@@ -3,6 +3,7 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, toggleMute, unlockAudio } from './engine/audio'
+import { createPadButton } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { context2d } from './engine/pixelart'
 import { ENEMIES, ENEMY_DEX } from './data/enemies'
@@ -56,6 +57,14 @@ type Run = {
 let screen: Screen | null = null
 let run: Run | null = null
 let lastStarter: StarterId = 'charmander'
+/** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
+let specialQueued = false
+const padA = createPadButton(0)
+
+const queueSpecial = () => {
+  unlockAudio()
+  if (run?.game.phase === 'playing') specialQueued = true
+}
 
 const setScreen = (next: Screen | null) => {
   screen?.dispose()
@@ -80,7 +89,7 @@ const startRun = (starter: StarterId) => {
   endRun()
   lastStarter = starter
   const game = createGame(starter, view)
-  run = { game, hud: createHud(ui), overlay: null, shown: null, closeText: null }
+  run = { game, hud: createHud(ui, queueSpecial), overlay: null, shown: null, closeText: null }
 }
 
 /** Rebuilds the modal overlay whenever the simulation phase (or offer set) changes. */
@@ -121,6 +130,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
+    case 'special': {
+      if (e.phase === 'release') return playSfx('specialBlast', 0)
+      playSfx('specialCharge', 0)
+      playCry(sprites(playerDex(g)).cry, 0.5)
+      const who = STARTERS[g.starter].line[g.player.stage]!.name
+      return toast(ui, h('span', {}, `${who} usou `, h('b', {}, e.name), '!'), 1600)
+    }
     case 'boss': {
       const def = ENEMIES[e.enemy]
       playSfx('boss')
@@ -160,6 +176,7 @@ input.onKey((key) => {
   if (!run) return
   const g = run.game
   if ((key === 'Escape' || key === 'KeyP') && g.phase === 'playing') g.phase = 'paused'
+  if (key === 'Space') queueSpecial()
 })
 window.addEventListener('pointerdown', unlockAudio)
 document.addEventListener('visibilitychange', () => {
@@ -179,13 +196,18 @@ const frame = (now: number) => {
   if (run) {
     const r = run
     const g = r.game
+    if (padA()) queueSpecial()
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
       while (acc >= STEP) {
-        step(g, input.readMove(), STEP)
+        step(g, { move: input.readMove(), special: specialQueued }, STEP)
+        specialQueued = false
         acc -= STEP
       }
-    } else acc = 0
+    } else {
+      acc = 0
+      specialQueued = false
+    }
     for (const e of g.events.splice(0)) handleEvent(r, e)
     if (run === r) {
       syncOverlay(r)
