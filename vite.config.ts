@@ -1,7 +1,66 @@
-import { defineConfig } from 'vite'
+import { resolve } from 'node:path'
+import { defineConfig, runnerImport, type Plugin } from 'vite'
 
-// One page per language so each gets its own title, description and hreflang (see index.html and en/index.html).
+type Site = typeof import('./src/site/index.ts')
+
+const SITE_ENTRY = '/src/site/index.ts'
+
+/**
+ * Static site pages (Pokédex, guide, changelog, legal) rendered from `src/site`.
+ * In the build each page is a virtual HTML entry, so Vite bundles its CSS/JS and
+ * writes `dist/<path>/index.html` with the content already in the markup. In dev
+ * the same render runs per request (fresh after every edit). Also serves and
+ * emits `sitemap.xml` from the route table.
+ */
+const sitePages = (): Plugin => {
+  let site: Site | null = null
+  let root = process.cwd()
+  const pageFor = (id: string) => site?.SITE_PAGES.find((p) => resolve(root, p.file) === id)
+  return {
+    name: 'site-pages',
+    enforce: 'pre',
+    async config(config, { command }) {
+      if (command !== 'build') return
+      root = resolve(config.root ?? process.cwd())
+      site = (await runnerImport<Site>(SITE_ENTRY, { configFile: false, root })).module
+      return { build: { rolldownOptions: { input: Object.fromEntries(site.SITE_PAGES.map((p) => [p.path.slice(1, -1).replace(/\//g, '-'), p.file])) } } }
+    },
+    resolveId(id) {
+      const file = resolve(root, id.replace(/^\//, ''))
+      return pageFor(file) ? file : null
+    },
+    load(id) {
+      return pageFor(id)?.render() ?? null
+    },
+    generateBundle() {
+      if (site) this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: site.sitemap() })
+    },
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const path = (req.url ?? '/').split(/[?#]/)[0] ?? '/'
+        const dev = (await server.ssrLoadModule(SITE_ENTRY)) as Site
+        if (path === '/sitemap.xml') {
+          res.setHeader('Content-Type', 'application/xml')
+          return res.end(dev.sitemap())
+        }
+        // Like Vercel's `trailingSlash: true`: /guia → /guia/
+        const page = dev.SITE_PAGES.find((p) => p.path === path || p.path === `${path}/`)
+        if (!page) return next()
+        if (page.path !== path) {
+          res.statusCode = 308
+          res.setHeader('Location', page.path)
+          return res.end()
+        }
+        res.setHeader('Content-Type', 'text/html')
+        res.end(await server.transformIndexHtml(path, page.render(), req.originalUrl))
+      })
+    },
+  }
+}
+
+// One page per language for the game (index.html, en/index.html); the site pages are added by `sitePages`.
 export default defineConfig({
+  plugins: [sitePages()],
   build: {
     rolldownOptions: {
       input: { main: 'index.html', en: 'en/index.html' },

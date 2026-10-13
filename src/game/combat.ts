@@ -1,6 +1,7 @@
 import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS } from '../data/types'
+import { ENEMY_BERRY_CHANCE } from '../data/consumables'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { burst, floatText } from './effects'
 import { coinDrops } from './meta'
@@ -67,7 +68,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
       g.phase = 'victory'
       g.events.push({ kind: 'victory' })
     }
-  } else if (chance(g.rng, 0.012)) {
+  } else if (chance(g.rng, ENEMY_BERRY_CHANCE)) {
     dropPickup(g, e.x + 6, e.y, 'berry')
   } else {
     enemyDrop(g, e)

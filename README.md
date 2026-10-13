@@ -109,13 +109,15 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 
 | | Keyboard / gamepad | Touch |
 | --- | --- | --- |
-| Move | WASD / arrows / left stick | Drag anywhere (floating joystick) |
+| Move | WASD / arrows | Drag anywhere (floating joystick) |
 | Special attack | `Space` / A (✕) | Round button, bottom right |
-| Pause | `Esc` / `P` | Pause button, top right |
+| Pause | `Esc` / `P` / Start | Pause button, top right |
 | Pick an upgrade | `1`–`3` | Tap it |
 | Mute | `M` | Settings, on the title screen or in the pause menu |
 | Menus | Arrows / D-pad, `Enter` / A, `Esc` / B back | Tap |
 | Switch language | `I` (title screen) or Settings | `PT \| EN`, top left of the title screen, or Settings |
+
+On a gamepad, the D-pad and left stick drive every menu. In a run, A fires the special and Start pauses, but the gamepad can't move your Pokémon yet: use the keyboard or touch.
 
 ## Running locally
 
@@ -148,7 +150,8 @@ src/
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, title scene and logo, frame renderer
   ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
-  i18n/     every player-facing string: pt.ts (reference) and en.ts
+  i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
+  site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
 
 <details>
