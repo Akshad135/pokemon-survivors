@@ -110,6 +110,7 @@ const GLYPHS: Record<string, readonly string[]> = {
   '9': ['111', '101', '111', '001', '111'],
   '!': ['1', '1', '1', '0', '1'],
   '+': ['000', '010', '111', '010', '000'],
+  '₽': ['0110', '0101', '0110', '1110', '0100'],
 }
 
 /** Renders text with a 1px dark outline into a cached sprite. */

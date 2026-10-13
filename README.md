@@ -50,11 +50,12 @@ src/
 - 15 regular enemies, any of which can show up shiny. Mini-bosses: Onix (2:30, Rock Slide) and Snorlax (5:00, Body Slam). Legendaries: Articuno (7:00, ice shard ring), Zapdos (9:30, lightning strikes), Moltres (12:00, fire trail and fire ring), and Mewtwo (15:00, psychic rings and strikes; beating it wins the run), sometimes joined by a rare Mew.
 - Drops: Exp. Candy (4 tiers), Oran Berry, and a Poké Ball (from bosses and shinies) that evolves a move when possible, or grants a random upgrade.
 - Item sources on the map (item balls, berry trees, rustling tall grass) break under any attack and drop consumables: Potion, Super Potion, Rare Candy, Exp. Share, Poké Flute, Max Repel, Voltorb (Explosion), X Attack, X Speed and Revive. Drop tables live in `data/consumables.ts`.
+- Meta progression: enemies drop Poké Dollars (₽ coins, stacks and bags; bosses shower ₽), plus an end-of-run bonus for time and kills. Spend them in the **Poké Mart** (title screen, `L`) on permanent ranks: HP Up, Protein, Iron, Carbos, Calcium, Zinc, PP Up, Exp. Charm, Amulet Coin, and Ability Capsule / Escape Rope for level-up rerolls and skips. Saved in `localStorage` (`game/meta.ts` holds the pure rules).
 
 ## Ideas for next steps
 
 - Evolutions for the newer signature moves (Mach Punch, Spirit Shackle, Pyro Ball…).
-- Meta progression (Poké Dollars, permanent upgrades) and biomes (cave, forest, Lavender Town).
+- Biomes (cave, forest, Lavender Town).
 - Chiptune music; custom effects/tiles made with PixelLab.
 
 ## Credits

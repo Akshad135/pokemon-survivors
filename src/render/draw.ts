@@ -4,6 +4,7 @@ import { hash2 } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
+import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
 import { isAsleep } from '../game/status'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
@@ -396,6 +397,7 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
 
 const drawPickups = (ctx: Ctx, g: Game, t: number) => {
   const candies = PICKUPS.candy()
+  const coins = PICKUPS.coins()
   for (const k of g.pickups) {
     const bob = k.attracted ? 0 : Math.round(Math.sin(t * 4 + k.id) * 1.2)
     if (!k.attracted) blitCentered(ctx, ellipse(3, 1, 'rgba(16,40,16,0.25)'), k.x, k.y + 4)
@@ -403,7 +405,11 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
       drawConsumable(ctx, k.item, k.x, k.y + bob, k.id, t)
       continue
     }
-    const sprite = k.kind === 'xp' ? candies[xpTier(k.value)]! : k.kind === 'berry' ? PICKUPS.berry() : PICKUPS.pokeball()
+    const sprite =
+      k.kind === 'xp' ? candies[xpTier(k.value)]!
+      : k.kind === 'coin' ? coins[coinTier(k.value)]!
+      : k.kind === 'berry' ? PICKUPS.berry()
+      : PICKUPS.pokeball()
     blitCentered(ctx, sprite, k.x, k.y + bob)
   }
 }

@@ -7,9 +7,10 @@ import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
+import { formatPokeDollars, runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
-import { berryIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { berryIcon, coinIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { sprites } from '../render/sprites'
 import { h } from './dom'
@@ -29,7 +30,7 @@ export const hint = (keys: string, touch: string) =>
  * Shared keyboard/pointer navigation for a list of buttons.
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
  */
-const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
+export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
   let index = opts.initial ?? 0
   const openedAt = performance.now()
   const focus = (i: number, sound = true) => {
@@ -117,7 +118,10 @@ const offerView = (g: Game, offer: Offer) => {
   }
 }
 
-export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void): Screen => {
+/** Poké Mart charges offered under the level-up choices (only shown when owned). */
+type LevelUpExtras = { reroll: () => void; skip: () => void }
+
+export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const buttons = g.offers.map((offer, i) => {
     const v = offerView(g, offer)
@@ -138,14 +142,23 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
     )
   })
 
+  const actions = extras
+    ? [
+        g.rerolls > 0 && ([h('button', { class: 'btn' }, `Trocar (${g.rerolls})`), extras.reroll] as const),
+        g.skips > 0 && ([h('button', { class: 'btn' }, `Pular (${g.skips})`), extras.skip] as const),
+      ].filter((a) => a !== false)
+    : []
+
   let done = false
   // Space also fires the special attack: ignore presses that were meant for the fight.
   const openedAt = performance.now()
-  const nav = menu(input, buttons, (i) => {
+  const nav = menu(input, [...buttons, ...actions.map(([b]) => b)], (i) => {
     if (done || performance.now() - openedAt < 400) return
     done = true
     playSfx('select')
-    onChoose(g.offers[i]!)
+    const offer = g.offers[i]
+    if (offer) onChoose(offer)
+    else actions[i - buttons.length]?.[1]()
   })
 
   const el = h(
@@ -156,6 +169,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
       { class: 'dialog box pop' },
       h('div', { class: 'dialog-title' }, `${name} subiu para o Nv ${g.player.level - g.pendingLevelUps + 1}!`),
       h('div', { class: 'offers' }, ...buttons),
+      actions.length > 0 && h('div', { class: 'buttons' }, ...actions.map(([b]) => b)),
       hint('↑ ↓ escolher · ENTER confirmar · 1-3 atalho', 'Toque para escolher'),
     ),
   )
@@ -259,6 +273,7 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
+  const earned = runEarnings(g)
   const retry = h('button', { class: 'btn' }, 'Tentar de novo')
   const back = h('button', { class: 'btn' }, 'Trocar Pokémon')
   const nav = menu(input, [retry, back], (i) => (i === 0 ? onRetry() : onMenu()), { horizontal: true })
@@ -283,6 +298,13 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
         h('div', {}, h('span', {}, 'Tempo'), h('b', {}, formatTime(g.time))),
         h('div', {}, h('span', {}, 'Nível'), h('b', {}, g.player.level)),
         h('div', {}, h('span', {}, 'Derrotados'), h('b', {}, g.kills)),
+      ),
+      h(
+        'div',
+        { class: 'earnings' },
+        h('img', { src: coinIcon(2), alt: '' }),
+        h('b', {}, `+${formatPokeDollars(earned.total)}`),
+        h('span', {}, `Moedas ${formatPokeDollars(earned.coins)} · Bônus ${formatPokeDollars(earned.bonus)}`),
       ),
       h(
         'div',

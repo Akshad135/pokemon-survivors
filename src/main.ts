@@ -11,7 +11,8 @@ import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
 import { ITEMS } from './data/items'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { CONSUMABLES } from './game/consumables'
-import { chooseOffer, createGame, playerDex, step } from './game/game'
+import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { runEarnings } from './game/meta'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
@@ -21,7 +22,9 @@ import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
 import { h } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
+import { depositPokeDollars, loadSave } from './ui/save'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
+import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 
 const STEP = 1 / 60
@@ -74,6 +77,8 @@ type Run = {
   /** Phase + offers snapshot the overlay was built for. */
   shown: { phase: Phase; offers: Game['offers'] } | null
   closeText: (() => void) | null
+  /** True once this run's ₽ went into the wallet. */
+  banked: boolean
 }
 
 let screen: Screen | null = null
@@ -95,11 +100,23 @@ const setScreen = (next: Screen | null) => {
 
 const showMenu = () => {
   endRun()
-  setScreen(starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), lastStarter))
+  const select = starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), lastStarter)
+  const closeMart = martButton(ui, input, showShop)
+  setScreen({ ...select, dispose: () => (closeMart(), select.dispose()) })
+}
+
+const showShop = () => setScreen(shop(ui, input, showMenu))
+
+/** Moves the run's ₽ into the wallet once. Quitting keeps coins but forfeits the survival bonus. */
+const bankRun = (r: Run, withBonus: boolean) => {
+  if (r.banked) return
+  r.banked = true
+  depositPokeDollars(withBonus ? runEarnings(r.game).total : r.game.coins)
 }
 
 const endRun = () => {
   if (!run) return
+  bankRun(run, false)
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
@@ -119,9 +136,9 @@ const startRun = async (starter: StarterId) => {
   await Promise.all([loadAll([...starterDex(starter), ...ENEMY_DEX]), preloadShinies(starterDex(starter))])
   void preloadShinies(ENEMY_DEX)
   loading.remove()
-  const game = createGame(starter, view)
+  const game = createGame(starter, view, Date.now(), loadSave().ranks)
   const pause = () => game.phase === 'playing' && (game.phase = 'paused')
-  run = { game, hud: createHud(ui, queueSpecial, pause), overlay: null, shown: null, closeText: null }
+  run = { game, hud: createHud(ui, queueSpecial, pause), overlay: null, shown: null, closeText: null, banked: false }
 }
 
 /** Rebuilds the modal overlay whenever the simulation phase (or offer set) changes. */
@@ -133,7 +150,7 @@ const syncOverlay = (r: Run) => {
   r.shown = { phase: g.phase, offers: g.offers }
   switch (g.phase) {
     case 'levelup':
-      r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer))
+      r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer), { reroll: () => rerollOffers(g), skip: () => skipLevelUp(g) })
       break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, () => (g.phase = 'playing'), showMenu)
@@ -159,6 +176,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hit': return playSfx(e.effective > 1 ? 'superHit' : 'hit', 45)
     case 'kill': return playSfx('kill', 50)
     case 'pickup': return playSfx('pickup', 35)
+    case 'coin': return playSfx('coin', 60)
     case 'heal': return playSfx('heal')
     case 'hurt': return playSfx('hurt', 120)
     case 'levelup': return playSfx('levelUp')
@@ -225,9 +243,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), 'O ', h('b', {}, 'Revive'), ' te pôs de pé!'), 3000)
     case 'gameover':
+      bankRun(r, true)
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)
     case 'victory':
+      bankRun(r, true)
       return playSfx('evolve')
   }
 }

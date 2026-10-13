@@ -62,6 +62,12 @@ const SFX = {
     noise(0.12, 0.15)
   },
   levelUp: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.14, 'square', 0.14, i * 0.07)),
+  coin: () => {
+    tone(988, 988, 0.05, 'square', 0.1)
+    tone(1319, 1319, 0.14, 'square', 0.1, 0.05)
+  },
+  buy: () => [1319, 1568, 2093].forEach((f, i) => tone(f, f, 0.08, 'square', 0.1, i * 0.06)),
+  denied: () => tone(160, 120, 0.16, 'square', 0.12),
   select: () => tone(660, 990, 0.08, 'square', 0.12),
   move: () => tone(440, 440, 0.04, 'square', 0.06),
   boss: () => [196, 185, 175, 165].forEach((f, i) => tone(f, f * 0.98, 0.35, 'sawtooth', 0.16, i * 0.3)),

@@ -3,7 +3,8 @@ import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS } from '../data/types'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { burst, floatText } from './effects'
-import { dropPickup, dropXp } from './pickups'
+import { coinDrops } from './meta'
+import { dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 
@@ -56,6 +57,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
   g.events.push({ kind: 'kill', boss: e.boss })
 
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
+  dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.boss) {
     dropPickup(g, e.x, e.y, 'pokeball')

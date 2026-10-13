@@ -5,7 +5,8 @@ import { STARTERS } from '../data/starters'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
-import { itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
+import { formatPokeDollars } from '../game/meta'
+import { coinIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { consumableIcon } from '../render/props'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
@@ -24,6 +25,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
   const xpLabel = h('div', { class: 'xp-label' })
   const timer = h('div', { class: 'timer' })
   const kills = h('span')
+  const coins = h('span')
   const moveSlots = h('div', { class: 'slots' })
   const itemSlots = h('div', { class: 'slots' })
   const buffs = h('div', { class: 'buffs' })
@@ -52,7 +54,17 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       { class: 'hud-row' },
       h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots, buffs), special.badge),
       timer,
-      h('div', { class: 'hud-right' }, h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills), pause),
+      h(
+        'div',
+        { class: 'hud-right' },
+        h(
+          'div',
+          { class: 'counters' },
+          h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills),
+          h('div', { class: 'kills coins' }, h('img', { src: coinIcon(0), alt: '' }), coins),
+        ),
+        pause,
+      ),
     ),
     boss,
     h(
@@ -118,6 +130,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     setText(xpLabel, `Nv ${p.level}`)
     setText(timer, formatTime(g.time))
     setText(kills, String(g.kills))
+    setText(coins, formatPokeDollars(g.coins))
     special.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()

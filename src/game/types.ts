@@ -7,6 +7,7 @@ import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
+import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
 import type { Prop } from './props'
@@ -168,7 +169,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'consumable'; item: ConsumableId })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'consumable'; item: ConsumableId })
 
 export type Particle = {
   x: number
@@ -199,6 +200,7 @@ export type GameEvent =
   | { kind: 'hit'; effective: number }
   | { kind: 'kill'; boss: boolean }
   | { kind: 'pickup' }
+  | { kind: 'coin' }
   | { kind: 'heal' }
   | { kind: 'hurt' }
   | { kind: 'levelup' }
@@ -245,6 +247,13 @@ export type Game = {
   hitstop: number
   special: SpecialState
   kills: number
+  /** Permanent Poké Mart ranks this run was started with. */
+  ranks: Ranks
+  /** Poké Dollars collected this run (already multiplied by greed). */
+  coins: number
+  /** Level-up rerolls/skips left this run. */
+  rerolls: number
+  skips: number
   damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
   offers: Offer[]

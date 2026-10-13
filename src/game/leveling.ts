@@ -6,6 +6,7 @@ import { STARTERS, type StarterId } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
 import { burst } from './effects'
+import { rankDeltas } from './meta'
 import { maxMoveLevel, MOVES, type MoveId } from './moves'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove } from './types'
@@ -86,12 +87,13 @@ const starterDeltas = (id: StarterId, stage: number): StatDelta[] => {
 /** Player stats of a starter at an evolution stage, without items (used by the inspect panel). */
 export const starterStats = (id: StarterId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
 
-/** Rebuilds player stats from starter, evolution stage and held items. */
+/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage and held items. */
 export const recomputeStats = (g: Game) => {
   const p = g.player
   const before = p.stats.maxHp
   p.stats = applyDeltas(BASE_STATS, [
     ...starterDeltas(g.starter, p.stage),
+    ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
   ])
