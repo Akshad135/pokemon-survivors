@@ -39,6 +39,84 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   },
   {
     date: '2026-10-13',
+    pr: 22,
+    title: { pt: 'Fendas lendárias e modo sem fim', en: 'Legendary rifts and endless mode' },
+    notes: [
+      {
+        pt: 'Algumas vezes por partida, uma fenda se abre no mapa. Entre nela para enfrentar Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza ou Dialga numa arena fechada, com ataques próprios de cada lendário.',
+        en: 'A few times per run, a rift opens on the map. Step in to face Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena, each with its own attacks.',
+      },
+      {
+        pt: 'Vencer paga muita EXP, Poké Dollars, Poké Balls, itens e cura. Às vezes o lendário é shiny e paga o dobro. Se o tempo acabar, a fenda colapsa e joga você de volta.',
+        en: 'Winning pays lots of EXP, Poké Dollars, Poké Balls, items and a heal. Sometimes the legendary is shiny and pays double. If time runs out, the rift collapses and throws you back.',
+      },
+      {
+        pt: 'Depois de derrotar Mewtwo, continue no modo sem fim: a horda não para de crescer e Arceus vem caçar você às 20:00. Dá para derrotá-lo, se você for muito forte.',
+        en: 'After beating Mewtwo, keep going in endless mode: the horde keeps growing and Arceus comes hunting at 20:00. It can be beaten, if you are strong enough.',
+      },
+      {
+        pt: 'O tempo sobrevivido agora vale mais: cada minuto além de 15:00 rende Poké Dollars extras no fim da partida.',
+        en: 'Time survived is worth more now: every minute past 15:00 pays extra Poké Dollars at the end of the run.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
+    pr: 21,
+    title: { pt: 'Biomas e clima', en: 'Biomes and weather' },
+    notes: [
+      {
+        pt: 'A partida agora atravessa cinco biomas: Rota 1, Floresta de Viridian, Monte Moon, Monte Prateado e Torre de Lavender, cada um com visual, itens quebráveis e música próprios.',
+        en: 'A run now walks through five biomes: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own look, breakables and music.',
+      },
+      {
+        pt: 'Clima que muda durante a partida e vale para todos: sol forte (Fogo ×1,5, Água ×0,75), chuva (o inverso), tempestade de areia, neve e névoa.',
+        en: 'Weather that changes during the run and applies to everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm, snow and fog.',
+      },
+      {
+        pt: 'Quatro temas novos na trilha sonora, um por bioma.',
+        en: 'Four new soundtrack themes, one per biome.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
+    pr: 20,
+    title: { pt: 'Inimigos com personalidade', en: 'Enemies with personality' },
+    notes: [
+      {
+        pt: 'Seis comportamentos novos na horda: Chansey cura os aliados, Bronzong protege com um escudo que absorve dano, Nidoqueen chama Nidoran, Voltorb e Electrode explodem, Magnemite dispara raios e Hitmonlee salta sobre a horda.',
+        en: 'Six new behaviors in the horde: Chansey heals its allies, Bronzong shields them with a ward that soaks damage, Nidoqueen calls in Nidoran, Voltorb and Electrode explode, Magnemite fires beams and Hitmonlee leaps over the horde.',
+      },
+      {
+        pt: 'Todo ataque avisa antes: círculo vermelho, linha ou sombra no chão, piscando mais rápido quando o golpe está perto. A explosão do Voltorb fere os inimigos também.',
+        en: 'Every attack warns you first: a red circle, a line or a shadow on the ground, blinking faster as the hit gets close. Voltorb\'s blast hurts enemies too.',
+      },
+      { pt: 'Um cerco de Voltorb aos 4:30 e uma seção nova no guia.', en: 'A ring of Voltorb at 4:30 and a new guide section.' },
+    ],
+  },
+  {
+    date: '2026-10-13',
+    pr: 19,
+    title: { pt: 'Eventos no mapa', en: 'Map events' },
+    notes: [
+      {
+        pt: 'Pontos de interesse surgem durante a partida e fazem você escolher para onde ir: altares de buff, fontes que curam e baús trancados que pedem 3 segundos dentro do anel enquanto uma emboscada fecha o cerco.',
+        en: 'Points of interest show up during a run and make you choose where to go: buff altars, healing fountains and locked chests that need 3 seconds inside their ring while an ambush closes in.',
+      },
+      {
+        pt: 'Armadilhas de espinhos e bombas ferem você e a horda: atraia os selvagens para cima delas.',
+        en: 'Spike and bomb traps hurt you and the horde alike: lure the wild Pokémon onto them.',
+      },
+      {
+        pt: 'Um Meowth foge com moedas: cada golpe derruba uma, e se ele desmaiar vem o Pay Day.',
+        en: 'A Meowth runs off with coins: every hit knocks one loose, and if it faints you get the Pay Day.',
+      },
+      { pt: 'Setas na borda da tela apontam para os eventos importantes.', en: 'Arrows on the screen edge point to the important events.' },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 14,
     title: { pt: 'Site: Pokédex, guia, novidades e página legal', en: 'Website: Pokédex, guide, changelog and legal page' },
     notes: [

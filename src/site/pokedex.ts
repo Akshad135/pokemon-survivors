@@ -2,7 +2,11 @@ import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
 import type { PokeType } from '../data/types'
+import { RIFT, RIFT_LEGENDS } from '../data/rifts'
+import { SUMMONS } from '../data/traits'
 import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
+import { ENDLESS, REAPER } from '../game/endless'
+import { MEOWTH_DEX } from '../game/mapEventRules'
 
 /**
  * The site's Pokédex model: every species the game uses, derived from
@@ -10,7 +14,7 @@ import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
  * the next build.
  */
 
-export const ROLES = ['starter', 'enemy', 'boss', 'legendary'] as const
+export const ROLES = ['starter', 'enemy', 'boss', 'legendary', 'event'] as const
 
 export type Role = (typeof ROLES)[number]
 
@@ -34,7 +38,8 @@ export type DexEntry = {
   role: Role
   region: Region
   sprites: Sprites
-  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId }
+  /** `event`: met at a map event (the fleeing Meowth), not in the horde. */
+  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -48,6 +53,8 @@ export const slugOf = (name: string) =>
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace('♀', '-f')
+    .replace('♂', '-m')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
@@ -89,9 +96,11 @@ const wildEntry = (id: EnemyId): DexEntry => {
   return { ...base(e.dex, e.name, e.types), role, source: { kind: 'wild', id } }
 }
 
+const eventEntry = (): DexEntry => ({ ...base(MEOWTH_DEX, 'Meowth', ['normal']), role: 'event', source: { kind: 'event' } })
+
 /** Every Pokémon in the game, in national dex order. */
 export const pokedex = (): DexEntry[] =>
-  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry)].sort((a, b) => a.dex - b.dex)
+  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry), eventEntry()].sort((a, b) => a.dex - b.dex)
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
 
@@ -99,14 +108,23 @@ export type Appearance =
   /** May be drawn into the regular spawn pool between two run times (seconds). */
   | { kind: 'horde'; from: number; until: number }
   /** May lead a swarm or ring (each run draws its own). */
-  | { kind: 'swarm' | 'ring'; at: number; count: number }
+  /** `fixed`: the event always brings this species instead of drawing one from the run's horde. */
+  | { kind: 'swarm' | 'ring'; at: number; count: number; fixed?: boolean }
   /** `chance` is 1 for bosses that always come. */
   | { kind: 'boss'; at: number; chance: number }
+  /** Waits behind a legendary rift, which first opens at `from`. */
+  | { kind: 'rift'; from: number }
+  /** Hunts the player in endless mode from `at`. */
+  | { kind: 'reaper'; at: number }
+  /** Called in by a summoner (Nidoqueen's Nidoran). */
+  | { kind: 'summoned'; by: EnemyId }
+
+const isRiftLegend = (id: EnemyId): boolean => RIFT_LEGENDS.some((l) => l === id)
 
 /**
  * When an enemy can show up: the spawn-pool windows of the stages with a slot
  * of its tier (contiguous stages merged), the swarms (flyers only) and rings of
- * its tier, and its boss events.
+ * its tier or naming it, its boss events, rifts, the reaper and summons.
  */
 export const appearances = (id: EnemyId): Appearance[] => {
   const def: EnemyDef = ENEMIES[id]
@@ -121,10 +139,16 @@ export const appearances = (id: EnemyId): Appearance[] => {
   }, [])
   const events = EVENTS.flatMap((e): Appearance[] => {
     if (e.kind === 'boss') return e.enemy === id ? [{ kind: 'boss', at: e.at, chance: e.chance ?? 1 }] : []
+    if ('enemy' in e) return e.enemy === id ? [{ kind: e.kind, at: e.at, count: e.count, fixed: true }] : []
     if (e.tier !== def.tier || (e.kind === 'swarm' && !def.types.includes('flying'))) return []
     return [{ kind: e.kind, at: e.at, count: e.count }]
   })
-  return [...windows, ...events]
+  const rift: Appearance[] = isRiftLegend(id) ? [{ kind: 'rift', from: RIFT.firstAt }] : []
+  const reaper: Appearance[] = id === REAPER ? [{ kind: 'reaper', at: ENDLESS.reaperAt }] : []
+  const summoned = (Object.keys(SUMMONS) as Array<keyof typeof SUMMONS>)
+    .filter((by) => SUMMONS[by].includes(id))
+    .map((by): Appearance => ({ kind: 'summoned', by }))
+  return [...windows, ...events, ...rift, ...reaper, ...summoned]
 }
 
 /** `m:ss` run clock, as shown on the HUD. */

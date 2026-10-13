@@ -99,6 +99,7 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
 
   const eventSpecies = events.map((e): EnemyId | null => {
     if (e.kind === 'boss') return null
+    if ('enemy' in e) return e.enemy
     const stage = stageIndexAt(e.at)
     const met = metBy(stage, e.tier)
     if (e.kind === 'ring') return met.length > 0 ? pick(rng, met)[0] : draw(ofTier(e.tier), stage)

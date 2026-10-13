@@ -1,20 +1,27 @@
+import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
 import { BOSS_PATTERNS } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
-import { ENEMIES, type EnemyDef } from '../../data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { EVOLUTIONS } from '../../data/evolutions'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { STARTER_IDS, STARTERS } from '../../data/starters'
-import { effectiveness } from '../../data/types'
+import { WEATHER, WEATHER_CHIP } from '../../data/weather'
+import { effectiveness, POKE_TYPES } from '../../data/types'
+import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { EVENTS, RUN_LENGTH, scaling, STAGES, stageStart } from '../../data/waves'
 import { createRng } from '../../engine/rng'
+import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
+import { MAP_EVENTS } from '../../game/mapEvents'
+import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { drawRoster } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS } from '../../game/special'
+import { riftScale } from '../../game/rift'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
@@ -22,7 +29,7 @@ import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
 import { clock, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
-import { patternText, typeBadge } from './pokedex'
+import { patternText, traitText, typeBadge } from './pokedex'
 
 type Section = keyof SiteMessages['guide']['sections']
 
@@ -55,7 +62,12 @@ const run = (locale: Locale, m: SiteMessages) => {
     return [clock(min * 60), num(s.hp), num(s.damage)] as const
   })
   const events = EVENTS.map((e) => {
-    if (e.kind !== 'boss') return [clock(e.at), e.kind === 'swarm' ? m.roster.swarm(e.count, e.tier) : m.roster.ring(e.count, e.tier)]
+    if (e.kind === 'swarm') return [clock(e.at), m.roster.swarm(e.count, e.tier)]
+    if (e.kind === 'ring') {
+      if (!('enemy' in e)) return [clock(e.at), m.roster.ring(e.count, e.tier)]
+      const name = ENEMIES[e.enemy].name
+      return [clock(e.at), html`<a href="${dexLink(locale, name)}">${m.roster.ringOf(e.count, name)}</a>`]
+    }
     const name = ENEMIES[e.enemy].name
     const text = e.chance !== undefined ? r.bossChance(name, e.chance * 100) : r.boss(name)
     return [clock(e.at), html`<a href="${dexLink(locale, name)}">${text}</a>`]
@@ -64,6 +76,37 @@ const run = (locale: Locale, m: SiteMessages) => {
     <p>${r.scaling(scale)}</p>
     <h3>${r.timeline}</h3>
     ${table([r.timeHead, r.eventHead], events)}`
+}
+
+const world = (locale: Locale, m: SiteMessages) => {
+  const w = m.guide.world
+  const game = LOCALES[locale].messages.world
+  const pct = (v: number) => Math.round(v * 1000) / 10
+  const biomes = BIOME_ORDER.map((id, i) => {
+    const odds: Partial<Record<WeatherId, number>> = BIOMES[id].weather
+    const likely = WEATHER_IDS.filter((wid) => (odds[wid] ?? 0) > 0).sort((a, b) => odds[b]! - odds[a]!)
+    return [clock(i * BIOME_LENGTH), game.biomes[id], likely.map((wid) => game.weather[wid]).join(', ')]
+  })
+  // Every effect is read from the weather rules, so the guide follows any rebalance.
+  const effect = (id: Exclude<WeatherId, 'clear'>) => {
+    const def = WEATHER[id]
+    const parts = [
+      ...POKE_TYPES.flatMap((type) => {
+        const mult = def.power?.[type]
+        return mult === undefined ? [] : [w.power(m.types[type], mult)]
+      }),
+      ...(def.chip
+        ? [w.chip(pct(WEATHER_CHIP.enemy), pct(WEATHER_CHIP.boss), pct(WEATHER_CHIP.player), WEATHER_CHIP.every, pct(WEATHER_CHIP.playerFloor), def.chip.immune.map((t) => m.types[t]))]
+        : []),
+      ...(def.sight !== undefined ? [w.fog] : []),
+    ]
+    return parts.join('; ')
+  }
+  const weather = WEATHER_IDS.flatMap((id) => (id === 'clear' ? [] : [[game.weather[id], effect(id)]]))
+  return html`${paragraphs(w.paragraphs(BIOME_ORDER.length, BIOME_LENGTH / 60))}
+    ${table([w.timeHead, w.biomeHead, w.weatherHead], biomes)}
+    <h3>${w.weatherTitle}</h3>
+    ${table([w.weatherCol, w.effectHead], weather)}`
 }
 
 /** Wild species that can be drawn, by tier, in dex order. */
@@ -201,6 +244,43 @@ const bosses = (locale: Locale, m: SiteMessages) => {
   return html`${paragraphs(b.paragraphs)}${table([b.timeHead, b.bossHead, b.hpHead, b.attacksHead], rows)}`
 }
 
+const rifts = (locale: Locale, m: SiteMessages) => {
+  const r = m.guide.rifts
+  const num = (v: number) => v.toLocaleString(m.lang.tag)
+  const attacks = (id: keyof typeof ENEMIES) => html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
+  const rows = [...RIFT_LEGENDS, REAPER].map((id) => [
+    bossName(locale, id),
+    html`${ENEMIES[id].types.map((type) => typeBadge(type, m))}`,
+    num(id === REAPER ? reaperHp(0) : ENEMIES[id].hp),
+    attacks(id),
+  ])
+  const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
+  const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, shiny: Math.round(1 / RIFT.shinyOdds) }))}
+    ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
+    <p class="note">${r.hpNote(growth)}</p>
+    <h3>${r.endlessTitle}</h3>
+    ${paragraphs(
+      r.endless({
+        every: ENDLESS.eventEvery,
+        reaper: clock(ENDLESS.reaperAt),
+        hp: num(reaperHp(0)),
+        returns: ENDLESS.reaperReturn / 60,
+        perMinute: bonus(RUN_LENGTH + 60) - bonus(RUN_LENGTH),
+        reaperBonus: num(ENDLESS.reaperBonus),
+      }),
+    )}`
+}
+
+const traits = (locale: Locale, m: SiteMessages) => {
+  const t = m.guide.traits
+  const rows = (Object.keys(ENEMIES) as EnemyId[]).flatMap((id) => {
+    const { trait }: EnemyDef = ENEMIES[id]
+    return trait ? [[bossName(locale, id), m.traits.names[trait], html`${traitText(trait, id, m)} <em>${m.traits.tips[trait]}</em>`]] : []
+  })
+  return html`${paragraphs(t.paragraphs)}${table([t.pokemonHead, t.traitHead, t.effectHead], rows)}`
+}
+
 const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
   return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player)))}
@@ -219,6 +299,22 @@ const items = (m: SiteMessages) => {
     ${table([i.sourceHead, i.hitsHead], props)}
     <p class="note">${i.enemyNote(ENEMY_BERRY_CHANCE * 100, ENEMY_DROP_CHANCE * 100)}</p>
     ${table([i.itemHead, i.effectHead, i.whereHead], drops.map((d) => [nameOf(d), i.effects[d], where(d).join(', ')]))}`
+}
+
+const mapEvents = (m: SiteMessages) => {
+  const e = m.guide.mapEvents
+  const money = (coins: readonly number[]) => `₽${coins.reduce((a, b) => a + b, 0).toLocaleString(m.lang.tag)}`
+  const rows = [
+    [e.altar.name, e.altar.how, e.altar.reward(ALTAR.boost)],
+    [e.fountain.name, e.fountain.how(FOUNTAIN.charges, FOUNTAIN.interval), e.fountain.reward(FOUNTAIN.heal * 100)],
+    [e.chest.name, e.chest.how(CHEST.unlock), e.chest.reward(money(chestCoins(0)))],
+    [e.spikes.name, e.spikes.how, e.spikes.reward],
+    [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
+    [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
+  ]
+  const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
+  return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>
+    ${table([e.eventHead, e.howHead, e.rewardHead], rows)}`
 }
 
 const mart = (locale: Locale, m: SiteMessages) => {
@@ -243,14 +339,18 @@ const settings = (m: SiteMessages) => {
 const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   controls: (_, m) => controls(m),
   run,
+  world,
   horde,
   levels,
   moveEvolutions,
   special,
   types: (_, m) => types(m),
   bosses,
+  traits,
+  rifts,
   shinies,
   items: (_, m) => items(m),
+  mapEvents: (_, m) => mapEvents(m),
   mart,
   settings: (_, m) => settings(m),
 }

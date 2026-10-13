@@ -36,6 +36,7 @@ describe('drawRoster', () => {
       EVENTS.forEach((e, i) => {
         const id = r.events[i]
         if (e.kind === 'boss') return expect(id).toBeNull()
+        if ('enemy' in e) return expect(id).toBe(e.enemy)
         expect(id && def(id).tier).toBe(e.tier)
         if (e.kind === 'swarm') expect(def(id!).types).toContain('flying')
         else expect(met.has(id!)).toBe(true)

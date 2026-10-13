@@ -1,4 +1,5 @@
 import type { Drop } from '../../data/consumables'
+import type { TraitId } from '../../data/traits'
 import type { PokeType } from '../../data/types'
 import type { StatusKind } from '../../game/status'
 
@@ -39,7 +40,7 @@ export const sitePt = {
   types: {
     normal: 'Normal', fire: 'Fogo', water: 'Água', grass: 'Planta', electric: 'Elétrico', poison: 'Veneno',
     flying: 'Voador', bug: 'Inseto', rock: 'Pedra', ground: 'Terra', ghost: 'Fantasma', fighting: 'Lutador',
-    psychic: 'Psíquico', ice: 'Gelo', steel: 'Aço', dark: 'Sombrio', fairy: 'Fada',
+    psychic: 'Psíquico', ice: 'Gelo', steel: 'Aço', dark: 'Sombrio', fairy: 'Fada', dragon: 'Dragão',
   } satisfies Record<PokeType, string>,
 
   pokedex: {
@@ -62,8 +63,8 @@ export const sitePt = {
     results: (count: number) => `${count} ${s(count, 'Pokémon encontrado', 'Pokémon encontrados')}`,
     empty: 'Nenhum Pokémon com esses filtros.',
     clear: 'Limpar filtros',
-    roles: { starter: 'Inicial', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário' },
-    roleFilter: { starter: 'Iniciais', enemy: 'Selvagens', boss: 'Chefes', legendary: 'Lendários' },
+    roles: { starter: 'Inicial', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário', event: 'Evento' },
+    roleFilter: { starter: 'Iniciais', enemy: 'Selvagens', boss: 'Chefes', legendary: 'Lendários', event: 'Eventos' },
     link: (name: string) => `Link para ${name}`,
     portrait: (name: string) => `Retrato de ${name}`,
     sprite: (name: string) => `Sprite animado de ${name}`,
@@ -77,16 +78,55 @@ export const sitePt = {
     specialFinal: 'Na evolução final',
     learnset: 'Golpes que aprende',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
+    eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
     appears: 'Quando aparece',
     horde: (from: string, until: string) => `Pode entrar na horda, de ${from} a ${until}`,
     hordeEnd: (from: string) => `Pode entrar na horda, de ${from} até o fim`,
     swarm: (at: string, count: number) => `Pode liderar a revoada de ${count} em ${at}`,
     ring: (at: string, count: number) => `Pode formar o cerco de ${count} em ${at}`,
+    ringFixed: (at: string, count: number) => `Forma o cerco de ${count} em ${at}`,
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
+    rift: (from: string) => `Atrás de uma fenda lendária, a partir de ${from} (arena opcional)`,
+    reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
+    summoned: (by: string) => `Chamado por ${by}`,
+    behavior: 'Comportamento',
+  },
+
+  /** Enemy traits, built from `data/traits.ts`. */
+  traits: {
+    names: {
+      healer: 'Curandeiro',
+      shield: 'Escudo',
+      summoner: 'Invocador',
+      kamikaze: 'Kamikaze',
+      beam: 'Raio',
+      leaper: 'Saltador',
+    } satisfies Record<TraitId, string>,
+    effects: {
+      healer: (every: number, percent: number) =>
+        `A cada ${n(every)}s, um pulso verde cura ${n(percent)}% do HP máximo dos aliados feridos por perto.`,
+      shield: (every: number, percent: number, duration: number) =>
+        `A cada ${n(every)}s, envolve os aliados por perto num escudo que absorve dano igual a ${n(percent)}% do HP máximo deles, por ${n(duration)}s.`,
+      summoner: (every: number, count: number, max: number, names: readonly string[]) =>
+        `A cada ${n(every)}s chama ${count} reforços (${list(names)}), até ${max} ao mesmo tempo.`,
+      kamikaze: (fuse: number, damage: number, percent: number) =>
+        `Chega perto, para, pisca em vermelho e explode depois de ${n(fuse)}s. A explosão causa ${n(damage)}x o dano de contato em você e tira ${n(percent)}% do HP dos inimigos no círculo.`,
+      beam: (aim: number, damage: number) => `Para, desenha no chão a linha do raio por ${n(aim)}s e dispara: ${n(damage)}x o dano de contato.`,
+      leaper: (warn: number, damage: number) =>
+        `Salta sobre a horda até onde você estava. A sombra no chão marca a queda ${n(warn)}s antes, e o impacto causa ${n(damage)}x o dano de contato.`,
+    } satisfies Record<TraitId, unknown>,
+    tips: {
+      healer: 'Derrube primeiro, senão a horda volta a encher a vida.',
+      shield: 'Números azuis são dano absorvido. Derrube o escudeiro ou espere o escudo piscar e sumir.',
+      summoner: 'Os reforços param quando ela cai.',
+      kamikaze: 'Saia do círculo vermelho, ou atraia para o meio da horda: a explosão fere os inimigos também.',
+      beam: 'A mira trava quando a linha aparece: um passo para o lado basta.',
+      leaper: 'Saia de cima da sombra antes da queda.',
+    } satisfies Record<TraitId, string>,
   },
 
   /** Boss attack patterns, built from `data/bosses.ts`. */
@@ -122,12 +162,13 @@ export const sitePt = {
       `${list(groups.map(([tier, count]) => `${count} da faixa ${tier}`))} (${fresh} ${s(fresh, 'nova', 'novas')})`,
     swarm: (count: number, tier: number) => `Revoada: ${count} Pokémon voadores da faixa ${tier} cruzam a tela`,
     ring: (count: number, tier: number) => `Cerco: um círculo de ${count} Pokémon da faixa ${tier} se fecha ao seu redor`,
+    ringOf: (count: number, name: string) => `Cerco: um círculo de ${count} ${name} se fecha ao seu redor`,
   },
 
   guide: {
     title: 'Como jogar Pokémon Survivors: guia completo',
     description:
-      'Guia do Pokémon Survivors: controles no teclado, controle e celular, como funciona a partida, níveis, golpes, evolução de golpes com itens, ataque especial, tipos e status, chefes, shinies, itens do mapa e Poké Mart.',
+      'Guia do Pokémon Survivors: controles no teclado, controle e celular, como funciona a partida, níveis, golpes, evolução de golpes com itens, ataque especial, tipos e status, chefes, shinies, itens e eventos do mapa e Poké Mart.',
     h1: 'Como jogar',
     intro:
       'Pokémon Survivors é um roguelite estilo Vampire Survivors: você só anda, e o seu Pokémon ataca sozinho. Este guia explica tudo o que acontece numa partida, com os números do jogo.',
@@ -135,14 +176,18 @@ export const sitePt = {
     sections: {
       controls: 'Controles',
       run: 'A partida',
+      world: 'Biomas e clima',
       horde: 'A horda selvagem',
       levels: 'Níveis e golpes',
       moveEvolutions: 'Evolução de golpes',
       special: 'Ataque especial',
       types: 'Tipos e status',
       bosses: 'Chefes',
+      traits: 'Inimigos especiais',
+      rifts: 'Fendas lendárias e modo sem fim',
       shinies: 'Shinies',
       items: 'Itens no mapa',
+      mapEvents: 'Eventos no mapa',
       mart: 'Poké Mart e Poké Dollars',
       settings: 'Ajustes e música',
     },
@@ -167,7 +212,7 @@ export const sitePt = {
     run: {
       paragraphs: (minutes: number, starters: number) => [
         `Escolha um dos ${starters} iniciais, de Kanto a Paldea. Cada um tem status, golpe inicial, golpes que aprende e um ataque especial próprios (veja a Pokédex).`,
-        `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida.`,
+        `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida. Depois, se quiser, dá para continuar no modo sem fim.`,
         'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado). Os Poké Dollars coletados vão para a carteira.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
@@ -177,6 +222,22 @@ export const sitePt = {
       eventHead: 'Evento',
       boss: (name: string) => `Chefe: ${name}`,
       bossChance: (name: string, percent: number) => `Chefe raro: ${name} (${n(percent)}% de chance)`,
+    },
+    world: {
+      paragraphs: (count: number, minutes: number) => [
+        `A partida atravessa ${count} biomas, ${n(minutes)} minutos em cada um, sem tela de carregamento: o chão se dissolve no cenário seguinte e cada bioma tem a sua música. Os itens quebráveis também mudam de cara (na caverna, a grama alta vira uma rocha e a árvore de frutas vira um cogumelo gigante).`,
+        'O clima muda algumas vezes por partida e vale para todo mundo: para os seus golpes e para os ataques dos inimigos. Cada bioma tem os seus climas mais prováveis, e o ícone do clima aparece ao lado do relógio.',
+      ],
+      timeHead: 'A partir de',
+      biomeHead: 'Bioma',
+      weatherHead: 'Climas (do mais ao menos comum)',
+      weatherTitle: 'Climas',
+      weatherCol: 'Clima',
+      effectHead: 'Efeito',
+      power: (type: string, mult: number) => `golpes de ${type} ×${n(mult)}`,
+      chip: (enemy: number, boss: number, player: number, every: number, floor: number, immune: readonly string[]) =>
+        `a cada ${n(every)}s, inimigos perdem ${n(enemy)}% do HP máximo (chefes, ${n(boss)}%) e você perde ${n(player)}%, mas nunca abaixo de ${n(floor)}% do HP. Os tipos ${list(immune)} ficam imunes`,
+      fog: 'a visão fica curta: só dá para ver bem perto do seu Pokémon',
     },
     levels: {
       paragraphs: (moves: number, items: number, moveLevel: number) => [
@@ -229,6 +290,26 @@ export const sitePt = {
       flute: 'Poké Flute (item do mapa)',
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
     },
+    rifts: {
+      paragraphs: (r: { first: string; every: number; portal: number; enter: number; arena: number; shiny: number }) => [
+        `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s e nunca aparece enquanto um chefe está vivo.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você a uma arena fechada, com uma parede que não dá para atravessar, para enfrentar um lendário de outra geração. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
+        'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
+        `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
+      ],
+      legendHead: 'Lendário',
+      typesHead: 'Tipos',
+      hpHead: 'HP base',
+      attacksHead: 'Ataques',
+      hpNote: (percent: number) => `O HP base é o da primeira fenda, às 3:30. Depois, o HP e o dano de contato do lendário crescem com o relógio: +${n(percent)}% de HP por minuto. Cada fenda traz um lendário diferente.`,
+      endlessTitle: 'Modo sem fim',
+      endless: (e: { every: number; reaper: string; hp: string; returns: number; perMinute: number; reaperBonus: string }) => [
+        'Depois de derrotar Mewtwo, a tela de vitória oferece continuar no modo sem fim. Quem não quiser sai com a vitória normal, e o bônus já é pago na hora.',
+        `A horda não para de crescer: nascem mais inimigos, o limite na tela sobe e cercos e revoadas chegam a cada ${e.every} segundos. As fendas continuam abrindo.`,
+        `Às ${e.reaper}, Arceus desce para caçar você. Ele fica mais rápido quanto mais tempo caça, até ninguém conseguir fugir, e nunca se perde: se você se afastar, ele reaparece na borda da tela. Dá para derrotá-lo, mas ele tem ${e.hp} de HP; se cair, volta ${e.returns} minutos depois, mais forte.`,
+        `O tempo sobrevivido é a métrica principal: cada minuto depois de 15:00 paga ₽${n(e.perMinute)} no bônus, e cada Arceus derrotado mais ₽${e.reaperBonus}.`,
+      ],
+    },
     bosses: {
       paragraphs: [
         'Os chefes chegam em horários fixos. Os lendários entram com flash na tela, cry e um aviso. Todos têm uma barra de HP no topo e ataques próprios: os círculos marcados no chão avisam onde o golpe vai cair, então saia de dentro deles.',
@@ -238,6 +319,15 @@ export const sitePt = {
       bossHead: 'Chefe',
       hpHead: 'HP',
       attacksHead: 'Ataques',
+    },
+    traits: {
+      paragraphs: [
+        'Alguns Pokémon selvagens não só perseguem: eles curam, protegem e chamam a horda, ou atacam de longe. Eles são poucos no meio da horda, então vale a pena ficar de olho.',
+        'Todo ataque deles avisa antes: um "!" sobre a cabeça, um círculo vermelho, uma linha ou uma sombra no chão que pisca mais rápido quando o golpe está perto. Na primeira vez que cada um aparece numa partida, um aviso explica o que ele faz.',
+      ],
+      pokemonHead: 'Pokémon',
+      traitHead: 'Comportamento',
+      effectHead: 'O que faz',
     },
     shinies: {
       paragraphs: (wild: number, hp: number, xp: number, player: number) => [
@@ -270,6 +360,44 @@ export const sitePt = {
         xSpeed: 'Mais velocidade e recarga mais rápida por 20s.',
         revive: 'Fica guardado. Quando você desmaiar, levanta com 50% do HP.',
       } satisfies Record<Drop, string>,
+    },
+    mapEvents: {
+      intro: (first: number, gap: number, max: number) =>
+        `A partir de ${first}s de partida, a cada ${gap}s mais ou menos um ponto de interesse pode surgir perto de você (no máximo ${max} ao mesmo tempo). Os importantes ganham uma seta na borda da tela. Se você demorar, eles somem.`,
+      eventHead: 'Evento',
+      howHead: 'Como funciona',
+      rewardHead: 'Recompensa',
+      altar: {
+        name: 'Altar',
+        how: 'Pise nele. O buff que ele dá aparece flutuando acima, para você decidir de longe.',
+        reward: (boost: number) => `X Attack, X Speed ou Max Repel (o sorteio evita o que já está ativo), com ${n(boost)}x a duração normal.`,
+      },
+      fountain: {
+        name: 'Fonte',
+        how: (charges: number, interval: number) => `Fique nela enquanto estiver ferido: ${charges} cargas, uma a cada ${n(interval)}s. Com HP cheio, nada é gasto.`,
+        reward: (heal: number) => `Cada carga recupera ${n(heal)}% do HP máximo.`,
+      },
+      chest: {
+        name: 'Baú com cadeado',
+        how: (unlock: number) =>
+          `Fique dentro do anel por ${unlock}s. Fora dele, o progresso volta devagar. Assim que você começa, uma emboscada de Pokémon selvagens fecha o cerco.`,
+        reward: (coins: string) => `${coins} ou mais (cresce com o tempo), um item e uma Poké Ball.`,
+      },
+      spikes: {
+        name: 'Espinhos',
+        how: 'Os espinhos sobem de tempos em tempos, com um aviso piscando antes. Ferem quem estiver em cima: você e os selvagens.',
+        reward: 'Atraia a horda para cima deles.',
+      },
+      bomb: {
+        name: 'Bomba',
+        how: (fuse: number) => `Qualquer um que chegue perto acende o pavio. ${n(fuse)}s depois ela explode e fere tudo no raio, inclusive você.`,
+        reward: 'Deixe a horda acender e saia de perto.',
+      },
+      meowth: {
+        name: 'Meowth fugindo',
+        how: (ttl: number) => `Corre de você e escapa em ${ttl}s. Seus golpes acertam ele.`,
+        reward: (jackpot: string) => `Uma moeda a cada golpe e o Pay Day (${jackpot}) se ele desmaiar.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [

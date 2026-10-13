@@ -101,4 +101,13 @@ describe('earning ₽', () => {
     expect(runBonus({ ...base, victory: true })).toBe(1250)
     expect(runBonus({ ...base, greed: 1.5 })).toBe(375)
   })
+
+  it('pays every endless minute past Mewtwo triple, plus a fortune per defeated Arceus', () => {
+    const won = { time: 900, kills: 0, victory: true, greed: 1 }
+    const fiveMore = runBonus({ ...won, time: 900 + 300 })
+    expect(fiveMore - runBonus(won)).toBe(5 * 90)
+    expect(runBonus({ ...won, reaperDefeats: 1 }) - runBonus(won)).toBe(5000)
+    // Overtime only counts after a victory.
+    expect(runBonus({ ...won, time: 1200, victory: false })).toBe(600)
+  })
 })

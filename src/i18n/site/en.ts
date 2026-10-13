@@ -32,7 +32,7 @@ export const siteEn: SiteMessages = {
   types: {
     normal: 'Normal', fire: 'Fire', water: 'Water', grass: 'Grass', electric: 'Electric', poison: 'Poison',
     flying: 'Flying', bug: 'Bug', rock: 'Rock', ground: 'Ground', ghost: 'Ghost', fighting: 'Fighting',
-    psychic: 'Psychic', ice: 'Ice', steel: 'Steel', dark: 'Dark', fairy: 'Fairy',
+    psychic: 'Psychic', ice: 'Ice', steel: 'Steel', dark: 'Dark', fairy: 'Fairy', dragon: 'Dragon',
   },
 
   pokedex: {
@@ -55,8 +55,8 @@ export const siteEn: SiteMessages = {
     results: (count: number) => `${count} Pokémon found`,
     empty: 'No Pokémon match these filters.',
     clear: 'Clear filters',
-    roles: { starter: 'Starter', enemy: 'Wild', boss: 'Boss', legendary: 'Legendary' },
-    roleFilter: { starter: 'Starters', enemy: 'Wild', boss: 'Bosses', legendary: 'Legendaries' },
+    roles: { starter: 'Starter', enemy: 'Wild', boss: 'Boss', legendary: 'Legendary', event: 'Event' },
+    roleFilter: { starter: 'Starters', enemy: 'Wild', boss: 'Bosses', legendary: 'Legendaries', event: 'Events' },
     link: (name: string) => `Link to ${name}`,
     portrait: (name: string) => `${name} portrait`,
     sprite: (name: string) => `Animated ${name} sprite`,
@@ -70,16 +70,53 @@ export const siteEn: SiteMessages = {
     specialFinal: 'At the final evolution',
     learnset: 'Moves it learns',
     wildStats: { hp: 'HP', damage: 'Contact damage', speed: 'Speed', xp: 'EXP' },
+    eventNote: 'Shows up as a map event: it runs from you and drops coins with every hit. Knock it out before it escapes for the Pay Day jackpot.',
     wildNote: 'Base values. Regular enemies get tougher every minute; bosses don\'t.',
     appears: 'When it shows up',
     horde: (from: string, until: string) => `May join the horde, from ${from} to ${until}`,
     hordeEnd: (from: string) => `May join the horde, from ${from} to the end`,
     swarm: (at: string, count: number) => `May lead the swarm of ${count} at ${at}`,
     ring: (at: string, count: number) => `May form the ring of ${count} at ${at}`,
+    ringFixed: (at: string, count: number) => `Forms the ring of ${count} at ${at}`,
     boss: (at: string) => `Boss at ${at}`,
     bossChance: (at: string, percent: number) => `Boss at ${at} (${n(percent)}% chance)`,
+    rift: (from: string) => `Behind a legendary rift, from ${from} (optional arena)`,
+    reaper: (at: string) => `The endless mode's reaper, from ${at}`,
     attacks: 'Attacks',
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
+    summoned: (by: string) => `Called in by ${by}`,
+    behavior: 'Behavior',
+  },
+
+  traits: {
+    names: {
+      healer: 'Healer',
+      shield: 'Shield',
+      summoner: 'Summoner',
+      kamikaze: 'Kamikaze',
+      beam: 'Beam',
+      leaper: 'Leaper',
+    },
+    effects: {
+      healer: (every: number, percent: number) => `Every ${n(every)}s, a green pulse heals ${n(percent)}% of the max HP of wounded allies nearby.`,
+      shield: (every: number, percent: number, duration: number) =>
+        `Every ${n(every)}s, wraps nearby allies in a shield that soaks damage equal to ${n(percent)}% of their max HP, for ${n(duration)}s.`,
+      summoner: (every: number, count: number, max: number, names: readonly string[]) =>
+        `Every ${n(every)}s it calls in ${count} reinforcements (${list(names)}), up to ${max} at once.`,
+      kamikaze: (fuse: number, damage: number, percent: number) =>
+        `Walks up, stops, blinks red and explodes after ${n(fuse)}s. The blast deals ${n(damage)}x its contact damage to you and takes ${n(percent)}% of the HP of enemies in the circle.`,
+      beam: (aim: number, damage: number) => `Stops, draws the beam's line on the ground for ${n(aim)}s and fires: ${n(damage)}x its contact damage.`,
+      leaper: (warn: number, damage: number) =>
+        `Leaps over the horde to where you stood. The shadow on the ground marks the landing ${n(warn)}s ahead, and the impact deals ${n(damage)}x its contact damage.`,
+    },
+    tips: {
+      healer: 'Take it down first, or the horde keeps topping up.',
+      shield: 'Blue numbers are absorbed damage. Take out the shielder or wait for the shield to blink and fade.',
+      summoner: 'The reinforcements stop once she falls.',
+      kamikaze: 'Get out of the red circle, or lure it into the horde: the blast hurts enemies too.',
+      beam: 'The aim locks when the line shows up: one step aside is enough.',
+      leaper: 'Get off the shadow before it lands.',
+    },
   },
 
   patterns: {
@@ -114,12 +151,13 @@ export const siteEn: SiteMessages = {
       `${list(groups.map(([tier, count]) => `${count} from tier ${tier}`))} (${fresh} new)`,
     swarm: (count: number, tier: number) => `Swarm: ${count} flying tier ${tier} Pokémon cross the screen`,
     ring: (count: number, tier: number) => `Ring: a circle of ${count} tier ${tier} Pokémon closes in on you`,
+    ringOf: (count: number, name: string) => `Ring: a circle of ${count} ${name} closes in on you`,
   },
 
   guide: {
     title: 'How to play Pokémon Survivors: complete guide',
     description:
-      'Pokémon Survivors guide: keyboard, gamepad and phone controls, how a run works, levels, moves, move evolutions with held items, the special attack, types and status, bosses, shinies, map items and the Poké Mart.',
+      'Pokémon Survivors guide: keyboard, gamepad and phone controls, how a run works, levels, moves, move evolutions with held items, the special attack, types and status, bosses, shinies, map items, map events and the Poké Mart.',
     h1: 'How to play',
     intro:
       'Pokémon Survivors is a Vampire Survivors-style roguelite: you only move, and your Pokémon attacks on its own. This guide explains everything that happens in a run, with the game\'s numbers.',
@@ -127,14 +165,18 @@ export const siteEn: SiteMessages = {
     sections: {
       controls: 'Controls',
       run: 'The run',
+      world: 'Biomes and weather',
       horde: 'The wild horde',
       levels: 'Levels and moves',
       moveEvolutions: 'Move evolutions',
       special: 'Special attack',
       types: 'Types and status',
       bosses: 'Bosses',
+      traits: 'Special enemies',
+      rifts: 'Legendary rifts and endless mode',
       shinies: 'Shinies',
       items: 'Map items',
+      mapEvents: 'Map events',
       mart: 'Poké Mart and Poké Dollars',
       settings: 'Settings and music',
     },
@@ -159,7 +201,7 @@ export const siteEn: SiteMessages = {
     run: {
       paragraphs: (minutes: number, starters: number) => [
         `Pick one of ${starters} starters, Kanto to Paldea. Each one has its own stats, starting move, learnset and special attack (see the Pokédex).`,
-        `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run.`,
+        `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run. After that you can keep going in endless mode.`,
         'If your HP hits zero the run is over (unless you are holding a Revive). The Poké Dollars you picked up go to your wallet.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
@@ -169,6 +211,22 @@ export const siteEn: SiteMessages = {
       eventHead: 'Event',
       boss: (name: string) => `Boss: ${name}`,
       bossChance: (name: string, percent: number) => `Rare boss: ${name} (${n(percent)}% chance)`,
+    },
+    world: {
+      paragraphs: (count, minutes) => [
+        `A run walks through ${count} biomes, ${n(minutes)} minutes each, with no loading screen: the ground dissolves into the next place and every biome has its own music. Breakables change their look too (in the cave, tall grass becomes a rock and the berry tree a giant mushroom).`,
+        'The weather changes a few times per run and applies to everyone: your moves and the enemies\' attacks alike. Each biome has its own likely weather, and the weather icon shows next to the clock.',
+      ],
+      timeHead: 'From',
+      biomeHead: 'Biome',
+      weatherHead: 'Weather (most to least common)',
+      weatherTitle: 'Weather',
+      weatherCol: 'Weather',
+      effectHead: 'Effect',
+      power: (type, mult) => `${type} moves ×${n(mult)}`,
+      chip: (enemy, boss, player, every, floor, immune) =>
+        `every ${n(every)}s, enemies lose ${n(enemy)}% of their max HP (bosses ${n(boss)}%) and you lose ${n(player)}%, but never below ${n(floor)}% HP. ${list(immune)} types are immune`,
+      fog: 'short sight: you only see clearly close to your Pokémon',
     },
     levels: {
       paragraphs: (moves: number, items: number, moveLevel: number) => [
@@ -221,6 +279,26 @@ export const siteEn: SiteMessages = {
       flute: 'Poké Flute (map item)',
       itemsNote: 'King\'s Rock raises the status chance, Toxic Orb raises burn and poison damage, and Light Clay makes statuses last longer.',
     },
+    rifts: {
+      paragraphs: (r) => [
+        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s and never opens while a boss is alive.`,
+        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to a closed arena, walled in, to face a legendary from another generation. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
+        'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
+        `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
+      ],
+      legendHead: 'Legendary',
+      typesHead: 'Types',
+      hpHead: 'Base HP',
+      attacksHead: 'Attacks',
+      hpNote: (percent) => `Base HP is the first rift's, at 3:30. After that, the legendary's HP and contact damage grow with the clock: +${n(percent)}% HP per minute. Every rift brings a different legendary.`,
+      endlessTitle: 'Endless mode',
+      endless: (e) => [
+        'After you beat Mewtwo, the victory screen offers to keep going in endless mode. If you don\'t want to, you leave with the regular victory, and the bonus is paid right away.',
+        `The horde keeps growing: more enemies spawn, the on-screen cap rises and rings and swarms arrive every ${e.every} seconds. Rifts keep opening.`,
+        `At ${e.reaper}, Arceus descends to hunt you. It gets faster the longer it hunts, until nobody can outrun it, and it never loses you: wander off and it reappears at the edge of the screen. It can be beaten, but it has ${e.hp} HP; if it falls, it comes back ${e.returns} minutes later, stronger.`,
+        `Time survived is the main score: every minute past 15:00 pays ₽${n(e.perMinute)} in the bonus, and every defeated Arceus another ₽${e.reaperBonus}.`,
+      ],
+    },
     bosses: {
       paragraphs: [
         'Bosses arrive at fixed times. Legendaries make an entrance with a screen flash, their cry and a banner. All of them get an HP bar at the top and their own attacks: marked circles on the ground show where a hit will land, so step out of them.',
@@ -230,6 +308,15 @@ export const siteEn: SiteMessages = {
       bossHead: 'Boss',
       hpHead: 'HP',
       attacksHead: 'Attacks',
+    },
+    traits: {
+      paragraphs: [
+        'Some wild Pokémon do more than chase: they heal, shield and call in the horde, or attack from afar. They are a few among the horde, so keep an eye out.',
+        'Every one of their attacks warns you first: a "!" over the head, a red circle, a line or a shadow on the ground that blinks faster as the hit gets close. The first time each one shows up in a run, a message explains what it does.',
+      ],
+      pokemonHead: 'Pokémon',
+      traitHead: 'Behavior',
+      effectHead: 'What it does',
     },
     shinies: {
       paragraphs: (wild: number, hp: number, xp: number, player: number) => [
@@ -261,6 +348,44 @@ export const siteEn: SiteMessages = {
         xAttack: '50% more damage for 20s.',
         xSpeed: 'More speed and faster cooldowns for 20s.',
         revive: 'Kept for later. When you faint, you get back up with 50% HP.',
+      },
+    },
+    mapEvents: {
+      intro: (first: number, gap: number, max: number) =>
+        `From ${first}s into a run, roughly every ${gap}s a point of interest may show up near you (at most ${max} at once). The important ones get an arrow on the screen edge. Take too long and they vanish.`,
+      eventHead: 'Event',
+      howHead: 'How it works',
+      rewardHead: 'Reward',
+      altar: {
+        name: 'Altar',
+        how: 'Step on it. The buff it grants floats above it, so you can decide from afar.',
+        reward: (boost: number) => `X Attack, X Speed or Max Repel (the roll avoids what's already running), lasting ${n(boost)}x as long.`,
+      },
+      fountain: {
+        name: 'Fountain',
+        how: (charges: number, interval: number) => `Stand in it while hurt: ${charges} charges, one every ${n(interval)}s. At full HP nothing is spent.`,
+        reward: (heal: number) => `Each charge heals ${n(heal)}% of your max HP.`,
+      },
+      chest: {
+        name: 'Locked chest',
+        how: (unlock: number) =>
+          `Stay inside the ring for ${unlock}s. Outside it, progress slowly drains. As soon as you start, a ring of wild Pokémon ambushes you.`,
+        reward: (coins: string) => `${coins} or more (it grows over time), an item and a Poké Ball.`,
+      },
+      spikes: {
+        name: 'Spikes',
+        how: 'The spikes shoot up every few seconds, with a blinking warning first. They hurt whoever stands on them: you and the wild Pokémon.',
+        reward: 'Lure the horde on top of them.',
+      },
+      bomb: {
+        name: 'Bomb',
+        how: (fuse: number) => `Anyone who gets close lights the fuse. ${n(fuse)}s later it blows up and hurts everything in range, you included.`,
+        reward: 'Let the horde light it and step away.',
+      },
+      meowth: {
+        name: 'Fleeing Meowth',
+        how: (ttl: number) => `Runs from you and escapes after ${ttl}s. Your moves can hit it.`,
+        reward: (jackpot: string) => `A coin with every hit, and the Pay Day (${jackpot}) if it faints.`,
       },
     },
     mart: {

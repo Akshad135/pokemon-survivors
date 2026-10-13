@@ -24,6 +24,8 @@ export type WaveEvent =
   | { at: number; kind: 'swarm'; tier: Tier; count: number }
   /** A closing circle around the player: a species of `tier` from the run's horde. */
   | { at: number; kind: 'ring'; tier: Tier; count: number }
+  /** A closing circle of one fixed species, drawn or not (the Voltorb ring). */
+  | { at: number; kind: 'ring'; enemy: EnemyId; count: number }
 
 export const RUN_LENGTH = 15 * 60
 
@@ -44,6 +46,7 @@ export const EVENTS: readonly WaveEvent[] = [
   { at: 150, kind: 'boss', enemy: 'onix' },
   { at: 165, kind: 'swarm', tier: 1, count: 24 },
   { at: 240, kind: 'ring', tier: 2, count: 28 },
+  { at: 270, kind: 'ring', enemy: 'voltorb', count: 10 },
   { at: 300, kind: 'boss', enemy: 'snorlax' },
   { at: 390, kind: 'swarm', tier: 1, count: 36 },
   { at: 420, kind: 'boss', enemy: 'articuno' },

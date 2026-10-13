@@ -27,6 +27,8 @@ body {
   overscroll-behavior: none;
   background: #101820;
   font-family: var(--body);
+  /* Press Start 2P maps "fi" to a ligature it has no glyph for ("sem fim" showed as "sem fm"). */
+  font-variant-ligatures: none;
   -webkit-font-smoothing: none;
   -webkit-text-size-adjust: 100%;
   -webkit-user-select: none;
@@ -2433,5 +2435,145 @@ button {
     flex: 1 1 160px;
     height: 26px;
     padding: 2px 0;
+  }
+}
+
+/* ---------------- Legendary rifts and endless mode ---------------- */
+
+.rift-pill {
+  position: absolute;
+  top: 98px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  font-size: 9px;
+  white-space: nowrap;
+  text-shadow: none;
+  color: #6030b8;
+}
+
+.rift-pill.rift-arena {
+  color: #b82838;
+}
+
+.rift-pill.rift-endless,
+.rift-pill.rift-reaper {
+  color: #986800;
+}
+
+.rift-pill.urgent {
+  animation: rift-pulse 0.5s steps(2) infinite;
+}
+
+@keyframes rift-pulse {
+  50% {
+    color: #f83030;
+  }
+}
+
+.endless-hint {
+  max-width: 34em;
+  margin: 0 auto;
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1.1;
+  color: #8a5a00;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .rift-pill {
+    top: 108px;
+    font-size: 7px;
+  }
+  .endless-hint {
+    font-size: 16px;
+  }
+}
+
+.result-legends {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+
+.result-legends img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+/* ---------- Biomes & weather ---------- */
+
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A full outline, so the clock and counters stay readable over snow and sun glare. */
+.timer,
+.counters {
+  text-shadow:
+    2px 0 0 #101020,
+    -2px 0 0 #101020,
+    0 2px 0 #101020,
+    0 -2px 0 #101020,
+    2px 2px 0 #101020;
+}
+
+.weather-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.weather-icon.hidden {
+  display: none;
+}
+
+.biome-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.biome-banner small {
+  font-family: var(--body);
+  font-size: clamp(16px, 2.6vw, 22px);
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.banner .biome-banner b {
+  color: var(--ink);
+  font-size: clamp(12px, 3vw, 22px);
+}
+
+.weather-toast > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.weather-toast small {
+  font-size: 0.8em;
+  color: #6070a0;
+}
+
+/* Phones in portrait: the HUD row is full, so the icon hangs under the clock. */
+@media (max-width: 600px) {
+  .timer {
+    position: relative;
+    left: auto;
+    top: auto;
+  }
+  .weather-icon {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
   }
 }

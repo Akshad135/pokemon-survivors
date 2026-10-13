@@ -2,17 +2,19 @@ import { formatTime } from '../engine/math'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { canEvolve, EVOLUTIONS, evolutionOf, evolvedFrom, type MoveEvolution } from '../data/evolutions'
+import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
 import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
+import { overtime } from '../game/endless'
 import { runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
 import { berryIcon, coinIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
-import { sprites } from '../render/sprites'
+import { portraitUrl, sprites } from '../render/sprites'
 import { formatNumber, formatPokeDollars, t, type Messages } from '../i18n'
 import { h, later } from './dom'
 
@@ -304,16 +306,26 @@ const damageSource = (g: Game, id: DamageSource) => {
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
-export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void): Screen => {
+/**
+ * End of run. On a victory, `onContinue` adds the endless-mode button (first);
+ * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
+ */
+export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void, onContinue?: () => void): Screen => {
   const m = t().results
+  const r = t().rifts
   const victory = g.phase === 'victory'
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const earned = runEarnings(g)
+  const extra = overtime(g.time)
+  const reaperDefeats = g.endless?.reaperDefeats ?? 0
+  const legends = g.rift.cleared
   const retry = h('button', { class: 'btn' }, m.retry)
   const back = h('button', { class: 'btn' }, m.change)
-  const nav = menu(input, [retry, back], (i) => (i === 0 ? onRetry() : onMenu()), { horizontal: true })
+  const goOn = victory && onContinue ? h('button', { class: 'btn' }, r.continue) : null
+  const actions = goOn && onContinue ? [onContinue, onRetry, onMenu] : [onRetry, onMenu]
+  const nav = menu(input, goOn ? [goOn, retry, back] : [retry, back], (i) => actions[i]?.(), { horizontal: true })
 
   const el = h(
     'div',
@@ -327,15 +339,20 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
         h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
         g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
       ),
-      h('div', { class: 'dialog-title' }, victory ? m.victory : m.fainted(name)),
+      h('div', { class: 'dialog-title' }, victory ? m.victory : g.endless ? r.endlessOver(name) : m.fainted(name)),
       g.player.shiny && h('div', { class: 'tag tag-shiny' }, m.shiny(name)),
+      reaperDefeats > 0 && h('div', { class: 'tag tag-shiny' }, r.reaperDefeated(reaperDefeats)),
       h(
         'div',
         { class: 'result-stats' },
         h('div', {}, h('span', {}, m.time), h('b', {}, formatTime(g.time))),
+        extra > 0 && h('div', {}, h('span', {}, r.overtime), h('b', {}, `+${formatTime(extra)}`)),
         h('div', {}, h('span', {}, m.level), h('b', {}, g.player.level)),
         h('div', {}, h('span', {}, m.kills), h('b', {}, g.kills)),
+        legends.length > 0 &&
+          h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
       ),
+      goOn && h('p', { class: 'endless-hint' }, r.continueHint),
       h(
         'div',
         { class: 'earnings' },
@@ -358,7 +375,7 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
           )
         }),
       ),
-      h('div', { class: 'buttons' }, retry, back),
+      h('div', { class: 'buttons' }, goOn, retry, back),
     ),
   )
   root.append(el)

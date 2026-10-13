@@ -5,6 +5,7 @@ import { hurtPlayer } from './combat'
 import { burst } from './effects'
 import { isAsleep } from './status'
 import type { Enemy, Game, Hazard } from './types'
+import { HAZARD_TYPES } from './weather'
 
 type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 'ttl'> & Partial<Hazard>
 
@@ -98,6 +99,11 @@ const IMPACT: Partial<Record<HazardVisual, { colors: readonly string[]; event: '
   slam: { colors: ['#e0c068', '#a8a878', '#ffffff'], event: 'quake' },
   thunder: { colors: ['#f8d030', '#ffffff', '#fff8a0'], event: 'thunder' },
   psychic: { colors: ['#f85888', '#f8b0d0', '#ffffff'], event: 'quake' },
+  water: { colors: ['#58a8f8', '#c8e8f8', '#ffffff'], event: 'quake' },
+  dragon: { colors: ['#a070f8', '#7038f8', '#f0e0ff'], event: 'quake' },
+  steel: { colors: ['#c8e0f8', '#78e0f8', '#ffffff'], event: 'quake' },
+  aero: { colors: ['#ffffff', '#d8e8f8', '#a8c8f8'], event: 'quake' },
+  judgment: { colors: ['#fff0a0', '#f8d030', '#ffffff'], event: 'thunder' },
 }
 
 /** Moves enemy hazards, plays impacts as telegraphs land and hurts the player on contact. */
@@ -119,7 +125,7 @@ export const updateHazards = (g: Game, dt: number) => {
     if (h.age < h.armAt || h.age > h.disarmAt) continue
     const reach = h.r + p.radius * 0.7
     if ((h.x - p.x) ** 2 + (h.y - p.y) ** 2 >= reach * reach) continue
-    hurtPlayer(g, h.damage)
+    hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual])
     if (h.vanishOnHit) h.age = h.ttl
   }
   retain(g.hazards, (h) => h.age < h.ttl)

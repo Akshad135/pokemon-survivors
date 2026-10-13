@@ -40,11 +40,11 @@ describe('appearances', () => {
     }
   })
 
-  it('places every Pokémon somewhere in the run, bosses as boss events', () => {
+  it('places every Pokémon somewhere in the run, bosses as boss events, rifts or the reaper', () => {
     for (const id of ids) {
       const kinds = appearances(id).map((a) => a.kind)
       expect(kinds.length).toBeGreaterThan(0)
-      if ('boss' in ENEMIES[id]) expect(kinds).toContain('boss')
+      if ('boss' in ENEMIES[id]) expect(kinds.some((k) => k === 'boss' || k === 'rift' || k === 'reaper')).toBe(true)
     }
   })
 })

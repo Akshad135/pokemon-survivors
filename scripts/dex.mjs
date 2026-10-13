@@ -15,9 +15,17 @@ export const STARTERS = [
   906, 907, 908, 909, 910, 911, 912, 913, 914, // Paldea
 ]
 export const HORDE = Object.values(roster).map((s) => s.dex)
+/** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
+export const TRAITS = [29, 31, 32, 81, 100, 101, 106, 113, 437]
 export const BOSSES = [95, 143, 144, 145, 146, 150, 151]
-export const DEX = [...STARTERS, ...HORDE, ...BOSSES]
-/** Species that can roll shiny: the player line and regular enemies. */
-export const SHINY = new Set([...STARTERS, ...HORDE])
+/** Map event Pokémon (the fleeing Meowth). Keep in sync with MEOWTH_DEX in src/game/mapEventRules.ts */
+export const CRITTERS = [52]
+/** Rift legendaries (src/data/rifts.ts), which can also roll shiny. */
+export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483]
+/** Arceus, the endless mode's reaper. */
+export const REAPER = [493]
+export const DEX = [...STARTERS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER]
+/** Species that can roll shiny: the player line, regular enemies and rift legendaries. */
+export const SHINY = new Set([...STARTERS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS])
 
 export const pad = (n) => String(n).padStart(4, '0')

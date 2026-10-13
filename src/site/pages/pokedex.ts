@@ -1,6 +1,7 @@
 import { BOSS_PATTERNS, type BossPattern } from '../../data/bosses'
 import { ENEMIES, type EnemyDef } from '../../data/enemies'
 import { TIERS } from '../../data/roster'
+import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
 import { REGIONS, STARTERS, type StarterDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
@@ -91,9 +92,36 @@ const appearance = (a: Appearance, m: SiteMessages) => {
     case 'swarm':
       return m.pokedex.swarm(clock(a.at), a.count)
     case 'ring':
-      return m.pokedex.ring(clock(a.at), a.count)
+      return a.fixed ? m.pokedex.ringFixed(clock(a.at), a.count) : m.pokedex.ring(clock(a.at), a.count)
     case 'boss':
       return a.chance < 1 ? m.pokedex.bossChance(clock(a.at), a.chance * 100) : m.pokedex.boss(clock(a.at))
+    case 'rift':
+      return m.pokedex.rift(clock(a.from))
+    case 'reaper':
+      return m.pokedex.reaper(clock(a.at))
+    case 'summoned':
+      return m.pokedex.summoned(ENEMIES[a.by].name)
+  }
+}
+
+/** What a trait does, with its numbers from `data/traits.ts`. `id` picks the summoner's summons. */
+export const traitText = (trait: TraitId, id: keyof typeof ENEMIES, m: SiteMessages) => {
+  const e = m.traits.effects
+  switch (trait) {
+    case 'healer':
+      return e.healer(TRAITS.healer.every, TRAITS.healer.heal * 100)
+    case 'shield':
+      return e.shield(TRAITS.shield.every, TRAITS.shield.ward * 100, TRAITS.shield.duration)
+    case 'summoner': {
+      const names = isSummoner(id) ? [...new Set(SUMMONS[id].map((s) => ENEMIES[s].name))] : []
+      return e.summoner(TRAITS.summoner.every, TRAITS.summoner.perCast, TRAITS.summoner.max, names)
+    }
+    case 'kamikaze':
+      return e.kamikaze(TRAITS.kamikaze.fuse, TRAITS.kamikaze.damage, TRAITS.kamikaze.enemyDamage * 100)
+    case 'beam':
+      return e.beam(TRAITS.beam.aim, TRAITS.beam.damage)
+    case 'leaper':
+      return e.leaper(TRAITS.leaper.crouch + TRAITS.leaper.air, TRAITS.leaper.damage)
   }
 }
 
@@ -120,6 +148,7 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
       <div><dt>${s.xp}</dt><dd>${e.xp}</dd></div>
     </dl>
     <p class="note">${m.pokedex.wildNote}</p>
+    ${e.trait && html`<h3>${m.pokedex.behavior}</h3><p><b>${m.traits.names[e.trait]}.</b> ${traitText(e.trait, entry.source.id, m)}</p>`}
     <h3>${m.pokedex.appears}</h3>
     <ul class="list">${appearances(entry.source.id).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>
     ${patterns.length > 0 && html`<h3>${m.pokedex.attacks}</h3><ul class="list">${patterns.map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`}
@@ -151,7 +180,7 @@ const card = (entry: DexEntry, locale: Locale, css: SpriteCss) => {
   </div>
   <h2>${name}</h2>
   <div class="types">${types.map((t) => typeBadge(t, m))}</div>
-  ${entry.source.kind === 'starter' ? starterBody({ ...entry, source: entry.source }, locale) : wildBody({ ...entry, source: entry.source }, m)}
+  ${entry.source.kind === 'starter' ? starterBody({ ...entry, source: entry.source }, locale) : entry.source.kind === 'wild' ? wildBody({ ...entry, source: entry.source }, m) : html`<p class="note">${m.pokedex.eventNote}</p>`}
 </article>`
 }
 

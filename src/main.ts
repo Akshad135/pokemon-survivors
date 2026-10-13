@@ -2,34 +2,47 @@ import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
 
-import { playCry, playSfx, unlockAudio } from './engine/audio'
+import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { createPadButton, createPadKeys } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
-import { ENEMIES, type EnemyDef } from './data/enemies'
+import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
+import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
+import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
+import { setBiome } from './game/biomes'
+import { spawnEnemy } from './game/enemies'
+import { MAP_EVENT_KINDS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
+import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
-import { runEarnings } from './game/meta'
+import { REAPER } from './game/endless'
+import { continueEndless } from './game/endlessSystem'
+import { riftDevTools } from './game/riftDev'
+import { runEarnings, wonRun } from './game/meta'
 import { drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
+import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, preloadShinies, sprites, streamSpecies } from './render/sprites'
+import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites, streamSpecies } from './render/sprites'
+import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
+import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
 import { depositPokeDollars, loadSave } from './ui/save'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
+import { mapEventFeedback } from './ui/mapEvents'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
@@ -67,6 +80,8 @@ const resize = () => {
   document.documentElement.style.setProperty('--px', `${Math.max(2, Math.round(cssScale))}px`)
   context2d(canvas)
   dirty = true
+  // Runs after layout (and after module init, so `run` exists by then).
+  requestAnimationFrame(() => run && syncMarkerInsets())
 }
 // Rotation often reports stale sizes in the same tick, so re-measure on the next frame too.
 const scheduleResize = () => (resize(), requestAnimationFrame(resize))
@@ -84,8 +99,10 @@ type Run = {
   /** Phase + offers snapshot the overlay was built for. */
   shown: { phase: Phase; offers: Game['offers'] } | null
   closeText: (() => void) | null
-  /** True once this run's ₽ went into the wallet. */
-  banked: boolean
+  /** ₽ of this run already in the wallet: a victory banks right away and again if the run goes on endless. */
+  paid: number
+  /** True once the run's end was reported to analytics. */
+  reported: boolean
 }
 
 let screen: Screen | null = null
@@ -145,19 +162,30 @@ const showMenu = (initial: StarterId = lastStarter) => {
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
-/** Moves the run's ₽ into the wallet once and reports how the run ended. Quitting keeps coins but forfeits the survival bonus. */
+/**
+ * Moves the run's ₽ not banked yet into the wallet. Quitting keeps coins but
+ * forfeits the survival bonus, unless Mewtwo already fell (victory or endless).
+ */
 const bankRun = (r: Run, withBonus: boolean) => {
-  if (r.banked) return
-  r.banked = true
   const g = r.game
-  depositPokeDollars(withBonus ? runEarnings(g).total : g.coins)
-  const outcome = g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
+  const total = withBonus ? runEarnings(g).total : g.coins
+  if (total > r.paid) depositPokeDollars(total - r.paid)
+  r.paid = Math.max(r.paid, total)
+}
+
+/** Reports how the run ended, once. */
+const reportRun = (r: Run) => {
+  if (r.reported) return
+  r.reported = true
+  const g = r.game
+  const outcome = g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
   track('run_end', { starter: g.starter, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
 }
 
 const endRun = () => {
   if (!run) return
-  bankRun(run, false)
+  bankRun(run, wonRun(run.game))
+  reportRun(run)
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
@@ -197,13 +225,32 @@ const startRun = async (starter: StarterId) => {
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(starterDex(starter))
   loading.remove()
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, banked: false }
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
   track('run_start', { starter })
   const later = rosterSchedule(plan.roster).flatMap((s) => (s.at > 0 ? [s.dex] : []))
-  void streamSpecies([...later, ...openingDex(upcoming)], () => run?.game === game)
+  void streamSpecies([...later, MEOWTH_DEX, ...openingDex(upcoming)], () => run?.game === game)
 }
 
-const runHud = (game: Game) => createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
+const runHud = (game: Game) => {
+  const hud = createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
+  requestAnimationFrame(syncMarkerInsets)
+  return hud
+}
+
+/** Measures the HUD (top bar, status box, special button) in world px, so map event arrows stay clear of it. */
+const syncMarkerInsets = () => {
+  const box = canvas.getBoundingClientRect()
+  // Hidden elements (the touch special button on desktop) measure 0x0: they don't count.
+  const rect = (sel: string) => {
+    const r = ui.querySelector(sel)?.getBoundingClientRect()
+    return r && r.height > 0 ? r : null
+  }
+  const bottomOf = (sel: string) => rect(sel)?.bottom ?? box.top
+  const topOf = (sel: string) => rect(sel)?.top ?? box.bottom
+  const top = bottomOf('.hud-row') - box.top
+  const bottom = box.bottom - Math.min(topOf('.hud .status'), topOf('.special-button'))
+  setMarkerInsets({ top: Math.max(0, top) / cssScale + 10, bottom: Math.max(0, bottom) / cssScale + 10, side: 14 })
+}
 
 /** Settings from the pause menu. The HUD reads its labels once, so a language switch rebuilds it. */
 const runSettings = (r: Run, back: () => void) => {
@@ -234,7 +281,7 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu())
+      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g))
       break
   }
 }
@@ -246,6 +293,16 @@ const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) =>
   if (offer.kind === 'item') return m.pokeballLevel(ITEMS[offer.id].name, offer.level)
   if (offer.kind === 'evolution') return m.pokeballEvolution(MOVES[offer.to].name)
   return m.pokeballBerry
+}
+
+/** Sounds of enemy traits: the warning (fuse lit, beam aimed, leap) and the moment it goes off. */
+const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
+  healer: { warn: null, fire: 'enemyPulse' },
+  shield: { warn: null, fire: 'enemyPulse' },
+  summoner: { warn: null, fire: 'enemyPulse' },
+  kamikaze: { warn: 'selfDestruct', fire: 'blast' },
+  beam: { warn: 'beamCharge', fire: 'beam' },
+  leaper: { warn: 'leap', fire: 'quake' },
 }
 
 const handleEvent = (r: Run, e: GameEvent) => {
@@ -317,26 +374,96 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'propBreak':
       return playSfx('break', 60)
+    case 'mapEvent':
+      return mapEventFeedback(ui, e.notice)
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
     case 'gameover':
       bankRun(r, true)
+      reportRun(r)
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)
     case 'victory':
       bankRun(r, true)
       return playSfx('evolve')
+    case 'biome': {
+      const w = t().world
+      playSfx('item')
+      return banner(
+        ui,
+        h('span', { class: 'biome-banner' }, h('small', {}, w.area(BIOME_ORDER.indexOf(e.biome) + 1, BIOME_ORDER.length)), h('b', {}, w.biomes[e.biome])),
+        2800,
+      )
+    }
+    case 'weather':
+      return weatherToast(e.weather, e.prev)
+    case 'trait': {
+      const sfx = TRAIT_SFX[e.trait][e.phase]
+      if (sfx) playSfx(sfx, 120)
+      return
+    }
+    case 'traitIntro': {
+      const def = ENEMIES[e.enemy]
+      playCry(sprites(def.dex).cry, 0.35)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
+    }
+    case 'riftOpen':
+      playSfx('shiny')
+      return toast(ui, rich(t().rifts.open), 3200)
+    case 'riftClosed':
+      return toast(ui, t().rifts.closed, 2000)
+    case 'riftEnter': {
+      const def = ENEMIES[e.enemy]
+      playSfx('legendary')
+      playCry(sprites(def.dex).cry, 0.7)
+      flashScreen(ui)
+      return banner(ui, rich(e.shiny ? t().rifts.enterShiny(def.name) : t().rifts.enter(def.name)))
+    }
+    case 'riftCleared':
+      playSfx('evolve')
+      return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)
+    case 'riftExit':
+      if (e.outcome === 'collapse') {
+        playSfx('quake')
+        return toast(ui, t().rifts.collapse, 3000)
+      }
+      return
+    case 'reaper':
+      playSfx('legendary')
+      playCry(sprites(ENEMIES[REAPER].dex).cry, 0.8)
+      flashScreen(ui)
+      return banner(ui, rich(e.defeats > 0 ? t().rifts.reaperBack : t().rifts.reaper))
+    case 'reaperDown':
+      playSfx('evolve')
+      flashScreen(ui)
+      return banner(ui, rich(t().rifts.reaperDown))
   }
+}
+
+/** Announces a weather change: what started (and what it does), or what just ended. */
+const weatherToast = (next: WeatherId, prev: WeatherId) => {
+  const w = t().world
+  if (next === 'clear') {
+    if (prev !== 'clear') toast(ui, h('span', { class: 'item-toast' }, h('img', { src: weatherIcon(prev), alt: '' }), w.weatherEnd[prev]), 2600)
+    return
+  }
+  playSfx('select')
+  toast(
+    ui,
+    h('span', { class: 'item-toast weather-toast' }, h('img', { src: weatherIcon(next), alt: '' }), h('span', {}, rich(w.weatherStart[next]), h('small', {}, w.weatherHint[next]))),
+    3400,
+  )
 }
 
 /* ---------------- Music ---------------- */
 
-/** Silence until "press start", then menus play the village theme, a run its march, and a living boss takes over until it falls. */
+/** Silence until "press start", then menus play the village theme, a run its biome's theme, and a living boss takes over until it falls. */
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
-  return r.game.bossId !== null ? 'boss' : 'run'
+  // A rift arena keeps the boss theme until the player is back, loot window included.
+  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : BIOMES[r.game.biome.id].theme
 }
 
 /* ---------------- Global keys ---------------- */
@@ -448,5 +575,41 @@ const boot = () => {
 
 boot()
 
+/** Dev: places a map event `dx`, `dy` px from the player, e.g. `ps.event('chest')`. */
+const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
+  if (!run || !MAP_EVENT_KINDS.includes(kind)) return `Kinds: ${MAP_EVENT_KINDS.join(', ')}`
+  const p = run.game.player
+  return spawnMapEvent(run.game, kind, Math.round(p.x + dx), Math.round(p.y + dy))
+}
+
 // Dev-only handle for poking at the running game from the console.
-if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, showTitle, showMenu, theme: currentTheme } })
+/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots). */
+const devSpawn = (kind: EnemyId, count = 1) => {
+  const g = run?.game
+  if (!g) return
+  const p = g.player
+  const base = Math.atan2(p.facing.y, p.facing.x)
+  for (let i = 0; i < count; i++) {
+    const a = base + (i - (count - 1) / 2) * 0.35
+    spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+  }
+}
+
+// `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
+if (import.meta.env.DEV) {
+  const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
+  Object.assign(window, {
+    ps: {
+      run: () => run,
+      startRun,
+      showTitle,
+      showMenu,
+      theme: currentTheme,
+      spawn: devSpawn,
+      event: devEvent,
+      biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
+      weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
+      ...riftDevTools(() => run?.game),
+    },
+  })
+}

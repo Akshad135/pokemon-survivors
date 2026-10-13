@@ -514,6 +514,24 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 969 | Glimmet (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
 | 972 | Houndstone | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 972 | Houndstone (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 29 | Nidoran_F | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain, Fearless-Quit |
+| 29 | Nidoran_F (shiny) | [lokatts](https://twitter.com/lokatts) | Anonymous, JFain, Fearless-Quit |
+| 31 | Nidoqueen | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger, [TawnySoup](https://linktr.ee/tawnysoup) |
+| 31 | Nidoqueen (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 32 | Nidoran_M | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 32 | Nidoran_M (shiny) | Tacocoa | Tacocoa, JFain |
+| 81 | Magnemite | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Fearless-Quit, Emboarger |
+| 81 | Magnemite (shiny) | El_Pangoro_Parse | [RaoKurai](https://twitter.com/RaoKurai), Fearless-Quit, Emboarger |
+| 100 | Voltorb | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 100 | Voltorb (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 101 | Electrode | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [PhillipsYoung](https://twitter.com/PhilliYoung196), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 101 | Electrode (shiny) | Tacocoa, [Noo](https://artfight.net/~NooNoo_Skidoo) | Tacocoa, [PhillipsYoung](https://twitter.com/PhilliYoung196), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 106 | Hitmonlee | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Tainted#3886, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 106 | Hitmonlee (shiny) | Tacocoa | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), Tacocoa |
+| 113 | Chansey | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Mojo |
+| 113 | Chansey (shiny) | Tacocoa | Tacocoa, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 437 | Bronzong | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 437 | Bronzong (shiny) | Lovi, ShyStarryRain | Lovi, ShyStarryRain |
 | 95 | Onix | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
 | 144 | Articuno | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
@@ -521,6 +539,20 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 146 | Moltres | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 150 | Mewtwo | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 151 | Mew | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social), baronessfaron |
+| 52 | Meowth | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 249 | Lugia | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 249 | Lugia (shiny) | [Audino](https://github.com/audinowho) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 250 | Ho_Oh | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), CamusZekeSirius |
+| 250 | Ho_Oh (shiny) | El_Pangoro_Parse, [Deeshura](https://bsky.app/profile/deeshura.bsky.social) | El_Pangoro_Parse, CamusZekeSirius, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 382 | Kyogre | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 382 | Kyogre (shiny) | [lokatts](https://twitter.com/lokatts) | [Audino](https://github.com/audinowho), CamusZekeSirius, Top_Kec |
+| 383 | Groudon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 383 | Groudon (shiny) | [lokatts](https://twitter.com/lokatts) | [Audino](https://github.com/audinowho), Top_Kec |
+| 384 | Rayquaza | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 384 | Rayquaza (shiny) | [lokatts](https://twitter.com/lokatts) | [Audino](https://github.com/audinowho), CamusZekeSirius, Top_Kec |
+| 483 | Dialga | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 483 | Dialga (shiny) | Anonymous | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), Anonymous |
+| 493 | Arceus | baronessfaron, JFain | baronessfaron |
 
 ## Cries
 

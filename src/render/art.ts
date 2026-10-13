@@ -127,6 +127,38 @@ export const HAZARD_FX = {
   ice: lazy(() => art(SHARD, { 1: '#3878a8', 2: '#98d8f8', 3: '#ffffff' }, '#183048')),
   psychic: lazy(() => art(SMALL_ORB, { 1: '#a02868', 2: '#f85888', 3: '#ffffff' }, '#401030')),
   rock: lazy(() => art(ROCK, { 1: '#584020', 2: '#a08040', 3: '#d8c080' }, '#181818')),
+  water: lazy(() => art(SMALL_ORB, { 1: '#2858b8', 2: '#58a8f8', 3: '#e0f8ff' }, '#102048')),
+  dragon: lazy(() => art(SMALL_ORB, { 1: '#4820a8', 2: '#a070f8', 3: '#f0e0ff' }, '#180840')),
+  steel: lazy(() => art(SMALL_ORB, { 1: '#4868a8', 2: '#a8c8f0', 3: '#ffffff' }, '#182040')),
+  aero: lazy(() => art(SMALL_ORB, { 1: '#7890c0', 2: '#d8e8f8', 3: '#ffffff' }, '#283858')),
+  judgment: lazy(() => art(SMALL_ORB, { 1: '#c09020', 2: '#f8e070', 3: '#ffffff' }, '#483008')),
+}
+
+/* ---------------- Enemy traits ---------------- */
+
+const PLUS = ['..1..', '..1..', '11211', '..1..', '..1..']
+/** "!" over an enemy about to strike (fuse lit, beam aiming, leap crouch). */
+const ALERT = ['22', '22', '22', '22', '33', '..', '22', '33']
+/** Beam cross-sections, one pixel long: stretched along the beam's length when drawn. */
+const BEAM = ['1', '2', '2', '3', '3', '3', '2', '2', '1']
+const BEAM_TELEGRAPH = ['1', '2', '2', '2', '2', '2', '1']
+
+const beams = new Map<string, PixelSprite>()
+
+export const TRAIT_FX = {
+  healCross: lazy(() => art(PLUS, { 1: '#58d858', 2: '#ffffff' }, '#184818')),
+  alert: lazy(() => art(ALERT, { 2: '#f8e040', 3: '#e07020' }, '#401808')),
+  /** Two frames: the edges alternate colors as the telegraph blinks. */
+  beamTelegraph: lazy(() => [
+    fromStrings(BEAM_TELEGRAPH, { 1: '#f84830', 2: 'rgba(248,72,48,0.32)' }),
+    fromStrings(BEAM_TELEGRAPH, { 1: '#f8e040', 2: 'rgba(248,224,64,0.28)' }),
+  ]),
+  /** The beam itself, colored by the shooter's type (cached per color). */
+  beam: (color: string) => {
+    let sprite = beams.get(color)
+    if (!sprite) beams.set(color, (sprite = fromStrings(BEAM, { 1: '#282018', 2: color, 3: '#ffffff' })))
+    return sprite
+  },
 }
 
 /* ---------------- Pickups ---------------- */

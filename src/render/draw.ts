@@ -1,21 +1,27 @@
 import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
-import { ENEMIES } from '../data/enemies'
+import { biomeAt } from '../data/biomes'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
 import { isAsleep } from '../game/status'
+import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
+import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
+import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
+import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
-import { drawGround } from './world'
+import { drawWeather } from './weather'
+import { drawGround, warmGround } from './world'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -263,6 +269,11 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   ice: ['#98d8f8', 'rgba(152,216,248,0.25)'],
   fire: ['#f08030', 'rgba(240,128,48,0.25)'],
   psychic: ['#f870c0', 'rgba(248,96,208,0.4)'],
+  water: ['#58a8f8', 'rgba(88,168,248,0.28)'],
+  dragon: ['#a070f8', 'rgba(112,56,248,0.3)'],
+  steel: ['#c8e0f8', 'rgba(104,136,200,0.3)'],
+  aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
+  judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
 }
 
 /** Ground layer: telegraph circles, landed shockwaves and lingering fire. */
@@ -304,6 +315,12 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
         return blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
       case 'rock':
         return blitCentered(ctx, HAZARD_FX.rock(), h.x, y)
+      case 'water':
+      case 'dragon':
+      case 'steel':
+      case 'aero':
+      case 'judgment':
+        return blitCentered(ctx, HAZARD_FX[h.visual](), h.x, y + (Math.floor(h.age * 10) % 2))
       default:
         return blitCentered(ctx, HAZARD_FX.psychic(), h.x, y + (Math.floor(h.age * 10) % 2))
     }
@@ -314,9 +331,11 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     if (fall > 0) blitCentered(ctx, HAZARD_FX.rock(), h.x, h.y - 3 - (1 - fall) * 120)
     return
   }
-  if (h.visual === 'thunder' && h.age >= h.armAt) {
+  if ((h.visual === 'thunder' || h.visual === 'judgment') && h.age >= h.armAt) {
     ctx.globalAlpha = Math.max(0, 1 - (h.age - h.armAt) / (h.ttl - h.armAt))
-    bolt(ctx, h.x, h.y, 200)
+    // Arceus's Judgment falls as a pillar of light.
+    if (h.visual === 'judgment') bolt(ctx, h.x, h.y, 220, { width: 5, edge: '#f8e070', core: '#ffffff' })
+    else bolt(ctx, h.x, h.y, 200)
     blitCentered(ctx, ellipse(Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)'), h.x, h.y)
     ctx.globalAlpha = 1
   }
@@ -356,18 +375,22 @@ export const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, sinc
 
 /* ---------------- Entities ---------------- */
 
-const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) ? 'Idle' : 'Walk')
+const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
 
 /** `time` is game time (shiny entrance), `t` wall time (status tint). */
 const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
-  const s = sprites(ENEMIES[e.kind].dex, e.shiny)
+  const def: EnemyDef = ENEMIES[e.kind]
+  const s = sprites(def.dex, e.shiny)
+  const scale = def.scale ?? 1
   if (e.dying >= 0) {
     const k = e.dying / 0.4
-    drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false })
+    drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false, scale })
     return
   }
-  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id) })
-  if (e.shiny) drawSparkles(ctx, e.x, e.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
+  // Leapers are drawn lifted mid-jump; their shadow stays on the ground.
+  const y = e.y - traitLift(e)
+  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: traitTint(e) ?? statusTint(e.status, t, e.id), scale })
+  if (e.shiny) drawSparkles(ctx, e.x, y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
 }
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
@@ -462,6 +485,20 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 const drawables: Array<Enemy | 'player'> = []
 
+/* ---------------- Biome ---------------- */
+
+/** Seconds the ground takes to dissolve into the next biome. */
+const BIOME_FADE = 2.4
+/** How far ahead (game seconds) the next biome's ground starts building in the background. */
+const BIOME_WARMUP = 10
+
+/** The ground dissolve in progress, if any. */
+const biomeFade = (g: Game) => {
+  const { prev, since } = g.biome
+  const k = (g.time - since) / BIOME_FADE
+  return prev && k < 1 ? { from: prev, k } : null
+}
+
 /** Player preferences from the settings screen. */
 export type RenderOptions = { damageNumbers: boolean; screenShake: boolean }
 
@@ -473,7 +510,11 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const camX = Math.round(g.camera.x) + shakeX
   const camY = Math.round(g.camera.y) + shakeY
 
-  drawGround(ctx, camX, camY, w, h)
+  const fade = biomeFade(g)
+  if (g.rift.arena) drawArena(ctx, g.rift.arena, camX, camY, w, h, t)
+  else drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
+  const upcoming = biomeAt(g.time + BIOME_WARMUP)
+  if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
   ctx.save()
   ctx.translate(-camX, -camY)
 
@@ -481,14 +522,21 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
-  drawProps(ctx, g, t)
+  // Breakables change outfit halfway through the dissolve.
+  drawProps(ctx, g, t, fade && fade.k < 0.5 ? fade.from : g.biome.id)
+  // Map events wait outside with the rest of the world while the player is in an arena.
+  if (!g.rift.arena) drawMapEvents(ctx, g, t)
+  if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
   drawSpecialAura(ctx, g, t)
+  drawTraitGround(ctx, g, visible)
   drawPickups(ctx, g, t)
 
   drawables.length = 0
   for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
   drawables.push('player')
-  drawables.sort((a, b) => (a === 'player' ? g.player.y : a.y) - (b === 'player' ? g.player.y : b.y))
+  // Mid-jump leapers sort last so they fly over the horde.
+  const depth = (d: Enemy | 'player') => (d === 'player' ? g.player.y : isAirborne(d) ? d.y + 4096 : d.y)
+  drawables.sort((a, b) => depth(a) - depth(b))
 
   for (const d of drawables) {
     if (d === 'player') shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
@@ -500,9 +548,13 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {
-    if (d !== 'player' && d.boss && d.dying < 0) drawStatusBadge(ctx, d.status, d.x, d.y - sprites(ENEMIES[d.kind].dex).bodyH - 5)
+    if (d !== 'player' && d.boss && d.dying < 0) {
+      const def: EnemyDef = ENEMIES[d.kind]
+      drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
+    }
   }
   drawSleep(ctx, g, t)
+  drawTraitAir(ctx, g, visible)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
@@ -513,7 +565,12 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
   }
   ctx.globalAlpha = 1
+  ctx.restore()
 
+  // Weather goes over the world but under damage numbers, so they stay readable in fog and glare.
+  drawWeather(ctx, g, camX, camY, t)
+  ctx.save()
+  ctx.translate(-camX, -camY)
   for (const text of g.texts) {
     if (text.damage && !opts.damageNumbers) continue
     ctx.globalAlpha = Math.min(1, (0.7 - text.life) * 5)
@@ -522,6 +579,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
+  drawRiftArrow(ctx, g, camX, camY, t)
+  if (!g.rift.arena) drawMapEventMarkers(ctx, g, t)
   drawFlash(ctx, g)
   if (g.phase === 'evolving') drawEvolution(ctx, g, t)
 }

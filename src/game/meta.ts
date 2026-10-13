@@ -1,4 +1,5 @@
 import { chance, type Rng } from '../engine/rng'
+import { ENDLESS, overtime } from './endless'
 import type { StatDelta } from './stats'
 import type { Game } from './types'
 
@@ -139,12 +140,22 @@ export const coinDrops = (rng: Rng, enemy: { boss: boolean; xp: number; shiny?: 
   return [chance(rng, 0.1) ? 50 : 10]
 }
 
-/** End-of-run bonus for surviving and fainting foes, scaled by greed (Amulet Coin). */
-export const runBonus = (run: { time: number; kills: number; victory: boolean; greed: number }) =>
-  Math.round(((run.time / 60) * 30 + run.kills * 0.25 + (run.victory ? 1000 : 0)) * run.greed)
+/**
+ * End-of-run bonus for surviving and fainting foes, scaled by greed (Amulet Coin).
+ * Beating Mewtwo pays a lump sum; after it, every endless minute pays triple
+ * and every defeated Arceus a fortune, so surviving longer always pays more.
+ */
+export const runBonus = (run: { time: number; kills: number; victory: boolean; greed: number; reaperDefeats?: number }) => {
+  const endlessMinutes = run.victory ? overtime(run.time) / 60 : 0
+  const reaper = (run.reaperDefeats ?? 0) * ENDLESS.reaperBonus
+  return Math.round(((run.time / 60) * 30 + endlessMinutes * 60 + run.kills * 0.25 + (run.victory ? 1000 : 0) + reaper) * run.greed)
+}
+
+/** Mewtwo fell this run: on the victory screen, or still going in endless mode. */
+export const wonRun = (g: Game) => g.phase === 'victory' || g.endless !== null
 
 /** What a finished run pays out. Coins were already scaled by greed when collected. */
 export const runEarnings = (g: Game) => {
-  const bonus = runBonus({ time: g.time, kills: g.kills, victory: g.phase === 'victory', greed: g.player.stats.greed })
+  const bonus = runBonus({ time: g.time, kills: g.kills, victory: wonRun(g), greed: g.player.stats.greed, reaperDefeats: g.endless?.reaperDefeats })
   return { coins: g.coins, bonus, total: g.coins + bonus }
 }

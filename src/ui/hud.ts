@@ -8,8 +8,10 @@ import type { Game } from '../game/types'
 import { formatPokeDollars, t } from '../i18n'
 import { coinIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { consumableIcon } from '../render/props'
+import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
+import { createRiftHud } from './riftHud'
 import { createSpecialControls } from './specialButton'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
@@ -22,9 +24,12 @@ const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-
  */
 export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () => void) => {
   const special = createSpecialControls(onSpecial)
+  const rift = createRiftHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
-  const timer = h('div', { class: 'timer' })
+  const clock = h('span')
+  const weather = h('img', { class: 'weather-icon hidden', alt: '' })
+  const timer = h('div', { class: 'timer' }, weather, clock)
   const kills = h('span')
   const coins = h('span')
   const moveSlots = h('div', { class: 'slots' })
@@ -68,6 +73,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       ),
     ),
     boss,
+    rift.el,
     h(
       'div',
       { class: 'status box' },
@@ -89,6 +95,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
   let portraitKey = ''
   let buffKey = ''
   let buffFills: HTMLElement[] = []
+  let weatherKey = ''
 
   /** Timed buffs (icon + draining bar) and a held Revive. Rebuilt only when the set changes. */
   const renderBuffs = (g: Game) => {
@@ -130,10 +137,19 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     const p = g.player
     setStyle(xpFill, 'width', `${Math.min(100, (p.xp / p.xpNext) * 100).toFixed(1)}%`)
     setText(xpLabel, t().level(p.level))
-    setText(timer, formatTime(g.time))
+    setText(clock, formatTime(g.time))
+    if (g.weather.id !== weatherKey) {
+      weatherKey = g.weather.id
+      const id = g.weather.id
+      weather.classList.toggle('hidden', id === 'clear')
+      if (id !== 'clear') weather.setAttribute('src', weatherIcon(id))
+      weather.setAttribute('alt', t().world.weather[id])
+      weather.setAttribute('title', t().world.weather[id])
+    }
     setText(kills, String(g.kills))
     setText(coins, formatPokeDollars(g.coins))
     special.update(g)
+    rift.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
     if (key !== loadoutKey) {
