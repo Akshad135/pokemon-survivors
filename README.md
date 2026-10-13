@@ -1,6 +1,121 @@
+<div align="center">
+
+<img src="public/assets/pokemon/4/portrait.png" width="56" alt="Charmander">
+<img src="public/assets/pokemon/1/portrait.png" width="56" alt="Bulbasaur">
+<img src="public/assets/pokemon/7/portrait.png" width="56" alt="Squirtle">
+
 # Pokémon Survivors
 
-A browser survivors-like (in the style of Vampire Survivors) with Pokémon. Pick one of the 27 starters (Kanto to Paldea), survive 15 minutes of wild hordes, learn moves, evolve, and beat Mewtwo.
+**A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
+
+Pick one of 27 starters, survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+
+[**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
+
+[![CI](https://github.com/pedrobarretto/pokemon-survivors/actions/workflows/ci.yml/badge.svg)](https://github.com/pedrobarretto/pokemon-survivors/actions/workflows/ci.yml)
+[![License: MIT (code)](https://img.shields.io/badge/code-MIT-blue)](LICENSE)
+[![Fan game](https://img.shields.io/badge/unofficial-fan%20game-ef5350)](#legal)
+
+<img src="docs/screenshots/boss-fight.png" alt="Charizard fighting a horde while Moltres attacks" width="860">
+
+</div>
+
+> [!NOTE]
+> Pokémon Survivors is an unofficial, non-commercial fan game. It is **not affiliated with, endorsed, sponsored or approved by** Nintendo, The Pokémon Company, GAME FREAK or Creatures. See [Legal](#legal).
+
+The in-game text is in Brazilian Portuguese 🇧🇷. Pokémon, move and item names use their official English names.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/starter-select.png" alt="Starter select with the inspect panel"></td>
+    <td width="50%"><img src="docs/screenshots/level-up.png" alt="Level-up screen offering moves and held items"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Pick a starter from any region and inspect its stats, evolutions and moves</sub></td>
+    <td align="center"><sub>Level up and build your moveset with held items</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/evolution.png" alt="Fuecoco evolving into Crocalor"></td>
+    <td><img src="docs/screenshots/poke-mart.png" alt="Poké Mart with permanent upgrades"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Evolve mid-run, just like on the handhelds</sub></td>
+    <td align="center"><sub>Spend Poké Dollars on permanent upgrades</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="Skeledirge on a phone in portrait mode" width="260"><br>
+  <sub>Works on phones too: floating joystick, touch special button, installable as a fullscreen app</sub>
+</p>
+
+## Features
+
+- **27 starters from every region**, each with a full 3-stage evolution line, its own stats, signature move and learnset.
+
+  <table>
+    <tr><th>Kanto</th><th>Johto</th><th>Hoenn</th><th>Sinnoh</th><th>Unova</th><th>Kalos</th><th>Alola</th><th>Galar</th><th>Paldea</th></tr>
+    <tr>
+      <td><img src="public/assets/pokemon/1/portrait.png" width="40" alt="Bulbasaur"></td>
+      <td><img src="public/assets/pokemon/152/portrait.png" width="40" alt="Chikorita"></td>
+      <td><img src="public/assets/pokemon/252/portrait.png" width="40" alt="Treecko"></td>
+      <td><img src="public/assets/pokemon/387/portrait.png" width="40" alt="Turtwig"></td>
+      <td><img src="public/assets/pokemon/495/portrait.png" width="40" alt="Snivy"></td>
+      <td><img src="public/assets/pokemon/650/portrait.png" width="40" alt="Chespin"></td>
+      <td><img src="public/assets/pokemon/722/portrait.png" width="40" alt="Rowlet"></td>
+      <td><img src="public/assets/pokemon/810/portrait.png" width="40" alt="Grookey"></td>
+      <td><img src="public/assets/pokemon/906/portrait.png" width="40" alt="Sprigatito"></td>
+    </tr>
+    <tr>
+      <td><img src="public/assets/pokemon/4/portrait.png" width="40" alt="Charmander"></td>
+      <td><img src="public/assets/pokemon/155/portrait.png" width="40" alt="Cyndaquil"></td>
+      <td><img src="public/assets/pokemon/255/portrait.png" width="40" alt="Torchic"></td>
+      <td><img src="public/assets/pokemon/390/portrait.png" width="40" alt="Chimchar"></td>
+      <td><img src="public/assets/pokemon/498/portrait.png" width="40" alt="Tepig"></td>
+      <td><img src="public/assets/pokemon/653/portrait.png" width="40" alt="Fennekin"></td>
+      <td><img src="public/assets/pokemon/725/portrait.png" width="40" alt="Litten"></td>
+      <td><img src="public/assets/pokemon/813/portrait.png" width="40" alt="Scorbunny"></td>
+      <td><img src="public/assets/pokemon/909/portrait.png" width="40" alt="Fuecoco"></td>
+    </tr>
+    <tr>
+      <td><img src="public/assets/pokemon/7/portrait.png" width="40" alt="Squirtle"></td>
+      <td><img src="public/assets/pokemon/158/portrait.png" width="40" alt="Totodile"></td>
+      <td><img src="public/assets/pokemon/258/portrait.png" width="40" alt="Mudkip"></td>
+      <td><img src="public/assets/pokemon/393/portrait.png" width="40" alt="Piplup"></td>
+      <td><img src="public/assets/pokemon/501/portrait.png" width="40" alt="Oshawott"></td>
+      <td><img src="public/assets/pokemon/656/portrait.png" width="40" alt="Froakie"></td>
+      <td><img src="public/assets/pokemon/728/portrait.png" width="40" alt="Popplio"></td>
+      <td><img src="public/assets/pokemon/816/portrait.png" width="40" alt="Sobble"></td>
+      <td><img src="public/assets/pokemon/912/portrait.png" width="40" alt="Quaxly"></td>
+    </tr>
+  </table>
+
+- **23 moves and 19 held items.** Max out a move, pair it with the right item, and it evolves (Ember + Charcoal → Flamethrower).
+- **Real type matchups**, burn, poison and paralysis, and a manual **special attack** per type that becomes Blast Burn, Hydro Cannon or Frenzy Plant at the final evolution.
+- **Bosses with telegraphed attack patterns**: Onix, Snorlax, the legendary birds and Mewtwo. Mew sometimes shows up.
+
+  <img src="public/assets/pokemon/95/portrait.png" width="40" alt="Onix"> <img src="public/assets/pokemon/143/portrait.png" width="40" alt="Snorlax"> <img src="public/assets/pokemon/144/portrait.png" width="40" alt="Articuno"> <img src="public/assets/pokemon/145/portrait.png" width="40" alt="Zapdos"> <img src="public/assets/pokemon/146/portrait.png" width="40" alt="Moltres"> <img src="public/assets/pokemon/150/portrait.png" width="40" alt="Mewtwo"> <img src="public/assets/pokemon/151/portrait.png" width="40" alt="Mew">
+
+- **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
+- **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
+- **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
+- **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
+
+## Controls
+
+| | Keyboard / gamepad | Touch |
+| --- | --- | --- |
+| Move | WASD / arrows / left stick | Drag anywhere (floating joystick) |
+| Special attack | `Space` / A (✕) | Round button, bottom right |
+| Pause | `Esc` / `P` | Pause button, top right |
+| Pick an upgrade | `1`–`3` | Tap it |
+| Mute | `M` | — |
+
+## Running locally
+
+Requires Node.js 22+.
 
 ```bash
 npm install
@@ -8,15 +123,14 @@ npm run dev        # http://localhost:5173
 npm test           # focused rules tests (vitest)
 npm run build      # typecheck + production build
 npm run assets     # re-download sprites/cries (already committed in public/)
+npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-**Controls:** WASD/arrows · `Space` special attack (A/✕ on a gamepad) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade. On phones: drag anywhere for the floating joystick, tap the round button (bottom right) for the special and the pause button (top right) to pause. Installable to the home screen (fullscreen web app).
+In dev builds the browser console exposes `ps.run()` (current run state) and `ps.startRun('squirtle')`.
 
-## Stack
+## How it's built
 
-Vite + TypeScript, Canvas 2D, and no game engine. Everything is plain data plus functions (no classes). The world renders at about 300px tall and is upscaled by an integer factor, so every element (sprites, effects, particles) shares the same pixel grid. The UI is DOM with pixel fonts (Press Start 2P / VT323).
-
-## Architecture
+Vite + TypeScript and Canvas 2D, with no game engine. Everything is plain data plus functions (no classes). The UI is DOM with pixel fonts (Press Start 2P / VT323).
 
 ```
 src/
@@ -32,32 +146,46 @@ src/
   ui/       HUD, starter select, level-up, pause, results, toasts
 ```
 
+<details>
+<summary><b>Architecture notes</b></summary>
+
 - **Simulation and presentation are decoupled.** `step(game, input, dt)` mutates the state and pushes `GameEvent`s. `main.ts` drains them each frame to play sounds and cries and show toasts.
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
 - **Waves** live in `data/waves.ts`: spawn stages by time, plus events (flyby swarms, closing rings, bosses, optionally rare via `chance`).
-- **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/fetch-assets.mjs`.
-- **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball), and the starter has a 1/64 chance to be shiny for the whole run. Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
-- **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time (counted in the move's damage), burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses). Upgrades and items (King's Rock, Toxic Orb) raise chance and DoT damage.
-- **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides): Fire dashes leaving a fire trail, Water fires a beam, Grass erupts rings of roots, anything else gets a shockwave. The final evolution upgrades it to Blast Burn / Hydro Cannon / Frenzy Plant. Input reaches `step()` as data (`{ move, special }`).
+- **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/dex.mjs`.
+- **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
+- **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time, burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses).
+- **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides). Input reaches `step()` as data (`{ move, special }`).
 - **Type chart:** damage uses real Pokémon type matchups, softened (2x → 1.5x, 0x → 0.5x). Yellow numbers with `!` mean super effective.
+- **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
 
-## Content (v0.1)
+</details>
 
-- 27 starters (every main region, Gen 1–9), each with a 3-stage evolution line (Lv 12 / Lv 28), per-stage types, its own stat profile, signature and learnset, plus the handheld-style evolution scene. The region-tabbed selector has an inspect panel (stats, evolutions, special, moves).
-- 23 moves: Ember, Fire Spin, Water Gun, Whirlpool, Razor Leaf, Vine Whip, Swift, Thunder, Sludge Bomb, Gust, Mach Punch, Flash Cannon, Spirit Shackle, Water Shuriken, Crunch, Pyro Ball, Psyshock, Earthquake, Drum Beating, Disarming Voice, Torch Song, Leaf Blade, Razor Shell.
-- 19 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Dowsing Machine (pickup radius), Assault Vest, King's Rock, Toxic Orb, plus type boosters (Charcoal, Mystic Water, Miracle Seed, Silk Scarf, Magnet, Poison Barb, Sharp Beak).
-- Move evolutions (`data/evolutions.ts`): a max-level move plus its paired held item evolves on the next boss Poké Ball or level-up (e.g. Ember + Charcoal → Flamethrower). 10 evolved moves, which keep their base move's status effect.
-- 15 regular enemies, any of which can show up shiny. Mini-bosses: Onix (2:30, Rock Slide) and Snorlax (5:00, Body Slam). Legendaries: Articuno (7:00, ice shard ring), Zapdos (9:30, lightning strikes), Moltres (12:00, fire trail and fire ring), and Mewtwo (15:00, psychic rings and strikes; beating it wins the run), sometimes joined by a rare Mew.
-- Drops: Exp. Candy (4 tiers), Oran Berry, and a Poké Ball (from bosses and shinies) that evolves a move when possible, or grants a random upgrade.
-- Item sources on the map (item balls, berry trees, rustling tall grass) break under any attack and drop consumables: Potion, Super Potion, Rare Candy, Exp. Share, Poké Flute, Max Repel, Voltorb (Explosion), X Attack, X Speed and Revive. Drop tables live in `data/consumables.ts`.
-- Meta progression: enemies drop Poké Dollars (₽ coins, stacks and bags; bosses shower ₽), plus an end-of-run bonus for time and kills. Spend them in the **Poké Mart** (title screen, `L`) on permanent ranks: HP Up, Protein, Iron, Carbos, Calcium, Zinc, PP Up, Exp. Charm, Amulet Coin, and Ability Capsule / Escape Rope for level-up rerolls and skips. Saved in `localStorage` (`game/meta.ts` holds the pure rules).
-
-## Ideas for next steps
+## Roadmap
 
 - Evolutions for the newer signature moves (Mach Punch, Spirit Shackle, Pyro Ball…).
 - Biomes (cave, forest, Lavender Town).
-- Chiptune music; custom effects/tiles made with PixelLab.
+- Chiptune music and custom effects/tiles.
+
+## Contributing
+
+Bug reports and ideas are very welcome: [open an issue](https://github.com/pedrobarretto/pokemon-survivors/issues/new/choose). Pull requests are welcome too. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first and follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Credits
 
-Sprites: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab) (CC BY-NC 4.0). Cries: [PokéAPI](https://github.com/PokeAPI/cries). Pokémon © Nintendo / Game Freak / Creatures. A non-commercial fan project.
+- **Sprites and portraits:** [PMD SpriteCollab](https://sprites.pmdcollab.org) (CC BY-NC 4.0). Every artist is listed in [CREDITS.md](CREDITS.md).
+- **Cries:** [PokéAPI/cries](https://github.com/PokeAPI/cries).
+- **Fonts:** Press Start 2P and VT323 (SIL Open Font License).
+- **Inspiration:** [Vampire Survivors](https://poncle.itch.io/vampire-survivors) by poncle.
+
+## Legal
+
+Pokémon Survivors is an unofficial, free, non-commercial fan project made by fans for fans. It is not affiliated with, endorsed, sponsored or approved by Nintendo, The Pokémon Company, GAME FREAK inc., Creatures Inc. or Spike Chunsoft.
+
+Pokémon and Pokémon character names are trademarks of Nintendo. Pokémon © Nintendo, Creatures Inc. and GAME FREAK inc. All other trademarks belong to their respective owners. The game has no ads, no paid content and no in-app purchases. Poké Dollars exist only inside the game.
+
+The [MIT license](LICENSE) covers only the original source code of this repository. It grants no rights to Pokémon characters, names, sounds or artwork. The sprites and portraits are distributed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/), so the game as a whole cannot be used commercially.
+
+If you hold rights to any material used here and have concerns, please [open an issue](https://github.com/pedrobarretto/pokemon-survivors/issues) or contact [@pedrobarretto](https://github.com/pedrobarretto). It will be addressed promptly.
+
+<sub>🇧🇷 Pokémon Survivors é um fan game não oficial e sem fins lucrativos. Não tem nenhum vínculo com a Nintendo, The Pokémon Company, GAME FREAK ou Creatures, nem é endossado por elas. Pokémon e os nomes dos personagens são marcas registradas da Nintendo.</sub>

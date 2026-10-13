@@ -1,0 +1,36 @@
+name: Bug report
+description: Something is broken or behaves wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! English or Portuguese are both fine.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Pick Squirtle
+        2. Survive until 5:00
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 13, Safari 18 / Windows, Chrome 130
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: Screenshots or video
+      description: Drag and drop files here. Console errors are very helpful too.
