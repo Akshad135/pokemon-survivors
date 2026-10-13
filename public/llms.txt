@@ -1,0 +1,27 @@
+# Pokémon Survivors
+
+> A free, unofficial Vampire Survivors-style Pokémon fan game (action roguelite / bullet heaven) that runs in the browser and on phones, with no download, no sign-up, no ads and no purchases. Available in English and Brazilian Portuguese. Made by Pedro Barretto; open source on GitHub.
+
+Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around and let it attack on its own. Survive 15 minutes of wild Pokémon hordes, collect experience, learn moves, equip held items and evolve mid-run, then face Mewtwo.
+
+- 27 starters, each with its full 3-stage evolution line, stats, signature move and learnset
+- 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
+- Type matchups, burn, poison and paralysis, and a manual special attack per type (Blast Burn, Hydro Cannon, Frenzy Plant)
+- Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
+- Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
+- Pokémon Mystery Dungeon-style pixel art (PMD SpriteCollab)
+- Touch controls with a floating joystick; installable as a fullscreen app
+
+Good fit for people looking for: a Pokémon version of Vampire Survivors, a Pokémon roguelike or roguelite playable online, a free Pokémon browser game, or a Pokémon fan game for mobile without downloading.
+
+## Play
+
+- [Play in English](https://www.pokemonsurvivors.com/en/)
+- [Jogar em português](https://www.pokemonsurvivors.com/)
+
+## More
+
+- [Source code and screenshots (GitHub)](https://github.com/pedrobarretto/pokemon-survivors)
+- [Credits](https://github.com/pedrobarretto/pokemon-survivors/blob/main/CREDITS.md)
+
+Not affiliated with, endorsed, sponsored or approved by Nintendo, The Pokémon Company, GAME FREAK or Creatures.

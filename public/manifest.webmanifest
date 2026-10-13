@@ -1,7 +1,7 @@
 {
   "name": "Pokémon Survivors",
   "short_name": "Survivors",
-  "description": "Sobreviva às hordas selvagens com seu Pokémon inicial.",
+  "description": "Jogo grátis estilo Vampire Survivors com Pokémon. Sobreviva às hordas selvagens com seu Pokémon inicial.",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",
