@@ -1,20 +1,19 @@
-import { context2d } from '../engine/pixelart'
 import { formatTime } from '../engine/math'
-import { playCry, playSfx, toggleMute } from '../engine/audio'
+import { playSfx, toggleMute } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { ITEMS } from '../data/items'
-import { STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
+import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
 import type { Game, Offer } from '../game/types'
 import { berryIcon, itemIcon, moveIcon } from '../render/art'
-import { drawPokemon, sprites } from '../render/sprites'
+import { sprites } from '../render/sprites'
 import { h } from './dom'
 
 export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () => void }
 
-const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
+export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
 
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
@@ -44,65 +43,6 @@ const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => voi
     }
   })
   return { off, focus, get index() { return index } }
-}
-
-/* ---------------- Starter select ---------------- */
-
-export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: StarterId) => void): Screen => {
-  const canvases = new Map<StarterId, HTMLCanvasElement>()
-  const cards = STARTER_IDS.map((id) => {
-    const s = STARTERS[id]
-    const canvas = h('canvas', { width: 64, height: 56, class: 'starter-sprite' })
-    canvases.set(id, canvas)
-    const sig: MoveDef = MOVES[s.signature]
-    return h(
-      'button',
-      { class: 'starter-card box', style: `--accent:${s.color}` },
-      canvas,
-      h('div', { class: 'starter-name' }, s.name),
-      h('div', { class: 'types' }, ...s.types.map(typeBadge)),
-      h('div', { class: 'starter-blurb' }, s.blurb),
-      h('div', { class: 'starter-move' }, h('img', { src: moveIcon(s.signature), alt: '' }), sig.name),
-    )
-  })
-
-  let picked = false
-  const nav = menu(
-    input,
-    cards,
-    (i) => {
-      if (picked) return
-      picked = true
-      const id = STARTER_IDS[i]!
-      playSfx('select')
-      playCry(sprites(STARTERS[id].line[0].dex).cry)
-      onPick(id)
-    },
-    { horizontal: true },
-  )
-
-  const el = h(
-    'div',
-    { class: 'screen title-screen' },
-    h('h1', { class: 'logo' }, h('span', { class: 'logo-top' }, 'POKéMON'), h('span', { class: 'logo-bottom' }, 'SURVIVORS')),
-    h('p', { class: 'subtitle blink' }, 'Escolha seu parceiro!'),
-    h('div', { class: 'starters' }, ...cards),
-    h('p', { class: 'hint' }, '← → escolher · ENTER confirmar · WASD/setas para andar'),
-    h('p', { class: 'credits' }, 'Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Game Freak'),
-  )
-  root.append(el)
-
-  const tick = (t: number) => {
-    STARTER_IDS.forEach((id, i) => {
-      const canvas = canvases.get(id)!
-      const ctx = context2d(canvas)
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const selected = i === nav.index
-      drawPokemon(ctx, sprites(STARTERS[id].line[0].dex), selected ? 'Walk' : 'Idle', 0, t, 32, 48)
-    })
-  }
-
-  return { el, tick, dispose: () => (nav.off(), el.remove()) }
 }
 
 /* ---------------- Level up ---------------- */

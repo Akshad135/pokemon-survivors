@@ -1,6 +1,6 @@
 # Pokémon Survivors
 
-A browser survivors-like (in the style of Vampire Survivors) with Pokémon. Pick Charmander, Squirtle or Bulbasaur, survive 15 minutes of wild hordes, learn moves, evolve, and beat Mewtwo.
+A browser survivors-like (in the style of Vampire Survivors) with Pokémon. Pick one of the 27 starters (Kanto to Paldea), survive 15 minutes of wild hordes, learn moves, evolve, and beat Mewtwo.
 
 ```bash
 npm install
@@ -36,8 +36,8 @@ src/
 
 ## Content (v0.1)
 
-- 3 starters, each with a 3-stage evolution line (Lv 12 / Lv 28) and the handheld-style evolution scene.
-- 10 moves: Ember, Fire Spin, Water Gun, Whirlpool, Razor Leaf, Vine Whip, Swift, Thunder, Sludge Bomb, Gust.
+- 27 starters (every main region, Gen 1–9), each with a 3-stage evolution line (Lv 12 / Lv 28), per-stage types, its own stat profile, signature and learnset, plus the handheld-style evolution scene. The region-tabbed selector has an inspect panel (stats, evolutions, moves).
+- 23 moves: Ember, Fire Spin, Water Gun, Whirlpool, Razor Leaf, Vine Whip, Swift, Thunder, Sludge Bomb, Gust, Mach Punch, Flash Cannon, Spirit Shackle, Water Shuriken, Crunch, Pyro Ball, Psyshock, Earthquake, Drum Beating, Disarming Voice, Torch Song, Leaf Blade, Razor Shell.
 - 10 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Magnet, Assault Vest.
 - 15 regular enemies. Bosses: Onix (5:00), Snorlax (10:00), Mewtwo (15:00, beating it wins the run).
 - Drops: Exp. Candy (4 tiers), Oran Berry, and a boss Poké Ball that grants a random upgrade.
@@ -46,7 +46,7 @@ src/
 
 - Move evolutions (e.g. max Ember + Charcoal → Flamethrower), like weapon evolutions in Vampire Survivors.
 - Shiny elites that drop Poké Balls; status effects (burn, poison, paralysis).
-- Meta progression (Poké Dollars, permanent upgrades), more starters, and biomes (cave, forest, Lavender Town).
+- Meta progression (Poké Dollars, permanent upgrades) and biomes (cave, forest, Lavender Town).
 - Chiptune music; custom effects/tiles made with PixelLab.
 
 ## Credits

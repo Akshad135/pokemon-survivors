@@ -78,7 +78,9 @@ export type Motion =
   | { kind: 'follow'; ox: number; oy: number }
   | { kind: 'static' }
 
-export type Visual = 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+export type Visual =
+  | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+  | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'roots' | 'heart' | 'note' | 'blade' | 'shell'
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {

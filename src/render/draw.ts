@@ -53,6 +53,62 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitCentered(ctx, ring(Math.round(r), 1, '#f8e030'), a.x, a.y)
       return
     }
+    case 'quake': {
+      ctx.globalAlpha = Math.max(0, 1 - a.age / a.ttl)
+      dashedRing(ctx, a.x, a.y, r, 0, ['#704820', '#a07840', '#e0c068'], 0.85)
+      dashedRing(ctx, a.x, a.y, r - 2, 1.3, ['#503010', '#906838'], 0.5)
+      ctx.fillStyle = '#503010'
+      for (let i = 0; i < 7; i++) {
+        const angle = (i / 7) * TAU + a.id
+        for (let d = 4; d < r - 3; d += 1.5) {
+          const jag = Math.sin(d * 0.7 + i) * 1.5
+          ctx.fillRect(Math.round(a.x + Math.cos(angle) * d - Math.sin(angle) * jag), Math.round(a.y + Math.sin(angle) * d + Math.cos(angle) * jag), 1, 1)
+        }
+      }
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'roots': {
+      ctx.globalAlpha = Math.max(0, 1 - a.age / a.ttl)
+      dashedRing(ctx, a.x, a.y - 4, r, a.age * 4, ['#78c850', '#a87840', '#58a838'], 0.75)
+      for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * TAU + a.id
+        const x = Math.round(a.x + Math.cos(angle) * r)
+        const y = Math.round(a.y - 4 + Math.sin(angle) * r)
+        ctx.fillStyle = '#5a3818'
+        ctx.fillRect(x, y - 3, 1, 4)
+        ctx.fillStyle = '#78c850'
+        ctx.fillRect(x - 1, y - 4, 3, 1)
+      }
+      ctx.globalAlpha = 1
+      return
+    }
+  }
+}
+
+/** Small 8-ray impact spark (punch / bite hits). */
+const spark = (ctx: Ctx, x: number, y: number, size: number) => {
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * TAU
+    const len = i % 2 === 0 ? size : size * 0.6
+    for (let d = 2; d <= len; d++) {
+      ctx.fillStyle = d === 2 ? '#ffffff' : '#f8e070'
+      ctx.fillRect(Math.round(x + Math.cos(angle) * d), Math.round(y + Math.sin(angle) * d), 1, 1)
+    }
+  }
+}
+
+/** Crescent slash arc, revealed by `sweep` (0..1). */
+const slashArc = (ctx: Ctx, x: number, y: number, r: number, dir: number, sweep: number) => {
+  const steps = Math.ceil(r * 2.6)
+  const colors = ['#ffffff', '#a8d8f8', '#4878c0']
+  for (let i = 0; i <= steps * sweep; i++) {
+    const angle = dir - 1.1 + (2.2 * i) / steps
+    const thick = Math.sin((i / steps) * Math.PI) * 3
+    for (let k = 0; k < thick; k++) {
+      ctx.fillStyle = colors[k]!
+      ctx.fillRect(Math.round(x + Math.cos(angle) * (r - k)), Math.round(y + Math.sin(angle) * (r - k)), 1, 1)
+    }
   }
 }
 
@@ -135,7 +191,77 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = 1
       return
     }
+    case 'fist': {
+      if (m.kind !== 'follow') return
+      const angle = Math.atan2(m.oy + 8, m.ox)
+      blitRotated(ctx, FX.fist(), a.x, a.y, angle)
+      if (a.age > a.ttl * 0.5) spark(ctx, a.x + Math.cos(angle) * 6, a.y + Math.sin(angle) * 6, 5)
+      return
+    }
+    case 'steel': {
+      const r = a.shape.kind === 'circle' ? a.shape.r : 8
+      blitRotated(ctx, FX.steel(), a.x, a.y, 0, Math.max(1, Math.round(r / 4)))
+      if (Math.floor((t + a.id) * 12) % 3 === 0) spark(ctx, a.x, a.y, Math.round(r * 0.8))
+      return
+    }
+    case 'arrow':
+      return blitRotated(ctx, FX.arrow(), a.x, a.y, m.kind === 'linear' ? Math.atan2(m.vy, m.vx) : 0)
+    case 'shuriken':
+      return blitRotated(ctx, FX.shuriken(), a.x, a.y, a.age * 22)
+    case 'jaws': {
+      const r = a.shape.kind === 'circle' ? a.shape.r : 10
+      const scale = Math.max(1, Math.round(r / 7))
+      const { top, bottom } = FX.jaws()
+      const gap = Math.round((1 - Math.min(1, a.age / a.activeFrom)) * r * 0.9)
+      const half = (top.height * scale) / 2
+      ctx.globalAlpha = a.age > a.activeUntil ? Math.max(0, 1 - (a.age - a.activeUntil) / (a.ttl - a.activeUntil)) : 1
+      blitRotated(ctx, top, a.x, a.y - gap - half, 0, scale)
+      blitRotated(ctx, bottom, a.x, a.y + gap + half, 0, scale)
+      if (a.age >= a.activeFrom) spark(ctx, a.x, a.y, Math.round(r * 0.9))
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'pyro': {
+      if (a.age < a.activeFrom) {
+        const k = a.age / a.activeFrom
+        const x = a.from.x + (a.x - a.from.x) * k
+        const y = a.from.y + (a.y - a.from.y) * k - Math.sin(k * Math.PI) * 50
+        return blitRotated(ctx, FX.pyro(), x, y, a.age * 14)
+      }
+      if (a.shape.kind !== 'circle') return
+      const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
+      const r = Math.round(a.shape.r * (0.5 + 0.5 * e))
+      ctx.globalAlpha = Math.max(0, 1 - e)
+      blitCentered(ctx, ellipse(r, Math.round(r * 0.75), 'rgba(240,112,32,0.6)'), a.x, a.y)
+      blitCentered(ctx, ellipse(Math.round(r * 0.55), Math.round(r * 0.4), '#f8d860'), a.x, a.y - 1)
+      blitCentered(ctx, ring(r, 1, '#fff0a0'), a.x, a.y)
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'psy': {
+      const r = a.shape.kind === 'circle' ? a.shape.r : 6
+      return blitRotated(ctx, FX.psy()[Math.floor((t + a.id) * 10) % 2]!, a.x, a.y, 0, Math.max(1, Math.round((r * 2) / 7)))
+    }
+    case 'heart':
+      return blitCentered(ctx, FX.heart(), a.x, a.y + Math.round(Math.sin(a.age * 14) * 1.5))
+    case 'note':
+      return blitCentered(ctx, FX.note(), a.x + Math.round(Math.sin(a.age * 12) * 2), a.y)
+    case 'blade': {
+      if (m.kind !== 'orbit') return
+      const r = a.shape.kind === 'circle' ? a.shape.r : 9
+      return blitRotated(ctx, FX.blade(), a.x, a.y, m.angle + Math.PI * 0.75, Math.max(1, Math.round(r / 5)))
+    }
+    case 'shell': {
+      if (m.kind !== 'follow' || a.shape.kind !== 'circle') return
+      const dir = Math.atan2(m.oy + 8, m.ox)
+      ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.08)
+      slashArc(ctx, a.x - Math.cos(dir) * a.shape.r * 0.5, a.y - Math.sin(dir) * a.shape.r * 0.5, a.shape.r * 1.2, dir, Math.min(1, a.age / 0.1))
+      ctx.globalAlpha = 1
+      return
+    }
     case 'whirlpool':
+    case 'quake':
+    case 'roots':
       return
   }
 }
