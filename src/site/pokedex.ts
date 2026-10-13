@@ -2,6 +2,7 @@ import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyId } from '../data/enemies'
 import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
 import type { PokeType } from '../data/types'
+import { SUMMONS } from '../data/traits'
 import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
 
 /**
@@ -48,6 +49,8 @@ export const slugOf = (name: string) =>
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace('♀', '-f')
+    .replace('♂', '-m')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
@@ -101,6 +104,8 @@ export type Appearance =
   | { kind: 'swarm' | 'ring'; at: number; count: number }
   /** `chance` is 1 for bosses that always come. */
   | { kind: 'boss'; at: number; chance: number }
+  /** Called in by a summoner (Nidoqueen's Nidoran). */
+  | { kind: 'summoned'; by: EnemyId }
 
 /** Spawn-pool windows (contiguous stages merged) plus every timed event of an enemy. */
 export const appearances = (id: EnemyId): Appearance[] => {
@@ -116,7 +121,10 @@ export const appearances = (id: EnemyId): Appearance[] => {
   const events = EVENTS.filter((e) => e.enemy === id).map((e): Appearance =>
     e.kind === 'boss' ? { kind: 'boss', at: e.at, chance: e.chance ?? 1 } : { kind: e.kind, at: e.at, count: e.count },
   )
-  return [...windows, ...events]
+  const summoned = (Object.keys(SUMMONS) as Array<keyof typeof SUMMONS>)
+    .filter((by) => SUMMONS[by].includes(id))
+    .map((by): Appearance => ({ kind: 'summoned', by }))
+  return [...windows, ...events, ...summoned]
 }
 
 /** `m:ss` run clock, as shown on the HUD. */

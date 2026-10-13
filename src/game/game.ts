@@ -17,6 +17,7 @@ import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
+import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
 
@@ -81,6 +82,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     buffs: [],
     revives: 0,
     flash: 0,
+    traits: { seen: new Set(), nextIntro: 0 },
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
@@ -194,6 +196,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateHazards(g, dt)
   updateStatuses(g, dt)
   rebuildGrid(g)
+  updateTraits(g, dt)
   updateMoves(g, dt)
   updateAttacks(g, dt)
   updateProps(g, dt)

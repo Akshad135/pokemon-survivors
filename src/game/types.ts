@@ -5,6 +5,7 @@ import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
+import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
 import type { Ranks } from './meta'
@@ -14,6 +15,7 @@ import type { Prop } from './props'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
+import type { TraitState } from './traits'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -77,6 +79,8 @@ export type Enemy = {
   flash: number
   /** Status conditions (burn, poison, paralysis, slow). */
   status: EnemyStatus
+  /** Behavior trait (healer, kamikaze…) and the wards/heals it gets from allies. */
+  trait: TraitState
   /** -1 while alive; otherwise seconds since fainting. */
   dying: number
 }
@@ -221,6 +225,10 @@ export type GameEvent =
   | { kind: 'propBreak' }
   | { kind: 'revive' }
   | { kind: 'victory' }
+  /** An enemy trait warned (fuse lit, beam aimed, leap started) or went off. */
+  | { kind: 'trait'; trait: TraitId; phase: 'warn' | 'fire' }
+  /** First time a trait shows up on screen this run (one-time explainer toast). */
+  | { kind: 'traitIntro'; enemy: EnemyId; trait: TraitId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -271,5 +279,7 @@ export type Game = {
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
   flash: number
+  /** Enemy traits already introduced this run (each gets one explainer toast), and the game time the next one may show. */
+  traits: { seen: Set<TraitId>; nextIntro: number }
   events: GameEvent[]
 }

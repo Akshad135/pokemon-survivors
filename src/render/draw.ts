@@ -7,6 +7,7 @@ import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
 import { isAsleep } from '../game/status'
+import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
@@ -14,6 +15,7 @@ import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
+import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawGround } from './world'
 
@@ -356,7 +358,7 @@ export const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, sinc
 
 /* ---------------- Entities ---------------- */
 
-const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) ? 'Idle' : 'Walk')
+const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
 
 /** `time` is game time (shiny entrance), `t` wall time (status tint). */
 const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
@@ -366,8 +368,10 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false })
     return
   }
-  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id) })
-  if (e.shiny) drawSparkles(ctx, e.x, e.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
+  // Leapers are drawn lifted mid-jump; their shadow stays on the ground.
+  const y = e.y - traitLift(e)
+  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: traitTint(e) ?? statusTint(e.status, t, e.id) })
+  if (e.shiny) drawSparkles(ctx, e.x, y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
 }
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
@@ -483,12 +487,15 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   drawProps(ctx, g, t)
   drawSpecialAura(ctx, g, t)
+  drawTraitGround(ctx, g, visible)
   drawPickups(ctx, g, t)
 
   drawables.length = 0
   for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
   drawables.push('player')
-  drawables.sort((a, b) => (a === 'player' ? g.player.y : a.y) - (b === 'player' ? g.player.y : b.y))
+  // Mid-jump leapers sort last so they fly over the horde.
+  const depth = (d: Enemy | 'player') => (d === 'player' ? g.player.y : isAirborne(d) ? d.y + 4096 : d.y)
+  drawables.sort((a, b) => depth(a) - depth(b))
 
   for (const d of drawables) {
     if (d === 'player') shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
@@ -503,6 +510,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     if (d !== 'player' && d.boss && d.dying < 0) drawStatusBadge(ctx, d.status, d.x, d.y - sprites(ENEMIES[d.kind].dex).bodyH - 5)
   }
   drawSleep(ctx, g, t)
+  drawTraitAir(ctx, g, visible)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)

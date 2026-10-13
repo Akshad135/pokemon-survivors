@@ -19,6 +19,21 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    title: { pt: 'Inimigos com personalidade', en: 'Enemies with personality' },
+    notes: [
+      {
+        pt: 'Seis comportamentos novos na horda: Chansey cura os aliados, Bronzong protege com um escudo que absorve dano, Nidoqueen chama Nidoran, Voltorb e Electrode explodem, Magnemite dispara raios e Hitmonlee salta sobre a horda.',
+        en: 'Six new behaviors in the horde: Chansey heals its allies, Bronzong shields them with a ward that soaks damage, Nidoqueen calls in Nidoran, Voltorb and Electrode explode, Magnemite fires beams and Hitmonlee leaps over the horde.',
+      },
+      {
+        pt: 'Todo ataque avisa antes: círculo vermelho, linha ou sombra no chão, piscando mais rápido quando o golpe está perto. A explosão do Voltorb fere os inimigos também.',
+        en: 'Every attack warns you first: a red circle, a line or a shadow on the ground, blinking faster as the hit gets close. Voltorb\'s blast hurts enemies too.',
+      },
+      { pt: 'Um cerco de Voltorb aos 4:30 e uma seção nova no guia.', en: 'A ring of Voltorb at 4:30 and a new guide section.' },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 14,
     title: { pt: 'Site: Pokédex, guia, novidades e página legal', en: 'Website: Pokédex, guide, changelog and legal page' },
     notes: [

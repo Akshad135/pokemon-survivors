@@ -1,4 +1,5 @@
 import type { Drop } from '../../data/consumables'
+import type { TraitId } from '../../data/traits'
 import type { PokeType } from '../../data/types'
 import type { StatusKind } from '../../game/status'
 
@@ -87,6 +88,41 @@ export const sitePt = {
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
     attacks: 'Ataques',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
+    summoned: (by: string) => `Chamado por ${by}`,
+    behavior: 'Comportamento',
+  },
+
+  /** Enemy traits, built from `data/traits.ts`. */
+  traits: {
+    names: {
+      healer: 'Curandeiro',
+      shield: 'Escudo',
+      summoner: 'Invocador',
+      kamikaze: 'Kamikaze',
+      beam: 'Raio',
+      leaper: 'Saltador',
+    } satisfies Record<TraitId, string>,
+    effects: {
+      healer: (every: number, percent: number) =>
+        `A cada ${n(every)}s, um pulso verde cura ${n(percent)}% do HP máximo dos aliados feridos por perto.`,
+      shield: (every: number, percent: number, duration: number) =>
+        `A cada ${n(every)}s, envolve os aliados por perto num escudo que absorve dano igual a ${n(percent)}% do HP máximo deles, por ${n(duration)}s.`,
+      summoner: (every: number, count: number, max: number, names: readonly string[]) =>
+        `A cada ${n(every)}s chama ${count} reforços (${list(names)}), até ${max} ao mesmo tempo.`,
+      kamikaze: (fuse: number, damage: number, percent: number) =>
+        `Chega perto, para, pisca em vermelho e explode depois de ${n(fuse)}s. A explosão causa ${n(damage)}x o dano de contato em você e tira ${n(percent)}% do HP dos inimigos no círculo.`,
+      beam: (aim: number, damage: number) => `Para, desenha no chão a linha do raio por ${n(aim)}s e dispara: ${n(damage)}x o dano de contato.`,
+      leaper: (warn: number, damage: number) =>
+        `Salta sobre a horda até onde você estava. A sombra no chão marca a queda ${n(warn)}s antes, e o impacto causa ${n(damage)}x o dano de contato.`,
+    } satisfies Record<TraitId, unknown>,
+    tips: {
+      healer: 'Derrube primeiro, senão a horda volta a encher a vida.',
+      shield: 'Números azuis são dano absorvido. Derrube o escudeiro ou espere o escudo piscar e sumir.',
+      summoner: 'Os reforços param quando ela cai.',
+      kamikaze: 'Saia do círculo vermelho, ou atraia para o meio da horda: a explosão fere os inimigos também.',
+      beam: 'A mira trava quando a linha aparece: um passo para o lado basta.',
+      leaper: 'Saia de cima da sombra antes da queda.',
+    } satisfies Record<TraitId, string>,
   },
 
   /** Boss attack patterns, built from `data/bosses.ts`. */
@@ -114,6 +150,7 @@ export const sitePt = {
       special: 'Ataque especial',
       types: 'Tipos e status',
       bosses: 'Chefes',
+      traits: 'Inimigos especiais',
       shinies: 'Shinies',
       items: 'Itens no mapa',
       mart: 'Poké Mart e Poké Dollars',
@@ -213,6 +250,15 @@ export const sitePt = {
       bossHead: 'Chefe',
       hpHead: 'HP',
       attacksHead: 'Ataques',
+    },
+    traits: {
+      paragraphs: [
+        'Alguns Pokémon selvagens não só perseguem: eles curam, protegem e chamam a horda, ou atacam de longe. Eles são poucos no meio da horda, então vale a pena ficar de olho.',
+        'Todo ataque deles avisa antes: um "!" sobre a cabeça, um círculo vermelho, uma linha ou uma sombra no chão que pisca mais rápido quando o golpe está perto. Na primeira vez que cada um aparece numa partida, um aviso explica o que ele faz.',
+      ],
+      pokemonHead: 'Pokémon',
+      traitHead: 'Comportamento',
+      effectHead: 'O que faz',
     },
     shinies: {
       paragraphs: (wild: number, hp: number, xp: number, player: number) => [

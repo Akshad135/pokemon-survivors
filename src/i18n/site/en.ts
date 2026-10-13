@@ -80,6 +80,39 @@ export const siteEn: SiteMessages = {
     bossChance: (at: string, percent: number) => `Boss at ${at} (${n(percent)}% chance)`,
     attacks: 'Attacks',
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
+    summoned: (by: string) => `Called in by ${by}`,
+    behavior: 'Behavior',
+  },
+
+  traits: {
+    names: {
+      healer: 'Healer',
+      shield: 'Shield',
+      summoner: 'Summoner',
+      kamikaze: 'Kamikaze',
+      beam: 'Beam',
+      leaper: 'Leaper',
+    },
+    effects: {
+      healer: (every: number, percent: number) => `Every ${n(every)}s, a green pulse heals ${n(percent)}% of the max HP of wounded allies nearby.`,
+      shield: (every: number, percent: number, duration: number) =>
+        `Every ${n(every)}s, wraps nearby allies in a shield that soaks damage equal to ${n(percent)}% of their max HP, for ${n(duration)}s.`,
+      summoner: (every: number, count: number, max: number, names: readonly string[]) =>
+        `Every ${n(every)}s it calls in ${count} reinforcements (${list(names)}), up to ${max} at once.`,
+      kamikaze: (fuse: number, damage: number, percent: number) =>
+        `Walks up, stops, blinks red and explodes after ${n(fuse)}s. The blast deals ${n(damage)}x its contact damage to you and takes ${n(percent)}% of the HP of enemies in the circle.`,
+      beam: (aim: number, damage: number) => `Stops, draws the beam's line on the ground for ${n(aim)}s and fires: ${n(damage)}x its contact damage.`,
+      leaper: (warn: number, damage: number) =>
+        `Leaps over the horde to where you stood. The shadow on the ground marks the landing ${n(warn)}s ahead, and the impact deals ${n(damage)}x its contact damage.`,
+    },
+    tips: {
+      healer: 'Take it down first, or the horde keeps topping up.',
+      shield: 'Blue numbers are absorbed damage. Take out the shielder or wait for the shield to blink and fade.',
+      summoner: 'The reinforcements stop once she falls.',
+      kamikaze: 'Get out of the red circle, or lure it into the horde: the blast hurts enemies too.',
+      beam: 'The aim locks when the line shows up: one step aside is enough.',
+      leaper: 'Get off the shadow before it lands.',
+    },
   },
 
   patterns: {
@@ -106,6 +139,7 @@ export const siteEn: SiteMessages = {
       special: 'Special attack',
       types: 'Types and status',
       bosses: 'Bosses',
+      traits: 'Special enemies',
       shinies: 'Shinies',
       items: 'Map items',
       mart: 'Poké Mart and Poké Dollars',
@@ -205,6 +239,15 @@ export const siteEn: SiteMessages = {
       bossHead: 'Boss',
       hpHead: 'HP',
       attacksHead: 'Attacks',
+    },
+    traits: {
+      paragraphs: [
+        'Some wild Pokémon do more than chase: they heal, shield and call in the horde, or attack from afar. They are a few among the horde, so keep an eye out.',
+        'Every one of their attacks warns you first: a "!" over the head, a red circle, a line or a shadow on the ground that blinks faster as the hit gets close. The first time each one shows up in a run, a message explains what it does.',
+      ],
+      pokemonHead: 'Pokémon',
+      traitHead: 'Behavior',
+      effectHead: 'What it does',
     },
     shinies: {
       paragraphs: (wild: number, hp: number, xp: number, player: number) => [
