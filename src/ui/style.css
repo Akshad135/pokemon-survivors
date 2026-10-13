@@ -753,6 +753,121 @@ button {
   text-align: right;
 }
 
+/* ---------- Special attack (HUD badge + touch button) ---------- */
+
+.hud-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.special {
+  --fill: 1;
+  --type: #a8a878;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgba(16, 24, 48, 0.65);
+  border: 3px solid #101018;
+  box-shadow: inset 0 0 0 2px var(--type);
+}
+
+.special img {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cooldown shade, drained as --fill goes 0 -> 1. */
+.special::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(8, 8, 20, 0.62);
+}
+
+.special.ready {
+  animation: special-pulse 0.9s steps(2, jump-none) infinite;
+}
+
+.special.ready::after {
+  display: none;
+}
+
+@keyframes special-pulse {
+  to {
+    box-shadow:
+      inset 0 0 0 2px #ffffff,
+      0 0 0 3px var(--type);
+  }
+}
+
+.special-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+}
+
+.special-badge img {
+  width: 30px;
+  height: 30px;
+}
+
+/* Vertical fill: the shade shrinks from the bottom up. */
+.special-badge::after {
+  bottom: auto;
+  height: calc((1 - var(--fill)) * 100%);
+}
+
+.special-key {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 1px;
+  transform: translateX(-50%);
+  font-size: 5px;
+  color: #f8f8f8;
+}
+
+.special-button {
+  display: none;
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.special-button img {
+  width: 44px;
+  height: 44px;
+}
+
+/* Radial fill: the shade is a pie that unwinds clockwise. */
+.special-button::after {
+  background: conic-gradient(transparent calc(var(--fill) * 360deg), rgba(8, 8, 20, 0.62) 0);
+}
+
+.special-button:active {
+  transform: translateY(2px);
+}
+
+@media (pointer: coarse) {
+  .special-badge {
+    display: none;
+  }
+  .special-button {
+    display: grid;
+  }
+}
+
 /* ---------- Text box & toasts ---------- */
 
 .textbox {

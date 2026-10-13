@@ -5,6 +5,7 @@ import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { xpTier } from '../game/pickups'
 import type { Attack, Enemy, Game } from '../game/types'
 import { FX, PICKUPS } from './art'
+import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawGround } from './world'
 
@@ -53,6 +54,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitCentered(ctx, ring(Math.round(r), 1, '#f8e030'), a.x, a.y)
       return
     }
+    default:
+      return drawSpecialGround(ctx, a)
   }
 }
 
@@ -137,6 +140,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'whirlpool':
       return
+    default:
+      return drawSpecialAttack(ctx, a, t)
   }
 }
 
@@ -160,8 +165,9 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   const p = g.player
   const s = sprites(playerDex(g))
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
-  const blink = p.iframes > 0 && Math.floor(p.iframes * 20) % 2 === 0
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : 0 })
+  const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
+  const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
+  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging ? 0.6 : 0 })
 
   // GBA-style HP bar under the feet.
   const w = 22
@@ -248,6 +254,7 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  drawSpecialAura(ctx, g, t)
   drawPickups(ctx, g, t)
 
   drawables.length = 0

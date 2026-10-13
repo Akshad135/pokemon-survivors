@@ -7,14 +7,17 @@ import type { Game } from '../game/types'
 import { itemIcon, moveIcon, pokeballIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
+import { createSpecialControls } from './specialButton'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
 
 /**
  * In-run heads-up display. `update` is called every frame and only touches what changed.
- * `onPause` backs the on-screen pause button (phones have no Esc key).
+ * `onSpecial` fires when the touch special button is pressed; `onPause` backs the
+ * on-screen pause button (phones have no Esc key).
  */
-export const createHud = (root: HTMLElement, onPause: () => void) => {
+export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () => void) => {
+  const special = createSpecialControls(onSpecial)
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
   const timer = h('div', { class: 'timer' })
@@ -43,7 +46,7 @@ export const createHud = (root: HTMLElement, onPause: () => void) => {
     h(
       'div',
       { class: 'hud-row' },
-      h('div', { class: 'loadout' }, moveSlots, itemSlots),
+      h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots), special.badge),
       timer,
       h('div', { class: 'hud-right' }, h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills), pause),
     ),
@@ -60,6 +63,7 @@ export const createHud = (root: HTMLElement, onPause: () => void) => {
         hpText,
       ),
     ),
+    special.button,
   )
   root.append(el)
 
@@ -88,6 +92,7 @@ export const createHud = (root: HTMLElement, onPause: () => void) => {
     setText(xpLabel, `Nv ${p.level}`)
     setText(timer, formatTime(g.time))
     setText(kills, String(g.kills))
+    special.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
     if (key !== loadoutKey) {

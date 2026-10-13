@@ -70,6 +70,15 @@ const SFX = {
     noise(0.35, 0.18)
     tone(120, 40, 0.3, 'sawtooth', 0.12)
   },
+  specialCharge: () => {
+    tone(160, 880, 0.32, 'square', 0.1)
+    tone(240, 1320, 0.32, 'triangle', 0.08, 0.04)
+  },
+  specialBlast: () => {
+    noise(0.5, 0.26)
+    tone(150, 32, 0.55, 'sawtooth', 0.22)
+    tone(90, 30, 0.7, 'square', 0.14, 0.05)
+  },
   gameOver: () => [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.97, 0.3, 'triangle', 0.2, i * 0.25)),
 } as const
 
