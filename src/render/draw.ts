@@ -1,6 +1,7 @@
 import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
+import { biomeAt } from '../data/biomes'
 import { ENEMIES } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
@@ -15,7 +16,8 @@ import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './special
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
 import { bolt, dashedRing } from './strokes'
-import { drawGround } from './world'
+import { drawWeather } from './weather'
+import { drawGround, warmGround } from './world'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -462,6 +464,20 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 const drawables: Array<Enemy | 'player'> = []
 
+/* ---------------- Biome ---------------- */
+
+/** Seconds the ground takes to dissolve into the next biome. */
+const BIOME_FADE = 2.4
+/** How far ahead (game seconds) the next biome's ground starts building in the background. */
+const BIOME_WARMUP = 10
+
+/** The ground dissolve in progress, if any. */
+const biomeFade = (g: Game) => {
+  const { prev, since } = g.biome
+  const k = (g.time - since) / BIOME_FADE
+  return prev && k < 1 ? { from: prev, k } : null
+}
+
 /** Player preferences from the settings screen. */
 export type RenderOptions = { damageNumbers: boolean; screenShake: boolean }
 
@@ -473,7 +489,10 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const camX = Math.round(g.camera.x) + shakeX
   const camY = Math.round(g.camera.y) + shakeY
 
-  drawGround(ctx, camX, camY, w, h)
+  const fade = biomeFade(g)
+  drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
+  const upcoming = biomeAt(g.time + BIOME_WARMUP)
+  if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
   ctx.save()
   ctx.translate(-camX, -camY)
 
@@ -481,7 +500,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
-  drawProps(ctx, g, t)
+  // Breakables change outfit halfway through the dissolve.
+  drawProps(ctx, g, t, fade && fade.k < 0.5 ? fade.from : g.biome.id)
   drawSpecialAura(ctx, g, t)
   drawPickups(ctx, g, t)
 
@@ -513,7 +533,12 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
   }
   ctx.globalAlpha = 1
+  ctx.restore()
 
+  // Weather goes over the world but under damage numbers, so they stay readable in fog and glare.
+  drawWeather(ctx, g, camX, camY, t)
+  ctx.save()
+  ctx.translate(-camX, -camY)
   for (const text of g.texts) {
     if (text.damage && !opts.damageNumbers) continue
     ctx.globalAlpha = Math.min(1, (0.7 - text.life) * 5)

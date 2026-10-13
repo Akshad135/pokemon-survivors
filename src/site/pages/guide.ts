@@ -1,10 +1,12 @@
+import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
 import { BOSS_PATTERNS } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES } from '../../data/enemies'
 import { EVOLUTIONS } from '../../data/evolutions'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { STARTER_IDS, STARTERS } from '../../data/starters'
-import { effectiveness } from '../../data/types'
+import { WEATHER, WEATHER_CHIP } from '../../data/weather'
+import { effectiveness, POKE_TYPES } from '../../data/types'
 import { EVENTS, RUN_LENGTH, scaling } from '../../data/waves'
 import { CONSUMABLES } from '../../game/consumables'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
@@ -67,6 +69,37 @@ const run = (locale: Locale, m: SiteMessages) => {
     <p>${r.scaling(scale)}</p>
     <h3>${r.timeline}</h3>
     ${table([r.timeHead, r.eventHead], events)}`
+}
+
+const world = (locale: Locale, m: SiteMessages) => {
+  const w = m.guide.world
+  const game = LOCALES[locale].messages.world
+  const pct = (v: number) => Math.round(v * 1000) / 10
+  const biomes = BIOME_ORDER.map((id, i) => {
+    const odds: Partial<Record<WeatherId, number>> = BIOMES[id].weather
+    const likely = WEATHER_IDS.filter((wid) => (odds[wid] ?? 0) > 0).sort((a, b) => odds[b]! - odds[a]!)
+    return [clock(i * BIOME_LENGTH), game.biomes[id], likely.map((wid) => game.weather[wid]).join(', ')]
+  })
+  // Every effect is read from the weather rules, so the guide follows any rebalance.
+  const effect = (id: Exclude<WeatherId, 'clear'>) => {
+    const def = WEATHER[id]
+    const parts = [
+      ...POKE_TYPES.flatMap((type) => {
+        const mult = def.power?.[type]
+        return mult === undefined ? [] : [w.power(m.types[type], mult)]
+      }),
+      ...(def.chip
+        ? [w.chip(pct(WEATHER_CHIP.enemy), pct(WEATHER_CHIP.boss), pct(WEATHER_CHIP.player), WEATHER_CHIP.every, pct(WEATHER_CHIP.playerFloor), def.chip.immune.map((t) => m.types[t]))]
+        : []),
+      ...(def.sight !== undefined ? [w.fog] : []),
+    ]
+    return parts.join('; ')
+  }
+  const weather = WEATHER_IDS.flatMap((id) => (id === 'clear' ? [] : [[game.weather[id], effect(id)]]))
+  return html`${paragraphs(w.paragraphs(BIOME_ORDER.length, BIOME_LENGTH / 60))}
+    ${table([w.timeHead, w.biomeHead, w.weatherHead], biomes)}
+    <h3>${w.weatherTitle}</h3>
+    ${table([w.weatherCol, w.effectHead], weather)}`
 }
 
 const levels = (locale: Locale, m: SiteMessages) => {
@@ -210,6 +243,7 @@ const settings = (m: SiteMessages) => {
 const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   controls: (_, m) => controls(m),
   run,
+  world,
   levels,
   moveEvolutions,
   special,

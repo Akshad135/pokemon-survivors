@@ -1,5 +1,6 @@
 import { retain } from '../engine/math'
 import { hash2, weightedPick } from '../engine/rng'
+import type { BiomeId } from '../data/biomes'
 import { DROP_TABLES, PROPS, rollDrop, type PropKind } from '../data/consumables'
 import { dropItem } from './consumables'
 import { burst } from './effects'
@@ -74,11 +75,19 @@ const PROP_COLORS: Record<PropKind, readonly string[]> = {
   tallGrass: ['#4f9e48', '#78c060', '#2f7a3a'],
 }
 
+/** Debris where a biome dresses a breakable differently (see `render/props.ts`): rock chips in the cave, snow on Mt. Silver… */
+const BIOME_COLORS: Partial<Record<BiomeId, Partial<Record<PropKind, readonly string[]>>>> = {
+  forest: { berryTree: ['#2f7a30', '#58a040', '#3870d8', '#a06838'], tallGrass: ['#3a7a38', '#5aa048', '#1c4c24'] },
+  cave: { berryTree: ['#c04830', '#f8e8d0', '#e8d8c0'], tallGrass: ['#988870', '#c8b8a0', '#4a3e34'] },
+  snow: { berryTree: ['#2f6a50', '#f0f8ff', '#3870d8'], tallGrass: ['#98b8d0', '#ffffff', '#587890'] },
+  tower: { berryTree: ['#584870', '#8070a0', '#3870d8'], tallGrass: ['#6c6080', '#9890a8', '#3c3448'] },
+}
+
 const hitProp = (g: Game, prop: Prop) => {
   prop.hp--
   prop.hitCooldown = 0.2
   prop.shake = 0.2
-  const colors = PROP_COLORS[prop.kind]
+  const colors = BIOME_COLORS[g.biome.id]?.[prop.kind] ?? PROP_COLORS[prop.kind]
   burst(g, prop.x, prop.y - 6, { colors, count: 4, speed: 50, ttl: 0.3 })
   if (prop.hp > 0) return
   g.brokenProps.add(prop.cell)

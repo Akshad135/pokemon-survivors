@@ -3,10 +3,12 @@ import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
+import type { BiomeId, WeatherId } from '../data/biomes'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
+import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
@@ -14,6 +16,7 @@ import type { Prop } from './props'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
+import type { WeatherState } from './weather'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -221,6 +224,9 @@ export type GameEvent =
   | { kind: 'propBreak' }
   | { kind: 'revive' }
   | { kind: 'victory' }
+  /** The run walked into another biome. */
+  | { kind: 'biome'; biome: BiomeId }
+  | { kind: 'weather'; weather: WeatherId; prev: WeatherId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -271,5 +277,9 @@ export type Game = {
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
   flash: number
+  /** Biome the run is in (`game/biomes.ts`). */
+  biome: BiomeState
+  /** Weather in play (`game/weather.ts`). */
+  weather: WeatherState
   events: GameEvent[]
 }

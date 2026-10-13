@@ -162,6 +162,40 @@ export const pt = {
     revive: 'O *Revive* te pôs de pé!',
   },
 
+  /** Biomes and weather: banners, toasts and the HUD weather icon. */
+  world: {
+    biomes: {
+      meadow: 'Rota 1',
+      forest: 'Floresta de Viridian',
+      cave: 'Monte Moon',
+      snow: 'Monte Prateado',
+      tower: 'Torre de Lavender',
+    },
+    area: (n: number, total: number) => `Área ${n} de ${total}`,
+    weather: { clear: 'Céu limpo', sun: 'Sol forte', rain: 'Chuva', sand: 'Tempestade de areia', snow: 'Neve', fog: 'Névoa' },
+    weatherStart: {
+      sun: 'O sol ficou *forte*!',
+      rain: 'Começou a *chover*!',
+      sand: 'Uma *tempestade de areia* começou!',
+      snow: 'Começou a *nevar*!',
+      fog: 'Uma *névoa densa* cobriu tudo!',
+    },
+    weatherHint: {
+      sun: 'Fogo mais forte, Água mais fraca',
+      rain: 'Água mais forte, Fogo mais fraco',
+      sand: 'Desgasta quem não é Pedra, Terra ou Aço',
+      snow: 'Desgasta quem não é Gelo',
+      fog: 'Difícil enxergar longe',
+    },
+    weatherEnd: {
+      sun: 'O sol voltou ao normal.',
+      rain: 'A chuva parou.',
+      sand: 'A tempestade de areia passou.',
+      snow: 'Parou de nevar.',
+      fog: 'A névoa se dissipou.',
+    },
+  },
+
   moves: {
     ember: {
       description: 'Dispara brasas no inimigo mais próximo. Pode queimar.',

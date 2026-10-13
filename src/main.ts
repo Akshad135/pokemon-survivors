@@ -8,20 +8,24 @@ import { createInput } from './engine/input'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
+import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
 import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
 import { ITEMS } from './data/items'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
+import { setBiome } from './game/biomes'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { runEarnings } from './game/meta'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
+import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
 import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
+import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
@@ -304,16 +308,42 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'victory':
       bankRun(r, true)
       return playSfx('evolve')
+    case 'biome': {
+      const w = t().world
+      playSfx('item')
+      return banner(
+        ui,
+        h('span', { class: 'biome-banner' }, h('small', {}, w.area(BIOME_ORDER.indexOf(e.biome) + 1, BIOME_ORDER.length)), h('b', {}, w.biomes[e.biome])),
+        2800,
+      )
+    }
+    case 'weather':
+      return weatherToast(e.weather, e.prev)
   }
+}
+
+/** Announces a weather change: what started (and what it does), or what just ended. */
+const weatherToast = (next: WeatherId, prev: WeatherId) => {
+  const w = t().world
+  if (next === 'clear') {
+    if (prev !== 'clear') toast(ui, h('span', { class: 'item-toast' }, h('img', { src: weatherIcon(prev), alt: '' }), w.weatherEnd[prev]), 2600)
+    return
+  }
+  playSfx('select')
+  toast(
+    ui,
+    h('span', { class: 'item-toast weather-toast' }, h('img', { src: weatherIcon(next), alt: '' }), h('span', {}, rich(w.weatherStart[next]), h('small', {}, w.weatherHint[next]))),
+    3400,
+  )
 }
 
 /* ---------------- Music ---------------- */
 
-/** Silence until "press start", then menus play the village theme, a run its march, and a living boss takes over until it falls. */
+/** Silence until "press start", then menus play the village theme, a run its biome's theme, and a living boss takes over until it falls. */
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
-  return r.game.bossId !== null ? 'boss' : 'run'
+  return r.game.bossId !== null ? 'boss' : BIOMES[r.game.biome.id].theme
 }
 
 /* ---------------- Global keys ---------------- */
@@ -426,4 +456,18 @@ const boot = () => {
 boot()
 
 // Dev-only handle for poking at the running game from the console.
-if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, showTitle, showMenu, theme: currentTheme } })
+// `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
+if (import.meta.env.DEV) {
+  const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
+  Object.assign(window, {
+    ps: {
+      run: () => run,
+      startRun,
+      showTitle,
+      showMenu,
+      theme: currentTheme,
+      biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
+      weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
+    },
+  })
+}

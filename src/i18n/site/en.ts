@@ -101,6 +101,7 @@ export const siteEn: SiteMessages = {
     sections: {
       controls: 'Controls',
       run: 'The run',
+      world: 'Biomes and weather',
       levels: 'Levels and moves',
       moveEvolutions: 'Move evolutions',
       special: 'Special attack',
@@ -144,6 +145,22 @@ export const siteEn: SiteMessages = {
       ring: (count: number, name: string) => `Ring: a circle of ${count} ${name} closes in on you`,
       boss: (name: string) => `Boss: ${name}`,
       bossChance: (name: string, percent: number) => `Rare boss: ${name} (${n(percent)}% chance)`,
+    },
+    world: {
+      paragraphs: (count, minutes) => [
+        `A run walks through ${count} biomes, ${n(minutes)} minutes each, with no loading screen: the ground dissolves into the next place and every biome has its own music. Breakables change their look too (in the cave, tall grass becomes a rock and the berry tree a giant mushroom).`,
+        'The weather changes a few times per run and applies to everyone: your moves and the enemies\' attacks alike. Each biome has its own likely weather, and the weather icon shows next to the clock.',
+      ],
+      timeHead: 'From',
+      biomeHead: 'Biome',
+      weatherHead: 'Weather (most to least common)',
+      weatherTitle: 'Weather',
+      weatherCol: 'Weather',
+      effectHead: 'Effect',
+      power: (type, mult) => `${type} moves ×${n(mult)}`,
+      chip: (enemy, boss, player, every, floor, immune) =>
+        `every ${n(every)}s, enemies lose ${n(enemy)}% of their max HP (bosses ${n(boss)}%) and you lose ${n(player)}%, but never below ${n(floor)}% HP. ${list(immune)} types are immune`,
+      fog: 'short sight: you only see clearly close to your Pokémon',
     },
     levels: {
       paragraphs: (moves: number, items: number, moveLevel: number) => [

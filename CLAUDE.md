@@ -25,7 +25,7 @@ npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs)
 npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
 ```
 
-In dev builds, the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing), which are handy for staging screenshots.
+In dev builds, the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')` and `ps.weather('rain')` (both hold until the next scheduled change), which are handy for staging screenshots.
 
 ## Assets
 
