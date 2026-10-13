@@ -3,9 +3,13 @@ import { TAU } from '../engine/math'
 import { ENEMIES } from '../data/enemies'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { xpTier } from '../game/pickups'
+import { isAsleep } from '../game/status'
 import type { Attack, Enemy, Game } from '../game/types'
 import { FX, PICKUPS } from './art'
+import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
+import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawStatusBadge, statusTint } from './status'
 import { drawGround } from './world'
 
 type Ctx = CanvasRenderingContext2D
@@ -68,7 +72,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = 1
       return
     }
-    case 'roots': {
+    case 'drumRoots': {
       ctx.globalAlpha = Math.max(0, 1 - a.age / a.ttl)
       dashedRing(ctx, a.x, a.y - 4, r, a.age * 4, ['#78c850', '#a87840', '#58a838'], 0.75)
       for (let i = 0; i < 10; i++) {
@@ -83,6 +87,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = 1
       return
     }
+    default:
+      return drawSpecialGround(ctx, a)
   }
 }
 
@@ -261,23 +267,25 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'whirlpool':
     case 'quake':
-    case 'roots':
+    case 'drumRoots':
       return
+    default:
+      return drawSpecialAttack(ctx, a, t)
   }
 }
 
 /* ---------------- Entities ---------------- */
 
-const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : 'Walk')
+const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) ? 'Idle' : 'Walk')
 
-const drawEnemy = (ctx: Ctx, e: Enemy) => {
+const drawEnemy = (ctx: Ctx, e: Enemy, t: number) => {
   const s = sprites(ENEMIES[e.kind].dex)
   if (e.dying >= 0) {
     const k = e.dying / 0.4
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false })
     return
   }
-  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0 })
+  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id) })
 }
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
@@ -286,8 +294,9 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   const p = g.player
   const s = sprites(playerDex(g))
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
-  const blink = p.iframes > 0 && Math.floor(p.iframes * 20) % 2 === 0
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : 0 })
+  const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
+  const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
+  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging ? 0.6 : 0 })
 
   // GBA-style HP bar under the feet.
   const w = 22
@@ -306,8 +315,12 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
   const candies = PICKUPS.candy()
   for (const k of g.pickups) {
     const bob = k.attracted ? 0 : Math.round(Math.sin(t * 4 + k.id) * 1.2)
-    const sprite = k.kind === 'xp' ? candies[xpTier(k.value)]! : k.kind === 'berry' ? PICKUPS.berry() : PICKUPS.pokeball()
     if (!k.attracted) blitCentered(ctx, ellipse(3, 1, 'rgba(16,40,16,0.25)'), k.x, k.y + 4)
+    if (k.kind === 'consumable') {
+      drawConsumable(ctx, k.item, k.x, k.y + bob, k.id, t)
+      continue
+    }
+    const sprite = k.kind === 'xp' ? candies[xpTier(k.value)]! : k.kind === 'berry' ? PICKUPS.berry() : PICKUPS.pokeball()
     blitCentered(ctx, sprite, k.x, k.y + bob)
   }
 }
@@ -374,6 +387,8 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  drawProps(ctx, g, t)
+  drawSpecialAura(ctx, g, t)
   drawPickups(ctx, g, t)
 
   drawables.length = 0
@@ -387,8 +402,13 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   }
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
-    else drawEnemy(ctx, d)
+    else drawEnemy(ctx, d, t)
   }
+  // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
+  for (const d of drawables) {
+    if (d !== 'player' && d.boss && d.dying < 0) drawStatusBadge(ctx, d.status, d.x, d.y - sprites(ENEMIES[d.kind].dex).bodyH - 5)
+  }
+  drawSleep(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
 
@@ -406,5 +426,6 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
+  drawFlash(ctx, g)
   if (g.phase === 'evolving') drawEvolution(ctx, g, t)
 }

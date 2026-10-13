@@ -5,11 +5,13 @@ import { REGIONS, STARTERS, type StarterDef, type StarterId } from '../data/star
 import { TYPE_COLORS } from '../data/types'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
+import { resolveSpecial, type SpecialKind } from '../game/special'
 import type { PlayerStats } from '../game/stats'
 import { moveIcon, PICKUPS } from '../render/art'
+import { specialIcon } from '../render/specialFx'
 import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { h } from './dom'
-import { typeBadge, type Screen } from './screens'
+import { hint, typeBadge, type Screen } from './screens'
 
 /** Bars of the inspect panel: label, value getter and the range mapped to an empty/full bar. */
 const STAT_BARS = [
@@ -31,6 +33,25 @@ const moveRow = (id: MoveId, signature: boolean) => {
     { class: signature ? 'move-row signature' : 'move-row' },
     h('img', { src: moveIcon(id), alt: '' }),
     h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, def.name, signature && h('span', { class: 'tag tag-new' }, 'INICIAL')), h('div', { class: 'move-desc' }, def.description)),
+    typeBadge(def.type),
+  )
+}
+
+const SPECIAL_DESC = {
+  dash: 'Investida em chamas que deixa um rastro de fogo.',
+  beam: 'Jato concentrado na direção em que você anda.',
+  roots: 'Anéis de raízes brotam do chão e desaceleram.',
+  nova: 'Onda de choque ao redor que empurra tudo.',
+} as const satisfies Record<SpecialKind, string>
+
+/** The manual special (Space / round button): base move, upgraded at the final stage. */
+const specialRow = (id: StarterId) => {
+  const { id: special, def } = resolveSpecial(id, 0)
+  return h(
+    'div',
+    { class: 'move-row signature' },
+    h('img', { src: specialIcon(special), alt: '' }),
+    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${def.base.name} → ${def.final.name}`), h('div', { class: 'move-desc' }, SPECIAL_DESC[def.kind])),
     typeBadge(def.type),
   )
 }
@@ -88,6 +109,8 @@ const inspectPanel = (id: StarterId, stage: number, onStage: (stage: number) => 
     h('div', { class: 'stat-bars' }, ...bars),
     h('div', { class: 'inspect-section' }, 'Evolução'),
     h('div', { class: 'evo-line' }, ...evo),
+    h('div', { class: 'inspect-section' }, 'Especial', h('span', { class: 'legend' }, 'ESPAÇO')),
+    specialRow(id),
     h('div', { class: 'inspect-section' }, 'Golpes'),
     h('div', { class: 'move-list' }, ...s.learnset.map((m) => moveRow(m, m === s.signature))),
   )
@@ -211,7 +234,7 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
         { class: 'select-main' },
         h('div', { class: 'region-tabs', role: 'tablist' }, ...tabs),
         h('div', { class: 'starters' }, ...cards),
-        h('p', { class: 'hint' }, '← → parceiro · ↑ ↓ região · ENTER escolher'),
+        hint('← → parceiro · ↑ ↓ região · ENTER escolher', 'Toque para ver · toque de novo para escolher'),
       ),
       inspect,
       h('div', { class: 'select-footer' }, confirmBtn),

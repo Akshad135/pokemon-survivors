@@ -22,12 +22,12 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   return canvas
 }
 
-const lazy = <T>(build: () => T) => {
+export const lazy = <T>(build: () => T) => {
   let value: T | undefined
   return () => (value ??= build())
 }
 
-const art = (rows: readonly string[], palette: Palette, outline?: string) => {
+export const art = (rows: readonly string[], palette: Palette, outline?: string) => {
   const sprite = fromStrings(rows, palette)
   return outline ? outlined(sprite, outline) : sprite
 }
@@ -150,13 +150,15 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   choiceScarf: [['11111111', '12222221', '11111221', '....1221', '....1221', '...12221', '...1..11'], { 1: '#a03060', 2: '#f878b0' }],
   luckyEgg: [['..111..', '.12221.', '1222221', '1232321', '1222221', '1222221', '.12221.', '..111..'], { 1: '#a07850', 2: '#f8f0d8', 3: '#f87878' }],
   magnet: [['33....44', '33....44', '11....11', '11....11', '11....11', '.11..11.', '..1111..'], { 1: '#808088', 3: '#e83030', 4: '#3060e0' }],
+  kingsRock: [['3...3...3', '2...2...2', '22.222.22', '222242222', '211111112', '222222222'], { 1: '#c89000', 2: '#f8d830', 3: '#f8f8c0', 4: '#e83838' }],
+  toxicOrb: [['..1111..', '.122221.', '12233221', '12322321', '12232321', '12223321', '.122221.', '..1111..'], { 1: '#502060', 2: '#a040c0', 3: '#e0a0f8' }],
   assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
 }
 
 const iconCache = new Map<string, string>()
 
 /** Icon as a data URL, padded to a square so it scales uniformly in the DOM. */
-const toIconUrl = (key: string, build: () => PixelSprite) => {
+export const toIconUrl = (key: string, build: () => PixelSprite) => {
   const cached = iconCache.get(key)
   if (cached) return cached
   const sprite = build()

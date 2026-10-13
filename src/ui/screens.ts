@@ -4,10 +4,12 @@ import type { Input } from '../engine/input'
 import { ITEMS } from '../data/items'
 import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
+import { maxMoveLevel, MOVES, type MoveDef } from '../game/moves'
 import { playerDex } from '../game/game'
-import type { Game, Offer } from '../game/types'
+import { resolveSpecial } from '../game/special'
+import type { DamageSource, Game, Offer } from '../game/types'
 import { berryIcon, itemIcon, moveIcon } from '../render/art'
+import { specialIcon } from '../render/specialFx'
 import { sprites } from '../render/sprites'
 import { h } from './dom'
 
@@ -15,12 +17,20 @@ export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () 
 
 export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
 
+/** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
+const TAP_GUARD_MS = 350
+
+/** Hint that swaps between keyboard and touch wording (see `.keys-only` / `.touch-only` in CSS). */
+export const hint = (keys: string, touch: string) =>
+  h('p', { class: 'hint' }, h('span', { class: 'keys-only' }, keys), h('span', { class: 'touch-only' }, touch))
+
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
  */
 const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
   let index = opts.initial ?? 0
+  const openedAt = performance.now()
   const focus = (i: number, sound = true) => {
     index = (i + buttons.length) % buttons.length
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
@@ -28,7 +38,7 @@ const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => voi
   }
   buttons.forEach((b, i) => {
     b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => activate(i))
+    b.addEventListener('click', () => performance.now() - openedAt > TAP_GUARD_MS && activate(i))
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
@@ -90,8 +100,10 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   })
 
   let done = false
+  // Space also fires the special attack: ignore presses that were meant for the fight.
+  const openedAt = performance.now()
   const nav = menu(input, buttons, (i) => {
-    if (done) return
+    if (done || performance.now() - openedAt < 400) return
     done = true
     playSfx('select')
     onChoose(g.offers[i]!)
@@ -105,7 +117,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
       { class: 'dialog box pop' },
       h('div', { class: 'dialog-title' }, `${name} subiu para o Nv ${g.player.level - g.pendingLevelUps + 1}!`),
       h('div', { class: 'offers' }, ...buttons),
-      h('p', { class: 'hint' }, '↑ ↓ escolher · ENTER confirmar · 1-3 atalho'),
+      hint('↑ ↓ escolher · ENTER confirmar · 1-3 atalho', 'Toque para escolher'),
     ),
   )
   root.append(el)
@@ -174,10 +186,17 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, onResume: ()
 
 /* ---------------- Results ---------------- */
 
+/** Icon, name and type for a results-screen damage row. */
+const damageSource = (g: Game, id: DamageSource) => {
+  if (id !== 'special') return { icon: moveIcon(id), name: MOVES[id].name, type: MOVES[id].type }
+  const r = resolveSpecial(g.starter, g.player.stage)
+  return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
+}
+
 export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void): Screen => {
   const victory = g.phase === 'victory'
   const name = STARTERS[g.starter].line[g.player.stage]!.name
-  const entries = (Object.entries(g.damageByMove) as Array<[MoveId, number]>).sort((a, b) => b[1] - a[1])
+  const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const retry = h('button', { class: 'btn' }, 'Tentar de novo')
   const back = h('button', { class: 'btn' }, 'Trocar Pokémon')
@@ -201,16 +220,17 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
       h(
         'div',
         { class: 'damage-list' },
-        ...entries.map(([id, dmg]) =>
-          h(
+        ...entries.map(([id, dmg]) => {
+          const src = damageSource(g, id)
+          return h(
             'div',
             { class: 'damage-row' },
-            h('img', { src: moveIcon(id), alt: '' }),
-            h('span', { class: 'damage-name' }, MOVES[id].name),
-            h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[MOVES[id].type]}` })),
+            h('img', { src: src.icon, alt: '' }),
+            h('span', { class: 'damage-name' }, src.name),
+            h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[src.type]}` })),
             h('b', {}, Math.round(dmg).toLocaleString('pt-BR')),
-          ),
-        ),
+          )
+        }),
       ),
       h('div', { class: 'buttons' }, retry, back),
     ),

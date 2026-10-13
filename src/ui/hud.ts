@@ -5,19 +5,27 @@ import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
 import { itemIcon, moveIcon, pokeballIcon } from '../render/art'
+import { consumableIcon } from '../render/props'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
+import { createSpecialControls } from './specialButton'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
 
-/** In-run heads-up display. `update` is called every frame and only touches what changed. */
-export const createHud = (root: HTMLElement) => {
+/**
+ * In-run heads-up display. `update` is called every frame and only touches what changed.
+ * `onSpecial` fires when the touch special button is pressed; `onPause` backs the
+ * on-screen pause button (phones have no Esc key).
+ */
+export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () => void) => {
+  const special = createSpecialControls(onSpecial)
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
   const timer = h('div', { class: 'timer' })
   const kills = h('span')
   const moveSlots = h('div', { class: 'slots' })
   const itemSlots = h('div', { class: 'slots' })
+  const buffs = h('div', { class: 'buffs' })
   const bossName = h('div', { class: 'boss-name' })
   const bossFill = h('div', { class: 'boss-fill' })
   const boss = h('div', { class: 'boss hidden' }, bossName, h('div', { class: 'boss-bar' }, bossFill))
@@ -26,6 +34,12 @@ export const createHud = (root: HTMLElement) => {
   const level = h('div', { class: 'status-level' })
   const hpFill = h('div', { class: 'hp-fill' })
   const hpText = h('div', { class: 'status-hp-text' })
+  // pointerdown (not click) feels instant on touch and never steals keyboard focus.
+  const pause = h('button', { class: 'pause-btn box', 'aria-label': 'Pausar' }, h('span'), h('span'))
+  pause.addEventListener('pointerdown', (e) => {
+    e.preventDefault()
+    onPause()
+  })
 
   const el = h(
     'div',
@@ -34,9 +48,9 @@ export const createHud = (root: HTMLElement) => {
     h(
       'div',
       { class: 'hud-row' },
-      h('div', { class: 'loadout' }, moveSlots, itemSlots),
+      h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots, buffs), special.badge),
       timer,
-      h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills),
+      h('div', { class: 'hud-right' }, h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills), pause),
     ),
     boss,
     h(
@@ -51,11 +65,27 @@ export const createHud = (root: HTMLElement) => {
         hpText,
       ),
     ),
+    special.button,
   )
   root.append(el)
 
   let loadoutKey = ''
+  let buffKey = ''
+  let buffFills: HTMLElement[] = []
   let dex = 0
+
+  /** Timed buffs (icon + draining bar) and a held Revive. Rebuilt only when the set changes. */
+  const renderBuffs = (g: Game) => {
+    buffFills = []
+    buffs.replaceChildren(
+      ...g.buffs.map((b) => {
+        const fill = h('div', { class: 'buff-fill' })
+        buffFills.push(fill)
+        return h('div', { class: 'buff' }, h('img', { src: consumableIcon(b.id), alt: '' }), h('div', { class: 'buff-bar' }, fill))
+      }),
+      ...(g.revives > 0 ? [h('div', { class: 'buff revive', title: 'Revive' }, h('img', { src: consumableIcon('revive'), alt: '' }))] : []),
+    )
+  }
 
   const renderSlots = (g: Game) => {
     const p = g.player
@@ -79,12 +109,25 @@ export const createHud = (root: HTMLElement) => {
     setText(xpLabel, `Nv ${p.level}`)
     setText(timer, formatTime(g.time))
     setText(kills, String(g.kills))
+    special.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
     if (key !== loadoutKey) {
       loadoutKey = key
       renderSlots(g)
     }
+
+    const bkey = `${g.buffs.map((b) => b.id).join()}|${g.revives}`
+    if (bkey !== buffKey) {
+      buffKey = bkey
+      renderBuffs(g)
+    }
+    g.buffs.forEach((b, i) => {
+      const fill = buffFills[i]
+      if (!fill) return
+      setStyle(fill, 'width', `${((b.left / b.total) * 100).toFixed(1)}%`)
+      fill.parentElement!.parentElement!.classList.toggle('ending', b.left < 3)
+    })
 
     const currentDex = playerDex(g)
     if (currentDex !== dex) {
@@ -95,7 +138,8 @@ export const createHud = (root: HTMLElement) => {
     setText(level, `Nv${p.level}`)
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
     setStyle(hpFill, 'width', `${(ratio * 100).toFixed(1)}%`)
-    hpFill.className = `hp-fill ${hpClass(ratio)}`
+    const fillClass = `hp-fill ${hpClass(ratio)}`
+    if (hpFill.className !== fillClass) hpFill.className = fillClass
     setText(hpText, `${Math.ceil(p.hp)}/${Math.round(p.stats.maxHp)}`)
 
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
