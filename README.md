@@ -10,7 +10,7 @@ npm run build      # typecheck + production build
 npm run assets     # re-download sprites/cries (already committed in public/)
 ```
 
-**Controls:** WASD/arrows (or drag on touch screens) · `Space` special attack (round button on touch screens, A/✕ on a gamepad) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade.
+**Controls:** WASD/arrows · `Space` special attack (A/✕ on a gamepad) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade. On phones: drag anywhere for the floating joystick, tap the round button (bottom right) for the special and the pause button (top right) to pause. Installable to the home screen (fullscreen web app).
 
 ## Stack
 

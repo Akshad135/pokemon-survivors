@@ -4,6 +4,7 @@
  */
 type Wave = OscillatorType
 
+const MASTER_VOLUME = 0.35
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
 let muted = localStorage.getItem('ps:muted') === '1'
@@ -13,10 +14,11 @@ const audio = () => {
   if (!ctx) {
     ctx = new AudioContext()
     master = ctx.createGain()
-    master.gain.value = muted ? 0 : 0.35
+    master.gain.value = muted ? 0 : MASTER_VOLUME
     master.connect(ctx.destination)
   }
-  if (ctx.state === 'suspended') void ctx.resume()
+  // iOS reports 'interrupted' after calls or app switches; anything but running needs a resume.
+  if (ctx.state !== 'running') void ctx.resume().catch(() => {})
   return { ctx, master: master! }
 }
 
@@ -91,21 +93,63 @@ export const playSfx = (name: Sfx, minGapMs = 40) => {
   SFX[name]()
 }
 
+const cries = new Map<string, Promise<AudioBuffer | null>>()
+
+/** Decodes a cry once. `null` means this browser can't decode it in WebAudio (old Safari + .ogg). */
+const loadCry = (url: string) => {
+  let buffer = cries.get(url)
+  if (!buffer) {
+    buffer = fetch(url)
+      .then((r) => r.arrayBuffer())
+      .then((data) => audio().ctx.decodeAudioData(data))
+      .catch(() => null)
+    cries.set(url, buffer)
+  }
+  return buffer
+}
+
+/**
+ * Plays a cry through the (already unlocked) AudioContext, so iOS doesn't
+ * block it outside a gesture. Falls back to an <audio> element.
+ */
 export const playCry = (url: string, volume = 0.35) => {
   if (muted) return
-  const el = new Audio(url)
-  el.volume = volume
-  void el.play().catch(() => {})
+  void loadCry(url).then((buffer) => {
+    if (!buffer) {
+      const el = new Audio(url)
+      el.volume = volume
+      return void el.play().catch(() => {})
+    }
+    const { ctx, master } = audio()
+    const src = ctx.createBufferSource()
+    const gain = ctx.createGain()
+    src.buffer = buffer
+    gain.gain.value = volume / MASTER_VOLUME
+    src.connect(gain).connect(master)
+    src.start()
+  })
 }
 
 export const toggleMute = () => {
   muted = !muted
   localStorage.setItem('ps:muted', muted ? '1' : '0')
-  if (master) master.gain.value = muted ? 0 : 0.35
+  if (master) master.gain.value = muted ? 0 : MASTER_VOLUME
   return muted
 }
 
 export const isMuted = () => muted
 
-/** Must be called from a user gesture to unlock audio on Safari/Chrome. */
-export const unlockAudio = () => void audio()
+/**
+ * Must be called from a user gesture to unlock audio. On touch, only
+ * pointerup/touchend count as activation (not pointerdown), so the shell
+ * listens to those. Until the context runs, each call also plays a silent
+ * buffer, which older iOS needs before WebAudio makes any sound.
+ */
+export const unlockAudio = () => {
+  const { ctx } = audio()
+  if (ctx.state === 'running') return
+  const src = ctx.createBufferSource()
+  src.buffer = ctx.createBuffer(1, 1, 22050)
+  src.connect(ctx.destination)
+  src.start(0)
+}
