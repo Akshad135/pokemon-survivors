@@ -4,12 +4,14 @@ import { createGrid } from '../engine/spatial'
 import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
+import { createBiome, updateBiome } from './biomes'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
+import { createMapEvents, updateMapEvents } from './mapEvents'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { MOVES, moveStats } from './moves'
 import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
@@ -21,6 +23,8 @@ import { updateArena } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
+import { createWeather, updateWeather } from './weather'
+import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
 
@@ -83,8 +87,12 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     props: [],
     brokenProps: new Set(),
     buffs: [],
+    mapEvents: createMapEvents(),
     revives: 0,
     flash: 0,
+    biome: createBiome(),
+    weather: createWeather(),
+    traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
     endless: null,
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
@@ -191,6 +199,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   }
 
   g.time += dt
+  updateBiome(g)
+  updateWeather(g, dt)
   // Inside a rift arena the horde and the map wait outside: no spawns, no props.
   const inArena = g.rift.arena !== null
   updatePlayer(g, input.move, dt)
@@ -205,9 +215,13 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateArena(g, dt)
   updateEndless(g)
   rebuildGrid(g)
+  updateTraits(g, dt)
   updateMoves(g, dt)
   updateAttacks(g, dt)
-  if (!inArena) updateProps(g, dt)
+  if (!inArena) {
+    updateProps(g, dt)
+    updateMapEvents(g, dt)
+  }
   updatePickups(g, dt)
   updateConsumables(g, dt)
   updateEffects(g, dt)

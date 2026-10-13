@@ -5,6 +5,7 @@ import { hurtPlayer } from './combat'
 import { burst } from './effects'
 import { isAsleep } from './status'
 import type { Enemy, Game, Hazard } from './types'
+import { HAZARD_TYPES } from './weather'
 
 type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 'ttl'> & Partial<Hazard>
 
@@ -124,7 +125,7 @@ export const updateHazards = (g: Game, dt: number) => {
     if (h.age < h.armAt || h.age > h.disarmAt) continue
     const reach = h.r + p.radius * 0.7
     if ((h.x - p.x) ** 2 + (h.y - p.y) ** 2 >= reach * reach) continue
-    hurtPlayer(g, h.damage)
+    hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual])
     if (h.vanishOnHit) h.age = h.ttl
   }
   retain(g.hazards, (h) => h.age < h.ttl)

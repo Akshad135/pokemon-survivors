@@ -101,9 +101,12 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Legendary rifts**: a few times per run a rift opens on the map. Step in to duel Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena for big rewards, before it collapses.
 - **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
+- **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.
+- **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
+- **Map events** that make you pick where to go: buff altars, healing fountains, locked chests (stand in the ring while an ambush closes in), spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins. Off-screen ones get an arrow on the screen edge.
 - **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
-- **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, a march for the run, and a boss theme while a boss is alive.
+- **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
 
@@ -134,7 +137,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
 
 ## How it's built
 
@@ -143,16 +146,17 @@ Vite + TypeScript and Canvas 2D, with no game engine. Everything is plain data p
 ```
 src/
   engine/   math, seeded rng, spatial hash, input, WebAudio sfx and music synth, pixel-art helpers
-  data/     pure game data: starters, enemies, waves, held items, move evolutions, type chart, music scores
+  data/     pure game data: starters, enemies, waves, biomes, weather, held items, move evolutions, type chart, music scores
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
             status.ts (pure condition rules) · statusSystem.ts (DoT ticks, particles)
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
-            bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
+            mapEvents.ts (event director, altars, chests, traps, Meowth) · mapEventRules.ts (their pure rules)
+            bosses.ts (boss attack patterns, enemy hazards) · shiny.ts · biomes.ts · weather.ts
             rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
             endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
-  render/   PMD sprite loader, code-drawn pixel art, procedural meadow, title scene and logo, frame renderer
+  render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
   ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
@@ -165,6 +169,7 @@ src/
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
 - **Waves** live in `data/waves.ts`: spawn stages by time, plus events (flyby swarms, closing rings, bosses, optionally rare via `chance`).
 - **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/dex.mjs`.
+- **Map events** are data in `MAP_EVENTS` (`game/mapEvents.ts`): each kind has a spawn rule for the event director (earliest time, weight, max alive, lifetime, distance), a `create` for its state, an `update` with the interaction and reward, and optional `enter`/`expire` hooks. To add one, add its state to `MapEventStates`, its definition, its art in `render/mapEvents.ts` (plus an arrow in `MARKER` if it's important) and, if it talks to the player, a `MapEventNotice` handled in `ui/mapEvents.ts`.
 - **Rifts** keep the map side (`riftPortal.ts`: a portal opens, the player stands in it) apart from the arena (`riftArena.ts`). Entering sets the world aside (horde, hazards, pickups, props) and leaving puts it back; the run clock keeps going. Legendaries, arena looks and timings live in `data/rifts.ts`.
 - **Endless mode** starts from the victory screen (`continueEndless`). `endlessPressure` raises the spawn rate past 15:00 and `endlessSystem.ts` runs rings, swarms and the reaper.
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
@@ -173,6 +178,7 @@ src/
 - **Languages:** Brazilian Portuguese and English, picked from the browser language and switchable on the title screen (`PT | EN`, or `I`) and in Settings (pause menu). Text lives in `src/i18n`: `pt.ts` is the reference and its inferred type forces `en.ts` to match it, down to one line per move upgrade. Data files keep only the official English names. Toast strings use light markup (`*bold*`, `_accent_`) so each language can put names where its grammar wants them.
 - **Type chart:** damage uses real Pokémon type matchups, softened (2x → 1.5x, 0x → 0.5x). Yellow numbers with `!` mean super effective.
 - **Music** is code: `data/music.ts` holds the scores in a small tracker notation (`engine/score.ts`) and `engine/music.ts` plays them on two pulse channels, a triangle bass and a noise kit. The shell picks the theme each frame (`playTheme`). Music and effects have separate buses in `engine/audio.ts`, so music always sits under effects and cries.
+- **Biomes and weather:** `data/biomes.ts` holds the biome order (equal slices of the run), each biome's weather odds, theme and `affinity` (the types that feel at home there, meant to weight the enemy draw). `game/biomes.ts` follows the schedule and `game/weather.ts` rolls weather spells and applies their rules (`data/weather.ts`): `weatherBoost`/`weatherPower` multiply damage by attack type in `combat.ts` (player moves, enemy bodies by their types, boss hazards by `HAZARD_TYPES`), and sandstorm/snow wear down anyone not immune. The ground and breakables are drawn per biome in `render/world.ts` and `render/props.ts`, the overlays in `render/weather.ts`.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
 
 </details>
@@ -180,7 +186,6 @@ src/
 ## Roadmap
 
 - Evolutions for the newer signature moves (Mach Punch, Spirit Shackle, Pyro Ball…).
-- Biomes (cave, forest, Lavender Town).
 - Custom effects/tiles.
 
 ## Contributing

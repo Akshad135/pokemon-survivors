@@ -1,14 +1,18 @@
+import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
 import { BOSS_PATTERNS } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
-import { ENEMIES } from '../../data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { EVOLUTIONS } from '../../data/evolutions'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { STARTER_IDS, STARTERS } from '../../data/starters'
-import { effectiveness } from '../../data/types'
+import { WEATHER, WEATHER_CHIP } from '../../data/weather'
+import { effectiveness, POKE_TYPES } from '../../data/types'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { EVENTS, RUN_LENGTH, scaling } from '../../data/waves'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
+import { MAP_EVENTS } from '../../game/mapEvents'
+import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
@@ -22,7 +26,7 @@ import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
 import { clock, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
-import { patternText, typeBadge } from './pokedex'
+import { patternText, traitText, typeBadge } from './pokedex'
 
 type Section = keyof SiteMessages['guide']['sections']
 
@@ -70,6 +74,37 @@ const run = (locale: Locale, m: SiteMessages) => {
     <p>${r.scaling(scale)}</p>
     <h3>${r.timeline}</h3>
     ${table([r.timeHead, r.eventHead], events)}`
+}
+
+const world = (locale: Locale, m: SiteMessages) => {
+  const w = m.guide.world
+  const game = LOCALES[locale].messages.world
+  const pct = (v: number) => Math.round(v * 1000) / 10
+  const biomes = BIOME_ORDER.map((id, i) => {
+    const odds: Partial<Record<WeatherId, number>> = BIOMES[id].weather
+    const likely = WEATHER_IDS.filter((wid) => (odds[wid] ?? 0) > 0).sort((a, b) => odds[b]! - odds[a]!)
+    return [clock(i * BIOME_LENGTH), game.biomes[id], likely.map((wid) => game.weather[wid]).join(', ')]
+  })
+  // Every effect is read from the weather rules, so the guide follows any rebalance.
+  const effect = (id: Exclude<WeatherId, 'clear'>) => {
+    const def = WEATHER[id]
+    const parts = [
+      ...POKE_TYPES.flatMap((type) => {
+        const mult = def.power?.[type]
+        return mult === undefined ? [] : [w.power(m.types[type], mult)]
+      }),
+      ...(def.chip
+        ? [w.chip(pct(WEATHER_CHIP.enemy), pct(WEATHER_CHIP.boss), pct(WEATHER_CHIP.player), WEATHER_CHIP.every, pct(WEATHER_CHIP.playerFloor), def.chip.immune.map((t) => m.types[t]))]
+        : []),
+      ...(def.sight !== undefined ? [w.fog] : []),
+    ]
+    return parts.join('; ')
+  }
+  const weather = WEATHER_IDS.flatMap((id) => (id === 'clear' ? [] : [[game.weather[id], effect(id)]]))
+  return html`${paragraphs(w.paragraphs(BIOME_ORDER.length, BIOME_LENGTH / 60))}
+    ${table([w.timeHead, w.biomeHead, w.weatherHead], biomes)}
+    <h3>${w.weatherTitle}</h3>
+    ${table([w.weatherCol, w.effectHead], weather)}`
 }
 
 const levels = (locale: Locale, m: SiteMessages) => {
@@ -199,6 +234,15 @@ const rifts = (locale: Locale, m: SiteMessages) => {
     )}`
 }
 
+const traits = (locale: Locale, m: SiteMessages) => {
+  const t = m.guide.traits
+  const rows = (Object.keys(ENEMIES) as EnemyId[]).flatMap((id) => {
+    const { trait }: EnemyDef = ENEMIES[id]
+    return trait ? [[bossName(locale, id), m.traits.names[trait], html`${traitText(trait, id, m)} <em>${m.traits.tips[trait]}</em>`]] : []
+  })
+  return html`${paragraphs(t.paragraphs)}${table([t.pokemonHead, t.traitHead, t.effectHead], rows)}`
+}
+
 const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
   return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player)))}
@@ -217,6 +261,22 @@ const items = (m: SiteMessages) => {
     ${table([i.sourceHead, i.hitsHead], props)}
     <p class="note">${i.enemyNote(ENEMY_BERRY_CHANCE * 100, ENEMY_DROP_CHANCE * 100)}</p>
     ${table([i.itemHead, i.effectHead, i.whereHead], drops.map((d) => [nameOf(d), i.effects[d], where(d).join(', ')]))}`
+}
+
+const mapEvents = (m: SiteMessages) => {
+  const e = m.guide.mapEvents
+  const money = (coins: readonly number[]) => `₽${coins.reduce((a, b) => a + b, 0).toLocaleString(m.lang.tag)}`
+  const rows = [
+    [e.altar.name, e.altar.how, e.altar.reward(ALTAR.boost)],
+    [e.fountain.name, e.fountain.how(FOUNTAIN.charges, FOUNTAIN.interval), e.fountain.reward(FOUNTAIN.heal * 100)],
+    [e.chest.name, e.chest.how(CHEST.unlock), e.chest.reward(money(chestCoins(0)))],
+    [e.spikes.name, e.spikes.how, e.spikes.reward],
+    [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
+    [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
+  ]
+  const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
+  return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>
+    ${table([e.eventHead, e.howHead, e.rewardHead], rows)}`
 }
 
 const mart = (locale: Locale, m: SiteMessages) => {
@@ -241,14 +301,17 @@ const settings = (m: SiteMessages) => {
 const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   controls: (_, m) => controls(m),
   run,
+  world,
   levels,
   moveEvolutions,
   special,
   types: (_, m) => types(m),
   bosses,
+  traits,
   rifts,
   shinies,
   items: (_, m) => items(m),
+  mapEvents: (_, m) => mapEvents(m),
   mart,
   settings: (_, m) => settings(m),
 }

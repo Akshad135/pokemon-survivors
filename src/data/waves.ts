@@ -23,13 +23,13 @@ export const RUN_LENGTH = 15 * 60
 
 export const STAGES: readonly WaveStage[] = [
   { until: 60, rate: 1.4, max: 40, pool: [['rattata', 5], ['caterpie', 4], ['pidgey', 3]] },
-  { until: 120, rate: 2.2, max: 70, pool: [['rattata', 4], ['pidgey', 4], ['weedle', 4], ['spearow', 2]] },
-  { until: 180, rate: 3, max: 100, pool: [['spearow', 3], ['ekans', 4], ['zubat', 3], ['oddish', 4]] },
-  { until: 300, rate: 3.6, max: 130, pool: [['oddish', 3], ['paras', 4], ['venonat', 4], ['mankey', 2], ['zubat', 2]] },
-  { until: 420, rate: 4.2, max: 160, pool: [['mankey', 4], ['machop', 3], ['geodude', 2], ['gastly', 3]] },
-  { until: 600, rate: 5, max: 200, pool: [['gastly', 4], ['koffing', 3], ['machop', 4], ['venonat', 2], ['geodude', 2]] },
-  { until: 780, rate: 6, max: 250, pool: [['machop', 4], ['geodude', 4], ['koffing', 4], ['mankey', 3], ['gastly', 3]] },
-  { until: Infinity, rate: 7.5, max: 300, pool: [['geodude', 5], ['machop', 5], ['koffing', 4], ['gastly', 4]] },
+  { until: 120, rate: 2.2, max: 70, pool: [['rattata', 4], ['pidgey', 4], ['weedle', 4], ['spearow', 2], ['voltorb', 1]] },
+  { until: 180, rate: 3, max: 100, pool: [['spearow', 3], ['ekans', 4], ['zubat', 3], ['oddish', 4], ['voltorb', 1], ['magnemite', 1]] },
+  { until: 300, rate: 3.6, max: 130, pool: [['oddish', 3], ['paras', 4], ['venonat', 4], ['mankey', 2], ['zubat', 2], ['magnemite', 1], ['voltorb', 1], ['chansey', 1]] },
+  { until: 420, rate: 4.2, max: 160, pool: [['mankey', 4], ['machop', 3], ['geodude', 2], ['gastly', 3], ['hitmonlee', 1], ['chansey', 1], ['magnemite', 1]] },
+  { until: 600, rate: 5, max: 200, pool: [['gastly', 4], ['koffing', 3], ['machop', 4], ['venonat', 2], ['geodude', 2], ['bronzong', 1], ['hitmonlee', 1], ['voltorb', 1]] },
+  { until: 780, rate: 6, max: 250, pool: [['machop', 4], ['geodude', 4], ['koffing', 4], ['mankey', 3], ['gastly', 3], ['electrode', 1], ['bronzong', 1], ['nidoqueen', 1], ['chansey', 1]] },
+  { until: Infinity, rate: 7.5, max: 300, pool: [['geodude', 5], ['machop', 5], ['koffing', 4], ['gastly', 4], ['electrode', 1], ['nidoqueen', 1], ['bronzong', 1], ['hitmonlee', 1]] },
 ]
 
 /** Sorted by `at`. Events sharing a time run in list order (the last boss gets the HP bar). */
@@ -38,6 +38,7 @@ export const EVENTS: readonly WaveEvent[] = [
   { at: 150, kind: 'boss', enemy: 'onix' },
   { at: 165, kind: 'swarm', enemy: 'zubat', count: 24 },
   { at: 240, kind: 'ring', enemy: 'oddish', count: 28 },
+  { at: 270, kind: 'ring', enemy: 'voltorb', count: 10 },
   { at: 300, kind: 'boss', enemy: 'snorlax' },
   { at: 390, kind: 'swarm', enemy: 'zubat', count: 36 },
   { at: 420, kind: 'boss', enemy: 'articuno' },

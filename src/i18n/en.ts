@@ -136,6 +136,47 @@ export const en: Messages = {
     revive: 'Your *Revive* got you back on your feet!',
   },
 
+  world: {
+    biomes: {
+      meadow: 'Route 1',
+      forest: 'Viridian Forest',
+      cave: 'Mt. Moon',
+      snow: 'Mt. Silver',
+      tower: 'Lavender Tower',
+    },
+    area: (n, total) => `Area ${n} of ${total}`,
+    weather: { clear: 'Clear skies', sun: 'Harsh sunlight', rain: 'Rain', sand: 'Sandstorm', snow: 'Snow', fog: 'Fog' },
+    weatherStart: {
+      sun: 'The sunlight turned *harsh*!',
+      rain: 'It started to *rain*!',
+      sand: 'A *sandstorm* kicked up!',
+      snow: 'It started to *snow*!',
+      fog: 'A *thick fog* rolled in!',
+    },
+    weatherHint: {
+      sun: 'Fire hits harder, Water weaker',
+      rain: 'Water hits harder, Fire weaker',
+      sand: 'Wears down anyone not Rock, Ground or Steel',
+      snow: 'Wears down anyone not Ice',
+      fog: 'Hard to see far',
+    },
+    weatherEnd: {
+      sun: 'The sunlight faded.',
+      rain: 'The rain stopped.',
+      sand: 'The sandstorm subsided.',
+      snow: 'The snow stopped.',
+      fog: 'The fog lifted.',
+    },
+  },
+  mapEvents: {
+    altar: (buff) => `The altar granted *${buff}*!`,
+    fountain: 'The fountain restores your HP. Stay in it!',
+    chestAmbush: "A locked chest! Stay close to open it… _it's an ambush_!",
+    chestOpen: (coins) => `Chest opened: *${coins}*, an item and a Poké Ball!`,
+    meowth: 'A *Meowth* ran by with coins! Hit it!',
+    payDay: (coins) => `*Pay Day!* Meowth dropped ${coins}!`,
+    meowthEscaped: '*Meowth* got away…',
+  },
   rifts: {
     open: 'A *legendary rift* opened! Follow the arrow.',
     closed: 'The rift closed.',
@@ -562,5 +603,14 @@ export const en: Messages = {
     beam: 'A focused blast in the direction you move.',
     roots: 'Rings of roots burst from the ground and slow foes.',
     nova: 'A shockwave all around you that pushes everything back.',
+  },
+
+  traits: {
+    healer: (name: string) => `*${name}* heals nearby allies. Take it down first!`,
+    shield: (name: string) => `*${name}* wards its allies with a _shield_ that soaks damage.`,
+    summoner: (name: string) => `*${name}* calls in reinforcements every few seconds.`,
+    kamikaze: (name: string) => `*${name}* blinks and _explodes_! Get out of the red circle.`,
+    beam: (name: string) => `*${name}* aims a _beam_: step off the line on the ground!`,
+    leaper: (name: string) => `*${name}* leaps over the horde: dodge the _shadow_!`,
   },
 }

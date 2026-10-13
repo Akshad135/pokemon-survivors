@@ -1,10 +1,11 @@
 import { dir8, dirTo, retain } from '../engine/math'
 import { clearGrid, insert, query } from '../engine/spatial'
-import { ENEMIES, type EnemyId } from '../data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { sprites } from '../render/sprites'
 import { hurtPlayer } from './combat'
 import { createStatus, statusAttack, statusPace } from './status'
+import { createTraitState, isAirborne, traitPace } from './traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
 
 const neighbors: number[] = []
@@ -13,8 +14,8 @@ const neighbors: number[] = []
 export const radiusFor = (dex: number) => Math.max(5, Math.round(sprites(dex).bodyW * 0.32))
 
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
-  const def = ENEMIES[kind]
-  const boss = 'boss' in def && def.boss
+  const def: EnemyDef = ENEMIES[kind]
+  const boss = def.boss === true
   const scale = scaling(g.time)
   const hp = Math.round(def.hp * (boss ? 1 : scale.hp))
   const enemy: Enemy = {
@@ -26,7 +27,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     damage: def.damage * (boss ? 1 : scale.damage),
     speed: def.speed * (0.92 + g.rng() * 0.16),
     mass: def.mass,
-    radius: radiusFor(def.dex) * ('scale' in def ? def.scale : 1),
+    radius: radiusFor(def.dex) * (def.scale ?? 1),
     xp: def.xp,
     boss,
     shiny: false,
@@ -37,6 +38,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     animTime: g.rng() * 2,
     flash: 0,
     status: createStatus(),
+    trait: createTraitState(def.trait, g.rng()),
     dying: -1,
   }
   g.enemies.push(enemy)
@@ -64,7 +66,7 @@ export const updateEnemies = (g: Game, dt: number) => {
     const frozen = e.status.stun > 0
     if (!frozen) e.animTime += dt
     e.flash = Math.max(0, e.flash - dt)
-    const pace = e.speed * statusPace(e.status) * (e.flash > 0 ? 0.35 : 1)
+    const pace = e.speed * statusPace(e.status) * traitPace(e) * (e.flash > 0 ? 0.35 : 1)
 
     let vx = 0
     let vy = 0
@@ -95,11 +97,11 @@ export const updateEnemies = (g: Game, dt: number) => {
 
   // Separation: overlapping enemies push each other apart so hordes form rings, not blobs.
   g.enemies.forEach((e, i) => {
-    if (e.dying >= 0) return
+    if (e.dying >= 0 || isAirborne(e)) return
     for (const j of query(g.grid, e.x, e.y, e.radius * 2, neighbors)) {
       if (j === i) continue
       const o = g.enemies[j]!
-      if (o.dying >= 0) continue
+      if (o.dying >= 0 || isAirborne(o)) continue
       const dx = e.x - o.x
       const dy = e.y - o.y
       const min = (e.radius + o.radius) * 0.8
