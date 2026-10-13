@@ -7,6 +7,7 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - 27 starters, each with its full 3-stage evolution line, stats, signature move and learnset
 - 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
 - Type matchups, burn, poison and paralysis, and a manual special attack per type (Blast Burn, Hydro Cannon, Frenzy Plant)
+- 171 wild Pokémon from all 9 generations in 5 tiers by base stat total; every run draws its own cast (basic Pokémon early, evolved ones late)
 - Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - Pokémon Mystery Dungeon-style pixel art (PMD SpriteCollab)
@@ -22,8 +23,8 @@ Good fit for people looking for: a Pokémon version of Vampire Survivors, a Pok�
 
 ## Guides and reference
 
-- [Pokédex](https://www.pokemonsurvivors.com/en/pokedex/): every Pokémon in the game (27 starters with their evolutions, wild enemies, bosses and legendaries) with animated and shiny sprites, types, in-game stats, moves, specials and when each one shows up. Portuguese: [Pokédex](https://www.pokemonsurvivors.com/pokedex/)
-- [How to play](https://www.pokemonsurvivors.com/en/guide/): controls (keyboard, gamepad, touch), how a run works, levels and moves, move evolutions with held items, the special attack, types and status, boss timeline, shinies, map items and the Poké Mart, with the game's numbers. Portuguese: [Guia](https://www.pokemonsurvivors.com/guia/)
+- [Pokédex](https://www.pokemonsurvivors.com/en/pokedex/): every Pokémon in the game (27 starters with their evolutions, 171 wild species from every generation with their tier, bosses and legendaries) with animated and shiny sprites, types, in-game stats, moves, specials and when each one shows up. Portuguese: [Pokédex](https://www.pokemonsurvivors.com/pokedex/)
+- [How to play](https://www.pokemonsurvivors.com/en/guide/): controls (keyboard, gamepad, touch), how a run works, the wild horde and its tiers, levels and moves, move evolutions with held items, the special attack, types and status, boss timeline, shinies, map items and the Poké Mart, with the game's numbers. Portuguese: [Guia](https://www.pokemonsurvivors.com/guia/)
 - [Changelog](https://www.pokemonsurvivors.com/en/changelog/): every update, newest first. Portuguese: [Novidades](https://www.pokemonsurvivors.com/novidades/)
 - [Legal, privacy and credits](https://www.pokemonsurvivors.com/en/legal/): unofficial fan game, no ads or purchases, licenses, no personal data collected (localStorage only). Portuguese: [Legal](https://www.pokemonsurvivors.com/legal/)
 

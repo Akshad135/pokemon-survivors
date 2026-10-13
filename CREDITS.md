@@ -178,14 +178,26 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 13 | Weedle (shiny) | ShyStarryRain | ShyStarryRain |
 | 16 | Pidgey | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
 | 16 | Pidgey (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563) | Tacocoa, [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 17 | Pidgeotto | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Tainted#3886 |
+| 17 | Pidgeotto (shiny) | [Moo](https://twitter.com/MoonMoonMemes), [bwappi](https://bsky.app/profile/bwappi.bsky.social) | [Moo](https://twitter.com/MoonMoonMemes), Tainted#3886, [bwappi](https://bsky.app/profile/bwappi.bsky.social) |
 | 19 | Rattata | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Frostdrop1 |
 | 19 | Rattata (shiny) | ShyStarryRain | ShyStarryRain |
+| 20 | Raticate | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social), baronessfaron |
+| 20 | Raticate (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), 3Monika4 | Tacocoa, [G〜](https://bsky.app/profile/justtr4sh.pmd.social), baronessfaron |
 | 21 | Spearow | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Blanky](https://www.tumblr.com/theblankest123), [Cloudy](https://twitter.com/cloudyskys17695) |
 | 21 | Spearow (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563) | Anonymous, [Blanky](https://www.tumblr.com/theblankest123), JustAGunk |
+| 22 | Fearow | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) |
+| 22 | Fearow (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563) | Anonymous |
 | 23 | Ekans | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), Fearless-Quit, [TawnySoup](https://linktr.ee/tawnysoup) |
 | 23 | Ekans (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), baronessfaron |
+| 24 | Arbok | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 24 | Arbok (shiny) | [Moo](https://twitter.com/MoonMoonMemes), [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 37 | Vulpix | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 37 | Vulpix (shiny) | Lovi | Lovi, baronessfaron |
 | 41 | Zubat | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [fledermaus](https://www.furaffinity.net/user/fleder-maus/) |
 | 41 | Zubat (shiny) | Tacocoa | Tacocoa, [fledermaus](https://www.furaffinity.net/user/fleder-maus/) |
+| 42 | Golbat | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 42 | Golbat (shiny) | Tacocoa | Tacocoa, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 43 | Oddish | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Felis-Licht](https://www.deviantart.com/felis-licht/), ShyStarryRain |
 | 43 | Oddish (shiny) | Tacocoa | Anonymous, ShyStarryRain, [Felis-Licht](https://www.deviantart.com/felis-licht/) |
 | 46 | Paras | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [bwappi](https://bsky.app/profile/bwappi.bsky.social) |
@@ -194,14 +206,314 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 48 | Venonat (shiny) | Tacocoa, [Emmuffin](https://twitter.com/Ernmuffin) | [Blanky](https://www.tumblr.com/theblankest123) |
 | 56 | Mankey | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 56 | Mankey (shiny) | El_Pangoro_Parse | [Moo](https://twitter.com/MoonMoonMemes), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 57 | Primeape | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 57 | Primeape (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Moo](https://twitter.com/MoonMoonMemes) |
+| 58 | Growlithe | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin), JustAGunk | [CHUNSOFT](https://www.spike-chunsoft.com/), Deltex12, [LT](https://twitter.com/eLTehH) |
+| 58 | Growlithe (shiny) | [Audino](https://github.com/audinowho), [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, [Waffluffe](https://twitter.com/waffluffe), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 66 | Machop | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/), [Felis-Licht](https://www.deviantart.com/felis-licht/), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 66 | Machop (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 67 | Machoke | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 67 | Machoke (shiny) | Tacocoa | [Moo](https://twitter.com/MoonMoonMemes), JFain |
+| 68 | Machamp | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 68 | Machamp (shiny) | Tacocoa | Prismatic |
+| 70 | Weepinbell | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 70 | Weepinbell (shiny) | Anonymous | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 72 | Tentacool | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/), [brookriver](https://brookriver.carrd.co/) |
+| 72 | Tentacool (shiny) | Tacocoa | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), Tacocoa, [brookriver](https://brookriver.carrd.co/) |
 | 74 | Geodude | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JustAGunk |
 | 74 | Geodude (shiny) | El_Pangoro_Parse | [Moo](https://twitter.com/MoonMoonMemes), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 75 | Graveler | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), Tainted#3886 |
+| 75 | Graveler (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Moo](https://twitter.com/MoonMoonMemes), Tainted#3886 |
+| 76 | Golem | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
+| 76 | Golem (shiny) | [Emmuffin](https://twitter.com/Ernmuffin), El_Pangoro_Parse | Tacocoa, baronessfaron |
+| 88 | Grimer | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 88 | Grimer (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
 | 92 | Gastly | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
 | 92 | Gastly (shiny) | El_Pangoro_Parse, ShyStarryRain | Prismatic, El_Pangoro_Parse |
+| 93 | Haunter | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 93 | Haunter (shiny) | Tacocoa | [Moo](https://twitter.com/MoonMoonMemes), [PhillipsYoung](https://twitter.com/PhilliYoung196), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 94 | Gengar | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 94 | Gengar (shiny) | Tacocoa, Emboarger | [PhillipsYoung](https://twitter.com/PhilliYoung196) |
 | 109 | Koffing | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) |
 | 109 | Koffing (shiny) | Tacocoa | Tacocoa, [Caitemis](https://caitemis-art.tumblr.com/) |
+| 110 | Weezing | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 110 | Weezing (shiny) | El_Pangoro_Parse | Prismatic |
+| 111 | Rhyhorn | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), chikorene |
+| 111 | Rhyhorn (shiny) | Tacocoa | chikorene |
+| 112 | Rhydon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 112 | Rhydon (shiny) | Tacocoa | Tacocoa, [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 123 | Scyther | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Noo](https://artfight.net/~NooNoo_Skidoo), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 123 | Scyther (shiny) | Tacocoa | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 163 | Hoothoot | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 163 | Hoothoot (shiny) | Lovi, [Noo](https://artfight.net/~NooNoo_Skidoo) | Lovi, JFain |
+| 165 | Ledyba | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 165 | Ledyba (shiny) | Pokejavi. | Tacocoa, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 167 | Spinarak | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 167 | Spinarak (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 179 | Mareep | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Felis-Licht](https://www.deviantart.com/felis-licht/) |
+| 179 | Mareep (shiny) | Anonymous, [Emmuffin](https://twitter.com/Ernmuffin) | Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social), [silverfox88](https://twitter.com/realsilverfox88) |
+| 193 | Yanma | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 193 | Yanma (shiny) | [Moo](https://twitter.com/MoonMoonMemes) | [Moo](https://twitter.com/MoonMoonMemes), [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 194 | Wooper | [CHUNSOFT](https://www.spike-chunsoft.com/), Anon, [Uni](https://github.com/ArianaCastro01) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin), ShyStarryRain |
+| 194 | Wooper (shiny) | Prismatic, [Caitemis](https://caitemis-art.tumblr.com/), [Uni](https://github.com/ArianaCastro01) | Anonymous, Emboarger, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 195 | Quagsire | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 195 | Quagsire (shiny) | Anonymous | Anonymous, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 198 | Murkrow | [CHUNSOFT](https://www.spike-chunsoft.com/), [Smalusion](https://twitter.com/Smalusion), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 198 | Murkrow (shiny) | Scizivire, [Smalusion](https://twitter.com/Smalusion), [Caitemis](https://caitemis-art.tumblr.com/) | [Morei](https://bsky.app/profile/murpia57.bsky.social), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 200 | Misdreavus | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/), RoyalRust, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 200 | Misdreavus (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 204 | Pineco | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 204 | Pineco (shiny) | Tacocoa | Tacocoa, JFain |
+| 207 | Gligar | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [NeroIntruder](https://twitter.com/NeroIntruder) |
+| 207 | Gligar (shiny) | Prismatic, JFain | Lovi, [NeroIntruder](https://twitter.com/NeroIntruder) |
+| 214 | Heracross | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
+| 214 | Heracross (shiny) | Prismatic | Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 215 | Sneasel | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain, [Grimlin](https://twitter.com/Griimlin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [cosmosully](https://twitter.com/cosmosully) |
+| 215 | Sneasel (shiny) | Lovi, Emboarger | Lovi, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 216 | Teddiursa | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 216 | Teddiursa (shiny) | El_Pangoro_Parse, [Emmuffin](https://twitter.com/Ernmuffin) | El_Pangoro_Parse, [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 217 | Ursaring | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Tainted#3886, [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 217 | Ursaring (shiny) | El_Pangoro_Parse | El_Pangoro_Parse, [Morei](https://bsky.app/profile/murpia57.bsky.social), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 227 | Skarmory | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 227 | Skarmory (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | Anonymous, [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 228 | Houndour | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__) |
+| 228 | Houndour (shiny) | Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) | Anonymous, ShyStarryRain |
+| 229 | Houndoom | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 229 | Houndoom (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 231 | Phanpy | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 231 | Phanpy (shiny) | Prismatic, ShyStarryRain | Prismatic, ShyStarryRain |
+| 232 | Donphan | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 232 | Donphan (shiny) | Lovi, [Emmuffin](https://twitter.com/Ernmuffin) | Lovi, Emboarger |
+| 261 | Poochyena | [CHUNSOFT](https://www.spike-chunsoft.com/), [Smalusion](https://twitter.com/Smalusion) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 261 | Poochyena (shiny) | Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) | Anonymous, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 262 | Mightyena | [CHUNSOFT](https://www.spike-chunsoft.com/), KCN015 | [CHUNSOFT](https://www.spike-chunsoft.com/), deltaflare, [Gust](https://twitter.com/Estelaris__) |
+| 262 | Mightyena (shiny) | Anonymous, Emboarger | Anonymous, deltaflare, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 263 | Zigzagoon | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [DasK](http://reddit.com/u/thedask), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 263 | Zigzagoon (shiny) | Reppamon, [Caitemis](https://caitemis-art.tumblr.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 276 | Taillow | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 276 | Taillow (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | Top_Kec |
+| 277 | Swellow | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) |
+| 277 | Swellow (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social), [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 278 | Wingull | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), snarbs |
+| 278 | Wingull (shiny) | Tacocoa | snarbs |
+| 285 | Shroomish | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [drawsstuff](https://bugfu.newgrounds.com/) |
+| 285 | Shroomish (shiny) | Tacocoa | [Moo](https://twitter.com/MoonMoonMemes), [drawsstuff](https://bugfu.newgrounds.com/) |
+| 286 | Breloom | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Noo](https://artfight.net/~NooNoo_Skidoo), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 286 | Breloom (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 297 | Hariyama | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 297 | Hariyama (shiny) | [Moo](https://twitter.com/MoonMoonMemes) | [Moo](https://twitter.com/MoonMoonMemes) |
+| 302 | Sableye | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 302 | Sableye (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 304 | Aron | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/), Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 304 | Aron (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social), Emboarger | [Morei](https://bsky.app/profile/murpia57.bsky.social), Reppamon, Anonymous |
+| 306 | Aggron | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
+| 306 | Aggron (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 310 | Manectric | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__) |
+| 310 | Manectric (shiny) | [Hemlock](https://baphomets.neocities.org/) | [Gust](https://twitter.com/Estelaris__) |
+| 331 | Cacnea | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger |
+| 331 | Cacnea (shiny) | NOLASMOR | NOLASMOR |
+| 332 | Cacturne | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron, [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 332 | Cacturne (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 335 | Zangoose | [CHUNSOFT](https://www.spike-chunsoft.com/), KCN015 | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 335 | Zangoose (shiny) | El_Pangoro_Parse, KCN015, [Noo](https://artfight.net/~NooNoo_Skidoo) | El_Pangoro_Parse, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 336 | Seviper | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Tainted#3886, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 336 | Seviper (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 396 | Starly | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger, JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), CamusZekeSirius |
+| 396 | Starly (shiny) | Lovi, [Emmuffin](https://twitter.com/Ernmuffin) | Lovi, CamusZekeSirius |
+| 397 | Staravia | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), CamusZekeSirius |
+| 397 | Staravia (shiny) | Lovi, [Emmuffin](https://twitter.com/Ernmuffin) | Lovi, CamusZekeSirius |
+| 398 | Staraptor | [CHUNSOFT](https://www.spike-chunsoft.com/), [Audino](https://github.com/audinowho) | [CHUNSOFT](https://www.spike-chunsoft.com/), ShyStarryRain, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 398 | Staraptor (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 399 | Bidoof | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 399 | Bidoof (shiny) | Scizivire, [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 400 | Bibarel | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 400 | Bibarel (shiny) | Scizivire, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | Lovi, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 403 | Shinx | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 403 | Shinx (shiny) | Reppamon | Reppamon |
+| 404 | Luxio | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), C_Pariah |
+| 404 | Luxio (shiny) | Reppamon, [Caitemis](https://caitemis-art.tumblr.com/) | Reppamon, C_Pariah |
+| 405 | Luxray | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Soulja](https://twitter.com/OlSoulja) |
+| 405 | Luxray (shiny) | Reppamon, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 425 | Drifloon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Deleca7755, Fearless-Quit |
+| 425 | Drifloon (shiny) | Scizivire | Prismatic, Deleca7755, Fearless-Quit |
+| 426 | Drifblim | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR |
+| 426 | Drifblim (shiny) | Scizivire | NOLASMOR, Prismatic |
+| 434 | Stunky | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), C_Pariah, [Jarleypeño](https://www.deviantart.com/applecone413) |
+| 434 | Stunky (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | Anonymous, [Noo](https://artfight.net/~NooNoo_Skidoo) |
+| 436 | Bronzor | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), chime |
+| 436 | Bronzor (shiny) | Lovi | Lovi, chime |
+| 449 | Hippopotas | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 449 | Hippopotas (shiny) | Lovi | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 450 | Hippowdon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
+| 450 | Hippowdon (shiny) | Lovi | Lovi, baronessfaron |
+| 451 | Skorupi | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Sunny](https://twitter.com/temporalsunrise), [Cloudy](https://twitter.com/cloudyskys17695) |
+| 451 | Skorupi (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 452 | Drapion | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 452 | Drapion (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 454 | Toxicroak | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
+| 454 | Toxicroak (shiny) | [Moo](https://twitter.com/MoonMoonMemes) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 504 | Patrat | [Pink_no_tori](https://twitter.com/pink_avian_poke), baronessfaron | baronessfaron |
+| 504 | Patrat (shiny) | ◥θ┴θ◤ | [Caitemis](https://caitemis-art.tumblr.com/), ShyStarryRain |
+| 510 | Liepard | LightBlueBlaze | baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 510 | Liepard (shiny) | ShyStarryRain | [Caitemis](https://caitemis-art.tumblr.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 519 | Pidove | [powercristal](https://www.deviantart.com/powercristal), [Caitemis](https://caitemis-art.tumblr.com/) | [TawnySoup](https://linktr.ee/tawnysoup) |
+| 519 | Pidove (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [TawnySoup](https://linktr.ee/tawnysoup) |
+| 524 | Roggenrola | [powercristal](https://www.deviantart.com/powercristal) | [Gust](https://twitter.com/Estelaris__) |
+| 524 | Roggenrola (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Gust](https://twitter.com/Estelaris__) |
+| 525 | Boldore | [Soulja](https://twitter.com/OlSoulja) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 525 | Boldore (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 528 | Swoobat | [NeroIntruder](https://twitter.com/NeroIntruder) | [mucrush](https://www.deviantart.com/mucrush), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 528 | Swoobat (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 530 | Excadrill | [Soulja](https://twitter.com/OlSoulja), Skycloud383 | baronessfaron |
+| 530 | Excadrill (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | ShyStarryRain |
+| 532 | Timburr | Katach314 | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), JustAGunk |
+| 532 | Timburr (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 533 | Gurdurr | [Soulja](https://twitter.com/OlSoulja), Inv3rse, Katach314 | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 533 | Gurdurr (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 534 | Conkeldurr | Inv3rse, [Soulja](https://twitter.com/OlSoulja) | [mucrush](https://www.deviantart.com/mucrush), [Gust](https://twitter.com/Estelaris__) |
+| 534 | Conkeldurr (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Gust](https://twitter.com/Estelaris__) |
+| 543 | Venipede | [Soulja](https://twitter.com/OlSoulja), [pi3.14](https://twitter.com/Pi_y_ranitas), JFain | [Soulja](https://twitter.com/OlSoulja), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 543 | Venipede (shiny) | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 545 | Scolipede | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 545 | Scolipede (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 551 | Sandile | [Noivern](https://twitter.com/notarealnoivern), baronessfaron | [Noivern](https://twitter.com/notarealnoivern) |
+| 551 | Sandile (shiny) | [Emmuffin](https://twitter.com/Ernmuffin), [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Caitemis](https://caitemis-art.tumblr.com/), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 552 | Krokorok | [Soulja](https://twitter.com/OlSoulja) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 552 | Krokorok (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 553 | Krookodile | [Soulja](https://twitter.com/OlSoulja) | baronessfaron |
+| 553 | Krookodile (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 559 | Scraggy | [Soulja](https://twitter.com/OlSoulja) | [Soulja](https://twitter.com/OlSoulja) |
+| 559 | Scraggy (shiny) | ShyStarryRain, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Noo](https://artfight.net/~NooNoo_Skidoo), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 570 | Zorua | [Emmuffin](https://twitter.com/Ernmuffin), baronessfaron | baronessfaron, [MilesFarber](https://github.com/MilesFarber) |
+| 570 | Zorua (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron, [MilesFarber](https://github.com/MilesFarber) |
+| 607 | Litwick | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 607 | Litwick (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 608 | Lampent | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 608 | Lampent (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 609 | Chandelure | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 609 | Chandelure (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 659 | Bunnelby | [pi3.14](https://twitter.com/Pi_y_ranitas), baronessfaron | baronessfaron |
+| 659 | Bunnelby (shiny) | baronessfaron | ◥θ┴θ◤, baronessfaron |
+| 660 | Diggersby | [pi3.14](https://twitter.com/Pi_y_ranitas), [Soulja](https://twitter.com/OlSoulja) | [Aviivix](https://twitter.com/aviivix/), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 660 | Diggersby (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 661 | Fletchling | Axcel | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 661 | Fletchling (shiny) | ◥θ┴θ◤ | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 662 | Fletchinder | [Emmuffin](https://twitter.com/Ernmuffin), [Soulja](https://twitter.com/OlSoulja) | [Chesyon](https://linktr.ee/chesyon), [Soulja](https://twitter.com/OlSoulja), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 662 | Fletchinder (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 663 | Talonflame | [Soulja](https://twitter.com/OlSoulja), [Michael12](https://www.deviantart.com/michael12dz), [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 663 | Talonflame (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 667 | Litleo | [Caitemis](https://caitemis-art.tumblr.com/) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 667 | Litleo (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 674 | Pancham | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 674 | Pancham (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 675 | Pangoro | [Soulja](https://twitter.com/OlSoulja) | baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin), [Soulja](https://twitter.com/OlSoulja) |
+| 675 | Pangoro (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 677 | Espurr | [NeroIntruder](https://twitter.com/NeroIntruder) | baronessfaron |
+| 677 | Espurr (shiny) | [Noo](https://artfight.net/~NooNoo_Skidoo) | baronessfaron |
+| 679 | Honedge | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 679 | Honedge (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 680 | Doublade | [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron |
+| 680 | Doublade (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 686 | Inkay | baronessfaron | [Aviivix](https://twitter.com/aviivix/), NOLASMOR |
+| 686 | Inkay (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | ◥θ┴θ◤ |
+| 707 | Klefki | ◥θ┴θ◤, [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron, ◥θ┴θ◤ |
+| 707 | Klefki (shiny) | ◥θ┴θ◤, [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/), ◥θ┴θ◤, baronessfaron |
+| 708 | Phantump | [Emmuffin](https://twitter.com/Ernmuffin), ShyStarryRain | baronessfaron, Anonymous |
+| 708 | Phantump (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 709 | Trevenant | baronessfaron | baronessfaron |
+| 709 | Trevenant (shiny) | [Chesyon](https://linktr.ee/chesyon) | ◥θ┴θ◤, baronessfaron |
+| 731 | Pikipek | [FlowerSnek](https://twitter.com/EthanLac13) | [Aviivix](https://twitter.com/aviivix/), [Morei](https://bsky.app/profile/murpia57.bsky.social), NOLASMOR |
+| 731 | Pikipek (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Dasawkem](https://dasawkem.carrd.co/#social), NOLASMOR |
+| 734 | Yungoos | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 734 | Yungoos (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 736 | Grubbin | [Soulja](https://twitter.com/OlSoulja) | JFain |
+| 736 | Grubbin (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | ShyStarryRain |
+| 737 | Charjabug | [Soulja](https://twitter.com/OlSoulja) | [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
+| 737 | Charjabug (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
+| 738 | Vikavolt | [Soulja](https://twitter.com/OlSoulja) | baronessfaron |
+| 738 | Vikavolt (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | ShyStarryRain |
+| 739 | Crabrawler | [Soulja](https://twitter.com/OlSoulja) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 739 | Crabrawler (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 742 | Cutiefly | baronessfaron, Mitsubachi, [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron, NOLASMOR |
+| 742 | Cutiefly (shiny) | [Caitemis](https://caitemis-art.tumblr.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/), [silverfox88](https://twitter.com/realsilverfox88) |
+| 744 | Rockruff | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 744 | Rockruff (shiny) | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin), ShyStarryRain |
+| 749 | Mudbray | Ichor, [bwappi](https://bsky.app/profile/bwappi.bsky.social) | [bwappi](https://bsky.app/profile/bwappi.bsky.social) |
+| 749 | Mudbray (shiny) | ShyStarryRain, [bwappi](https://bsky.app/profile/bwappi.bsky.social) | [Caitemis](https://caitemis-art.tumblr.com/), [bwappi](https://bsky.app/profile/bwappi.bsky.social) |
+| 753 | Fomantis | [Emmuffin](https://twitter.com/Ernmuffin) | [Aviivix](https://twitter.com/aviivix/), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 753 | Fomantis (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 758 | Salazzle | [Soulja](https://twitter.com/OlSoulja) | baronessfaron |
+| 758 | Salazzle (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | Axcel, baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 759 | Stufful | JFain | baronessfaron, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 759 | Stufful (shiny) | ShyStarryRain | baronessfaron, [G〜](https://bsky.app/profile/justtr4sh.pmd.social), ShyStarryRain |
+| 760 | Bewear | baronessfaron | baronessfaron |
+| 760 | Bewear (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 777 | Togedemaru | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 777 | Togedemaru (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 778 | Mimikyu | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 778 | Mimikyu (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 819 | Skwovet | [Jhony-Rex](https://www.deviantart.com/jhony-rex), [Soulja](https://twitter.com/OlSoulja) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 819 | Skwovet (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 821 | Rookidee | [Michael12](https://www.deviantart.com/michael12dz), [Soulja](https://twitter.com/OlSoulja), [Caitemis](https://caitemis-art.tumblr.com/) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Cloudy](https://twitter.com/cloudyskys17695) |
+| 821 | Rookidee (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Caitemis](https://caitemis-art.tumblr.com/) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 822 | Corvisquire | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 822 | Corvisquire (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 823 | Corviknight | [nataniel-sama](https://pokemon-reloaded.el-foro.net/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Soulja](https://twitter.com/OlSoulja) | [EzerArt](https://twitter.com/EzerArt_), [Soulja](https://twitter.com/OlSoulja) |
+| 823 | Corviknight (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 827 | Nickit | Top_Kec | Top_Kec |
+| 827 | Nickit (shiny) | Top_Kec | Top_Kec |
+| 828 | Thievul | [Smalusion](https://twitter.com/Smalusion) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 828 | Thievul (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 833 | Chewtle | [nataniel-sama](https://pokemon-reloaded.el-foro.net/), [Emmuffin](https://twitter.com/Ernmuffin), [Soulja](https://twitter.com/OlSoulja) | [EzerArt](https://twitter.com/EzerArt_), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 833 | Chewtle (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 834 | Drednaw | [nataniel-sama](https://pokemon-reloaded.el-foro.net/), [Soulja](https://twitter.com/OlSoulja) | [EzerArt](https://twitter.com/EzerArt_), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 834 | Drednaw (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 835 | Yamper | RelicCipher, baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin) | RelicCipher |
+| 835 | Yamper (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | RelicCipher |
+| 850 | Sizzlipede | [Soulja](https://twitter.com/OlSoulja) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 850 | Sizzlipede (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 851 | Centiskorch | [Soulja](https://twitter.com/OlSoulja) | baronessfaron |
+| 851 | Centiskorch (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | ShyStarryRain |
+| 854 | Sinistea | baronessfaron | [EzerArt](https://twitter.com/EzerArt_), ShyStarryRain, baronessfaron |
+| 854 | Sinistea (shiny) | ShyStarryRain | Vendily, [Morei](https://bsky.app/profile/murpia57.bsky.social), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 855 | Polteageist | JFain | [EzerArt](https://twitter.com/EzerArt_), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 855 | Polteageist (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 859 | Impidimp | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 859 | Impidimp (shiny) | [lokatts](https://twitter.com/lokatts) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 860 | Morgrem | JFain, [Soulja](https://twitter.com/OlSoulja) | baronessfaron |
+| 860 | Morgrem (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 861 | Grimmsnarl | baronessfaron | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 861 | Grimmsnarl (shiny) | baronessfaron | ShyStarryRain, baronessfaron |
+| 915 | Lechonk | Emboarger | [Emmuffin](https://twitter.com/Ernmuffin), NikolaP |
+| 915 | Lechonk (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 917 | Tarountula | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 917 | Tarountula (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 918 | Spidops | baronessfaron | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 918 | Spidops (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 920 | Lokix | [Soulja](https://twitter.com/OlSoulja) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 920 | Lokix (shiny) | [lokatts](https://twitter.com/lokatts) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 921 | Pawmi | ShyStarryRain, JFain | [Emmuffin](https://twitter.com/Ernmuffin), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 921 | Pawmi (shiny) | ShyStarryRain, JFain | [Emmuffin](https://twitter.com/Ernmuffin), ShyStarryRain |
+| 922 | Pawmo | ShyStarryRain | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), ◥θ┴θ◤ |
+| 922 | Pawmo (shiny) | ShyStarryRain | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 923 | Pawmot | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 923 | Pawmot (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 932 | Nacli | DavKriz, baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 932 | Nacli (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 939 | Bellibolt | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 939 | Bellibolt (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 940 | Wattrel | [Soulja](https://twitter.com/OlSoulja), DavKriz | [Aviivix](https://twitter.com/aviivix/), JustAGunk |
+| 940 | Wattrel (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | ShyStarryRain, JustAGunk |
+| 957 | Tinkatink | JFain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 957 | Tinkatink (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 959 | Tinkaton | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 959 | Tinkaton (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 960 | Wiglett | [Limomon](https://twitter.com/TheLimomon) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 960 | Wiglett (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 969 | Glimmet | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
+| 969 | Glimmet (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
+| 972 | Houndstone | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 972 | Houndstone (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 95 | Onix | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
 | 144 | Articuno | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |

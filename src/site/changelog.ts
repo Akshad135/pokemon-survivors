@@ -19,6 +19,25 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    title: { pt: 'Horda de todas as gerações', en: 'A horde from every generation' },
+    notes: [
+      {
+        pt: '171 Pokémon selvagens das 9 gerações. Cada partida sorteia o seu elenco, com poucas espécies novas por fase.',
+        en: '171 wild Pokémon from all 9 generations. Every run draws its own cast, with only a few new species per stage.',
+      },
+      {
+        pt: 'Os inimigos são divididos em 5 faixas pelo total de status base: básicos no começo, evoluções no fim. Revoadas e cercos usam o elenco da partida.',
+        en: 'Enemies are split into 5 tiers by base stat total: basic Pokémon early, evolved ones late. Swarms and rings use the run\'s cast.',
+      },
+      {
+        pt: 'A partida começa mais rápido: só o primeiro elenco é baixado antes, o resto chega em segundo plano.',
+        en: 'Runs start faster: only the opening cast is downloaded up front, the rest streams in the background.',
+      },
+      { pt: 'Pokédex com filtro por faixa e o Guia com a seção da horda selvagem.', en: 'A tier filter in the Pokédex and a wild horde section in the guide.' },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 14,
     title: { pt: 'Site: Pokédex, guia, novidades e página legal', en: 'Website: Pokédex, guide, changelog and legal page' },
     notes: [

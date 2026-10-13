@@ -11,6 +11,7 @@ import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
 import type { Prop } from './props'
+import type { Roster } from './roster'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
@@ -259,6 +260,8 @@ export type Game = {
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null
+  /** This run's wild cast, drawn at the start (`game/roster.ts`). */
+  roster: Roster
   spawnBudget: number
   nextEvent: number
   bossId: number | null

@@ -851,6 +851,13 @@ td small {
   gap: 4px;
 }
 
+/* A row of species links (guide tier examples), wrapping on phones. */
+.minis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
 .mini {
   width: 40px;
   height: 40px;

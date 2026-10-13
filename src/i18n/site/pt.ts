@@ -79,10 +79,10 @@ export const sitePt = {
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
     appears: 'Quando aparece',
-    horde: (from: string, until: string) => `Na horda, de ${from} a ${until}`,
-    hordeEnd: (from: string) => `Na horda, de ${from} até o fim`,
-    swarm: (at: string, count: number) => `Revoada de ${count} em ${at}`,
-    ring: (at: string, count: number) => `Cerco de ${count} em ${at}`,
+    horde: (from: string, until: string) => `Pode entrar na horda, de ${from} a ${until}`,
+    hordeEnd: (from: string) => `Pode entrar na horda, de ${from} até o fim`,
+    swarm: (at: string, count: number) => `Pode liderar a revoada de ${count} em ${at}`,
+    ring: (at: string, count: number) => `Pode formar o cerco de ${count} em ${at}`,
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
     attacks: 'Ataques',
@@ -98,6 +98,32 @@ export const sitePt = {
     trail: (ttl: number, damage: number) => `Deixa um rastro que queima por ${n(ttl)}s (${damage} de dano)`,
   },
 
+  /** The wild roster: tiers and the cast each run draws (Pokédex filter and the guide's horde section). */
+  roster: {
+    tier: 'Faixa',
+    tierOf: (tier: number) => `Faixa ${tier}`,
+    allTiers: 'Todas',
+    paragraphs: (species: number, perRun: number) => [
+      `A horda tem ${species} espécies selvagens das 9 gerações, e cada partida sorteia o seu elenco: cerca de ${perRun} espécies, poucas novas por fase, para você reconhecer quem está chegando.`,
+      'Cada espécie entra numa faixa pelo total de status base. As primeiras fases puxam da faixa 1 (Pokémon básicos fracos) e o fim da partida, das faixas 4 e 5 (evoluções). As revoadas pegam um Pokémon voador da faixa indicada e os cercos, um Pokémon da faixa que você já encontrou na partida.',
+    ],
+    formula: 'Os status no jogo saem dos status base: o HP vem da faixa e da defesa (HP, Defesa e Defesa Especial), o dano da faixa e do melhor ataque, a velocidade da Velocidade base, a EXP do HP e a resistência a empurrão do HP e da Defesa (voadores e fantasmas são mais leves).',
+    tiersTitle: 'Faixas',
+    tierHead: 'Faixa',
+    totalHead: 'Total de status base',
+    total: (min: number, max: number | null) => (max === null ? `${min} ou mais` : min === 0 ? `até ${max}` : `${min} a ${max}`),
+    speciesHead: 'Espécies',
+    examplesHead: 'Exemplos',
+    stagesTitle: 'Faixas por fase',
+    timeHead: 'Tempo',
+    castHead: 'Faixas do elenco',
+    /** `groups` = [tier, slots] pairs. */
+    cast: (groups: readonly (readonly [number, number])[], fresh: number) =>
+      `${list(groups.map(([tier, count]) => `${count} da faixa ${tier}`))} (${fresh} ${s(fresh, 'nova', 'novas')})`,
+    swarm: (count: number, tier: number) => `Revoada: ${count} Pokémon voadores da faixa ${tier} cruzam a tela`,
+    ring: (count: number, tier: number) => `Cerco: um círculo de ${count} Pokémon da faixa ${tier} se fecha ao seu redor`,
+  },
+
   guide: {
     title: 'Como jogar Pokémon Survivors: guia completo',
     description:
@@ -109,6 +135,7 @@ export const sitePt = {
     sections: {
       controls: 'Controles',
       run: 'A partida',
+      horde: 'A horda selvagem',
       levels: 'Níveis e golpes',
       moveEvolutions: 'Evolução de golpes',
       special: 'Ataque especial',
@@ -148,8 +175,6 @@ export const sitePt = {
       timeline: 'Linha do tempo',
       timeHead: 'Tempo',
       eventHead: 'Evento',
-      swarm: (count: number, name: string) => `Revoada: ${count} ${name} cruzam a tela`,
-      ring: (count: number, name: string) => `Cerco: um círculo de ${count} ${name} se fecha ao seu redor`,
       boss: (name: string) => `Chefe: ${name}`,
       bossChance: (name: string, percent: number) => `Chefe raro: ${name} (${n(percent)}% de chance)`,
     },

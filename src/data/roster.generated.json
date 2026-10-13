@@ -1,0 +1,2667 @@
+{
+  "caterpie": {
+    "dex": 10,
+    "name": "Caterpie",
+    "types": [
+      "bug"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 30,
+      "defense": 35,
+      "spAttack": 20,
+      "spDefense": 20,
+      "speed": 45
+    }
+  },
+  "weedle": {
+    "dex": 13,
+    "name": "Weedle",
+    "types": [
+      "bug",
+      "poison"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 35,
+      "defense": 30,
+      "spAttack": 20,
+      "spDefense": 20,
+      "speed": 50
+    }
+  },
+  "pidgey": {
+    "dex": 16,
+    "name": "Pidgey",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 45,
+      "defense": 40,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 56
+    }
+  },
+  "pidgeotto": {
+    "dex": 17,
+    "name": "Pidgeotto",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 63,
+      "attack": 60,
+      "defense": 55,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 71
+    }
+  },
+  "rattata": {
+    "dex": 19,
+    "name": "Rattata",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 30,
+      "attack": 56,
+      "defense": 35,
+      "spAttack": 25,
+      "spDefense": 35,
+      "speed": 72
+    }
+  },
+  "raticate": {
+    "dex": 20,
+    "name": "Raticate",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 81,
+      "defense": 60,
+      "spAttack": 50,
+      "spDefense": 70,
+      "speed": 97
+    }
+  },
+  "spearow": {
+    "dex": 21,
+    "name": "Spearow",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 60,
+      "defense": 30,
+      "spAttack": 31,
+      "spDefense": 31,
+      "speed": 70
+    }
+  },
+  "fearow": {
+    "dex": 22,
+    "name": "Fearow",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 90,
+      "defense": 65,
+      "spAttack": 61,
+      "spDefense": 61,
+      "speed": 100
+    }
+  },
+  "ekans": {
+    "dex": 23,
+    "name": "Ekans",
+    "types": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 35,
+      "attack": 60,
+      "defense": 44,
+      "spAttack": 40,
+      "spDefense": 54,
+      "speed": 55
+    }
+  },
+  "arbok": {
+    "dex": 24,
+    "name": "Arbok",
+    "types": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 95,
+      "defense": 69,
+      "spAttack": 65,
+      "spDefense": 79,
+      "speed": 80
+    }
+  },
+  "vulpix": {
+    "dex": 37,
+    "name": "Vulpix",
+    "types": [
+      "fire"
+    ],
+    "stats": {
+      "hp": 38,
+      "attack": 41,
+      "defense": 40,
+      "spAttack": 50,
+      "spDefense": 65,
+      "speed": 65
+    }
+  },
+  "zubat": {
+    "dex": 41,
+    "name": "Zubat",
+    "types": [
+      "poison",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 45,
+      "defense": 35,
+      "spAttack": 30,
+      "spDefense": 40,
+      "speed": 55
+    }
+  },
+  "golbat": {
+    "dex": 42,
+    "name": "Golbat",
+    "types": [
+      "poison",
+      "flying"
+    ],
+    "stats": {
+      "hp": 75,
+      "attack": 80,
+      "defense": 70,
+      "spAttack": 65,
+      "spDefense": 75,
+      "speed": 90
+    }
+  },
+  "oddish": {
+    "dex": 43,
+    "name": "Oddish",
+    "types": [
+      "grass",
+      "poison"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 50,
+      "defense": 55,
+      "spAttack": 75,
+      "spDefense": 65,
+      "speed": 30
+    }
+  },
+  "paras": {
+    "dex": 46,
+    "name": "Paras",
+    "types": [
+      "bug",
+      "grass"
+    ],
+    "stats": {
+      "hp": 35,
+      "attack": 70,
+      "defense": 55,
+      "spAttack": 45,
+      "spDefense": 55,
+      "speed": 25
+    }
+  },
+  "venonat": {
+    "dex": 48,
+    "name": "Venonat",
+    "types": [
+      "bug",
+      "poison"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 55,
+      "defense": 50,
+      "spAttack": 40,
+      "spDefense": 55,
+      "speed": 45
+    }
+  },
+  "mankey": {
+    "dex": 56,
+    "name": "Mankey",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 80,
+      "defense": 35,
+      "spAttack": 35,
+      "spDefense": 45,
+      "speed": 70
+    }
+  },
+  "primeape": {
+    "dex": 57,
+    "name": "Primeape",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 105,
+      "defense": 60,
+      "spAttack": 60,
+      "spDefense": 70,
+      "speed": 95
+    }
+  },
+  "growlithe": {
+    "dex": 58,
+    "name": "Growlithe",
+    "types": [
+      "fire"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 70,
+      "defense": 45,
+      "spAttack": 70,
+      "spDefense": 50,
+      "speed": 60
+    }
+  },
+  "machop": {
+    "dex": 66,
+    "name": "Machop",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 80,
+      "defense": 50,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 35
+    }
+  },
+  "machoke": {
+    "dex": 67,
+    "name": "Machoke",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 100,
+      "defense": 70,
+      "spAttack": 50,
+      "spDefense": 60,
+      "speed": 45
+    }
+  },
+  "machamp": {
+    "dex": 68,
+    "name": "Machamp",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 90,
+      "attack": 130,
+      "defense": 80,
+      "spAttack": 65,
+      "spDefense": 85,
+      "speed": 55
+    }
+  },
+  "weepinbell": {
+    "dex": 70,
+    "name": "Weepinbell",
+    "types": [
+      "grass",
+      "poison"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 90,
+      "defense": 50,
+      "spAttack": 85,
+      "spDefense": 45,
+      "speed": 55
+    }
+  },
+  "tentacool": {
+    "dex": 72,
+    "name": "Tentacool",
+    "types": [
+      "water",
+      "poison"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 40,
+      "defense": 35,
+      "spAttack": 50,
+      "spDefense": 100,
+      "speed": 70
+    }
+  },
+  "geodude": {
+    "dex": 74,
+    "name": "Geodude",
+    "types": [
+      "rock",
+      "ground"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 80,
+      "defense": 100,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 20
+    }
+  },
+  "graveler": {
+    "dex": 75,
+    "name": "Graveler",
+    "types": [
+      "rock",
+      "ground"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 95,
+      "defense": 115,
+      "spAttack": 45,
+      "spDefense": 45,
+      "speed": 35
+    }
+  },
+  "golem": {
+    "dex": 76,
+    "name": "Golem",
+    "types": [
+      "rock",
+      "ground"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 120,
+      "defense": 130,
+      "spAttack": 55,
+      "spDefense": 65,
+      "speed": 45
+    }
+  },
+  "grimer": {
+    "dex": 88,
+    "name": "Grimer",
+    "types": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 80,
+      "defense": 50,
+      "spAttack": 40,
+      "spDefense": 50,
+      "speed": 25
+    }
+  },
+  "gastly": {
+    "dex": 92,
+    "name": "Gastly",
+    "types": [
+      "ghost",
+      "poison"
+    ],
+    "stats": {
+      "hp": 30,
+      "attack": 35,
+      "defense": 30,
+      "spAttack": 100,
+      "spDefense": 35,
+      "speed": 80
+    }
+  },
+  "haunter": {
+    "dex": 93,
+    "name": "Haunter",
+    "types": [
+      "ghost",
+      "poison"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 50,
+      "defense": 45,
+      "spAttack": 115,
+      "spDefense": 55,
+      "speed": 95
+    }
+  },
+  "gengar": {
+    "dex": 94,
+    "name": "Gengar",
+    "types": [
+      "ghost",
+      "poison"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 65,
+      "defense": 60,
+      "spAttack": 130,
+      "spDefense": 75,
+      "speed": 110
+    }
+  },
+  "koffing": {
+    "dex": 109,
+    "name": "Koffing",
+    "types": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 65,
+      "defense": 95,
+      "spAttack": 60,
+      "spDefense": 45,
+      "speed": 35
+    }
+  },
+  "weezing": {
+    "dex": 110,
+    "name": "Weezing",
+    "types": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 90,
+      "defense": 120,
+      "spAttack": 85,
+      "spDefense": 70,
+      "speed": 60
+    }
+  },
+  "rhyhorn": {
+    "dex": 111,
+    "name": "Rhyhorn",
+    "types": [
+      "ground",
+      "rock"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 85,
+      "defense": 95,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 25
+    }
+  },
+  "rhydon": {
+    "dex": 112,
+    "name": "Rhydon",
+    "types": [
+      "ground",
+      "rock"
+    ],
+    "stats": {
+      "hp": 105,
+      "attack": 130,
+      "defense": 120,
+      "spAttack": 45,
+      "spDefense": 45,
+      "speed": 40
+    }
+  },
+  "scyther": {
+    "dex": 123,
+    "name": "Scyther",
+    "types": [
+      "bug",
+      "flying"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 110,
+      "defense": 80,
+      "spAttack": 55,
+      "spDefense": 80,
+      "speed": 105
+    }
+  },
+  "hoothoot": {
+    "dex": 163,
+    "name": "Hoothoot",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 30,
+      "defense": 30,
+      "spAttack": 36,
+      "spDefense": 56,
+      "speed": 50
+    }
+  },
+  "ledyba": {
+    "dex": 165,
+    "name": "Ledyba",
+    "types": [
+      "bug",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 20,
+      "defense": 30,
+      "spAttack": 40,
+      "spDefense": 80,
+      "speed": 55
+    }
+  },
+  "spinarak": {
+    "dex": 167,
+    "name": "Spinarak",
+    "types": [
+      "bug",
+      "poison"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 60,
+      "defense": 40,
+      "spAttack": 40,
+      "spDefense": 40,
+      "speed": 30
+    }
+  },
+  "mareep": {
+    "dex": 179,
+    "name": "Mareep",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 40,
+      "defense": 40,
+      "spAttack": 65,
+      "spDefense": 45,
+      "speed": 35
+    }
+  },
+  "yanma": {
+    "dex": 193,
+    "name": "Yanma",
+    "types": [
+      "bug",
+      "flying"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 65,
+      "defense": 45,
+      "spAttack": 75,
+      "spDefense": 45,
+      "speed": 95
+    }
+  },
+  "wooper": {
+    "dex": 194,
+    "name": "Wooper",
+    "types": [
+      "water",
+      "ground"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 45,
+      "defense": 45,
+      "spAttack": 25,
+      "spDefense": 25,
+      "speed": 15
+    }
+  },
+  "quagsire": {
+    "dex": 195,
+    "name": "Quagsire",
+    "types": [
+      "water",
+      "ground"
+    ],
+    "stats": {
+      "hp": 95,
+      "attack": 85,
+      "defense": 85,
+      "spAttack": 65,
+      "spDefense": 65,
+      "speed": 35
+    }
+  },
+  "murkrow": {
+    "dex": 198,
+    "name": "Murkrow",
+    "types": [
+      "dark",
+      "flying"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 85,
+      "defense": 42,
+      "spAttack": 85,
+      "spDefense": 42,
+      "speed": 91
+    }
+  },
+  "misdreavus": {
+    "dex": 200,
+    "name": "Misdreavus",
+    "types": [
+      "ghost"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 60,
+      "defense": 60,
+      "spAttack": 85,
+      "spDefense": 85,
+      "speed": 85
+    }
+  },
+  "pineco": {
+    "dex": 204,
+    "name": "Pineco",
+    "types": [
+      "bug"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 65,
+      "defense": 90,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 15
+    }
+  },
+  "gligar": {
+    "dex": 207,
+    "name": "Gligar",
+    "types": [
+      "ground",
+      "flying"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 75,
+      "defense": 105,
+      "spAttack": 35,
+      "spDefense": 65,
+      "speed": 85
+    }
+  },
+  "heracross": {
+    "dex": 214,
+    "name": "Heracross",
+    "types": [
+      "bug",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 125,
+      "defense": 75,
+      "spAttack": 40,
+      "spDefense": 95,
+      "speed": 85
+    }
+  },
+  "sneasel": {
+    "dex": 215,
+    "name": "Sneasel",
+    "types": [
+      "dark",
+      "ice"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 95,
+      "defense": 55,
+      "spAttack": 35,
+      "spDefense": 75,
+      "speed": 115
+    }
+  },
+  "teddiursa": {
+    "dex": 216,
+    "name": "Teddiursa",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 80,
+      "defense": 50,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 40
+    }
+  },
+  "ursaring": {
+    "dex": 217,
+    "name": "Ursaring",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 90,
+      "attack": 130,
+      "defense": 75,
+      "spAttack": 75,
+      "spDefense": 75,
+      "speed": 55
+    }
+  },
+  "skarmory": {
+    "dex": 227,
+    "name": "Skarmory",
+    "types": [
+      "steel",
+      "flying"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 80,
+      "defense": 140,
+      "spAttack": 40,
+      "spDefense": 70,
+      "speed": 70
+    }
+  },
+  "houndour": {
+    "dex": 228,
+    "name": "Houndour",
+    "types": [
+      "dark",
+      "fire"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 60,
+      "defense": 30,
+      "spAttack": 80,
+      "spDefense": 50,
+      "speed": 65
+    }
+  },
+  "houndoom": {
+    "dex": 229,
+    "name": "Houndoom",
+    "types": [
+      "dark",
+      "fire"
+    ],
+    "stats": {
+      "hp": 75,
+      "attack": 90,
+      "defense": 50,
+      "spAttack": 110,
+      "spDefense": 80,
+      "speed": 95
+    }
+  },
+  "phanpy": {
+    "dex": 231,
+    "name": "Phanpy",
+    "types": [
+      "ground"
+    ],
+    "stats": {
+      "hp": 90,
+      "attack": 60,
+      "defense": 60,
+      "spAttack": 40,
+      "spDefense": 40,
+      "speed": 40
+    }
+  },
+  "donphan": {
+    "dex": 232,
+    "name": "Donphan",
+    "types": [
+      "ground"
+    ],
+    "stats": {
+      "hp": 90,
+      "attack": 120,
+      "defense": 120,
+      "spAttack": 60,
+      "spDefense": 60,
+      "speed": 50
+    }
+  },
+  "poochyena": {
+    "dex": 261,
+    "name": "Poochyena",
+    "types": [
+      "dark"
+    ],
+    "stats": {
+      "hp": 35,
+      "attack": 55,
+      "defense": 35,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 35
+    }
+  },
+  "mightyena": {
+    "dex": 262,
+    "name": "Mightyena",
+    "types": [
+      "dark"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 90,
+      "defense": 70,
+      "spAttack": 60,
+      "spDefense": 60,
+      "speed": 70
+    }
+  },
+  "zigzagoon": {
+    "dex": 263,
+    "name": "Zigzagoon",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 38,
+      "attack": 30,
+      "defense": 41,
+      "spAttack": 30,
+      "spDefense": 41,
+      "speed": 60
+    }
+  },
+  "taillow": {
+    "dex": 276,
+    "name": "Taillow",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 55,
+      "defense": 30,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 85
+    }
+  },
+  "swellow": {
+    "dex": 277,
+    "name": "Swellow",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 85,
+      "defense": 60,
+      "spAttack": 75,
+      "spDefense": 50,
+      "speed": 125
+    }
+  },
+  "wingull": {
+    "dex": 278,
+    "name": "Wingull",
+    "types": [
+      "water",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 30,
+      "defense": 30,
+      "spAttack": 55,
+      "spDefense": 30,
+      "speed": 85
+    }
+  },
+  "shroomish": {
+    "dex": 285,
+    "name": "Shroomish",
+    "types": [
+      "grass"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 40,
+      "defense": 60,
+      "spAttack": 40,
+      "spDefense": 60,
+      "speed": 35
+    }
+  },
+  "breloom": {
+    "dex": 286,
+    "name": "Breloom",
+    "types": [
+      "grass",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 130,
+      "defense": 80,
+      "spAttack": 60,
+      "spDefense": 60,
+      "speed": 70
+    }
+  },
+  "hariyama": {
+    "dex": 297,
+    "name": "Hariyama",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 144,
+      "attack": 120,
+      "defense": 60,
+      "spAttack": 40,
+      "spDefense": 60,
+      "speed": 50
+    }
+  },
+  "sableye": {
+    "dex": 302,
+    "name": "Sableye",
+    "types": [
+      "dark",
+      "ghost"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 75,
+      "defense": 75,
+      "spAttack": 65,
+      "spDefense": 65,
+      "speed": 50
+    }
+  },
+  "aron": {
+    "dex": 304,
+    "name": "Aron",
+    "types": [
+      "steel",
+      "rock"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 70,
+      "defense": 100,
+      "spAttack": 40,
+      "spDefense": 40,
+      "speed": 30
+    }
+  },
+  "aggron": {
+    "dex": 306,
+    "name": "Aggron",
+    "types": [
+      "steel",
+      "rock"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 110,
+      "defense": 180,
+      "spAttack": 60,
+      "spDefense": 60,
+      "speed": 50
+    }
+  },
+  "manectric": {
+    "dex": 310,
+    "name": "Manectric",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 75,
+      "defense": 60,
+      "spAttack": 105,
+      "spDefense": 60,
+      "speed": 105
+    }
+  },
+  "cacnea": {
+    "dex": 331,
+    "name": "Cacnea",
+    "types": [
+      "grass"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 85,
+      "defense": 40,
+      "spAttack": 85,
+      "spDefense": 40,
+      "speed": 35
+    }
+  },
+  "cacturne": {
+    "dex": 332,
+    "name": "Cacturne",
+    "types": [
+      "grass",
+      "dark"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 115,
+      "defense": 60,
+      "spAttack": 115,
+      "spDefense": 60,
+      "speed": 55
+    }
+  },
+  "zangoose": {
+    "dex": 335,
+    "name": "Zangoose",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 73,
+      "attack": 115,
+      "defense": 60,
+      "spAttack": 60,
+      "spDefense": 60,
+      "speed": 90
+    }
+  },
+  "seviper": {
+    "dex": 336,
+    "name": "Seviper",
+    "types": [
+      "poison"
+    ],
+    "stats": {
+      "hp": 73,
+      "attack": 100,
+      "defense": 60,
+      "spAttack": 100,
+      "spDefense": 60,
+      "speed": 65
+    }
+  },
+  "starly": {
+    "dex": 396,
+    "name": "Starly",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 55,
+      "defense": 30,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 60
+    }
+  },
+  "staravia": {
+    "dex": 397,
+    "name": "Staravia",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 75,
+      "defense": 50,
+      "spAttack": 40,
+      "spDefense": 40,
+      "speed": 80
+    }
+  },
+  "staraptor": {
+    "dex": 398,
+    "name": "Staraptor",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 85,
+      "attack": 120,
+      "defense": 70,
+      "spAttack": 50,
+      "spDefense": 60,
+      "speed": 100
+    }
+  },
+  "bidoof": {
+    "dex": 399,
+    "name": "Bidoof",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 59,
+      "attack": 45,
+      "defense": 40,
+      "spAttack": 35,
+      "spDefense": 40,
+      "speed": 31
+    }
+  },
+  "bibarel": {
+    "dex": 400,
+    "name": "Bibarel",
+    "types": [
+      "normal",
+      "water"
+    ],
+    "stats": {
+      "hp": 79,
+      "attack": 85,
+      "defense": 60,
+      "spAttack": 55,
+      "spDefense": 60,
+      "speed": 71
+    }
+  },
+  "shinx": {
+    "dex": 403,
+    "name": "Shinx",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 65,
+      "defense": 34,
+      "spAttack": 40,
+      "spDefense": 34,
+      "speed": 45
+    }
+  },
+  "luxio": {
+    "dex": 404,
+    "name": "Luxio",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 85,
+      "defense": 49,
+      "spAttack": 60,
+      "spDefense": 49,
+      "speed": 60
+    }
+  },
+  "luxray": {
+    "dex": 405,
+    "name": "Luxray",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 120,
+      "defense": 79,
+      "spAttack": 95,
+      "spDefense": 79,
+      "speed": 70
+    }
+  },
+  "drifloon": {
+    "dex": 425,
+    "name": "Drifloon",
+    "types": [
+      "ghost",
+      "flying"
+    ],
+    "stats": {
+      "hp": 90,
+      "attack": 50,
+      "defense": 34,
+      "spAttack": 60,
+      "spDefense": 44,
+      "speed": 70
+    }
+  },
+  "drifblim": {
+    "dex": 426,
+    "name": "Drifblim",
+    "types": [
+      "ghost",
+      "flying"
+    ],
+    "stats": {
+      "hp": 150,
+      "attack": 80,
+      "defense": 44,
+      "spAttack": 90,
+      "spDefense": 54,
+      "speed": 80
+    }
+  },
+  "stunky": {
+    "dex": 434,
+    "name": "Stunky",
+    "types": [
+      "poison",
+      "dark"
+    ],
+    "stats": {
+      "hp": 63,
+      "attack": 63,
+      "defense": 47,
+      "spAttack": 41,
+      "spDefense": 41,
+      "speed": 74
+    }
+  },
+  "bronzor": {
+    "dex": 436,
+    "name": "Bronzor",
+    "types": [
+      "steel",
+      "psychic"
+    ],
+    "stats": {
+      "hp": 57,
+      "attack": 24,
+      "defense": 86,
+      "spAttack": 24,
+      "spDefense": 86,
+      "speed": 23
+    }
+  },
+  "hippopotas": {
+    "dex": 449,
+    "name": "Hippopotas",
+    "types": [
+      "ground"
+    ],
+    "stats": {
+      "hp": 68,
+      "attack": 72,
+      "defense": 78,
+      "spAttack": 38,
+      "spDefense": 42,
+      "speed": 32
+    }
+  },
+  "hippowdon": {
+    "dex": 450,
+    "name": "Hippowdon",
+    "types": [
+      "ground"
+    ],
+    "stats": {
+      "hp": 108,
+      "attack": 112,
+      "defense": 118,
+      "spAttack": 68,
+      "spDefense": 72,
+      "speed": 47
+    }
+  },
+  "skorupi": {
+    "dex": 451,
+    "name": "Skorupi",
+    "types": [
+      "poison",
+      "bug"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 50,
+      "defense": 90,
+      "spAttack": 30,
+      "spDefense": 55,
+      "speed": 65
+    }
+  },
+  "drapion": {
+    "dex": 452,
+    "name": "Drapion",
+    "types": [
+      "poison",
+      "dark"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 90,
+      "defense": 110,
+      "spAttack": 60,
+      "spDefense": 75,
+      "speed": 95
+    }
+  },
+  "toxicroak": {
+    "dex": 454,
+    "name": "Toxicroak",
+    "types": [
+      "poison",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 83,
+      "attack": 106,
+      "defense": 65,
+      "spAttack": 86,
+      "spDefense": 65,
+      "speed": 85
+    }
+  },
+  "patrat": {
+    "dex": 504,
+    "name": "Patrat",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 55,
+      "defense": 39,
+      "spAttack": 35,
+      "spDefense": 39,
+      "speed": 42
+    }
+  },
+  "liepard": {
+    "dex": 510,
+    "name": "Liepard",
+    "types": [
+      "dark"
+    ],
+    "stats": {
+      "hp": 64,
+      "attack": 88,
+      "defense": 50,
+      "spAttack": 88,
+      "spDefense": 50,
+      "speed": 106
+    }
+  },
+  "pidove": {
+    "dex": 519,
+    "name": "Pidove",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 55,
+      "defense": 50,
+      "spAttack": 36,
+      "spDefense": 30,
+      "speed": 43
+    }
+  },
+  "roggenrola": {
+    "dex": 524,
+    "name": "Roggenrola",
+    "types": [
+      "rock"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 75,
+      "defense": 85,
+      "spAttack": 25,
+      "spDefense": 25,
+      "speed": 15
+    }
+  },
+  "boldore": {
+    "dex": 525,
+    "name": "Boldore",
+    "types": [
+      "rock"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 105,
+      "defense": 105,
+      "spAttack": 50,
+      "spDefense": 40,
+      "speed": 20
+    }
+  },
+  "swoobat": {
+    "dex": 528,
+    "name": "Swoobat",
+    "types": [
+      "psychic",
+      "flying"
+    ],
+    "stats": {
+      "hp": 67,
+      "attack": 57,
+      "defense": 55,
+      "spAttack": 77,
+      "spDefense": 55,
+      "speed": 114
+    }
+  },
+  "excadrill": {
+    "dex": 530,
+    "name": "Excadrill",
+    "types": [
+      "ground",
+      "steel"
+    ],
+    "stats": {
+      "hp": 110,
+      "attack": 135,
+      "defense": 60,
+      "spAttack": 50,
+      "spDefense": 65,
+      "speed": 88
+    }
+  },
+  "timburr": {
+    "dex": 532,
+    "name": "Timburr",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 75,
+      "attack": 80,
+      "defense": 55,
+      "spAttack": 25,
+      "spDefense": 35,
+      "speed": 35
+    }
+  },
+  "gurdurr": {
+    "dex": 533,
+    "name": "Gurdurr",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 85,
+      "attack": 105,
+      "defense": 85,
+      "spAttack": 40,
+      "spDefense": 50,
+      "speed": 40
+    }
+  },
+  "conkeldurr": {
+    "dex": 534,
+    "name": "Conkeldurr",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 105,
+      "attack": 140,
+      "defense": 95,
+      "spAttack": 55,
+      "spDefense": 65,
+      "speed": 45
+    }
+  },
+  "venipede": {
+    "dex": 543,
+    "name": "Venipede",
+    "types": [
+      "bug",
+      "poison"
+    ],
+    "stats": {
+      "hp": 30,
+      "attack": 45,
+      "defense": 59,
+      "spAttack": 30,
+      "spDefense": 39,
+      "speed": 57
+    }
+  },
+  "scolipede": {
+    "dex": 545,
+    "name": "Scolipede",
+    "types": [
+      "bug",
+      "poison"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 100,
+      "defense": 89,
+      "spAttack": 55,
+      "spDefense": 69,
+      "speed": 112
+    }
+  },
+  "sandile": {
+    "dex": 551,
+    "name": "Sandile",
+    "types": [
+      "ground",
+      "dark"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 72,
+      "defense": 35,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 65
+    }
+  },
+  "krokorok": {
+    "dex": 552,
+    "name": "Krokorok",
+    "types": [
+      "ground",
+      "dark"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 82,
+      "defense": 45,
+      "spAttack": 45,
+      "spDefense": 45,
+      "speed": 74
+    }
+  },
+  "krookodile": {
+    "dex": 553,
+    "name": "Krookodile",
+    "types": [
+      "ground",
+      "dark"
+    ],
+    "stats": {
+      "hp": 95,
+      "attack": 117,
+      "defense": 80,
+      "spAttack": 65,
+      "spDefense": 70,
+      "speed": 92
+    }
+  },
+  "scraggy": {
+    "dex": 559,
+    "name": "Scraggy",
+    "types": [
+      "dark",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 75,
+      "defense": 70,
+      "spAttack": 35,
+      "spDefense": 70,
+      "speed": 48
+    }
+  },
+  "zorua": {
+    "dex": 570,
+    "name": "Zorua",
+    "types": [
+      "dark"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 65,
+      "defense": 40,
+      "spAttack": 80,
+      "spDefense": 40,
+      "speed": 65
+    }
+  },
+  "litwick": {
+    "dex": 607,
+    "name": "Litwick",
+    "types": [
+      "ghost",
+      "fire"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 30,
+      "defense": 55,
+      "spAttack": 65,
+      "spDefense": 55,
+      "speed": 20
+    }
+  },
+  "lampent": {
+    "dex": 608,
+    "name": "Lampent",
+    "types": [
+      "ghost",
+      "fire"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 40,
+      "defense": 60,
+      "spAttack": 95,
+      "spDefense": 60,
+      "speed": 55
+    }
+  },
+  "chandelure": {
+    "dex": 609,
+    "name": "Chandelure",
+    "types": [
+      "ghost",
+      "fire"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 55,
+      "defense": 90,
+      "spAttack": 145,
+      "spDefense": 90,
+      "speed": 80
+    }
+  },
+  "bunnelby": {
+    "dex": 659,
+    "name": "Bunnelby",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 38,
+      "attack": 36,
+      "defense": 38,
+      "spAttack": 32,
+      "spDefense": 36,
+      "speed": 57
+    }
+  },
+  "diggersby": {
+    "dex": 660,
+    "name": "Diggersby",
+    "types": [
+      "normal",
+      "ground"
+    ],
+    "stats": {
+      "hp": 85,
+      "attack": 56,
+      "defense": 77,
+      "spAttack": 50,
+      "spDefense": 77,
+      "speed": 78
+    }
+  },
+  "fletchling": {
+    "dex": 661,
+    "name": "Fletchling",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 50,
+      "defense": 43,
+      "spAttack": 40,
+      "spDefense": 38,
+      "speed": 62
+    }
+  },
+  "fletchinder": {
+    "dex": 662,
+    "name": "Fletchinder",
+    "types": [
+      "fire",
+      "flying"
+    ],
+    "stats": {
+      "hp": 62,
+      "attack": 73,
+      "defense": 55,
+      "spAttack": 56,
+      "spDefense": 52,
+      "speed": 84
+    }
+  },
+  "talonflame": {
+    "dex": 663,
+    "name": "Talonflame",
+    "types": [
+      "fire",
+      "flying"
+    ],
+    "stats": {
+      "hp": 78,
+      "attack": 81,
+      "defense": 71,
+      "spAttack": 74,
+      "spDefense": 69,
+      "speed": 126
+    }
+  },
+  "litleo": {
+    "dex": 667,
+    "name": "Litleo",
+    "types": [
+      "fire",
+      "normal"
+    ],
+    "stats": {
+      "hp": 62,
+      "attack": 50,
+      "defense": 58,
+      "spAttack": 73,
+      "spDefense": 54,
+      "speed": 72
+    }
+  },
+  "pancham": {
+    "dex": 674,
+    "name": "Pancham",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 67,
+      "attack": 82,
+      "defense": 62,
+      "spAttack": 46,
+      "spDefense": 48,
+      "speed": 43
+    }
+  },
+  "pangoro": {
+    "dex": 675,
+    "name": "Pangoro",
+    "types": [
+      "fighting",
+      "dark"
+    ],
+    "stats": {
+      "hp": 95,
+      "attack": 124,
+      "defense": 78,
+      "spAttack": 69,
+      "spDefense": 71,
+      "speed": 58
+    }
+  },
+  "espurr": {
+    "dex": 677,
+    "name": "Espurr",
+    "types": [
+      "psychic"
+    ],
+    "stats": {
+      "hp": 62,
+      "attack": 48,
+      "defense": 54,
+      "spAttack": 63,
+      "spDefense": 60,
+      "speed": 68
+    }
+  },
+  "honedge": {
+    "dex": 679,
+    "name": "Honedge",
+    "types": [
+      "steel",
+      "ghost"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 80,
+      "defense": 100,
+      "spAttack": 35,
+      "spDefense": 37,
+      "speed": 28
+    }
+  },
+  "doublade": {
+    "dex": 680,
+    "name": "Doublade",
+    "types": [
+      "steel",
+      "ghost"
+    ],
+    "stats": {
+      "hp": 59,
+      "attack": 110,
+      "defense": 150,
+      "spAttack": 45,
+      "spDefense": 49,
+      "speed": 35
+    }
+  },
+  "inkay": {
+    "dex": 686,
+    "name": "Inkay",
+    "types": [
+      "dark",
+      "psychic"
+    ],
+    "stats": {
+      "hp": 53,
+      "attack": 54,
+      "defense": 53,
+      "spAttack": 37,
+      "spDefense": 46,
+      "speed": 45
+    }
+  },
+  "klefki": {
+    "dex": 707,
+    "name": "Klefki",
+    "types": [
+      "steel",
+      "fairy"
+    ],
+    "stats": {
+      "hp": 57,
+      "attack": 80,
+      "defense": 91,
+      "spAttack": 80,
+      "spDefense": 87,
+      "speed": 75
+    }
+  },
+  "phantump": {
+    "dex": 708,
+    "name": "Phantump",
+    "types": [
+      "ghost",
+      "grass"
+    ],
+    "stats": {
+      "hp": 43,
+      "attack": 70,
+      "defense": 48,
+      "spAttack": 50,
+      "spDefense": 60,
+      "speed": 38
+    }
+  },
+  "trevenant": {
+    "dex": 709,
+    "name": "Trevenant",
+    "types": [
+      "ghost",
+      "grass"
+    ],
+    "stats": {
+      "hp": 85,
+      "attack": 110,
+      "defense": 76,
+      "spAttack": 65,
+      "spDefense": 82,
+      "speed": 56
+    }
+  },
+  "pikipek": {
+    "dex": 731,
+    "name": "Pikipek",
+    "types": [
+      "normal",
+      "flying"
+    ],
+    "stats": {
+      "hp": 35,
+      "attack": 75,
+      "defense": 30,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 65
+    }
+  },
+  "yungoos": {
+    "dex": 734,
+    "name": "Yungoos",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 48,
+      "attack": 70,
+      "defense": 30,
+      "spAttack": 30,
+      "spDefense": 30,
+      "speed": 45
+    }
+  },
+  "grubbin": {
+    "dex": 736,
+    "name": "Grubbin",
+    "types": [
+      "bug"
+    ],
+    "stats": {
+      "hp": 47,
+      "attack": 62,
+      "defense": 45,
+      "spAttack": 55,
+      "spDefense": 45,
+      "speed": 46
+    }
+  },
+  "charjabug": {
+    "dex": 737,
+    "name": "Charjabug",
+    "types": [
+      "bug",
+      "electric"
+    ],
+    "stats": {
+      "hp": 57,
+      "attack": 82,
+      "defense": 95,
+      "spAttack": 55,
+      "spDefense": 75,
+      "speed": 36
+    }
+  },
+  "vikavolt": {
+    "dex": 738,
+    "name": "Vikavolt",
+    "types": [
+      "bug",
+      "electric"
+    ],
+    "stats": {
+      "hp": 77,
+      "attack": 70,
+      "defense": 90,
+      "spAttack": 145,
+      "spDefense": 75,
+      "speed": 43
+    }
+  },
+  "crabrawler": {
+    "dex": 739,
+    "name": "Crabrawler",
+    "types": [
+      "fighting"
+    ],
+    "stats": {
+      "hp": 47,
+      "attack": 82,
+      "defense": 57,
+      "spAttack": 42,
+      "spDefense": 47,
+      "speed": 63
+    }
+  },
+  "cutiefly": {
+    "dex": 742,
+    "name": "Cutiefly",
+    "types": [
+      "bug",
+      "fairy"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 45,
+      "defense": 40,
+      "spAttack": 55,
+      "spDefense": 40,
+      "speed": 84
+    }
+  },
+  "rockruff": {
+    "dex": 744,
+    "name": "Rockruff",
+    "types": [
+      "rock"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 65,
+      "defense": 40,
+      "spAttack": 30,
+      "spDefense": 40,
+      "speed": 60
+    }
+  },
+  "mudbray": {
+    "dex": 749,
+    "name": "Mudbray",
+    "types": [
+      "ground"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 100,
+      "defense": 70,
+      "spAttack": 45,
+      "spDefense": 55,
+      "speed": 45
+    }
+  },
+  "fomantis": {
+    "dex": 753,
+    "name": "Fomantis",
+    "types": [
+      "grass"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 55,
+      "defense": 35,
+      "spAttack": 50,
+      "spDefense": 35,
+      "speed": 35
+    }
+  },
+  "salazzle": {
+    "dex": 758,
+    "name": "Salazzle",
+    "types": [
+      "poison",
+      "fire"
+    ],
+    "stats": {
+      "hp": 68,
+      "attack": 64,
+      "defense": 60,
+      "spAttack": 111,
+      "spDefense": 60,
+      "speed": 117
+    }
+  },
+  "stufful": {
+    "dex": 759,
+    "name": "Stufful",
+    "types": [
+      "normal",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 75,
+      "defense": 50,
+      "spAttack": 45,
+      "spDefense": 50,
+      "speed": 50
+    }
+  },
+  "bewear": {
+    "dex": 760,
+    "name": "Bewear",
+    "types": [
+      "normal",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 120,
+      "attack": 125,
+      "defense": 80,
+      "spAttack": 55,
+      "spDefense": 60,
+      "speed": 60
+    }
+  },
+  "togedemaru": {
+    "dex": 777,
+    "name": "Togedemaru",
+    "types": [
+      "electric",
+      "steel"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 98,
+      "defense": 63,
+      "spAttack": 40,
+      "spDefense": 73,
+      "speed": 96
+    }
+  },
+  "mimikyu": {
+    "dex": 778,
+    "name": "Mimikyu",
+    "types": [
+      "ghost",
+      "fairy"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 90,
+      "defense": 80,
+      "spAttack": 50,
+      "spDefense": 105,
+      "speed": 96
+    }
+  },
+  "skwovet": {
+    "dex": 819,
+    "name": "Skwovet",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 55,
+      "defense": 55,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 25
+    }
+  },
+  "rookidee": {
+    "dex": 821,
+    "name": "Rookidee",
+    "types": [
+      "flying"
+    ],
+    "stats": {
+      "hp": 38,
+      "attack": 47,
+      "defense": 35,
+      "spAttack": 33,
+      "spDefense": 35,
+      "speed": 57
+    }
+  },
+  "corvisquire": {
+    "dex": 822,
+    "name": "Corvisquire",
+    "types": [
+      "flying"
+    ],
+    "stats": {
+      "hp": 68,
+      "attack": 67,
+      "defense": 55,
+      "spAttack": 43,
+      "spDefense": 55,
+      "speed": 77
+    }
+  },
+  "corviknight": {
+    "dex": 823,
+    "name": "Corviknight",
+    "types": [
+      "flying",
+      "steel"
+    ],
+    "stats": {
+      "hp": 98,
+      "attack": 87,
+      "defense": 105,
+      "spAttack": 53,
+      "spDefense": 85,
+      "speed": 67
+    }
+  },
+  "nickit": {
+    "dex": 827,
+    "name": "Nickit",
+    "types": [
+      "dark"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 28,
+      "defense": 28,
+      "spAttack": 47,
+      "spDefense": 52,
+      "speed": 50
+    }
+  },
+  "thievul": {
+    "dex": 828,
+    "name": "Thievul",
+    "types": [
+      "dark"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 58,
+      "defense": 58,
+      "spAttack": 87,
+      "spDefense": 92,
+      "speed": 90
+    }
+  },
+  "chewtle": {
+    "dex": 833,
+    "name": "Chewtle",
+    "types": [
+      "water"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 64,
+      "defense": 50,
+      "spAttack": 38,
+      "spDefense": 38,
+      "speed": 44
+    }
+  },
+  "drednaw": {
+    "dex": 834,
+    "name": "Drednaw",
+    "types": [
+      "water",
+      "rock"
+    ],
+    "stats": {
+      "hp": 90,
+      "attack": 115,
+      "defense": 90,
+      "spAttack": 48,
+      "spDefense": 68,
+      "speed": 74
+    }
+  },
+  "yamper": {
+    "dex": 835,
+    "name": "Yamper",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 59,
+      "attack": 45,
+      "defense": 50,
+      "spAttack": 40,
+      "spDefense": 50,
+      "speed": 26
+    }
+  },
+  "sizzlipede": {
+    "dex": 850,
+    "name": "Sizzlipede",
+    "types": [
+      "fire",
+      "bug"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 65,
+      "defense": 45,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 45
+    }
+  },
+  "centiskorch": {
+    "dex": 851,
+    "name": "Centiskorch",
+    "types": [
+      "fire",
+      "bug"
+    ],
+    "stats": {
+      "hp": 100,
+      "attack": 115,
+      "defense": 65,
+      "spAttack": 90,
+      "spDefense": 90,
+      "speed": 65
+    }
+  },
+  "sinistea": {
+    "dex": 854,
+    "name": "Sinistea",
+    "types": [
+      "ghost"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 45,
+      "defense": 45,
+      "spAttack": 74,
+      "spDefense": 54,
+      "speed": 50
+    }
+  },
+  "polteageist": {
+    "dex": 855,
+    "name": "Polteageist",
+    "types": [
+      "ghost"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 65,
+      "defense": 65,
+      "spAttack": 134,
+      "spDefense": 114,
+      "speed": 70
+    }
+  },
+  "impidimp": {
+    "dex": 859,
+    "name": "Impidimp",
+    "types": [
+      "dark",
+      "fairy"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 45,
+      "defense": 30,
+      "spAttack": 55,
+      "spDefense": 40,
+      "speed": 50
+    }
+  },
+  "morgrem": {
+    "dex": 860,
+    "name": "Morgrem",
+    "types": [
+      "dark",
+      "fairy"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 60,
+      "defense": 45,
+      "spAttack": 75,
+      "spDefense": 55,
+      "speed": 70
+    }
+  },
+  "grimmsnarl": {
+    "dex": 861,
+    "name": "Grimmsnarl",
+    "types": [
+      "dark",
+      "fairy"
+    ],
+    "stats": {
+      "hp": 95,
+      "attack": 120,
+      "defense": 65,
+      "spAttack": 95,
+      "spDefense": 75,
+      "speed": 60
+    }
+  },
+  "lechonk": {
+    "dex": 915,
+    "name": "Lechonk",
+    "types": [
+      "normal"
+    ],
+    "stats": {
+      "hp": 54,
+      "attack": 45,
+      "defense": 40,
+      "spAttack": 35,
+      "spDefense": 45,
+      "speed": 35
+    }
+  },
+  "tarountula": {
+    "dex": 917,
+    "name": "Tarountula",
+    "types": [
+      "bug"
+    ],
+    "stats": {
+      "hp": 35,
+      "attack": 41,
+      "defense": 45,
+      "spAttack": 29,
+      "spDefense": 40,
+      "speed": 20
+    }
+  },
+  "spidops": {
+    "dex": 918,
+    "name": "Spidops",
+    "types": [
+      "bug"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 79,
+      "defense": 92,
+      "spAttack": 52,
+      "spDefense": 86,
+      "speed": 35
+    }
+  },
+  "lokix": {
+    "dex": 920,
+    "name": "Lokix",
+    "types": [
+      "bug",
+      "dark"
+    ],
+    "stats": {
+      "hp": 71,
+      "attack": 102,
+      "defense": 78,
+      "spAttack": 52,
+      "spDefense": 55,
+      "speed": 92
+    }
+  },
+  "pawmi": {
+    "dex": 921,
+    "name": "Pawmi",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 50,
+      "defense": 20,
+      "spAttack": 40,
+      "spDefense": 25,
+      "speed": 60
+    }
+  },
+  "pawmo": {
+    "dex": 922,
+    "name": "Pawmo",
+    "types": [
+      "electric",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 60,
+      "attack": 75,
+      "defense": 40,
+      "spAttack": 50,
+      "spDefense": 40,
+      "speed": 85
+    }
+  },
+  "pawmot": {
+    "dex": 923,
+    "name": "Pawmot",
+    "types": [
+      "electric",
+      "fighting"
+    ],
+    "stats": {
+      "hp": 70,
+      "attack": 115,
+      "defense": 70,
+      "spAttack": 70,
+      "spDefense": 60,
+      "speed": 105
+    }
+  },
+  "nacli": {
+    "dex": 932,
+    "name": "Nacli",
+    "types": [
+      "rock"
+    ],
+    "stats": {
+      "hp": 55,
+      "attack": 55,
+      "defense": 75,
+      "spAttack": 35,
+      "spDefense": 35,
+      "speed": 25
+    }
+  },
+  "bellibolt": {
+    "dex": 939,
+    "name": "Bellibolt",
+    "types": [
+      "electric"
+    ],
+    "stats": {
+      "hp": 109,
+      "attack": 64,
+      "defense": 91,
+      "spAttack": 103,
+      "spDefense": 83,
+      "speed": 45
+    }
+  },
+  "wattrel": {
+    "dex": 940,
+    "name": "Wattrel",
+    "types": [
+      "electric",
+      "flying"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 40,
+      "defense": 35,
+      "spAttack": 55,
+      "spDefense": 40,
+      "speed": 70
+    }
+  },
+  "tinkatink": {
+    "dex": 957,
+    "name": "Tinkatink",
+    "types": [
+      "fairy",
+      "steel"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 45,
+      "defense": 45,
+      "spAttack": 35,
+      "spDefense": 64,
+      "speed": 58
+    }
+  },
+  "tinkaton": {
+    "dex": 959,
+    "name": "Tinkaton",
+    "types": [
+      "fairy",
+      "steel"
+    ],
+    "stats": {
+      "hp": 85,
+      "attack": 75,
+      "defense": 77,
+      "spAttack": 70,
+      "spDefense": 105,
+      "speed": 94
+    }
+  },
+  "wiglett": {
+    "dex": 960,
+    "name": "Wiglett",
+    "types": [
+      "water"
+    ],
+    "stats": {
+      "hp": 10,
+      "attack": 55,
+      "defense": 25,
+      "spAttack": 35,
+      "spDefense": 25,
+      "speed": 95
+    }
+  },
+  "glimmet": {
+    "dex": 969,
+    "name": "Glimmet",
+    "types": [
+      "rock",
+      "poison"
+    ],
+    "stats": {
+      "hp": 48,
+      "attack": 35,
+      "defense": 42,
+      "spAttack": 105,
+      "spDefense": 60,
+      "speed": 60
+    }
+  },
+  "houndstone": {
+    "dex": 972,
+    "name": "Houndstone",
+    "types": [
+      "ghost"
+    ],
+    "stats": {
+      "hp": 72,
+      "attack": 101,
+      "defense": 100,
+      "spAttack": 50,
+      "spDefense": 97,
+      "speed": 68
+    }
+  }
+}

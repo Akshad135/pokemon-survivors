@@ -1,6 +1,6 @@
 import { dir8, dirTo, retain } from '../engine/math'
 import { clearGrid, insert, query } from '../engine/spatial'
-import { ENEMIES, type EnemyId } from '../data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { sprites } from '../render/sprites'
 import { hurtPlayer } from './combat'
@@ -13,8 +13,8 @@ const neighbors: number[] = []
 export const radiusFor = (dex: number) => Math.max(5, Math.round(sprites(dex).bodyW * 0.32))
 
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
-  const def = ENEMIES[kind]
-  const boss = 'boss' in def && def.boss
+  const def: EnemyDef = ENEMIES[kind]
+  const boss = def.boss === true
   const scale = scaling(g.time)
   const hp = Math.round(def.hp * (boss ? 1 : scale.hp))
   const enemy: Enemy = {
