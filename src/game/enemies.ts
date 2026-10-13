@@ -4,6 +4,7 @@ import { ENEMIES, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { sprites } from '../render/sprites'
 import { hurtPlayer } from './combat'
+import { createStatus, statusAttack, statusPace } from './status'
 import type { Enemy, EnemyBehavior, Game } from './types'
 
 const neighbors: number[] = []
@@ -32,8 +33,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     dir: 0,
     animTime: g.rng() * 2,
     flash: 0,
-    slow: 0,
-    slowUntil: 0,
+    status: createStatus(),
     dying: -1,
   }
   g.enemies.push(enemy)
@@ -58,9 +58,10 @@ export const updateEnemies = (g: Game, dt: number) => {
       e.dying += dt
       continue
     }
-    e.animTime += dt
+    const frozen = e.status.stun > 0
+    if (!frozen) e.animTime += dt
     e.flash = Math.max(0, e.flash - dt)
-    const pace = e.speed * (g.time < e.slowUntil ? 1 - e.slow : 1) * (e.flash > 0 ? 0.35 : 1)
+    const pace = e.speed * statusPace(e.status) * (e.flash > 0 ? 0.35 : 1)
 
     let vx = 0
     let vy = 0
@@ -69,8 +70,8 @@ export const updateEnemies = (g: Game, dt: number) => {
       vx = d.x * pace
       vy = d.y * pace
     } else {
-      vx = e.behavior.vx
-      vy = e.behavior.vy
+      vx = frozen ? 0 : e.behavior.vx
+      vy = frozen ? 0 : e.behavior.vy
       e.behavior.ttl -= dt
       if (e.behavior.ttl <= 0) e.dying = FAINT_TIME // despawn silently
     }
@@ -116,7 +117,7 @@ export const updateEnemies = (g: Game, dt: number) => {
       const d = Math.sqrt(d2) || 1
       e.x = p.x + (dx / d) * reach
       e.y = p.y + (dy / d) * reach
-      hurtPlayer(g, e.damage, e)
+      hurtPlayer(g, e.damage * statusAttack(e.status), e)
     }
   })
 

@@ -224,7 +224,7 @@ const release = (g: Game, r: ResolvedSpecial) => {
           spawnAttack(g, {
             move: 'special', type: r.def.type, visual: 'roots', x: p.x + Math.cos(a) * radius, y: p.y + Math.sin(a) * radius,
             shape: { kind: 'circle', r: 9 * area }, motion: { kind: 'static' },
-            damage: dmg, knockback: 30, slow: 0.75, ttl: 0.8, age: -k * 0.13, flip: chance(g.rng, 0.5),
+            damage: dmg, knockback: 30, status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.75 }, ttl: 0.8, age: -k * 0.13, flip: chance(g.rng, 0.5),
           })
         }
       }

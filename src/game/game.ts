@@ -11,6 +11,7 @@ import { MOVES, moveStats } from './moves'
 import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { updateSpawner } from './spawner'
+import { updateStatuses } from './statusSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
 
@@ -157,6 +158,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)
+  updateStatuses(g, dt)
   rebuildGrid(g)
   updateMoves(g, dt)
   updateAttacks(g, dt)

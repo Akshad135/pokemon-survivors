@@ -5,6 +5,7 @@ import { spawnAttack } from './spawn'
 import { enemiesInView, nearestEnemy } from './queries'
 import type { Game } from './types'
 import type { PlayerStats } from './stats'
+import { scaleStatus, type StatusSpec } from './status'
 
 /**
  * Moves are the weapons. Each level-up upgrade adds a delta to the move's
@@ -24,7 +25,14 @@ export type MoveStats = {
   duration: number
   pierce: number
   knockback: number
+  /** added to the move's status chance */
+  statusChance: number
+  /** extra burn/poison damage (0.25 = +25%) */
+  statusDamage: number
 }
+
+/** What `fire` receives: final stats plus the scaled status the move inflicts. */
+export type CastStats = MoveStats & { status: StatusSpec | null }
 
 type Upgrade = { text: string; delta: Partial<MoveStats> }
 
@@ -34,11 +42,13 @@ export type MoveDef = {
   description: string
   base: MoveStats
   upgrades: readonly Upgrade[]
-  fire: (g: Game, s: MoveStats) => void
+  /** Condition its hits may inflict (chance and power scale with upgrades and items). */
+  status?: StatusSpec
+  fire: (g: Game, s: CastStats) => void
 }
 
 const stats = (s: Partial<MoveStats>): MoveStats => ({
-  damage: 0, cooldown: 1, area: 1, amount: 1, speed: 0, duration: 1, pierce: Infinity, knockback: 0, ...s,
+  damage: 0, cooldown: 1, area: 1, amount: 1, speed: 0, duration: 1, pierce: Infinity, knockback: 0, statusChance: 0, statusDamage: 0, ...s,
 })
 
 /** Angles spread evenly around `center`, `step` radians apart. */
@@ -56,11 +66,12 @@ export const MOVES = {
   ember: {
     name: 'Ember',
     type: 'fire',
-    description: 'Dispara brasas no inimigo mais próximo.',
+    description: 'Dispara brasas no inimigo mais próximo. Pode queimar.',
     base: stats({ damage: 10, cooldown: 1, amount: 1, speed: 190, pierce: 1, knockback: 40 }),
+    status: { kind: 'burn', chance: 0.3, duration: 2.5, power: 0.3 },
     upgrades: [
       { text: '+1 brasa', delta: { amount: 1 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
+      { text: '+4 de dano e +10% de chance de queimar', delta: { damage: 4, statusChance: 0.1 } },
       { text: 'Recarga 15% mais rápida', delta: { cooldown: -0.15 } },
       { text: '+1 brasa', delta: { amount: 1 } },
       { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
@@ -75,7 +86,7 @@ export const MOVES = {
           move: 'ember', type: 'fire', visual: 'ember', x: p.x, y: p.y - 6,
           shape: { kind: 'circle', r: 4 * s.area },
           motion: { kind: 'linear', vx: v.x, vy: v.y },
-          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 1.6,
+          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 1.6, status: s.status,
         })
       }
     },
@@ -84,15 +95,16 @@ export const MOVES = {
   fireSpin: {
     name: 'Fire Spin',
     type: 'fire',
-    description: 'Chamas giram ao seu redor.',
+    description: 'Chamas giram ao seu redor. Pode queimar.',
     base: stats({ damage: 9, cooldown: 3.4, amount: 2, speed: 3.4, duration: 2.6, knockback: 30 }),
+    status: { kind: 'burn', chance: 0.25, duration: 2, power: 0.3 },
     upgrades: [
       { text: '+1 chama', delta: { amount: 1 } },
       { text: '+20% de área', delta: { area: 0.2 } },
       { text: '+4 de dano', delta: { damage: 4 } },
       { text: 'Dura +0.6s', delta: { duration: 0.6 } },
       { text: '+1 chama', delta: { amount: 1 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
+      { text: '+5 de dano e queimaduras +25% mais fortes', delta: { damage: 5, statusDamage: 0.25 } },
       { text: '+1 chama e gira mais rápido', delta: { amount: 1, speed: 1 } },
     ],
     fire: (g, s) => {
@@ -102,7 +114,7 @@ export const MOVES = {
           move: 'fireSpin', type: 'fire', visual: 'flame', x: p.x, y: p.y,
           shape: { kind: 'circle', r: 7 * s.area },
           motion: { kind: 'orbit', angle: (i / s.amount) * TAU, spin: s.speed, radius: 36 * s.area },
-          damage: s.damage, knockback: s.knockback, hitInterval: 0.45, ttl: s.duration,
+          damage: s.damage, knockback: s.knockback, hitInterval: 0.45, ttl: s.duration, status: s.status,
         })
       }
     },
@@ -143,6 +155,7 @@ export const MOVES = {
     type: 'water',
     description: 'Redemoinho constante que machuca e desacelera quem chega perto.',
     base: stats({ damage: 5, cooldown: 0.6, knockback: 14 }),
+    status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.4 },
     upgrades: [
       { text: '+20% de área', delta: { area: 0.2 } },
       { text: '+2 de dano', delta: { damage: 2 } },
@@ -161,13 +174,14 @@ export const MOVES = {
         aura.damage = s.damage
         aura.hitInterval = s.cooldown
         aura.knockback = s.knockback
+        aura.status = s.status
         return
       }
       spawnAttack(g, {
         move: 'whirlpool', type: 'water', visual: 'whirlpool', x: g.player.x, y: g.player.y,
         shape: { kind: 'circle', r: radius },
         motion: { kind: 'follow', ox: 0, oy: 0 },
-        damage: s.damage, knockback: s.knockback, hitInterval: s.cooldown, ttl: Infinity, slow: 0.4,
+        damage: s.damage, knockback: s.knockback, hitInterval: s.cooldown, ttl: Infinity, status: s.status,
       })
     },
   },
@@ -175,8 +189,9 @@ export const MOVES = {
   razorLeaf: {
     name: 'Razor Leaf',
     type: 'grass',
-    description: 'Folhas afiadas vão e voltam como bumerangue.',
+    description: 'Folhas afiadas vão e voltam como bumerangue. Podem envenenar.',
     base: stats({ damage: 11, cooldown: 1.5, amount: 1, speed: 210, duration: 1, knockback: 25 }),
+    status: { kind: 'poison', chance: 0.15, duration: 3, power: 0.2 },
     upgrades: [
       { text: '+1 folha', delta: { amount: 1 } },
       { text: '+4 de dano', delta: { damage: 4 } },
@@ -194,7 +209,7 @@ export const MOVES = {
           move: 'razorLeaf', type: 'grass', visual: 'leaf', x: p.x, y: p.y - 6,
           shape: { kind: 'circle', r: 6 * s.area },
           motion: { kind: 'boomerang', vx: d.x * s.speed, vy: d.y * s.speed, ax: -d.x * s.speed * 1.5, ay: -d.y * s.speed * 1.5 },
-          damage: s.damage, knockback: s.knockback, hitInterval: 0.6, ttl: 2.2 * s.duration,
+          damage: s.damage, knockback: s.knockback, hitInterval: 0.6, ttl: 2.2 * s.duration, status: s.status,
         })
       }
     },
@@ -203,8 +218,9 @@ export const MOVES = {
   vineWhip: {
     name: 'Vine Whip',
     type: 'grass',
-    description: 'Chicotada horizontal com cipós. Alcance longo.',
+    description: 'Chicotada horizontal com cipós. Alcance longo. Pode envenenar.',
     base: stats({ damage: 14, cooldown: 1.3, amount: 1, knockback: 70 }),
+    status: { kind: 'poison', chance: 0.25, duration: 3, power: 0.2 },
     upgrades: [
       { text: 'Também ataca atrás', delta: { amount: 1 } },
       { text: '+5 de dano', delta: { damage: 5 } },
@@ -225,7 +241,7 @@ export const MOVES = {
           move: 'vineWhip', type: 'grass', visual: 'vine', x: p.x, y: p.y,
           shape: { kind: 'rect', w, h },
           motion: { kind: 'follow', ox: dir * (w / 2 + 4), oy: -6 - Math.floor(i / 2) * 12 },
-          damage: s.damage, knockback: s.knockback, ttl: 0.24, flip: dir < 0,
+          damage: s.damage, knockback: s.knockback, ttl: 0.24, flip: dir < 0, status: s.status,
           age: -i * 0.1,
         })
       }
@@ -266,12 +282,13 @@ export const MOVES = {
   thunder: {
     name: 'Thunder',
     type: 'electric',
-    description: 'Raios caem sobre inimigos aleatórios na tela.',
+    description: 'Raios caem sobre inimigos aleatórios na tela. Podem paralisar.',
     base: stats({ damage: 22, cooldown: 2.6, amount: 2, knockback: 10 }),
+    status: { kind: 'paralysis', chance: 0.5, duration: 2.5, power: 0 },
     upgrades: [
       { text: '+1 raio', delta: { amount: 1 } },
       { text: '+8 de dano', delta: { damage: 8 } },
-      { text: '+25% de área', delta: { area: 0.25 } },
+      { text: '+25% de área e +15% de chance de paralisar', delta: { area: 0.25, statusChance: 0.15 } },
       { text: '+1 raio', delta: { amount: 1 } },
       { text: 'Recarga 0.3s mais rápida', delta: { cooldown: -0.3 } },
       { text: '+10 de dano', delta: { damage: 10 } },
@@ -286,7 +303,7 @@ export const MOVES = {
           move: 'thunder', type: 'electric', visual: 'thunder', x: t.x, y: t.y,
           shape: { kind: 'circle', r: 16 * s.area },
           motion: { kind: 'static' },
-          damage: s.damage, knockback: s.knockback, ttl: 0.5, activeFrom: 0.22, activeUntil: 0.3,
+          damage: s.damage, knockback: s.knockback, ttl: 0.5, activeFrom: 0.22, activeUntil: 0.3, status: s.status,
           age: -i * 0.12,
         })
       }
@@ -297,11 +314,12 @@ export const MOVES = {
   sludgeBomb: {
     name: 'Sludge Bomb',
     type: 'poison',
-    description: 'Arremessa lodo tóxico que deixa uma poça venenosa.',
+    description: 'Arremessa lodo tóxico que deixa uma poça venenosa. O veneno acumula.',
     base: stats({ damage: 6, cooldown: 3.6, amount: 1, duration: 2.6 }),
+    status: { kind: 'poison', chance: 0.6, duration: 3, power: 0.35 },
     upgrades: [
       { text: '+1 bomba', delta: { amount: 1 } },
-      { text: '+2 de dano', delta: { damage: 2 } },
+      { text: '+2 de dano e veneno +25% mais forte', delta: { damage: 2, statusDamage: 0.25 } },
       { text: 'Poça dura +0.6s', delta: { duration: 0.6 } },
       { text: '+20% de área', delta: { area: 0.2 } },
       { text: '+1 bomba', delta: { amount: 1 } },
@@ -317,7 +335,7 @@ export const MOVES = {
           move: 'sludgeBomb', type: 'poison', visual: 'sludge', x: t.x, y: t.y,
           shape: { kind: 'circle', r: 22 * s.area },
           motion: { kind: 'static' },
-          damage: s.damage, hitInterval: 0.45, ttl: 0.4 + s.duration, activeFrom: 0.4, slow: 0.25,
+          damage: s.damage, hitInterval: 0.45, ttl: 0.4 + s.duration, activeFrom: 0.4, status: s.status,
           from: { x: p.x, y: p.y - 10 },
           age: -i * 0.15,
         })
@@ -361,7 +379,7 @@ export const MOVE_IDS = Object.keys(MOVES) as MoveId[]
 export const maxMoveLevel = (id: MoveId) => MOVES[id].upgrades.length + 1
 
 /** Final stats of a move at `level`, after upgrades and player modifiers. */
-export const moveStats = (id: MoveId, level: number, player: PlayerStats): MoveStats => {
+export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastStats => {
   const def: MoveDef = MOVES[id]
   const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, { delta }) => {
     const next = { ...acc }
@@ -376,5 +394,12 @@ export const moveStats = (id: MoveId, level: number, player: PlayerStats): MoveS
     amount: s.amount + player.amount,
     speed: s.speed * player.projectileSpeed,
     duration: s.duration * player.duration,
+    status: def.status
+      ? scaleStatus(def.status, {
+          chance: s.statusChance + player.statusChance,
+          damage: s.statusDamage + player.statusDamage,
+          duration: player.duration,
+        })
+      : null,
   }
 }

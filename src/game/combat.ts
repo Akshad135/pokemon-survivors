@@ -3,7 +3,8 @@ import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS } from '../data/types'
 import { burst, floatText } from './effects'
 import { dropPickup, dropXp } from './pickups'
-import type { Attack, Enemy, Game } from './types'
+import { applyStatus, STATUS_RULES, type StatusKind } from './status'
+import type { Attack, DamageSource, Enemy, Game } from './types'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8' } as const
 
@@ -21,9 +22,11 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   e.kx += away.x * kb
   e.ky += away.y * kb
 
-  if (attack.slow > 0) {
-    e.slow = attack.slow
-    e.slowUntil = g.time + 0.6
+  const status = attack.status
+  if (status && chance(g.rng, status.chance)) {
+    const fresh = e.status[status.kind].time <= 0
+    applyStatus(e.status, status, attack.damage, e.boss, attack.move)
+    if (fresh && status.kind !== 'slow') burst(g, e.x, e.y - e.radius, { colors: [STATUS_RULES[status.kind].color, '#ffffff'], count: 5, speed: 50, ttl: 0.3 })
   }
 
   const color = eff > 1 ? TEXT_COLORS.super : eff < 1 ? TEXT_COLORS.weak : TEXT_COLORS.normal
@@ -31,6 +34,15 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   burst(g, e.x, e.y - e.radius, { colors: [TYPE_COLORS[attack.type], '#ffffff'], count: eff > 1 ? 6 : 3, speed: 70, ttl: 0.25 })
   g.events.push({ kind: 'hit', effective: eff })
 
+  if (e.hp <= 0) killEnemy(g, e)
+}
+
+/** Damage-over-time tick: no knockback or hit sound, number in the status color. */
+export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource | null, kind: StatusKind) => {
+  const dmg = Math.max(1, Math.round(amount))
+  e.hp -= dmg
+  if (move) g.damageByMove[move] = (g.damageByMove[move] ?? 0) + dmg
+  floatText(g, e.x, e.y - e.radius * 2 - 4, String(dmg), STATUS_RULES[kind].color)
   if (e.hp <= 0) killEnemy(g, e)
 }
 
