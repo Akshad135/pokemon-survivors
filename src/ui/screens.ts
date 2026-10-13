@@ -16,7 +16,13 @@ import { sprites } from '../render/sprites'
 import { formatNumber, formatPokeDollars, t, type Messages } from '../i18n'
 import { h, later } from './dom'
 
-export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () => void }
+export type Screen = {
+  el: HTMLElement
+  tick?: (t: number) => void
+  dispose: () => void
+  /** How much the attract-mode meadow behind the screen is darkened (0..1, default 0.35). */
+  dim?: number
+}
 
 export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
 

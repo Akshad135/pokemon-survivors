@@ -112,7 +112,7 @@ const backRow = (label: string, close: () => void): Row => {
  * shake and language. Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
- * input). The Back button or Esc close it: it removes itself, then calls
+ * input). The Back button, Esc or Backspace (gamepad B) close it: it removes itself, then calls
  * `onClose` after the current key dispatch. The language may have changed by
  * then, so `onClose` should rebuild any text it owns. `dispose` closes it
  * without calling `onClose` (e.g. when the caller's own screen goes away).
@@ -163,7 +163,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     const row = nav && rows[nav.index]
     if (key === 'ArrowLeft' || key === 'KeyA') row?.adjust(-1)
     else if (key === 'ArrowRight' || key === 'KeyD') row?.adjust(1)
-    else if (key === 'Escape') close()
+    else if (key === 'Escape' || key === 'Backspace') close() // Backspace is also the gamepad's B
   })
 
   const dispose = () => {

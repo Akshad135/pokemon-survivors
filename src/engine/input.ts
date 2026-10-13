@@ -9,6 +9,8 @@ export type Input = {
   readMove: () => Vec
   readStick: () => Stick | null
   onKey: (handler: (key: string) => void) => () => void
+  /** Delivers a key press that didn't come from the keyboard (gamepad menu navigation). */
+  press: (key: string) => void
 }
 
 /** Joystick state in CSS px: where the base sits and where the knob is drawn. */
@@ -111,5 +113,5 @@ export const createInput = (target: HTMLElement): Input => {
     return () => void handlers.delete(handler)
   }
 
-  return { readMove, readStick: () => stick, onKey }
+  return { readMove, readStick: () => stick, onKey, press: (key) => handlers.forEach((h) => h(key)) }
 }
