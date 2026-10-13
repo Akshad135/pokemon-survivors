@@ -32,7 +32,7 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   }
 
   const color = eff > 1 ? TEXT_COLORS.super : eff < 1 ? TEXT_COLORS.weak : TEXT_COLORS.normal
-  floatText(g, e.x, e.y - e.radius * 2 - 4, eff > 1 ? `${dmg}!` : String(dmg), color)
+  floatText(g, e.x, e.y - e.radius * 2 - 4, eff > 1 ? `${dmg}!` : String(dmg), color, true)
   burst(g, e.x, e.y - e.radius, { colors: [TYPE_COLORS[attack.type], '#ffffff'], count: eff > 1 ? 6 : 3, speed: 70, ttl: 0.25 })
   g.events.push({ kind: 'hit', effective: eff })
 
@@ -44,7 +44,7 @@ export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource 
   const dmg = Math.max(1, Math.round(amount))
   e.hp -= dmg
   if (move) g.damageByMove[move] = (g.damageByMove[move] ?? 0) + dmg
-  floatText(g, e.x, e.y - e.radius * 2 - 4, String(dmg), STATUS_RULES[kind].color)
+  floatText(g, e.x, e.y - e.radius * 2 - 4, String(dmg), STATUS_RULES[kind].color, true)
   if (e.hp <= 0) killEnemy(g, e)
 }
 
@@ -83,7 +83,7 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy) => {
   p.iframes = 0.5
   p.hurt = 0.3
   g.shake = Math.max(g.shake, 3)
-  floatText(g, p.x, p.y - 28, String(dmg), '#ff5040')
+  floatText(g, p.x, p.y - 28, String(dmg), '#ff5040', true)
   burst(g, p.x, p.y - 10, { colors: ['#ff5040', '#ffffff'], count: 6, speed: 80, ttl: 0.3 })
   g.events.push({ kind: 'hurt' })
   // A small shove keeps the player from being body-blocked into a death spiral.

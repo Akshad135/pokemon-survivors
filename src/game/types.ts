@@ -184,7 +184,8 @@ export type Particle = {
   drag: number
 }
 
-export type FloatText = { x: number; y: number; vy: number; life: number; text: string; color: string }
+/** `damage` marks damage numbers, which the settings can hide (heals and ₽ always show). */
+export type FloatText = { x: number; y: number; vy: number; life: number; text: string; color: string; damage: boolean }
 
 export type Offer =
   | { kind: 'move'; id: MoveId; level: number }

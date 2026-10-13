@@ -34,9 +34,9 @@ export const burst = (g: Game, x: number, y: number, opts: BurstOpts) => {
   }
 }
 
-export const floatText = (g: Game, x: number, y: number, text: string, color: string) => {
+export const floatText = (g: Game, x: number, y: number, text: string, color: string, damage = false) => {
   if (g.texts.length > 120) g.texts.shift()
-  g.texts.push({ x: x + range(g.rng, -4, 4), y, vy: -38, life: 0, text, color })
+  g.texts.push({ x: x + range(g.rng, -4, 4), y, vy: -38, life: 0, text, color, damage })
 }
 
 export const updateEffects = (g: Game, dt: number) => {

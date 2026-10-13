@@ -58,7 +58,7 @@ const explode = (g: Game) => {
     const dmg = e.boss ? Math.round(e.maxHp * 0.1) : Math.ceil(e.hp)
     e.hp -= dmg
     e.flash = 0.3
-    floatText(g, e.x, e.y - e.radius * 2 - 4, `${dmg}!`, '#ffd830')
+    floatText(g, e.x, e.y - e.radius * 2 - 4, `${dmg}!`, '#ffd830', true)
     burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8e858', '#f87830'], count: 5, speed: 90, ttl: 0.4 })
     if (e.hp <= 0) killEnemy(g, e)
   }

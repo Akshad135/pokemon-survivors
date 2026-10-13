@@ -2,9 +2,10 @@ import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
 
-import { playCry, playSfx, toggleMute, unlockAudio } from './engine/audio'
+import { playCry, playSfx, unlockAudio } from './engine/audio'
 import { createPadButton } from './engine/gamepad'
 import { createInput } from './engine/input'
+import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
@@ -20,12 +21,13 @@ import { drawJoystick } from './render/joystick'
 import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
-import { locale, LOCALES, nextLocale, setLocale, t, type Locale } from './i18n'
+import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
 import { depositPokeDollars, loadSave } from './ui/save'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
 import { languageSwitch } from './ui/language'
+import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 
@@ -151,12 +153,17 @@ const startRun = async (starter: StarterId) => {
 
 const runHud = (game: Game) => createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
 
-/** Pause menu language button: the HUD reads its labels once, so it is rebuilt in the new language. */
-const changeRunLanguage = (r: Run) => {
-  changeLanguage(nextLocale(locale()))
-  r.hud.dispose()
-  r.hud = runHud(r.game)
-  dirty = true
+/** Settings from the pause menu. The HUD reads its labels once, so a language switch rebuilds it. */
+const runSettings = (r: Run, back: () => void) => {
+  const before = locale()
+  return openSettings(ui, input, () => {
+    if (locale() !== before) {
+      r.hud.dispose()
+      r.hud = runHud(r.game)
+      dirty = true
+    }
+    back()
+  })
 }
 
 /** Rebuilds the modal overlay whenever the simulation phase (or offer set) changes. */
@@ -171,7 +178,7 @@ const syncOverlay = (r: Run) => {
       r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer), { reroll: () => rerollOffers(g), skip: () => skipLevelUp(g) })
       break
     case 'paused':
-      r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => showMenu(), language: () => changeRunLanguage(r) })
+      r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => showMenu(), settings: (back) => runSettings(r, back) })
       break
     case 'gameover':
     case 'victory':
@@ -271,6 +278,14 @@ const handleEvent = (r: Run, e: GameEvent) => {
   }
 }
 
+/* ---------------- Music ---------------- */
+
+/** Menus play the village theme, a run its march, and a living boss takes over until it falls. */
+const themeFor = (r: Run | null): ThemeId => {
+  if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
+  return r.game.bossId !== null ? 'boss' : 'run'
+}
+
 /* ---------------- Global keys ---------------- */
 
 input.onKey((key) => {
@@ -338,7 +353,7 @@ const frame = (now: number) => {
       // idles the GPU while a menu is open over a frozen frame.
       if (steps > 0 || dirty) {
         dirty = false
-        render(ctx, g, t)
+        render(ctx, g, t, settings())
         const stick = input.readStick()
         if (stick && g.phase === 'playing') drawJoystick(ctx, stick, cssScale)
         r.hud.update(g)
@@ -351,6 +366,9 @@ const frame = (now: number) => {
     ctx.fillRect(0, 0, view.w, view.h)
   }
   screen?.tick?.(t)
+  playTheme(themeFor(run))
+  // Ducked under the pause menu, but at full level while the player tunes the volume.
+  duckMusic(run?.game.phase === 'paused' && !isSettingsOpen())
   requestAnimationFrame(frame)
 }
 
@@ -375,4 +393,4 @@ const boot = () => {
 boot()
 
 // Dev-only handle for poking at the running game from the console.
-if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun } })
+if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, theme: currentTheme } })
