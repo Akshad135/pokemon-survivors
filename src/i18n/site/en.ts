@@ -324,7 +324,7 @@ export const siteEn: SiteMessages = {
     privacyAfter: [
       'To delete this data, clear the site data in your browser settings.',
       'Sprites, sounds and fonts are served by this site, with no calls to third-party services. The site is hosted on Vercel which, like any web server, may log technical access data (such as IP addresses) to run and protect the service.',
-      'To know how many people visit, the site uses Vercel Web Analytics, which counts visits anonymously and in aggregate (page, country, browser, device and referring site), with no cookies and without identifying you or following you across sites.',
+      'To know how many people visit and play, the site uses Vercel Web Analytics and its own Umami instance, on our own server. They count visits anonymously and in aggregate (page, country, browser, device and referring site) and, in Umami\'s case, a summary of each run (starter Pokémon, the minute and level you reached and whether you won), with no cookies and without identifying you or following you across sites.',
     ],
     contact: [
       'If you hold rights to any material used here and want it removed or changed, open an issue on GitHub. It will be addressed promptly.',

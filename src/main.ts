@@ -11,6 +11,7 @@ import { fitView } from './engine/viewport'
 import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
 import { ITEMS } from './data/items'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
+import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { runEarnings } from './game/meta'
@@ -142,11 +143,14 @@ const showMenu = (initial: StarterId = lastStarter) => {
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
-/** Moves the run's ₽ into the wallet once. Quitting keeps coins but forfeits the survival bonus. */
+/** Moves the run's ₽ into the wallet once and reports how the run ended. Quitting keeps coins but forfeits the survival bonus. */
 const bankRun = (r: Run, withBonus: boolean) => {
   if (r.banked) return
   r.banked = true
-  depositPokeDollars(withBonus ? runEarnings(r.game).total : r.game.coins)
+  const g = r.game
+  depositPokeDollars(withBonus ? runEarnings(g).total : g.coins)
+  const outcome = g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
+  track('run_end', { starter: g.starter, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
 }
 
 const endRun = () => {
@@ -173,6 +177,7 @@ const startRun = async (starter: StarterId) => {
   loading.remove()
   const game = createGame(starter, view, Date.now(), loadSave().ranks)
   run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, banked: false }
+  track('run_start', { starter })
 }
 
 const runHud = (game: Game) => createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
