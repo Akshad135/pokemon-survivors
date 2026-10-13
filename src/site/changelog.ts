@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    pr: 19,
     title: { pt: 'Eventos no mapa', en: 'Map events' },
     notes: [
       {
