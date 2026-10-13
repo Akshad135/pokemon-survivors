@@ -1,12 +1,18 @@
 import type { Dir8 } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
+import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
+import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
+import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
+import type { Prop } from './props'
+import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
+import type { EnemyStatus, StatusSpec } from './status'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -32,6 +38,8 @@ export type Player = {
   stats: PlayerStats
   radius: number
   animTime: number
+  /** Rolled once per run; the whole evolution line uses shiny sprites. */
+  shiny: boolean
 }
 
 export type EnemyBehavior =
@@ -56,12 +64,18 @@ export type Enemy = {
   radius: number
   xp: number
   boss: boolean
+  /** Shiny elite: more HP and EXP, drops a Poké Ball. */
+  shiny: boolean
+  /** Game time it spawned at (sparkle timing). */
+  bornAt: number
+  /** Seconds until each boss pattern fires, indexed like `BOSS_PATTERNS[kind]`. */
+  cooldowns: number[]
   behavior: EnemyBehavior
   dir: Dir8
   animTime: number
   flash: number
-  slow: number
-  slowUntil: number
+  /** Status conditions (burn, poison, paralysis, slow). */
+  status: EnemyStatus
   /** -1 while alive; otherwise seconds since fainting. */
   dying: number
 }
@@ -78,7 +92,15 @@ export type Motion =
   | { kind: 'follow'; ox: number; oy: number }
   | { kind: 'static' }
 
-export type Visual = 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust' | EvolvedVisual
+export type Visual =
+  | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+  | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
+  /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
+  | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova'
+  | EvolvedVisual
+
+/** What dealt the damage, for the results screen. */
+export type DamageSource = MoveId | 'special'
 
 /** Visuals of evolved moves, drawn by `render/evolved.ts`. */
 export type EvolvedVisual =
@@ -88,7 +110,7 @@ export type EvolvedVisual =
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
   id: number
-  move: MoveId
+  move: DamageSource
   type: PokeType
   visual: Visual
   x: number
@@ -109,10 +131,32 @@ export type Attack = {
   activeUntil: number
   /** Radius growth per second (expanding rings). */
   grow: number
-  slow: number
+  /** Condition this hitbox may inflict on hit. */
+  status: StatusSpec | null
   /** Where it was launched from (lobbed attacks animate from here). */
   from: { x: number; y: number }
   flip: boolean
+}
+
+/** Enemy-owned hitbox that hurts the player (boss attacks). */
+export type Hazard = {
+  id: number
+  /** strike = telegraphed impact, shot = projectile, zone = lingering patch. */
+  kind: 'strike' | 'shot' | 'zone'
+  visual: HazardVisual
+  x: number
+  y: number
+  vx: number
+  vy: number
+  r: number
+  damage: number
+  age: number
+  /** Harmless telegraph until `armAt`; can hurt until `disarmAt`. */
+  armAt: number
+  disarmAt: number
+  ttl: number
+  /** Projectiles vanish on hit; zones linger. */
+  vanishOnHit: boolean
 }
 
 export type Pickup = {
@@ -124,7 +168,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'berry' } | { kind: 'pokeball' })
+} & ({ kind: 'xp'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'consumable'; item: ConsumableId })
 
 export type Particle = {
   x: number
@@ -159,13 +203,24 @@ export type GameEvent =
   | { kind: 'hurt' }
   | { kind: 'levelup' }
   | { kind: 'boss'; enemy: EnemyId }
+  | { kind: 'shiny'; enemy: EnemyId }
+  | { kind: 'shinyPlayer' }
   | { kind: 'thunder' }
+  | { kind: 'quake' }
+  /** The special attack started charging or was unleashed. */
+  | { kind: 'special'; phase: 'charge' | 'release'; name: string }
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
   | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
   | { kind: 'gameover' }
+  | { kind: 'consumable'; item: ConsumableId }
+  | { kind: 'propBreak' }
+  | { kind: 'revive' }
   | { kind: 'victory' }
+
+/** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
+export type Buff = { id: BuffId; left: number; total: number }
 
 export type Evolution = { from: number; to: number; t: number }
 
@@ -178,6 +233,7 @@ export type Game = {
   player: Player
   enemies: Enemy[]
   attacks: Attack[]
+  hazards: Hazard[]
   pickups: Pickup[]
   particles: Particle[]
   texts: FloatText[]
@@ -185,13 +241,25 @@ export type Game = {
   view: { w: number; h: number }
   camera: { x: number; y: number }
   shake: number
+  /** Seconds the simulation stays frozen for impact (hit-stop). */
+  hitstop: number
+  special: SpecialState
   kills: number
-  damageByMove: Partial<Record<MoveId, number>>
+  damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null
   spawnBudget: number
   nextEvent: number
   bossId: number | null
+  /** Breakable item sources (item balls, berry trees, tall grass) near the player. */
+  props: Prop[]
+  /** World cells whose prop was already broken, so it never respawns. */
+  brokenProps: Set<number>
+  buffs: Buff[]
+  /** Revives held (0 or 1). Auto-used on fainting. */
+  revives: number
+  /** Full-screen white flash strength (Explosion), decays to 0. */
+  flash: number
   events: GameEvent[]
 }

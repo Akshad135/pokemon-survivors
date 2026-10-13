@@ -29,6 +29,10 @@ export type PlayerStats = {
   growth: number
   /** extra damage per move type, on top of might (0.1 = +10% for that type) */
   typeDamage: Partial<Record<PokeType, number>>
+  /** added to every move's status chance */
+  statusChance: number
+  /** extra burn/poison damage (0.2 = +20%) */
+  statusDamage: number
 }
 
 export type StatDelta = Partial<PlayerStats>
@@ -47,6 +51,8 @@ export const BASE_STATS: PlayerStats = {
   armor: 0,
   growth: 1,
   typeDamage: {},
+  statusChance: 0,
+  statusDamage: 0,
 }
 
 export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): PlayerStats =>

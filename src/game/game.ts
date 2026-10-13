@@ -4,12 +4,18 @@ import { createGrid } from '../engine/spatial'
 import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
+import { updateBosses, updateHazards } from './bosses'
+import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
 import { MOVES, moveStats } from './moves'
+import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
+import { rollShiny, SHINY_ODDS } from './shiny'
+import { updateProps } from './props'
 import { updateSpawner } from './spawner'
+import { updateStatuses } from './statusSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
 
@@ -19,9 +25,11 @@ export const playerDex = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.
 
 export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now()): Game => {
   const def = STARTERS[starter]
+  const rng = createRng(seed)
+  const shiny = rollShiny(rng, SHINY_ODDS.player)
   const g: Game = {
     starter,
-    rng: createRng(seed),
+    rng,
     time: 0,
     phase: 'playing',
     nextId: 1,
@@ -42,9 +50,11 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
       stats: BASE_STATS,
       radius: Math.max(6, Math.round(sprites(def.line[0].dex).bodyW * 0.3)),
       animTime: 0,
+      shiny,
     },
     enemies: [],
     attacks: [],
+    hazards: [],
     pickups: [],
     particles: [],
     texts: [],
@@ -52,6 +62,8 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     view,
     camera: { x: -view.w / 2, y: -view.h / 2 },
     shake: 0,
+    hitstop: 0,
+    special: createSpecialState(),
     kills: 0,
     damageByMove: {},
     pendingLevelUps: 0,
@@ -60,20 +72,30 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
-    events: [],
+    props: [],
+    brokenProps: new Set(),
+    buffs: [],
+    revives: 0,
+    flash: 0,
+    events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
   return g
 }
 
+/** Per-tick player input, as plain data so the simulation stays DOM-free. */
+export type StepInput = { move: Vec; special: boolean }
+
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
-  const moving = Math.abs(input.x) + Math.abs(input.y) > 0.05
-  p.moving = moving
+  const slow = specialSpeedFactor(g)
+  const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
+  // A speed factor of 0 means the special is dashing the player around.
+  p.moving = moving || slow === 0
   if (moving) {
-    p.x += input.x * p.stats.speed * dt
-    p.y += input.y * p.stats.speed * dt
+    p.x += input.x * p.stats.speed * slow * dt
+    p.y += input.y * p.stats.speed * slow * dt
     const len = Math.hypot(input.x, input.y)
     p.facing = { x: input.x / len, y: input.y / len }
     p.dir = dir8(input.x, input.y)
@@ -135,19 +157,29 @@ const updateEvolution = (g: Game, dt: number) => {
 }
 
 /** One fixed-timestep simulation tick. */
-export const step = (g: Game, input: Vec, dt: number) => {
+export const step = (g: Game, input: StepInput, dt: number) => {
   if (g.phase === 'evolving') return updateEvolution(g, dt)
   if (g.phase !== 'playing') return
+  if (g.hitstop > 0) {
+    g.hitstop -= dt
+    return
+  }
 
   g.time += dt
-  updatePlayer(g, input, dt)
+  updatePlayer(g, input.move, dt)
+  updateSpecial(g, input.special, dt)
   updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)
+  updateBosses(g, dt)
+  updateHazards(g, dt)
+  updateStatuses(g, dt)
   rebuildGrid(g)
   updateMoves(g, dt)
   updateAttacks(g, dt)
+  updateProps(g, dt)
   updatePickups(g, dt)
+  updateConsumables(g, dt)
   updateEffects(g, dt)
 
   g.camera.x = g.player.x - g.view.w / 2

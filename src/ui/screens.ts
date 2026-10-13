@@ -1,21 +1,29 @@
-import { context2d } from '../engine/pixelart'
 import { formatTime } from '../engine/math'
-import { playCry, playSfx, toggleMute } from '../engine/audio'
+import { playSfx, toggleMute } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { canEvolve, EVOLUTIONS, evolutionOf, evolvedFrom, type MoveEvolution } from '../data/evolutions'
 import { ITEMS } from '../data/items'
-import { STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
+import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
-import type { Game, Offer } from '../game/types'
-import { berryIcon, itemIcon, moveIcon } from '../render/art'
-import { drawPokemon, sprites } from '../render/sprites'
+import { resolveSpecial } from '../game/special'
+import type { DamageSource, Game, Offer } from '../game/types'
+import { berryIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { specialIcon } from '../render/specialFx'
+import { sprites } from '../render/sprites'
 import { h } from './dom'
 
 export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () => void }
 
-const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
+export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
+
+/** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
+const TAP_GUARD_MS = 350
+
+/** Hint that swaps between keyboard and touch wording (see `.keys-only` / `.touch-only` in CSS). */
+export const hint = (keys: string, touch: string) =>
+  h('p', { class: 'hint' }, h('span', { class: 'keys-only' }, keys), h('span', { class: 'touch-only' }, touch))
 
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
@@ -23,6 +31,7 @@ const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `-
  */
 const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
   let index = opts.initial ?? 0
+  const openedAt = performance.now()
   const focus = (i: number, sound = true) => {
     index = (i + buttons.length) % buttons.length
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
@@ -30,7 +39,7 @@ const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => voi
   }
   buttons.forEach((b, i) => {
     b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => activate(i))
+    b.addEventListener('click', () => performance.now() - openedAt > TAP_GUARD_MS && activate(i))
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
@@ -45,65 +54,6 @@ const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => voi
     }
   })
   return { off, focus, get index() { return index } }
-}
-
-/* ---------------- Starter select ---------------- */
-
-export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: StarterId) => void): Screen => {
-  const canvases = new Map<StarterId, HTMLCanvasElement>()
-  const cards = STARTER_IDS.map((id) => {
-    const s = STARTERS[id]
-    const canvas = h('canvas', { width: 64, height: 56, class: 'starter-sprite' })
-    canvases.set(id, canvas)
-    const sig: MoveDef = MOVES[s.signature]
-    return h(
-      'button',
-      { class: 'starter-card box', style: `--accent:${s.color}` },
-      canvas,
-      h('div', { class: 'starter-name' }, s.name),
-      h('div', { class: 'types' }, ...s.types.map(typeBadge)),
-      h('div', { class: 'starter-blurb' }, s.blurb),
-      h('div', { class: 'starter-move' }, h('img', { src: moveIcon(s.signature), alt: '' }), sig.name),
-    )
-  })
-
-  let picked = false
-  const nav = menu(
-    input,
-    cards,
-    (i) => {
-      if (picked) return
-      picked = true
-      const id = STARTER_IDS[i]!
-      playSfx('select')
-      playCry(sprites(STARTERS[id].line[0].dex).cry)
-      onPick(id)
-    },
-    { horizontal: true },
-  )
-
-  const el = h(
-    'div',
-    { class: 'screen title-screen' },
-    h('h1', { class: 'logo' }, h('span', { class: 'logo-top' }, 'POKéMON'), h('span', { class: 'logo-bottom' }, 'SURVIVORS')),
-    h('p', { class: 'subtitle blink' }, 'Escolha seu parceiro!'),
-    h('div', { class: 'starters' }, ...cards),
-    h('p', { class: 'hint' }, '← → escolher · ENTER confirmar · WASD/setas para andar'),
-    h('p', { class: 'credits' }, 'Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Game Freak'),
-  )
-  root.append(el)
-
-  const tick = (t: number) => {
-    STARTER_IDS.forEach((id, i) => {
-      const canvas = canvases.get(id)!
-      const ctx = context2d(canvas)
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const selected = i === nav.index
-      drawPokemon(ctx, sprites(STARTERS[id].line[0].dex), selected ? 'Walk' : 'Idle', 0, t, 32, 48)
-    })
-  }
-
-  return { el, tick, dispose: () => (nav.off(), el.remove()) }
 }
 
 /* ---------------- Level up ---------------- */
@@ -189,8 +139,10 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   })
 
   let done = false
+  // Space also fires the special attack: ignore presses that were meant for the fight.
+  const openedAt = performance.now()
   const nav = menu(input, buttons, (i) => {
-    if (done) return
+    if (done || performance.now() - openedAt < 400) return
     done = true
     playSfx('select')
     onChoose(g.offers[i]!)
@@ -204,7 +156,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
       { class: 'dialog box pop' },
       h('div', { class: 'dialog-title' }, `${name} subiu para o Nv ${g.player.level - g.pendingLevelUps + 1}!`),
       h('div', { class: 'offers' }, ...buttons),
-      h('p', { class: 'hint' }, '↑ ↓ escolher · ENTER confirmar · 1-3 atalho'),
+      hint('↑ ↓ escolher · ENTER confirmar · 1-3 atalho', 'Toque para escolher'),
     ),
   )
   root.append(el)
@@ -295,10 +247,17 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, onResume: ()
 
 /* ---------------- Results ---------------- */
 
+/** Icon, name and type for a results-screen damage row. */
+const damageSource = (g: Game, id: DamageSource) => {
+  if (id !== 'special') return { icon: moveIcon(id), name: MOVES[id].name, type: MOVES[id].type }
+  const r = resolveSpecial(g.starter, g.player.stage)
+  return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
+}
+
 export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void): Screen => {
   const victory = g.phase === 'victory'
   const name = STARTERS[g.starter].line[g.player.stage]!.name
-  const entries = (Object.entries(g.damageByMove) as Array<[MoveId, number]>).sort((a, b) => b[1] - a[1])
+  const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const retry = h('button', { class: 'btn' }, 'Tentar de novo')
   const back = h('button', { class: 'btn' }, 'Trocar Pokémon')
@@ -310,8 +269,14 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
     h(
       'div',
       { class: 'dialog box pop wide' },
-      h('img', { class: 'result-portrait', src: sprites(playerDex(g)).portrait.src, alt: '' }),
+      h(
+        'div',
+        { class: 'portrait-wrap' },
+        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
+        g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
+      ),
       h('div', { class: 'dialog-title' }, victory ? 'Você venceu Mewtwo!' : `${name} desmaiou!`),
+      g.player.shiny && h('div', { class: 'tag tag-shiny' }, `${name} shiny`),
       h(
         'div',
         { class: 'result-stats' },
@@ -322,16 +287,17 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
       h(
         'div',
         { class: 'damage-list' },
-        ...entries.map(([id, dmg]) =>
-          h(
+        ...entries.map(([id, dmg]) => {
+          const src = damageSource(g, id)
+          return h(
             'div',
             { class: 'damage-row' },
-            h('img', { src: moveIcon(id), alt: '' }),
-            h('span', { class: 'damage-name' }, MOVES[id].name),
-            h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[MOVES[id].type]}` })),
+            h('img', { src: src.icon, alt: '' }),
+            h('span', { class: 'damage-name' }, src.name),
+            h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[src.type]}` })),
             h('b', {}, Math.round(dmg).toLocaleString('pt-BR')),
-          ),
-        ),
+          )
+        }),
       ),
       h('div', { class: 'buttons' }, retry, back),
     ),
@@ -354,4 +320,19 @@ export const toast = (root: HTMLElement, content: HTMLElement | string, ms = 260
   root.append(el)
   setTimeout(() => el.classList.add('out'), ms)
   setTimeout(() => el.remove(), ms + 400)
+}
+
+/** Big centered announcement (legendary entrances). Wraps on small screens. */
+export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600) => {
+  const el = h('div', { class: 'banner box' }, content)
+  root.append(el)
+  setTimeout(() => el.classList.add('out'), ms)
+  setTimeout(() => el.remove(), ms + 400)
+}
+
+/** Full-screen white flash that fades out by itself. */
+export const flashScreen = (root: HTMLElement) => {
+  const el = h('div', { class: 'screen-flash' })
+  root.append(el)
+  setTimeout(() => el.remove(), 1000)
 }

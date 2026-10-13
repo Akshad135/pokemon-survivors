@@ -4,9 +4,10 @@ import { evolvedFrom, readyEvolutions } from '../data/evolutions'
 import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
 import { STARTERS, type StarterId } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
+import { buffDeltas } from './buffs'
 import { burst } from './effects'
 import { maxMoveLevel, MOVES, type MoveId } from './moves'
-import { applyDeltas, BASE_STATS } from './stats'
+import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove } from './types'
 
 export const MAX_MOVES = 6
@@ -76,15 +77,23 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3): Offer[] => {
   return picked.length > 0 ? picked : [{ kind: 'berry' }]
 }
 
+/** Stat deltas a starter has at an evolution stage (0-2), before held items. */
+const starterDeltas = (id: StarterId, stage: number): StatDelta[] => {
+  const starter = STARTERS[id]
+  return [starter.stats, ...starter.line.slice(0, stage + 1).map((s) => s.bonus)]
+}
+
+/** Player stats of a starter at an evolution stage, without items (used by the inspect panel). */
+export const starterStats = (id: StarterId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
+
 /** Rebuilds player stats from starter, evolution stage and held items. */
 export const recomputeStats = (g: Game) => {
   const p = g.player
-  const starter = STARTERS[g.starter]
   const before = p.stats.maxHp
   p.stats = applyDeltas(BASE_STATS, [
-    starter.stats,
-    ...starter.line.slice(0, p.stage + 1).map((s) => s.bonus),
+    ...starterDeltas(g.starter, p.stage),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
+    ...buffDeltas(g.buffs),
   ])
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before
   p.hp = Math.min(p.hp, p.stats.maxHp)

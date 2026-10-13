@@ -61,10 +61,20 @@ export const ITEMS = {
     description: '+10% de EXP recebida.',
     levels: repeat({ growth: 0.1 }, 5),
   },
-  amuletCoin: {
-    name: 'Amulet Coin',
+  dowsingMachine: {
+    name: 'Dowsing Machine',
     description: 'Atrai Exp. Candies de mais longe.',
     levels: repeat({ magnet: 12 }, 5),
+  },
+  kingsRock: {
+    name: "King's Rock",
+    description: '+6% de chance de causar status (queimar, envenenar, paralisar).',
+    levels: repeat({ statusChance: 0.06 }, 5),
+  },
+  toxicOrb: {
+    name: 'Toxic Orb',
+    description: 'Queimadura e veneno causam +20% de dano.',
+    levels: repeat({ statusDamage: 0.2 }, 5),
   },
   assaultVest: {
     name: 'Assault Vest',

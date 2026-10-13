@@ -12,7 +12,8 @@ export type WaveStage = {
 }
 
 export type WaveEvent =
-  | { at: number; kind: 'boss'; enemy: EnemyId }
+  /** `chance` (0..1) makes the boss a rare appearance; omitted = always. */
+  | { at: number; kind: 'boss'; enemy: EnemyId; chance?: number }
   /** A flock crossing the screen in a straight line. */
   | { at: number; kind: 'swarm'; enemy: EnemyId; count: number }
   /** A closing circle around the player. */
@@ -31,17 +32,22 @@ export const STAGES: readonly WaveStage[] = [
   { until: Infinity, rate: 7.5, max: 300, pool: [['geodude', 5], ['machop', 5], ['koffing', 4], ['gastly', 4]] },
 ]
 
+/** Sorted by `at`. Events sharing a time run in list order (the last boss gets the HP bar). */
 export const EVENTS: readonly WaveEvent[] = [
   { at: 75, kind: 'swarm', enemy: 'pidgey', count: 16 },
-  { at: 150, kind: 'swarm', enemy: 'zubat', count: 24 },
+  { at: 150, kind: 'boss', enemy: 'onix' },
+  { at: 165, kind: 'swarm', enemy: 'zubat', count: 24 },
   { at: 240, kind: 'ring', enemy: 'oddish', count: 28 },
-  { at: 300, kind: 'boss', enemy: 'onix' },
+  { at: 300, kind: 'boss', enemy: 'snorlax' },
   { at: 390, kind: 'swarm', enemy: 'zubat', count: 36 },
+  { at: 420, kind: 'boss', enemy: 'articuno' },
   { at: 480, kind: 'ring', enemy: 'geodude', count: 30 },
   { at: 540, kind: 'swarm', enemy: 'spearow', count: 40 },
-  { at: 600, kind: 'boss', enemy: 'snorlax' },
-  { at: 720, kind: 'ring', enemy: 'gastly', count: 40 },
+  { at: 570, kind: 'boss', enemy: 'zapdos' },
+  { at: 660, kind: 'ring', enemy: 'gastly', count: 40 },
+  { at: 720, kind: 'boss', enemy: 'moltres' },
   { at: 810, kind: 'swarm', enemy: 'zubat', count: 60 },
+  { at: RUN_LENGTH, kind: 'boss', enemy: 'mew', chance: 0.1 },
   { at: RUN_LENGTH, kind: 'boss', enemy: 'mewtwo' },
 ]
 
