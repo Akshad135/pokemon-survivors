@@ -1,0 +1,170 @@
+import manifest from '../data/sprites.generated.json'
+import { createCanvas, context2d } from '../engine/pixelart'
+import type { Dir8 } from '../engine/math'
+
+/**
+ * Loader/renderer for PMD SpriteCollab sheets. Each sheet has 8 rows (one per
+ * direction) and N columns (frames). Durations are in 1/60s ticks.
+ */
+export type AnimName = 'Walk' | 'Idle' | 'Hurt'
+export type Dex = number
+
+type Sheet = {
+  img: HTMLImageElement
+  white: HTMLCanvasElement
+  fw: number
+  fh: number
+  durations: readonly number[]
+  totalTicks: number
+}
+
+export type SpeciesSprites = {
+  dex: Dex
+  anims: Record<AnimName, Sheet>
+  portrait: HTMLImageElement
+  cry: string
+  /** Distance from frame center down to the feet, in px. */
+  footY: number
+  /** Opaque body size measured on the first Walk frame. */
+  bodyW: number
+  bodyH: number
+}
+
+type ManifestEntry = { anims: Partial<Record<AnimName, { frameWidth: number; frameHeight: number; durations: number[] }>> }
+const MANIFEST = manifest as Record<string, ManifestEntry>
+
+const base = (dex: Dex) => `${import.meta.env.BASE_URL}assets/pokemon/${dex}`
+
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`Failed to load ${src}`))
+    img.src = src
+  })
+
+/** Solid white silhouette used for hit flashes and the evolution sequence. */
+const silhouette = (img: HTMLImageElement) => {
+  const canvas = createCanvas(img.width, img.height)
+  const ctx = context2d(canvas)
+  ctx.drawImage(img, 0, 0)
+  ctx.globalCompositeOperation = 'source-in'
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, img.width, img.height)
+  return canvas
+}
+
+const measure = (sheet: Sheet) => {
+  const canvas = createCanvas(sheet.fw, sheet.fh)
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+  ctx.drawImage(sheet.img, 0, 0, sheet.fw, sheet.fh, 0, 0, sheet.fw, sheet.fh)
+  const { data } = ctx.getImageData(0, 0, sheet.fw, sheet.fh)
+  let minX = sheet.fw, maxX = 0, minY = sheet.fh, maxY = 0
+  for (let y = 0; y < sheet.fh; y++) {
+    for (let x = 0; x < sheet.fw; x++) {
+      if (data[(y * sheet.fw + x) * 4 + 3]! > 0) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x)
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y)
+      }
+    }
+  }
+  return { footY: maxY - sheet.fh / 2, bodyW: maxX - minX + 1, bodyH: maxY - minY + 1 }
+}
+
+const cache = new Map<Dex, SpeciesSprites>()
+
+export const loadSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
+  const cached = cache.get(dex)
+  if (cached) return cached
+  const entry = MANIFEST[String(dex)]
+  if (!entry) throw new Error(`Missing sprites for #${dex}. Run npm run assets.`)
+
+  const loadSheet = async (name: AnimName): Promise<Sheet> => {
+    const meta = entry.anims[name] ?? entry.anims.Walk!
+    const img = await loadImage(`${base(dex)}/${entry.anims[name] ? name : 'Walk'}.png`)
+    return {
+      img,
+      white: silhouette(img),
+      fw: meta.frameWidth,
+      fh: meta.frameHeight,
+      durations: meta.durations,
+      totalTicks: meta.durations.reduce((a, b) => a + b, 0),
+    }
+  }
+
+  const [Walk, Idle, Hurt, portrait] = await Promise.all([
+    loadSheet('Walk'),
+    loadSheet('Idle'),
+    loadSheet('Hurt'),
+    loadImage(`${base(dex)}/portrait.png`),
+  ])
+  const sprites: SpeciesSprites = {
+    dex,
+    anims: { Walk, Idle, Hurt },
+    portrait,
+    cry: `${base(dex)}/cry.ogg`,
+    ...measure(Walk),
+  }
+  cache.set(dex, sprites)
+  return sprites
+}
+
+export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map(loadSpecies))
+
+export const sprites = (dex: Dex) => {
+  const s = cache.get(dex)
+  if (!s) throw new Error(`Sprites for #${dex} not loaded`)
+  return s
+}
+
+export const portraitUrl = (dex: Dex) => `${base(dex)}/portrait.png`
+
+const frameIndex = (sheet: Sheet, seconds: number, loop: boolean) => {
+  let tick = Math.floor(seconds * 60)
+  tick = loop ? tick % sheet.totalTicks : Math.min(tick, sheet.totalTicks - 1)
+  for (let i = 0; i < sheet.durations.length; i++) {
+    tick -= sheet.durations[i]!
+    if (tick < 0) return i
+  }
+  return sheet.durations.length - 1
+}
+
+export type DrawOpts = {
+  /** 0..1 white overlay strength (hit flash). 1 = full silhouette. */
+  flash?: number
+  alpha?: number
+  loop?: boolean
+  /** Integer upscale (evolution scene, menus). */
+  scale?: number
+}
+
+/** Draws a species at its feet position (x, y). */
+export const drawPokemon = (
+  ctx: CanvasRenderingContext2D,
+  s: SpeciesSprites,
+  anim: AnimName,
+  dir: Dir8,
+  seconds: number,
+  x: number,
+  y: number,
+  opts: DrawOpts = {},
+) => {
+  const sheet = s.anims[anim]
+  const frame = frameIndex(sheet, seconds, opts.loop ?? true)
+  const sx = frame * sheet.fw
+  const sy = dir * sheet.fh
+  const k = opts.scale ?? 1
+  const dw = sheet.fw * k
+  const dh = sheet.fh * k
+  const dx = Math.round(x - dw / 2)
+  const dy = Math.round(y - (s.footY + sheet.fh / 2) * k)
+  const alpha = opts.alpha ?? 1
+  const flash = opts.flash ?? 0
+  if (alpha !== 1) ctx.globalAlpha = alpha
+  if (flash < 1) ctx.drawImage(sheet.img, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+  if (flash > 0) {
+    ctx.globalAlpha = alpha * Math.min(1, flash)
+    ctx.drawImage(sheet.white, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+  }
+  ctx.globalAlpha = 1
+}
