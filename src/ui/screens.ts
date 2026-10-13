@@ -7,13 +7,14 @@ import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
-import { formatPokeDollars, runEarnings } from '../game/meta'
+import { runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
 import { berryIcon, coinIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { sprites } from '../render/sprites'
-import { h } from './dom'
+import { formatNumber, formatPokeDollars, locale, LOCALES, t, type Messages } from '../i18n'
+import { h, later } from './dom'
 
 export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () => void }
 
@@ -69,7 +70,7 @@ const evoRecipe = (evo: MoveEvolution, ready: boolean) =>
     h('img', { src: itemIcon(evo.item), alt: '' }),
     '→',
     h('img', { src: moveIcon(evo.to), alt: '' }),
-    ready && h('b', {}, 'PRONTO!'),
+    ready && h('b', {}, t().levelUp.ready),
   )
 
 /** Recipes an offer takes part in, flagged ready if picking it completes the pair. */
@@ -92,28 +93,31 @@ const offerRecipes = (g: Game, offer: Offer) => {
 }
 
 const offerView = (g: Game, offer: Offer) => {
+  const m = t()
   switch (offer.kind) {
     case 'move': {
       const def: MoveDef = MOVES[offer.id]
+      const text = m.moves[offer.id]
       const isNew = offer.level === 1
       return {
         icon: moveIcon(offer.id),
         name: def.name,
-        tag: isNew ? 'NOVO!' : offer.level === maxMoveLevel(offer.id) ? 'MAX' : `Nv ${offer.level}`,
+        tag: isNew ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level),
         isNew,
-        desc: isNew ? def.description : def.upgrades[offer.level - 2]!.text,
+        desc: isNew ? text.description : text.upgrades[offer.level - 2]!,
         type: def.type,
       }
     }
     case 'item': {
-      const def = ITEMS[offer.id]
-      return { icon: itemIcon(offer.id), name: def.name, tag: offer.level === 1 ? 'NOVO!' : `Nv ${offer.level}`, isNew: offer.level === 1, desc: def.description, type: null }
+      const isNew = offer.level === 1
+      return { icon: itemIcon(offer.id), name: ITEMS[offer.id].name, tag: isNew ? m.new : m.level(offer.level), isNew, desc: m.items[offer.id], type: null }
     }
     case 'berry':
-      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: `${STARTERS[g.starter].name} recupera 40 HP.`, type: null }
+      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(STARTERS[g.starter].name), type: null }
     case 'evolution': {
       const to: MoveDef = MOVES[offer.to]
-      return { icon: moveIcon(offer.to), name: to.name, tag: 'EVOLUÇÃO!', isNew: true, desc: `${MOVES[offer.from].name} evolui! ${to.description}`, type: to.type }
+      const desc = m.levelUp.evolves(MOVES[offer.from].name, m.moves[offer.to].description)
+      return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type }
     }
   }
 }
@@ -122,6 +126,7 @@ const offerView = (g: Game, offer: Offer) => {
 type LevelUpExtras = { reroll: () => void; skip: () => void }
 
 export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
+  const m = t().levelUp
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const buttons = g.offers.map((offer, i) => {
     const v = offerView(g, offer)
@@ -144,8 +149,8 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
 
   const actions = extras
     ? [
-        g.rerolls > 0 && ([h('button', { class: 'btn' }, `Trocar (${g.rerolls})`), extras.reroll] as const),
-        g.skips > 0 && ([h('button', { class: 'btn' }, `Pular (${g.skips})`), extras.skip] as const),
+        g.rerolls > 0 && ([h('button', { class: 'btn' }, m.reroll(g.rerolls)), extras.reroll] as const),
+        g.skips > 0 && ([h('button', { class: 'btn' }, m.skip(g.skips)), extras.skip] as const),
       ].filter((a) => a !== false)
     : []
 
@@ -167,10 +172,10 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
     h(
       'div',
       { class: 'dialog box pop' },
-      h('div', { class: 'dialog-title' }, `${name} subiu para o Nv ${g.player.level - g.pendingLevelUps + 1}!`),
+      h('div', { class: 'dialog-title' }, m.title(name, g.player.level - g.pendingLevelUps + 1)),
       h('div', { class: 'offers' }, ...buttons),
       actions.length > 0 && h('div', { class: 'buttons' }, ...actions.map(([b]) => b)),
-      hint('↑ ↓ escolher · ENTER confirmar · 1-3 atalho', 'Toque para escolher'),
+      hint(m.hintKeys, m.hintTouch),
     ),
   )
   root.append(el)
@@ -180,15 +185,15 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
 /* ---------------- Pause ---------------- */
 
 const STAT_ROWS = [
-  ['Dano', (s: Game['player']['stats']) => `x${s.might.toFixed(2)}`],
-  ['Área', (s) => `x${s.area.toFixed(2)}`],
-  ['Recarga', (s) => `x${s.cooldown.toFixed(2)}`],
-  ['Duração', (s) => `x${s.duration.toFixed(2)}`],
-  ['Projéteis', (s) => `+${s.amount}`],
-  ['Velocidade', (s) => `${Math.round(s.speed)}`],
-  ['Defesa', (s) => `${s.armor}`],
-  ['Regeneração', (s) => `${s.regen.toFixed(1)}/s`],
-] as const satisfies ReadonlyArray<readonly [string, (s: Game['player']['stats']) => string]>
+  ['damage', (s: Game['player']['stats']) => `x${s.might.toFixed(2)}`],
+  ['area', (s) => `x${s.area.toFixed(2)}`],
+  ['cooldown', (s) => `x${s.cooldown.toFixed(2)}`],
+  ['duration', (s) => `x${s.duration.toFixed(2)}`],
+  ['amount', (s) => `+${s.amount}`],
+  ['speed', (s) => `${Math.round(s.speed)}`],
+  ['defense', (s) => `${s.armor}`],
+  ['regen', (s) => `${s.regen.toFixed(1)}/s`],
+] as const satisfies ReadonlyArray<readonly [keyof Messages['stats'], (s: Game['player']['stats']) => string]>
 
 /** Paired item hint for a loadout move: shows what it needs and whether it is ready. */
 const loadoutHint = (g: Game, id: MoveId) => {
@@ -215,48 +220,65 @@ const loadoutList = (g: Game) =>
         h('img', { src: moveIcon(m.id), alt: '' }),
         MOVES[m.id].name,
         loadoutHint(g, m.id),
-        !evolvedFrom(m.id) && h('span', { class: 'tag' }, `Nv ${m.level}`),
+        !evolvedFrom(m.id) && h('span', { class: 'tag' }, t().level(m.level)),
       ),
     ),
     ...g.player.items.map((i) =>
-      h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, h('span', { class: 'tag' }, `Nv ${i.level}`)),
+      h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, h('span', { class: 'tag' }, t().level(i.level))),
     ),
   )
 
-export const pauseMenu = (root: HTMLElement, input: Input, g: Game, onResume: () => void, onQuit: () => void): Screen => {
-  const muteLabel = () => (localStorage.getItem('ps:muted') === '1' ? 'Som: OFF' : 'Som: ON')
-  const resume = h('button', { class: 'btn' }, 'Continuar')
-  const mute = h('button', { class: 'btn' }, muteLabel())
-  const quit = h('button', { class: 'btn' }, 'Desistir')
-  const nav = menu(input, [resume, mute, quit], (i) => {
-    if (i === 0) onResume()
-    if (i === 1) {
-      toggleMute()
-      mute.textContent = muteLabel()
-    }
-    if (i === 2) onQuit()
-  })
-  const offEsc = input.onKey((k) => k === 'Escape' && onResume())
-  const s = g.player.stats
-  const el = h(
-    'div',
-    { class: 'screen dim' },
-    h(
-      'div',
-      { class: 'dialog box pop wide' },
-      h('div', { class: 'dialog-title' }, 'PAUSA'),
+/** `language` switches to the next locale (and rebuilds the HUD); the menu then redraws itself in it. */
+type PauseActions = { resume: () => void; quit: () => void; language: () => void }
+
+export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: PauseActions): Screen => {
+  const el = h('div', { class: 'screen dim' })
+  let nav: ReturnType<typeof menu> | null = null
+
+  /** `opening` plays the pop-in; redraws after a language switch don't. */
+  const render = (focus: number, opening: boolean) => {
+    const m = t().pause
+    const muteLabel = () => m.sound(localStorage.getItem('ps:muted') !== '1')
+    const resume = h('button', { class: 'btn' }, m.resume)
+    const mute = h('button', { class: 'btn' }, muteLabel())
+    const language = h('button', { class: 'btn' }, m.language(LOCALES[locale()].name))
+    const quit = h('button', { class: 'btn' }, m.quit)
+    nav?.off()
+    nav = menu(input, [resume, mute, language, quit], (i) => {
+      if (i === 0) actions.resume()
+      if (i === 1) {
+        toggleMute()
+        mute.textContent = muteLabel()
+      }
+      if (i === 2) {
+        actions.language()
+        // Redraw after this key dispatch, or the new menu would receive the same Enter.
+        later(() => render(2, false))
+      }
+      if (i === 3) actions.quit()
+    }, { initial: focus })
+    const s = g.player.stats
+    el.replaceChildren(
       h(
         'div',
-        { class: 'pause-grid' },
-        loadoutList(g),
-        h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([label, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, label), h('b', {}, fmt(s))))),
+        { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
+        h('div', { class: 'dialog-title' }, m.title),
+        h(
+          'div',
+          { class: 'pause-grid' },
+          loadoutList(g),
+          h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([key, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, t().stats[key]), h('b', {}, fmt(s))))),
+        ),
+        h('p', { class: 'evo-legend' }, m.evoLegend),
+        h('div', { class: 'buttons' }, resume, mute, language, quit),
       ),
-      h('p', { class: 'evo-legend' }, 'Golpe no nível máximo + o item indicado = evolução na próxima Poké Ball ou subida de nível!'),
-      h('div', { class: 'buttons' }, resume, mute, quit),
-    ),
-  )
+    )
+  }
+
+  render(0, true)
+  const offEsc = input.onKey((k) => k === 'Escape' && actions.resume())
   root.append(el)
-  return { el, dispose: () => (nav.off(), offEsc(), el.remove()) }
+  return { el, dispose: () => (nav?.off(), offEsc(), el.remove()) }
 }
 
 /* ---------------- Results ---------------- */
@@ -269,13 +291,14 @@ const damageSource = (g: Game, id: DamageSource) => {
 }
 
 export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void): Screen => {
+  const m = t().results
   const victory = g.phase === 'victory'
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const earned = runEarnings(g)
-  const retry = h('button', { class: 'btn' }, 'Tentar de novo')
-  const back = h('button', { class: 'btn' }, 'Trocar Pokémon')
+  const retry = h('button', { class: 'btn' }, m.retry)
+  const back = h('button', { class: 'btn' }, m.change)
   const nav = menu(input, [retry, back], (i) => (i === 0 ? onRetry() : onMenu()), { horizontal: true })
 
   const el = h(
@@ -290,21 +313,21 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
         h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
         g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
       ),
-      h('div', { class: 'dialog-title' }, victory ? 'Você venceu Mewtwo!' : `${name} desmaiou!`),
-      g.player.shiny && h('div', { class: 'tag tag-shiny' }, `${name} shiny`),
+      h('div', { class: 'dialog-title' }, victory ? m.victory : m.fainted(name)),
+      g.player.shiny && h('div', { class: 'tag tag-shiny' }, m.shiny(name)),
       h(
         'div',
         { class: 'result-stats' },
-        h('div', {}, h('span', {}, 'Tempo'), h('b', {}, formatTime(g.time))),
-        h('div', {}, h('span', {}, 'Nível'), h('b', {}, g.player.level)),
-        h('div', {}, h('span', {}, 'Derrotados'), h('b', {}, g.kills)),
+        h('div', {}, h('span', {}, m.time), h('b', {}, formatTime(g.time))),
+        h('div', {}, h('span', {}, m.level), h('b', {}, g.player.level)),
+        h('div', {}, h('span', {}, m.kills), h('b', {}, g.kills)),
       ),
       h(
         'div',
         { class: 'earnings' },
         h('img', { src: coinIcon(2), alt: '' }),
         h('b', {}, `+${formatPokeDollars(earned.total)}`),
-        h('span', {}, `Moedas ${formatPokeDollars(earned.coins)} · Bônus ${formatPokeDollars(earned.bonus)}`),
+        h('span', {}, m.earnings(formatPokeDollars(earned.coins), formatPokeDollars(earned.bonus))),
       ),
       h(
         'div',
@@ -317,7 +340,7 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
             h('img', { src: src.icon, alt: '' }),
             h('span', { class: 'damage-name' }, src.name),
             h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[src.type]}` })),
-            h('b', {}, Math.round(dmg).toLocaleString('pt-BR')),
+            h('b', {}, formatNumber(dmg)),
           )
         }),
       ),

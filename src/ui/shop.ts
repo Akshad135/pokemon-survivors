@@ -1,13 +1,11 @@
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
-import { buyUpgrade, formatPokeDollars, refundAll, totalSpent, UPGRADE_IDS, UPGRADES, upgradePrice, type UpgradeId } from '../game/meta'
+import { formatPokeDollars, t } from '../i18n'
+import { buyUpgrade, refundAll, totalSpent, UPGRADE_IDS, UPGRADES, upgradePrice, type UpgradeId } from '../game/meta'
 import { coinIcon, upgradeIcon } from '../render/art'
-import { h, setText } from './dom'
+import { h, later, setText } from './dom'
 import { loadSave, writeSave } from './save'
 import { menu, type Screen } from './screens'
-
-/** Runs after the current key/click dispatch, so the next screen doesn't receive the same Enter. */
-const later = (fn: () => void) => setTimeout(fn, 0)
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
 
@@ -18,7 +16,7 @@ const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' 
 export const martButton = (root: HTMLElement, input: Input, onOpen: () => void) => {
   const el = h(
     'button',
-    { class: 'mart-entry box', 'aria-label': 'Abrir Poké Mart' },
+    { class: 'mart-entry box', 'aria-label': t().mart.open },
     h('img', { src: coinIcon(2), alt: '' }),
     h('span', { class: 'mart-entry-text' }, h('b', {}, 'POKé MART'), h('span', {}, formatPokeDollars(loadSave().wallet))),
     h('span', { class: 'key-hint' }, 'L'),
@@ -29,10 +27,10 @@ export const martButton = (root: HTMLElement, input: Input, onOpen: () => void) 
   return () => (off(), el.remove())
 }
 
-/** Yes/no dialog layered over the mart. Defaults to "Não" so a stray Enter is harmless. */
+/** Yes/no dialog layered over the mart. Defaults to "no" so a stray Enter is harmless. */
 const confirmDialog = (root: HTMLElement, input: Input, text: string, onAnswer: (yes: boolean) => void): Screen => {
-  const yes = h('button', { class: 'btn' }, 'Sim')
-  const no = h('button', { class: 'btn' }, 'Não')
+  const yes = h('button', { class: 'btn' }, t().mart.yes)
+  const no = h('button', { class: 'btn' }, t().mart.no)
   const nav = menu(input, [yes, no], (i) => onAnswer(i === 0), { horizontal: true, initial: 1 })
   const offEsc = input.onKey((k) => k === 'Escape' && onAnswer(false))
   const el = h('div', { class: 'screen dim' }, h('div', { class: 'dialog box pop' }, h('div', { class: 'dialog-title' }, text), h('div', { class: 'buttons' }, yes, no)))
@@ -43,9 +41,10 @@ const confirmDialog = (root: HTMLElement, input: Input, text: string, onAnswer: 
 /**
  * Poké Mart: spend ₽ on permanent ranks. GBA-style list with prices on the
  * right and a description box below. Keyboard (↑↓ Enter Esc), mouse (click
- * buys) and touch (tap selects, tap again or "Comprar" buys).
+ * buys) and touch (tap selects, tap again or "Buy" buys).
  */
 export const shop = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
+  const m = t().mart
   let save = loadSave()
   let index = 0
   let confirm: Screen | null = null
@@ -63,8 +62,8 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
     )
     return { id, el, pips, price }
   })
-  const back = h('button', { class: 'btn' }, 'Voltar')
-  const refund = h('button', { class: 'btn' }, 'Reembolsar')
+  const back = h('button', { class: 'btn' }, m.back)
+  const refund = h('button', { class: 'btn' }, m.refund)
   const entries = [...rows.map((r) => r.el), back, refund]
 
   const descIcon = h('img', { alt: '' })
@@ -83,7 +82,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
       r.pips.replaceChildren(...Array.from({ length: max }, (_, i) => h('span', { class: i < rank ? 'pip on' : 'pip' })))
       const maxed = rank >= max
       const price = upgradePrice(r.id, rank)
-      setText(r.price, maxed ? 'MAX' : formatPokeDollars(price))
+      setText(r.price, maxed ? t().max : formatPokeDollars(price))
       r.el.classList.toggle('maxed', maxed)
       r.el.classList.toggle('poor', !maxed && price > save.wallet)
     }
@@ -95,15 +94,15 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
       const rank = save.ranks[row.id]
       descIcon.src = upgradeIcon(row.id)
       descIconBox.classList.remove('hidden')
-      setText(descTitle, `${def.name} · Nv ${rank}/${def.maxRank}`)
-      setText(descText, def.description)
+      setText(descTitle, m.rank(def.name, rank, def.maxRank))
+      setText(descText, t().upgrades[row.id])
       const maxed = rank >= def.maxRank
-      setText(buy, maxed ? 'MAX' : `Comprar ${formatPokeDollars(upgradePrice(row.id, rank))}`)
+      setText(buy, maxed ? t().max : m.buy(formatPokeDollars(upgradePrice(row.id, rank))))
       buy.toggleAttribute('disabled', maxed || upgradePrice(row.id, rank) > save.wallet)
     } else {
       descIconBox.classList.add('hidden')
-      setText(descTitle, index === rows.length ? 'Voltar' : 'Reembolsar tudo')
-      setText(descText, index === rows.length ? 'Voltar para a escolha de parceiro.' : `Desfaz todas as compras e devolve ${formatPokeDollars(totalSpent(save.ranks))}.`)
+      setText(descTitle, index === rows.length ? m.back : m.refundAll)
+      setText(descText, index === rows.length ? m.backDescription : m.refundDescription(formatPokeDollars(totalSpent(save.ranks))))
     }
   }
 
@@ -128,7 +127,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
   const askRefund = () => {
     if (totalSpent(save.ranks) === 0) return playSfx('denied')
     later(() => {
-      confirm = confirmDialog(root, input, `Reembolsar tudo e receber ${formatPokeDollars(totalSpent(save.ranks))}?`, (yes) => {
+      confirm = confirmDialog(root, input, m.refundConfirm(formatPokeDollars(totalSpent(save.ranks))), (yes) => {
         confirm?.dispose()
         confirm = null
         if (!yes) return
@@ -179,7 +178,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
       h('div', { class: 'mart-list' }, ...rows.map((r) => r.el)),
       h('div', { class: 'mart-desc' }, descIconBox, h('div', { class: 'mart-desc-body' }, descTitle, descText), buy),
       h('div', { class: 'buttons' }, back, refund),
-      h('p', { class: 'hint' }, '↑ ↓ escolher · ENTER comprar · ESC voltar'),
+      h('p', { class: 'hint' }, m.hint),
     ),
   )
   root.append(el)

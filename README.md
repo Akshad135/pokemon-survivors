@@ -10,7 +10,7 @@ npm run build      # typecheck + production build
 npm run assets     # re-download sprites/cries (already committed in public/)
 ```
 
-**Controls:** WASD/arrows · `Space` special attack (A/✕ on a gamepad) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade. On phones: drag anywhere for the floating joystick, tap the round button (bottom right) for the special and the pause button (top right) to pause. Installable to the home screen (fullscreen web app).
+**Controls:** WASD/arrows · `Space` special attack (A/✕ on a gamepad) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade · `I` switch language (title screen). On phones: drag anywhere for the floating joystick, tap the round button (bottom right) for the special and the pause button (top right) to pause. Installable to the home screen (fullscreen web app).
 
 ## Stack
 
@@ -29,7 +29,8 @@ src/
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, frame renderer
-  ui/       HUD, starter select, level-up, pause, results, toasts
+  ui/       HUD, starter select, level-up, pause, results, toasts, language switch
+  i18n/     every player-facing string: pt.ts (reference) and en.ts
 ```
 
 - **Simulation and presentation are decoupled.** `step(game, input, dt)` mutates the state and pushes `GameEvent`s. `main.ts` drains them each frame to play sounds and cries and show toasts.
@@ -39,6 +40,7 @@ src/
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball), and the starter has a 1/64 chance to be shiny for the whole run. Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time (counted in the move's damage), burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses). Upgrades and items (King's Rock, Toxic Orb) raise chance and DoT damage.
 - **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides): Fire dashes leaving a fire trail, Water fires a beam, Grass erupts rings of roots, anything else gets a shockwave. The final evolution upgrades it to Blast Burn / Hydro Cannon / Frenzy Plant. Input reaches `step()` as data (`{ move, special }`).
+- **Languages:** Brazilian Portuguese and English, picked from the browser language and switchable on the title screen (`PT | EN`, or `I`) and in the pause menu. Text lives in `src/i18n`: `pt.ts` is the reference and its inferred type forces `en.ts` to match it, down to one line per move upgrade. Data files keep only the official English names. Toast strings use light markup (`*bold*`, `_accent_`) so each language can put names where its grammar wants them.
 - **Type chart:** damage uses real Pokémon type matchups, softened (2x → 1.5x, 0x → 0.5x). Yellow numbers with `!` mean super effective.
 
 ## Content (v0.1)

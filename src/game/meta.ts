@@ -8,8 +8,8 @@ import type { Game } from './types'
  */
 
 type UpgradeDef = {
+  /** Official English name; descriptions live in `i18n`. */
   name: string
-  description: string
   maxRank: number
   /** Price of the first rank; later ranks grow by PRICE_GROWTH. */
   basePrice: number
@@ -18,17 +18,17 @@ type UpgradeDef = {
 }
 
 export const UPGRADES = {
-  hpUp: { name: 'HP Up', description: '+10 de HP máximo por nível.', maxRank: 5, basePrice: 200, effect: { stat: { maxHp: 10 } } },
-  protein: { name: 'Protein', description: '+5% de dano por nível.', maxRank: 5, basePrice: 300, effect: { stat: { might: 0.05 } } },
-  iron: { name: 'Iron', description: '+1 de defesa por nível.', maxRank: 3, basePrice: 400, effect: { stat: { armor: 1 } } },
-  carbos: { name: 'Carbos', description: '+5% de velocidade por nível.', maxRank: 3, basePrice: 250, effect: { stat: { speed: 3.4 } } },
-  calcium: { name: 'Calcium', description: '+5% de área dos golpes por nível.', maxRank: 3, basePrice: 300, effect: { stat: { area: 0.05 } } },
-  zinc: { name: 'Zinc', description: 'Golpes recarregam 2,5% mais rápido por nível.', maxRank: 3, basePrice: 450, effect: { stat: { cooldown: -0.025 } } },
-  ppUp: { name: 'PP Up', description: '+1 projétil em todos os golpes.', maxRank: 1, basePrice: 3000, effect: { stat: { amount: 1 } } },
-  expCharm: { name: 'Exp. Charm', description: '+3% de EXP recebida por nível.', maxRank: 5, basePrice: 250, effect: { stat: { growth: 0.03 } } },
-  amuletCoin: { name: 'Amulet Coin', description: '+10% de ₽ ganhos por nível.', maxRank: 5, basePrice: 250, effect: { stat: { greed: 0.1 } } },
-  abilityCapsule: { name: 'Ability Capsule', description: '+1 troca de opções por partida ao subir de nível.', maxRank: 3, basePrice: 500, effect: { charge: 'rerolls' } },
-  escapeRope: { name: 'Escape Rope', description: '+1 pulo de subida de nível por partida.', maxRank: 3, basePrice: 300, effect: { charge: 'skips' } },
+  hpUp: { name: 'HP Up', maxRank: 5, basePrice: 200, effect: { stat: { maxHp: 10 } } },
+  protein: { name: 'Protein', maxRank: 5, basePrice: 300, effect: { stat: { might: 0.05 } } },
+  iron: { name: 'Iron', maxRank: 3, basePrice: 400, effect: { stat: { armor: 1 } } },
+  carbos: { name: 'Carbos', maxRank: 3, basePrice: 250, effect: { stat: { speed: 3.4 } } },
+  calcium: { name: 'Calcium', maxRank: 3, basePrice: 300, effect: { stat: { area: 0.05 } } },
+  zinc: { name: 'Zinc', maxRank: 3, basePrice: 450, effect: { stat: { cooldown: -0.025 } } },
+  ppUp: { name: 'PP Up', maxRank: 1, basePrice: 3000, effect: { stat: { amount: 1 } } },
+  expCharm: { name: 'Exp. Charm', maxRank: 5, basePrice: 250, effect: { stat: { growth: 0.03 } } },
+  amuletCoin: { name: 'Amulet Coin', maxRank: 5, basePrice: 250, effect: { stat: { greed: 0.1 } } },
+  abilityCapsule: { name: 'Ability Capsule', maxRank: 3, basePrice: 500, effect: { charge: 'rerolls' } },
+  escapeRope: { name: 'Escape Rope', maxRank: 3, basePrice: 300, effect: { charge: 'skips' } },
 } as const satisfies Record<string, UpgradeDef>
 
 export type UpgradeId = keyof typeof UPGRADES
@@ -148,6 +148,3 @@ export const runEarnings = (g: Game) => {
   const bonus = runBonus({ time: g.time, kills: g.kills, victory: g.phase === 'victory', greed: g.player.stats.greed })
   return { coins: g.coins, bonus, total: g.coins + bonus }
 }
-
-/** `₽ 1.250` – Brazilian thousands separator. */
-export const formatPokeDollars = (amount: number) => `₽ ${Math.round(amount).toLocaleString('pt-BR')}`

@@ -8,7 +8,7 @@ Browser survivors-like (Vampire Survivors–style) with Pokémon. Vite + TypeScr
 - The simulation mutates plain state for performance (hundreds of entities at 60 Hz), and that's fine. Keep hot loops allocation-light (see `retain`, the spatial grid).
 - **Simulation ≠ presentation.** `src/game/*` must not touch the DOM or audio. Notify the shell by pushing a `GameEvent`; `main.ts` handles sounds, cries and toasts.
 - **Pixel-perfect rendering.** The world is drawn at low internal resolution and integer-upscaled. Snap draw positions to whole pixels and use the hard-edged helpers in `engine/pixelart.ts`. New effect art is code-authored pixel strings (`render/art.ts`).
-- **UI text is Brazilian Portuguese.** Pokémon, move and item names stay in English (official names).
+- **Two languages: pt-BR and English.** Every player-facing string lives in `src/i18n` (`pt.ts` is the reference; `en.ts` must match it key for key, and the type checker enforces it, down to one line per move upgrade). Read text with `t()` at render time, never at module load. Pokémon, move and item names stay in English (official names) and live in the data files.
 - **Comments:** short doc comments above non-obvious functions. Don't comment every line, and keep comments in sync with the code.
 - **Tests:** focused vitest tests for pure rules only (`*.test.ts`). No smoke or snapshot slop.
 - **Mobile matters:** many players will be on phones. Every UI must work with touch and on small portrait and landscape screens.

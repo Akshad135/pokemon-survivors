@@ -1,6 +1,7 @@
 import { TYPE_COLORS } from '../data/types'
 import { resolveSpecial, specialReady } from '../game/special'
 import type { Game } from '../game/types'
+import { t } from '../i18n'
 import { specialIcon } from '../render/specialFx'
 import { h, setStyle } from './dom'
 
@@ -12,8 +13,8 @@ import { h, setStyle } from './dom'
 export const createSpecialControls = (onPress: () => void) => {
   const badgeIcon = h('img', { alt: '' })
   const buttonIcon = h('img', { alt: '' })
-  const badge = h('div', { class: 'special special-badge' }, badgeIcon, h('span', { class: 'special-key' }, 'ESPAÇO'))
-  const button = h('button', { class: 'special special-button', type: 'button', 'aria-label': 'Ataque especial' }, buttonIcon)
+  const badge = h('div', { class: 'special special-badge' }, badgeIcon, h('span', { class: 'special-key' }, t().spaceKey))
+  const button = h('button', { class: 'special special-button', type: 'button', 'aria-label': t().hud.specialAttack }, buttonIcon)
 
   // Claim the touch so the floating joystick (pointerdown anywhere) never sees it.
   button.addEventListener('pointerdown', (e) => {
@@ -33,7 +34,7 @@ export const createSpecialControls = (onPress: () => void) => {
       const src = specialIcon(r.id)
       badgeIcon.setAttribute('src', src)
       buttonIcon.setAttribute('src', src)
-      badge.title = `${r.tier.name} (Espaço)`
+      badge.title = t().hud.specialTitle(r.tier.name)
       for (const el of [badge, button]) setStyle(el, '--type', TYPE_COLORS[r.def.type])
     }
     const fill = (s.total > 0 ? 1 - s.cooldown / s.total : 1).toFixed(3)

@@ -5,23 +5,24 @@ import { REGIONS, STARTERS, type StarterDef, type StarterId } from '../data/star
 import { TYPE_COLORS } from '../data/types'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
-import { resolveSpecial, type SpecialKind } from '../game/special'
+import { resolveSpecial } from '../game/special'
 import type { PlayerStats } from '../game/stats'
 import { moveIcon, PICKUPS } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
+import { t } from '../i18n'
 import { h } from './dom'
 import { hint, typeBadge, type Screen } from './screens'
 
-/** Bars of the inspect panel: label, value getter and the range mapped to an empty/full bar. */
+/** Bars of the inspect panel: label key, value getter and the range mapped to an empty/full bar. */
 const STAT_BARS = [
-  { label: 'HP', get: (s: PlayerStats) => s.maxHp, min: 50, max: 260, fmt: (v: number) => `${Math.round(v)}` },
-  { label: 'Ataque', get: (s: PlayerStats) => s.might, min: 0.8, max: 1.5, fmt: (v: number) => `x${v.toFixed(2)}` },
-  { label: 'Defesa', get: (s: PlayerStats) => s.armor, min: 0, max: 5, fmt: (v: number) => `${v}` },
-  { label: 'Velocidade', get: (s: PlayerStats) => s.speed, min: 50, max: 95, fmt: (v: number) => `${Math.round(v)}` },
-  { label: 'Recarga', get: (s: PlayerStats) => 1 / s.cooldown, min: 0.9, max: 1.2, fmt: (v: number) => `x${(1 / v).toFixed(2)}` },
-  { label: 'Área', get: (s: PlayerStats) => s.area, min: 0.9, max: 1.45, fmt: (v: number) => `x${v.toFixed(2)}` },
-  { label: 'Regeneração', get: (s: PlayerStats) => s.regen, min: 0, max: 1.5, fmt: (v: number) => `${v.toFixed(1)}/s` },
+  { label: 'hp', get: (s: PlayerStats) => s.maxHp, min: 50, max: 260, fmt: (v: number) => `${Math.round(v)}` },
+  { label: 'attack', get: (s: PlayerStats) => s.might, min: 0.8, max: 1.5, fmt: (v: number) => `x${v.toFixed(2)}` },
+  { label: 'defense', get: (s: PlayerStats) => s.armor, min: 0, max: 5, fmt: (v: number) => `${v}` },
+  { label: 'speed', get: (s: PlayerStats) => s.speed, min: 50, max: 95, fmt: (v: number) => `${Math.round(v)}` },
+  { label: 'cooldown', get: (s: PlayerStats) => 1 / s.cooldown, min: 0.9, max: 1.2, fmt: (v: number) => `x${(1 / v).toFixed(2)}` },
+  { label: 'area', get: (s: PlayerStats) => s.area, min: 0.9, max: 1.45, fmt: (v: number) => `x${v.toFixed(2)}` },
+  { label: 'regen', get: (s: PlayerStats) => s.regen, min: 0, max: 1.5, fmt: (v: number) => `${v.toFixed(1)}/s` },
 ] as const
 
 const ratio = (v: number, min: number, max: number) => Math.max(0.03, Math.min(1, (v - min) / (max - min)))
@@ -32,17 +33,10 @@ const moveRow = (id: MoveId, signature: boolean) => {
     'div',
     { class: signature ? 'move-row signature' : 'move-row' },
     h('img', { src: moveIcon(id), alt: '' }),
-    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, def.name, signature && h('span', { class: 'tag tag-new' }, 'INICIAL')), h('div', { class: 'move-desc' }, def.description)),
+    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, def.name, signature && h('span', { class: 'tag tag-new' }, t().title.signature)), h('div', { class: 'move-desc' }, t().moves[id].description)),
     typeBadge(def.type),
   )
 }
-
-const SPECIAL_DESC = {
-  dash: 'Investida em chamas que deixa um rastro de fogo.',
-  beam: 'Jato concentrado na direção em que você anda.',
-  roots: 'Anéis de raízes brotam do chão e desaceleram.',
-  nova: 'Onda de choque ao redor que empurra tudo.',
-} as const satisfies Record<SpecialKind, string>
 
 /** The manual special (Space / round button): base move, upgraded at the final stage. */
 const specialRow = (id: StarterId) => {
@@ -51,13 +45,14 @@ const specialRow = (id: StarterId) => {
     'div',
     { class: 'move-row signature' },
     h('img', { src: specialIcon(special), alt: '' }),
-    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${def.base.name} → ${def.final.name}`), h('div', { class: 'move-desc' }, SPECIAL_DESC[def.kind])),
+    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${def.base.name} → ${def.final.name}`), h('div', { class: 'move-desc' }, t().specials[def.kind])),
     typeBadge(def.type),
   )
 }
 
 /** Detailed sheet of a starter: sprite, types, stat bars, evolution line and every move it can learn. */
 const inspectPanel = (id: StarterId, stage: number, onStage: (stage: number) => void, sprite: HTMLCanvasElement) => {
+  const m = t()
   const s = STARTERS[id]
   const form = s.line[stage]!
   const base = starterStats(id, 0)
@@ -67,7 +62,7 @@ const inspectPanel = (id: StarterId, stage: number, onStage: (stage: number) => 
     h(
       'div',
       { class: 'stat-bar' },
-      h('span', { class: 'stat-label' }, b.label),
+      h('span', { class: 'stat-label' }, m.stats[b.label]),
       h(
         'div',
         { class: 'bar' },
@@ -80,7 +75,7 @@ const inspectPanel = (id: StarterId, stage: number, onStage: (stage: number) => 
 
   const line: StarterDef['line'] = s.line
   const evo = line.flatMap((st, i) => [
-    i > 0 && h('span', { class: 'evo-arrow' }, `Nv ${line[i - 1]!.evolveAt}`, h('br'), '▶'),
+    i > 0 && h('span', { class: 'evo-arrow' }, m.level(line[i - 1]!.evolveAt!), h('br'), '▶'),
     h(
       'button',
       { class: i === stage ? 'evo-stage selected' : 'evo-stage', onclick: () => onStage(i), title: st.name },
@@ -102,16 +97,16 @@ const inspectPanel = (id: StarterId, stage: number, onStage: (stage: number) => 
         { class: 'inspect-id' },
         h('div', { class: 'inspect-name' }, h('small', {}, `#${String(form.dex).padStart(3, '0')}`), form.name),
         h('div', { class: 'types' }, ...form.types.map(typeBadge)),
-        h('div', { class: 'inspect-blurb' }, s.blurb),
+        h('div', { class: 'inspect-blurb' }, m.blurbs[id]),
       ),
     ),
-    h('div', { class: 'inspect-section' }, 'Status', h('span', { class: 'legend' }, h('i', { class: 'legend-base' }), 'início ', h('i', { class: 'legend-final' }), 'evoluído')),
+    h('div', { class: 'inspect-section' }, m.title.statsSection, h('span', { class: 'legend' }, h('i', { class: 'legend-base' }), `${m.title.legendBase} `, h('i', { class: 'legend-final' }), m.title.legendFinal)),
     h('div', { class: 'stat-bars' }, ...bars),
-    h('div', { class: 'inspect-section' }, 'Evolução'),
+    h('div', { class: 'inspect-section' }, m.title.evolution),
     h('div', { class: 'evo-line' }, ...evo),
-    h('div', { class: 'inspect-section' }, 'Especial', h('span', { class: 'legend' }, 'ESPAÇO')),
+    h('div', { class: 'inspect-section' }, m.title.special, h('span', { class: 'legend' }, m.spaceKey)),
     specialRow(id),
-    h('div', { class: 'inspect-section' }, 'Golpes'),
+    h('div', { class: 'inspect-section' }, m.title.moves),
     h('div', { class: 'move-list' }, ...s.learnset.map((m) => moveRow(m, m === s.signature))),
   )
 }
@@ -122,8 +117,14 @@ type Cursor = { region: number; slot: number }
  * Region-tabbed starter selector with an always-visible inspect panel.
  * Keyboard: ←/→ starter (wraps across regions), ↑/↓ or Q/E region, 1-9 jump to region, Enter confirms.
  * Pointer: hover/tap highlights, clicking the highlighted card (or the button) confirms.
+ * `selected` reads the highlighted starter, so a rebuilt screen (language switch) keeps it.
  */
-export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: StarterId) => void, initial: StarterId = 'charmander'): Screen => {
+export const starterSelect = (
+  root: HTMLElement,
+  input: Input,
+  onPick: (id: StarterId) => void,
+  initial: StarterId = 'charmander',
+): Screen & { selected: () => StarterId } => {
   const start = Math.max(0, REGIONS.findIndex((r) => r.starters.includes(initial)))
   const cursor: Cursor = { region: start, slot: Math.max(0, REGIONS[start]!.starters.indexOf(initial)) }
   let stage = 0
@@ -170,14 +171,14 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
     void loadSpecies(STARTERS[id].line[stage]!.dex).catch(() => {})
     inspect.style.setProperty('--accent', STARTERS[id].color)
     inspect.replaceChildren(
-      h('div', { class: 'dialog-title' }, 'INSPECIONAR'),
+      h('div', { class: 'dialog-title' }, t().title.inspect),
       inspectPanel(id, stage, (i) => {
         stage = i
         playSfx('move')
         renderInspect()
       }, inspectSprite),
     )
-    confirmBtn.textContent = `Escolher ${STARTERS[id].name}!`
+    confirmBtn.textContent = t().title.choose(STARTERS[id].name)
   }
 
   const setCursor = (next: Cursor, sound = true) => {
@@ -225,7 +226,7 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
     'div',
     { class: 'screen title-screen select-screen' },
     h('h1', { class: 'logo' }, h('span', { class: 'logo-top' }, 'POKéMON'), h('span', { class: 'logo-bottom' }, 'SURVIVORS')),
-    h('p', { class: 'subtitle blink' }, 'Escolha seu parceiro!'),
+    h('p', { class: 'subtitle blink' }, t().title.subtitle),
     h(
       'div',
       { class: 'select-layout' },
@@ -234,7 +235,7 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
         { class: 'select-main' },
         h('div', { class: 'region-tabs', role: 'tablist' }, ...tabs),
         h('div', { class: 'starters' }, ...cards),
-        hint('← → parceiro · ↑ ↓ região · ENTER escolher', 'Toque para ver · toque de novo para escolher'),
+        hint(t().title.hintKeys, t().title.hintTouch),
       ),
       inspect,
       h('div', { class: 'select-footer' }, confirmBtn),
@@ -258,5 +259,5 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
     draw(inspectSprite, STARTERS[current()].line[stage]!.dex, t, true)
   }
 
-  return { el, tick, dispose: () => (off(), clearTimeout(cryTimer), el.remove()) }
+  return { el, tick, selected: current, dispose: () => (off(), clearTimeout(cryTimer), el.remove()) }
 }

@@ -20,10 +20,12 @@ import { drawJoystick } from './render/joystick'
 import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
-import { h } from './ui/dom'
+import { locale, LOCALES, nextLocale, setLocale, t, type Locale } from './i18n'
+import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
 import { depositPokeDollars, loadSave } from './ui/save'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
+import { languageSwitch } from './ui/language'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 
@@ -98,14 +100,21 @@ const setScreen = (next: Screen | null) => {
   screen = next
 }
 
-const showMenu = () => {
-  endRun()
-  const select = starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), lastStarter)
-  const closeMart = martButton(ui, input, showShop)
-  setScreen({ ...select, dispose: () => (closeMart(), select.dispose()) })
+const changeLanguage = (next: Locale) => {
+  setLocale(next)
+  playSfx('select')
 }
 
-const showShop = () => setScreen(shop(ui, input, showMenu))
+const showMenu = (initial: StarterId = lastStarter) => {
+  endRun()
+  const select = starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), initial)
+  const closeMart = martButton(ui, input, () => showShop())
+  // Every label is read at render time, so switching language just rebuilds the menu.
+  const closeLanguage = languageSwitch(ui, input, (next) => (changeLanguage(next), showMenu(select.selected())))
+  setScreen({ ...select, dispose: () => (closeMart(), closeLanguage(), select.dispose()) })
+}
+
+const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
 /** Moves the run's ₽ into the wallet once. Quitting keeps coins but forfeits the survival bonus. */
 const bankRun = (r: Run, withBonus: boolean) => {
@@ -123,7 +132,7 @@ const endRun = () => {
   run = null
 }
 
-const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, 'Carregando…'))
+const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, t().loading))
 
 /** Loads the starter's evolution line and every enemy, then starts a fresh run. */
 const startRun = async (starter: StarterId) => {
@@ -137,8 +146,17 @@ const startRun = async (starter: StarterId) => {
   void preloadShinies(ENEMY_DEX)
   loading.remove()
   const game = createGame(starter, view, Date.now(), loadSave().ranks)
-  const pause = () => game.phase === 'playing' && (game.phase = 'paused')
-  run = { game, hud: createHud(ui, queueSpecial, pause), overlay: null, shown: null, closeText: null, banked: false }
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, banked: false }
+}
+
+const runHud = (game: Game) => createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
+
+/** Pause menu language button: the HUD reads its labels once, so it is rebuilt in the new language. */
+const changeRunLanguage = (r: Run) => {
+  changeLanguage(nextLocale(locale()))
+  r.hud.dispose()
+  r.hud = runHud(r.game)
+  dirty = true
 }
 
 /** Rebuilds the modal overlay whenever the simulation phase (or offer set) changes. */
@@ -153,21 +171,22 @@ const syncOverlay = (r: Run) => {
       r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer), { reroll: () => rerollOffers(g), skip: () => skipLevelUp(g) })
       break
     case 'paused':
-      r.overlay = pauseMenu(ui, input, g, () => (g.phase = 'playing'), showMenu)
+      r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => showMenu(), language: () => changeRunLanguage(r) })
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => void startRun(lastStarter), showMenu)
+      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu())
       break
   }
 }
 
 const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) => {
-  if (!offer) return 'nada… estava vazia!'
-  if (offer.kind === 'move') return `${MOVES[offer.id].name} Nv ${offer.level}!`
-  if (offer.kind === 'item') return `${ITEMS[offer.id].name} Nv ${offer.level}!`
-  if (offer.kind === 'evolution') return `${MOVES[offer.to].name}!`
-  return 'uma Oran Berry!'
+  const m = t().toast
+  if (!offer) return m.pokeballEmpty
+  if (offer.kind === 'move') return m.pokeballLevel(MOVES[offer.id].name, offer.level)
+  if (offer.kind === 'item') return m.pokeballLevel(ITEMS[offer.id].name, offer.level)
+  if (offer.kind === 'evolution') return m.pokeballEvolution(MOVES[offer.to].name)
+  return m.pokeballBerry
 }
 
 const handleEvent = (r: Run, e: GameEvent) => {
@@ -187,7 +206,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('specialCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.5)
       const who = STARTERS[g.starter].line[g.player.stage]!.name
-      return toast(ui, h('span', {}, `${who} usou `, h('b', {}, e.name), '!'), 1600)
+      return toast(ui, rich(t().toast.used(who, e.name)), 1600)
     }
     case 'boss': {
       const def: EnemyDef = ENEMIES[e.enemy]
@@ -195,26 +214,26 @@ const handleEvent = (r: Run, e: GameEvent) => {
         playSfx('legendary')
         playCry(sprites(def.dex).cry, 0.7)
         flashScreen(ui)
-        return banner(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' ', h('span', { class: 'legendary' }, 'lendário'), ' apareceu!'))
+        return banner(ui, rich(t().toast.legendary(def.name)))
       }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
-      return toast(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' selvagem apareceu!'), 3200)
+      return toast(ui, rich(t().toast.boss(def.name)), 3200)
     }
     case 'shiny': {
       const def = ENEMIES[e.enemy]
       playSfx('shiny')
       playCry(sprites(def.dex).cry, 0.4)
-      return toast(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' shiny apareceu!'), 3200)
+      return toast(ui, rich(t().toast.shiny(def.name)), 3200)
     }
     case 'shinyPlayer': {
       playSfx('shiny')
-      return toast(ui, h('span', {}, 'Que sorte! Seu ', h('b', {}, STARTERS[g.starter].name), ' é shiny!'), 3600)
+      return toast(ui, rich(t().toast.shinyPlayer(STARTERS[g.starter].name)), 3600)
     }
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
-      r.closeText = textBox(ui, `Hã? ${STARTERS[g.starter].line[g.player.stage]!.name} está evoluindo!`)
+      r.closeText = textBox(ui, t().toast.evolving(STARTERS[g.starter].line[g.player.stage]!.name))
       return
     }
     case 'evolved': {
@@ -223,25 +242,25 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(e.to).cry)
       r.closeText?.()
       r.closeText = null
-      return toast(ui, `Parabéns! ${line[g.player.stage - 1]!.name} evoluiu para ${line[g.player.stage]!.name}!`, 3500)
+      return toast(ui, t().toast.evolved(line[g.player.stage - 1]!.name, line[g.player.stage]!.name), 3500)
     }
     case 'moveEvolved':
       playSfx('evolve')
       playCry(sprites(playerDex(g)).cry, 0.3)
-      return toast(ui, h('span', { class: 'toast-evo' }, h('b', {}, MOVES[e.from].name), ' evoluiu para ', h('b', {}, MOVES[e.to].name), '!'), 3500)
+      return toast(ui, rich(t().toast.moveEvolved(MOVES[e.from].name, MOVES[e.to].name), { class: 'toast-evo' }), 3500)
     case 'pokeball':
       playSfx('levelUp')
-      return toast(ui, `Poké Ball: ${offerLabel(e.offer)}`)
+      return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
     case 'consumable': {
       const def = CONSUMABLES[e.item]
       playSfx(def.sfx)
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), def.label), 2200)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), t().consumables[e.item]), 2200)
     }
     case 'propBreak':
       return playSfx('break', 60)
     case 'revive':
       playSfx('evolve')
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), 'O ', h('b', {}, 'Revive'), ' te pôs de pé!'), 3000)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
     case 'gameover':
       bankRun(r, true)
       playSfx('gameOver')
@@ -347,6 +366,7 @@ const preloadInBackground = async () => {
 }
 
 const boot = () => {
+  document.documentElement.lang = LOCALES[locale()].tag
   showMenu()
   requestAnimationFrame(frame)
   void preloadInBackground()

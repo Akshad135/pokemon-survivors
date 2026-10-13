@@ -14,7 +14,6 @@ export type EvolutionStage = {
 
 export type StarterDef = {
   name: string
-  blurb: string
   color: string
   stats: StatDelta
   /** Move the run starts with. */
@@ -41,7 +40,6 @@ export const STARTERS = {
   /* ---------- Kanto ---------- */
   bulbasaur: {
     name: 'Bulbasaur',
-    blurb: 'Equilibrado. Regenera vida.',
     color: '#78c850',
     stats: { regen: 0.4, maxHp: 10 },
     signature: 'razorLeaf',
@@ -53,7 +51,6 @@ export const STARTERS = {
   },
   charmander: {
     name: 'Charmander',
-    blurb: 'Ofensivo. Mais dano, menos vida.',
     color: '#f08030',
     stats: { might: 0.15, maxHp: -10 },
     signature: 'ember',
@@ -65,7 +62,6 @@ export const STARTERS = {
   },
   squirtle: {
     name: 'Squirtle',
-    blurb: 'Defensivo. Mais vida e defesa.',
     color: '#6890f0',
     stats: { maxHp: 20, armor: 1, speed: -3 },
     signature: 'waterGun',
@@ -79,7 +75,6 @@ export const STARTERS = {
   /* ---------- Johto ---------- */
   chikorita: {
     name: 'Chikorita',
-    blurb: 'Curandeira. Muita vida e regeneração.',
     color: '#a8d868',
     stats: { maxHp: 25, regen: 0.3, speed: -4, might: -0.05 },
     signature: 'vineWhip',
@@ -91,7 +86,6 @@ export const STARTERS = {
   },
   cyndaquil: {
     name: 'Cyndaquil',
-    blurb: 'Labaredas. Golpes maiores e mais longos.',
     color: '#f8a040',
     stats: { area: 0.15, duration: 0.15, maxHp: -5 },
     signature: 'fireSpin',
@@ -103,7 +97,6 @@ export const STARTERS = {
   },
   totodile: {
     name: 'Totodile',
-    blurb: 'Brigão. Mordidas fortes e casca grossa.',
     color: '#58a8e8',
     stats: { might: 0.12, armor: 1, speed: -2 },
     signature: 'crunch',
@@ -117,7 +110,6 @@ export const STARTERS = {
   /* ---------- Hoenn ---------- */
   treecko: {
     name: 'Treecko',
-    blurb: 'Veloz. Corre muito, mas é frágil.',
     color: '#58b858',
     stats: { speed: 10, cooldown: -0.06, maxHp: -15 },
     signature: 'leafBlade',
@@ -129,7 +121,6 @@ export const STARTERS = {
   },
   torchic: {
     name: 'Torchic',
-    blurb: 'Lutador. Chutes de fogo cada vez mais fortes.',
     color: '#f87838',
     stats: { might: 0.1, speed: 4, maxHp: -5 },
     signature: 'ember',
@@ -141,7 +132,6 @@ export const STARTERS = {
   },
   mudkip: {
     name: 'Mudkip',
-    blurb: 'Tanque. Aguenta pancada e revida no chão.',
     color: '#4890d8',
     stats: { maxHp: 30, armor: 1, speed: -5 },
     signature: 'whirlpool',
@@ -155,7 +145,6 @@ export const STARTERS = {
   /* ---------- Sinnoh ---------- */
   turtwig: {
     name: 'Turtwig',
-    blurb: 'Fortaleza. Lento, blindado e sísmico.',
     color: '#88b848',
     stats: { maxHp: 40, armor: 2, speed: -9, cooldown: 0.05 },
     signature: 'earthquake',
@@ -167,7 +156,6 @@ export const STARTERS = {
   },
   chimchar: {
     name: 'Chimchar',
-    blurb: 'Ágil. Combos rápidos de socos.',
     color: '#e86830',
     stats: { speed: 8, cooldown: -0.08, maxHp: -10 },
     signature: 'machPunch',
@@ -179,7 +167,6 @@ export const STARTERS = {
   },
   piplup: {
     name: 'Piplup',
-    blurb: 'Orgulhoso. Defesa e disparos de aço.',
     color: '#5878c8',
     stats: { armor: 1, might: 0.05, projectileSpeed: 0.1 },
     signature: 'flashCannon',
@@ -193,7 +180,6 @@ export const STARTERS = {
   /* ---------- Unova ---------- */
   snivy: {
     name: 'Snivy',
-    blurb: 'Elegante. Rápido e com ímã maior.',
     color: '#68b848',
     stats: { speed: 6, cooldown: -0.05, magnet: 12 },
     signature: 'vineWhip',
@@ -205,7 +191,6 @@ export const STARTERS = {
   },
   tepig: {
     name: 'Tepig',
-    blurb: 'Pesado. Muita vida e golpes brutos.',
     color: '#e86040',
     stats: { maxHp: 25, might: 0.08, speed: -4 },
     signature: 'fireSpin',
@@ -217,7 +202,6 @@ export const STARTERS = {
   },
   oshawott: {
     name: 'Oshawott',
-    blurb: 'Espadachim. Cortes de concha em arco.',
     color: '#68a8e0',
     stats: { might: 0.06, armor: 1 },
     signature: 'razorShell',
@@ -231,7 +215,6 @@ export const STARTERS = {
   /* ---------- Kalos ---------- */
   chespin: {
     name: 'Chespin',
-    blurb: 'Espinhoso. Defesa alta, soca de perto.',
     color: '#80b050',
     stats: { maxHp: 25, armor: 2, speed: -6 },
     signature: 'razorLeaf',
@@ -243,7 +226,6 @@ export const STARTERS = {
   },
   fennekin: {
     name: 'Fennekin',
-    blurb: 'Mística. Poderes psíquicos e área maior.',
     color: '#f09048',
     stats: { area: 0.1, duration: 0.2, might: 0.05, maxHp: -10 },
     signature: 'psyshock',
@@ -255,7 +237,6 @@ export const STARTERS = {
   },
   froakie: {
     name: 'Froakie',
-    blurb: 'Ninja. Muito rápido, pouca vida.',
     color: '#58a0d8',
     stats: { speed: 12, projectileSpeed: 0.15, maxHp: -20 },
     signature: 'waterShuriken',
@@ -269,7 +250,6 @@ export const STARTERS = {
   /* ---------- Alola ---------- */
   rowlet: {
     name: 'Rowlet',
-    blurb: 'Arqueiro. Flechas rápidas e certeiras.',
     color: '#a8a060',
     stats: { projectileSpeed: 0.1, magnet: 15, might: 0.05 },
     signature: 'spiritShackle',
@@ -281,7 +261,6 @@ export const STARTERS = {
   },
   litten: {
     name: 'Litten',
-    blurb: 'Lutador sombrio. Dano alto e resistente.',
     color: '#d84848',
     stats: { might: 0.12, maxHp: 5, speed: -2 },
     signature: 'ember',
@@ -293,7 +272,6 @@ export const STARTERS = {
   },
   popplio: {
     name: 'Popplio',
-    blurb: 'Artista. Canta, cura e acerta em volta.',
     color: '#78b8f0',
     stats: { regen: 0.25, area: 0.1, duration: 0.1 },
     signature: 'disarmingVoice',
@@ -307,7 +285,6 @@ export const STARTERS = {
   /* ---------- Galar ---------- */
   grookey: {
     name: 'Grookey',
-    blurb: 'Ritmado. Ondas que freiam a horda.',
     color: '#68b040',
     stats: { area: 0.15, maxHp: 10, cooldown: 0.03 },
     signature: 'drumBeating',
@@ -319,7 +296,6 @@ export const STARTERS = {
   },
   scorbunny: {
     name: 'Scorbunny',
-    blurb: 'Artilheiro. Chutes explosivos e velocidade.',
     color: '#f05838',
     stats: { speed: 10, might: 0.08, maxHp: -15 },
     signature: 'pyroBall',
@@ -331,7 +307,6 @@ export const STARTERS = {
   },
   sobble: {
     name: 'Sobble',
-    blurb: 'Atirador. Projéteis rápidos e fortes.',
     color: '#5898e0',
     stats: { projectileSpeed: 0.25, might: 0.1, maxHp: -15, speed: -2 },
     signature: 'waterGun',
@@ -345,7 +320,6 @@ export const STARTERS = {
   /* ---------- Paldea ---------- */
   sprigatito: {
     name: 'Sprigatito',
-    blurb: 'Trapaceira. Recarga curta e mais EXP.',
     color: '#78c068',
     stats: { cooldown: -0.06, growth: 0.1, maxHp: -5 },
     signature: 'leafBlade',
@@ -357,7 +331,6 @@ export const STARTERS = {
   },
   fuecoco: {
     name: 'Fuecoco',
-    blurb: 'Tranquilo. Muita vida e canções de fogo.',
     color: '#f06848',
     stats: { maxHp: 30, regen: 0.15, speed: -6 },
     signature: 'torchSong',
@@ -369,7 +342,6 @@ export const STARTERS = {
   },
   quaxly: {
     name: 'Quaxly',
-    blurb: 'Dançarino. Gira na água e golpeia.',
     color: '#68a8f0',
     stats: { speed: 6, might: 0.06, duration: 0.1 },
     signature: 'whirlpool',
