@@ -78,7 +78,12 @@ export type Motion =
   | { kind: 'follow'; ox: number; oy: number }
   | { kind: 'static' }
 
-export type Visual = 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+export type Visual = 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust' | EvolvedVisual
+
+/** Visuals of evolved moves, drawn by `render/evolved.ts`. */
+export type EvolvedVisual =
+  | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
+  | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
@@ -140,6 +145,8 @@ export type Offer =
   | { kind: 'move'; id: MoveId; level: number }
   | { kind: 'item'; id: ItemId; level: number }
   | { kind: 'berry' }
+  /** Max level move + its paired held item: the move evolves in place. */
+  | { kind: 'evolution'; from: MoveId; to: MoveId }
 
 export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
 
@@ -156,6 +163,7 @@ export type GameEvent =
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
+  | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
   | { kind: 'gameover' }
   | { kind: 'victory' }
 

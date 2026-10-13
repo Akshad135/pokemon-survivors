@@ -5,7 +5,9 @@ import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { xpTier } from '../game/pickups'
 import type { Attack, Enemy, Game } from '../game/types'
 import { FX, PICKUPS } from './art'
+import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { bolt, dashedRing } from './strokes'
 import { drawGround } from './world'
 
 type Ctx = CanvasRenderingContext2D
@@ -16,17 +18,6 @@ const shadow = (ctx: Ctx, x: number, y: number, width: number) => {
 }
 
 /* ---------------- Attacks ---------------- */
-
-/** Pixel-plotted circle outline with gaps – cheap "swirl" rings. */
-const dashedRing = (ctx: Ctx, x: number, y: number, r: number, rot: number, colors: readonly string[], density = 0.5) => {
-  const steps = Math.max(12, Math.floor(r * TAU * 0.6))
-  for (let i = 0; i < steps; i++) {
-    const a = (i / steps) * TAU
-    if (Math.sin(a * 3 + rot) < 1 - density * 2) continue
-    ctx.fillStyle = colors[i % colors.length]!
-    ctx.fillRect(Math.round(x + Math.cos(a + rot * 0.3) * r), Math.round(y + Math.sin(a + rot * 0.3) * r), 1, 1)
-  }
-}
 
 const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
   if (a.shape.kind !== 'circle') return
@@ -53,22 +44,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitCentered(ctx, ring(Math.round(r), 1, '#f8e030'), a.x, a.y)
       return
     }
-  }
-}
-
-const bolt = (ctx: Ctx, x: number, y: number, height: number) => {
-  let cx = x
-  for (let yy = y - height; yy < y; yy += 6) {
-    const nx = yy + 6 >= y ? x : x + (Math.random() - 0.5) * 14
-    const steps = 6
-    for (let s = 0; s < steps; s++) {
-      const px = Math.round(cx + ((nx - cx) * s) / steps)
-      ctx.fillStyle = '#f8d030'
-      ctx.fillRect(px - 1, yy + s, 3, 1)
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(px, yy + s, 1, 1)
-    }
-    cx = nx
+    default:
+      return drawEvolvedGround(ctx, a, t)
   }
 }
 
@@ -137,6 +114,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'whirlpool':
       return
+    default:
+      return drawEvolvedAttack(ctx, a, t)
   }
 }
 

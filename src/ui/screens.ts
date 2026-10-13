@@ -2,6 +2,7 @@ import { context2d } from '../engine/pixelart'
 import { formatTime } from '../engine/math'
 import { playCry, playSfx, toggleMute } from '../engine/audio'
 import type { Input } from '../engine/input'
+import { canEvolve, EVOLUTIONS, evolutionOf, evolvedFrom, type MoveEvolution } from '../data/evolutions'
 import { ITEMS } from '../data/items'
 import { STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
@@ -107,6 +108,38 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
 
 /* ---------------- Level up ---------------- */
 
+/** "Ember + Charcoal → Flamethrower" chip. `ready` lights it up when the evolution is available. */
+const evoRecipe = (evo: MoveEvolution, ready: boolean) =>
+  h(
+    'span',
+    { class: ready ? 'evo-recipe ready' : 'evo-recipe', title: `${MOVES[evo.from].name} + ${ITEMS[evo.item].name} → ${MOVES[evo.to].name}` },
+    h('img', { src: moveIcon(evo.from), alt: '' }),
+    '+',
+    h('img', { src: itemIcon(evo.item), alt: '' }),
+    '→',
+    h('img', { src: moveIcon(evo.to), alt: '' }),
+    ready && h('b', {}, 'PRONTO!'),
+  )
+
+/** Recipes an offer takes part in, flagged ready if picking it completes the pair. */
+const offerRecipes = (g: Game, offer: Offer) => {
+  const p = g.player
+  switch (offer.kind) {
+    case 'move': {
+      const evo = evolutionOf(offer.id)
+      return evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
+    }
+    case 'item': {
+      const learnset: readonly MoveId[] = STARTERS[g.starter].learnset
+      return EVOLUTIONS.filter((e) => e.item === offer.id && learnset.includes(e.from)).map((e) =>
+        evoRecipe(e, canEvolve(e, { moves: p.moves, items: [offer] })),
+      )
+    }
+    default:
+      return []
+  }
+}
+
 const offerView = (g: Game, offer: Offer) => {
   switch (offer.kind) {
     case 'move': {
@@ -127,6 +160,10 @@ const offerView = (g: Game, offer: Offer) => {
     }
     case 'berry':
       return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: `${STARTERS[g.starter].name} recupera 40 HP.`, type: null }
+    case 'evolution': {
+      const to: MoveDef = MOVES[offer.to]
+      return { icon: moveIcon(offer.to), name: to.name, tag: 'EVOLUÇÃO!', isNew: true, desc: `${MOVES[offer.from].name} evolui! ${to.description}`, type: to.type }
+    }
   }
 }
 
@@ -134,9 +171,10 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const buttons = g.offers.map((offer, i) => {
     const v = offerView(g, offer)
+    const recipes = offerRecipes(g, offer)
     return h(
       'button',
-      { class: 'offer' },
+      { class: offer.kind === 'evolution' ? 'offer offer-evo' : 'offer' },
       h('span', { class: 'offer-key' }, i + 1),
       h('div', { class: 'offer-icon' }, h('img', { src: v.icon, alt: '' })),
       h(
@@ -144,6 +182,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
         { class: 'offer-body' },
         h('div', { class: 'offer-name' }, v.name, v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag)),
         h('div', { class: 'offer-desc' }, v.desc),
+        recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
       ),
       v.type && typeBadge(v.type),
     )
@@ -185,12 +224,33 @@ const STAT_ROWS = [
   ['Regeneração', (s) => `${s.regen.toFixed(1)}/s`],
 ] as const satisfies ReadonlyArray<readonly [string, (s: Game['player']['stats']) => string]>
 
+/** Paired item hint for a loadout move: shows what it needs and whether it is ready. */
+const loadoutHint = (g: Game, id: MoveId) => {
+  if (evolvedFrom(id)) return h('span', { class: 'tag tag-new' }, '★ EVO')
+  const evo = evolutionOf(id)
+  if (!evo) return null
+  const ready = canEvolve(evo, g.player)
+  return h(
+    'span',
+    { class: ready ? 'evo-pair ready' : 'evo-pair', title: `${ITEMS[evo.item].name} → ${MOVES[evo.to].name}` },
+    h('img', { src: itemIcon(evo.item), alt: ITEMS[evo.item].name }),
+    ready && '!',
+  )
+}
+
 const loadoutList = (g: Game) =>
   h(
     'div',
     { class: 'loadout-list' },
     ...g.player.moves.map((m) =>
-      h('div', { class: 'loadout-row' }, h('img', { src: moveIcon(m.id), alt: '' }), MOVES[m.id].name, h('span', { class: 'tag' }, `Nv ${m.level}`)),
+      h(
+        'div',
+        { class: 'loadout-row' },
+        h('img', { src: moveIcon(m.id), alt: '' }),
+        MOVES[m.id].name,
+        loadoutHint(g, m.id),
+        !evolvedFrom(m.id) && h('span', { class: 'tag' }, `Nv ${m.level}`),
+      ),
     ),
     ...g.player.items.map((i) =>
       h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, h('span', { class: 'tag' }, `Nv ${i.level}`)),
@@ -225,6 +285,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, onResume: ()
         loadoutList(g),
         h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([label, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, label), h('b', {}, fmt(s))))),
       ),
+      h('p', { class: 'evo-legend' }, 'Golpe no nível máximo + o item indicado = evolução na próxima Poké Ball ou subida de nível!'),
       h('div', { class: 'buttons' }, resume, mute, quit),
     ),
   )

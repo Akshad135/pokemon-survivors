@@ -108,6 +108,7 @@ const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) =>
   if (!offer) return 'nada… estava vazia!'
   if (offer.kind === 'move') return `${MOVES[offer.id].name} Nv ${offer.level}!`
   if (offer.kind === 'item') return `${ITEMS[offer.id].name} Nv ${offer.level}!`
+  if (offer.kind === 'evolution') return `${MOVES[offer.to].name}!`
   return 'uma Oran Berry!'
 }
 
@@ -141,6 +142,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
       r.closeText = null
       return toast(ui, `Parabéns! ${line[g.player.stage - 1]!.name} evoluiu para ${line[g.player.stage]!.name}!`, 3500)
     }
+    case 'moveEvolved':
+      playSfx('evolve')
+      playCry(sprites(playerDex(g)).cry, 0.3)
+      return toast(ui, h('span', { class: 'toast-evo' }, h('b', {}, MOVES[e.from].name), ' evoluiu para ', h('b', {}, MOVES[e.to].name), '!'), 3500)
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, `Poké Ball: ${offerLabel(e.offer)}`)

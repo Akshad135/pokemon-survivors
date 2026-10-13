@@ -45,7 +45,8 @@ const collect = (g: Game, pickup: Pickup) => {
       const [offer] = rollOffers(loadout(g), g.rng, 1)
       if (offer) applyOffer(g, offer)
       burst(g, p.x, p.y - 10, { colors: ['#f83838', '#ffffff', '#ffd830'], count: 30, speed: 120, ttl: 0.6 })
-      g.events.push({ kind: 'pokeball', offer: offer ?? null })
+      // Evolutions celebrate with their own event instead of the Poké Ball toast.
+      if (offer?.kind !== 'evolution') g.events.push({ kind: 'pokeball', offer: offer ?? null })
       break
     }
   }

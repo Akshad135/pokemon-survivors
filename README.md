@@ -21,7 +21,7 @@ Vite + TypeScript, Canvas 2D, and no game engine. Everything is plain data plus 
 ```
 src/
   engine/   math, seeded rng, spatial hash, input, WebAudio sfx, pixel-art helpers
-  data/     pure game data: starters, enemies, waves, held items, type chart
+  data/     pure game data: starters, enemies, waves, held items, move evolutions, type chart
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts
@@ -38,13 +38,13 @@ src/
 
 - 3 starters, each with a 3-stage evolution line (Lv 12 / Lv 28) and the handheld-style evolution scene.
 - 10 moves: Ember, Fire Spin, Water Gun, Whirlpool, Razor Leaf, Vine Whip, Swift, Thunder, Sludge Bomb, Gust.
-- 10 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Magnet, Assault Vest.
+- 17 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Amulet Coin, Assault Vest, plus type boosters (Charcoal, Mystic Water, Miracle Seed, Silk Scarf, Magnet, Poison Barb, Sharp Beak).
+- Move evolutions (`data/evolutions.ts`): a max-level move plus its paired held item evolves on the next boss Poké Ball or level-up (e.g. Ember + Charcoal → Flamethrower). 10 evolved moves.
 - 15 regular enemies. Bosses: Onix (5:00), Snorlax (10:00), Mewtwo (15:00, beating it wins the run).
-- Drops: Exp. Candy (4 tiers), Oran Berry, and a boss Poké Ball that grants a random upgrade.
+- Drops: Exp. Candy (4 tiers), Oran Berry, and a boss Poké Ball that evolves a move when possible, or grants a random upgrade.
 
 ## Ideas for next steps
 
-- Move evolutions (e.g. max Ember + Charcoal → Flamethrower), like weapon evolutions in Vampire Survivors.
 - Shiny elites that drop Poké Balls; status effects (burn, poison, paralysis).
 - Meta progression (Poké Dollars, permanent upgrades), more starters, and biomes (cave, forest, Lavender Town).
 - Chiptune music; custom effects/tiles made with PixelLab.
