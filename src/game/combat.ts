@@ -4,8 +4,7 @@ import { effectiveness, TYPE_COLORS } from '../data/types'
 import { burst, floatText } from './effects'
 import { dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
-import type { MoveId } from './moves'
-import type { Attack, Enemy, Game } from './types'
+import type { Attack, DamageSource, Enemy, Game } from './types'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8' } as const
 
@@ -39,7 +38,7 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
 }
 
 /** Damage-over-time tick: no knockback or hit sound, number in the status color. */
-export const dotDamage = (g: Game, e: Enemy, amount: number, move: MoveId | null, kind: StatusKind) => {
+export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource | null, kind: StatusKind) => {
   const dmg = Math.max(1, Math.round(amount))
   e.hp -= dmg
   if (move) g.damageByMove[move] = (g.damageByMove[move] ?? 0) + dmg

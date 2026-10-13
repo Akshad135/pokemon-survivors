@@ -10,7 +10,7 @@ npm run build      # typecheck + production build
 npm run assets     # re-download sprites/cries (already committed in public/)
 ```
 
-**Controls:** WASD/arrows (or drag on touch screens) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade.
+**Controls:** WASD/arrows · `Space` special attack (A/✕ on a gamepad) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade. On phones: drag anywhere for the floating joystick, tap the round button (bottom right) for the special and the pause button (top right) to pause. Installable to the home screen (fullscreen web app).
 
 ## Stack
 
@@ -24,7 +24,7 @@ src/
   data/     pure game data: starters, enemies, waves, held items, type chart
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
-            combat.ts · pickups.ts · leveling.ts · effects.ts
+            combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
             status.ts (pure condition rules) · statusSystem.ts (DoT ticks, particles)
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, frame renderer
   ui/       HUD, starter select, level-up, pause, results, toasts
@@ -34,6 +34,7 @@ src/
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
 - **Waves** live in `data/waves.ts`: spawn stages by time, plus events (flyby swarms, closing rings, bosses).
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow). Burn and poison deal damage over time (counted in the move's damage), burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses). Upgrades and items (King's Rock, Toxic Orb) raise chance and DoT damage.
+- **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides): Fire dashes leaving a fire trail, Water fires a beam, Grass erupts rings of roots, anything else gets a shockwave. The final evolution upgrades it to Blast Burn / Hydro Cannon / Frenzy Plant. Input reaches `step()` as data (`{ move, special }`).
 - **Type chart:** damage uses real Pokémon type matchups, softened (2x → 1.5x, 0x → 0.5x). Yellow numbers with `!` mean super effective.
 
 ## Content (v0.1)

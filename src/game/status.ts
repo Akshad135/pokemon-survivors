@@ -1,5 +1,5 @@
 import type { Rng } from '../engine/rng'
-import type { MoveId } from './moves'
+import type { DamageSource } from './types'
 
 /**
  * Pure status-condition rules (burn, poison, paralysis, slow). Moves declare a
@@ -44,7 +44,7 @@ export const STUTTER_RATE = 1.6
 /** Movement speed while paralyzed between stutters. */
 export const PARALYSIS_PACE = 0.75
 
-export type Affliction = { time: number; power: number; stacks: number; move: MoveId | null }
+export type Affliction = { time: number; power: number; stacks: number; move: DamageSource | null }
 
 export type EnemyStatus = Record<StatusKind, Affliction> & {
   /** Seconds frozen in place (paralysis). */
@@ -68,7 +68,7 @@ export const dotDps = (a: Affliction) => (a.time > 0 ? a.power * a.stacks : 0)
  * Inflicts `spec` (already rolled) from a hit of `damage`. Re-applying refreshes
  * the duration and keeps the strongest power; poison also adds a stack.
  */
-export const applyStatus = (st: EnemyStatus, spec: StatusSpec, damage: number, boss: boolean, move: MoveId) => {
+export const applyStatus = (st: EnemyStatus, spec: StatusSpec, damage: number, boss: boolean, move: DamageSource) => {
   const rule = STATUS_RULES[spec.kind]
   const a = st[spec.kind]
   const resist = boss ? rule.boss : 1

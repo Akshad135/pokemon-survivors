@@ -8,6 +8,7 @@ import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
 import { MOVES, moveStats } from './moves'
+import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
@@ -53,6 +54,8 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     view,
     camera: { x: -view.w / 2, y: -view.h / 2 },
     shake: 0,
+    hitstop: 0,
+    special: createSpecialState(),
     kills: 0,
     damageByMove: {},
     pendingLevelUps: 0,
@@ -68,13 +71,18 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
   return g
 }
 
+/** Per-tick player input, as plain data so the simulation stays DOM-free. */
+export type StepInput = { move: Vec; special: boolean }
+
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
-  const moving = Math.abs(input.x) + Math.abs(input.y) > 0.05
-  p.moving = moving
+  const slow = specialSpeedFactor(g)
+  const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
+  // A speed factor of 0 means the special is dashing the player around.
+  p.moving = moving || slow === 0
   if (moving) {
-    p.x += input.x * p.stats.speed * dt
-    p.y += input.y * p.stats.speed * dt
+    p.x += input.x * p.stats.speed * slow * dt
+    p.y += input.y * p.stats.speed * slow * dt
     const len = Math.hypot(input.x, input.y)
     p.facing = { x: input.x / len, y: input.y / len }
     p.dir = dir8(input.x, input.y)
@@ -136,12 +144,17 @@ const updateEvolution = (g: Game, dt: number) => {
 }
 
 /** One fixed-timestep simulation tick. */
-export const step = (g: Game, input: Vec, dt: number) => {
+export const step = (g: Game, input: StepInput, dt: number) => {
   if (g.phase === 'evolving') return updateEvolution(g, dt)
   if (g.phase !== 'playing') return
+  if (g.hitstop > 0) {
+    g.hitstop -= dt
+    return
+  }
 
   g.time += dt
-  updatePlayer(g, input, dt)
+  updatePlayer(g, input.move, dt)
+  updateSpecial(g, input.special, dt)
   updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)

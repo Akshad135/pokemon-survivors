@@ -114,7 +114,7 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
 const iconCache = new Map<string, string>()
 
 /** Icon as a data URL, padded to a square so it scales uniformly in the DOM. */
-const toIconUrl = (key: string, build: () => PixelSprite) => {
+export const toIconUrl = (key: string, build: () => PixelSprite) => {
   const cached = iconCache.get(key)
   if (cached) return cached
   const sprite = build()
