@@ -159,7 +159,7 @@ export const portraitUrl = (dex: Dex, shiny = false) =>
   `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`
 
 /** Sprites if already loaded, without throwing (menus draw progressively). */
-export const loadedSprites = (dex: Dex): SpeciesSprites | undefined => cache.get(cacheKey(dex, false))
+export const loadedSprites = (dex: Dex, shiny = false): SpeciesSprites | undefined => cache.get(cacheKey(dex, shiny))
 
 export const cryUrl = (dex: Dex) => `${base(dex)}/cry.ogg`
 

@@ -1604,6 +1604,148 @@ button {
   }
 }
 
+/* ---------- Title screen ---------- */
+
+.title-home {
+  gap: clamp(16px, 5vh, 40px);
+  padding-bottom: max(48px, var(--safe-b));
+}
+
+/* Sized in whole device pixels per logo pixel by `fitLogo` (ui/title.ts). */
+.title-logo {
+  display: block;
+  visibility: hidden;
+  animation: bob 2.4s steps(1) infinite;
+}
+
+.title-logo.shown {
+  visibility: visible;
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(var(--px));
+  }
+}
+
+.press-start {
+  margin: 0;
+  padding: 8px;
+  font-family: var(--title);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #fff;
+  text-align: center;
+  text-shadow: 2px 2px 0 #101020;
+}
+
+.title-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 240px;
+  padding: 12px 10px;
+}
+
+.title-item {
+  position: relative;
+  min-height: 44px;
+  padding: 8px 14px 8px 32px;
+  font-family: var(--title);
+  font-size: 12px;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+}
+
+.title-item.selected {
+  background: #e4e8f4;
+}
+
+.title-item.selected::before {
+  content: '▶';
+  position: absolute;
+  left: 12px;
+  color: #e83838;
+}
+
+.title-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(8px, var(--safe-b));
+  padding: 0 12px;
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1.6;
+  text-align: center;
+  color: #e8e8f8;
+  text-shadow: 2px 2px 0 #101020;
+  opacity: 0.75;
+}
+
+.title-footer a {
+  display: inline-block;
+  padding: 8px 2px;
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.title-footer a:hover,
+.title-footer a:focus-visible {
+  color: #ffcb05;
+}
+
+/* Starter select's way back to the title: top-left twin of the Poké Mart entry. */
+.back-entry {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  font-family: var(--title);
+  font-size: 9px;
+  pointer-events: auto;
+}
+
+.back-arrow {
+  color: #e83838;
+}
+
+.back-entry:hover,
+.back-entry:focus-visible {
+  --frame: #e83838;
+}
+
+@media (max-width: 480px) {
+  .back-entry {
+    top: 6px;
+    left: 6px;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+}
+
+/* Phones in landscape: logo beside the menu, so neither has to shrink. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .title-home {
+    flex-direction: row;
+    gap: clamp(16px, 5vw, 48px);
+    padding-bottom: max(36px, var(--safe-b));
+  }
+  .title-item {
+    min-height: 40px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
 .mart-screen {
   padding: 8px;
 }

@@ -19,7 +19,7 @@ import { drawGround } from './world'
 
 type Ctx = CanvasRenderingContext2D
 
-const shadow = (ctx: Ctx, x: number, y: number, width: number) => {
+export const shadow = (ctx: Ctx, x: number, y: number, width: number) => {
   const rx = Math.max(3, Math.round(width * 0.36))
   blitCentered(ctx, ellipse(rx, Math.max(1, Math.round(rx * 0.4)), 'rgba(16,40,16,0.28)'), x, y)
 }
@@ -332,7 +332,7 @@ const TWINKLE_PERIOD = 0.8
  * followed by a twinkle at a random spot on the body every `TWINKLE_PERIOD`.
  * `since` is seconds since the entrance; `size` is the body size in px.
  */
-const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, since: number, seed: number) => {
+export const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, since: number, seed: number) => {
   if (since < 0) return
   const stars = SPARKLE()
   if (since < SPARKLE_BURST) {

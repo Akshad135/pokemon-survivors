@@ -113,8 +113,9 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 | Special attack | `Space` / A (✕) | Round button, bottom right |
 | Pause | `Esc` / `P` | Pause button, top right |
 | Pick an upgrade | `1`–`3` | Tap it |
-| Mute | `M` | Settings, in the pause menu |
-| Switch language | `I` (title screen) or Settings in the pause menu | `PT \| EN`, top left of the title screen, or Settings in the pause menu |
+| Mute | `M` | Settings, on the title screen or in the pause menu |
+| Menus | Arrows / D-pad, `Enter` / A, `Esc` / B back | Tap |
+| Switch language | `I` (title screen) or Settings | `PT \| EN`, top left of the title screen, or Settings |
 
 ## Running locally
 
@@ -145,8 +146,8 @@ src/
             status.ts (pure condition rules) · statusSystem.ts (DoT ticks, particles)
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
-  render/   PMD sprite loader, code-drawn pixel art, procedural meadow, frame renderer
-  ui/       HUD, starter select, level-up, pause, settings, results, toasts, language switch
+  render/   PMD sprite loader, code-drawn pixel art, procedural meadow, title scene and logo, frame renderer
+  ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
   i18n/     every player-facing string: pt.ts (reference) and en.ts
 ```
 

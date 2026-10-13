@@ -24,6 +24,18 @@ export const en: Messages = {
     regen: 'Regen',
   },
 
+  home: {
+    pressKeys: 'Press any key',
+    pressTouch: 'Tap to start',
+    play: 'Play',
+    pokedex: 'Pokédex',
+    guide: 'How to play',
+    settings: 'Settings',
+    legal: 'Legal & credits',
+    fanGame: 'Unofficial fan game',
+    back: 'Title',
+  },
+
   title: {
     subtitle: 'Choose your partner!',
     hintKeys: '← → partner · ↑ ↓ region · ENTER choose',

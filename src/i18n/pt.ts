@@ -49,6 +49,19 @@ export const pt = {
     regen: 'Regeneração',
   },
 
+  /** Title screen (the first thing a player sees). */
+  home: {
+    pressKeys: 'Pressione qualquer tecla',
+    pressTouch: 'Toque para começar',
+    play: 'Jogar',
+    pokedex: 'Pokédex',
+    guide: 'Como jogar',
+    settings: 'Ajustes',
+    legal: 'Legal e créditos',
+    fanGame: 'Fan game não oficial',
+    back: 'Título',
+  },
+
   title: {
     subtitle: 'Escolha seu parceiro!',
     hintKeys: '← → parceiro · ↑ ↓ região · ENTER escolher',

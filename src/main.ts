@@ -3,7 +3,7 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, unlockAudio } from './engine/audio'
-import { createPadButton } from './engine/gamepad'
+import { createPadButton, createPadKeys } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
@@ -20,16 +20,16 @@ import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
 import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
-import { drawGround } from './render/world'
+import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
 import { depositPokeDollars, loadSave } from './ui/save'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
-import { languageSwitch } from './ui/language'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
+import { titleButton, titleScreen } from './ui/title'
 
 const STEP = 1 / 60
 
@@ -91,6 +91,9 @@ let lastStarter: StarterId = 'charmander'
 /** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
 let specialQueued = false
 const padA = createPadButton(0)
+const padKeys = createPadKeys()
+/** The meadow with wandering Pokémon behind every menu. Lives across screens, so it never pops. */
+const scene = createTitleScene(Date.now())
 
 const queueSpecial = () => {
   unlockAudio()
@@ -107,13 +110,34 @@ const changeLanguage = (next: Locale) => {
   playSfx('select')
 }
 
+/** Set by the title's "press start": the music waits for it, even where the browser would autoplay. */
+let pressedStart = false
+
+/**
+ * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch);
+ * coming back from the starter select goes straight to the menu. `focus` is the menu entry to highlight.
+ */
+const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
+  endRun()
+  setScreen(
+    titleScreen(ui, input, {
+      play: () => showMenu(),
+      // Every label is read at render time, so switching language just rebuilds the screen.
+      language: (next) => (changeLanguage(next), showTitle()),
+      ready: () => (pressedStart = true),
+      // The language may change inside Settings, so closing them rebuilds the title on the same entry.
+      settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
+    }, opts),
+  )
+}
+
+/** Starter select, with the Poké Mart (top right) and the way back to the title (top left). */
 const showMenu = (initial: StarterId = lastStarter) => {
   endRun()
   const select = starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), initial)
   const closeMart = martButton(ui, input, () => showShop())
-  // Every label is read at render time, so switching language just rebuilds the menu.
-  const closeLanguage = languageSwitch(ui, input, (next) => (changeLanguage(next), showMenu(select.selected())))
-  setScreen({ ...select, dispose: () => (closeMart(), closeLanguage(), select.dispose()) })
+  const closeBack = titleButton(ui, input, () => showTitle())
+  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), select.dispose()) })
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
@@ -280,8 +304,9 @@ const handleEvent = (r: Run, e: GameEvent) => {
 
 /* ---------------- Music ---------------- */
 
-/** Menus play the village theme, a run its march, and a living boss takes over until it falls. */
-const themeFor = (r: Run | null): ThemeId => {
+/** Silence until "press start", then menus play the village theme, a run its march, and a living boss takes over until it falls. */
+const themeFor = (r: Run | null): ThemeId | null => {
+  if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
   return r.game.bossId !== null ? 'boss' : 'run'
 }
@@ -328,6 +353,8 @@ const frame = (now: number) => {
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   const t = now / 1000
+  // Gamepads drive the menus through the same key codes as the keyboard.
+  for (const key of padKeys()) input.press(key)
 
   if (run) {
     const r = run
@@ -360,9 +387,10 @@ const frame = (now: number) => {
       }
     }
   } else {
-    // Attract mode: the meadow drifts behind the menu.
-    drawGround(ctx, Math.round(t * 14), Math.round(t * 7), view.w, view.h)
-    ctx.fillStyle = 'rgba(16,24,48,0.35)'
+    // Attract mode: wild Pokémon stroll through the meadow behind the menus.
+    stepTitleScene(scene, dt, view.w, view.h)
+    drawTitleScene(ctx, scene, view.w, view.h)
+    ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
     ctx.fillRect(0, 0, view.w, view.h)
   }
   screen?.tick?.(t)
@@ -385,7 +413,7 @@ const preloadInBackground = async () => {
 
 const boot = () => {
   document.documentElement.lang = LOCALES[locale()].tag
-  showMenu()
+  showTitle({ intro: true })
   requestAnimationFrame(frame)
   void preloadInBackground()
 }
@@ -393,4 +421,4 @@ const boot = () => {
 boot()
 
 // Dev-only handle for poking at the running game from the console.
-if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, theme: currentTheme } })
+if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, showTitle, showMenu, theme: currentTheme } })
