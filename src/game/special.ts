@@ -67,7 +67,7 @@ export const specialIdFor = (species: StarterId, types: readonly PokeType[]): Sp
 
 export const resolveSpecial = (starter: StarterId, stage: number) => {
   const species = STARTERS[starter]
-  const id = specialIdFor(starter, species.types)
+  const id = specialIdFor(starter, species.line[0].types)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1
   return { id, def, final, tier: final ? def.final : def.base }

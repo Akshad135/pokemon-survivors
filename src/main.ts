@@ -9,19 +9,20 @@ import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { ENEMIES, ENEMY_DEX } from './data/enemies'
 import { ITEMS } from './data/items'
-import { STARTER_IDS, STARTERS, starterDex, type StarterId } from './data/starters'
+import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { CONSUMABLES } from './game/consumables'
 import { chooseOffer, createGame, playerDex, step } from './game/game'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, sprites } from './render/sprites'
+import { loadAll, loadSpecies, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
 import { h } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { levelUp, pauseMenu, results, starterSelect, textBox, toast, type Screen } from './ui/screens'
+import { levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
+import { starterSelect } from './ui/starterSelect'
 
 const STEP = 1 / 60
 
@@ -94,7 +95,7 @@ const setScreen = (next: Screen | null) => {
 
 const showMenu = () => {
   endRun()
-  setScreen(starterSelect(ui, input, (id) => setTimeout(() => startRun(id), 250)))
+  setScreen(starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), lastStarter))
 }
 
 const endRun = () => {
@@ -105,10 +106,17 @@ const endRun = () => {
   run = null
 }
 
-const startRun = (starter: StarterId) => {
+const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, 'Carregando…'))
+
+/** Loads the starter's evolution line and every enemy, then starts a fresh run. */
+const startRun = async (starter: StarterId) => {
   setScreen(null)
   endRun()
   lastStarter = starter
+  const loading = loadingScreen()
+  ui.append(loading)
+  await loadAll([...starterDex(starter), ...ENEMY_DEX])
+  loading.remove()
   const game = createGame(starter, view)
   const pause = () => game.phase === 'playing' && (game.phase = 'paused')
   run = { game, hud: createHud(ui, queueSpecial, pause), overlay: null, shown: null, closeText: null }
@@ -130,7 +138,7 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => startRun(lastStarter), showMenu)
+      r.overlay = results(ui, input, g, () => void startRun(lastStarter), showMenu)
       break
   }
 }
@@ -285,16 +293,22 @@ const frame = (now: number) => {
 
 /* ---------------- Boot ---------------- */
 
-const boot = async () => {
-  const loading = h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, 'Carregando…'))
-  ui.append(loading)
-  await loadAll([...new Set([...STARTER_IDS.flatMap(starterDex), ...ENEMY_DEX])])
-  loading.remove()
-  showMenu()
-  requestAnimationFrame(frame)
+/**
+ * Warms the sprite cache one species at a time so the menu stays responsive:
+ * every region's trio first (menu cards), then the horde (needed by any run).
+ */
+const preloadInBackground = async () => {
+  const queue = [...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...ENEMY_DEX]
+  for (const dex of queue) await loadSpecies(dex).catch(() => {})
 }
 
-void boot()
+const boot = () => {
+  showMenu()
+  requestAnimationFrame(frame)
+  void preloadInBackground()
+}
+
+boot()
 
 // Dev-only handle for poking at the running game from the console.
 if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun } })

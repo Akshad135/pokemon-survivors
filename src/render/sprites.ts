@@ -91,10 +91,18 @@ const measure = (sheet: Sheet) => {
 }
 
 const cache = new Map<Dex, SpeciesSprites>()
+const pending = new Map<Dex, Promise<SpeciesSprites>>()
 
-export const loadSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
+/** Loads (once) every sheet, the portrait and cry URL of a species. Concurrent calls share one request. */
+export const loadSpecies = (dex: Dex): Promise<SpeciesSprites> => {
   const cached = cache.get(dex)
-  if (cached) return cached
+  if (cached) return Promise.resolve(cached)
+  const inFlight = pending.get(dex) ?? fetchSpecies(dex).finally(() => pending.delete(dex))
+  pending.set(dex, inFlight)
+  return inFlight
+}
+
+const fetchSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
   const entry = MANIFEST[String(dex)]
   if (!entry) throw new Error(`Missing sprites for #${dex}. Run npm run assets.`)
 
@@ -111,17 +119,14 @@ export const loadSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
     }
   }
 
-  const [Walk, Idle, Hurt, portrait] = await Promise.all([
-    loadSheet('Walk'),
-    loadSheet('Idle'),
-    loadSheet('Hurt'),
-    loadImage(`${base(dex)}/portrait.png`),
-  ])
+  const [Walk, Idle, Hurt] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt')])
+  // A missing portrait shouldn't block a run: fall back to the walk sheet.
+  const portrait = await loadImage(`${base(dex)}/portrait.png`).catch(() => Walk.img)
   const sprites: SpeciesSprites = {
     dex,
     anims: { Walk, Idle, Hurt },
     portrait,
-    cry: `${base(dex)}/cry.ogg`,
+    cry: cryUrl(dex),
     ...measure(Walk),
   }
   cache.set(dex, sprites)
@@ -136,7 +141,12 @@ export const sprites = (dex: Dex) => {
   return s
 }
 
+/** Sprites if already loaded, without throwing (menus draw progressively). */
+export const loadedSprites = (dex: Dex): SpeciesSprites | undefined => cache.get(dex)
+
 export const portraitUrl = (dex: Dex) => `${base(dex)}/portrait.png`
+
+export const cryUrl = (dex: Dex) => `${base(dex)}/cry.ogg`
 
 const frameIndex = (sheet: Sheet, seconds: number, loop: boolean) => {
   let tick = Math.floor(seconds * 60)

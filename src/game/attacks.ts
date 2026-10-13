@@ -86,6 +86,14 @@ const trail = (g: Game, a: Attack) => {
     case 'water': return emit(['#a8d8f8', '#6890f0', '#ffffff'], 0.7, { gravity: 60 })
     case 'star': return emit(['#fff8a0', '#ffffff'], 0.5, { ttl: 0.25 })
     case 'sludge': return a.age > a.activeFrom ? emit(['#c070d0', '#a040a0'], 0.25, { gravity: -25, ttl: 0.5, speed: 6 }) : undefined
+    case 'arrow': return emit(['#a070d8', '#705898', '#c8a8f0'], 0.7, { ttl: 0.35, speed: 4 })
+    case 'steel': return emit(['#ffffff', '#c8d0e0', '#8890a8'], 0.6, { ttl: 0.3, speed: 14 })
+    case 'shuriken': return emit(['#a8d8f8', '#ffffff'], 0.4, { gravity: 40, ttl: 0.25 })
+    case 'psy': return emit(['#f85888', '#ffd0e8'], 0.4, { ttl: 0.3, speed: 6 })
+    case 'heart': return emit(['#f878a8', '#ffffff'], 0.3, { gravity: -20, ttl: 0.3, speed: 6 })
+    case 'note': return emit(['#f8d030', '#f08030', '#c03020'], 0.6, { gravity: -30 })
+    case 'blade': return emit(['#a8e870', '#58b838'], 0.5, { ttl: 0.25, speed: 6 })
+    case 'pyro': return a.age < a.activeFrom ? undefined : emit(['#f8d030', '#f08030', '#c03020'], 0.9, { gravity: -40, speed: 40, ttl: 0.4 })
     default: return
   }
 }

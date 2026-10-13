@@ -85,6 +85,7 @@ export type Motion =
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+  | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova'
 
