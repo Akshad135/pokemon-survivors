@@ -10,6 +10,7 @@ import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
+import { createMapEvents, updateMapEvents } from './mapEvents'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { MOVES, moveStats } from './moves'
 import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
@@ -19,6 +20,7 @@ import { updateProps } from './props'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
 import { createWeather, updateWeather } from './weather'
+import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
 
@@ -81,10 +83,12 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     props: [],
     brokenProps: new Set(),
     buffs: [],
+    mapEvents: createMapEvents(),
     revives: 0,
     flash: 0,
     biome: createBiome(),
     weather: createWeather(),
+    traits: { seen: new Set(), nextIntro: 0 },
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
@@ -200,9 +204,11 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateHazards(g, dt)
   updateStatuses(g, dt)
   rebuildGrid(g)
+  updateTraits(g, dt)
   updateMoves(g, dt)
   updateAttacks(g, dt)
   updateProps(g, dt)
+  updateMapEvents(g, dt)
   updatePickups(g, dt)
   updateConsumables(g, dt)
   updateEffects(g, dt)

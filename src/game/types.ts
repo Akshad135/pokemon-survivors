@@ -6,17 +6,20 @@ import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
+import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
+import type { MapEventNotice, MapEventsState } from './mapEvents'
 import type { Prop } from './props'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
+import type { TraitState } from './traits'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -80,6 +83,8 @@ export type Enemy = {
   flash: number
   /** Status conditions (burn, poison, paralysis, slow). */
   status: EnemyStatus
+  /** Behavior trait (healer, kamikaze…) and the wards/heals it gets from allies. */
+  trait: TraitState
   /** -1 while alive; otherwise seconds since fainting. */
   dying: number
 }
@@ -227,6 +232,12 @@ export type GameEvent =
   /** The run walked into another biome. */
   | { kind: 'biome'; biome: BiomeId }
   | { kind: 'weather'; weather: WeatherId; prev: WeatherId }
+  /** An enemy trait warned (fuse lit, beam aimed, leap started) or went off. */
+  | { kind: 'trait'; trait: TraitId; phase: 'warn' | 'fire' }
+  /** First time a trait shows up on screen this run (one-time explainer toast). */
+  | { kind: 'traitIntro'; enemy: EnemyId; trait: TraitId }
+  /** Something happened at a map event (altar, chest, Meowth…). */
+  | { kind: 'mapEvent'; notice: MapEventNotice }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -273,6 +284,8 @@ export type Game = {
   /** World cells whose prop was already broken, so it never respawns. */
   brokenProps: Set<number>
   buffs: Buff[]
+  /** Points of interest placed by the event director (`mapEvents.ts`). */
+  mapEvents: MapEventsState
   /** Revives held (0 or 1). Auto-used on fainting. */
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
@@ -281,5 +294,7 @@ export type Game = {
   biome: BiomeState
   /** Weather in play (`game/weather.ts`). */
   weather: WeatherState
+  /** Enemy traits already introduced this run (each gets one explainer toast), and the game time the next one may show. */
+  traits: { seen: Set<TraitId>; nextIntro: number }
   events: GameEvent[]
 }

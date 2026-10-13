@@ -2,19 +2,23 @@ import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
 
-import { playCry, playSfx, unlockAudio } from './engine/audio'
+import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { createPadButton, createPadKeys } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
-import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
+import { ENEMIES, ENEMY_DEX, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
+import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { setBiome } from './game/biomes'
+import { spawnEnemy } from './game/enemies'
+import { MAP_EVENT_KINDS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
+import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { runEarnings } from './game/meta'
 import { MOVES } from './game/moves'
@@ -22,7 +26,8 @@ import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
+import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites } from './render/sprites'
+import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
@@ -32,6 +37,7 @@ import { createHud, type Hud } from './ui/hud'
 import { depositPokeDollars, loadSave } from './ui/save'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
+import { mapEventFeedback } from './ui/mapEvents'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
@@ -69,6 +75,8 @@ const resize = () => {
   document.documentElement.style.setProperty('--px', `${Math.max(2, Math.round(cssScale))}px`)
   context2d(canvas)
   dirty = true
+  // Runs after layout (and after module init, so `run` exists by then).
+  requestAnimationFrame(() => run && syncMarkerInsets())
 }
 // Rotation often reports stale sizes in the same tick, so re-measure on the next frame too.
 const scheduleResize = () => (resize(), requestAnimationFrame(resize))
@@ -176,7 +184,7 @@ const startRun = async (starter: StarterId) => {
   const loading = loadingScreen()
   ui.append(loading)
   // The player's shiny line is awaited (a shiny run must not start in normal colors); enemy shinies stream in.
-  await Promise.all([loadAll([...starterDex(starter), ...ENEMY_DEX]), preloadShinies(starterDex(starter))])
+  await Promise.all([loadAll([...starterDex(starter), ...ENEMY_DEX, MEOWTH_DEX]), preloadShinies(starterDex(starter))])
   void preloadShinies(ENEMY_DEX)
   loading.remove()
   const game = createGame(starter, view, Date.now(), loadSave().ranks)
@@ -184,7 +192,26 @@ const startRun = async (starter: StarterId) => {
   track('run_start', { starter })
 }
 
-const runHud = (game: Game) => createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
+const runHud = (game: Game) => {
+  const hud = createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
+  requestAnimationFrame(syncMarkerInsets)
+  return hud
+}
+
+/** Measures the HUD (top bar, status box, special button) in world px, so map event arrows stay clear of it. */
+const syncMarkerInsets = () => {
+  const box = canvas.getBoundingClientRect()
+  // Hidden elements (the touch special button on desktop) measure 0x0: they don't count.
+  const rect = (sel: string) => {
+    const r = ui.querySelector(sel)?.getBoundingClientRect()
+    return r && r.height > 0 ? r : null
+  }
+  const bottomOf = (sel: string) => rect(sel)?.bottom ?? box.top
+  const topOf = (sel: string) => rect(sel)?.top ?? box.bottom
+  const top = bottomOf('.hud-row') - box.top
+  const bottom = box.bottom - Math.min(topOf('.hud .status'), topOf('.special-button'))
+  setMarkerInsets({ top: Math.max(0, top) / cssScale + 10, bottom: Math.max(0, bottom) / cssScale + 10, side: 14 })
+}
 
 /** Settings from the pause menu. The HUD reads its labels once, so a language switch rebuilds it. */
 const runSettings = (r: Run, back: () => void) => {
@@ -227,6 +254,16 @@ const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) =>
   if (offer.kind === 'item') return m.pokeballLevel(ITEMS[offer.id].name, offer.level)
   if (offer.kind === 'evolution') return m.pokeballEvolution(MOVES[offer.to].name)
   return m.pokeballBerry
+}
+
+/** Sounds of enemy traits: the warning (fuse lit, beam aimed, leap) and the moment it goes off. */
+const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
+  healer: { warn: null, fire: 'enemyPulse' },
+  shield: { warn: null, fire: 'enemyPulse' },
+  summoner: { warn: null, fire: 'enemyPulse' },
+  kamikaze: { warn: 'selfDestruct', fire: 'blast' },
+  beam: { warn: 'beamCharge', fire: 'beam' },
+  leaper: { warn: 'leap', fire: 'quake' },
 }
 
 const handleEvent = (r: Run, e: GameEvent) => {
@@ -298,6 +335,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'propBreak':
       return playSfx('break', 60)
+    case 'mapEvent':
+      return mapEventFeedback(ui, e.notice)
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
@@ -319,6 +358,16 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'weather':
       return weatherToast(e.weather, e.prev)
+    case 'trait': {
+      const sfx = TRAIT_SFX[e.trait][e.phase]
+      if (sfx) playSfx(sfx, 120)
+      return
+    }
+    case 'traitIntro': {
+      const def = ENEMIES[e.enemy]
+      playCry(sprites(def.dex).cry, 0.35)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
+    }
   }
 }
 
@@ -455,7 +504,26 @@ const boot = () => {
 
 boot()
 
+/** Dev: places a map event `dx`, `dy` px from the player, e.g. `ps.event('chest')`. */
+const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
+  if (!run || !MAP_EVENT_KINDS.includes(kind)) return `Kinds: ${MAP_EVENT_KINDS.join(', ')}`
+  const p = run.game.player
+  return spawnMapEvent(run.game, kind, Math.round(p.x + dx), Math.round(p.y + dy))
+}
+
 // Dev-only handle for poking at the running game from the console.
+/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots). */
+const devSpawn = (kind: EnemyId, count = 1) => {
+  const g = run?.game
+  if (!g) return
+  const p = g.player
+  const base = Math.atan2(p.facing.y, p.facing.x)
+  for (let i = 0; i < count; i++) {
+    const a = base + (i - (count - 1) / 2) * 0.35
+    spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+  }
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -466,6 +534,8 @@ if (import.meta.env.DEV) {
       showTitle,
       showMenu,
       theme: currentTheme,
+      spawn: devSpawn,
+      event: devEvent,
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
     },

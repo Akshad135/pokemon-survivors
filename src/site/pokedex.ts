@@ -2,7 +2,9 @@ import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyId } from '../data/enemies'
 import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
 import type { PokeType } from '../data/types'
+import { SUMMONS } from '../data/traits'
 import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
+import { MEOWTH_DEX } from '../game/mapEventRules'
 
 /**
  * The site's Pokédex model: every species the game uses, derived from
@@ -10,7 +12,7 @@ import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
  * the next build.
  */
 
-export const ROLES = ['starter', 'enemy', 'boss', 'legendary'] as const
+export const ROLES = ['starter', 'enemy', 'boss', 'legendary', 'event'] as const
 
 export type Role = (typeof ROLES)[number]
 
@@ -34,7 +36,8 @@ export type DexEntry = {
   role: Role
   region: Region
   sprites: Sprites
-  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId }
+  /** `event`: met at a map event (the fleeing Meowth), not in the horde. */
+  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -48,6 +51,8 @@ export const slugOf = (name: string) =>
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace('♀', '-f')
+    .replace('♂', '-m')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
@@ -89,9 +94,11 @@ const wildEntry = (id: EnemyId): DexEntry => {
   return { ...base(e.dex, e.name, e.types), role, source: { kind: 'wild', id } }
 }
 
+const eventEntry = (): DexEntry => ({ ...base(MEOWTH_DEX, 'Meowth', ['normal']), role: 'event', source: { kind: 'event' } })
+
 /** Every Pokémon in the game, in national dex order. */
 export const pokedex = (): DexEntry[] =>
-  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry)].sort((a, b) => a.dex - b.dex)
+  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry), eventEntry()].sort((a, b) => a.dex - b.dex)
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
 
@@ -101,6 +108,8 @@ export type Appearance =
   | { kind: 'swarm' | 'ring'; at: number; count: number }
   /** `chance` is 1 for bosses that always come. */
   | { kind: 'boss'; at: number; chance: number }
+  /** Called in by a summoner (Nidoqueen's Nidoran). */
+  | { kind: 'summoned'; by: EnemyId }
 
 /** Spawn-pool windows (contiguous stages merged) plus every timed event of an enemy. */
 export const appearances = (id: EnemyId): Appearance[] => {
@@ -116,7 +125,10 @@ export const appearances = (id: EnemyId): Appearance[] => {
   const events = EVENTS.filter((e) => e.enemy === id).map((e): Appearance =>
     e.kind === 'boss' ? { kind: 'boss', at: e.at, chance: e.chance ?? 1 } : { kind: e.kind, at: e.at, count: e.count },
   )
-  return [...windows, ...events]
+  const summoned = (Object.keys(SUMMONS) as Array<keyof typeof SUMMONS>)
+    .filter((by) => SUMMONS[by].includes(id))
+    .map((by): Appearance => ({ kind: 'summoned', by }))
+  return [...windows, ...events, ...summoned]
 }
 
 /** `m:ss` run clock, as shown on the HUD. */

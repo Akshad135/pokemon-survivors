@@ -168,6 +168,15 @@ export const en: Messages = {
       fog: 'The fog lifted.',
     },
   },
+  mapEvents: {
+    altar: (buff) => `The altar granted *${buff}*!`,
+    fountain: 'The fountain restores your HP. Stay in it!',
+    chestAmbush: "A locked chest! Stay close to open it… _it's an ambush_!",
+    chestOpen: (coins) => `Chest opened: *${coins}*, an item and a Poké Ball!`,
+    meowth: 'A *Meowth* ran by with coins! Hit it!',
+    payDay: (coins) => `*Pay Day!* Meowth dropped ${coins}!`,
+    meowthEscaped: '*Meowth* got away…',
+  },
 
   moves: {
     ember: {
@@ -572,5 +581,14 @@ export const en: Messages = {
     beam: 'A focused blast in the direction you move.',
     roots: 'Rings of roots burst from the ground and slow foes.',
     nova: 'A shockwave all around you that pushes everything back.',
+  },
+
+  traits: {
+    healer: (name: string) => `*${name}* heals nearby allies. Take it down first!`,
+    shield: (name: string) => `*${name}* wards its allies with a _shield_ that soaks damage.`,
+    summoner: (name: string) => `*${name}* calls in reinforcements every few seconds.`,
+    kamikaze: (name: string) => `*${name}* blinks and _explodes_! Get out of the red circle.`,
+    beam: (name: string) => `*${name}* aims a _beam_: step off the line on the ground!`,
+    leaper: (name: string) => `*${name}* leaps over the horde: dodge the _shadow_!`,
   },
 }
