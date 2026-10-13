@@ -153,10 +153,38 @@ const SFX = {
     tone(150, 32, 0.55, 'sawtooth', 0.22)
     tone(90, 30, 0.7, 'square', 0.14, 0.05)
   },
+  /* Map events */
+  altar: () => {
+    ;[523, 784, 1047, 1568].forEach((f, i) => tone(f, f * 1.01, 0.2, 'triangle', 0.16, i * 0.07))
+    ;[2093, 2637].forEach((f, i) => tone(f, f, 0.12, 'square', 0.05, 0.3 + i * 0.06))
+  },
+  sip: () => {
+    tone(520, 1100, 0.06, 'sine', 0.14)
+    tone(760, 1400, 0.05, 'sine', 0.08, 0.05)
+  },
+  /** Lock click while a chest is being opened. */
+  tick: () => tone(1400, 1100, 0.03, 'square', 0.07),
+  unlock: () => [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.12, 'square', 0.12, i * 0.07)),
+  ambush: () => [220, 208, 220, 208].forEach((f, i) => tone(f, f * 0.97, 0.12, 'sawtooth', 0.12, i * 0.13)),
+  /** Fuse hiss with beeps that speed up until the blast. */
+  fuse: () => {
+    noise(1.5, 0.05)
+    ;[0, 0.4, 0.75, 1.05, 1.3, 1.5].forEach((d) => tone(1047, 1047, 0.05, 'square', 0.09, d))
+  },
+  spikes: () => {
+    tone(1800, 500, 0.09, 'sawtooth', 0.06)
+    noise(0.05, 0.08)
+  },
+  /** Pay Day: a cascade of coins. */
+  payDay: () => [0, 1, 2, 3, 4, 5].forEach((i) => {
+    tone(988 + i * 60, 988 + i * 60, 0.05, 'square', 0.08, i * 0.07)
+    tone(1319 + i * 80, 1319 + i * 80, 0.1, 'square', 0.08, i * 0.07 + 0.04)
+  }),
+  escaped: () => [784, 659, 523].forEach((f, i) => tone(f, f * 0.9, 0.1, 'triangle', 0.12, i * 0.07)),
   gameOver: () => [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.97, 0.3, 'triangle', 0.2, i * 0.25)),
   /* Enemy traits */
-  /** A lit fuse: beeps that speed up until the blast (about 1.1s). */
-  fuse: () => [0, 0.32, 0.58, 0.78, 0.92, 1.02].forEach((d, i) => tone(1100 + i * 90, 1100 + i * 90, 0.05, 'square', 0.07, d)),
+  /** A kamikaze's lit fuse: beeps that speed up until the blast (about 1.1s). */
+  selfDestruct: () => [0, 0.32, 0.58, 0.78, 0.92, 1.02].forEach((d, i) => tone(1100 + i * 90, 1100 + i * 90, 0.05, 'square', 0.07, d)),
   blast: () => {
     noise(0.4, 0.24)
     tone(160, 40, 0.35, 'sawtooth', 0.16)

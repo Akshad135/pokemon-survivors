@@ -11,6 +11,7 @@ import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
+import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { drawPokemon, sprites, type AnimName } from './sprites'
@@ -486,6 +487,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   drawProps(ctx, g, t)
+  drawMapEvents(ctx, g, t)
   drawSpecialAura(ctx, g, t)
   drawTraitGround(ctx, g, visible)
   drawPickups(ctx, g, t)
@@ -530,6 +532,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
+  drawMapEventMarkers(ctx, g, t)
   drawFlash(ctx, g)
   if (g.phase === 'evolving') drawEvolution(ctx, g, t)
 }

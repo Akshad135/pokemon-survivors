@@ -61,7 +61,8 @@ const materialize = (g: Game) => {
   }
 }
 
-const touches = (a: Attack, x: number, y: number, r: number) => {
+/** Whether an attack's hitbox overlaps a circle of radius `r` at (x, y). */
+export const touches = (a: Attack, x: number, y: number, r: number) => {
   if (a.shape.kind === 'circle') return (a.x - x) ** 2 + (a.y - y) ** 2 < (a.shape.r + r) ** 2
   const cx = Math.max(a.x - a.shape.w / 2, Math.min(x, a.x + a.shape.w / 2))
   const cy = Math.max(a.y - a.shape.h / 2, Math.min(y, a.y + a.shape.h / 2))

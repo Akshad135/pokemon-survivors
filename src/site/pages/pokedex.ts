@@ -166,7 +166,7 @@ const card = (entry: DexEntry, locale: Locale, css: SpriteCss) => {
   </div>
   <h2>${name}</h2>
   <div class="types">${types.map((t) => typeBadge(t, m))}</div>
-  ${entry.source.kind === 'starter' ? starterBody({ ...entry, source: entry.source }, locale) : wildBody({ ...entry, source: entry.source }, m)}
+  ${entry.source.kind === 'starter' ? starterBody({ ...entry, source: entry.source }, locale) : entry.source.kind === 'wild' ? wildBody({ ...entry, source: entry.source }, m) : html`<p class="note">${m.pokedex.eventNote}</p>`}
 </article>`
 }
 

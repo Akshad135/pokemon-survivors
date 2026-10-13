@@ -7,6 +7,8 @@ import { STARTER_IDS, STARTERS } from '../../data/starters'
 import { effectiveness } from '../../data/types'
 import { EVENTS, RUN_LENGTH, scaling } from '../../data/waves'
 import { CONSUMABLES } from '../../game/consumables'
+import { MAP_EVENTS } from '../../game/mapEvents'
+import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
@@ -197,6 +199,22 @@ const items = (m: SiteMessages) => {
     ${table([i.itemHead, i.effectHead, i.whereHead], drops.map((d) => [nameOf(d), i.effects[d], where(d).join(', ')]))}`
 }
 
+const mapEvents = (m: SiteMessages) => {
+  const e = m.guide.mapEvents
+  const money = (coins: readonly number[]) => `₽${coins.reduce((a, b) => a + b, 0).toLocaleString(m.lang.tag)}`
+  const rows = [
+    [e.altar.name, e.altar.how, e.altar.reward(ALTAR.boost)],
+    [e.fountain.name, e.fountain.how(FOUNTAIN.charges, FOUNTAIN.interval), e.fountain.reward(FOUNTAIN.heal * 100)],
+    [e.chest.name, e.chest.how(CHEST.unlock), e.chest.reward(money(chestCoins(0)))],
+    [e.spikes.name, e.spikes.how, e.spikes.reward],
+    [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
+    [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
+  ]
+  const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
+  return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>
+    ${table([e.eventHead, e.howHead, e.rewardHead], rows)}`
+}
+
 const mart = (locale: Locale, m: SiteMessages) => {
   const k = m.guide.mart
   const game = LOCALES[locale].messages
@@ -227,6 +245,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   traits,
   shinies,
   items: (_, m) => items(m),
+  mapEvents: (_, m) => mapEvents(m),
   mart,
   settings: (_, m) => settings(m),
 }

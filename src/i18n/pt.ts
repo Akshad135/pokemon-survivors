@@ -163,6 +163,17 @@ export const pt = {
     revive: 'O *Revive* te pôs de pé!',
   },
 
+  /** Map event toasts (altars, fountains, chests, Meowth). */
+  mapEvents: {
+    altar: (buff: string) => `O altar concedeu *${buff}*!`,
+    fountain: 'A fonte restaura seu HP. Fique nela!',
+    chestAmbush: 'Baú trancado! Fique perto para abrir… _é uma emboscada_!',
+    chestOpen: (coins: string) => `Baú aberto: *${coins}*, um item e uma Poké Ball!`,
+    meowth: 'Um *Meowth* passou correndo com moedas! Acerte ele!',
+    payDay: (coins: string) => `*Pay Day!* Meowth largou ${coins}!`,
+    meowthEscaped: 'O *Meowth* fugiu…',
+  },
+
   moves: {
     ember: {
       description: 'Dispara brasas no inimigo mais próximo. Pode queimar.',

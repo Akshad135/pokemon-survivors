@@ -55,8 +55,8 @@ export const siteEn: SiteMessages = {
     results: (count: number) => `${count} Pokémon found`,
     empty: 'No Pokémon match these filters.',
     clear: 'Clear filters',
-    roles: { starter: 'Starter', enemy: 'Wild', boss: 'Boss', legendary: 'Legendary' },
-    roleFilter: { starter: 'Starters', enemy: 'Wild', boss: 'Bosses', legendary: 'Legendaries' },
+    roles: { starter: 'Starter', enemy: 'Wild', boss: 'Boss', legendary: 'Legendary', event: 'Event' },
+    roleFilter: { starter: 'Starters', enemy: 'Wild', boss: 'Bosses', legendary: 'Legendaries', event: 'Events' },
     link: (name: string) => `Link to ${name}`,
     portrait: (name: string) => `${name} portrait`,
     sprite: (name: string) => `Animated ${name} sprite`,
@@ -70,6 +70,7 @@ export const siteEn: SiteMessages = {
     specialFinal: 'At the final evolution',
     learnset: 'Moves it learns',
     wildStats: { hp: 'HP', damage: 'Contact damage', speed: 'Speed', xp: 'EXP' },
+    eventNote: 'Shows up as a map event: it runs from you and drops coins with every hit. Knock it out before it escapes for the Pay Day jackpot.',
     wildNote: 'Base values. Regular enemies get tougher every minute; bosses don\'t.',
     appears: 'When it shows up',
     horde: (from: string, until: string) => `In the horde, from ${from} to ${until}`,
@@ -126,7 +127,7 @@ export const siteEn: SiteMessages = {
   guide: {
     title: 'How to play Pokémon Survivors: complete guide',
     description:
-      'Pokémon Survivors guide: keyboard, gamepad and phone controls, how a run works, levels, moves, move evolutions with held items, the special attack, types and status, bosses, shinies, map items and the Poké Mart.',
+      'Pokémon Survivors guide: keyboard, gamepad and phone controls, how a run works, levels, moves, move evolutions with held items, the special attack, types and status, bosses, shinies, map items, map events and the Poké Mart.',
     h1: 'How to play',
     intro:
       'Pokémon Survivors is a Vampire Survivors-style roguelite: you only move, and your Pokémon attacks on its own. This guide explains everything that happens in a run, with the game\'s numbers.',
@@ -142,6 +143,7 @@ export const siteEn: SiteMessages = {
       traits: 'Special enemies',
       shinies: 'Shinies',
       items: 'Map items',
+      mapEvents: 'Map events',
       mart: 'Poké Mart and Poké Dollars',
       settings: 'Settings and music',
     },
@@ -279,6 +281,44 @@ export const siteEn: SiteMessages = {
         xAttack: '50% more damage for 20s.',
         xSpeed: 'More speed and faster cooldowns for 20s.',
         revive: 'Kept for later. When you faint, you get back up with 50% HP.',
+      },
+    },
+    mapEvents: {
+      intro: (first: number, gap: number, max: number) =>
+        `From ${first}s into a run, roughly every ${gap}s a point of interest may show up near you (at most ${max} at once). The important ones get an arrow on the screen edge. Take too long and they vanish.`,
+      eventHead: 'Event',
+      howHead: 'How it works',
+      rewardHead: 'Reward',
+      altar: {
+        name: 'Altar',
+        how: 'Step on it. The buff it grants floats above it, so you can decide from afar.',
+        reward: (boost: number) => `X Attack, X Speed or Max Repel (the roll avoids what's already running), lasting ${n(boost)}x as long.`,
+      },
+      fountain: {
+        name: 'Fountain',
+        how: (charges: number, interval: number) => `Stand in it while hurt: ${charges} charges, one every ${n(interval)}s. At full HP nothing is spent.`,
+        reward: (heal: number) => `Each charge heals ${n(heal)}% of your max HP.`,
+      },
+      chest: {
+        name: 'Locked chest',
+        how: (unlock: number) =>
+          `Stay inside the ring for ${unlock}s. Outside it, progress slowly drains. As soon as you start, a ring of wild Pokémon ambushes you.`,
+        reward: (coins: string) => `${coins} or more (it grows over time), an item and a Poké Ball.`,
+      },
+      spikes: {
+        name: 'Spikes',
+        how: 'The spikes shoot up every few seconds, with a blinking warning first. They hurt whoever stands on them: you and the wild Pokémon.',
+        reward: 'Lure the horde on top of them.',
+      },
+      bomb: {
+        name: 'Bomb',
+        how: (fuse: number) => `Anyone who gets close lights the fuse. ${n(fuse)}s later it blows up and hurts everything in range, you included.`,
+        reward: 'Let the horde light it and step away.',
+      },
+      meowth: {
+        name: 'Fleeing Meowth',
+        how: (ttl: number) => `Runs from you and escapes after ${ttl}s. Your moves can hit it.`,
+        reward: (jackpot: string) => `A coin with every hit, and the Pay Day (${jackpot}) if it faints.`,
       },
     },
     mart: {
