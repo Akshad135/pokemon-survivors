@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "assets": "node scripts/fetch-assets.mjs"
+    "assets": "node scripts/fetch-assets.mjs",
+    "credits": "node scripts/credits.mjs"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
@@ -19,5 +20,14 @@
   "dependencies": {
     "@fontsource/press-start-2p": "^5.3.0",
     "@fontsource/vt323": "^5.3.0"
+  },
+  "license": "MIT",
+  "homepage": "https://www.pokemonsurvivors.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedrobarretto/pokemon-survivors.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pedrobarretto/pokemon-survivors/issues"
   }
 }

@@ -19,11 +19,12 @@ Browser survivors-like (Vampire Survivors–style) with Pokémon. Vite + TypeScr
 npm run dev        # vite dev server
 npm test           # vitest
 npm run build      # tsc --noEmit + vite build (must pass before any PR)
-npm run assets     # fetch sprites (add new dex numbers in scripts/fetch-assets.mjs)
+npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs)
+npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
 ```
 
 In dev builds, the browser console exposes `ps.run()` (current run state) and `ps.startRun('squirtle')`, which are handy for staging screenshots.
 
 ## Assets
 
-Pokémon sprites come from PMD SpriteCollab (`sprite/<dex>/` has Walk/Idle/Hurt; shiny forms live under `sprite/<dex>/0000/0001/`). Portraits and cries come from PokeAPI. They are downloaded by `scripts/fetch-assets.mjs` into `public/assets/pokemon/<dex>/` and indexed in `src/data/sprites.generated.json`.
+Pokémon sprites come from PMD SpriteCollab (`sprite/<dex>/` has Walk/Idle/Hurt; shiny forms live under `sprite/<dex>/0000/0001/`). Portraits also come from SpriteCollab and cries from PokeAPI. They are downloaded by `scripts/fetch-assets.mjs` into `public/assets/pokemon/<dex>/` and indexed in `src/data/sprites.generated.json`. SpriteCollab is CC BY-NC 4.0 with per-artist credit, so keep `CREDITS.md` in sync (`npm run credits`).
