@@ -4,7 +4,8 @@ import { STARTERS } from '../data/starters'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
-import { itemIcon, moveIcon, pokeballIcon } from '../render/art'
+import { formatPokeDollars } from '../game/meta'
+import { coinIcon, itemIcon, moveIcon, pokeballIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
 
@@ -16,6 +17,7 @@ export const createHud = (root: HTMLElement) => {
   const xpLabel = h('div', { class: 'xp-label' })
   const timer = h('div', { class: 'timer' })
   const kills = h('span')
+  const coins = h('span')
   const moveSlots = h('div', { class: 'slots' })
   const itemSlots = h('div', { class: 'slots' })
   const bossName = h('div', { class: 'boss-name' })
@@ -36,7 +38,12 @@ export const createHud = (root: HTMLElement) => {
       { class: 'hud-row' },
       h('div', { class: 'loadout' }, moveSlots, itemSlots),
       timer,
-      h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills),
+      h(
+        'div',
+        { class: 'counters' },
+        h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills),
+        h('div', { class: 'kills coins' }, h('img', { src: coinIcon(0), alt: '' }), coins),
+      ),
     ),
     boss,
     h(
@@ -79,6 +86,7 @@ export const createHud = (root: HTMLElement) => {
     setText(xpLabel, `Nv ${p.level}`)
     setText(timer, formatTime(g.time))
     setText(kills, String(g.kills))
+    setText(coins, formatPokeDollars(g.coins))
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
     if (key !== loadoutKey) {

@@ -2,7 +2,8 @@ import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS } from '../data/types'
 import { burst, floatText } from './effects'
-import { dropPickup, dropXp } from './pickups'
+import { coinDrops } from './meta'
+import { dropCoins, dropPickup, dropXp } from './pickups'
 import type { Attack, Enemy, Game } from './types'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8' } as const
@@ -42,6 +43,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
   g.events.push({ kind: 'kill', boss: e.boss })
 
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
+  dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.boss) {
     dropPickup(g, e.x, e.y, 'pokeball')
     if (g.bossId === e.id) g.bossId = null

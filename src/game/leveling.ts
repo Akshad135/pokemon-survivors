@@ -1,6 +1,7 @@
 import type { Rng } from '../engine/rng'
 import { ITEM_IDS, ITEMS, type ItemId } from '../data/items'
 import { STARTERS, type StarterId } from '../data/starters'
+import { rankDeltas } from './meta'
 import { maxMoveLevel, type MoveId } from './moves'
 import { applyDeltas, BASE_STATS } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove } from './types'
@@ -62,13 +63,14 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3): Offer[] => {
   return picked.length > 0 ? picked : [{ kind: 'berry' }]
 }
 
-/** Rebuilds player stats from starter, evolution stage and held items. */
+/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage and held items. */
 export const recomputeStats = (g: Game) => {
   const p = g.player
   const starter = STARTERS[g.starter]
   const before = p.stats.maxHp
   p.stats = applyDeltas(BASE_STATS, [
     starter.stats,
+    ...rankDeltas(g.ranks),
     ...starter.line.slice(0, p.stage + 1).map((s) => s.bonus),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
   ])

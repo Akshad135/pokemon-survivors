@@ -7,6 +7,7 @@ import { updateAttacks } from './attacks'
 import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
+import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { MOVES, moveStats } from './moves'
 import { updatePickups } from './pickups'
 import { updateSpawner } from './spawner'
@@ -17,7 +18,7 @@ export const EVOLUTION_TIME = 4.6
 
 export const playerDex = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.dex
 
-export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now()): Game => {
+export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now(), ranks: Ranks = NO_RANKS): Game => {
   const def = STARTERS[starter]
   const g: Game = {
     starter,
@@ -53,6 +54,9 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     camera: { x: -view.w / 2, y: -view.h / 2 },
     shake: 0,
     kills: 0,
+    ranks,
+    coins: 0,
+    ...runCharges(ranks),
     damageByMove: {},
     pendingLevelUps: 0,
     offers: [],
@@ -115,6 +119,21 @@ const advancePhase = (g: Game) => {
 export const chooseOffer = (g: Game, offer: Offer) => {
   if (g.phase !== 'levelup') return
   applyOffer(g, offer)
+  g.pendingLevelUps--
+  advancePhase(g)
+}
+
+/** Spends a Poké Mart reroll: draws a fresh set of level-up offers. */
+export const rerollOffers = (g: Game) => {
+  if (g.phase !== 'levelup' || g.rerolls <= 0) return
+  g.rerolls--
+  g.offers = rollOffers(loadout(g), g.rng, 3)
+}
+
+/** Spends a Poké Mart skip: discards this level-up without picking anything. */
+export const skipLevelUp = (g: Game) => {
+  if (g.phase !== 'levelup' || g.skips <= 0) return
+  g.skips--
   g.pendingLevelUps--
   advancePhase(g)
 }

@@ -6,7 +6,7 @@ import type { Game, Pickup } from './types'
 
 const MAX_XP_PICKUPS = 260
 
-type PickupKind = Exclude<Pickup['kind'], 'xp'>
+type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin'>
 
 export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
@@ -23,6 +23,14 @@ export const dropXp = (g: Game, x: number, y: number, value: number) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -20, 20), vy: range(g.rng, -30, -10), attracted: false, age: 0, kind: 'xp', value })
 }
 
+/** Scatters Poké Dollar coins around a fainted enemy. */
+export const dropCoins = (g: Game, x: number, y: number, values: readonly number[]) => {
+  for (const value of values) {
+    const spread = values.length > 1 ? 40 : 15
+    g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -spread, spread), vy: range(g.rng, -spread, -5), attracted: false, age: 0, kind: 'coin', value })
+  }
+}
+
 /** Exp. Candy size tier, used for rendering. */
 export const xpTier = (value: number) => (value >= 40 ? 3 : value >= 10 ? 2 : value >= 3 ? 1 : 0)
 
@@ -33,6 +41,13 @@ const collect = (g: Game, pickup: Pickup) => {
       gainXp(g, pickup.value)
       g.events.push({ kind: 'pickup' })
       break
+    case 'coin': {
+      const amount = Math.round(pickup.value * p.stats.greed)
+      g.coins += amount
+      floatText(g, p.x, p.y - 30, `₽${amount}`, '#f8d030')
+      g.events.push({ kind: 'coin' })
+      break
+    }
     case 'berry': {
       const heal = Math.round(p.stats.maxHp * 0.3)
       p.hp = Math.min(p.stats.maxHp, p.hp + heal)

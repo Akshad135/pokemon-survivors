@@ -715,6 +715,299 @@ button {
   }
 }
 
+/* ---------- Poké Dollars & Poké Mart ---------- */
+
+.counters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.coins {
+  color: #f8d030;
+}
+
+.coins img {
+  width: 16px;
+  height: 16px;
+}
+
+.earnings {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 8px 12px;
+  background: #fff8d8;
+  border: 3px solid #e8c050;
+  border-radius: 6px;
+}
+
+.earnings img {
+  grid-row: span 2;
+  width: 32px;
+  height: 32px;
+}
+
+.earnings b {
+  font-family: var(--title);
+  font-size: 14px;
+  color: #a86000;
+}
+
+.earnings span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mart-entry {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 8px;
+  pointer-events: auto;
+}
+
+.mart-entry img {
+  width: 28px;
+  height: 28px;
+}
+
+.mart-entry-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mart-entry-text b {
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.mart-entry:hover,
+.mart-entry:focus-visible {
+  --frame: #e83838;
+}
+
+.key-hint {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #fff;
+  background: #6878a8;
+  border-radius: 4px;
+  padding: 4px 5px 3px;
+}
+
+@media (hover: none) {
+  .key-hint {
+    display: none;
+  }
+}
+
+.mart-screen {
+  padding: 8px;
+}
+
+.dialog.mart {
+  width: min(600px, 100%);
+  max-height: 100%;
+  padding: 16px;
+  gap: 10px;
+}
+
+.mart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.mart-wallet {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--title);
+  font-size: 12px;
+  padding: 6px 10px;
+  background: #283048;
+  color: #f8d030;
+  border-radius: 6px;
+}
+
+.mart-wallet img {
+  width: 18px;
+  height: 18px;
+}
+
+.mart-list {
+  flex: 1 1 auto;
+  min-height: 96px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px;
+}
+
+.mart-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  text-align: left;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.mart-row img {
+  width: 28px;
+  height: 28px;
+}
+
+.mart-row.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+.mart-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mart-name {
+  font-family: var(--title);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pips {
+  display: flex;
+  gap: 3px;
+}
+
+.pip {
+  width: 10px;
+  height: 6px;
+  background: #c8c8d8;
+  border: 1px solid #8888a0;
+}
+
+.pip.on {
+  background: #48c048;
+  border-color: #287028;
+}
+
+.mart-price {
+  font-family: var(--title);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.mart-row.poor .mart-price {
+  color: #c83030;
+}
+
+.mart-row.maxed .mart-price {
+  color: #48a048;
+}
+
+.mart-desc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #283048;
+  color: #f8f8f8;
+  border-radius: 6px;
+  min-height: 72px;
+}
+
+.mart-desc-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: #f8f8f8;
+  border-radius: 6px;
+}
+
+.mart-desc-icon img {
+  width: 36px;
+  height: 36px;
+}
+
+.mart-desc-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mart-desc-title {
+  font-family: var(--title);
+  font-size: 9px;
+  color: #f8d030;
+}
+
+.mart-desc-body p {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mart-buy {
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .dialog.mart {
+    padding: 10px;
+  }
+  .mart-desc {
+    flex-wrap: wrap;
+  }
+  .mart-buy {
+    width: 100%;
+  }
+  /* Compact entry so it clears the centered logo on phones. */
+  .mart-entry {
+    top: 6px;
+    right: 6px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 8px;
+  }
+  .mart-entry-text b {
+    display: none;
+  }
+  .mart-entry-text span {
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 720px) {
   .starter-card {
     width: 150px;

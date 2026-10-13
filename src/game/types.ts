@@ -5,6 +5,7 @@ import type { EnemyId } from '../data/enemies'
 import type { ItemId } from '../data/items'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
+import type { Ranks } from './meta'
 import type { MoveId } from './moves'
 import type { PlayerStats } from './stats'
 
@@ -119,7 +120,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'berry' } | { kind: 'pokeball' })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' })
 
 export type Particle = {
   x: number
@@ -148,6 +149,7 @@ export type GameEvent =
   | { kind: 'hit'; effective: number }
   | { kind: 'kill'; boss: boolean }
   | { kind: 'pickup' }
+  | { kind: 'coin' }
   | { kind: 'heal' }
   | { kind: 'hurt' }
   | { kind: 'levelup' }
@@ -178,6 +180,13 @@ export type Game = {
   camera: { x: number; y: number }
   shake: number
   kills: number
+  /** Permanent Poké Mart ranks this run was started with. */
+  ranks: Ranks
+  /** Poké Dollars collected this run (already multiplied by greed). */
+  coins: number
+  /** Level-up rerolls/skips left this run. */
+  rerolls: number
+  skips: number
   damageByMove: Partial<Record<MoveId, number>>
   pendingLevelUps: number
   offers: Offer[]

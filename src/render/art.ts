@@ -1,5 +1,6 @@
 import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { ItemId } from '../data/items'
+import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 
 /**
@@ -69,7 +70,18 @@ const CANDY_TIERS: readonly Palette[] = [
 const BERRY = ['....22..', '...22...', '.111111.', '11133111', '11131111', '11111111', '.111111.', '..1111..']
 const POKEBALL = ['..1111..', '.125221.', '12222221', '11144111', '13344331', '13333331', '.133331.', '..1111..']
 
+/** Poké Dollar tiers: single coin (₽10), coin stack (₽50), money bag (₽250). */
+const COIN = ['.1111.', '123321', '132221', '122221', '122211', '.1111.']
+const COIN_STACK = ['.11111.', '1233321', '.11111.', '1222221', '.11111.', '1222221', '.11111.']
+const MONEY_BAG = ['.1....1.', '..1111..', '..1221..', '.122221.', '12233221', '12322321', '12233221', '12223221', '.122221.', '..1111..']
+const GOLD = { 1: '#a86000', 2: '#f8c830', 3: '#fff8b0' }
+
 export const PICKUPS = {
+  coins: lazy(() => [
+    art(COIN, GOLD, '#181818'),
+    art(COIN_STACK, GOLD, '#181818'),
+    art(MONEY_BAG, { 1: '#583010', 2: '#c88848', 3: '#f8d030' }, '#181818'),
+  ]),
   candy: lazy(() => CANDY_TIERS.map((pal) => art(CANDY, pal, '#181818'))),
   berry: lazy(() => art(BERRY, { 1: '#3870d8', 2: '#48a838', 3: '#b8d8ff' }, '#181818')),
   pokeball: lazy(() => art(POKEBALL, { 1: '#202028', 2: '#e83838', 3: '#f0f0f0', 4: '#ffffff', 5: '#f8a0a0' }, '#181818')),
@@ -109,6 +121,29 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
 }
 
+/* ---------------- Poké Mart icons ---------------- */
+
+/** Vitamin bottle: 1 outline, 2 cap, 3 bottle, 4 shine, 5 label. */
+const BOTTLE = ['..1111..', '..1221..', '..1111..', '.133331.', '13433331', '14555531', '13555531', '13333331', '.111111.']
+const vitamin = (cap: string, body: string): readonly [readonly string[], Palette] => [
+  BOTTLE,
+  { 1: '#202028', 2: cap, 3: body, 4: '#ffffff', 5: '#f0f0f0' },
+]
+
+const UPGRADE_ART: Record<UpgradeId, readonly [readonly string[], Palette]> = {
+  hpUp: vitamin('#f8f8f8', '#58c058'),
+  protein: vitamin('#f8f8f8', '#e85040'),
+  iron: vitamin('#f8f8f8', '#8890a8'),
+  carbos: vitamin('#f8f8f8', '#40a8e0'),
+  calcium: vitamin('#f8f8f8', '#e8d070'),
+  zinc: vitamin('#f8f8f8', '#a070d0'),
+  ppUp: vitamin('#f8d030', '#f078b8'),
+  expShare: [['.111111.', '12222221', '12333321', '12344321', '12333321', '12222221', '.111111.', '..1..1..'], { 1: '#283048', 2: '#4880d8', 3: '#a8d0f8', 4: '#f8f8f8' }],
+  amuletCoin: [['1......1', '.1....1.', '..1111..', '.122221.', '12233221', '12322321', '12233221', '.122221.', '..1111..'], { 1: '#805000', 2: '#f8c830', 3: '#fff8b0' }],
+  abilityCapsule: [['..1111..', '.122221.', '12222221', '12222221', '13333331', '13333331', '13333331', '.133331.', '..1111..'], { 1: '#283048', 2: '#e85878', 3: '#f8f0f8' }],
+  escapeRope: [['..1111..', '.12..21.', '12.11.21', '1.1221.1', '1.1..1.1', '12.11.21', '.12..21.', '..1111..'], { 1: '#805828', 2: '#d8a868' }],
+}
+
 const iconCache = new Map<string, string>()
 
 /** Icon as a data URL, padded to a square so it scales uniformly in the DOM. */
@@ -132,6 +167,13 @@ export const itemIcon = (id: ItemId) =>
     return art(rows, pal, '#181818')
   })
 
+export const upgradeIcon = (id: UpgradeId) =>
+  toIconUrl(`upgrade:${id}`, () => {
+    const [rows, pal] = UPGRADE_ART[id]
+    return art(rows, pal, '#181818')
+  })
+
+export const coinIcon = (tier = 0) => toIconUrl(`coin:${tier}`, () => PICKUPS.coins()[tier]!)
 export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICKUPS.candy()[tier]!)
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)

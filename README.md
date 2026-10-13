@@ -41,12 +41,13 @@ src/
 - 10 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Magnet, Assault Vest.
 - 15 regular enemies. Bosses: Onix (5:00), Snorlax (10:00), Mewtwo (15:00, beating it wins the run).
 - Drops: Exp. Candy (4 tiers), Oran Berry, and a boss Poké Ball that grants a random upgrade.
+- Meta progression: enemies drop Poké Dollars (₽ coins, stacks and bags; bosses shower ₽), plus an end-of-run bonus for time and kills. Spend them in the **Poké Mart** (title screen, `L`) on permanent ranks: HP Up, Protein, Iron, Carbos, Calcium, Zinc, PP Up, Exp. Share, Amulet Coin, and Ability Capsule / Escape Rope for level-up rerolls and skips. Saved in `localStorage` (`game/meta.ts` holds the pure rules).
 
 ## Ideas for next steps
 
 - Move evolutions (e.g. max Ember + Charcoal → Flamethrower), like weapon evolutions in Vampire Survivors.
 - Shiny elites that drop Poké Balls; status effects (burn, poison, paralysis).
-- Meta progression (Poké Dollars, permanent upgrades), more starters, and biomes (cave, forest, Lavender Town).
+- More starters and biomes (cave, forest, Lavender Town).
 - Chiptune music; custom effects/tiles made with PixelLab.
 
 ## Credits

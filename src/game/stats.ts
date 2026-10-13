@@ -1,6 +1,6 @@
 /**
  * Player-wide modifiers, Vampire Survivors style. Every source (starter,
- * evolution stage, held items) contributes additive deltas on top of BASE.
+ * evolution stage, held items, Poké Mart ranks) contributes additive deltas on top of BASE.
  */
 export type PlayerStats = {
   maxHp: number
@@ -25,6 +25,8 @@ export type PlayerStats = {
   armor: number
   /** xp multiplier */
   growth: number
+  /** Poké Dollar multiplier */
+  greed: number
 }
 
 export type StatDelta = Partial<PlayerStats>
@@ -42,6 +44,7 @@ export const BASE_STATS: PlayerStats = {
   regen: 0,
   armor: 0,
   growth: 1,
+  greed: 1,
 }
 
 export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): PlayerStats =>
