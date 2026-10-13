@@ -62,9 +62,22 @@ export const en: Messages = {
     title: 'PAUSED',
     resume: 'Resume',
     quit: 'Give up',
-    sound: (on) => `Sound: ${on ? 'ON' : 'OFF'}`,
-    language: (name) => `Language: ${name}`,
+    settings: 'Settings',
     evoLegend: 'Max-level move + its paired item = evolution on the next Poké Ball or level-up!',
+  },
+
+  settings: {
+    title: 'SETTINGS',
+    music: 'Music',
+    sfx: 'Effects',
+    sound: 'Sound',
+    damageNumbers: 'Damage numbers',
+    screenShake: 'Screen shake',
+    on: 'ON',
+    off: 'OFF',
+    back: 'Back',
+    hintKeys: '↑ ↓ choose · ← → adjust · ESC back',
+    hintTouch: 'Tap or drag to adjust',
   },
 
   results: {

@@ -101,6 +101,8 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
 - **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
+- **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, a march for the run, and a boss theme while a boss is alive.
+- **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
 
 ## Controls
@@ -111,8 +113,8 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 | Special attack | `Space` / A (✕) | Round button, bottom right |
 | Pause | `Esc` / `P` | Pause button, top right |
 | Pick an upgrade | `1`–`3` | Tap it |
-| Mute | `M` | — |
-| Switch language | `I` (title screen) or the pause menu | `PT \| EN`, top left of the title screen, or the pause menu |
+| Mute | `M` | Settings, in the pause menu |
+| Switch language | `I` (title screen) or Settings in the pause menu | `PT \| EN`, top left of the title screen, or Settings in the pause menu |
 
 ## Running locally
 
@@ -127,7 +129,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state) and `ps.startRun('squirtle')`.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing).
 
 ## How it's built
 
@@ -135,8 +137,8 @@ Vite + TypeScript and Canvas 2D, with no game engine. Everything is plain data p
 
 ```
 src/
-  engine/   math, seeded rng, spatial hash, input, WebAudio sfx, pixel-art helpers
-  data/     pure game data: starters, enemies, waves, held items, move evolutions, type chart
+  engine/   math, seeded rng, spatial hash, input, WebAudio sfx and music synth, pixel-art helpers
+  data/     pure game data: starters, enemies, waves, held items, move evolutions, type chart, music scores
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
@@ -144,7 +146,7 @@ src/
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, frame renderer
-  ui/       HUD, starter select, level-up, pause, results, toasts, language switch
+  ui/       HUD, starter select, level-up, pause, settings, results, toasts, language switch
   i18n/     every player-facing string: pt.ts (reference) and en.ts
 ```
 
@@ -158,8 +160,9 @@ src/
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time, burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses).
 - **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides). Input reaches `step()` as data (`{ move, special }`).
-- **Languages:** Brazilian Portuguese and English, picked from the browser language and switchable on the title screen (`PT | EN`, or `I`) and in the pause menu. Text lives in `src/i18n`: `pt.ts` is the reference and its inferred type forces `en.ts` to match it, down to one line per move upgrade. Data files keep only the official English names. Toast strings use light markup (`*bold*`, `_accent_`) so each language can put names where its grammar wants them.
+- **Languages:** Brazilian Portuguese and English, picked from the browser language and switchable on the title screen (`PT | EN`, or `I`) and in Settings (pause menu). Text lives in `src/i18n`: `pt.ts` is the reference and its inferred type forces `en.ts` to match it, down to one line per move upgrade. Data files keep only the official English names. Toast strings use light markup (`*bold*`, `_accent_`) so each language can put names where its grammar wants them.
 - **Type chart:** damage uses real Pokémon type matchups, softened (2x → 1.5x, 0x → 0.5x). Yellow numbers with `!` mean super effective.
+- **Music** is code: `data/music.ts` holds the scores in a small tracker notation (`engine/score.ts`) and `engine/music.ts` plays them on two pulse channels, a triangle bass and a noise kit. The shell picks the theme each frame (`playTheme`). Music and effects have separate buses in `engine/audio.ts`, so music always sits under effects and cries.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
 
 </details>
@@ -168,7 +171,7 @@ src/
 
 - Evolutions for the newer signature moves (Mach Punch, Spirit Shackle, Pyro Ball…).
 - Biomes (cave, forest, Lavender Town).
-- Chiptune music and custom effects/tiles.
+- Custom effects/tiles.
 
 ## Contributing
 

@@ -1,29 +1,75 @@
 /**
  * Tiny chiptune SFX synth on WebAudio plus Pokémon cries.
  * Everything is lazy: the AudioContext is created on the first user gesture.
+ *
+ * Mixing: sfx and cries → `sfx` bus, music (`music.ts`) → `music` bus, both
+ * into `master`, which mute silences. Volumes come from the settings (`setMix`).
  */
 type Wave = OscillatorType
 
 const MASTER_VOLUME = 0.35
-let ctx: AudioContext | null = null
-let master: GainNode | null = null
-let muted = localStorage.getItem('ps:muted') === '1'
+/** Music sits under effects and cries even with both sliders at 100%. */
+const MUSIC_HEADROOM = 0.4
+
+/** User-facing mix, 0..1 per slider. Applied to the buses whenever they exist. */
+export type Mix = { musicVolume: number; sfxVolume: number; muted: boolean }
+
+let mix: Mix = { musicVolume: 0.6, sfxVolume: 1, muted: false }
+let graph: { ctx: AudioContext; master: GainNode; sfx: GainNode; music: GainNode } | null = null
+const runningListeners = new Set<() => void>()
 const lastPlayed = new Map<string, number>()
 
+/** Sliders feel linear to the ear when the gain is squared. */
+const loudness = (v: number) => v * v
+
+const applyMix = () => {
+  if (!graph) return
+  const t = graph.ctx.currentTime
+  graph.master.gain.setTargetAtTime(mix.muted ? 0 : MASTER_VOLUME, t, 0.02)
+  graph.sfx.gain.setTargetAtTime(loudness(mix.sfxVolume), t, 0.02)
+  graph.music.gain.setTargetAtTime(loudness(mix.musicVolume) * MUSIC_HEADROOM, t, 0.02)
+}
+
 const audio = () => {
-  if (!ctx) {
-    ctx = new AudioContext()
-    master = ctx.createGain()
-    master.gain.value = muted ? 0 : MASTER_VOLUME
+  if (!graph) {
+    const ctx = new AudioContext()
+    const master = ctx.createGain()
+    const sfx = ctx.createGain()
+    const music = ctx.createGain()
+    master.gain.value = 0
+    sfx.connect(master)
+    music.connect(master)
     master.connect(ctx.destination)
+    graph = { ctx, master, sfx, music }
+    ctx.addEventListener('statechange', () => ctx.state === 'running' && runningListeners.forEach((fn) => fn()))
+    applyMix()
   }
+  const { ctx, sfx } = graph
   // iOS reports 'interrupted' after calls or app switches; anything but running needs a resume.
   if (ctx.state !== 'running') void ctx.resume().catch(() => {})
-  return { ctx, master: master! }
+  return { ctx, sfx }
+}
+
+/** Updates bus volumes and mute. Safe to call before audio is unlocked. */
+export const setMix = (next: Mix) => {
+  mix = next
+  applyMix()
+}
+
+/**
+ * The music bus, only once the context is actually running (after a user
+ * gesture), so music never creates or wakes the AudioContext by itself.
+ */
+export const musicOutput = () => (graph?.ctx.state === 'running' ? { ctx: graph.ctx, bus: graph.music } : null)
+
+/** Calls `fn` every time the context starts running (unlock, or back from an iOS interruption). */
+export const onAudioRunning = (fn: () => void) => {
+  runningListeners.add(fn)
+  return () => void runningListeners.delete(fn)
 }
 
 const tone = (freq: number, endFreq: number, duration: number, wave: Wave, volume = 0.3, delay = 0) => {
-  const { ctx, master } = audio()
+  const { ctx, sfx } = audio()
   const t = ctx.currentTime + delay
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
@@ -32,13 +78,13 @@ const tone = (freq: number, endFreq: number, duration: number, wave: Wave, volum
   osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), t + duration)
   gain.gain.setValueAtTime(volume, t)
   gain.gain.exponentialRampToValueAtTime(0.001, t + duration)
-  osc.connect(gain).connect(master)
+  osc.connect(gain).connect(sfx)
   osc.start(t)
   osc.stop(t + duration)
 }
 
 const noise = (duration: number, volume = 0.2, delay = 0) => {
-  const { ctx, master } = audio()
+  const { ctx, sfx } = audio()
   const t = ctx.currentTime + delay
   const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate)
   const data = buffer.getChannelData(0)
@@ -47,7 +93,7 @@ const noise = (duration: number, volume = 0.2, delay = 0) => {
   const gain = ctx.createGain()
   src.buffer = buffer
   gain.gain.value = volume
-  src.connect(gain).connect(master)
+  src.connect(gain).connect(sfx)
   src.start(t)
 }
 
@@ -114,7 +160,7 @@ export type Sfx = keyof typeof SFX
 
 /** Plays a sound effect, throttled so dense hordes don't turn into noise. */
 export const playSfx = (name: Sfx, minGapMs = 40) => {
-  if (muted) return
+  if (mix.muted) return
   const now = performance.now()
   if (now - (lastPlayed.get(name) ?? 0) < minGapMs) return
   lastPlayed.set(name, now)
@@ -141,31 +187,22 @@ const loadCry = (url: string) => {
  * block it outside a gesture. Falls back to an <audio> element.
  */
 export const playCry = (url: string, volume = 0.35) => {
-  if (muted) return
+  if (mix.muted) return
   void loadCry(url).then((buffer) => {
     if (!buffer) {
       const el = new Audio(url)
-      el.volume = volume
+      el.volume = volume * loudness(mix.sfxVolume)
       return void el.play().catch(() => {})
     }
-    const { ctx, master } = audio()
+    const { ctx, sfx } = audio()
     const src = ctx.createBufferSource()
     const gain = ctx.createGain()
     src.buffer = buffer
     gain.gain.value = volume / MASTER_VOLUME
-    src.connect(gain).connect(master)
+    src.connect(gain).connect(sfx)
     src.start()
   })
 }
-
-export const toggleMute = () => {
-  muted = !muted
-  localStorage.setItem('ps:muted', muted ? '1' : '0')
-  if (master) master.gain.value = muted ? 0 : MASTER_VOLUME
-  return muted
-}
-
-export const isMuted = () => muted
 
 /**
  * Must be called from a user gesture to unlock audio. On touch, only

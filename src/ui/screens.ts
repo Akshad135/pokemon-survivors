@@ -1,5 +1,5 @@
 import { formatTime } from '../engine/math'
-import { playSfx, toggleMute } from '../engine/audio'
+import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { canEvolve, EVOLUTIONS, evolutionOf, evolvedFrom, type MoveEvolution } from '../data/evolutions'
 import { ITEMS } from '../data/items'
@@ -13,7 +13,7 @@ import type { DamageSource, Game, Offer } from '../game/types'
 import { berryIcon, coinIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { sprites } from '../render/sprites'
-import { formatNumber, formatPokeDollars, locale, LOCALES, t, type Messages } from '../i18n'
+import { formatNumber, formatPokeDollars, t, type Messages } from '../i18n'
 import { h, later } from './dom'
 
 export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () => void }
@@ -228,34 +228,41 @@ const loadoutList = (g: Game) =>
     ),
   )
 
-/** `language` switches to the next locale (and rebuilds the HUD); the menu then redraws itself in it. */
-type PauseActions = { resume: () => void; quit: () => void; language: () => void }
+/**
+ * `settings` opens the settings screen on top (see `openSettings`) and must
+ * call `back` once it closes; the pause menu hides meanwhile, then redraws
+ * itself, in the new language if it changed.
+ */
+type PauseActions = { resume: () => void; quit: () => void; settings: (back: () => void) => Screen }
 
 export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: PauseActions): Screen => {
   const el = h('div', { class: 'screen dim' })
   let nav: ReturnType<typeof menu> | null = null
+  let settings: Screen | null = null
 
-  /** `opening` plays the pop-in; redraws after a language switch don't. */
+  const openSettings = () => {
+    if (settings) return
+    nav?.off()
+    el.classList.add('hidden')
+    settings = actions.settings(() => {
+      settings = null
+      el.classList.remove('hidden')
+      render(1, false)
+    })
+  }
+
+  /** `opening` plays the pop-in; redraws after closing the settings don't. */
   const render = (focus: number, opening: boolean) => {
     const m = t().pause
-    const muteLabel = () => m.sound(localStorage.getItem('ps:muted') !== '1')
     const resume = h('button', { class: 'btn' }, m.resume)
-    const mute = h('button', { class: 'btn' }, muteLabel())
-    const language = h('button', { class: 'btn' }, m.language(LOCALES[locale()].name))
+    const settingsButton = h('button', { class: 'btn' }, m.settings)
     const quit = h('button', { class: 'btn' }, m.quit)
     nav?.off()
-    nav = menu(input, [resume, mute, language, quit], (i) => {
+    nav = menu(input, [resume, settingsButton, quit], (i) => {
       if (i === 0) actions.resume()
-      if (i === 1) {
-        toggleMute()
-        mute.textContent = muteLabel()
-      }
-      if (i === 2) {
-        actions.language()
-        // Redraw after this key dispatch, or the new menu would receive the same Enter.
-        later(() => render(2, false))
-      }
-      if (i === 3) actions.quit()
+      // Open after this key dispatch, or the settings would receive the same Enter.
+      if (i === 1) later(openSettings)
+      if (i === 2) actions.quit()
     }, { initial: focus })
     const s = g.player.stats
     el.replaceChildren(
@@ -270,15 +277,16 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
           h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([key, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, t().stats[key]), h('b', {}, fmt(s))))),
         ),
         h('p', { class: 'evo-legend' }, m.evoLegend),
-        h('div', { class: 'buttons' }, resume, mute, language, quit),
+        h('div', { class: 'buttons' }, resume, settingsButton, quit),
       ),
     )
   }
 
   render(0, true)
-  const offEsc = input.onKey((k) => k === 'Escape' && actions.resume())
+  // Esc inside the settings only closes them.
+  const offEsc = input.onKey((k) => k === 'Escape' && !settings && actions.resume())
   root.append(el)
-  return { el, dispose: () => (nav?.off(), offEsc(), el.remove()) }
+  return { el, dispose: () => (settings?.dispose(), nav?.off(), offEsc(), el.remove()) }
 }
 
 /* ---------------- Results ---------------- */

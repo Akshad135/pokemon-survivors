@@ -87,9 +87,22 @@ export const pt = {
     title: 'PAUSA',
     resume: 'Continuar',
     quit: 'Desistir',
-    sound: (on: boolean) => `Som: ${on ? 'ON' : 'OFF'}`,
-    language: (name: string) => `Idioma: ${name}`,
+    settings: 'Ajustes',
     evoLegend: 'Golpe no nível máximo + o item indicado = evolução na próxima Poké Ball ou subida de nível!',
+  },
+
+  settings: {
+    title: 'AJUSTES',
+    music: 'Música',
+    sfx: 'Efeitos',
+    sound: 'Som',
+    damageNumbers: 'Números de dano',
+    screenShake: 'Tremor de tela',
+    on: 'ON',
+    off: 'OFF',
+    back: 'Voltar',
+    hintKeys: '↑ ↓ escolher · ← → ajustar · ESC voltar',
+    hintTouch: 'Toque ou arraste para ajustar',
   },
 
   results: {

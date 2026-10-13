@@ -462,10 +462,14 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 const drawables: Array<Enemy | 'player'> = []
 
-export const render = (ctx: Ctx, g: Game, t: number) => {
+/** Player preferences from the settings screen. */
+export type RenderOptions = { damageNumbers: boolean; screenShake: boolean }
+
+export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const { w, h } = g.view
-  const shakeX = g.shake > 0 ? Math.round((Math.random() - 0.5) * g.shake * 2) : 0
-  const shakeY = g.shake > 0 ? Math.round((Math.random() - 0.5) * g.shake * 2) : 0
+  const shake = opts.screenShake ? g.shake : 0
+  const shakeX = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 2) : 0
+  const shakeY = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 2) : 0
   const camX = Math.round(g.camera.x) + shakeX
   const camY = Math.round(g.camera.y) + shakeY
 
@@ -511,6 +515,7 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   ctx.globalAlpha = 1
 
   for (const text of g.texts) {
+    if (text.damage && !opts.damageNumbers) continue
     ctx.globalAlpha = Math.min(1, (0.7 - text.life) * 5)
     blitCentered(ctx, textSprite(text.text, text.color), text.x, text.y)
   }
