@@ -11,6 +11,7 @@ Browser survivors-like (Vampire Survivors–style) with Pokémon. Vite + TypeScr
 - **Two languages: pt-BR and English.** Every player-facing string lives in `src/i18n` (`pt.ts` is the reference; `en.ts` must match it key for key, and the type checker enforces it, down to one line per move upgrade). Read text with `t()` at render time, never at module load. Pokémon, move and item names stay in English (official names) and live in the data files.
 - **Comments:** short doc comments above non-obvious functions. Don't comment every line, and keep comments in sync with the code.
 - **Tests:** focused vitest tests for pure rules only (`*.test.ts`). No smoke or snapshot slop.
+- **SEO/GEO copy** lives in static HTML so crawlers and AI chats can read it without JS: `index.html` (pt-BR, `/`), `en/index.html` (English, `/en/`) and `public/llms.txt`. When a feature changes what the game is (starters, bosses, counts), update all three.
 - **Mobile matters:** many players will be on phones. Every UI must work with touch and on small portrait and landscape screens.
 
 ## Commands

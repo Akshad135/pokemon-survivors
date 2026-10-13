@@ -58,6 +58,16 @@ canvas {
   pointer-events: none;
 }
 
+/* The page's text description (index.html): there for screen readers and crawlers, never drawn over the game. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 button {
   font: inherit;
   color: inherit;

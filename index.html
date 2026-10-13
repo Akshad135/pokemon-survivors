@@ -13,25 +13,128 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Survivors" />
     <meta name="format-detection" content="telephone=no" />
-    <title>Pokémon Survivors</title>
-    <meta name="description" content="Fan game gratuito estilo Vampire Survivors com Pokémon. Escolha um inicial, sobreviva às hordas selvagens, evolua e derrote Mewtwo." />
+    <title>Pokémon Survivors – Jogo grátis estilo Vampire Survivors com Pokémon</title>
+    <meta name="description" content="Jogue grátis no navegador ou no celular, sem baixar nada: um roguelite estilo Vampire Survivors com Pokémon. Escolha entre 27 iniciais de todas as regiões, evolua e derrote Mewtwo." />
     <link rel="canonical" href="https://www.pokemonsurvivors.com/" />
+    <link rel="alternate" hreflang="pt-BR" href="https://www.pokemonsurvivors.com/" />
+    <link rel="alternate" hreflang="en" href="https://www.pokemonsurvivors.com/en/" />
+    <link rel="alternate" hreflang="x-default" href="https://www.pokemonsurvivors.com/en/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pokémon Survivors" />
     <meta property="og:url" content="https://www.pokemonsurvivors.com/" />
-    <meta property="og:title" content="Pokémon Survivors" />
-    <meta property="og:description" content="Fan game gratuito estilo Vampire Survivors com Pokémon. Jogue no navegador ou no celular." />
+    <meta property="og:title" content="Pokémon Survivors – Vampire Survivors com Pokémon, grátis" />
+    <meta property="og:description" content="Fan game gratuito estilo Vampire Survivors com Pokémon. Jogue no navegador ou no celular, sem baixar." />
     <meta property="og:image" content="https://www.pokemonsurvivors.com/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Charizard enfrentando uma horda de Pokémon selvagens em pixel art" />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:locale:alternate" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/assets/pokemon/4/portrait.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://www.pokemonsurvivors.com/#website",
+            "name": "Pokémon Survivors",
+            "url": "https://www.pokemonsurvivors.com/",
+            "inLanguage": ["pt-BR", "en"]
+          },
+          {
+            "@type": "VideoGame",
+            "@id": "https://www.pokemonsurvivors.com/#game",
+            "name": "Pokémon Survivors",
+            "alternateName": ["Pokemon Survivors", "Vampire Survivors com Pokémon"],
+            "url": "https://www.pokemonsurvivors.com/",
+            "description": "Fan game gratuito e não oficial estilo Vampire Survivors com Pokémon. Escolha um dos 27 iniciais, sobreviva 15 minutos de hordas selvagens, aprenda golpes, evolua e derrote Mewtwo. Roda no navegador e no celular, sem download.",
+            "image": "https://www.pokemonsurvivors.com/og.png",
+            "genre": ["Roguelite", "Roguelike", "Bullet heaven", "Survivors-like", "Ação"],
+            "gamePlatform": ["Navegador", "Android", "iOS", "PC"],
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "Qualquer (navegador)",
+            "playMode": "SinglePlayer",
+            "inLanguage": ["pt-BR", "en"],
+            "isAccessibleForFree": true,
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+            "author": { "@type": "Person", "name": "Pedro Barretto", "url": "https://pedrobarretto.com.br" },
+            "sameAs": ["https://github.com/pedrobarretto/pokemon-survivors"],
+            "isPartOf": { "@id": "https://www.pokemonsurvivors.com/#website" }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Pokémon Survivors é grátis?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Sim. É um fan game gratuito, sem anúncios e sem compras. O código é aberto no GitHub." }
+              },
+              {
+                "@type": "Question",
+                "name": "Precisa baixar alguma coisa?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Não. O jogo roda direto no navegador, no PC ou no celular. No celular dá para instalar como app em tela cheia pelo menu do navegador." }
+              },
+              {
+                "@type": "Question",
+                "name": "Como funciona o jogo?",
+                "acceptedAnswer": { "@type": "Answer", "text": "É um roguelite estilo Vampire Survivors: você só se move, e seu Pokémon ataca sozinho. Sobreviva 15 minutos de hordas, ganhe experiência, escolha golpes e itens a cada nível, evolua e enfrente chefes lendários até Mewtwo." }
+              },
+              {
+                "@type": "Question",
+                "name": "É um jogo oficial da Pokémon?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Não. É um fan game não oficial e sem fins lucrativos, sem ligação com Nintendo, The Pokémon Company, GAME FREAK ou Creatures." }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <canvas id="game"></canvas>
+    <canvas id="game" aria-label="Pokémon Survivors"></canvas>
     <div id="ui"></div>
+    <!-- Text alternative to the canvas: read by screen readers, search engines and AI crawlers that don't run JS. -->
+    <main class="sr-only">
+      <h1>Pokémon Survivors: jogo grátis estilo Vampire Survivors com Pokémon</h1>
+      <p>
+        Pokémon Survivors é um fan game gratuito e não oficial que mistura Pokémon com Vampire Survivors. É um roguelite
+        de ação (bullet heaven) que roda no navegador e no celular, sem download e sem cadastro.
+      </p>
+      <h2>Como jogar</h2>
+      <p>
+        Escolha seu Pokémon inicial, ande pelo mapa e deixe ele atacar sozinho. Sobreviva 15 minutos de hordas de
+        Pokémon selvagens, colete experiência, aprenda golpes, equipe itens e evolua no meio da partida. No fim, enfrente
+        Mewtwo.
+      </p>
+      <h2>Recursos</h2>
+      <ul>
+        <li>27 iniciais de todas as regiões, de Kanto a Paldea (Charmander, Squirtle, Bulbasaur, Piplup, Froakie, Fuecoco, Sprigatito e mais), cada um com sua linha evolutiva completa.</li>
+        <li>23 golpes e 19 itens: maximize um golpe com o item certo e ele evolui (Ember + Charcoal vira Flamethrower).</li>
+        <li>Vantagens de tipo, queimadura, veneno e paralisia, e um ataque especial por tipo, como Blast Burn, Hydro Cannon e Frenzy Plant.</li>
+        <li>Chefes lendários: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew e Mewtwo.</li>
+        <li>Shinies selvagens e iniciais shiny, Poké Dollars e melhorias permanentes no Poké Mart.</li>
+        <li>Pixel art no estilo Pokémon Mystery Dungeon, em português e inglês.</li>
+        <li>Funciona no celular com joystick por toque e pode ser instalado como app.</li>
+      </ul>
+      <h2>Perguntas frequentes</h2>
+      <h3>Pokémon Survivors é grátis?</h3>
+      <p>Sim. É gratuito, sem anúncios e sem compras. O código é aberto no GitHub.</p>
+      <h3>Precisa baixar alguma coisa?</h3>
+      <p>Não. Roda direto no navegador, no PC ou no celular.</p>
+      <h3>É um jogo oficial da Pokémon?</h3>
+      <p>
+        Não. É um fan game não oficial e sem fins lucrativos, sem ligação com Nintendo, The Pokémon Company, GAME FREAK ou
+        Creatures. Feito por Pedro Barretto.
+      </p>
+      <p>
+        <a href="https://www.pokemonsurvivors.com/en/" hreflang="en">Play in English</a> ·
+        <a href="https://github.com/pedrobarretto/pokemon-survivors">Código no GitHub</a>
+      </p>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -29,7 +29,13 @@ const readSaved = () => {
   }
 }
 
-let current: Locale = detectLocale(readSaved(), globalThis.navigator?.languages ?? [])
+/** A localized page (`/en/` sets `data-locale`) beats the browser language: search visitors play in the language they searched in. */
+const preferredLanguages = (): readonly string[] => {
+  const page = globalThis.document?.documentElement.dataset.locale
+  return page ? [page] : (globalThis.navigator?.languages ?? [])
+}
+
+let current: Locale = detectLocale(readSaved(), preferredLanguages())
 
 export const locale = () => current
 
