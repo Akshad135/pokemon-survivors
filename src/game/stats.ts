@@ -25,6 +25,10 @@ export type PlayerStats = {
   armor: number
   /** xp multiplier */
   growth: number
+  /** added to every move's status chance */
+  statusChance: number
+  /** extra burn/poison damage (0.2 = +20%) */
+  statusDamage: number
 }
 
 export type StatDelta = Partial<PlayerStats>
@@ -42,6 +46,8 @@ export const BASE_STATS: PlayerStats = {
   regen: 0,
   armor: 0,
   growth: 1,
+  statusChance: 0,
+  statusDamage: 0,
 }
 
 export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): PlayerStats =>

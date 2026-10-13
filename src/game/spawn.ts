@@ -17,7 +17,7 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     activeFrom: 0,
     activeUntil: Infinity,
     grow: 0,
-    slow: 0,
+    status: null,
     from: { x: init.x, y: init.y },
     flip: false,
     ...init,

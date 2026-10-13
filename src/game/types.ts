@@ -9,7 +9,9 @@ import type { StarterId } from '../data/starters'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
 import type { Prop } from './props'
+import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
+import type { EnemyStatus, StatusSpec } from './status'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -63,8 +65,8 @@ export type Enemy = {
   dir: Dir8
   animTime: number
   flash: number
-  slow: number
-  slowUntil: number
+  /** Status conditions (burn, poison, paralysis, slow). */
+  status: EnemyStatus
   /** -1 while alive; otherwise seconds since fainting. */
   dying: number
 }
@@ -81,12 +83,18 @@ export type Motion =
   | { kind: 'follow'; ox: number; oy: number }
   | { kind: 'static' }
 
-export type Visual = 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+export type Visual =
+  | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
+  /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
+  | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova'
+
+/** What dealt the damage, for the results screen. */
+export type DamageSource = MoveId | 'special'
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
   id: number
-  move: MoveId
+  move: DamageSource
   type: PokeType
   visual: Visual
   x: number
@@ -107,7 +115,8 @@ export type Attack = {
   activeUntil: number
   /** Radius growth per second (expanding rings). */
   grow: number
-  slow: number
+  /** Condition this hitbox may inflict on hit. */
+  status: StatusSpec | null
   /** Where it was launched from (lobbed attacks animate from here). */
   from: { x: number; y: number }
   flip: boolean
@@ -156,6 +165,8 @@ export type GameEvent =
   | { kind: 'levelup' }
   | { kind: 'boss'; enemy: EnemyId }
   | { kind: 'thunder' }
+  /** The special attack started charging or was unleashed. */
+  | { kind: 'special'; phase: 'charge' | 'release'; name: string }
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
@@ -186,8 +197,11 @@ export type Game = {
   view: { w: number; h: number }
   camera: { x: number; y: number }
   shake: number
+  /** Seconds the simulation stays frozen for impact (hit-stop). */
+  hitstop: number
+  special: SpecialState
   kills: number
-  damageByMove: Partial<Record<MoveId, number>>
+  damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null

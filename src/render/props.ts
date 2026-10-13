@@ -1,6 +1,7 @@
 import { blitCentered, ellipse, fromStrings, ring, type Palette, type PixelSprite } from '../engine/pixelart'
 import { REPEL_RADIUS } from '../data/consumables'
-import { isAsleep, type ConsumableId } from '../game/consumables'
+import type { ConsumableId } from '../game/consumables'
+import { isAsleep } from '../game/status'
 import type { Prop } from '../game/props'
 import type { Game } from '../game/types'
 import { art, lazy, toIconUrl } from './art'
@@ -127,7 +128,7 @@ const ZZZ = lazy(() => [
 export const drawSleep = (ctx: Ctx, g: Game, t: number) => {
   const [big, small] = ZZZ()
   for (const e of g.enemies) {
-    if (e.dying >= 0 || !isAsleep(e, g.time) || !near(g, e.x, e.y, 0)) continue
+    if (e.dying >= 0 || !isAsleep(e.status) || !near(g, e.x, e.y, 0)) continue
     for (let k = 0; k < 2; k++) {
       const ph = (t * 0.7 + e.id * 0.31 + k * 0.5) % 1
       ctx.globalAlpha = Math.min(1, (1 - ph) * 2)

@@ -55,6 +55,16 @@ export const ITEMS = {
     description: 'Atrai Exp. Candies de mais longe.',
     levels: repeat({ magnet: 12 }, 5),
   },
+  kingsRock: {
+    name: "King's Rock",
+    description: '+6% de chance de causar status (queimar, envenenar, paralisar).',
+    levels: repeat({ statusChance: 0.06 }, 5),
+  },
+  toxicOrb: {
+    name: 'Toxic Orb',
+    description: 'Queimadura e veneno causam +20% de dano.',
+    levels: repeat({ statusDamage: 0.2 }, 5),
+  },
   assaultVest: {
     name: 'Assault Vest',
     description: '+20 HP máximo e +1 de defesa.',

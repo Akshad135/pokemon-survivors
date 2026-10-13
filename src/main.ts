@@ -3,8 +3,10 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, toggleMute, unlockAudio } from './engine/audio'
+import { createPadButton } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { context2d } from './engine/pixelart'
+import { fitView } from './engine/viewport'
 import { ENEMIES, ENEMY_DEX } from './data/enemies'
 import { ITEMS } from './data/items'
 import { STARTER_IDS, STARTERS, starterDex, type StarterId } from './data/starters'
@@ -13,6 +15,7 @@ import { chooseOffer, createGame, playerDex, step } from './game/game'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
+import { drawJoystick } from './render/joystick'
 import { loadAll, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
@@ -21,27 +24,44 @@ import { createHud, type Hud } from './ui/hud'
 import { levelUp, pauseMenu, results, starterSelect, textBox, toast, type Screen } from './ui/screens'
 
 const STEP = 1 / 60
-/** Target internal height; the canvas is upscaled by an integer factor for crisp pixels. */
-const TARGET_HEIGHT = 300
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!
 const ui = document.querySelector<HTMLDivElement>('#ui')!
 const ctx = context2d(canvas)
 const input = createInput(canvas)
+/** Internal canvas size in world px. Shared by reference with the running game. */
 const view = { w: 480, h: 270 }
+/** CSS px per world px (integer in device px, see `fitView`). */
+let cssScale = 4
+/** Set when the canvas was cleared and must be redrawn even if the game is paused. */
+let dirty = true
 
+/**
+ * Sizes the low-res canvas to the visible viewport. Runs on resize, rotation
+ * and iOS toolbar changes (visualViewport), and only touches the canvas when
+ * the result actually changed, because resizing clears it.
+ */
 const resize = () => {
-  const scale = Math.max(2, Math.round(window.innerHeight / TARGET_HEIGHT))
-  view.w = Math.ceil(window.innerWidth / scale)
-  view.h = Math.ceil(window.innerHeight / scale)
+  const width = window.visualViewport?.width ?? window.innerWidth
+  const height = window.visualViewport?.height ?? window.innerHeight
+  const fit = fitView(width, height, window.devicePixelRatio || 1)
+  if (fit.w === view.w && fit.h === view.h && fit.cssScale === cssScale) return
+  view.w = fit.w
+  view.h = fit.h
+  cssScale = fit.cssScale
   canvas.width = view.w
   canvas.height = view.h
-  canvas.style.width = `${view.w * scale}px`
-  canvas.style.height = `${view.h * scale}px`
-  document.documentElement.style.setProperty('--px', `${scale}px`)
+  canvas.style.width = `${view.w * cssScale}px`
+  canvas.style.height = `${view.h * cssScale}px`
+  document.documentElement.style.setProperty('--px', `${Math.max(2, Math.round(cssScale))}px`)
   context2d(canvas)
+  dirty = true
 }
-window.addEventListener('resize', resize)
+// Rotation often reports stale sizes in the same tick, so re-measure on the next frame too.
+const scheduleResize = () => (resize(), requestAnimationFrame(resize))
+window.addEventListener('resize', scheduleResize)
+window.addEventListener('orientationchange', scheduleResize)
+window.visualViewport?.addEventListener('resize', scheduleResize)
 resize()
 
 /* ---------------- App state ---------------- */
@@ -58,6 +78,14 @@ type Run = {
 let screen: Screen | null = null
 let run: Run | null = null
 let lastStarter: StarterId = 'charmander'
+/** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
+let specialQueued = false
+const padA = createPadButton(0)
+
+const queueSpecial = () => {
+  unlockAudio()
+  if (run?.game.phase === 'playing') specialQueued = true
+}
 
 const setScreen = (next: Screen | null) => {
   screen?.dispose()
@@ -82,7 +110,8 @@ const startRun = (starter: StarterId) => {
   endRun()
   lastStarter = starter
   const game = createGame(starter, view)
-  run = { game, hud: createHud(ui), overlay: null, shown: null, closeText: null }
+  const pause = () => game.phase === 'playing' && (game.phase = 'paused')
+  run = { game, hud: createHud(ui, queueSpecial, pause), overlay: null, shown: null, closeText: null }
 }
 
 /** Rebuilds the modal overlay whenever the simulation phase (or offer set) changes. */
@@ -123,6 +152,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
+    case 'special': {
+      if (e.phase === 'release') return playSfx('specialBlast', 0)
+      playSfx('specialCharge', 0)
+      playCry(sprites(playerDex(g)).cry, 0.5)
+      const who = STARTERS[g.starter].line[g.player.stage]!.name
+      return toast(ui, h('span', {}, `${who} usou `, h('b', {}, e.name), '!'), 1600)
+    }
     case 'boss': {
       const def = ENEMIES[e.enemy]
       playSfx('boss')
@@ -172,8 +208,27 @@ input.onKey((key) => {
   if (!run) return
   const g = run.game
   if ((key === 'Escape' || key === 'KeyP') && g.phase === 'playing') g.phase = 'paused'
+  if (key === 'Space') queueSpecial()
 })
-window.addEventListener('pointerdown', unlockAudio)
+// Touch only counts as a user activation on pointerup/touchend (not pointerdown).
+for (const type of ['pointerdown', 'pointerup', 'touchend'] as const) window.addEventListener(type, unlockAudio)
+
+/* ---------------- Browser chrome ---------------- */
+
+// No pinch/double-tap zoom, pull-to-refresh, rubber-banding or long-press menus.
+// CSS `touch-action` covers most browsers; these guards cover iOS Safari quirks.
+const blockDefault = (e: Event) => e.preventDefault()
+document.addEventListener('contextmenu', blockDefault)
+document.addEventListener('gesturestart', blockDefault)
+document.addEventListener(
+  'touchmove',
+  (e) => {
+    const inScrollable = e.target instanceof Element && e.target.closest('.screen')
+    if (e.touches.length > 1 || !inScrollable) e.preventDefault()
+  },
+  { passive: false },
+)
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden && run?.game.phase === 'playing') run.game.phase = 'paused'
 })
@@ -191,18 +246,32 @@ const frame = (now: number) => {
   if (run) {
     const r = run
     const g = r.game
+    if (padA()) queueSpecial()
+    let steps = 0
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
       while (acc >= STEP) {
-        step(g, input.readMove(), STEP)
+        step(g, { move: input.readMove(), special: specialQueued }, STEP)
+        specialQueued = false
         acc -= STEP
+        steps++
       }
-    } else acc = 0
+    } else {
+      acc = 0
+      specialQueued = false
+    }
     for (const e of g.events.splice(0)) handleEvent(r, e)
     if (run === r) {
       syncOverlay(r)
-      render(ctx, g, t)
-      r.hud.update(g)
+      // Redraw only when the simulation advanced: halves the work on 120 Hz phones and
+      // idles the GPU while a menu is open over a frozen frame.
+      if (steps > 0 || dirty) {
+        dirty = false
+        render(ctx, g, t)
+        const stick = input.readStick()
+        if (stick && g.phase === 'playing') drawJoystick(ctx, stick, cssScale)
+        r.hud.update(g)
+      }
     }
   } else {
     // Attract mode: the meadow drifts behind the menu.

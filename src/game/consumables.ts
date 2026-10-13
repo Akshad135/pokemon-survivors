@@ -9,6 +9,7 @@ import { burst, floatText } from './effects'
 import { gainXp, recomputeStats } from './leveling'
 import { dropPickup } from './pickups'
 import { inView, isAlive } from './queries'
+import { applyStatus, type StatusSpec } from './status'
 import type { Enemy, Game } from './types'
 
 /**
@@ -39,14 +40,12 @@ const buff = (id: BuffId) => (g: Game) => {
   burst(g, g.player.x, g.player.y - 10, { colors, count: 20, speed: 90, ttl: 0.6, gravity: -60 })
 }
 
-/** Sleep is a full slow (pace × 0) for a while. Moves that slow on hit can wake an enemy early. */
-export const isAsleep = (e: Enemy, time: number) => e.slow >= 1 && time < e.slowUntil
+const FLUTE: StatusSpec = { kind: 'sleep', chance: 1, duration: FLUTE_SLEEP, power: 0 }
 
 const sleepOnScreen = (g: Game) => {
   for (const e of g.enemies) {
     if (!isAlive(e) || !inView(g, e.x, e.y, 16)) continue
-    e.slow = 1
-    e.slowUntil = g.time + FLUTE_SLEEP
+    applyStatus(e.status, FLUTE, 0, e.boss, null)
     e.kx = 0
     e.ky = 0
   }

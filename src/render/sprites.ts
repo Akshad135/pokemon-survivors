@@ -54,6 +54,25 @@ const silhouette = (img: HTMLImageElement) => {
   return canvas
 }
 
+const tints = new WeakMap<HTMLCanvasElement, Map<string, HTMLCanvasElement>>()
+
+/** Silhouette recolored to `color`, cached per sheet and color (status tints). */
+const tinted = (white: HTMLCanvasElement, color: string) => {
+  let byColor = tints.get(white)
+  if (!byColor) tints.set(white, (byColor = new Map()))
+  let canvas = byColor.get(color)
+  if (!canvas) {
+    canvas = createCanvas(white.width, white.height)
+    const ctx = context2d(canvas)
+    ctx.drawImage(white, 0, 0)
+    ctx.globalCompositeOperation = 'source-in'
+    ctx.fillStyle = color
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    byColor.set(color, canvas)
+  }
+  return canvas
+}
+
 const measure = (sheet: Sheet) => {
   const canvas = createCanvas(sheet.fw, sheet.fh)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
@@ -136,6 +155,8 @@ export type DrawOpts = {
   loop?: boolean
   /** Integer upscale (evolution scene, menus). */
   scale?: number
+  /** Colored overlay (status conditions); `amount` is 0..1 opacity. */
+  tint?: { color: string; amount: number }
 }
 
 /** Draws a species at its feet position (x, y). */
@@ -162,6 +183,11 @@ export const drawPokemon = (
   const flash = opts.flash ?? 0
   if (alpha !== 1) ctx.globalAlpha = alpha
   if (flash < 1) ctx.drawImage(sheet.img, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+  const tint = opts.tint
+  if (tint && tint.amount > 0 && flash < 1) {
+    ctx.globalAlpha = alpha * Math.min(1, tint.amount)
+    ctx.drawImage(tinted(sheet.white, tint.color), sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+  }
   if (flash > 0) {
     ctx.globalAlpha = alpha * Math.min(1, flash)
     ctx.drawImage(sheet.white, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
