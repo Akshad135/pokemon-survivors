@@ -6,6 +6,7 @@ import { xpTier } from '../game/pickups'
 import type { Attack, Enemy, Game } from '../game/types'
 import { FX, PICKUPS } from './art'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawStatusBadge, statusTint } from './status'
 import { drawGround } from './world'
 
 type Ctx = CanvasRenderingContext2D
@@ -144,14 +145,14 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
 
 const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : 'Walk')
 
-const drawEnemy = (ctx: Ctx, e: Enemy) => {
+const drawEnemy = (ctx: Ctx, e: Enemy, t: number) => {
   const s = sprites(ENEMIES[e.kind].dex)
   if (e.dying >= 0) {
     const k = e.dying / 0.4
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false })
     return
   }
-  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0 })
+  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id) })
 }
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
@@ -261,7 +262,11 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   }
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
-    else drawEnemy(ctx, d)
+    else drawEnemy(ctx, d, t)
+  }
+  // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
+  for (const d of drawables) {
+    if (d !== 'player' && d.boss && d.dying < 0) drawStatusBadge(ctx, d.status, d.x, d.y - sprites(ENEMIES[d.kind].dex).bodyH - 5)
   }
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)

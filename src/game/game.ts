@@ -10,6 +10,7 @@ import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFo
 import { MOVES, moveStats } from './moves'
 import { updatePickups } from './pickups'
 import { updateSpawner } from './spawner'
+import { updateStatuses } from './statusSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
 
@@ -144,6 +145,7 @@ export const step = (g: Game, input: Vec, dt: number) => {
   updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)
+  updateStatuses(g, dt)
   rebuildGrid(g)
   updateMoves(g, dt)
   updateAttacks(g, dt)

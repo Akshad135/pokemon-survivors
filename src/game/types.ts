@@ -7,6 +7,7 @@ import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
 import type { MoveId } from './moves'
 import type { PlayerStats } from './stats'
+import type { EnemyStatus, StatusSpec } from './status'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -60,8 +61,8 @@ export type Enemy = {
   dir: Dir8
   animTime: number
   flash: number
-  slow: number
-  slowUntil: number
+  /** Status conditions (burn, poison, paralysis, slow). */
+  status: EnemyStatus
   /** -1 while alive; otherwise seconds since fainting. */
   dying: number
 }
@@ -104,7 +105,8 @@ export type Attack = {
   activeUntil: number
   /** Radius growth per second (expanding rings). */
   grow: number
-  slow: number
+  /** Condition this hitbox may inflict on hit. */
+  status: StatusSpec | null
   /** Where it was launched from (lobbed attacks animate from here). */
   from: { x: number; y: number }
   flip: boolean
