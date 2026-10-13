@@ -18,9 +18,8 @@ import type { Enemy, Game } from './types'
  * when the player picks it up.
  */
 export type ConsumableDef = {
+  /** Official English name; the pickup toast line lives in `i18n`. */
   name: string
-  /** Short pt-BR line shown in the pickup toast. */
-  label: string
   sfx: Sfx
   apply: (g: Game) => void
 }
@@ -70,11 +69,10 @@ const explode = (g: Game) => {
 }
 
 export const CONSUMABLES = {
-  potion: { name: 'Potion', label: 'Recuperou 30 HP.', sfx: 'heal', apply: (g) => heal(g, 30) },
-  superPotion: { name: 'Super Potion', label: 'Recuperou 60 HP.', sfx: 'heal', apply: (g) => heal(g, 60) },
+  potion: { name: 'Potion', sfx: 'heal', apply: (g) => heal(g, 30) },
+  superPotion: { name: 'Super Potion', sfx: 'heal', apply: (g) => heal(g, 60) },
   rareCandy: {
     name: 'Rare Candy',
-    label: 'Subiu de nível!',
     sfx: 'levelUp',
     apply: (g) => {
       g.player.xp = g.player.xpNext
@@ -83,20 +81,18 @@ export const CONSUMABLES = {
   },
   expShare: {
     name: 'Exp. Share',
-    label: 'Todos os Exp. Candies vieram até você!',
     sfx: 'item',
     apply: (g) => {
       for (const k of g.pickups) if (k.kind === 'xp') k.attracted = true
     },
   },
-  pokeFlute: { name: 'Poké Flute', label: 'Os Pokémon selvagens adormeceram!', sfx: 'flute', apply: sleepOnScreen },
-  maxRepel: { name: 'Max Repel', label: 'Nenhum Pokémon selvagem se aproxima!', sfx: 'item', apply: buff('maxRepel') },
-  explosion: { name: 'Voltorb', label: 'usou Explosion!', sfx: 'explosion', apply: explode },
-  xAttack: { name: 'X Attack', label: 'O Ataque aumentou muito!', sfx: 'item', apply: buff('xAttack') },
-  xSpeed: { name: 'X Speed', label: 'A Velocidade aumentou muito!', sfx: 'item', apply: buff('xSpeed') },
+  pokeFlute: { name: 'Poké Flute', sfx: 'flute', apply: sleepOnScreen },
+  maxRepel: { name: 'Max Repel', sfx: 'item', apply: buff('maxRepel') },
+  explosion: { name: 'Voltorb', sfx: 'explosion', apply: explode },
+  xAttack: { name: 'X Attack', sfx: 'item', apply: buff('xAttack') },
+  xSpeed: { name: 'X Speed', sfx: 'item', apply: buff('xSpeed') },
   revive: {
     name: 'Revive',
-    label: 'Guardado para quando você desmaiar.',
     sfx: 'item',
     apply: (g) => {
       if (g.revives > 0) heal(g, g.player.stats.maxHp * 0.5)

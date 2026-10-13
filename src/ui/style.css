@@ -1543,6 +1543,42 @@ button {
   --frame: #e83838;
 }
 
+/* Language switch: top-left twin of the Poké Mart entry. */
+.lang-switch {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  pointer-events: auto;
+}
+
+.lang-option {
+  font-family: var(--title);
+  font-size: 9px;
+  min-width: 36px;
+  min-height: 32px;
+  padding: 4px 6px;
+  color: #8890a8;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+
+.lang-option:hover,
+.lang-option:focus-visible {
+  color: var(--ink);
+}
+
+.lang-option.selected {
+  color: #fff;
+  background: #e83838;
+  border-color: #a02028;
+}
+
 .key-hint {
   font-family: var(--title);
   font-size: 8px;
@@ -1750,6 +1786,17 @@ button {
   }
   .mart-entry-text span {
     font-size: 16px;
+  }
+  /* Stays a row: it fits left of the logo, while a column would cover the region tabs. */
+  .lang-switch {
+    top: 6px;
+    left: 6px;
+    gap: 2px;
+    padding: 4px;
+  }
+  .lang-option {
+    min-width: 32px;
+    min-height: 28px;
   }
 }
 
@@ -2113,6 +2160,7 @@ button {
   color: #c02838;
 }
 
-.banner .legendary {
+.banner em {
   color: #c89000;
+  font-style: normal;
 }

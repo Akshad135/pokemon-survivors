@@ -10,4 +10,4 @@
 
 - [ ] `npm test` and `npm run build` pass
 - [ ] Works with touch and on a small screen (if it touches the UI)
-- [ ] UI text is in Brazilian Portuguese, Pokémon/move/item names in English
+- [ ] New UI text is in `src/i18n` in both pt-BR and English, Pokémon/move/item names in English

@@ -23,7 +23,7 @@ Pick one of 27 starters, survive 15 minutes of wild hordes, learn moves, evolve,
 > [!NOTE]
 > Pokémon Survivors is an unofficial, non-commercial fan game. It is **not affiliated with, endorsed, sponsored or approved by** Nintendo, The Pokémon Company, GAME FREAK or Creatures. See [Legal](#legal).
 
-The in-game text is in Brazilian Portuguese 🇧🇷. Pokémon, move and item names use their official English names.
+The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from your browser language and switchable from the menus. Pokémon, move and item names use their official English names.
 
 ## Screenshots
 
@@ -112,6 +112,7 @@ The in-game text is in Brazilian Portuguese 🇧🇷. Pokémon, move and item na
 | Pause | `Esc` / `P` | Pause button, top right |
 | Pick an upgrade | `1`–`3` | Tap it |
 | Mute | `M` | — |
+| Switch language | `I` (title screen) or the pause menu | `PT \| EN`, top left of the title screen, or the pause menu |
 
 ## Running locally
 
@@ -143,7 +144,8 @@ src/
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, frame renderer
-  ui/       HUD, starter select, level-up, pause, results, toasts
+  ui/       HUD, starter select, level-up, pause, results, toasts, language switch
+  i18n/     every player-facing string: pt.ts (reference) and en.ts
 ```
 
 <details>
@@ -156,6 +158,7 @@ src/
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time, burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses).
 - **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides). Input reaches `step()` as data (`{ move, special }`).
+- **Languages:** Brazilian Portuguese and English, picked from the browser language and switchable on the title screen (`PT | EN`, or `I`) and in the pause menu. Text lives in `src/i18n`: `pt.ts` is the reference and its inferred type forces `en.ts` to match it, down to one line per move upgrade. Data files keep only the official English names. Toast strings use light markup (`*bold*`, `_accent_`) so each language can put names where its grammar wants them.
 - **Type chart:** damage uses real Pokémon type matchups, softened (2x → 1.5x, 0x → 0.5x). Yellow numbers with `!` mean super effective.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
 

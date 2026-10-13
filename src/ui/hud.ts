@@ -5,7 +5,7 @@ import { STARTERS } from '../data/starters'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
-import { formatPokeDollars } from '../game/meta'
+import { formatPokeDollars, t } from '../i18n'
 import { coinIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { consumableIcon } from '../render/props'
 import { portraitUrl } from '../render/sprites'
@@ -17,7 +17,8 @@ const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-
 /**
  * In-run heads-up display. `update` is called every frame and only touches what changed.
  * `onSpecial` fires when the touch special button is pressed; `onPause` backs the
- * on-screen pause button (phones have no Esc key).
+ * on-screen pause button (phones have no Esc key). Labels are read at creation:
+ * rebuild the HUD after a language switch.
  */
 export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () => void) => {
   const special = createSpecialControls(onSpecial)
@@ -39,7 +40,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
   const hpFill = h('div', { class: 'hp-fill' })
   const hpText = h('div', { class: 'status-hp-text' })
   // pointerdown (not click) feels instant on touch and never steals keyboard focus.
-  const pause = h('button', { class: 'pause-btn box', 'aria-label': 'Pausar' }, h('span'), h('span'))
+  const pause = h('button', { class: 'pause-btn box', 'aria-label': t().hud.pause }, h('span'), h('span'))
   pause.addEventListener('pointerdown', (e) => {
     e.preventDefault()
     onPause()
@@ -81,7 +82,8 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     ),
     special.button,
   )
-  root.append(el)
+  // First child, so a HUD rebuilt mid-run still sits under open menus and toasts.
+  root.prepend(el)
 
   let loadoutKey = ''
   let portraitKey = ''
@@ -127,7 +129,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
   const update = (g: Game) => {
     const p = g.player
     setStyle(xpFill, 'width', `${Math.min(100, (p.xp / p.xpNext) * 100).toFixed(1)}%`)
-    setText(xpLabel, `Nv ${p.level}`)
+    setText(xpLabel, t().level(p.level))
     setText(timer, formatTime(g.time))
     setText(kills, String(g.kills))
     setText(coins, formatPokeDollars(g.coins))
@@ -159,7 +161,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       name.classList.toggle('shiny-name', p.shiny)
       setText(name, STARTERS[g.starter].line[p.stage]!.name)
     }
-    setText(level, `Nv${p.level}`)
+    setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
     setStyle(hpFill, 'width', `${(ratio * 100).toFixed(1)}%`)
     const fillClass = `hp-fill ${hpClass(ratio)}`

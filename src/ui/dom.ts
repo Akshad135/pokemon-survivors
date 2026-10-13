@@ -24,3 +24,19 @@ export const setText = (el: HTMLElement, text: string) => {
 export const setStyle = (el: HTMLElement, prop: string, value: string) => {
   if (el.style.getPropertyValue(prop) !== value) el.style.setProperty(prop, value)
 }
+
+/**
+ * Translated text with light markup (see `i18n/pt.ts`): `*bold*` becomes <b>
+ * and `_accent_` becomes <em>. Lets each language place names wherever its grammar wants.
+ */
+export const rich = (text: string, attrs: Attrs = {}) =>
+  h(
+    'span',
+    attrs,
+    ...text.split(/(\*[^*]+\*|_[^_]+_)/).map((part, i) =>
+      i % 2 === 0 ? part : h(part.startsWith('*') ? 'b' : 'em', {}, part.slice(1, -1)),
+    ),
+  )
+
+/** Runs after the current key/click dispatch, so the next screen doesn't receive the same press. */
+export const later = (fn: () => void) => setTimeout(fn, 0)

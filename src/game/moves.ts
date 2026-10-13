@@ -34,12 +34,13 @@ export type MoveStats = {
 /** What `fire` receives: final stats plus the scaled status the move inflicts. */
 export type CastStats = MoveStats & { status: StatusSpec | null }
 
-type Upgrade = { text: string; delta: Partial<MoveStats> }
+/** Stat delta added by one level-up (texts live in `i18n`). */
+type Upgrade = Partial<MoveStats>
 
 export type MoveDef = {
+  /** Official English name; descriptions live in `i18n`. */
   name: string
   type: PokeType
-  description: string
   base: MoveStats
   upgrades: readonly Upgrade[]
   /** Condition its hits may inflict (chance and power scale with upgrades and items). */
@@ -76,17 +77,16 @@ export const MOVES = {
   ember: {
     name: 'Ember',
     type: 'fire',
-    description: 'Dispara brasas no inimigo mais próximo. Pode queimar.',
     base: stats({ damage: 10, cooldown: 1, amount: 1, speed: 190, pierce: 1, knockback: 40 }),
     status: { kind: 'burn', chance: 0.3, duration: 2.5, power: 0.3 },
     upgrades: [
-      { text: '+1 brasa', delta: { amount: 1 } },
-      { text: '+4 de dano e +10% de chance de queimar', delta: { damage: 4, statusChance: 0.1 } },
-      { text: 'Recarga 15% mais rápida', delta: { cooldown: -0.15 } },
-      { text: '+1 brasa', delta: { amount: 1 } },
-      { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+1 brasa e +25% de área', delta: { amount: 1, area: 0.25 } },
+      { amount: 1 },
+      { damage: 4, statusChance: 0.1 },
+      { cooldown: -0.15 },
+      { amount: 1 },
+      { pierce: 1 },
+      { damage: 6 },
+      { amount: 1, area: 0.25 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -105,17 +105,16 @@ export const MOVES = {
   fireSpin: {
     name: 'Fire Spin',
     type: 'fire',
-    description: 'Chamas giram ao seu redor. Pode queimar.',
     base: stats({ damage: 9, cooldown: 3.4, amount: 2, speed: 3.4, duration: 2.6, knockback: 30 }),
     status: { kind: 'burn', chance: 0.25, duration: 2, power: 0.3 },
     upgrades: [
-      { text: '+1 chama', delta: { amount: 1 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: 'Dura +0.6s', delta: { duration: 0.6 } },
-      { text: '+1 chama', delta: { amount: 1 } },
-      { text: '+5 de dano e queimaduras +25% mais fortes', delta: { damage: 5, statusDamage: 0.25 } },
-      { text: '+1 chama e gira mais rápido', delta: { amount: 1, speed: 1 } },
+      { amount: 1 },
+      { area: 0.2 },
+      { damage: 4 },
+      { duration: 0.6 },
+      { amount: 1 },
+      { damage: 5, statusDamage: 0.25 },
+      { amount: 1, speed: 1 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -133,16 +132,15 @@ export const MOVES = {
   waterGun: {
     name: 'Water Gun',
     type: 'water',
-    description: 'Jato d’água que atravessa inimigos na direção em que você anda.',
     base: stats({ damage: 8, cooldown: 0.75, amount: 1, speed: 290, pierce: 2, knockback: 60 }),
     upgrades: [
-      { text: '+1 jato', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
-      { text: 'Recarga 0.1s mais rápida', delta: { cooldown: -0.1 } },
-      { text: '+1 jato', delta: { amount: 1 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+1 jato e atravessa +2', delta: { amount: 1, pierce: 2 } },
+      { amount: 1 },
+      { damage: 3 },
+      { pierce: 1 },
+      { cooldown: -0.1 },
+      { amount: 1 },
+      { damage: 5 },
+      { amount: 1, pierce: 2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -163,17 +161,16 @@ export const MOVES = {
   whirlpool: {
     name: 'Whirlpool',
     type: 'water',
-    description: 'Redemoinho constante que machuca e desacelera quem chega perto.',
     base: stats({ damage: 5, cooldown: 0.6, knockback: 14 }),
     status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.4 },
     upgrades: [
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+2 de dano', delta: { damage: 2 } },
-      { text: 'Acerta mais rápido', delta: { cooldown: -0.08 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Acerta mais rápido', delta: { cooldown: -0.08 } },
-      { text: '+25% de área e +3 de dano', delta: { area: 0.25, damage: 3 } },
+      { area: 0.2 },
+      { damage: 2 },
+      { cooldown: -0.08 },
+      { area: 0.2 },
+      { damage: 3 },
+      { cooldown: -0.08 },
+      { area: 0.25, damage: 3 },
     ],
     // Persistent aura: each "cast" refreshes the single live hitbox with current stats.
     fire: (g, s) => {
@@ -199,17 +196,16 @@ export const MOVES = {
   razorLeaf: {
     name: 'Razor Leaf',
     type: 'grass',
-    description: 'Folhas afiadas vão e voltam como bumerangue. Podem envenenar.',
     base: stats({ damage: 11, cooldown: 1.5, amount: 1, speed: 210, duration: 1, knockback: 25 }),
     status: { kind: 'poison', chance: 0.15, duration: 3, power: 0.2 },
     upgrades: [
-      { text: '+1 folha', delta: { amount: 1 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 folha', delta: { amount: 1 } },
-      { text: 'Folhas 25% mais rápidas', delta: { speed: 52 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+1 folha', delta: { amount: 1 } },
+      { amount: 1 },
+      { damage: 4 },
+      { area: 0.2 },
+      { amount: 1 },
+      { speed: 52 },
+      { damage: 5 },
+      { amount: 1 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -228,17 +224,16 @@ export const MOVES = {
   vineWhip: {
     name: 'Vine Whip',
     type: 'grass',
-    description: 'Chicotada horizontal com cipós. Alcance longo. Pode envenenar.',
     base: stats({ damage: 14, cooldown: 1.3, amount: 1, knockback: 70 }),
     status: { kind: 'poison', chance: 0.25, duration: 3, power: 0.2 },
     upgrades: [
-      { text: 'Também ataca atrás', delta: { amount: 1 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: 'Recarga 0.15s mais rápida', delta: { cooldown: -0.15 } },
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+8 de dano', delta: { damage: 8 } },
+      { amount: 1 },
+      { damage: 5 },
+      { area: 0.2 },
+      { cooldown: -0.15 },
+      { damage: 6 },
+      { area: 0.2 },
+      { damage: 8 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -261,16 +256,15 @@ export const MOVES = {
   swift: {
     name: 'Swift',
     type: 'normal',
-    description: 'Estrelas teleguiadas que nunca erram.',
     base: stats({ damage: 7, cooldown: 1.25, amount: 2, speed: 170, pierce: 1, knockback: 20 }),
     upgrades: [
-      { text: '+1 estrela', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Recarga 15% mais rápida', delta: { cooldown: -0.18 } },
-      { text: '+1 estrela', delta: { amount: 1 } },
-      { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+2 estrelas', delta: { amount: 2 } },
+      { amount: 1 },
+      { damage: 3 },
+      { cooldown: -0.18 },
+      { amount: 1 },
+      { pierce: 1 },
+      { damage: 4 },
+      { amount: 2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -292,17 +286,16 @@ export const MOVES = {
   thunder: {
     name: 'Thunder',
     type: 'electric',
-    description: 'Raios caem sobre inimigos aleatórios na tela. Podem paralisar.',
     base: stats({ damage: 22, cooldown: 2.6, amount: 2, knockback: 10 }),
     status: { kind: 'paralysis', chance: 0.5, duration: 2.5, power: 0 },
     upgrades: [
-      { text: '+1 raio', delta: { amount: 1 } },
-      { text: '+8 de dano', delta: { damage: 8 } },
-      { text: '+25% de área e +15% de chance de paralisar', delta: { area: 0.25, statusChance: 0.15 } },
-      { text: '+1 raio', delta: { amount: 1 } },
-      { text: 'Recarga 0.3s mais rápida', delta: { cooldown: -0.3 } },
-      { text: '+10 de dano', delta: { damage: 10 } },
-      { text: '+2 raios', delta: { amount: 2 } },
+      { amount: 1 },
+      { damage: 8 },
+      { area: 0.25, statusChance: 0.15 },
+      { amount: 1 },
+      { cooldown: -0.3 },
+      { damage: 10 },
+      { amount: 2 },
     ],
     fire: (g, s) => {
       const targets = enemiesInView(g)
@@ -324,17 +317,16 @@ export const MOVES = {
   sludgeBomb: {
     name: 'Sludge Bomb',
     type: 'poison',
-    description: 'Arremessa lodo tóxico que deixa uma poça venenosa. O veneno acumula.',
     base: stats({ damage: 6, cooldown: 3.6, amount: 1, duration: 2.6 }),
     status: { kind: 'poison', chance: 0.6, duration: 3, power: 0.35 },
     upgrades: [
-      { text: '+1 bomba', delta: { amount: 1 } },
-      { text: '+2 de dano e veneno +25% mais forte', delta: { damage: 2, statusDamage: 0.25 } },
-      { text: 'Poça dura +0.6s', delta: { duration: 0.6 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 bomba', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: '+1 bomba e +20% de área', delta: { amount: 1, area: 0.2 } },
+      { amount: 1 },
+      { damage: 2, statusDamage: 0.25 },
+      { duration: 0.6 },
+      { area: 0.2 },
+      { amount: 1 },
+      { damage: 3 },
+      { amount: 1, area: 0.2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -356,16 +348,15 @@ export const MOVES = {
   gust: {
     name: 'Gust',
     type: 'flying',
-    description: 'Rajada de vento circular que empurra todos para longe.',
     base: stats({ damage: 8, cooldown: 3, amount: 1, duration: 0.45, knockback: 170 }),
     upgrades: [
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: 'Recarga 0.4s mais rápida', delta: { cooldown: -0.4 } },
-      { text: '+1 rajada', delta: { amount: 1 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+30% de área e empurrão', delta: { area: 0.3, knockback: 60 } },
-      { text: '+1 rajada', delta: { amount: 1 } },
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.4 },
+      { amount: 1 },
+      { damage: 4 },
+      { area: 0.3, knockback: 60 },
+      { amount: 1 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -384,16 +375,15 @@ export const MOVES = {
   machPunch: {
     name: 'Mach Punch',
     type: 'fighting',
-    description: 'Combo de socos rápidos no inimigo mais próximo.',
     base: stats({ damage: 9, cooldown: 1.1, amount: 3, knockback: 50 }),
     upgrades: [
-      { text: '+1 soco', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 soco', delta: { amount: 1 } },
-      { text: 'Recarga 0.2s mais rápida', delta: { cooldown: -0.2 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+2 socos', delta: { amount: 2 } },
+      { amount: 1 },
+      { damage: 3 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.2 },
+      { damage: 5 },
+      { amount: 2 },
     ],
     fire: (g, s) => {
       const angle = aimAngle(g, 90)
@@ -412,16 +402,15 @@ export const MOVES = {
   flashCannon: {
     name: 'Flash Cannon',
     type: 'steel',
-    description: 'Esfera de aço que atravessa tudo em linha reta.',
     base: stats({ damage: 16, cooldown: 2.2, amount: 1, speed: 150, knockback: 80 }),
     upgrades: [
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+25% de área', delta: { area: 0.25 } },
-      { text: 'Recarga 0.3s mais rápida', delta: { cooldown: -0.3 } },
-      { text: '+1 esfera', delta: { amount: 1 } },
-      { text: '+8 de dano', delta: { damage: 8 } },
-      { text: '+25% de área', delta: { area: 0.25 } },
-      { text: '+1 esfera', delta: { amount: 1 } },
+      { damage: 6 },
+      { area: 0.25 },
+      { cooldown: -0.3 },
+      { amount: 1 },
+      { damage: 8 },
+      { area: 0.25 },
+      { amount: 1 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -440,16 +429,15 @@ export const MOVES = {
   spiritShackle: {
     name: 'Spirit Shackle',
     type: 'ghost',
-    description: 'Rajada de flechas espectrais em leque que atravessam inimigos.',
     base: stats({ damage: 8, cooldown: 1.4, amount: 3, speed: 260, pierce: 2, knockback: 20 }),
     upgrades: [
-      { text: '+1 flecha', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
-      { text: '+1 flecha', delta: { amount: 1 } },
-      { text: 'Recarga 0.2s mais rápida', delta: { cooldown: -0.2 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+2 flechas', delta: { amount: 2 } },
+      { amount: 1 },
+      { damage: 3 },
+      { pierce: 1 },
+      { amount: 1 },
+      { cooldown: -0.2 },
+      { damage: 4 },
+      { amount: 2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -468,16 +456,15 @@ export const MOVES = {
   waterShuriken: {
     name: 'Water Shuriken',
     type: 'water',
-    description: 'Shurikens d’água teleguiadas, rápidas e certeiras.',
     base: stats({ damage: 5, cooldown: 0.9, amount: 2, speed: 230, pierce: 1, knockback: 15 }),
     upgrades: [
-      { text: '+1 shuriken', delta: { amount: 1 } },
-      { text: '+2 de dano', delta: { damage: 2 } },
-      { text: 'Recarga 0.12s mais rápida', delta: { cooldown: -0.12 } },
-      { text: '+1 shuriken', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Shurikens mais rápidas', delta: { speed: 60 } },
-      { text: '+2 shurikens', delta: { amount: 2 } },
+      { amount: 1 },
+      { damage: 2 },
+      { cooldown: -0.12 },
+      { amount: 1 },
+      { damage: 3 },
+      { speed: 60 },
+      { amount: 2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -499,16 +486,15 @@ export const MOVES = {
   crunch: {
     name: 'Crunch',
     type: 'dark',
-    description: 'Mordida poderosa nos inimigos mais próximos.',
     base: stats({ damage: 18, cooldown: 1.6, amount: 1, knockback: 30 }),
     upgrades: [
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+1 mordida', delta: { amount: 1 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: 'Recarga 0.2s mais rápida', delta: { cooldown: -0.2 } },
-      { text: '+1 mordida', delta: { amount: 1 } },
-      { text: '+8 de dano', delta: { damage: 8 } },
-      { text: '+1 mordida e +20% de área', delta: { amount: 1, area: 0.2 } },
+      { damage: 6 },
+      { amount: 1 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { amount: 1 },
+      { damage: 8 },
+      { amount: 1, area: 0.2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -531,16 +517,15 @@ export const MOVES = {
   pyroBall: {
     name: 'Pyro Ball',
     type: 'fire',
-    description: 'Chuta uma bola de fogo que explode ao cair.',
     base: stats({ damage: 20, cooldown: 2.4, amount: 1, knockback: 90 }),
     upgrades: [
-      { text: '+1 bola', delta: { amount: 1 } },
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+25% de área', delta: { area: 0.25 } },
-      { text: 'Recarga 0.3s mais rápida', delta: { cooldown: -0.3 } },
-      { text: '+8 de dano', delta: { damage: 8 } },
-      { text: '+1 bola', delta: { amount: 1 } },
-      { text: '+25% de área e +6 de dano', delta: { area: 0.25, damage: 6 } },
+      { amount: 1 },
+      { damage: 6 },
+      { area: 0.25 },
+      { cooldown: -0.3 },
+      { damage: 8 },
+      { amount: 1 },
+      { area: 0.25, damage: 6 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -562,16 +547,15 @@ export const MOVES = {
   psyshock: {
     name: 'Psyshock',
     type: 'psychic',
-    description: 'Orbes psíquicos saem em todas as direções e voltam.',
     base: stats({ damage: 9, cooldown: 2.2, amount: 4, speed: 170, duration: 1, knockback: 30 }),
     upgrades: [
-      { text: '+1 orbe', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 orbe', delta: { amount: 1 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: 'Orbes mais rápidos', delta: { speed: 40 } },
-      { text: '+2 orbes', delta: { amount: 2 } },
+      { amount: 1 },
+      { damage: 3 },
+      { area: 0.2 },
+      { amount: 1 },
+      { damage: 4 },
+      { speed: 40 },
+      { amount: 2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -590,16 +574,15 @@ export const MOVES = {
   earthquake: {
     name: 'Earthquake',
     type: 'ground',
-    description: 'Tremor que machuca tudo ao redor. Recarga longa.',
     base: stats({ damage: 24, cooldown: 3.2, amount: 1, duration: 0.35, knockback: 60 }),
     upgrades: [
-      { text: '+8 de dano', delta: { damage: 8 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: 'Recarga 0.4s mais rápida', delta: { cooldown: -0.4 } },
-      { text: '+1 tremor', delta: { amount: 1 } },
-      { text: '+10 de dano', delta: { damage: 10 } },
-      { text: '+25% de área', delta: { area: 0.25 } },
-      { text: '+1 tremor e +10 de dano', delta: { amount: 1, damage: 10 } },
+      { damage: 8 },
+      { area: 0.2 },
+      { cooldown: -0.4 },
+      { amount: 1 },
+      { damage: 10 },
+      { area: 0.25 },
+      { amount: 1, damage: 10 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -619,17 +602,16 @@ export const MOVES = {
   drumBeating: {
     name: 'Drum Beating',
     type: 'grass',
-    description: 'Batidas de tambor: ondas de raízes que desaceleram inimigos.',
     base: stats({ damage: 11, cooldown: 1.9, amount: 1, duration: 0.3, knockback: 40 }),
     status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.35 },
     upgrades: [
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 batida', delta: { amount: 1 } },
-      { text: 'Recarga 0.25s mais rápida', delta: { cooldown: -0.25 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+1 batida', delta: { amount: 1 } },
-      { text: '+25% de área e +5 de dano', delta: { area: 0.25, damage: 5 } },
+      { damage: 4 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.25 },
+      { damage: 5 },
+      { amount: 1 },
+      { area: 0.25, damage: 5 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -648,16 +630,15 @@ export const MOVES = {
   disarmingVoice: {
     name: 'Disarming Voice',
     type: 'fairy',
-    description: 'Ondas de corações em todas as direções.',
     base: stats({ damage: 7, cooldown: 1.6, amount: 6, speed: 150, pierce: 1, knockback: 30 }),
     upgrades: [
-      { text: '+2 corações', delta: { amount: 2 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
-      { text: 'Recarga 0.2s mais rápida', delta: { cooldown: -0.2 } },
-      { text: '+2 corações', delta: { amount: 2 } },
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+4 corações', delta: { amount: 4 } },
+      { amount: 2 },
+      { damage: 3 },
+      { pierce: 1 },
+      { cooldown: -0.2 },
+      { amount: 2 },
+      { damage: 4 },
+      { amount: 4 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -676,16 +657,15 @@ export const MOVES = {
   torchSong: {
     name: 'Torch Song',
     type: 'fire',
-    description: 'Canto flamejante: notas de fogo em todas as direções.',
     base: stats({ damage: 9, cooldown: 2, amount: 5, speed: 115, pierce: 2, knockback: 20 }),
     upgrades: [
-      { text: '+1 nota', delta: { amount: 1 } },
-      { text: '+3 de dano', delta: { damage: 3 } },
-      { text: 'Atravessa +1 inimigo', delta: { pierce: 1 } },
-      { text: '+2 notas', delta: { amount: 2 } },
-      { text: 'Recarga 0.3s mais rápida', delta: { cooldown: -0.3 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+2 notas e +20% de área', delta: { amount: 2, area: 0.2 } },
+      { amount: 1 },
+      { damage: 3 },
+      { pierce: 1 },
+      { amount: 2 },
+      { cooldown: -0.3 },
+      { damage: 5 },
+      { amount: 2, area: 0.2 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -704,16 +684,15 @@ export const MOVES = {
   leafBlade: {
     name: 'Leaf Blade',
     type: 'grass',
-    description: 'Lâmina giratória que corta tudo ao seu redor.',
     base: stats({ damage: 13, cooldown: 1.5, amount: 1, speed: 12, knockback: 50 }),
     upgrades: [
-      { text: '+4 de dano', delta: { damage: 4 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 lâmina', delta: { amount: 1 } },
-      { text: 'Recarga 0.2s mais rápida', delta: { cooldown: -0.2 } },
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 lâmina', delta: { amount: 1 } },
+      { damage: 4 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.2 },
+      { damage: 6 },
+      { area: 0.2 },
+      { amount: 1 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -732,16 +711,15 @@ export const MOVES = {
   razorShell: {
     name: 'Razor Shell',
     type: 'water',
-    description: 'Golpe de concha afiada em arco à sua frente.',
     base: stats({ damage: 15, cooldown: 1.2, amount: 1, knockback: 80 }),
     upgrades: [
-      { text: 'Também ataca atrás', delta: { amount: 1 } },
-      { text: '+5 de dano', delta: { damage: 5 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: 'Recarga 0.15s mais rápida', delta: { cooldown: -0.15 } },
-      { text: '+6 de dano', delta: { damage: 6 } },
-      { text: '+20% de área', delta: { area: 0.2 } },
-      { text: '+1 golpe e +6 de dano', delta: { amount: 1, damage: 6 } },
+      { amount: 1 },
+      { damage: 5 },
+      { area: 0.2 },
+      { cooldown: -0.15 },
+      { damage: 6 },
+      { area: 0.2 },
+      { amount: 1, damage: 6 },
     ],
     fire: (g, s) => {
       const p = g.player
@@ -762,7 +740,6 @@ export const MOVES = {
   flamethrower: {
     name: 'Flamethrower',
     type: 'fire',
-    description: 'Jorro de fogo contínuo que atravessa tudo pela frente.',
     base: stats({ damage: 18, cooldown: 0.9, amount: 7, speed: 240, area: 1.3, knockback: 30 }),
     status: { kind: 'burn', chance: 0.35, duration: 2.5, power: 0.35 },
     upgrades: [],
@@ -785,7 +762,6 @@ export const MOVES = {
   fireBlast: {
     name: 'Fire Blast',
     type: 'fire',
-    description: 'Grandes chamas em forma de ★ orbitam ao seu redor.',
     base: stats({ damage: 26, cooldown: 3.6, amount: 5, speed: 2.8, duration: 3.4, area: 1.3, knockback: 60 }),
     status: { kind: 'burn', chance: 0.4, duration: 3, power: 0.35 },
     upgrades: [],
@@ -805,7 +781,6 @@ export const MOVES = {
   hydroPump: {
     name: 'Hydro Pump',
     type: 'water',
-    description: 'Jatos d’água de alta pressão que atravessam e arremessam inimigos.',
     base: stats({ damage: 30, cooldown: 0.7, amount: 3, speed: 360, area: 1.4, knockback: 150 }),
     upgrades: [],
     fire: (g, s) => {
@@ -826,7 +801,6 @@ export const MOVES = {
   surf: {
     name: 'Surf',
     type: 'water',
-    description: 'Ondas gigantes se espalham ao seu redor, empurrando e desacelerando.',
     base: stats({ damage: 26, cooldown: 1.3, amount: 2, duration: 0.9, knockback: 110 }),
     status: { kind: 'slow', chance: 1, duration: 0.8, power: 0.5 },
     upgrades: [],
@@ -847,7 +821,6 @@ export const MOVES = {
   leafStorm: {
     name: 'Leaf Storm',
     type: 'grass',
-    description: 'Tempestade de folhas em todas as direções, que voltam como bumerangue.',
     base: stats({ damage: 20, cooldown: 1.6, amount: 10, speed: 240, area: 1.4, knockback: 35 }),
     upgrades: [],
     fire: (g, s) => {
@@ -868,7 +841,6 @@ export const MOVES = {
   powerWhip: {
     name: 'Power Whip',
     type: 'grass',
-    description: 'Cipós espinhosos e enormes chicoteiam dos dois lados.',
     base: stats({ damage: 48, cooldown: 1, amount: 4, area: 1.7, knockback: 130 }),
     upgrades: [],
     fire: (g, s) => {
@@ -892,7 +864,6 @@ export const MOVES = {
   triAttack: {
     name: 'Tri Attack',
     type: 'normal',
-    description: 'Triângulos de fogo, gelo e raio perseguem vários alvos.',
     base: stats({ damage: 18, cooldown: 1, amount: 9, speed: 210, pierce: 3, area: 1.2, knockback: 30 }),
     upgrades: [],
     fire: (g, s) => {
@@ -915,7 +886,6 @@ export const MOVES = {
   wildboltStorm: {
     name: 'Wildbolt Storm',
     type: 'electric',
-    description: 'Uma tempestade de raios castiga a tela inteira.',
     base: stats({ damage: 46, cooldown: 1.7, amount: 9, area: 1.5, knockback: 30 }),
     status: { kind: 'paralysis', chance: 0.5, duration: 2.5, power: 0 },
     upgrades: [],
@@ -939,7 +909,6 @@ export const MOVES = {
   gunkShot: {
     name: 'Gunk Shot',
     type: 'poison',
-    description: 'Arremessa montanhas de lixo tóxico que deixam poças enormes.',
     base: stats({ damage: 14, cooldown: 2.8, amount: 5, duration: 4, area: 1.7 }),
     status: { kind: 'poison', chance: 0.7, duration: 3.5, power: 0.4 },
     upgrades: [],
@@ -963,7 +932,6 @@ export const MOVES = {
   hurricane: {
     name: 'Hurricane',
     type: 'flying',
-    description: 'Tornados giram ao seu redor, sugando e jogando inimigos longe.',
     base: stats({ damage: 16, cooldown: 4.5, amount: 2, speed: 1.6, duration: 4.5, knockback: 50 }),
     upgrades: [],
     fire: (g, s) => {
@@ -989,7 +957,7 @@ export const maxMoveLevel = (id: MoveId) => MOVES[id].upgrades.length + 1
 /** Final stats of a move at `level`, after upgrades and player modifiers (incl. type boosts). */
 export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastStats => {
   const def: MoveDef = MOVES[id]
-  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, { delta }) => {
+  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, delta) => {
     const next = { ...acc }
     for (const k of Object.keys(delta) as (keyof MoveStats)[]) next[k] += delta[k] ?? 0
     return next
