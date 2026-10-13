@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    pr: 21,
     title: { pt: 'Biomas e clima', en: 'Biomes and weather' },
     notes: [
       {
