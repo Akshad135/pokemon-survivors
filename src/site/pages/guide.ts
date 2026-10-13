@@ -202,6 +202,11 @@ const mart = (locale: Locale, m: SiteMessages) => {
     ${table([k.upgradeHead, k.effectHead, k.pricesHead], rows)}`
 }
 
+const settings = (m: SiteMessages) => {
+  const s = m.guide.settings
+  return html`${paragraphs(s.paragraphs)}${table([s.optionHead, s.effectHead], s.rows)}`
+}
+
 const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   controls: (_, m) => controls(m),
   run,
@@ -213,6 +218,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   shinies,
   items: (_, m) => items(m),
   mart,
+  settings: (_, m) => settings(m),
 }
 
 /** `/guia/`: how to play, with every number and table read from the game's data. */

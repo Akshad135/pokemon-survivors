@@ -35,6 +35,36 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   },
   {
     date: '2026-10-13',
+    pr: 12,
+    title: { pt: 'Nova tela de título', en: 'New title screen' },
+    notes: [
+      {
+        pt: 'Tela de título com um campo vivo ao fundo, logo em pixel art e menu: Jogar, Pokédex, Como jogar e Ajustes.',
+        en: 'A title screen with a living meadow behind it, a pixel-art logo and a menu: Play, Pokédex, How to play and Settings.',
+      },
+      {
+        pt: 'Os menus agora funcionam no controle: D-pad ou analógico esquerdo para navegar, A confirma, B volta e Start pausa.',
+        en: 'Menus now work on a gamepad: D-pad or left stick to navigate, A confirms, B goes back and Start pauses.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
+    pr: 13,
+    title: { pt: 'Trilha chiptune original e Ajustes', en: 'Original chiptune soundtrack and Settings' },
+    notes: [
+      {
+        pt: 'Trilha sonora original composta em código e sintetizada ao vivo: tema de vila nos menus, marcha na partida e tema de chefe.',
+        en: 'An original soundtrack composed in code and synthesized live: a village theme in the menus, a march for the run and a boss theme.',
+      },
+      {
+        pt: 'Tela de Ajustes, no título e na pausa: volume da música e dos efeitos, som, números de dano, tremor de tela e idioma.',
+        en: 'A Settings screen, on the title screen and in the pause menu: music and effects volume, sound, damage numbers, screen shake and language.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 11,
     title: { pt: 'Páginas em português e inglês para buscadores', en: 'Portuguese and English pages for search engines' },
     notes: [

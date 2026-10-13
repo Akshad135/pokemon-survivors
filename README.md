@@ -111,11 +111,13 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 | --- | --- | --- |
 | Move | WASD / arrows | Drag anywhere (floating joystick) |
 | Special attack | `Space` / A (✕) | Round button, bottom right |
-| Pause | `Esc` / `P` | Pause button, top right |
+| Pause | `Esc` / `P` / Start | Pause button, top right |
 | Pick an upgrade | `1`–`3` | Tap it |
 | Mute | `M` | Settings, on the title screen or in the pause menu |
 | Menus | Arrows / D-pad, `Enter` / A, `Esc` / B back | Tap |
 | Switch language | `I` (title screen) or Settings | `PT \| EN`, top left of the title screen, or Settings |
+
+On a gamepad, the D-pad and left stick drive every menu. In a run, A fires the special and Start pauses, but the gamepad can't move your Pokémon yet: use the keyboard or touch.
 
 ## Running locally
 

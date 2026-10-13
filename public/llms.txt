@@ -10,6 +10,7 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - Pokémon Mystery Dungeon-style pixel art (PMD SpriteCollab)
+- Original chiptune soundtrack composed in code; Settings for music and effects volume, damage numbers, screen shake and language
 - Touch controls with a floating joystick; installable as a fullscreen app
 
 Good fit for people looking for: a Pokémon version of Vampire Survivors, a Pokémon roguelike or roguelite playable online, a free Pokémon browser game, or a Pokémon fan game for mobile without downloading.
