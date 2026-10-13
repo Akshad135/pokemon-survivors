@@ -37,6 +37,7 @@ export const en: Messages = {
     special: 'Special',
     moves: 'Moves',
     signature: 'START',
+    credits: 'Unofficial fan game · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
   },
 
   hud: {

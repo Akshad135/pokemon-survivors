@@ -240,7 +240,7 @@ export const starterSelect = (
       inspect,
       h('div', { class: 'select-footer' }, confirmBtn),
     ),
-    h('p', { class: 'credits' }, 'Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Game Freak'),
+    h('p', { class: 'credits' }, t().title.credits),
   )
   root.append(el)
   setCursor(cursor, false)

@@ -62,6 +62,7 @@ export const pt = {
     special: 'Especial',
     moves: 'Golpes',
     signature: 'INICIAL',
+    credits: 'Fan game não oficial · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
   },
 
   hud: {
