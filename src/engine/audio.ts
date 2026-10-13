@@ -68,6 +68,17 @@ const SFX = {
     noise(0.35, 0.18)
     tone(120, 40, 0.3, 'sawtooth', 0.12)
   },
+  item: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, 'square', 0.12, i * 0.06)),
+  /** Poké Flute: a short lullaby. */
+  flute: () => [523, 659, 784, 659, 523, 392].forEach((f, i) => tone(f, f * 1.01, 0.22, 'triangle', 0.2, i * 0.16)),
+  explosion: () => {
+    noise(0.7, 0.35)
+    tone(180, 30, 0.6, 'sawtooth', 0.22)
+  },
+  break: () => {
+    noise(0.06, 0.12)
+    tone(700, 220, 0.07, 'square', 0.06)
+  },
   gameOver: () => [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.97, 0.3, 'triangle', 0.2, i * 0.25)),
 } as const
 

@@ -4,11 +4,13 @@ import { createGrid } from '../engine/spatial'
 import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
+import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
 import { MOVES, moveStats } from './moves'
 import { updatePickups } from './pickups'
+import { updateProps } from './props'
 import { updateSpawner } from './spawner'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
@@ -60,6 +62,11 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
+    props: [],
+    brokenProps: new Set(),
+    buffs: [],
+    revives: 0,
+    flash: 0,
     events: [],
   }
   recomputeStats(g)
@@ -147,7 +154,9 @@ export const step = (g: Game, input: Vec, dt: number) => {
   rebuildGrid(g)
   updateMoves(g, dt)
   updateAttacks(g, dt)
+  updateProps(g, dt)
   updatePickups(g, dt)
+  updateConsumables(g, dt)
   updateEffects(g, dt)
 
   g.camera.x = g.player.x - g.view.w / 2

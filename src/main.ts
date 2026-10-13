@@ -8,11 +8,13 @@ import { context2d } from './engine/pixelart'
 import { ENEMIES, ENEMY_DEX } from './data/enemies'
 import { ITEMS } from './data/items'
 import { STARTER_IDS, STARTERS, starterDex, type StarterId } from './data/starters'
+import { CONSUMABLES } from './game/consumables'
 import { chooseOffer, createGame, playerDex, step } from './game/game'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
 import { loadAll, sprites } from './render/sprites'
+import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
 import { h } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
@@ -144,6 +146,16 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, `Poké Ball: ${offerLabel(e.offer)}`)
+    case 'consumable': {
+      const def = CONSUMABLES[e.item]
+      playSfx(def.sfx)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), def.label), 2200)
+    }
+    case 'propBreak':
+      return playSfx('break', 60)
+    case 'revive':
+      playSfx('evolve')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), 'O ', h('b', {}, 'Revive'), ' te pôs de pé!'), 3000)
     case 'gameover':
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)

@@ -25,6 +25,7 @@ src/
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts
+            consumables.ts (floor items, buffs) · props.ts (breakable item sources)
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, frame renderer
   ui/       HUD, starter select, level-up, pause, results, toasts
 ```
@@ -41,6 +42,7 @@ src/
 - 10 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Magnet, Assault Vest.
 - 15 regular enemies. Bosses: Onix (5:00), Snorlax (10:00), Mewtwo (15:00, beating it wins the run).
 - Drops: Exp. Candy (4 tiers), Oran Berry, and a boss Poké Ball that grants a random upgrade.
+- Item sources on the map (item balls, berry trees, rustling tall grass) break under any attack and drop consumables: Potion, Super Potion, Rare Candy, Exp. Share, Poké Flute, Max Repel, Voltorb (Explosion), X Attack, X Speed and Revive. Drop tables live in `data/consumables.ts`.
 
 ## Ideas for next steps
 

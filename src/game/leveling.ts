@@ -1,6 +1,7 @@
 import type { Rng } from '../engine/rng'
 import { ITEM_IDS, ITEMS, type ItemId } from '../data/items'
 import { STARTERS, type StarterId } from '../data/starters'
+import { buffDeltas } from './buffs'
 import { maxMoveLevel, type MoveId } from './moves'
 import { applyDeltas, BASE_STATS } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove } from './types'
@@ -71,6 +72,7 @@ export const recomputeStats = (g: Game) => {
     starter.stats,
     ...starter.line.slice(0, p.stage + 1).map((s) => s.bonus),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
+    ...buffDeltas(g.buffs),
   ])
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before
   p.hp = Math.min(p.hp, p.stats.maxHp)

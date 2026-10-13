@@ -22,12 +22,12 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   return canvas
 }
 
-const lazy = <T>(build: () => T) => {
+export const lazy = <T>(build: () => T) => {
   let value: T | undefined
   return () => (value ??= build())
 }
 
-const art = (rows: readonly string[], palette: Palette, outline?: string) => {
+export const art = (rows: readonly string[], palette: Palette, outline?: string) => {
   const sprite = fromStrings(rows, palette)
   return outline ? outlined(sprite, outline) : sprite
 }
@@ -112,7 +112,7 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
 const iconCache = new Map<string, string>()
 
 /** Icon as a data URL, padded to a square so it scales uniformly in the DOM. */
-const toIconUrl = (key: string, build: () => PixelSprite) => {
+export const toIconUrl = (key: string, build: () => PixelSprite) => {
   const cached = iconCache.get(key)
   if (cached) return cached
   const sprite = build()
