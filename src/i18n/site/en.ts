@@ -312,7 +312,7 @@ export const siteEn: SiteMessages = {
       nonCommercial: 'Because the sprites are CC BY-NC, the game as a whole can\'t be used commercially.',
     },
     privacy: [
-      'The game has no sign-up, cookies, analytics, ads or trackers, and collects no personal data.',
+      'The game has no sign-up, cookies, ads or trackers, and collects no personal data.',
       'Everything the game remembers lives in your browser\'s localStorage, on your device, and is never sent to any server:',
     ],
     storage: {
@@ -324,6 +324,7 @@ export const siteEn: SiteMessages = {
     privacyAfter: [
       'To delete this data, clear the site data in your browser settings.',
       'Sprites, sounds and fonts are served by this site, with no calls to third-party services. The site is hosted on Vercel which, like any web server, may log technical access data (such as IP addresses) to run and protect the service.',
+      'To know how many people visit, the site uses Vercel Web Analytics, which counts visits anonymously and in aggregate (page, country, browser, device and referring site), with no cookies and without identifying you or following you across sites.',
     ],
     contact: [
       'If you hold rights to any material used here and want it removed or changed, open an issue on GitHub. It will be addressed promptly.',
