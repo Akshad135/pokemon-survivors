@@ -10,8 +10,11 @@ import { h, setStyle, setText } from './dom'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
 
-/** In-run heads-up display. `update` is called every frame and only touches what changed. */
-export const createHud = (root: HTMLElement) => {
+/**
+ * In-run heads-up display. `update` is called every frame and only touches what changed.
+ * `onPause` backs the on-screen pause button (phones have no Esc key).
+ */
+export const createHud = (root: HTMLElement, onPause: () => void) => {
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
   const timer = h('div', { class: 'timer' })
@@ -26,6 +29,12 @@ export const createHud = (root: HTMLElement) => {
   const level = h('div', { class: 'status-level' })
   const hpFill = h('div', { class: 'hp-fill' })
   const hpText = h('div', { class: 'status-hp-text' })
+  // pointerdown (not click) feels instant on touch and never steals keyboard focus.
+  const pause = h('button', { class: 'pause-btn box', 'aria-label': 'Pausar' }, h('span'), h('span'))
+  pause.addEventListener('pointerdown', (e) => {
+    e.preventDefault()
+    onPause()
+  })
 
   const el = h(
     'div',
@@ -36,7 +45,7 @@ export const createHud = (root: HTMLElement) => {
       { class: 'hud-row' },
       h('div', { class: 'loadout' }, moveSlots, itemSlots),
       timer,
-      h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills),
+      h('div', { class: 'hud-right' }, h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills), pause),
     ),
     boss,
     h(
@@ -95,7 +104,8 @@ export const createHud = (root: HTMLElement) => {
     setText(level, `Nv${p.level}`)
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
     setStyle(hpFill, 'width', `${(ratio * 100).toFixed(1)}%`)
-    hpFill.className = `hp-fill ${hpClass(ratio)}`
+    const fillClass = `hp-fill ${hpClass(ratio)}`
+    if (hpFill.className !== fillClass) hpFill.className = fillClass
     setText(hpText, `${Math.ceil(p.hp)}/${Math.round(p.stats.maxHp)}`)
 
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
