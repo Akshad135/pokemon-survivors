@@ -1,0 +1,932 @@
+/* Static site pages (Pokédex, guide, changelog, legal). Same fonts and palette as the game, but a
+   normal scrolling document; the game's style.css is never loaded here. */
+@import '@fontsource/press-start-2p/index.css';
+@import '@fontsource/vt323/index.css';
+
+:root {
+  --bg: #101820;
+  --bg-2: #182234;
+  --ink: #303040;
+  --muted: #606078;
+  --paper: #f8f8f8;
+  --paper-2: #e8e8f0;
+  --frame: #6878a8;
+  --line: #283040;
+  --text: #e8e8f8;
+  --text-dim: #a8b0d0;
+  --yellow: #ffcb05;
+  --blue: #2a5aa8;
+  --red: #e83838;
+  --title: 'Press Start 2P', monospace;
+  --body: 'VT323', monospace;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+img {
+  image-rendering: pixelated;
+}
+
+a {
+  color: var(--yellow);
+  text-underline-offset: 3px;
+}
+
+.box a {
+  color: var(--blue);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+label:focus-within > span {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+code {
+  font-family: var(--body);
+  font-size: 1em;
+  background: var(--paper-2);
+  padding: 0 4px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--title);
+  font-weight: normal;
+  line-height: 1.5;
+}
+
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 10;
+  padding: 8px 12px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.skip:focus {
+  top: 8px;
+}
+
+/* ---------- GBA dialog box (same as the game) ---------- */
+
+.box {
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--line);
+  border-radius: 9px;
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 6px var(--frame),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  background: var(--bg-2);
+  border-bottom: 3px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--yellow);
+  text-decoration: none;
+  font-family: var(--title);
+  font-size: 10px;
+  line-height: 1.4;
+  text-shadow: 2px 2px 0 var(--blue);
+}
+
+.site-nav {
+  order: 3;
+  flex: 1 0 100%;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.site-nav a,
+.lang a {
+  flex-shrink: 0;
+  padding: 10px 10px 8px;
+  border-radius: 4px;
+  color: var(--text);
+  text-decoration: none;
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.site-nav a:hover,
+.lang a:hover {
+  background: #283048;
+}
+
+.site-nav a[aria-current='page'] {
+  color: var(--yellow);
+  box-shadow: inset 0 -3px 0 var(--yellow);
+}
+
+.site-nav .nav-play {
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--blue);
+}
+
+.site-nav .nav-play:hover {
+  background: #ffe066;
+}
+
+.lang {
+  margin-left: auto;
+  display: flex;
+}
+
+.lang a[aria-current='true'] {
+  color: var(--yellow);
+}
+
+@media (min-width: 760px) {
+  .site-nav {
+    order: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .lang {
+    margin-left: 0;
+  }
+}
+
+/* ---------- Page ---------- */
+
+.site-main {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  padding: 24px max(14px, env(safe-area-inset-right)) 48px max(14px, env(safe-area-inset-left));
+}
+
+.page-head {
+  margin: 8px 0 24px;
+  text-align: center;
+}
+
+.page-head h1 {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 5vw, 36px);
+  color: var(--yellow);
+  letter-spacing: 1px;
+  text-shadow:
+    -3px 0 0 var(--blue), 3px 0 0 var(--blue), 0 -3px 0 var(--blue), 0 3px 0 var(--blue),
+    -3px -3px 0 var(--blue), 3px 3px 0 var(--blue), -3px 3px 0 var(--blue), 3px -3px 0 var(--blue),
+    0 7px 0 #101830;
+}
+
+.lead {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--text-dim);
+  font-size: 24px;
+}
+
+.note {
+  color: var(--muted);
+  font-size: 19px;
+}
+
+.type-badge {
+  display: inline-block;
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1;
+  padding: 5px 6px 4px;
+  border-radius: 4px;
+  color: #fff;
+  background: var(--type);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.btn-link,
+.btn-play {
+  display: inline-block;
+  padding: 12px 14px 10px;
+  border: 3px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-2);
+  color: var(--ink) !important;
+  font-family: var(--title);
+  font-size: 10px;
+  line-height: 1.5;
+  text-decoration: none;
+  box-shadow: 0 3px 0 var(--frame);
+}
+
+.btn-play {
+  background: var(--yellow);
+  font-size: 12px;
+  box-shadow: 0 4px 0 var(--blue);
+}
+
+.btn-link:hover,
+.btn-play:hover {
+  transform: translateY(-1px);
+}
+
+/* ---------- Pokédex filters ---------- */
+
+.dex-filters {
+  display: none;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px 16px;
+  margin: 0 0 20px;
+  padding: 14px;
+  background: var(--bg-2);
+  border: 3px solid var(--line);
+  border-radius: 8px;
+}
+
+.js .dex-filters {
+  display: flex;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.field-search {
+  flex: 1 1 220px;
+}
+
+.field input,
+.field select {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 3px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--body);
+  font-size: 22px;
+}
+
+.roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.roles legend {
+  margin-bottom: 6px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.roles label,
+.shiny-all {
+  position: relative;
+  cursor: pointer;
+}
+
+.roles input,
+.shiny-all input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.roles span,
+.shiny-all span {
+  display: inline-block;
+  min-height: 44px;
+  padding: 14px 10px 10px;
+  border: 3px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.roles input:checked + span {
+  background: var(--yellow);
+  border-color: var(--blue);
+}
+
+.shiny-all input:checked + span {
+  background: #fff4b0;
+  border-color: #e0a800;
+}
+
+.dex-count {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.dex-empty {
+  text-align: center;
+}
+
+.dex-empty button {
+  margin-left: 8px;
+  padding: 8px 10px;
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+/* Phones: keep the first cards near the fold. Region/type share a row and roles scroll sideways. */
+@media (max-width: 600px) {
+  .page-head {
+    margin: 0 0 16px;
+  }
+  .lead {
+    font-size: 20px;
+  }
+  .dex-filters {
+    gap: 10px;
+    padding: 12px;
+  }
+  .field-search {
+    flex: 1 0 100%;
+  }
+  .dex-filters .field:not(.field-search) {
+    flex: 1 1 0;
+  }
+  .roles {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .roles legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .roles label {
+    flex-shrink: 0;
+  }
+  .dex-count {
+    flex: 1 1 auto;
+    align-self: center;
+  }
+}
+
+/* ---------- Pokédex cards ---------- */
+
+.dex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.dex-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 16px;
+  scroll-margin-top: 16px;
+  /* Off-screen cards skip rendering, so their sprites only load when scrolled near. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 760px;
+}
+
+.dex-card:target {
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 6px var(--yellow),
+    0 0 0 4px var(--yellow);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.dex-no {
+  font-size: 10px;
+  color: var(--ink);
+}
+
+.role {
+  padding: 4px 5px 3px;
+  border-radius: 3px;
+  background: var(--paper-2);
+}
+
+.role-boss .role {
+  background: #f8d0c8;
+  color: #902818;
+}
+
+.role-legendary .role {
+  background: #f8e8a0;
+  color: #806000;
+}
+
+.anchor {
+  margin-left: auto;
+  color: var(--muted) !important;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.card-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0 4px;
+  padding: 6px;
+  border-radius: 6px;
+  background: linear-gradient(#c8e8a0, #a8d880);
+  box-shadow: inset 0 0 0 3px #88b860;
+}
+
+.role-boss .card-art,
+.role-legendary .card-art {
+  background: linear-gradient(#c8d0f0, #a8b0e0);
+  box-shadow: inset 0 0 0 3px #7880c0;
+}
+
+.stage {
+  display: grid;
+  place-items: center;
+  width: 144px;
+  height: 144px;
+  cursor: pointer;
+}
+
+.sp {
+  display: none;
+  grid-area: 1 / 1;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+
+/* One of four sheets shows: idle, or walk on hover/focus/tap, in normal or shiny colors. */
+.dex-card:not(.is-shiny) .sp-i,
+.dex-card.is-shiny .sp-si {
+  display: block;
+}
+
+.dex-card:is(:hover, :focus-within, .walking):not(.is-shiny) .sp-i,
+.dex-card:is(:hover, :focus-within, .walking).is-shiny .sp-si {
+  display: none;
+}
+
+.dex-card:is(:hover, :focus-within, .walking):not(.is-shiny) .sp-w,
+.dex-card:is(:hover, :focus-within, .walking).is-shiny .sp-sw {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sp {
+    animation: none !important;
+  }
+}
+
+.portrait {
+  width: 80px;
+  height: 80px;
+  border: 3px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+.shiny-btn {
+  display: none;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.js .shiny-btn {
+  display: block;
+}
+
+.shiny-btn[aria-pressed='true'] {
+  background: #fff4b0;
+  border-color: #e0a800;
+  color: #e0a800;
+}
+
+.dex-card h2 {
+  margin: 8px 0 6px;
+  font-size: 14px;
+}
+
+.types {
+  display: flex;
+  gap: 4px;
+}
+
+.blurb {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.dex-card h3 {
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid #d8d8e8;
+  font-size: 9px;
+  color: var(--frame);
+}
+
+.dex-card p {
+  margin: 0;
+}
+
+.bars,
+.facts {
+  display: grid;
+  gap: 2px 10px;
+  margin: 0;
+}
+
+.bars div {
+  display: grid;
+  grid-template-columns: 7.5em 1fr 3.4em;
+  align-items: center;
+  gap: 8px;
+}
+
+.bars dd {
+  display: contents;
+}
+
+.bars dt,
+.facts dt {
+  color: var(--muted);
+}
+
+.bar {
+  height: 10px;
+  background: #e0e0ea;
+  box-shadow: inset 0 0 0 1px #b8b8c8;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(#78d878, #48b048);
+}
+
+.bars b {
+  text-align: right;
+}
+
+.facts {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 6px;
+  background: #eeeef4;
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: bold;
+}
+
+.evo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evo li:not(.evo-arrow) {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.evo a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--ink) !important;
+  text-decoration: none;
+  font-size: 15px;
+  text-align: center;
+}
+
+.evo a[aria-current='true'] {
+  background: #fff4b0;
+}
+
+/* "Lv 12" over "▶", like the game's inspect panel. */
+.evo-arrow {
+  flex-shrink: 0;
+  width: 2.6em;
+  color: var(--muted);
+  font-size: 15px;
+  text-align: center;
+}
+
+.move small {
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  padding: 1px 6px;
+  border-left: 5px solid var(--type);
+  background: #eeeef4;
+  font-size: 19px;
+}
+
+.list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* ---------- Documents (guide, changelog, legal) ---------- */
+
+.doc {
+  display: grid;
+  gap: 20px;
+}
+
+.toc {
+  padding: 16px 20px;
+}
+
+.toc h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: 1.4em;
+  columns: 2 200px;
+}
+
+@media (min-width: 980px) {
+  .doc {
+    grid-template-columns: 260px 1fr;
+    align-items: start;
+  }
+  .toc {
+    position: sticky;
+    top: 16px;
+  }
+  .toc ol {
+    columns: 1;
+  }
+}
+
+.doc-body {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.doc-body.narrow {
+  width: min(860px, 100%);
+  margin: 0 auto;
+}
+
+.doc-section {
+  padding: 18px 20px 20px;
+  scroll-margin-top: 16px;
+}
+
+.doc-section h2 {
+  margin: 0 0 12px;
+  font-size: clamp(12px, 2.4vw, 15px);
+  color: var(--ink);
+}
+
+.doc-section h3 {
+  margin: 18px 0 8px;
+  font-size: 10px;
+  color: var(--frame);
+}
+
+.doc-section p {
+  margin: 0 0 12px;
+}
+
+.doc-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 0 0 12px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+th,
+td {
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th {
+  background: var(--frame);
+  color: #fff;
+  font-family: var(--title);
+  font-size: 8px;
+  font-weight: normal;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+tbody tr:nth-child(even) {
+  background: #eeeef4;
+}
+
+tbody th {
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+td small {
+  color: var(--muted);
+}
+
+.with-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mini {
+  width: 40px;
+  height: 40px;
+}
+
+.cta {
+  text-align: center;
+}
+
+.changelog-day h2 {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--yellow);
+}
+
+.changelog-day {
+  display: grid;
+  gap: 14px;
+}
+
+.changelog-day h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.pr {
+  font-family: var(--body);
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.defs {
+  margin: 0 0 12px;
+}
+
+.defs dt {
+  margin-top: 8px;
+  font-weight: bold;
+}
+
+.defs dd {
+  margin: 0 0 0 16px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  padding: 24px max(16px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  border-top: 3px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  font-size: 19px;
+  text-align: center;
+}
+
+.site-footer p {
+  max-width: 860px;
+  margin: 0 auto 12px;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.footer-links a {
+  padding: 8px 0;
+}

@@ -12,6 +12,7 @@ Browser survivors-like (Vampire Survivors–style) with Pokémon. Vite + TypeScr
 - **Comments:** short doc comments above non-obvious functions. Don't comment every line, and keep comments in sync with the code.
 - **Tests:** focused vitest tests for pure rules only (`*.test.ts`). No smoke or snapshot slop.
 - **SEO/GEO copy** lives in static HTML so crawlers and AI chats can read it without JS: `index.html` (pt-BR, `/`), `en/index.html` (English, `/en/`) and `public/llms.txt`. When a feature changes what the game is (starters, bosses, counts), update all three.
+- **Site pages** (`/pokedex/`, `/guia/`, `/novidades/`, `/legal/` and their `/en/` twins) are rendered at build time from `src/site` (wired in `vite.config.ts`) and read `src/data/*`, so the Pokédex and the guide's tables follow the data on their own. Their copy lives in `src/i18n/site` (`pt.ts` is the reference). Routes live in `src/site/routes.ts`, which also generates `sitemap.xml`. Add a `src/site/changelog.ts` entry when a player-facing change ships. `src/site/client.ts` must never import game code, so the game and the site never load each other's bundles.
 - **Mobile matters:** many players will be on phones. Every UI must work with touch and on small portrait and landscape screens.
 
 ## Commands

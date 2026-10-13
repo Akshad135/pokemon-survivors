@@ -6,26 +6,13 @@ import { TYPE_COLORS } from '../data/types'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
-import type { PlayerStats } from '../game/stats'
 import { moveIcon, PICKUPS } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { t } from '../i18n'
 import { h } from './dom'
+import { STAT_BARS, statRatio } from './statBars'
 import { hint, typeBadge, type Screen } from './screens'
-
-/** Bars of the inspect panel: label key, value getter and the range mapped to an empty/full bar. */
-const STAT_BARS = [
-  { label: 'hp', get: (s: PlayerStats) => s.maxHp, min: 50, max: 260, fmt: (v: number) => `${Math.round(v)}` },
-  { label: 'attack', get: (s: PlayerStats) => s.might, min: 0.8, max: 1.5, fmt: (v: number) => `x${v.toFixed(2)}` },
-  { label: 'defense', get: (s: PlayerStats) => s.armor, min: 0, max: 5, fmt: (v: number) => `${v}` },
-  { label: 'speed', get: (s: PlayerStats) => s.speed, min: 50, max: 95, fmt: (v: number) => `${Math.round(v)}` },
-  { label: 'cooldown', get: (s: PlayerStats) => 1 / s.cooldown, min: 0.9, max: 1.2, fmt: (v: number) => `x${(1 / v).toFixed(2)}` },
-  { label: 'area', get: (s: PlayerStats) => s.area, min: 0.9, max: 1.45, fmt: (v: number) => `x${v.toFixed(2)}` },
-  { label: 'regen', get: (s: PlayerStats) => s.regen, min: 0, max: 1.5, fmt: (v: number) => `${v.toFixed(1)}/s` },
-] as const
-
-const ratio = (v: number, min: number, max: number) => Math.max(0.03, Math.min(1, (v - min) / (max - min)))
 
 const moveRow = (id: MoveId, signature: boolean) => {
   const def: MoveDef = MOVES[id]
@@ -66,8 +53,8 @@ const inspectPanel = (id: StarterId, stage: number, onStage: (stage: number) => 
       h(
         'div',
         { class: 'bar' },
-        h('div', { class: 'bar-final', style: `width:${ratio(b.get(final), b.min, b.max) * 100}%` }),
-        h('div', { class: 'bar-base', style: `width:${ratio(b.get(base), b.min, b.max) * 100}%` }),
+        h('div', { class: 'bar-final', style: `width:${statRatio(b.get(final), b.min, b.max) * 100}%` }),
+        h('div', { class: 'bar-base', style: `width:${statRatio(b.get(base), b.min, b.max) * 100}%` }),
       ),
       h('b', {}, b.fmt(b.get(base))),
     ),

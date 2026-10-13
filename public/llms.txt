@@ -19,6 +19,13 @@ Good fit for people looking for: a Pokémon version of Vampire Survivors, a Pok�
 - [Play in English](https://www.pokemonsurvivors.com/en/)
 - [Jogar em português](https://www.pokemonsurvivors.com/)
 
+## Guides and reference
+
+- [Pokédex](https://www.pokemonsurvivors.com/en/pokedex/): every Pokémon in the game (27 starters with their evolutions, wild enemies, bosses and legendaries) with animated and shiny sprites, types, in-game stats, moves, specials and when each one shows up. Portuguese: [Pokédex](https://www.pokemonsurvivors.com/pokedex/)
+- [How to play](https://www.pokemonsurvivors.com/en/guide/): controls (keyboard, gamepad, touch), how a run works, levels and moves, move evolutions with held items, the special attack, types and status, boss timeline, shinies, map items and the Poké Mart, with the game's numbers. Portuguese: [Guia](https://www.pokemonsurvivors.com/guia/)
+- [Changelog](https://www.pokemonsurvivors.com/en/changelog/): every update, newest first. Portuguese: [Novidades](https://www.pokemonsurvivors.com/novidades/)
+- [Legal, privacy and credits](https://www.pokemonsurvivors.com/en/legal/): unofficial fan game, no ads or purchases, licenses, no personal data collected (localStorage only). Portuguese: [Legal](https://www.pokemonsurvivors.com/legal/)
+
 ## More
 
 - [Source code and screenshots (GitHub)](https://github.com/pedrobarretto/pokemon-survivors)

@@ -109,7 +109,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 
 | | Keyboard / gamepad | Touch |
 | --- | --- | --- |
-| Move | WASD / arrows / left stick | Drag anywhere (floating joystick) |
+| Move | WASD / arrows | Drag anywhere (floating joystick) |
 | Special attack | `Space` / A (✕) | Round button, bottom right |
 | Pause | `Esc` / `P` | Pause button, top right |
 | Pick an upgrade | `1`–`3` | Tap it |
@@ -148,7 +148,8 @@ src/
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, title scene and logo, frame renderer
   ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
-  i18n/     every player-facing string: pt.ts (reference) and en.ts
+  i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
+  site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
 
 <details>

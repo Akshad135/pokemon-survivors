@@ -60,6 +60,9 @@ export type DropSource = keyof typeof DROP_TABLES
 /** Very rare floor drop from regular (non-boss) enemies. */
 export const ENEMY_DROP_CHANCE = 0.004
 
+/** Chance a fainted regular enemy drops an Oran Berry (rolled before `ENEMY_DROP_CHANCE`). */
+export const ENEMY_BERRY_CHANCE = 0.012
+
 /** Current weight of every entry in a table, at run time `time` (seconds). */
 export const dropWeights = (table: readonly DropEntry[], time: number) => {
   const k = clamp(time / RAMP_TIME, 0, 1)
