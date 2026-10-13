@@ -4,6 +4,7 @@ import { createGrid } from '../engine/spatial'
 import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
+import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
@@ -11,6 +12,7 @@ import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFo
 import { MOVES, moveStats } from './moves'
 import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
+import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
@@ -23,9 +25,11 @@ export const playerDex = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.
 
 export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now()): Game => {
   const def = STARTERS[starter]
+  const rng = createRng(seed)
+  const shiny = rollShiny(rng, SHINY_ODDS.player)
   const g: Game = {
     starter,
-    rng: createRng(seed),
+    rng,
     time: 0,
     phase: 'playing',
     nextId: 1,
@@ -46,9 +50,11 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
       stats: BASE_STATS,
       radius: Math.max(6, Math.round(sprites(def.line[0].dex).bodyW * 0.3)),
       animTime: 0,
+      shiny,
     },
     enemies: [],
     attacks: [],
+    hazards: [],
     pickups: [],
     particles: [],
     texts: [],
@@ -71,7 +77,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     buffs: [],
     revives: 0,
     flash: 0,
-    events: [],
+    events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -165,6 +171,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)
+  updateBosses(g, dt)
+  updateHazards(g, dt)
   updateStatuses(g, dt)
   rebuildGrid(g)
   updateMoves(g, dt)

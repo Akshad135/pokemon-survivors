@@ -8,7 +8,7 @@ import { maxMoveLevel, MOVES, type MoveDef } from '../game/moves'
 import { playerDex } from '../game/game'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
-import { berryIcon, itemIcon, moveIcon } from '../render/art'
+import { berryIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { sprites } from '../render/sprites'
 import { h } from './dom'
@@ -208,8 +208,14 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
     h(
       'div',
       { class: 'dialog box pop wide' },
-      h('img', { class: 'result-portrait', src: sprites(playerDex(g)).portrait.src, alt: '' }),
+      h(
+        'div',
+        { class: 'portrait-wrap' },
+        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
+        g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
+      ),
       h('div', { class: 'dialog-title' }, victory ? 'Você venceu Mewtwo!' : `${name} desmaiou!`),
+      g.player.shiny && h('div', { class: 'tag tag-shiny' }, `${name} shiny`),
       h(
         'div',
         { class: 'result-stats' },
@@ -253,4 +259,19 @@ export const toast = (root: HTMLElement, content: HTMLElement | string, ms = 260
   root.append(el)
   setTimeout(() => el.classList.add('out'), ms)
   setTimeout(() => el.remove(), ms + 400)
+}
+
+/** Big centered announcement (legendary entrances). Wraps on small screens. */
+export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600) => {
+  const el = h('div', { class: 'banner box' }, content)
+  root.append(el)
+  setTimeout(() => el.classList.add('out'), ms)
+  setTimeout(() => el.remove(), ms + 400)
+}
+
+/** Full-screen white flash that fades out by itself. */
+export const flashScreen = (root: HTMLElement) => {
+  const el = h('div', { class: 'screen-flash' })
+  root.append(el)
+  setTimeout(() => el.remove(), 1000)
 }

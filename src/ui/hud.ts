@@ -4,7 +4,7 @@ import { STARTERS } from '../data/starters'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
-import { itemIcon, moveIcon, pokeballIcon } from '../render/art'
+import { itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { consumableIcon } from '../render/props'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
@@ -30,6 +30,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
   const bossFill = h('div', { class: 'boss-fill' })
   const boss = h('div', { class: 'boss hidden' }, bossName, h('div', { class: 'boss-bar' }, bossFill))
   const portrait = h('img', { class: 'status-portrait', alt: '' })
+  const shinyBadge = h('img', { class: 'shiny-badge hidden', src: sparkleIcon(), alt: 'Shiny' })
   const name = h('div', { class: 'status-name' })
   const level = h('div', { class: 'status-level' })
   const hpFill = h('div', { class: 'hp-fill' })
@@ -56,7 +57,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     h(
       'div',
       { class: 'status box' },
-      portrait,
+      h('div', { class: 'portrait-wrap' }, portrait, shinyBadge),
       h(
         'div',
         { class: 'status-body' },
@@ -70,9 +71,9 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
   root.append(el)
 
   let loadoutKey = ''
+  let portraitKey = ''
   let buffKey = ''
   let buffFills: HTMLElement[] = []
-  let dex = 0
 
   /** Timed buffs (icon + draining bar) and a held Revive. Rebuilt only when the set changes. */
   const renderBuffs = (g: Game) => {
@@ -129,10 +130,12 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       fill.parentElement!.parentElement!.classList.toggle('ending', b.left < 3)
     })
 
-    const currentDex = playerDex(g)
-    if (currentDex !== dex) {
-      dex = currentDex
-      portrait.setAttribute('src', portraitUrl(dex))
+    const dex = playerDex(g)
+    if (`${dex}${p.shiny}` !== portraitKey) {
+      portraitKey = `${dex}${p.shiny}`
+      portrait.setAttribute('src', portraitUrl(dex, p.shiny))
+      shinyBadge.classList.toggle('hidden', !p.shiny)
+      name.classList.toggle('shiny-name', p.shiny)
       setText(name, STARTERS[g.starter].line[p.stage]!.name)
     }
     setText(level, `Nv${p.level}`)

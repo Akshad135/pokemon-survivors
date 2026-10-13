@@ -30,10 +30,16 @@ export type SpeciesSprites = {
   bodyH: number
 }
 
-type ManifestEntry = { anims: Partial<Record<AnimName, { frameWidth: number; frameHeight: number; durations: number[] }>> }
+type ManifestAnims = Partial<Record<AnimName, { frameWidth: number; frameHeight: number; durations: number[] }>>
+type ManifestEntry = { anims: ManifestAnims; shiny?: { anims: ManifestAnims; portrait: boolean } }
 const MANIFEST = manifest as Record<string, ManifestEntry>
 
 const base = (dex: Dex) => `${import.meta.env.BASE_URL}assets/pokemon/${dex}`
+/** Shiny forms live in a `shiny/` subfolder with their own sheets and portrait. */
+const variantBase = (dex: Dex, shiny: boolean) => (shiny ? `${base(dex)}/shiny` : base(dex))
+const cacheKey = (dex: Dex, shiny: boolean) => (shiny ? `${dex}s` : String(dex))
+
+export const hasShiny = (dex: Dex) => MANIFEST[String(dex)]?.shiny !== undefined
 
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
@@ -90,25 +96,29 @@ const measure = (sheet: Sheet) => {
   return { footY: maxY - sheet.fh / 2, bodyW: maxX - minX + 1, bodyH: maxY - minY + 1 }
 }
 
-const cache = new Map<Dex, SpeciesSprites>()
-const pending = new Map<Dex, Promise<SpeciesSprites>>()
+const cache = new Map<string, SpeciesSprites>()
+const pending = new Map<string, Promise<SpeciesSprites>>()
 
-/** Loads (once) every sheet, the portrait and cry URL of a species. Concurrent calls share one request. */
-export const loadSpecies = (dex: Dex): Promise<SpeciesSprites> => {
-  const cached = cache.get(dex)
+/** Loads (once) every sheet, the portrait and cry URL of a species form. Concurrent calls share one request. */
+export const loadSpecies = (dex: Dex, shiny = false): Promise<SpeciesSprites> => {
+  const key = cacheKey(dex, shiny)
+  const cached = cache.get(key)
   if (cached) return Promise.resolve(cached)
-  const inFlight = pending.get(dex) ?? fetchSpecies(dex).finally(() => pending.delete(dex))
-  pending.set(dex, inFlight)
+  const inFlight = pending.get(key) ?? fetchSpecies(dex, shiny).finally(() => pending.delete(key))
+  pending.set(key, inFlight)
   return inFlight
 }
 
-const fetchSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
+const fetchSpecies = async (dex: Dex, shiny: boolean): Promise<SpeciesSprites> => {
+  const key = cacheKey(dex, shiny)
   const entry = MANIFEST[String(dex)]
-  if (!entry) throw new Error(`Missing sprites for #${dex}. Run npm run assets.`)
+  const anims = shiny ? entry?.shiny?.anims : entry?.anims
+  if (!anims) throw new Error(`Missing ${shiny ? 'shiny ' : ''}sprites for #${dex}. Run npm run assets.`)
+  const dir = variantBase(dex, shiny)
 
   const loadSheet = async (name: AnimName): Promise<Sheet> => {
-    const meta = entry.anims[name] ?? entry.anims.Walk!
-    const img = await loadImage(`${base(dex)}/${entry.anims[name] ? name : 'Walk'}.png`)
+    const meta = anims[name] ?? anims.Walk!
+    const img = await loadImage(`${dir}/${anims[name] ? name : 'Walk'}.png`)
     return {
       img,
       white: silhouette(img),
@@ -121,7 +131,7 @@ const fetchSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
 
   const [Walk, Idle, Hurt] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt')])
   // A missing portrait shouldn't block a run: fall back to the walk sheet.
-  const portrait = await loadImage(`${base(dex)}/portrait.png`).catch(() => Walk.img)
+  const portrait = await loadImage(`${dir}/portrait.png`).catch(() => Walk.img)
   const sprites: SpeciesSprites = {
     dex,
     anims: { Walk, Idle, Hurt },
@@ -129,22 +139,27 @@ const fetchSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
     cry: cryUrl(dex),
     ...measure(Walk),
   }
-  cache.set(dex, sprites)
+  cache.set(key, sprites)
   return sprites
 }
 
-export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map(loadSpecies))
+export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map((dex) => loadSpecies(dex)))
 
-export const sprites = (dex: Dex) => {
-  const s = cache.get(dex)
+/** Loads shiny forms in the background. Until one is ready, `sprites` falls back to the normal form. */
+export const preloadShinies = (dexes: readonly Dex[]) =>
+  Promise.allSettled(dexes.filter(hasShiny).map((dex) => loadSpecies(dex, true)))
+
+export const sprites = (dex: Dex, shiny = false) => {
+  const s = (shiny && cache.get(cacheKey(dex, true))) || cache.get(cacheKey(dex, false))
   if (!s) throw new Error(`Sprites for #${dex} not loaded`)
   return s
 }
 
-/** Sprites if already loaded, without throwing (menus draw progressively). */
-export const loadedSprites = (dex: Dex): SpeciesSprites | undefined => cache.get(dex)
+export const portraitUrl = (dex: Dex, shiny = false) =>
+  `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`
 
-export const portraitUrl = (dex: Dex) => `${base(dex)}/portrait.png`
+/** Sprites if already loaded, without throwing (menus draw progressively). */
+export const loadedSprites = (dex: Dex): SpeciesSprites | undefined => cache.get(cacheKey(dex, false))
 
 export const cryUrl = (dex: Dex) => `${base(dex)}/cry.ogg`
 

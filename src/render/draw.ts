@@ -1,11 +1,13 @@
 import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
+import { hash2 } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
+import type { HazardVisual } from '../data/bosses'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { xpTier } from '../game/pickups'
 import { isAsleep } from '../game/status'
-import type { Attack, Enemy, Game } from '../game/types'
-import { FX, PICKUPS } from './art'
+import type { Attack, Enemy, Game, Hazard } from '../game/types'
+import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { drawPokemon, sprites, type AnimName } from './sprites'
@@ -274,29 +276,133 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
   }
 }
 
+/* ---------------- Boss hazards ---------------- */
+
+const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
+  rock: ['#c08040', 'rgba(120,80,32,0.28)'],
+  slam: ['#f8d878', 'rgba(160,120,48,0.3)'],
+  thunder: ['#f8e030', 'rgba(248,224,48,0.22)'],
+  ice: ['#98d8f8', 'rgba(152,216,248,0.25)'],
+  fire: ['#f08030', 'rgba(240,128,48,0.25)'],
+  psychic: ['#f870c0', 'rgba(248,96,208,0.4)'],
+}
+
+/** Ground layer: telegraph circles, landed shockwaves and lingering fire. */
+const drawHazardGround = (ctx: Ctx, h: Hazard) => {
+  const [line, fill] = HAZARD_COLORS[h.visual]
+  const r = Math.round(h.r)
+  if (h.kind === 'strike') {
+    if (h.age < h.armAt) {
+      const k = h.age / h.armAt
+      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
+      // The outline blinks faster as the impact gets close.
+      if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+      return
+    }
+    if (h.visual === 'thunder' || h.visual === 'rock') return
+    const k = (h.age - h.armAt) / (h.ttl - h.armAt)
+    ctx.globalAlpha = 1 - k
+    blitCentered(ctx, ellipse(r, r, fill), h.x, h.y)
+    blitCentered(ctx, ring(Math.round(r * (0.6 + k * 0.5)), 2, line), h.x, h.y)
+    ctx.globalAlpha = 1
+    return
+  }
+  if (h.kind === 'zone') {
+    ctx.globalAlpha = Math.min(1, h.age / 0.15, (h.ttl - h.age) / 0.4)
+    blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), fill), h.x, h.y)
+    if (h.visual === 'fire') blitCentered(ctx, FX.flame()[Math.floor((h.age + h.id) * 8) % 2]!, h.x, h.y - 5)
+    ctx.globalAlpha = 1
+  }
+}
+
+/** Air layer: projectiles, lightning bolts and falling rocks. */
+const drawHazard = (ctx: Ctx, h: Hazard) => {
+  if (h.kind === 'shot') {
+    const y = h.y - 6
+    switch (h.visual) {
+      case 'ice':
+        return blitRotated(ctx, HAZARD_FX.ice(), h.x, y, Math.atan2(h.vy, h.vx))
+      case 'fire':
+        return blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
+      case 'rock':
+        return blitCentered(ctx, HAZARD_FX.rock(), h.x, y)
+      default:
+        return blitCentered(ctx, HAZARD_FX.psychic(), h.x, y + (Math.floor(h.age * 10) % 2))
+    }
+  }
+  if (h.kind !== 'strike') return
+  if (h.visual === 'rock' && h.age < h.armAt) {
+    const fall = 1 - (h.armAt - h.age) / 0.35
+    if (fall > 0) blitCentered(ctx, HAZARD_FX.rock(), h.x, h.y - 3 - (1 - fall) * 120)
+    return
+  }
+  if (h.visual === 'thunder' && h.age >= h.armAt) {
+    ctx.globalAlpha = Math.max(0, 1 - (h.age - h.armAt) / (h.ttl - h.armAt))
+    bolt(ctx, h.x, h.y, 200)
+    blitCentered(ctx, ellipse(Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)'), h.x, h.y)
+    ctx.globalAlpha = 1
+  }
+}
+
+/* ---------------- Shiny sparkles ---------------- */
+
+const SPARKLE_BURST = 0.9
+const TWINKLE_PERIOD = 0.8
+
+/**
+ * The shiny star burst (eight stars flying out for `SPARKLE_BURST` seconds),
+ * followed by a twinkle at a random spot on the body every `TWINKLE_PERIOD`.
+ * `since` is seconds since the entrance; `size` is the body size in px.
+ */
+const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, since: number, seed: number) => {
+  if (since < 0) return
+  const stars = SPARKLE()
+  if (since < SPARKLE_BURST) {
+    const k = since / SPARKLE_BURST
+    const r = 4 + (1 - (1 - k) ** 2) * (size * 0.7 + 10)
+    const big = k < 0.2 ? 1 : k < 0.7 ? 2 : k < 0.85 ? 1 : 0
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + k * 0.6
+      blitCentered(ctx, stars[i % 2 ? Math.max(0, big - 1) : big]!, x + Math.cos(a) * r, cy + Math.sin(a) * r)
+    }
+    return
+  }
+  const cycle = Math.floor(since / TWINKLE_PERIOD)
+  const phase = since / TWINKLE_PERIOD - cycle
+  if (phase > 0.4) return
+  const frame = phase < 0.08 || phase > 0.32 ? 0 : phase < 0.14 || phase > 0.26 ? 1 : 2
+  const ox = (hash2(seed, cycle, 1) - 0.5) * size
+  const oy = (hash2(seed, cycle, 2) - 0.5) * size
+  blitCentered(ctx, stars[frame]!, x + ox, cy + oy)
+}
+
 /* ---------------- Entities ---------------- */
 
 const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) ? 'Idle' : 'Walk')
 
-const drawEnemy = (ctx: Ctx, e: Enemy, t: number) => {
-  const s = sprites(ENEMIES[e.kind].dex)
+/** `time` is game time (shiny entrance), `t` wall time (status tint). */
+const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
+  const s = sprites(ENEMIES[e.kind].dex, e.shiny)
   if (e.dying >= 0) {
     const k = e.dying / 0.4
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false })
     return
   }
   drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id) })
+  if (e.shiny) drawSparkles(ctx, e.x, e.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
 }
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
 
 const drawPlayer = (ctx: Ctx, g: Game) => {
   const p = g.player
-  const s = sprites(playerDex(g))
+  const s = sprites(playerDex(g), p.shiny)
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
   drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging ? 0.6 : 0 })
+  // The shiny entrance plays shortly after the run starts.
+  if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
 
   // GBA-style HP bar under the feet.
   const w = 22
@@ -337,8 +443,8 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
   const cx = Math.round(w / 2)
   const cy = Math.round(h / 2 + 24)
-  const from = sprites(evo.from)
-  const to = sprites(evo.to)
+  const from = sprites(evo.from, g.player.shiny)
+  const to = sprites(evo.to, g.player.shiny)
   const flashStart = 0.7
   const flashEnd = 3.7
   if (k < flashStart) {
@@ -387,6 +493,7 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   drawProps(ctx, g, t)
   drawSpecialAura(ctx, g, t)
   drawPickups(ctx, g, t)
@@ -402,7 +509,7 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   }
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
-    else drawEnemy(ctx, d, t)
+    else drawEnemy(ctx, d, g.time, t)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {
@@ -411,6 +518,7 @@ export const render = (ctx: Ctx, g: Game, t: number) => {
   drawSleep(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
+  for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {
     ctx.globalAlpha = Math.min(1, (1 - p.life / p.ttl) * 1.5)

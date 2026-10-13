@@ -70,6 +70,17 @@ const SFX = {
     noise(0.35, 0.18)
     tone(120, 40, 0.3, 'sawtooth', 0.12)
   },
+  /** The classic shiny twinkle: two quick high arpeggios. */
+  shiny: () => [1568, 2093, 2637, 2093, 2637, 3136].forEach((f, i) => tone(f, f, 0.09, 'square', 0.07, i * 0.06)),
+  legendary: () => {
+    noise(0.9, 0.12)
+    tone(55, 40, 1.2, 'sawtooth', 0.2)
+    ;[147, 175, 220, 294].forEach((f, i) => tone(f, f, 0.5, 'square', 0.1, 0.35 + i * 0.16))
+  },
+  quake: () => {
+    noise(0.22, 0.14)
+    tone(90, 40, 0.22, 'triangle', 0.18)
+  },
   item: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, 'square', 0.12, i * 0.06)),
   /** Poké Flute: a short lullaby. */
   flute: () => [523, 659, 784, 659, 523, 392].forEach((f, i) => tone(f, f * 1.01, 0.22, 'triangle', 0.2, i * 0.16)),

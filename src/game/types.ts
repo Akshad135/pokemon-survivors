@@ -1,6 +1,7 @@
 import type { Dir8 } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
+import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
@@ -37,6 +38,8 @@ export type Player = {
   stats: PlayerStats
   radius: number
   animTime: number
+  /** Rolled once per run; the whole evolution line uses shiny sprites. */
+  shiny: boolean
 }
 
 export type EnemyBehavior =
@@ -61,6 +64,12 @@ export type Enemy = {
   radius: number
   xp: number
   boss: boolean
+  /** Shiny elite: more HP and EXP, drops a Poké Ball. */
+  shiny: boolean
+  /** Game time it spawned at (sparkle timing). */
+  bornAt: number
+  /** Seconds until each boss pattern fires, indexed like `BOSS_PATTERNS[kind]`. */
+  cooldowns: number[]
   behavior: EnemyBehavior
   dir: Dir8
   animTime: number
@@ -123,6 +132,27 @@ export type Attack = {
   flip: boolean
 }
 
+/** Enemy-owned hitbox that hurts the player (boss attacks). */
+export type Hazard = {
+  id: number
+  /** strike = telegraphed impact, shot = projectile, zone = lingering patch. */
+  kind: 'strike' | 'shot' | 'zone'
+  visual: HazardVisual
+  x: number
+  y: number
+  vx: number
+  vy: number
+  r: number
+  damage: number
+  age: number
+  /** Harmless telegraph until `armAt`; can hurt until `disarmAt`. */
+  armAt: number
+  disarmAt: number
+  ttl: number
+  /** Projectiles vanish on hit; zones linger. */
+  vanishOnHit: boolean
+}
+
 export type Pickup = {
   id: number
   x: number
@@ -165,7 +195,10 @@ export type GameEvent =
   | { kind: 'hurt' }
   | { kind: 'levelup' }
   | { kind: 'boss'; enemy: EnemyId }
+  | { kind: 'shiny'; enemy: EnemyId }
+  | { kind: 'shinyPlayer' }
   | { kind: 'thunder' }
+  | { kind: 'quake' }
   /** The special attack started charging or was unleashed. */
   | { kind: 'special'; phase: 'charge' | 'release'; name: string }
   | { kind: 'evolve'; from: number; to: number }
@@ -191,6 +224,7 @@ export type Game = {
   player: Player
   enemies: Enemy[]
   attacks: Attack[]
+  hazards: Hazard[]
   pickups: Pickup[]
   particles: Particle[]
   texts: FloatText[]

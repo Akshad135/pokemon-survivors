@@ -85,6 +85,29 @@ export const FX = {
   blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
 }
 
+/* ---------------- Shiny sparkles ---------------- */
+
+/** Classic shiny twinkle: a four-point star in three sizes (small → big). */
+const SPARKLES = [
+  ['.1.', '121', '.1.'],
+  ['..1..', '..1..', '11211', '..1..', '..1..'],
+  ['...1...', '...1...', '..121..', '1122211', '..121..', '...1...', '...1...'],
+] as const
+
+export const SPARKLE = lazy(() => SPARKLES.map((rows) => fromStrings(rows, { 1: '#f8e070', 2: '#ffffff' })))
+
+/* ---------------- Boss hazards ---------------- */
+
+const SHARD = ['....11.', '..1221.', '1123331', '..1221.', '....11.']
+const SMALL_ORB = ['.111.', '12221', '12321', '12221', '.111.']
+const ROCK = ['..1111..', '.122221.', '12233221', '12232221', '12222211', '.112211.', '..1111..']
+
+export const HAZARD_FX = {
+  ice: lazy(() => art(SHARD, { 1: '#3878a8', 2: '#98d8f8', 3: '#ffffff' }, '#183048')),
+  psychic: lazy(() => art(SMALL_ORB, { 1: '#a02868', 2: '#f85888', 3: '#ffffff' }, '#401030')),
+  rock: lazy(() => art(ROCK, { 1: '#584020', 2: '#a08040', 3: '#d8c080' }, '#181818')),
+}
+
 /* ---------------- Pickups ---------------- */
 
 const CANDY = ['..111..', '1122211', '.12321.', '1122211', '..111..']
@@ -181,3 +204,4 @@ export const itemIcon = (id: ItemId) =>
 export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICKUPS.candy()[tier]!)
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
+export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))

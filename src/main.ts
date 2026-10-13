@@ -7,7 +7,7 @@ import { createPadButton } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
-import { ENEMIES, ENEMY_DEX } from './data/enemies'
+import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
 import { ITEMS } from './data/items'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { CONSUMABLES } from './game/consumables'
@@ -16,12 +16,12 @@ import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, sprites } from './render/sprites'
+import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
 import { consumableIcon } from './render/props'
 import { drawGround } from './render/world'
 import { h } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
+import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
 import { starterSelect } from './ui/starterSelect'
 
 const STEP = 1 / 60
@@ -115,7 +115,9 @@ const startRun = async (starter: StarterId) => {
   lastStarter = starter
   const loading = loadingScreen()
   ui.append(loading)
-  await loadAll([...starterDex(starter), ...ENEMY_DEX])
+  // The player's shiny line is awaited (a shiny run must not start in normal colors); enemy shinies stream in.
+  await Promise.all([loadAll([...starterDex(starter), ...ENEMY_DEX]), preloadShinies(starterDex(starter))])
+  void preloadShinies(ENEMY_DEX)
   loading.remove()
   const game = createGame(starter, view)
   const pause = () => game.phase === 'playing' && (game.phase = 'paused')
@@ -160,6 +162,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
+    case 'quake': return playSfx('quake', 150)
     case 'special': {
       if (e.phase === 'release') return playSfx('specialBlast', 0)
       playSfx('specialCharge', 0)
@@ -168,10 +171,26 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, h('span', {}, `${who} usou `, h('b', {}, e.name), '!'), 1600)
     }
     case 'boss': {
-      const def = ENEMIES[e.enemy]
+      const def: EnemyDef = ENEMIES[e.enemy]
+      if (def.legendary) {
+        playSfx('legendary')
+        playCry(sprites(def.dex).cry, 0.7)
+        flashScreen(ui)
+        return banner(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' ', h('span', { class: 'legendary' }, 'lendário'), ' apareceu!'))
+      }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
       return toast(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' selvagem apareceu!'), 3200)
+    }
+    case 'shiny': {
+      const def = ENEMIES[e.enemy]
+      playSfx('shiny')
+      playCry(sprites(def.dex).cry, 0.4)
+      return toast(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' shiny apareceu!'), 3200)
+    }
+    case 'shinyPlayer': {
+      playSfx('shiny')
+      return toast(ui, h('span', {}, 'Que sorte! Seu ', h('b', {}, STARTERS[g.starter].name), ' é shiny!'), 3600)
     }
     case 'evolve': {
       playCry(sprites(e.from).cry)
