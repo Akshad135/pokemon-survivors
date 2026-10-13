@@ -1,6 +1,6 @@
 export const POKE_TYPES = [
   'normal', 'fire', 'water', 'grass', 'electric', 'poison', 'flying',
-  'bug', 'rock', 'ground', 'ghost', 'fighting', 'psychic',
+  'bug', 'rock', 'ground', 'ghost', 'fighting', 'psychic', 'ice',
 ] as const
 
 export type PokeType = (typeof POKE_TYPES)[number]
@@ -19,18 +19,20 @@ export const TYPE_COLORS: Record<PokeType, string> = {
   ghost: '#705898',
   fighting: '#c03028',
   psychic: '#f85888',
+  ice: '#98d8d8',
 }
 
 /** Official chart, restricted to the types we use. Missing entries are 1x. */
 const CHART: Partial<Record<PokeType, Partial<Record<PokeType, number>>>> = {
   normal: { rock: 0.5, ghost: 0 },
-  fire: { grass: 2, bug: 2, fire: 0.5, water: 0.5, rock: 0.5 },
+  fire: { grass: 2, bug: 2, ice: 2, fire: 0.5, water: 0.5, rock: 0.5 },
   water: { fire: 2, rock: 2, ground: 2, water: 0.5, grass: 0.5 },
   grass: { water: 2, rock: 2, ground: 2, fire: 0.5, grass: 0.5, poison: 0.5, flying: 0.5, bug: 0.5 },
   electric: { water: 2, flying: 2, grass: 0.5, electric: 0.5, ground: 0 },
   poison: { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5 },
   flying: { grass: 2, bug: 2, fighting: 2, electric: 0.5, rock: 0.5 },
   psychic: { fighting: 2, poison: 2, psychic: 0.5 },
+  ice: { grass: 2, ground: 2, flying: 2, fire: 0.5, water: 0.5, ice: 0.5 },
 }
 
 /**

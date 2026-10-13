@@ -5,18 +5,18 @@ import './ui/style.css'
 import { playCry, playSfx, toggleMute, unlockAudio } from './engine/audio'
 import { createInput } from './engine/input'
 import { context2d } from './engine/pixelart'
-import { ENEMIES, ENEMY_DEX } from './data/enemies'
+import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
 import { ITEMS } from './data/items'
 import { STARTER_IDS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { chooseOffer, createGame, playerDex, step } from './game/game'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
-import { loadAll, sprites } from './render/sprites'
+import { loadAll, preloadShinies, sprites } from './render/sprites'
 import { drawGround } from './render/world'
 import { h } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { levelUp, pauseMenu, results, starterSelect, textBox, toast, type Screen } from './ui/screens'
+import { banner, flashScreen, levelUp, pauseMenu, results, starterSelect, textBox, toast, type Screen } from './ui/screens'
 
 const STEP = 1 / 60
 /** Target internal height; the canvas is upscaled by an integer factor for crisp pixels. */
@@ -121,11 +121,28 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
+    case 'quake': return playSfx('quake', 150)
     case 'boss': {
-      const def = ENEMIES[e.enemy]
+      const def: EnemyDef = ENEMIES[e.enemy]
+      if (def.legendary) {
+        playSfx('legendary')
+        playCry(sprites(def.dex).cry, 0.7)
+        flashScreen(ui)
+        return banner(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' ', h('span', { class: 'legendary' }, 'lendário'), ' apareceu!'))
+      }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
       return toast(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' selvagem apareceu!'), 3200)
+    }
+    case 'shiny': {
+      const def = ENEMIES[e.enemy]
+      playSfx('shiny')
+      playCry(sprites(def.dex).cry, 0.4)
+      return toast(ui, h('span', {}, 'Um ', h('b', {}, def.name), ' shiny apareceu!'), 3200)
+    }
+    case 'shinyPlayer': {
+      playSfx('shiny')
+      return toast(ui, h('span', {}, 'Que sorte! Seu ', h('b', {}, STARTERS[g.starter].name), ' é shiny!'), 3600)
     }
     case 'evolve': {
       playCry(sprites(e.from).cry)
@@ -207,7 +224,9 @@ const frame = (now: number) => {
 const boot = async () => {
   const loading = h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, 'Carregando…'))
   ui.append(loading)
-  await loadAll([...new Set([...STARTER_IDS.flatMap(starterDex), ...ENEMY_DEX])])
+  const dexes = [...new Set([...STARTER_IDS.flatMap(starterDex), ...ENEMY_DEX])]
+  await loadAll(dexes)
+  void preloadShinies(dexes)
   loading.remove()
   showMenu()
   requestAnimationFrame(frame)

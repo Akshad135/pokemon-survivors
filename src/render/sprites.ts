@@ -30,10 +30,16 @@ export type SpeciesSprites = {
   bodyH: number
 }
 
-type ManifestEntry = { anims: Partial<Record<AnimName, { frameWidth: number; frameHeight: number; durations: number[] }>> }
+type ManifestAnims = Partial<Record<AnimName, { frameWidth: number; frameHeight: number; durations: number[] }>>
+type ManifestEntry = { anims: ManifestAnims; shiny?: { anims: ManifestAnims; portrait: boolean } }
 const MANIFEST = manifest as Record<string, ManifestEntry>
 
 const base = (dex: Dex) => `${import.meta.env.BASE_URL}assets/pokemon/${dex}`
+/** Shiny forms live in a `shiny/` subfolder with their own sheets and portrait. */
+const variantBase = (dex: Dex, shiny: boolean) => (shiny ? `${base(dex)}/shiny` : base(dex))
+const cacheKey = (dex: Dex, shiny: boolean) => (shiny ? `${dex}s` : String(dex))
+
+export const hasShiny = (dex: Dex) => MANIFEST[String(dex)]?.shiny !== undefined
 
 const loadImage = (src: string) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
@@ -71,17 +77,20 @@ const measure = (sheet: Sheet) => {
   return { footY: maxY - sheet.fh / 2, bodyW: maxX - minX + 1, bodyH: maxY - minY + 1 }
 }
 
-const cache = new Map<Dex, SpeciesSprites>()
+const cache = new Map<string, SpeciesSprites>()
 
-export const loadSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
-  const cached = cache.get(dex)
+export const loadSpecies = async (dex: Dex, shiny = false): Promise<SpeciesSprites> => {
+  const key = cacheKey(dex, shiny)
+  const cached = cache.get(key)
   if (cached) return cached
   const entry = MANIFEST[String(dex)]
-  if (!entry) throw new Error(`Missing sprites for #${dex}. Run npm run assets.`)
+  const anims = shiny ? entry?.shiny?.anims : entry?.anims
+  if (!anims) throw new Error(`Missing ${shiny ? 'shiny ' : ''}sprites for #${dex}. Run npm run assets.`)
+  const dir = variantBase(dex, shiny)
 
   const loadSheet = async (name: AnimName): Promise<Sheet> => {
-    const meta = entry.anims[name] ?? entry.anims.Walk!
-    const img = await loadImage(`${base(dex)}/${entry.anims[name] ? name : 'Walk'}.png`)
+    const meta = anims[name] ?? anims.Walk!
+    const img = await loadImage(`${dir}/${anims[name] ? name : 'Walk'}.png`)
     return {
       img,
       white: silhouette(img),
@@ -96,7 +105,7 @@ export const loadSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
     loadSheet('Walk'),
     loadSheet('Idle'),
     loadSheet('Hurt'),
-    loadImage(`${base(dex)}/portrait.png`),
+    loadImage(`${dir}/portrait.png`),
   ])
   const sprites: SpeciesSprites = {
     dex,
@@ -105,19 +114,24 @@ export const loadSpecies = async (dex: Dex): Promise<SpeciesSprites> => {
     cry: `${base(dex)}/cry.ogg`,
     ...measure(Walk),
   }
-  cache.set(dex, sprites)
+  cache.set(key, sprites)
   return sprites
 }
 
-export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map(loadSpecies))
+export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map((dex) => loadSpecies(dex)))
 
-export const sprites = (dex: Dex) => {
-  const s = cache.get(dex)
+/** Loads shiny forms in the background. Until one is ready, `sprites` falls back to the normal form. */
+export const preloadShinies = (dexes: readonly Dex[]) =>
+  Promise.allSettled(dexes.filter(hasShiny).map((dex) => loadSpecies(dex, true)))
+
+export const sprites = (dex: Dex, shiny = false) => {
+  const s = (shiny && cache.get(cacheKey(dex, true))) || cache.get(cacheKey(dex, false))
   if (!s) throw new Error(`Sprites for #${dex} not loaded`)
   return s
 }
 
-export const portraitUrl = (dex: Dex) => `${base(dex)}/portrait.png`
+export const portraitUrl = (dex: Dex, shiny = false) =>
+  `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`
 
 const frameIndex = (sheet: Sheet, seconds: number, loop: boolean) => {
   let tick = Math.floor(seconds * 60)

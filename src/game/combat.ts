@@ -38,10 +38,12 @@ export const killEnemy = (g: Game, e: Enemy) => {
   e.dying = 0
   e.hp = 0
   g.kills++
-  burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: e.boss ? 60 : 8, speed: e.boss ? 160 : 70, ttl: 0.45 })
+  const big = e.boss || e.shiny
+  burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })
 
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
+  if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.boss) {
     dropPickup(g, e.x, e.y, 'pokeball')
     if (g.bossId === e.id) g.bossId = null
@@ -55,7 +57,8 @@ export const killEnemy = (g: Game, e: Enemy) => {
   }
 }
 
-export const hurtPlayer = (g: Game, amount: number, from: Enemy) => {
+/** Damages the player. `from` (a body that touched them) gets shoved back; hazards pass none. */
+export const hurtPlayer = (g: Game, amount: number, from?: Enemy) => {
   const p = g.player
   if (p.iframes > 0 || g.phase !== 'playing') return
   const dmg = Math.max(1, Math.round(amount - p.stats.armor))
@@ -67,9 +70,11 @@ export const hurtPlayer = (g: Game, amount: number, from: Enemy) => {
   burst(g, p.x, p.y - 10, { colors: ['#ff5040', '#ffffff'], count: 6, speed: 80, ttl: 0.3 })
   g.events.push({ kind: 'hurt' })
   // A small shove keeps the player from being body-blocked into a death spiral.
-  const away = dirTo(from.x, from.y, p.x, p.y)
-  from.kx -= away.x * 60
-  from.ky -= away.y * 60
+  if (from) {
+    const away = dirTo(from.x, from.y, p.x, p.y)
+    from.kx -= away.x * 60
+    from.ky -= away.y * 60
+  }
 
   if (p.hp <= 0) {
     p.hp = 0

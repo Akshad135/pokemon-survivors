@@ -4,11 +4,13 @@ import { createGrid } from '../engine/spatial'
 import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
+import { updateBosses, updateHazards } from './bosses'
 import { updateEffects } from './effects'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
 import { MOVES, moveStats } from './moves'
 import { updatePickups } from './pickups'
+import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateSpawner } from './spawner'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
@@ -19,9 +21,11 @@ export const playerDex = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.
 
 export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now()): Game => {
   const def = STARTERS[starter]
+  const rng = createRng(seed)
+  const shiny = rollShiny(rng, SHINY_ODDS.player)
   const g: Game = {
     starter,
-    rng: createRng(seed),
+    rng,
     time: 0,
     phase: 'playing',
     nextId: 1,
@@ -42,9 +46,11 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
       stats: BASE_STATS,
       radius: Math.max(6, Math.round(sprites(def.line[0].dex).bodyW * 0.3)),
       animTime: 0,
+      shiny,
     },
     enemies: [],
     attacks: [],
+    hazards: [],
     pickups: [],
     particles: [],
     texts: [],
@@ -60,7 +66,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
-    events: [],
+    events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -144,6 +150,8 @@ export const step = (g: Game, input: Vec, dt: number) => {
   updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)
+  updateBosses(g, dt)
+  updateHazards(g, dt)
   rebuildGrid(g)
   updateMoves(g, dt)
   updateAttacks(g, dt)
