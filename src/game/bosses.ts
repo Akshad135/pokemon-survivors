@@ -3,6 +3,7 @@ import { range } from '../engine/rng'
 import { BOSS_PATTERNS, type BossPattern, type HazardVisual } from '../data/bosses'
 import { hurtPlayer } from './combat'
 import { burst } from './effects'
+import { isAsleep } from './status'
 import type { Enemy, Game, Hazard } from './types'
 
 type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 'ttl'> & Partial<Hazard>
@@ -79,6 +80,8 @@ export const updateBosses = (g: Game, dt: number) => {
   for (const e of g.enemies) {
     const patterns = BOSS_PATTERNS[e.kind]
     if (!patterns || e.dying >= 0) continue
+    // Stunned or asleep bosses hold their attacks (paralysis and the Poké Flute pay off here).
+    if (e.status.stun > 0 || isAsleep(e.status)) continue
     if (e.cooldowns.length === 0) e.cooldowns = patterns.map((pt) => pt.every * 0.5)
     const near = Math.hypot(e.x - g.player.x, e.y - g.player.y) < reach
     patterns.forEach((pattern, i) => {
