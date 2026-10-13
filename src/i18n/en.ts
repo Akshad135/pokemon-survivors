@@ -136,6 +136,16 @@ export const en: Messages = {
     revive: 'Your *Revive* got you back on your feet!',
   },
 
+  mapEvents: {
+    altar: (buff) => `The altar granted *${buff}*!`,
+    fountain: 'The fountain restores your HP. Stay in it!',
+    chestAmbush: "A locked chest! Stay close to open it… _it's an ambush_!",
+    chestOpen: (coins) => `Chest opened: *${coins}*, an item and a Poké Ball!`,
+    meowth: 'A *Meowth* ran by with coins! Hit it!',
+    payDay: (coins) => `*Pay Day!* Meowth dropped ${coins}!`,
+    meowthEscaped: '*Meowth* got away…',
+  },
+
   moves: {
     ember: {
       description: 'Shoots embers at the nearest foe. May burn.',

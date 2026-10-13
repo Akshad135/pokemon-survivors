@@ -3,6 +3,7 @@ import { ENEMIES, type EnemyId } from '../data/enemies'
 import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
 import type { PokeType } from '../data/types'
 import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
+import { MEOWTH_DEX } from '../game/mapEventRules'
 
 /**
  * The site's Pokédex model: every species the game uses, derived from
@@ -10,7 +11,7 @@ import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
  * the next build.
  */
 
-export const ROLES = ['starter', 'enemy', 'boss', 'legendary'] as const
+export const ROLES = ['starter', 'enemy', 'boss', 'legendary', 'event'] as const
 
 export type Role = (typeof ROLES)[number]
 
@@ -34,7 +35,8 @@ export type DexEntry = {
   role: Role
   region: Region
   sprites: Sprites
-  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId }
+  /** `event`: met at a map event (the fleeing Meowth), not in the horde. */
+  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -89,9 +91,11 @@ const wildEntry = (id: EnemyId): DexEntry => {
   return { ...base(e.dex, e.name, e.types), role, source: { kind: 'wild', id } }
 }
 
+const eventEntry = (): DexEntry => ({ ...base(MEOWTH_DEX, 'Meowth', ['normal']), role: 'event', source: { kind: 'event' } })
+
 /** Every Pokémon in the game, in national dex order. */
 export const pokedex = (): DexEntry[] =>
-  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry)].sort((a, b) => a.dex - b.dex)
+  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry), eventEntry()].sort((a, b) => a.dex - b.dex)
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
 

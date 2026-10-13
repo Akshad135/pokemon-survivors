@@ -62,8 +62,8 @@ export const sitePt = {
     results: (count: number) => `${count} ${s(count, 'Pokémon encontrado', 'Pokémon encontrados')}`,
     empty: 'Nenhum Pokémon com esses filtros.',
     clear: 'Limpar filtros',
-    roles: { starter: 'Inicial', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário' },
-    roleFilter: { starter: 'Iniciais', enemy: 'Selvagens', boss: 'Chefes', legendary: 'Lendários' },
+    roles: { starter: 'Inicial', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário', event: 'Evento' },
+    roleFilter: { starter: 'Iniciais', enemy: 'Selvagens', boss: 'Chefes', legendary: 'Lendários', event: 'Eventos' },
     link: (name: string) => `Link para ${name}`,
     portrait: (name: string) => `Retrato de ${name}`,
     sprite: (name: string) => `Sprite animado de ${name}`,
@@ -77,6 +77,7 @@ export const sitePt = {
     specialFinal: 'Na evolução final',
     learnset: 'Golpes que aprende',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
+    eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
     appears: 'Quando aparece',
     horde: (from: string, until: string) => `Na horda, de ${from} a ${until}`,
@@ -101,7 +102,7 @@ export const sitePt = {
   guide: {
     title: 'Como jogar Pokémon Survivors: guia completo',
     description:
-      'Guia do Pokémon Survivors: controles no teclado, controle e celular, como funciona a partida, níveis, golpes, evolução de golpes com itens, ataque especial, tipos e status, chefes, shinies, itens do mapa e Poké Mart.',
+      'Guia do Pokémon Survivors: controles no teclado, controle e celular, como funciona a partida, níveis, golpes, evolução de golpes com itens, ataque especial, tipos e status, chefes, shinies, itens e eventos do mapa e Poké Mart.',
     h1: 'Como jogar',
     intro:
       'Pokémon Survivors é um roguelite estilo Vampire Survivors: você só anda, e o seu Pokémon ataca sozinho. Este guia explica tudo o que acontece numa partida, com os números do jogo.',
@@ -116,6 +117,7 @@ export const sitePt = {
       bosses: 'Chefes',
       shinies: 'Shinies',
       items: 'Itens no mapa',
+      mapEvents: 'Eventos no mapa',
       mart: 'Poké Mart e Poké Dollars',
       settings: 'Ajustes e música',
     },
@@ -245,6 +247,44 @@ export const sitePt = {
         xSpeed: 'Mais velocidade e recarga mais rápida por 20s.',
         revive: 'Fica guardado. Quando você desmaiar, levanta com 50% do HP.',
       } satisfies Record<Drop, string>,
+    },
+    mapEvents: {
+      intro: (first: number, gap: number, max: number) =>
+        `A partir de ${first}s de partida, a cada ${gap}s mais ou menos um ponto de interesse pode surgir perto de você (no máximo ${max} ao mesmo tempo). Os importantes ganham uma seta na borda da tela. Se você demorar, eles somem.`,
+      eventHead: 'Evento',
+      howHead: 'Como funciona',
+      rewardHead: 'Recompensa',
+      altar: {
+        name: 'Altar',
+        how: 'Pise nele. O buff que ele dá aparece flutuando acima, para você decidir de longe.',
+        reward: (boost: number) => `X Attack, X Speed ou Max Repel (o sorteio evita o que já está ativo), com ${n(boost)}x a duração normal.`,
+      },
+      fountain: {
+        name: 'Fonte',
+        how: (charges: number, interval: number) => `Fique nela enquanto estiver ferido: ${charges} cargas, uma a cada ${n(interval)}s. Com HP cheio, nada é gasto.`,
+        reward: (heal: number) => `Cada carga recupera ${n(heal)}% do HP máximo.`,
+      },
+      chest: {
+        name: 'Baú com cadeado',
+        how: (unlock: number) =>
+          `Fique dentro do anel por ${unlock}s. Fora dele, o progresso volta devagar. Assim que você começa, uma emboscada de Pokémon selvagens fecha o cerco.`,
+        reward: (coins: string) => `${coins} ou mais (cresce com o tempo), um item e uma Poké Ball.`,
+      },
+      spikes: {
+        name: 'Espinhos',
+        how: 'Os espinhos sobem de tempos em tempos, com um aviso piscando antes. Ferem quem estiver em cima: você e os selvagens.',
+        reward: 'Atraia a horda para cima deles.',
+      },
+      bomb: {
+        name: 'Bomba',
+        how: (fuse: number) => `Qualquer um que chegue perto acende o pavio. ${n(fuse)}s depois ela explode e fere tudo no raio, inclusive você.`,
+        reward: 'Deixe a horda acender e saia de perto.',
+      },
+      meowth: {
+        name: 'Meowth fugindo',
+        how: (ttl: number) => `Corre de você e escapa em ${ttl}s. Seus golpes acertam ele.`,
+        reward: (jackpot: string) => `Uma moeda a cada golpe e o Pay Day (${jackpot}) se ele desmaiar.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
