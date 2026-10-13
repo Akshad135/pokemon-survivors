@@ -10,7 +10,7 @@ npm run build      # typecheck + production build
 npm run assets     # re-download sprites/cries (already committed in public/)
 ```
 
-**Controls:** WASD/arrows (or drag on touch screens) · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade.
+**Controls:** WASD/arrows · `Esc`/`P` pause · `M` mute · `1-3` pick an upgrade. On phones: drag anywhere for the floating joystick, tap the pause button (top right). Installable to the home screen (fullscreen web app).
 
 ## Stack
 

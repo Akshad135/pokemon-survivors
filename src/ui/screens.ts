@@ -16,12 +16,20 @@ export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () 
 
 const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
 
+/** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
+const TAP_GUARD_MS = 350
+
+/** Hint that swaps between keyboard and touch wording (see `.keys-only` / `.touch-only` in CSS). */
+const hint = (keys: string, touch: string) =>
+  h('p', { class: 'hint' }, h('span', { class: 'keys-only' }, keys), h('span', { class: 'touch-only' }, touch))
+
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
  */
 const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
   let index = opts.initial ?? 0
+  const openedAt = performance.now()
   const focus = (i: number, sound = true) => {
     index = (i + buttons.length) % buttons.length
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
@@ -29,7 +37,7 @@ const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => voi
   }
   buttons.forEach((b, i) => {
     b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => activate(i))
+    b.addEventListener('click', () => performance.now() - openedAt > TAP_GUARD_MS && activate(i))
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
@@ -87,7 +95,7 @@ export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: Star
     h('h1', { class: 'logo' }, h('span', { class: 'logo-top' }, 'POKéMON'), h('span', { class: 'logo-bottom' }, 'SURVIVORS')),
     h('p', { class: 'subtitle blink' }, 'Escolha seu parceiro!'),
     h('div', { class: 'starters' }, ...cards),
-    h('p', { class: 'hint' }, '← → escolher · ENTER confirmar · WASD/setas para andar'),
+    hint('← → escolher · ENTER confirmar · WASD/setas para andar', 'Toque para escolher · arraste o dedo para andar'),
     h('p', { class: 'credits' }, 'Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Game Freak'),
   )
   root.append(el)
@@ -165,7 +173,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
       { class: 'dialog box pop' },
       h('div', { class: 'dialog-title' }, `${name} subiu para o Nv ${g.player.level - g.pendingLevelUps + 1}!`),
       h('div', { class: 'offers' }, ...buttons),
-      h('p', { class: 'hint' }, '↑ ↓ escolher · ENTER confirmar · 1-3 atalho'),
+      hint('↑ ↓ escolher · ENTER confirmar · 1-3 atalho', 'Toque para escolher'),
     ),
   )
   root.append(el)
