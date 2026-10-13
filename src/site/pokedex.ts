@@ -2,7 +2,9 @@ import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyId } from '../data/enemies'
 import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
 import type { PokeType } from '../data/types'
+import { RIFT, RIFT_LEGENDS } from '../data/rifts'
 import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
+import { ENDLESS, REAPER } from '../game/endless'
 
 /**
  * The site's Pokédex model: every species the game uses, derived from
@@ -101,8 +103,14 @@ export type Appearance =
   | { kind: 'swarm' | 'ring'; at: number; count: number }
   /** `chance` is 1 for bosses that always come. */
   | { kind: 'boss'; at: number; chance: number }
+  /** Waits behind a legendary rift, which first opens at `from`. */
+  | { kind: 'rift'; from: number }
+  /** Hunts the player in endless mode from `at`. */
+  | { kind: 'reaper'; at: number }
 
-/** Spawn-pool windows (contiguous stages merged) plus every timed event of an enemy. */
+const isRiftLegend = (id: EnemyId): boolean => RIFT_LEGENDS.some((l) => l === id)
+
+/** Spawn-pool windows (contiguous stages merged), every timed event of an enemy, and rifts and the reaper. */
 export const appearances = (id: EnemyId): Appearance[] => {
   const windows = STAGES.reduce<Array<{ kind: 'horde'; from: number; until: number }>>((acc, stage, i) => {
     if (!stage.pool.some(([enemy]) => enemy === id)) return acc
@@ -116,7 +124,9 @@ export const appearances = (id: EnemyId): Appearance[] => {
   const events = EVENTS.filter((e) => e.enemy === id).map((e): Appearance =>
     e.kind === 'boss' ? { kind: 'boss', at: e.at, chance: e.chance ?? 1 } : { kind: e.kind, at: e.at, count: e.count },
   )
-  return [...windows, ...events]
+  const rift: Appearance[] = isRiftLegend(id) ? [{ kind: 'rift', from: RIFT.firstAt }] : []
+  const reaper: Appearance[] = id === REAPER ? [{ kind: 'reaper', at: ENDLESS.reaperAt }] : []
+  return [...windows, ...events, ...rift, ...reaper]
 }
 
 /** `m:ss` run clock, as shown on the HUD. */

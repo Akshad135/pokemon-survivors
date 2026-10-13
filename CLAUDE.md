@@ -25,7 +25,7 @@ npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs)
 npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
 ```
 
-In dev builds, the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing), which are handy for staging screenshots.
+In dev builds, the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing), which are handy for staging screenshots. For rifts and the endless mode: `ps.rift('kyogre')` steps into an arena (random legendary without an argument), `ps.portal()` opens a portal next to the player, `ps.victory()` shows the victory screen with the endless offer, `ps.endless(19.5)` jumps into endless mode at that minute and `ps.reaper()` calls Arceus now.
 
 ## Assets
 

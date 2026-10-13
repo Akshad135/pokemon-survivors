@@ -2,6 +2,7 @@ import { TAU } from '../engine/math'
 import { chance, range, weightedPick } from '../engine/rng'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import { EVENTS, stageAt, type WaveEvent } from '../data/waves'
+import { endlessPressure } from './endless'
 import { spawnEnemy } from './enemies'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
 import type { Game } from './types'
@@ -14,7 +15,8 @@ const offscreen = (g: Game, angle = range(g.rng, 0, TAU)) => {
   return { x: g.player.x + Math.cos(angle) * d, y: g.player.y + Math.sin(angle) * d }
 }
 
-const runEvent = (g: Game, event: WaveEvent) => {
+/** Runs a timed wave event now. The endless mode reuses it for its own rings and swarms. */
+export const runEvent = (g: Game, event: WaveEvent) => {
   const p = g.player
   switch (event.kind) {
     case 'boss': {
@@ -60,12 +62,13 @@ const runEvent = (g: Game, event: WaveEvent) => {
 
 export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
+  const pressure = endlessPressure(g.time)
   const regular = g.enemies.reduce((n, e) => n + (e.dying < 0 && !e.boss && e.behavior.kind === 'chase' ? 1 : 0), 0)
 
-  g.spawnBudget += stage.rate * dt
+  g.spawnBudget += stage.rate * pressure.rate * dt
   while (g.spawnBudget >= 1) {
     g.spawnBudget--
-    if (regular >= stage.max) continue
+    if (regular >= stage.max * pressure.max) continue
     const kind = weightedPick(g.rng, stage.pool)
     if (rollShiny(g.rng, SHINY_ODDS.enemy)) {
       // Shinies pop in just inside the screen edge so their sparkle entrance is seen.

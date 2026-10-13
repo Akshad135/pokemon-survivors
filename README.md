@@ -98,6 +98,8 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 
   <img src="public/assets/pokemon/95/portrait.png" width="40" alt="Onix"> <img src="public/assets/pokemon/143/portrait.png" width="40" alt="Snorlax"> <img src="public/assets/pokemon/144/portrait.png" width="40" alt="Articuno"> <img src="public/assets/pokemon/145/portrait.png" width="40" alt="Zapdos"> <img src="public/assets/pokemon/146/portrait.png" width="40" alt="Moltres"> <img src="public/assets/pokemon/150/portrait.png" width="40" alt="Mewtwo"> <img src="public/assets/pokemon/151/portrait.png" width="40" alt="Mew">
 
+- **Legendary rifts**: a few times per run a rift opens on the map. Step in to duel Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena for big rewards, before it collapses.
+- **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
 - **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
@@ -132,7 +134,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing).
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
 
 ## How it's built
 
@@ -148,6 +150,8 @@ src/
             status.ts (pure condition rules) · statusSystem.ts (DoT ticks, particles)
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
+            rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
+            endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, title scene and logo, frame renderer
   ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
@@ -161,6 +165,8 @@ src/
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
 - **Waves** live in `data/waves.ts`: spawn stages by time, plus events (flyby swarms, closing rings, bosses, optionally rare via `chance`).
 - **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/dex.mjs`.
+- **Rifts** keep the map side (`riftPortal.ts`: a portal opens, the player stands in it) apart from the arena (`riftArena.ts`). Entering sets the world aside (horde, hazards, pickups, props) and leaving puts it back; the run clock keeps going. Legendaries, arena looks and timings live in `data/rifts.ts`.
+- **Endless mode** starts from the victory screen (`continueEndless`). `endlessPressure` raises the spawn rate past 15:00 and `endlessSystem.ts` runs rings, swarms and the reaper.
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time, burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses).
 - **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides). Input reaches `step()` as data (`{ move, special }`).

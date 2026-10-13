@@ -15,6 +15,8 @@ export type EnemyDef = {
   boss?: boolean
   /** Legendary bosses get the big entrance (flash, banner) and attack patterns from `data/bosses.ts`. */
   legendary?: boolean
+  /** Integer draw scale (and body size) for Pokémon that must loom over the rest, like the reaper. */
+  scale?: number
 }
 
 export const ENEMIES = {
@@ -40,6 +42,15 @@ export const ENEMIES = {
   moltres: { dex: 146, name: 'Moltres', types: ['fire', 'flying'], hp: 11500, speed: 54, damage: 34, xp: 250, mass: 30, boss: true, legendary: true },
   mew: { dex: 151, name: 'Mew', types: ['psychic'], hp: 9000, speed: 70, damage: 30, xp: 300, mass: 40, boss: true, legendary: true },
   mewtwo: { dex: 150, name: 'Mewtwo', types: ['psychic'], hp: 22000, speed: 62, damage: 45, xp: 0, mass: 50, boss: true, legendary: true },
+  // Rift legendaries (`data/rifts.ts`): HP and contact damage are their 3:30 values, scaled by `riftScale`.
+  lugia: { dex: 249, name: 'Lugia', types: ['psychic', 'flying'], hp: 3400, speed: 56, damage: 28, xp: 0, mass: 40, boss: true, legendary: true },
+  hoOh: { dex: 250, name: 'Ho-Oh', types: ['fire', 'flying'], hp: 3400, speed: 56, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
+  kyogre: { dex: 382, name: 'Kyogre', types: ['water'], hp: 3800, speed: 44, damage: 28, xp: 0, mass: 40, boss: true, legendary: true },
+  groudon: { dex: 383, name: 'Groudon', types: ['ground'], hp: 4200, speed: 38, damage: 32, xp: 0, mass: 40, boss: true, legendary: true },
+  rayquaza: { dex: 384, name: 'Rayquaza', types: ['dragon', 'flying'], hp: 3000, speed: 66, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
+  dialga: { dex: 483, name: 'Dialga', types: ['steel', 'dragon'], hp: 3600, speed: 46, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
+  // The endless mode's reaper (`game/endless.ts`): it hunts the player from 20:00.
+  arceus: { dex: 493, name: 'Arceus', types: ['normal'], hp: 300000, speed: 60, damage: 90, xp: 0, mass: 999, boss: true, legendary: true, scale: 2 },
 } as const satisfies Record<string, EnemyDef>
 
 export type EnemyId = keyof typeof ENEMIES

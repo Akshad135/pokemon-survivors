@@ -13,8 +13,12 @@ export const STARTERS = [
 ]
 export const HORDE = [10, 13, 16, 19, 21, 23, 41, 43, 46, 48, 56, 66, 74, 92, 109]
 export const BOSSES = [95, 143, 144, 145, 146, 150, 151]
-export const DEX = [...STARTERS, ...HORDE, ...BOSSES]
-/** Species that can roll shiny: the player line and regular enemies. */
-export const SHINY = new Set([...STARTERS, ...HORDE])
+/** Rift legendaries (src/data/rifts.ts), which can also roll shiny. */
+export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483]
+/** Arceus, the endless mode's reaper. */
+export const REAPER = [493]
+export const DEX = [...STARTERS, ...HORDE, ...BOSSES, ...RIFT_LEGENDS, ...REAPER]
+/** Species that can roll shiny: the player line, regular enemies and rift legendaries. */
+export const SHINY = new Set([...STARTERS, ...HORDE, ...RIFT_LEGENDS])
 
 export const pad = (n) => String(n).padStart(4, '0')

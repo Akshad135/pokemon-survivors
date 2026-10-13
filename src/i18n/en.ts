@@ -136,6 +136,29 @@ export const en: Messages = {
     revive: 'Your *Revive* got you back on your feet!',
   },
 
+  rifts: {
+    open: 'A *legendary rift* opened! Follow the arrow.',
+    closed: 'The rift closed.',
+    enter: (name) => `The rift takes you to *${name}*!`,
+    enterShiny: (name) => `The rift takes you to a _shiny_ *${name}*!`,
+    cleared: (name) => `*${name}* defeated! The rift leaves a treasure.`,
+    collapse: 'The rift collapsed! You were thrown back.',
+    hudPortal: (time) => `Rift ${time}`,
+    hudArena: (time) => `Collapse ${time}`,
+    hudEndless: (time) => `Endless +${time}`,
+    hudReaper: (time) => `Arceus in ${time}`,
+    hudHunting: 'Arceus is hunting you!',
+    reaper: '*Arceus* descended to judge you!',
+    reaperBack: '*Arceus* is back, stronger!',
+    reaperDown: 'You defeated *Arceus*! A _legendary_ feat!',
+    continue: 'Endless mode',
+    continueHint: 'The horde never stops and Arceus comes hunting at 20:00. How long can you last?',
+    endlessOver: (name) => `${name} fell in endless mode!`,
+    overtime: 'Overtime',
+    legends: 'Legendaries',
+    reaperDefeated: (n) => (n === 1 ? 'Arceus defeated!' : `Arceus defeated ${n}x!`),
+  },
+
   moves: {
     ember: {
       description: 'Shoots embers at the nearest foe. May burn.',

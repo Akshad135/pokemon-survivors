@@ -1,7 +1,7 @@
 import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
-import { ENEMIES } from '../data/enemies'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
@@ -12,6 +12,7 @@ import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
+import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
 import { bolt, dashedRing } from './strokes'
@@ -263,6 +264,11 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   ice: ['#98d8f8', 'rgba(152,216,248,0.25)'],
   fire: ['#f08030', 'rgba(240,128,48,0.25)'],
   psychic: ['#f870c0', 'rgba(248,96,208,0.4)'],
+  water: ['#58a8f8', 'rgba(88,168,248,0.28)'],
+  dragon: ['#a070f8', 'rgba(112,56,248,0.3)'],
+  steel: ['#c8e0f8', 'rgba(104,136,200,0.3)'],
+  aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
+  judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
 }
 
 /** Ground layer: telegraph circles, landed shockwaves and lingering fire. */
@@ -304,6 +310,12 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
         return blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
       case 'rock':
         return blitCentered(ctx, HAZARD_FX.rock(), h.x, y)
+      case 'water':
+      case 'dragon':
+      case 'steel':
+      case 'aero':
+      case 'judgment':
+        return blitCentered(ctx, HAZARD_FX[h.visual](), h.x, y + (Math.floor(h.age * 10) % 2))
       default:
         return blitCentered(ctx, HAZARD_FX.psychic(), h.x, y + (Math.floor(h.age * 10) % 2))
     }
@@ -314,9 +326,11 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     if (fall > 0) blitCentered(ctx, HAZARD_FX.rock(), h.x, h.y - 3 - (1 - fall) * 120)
     return
   }
-  if (h.visual === 'thunder' && h.age >= h.armAt) {
+  if ((h.visual === 'thunder' || h.visual === 'judgment') && h.age >= h.armAt) {
     ctx.globalAlpha = Math.max(0, 1 - (h.age - h.armAt) / (h.ttl - h.armAt))
-    bolt(ctx, h.x, h.y, 200)
+    // Arceus's Judgment falls as a pillar of light.
+    if (h.visual === 'judgment') bolt(ctx, h.x, h.y, 220, { width: 5, edge: '#f8e070', core: '#ffffff' })
+    else bolt(ctx, h.x, h.y, 200)
     blitCentered(ctx, ellipse(Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)'), h.x, h.y)
     ctx.globalAlpha = 1
   }
@@ -360,13 +374,15 @@ const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' 
 
 /** `time` is game time (shiny entrance), `t` wall time (status tint). */
 const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
-  const s = sprites(ENEMIES[e.kind].dex, e.shiny)
+  const def: EnemyDef = ENEMIES[e.kind]
+  const s = sprites(def.dex, e.shiny)
+  const scale = def.scale ?? 1
   if (e.dying >= 0) {
     const k = e.dying / 0.4
-    drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false })
+    drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false, scale })
     return
   }
-  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id) })
+  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, e.y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: statusTint(e.status, t, e.id), scale })
   if (e.shiny) drawSparkles(ctx, e.x, e.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
 }
 
@@ -473,7 +489,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const camX = Math.round(g.camera.x) + shakeX
   const camY = Math.round(g.camera.y) + shakeY
 
-  drawGround(ctx, camX, camY, w, h)
+  if (g.rift.arena) drawArena(ctx, g.rift.arena, camX, camY, w, h, t)
+  else drawGround(ctx, camX, camY, w, h)
   ctx.save()
   ctx.translate(-camX, -camY)
 
@@ -482,6 +499,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   drawProps(ctx, g, t)
+  if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
   drawSpecialAura(ctx, g, t)
   drawPickups(ctx, g, t)
 
@@ -500,7 +518,10 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {
-    if (d !== 'player' && d.boss && d.dying < 0) drawStatusBadge(ctx, d.status, d.x, d.y - sprites(ENEMIES[d.kind].dex).bodyH - 5)
+    if (d !== 'player' && d.boss && d.dying < 0) {
+      const def: EnemyDef = ENEMIES[d.kind]
+      drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
+    }
   }
   drawSleep(ctx, g, t)
 
@@ -522,6 +543,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
+  drawRiftArrow(ctx, g, camX, camY, t)
   drawFlash(ctx, g)
   if (g.phase === 'evolving') drawEvolution(ctx, g, t)
 }

@@ -3,14 +3,17 @@ import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
+import type { RiftLegend } from '../data/rifts'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
+import type { EndlessState } from './endless'
 import type { MoveId } from './moves'
 import type { Prop } from './props'
+import type { RiftState } from './rift'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
@@ -221,6 +224,15 @@ export type GameEvent =
   | { kind: 'propBreak' }
   | { kind: 'revive' }
   | { kind: 'victory' }
+  /** Legendary rifts: a portal opened or closed unused, the player stepped in, won, or came back. */
+  | { kind: 'riftOpen' }
+  | { kind: 'riftClosed' }
+  | { kind: 'riftEnter'; enemy: RiftLegend; shiny: boolean }
+  | { kind: 'riftCleared'; enemy: RiftLegend; shiny: boolean }
+  | { kind: 'riftExit'; outcome: 'won' | 'collapse' }
+  /** Endless mode: Arceus arrived (`defeats` so far) or fell. */
+  | { kind: 'reaper'; defeats: number }
+  | { kind: 'reaperDown'; defeats: number }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -271,5 +283,9 @@ export type Game = {
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
   flash: number
+  /** Legendary rifts: the portal on the map, the arena and what was met this run. */
+  rift: RiftState
+  /** Set once the player goes on past Mewtwo (endless mode). */
+  endless: EndlessState | null
   events: GameEvent[]
 }

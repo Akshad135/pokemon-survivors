@@ -209,6 +209,19 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 146 | Moltres | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 150 | Mewtwo | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 151 | Mew | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social), baronessfaron |
+| 249 | Lugia | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 249 | Lugia (shiny) | [Audino](https://github.com/audinowho) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 250 | Ho_Oh | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), CamusZekeSirius |
+| 250 | Ho_Oh (shiny) | El_Pangoro_Parse, [Deeshura](https://bsky.app/profile/deeshura.bsky.social) | El_Pangoro_Parse, CamusZekeSirius, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 382 | Kyogre | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 382 | Kyogre (shiny) | [lokatts](https://twitter.com/lokatts) | [Audino](https://github.com/audinowho), CamusZekeSirius, Top_Kec |
+| 383 | Groudon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 383 | Groudon (shiny) | [lokatts](https://twitter.com/lokatts) | [Audino](https://github.com/audinowho), Top_Kec |
+| 384 | Rayquaza | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Top_Kec |
+| 384 | Rayquaza (shiny) | [lokatts](https://twitter.com/lokatts) | [Audino](https://github.com/audinowho), CamusZekeSirius, Top_Kec |
+| 483 | Dialga | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 483 | Dialga (shiny) | Anonymous | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), Anonymous |
+| 493 | Arceus | baronessfaron, JFain | baronessfaron |
 
 ## Cries
 

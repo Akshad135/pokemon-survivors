@@ -5,13 +5,16 @@ import { EVOLUTIONS } from '../../data/evolutions'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { STARTER_IDS, STARTERS } from '../../data/starters'
 import { effectiveness } from '../../data/types'
+import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { EVENTS, RUN_LENGTH, scaling } from '../../data/waves'
+import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS } from '../../game/special'
+import { riftScale } from '../../game/rift'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
@@ -168,6 +171,34 @@ const bosses = (locale: Locale, m: SiteMessages) => {
   return html`${paragraphs(b.paragraphs)}${table([b.timeHead, b.bossHead, b.hpHead, b.attacksHead], rows)}`
 }
 
+const rifts = (locale: Locale, m: SiteMessages) => {
+  const r = m.guide.rifts
+  const num = (v: number) => v.toLocaleString(m.lang.tag)
+  const attacks = (id: keyof typeof ENEMIES) => html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
+  const rows = [...RIFT_LEGENDS, REAPER].map((id) => [
+    bossName(locale, id),
+    html`${ENEMIES[id].types.map((type) => typeBadge(type, m))}`,
+    num(id === REAPER ? reaperHp(0) : ENEMIES[id].hp),
+    attacks(id),
+  ])
+  const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
+  const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, shiny: Math.round(1 / RIFT.shinyOdds) }))}
+    ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
+    <p class="note">${r.hpNote(growth)}</p>
+    <h3>${r.endlessTitle}</h3>
+    ${paragraphs(
+      r.endless({
+        every: ENDLESS.eventEvery,
+        reaper: clock(ENDLESS.reaperAt),
+        hp: num(reaperHp(0)),
+        returns: ENDLESS.reaperReturn / 60,
+        perMinute: bonus(RUN_LENGTH + 60) - bonus(RUN_LENGTH),
+        reaperBonus: num(ENDLESS.reaperBonus),
+      }),
+    )}`
+}
+
 const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
   return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player)))}
@@ -215,6 +246,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   special,
   types: (_, m) => types(m),
   bosses,
+  rifts,
   shinies,
   items: (_, m) => items(m),
   mart,
