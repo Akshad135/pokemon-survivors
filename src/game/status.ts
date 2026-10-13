@@ -2,15 +2,15 @@ import type { Rng } from '../engine/rng'
 import type { DamageSource } from './types'
 
 /**
- * Pure status-condition rules (burn, poison, paralysis, slow). Moves declare a
+ * Pure status-condition rules (burn, poison, paralysis, slow, sleep). Moves declare a
  * `StatusSpec` in data; hits roll its chance and call `applyStatus`. The
  * per-tick system (DoT damage, particles) lives in `statusSystem.ts`.
  */
-export type StatusKind = 'burn' | 'poison' | 'paralysis' | 'slow'
+export type StatusKind = 'burn' | 'poison' | 'paralysis' | 'slow' | 'sleep'
 
 /**
  * What a hit can inflict. `power` is DoT damage per second as a fraction of the
- * hit's damage (burn, poison: per stack) or the speed lost (slow). Paralysis ignores it.
+ * hit's damage (burn, poison: per stack) or the speed lost (slow). Paralysis and sleep ignore it.
  */
 export type StatusSpec = { kind: StatusKind; chance: number; duration: number; power: number }
 
@@ -28,6 +28,7 @@ export const STATUS_RULES = {
   poison: { maxStacks: 5, boss: 1, dot: true, color: '#c878f0' },
   paralysis: { maxStacks: 1, boss: 0.35, dot: false, color: '#f8d830' },
   slow: { maxStacks: 1, boss: 0.5, dot: false, color: '#78a8f8' },
+  sleep: { maxStacks: 1, boss: 0.35, dot: false, color: '#a8b8f0' },
 } as const satisfies Record<StatusKind, StatusRule>
 
 export const STATUS_KINDS = Object.keys(STATUS_RULES) as StatusKind[]
@@ -55,9 +56,9 @@ export type EnemyStatus = Record<StatusKind, Affliction> & {
 
 const none = (): Affliction => ({ time: 0, power: 0, stacks: 0, move: null })
 
-export const createStatus = (): EnemyStatus => ({ burn: none(), poison: none(), paralysis: none(), slow: none(), stun: 0, tick: 0 })
+export const createStatus = (): EnemyStatus => ({ burn: none(), poison: none(), paralysis: none(), slow: none(), sleep: none(), stun: 0, tick: 0 })
 
-export const isAfflicted = (st: EnemyStatus) => st.burn.time > 0 || st.poison.time > 0 || st.paralysis.time > 0 || st.slow.time > 0 || st.stun > 0
+export const isAfflicted = (st: EnemyStatus) => st.burn.time > 0 || st.poison.time > 0 || st.paralysis.time > 0 || st.slow.time > 0 || st.sleep.time > 0 || st.stun > 0
 
 const hasDot = (st: EnemyStatus) => st.burn.time > 0 || st.poison.time > 0
 
@@ -68,7 +69,7 @@ export const dotDps = (a: Affliction) => (a.time > 0 ? a.power * a.stacks : 0)
  * Inflicts `spec` (already rolled) from a hit of `damage`. Re-applying refreshes
  * the duration and keeps the strongest power; poison also adds a stack.
  */
-export const applyStatus = (st: EnemyStatus, spec: StatusSpec, damage: number, boss: boolean, move: DamageSource) => {
+export const applyStatus = (st: EnemyStatus, spec: StatusSpec, damage: number, boss: boolean, move: DamageSource | null) => {
   const rule = STATUS_RULES[spec.kind]
   const a = st[spec.kind]
   const resist = boss ? rule.boss : 1
@@ -120,12 +121,15 @@ export const tickStatus = (st: EnemyStatus, dt: number, boss: boolean, rng: Rng)
   return due
 }
 
-/** Movement multiplier from slow, paralysis and stun. */
-export const statusPace = (st: EnemyStatus) =>
-  st.stun > 0 ? 0 : (st.slow.time > 0 ? 1 - st.slow.power : 1) * (st.paralysis.time > 0 ? PARALYSIS_PACE : 1)
+/** Asleep enemies stand still and deal no contact damage (Poké Flute). */
+export const isAsleep = (st: EnemyStatus) => st.sleep.time > 0
 
-/** Contact damage multiplier: burn weakens attacks, like in the games. */
-export const statusAttack = (st: EnemyStatus) => (st.burn.time > 0 ? BURN_ATTACK : 1)
+/** Movement multiplier from sleep, slow, paralysis and stun. */
+export const statusPace = (st: EnemyStatus) =>
+  st.stun > 0 || isAsleep(st) ? 0 : (st.slow.time > 0 ? 1 - st.slow.power : 1) * (st.paralysis.time > 0 ? PARALYSIS_PACE : 1)
+
+/** Contact damage multiplier: burn weakens attacks, like in the games; sleepers don't attack. */
+export const statusAttack = (st: EnemyStatus) => (isAsleep(st) ? 0 : st.burn.time > 0 ? BURN_ATTACK : 1)
 
 export type StatusBonus = { chance: number; damage: number; duration: number }
 
@@ -139,4 +143,4 @@ export const scaleStatus = (spec: StatusSpec, bonus: StatusBonus): StatusSpec =>
 
 /** The condition shown on an enemy (badge, tint): the most impactful active one. */
 export const mainStatus = (st: EnemyStatus): StatusKind | null =>
-  st.paralysis.time > 0 ? 'paralysis' : st.burn.time > 0 ? 'burn' : st.poison.time > 0 ? 'poison' : st.slow.time > 0 ? 'slow' : null
+  st.sleep.time > 0 ? 'sleep' : st.paralysis.time > 0 ? 'paralysis' : st.burn.time > 0 ? 'burn' : st.poison.time > 0 ? 'poison' : st.slow.time > 0 ? 'slow' : null

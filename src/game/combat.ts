@@ -1,6 +1,7 @@
 import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS } from '../data/types'
+import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { burst, floatText } from './effects'
 import { dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
@@ -64,12 +65,14 @@ export const killEnemy = (g: Game, e: Enemy) => {
     }
   } else if (chance(g.rng, 0.012)) {
     dropPickup(g, e.x + 6, e.y, 'berry')
+  } else {
+    enemyDrop(g, e)
   }
 }
 
 export const hurtPlayer = (g: Game, amount: number, from: Enemy) => {
   const p = g.player
-  if (p.iframes > 0 || g.phase !== 'playing') return
+  if (p.iframes > 0 || isRepelled(g) || g.phase !== 'playing') return
   const dmg = Math.max(1, Math.round(amount - p.stats.armor))
   p.hp -= dmg
   p.iframes = 0.5
@@ -83,7 +86,7 @@ export const hurtPlayer = (g: Game, amount: number, from: Enemy) => {
   from.kx -= away.x * 60
   from.ky -= away.y * 60
 
-  if (p.hp <= 0) {
+  if (p.hp <= 0 && !tryRevive(g)) {
     p.hp = 0
     g.phase = 'gameover'
     g.events.push({ kind: 'gameover' })

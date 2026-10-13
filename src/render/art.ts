@@ -22,12 +22,12 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   return canvas
 }
 
-const lazy = <T>(build: () => T) => {
+export const lazy = <T>(build: () => T) => {
   let value: T | undefined
   return () => (value ??= build())
 }
 
-const art = (rows: readonly string[], palette: Palette, outline?: string) => {
+export const art = (rows: readonly string[], palette: Palette, outline?: string) => {
   const sprite = fromStrings(rows, palette)
   return outline ? outlined(sprite, outline) : sprite
 }

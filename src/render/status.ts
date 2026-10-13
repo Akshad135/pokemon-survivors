@@ -25,15 +25,19 @@ export const statusTint = (st: EnemyStatus, t: number, seed: number) => {
     case 'slow':
       tint.amount = 0.18
       break
+    case 'sleep':
+      tint.amount = 0.22 + Math.sin(t * 2 + seed) * 0.08
+      break
   }
   return tint
 }
 
-/* ---------- GBA-style BRN/PSN/PAR badges ---------- */
+/* ---------- GBA-style BRN/PSN/PAR/SLP badges ---------- */
 
 const LETTERS: Record<string, readonly string[]> = {
   A: ['010', '101', '111', '101', '101'],
   B: ['110', '101', '110', '101', '110'],
+  L: ['100', '100', '100', '100', '111'],
   N: ['101', '111', '111', '111', '101'],
   P: ['110', '101', '110', '100', '100'],
   R: ['110', '101', '110', '101', '101'],
@@ -44,6 +48,7 @@ const BADGES = {
   burn: { text: 'BRN', bg: '#e07038' },
   poison: { text: 'PSN', bg: '#a050b0' },
   paralysis: { text: 'PAR', bg: '#c8a000' },
+  sleep: { text: 'SLP', bg: '#6878a8' },
 } as const
 
 const badgeCache = new Map<StatusKind, PixelSprite>()

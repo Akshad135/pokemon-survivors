@@ -1176,3 +1176,72 @@ button {
     top: calc(64px + var(--safe-t));
   }
 }
+
+/* ---------- Consumables: buff timers & item toasts ---------- */
+
+.buffs {
+  display: flex;
+  gap: 4px;
+  min-height: 0;
+}
+
+.buff {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(16, 24, 48, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+.buff img {
+  width: 18px;
+  height: 18px;
+}
+
+.buff-bar {
+  width: 18px;
+  height: 3px;
+  background: #301818;
+}
+
+.buff-fill {
+  height: 100%;
+  background: #f8d030;
+}
+
+.buff.ending {
+  animation: buff-blink 0.3s steps(2) infinite;
+}
+
+.buff.revive {
+  border-color: #f8d030;
+}
+
+@keyframes buff-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.item-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.item-toast img {
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 720px) {
+  .toast {
+    font-size: 18px;
+    white-space: normal;
+    width: max-content;
+    max-width: 90vw;
+  }
+}

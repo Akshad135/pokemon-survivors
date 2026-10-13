@@ -117,7 +117,8 @@ export const updateEnemies = (g: Game, dt: number) => {
       const d = Math.sqrt(d2) || 1
       e.x = p.x + (dx / d) * reach
       e.y = p.y + (dy / d) * reach
-      hurtPlayer(g, e.damage * statusAttack(e.status), e)
+      const attack = statusAttack(e.status)
+      if (attack > 0) hurtPlayer(g, e.damage * attack, e)
     }
   })
 
