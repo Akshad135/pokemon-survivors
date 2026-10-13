@@ -1,4 +1,5 @@
 import { formatTime } from '../engine/math'
+import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
 import { STARTERS } from '../data/starters'
 import { playerDex } from '../game/game'
@@ -93,7 +94,14 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     moveSlots.replaceChildren(
       ...Array.from({ length: MAX_MOVES }, (_, i) => {
         const m = p.moves[i]
-        return h('div', { class: 'slot' }, m && h('img', { src: moveIcon(m.id), alt: '' }), m && h('span', { class: 'slot-level' }, m.level))
+        const evo = m && evolutionOf(m.id)
+        const ready = evo !== undefined && canEvolve(evo, p)
+        return h(
+          'div',
+          { class: ready ? 'slot evo-ready' : 'slot' },
+          m && h('img', { src: moveIcon(m.id), alt: '' }),
+          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? '★' : m.level),
+        )
       }),
     )
     itemSlots.replaceChildren(

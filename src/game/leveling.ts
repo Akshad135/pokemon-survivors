@@ -1,8 +1,12 @@
+import { retain } from '../engine/math'
 import type { Rng } from '../engine/rng'
-import { ITEM_IDS, ITEMS, type ItemId } from '../data/items'
+import { evolvedFrom, readyEvolutions } from '../data/evolutions'
+import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
 import { STARTERS, type StarterId } from '../data/starters'
+import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
-import { maxMoveLevel, type MoveId } from './moves'
+import { burst } from './effects'
+import { maxMoveLevel, MOVES, type MoveId } from './moves'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove } from './types'
 
@@ -24,7 +28,7 @@ export const gainXp = (g: Game, amount: number) => {
   }
 }
 
-type Loadout = { starter: StarterId; moves: readonly OwnedMove[]; items: readonly OwnedItem[] }
+export type Loadout = { starter: StarterId; moves: readonly OwnedMove[]; items: readonly OwnedItem[] }
 
 export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.player.moves, items: g.player.items })
 
@@ -33,15 +37,20 @@ export const offerPool = ({ starter, moves, items }: Loadout): Array<readonly [O
   const ownedMoves = new Map(moves.map((m) => [m.id, m.level]))
   const ownedItems = new Map(items.map((i) => [i.id, i.level]))
   const learnset: readonly MoveId[] = STARTERS[starter].learnset
+  const learnsetTypes = new Set<PokeType>(learnset.map((id) => MOVES[id].type))
+  // A base move whose evolution is already owned must not come back as a new move.
+  const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
 
   const moveOffers = learnset.flatMap((id): Array<readonly [Offer, number]> => {
     const level = ownedMoves.get(id)
-    if (level === undefined) return moves.length < MAX_MOVES ? [[{ kind: 'move', id, level: 1 }, 1]] : []
+    if (level === undefined) return moves.length < MAX_MOVES && !evolvedBases.has(id) ? [[{ kind: 'move', id, level: 1 }, 1]] : []
     return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, 1.3]] : []
   })
 
   const itemOffers = ITEM_IDS.flatMap((id: ItemId): Array<readonly [Offer, number]> => {
     const level = ownedItems.get(id)
+    const def: ItemDef = ITEMS[id]
+    if (level === undefined && def.boosts && !learnsetTypes.has(def.boosts)) return []
     if (level === undefined) return items.length < MAX_ITEMS ? [[{ kind: 'item', id, level: 1 }, 0.8]] : []
     return level < ITEMS[id].levels.length ? [[{ kind: 'item', id, level: level + 1 }, 1]] : []
   })
@@ -49,10 +58,15 @@ export const offerPool = ({ starter, moves, items }: Loadout): Array<readonly [O
   return [...moveOffers, ...itemOffers]
 }
 
-/** Weighted sampling without replacement. Falls back to a healing berry when maxed out. */
+/**
+ * Ready move evolutions come first, then weighted sampling without replacement.
+ * Falls back to a healing berry when maxed out.
+ */
 export const rollOffers = (loadout: Loadout, rng: Rng, count = 3): Offer[] => {
   const pool = [...offerPool(loadout)]
-  const picked: Offer[] = []
+  const picked: Offer[] = readyEvolutions(loadout)
+    .slice(0, count)
+    .map(({ from, to }) => ({ kind: 'evolution', from, to }))
   while (picked.length < count && pool.length > 0) {
     const total = pool.reduce((s, [, w]) => s + w, 0)
     let roll = rng() * total
@@ -105,7 +119,27 @@ export const applyOffer = (g: Game, offer: Offer) => {
       p.hp = Math.min(p.stats.maxHp, p.hp + 40)
       g.events.push({ kind: 'heal' })
       break
+    case 'evolution':
+      evolveMove(g, offer.from, offer.to)
+      break
   }
+}
+
+/** Swaps a move for its evolved form in the same slot, with a celebratory burst. */
+const evolveMove = (g: Game, from: MoveId, to: MoveId) => {
+  const p = g.player
+  const owned = p.moves.find((m) => m.id === from)
+  if (!owned) return
+  owned.id = to
+  owned.level = 1
+  owned.cooldown = 0.3
+  // Drop lingering hitboxes of the old move (e.g. Whirlpool's permanent aura).
+  retain(g.attacks, (a) => a.move !== from)
+  const colors = [TYPE_COLORS[MOVES[to].type], '#ffffff', '#ffd830']
+  burst(g, p.x, p.y - 10, { colors, count: 70, speed: 170, ttl: 0.9, size: 2, drag: 3 })
+  burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#fff8c0'], count: 30, speed: 60, ttl: 1.2, gravity: -50 })
+  g.shake = Math.max(g.shake, 5)
+  g.events.push({ kind: 'moveEvolved', from, to })
 }
 
 /** The next evolution, if the player's level has reached it. */

@@ -97,9 +97,15 @@ export type Visual =
   | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova'
+  | EvolvedVisual
 
 /** What dealt the damage, for the results screen. */
 export type DamageSource = MoveId | 'special'
+
+/** Visuals of evolved moves, drawn by `render/evolved.ts`. */
+export type EvolvedVisual =
+  | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
+  | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
@@ -183,6 +189,8 @@ export type Offer =
   | { kind: 'move'; id: MoveId; level: number }
   | { kind: 'item'; id: ItemId; level: number }
   | { kind: 'berry' }
+  /** Max level move + its paired held item: the move evolves in place. */
+  | { kind: 'evolution'; from: MoveId; to: MoveId }
 
 export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
 
@@ -204,6 +212,7 @@ export type GameEvent =
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
+  | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
   | { kind: 'gameover' }
   | { kind: 'consumable'; item: ConsumableId }
   | { kind: 'propBreak' }

@@ -21,7 +21,7 @@ Vite + TypeScript, Canvas 2D, and no game engine. Everything is plain data plus 
 ```
 src/
   engine/   math, seeded rng, spatial hash, input, WebAudio sfx, pixel-art helpers
-  data/     pure game data: starters, enemies, waves, held items, type chart
+  data/     pure game data: starters, enemies, waves, held items, move evolutions, type chart
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
@@ -45,14 +45,15 @@ src/
 
 - 27 starters (every main region, Gen 1–9), each with a 3-stage evolution line (Lv 12 / Lv 28), per-stage types, its own stat profile, signature and learnset, plus the handheld-style evolution scene. The region-tabbed selector has an inspect panel (stats, evolutions, special, moves).
 - 23 moves: Ember, Fire Spin, Water Gun, Whirlpool, Razor Leaf, Vine Whip, Swift, Thunder, Sludge Bomb, Gust, Mach Punch, Flash Cannon, Spirit Shackle, Water Shuriken, Crunch, Pyro Ball, Psyshock, Earthquake, Drum Beating, Disarming Voice, Torch Song, Leaf Blade, Razor Shell.
-- 12 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Magnet, Assault Vest, King's Rock, Toxic Orb.
+- 19 held items (passives): Muscle Band, Quick Claw, Wide Lens, Light Clay, Loaded Dice, Leftovers, Choice Scarf, Lucky Egg, Dowsing Machine (pickup radius), Assault Vest, King's Rock, Toxic Orb, plus type boosters (Charcoal, Mystic Water, Miracle Seed, Silk Scarf, Magnet, Poison Barb, Sharp Beak).
+- Move evolutions (`data/evolutions.ts`): a max-level move plus its paired held item evolves on the next boss Poké Ball or level-up (e.g. Ember + Charcoal → Flamethrower). 10 evolved moves, which keep their base move's status effect.
 - 15 regular enemies, any of which can show up shiny. Mini-bosses: Onix (2:30, Rock Slide) and Snorlax (5:00, Body Slam). Legendaries: Articuno (7:00, ice shard ring), Zapdos (9:30, lightning strikes), Moltres (12:00, fire trail and fire ring), and Mewtwo (15:00, psychic rings and strikes; beating it wins the run), sometimes joined by a rare Mew.
-- Drops: Exp. Candy (4 tiers), Oran Berry, and a Poké Ball (from bosses and shinies) that grants a random upgrade.
+- Drops: Exp. Candy (4 tiers), Oran Berry, and a Poké Ball (from bosses and shinies) that evolves a move when possible, or grants a random upgrade.
 - Item sources on the map (item balls, berry trees, rustling tall grass) break under any attack and drop consumables: Potion, Super Potion, Rare Candy, Exp. Share, Poké Flute, Max Repel, Voltorb (Explosion), X Attack, X Speed and Revive. Drop tables live in `data/consumables.ts`.
 
 ## Ideas for next steps
 
-- Move evolutions (e.g. max Ember + Charcoal → Flamethrower), like weapon evolutions in Vampire Survivors.
+- Evolutions for the newer signature moves (Mach Punch, Spirit Shackle, Pyro Ball…).
 - Meta progression (Poké Dollars, permanent upgrades) and biomes (cave, forest, Lavender Town).
 - Chiptune music; custom effects/tiles made with PixelLab.
 

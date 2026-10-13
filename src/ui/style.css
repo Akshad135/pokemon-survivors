@@ -1190,6 +1190,117 @@ button {
   text-align: right;
 }
 
+/* ---------- Move evolutions ---------- */
+
+.offer-evo {
+  background: linear-gradient(180deg, #fff8d0, #f8e090);
+  border-color: #e0a020;
+  animation: evo-glow 0.8s steps(2) infinite;
+}
+
+.offer-evo.selected {
+  background: linear-gradient(180deg, #fffbe0, #f8e8a8);
+  border-color: #e83838;
+}
+
+.offer-evo .offer-icon {
+  background: #503010;
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
+@keyframes evo-glow {
+  50% {
+    box-shadow: 0 0 0 2px #fff, 0 0 10px 2px #f8d030;
+  }
+}
+
+.evo-recipes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.evo-recipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px 1px 3px;
+  font-size: 18px;
+  line-height: 1;
+  color: #6878a8;
+  background: rgba(104, 120, 168, 0.14);
+  border-radius: 4px;
+}
+
+.evo-recipe img {
+  width: 18px;
+  height: 18px;
+}
+
+.evo-recipe.ready {
+  color: #a05800;
+  background: #f8e090;
+}
+
+.evo-recipe b {
+  margin-left: 4px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #e83838;
+}
+
+.evo-pair {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px;
+  border-radius: 4px;
+  opacity: 0.55;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #e83838;
+}
+
+.loadout-row .evo-pair img {
+  width: 18px;
+  height: 18px;
+}
+
+.evo-pair.ready {
+  opacity: 1;
+  background: #f8e090;
+  box-shadow: 0 0 0 2px #e0a020;
+}
+
+.loadout-row .evo-pair + .tag {
+  margin-left: 6px;
+}
+
+.evo-legend {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  text-align: center;
+  color: #6878a8;
+}
+
+.slot.evo-ready {
+  border-color: #f8d030;
+  animation: evo-slot 0.6s steps(2) infinite;
+}
+
+@keyframes evo-slot {
+  50% {
+    border-color: #fff8c0;
+    box-shadow: 0 0 6px #f8d030;
+  }
+}
+
+.toast-evo b {
+  color: #e07000;
+}
+
 /* ---------- Special attack (HUD badge + touch button) ---------- */
 
 .hud-left {
