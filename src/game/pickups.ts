@@ -1,12 +1,13 @@
 import { dirTo, retain } from '../engine/math'
 import { range } from '../engine/rng'
 import { burst, floatText } from './effects'
+import { useConsumable } from './consumables'
 import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
 import type { Game, Pickup } from './types'
 
 const MAX_XP_PICKUPS = 260
 
-type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin'>
+type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable'>
 
 export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
@@ -60,9 +61,13 @@ const collect = (g: Game, pickup: Pickup) => {
       const [offer] = rollOffers(loadout(g), g.rng, 1)
       if (offer) applyOffer(g, offer)
       burst(g, p.x, p.y - 10, { colors: ['#f83838', '#ffffff', '#ffd830'], count: 30, speed: 120, ttl: 0.6 })
-      g.events.push({ kind: 'pokeball', offer: offer ?? null })
+      // Evolutions celebrate with their own event instead of the Poké Ball toast.
+      if (offer?.kind !== 'evolution') g.events.push({ kind: 'pokeball', offer: offer ?? null })
       break
     }
+    case 'consumable':
+      useConsumable(g, pickup.item)
+      break
   }
 }
 

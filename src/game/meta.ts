@@ -25,7 +25,7 @@ export const UPGRADES = {
   calcium: { name: 'Calcium', description: '+5% de área dos golpes por nível.', maxRank: 3, basePrice: 300, effect: { stat: { area: 0.05 } } },
   zinc: { name: 'Zinc', description: 'Golpes recarregam 2,5% mais rápido por nível.', maxRank: 3, basePrice: 450, effect: { stat: { cooldown: -0.025 } } },
   ppUp: { name: 'PP Up', description: '+1 projétil em todos os golpes.', maxRank: 1, basePrice: 3000, effect: { stat: { amount: 1 } } },
-  expShare: { name: 'Exp. Share', description: '+3% de EXP recebida por nível.', maxRank: 5, basePrice: 250, effect: { stat: { growth: 0.03 } } },
+  expCharm: { name: 'Exp. Charm', description: '+3% de EXP recebida por nível.', maxRank: 5, basePrice: 250, effect: { stat: { growth: 0.03 } } },
   amuletCoin: { name: 'Amulet Coin', description: '+10% de ₽ ganhos por nível.', maxRank: 5, basePrice: 250, effect: { stat: { greed: 0.1 } } },
   abilityCapsule: { name: 'Ability Capsule', description: '+1 troca de opções por partida ao subir de nível.', maxRank: 3, basePrice: 500, effect: { charge: 'rerolls' } },
   escapeRope: { name: 'Escape Rope', description: '+1 pulo de subida de nível por partida.', maxRank: 3, basePrice: 300, effect: { charge: 'skips' } },
@@ -52,14 +52,11 @@ export const totalSpent = (ranks: Ranks) =>
 
 /* ---------------- Applying ranks ---------------- */
 
-const scaleDelta = (delta: StatDelta, times: number): StatDelta =>
-  Object.fromEntries(Object.entries(delta).map(([k, v]) => [k, v * times]))
-
-/** One stat layer per owned stat upgrade, ready for `applyDeltas`. */
+/** One stat layer per owned rank (deltas are additive), ready for `applyDeltas`. */
 export const rankDeltas = (ranks: Ranks): StatDelta[] =>
   UPGRADE_IDS.flatMap((id) => {
     const effect: UpgradeDef['effect'] = UPGRADES[id].effect
-    return 'stat' in effect && ranks[id] > 0 ? [scaleDelta(effect.stat, ranks[id])] : []
+    return 'stat' in effect ? Array.from({ length: ranks[id] }, () => effect.stat) : []
   })
 
 /** Level-up rerolls and skips a run starts with. */

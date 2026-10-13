@@ -23,12 +23,12 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   return canvas
 }
 
-const lazy = <T>(build: () => T) => {
+export const lazy = <T>(build: () => T) => {
   let value: T | undefined
   return () => (value ??= build())
 }
 
-const art = (rows: readonly string[], palette: Palette, outline?: string) => {
+export const art = (rows: readonly string[], palette: Palette, outline?: string) => {
   const sprite = fromStrings(rows, palette)
   return outline ? outlined(sprite, outline) : sprite
 }
@@ -43,6 +43,31 @@ const FLAME = [
 const DROPLET = ['..11111..', '.1222221.', '122333421', '.1222221.', '..11111..']
 const LEAF = ['......111', '....11221', '...122231', '..122321.', '.122321..', '.12321...', '1231.....', '131......', '11.......']
 const STAR = ['....1....', '...121...', '111232111', '.1233321.', '..12321..', '..12121..', '.121.121.', '.11...11.']
+/** Fist pointing right. */
+const FIST = ['..1111..', '.122221.', '12333311', '12333331', '12333321', '.1222221', '..11111.']
+const STEEL_ORB = ['..1111..', '.122221.', '12233221', '12344321', '12344321', '12233221', '.122221.', '..1111..']
+/** Quill arrow pointing right. */
+const ARROW = ['11.......2.', '.1333333322', '11.......2.']
+const SHURIKEN = ['...1...', '...1...', '..121..', '1112111', '..121..', '...1...', '...1...']
+/** Upper jaw; the lower one is the same rows reversed. */
+const JAW = ['.111111111.', '12222222221', '13.3.3.3.31']
+const ORB = ['..111..', '.12221.', '1223221', '1233321', '1223221', '.12221.', '..111..']
+const HEART = ['.11.11.', '1221221', '1232221', '1222221', '.12221.', '..121..', '...1...']
+const NOTE = ['...11.', '...121', '...1.1', '...1..', '.111..', '1221..', '.11...']
+const BLADE = ['.......11', '.....1121', '...11231.', '.11231...', '1231.....', '11.......']
+
+/* Evolved moves */
+const FIRE_STAR = [
+  '......1......', '.....121.....', '.....121.....', '....12321....', '1111233321111', '.12223432221.',
+  '..122343221..', '...1234321...', '...1233321...', '..123212321..', '..1221.1221..', '.1221...1221.', '.111.....111.',
+]
+const JET = ['......1111111..', '...11122222221.', '.1122233333321.', '122333444443321', '.1122233333321.', '...11122222221.', '......1111111..']
+const TRIANGLE = ['....1....', '...121...', '...121...', '..12321..', '..12321..', '.1233321.', '.1222221.', '111111111']
+const TRI_PALETTES: readonly Palette[] = [
+  { 1: '#a02010', 2: '#f06020', 3: '#ffd080' },
+  { 1: '#2060a0', 2: '#60c0f0', 3: '#e0f8ff' },
+  { 1: '#a07800', 2: '#f8d830', 3: '#fff8c0' },
+]
 
 export const FX = {
   ember: lazy(() => [
@@ -56,6 +81,52 @@ export const FX = {
   water: lazy(() => art(DROPLET, { 1: '#2848b0', 2: '#6890f0', 3: '#a8d0f8', 4: '#ffffff' })),
   leaf: lazy(() => art(LEAF, { 1: '#285820', 2: '#58b838', 3: '#a8e870' })),
   star: lazy(() => art(STAR, { 1: '#c88800', 2: '#f8d830', 3: '#fff8c0' })),
+  fireBlast: lazy(() => [
+    art(FIRE_STAR, { 1: '#a01810', 2: '#e85018', 3: '#f8b030', 4: '#fff8d0' }, '#401008'),
+    art(FIRE_STAR, { 1: '#c03018', 2: '#f87828', 3: '#f8d050', 4: '#ffffff' }, '#401008'),
+  ]),
+  hydroPump: lazy(() => art(JET, { 1: '#1838a0', 2: '#4878e8', 3: '#a8d8f8', 4: '#ffffff' }, '#102060')),
+  leafStorm: lazy(() => art(LEAF, { 1: '#205018', 2: '#70d048', 3: '#e0f8a0' }, '#103010')),
+  triAttack: lazy(() => TRI_PALETTES.map((pal) => art(TRIANGLE, pal, '#181818'))),
+  fist: lazy(() => art(FIST, { 1: '#601818', 2: '#c03028', 3: '#f89070' }, '#281010')),
+  steel: lazy(() => art(STEEL_ORB, { 1: '#404858', 2: '#8890a8', 3: '#c8d0e0', 4: '#ffffff' })),
+  arrow: lazy(() => art(ARROW, { 1: '#58b838', 2: '#a070d8', 3: '#e8e0c8' }, '#281838')),
+  shuriken: lazy(() => art(SHURIKEN, { 1: '#3068d0', 2: '#d0f0ff' }, '#183060')),
+  jaws: lazy(() => {
+    const pal = { 1: '#281820', 2: '#705848', 3: '#ffffff' }
+    return { top: art(JAW, pal), bottom: art([...JAW].reverse(), pal) }
+  }),
+  pyro: lazy(() => art(FIREBALL, { 1: '#a82010', 2: '#f07020', 3: '#f8c040', 4: '#ffffff' }, '#401008')),
+  psy: lazy(() => [
+    art(ORB, { 1: '#a03068', 2: '#f85888', 3: '#ffd0e8' }),
+    art(ORB, { 1: '#c04080', 2: '#f888b0', 3: '#ffffff' }),
+  ]),
+  heart: lazy(() => art(HEART, { 1: '#a02858', 2: '#f878a8', 3: '#ffffff' }, '#401020')),
+  note: lazy(() => art(NOTE, { 1: '#c03018', 2: '#f8b030' }, '#401008')),
+  blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
+}
+
+/* ---------------- Shiny sparkles ---------------- */
+
+/** Classic shiny twinkle: a four-point star in three sizes (small → big). */
+const SPARKLES = [
+  ['.1.', '121', '.1.'],
+  ['..1..', '..1..', '11211', '..1..', '..1..'],
+  ['...1...', '...1...', '..121..', '1122211', '..121..', '...1...', '...1...'],
+] as const
+
+export const SPARKLE = lazy(() => SPARKLES.map((rows) => fromStrings(rows, { 1: '#f8e070', 2: '#ffffff' })))
+
+/* ---------------- Boss hazards ---------------- */
+
+const SHARD = ['....11.', '..1221.', '1123331', '..1221.', '....11.']
+const SMALL_ORB = ['.111.', '12221', '12321', '12221', '.111.']
+const ROCK = ['..1111..', '.122221.', '12233221', '12232221', '12222211', '.112211.', '..1111..']
+
+export const HAZARD_FX = {
+  ice: lazy(() => art(SHARD, { 1: '#3878a8', 2: '#98d8f8', 3: '#ffffff' }, '#183048')),
+  psychic: lazy(() => art(SMALL_ORB, { 1: '#a02868', 2: '#f85888', 3: '#ffffff' }, '#401030')),
+  rock: lazy(() => art(ROCK, { 1: '#584020', 2: '#a08040', 3: '#d8c080' }, '#181818')),
 }
 
 /* ---------------- Pickups ---------------- */
@@ -94,6 +165,22 @@ const SPIRAL = ['.1111...', '1....1..', '1.11..1.', '1.1.1.1.', '1.1..1.1', '1..
 const VINE = ['.....11.', '....1221', '..11.11.', '.12.....', '.1......', '.12.....', '..121...', '....11..']
 const BLOB = ['...11...', '..1221..', '.122221.', '12232221', '12222221', '.122221.', '..1111..']
 const WIND = ['.1111...', '1....1..', '.....1..', '11111...', '........', '1111111.', '.......1', '.....11.']
+const CRACK = ['22222222', '21222212', '22122122', '22211222', '22212112', '22122221', '21222211', '22222222']
+const DRUM = ['.111111.', '12222221', '13333331', '13131331', '13333331', '13313131', '13333331', '.111111.']
+const SHELL = ['...11...', '..1221..', '.122221.', '12323231', '12323231', '.111111.']
+
+const CONE = ['......1111', '...1112221', '1112233321', '1223344321', '1112233321', '...1112221', '......1111']
+const WAVE = ['...11111..', '..1222221.', '.12233.121', '.1231...1.', '1223......', '12231...11', '1222311121', '.11111111.']
+const TORNADO = ['1111111111', '.12222221.', '..111111..', '..1222221.', '...11111..', '...12221..', '....111...', '....121...', '.....1....']
+const GUNK = ['...111....', '..12221.1.', '.1224221121', '12222222221', '12232242221', '1222222221', '.11111111.']
+
+/** Layers several sprites on one canvas (cluster icons like Leaf Storm). */
+const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSprite, number, number]>) => {
+  const canvas = createCanvas(w, h)
+  const ctx = context2d(canvas)
+  for (const [sprite, x, y] of layers) ctx.drawImage(sprite, x, y)
+  return canvas
+}
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ember: () => FX.ember()[0]!,
@@ -106,6 +193,32 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   thunder: () => art(BOLT, { 1: '#c89000', 2: '#f8e030' }, '#504010'),
   sludgeBomb: () => art(BLOB, { 1: '#502060', 2: '#a040a0', 3: '#e0a0f0' }),
   gust: () => art(WIND, { 1: '#e8f0ff' }, '#58607a'),
+  flamethrower: () => art(CONE, { 1: '#a82010', 2: '#f07020', 3: '#f8c040', 4: '#ffffff' }, '#401008'),
+  fireBlast: () => FX.fireBlast()[0]!,
+  hydroPump: () => FX.hydroPump(),
+  surf: () => art(WAVE, { 1: '#2848b0', 2: '#68a0f0', 3: '#ffffff' }, '#102060'),
+  leafStorm: () => compose(14, 14, [[FX.leafStorm(), 0, 3], [FX.leafStorm(), 3, 0]]),
+  powerWhip: () => art(VINE, { 1: '#183818', 2: '#48a030' }, '#e0f0a0'),
+  triAttack: () => compose(14, 14, FX.triAttack().map((tri, i) => [tri, [2, 0, 4][i]!, [0, 4, 4][i]!] as const)),
+  wildboltStorm: () => {
+    const bolt = art(BOLT, { 1: '#2890c8', 2: '#e0ffff' }, '#103048')
+    return compose(13, 11, [[bolt, 0, 0], [bolt, 5, 2]])
+  },
+  gunkShot: () => art(GUNK, { 1: '#281830', 2: '#6a3a78', 3: '#b878c8', 4: '#88a038' }, '#100810'),
+  hurricane: () => art(TORNADO, { 1: '#7880a8', 2: '#f0f4ff' }, '#30384a'),
+  machPunch: () => FX.fist(),
+  flashCannon: () => outlined(FX.steel()),
+  spiritShackle: () => FX.arrow(),
+  waterShuriken: () => FX.shuriken(),
+  crunch: () => art([...JAW, ...[...JAW].reverse()], { 1: '#281820', 2: '#705848', 3: '#ffffff' }, '#a89888'),
+  pyroBall: () => FX.pyro(),
+  psyshock: () => outlined(FX.psy()[0]!),
+  earthquake: () => art(CRACK, { 1: '#704820', 2: '#e0c068' }),
+  drumBeating: () => art(DRUM, { 1: '#402010', 2: '#78c850', 3: '#a87840' }),
+  disarmingVoice: () => FX.heart(),
+  torchSong: () => FX.note(),
+  leafBlade: () => FX.blade(),
+  razorShell: () => art(SHELL, { 1: '#284880', 2: '#e8f0f8', 3: '#a8c8e8' }, '#101830'),
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -117,7 +230,16 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   leftovers: [['....2...', '...2....', '.111111.', '11331111', '13111111', '11111111', '.111111.', '..1..1..'], { 1: '#c83030', 2: '#58a030', 3: '#f8a0a0' }],
   choiceScarf: [['11111111', '12222221', '11111221', '....1221', '....1221', '...12221', '...1..11'], { 1: '#a03060', 2: '#f878b0' }],
   luckyEgg: [['..111..', '.12221.', '1222221', '1232321', '1222221', '1222221', '.12221.', '..111..'], { 1: '#a07850', 2: '#f8f0d8', 3: '#f87878' }],
+  dowsingMachine: [['.1....1.', '.1....1.', '..1..1..', '11111111', '12222221', '12333321', '12222221', '11111111'], { 1: '#404858', 2: '#88a0c0', 3: '#78f8a0' }],
+  charcoal: [['..111...', '.12221..', '1222321.', '12222221', '.1222221', '..11111.'], { 1: '#101010', 2: '#383838', 3: '#f08030' }],
+  mysticWater: [['...1...', '..121..', '.12221.', '1223221', '1222221', '.12221.', '..111..'], { 1: '#2848b0', 2: '#6890f0', 3: '#ffffff' }],
+  miracleSeed: [['...2.2.', '....2..', '..111..', '.13331.', '1333331', '.13331.', '..111..'], { 1: '#704818', 2: '#58c838', 3: '#d8a858' }],
+  silkScarf: [['11111111', '12222221', '11111221', '....1221', '....1221', '...12221', '...1..11'], { 1: '#9898a8', 2: '#f8f8f8' }],
+  poisonBarb: [['......1', '.....11', '....121', '...121.', '..121..', '.121...', '111....'], { 1: '#502060', 2: '#c060d0' }],
+  sharpBeak: [['.111....', '12221...', '122221..', '1222221.', '1111111.', '.12221..', '..111...'], { 1: '#806010', 2: '#f8c030' }],
   magnet: [['33....44', '33....44', '11....11', '11....11', '11....11', '.11..11.', '..1111..'], { 1: '#808088', 3: '#e83030', 4: '#3060e0' }],
+  kingsRock: [['3...3...3', '2...2...2', '22.222.22', '222242222', '211111112', '222222222'], { 1: '#c89000', 2: '#f8d830', 3: '#f8f8c0', 4: '#e83838' }],
+  toxicOrb: [['..1111..', '.122221.', '12233221', '12322321', '12232321', '12223321', '.122221.', '..1111..'], { 1: '#502060', 2: '#a040c0', 3: '#e0a0f8' }],
   assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
 }
 
@@ -138,7 +260,7 @@ const UPGRADE_ART: Record<UpgradeId, readonly [readonly string[], Palette]> = {
   calcium: vitamin('#f8f8f8', '#e8d070'),
   zinc: vitamin('#f8f8f8', '#a070d0'),
   ppUp: vitamin('#f8d030', '#f078b8'),
-  expShare: [['.111111.', '12222221', '12333321', '12344321', '12333321', '12222221', '.111111.', '..1..1..'], { 1: '#283048', 2: '#4880d8', 3: '#a8d0f8', 4: '#f8f8f8' }],
+  expCharm: [['.111111.', '12222221', '12333321', '12344321', '12333321', '12222221', '.111111.', '..1..1..'], { 1: '#283048', 2: '#4880d8', 3: '#a8d0f8', 4: '#f8f8f8' }],
   amuletCoin: [['1......1', '.1....1.', '..1111..', '.122221.', '12233221', '12322321', '12233221', '.122221.', '..1111..'], { 1: '#805000', 2: '#f8c830', 3: '#fff8b0' }],
   abilityCapsule: [['..1111..', '.122221.', '12222221', '12222221', '13333331', '13333331', '13333331', '.133331.', '..1111..'], { 1: '#283048', 2: '#e85878', 3: '#f8f0f8' }],
   escapeRope: [['..1111..', '.12..21.', '12.11.21', '1.1221.1', '1.1..1.1', '12.11.21', '.12..21.', '..1111..'], { 1: '#805828', 2: '#d8a868' }],
@@ -147,7 +269,7 @@ const UPGRADE_ART: Record<UpgradeId, readonly [readonly string[], Palette]> = {
 const iconCache = new Map<string, string>()
 
 /** Icon as a data URL, padded to a square so it scales uniformly in the DOM. */
-const toIconUrl = (key: string, build: () => PixelSprite) => {
+export const toIconUrl = (key: string, build: () => PixelSprite) => {
   const cached = iconCache.get(key)
   if (cached) return cached
   const sprite = build()
@@ -177,3 +299,4 @@ export const coinIcon = (tier = 0) => toIconUrl(`coin:${tier}`, () => PICKUPS.co
 export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICKUPS.candy()[tier]!)
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
+export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))

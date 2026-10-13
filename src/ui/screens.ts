@@ -1,21 +1,30 @@
-import { context2d } from '../engine/pixelart'
 import { formatTime } from '../engine/math'
-import { playCry, playSfx, toggleMute } from '../engine/audio'
+import { playSfx, toggleMute } from '../engine/audio'
 import type { Input } from '../engine/input'
+import { canEvolve, EVOLUTIONS, evolutionOf, evolvedFrom, type MoveEvolution } from '../data/evolutions'
 import { ITEMS } from '../data/items'
-import { STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
+import { STARTERS } from '../data/starters'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
 import { formatPokeDollars, runEarnings } from '../game/meta'
-import type { Game, Offer } from '../game/types'
-import { berryIcon, coinIcon, itemIcon, moveIcon } from '../render/art'
-import { drawPokemon, sprites } from '../render/sprites'
+import { resolveSpecial } from '../game/special'
+import type { DamageSource, Game, Offer } from '../game/types'
+import { berryIcon, coinIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { specialIcon } from '../render/specialFx'
+import { sprites } from '../render/sprites'
 import { h } from './dom'
 
 export type Screen = { el: HTMLElement; tick?: (t: number) => void; dispose: () => void }
 
-const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
+export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
+
+/** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
+const TAP_GUARD_MS = 350
+
+/** Hint that swaps between keyboard and touch wording (see `.keys-only` / `.touch-only` in CSS). */
+export const hint = (keys: string, touch: string) =>
+  h('p', { class: 'hint' }, h('span', { class: 'keys-only' }, keys), h('span', { class: 'touch-only' }, touch))
 
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
@@ -23,6 +32,7 @@ const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `-
  */
 export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
   let index = opts.initial ?? 0
+  const openedAt = performance.now()
   const focus = (i: number, sound = true) => {
     index = (i + buttons.length) % buttons.length
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
@@ -30,7 +40,7 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
   }
   buttons.forEach((b, i) => {
     b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => activate(i))
+    b.addEventListener('click', () => performance.now() - openedAt > TAP_GUARD_MS && activate(i))
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
@@ -47,66 +57,39 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
   return { off, focus, get index() { return index } }
 }
 
-/* ---------------- Starter select ---------------- */
-
-export const starterSelect = (root: HTMLElement, input: Input, onPick: (id: StarterId) => void): Screen => {
-  const canvases = new Map<StarterId, HTMLCanvasElement>()
-  const cards = STARTER_IDS.map((id) => {
-    const s = STARTERS[id]
-    const canvas = h('canvas', { width: 64, height: 56, class: 'starter-sprite' })
-    canvases.set(id, canvas)
-    const sig: MoveDef = MOVES[s.signature]
-    return h(
-      'button',
-      { class: 'starter-card box', style: `--accent:${s.color}` },
-      canvas,
-      h('div', { class: 'starter-name' }, s.name),
-      h('div', { class: 'types' }, ...s.types.map(typeBadge)),
-      h('div', { class: 'starter-blurb' }, s.blurb),
-      h('div', { class: 'starter-move' }, h('img', { src: moveIcon(s.signature), alt: '' }), sig.name),
-    )
-  })
-
-  let picked = false
-  const nav = menu(
-    input,
-    cards,
-    (i) => {
-      if (picked) return
-      picked = true
-      const id = STARTER_IDS[i]!
-      playSfx('select')
-      playCry(sprites(STARTERS[id].line[0].dex).cry)
-      onPick(id)
-    },
-    { horizontal: true },
-  )
-
-  const el = h(
-    'div',
-    { class: 'screen title-screen' },
-    h('h1', { class: 'logo' }, h('span', { class: 'logo-top' }, 'POKéMON'), h('span', { class: 'logo-bottom' }, 'SURVIVORS')),
-    h('p', { class: 'subtitle blink' }, 'Escolha seu parceiro!'),
-    h('div', { class: 'starters' }, ...cards),
-    h('p', { class: 'hint' }, '← → escolher · ENTER confirmar · WASD/setas para andar'),
-    h('p', { class: 'credits' }, 'Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Game Freak'),
-  )
-  root.append(el)
-
-  const tick = (t: number) => {
-    STARTER_IDS.forEach((id, i) => {
-      const canvas = canvases.get(id)!
-      const ctx = context2d(canvas)
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const selected = i === nav.index
-      drawPokemon(ctx, sprites(STARTERS[id].line[0].dex), selected ? 'Walk' : 'Idle', 0, t, 32, 48)
-    })
-  }
-
-  return { el, tick, dispose: () => (nav.off(), el.remove()) }
-}
-
 /* ---------------- Level up ---------------- */
+
+/** "Ember + Charcoal → Flamethrower" chip. `ready` lights it up when the evolution is available. */
+const evoRecipe = (evo: MoveEvolution, ready: boolean) =>
+  h(
+    'span',
+    { class: ready ? 'evo-recipe ready' : 'evo-recipe', title: `${MOVES[evo.from].name} + ${ITEMS[evo.item].name} → ${MOVES[evo.to].name}` },
+    h('img', { src: moveIcon(evo.from), alt: '' }),
+    '+',
+    h('img', { src: itemIcon(evo.item), alt: '' }),
+    '→',
+    h('img', { src: moveIcon(evo.to), alt: '' }),
+    ready && h('b', {}, 'PRONTO!'),
+  )
+
+/** Recipes an offer takes part in, flagged ready if picking it completes the pair. */
+const offerRecipes = (g: Game, offer: Offer) => {
+  const p = g.player
+  switch (offer.kind) {
+    case 'move': {
+      const evo = evolutionOf(offer.id)
+      return evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
+    }
+    case 'item': {
+      const learnset: readonly MoveId[] = STARTERS[g.starter].learnset
+      return EVOLUTIONS.filter((e) => e.item === offer.id && learnset.includes(e.from)).map((e) =>
+        evoRecipe(e, canEvolve(e, { moves: p.moves, items: [offer] })),
+      )
+    }
+    default:
+      return []
+  }
+}
 
 const offerView = (g: Game, offer: Offer) => {
   switch (offer.kind) {
@@ -128,6 +111,10 @@ const offerView = (g: Game, offer: Offer) => {
     }
     case 'berry':
       return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: `${STARTERS[g.starter].name} recupera 40 HP.`, type: null }
+    case 'evolution': {
+      const to: MoveDef = MOVES[offer.to]
+      return { icon: moveIcon(offer.to), name: to.name, tag: 'EVOLUÇÃO!', isNew: true, desc: `${MOVES[offer.from].name} evolui! ${to.description}`, type: to.type }
+    }
   }
 }
 
@@ -138,9 +125,10 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const name = STARTERS[g.starter].line[g.player.stage]!.name
   const buttons = g.offers.map((offer, i) => {
     const v = offerView(g, offer)
+    const recipes = offerRecipes(g, offer)
     return h(
       'button',
-      { class: 'offer' },
+      { class: offer.kind === 'evolution' ? 'offer offer-evo' : 'offer' },
       h('span', { class: 'offer-key' }, i + 1),
       h('div', { class: 'offer-icon' }, h('img', { src: v.icon, alt: '' })),
       h(
@@ -148,6 +136,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
         { class: 'offer-body' },
         h('div', { class: 'offer-name' }, v.name, v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag)),
         h('div', { class: 'offer-desc' }, v.desc),
+        recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
       ),
       v.type && typeBadge(v.type),
     )
@@ -161,8 +150,10 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
     : []
 
   let done = false
+  // Space also fires the special attack: ignore presses that were meant for the fight.
+  const openedAt = performance.now()
   const nav = menu(input, [...buttons, ...actions.map(([b]) => b)], (i) => {
-    if (done) return
+    if (done || performance.now() - openedAt < 400) return
     done = true
     playSfx('select')
     const offer = g.offers[i]
@@ -179,7 +170,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
       h('div', { class: 'dialog-title' }, `${name} subiu para o Nv ${g.player.level - g.pendingLevelUps + 1}!`),
       h('div', { class: 'offers' }, ...buttons),
       actions.length > 0 && h('div', { class: 'buttons' }, ...actions.map(([b]) => b)),
-      h('p', { class: 'hint' }, '↑ ↓ escolher · ENTER confirmar · 1-3 atalho'),
+      hint('↑ ↓ escolher · ENTER confirmar · 1-3 atalho', 'Toque para escolher'),
     ),
   )
   root.append(el)
@@ -199,12 +190,33 @@ const STAT_ROWS = [
   ['Regeneração', (s) => `${s.regen.toFixed(1)}/s`],
 ] as const satisfies ReadonlyArray<readonly [string, (s: Game['player']['stats']) => string]>
 
+/** Paired item hint for a loadout move: shows what it needs and whether it is ready. */
+const loadoutHint = (g: Game, id: MoveId) => {
+  if (evolvedFrom(id)) return h('span', { class: 'tag tag-new' }, '★ EVO')
+  const evo = evolutionOf(id)
+  if (!evo) return null
+  const ready = canEvolve(evo, g.player)
+  return h(
+    'span',
+    { class: ready ? 'evo-pair ready' : 'evo-pair', title: `${ITEMS[evo.item].name} → ${MOVES[evo.to].name}` },
+    h('img', { src: itemIcon(evo.item), alt: ITEMS[evo.item].name }),
+    ready && '!',
+  )
+}
+
 const loadoutList = (g: Game) =>
   h(
     'div',
     { class: 'loadout-list' },
     ...g.player.moves.map((m) =>
-      h('div', { class: 'loadout-row' }, h('img', { src: moveIcon(m.id), alt: '' }), MOVES[m.id].name, h('span', { class: 'tag' }, `Nv ${m.level}`)),
+      h(
+        'div',
+        { class: 'loadout-row' },
+        h('img', { src: moveIcon(m.id), alt: '' }),
+        MOVES[m.id].name,
+        loadoutHint(g, m.id),
+        !evolvedFrom(m.id) && h('span', { class: 'tag' }, `Nv ${m.level}`),
+      ),
     ),
     ...g.player.items.map((i) =>
       h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, h('span', { class: 'tag' }, `Nv ${i.level}`)),
@@ -239,6 +251,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, onResume: ()
         loadoutList(g),
         h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([label, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, label), h('b', {}, fmt(s))))),
       ),
+      h('p', { class: 'evo-legend' }, 'Golpe no nível máximo + o item indicado = evolução na próxima Poké Ball ou subida de nível!'),
       h('div', { class: 'buttons' }, resume, mute, quit),
     ),
   )
@@ -248,10 +261,17 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, onResume: ()
 
 /* ---------------- Results ---------------- */
 
+/** Icon, name and type for a results-screen damage row. */
+const damageSource = (g: Game, id: DamageSource) => {
+  if (id !== 'special') return { icon: moveIcon(id), name: MOVES[id].name, type: MOVES[id].type }
+  const r = resolveSpecial(g.starter, g.player.stage)
+  return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
+}
+
 export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void): Screen => {
   const victory = g.phase === 'victory'
   const name = STARTERS[g.starter].line[g.player.stage]!.name
-  const entries = (Object.entries(g.damageByMove) as Array<[MoveId, number]>).sort((a, b) => b[1] - a[1])
+  const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const earned = runEarnings(g)
   const retry = h('button', { class: 'btn' }, 'Tentar de novo')
@@ -264,8 +284,14 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
     h(
       'div',
       { class: 'dialog box pop wide' },
-      h('img', { class: 'result-portrait', src: sprites(playerDex(g)).portrait.src, alt: '' }),
+      h(
+        'div',
+        { class: 'portrait-wrap' },
+        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
+        g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
+      ),
       h('div', { class: 'dialog-title' }, victory ? 'Você venceu Mewtwo!' : `${name} desmaiou!`),
+      g.player.shiny && h('div', { class: 'tag tag-shiny' }, `${name} shiny`),
       h(
         'div',
         { class: 'result-stats' },
@@ -283,16 +309,17 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
       h(
         'div',
         { class: 'damage-list' },
-        ...entries.map(([id, dmg]) =>
-          h(
+        ...entries.map(([id, dmg]) => {
+          const src = damageSource(g, id)
+          return h(
             'div',
             { class: 'damage-row' },
-            h('img', { src: moveIcon(id), alt: '' }),
-            h('span', { class: 'damage-name' }, MOVES[id].name),
-            h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[MOVES[id].type]}` })),
+            h('img', { src: src.icon, alt: '' }),
+            h('span', { class: 'damage-name' }, src.name),
+            h('div', { class: 'damage-bar' }, h('div', { style: `width:${(dmg / top) * 100}%;--type:${TYPE_COLORS[src.type]}` })),
             h('b', {}, Math.round(dmg).toLocaleString('pt-BR')),
-          ),
-        ),
+          )
+        }),
       ),
       h('div', { class: 'buttons' }, retry, back),
     ),
@@ -315,4 +342,19 @@ export const toast = (root: HTMLElement, content: HTMLElement | string, ms = 260
   root.append(el)
   setTimeout(() => el.classList.add('out'), ms)
   setTimeout(() => el.remove(), ms + 400)
+}
+
+/** Big centered announcement (legendary entrances). Wraps on small screens. */
+export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600) => {
+  const el = h('div', { class: 'banner box' }, content)
+  root.append(el)
+  setTimeout(() => el.classList.add('out'), ms)
+  setTimeout(() => el.remove(), ms + 400)
+}
+
+/** Full-screen white flash that fades out by itself. */
+export const flashScreen = (root: HTMLElement) => {
+  const el = h('div', { class: 'screen-flash' })
+  root.append(el)
+  setTimeout(() => el.remove(), 1000)
 }

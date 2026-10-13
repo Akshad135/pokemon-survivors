@@ -1,8 +1,9 @@
 import { TAU } from '../engine/math'
-import { range, weightedPick } from '../engine/rng'
-import { ENEMIES } from '../data/enemies'
+import { chance, range, weightedPick } from '../engine/rng'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
 import { EVENTS, stageAt, type WaveEvent } from '../data/waves'
 import { spawnEnemy } from './enemies'
+import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
 import type { Game } from './types'
 
 /** Just outside the visible area, in a random direction around the player. */
@@ -17,10 +18,12 @@ const runEvent = (g: Game, event: WaveEvent) => {
   const p = g.player
   switch (event.kind) {
     case 'boss': {
+      if (event.chance !== undefined && !chance(g.rng, event.chance)) break
       const pos = offscreen(g)
       const boss = spawnEnemy(g, event.enemy, pos.x, pos.y)
+      const def: EnemyDef = ENEMIES[event.enemy]
       g.bossId = boss.id
-      g.shake = 5
+      g.shake = def.legendary ? 9 : 5
       g.events.push({ kind: 'boss', enemy: event.enemy })
       break
     }
@@ -63,8 +66,16 @@ export const updateSpawner = (g: Game, dt: number) => {
   while (g.spawnBudget >= 1) {
     g.spawnBudget--
     if (regular >= stage.max) continue
-    const pos = offscreen(g)
-    spawnEnemy(g, weightedPick(g.rng, stage.pool), pos.x, pos.y)
+    const kind = weightedPick(g.rng, stage.pool)
+    if (rollShiny(g.rng, SHINY_ODDS.enemy)) {
+      // Shinies pop in just inside the screen edge so their sparkle entrance is seen.
+      const a = range(g.rng, 0, TAU)
+      const d = Math.min(g.view.w, g.view.h) / 2 - 16
+      makeShiny(g, spawnEnemy(g, kind, g.player.x + Math.cos(a) * d, g.player.y + Math.sin(a) * d))
+    } else {
+      const pos = offscreen(g)
+      spawnEnemy(g, kind, pos.x, pos.y)
+    }
   }
 
   while (g.nextEvent < EVENTS.length && EVENTS[g.nextEvent]!.at <= g.time) {
