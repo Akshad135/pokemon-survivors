@@ -1,6 +1,7 @@
 import { retain, TAU } from '../engine/math'
 import { pick, range } from '../engine/rng'
-import type { Game } from './types'
+import { placeDamage, SLOT_OFFSETS } from './damageText'
+import type { Enemy, Game } from './types'
 
 type BurstOpts = {
   colors: readonly string[]
@@ -34,9 +35,42 @@ export const burst = (g: Game, x: number, y: number, opts: BurstOpts) => {
   }
 }
 
+const MAX_TEXTS = 120
+const TEXT_RISE = -38
+
 export const floatText = (g: Game, x: number, y: number, text: string, color: string, damage = false) => {
-  if (g.texts.length > 120) g.texts.shift()
-  g.texts.push({ x: x + range(g.rng, -4, 4), y, vy: -38, life: 0, text, color, damage })
+  if (g.texts.length > MAX_TEXTS) g.texts.shift()
+  g.texts.push({ x: x + range(g.rng, -4, 4), y, vy: TEXT_RISE, life: 0, text, color, damage, target: -1, amount: 0, slot: 0 })
+}
+
+/**
+ * A damage number over an enemy, grouped with its recent ones (`placeDamage`):
+ * a merge adds to the total and pops it back over the target. `bang` marks
+ * super-effective and critical hits (`12!`); they have their own color, so
+ * they only group with each other.
+ */
+export const damageText = (g: Game, e: Enemy, amount: number, color: string, bang = false) => {
+  const place = placeDamage(g.texts, e.id, color)
+  if (place.kind === 'skip') return
+  const ax = e.x
+  const ay = e.y - e.radius * 2 - 4
+  if (place.kind === 'new') {
+    if (g.texts.length > MAX_TEXTS) g.texts.shift()
+    const o = SLOT_OFFSETS[place.slot]!
+    g.texts.push({ x: ax + o.x, y: ay + o.y, vy: TEXT_RISE, life: 0, text: `${amount}${bang ? '!' : ''}`, color, damage: true, target: e.id, amount, slot: place.slot })
+    return
+  }
+  const t = g.texts[place.index]!
+  const o = SLOT_OFFSETS[t.slot]!
+  t.amount = place.kind === 'merge' ? t.amount + amount : amount
+  t.text = `${t.amount}${bang ? '!' : ''}`
+  t.x = ax + o.x
+  t.y = ay + o.y
+  t.vy = TEXT_RISE
+  if (place.kind === 'recycle') {
+    t.life = 0
+    t.color = color
+  }
 }
 
 export const updateEffects = (g: Game, dt: number) => {

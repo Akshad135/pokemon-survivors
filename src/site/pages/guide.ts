@@ -16,7 +16,7 @@ import { createRng } from '../../engine/rng'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
 import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
-import { HATCHLING_IDS, HATCHLINGS } from '../../data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
@@ -24,7 +24,7 @@ import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../.
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
-import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS } from '../../game/special'
+import { MIN_SPECIAL_COOLDOWN, resolveSpecial, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { LOCALES, type Locale } from '../../i18n'
@@ -179,17 +179,21 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
 const special = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.special
   const game = LOCALES[locale].messages
-  // Only the specials some starter actually gets (they follow the starter's first type).
-  const used = [...new Set(STARTER_IDS.map((id) => resolveSpecial(id, 0).id))]
-  const rows = used.map((id) => {
+  // One special per type; a Pokémon uses its first type's, so some have no user yet.
+  const rows = POKE_TYPES.map((type) => {
+    const id = specialOfType(type)
     const def = SPECIALS[id]
+    const users = [...STARTER_IDS, ...HATCHLING_IDS].filter((p) => resolveSpecial(p, 0).id === id)
     return [
       typeBadge(def.type, m),
-      html`<b>${def.base.name} → ${def.final.name}</b><br /><small>${game.specials[def.kind]}</small>`,
+      html`<b>${def.base.name} → ${def.final.name}</b><br /><small>${game.specials[id]}</small>`,
       `${def.cooldown}s`,
+      users.length > 0
+        ? html`<span class="minis">${users.map((p) => html`<span class="with-mini">${portrait(PLAYABLE[p].line[0].dex)}${PLAYABLE[p].line[0].name}</span>`)}</span>`
+        : s.noUsers,
     ]
   })
-  return html`${paragraphs(s.paragraphs(MIN_SPECIAL_COOLDOWN))}${table([s.typeHead, s.moveHead, s.cooldownHead], rows)}`
+  return html`${paragraphs(s.paragraphs(MIN_SPECIAL_COOLDOWN))}${table([s.typeHead, s.moveHead, s.cooldownHead, s.usersHead], rows)}`
 }
 
 const types = (m: SiteMessages) => {

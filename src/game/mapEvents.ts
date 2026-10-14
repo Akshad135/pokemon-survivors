@@ -7,7 +7,7 @@ import { addBuff } from './buffs'
 import { hurtPlayer, killEnemy } from './combat'
 import { dropItem } from './consumables'
 import { logDefeat } from './dex'
-import { burst, floatText } from './effects'
+import { burst, damageText, floatText } from './effects'
 import { spawnEnemy } from './enemies'
 import { recomputeStats } from './leveling'
 import {
@@ -131,7 +131,7 @@ const trapHit = (g: Game, x: number, y: number, r: number, damage: number, bossS
     const away = dirTo(x, y, e.x, e.y)
     e.kx += (away.x * 160) / e.mass
     e.ky += (away.y * 160) / e.mass
-    floatText(g, e.x, e.y - e.radius * 2 - 4, String(dmg), '#f8a040', true)
+    damageText(g, e, dmg, '#f8a040')
     if (e.hp <= 0) killEnemy(g, e)
   }
   if (within(g, x, y, r + g.player.radius)) hurtPlayer(g, player)

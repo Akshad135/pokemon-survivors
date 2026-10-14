@@ -851,10 +851,24 @@ export const en: Messages = {
   },
 
   specials: {
-    dash: 'A flaming charge that leaves a trail of fire.',
-    beam: 'A focused blast in the direction you move.',
-    roots: 'Rings of roots burst from the ground and slow foes.',
-    nova: 'A shockwave all around you that pushes everything back.',
+    blastBurn: 'A flaming charge that leaves a trail of fire.',
+    hydroCannon: 'A focused blast in the direction you move.',
+    frenzyPlant: 'Rings of roots burst from the ground and slow foes.',
+    boomburst: 'A shockwave all around you that pushes everything back.',
+    boltStrike: 'Lightning strikes the nearest foes and may paralyze them.',
+    doomDesire: 'Columns of steel light crash on the nearest foes: few, but heavy.',
+    lightOfRuin: 'Beams of light fall on the nearest foes and may put them to sleep.',
+    expandingForce: 'Psychic waves all around you that push and slow foes.',
+    nightDaze: 'Waves of darkness all around you that push and may put foes to sleep.',
+    dracoMeteor: 'A meteor shower around you that may burn.',
+    diamondStorm: 'A rockfall around you that hits hard and pushes back.',
+    blizzard: 'Icicles rain down around you and slow foes.',
+    astralBarrage: 'A ring of shadow balls fired every way that may paralyze.',
+    auraSphere: 'A ring of energy spheres fired every way.',
+    attackOrder: 'A ring of stingers fired every way that may poison.',
+    precipiceBlades: 'A wall of stone blades that sweeps the way you move and slows foes.',
+    aeroblast: 'A wall of wind that sweeps the way you move and pushes foes back.',
+    malignantChain: 'You run a little faster and leave a poison trail behind.',
   },
 
   traits: {

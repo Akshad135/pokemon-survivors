@@ -500,6 +500,8 @@ const biomeFade = (g: Game) => {
 }
 
 /** Player preferences from the settings screen. */
+const TEXT_PASSES = [false, true] as const
+
 export type RenderOptions = { damageNumbers: boolean; screenShake: boolean }
 
 export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
@@ -571,10 +573,13 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawWeather(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)
-  for (const text of g.texts) {
-    if (text.damage && !opts.damageNumbers) continue
-    ctx.globalAlpha = Math.min(1, (0.7 - text.life) * 5)
-    blitCentered(ctx, textSprite(text.text, text.color), text.x, text.y)
+  // Two passes: super-effective and critical numbers (`12!`) land on top of the rest.
+  for (const bang of TEXT_PASSES) {
+    for (const text of g.texts) {
+      if ((text.damage && !opts.damageNumbers) || text.text.endsWith('!') !== bang) continue
+      ctx.globalAlpha = Math.min(1, (0.7 - text.life) * 5)
+      blitCentered(ctx, textSprite(text.text, text.color), text.x, text.y)
+    }
   }
   ctx.globalAlpha = 1
   ctx.restore()

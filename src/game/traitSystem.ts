@@ -4,7 +4,7 @@ import { query } from '../engine/spatial'
 import { isSummoner, SUMMONS, TRAITS } from '../data/traits'
 import { hurtPlayer, killEnemy } from './combat'
 import { spawnEnemy } from './enemies'
-import { burst, floatText } from './effects'
+import { burst, damageText } from './effects'
 import { inView } from './queries'
 import { isAsleep } from './status'
 import {
@@ -46,7 +46,7 @@ const hurtEnemy = (g: Game, e: Enemy, amount: number, from: Enemy) => {
   e.flash = 0.16
   if (dmg <= 0) return
   e.hp -= dmg
-  floatText(g, e.x, e.y - e.radius * 2 - 4, String(dmg), '#f8a048', true)
+  damageText(g, e, dmg, '#f8a048')
   if (e.hp <= 0) killEnemy(g, e)
 }
 

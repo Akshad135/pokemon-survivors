@@ -35,7 +35,7 @@ const specialRow = (id: PlayableId) => {
     'div',
     { class: 'move-row signature' },
     h('img', { src: specialIcon(special), alt: '' }),
-    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${def.base.name} → ${def.final.name}`), h('div', { class: 'move-desc' }, t().specials[def.kind])),
+    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${def.base.name} → ${def.final.name}`), h('div', { class: 'move-desc' }, t().specials[special])),
     typeBadge(def.type),
   )
 }
