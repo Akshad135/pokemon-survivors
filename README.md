@@ -100,6 +100,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
+- **Map events** that make you pick where to go: buff altars, healing fountains, locked chests (stand in the ring while an ambush closes in), spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins. Off-screen ones get an arrow on the screen edge.
 - **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, a march for the run, and a boss theme while a boss is alive.
 - **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
@@ -132,7 +133,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')` and `ps.theme()` (music theme playing).
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing) and `ps.event('chest')` (places a map event next to you).
 
 ## How it's built
 
@@ -147,6 +148,7 @@ src/
             combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
             status.ts (pure condition rules) · statusSystem.ts (DoT ticks, particles)
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
+            mapEvents.ts (event director, altars, chests, traps, Meowth) · mapEventRules.ts (their pure rules)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts
   render/   PMD sprite loader, code-drawn pixel art, procedural meadow, title scene and logo, frame renderer
   ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
@@ -161,6 +163,7 @@ src/
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
 - **Waves** live in `data/waves.ts`: spawn stages by time, plus events (flyby swarms, closing rings, bosses, optionally rare via `chance`).
 - **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/dex.mjs`.
+- **Map events** are data in `MAP_EVENTS` (`game/mapEvents.ts`): each kind has a spawn rule for the event director (earliest time, weight, max alive, lifetime, distance), a `create` for its state, an `update` with the interaction and reward, and optional `enter`/`expire` hooks. To add one, add its state to `MapEventStates`, its definition, its art in `render/mapEvents.ts` (plus an arrow in `MARKER` if it's important) and, if it talks to the player, a `MapEventNotice` handled in `ui/mapEvents.ts`.
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time, burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses).
 - **Special attack:** one manual move on a cooldown, defined in `special.ts` per Pokémon type (with optional per-species overrides). Input reaches `step()` as data (`{ move, special }`).

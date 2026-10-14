@@ -10,6 +10,7 @@ import type { StarterId } from '../data/starters'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
+import type { MapEventNotice, MapEventsState } from './mapEvents'
 import type { Prop } from './props'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
@@ -221,6 +222,8 @@ export type GameEvent =
   | { kind: 'propBreak' }
   | { kind: 'revive' }
   | { kind: 'victory' }
+  /** Something happened at a map event (altar, chest, Meowth…). */
+  | { kind: 'mapEvent'; notice: MapEventNotice }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -267,6 +270,8 @@ export type Game = {
   /** World cells whose prop was already broken, so it never respawns. */
   brokenProps: Set<number>
   buffs: Buff[]
+  /** Points of interest placed by the event director (`mapEvents.ts`). */
+  mapEvents: MapEventsState
   /** Revives held (0 or 1). Auto-used on fainting. */
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */

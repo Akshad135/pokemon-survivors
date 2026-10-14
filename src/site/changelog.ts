@@ -19,6 +19,26 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    pr: 19,
+    title: { pt: 'Eventos no mapa', en: 'Map events' },
+    notes: [
+      {
+        pt: 'Pontos de interesse surgem durante a partida e fazem você escolher para onde ir: altares de buff, fontes que curam e baús trancados que pedem 3 segundos dentro do anel enquanto uma emboscada fecha o cerco.',
+        en: 'Points of interest show up during a run and make you choose where to go: buff altars, healing fountains and locked chests that need 3 seconds inside their ring while an ambush closes in.',
+      },
+      {
+        pt: 'Armadilhas de espinhos e bombas ferem você e a horda: atraia os selvagens para cima delas.',
+        en: 'Spike and bomb traps hurt you and the horde alike: lure the wild Pokémon onto them.',
+      },
+      {
+        pt: 'Um Meowth foge com moedas: cada golpe derruba uma, e se ele desmaiar vem o Pay Day.',
+        en: 'A Meowth runs off with coins: every hit knocks one loose, and if it faints you get the Pay Day.',
+      },
+      { pt: 'Setas na borda da tela apontam para os eventos importantes.', en: 'Arrows on the screen edge point to the important events.' },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 14,
     title: { pt: 'Site: Pokédex, guia, novidades e página legal', en: 'Website: Pokédex, guide, changelog and legal page' },
     notes: [
