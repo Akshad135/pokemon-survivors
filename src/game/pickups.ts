@@ -2,6 +2,7 @@ import { dirTo, retain } from '../engine/math'
 import { range } from '../engine/rng'
 import { burst, floatText } from './effects'
 import { useConsumable } from './consumables'
+import { rollEgg, type EggSource } from './eggs'
 import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
 import type { Game, Pickup } from './types'
 
@@ -30,6 +31,19 @@ export const dropCoins = (g: Game, x: number, y: number, values: readonly number
     const spread = values.length > 1 ? 40 : 15
     g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -spread, spread), vy: range(g.rng, -spread, -5), attracted: false, age: 0, kind: 'coin', value })
   }
+}
+
+/**
+ * Rolls an egg from `source` (`rollEgg`). A found egg goes straight into the
+ * run's bag, so it can't be lost on the ground when Mewtwo ends the run.
+ */
+export const awardEgg = (g: Game, source: EggSource, x: number, y: number) => {
+  const tier = rollEgg(g.rng, source, g.eggs)
+  if (!tier) return
+  g.eggs.found.push({ tier, at: g.player.walked })
+  g.eggs.lucky = false
+  burst(g, x, y - 12, { colors: ['#f8f0d0', '#ffffff', '#58c858', '#f8d030'], count: 36, speed: 110, ttl: 0.8, gravity: 40 })
+  g.events.push({ kind: 'egg', tier })
 }
 
 /** Exp. Candy size tier, used for rendering. */

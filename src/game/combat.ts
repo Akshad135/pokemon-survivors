@@ -6,8 +6,9 @@ import { ENEMIES } from '../data/enemies'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { logDefeat } from './dex'
 import { burst, floatText } from './effects'
+import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
-import { dropCoins, dropPickup, dropXp } from './pickups'
+import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
 import { absorb } from './traits'
 import type { Attack, DamageSource, Enemy, Game } from './types'
@@ -71,6 +72,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.boss) {
     dropPickup(g, e.x, e.y, 'pokeball')
+    awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
     if (e.kind === 'mewtwo') {

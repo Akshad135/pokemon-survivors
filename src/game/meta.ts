@@ -1,5 +1,6 @@
 import { chance, type Rng } from '../engine/rng'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
+import { parseEggs, parseHatched, type Egg, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import type { StatDelta } from './stats'
 import type { Game } from './types'
@@ -68,10 +69,14 @@ export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, sk
 
 export const SAVE_VERSION = 1
 
-/** `dex` is the Pokédex progress (`game/dex.ts`); saves from before it start empty. */
-export type Save = { version: typeof SAVE_VERSION; wallet: number; ranks: Ranks; dex: Pokedex }
+/**
+ * `dex` is the Pokédex progress (`game/dex.ts`); `eggs` (the incubator) and
+ * `hatched` (families unlocked from eggs) live in `eggs.ts`. Saves from before
+ * a field existed load it empty.
+ */
+export type Save = { version: typeof SAVE_VERSION; wallet: number; ranks: Ranks; dex: Pokedex; eggs: readonly Egg[]; hatched: Hatched }
 
-export const EMPTY_SAVE: Save = { version: SAVE_VERSION, wallet: 0, ranks: NO_RANKS, dex: EMPTY_DEX }
+export const EMPTY_SAVE: Save = { version: SAVE_VERSION, wallet: 0, ranks: NO_RANKS, dex: EMPTY_DEX, eggs: [], hatched: {} }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
@@ -108,6 +113,8 @@ export const parseSave = (raw: string | null): Save => {
     wallet: wholeNumber(data.wallet),
     ranks: Object.fromEntries(UPGRADE_IDS.map((id) => [id, wholeNumber(ranks[id], UPGRADES[id].maxRank)])) as Record<UpgradeId, number>,
     dex: parseDex(data.dex),
+    eggs: parseEggs(data.eggs),
+    hatched: parseHatched(data.hatched),
   }
 }
 

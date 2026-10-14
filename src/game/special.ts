@@ -1,6 +1,6 @@
 import { dir8, fromAngle, TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
-import { STARTERS, type StarterId } from '../data/starters'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
 import { spawnAttack } from './spawn'
@@ -59,14 +59,14 @@ export type SpecialId = keyof typeof SPECIALS
 const BY_TYPE: Partial<Record<PokeType, SpecialId>> = { fire: 'blastBurn', water: 'hydroCannon', grass: 'frenzyPlant' }
 
 /** Per-species overrides win over the type table (e.g. a Pikachu starter could get its own). */
-const BY_SPECIES: Partial<Record<StarterId, SpecialId>> = {}
+const BY_SPECIES: Partial<Record<PlayableId, SpecialId>> = {}
 
 /** Species override, else the first type with a special, else the generic fallback. */
-export const specialIdFor = (species: StarterId, types: readonly PokeType[]): SpecialId =>
+export const specialIdFor = (species: PlayableId, types: readonly PokeType[]): SpecialId =>
   BY_SPECIES[species] ?? types.map((t) => BY_TYPE[t]).find((id) => id !== undefined) ?? 'boomburst'
 
-export const resolveSpecial = (starter: StarterId, stage: number) => {
-  const species = STARTERS[starter]
+export const resolveSpecial = (starter: PlayableId, stage: number) => {
+  const species = PLAYABLE[starter]
   const id = specialIdFor(starter, species.line[0].types)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1

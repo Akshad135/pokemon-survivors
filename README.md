@@ -8,7 +8,7 @@
 
 **A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
 
-Pick one of 27 starters, survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+Pick one of 27 starters (or hatch eggs for 25 more Pokémon), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
 
 [**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
 
@@ -92,6 +92,8 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
     </tr>
   </table>
 
+- **Eggs and 25 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 25 families from every type and generation (Pichu, Eevee, Machop, Gastly, Abra, Riolu, Zorua… and the rare Dratini, Larvitar, Beldum, Gible and Dreepy), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars.
+
 - **23 moves and 19 held items.** Max out a move, pair it with the right item, and it evolves (Ember + Charcoal → Flamethrower).
 - **Real type matchups**, burn, poison and paralysis, and a manual **special attack** per type that becomes Blast Burn, Hydro Cannon or Frenzy Plant at the final evolution.
 - **193 wild Pokémon from all 9 generations**, Dragon types included, in 5 tiers by base stat total. Every run draws its own cast, a few new faces per stage, from basic Pokémon early to evolved ones late, and each biome pulls the draw towards its types (more Grass and Bug in the forest, Rock and Ground in the cave).
@@ -107,7 +109,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
 - **Map events** that make you pick where to go: buff altars, healing fountains, locked chests (stand in the ring while an ambush closes in), spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins. Off-screen ones get an arrow on the screen edge.
-- **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
+- **Meta progression**: hatch eggs into new partners, collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
@@ -140,7 +142,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` (`ps.spawn('pidgey', 1, true)` for a shiny), `ps.dex()` (saved Pokédex) and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` (`ps.spawn('pidgey', 1, true)` for a shiny), `ps.dex()` (saved Pokédex) and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode, and `ps.egg('rare')`, `ps.walk(500)`, `ps.hatch()`, `ps.hatch('gible', true, 2.8)`, `ps.unlock()` and `ps.incubator()` for eggs.
 
 ## How it's built
 
@@ -149,7 +151,7 @@ Vite + TypeScript and Canvas 2D, with no game engine. Everything is plain data p
 ```
 src/
   engine/   math, seeded rng, spatial hash, input, WebAudio sfx and music synth, pixel-art helpers
-  data/     pure game data: starters, enemies, waves, biomes, weather, held items, move evolutions, type chart, music scores
+  data/     pure game data: starters, egg families (hatchlings), enemies, waves, biomes, weather, held items, move evolutions, type chart, music scores
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
@@ -160,8 +162,9 @@ src/
             dex.ts (Pokédex rules and save format) · sightings.ts (who's on screen)
             rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
             endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
+            eggs.ts (egg drops, incubator, hatching: pure rules)
   render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
-  ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch, Pokédex
+  ui/       title screen, HUD, Pokémon select (with the egg box), incubator and hatching scene, level-up, pause, settings, results, toasts, language switch, Pokédex
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
@@ -186,6 +189,7 @@ src/
 - **Biomes and weather:** `data/biomes.ts` holds the biome order (equal slices of the run), each biome's weather odds, theme and `affinity` (the types that feel at home there, which weight the enemy draw through `biomeWeight`). `game/biomes.ts` follows the schedule and `game/weather.ts` rolls weather spells and applies their rules (`data/weather.ts`): `weatherBoost`/`weatherPower` multiply damage by attack type in `combat.ts` (player moves, enemy bodies by their types, boss hazards by `HAZARD_TYPES`), and sandstorm/snow wear down anyone not immune. The ground and breakables are drawn per biome in `render/world.ts` and `render/props.ts`, the overlays in `render/weather.ts`.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
 - **Pokédex:** the simulation fills a run's `dexLog` (species on screen via `sightings.ts`, defeats and caught shinies in `killEnemy`); the shell folds it into the save's `dex` field when the run is banked. `game/dex.ts` holds the pure rules: a compact `[defeated, flags]` mark per dex number, `markCaught` (for any future capture source, like eggs) and `dexCounts` for anything that reads progress.
+- **Eggs:** `game/eggs.ts` holds the rules (drop odds per source, the per-run cap, steps per tier, the incubator, hatching, duplicates). A run counts `player.walked`; the shell banks steps and found eggs into the save (`eggs`, `hatched`) like ₽, and ready eggs hatch when the player leaves the run (`ui/incubator.ts`). The playable families live in `data/hatchlings.ts` with the starters' shape (`PlayableDef`), and `PLAYABLE` merges both. `grantEgg` gives an egg from outside a run (mission rewards).
 
 </details>
 

@@ -4,15 +4,16 @@ import type { Input } from '../engine/input'
 import { canEvolve, EVOLUTIONS, evolutionOf, evolvedFrom, type MoveEvolution } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
-import { STARTERS } from '../data/starters'
+import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
+import { toSteps } from '../game/eggs'
 import { overtime } from '../game/endless'
 import { runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
-import { berryIcon, coinIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { berryIcon, coinIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
 import { formatNumber, formatPokeDollars, t, type Messages } from '../i18n'
@@ -90,7 +91,7 @@ const offerRecipes = (g: Game, offer: Offer) => {
       return evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
     }
     case 'item': {
-      const learnset: readonly MoveId[] = STARTERS[g.starter].learnset
+      const learnset: readonly MoveId[] = PLAYABLE[g.starter].learnset
       return EVOLUTIONS.filter((e) => e.item === offer.id && learnset.includes(e.from)).map((e) =>
         evoRecipe(e, canEvolve(e, { moves: p.moves, items: [offer] })),
       )
@@ -121,7 +122,7 @@ const offerView = (g: Game, offer: Offer) => {
       return { icon: itemIcon(offer.id), name: ITEMS[offer.id].name, tag: isNew ? m.new : m.level(offer.level), isNew, desc: m.items[offer.id], type: null }
     }
     case 'berry':
-      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(STARTERS[g.starter].name), type: null }
+      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(PLAYABLE[g.starter].name), type: null }
     case 'evolution': {
       const to: MoveDef = MOVES[offer.to]
       const desc = m.levelUp.evolves(MOVES[offer.from].name, m.moves[offer.to].description)
@@ -135,7 +136,7 @@ type LevelUpExtras = { reroll: () => void; skip: () => void }
 
 export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
   const m = t().levelUp
-  const name = STARTERS[g.starter].line[g.player.stage]!.name
+  const name = PLAYABLE[g.starter].line[g.player.stage]!.name
   const buttons = g.offers.map((offer, i) => {
     const v = offerView(g, offer)
     const recipes = offerRecipes(g, offer)
@@ -306,13 +307,17 @@ const damageSource = (g: Game, id: DamageSource) => {
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
+/** What the incubator made of the run: ₽ paid for eggs that didn't fit, and eggs now ready to hatch. */
+export type ResultEggs = { refund: number; ready: number }
+
 /** What the run added to the Pokédex (`dexNews`). */
 type DexNews = { species: number; shinies: number }
 
 /**
  * End of run. On a victory, `onContinue` adds the endless-mode button (first);
  * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
- * `news` adds a one-line Pokédex summary when the run found something new.
+ * The steps walked and eggs found feed the incubator (`eggs`), and `news`
+ * adds a one-line Pokédex summary when the run found something new.
  */
 export const results = (
   root: HTMLElement,
@@ -321,12 +326,14 @@ export const results = (
   onRetry: () => void,
   onMenu: () => void,
   onContinue?: () => void,
+  eggs: ResultEggs = { refund: 0, ready: 0 },
   news: DexNews = { species: 0, shinies: 0 },
 ): Screen => {
   const m = t().results
+  const e = t().eggs
   const r = t().rifts
   const victory = g.phase === 'victory'
-  const name = STARTERS[g.starter].line[g.player.stage]!.name
+  const name = PLAYABLE[g.starter].line[g.player.stage]!.name
   const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const earned = runEarnings(g)
@@ -363,7 +370,12 @@ export const results = (
         h('div', {}, h('span', {}, m.kills), h('b', {}, g.kills)),
         legends.length > 0 &&
           h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
+        h('div', {}, h('span', {}, e.steps), h('b', {}, formatNumber(toSteps(g.player.walked)))),
+        g.eggs.found.length > 0 &&
+          h('div', {}, h('span', {}, e.eggs), h('b', { class: 'result-legends' }, ...g.eggs.found.map((egg) => h('img', { src: eggIcon(egg.tier), alt: e.tiers[egg.tier], title: e.tiers[egg.tier] })))),
       ),
+      eggs.refund > 0 && h('p', { class: 'endless-hint' }, e.full(formatPokeDollars(eggs.refund))),
+      eggs.ready > 0 && h('div', { class: 'tag tag-shiny' }, e.readyBadge(eggs.ready)),
       (news.species > 0 || news.shinies > 0) &&
         h(
           'div',

@@ -1,5 +1,5 @@
 import { ENEMIES } from '../data/enemies'
-import { STARTERS } from '../data/starters'
+import { PLAYABLE } from '../data/hatchlings'
 import { MEOWTH_DEX } from './mapEventRules'
 import type { Game } from './types'
 
@@ -16,7 +16,7 @@ const onScreen = (g: Game, x: number, y: number) =>
 export const updateSightings = (g: Game, dt: number) => {
   if (Math.floor(g.time * CHECKS_PER_SECOND) === Math.floor((g.time - dt) * CHECKS_PER_SECOND)) return
   const seen = g.dexLog.seen
-  seen.add(STARTERS[g.starter].line[g.player.stage]!.dex)
+  seen.add(PLAYABLE[g.starter].line[g.player.stage]!.dex)
   for (const e of g.enemies) if (e.dying < 0 && onScreen(g, e.x, e.y)) seen.add(ENEMIES[e.kind].dex)
   for (const ev of g.mapEvents.list) if (ev.kind === 'meowth' && ev.gone < 0 && onScreen(g, ev.x, ev.y)) seen.add(MEOWTH_DEX)
 }

@@ -14,6 +14,12 @@ export const STARTERS = [
   810, 811, 812, 813, 814, 815, 816, 817, 818, // Galar
   906, 907, 908, 909, 910, 911, 912, 913, 914, // Paldea
 ]
+/** Families that hatch from eggs (src/data/hatchlings.ts), whole lines. Some also roam the horde. */
+export const HATCHLINGS = [
+  172, 25, 26, 66, 67, 68, 133, 197, 175, 176, 468, 363, 364, 365, 396, 397, 398, 406, 315, 407, 744, 745, 736, 737, 738, // common
+  92, 93, 94, 63, 64, 65, 280, 281, 282, 447, 448, 570, 571, 636, 637, 714, 715, 679, 680, 681, 848, 849, 957, 958, 959, 935, 936, // rare
+  147, 148, 149, 246, 247, 248, 374, 375, 376, 443, 444, 445, 885, 886, 887, // ultra rare
+]
 export const HORDE = Object.values(roster).map((s) => s.dex)
 /** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
 export const TRAITS = [29, 31, 32, 81, 100, 101, 106, 113, 437]
@@ -24,8 +30,8 @@ export const CRITTERS = [52]
 export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483]
 /** Arceus, the endless mode's reaper. */
 export const REAPER = [493]
-export const DEX = [...STARTERS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER]
-/** Species that can roll shiny: the player line, regular enemies and rift legendaries. */
-export const SHINY = new Set([...STARTERS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS])
+export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER])]
+/** Species that can roll shiny: the player lines, regular enemies and rift legendaries. */
+export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS])
 
 export const pad = (n) => String(n).padStart(4, '0')

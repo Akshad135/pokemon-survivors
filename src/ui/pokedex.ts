@@ -24,6 +24,9 @@ const FILTER_TEST = {
   missing: (s) => !s.seen,
 } as const satisfies Record<DexFilter, (s: DexStatus) => boolean>
 
+/** Species the player can knock out: wild ones, plus playable families that also roam the horde. */
+const defeatable = (e: DexEntry) => e.source.kind !== 'starter' || e.source.wild !== undefined
+
 const dexNumber = (n: number) => `#${String(n).padStart(4, '0')}`
 
 /** Focus zones: the filter tabs, the grid and the footer buttons. ↑/↓ move between them at the grid's edges. */
@@ -40,7 +43,7 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
   const save: Pokedex = loadSave().dex
   const entries = pokedex()
   const status = entries.map((e) => dexStatus(save, e.dex))
-  const wild = entries.filter((e) => e.role !== 'starter')
+  const wild = entries.filter(defeatable)
   const counts = dexCounts(save, entries.map((e) => e.dex))
 
   let filter: DexFilter = 'all'
@@ -108,7 +111,7 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
     const lines = [
       h('span', { class: 'tag' }, m.roles[e.role]),
       !s.seen && h('p', { class: 'dex-tip' }, m.unseen),
-      s.seen && e.role !== 'starter' && row(m.defeated, String(s.defeated)),
+      s.seen && defeatable(e) && row(m.defeated, String(s.defeated)),
       s.seen && row(m.owned, s.caught ? m.yes : m.no),
       s.shiny && h('span', { class: 'tag tag-shiny' }, h('img', { src: sparkleIcon(), alt: '' }), m.shiny),
     ]

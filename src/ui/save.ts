@@ -1,3 +1,4 @@
+import { depositEggs, type Egg } from '../game/eggs'
 import { parseSave, type Save } from '../game/meta'
 
 const KEY = 'ps:save'
@@ -28,6 +29,16 @@ export const depositPokeDollars = (amount: number) => {
   const next = { ...save, wallet: save.wallet + Math.max(0, Math.round(amount)) }
   writeSave(next)
   return next.wallet
+}
+
+/**
+ * Banks a run into the incubator: incubating eggs walk `steps`, new eggs take
+ * the free slots and the rest are paid in ₽ (see `depositEggs`).
+ */
+export const bankEggs = (steps: number, found: readonly Egg[]) => {
+  const { save, converted, refund } = depositEggs(loadSave(), steps, found)
+  writeSave(save)
+  return { converted, refund }
 }
 
 /* ---------------- Settings ---------------- */

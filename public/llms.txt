@@ -5,6 +5,7 @@
 Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around and let it attack on its own. Survive 15 minutes of wild Pokémon hordes, collect experience, learn moves, equip held items and evolve mid-run, then face Mewtwo. After the victory you can keep going in an endless mode, where the horde keeps scaling and Arceus hunts you as the reaper.
 
 - 27 starters, each with its full 3-stage evolution line, stats, signature move and learnset
+- Eggs: bosses, locked chests and rifts sometimes drop an egg; it waits in a 3-slot incubator and hatches with the steps walked in runs, unlocking one of 25 more playable families (every type and generation, e.g. Pichu, Eevee, Gastly, Riolu, Gible, Dreepy). 1% of hatchlings are shiny for good; duplicates become Poké Dollars
 - 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
 - Type matchups, burn, poison and paralysis, and a manual special attack per type (Blast Burn, Hydro Cannon, Frenzy Plant)
 - 193 wild Pokémon from all 9 generations (Dragon types included) in 5 tiers by base stat total; every run draws its own cast (basic Pokémon early, evolved ones late), weighted towards the types of each biome
