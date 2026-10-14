@@ -3,6 +3,7 @@ import type { PlayableId } from './data/hatchlings'
 import type { Difficulty } from './game/difficulty'
 import { isRecord } from './game/parse'
 import { parseRunResult, type Board, type BoardPeriod, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
+import type { Replay } from './game/replay'
 import { locale, type Locale } from './i18n'
 
 /**
@@ -41,11 +42,14 @@ const read = async (path: string, token: string | null, init?: RequestInit) => {
 
 const QUEUE_KEY = 'ps:runs'
 
-/** Results kept for the API at most; older ones give way. */
-const MAX_PENDING = 20
+/** Results kept for the API at most (a long run's replay is ~60 KB); older ones give way. */
+const MAX_PENDING = 10
 
-/** A run result waiting for the API, under the start token of the player who played it. */
-type Pending = { userId: string; token: string; result: RunResult }
+/**
+ * A run result waiting for the API, under the start token of the player who
+ * played it, with its replay for the server to re-simulate (checked there).
+ */
+type Pending = { userId: string; token: string; result: RunResult; replay: unknown }
 
 const readQueue = (): Pending[] => {
   try {
@@ -53,7 +57,7 @@ const readQueue = (): Pending[] => {
     if (!Array.isArray(data)) return []
     return data.flatMap((p: unknown) => {
       const result = isRecord(p) ? parseRunResult(p.result) : null
-      return isRecord(p) && result && typeof p.userId === 'string' && typeof p.token === 'string' ? [{ userId: p.userId, token: p.token, result }] : []
+      return isRecord(p) && result && typeof p.userId === 'string' && typeof p.token === 'string' ? [{ userId: p.userId, token: p.token, result, replay: p.replay }] : []
     })
   } catch {
     return []
@@ -94,7 +98,7 @@ const flushOnce = async () => {
   const token = userId ? await sessionToken() : null
   if (!token) return done
   for (const p of readQueue().filter((q) => q.userId === userId)) {
-    const { status, body } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify(p.result) })
+    const { status, body } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
     if (status === 0 || status === 401 || status === 429 || status >= 500) break
     const ranks = parseRanks(body)
     done.set(p.token, ranks ? { kind: 'ranked', ranks } : { kind: 'rejected' })
@@ -118,11 +122,12 @@ const requestToken = async () => {
 }
 
 /**
- * A run played signed in. `submit` reports its result and resolves once the
- * API took it (or the queue did); reporting again only sends a longer run (a
- * victory that went on into endless mode), else it answers what it did last.
+ * A run played signed in. `submit` reports its result with the replay so far
+ * and resolves once the API took it (or the queue did); reporting again only
+ * sends a longer run (a victory that went on into endless mode), else it
+ * answers what it did last.
  */
-export type RankedRun = { submit: (result: RunResult) => Promise<RankOutcome> }
+export type RankedRun = { submit: (result: RunResult, replay: Replay) => Promise<RankOutcome> }
 
 /** Asks for the start token of a run that begins now. Null for guests. */
 export const startRanked = (): RankedRun | null => {
@@ -132,12 +137,14 @@ export const startRanked = (): RankedRun | null => {
   let sent = -1
   let last: Promise<RankOutcome> = Promise.resolve({ kind: 'unranked' })
   return {
-    submit: (result) => {
+    submit: (result, replay) => {
       if (result.time <= sent) return last
       sent = result.time
+      // A copy now: the recorder keeps writing if the run goes on.
+      const recorded: unknown = JSON.parse(JSON.stringify(replay))
       last = token.then(async (t): Promise<RankOutcome> => {
         if (!t) return { kind: 'unranked' }
-        writeQueue([...readQueue().filter((q) => q.token !== t), { userId, token: t, result }])
+        writeQueue([...readQueue().filter((q) => q.token !== t), { userId, token: t, result, replay: recorded }])
         return (await flushRuns()).get(t) ?? { kind: 'queued' }
       })
       return last

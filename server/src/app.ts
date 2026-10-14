@@ -7,13 +7,17 @@ import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, parseDisplayName, parseHandle, parseRunResult } from '../../src/game/ranking'
+import { parseReplay } from '../../src/game/replay'
 import type { Verify } from './auth'
+import type { Checks } from './checks'
 import type { SaveStore } from './db'
 import type { RankingStore } from './ranking'
 
 export type AppDeps = {
   store: SaveStore
   ranking: RankingStore
+  /** Re-simulates finished runs after the answer went out. */
+  checks: Pick<Checks, 'schedule'>
   verify: Verify
   allowedOrigin: (origin: string) => boolean
   /** Whether the database answers, for `/health`. */
@@ -40,15 +44,18 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422 } as const
  * - `GET /me` (auth): `{ profile }`, the player's handle and name, null before they pick them.
  * - `PUT /me` (auth) `{ handle, name }`: sets them. 409 `{ suggestion }` when the handle is taken.
  * - `POST /runs` (auth): `{ token }` for a run that just started. 429 past the start rate limit.
- * - `PUT /runs/:token` (auth) `RunResult`: records how it ended and returns `{ ranks }`.
- *   400 for an implausible result, 404 for an unknown token, 409 when it
- *   contradicts what the run already recorded, 422 when the clock can't fit it.
+ * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
+ *   returns `{ ranks }`; the replay is re-simulated afterwards (`checks.ts`).
+ *   400 for an implausible result or a replay of another run, 404 for an
+ *   unknown token, 409 when it contradicts what the run already recorded, 422
+ *   when the clock can't fit it. A body without a replay (an older game) is
+ *   taken and stays unverified.
  * - `GET /boards/:difficulty?period=day|week|all&starter=&friends=1`: `Board`.
  *   `friends` needs a token.
  * - `GET /profiles/:handle`: `PublicProfile`, 404 if nobody has that handle.
  * - `PUT|DELETE /follows/:handle` (auth): follows or unfollows. `{ followed, followers }`.
  */
-export const createApp = ({ store, ranking, verify, allowedOrigin, ping }: AppDeps) => {
+export const createApp = ({ store, ranking, checks, verify, allowedOrigin, ping }: AppDeps) => {
   const app = new Hono()
 
   app.use(logger())
@@ -105,11 +112,19 @@ export const createApp = ({ store, ranking, verify, allowedOrigin, ping }: AppDe
     return token ? c.json({ token }, 201) : c.json({ error: 'too many runs' }, 429)
   })
 
-  app.put('/runs/:token', auth, smallBody, async (c) => {
-    const result = parseRunResult(await json(c))
+  // A 30-minute replay is ~60 KB of JSON.
+  app.put('/runs/:token', auth, bodyLimit({ maxSize: 512 * 1024 }), async (c) => {
+    const body = await json(c)
+    const result = parseRunResult(body)
     if (!result) return c.json({ error: 'implausible result' }, 400)
-    const finished = await ranking.finishRun(c.var.userId, c.req.param('token'), result)
+    const replay = isRecord(body) && body.replay !== undefined ? parseReplay(body.replay) : null
+    if (isRecord(body) && body.replay !== undefined && (!replay || replay.start.starter !== result.starter || replay.start.difficulty !== result.difficulty)) {
+      return c.json({ error: 'replay of another run' }, 400)
+    }
+    const token = c.req.param('token')
+    const finished = await ranking.finishRun(c.var.userId, token, result, replay)
     if (!finished.ok) return c.json({ error: finished.error }, FINISH_ERRORS[finished.error])
+    if (replay) checks.schedule(token)
     return c.json({ ranks: await ranking.runRanks(c.var.userId, result.difficulty) })
   })
 

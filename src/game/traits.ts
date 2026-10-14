@@ -1,6 +1,7 @@
 import { clamp } from '../engine/math'
 import { TRAITS, type TraitId } from '../data/traits'
 import type { Enemy } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Pure enemy-trait rules (who gets healed or warded, how many summons, who a
@@ -63,7 +64,7 @@ export const createTraitState = (trait: TraitId | undefined, roll: number): Trai
   }
 }
 
-const within = (a: Enemy, b: Enemy, radius: number) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 < radius * radius
+const within = (a: Enemy, b: Enemy, radius: number) => dm.sq(a.x - b.x) + dm.sq(a.y - b.y) < radius * radius
 
 /** A healer mends wounded regular allies in range: never itself, the fainting or bosses. */
 export const isHealTarget = (healer: Enemy, ally: Enemy, radius: number = TRAITS.healer.radius) =>
@@ -97,7 +98,7 @@ export const blastRadius = (bodyRadius: number) => bodyRadius + TRAITS.kamikaze.
 
 /** Is a body of radius `r` at (x, y) caught in a blast of radius `blast` at (cx, cy)? */
 export const inBlast = (cx: number, cy: number, blast: number, x: number, y: number, r: number) =>
-  (x - cx) ** 2 + (y - cy) ** 2 < (blast + r) ** 2
+  dm.sq(x - cx) + dm.sq(y - cy) < dm.sq(blast + r)
 
 /** What a blast does to an enemy in it: a share of its max HP, or the player damage to a boss. */
 export const blastDamage = (target: Enemy, playerDamage: number) =>
@@ -111,7 +112,7 @@ export const onBeam = (ox: number, oy: number, dx: number, dy: number, length: n
   const along = clamp((x - ox) * dx + (y - oy) * dy, 0, length)
   const px = ox + dx * along - x
   const py = oy + dy * along - y
-  return px * px + py * py < (halfWidth + r) ** 2
+  return px * px + py * py < dm.sq(halfWidth + r)
 }
 
 /** Height of a jump `k` (0..1) of the way through: a parabola peaking at `peak`. */

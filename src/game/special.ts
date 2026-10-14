@@ -8,6 +8,7 @@ import { spawnAttack } from './spawn'
 import type { StatusSpec } from './status'
 import type { PlayerStats } from './stats'
 import type { Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * The manual special attack (Space / touch button / gamepad A). Each of the 18
@@ -294,8 +295,8 @@ const chargeFx = (g: Game, r: ResolvedSpecial) => {
   const a = range(g.rng, 0, TAU)
   const d = range(g.rng, 18, 28)
   g.particles.push({
-    x: p.x + Math.cos(a) * d, y: p.y - 10 + Math.sin(a) * d,
-    vx: -Math.cos(a) * d * 4, vy: -Math.sin(a) * d * 4,
+    x: p.x + dm.cos(a) * d, y: p.y - 10 + dm.sin(a) * d,
+    vx: -dm.cos(a) * d * 4, vy: -dm.sin(a) * d * 4,
     life: 0, ttl: 0.22, color: chance(g.rng, 0.5) ? TYPE_COLORS[r.def.type] : '#ffffff', size: 1, gravity: 0, drag: 0,
   })
 }
@@ -325,7 +326,7 @@ const release = (g: Game, r: ResolvedSpecial) => {
   const p = g.player
   const area = areaOf(g, r)
   const dmg = power(g, r)
-  s.angle = Math.atan2(p.facing.y, p.facing.x)
+  s.angle = dm.atan2(p.facing.y, p.facing.x)
   g.hitstop = 0.07
   g.shake = Math.max(g.shake, 5)
   g.events.push({ kind: 'special', phase: 'release', name: r.tier.name })
@@ -365,7 +366,7 @@ const release = (g: Game, r: ResolvedSpecial) => {
         for (let j = 0; j < count; j++) {
           const a = (j / count) * TAU + k * 0.4
           spawnAttack(g, {
-            move: 'special', type: r.def.type, visual: 'roots', x: p.x + Math.cos(a) * radius, y: p.y + Math.sin(a) * radius,
+            move: 'special', type: r.def.type, visual: 'roots', x: p.x + dm.cos(a) * radius, y: p.y + dm.sin(a) * radius,
             shape: { kind: 'circle', r: 9 * area }, motion: { kind: 'static' },
             damage: dmg, knockback: 30, status: r.def.status ?? null, ttl: 0.8, age: -k * 0.13, flip: chance(g.rng, 0.5),
           })
@@ -423,7 +424,7 @@ const release = (g: Game, r: ResolvedSpecial) => {
 const releaseBolts = (g: Game, r: ResolvedSpecial, area: number, dmg: number) => {
   const p = g.player
   const targets = enemiesInView(g)
-    .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2))
+    .sort((a, b) => dm.sq(a.x - p.x) + dm.sq(a.y - p.y) - (dm.sq(b.x - p.x) + dm.sq(b.y - p.y)))
     .slice(0, r.tier.count)
   for (let i = 0; i < r.tier.count; i++) {
     const e = targets[i]
@@ -432,7 +433,7 @@ const releaseBolts = (g: Game, r: ResolvedSpecial, area: number, dmg: number) =>
     const at = BOLT_DELAY + i * BOLT_STAGGER
     spawnAttack(g, {
       move: 'special', type: r.def.type, visual: 'bolt',
-      x: e ? e.x : p.x + Math.cos(a) * d, y: e ? e.y - e.radius : p.y + Math.sin(a) * d * 0.8,
+      x: e ? e.x : p.x + dm.cos(a) * d, y: e ? e.y - e.radius : p.y + dm.sin(a) * d * 0.8,
       shape: { kind: 'circle', r: 14 * area }, motion: { kind: 'static' },
       damage: dmg, knockback: 120, status: r.def.status ?? null,
       activeFrom: at, activeUntil: at + IMPACT_WINDOW, ttl: at + 0.4,
@@ -443,7 +444,7 @@ const releaseBolts = (g: Game, r: ResolvedSpecial, area: number, dmg: number) =>
 /** Projectiles raining around the player over RAIN_TIME, most of them on foes. */
 const releaseRain = (g: Game, r: ResolvedSpecial, area: number, dmg: number) => {
   const p = g.player
-  const near = enemiesInView(g).filter((e) => (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < RAIN_RADIUS ** 2)
+  const near = enemiesInView(g).filter((e) => dm.sq(e.x - p.x) + dm.sq(e.y - p.y) < dm.sq(RAIN_RADIUS))
   for (let i = 0; i < r.tier.count; i++) {
     const e = near.length > 0 && chance(g.rng, RAIN_AIMED) ? pick(g.rng, near) : null
     const a = range(g.rng, 0, TAU)
@@ -451,7 +452,7 @@ const releaseRain = (g: Game, r: ResolvedSpecial, area: number, dmg: number) => 
     const at = 0.15 + (i / r.tier.count) * RAIN_TIME
     spawnAttack(g, {
       move: 'special', type: r.def.type, visual: 'meteor',
-      x: e ? e.x : p.x + Math.cos(a) * d, y: e ? e.y : p.y + Math.sin(a) * d * 0.8,
+      x: e ? e.x : p.x + dm.cos(a) * d, y: e ? e.y : p.y + dm.sin(a) * d * 0.8,
       shape: { kind: 'circle', r: 14 * area }, motion: { kind: 'static' },
       damage: dmg, knockback: 160, status: r.def.status ?? null,
       activeFrom: at, activeUntil: at + IMPACT_WINDOW, ttl: at + 0.35, flip: chance(g.rng, 0.5),

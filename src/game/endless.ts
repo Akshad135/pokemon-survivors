@@ -1,5 +1,6 @@
 import type { EnemyId } from '../data/enemies'
 import { RUN_LENGTH } from '../data/waves'
+import * as dm from '../engine/dmath'
 
 /**
  * Pure rules of the endless mode, offered after Mewtwo falls: the horde keeps
@@ -56,7 +57,7 @@ export const overtime = (time: number) => Math.max(0, time - RUN_LENGTH)
 /** Arceus arrives when its time comes and none is hunting yet. */
 export const reaperDue = (s: Pick<EndlessState, 'reaperAt' | 'reaperId'>, time: number) => s.reaperId === null && time >= s.reaperAt
 
-export const reaperHp = (defeats: number) => Math.round(ENDLESS.reaperHp * ENDLESS.reaperHpGrowth ** defeats)
+export const reaperHp = (defeats: number) => Math.round(ENDLESS.reaperHp * dm.powInt(ENDLESS.reaperHpGrowth, defeats))
 
 /** The longer Arceus hunts, the faster it gets, until nobody can outrun it. */
 export const reaperSpeed = (base: number, hunting: number) => base * Math.min(ENDLESS.reaperMaxSpeed, 1 + hunting / ENDLESS.reaperRamp)

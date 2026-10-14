@@ -19,6 +19,7 @@ import { touches } from './props'
 import { isAlive } from './queries'
 import { countNotice } from './tally'
 import type { Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Points of interest the event director scatters around the player during a
@@ -113,7 +114,7 @@ const spend = (ev: { gone: number }) => {
   ev.gone = 0
 }
 
-const within = (g: Game, x: number, y: number, r: number) => (g.player.x - x) ** 2 + (g.player.y - y) ** 2 < r * r
+const within = (g: Game, x: number, y: number, r: number) => dm.sq(g.player.x - x) + dm.sq(g.player.y - y) < r * r
 
 const neighbors: number[] = []
 
@@ -124,7 +125,7 @@ const neighbors: number[] = []
 const trapHit = (g: Game, x: number, y: number, r: number, damage: number, bossShare: number, player: number) => {
   for (const i of query(g.grid, x, y, r + 16, neighbors)) {
     const e = g.enemies[i]
-    if (!e || !isAlive(e) || (e.x - x) ** 2 + (e.y - y) ** 2 > (r + e.radius) ** 2) continue
+    if (!e || !isAlive(e) || dm.sq(e.x - x) + dm.sq(e.y - y) > dm.sq(r + e.radius)) continue
     const dmg = Math.max(1, Math.round(e.boss ? e.maxHp * bossShare : damage))
     e.hp -= dmg
     e.flash = 0.2
@@ -145,7 +146,7 @@ const ambush = (g: Game, x: number, y: number) => {
   const offset = range(g.rng, 0, TAU)
   for (let i = 0; i < count; i++) {
     const a = offset + (i / count) * TAU
-    spawnEnemy(g, weightedPick(g.rng, pool), x + Math.cos(a) * CHEST.ambushRadius, y + Math.sin(a) * CHEST.ambushRadius)
+    spawnEnemy(g, weightedPick(g.rng, pool), x + dm.cos(a) * CHEST.ambushRadius, y + dm.sin(a) * CHEST.ambushRadius)
   }
 }
 
@@ -235,7 +236,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
           within(g, ev.x, ev.y, BOMB.trigger + g.player.radius) ||
           query(g.grid, ev.x, ev.y, BOMB.trigger, neighbors).some((i) => {
             const e = g.enemies[i]
-            return e !== undefined && isAlive(e) && (e.x - ev.x) ** 2 + (e.y - ev.y) ** 2 < BOMB.trigger ** 2
+            return e !== undefined && isAlive(e) && dm.sq(e.x - ev.x) + dm.sq(e.y - ev.y) < dm.sq(BOMB.trigger)
           })
         if (!lit) return
         s.fuse = 0
@@ -260,7 +261,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
     update: (g, ev, dt) => {
       const p = g.player
       const s = ev.state
-      const dist = Math.hypot(ev.x - p.x, ev.y - p.y)
+      const dist = dm.hypot(ev.x - p.x, ev.y - p.y)
       // Left far behind: it escapes right away (`expire`).
       if (dist > MEOWTH.escape) return void (ev.ttl = 0)
       const head = fleeHeading(ev.x, ev.y, p.x, p.y, ev.age, s.seed)

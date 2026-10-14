@@ -19,6 +19,21 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    pr: 35,
+    title: { pt: 'Ranking conferido pelo servidor', en: 'A ranking the server checks' },
+    notes: [
+      {
+        pt: 'Cada partida do ranking agora é jogada de novo pelo servidor, a partir do replay, e só fica no quadro se terminar igual. Enquanto isso, ela aparece como "Conferindo…".',
+        en: 'Every ranked run is now played again by the server from its replay, and only stays on the board if it ends the same. Meanwhile it shows as "Checking…".',
+      },
+      {
+        pt: 'O tamanho de cada Pokémon na hora de acertar e levar golpes agora vem pronto com o jogo. Antes, um inimigo que surgia antes do sprite baixar tinha um corpo diferente por alguns instantes.',
+        en: 'Each Pokémon\'s hitbox now ships with the game. Before, an enemy that showed up before its sprite downloaded had a different body for a moment.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     pr: 34,
     title: { pt: 'Ranking, perfis e amigos', en: 'Ranking, profiles and friends' },
     notes: [

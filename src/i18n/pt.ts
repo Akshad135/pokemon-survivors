@@ -181,10 +181,12 @@ export const pt = {
     you: 'você',
     myProfile: 'Meu perfil',
     back: 'Voltar',
-    resets: 'Hoje e Semana viram à meia-noite de Brasília (a semana começa na segunda).',
+    resets: 'Hoje e Semana viram à meia-noite de Brasília (a semana começa na segunda). O servidor confere cada partida antes de ela ficar no ranking.',
     hintKeys: '↑ ↓ jogador · ← → período · Q E dificuldade · F amigos · ENTER perfil · ESC voltar',
     hintTouch: 'Toque num treinador para ver o perfil',
     outcomes: { victory: 'Venceu', death: 'Desmaiou', quit: 'Desistiu' },
+    /** A run the server hasn't re-simulated yet (it checks every run against its replay). */
+    pending: 'Conferindo…',
     /** End of a run: where the player stands now. */
     sending: 'Enviando para o ranking…',
     place: { day: 'hoje', week: 'na semana', all: 'no total' },

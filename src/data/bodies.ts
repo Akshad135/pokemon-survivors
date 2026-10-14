@@ -1,0 +1,18 @@
+import manifest from './sprites.generated.json'
+
+/** A sprite's opaque body on its first Walk frame, in px (`npm run bodies` measures it from the PNGs). */
+export type Body = { bodyW: number; bodyH: number; footY: number }
+
+type Entry = { body?: Body; shiny?: { body?: Body } }
+
+const MANIFEST: Record<string, Entry> = manifest
+
+/** For a species without sprites: about a starter's size. */
+const FALLBACK: Body = { bodyW: 18, bodyH: 20, footY: 6 }
+
+/**
+ * Body of a species form. Hitboxes are sized from it, so they're the same on
+ * every device and server whether or not the sprite has downloaded.
+ */
+export const bodyOf = (dex: number, shiny = false): Body =>
+  (shiny ? MANIFEST[String(dex)]?.shiny?.body : undefined) ?? MANIFEST[String(dex)]?.body ?? FALLBACK

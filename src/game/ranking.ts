@@ -176,8 +176,12 @@ export const isBoardPeriod = (v: unknown): v is BoardPeriod => BOARD_PERIODS.som
 /** Players shown at the top of a board. */
 export const BOARD_SIZE = 50
 
-/** One player's best run on a board. `at` is when the run started (ISO). */
-export type BoardEntry = ProfileName & { rank: number; starter: PlayableId; stage: number; time: number; outcome: RunOutcome; at: string }
+/**
+ * One player's best run on a board. `at` is when the run started (ISO);
+ * `verified` is null while the server hasn't re-simulated it yet (runs that
+ * failed never show).
+ */
+export type BoardEntry = ProfileName & { rank: number; starter: PlayableId; stage: number; time: number; outcome: RunOutcome; at: string; verified: boolean | null }
 
 /** The top of a board, plus the asking player's own line (null if they're not on it). */
 export type Board = { entries: BoardEntry[]; me: BoardEntry | null }
@@ -185,8 +189,8 @@ export type Board = { entries: BoardEntry[]; me: BoardEntry | null }
 /** Where a run's player stands on its difficulty's boards, after it. Null on a board they're not on. */
 export type RunRanks = Record<BoardPeriod, number | null>
 
-/** A run on a public profile. */
-export type ProfileRun = { starter: PlayableId; stage: number; difficulty: Difficulty; time: number; outcome: RunOutcome; at: string }
+/** A run on a public profile (`verified` as on `BoardEntry`). */
+export type ProfileRun = { starter: PlayableId; stage: number; difficulty: Difficulty; time: number; outcome: RunOutcome; at: string; verified: boolean | null }
 
 /** What `/profiles/:handle` answers. `followed`: the asking player follows them; `self`: it's the asking player. */
 export type PublicProfile = ProfileName & {

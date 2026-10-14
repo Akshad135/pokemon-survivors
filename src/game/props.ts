@@ -6,6 +6,7 @@ import { dropItem } from './consumables'
 import { burst } from './effects'
 import { inView } from './queries'
 import type { Attack, Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Breakable item sources (VS light sources). The world is split into cells
@@ -46,7 +47,7 @@ export const propAt = (cx: number, cy: number): { kind: PropKind; x: number; y: 
 }
 
 /** Cells (Chebyshev) around the player that hold live props; one ring past the screen so they never pop in. */
-const reachCells = (g: Game) => Math.ceil(Math.hypot(g.view.w, g.view.h) / 2 / PROP_CELL) + 1
+const reachCells = (g: Game) => Math.ceil(dm.hypot(g.view.w, g.view.h) / 2 / PROP_CELL) + 1
 
 const materialize = (g: Game) => {
   const reach = reachCells(g)
@@ -64,10 +65,10 @@ const materialize = (g: Game) => {
 
 /** Whether an attack's hitbox overlaps a circle of radius `r` at (x, y). */
 export const touches = (a: Attack, x: number, y: number, r: number) => {
-  if (a.shape.kind === 'circle') return (a.x - x) ** 2 + (a.y - y) ** 2 < (a.shape.r + r) ** 2
+  if (a.shape.kind === 'circle') return dm.sq(a.x - x) + dm.sq(a.y - y) < dm.sq(a.shape.r + r)
   const cx = Math.max(a.x - a.shape.w / 2, Math.min(x, a.x + a.shape.w / 2))
   const cy = Math.max(a.y - a.shape.h / 2, Math.min(y, a.y + a.shape.h / 2))
-  return (cx - x) ** 2 + (cy - y) ** 2 < r * r
+  return dm.sq(cx - x) + dm.sq(cy - y) < r * r
 }
 
 const PROP_COLORS: Record<PropKind, readonly string[]> = {

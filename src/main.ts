@@ -26,7 +26,7 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
-import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
@@ -35,7 +35,8 @@ import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runResult } from './game/ranking'
-import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
+import { rosterSchedule, type Roster } from './game/roster'
+import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -67,7 +68,8 @@ import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
-const STEP = 1 / 60
+/** Fixed simulation step: the replays the ranking re-simulates count on it. */
+const STEP = TICK
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!
 const ui = document.querySelector<HTMLDivElement>('#ui')!
@@ -134,6 +136,8 @@ type Run = {
   hatchery: { steps: number; eggs: number; refund: number }
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
   dexBase: Pokedex
+  /** Everything the simulation took from the player, for the ranking to re-simulate (`game/replay.ts`). */
+  recorder: Recorder
   /** Signed in: the run's start token and its result, once reported (see `rankRun`). */
   ranked: RankedRun | null
   rank: Promise<RankOutcome> | null
@@ -283,7 +287,7 @@ const recordProgress = (r: Run) => {
  */
 const rankRun = (r: Run) => {
   const result = runResult(r.game, __GAME_VERSION__)
-  if (r.ranked && rankable(result)) r.rank = r.ranked.submit(result)
+  if (r.ranked && rankable(result)) r.rank = r.ranked.submit(result, r.recorder.replay)
 }
 
 /** Reports how the run ended, once. */
@@ -319,7 +323,7 @@ type RunPlan = { seed: number; roster: Roster }
 
 const planRun = (): RunPlan => {
   const seed = Date.now()
-  return { seed, roster: drawRoster(createRng(seed), { weight: biomeWeight }) }
+  return { seed, roster: runRoster(seed) }
 }
 
 let upcoming = planRun()
@@ -355,11 +359,17 @@ const startRun = async (starter: PlayableId) => {
   upcoming = planRun()
   await loadAll([...playableDex(starter), ...openingDex(plan)])
   const save = loadSave()
-  const game = createGame(starter, view, plan.seed, save.ranks, plan.roster, {
+  const start: ReplayStart = {
+    seed: plan.seed,
+    starter,
+    difficulty: save.difficulty,
+    ranks: save.ranks,
     shiny: isHatchling(starter) && save.hatched[starter]?.shiny === true,
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
-    difficulty: save.difficulty,
-  })
+    view: { w: view.w, h: view.h },
+  }
+  // Created like a replay is re-simulated (the roster drawn ahead is the same one).
+  const game = startGame(start, view)
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
   loading.remove()
@@ -378,6 +388,7 @@ const startRun = async (starter: PlayableId) => {
     rewardEggs: 0,
     hatchery: { steps: 0, eggs: 0, refund: 0 },
     dexBase: save.dex,
+    recorder: startRecording(start),
     ranked,
     rank: null,
   }
@@ -429,7 +440,10 @@ const syncOverlay = (r: Run) => {
   r.shown = { phase: g.phase, offers: g.offers }
   switch (g.phase) {
     case 'levelup':
-      r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer), { reroll: () => rerollOffers(g), skip: () => skipLevelUp(g) })
+      r.overlay = levelUp(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)), {
+        reroll: () => (recordEvent(r.recorder, ['reroll']), rerollOffers(g)),
+        skip: () => (recordEvent(r.recorder, ['skip']), skipLevelUp(g)),
+      })
       break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
@@ -442,7 +456,7 @@ const syncOverlay = (r: Run) => {
         g,
         () => afterRun(() => void startRun(lastStarter)),
         () => afterRun(() => showMenu()),
-        () => continueEndless(g),
+        () => (recordEvent(r.recorder, ['endless']), continueEndless(g)),
         {
           badge: titleBadge(loadSave().title),
           report: missionReport(r.missionsBefore, r.reward, r.rewardEggs),
@@ -705,7 +719,9 @@ const frame = (now: number) => {
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
       while (acc >= STEP) {
-        step(g, { move: input.readMove(), special: specialQueued }, STEP)
+        // The simulation gets the stick as the replay stores it (`moveCode`), so a re-simulation sees the same run.
+        if (specialQueued) recordEvent(r.recorder, ['special'])
+        step(g, { move: recordStep(r.recorder, view, input.readMove()), special: specialQueued }, STEP)
         specialQueued = false
         acc -= STEP
         steps++

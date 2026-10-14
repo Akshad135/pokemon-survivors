@@ -11,7 +11,8 @@
     "test": "vitest run",
     "roster": "node scripts/roster.mjs",
     "assets": "node scripts/fetch-assets.mjs",
-    "credits": "node scripts/credits.mjs"
+    "credits": "node scripts/credits.mjs",
+    "bodies": "node scripts/bodies.mjs"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

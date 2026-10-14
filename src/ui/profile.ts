@@ -50,7 +50,7 @@ const recentRow = (run: ProfileRun) =>
     h('span', { class: 'profile-run-name' }, runForm(run.starter, run.stage).name),
     difficultyTag(run.difficulty),
     h('b', {}, formatTime(run.time)),
-    h('small', {}, `${t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
+    h('small', {}, `${run.verified === null ? t().ranking.pending : t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
   )
 
 /** The profile's face: the Pokémon of its longest record, or a Poké Ball before any. */
