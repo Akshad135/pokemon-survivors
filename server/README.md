@@ -46,8 +46,39 @@ In the game, set `VITE_CLERK_PUBLISHABLE_KEY` and `VITE_API_URL=http://localhost
 
 ## Deploy (Dokploy)
 
-1. Create a Postgres service and copy its internal connection string.
-2. Create an application from this repository with the **Dockerfile** build type: Dockerfile path `server/Dockerfile`, build context `.` (the repository root, since the API bundles `src/`).
-3. Set `DATABASE_URL` and `CLERK_SECRET_KEY` (production instance keys).
-4. Domain `api.pokemonsurvivors.com` → container port `3000`, HTTPS on. The image has a `HEALTHCHECK` on `/health`.
-5. On Vercel, set `VITE_CLERK_PUBLISHABLE_KEY` and `VITE_API_URL=https://api.pokemonsurvivors.com` and redeploy the site.
+### What runs
+
+The Dokploy project **Pokémon Survivors** has two services:
+
+- **Postgres 18** `survivors-postgres-kwkfm5`, with no external port. Only the API reaches it, over Dokploy's internal network.
+- **App `api`**: built with the Dockerfile `server/Dockerfile` and build context `.` (the repository root, since the API bundles `src/`). It listens on container port `3000` behind `api.pokemonsurvivors.com`, with a Let's Encrypt certificate.
+
+### When it deploys
+
+A push to `main` deploys the API automatically, but only when it touches `server/**`, `src/game/**`, `src/data/**` or `src/engine/**`. Those are the folders the API bundle imports. **If the bundle starts importing another folder of `src/`, add it to this list in Dokploy** (and here). Otherwise a change there ships to the site but not to the API, and the two drift apart.
+
+### Rollout
+
+New versions roll out with no downtime:
+
+- The new container starts before the old one stops (start-first).
+- If its `HEALTHCHECK` (`/health`) doesn't pass within 30 s, Swarm rolls back to the previous version on its own. That includes a migration that breaks the boot.
+
+### Migrations
+
+- The files are numbered and only move forward. Never edit a migration that already ran: add the next file.
+- Every change must work with the previous version of the API, since both run side by side during a rollout. For example, add a nullable column first, and drop the old one only in a later PR.
+- All pending migrations run in one transaction, so a failure leaves nothing half applied.
+
+### Environment
+
+| Variable | Where | |
+| --- | --- | --- |
+| `DATABASE_URL` | Dokploy (`api`) | Internal connection string of `survivors-postgres-kwkfm5` |
+| `CLERK_SECRET_KEY` | Dokploy (`api`) | Production instance secret key |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
+| `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
+
+### Local development
+
+The `pk_live` key doesn't work on `localhost`. To test sign-in locally, put the keys of Clerk's **development** instance in `.env.local` at the repository root (and its secret key in `server/.env`).
