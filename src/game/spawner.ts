@@ -1,10 +1,10 @@
 import { TAU } from '../engine/math'
-import { chance, range, weightedPick } from '../engine/rng'
-import { ENEMIES, type EnemyDef } from '../data/enemies'
-import type { EnemyId } from '../data/enemies'
+import { chance, range } from '../engine/rng'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { EVENTS, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
 import { endlessPressure } from './endless'
 import { spawnEnemy } from './enemies'
+import { hasTrait, pickSpawn } from './roster'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
 import type { Game } from './types'
 
@@ -74,13 +74,21 @@ export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
   const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
   const pressure = endlessPressure(g.time)
-  const regular = g.enemies.reduce((n, e) => n + (e.dying < 0 && !e.boss && e.behavior.kind === 'chase' ? 1 : 0), 0)
+  let regular = 0
+  let traitsAlive = 0
+  for (const e of g.enemies) {
+    if (e.dying >= 0 || e.boss) continue
+    if (e.behavior.kind === 'chase') regular++
+    if (hasTrait(e.kind)) traitsAlive++
+  }
 
   g.spawnBudget += stage.rate * pressure.rate * dt
   while (g.spawnBudget >= 1) {
     g.spawnBudget--
-    if (regular >= stage.max * pressure.max || pool.length === 0) continue
-    const kind = weightedPick(g.rng, pool)
+    if (regular >= stage.max * pressure.max) continue
+    const kind = pickSpawn(g.rng, pool, traitsAlive)
+    if (!kind) continue
+    if (hasTrait(kind)) traitsAlive++
     if (rollShiny(g.rng, SHINY_ODDS.enemy)) {
       // Shinies pop in just inside the screen edge so their sparkle entrance is seen.
       const a = range(g.rng, 0, TAU)

@@ -1,8 +1,10 @@
 import { pick, weightedPick, type Rng } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
+import { biomeAt, BIOMES, type BiomeId } from '../data/biomes'
 import type { Tier } from '../data/roster'
+import { isSummoner, SUMMONS } from '../data/traits'
 import type { PokeType } from '../data/types'
-import { EVENTS, STAGES, stageIndexAt, stageStart, type WaveEvent, type WaveStage } from '../data/waves'
+import { EVENTS, RUN_LENGTH, STAGES, stageIndexAt, stageStart, type WaveEvent, type WaveStage } from '../data/waves'
 
 /** Weighted spawn pool of one stage, as `weightedPick` takes it. */
 export type StagePool = ReadonlyArray<readonly [EnemyId, number]>
@@ -32,6 +34,20 @@ export type RosterOptions = {
 const FRESH = 4
 const CARRIED = 3
 
+/**
+ * Species with a behavior trait are seasoning: a stage holds at most
+ * `TRAIT_CAP` of them, none before stage `TRAIT_FROM` (minute 1), and each
+ * spawns with `TRAIT_SPAWN` weight instead of `FRESH`/`CARRIED`. `TRAIT_ODDS`
+ * makes up for how few they are, so most runs still meet a few. Tanky ones
+ * (Bronzong under its own wards) pile up over a long stage, so the spawner
+ * also stops at `TRAIT_ALIVE` of them alive (`pickSpawn`).
+ */
+export const TRAIT_CAP = 1
+export const TRAIT_FROM = 1
+export const TRAIT_ALIVE = 6
+const TRAIT_SPAWN = 1
+const TRAIT_ODDS = 6
+
 type Entry = readonly [EnemyId, EnemyDef & { tier: Tier }]
 
 /** Every species that can be drawn: anything in `ENEMIES` with a tier. */
@@ -40,8 +56,17 @@ const TIERED: readonly Entry[] = (Object.entries(ENEMIES) as Array<[EnemyId, Ene
 )
 
 const TIER_OF = new Map(TIERED.map(([id, def]) => [id, def.tier]))
+const TRAITED = new Set(TIERED.flatMap(([id, def]) => (def.trait ? [id] : [])))
+/** True for species with a behavior trait (`data/traits.ts`). */
+export const hasTrait = (id: EnemyId) => TRAITED.has(id)
 
 const isFlyer = (def: EnemyDef) => def.types.includes('flying')
+
+/** One regular spawn from a stage's pool, skipping trait species while `traitsAlive` is at `TRAIT_ALIVE`. */
+export const pickSpawn = (rng: Rng, pool: StagePool, traitsAlive: number): EnemyId | null => {
+  const open = traitsAlive < TRAIT_ALIVE ? pool : pool.filter(([id]) => !hasTrait(id))
+  return open.length > 0 ? weightedPick(rng, open) : null
+}
 
 /** Weighted pick of one entry; when every weight is 0 they all count the same. */
 const drawOne = (rng: Rng, entries: readonly Entry[], weight: (def: EnemyDef) => number): EnemyId => {
@@ -50,6 +75,8 @@ const drawOne = (rng: Rng, entries: readonly Entry[], weight: (def: EnemyDef) =>
   return weightedPick(rng, total > 0 ? weighted : weighted.map(([id]) => [id, 1] as const))
 }
 
+const summonsOf = (id: EnemyId): readonly EnemyId[] => (isSummoner(id) ? SUMMONS[id] : [])
+
 const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((l) => l.length > 0) ?? []
 
 /**
@@ -57,20 +84,21 @@ const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((
  * (species new to the run first), keeping up to `cast.length - fresh` of the
  * previous stage's newest species. Swarms take a flyer of their tier the run
  * has already met (else any flyer of the tier, else the fastest met), rings a
- * species of their tier the run has already met. Same seed, same cast.
+ * species of their tier the run has already met; neither ever takes a trait
+ * species, which stay within `TRAIT_CAP` per stage. Same seed, same cast.
  */
 export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events = EVENTS }: RosterOptions = {}): Roster => {
   const used = new Set<EnemyId>()
-  const ofTier = (tier: Tier) => {
-    const all = TIERED.filter(([, def]) => def.tier === tier)
+  const ofTier = (tier: Tier, traits: boolean) => {
+    const all = TIERED.filter(([id, def]) => def.tier === tier && (traits || !hasTrait(id)))
     return firstNonEmpty(
       all.filter(([id]) => !used.has(id)),
       all,
-      TIERED.filter(([id]) => !used.has(id)),
+      TIERED.filter(([id]) => !used.has(id) && (traits || !hasTrait(id))),
     )
   }
   const draw = (entries: readonly Entry[], stage: number) => {
-    const id = drawOne(rng, entries, (def) => weight(def, stage))
+    const id = drawOne(rng, entries, (def) => weight(def, stage) * (def.trait ? TRAIT_ODDS : 1))
     used.add(id)
     return id
   }
@@ -86,15 +114,20 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
       open.splice(slot, 1)
       carried.unshift(id)
     }
-    const fresh = open.map((tier) => draw(ofTier(tier), i))
+    let traitRoom = i >= TRAIT_FROM ? TRAIT_CAP - carried.filter(hasTrait).length : 0
+    const fresh = open.map((tier) => {
+      const id = draw(ofTier(tier, traitRoom > 0), i)
+      if (hasTrait(id)) traitRoom--
+      return id
+    })
     previous = [...carried, ...fresh]
     return { carried, fresh }
   })
 
-  /** Species the run has met by stage `index`, by tier. */
+  /** Species without a trait the run has met by stage `index`, by tier (a ring of healers would be no seasoning). */
   const metBy = (index: number, tier: Tier): Entry[] => {
     const ids = new Set(casts.slice(0, index + 1).flatMap((c) => [...c.carried, ...c.fresh]))
-    return TIERED.filter(([id, def]) => ids.has(id) && def.tier === tier)
+    return TIERED.filter(([id, def]) => ids.has(id) && def.tier === tier && !hasTrait(id))
   }
 
   const eventSpecies = events.map((e): EnemyId | null => {
@@ -102,17 +135,20 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
     if ('enemy' in e) return e.enemy
     const stage = stageIndexAt(e.at)
     const met = metBy(stage, e.tier)
-    if (e.kind === 'ring') return met.length > 0 ? pick(rng, met)[0] : draw(ofTier(e.tier), stage)
+    if (e.kind === 'ring') return met.length > 0 ? pick(rng, met)[0] : draw(ofTier(e.tier, false), stage)
     const flyers = met.filter(([, def]) => isFlyer(def))
     if (flyers.length > 0) return pick(rng, flyers)[0]
-    const wildFlyers = ofTier(e.tier).filter(([, def]) => isFlyer(def))
+    const wildFlyers = ofTier(e.tier, false).filter(([, def]) => isFlyer(def))
     if (wildFlyers.length > 0) return draw(wildFlyers, stage)
     const fastest = [...met].sort((a, b) => b[1].speed - a[1].speed)[0]
-    return fastest ? fastest[0] : draw(ofTier(e.tier), stage)
+    return fastest ? fastest[0] : draw(ofTier(e.tier, false), stage)
   })
 
   return {
-    stages: casts.map(({ carried, fresh }) => [...carried.map((id) => [id, CARRIED] as const), ...fresh.map((id) => [id, FRESH] as const)]),
+    stages: casts.map(({ carried, fresh }) => [
+      ...carried.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : CARRIED] as const),
+      ...fresh.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : FRESH] as const),
+    ]),
     events: eventSpecies,
   }
 }
@@ -129,14 +165,30 @@ export const byTypes =
     return factors.length > 0 ? Math.max(...factors) : 1
   }
 
+/** Draw odds of a species with a type its stage's biome favors (`BIOMES[id].affinity`). */
+export const AFFINITY_ODDS = 3
+
+/** Biome a stage mostly plays in: the one at the middle of its time window. */
+export const stageBiome = (stage: number): BiomeId => {
+  const start = stageStart(stage)
+  return biomeAt((start + Math.min(STAGES[stage]?.until ?? RUN_LENGTH, RUN_LENGTH)) / 2)
+}
+
+const AFFINITY = Object.fromEntries(
+  Object.entries(BIOMES).map(([id, biome]) => [id, byTypes(Object.fromEntries(biome.affinity.map((type) => [type, AFFINITY_ODDS])))]),
+) as Record<BiomeId, SpeciesWeight>
+
+/** The run's draw bias: each stage pulls its new species towards the types of the biome it plays in. */
+export const biomeWeight: SpeciesWeight = (def, stage) => AFFINITY[stageBiome(stage)](def, stage)
+
 /**
- * Every species a run needs (horde, swarms, rings, bosses) with the run time
+ * Every species a run needs (horde, swarms, rings, bosses, what its summoners call in) with the run time
  * it first shows up at, soonest first. The shell loads `at === 0` before the
  * run starts and streams the rest in this order.
  */
 export const rosterSchedule = (roster: Roster, events: readonly WaveEvent[] = EVENTS) => {
   const needs = [
-    ...roster.stages.flatMap((pool, i) => pool.map(([id]) => ({ id, at: stageStart(i) }))),
+    ...roster.stages.flatMap((pool, i) => pool.flatMap(([id]) => [id, ...summonsOf(id)].map((need) => ({ id: need, at: stageStart(i) })))),
     ...events.flatMap((e, i) => {
       const id = e.kind === 'boss' ? e.enemy : roster.events[i]
       return id ? [{ id, at: e.at }] : []

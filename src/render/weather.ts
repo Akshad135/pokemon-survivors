@@ -190,6 +190,7 @@ const drawOne = (ctx: Ctx, id: WeatherId, alpha: number, g: Game, camX: number, 
 
 /** Weather overlay for the frame, in screen space. The outgoing weather fades as the new one rolls in. */
 export const drawWeather = (ctx: Ctx, g: Game, camX: number, camY: number, t: number) => {
+  if (g.rift.arena) return
   const k = Math.min(1, (g.time - g.weather.since) / FADE)
   drawOne(ctx, g.weather.prev, 1 - k, g, camX, camY, t)
   drawOne(ctx, g.weather.id, k, g, camX, camY, t)

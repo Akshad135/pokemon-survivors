@@ -8,9 +8,9 @@ export type WeatherId = (typeof WEATHER_IDS)[number]
 
 export type BiomeDef = {
   /**
-   * Types that feel at home here, strongest first. Meant to weight the enemy
-   * draw towards fitting species (forest → grass/bug), so the horde matches
-   * the scenery. Spawning doesn't read it yet.
+   * Types that feel at home here. `biomeWeight` (`game/roster.ts`) makes new
+   * species of these types likelier in the stages played here (forest →
+   * grass/bug), so the horde matches the scenery.
    */
   affinity: readonly PokeType[]
   /** Relative odds of each weather spell while in this biome (missing = never). */

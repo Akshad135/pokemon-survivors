@@ -6,6 +6,7 @@ import { burst } from './effects'
 import { ENDLESS, endlessEventSize, REAPER, reaperDue, reaperHp, reaperSpeed, startEndless, type EndlessState } from './endless'
 import { spawnEnemy } from './enemies'
 import { dropCoins, dropPickup } from './pickups'
+import { hasTrait } from './roster'
 import { spawnRing, spawnSwarm } from './spawner'
 import type { Enemy, Game } from './types'
 
@@ -69,7 +70,8 @@ export const updateEndless = (g: Game) => {
   const s = g.endless
   if (!s || g.rift.arena) return
   if (g.time >= s.nextEvent) {
-    const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
+    // Trait species stay seasoning: a ring of 40 Nidoqueen would be the whole horde.
+    const pool = (g.roster.stages[stageIndexAt(g.time)] ?? []).filter(([id]) => !hasTrait(id))
     const count = endlessEventSize(g.time)
     if (pool.length > 0) (s.events % 2 === 0 ? spawnRing : spawnSwarm)(g, weightedPick(g.rng, pool), count)
     s.events++

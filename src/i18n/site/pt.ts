@@ -224,12 +224,14 @@ export const sitePt = {
       bossChance: (name: string, percent: number) => `Chefe raro: ${name} (${n(percent)}% de chance)`,
     },
     world: {
-      paragraphs: (count: number, minutes: number) => [
+      paragraphs: (count: number, minutes: number, odds: number) => [
         `A partida atravessa ${count} biomas, ${n(minutes)} minutos em cada um, sem tela de carregamento: o chão se dissolve no cenário seguinte e cada bioma tem a sua música. Os itens quebráveis também mudam de cara (na caverna, a grama alta vira uma rocha e a árvore de frutas vira um cogumelo gigante).`,
+        `Cada bioma puxa a horda para os seus tipos: as espécies novas de cada fase têm ${n(odds)}x mais chance de ser de um tipo da casa (mais Planta e Inseto na floresta, mais Pedra e Terra na caverna), sem deixar de lado os outros.`,
         'O clima muda algumas vezes por partida e vale para todo mundo: para os seus golpes e para os ataques dos inimigos. Cada bioma tem os seus climas mais prováveis, e o ícone do clima aparece ao lado do relógio.',
       ],
       timeHead: 'A partir de',
       biomeHead: 'Bioma',
+      hordeHead: 'Tipos da horda',
       weatherHead: 'Climas (do mais ao menos comum)',
       weatherTitle: 'Climas',
       weatherCol: 'Clima',
@@ -321,8 +323,8 @@ export const sitePt = {
       attacksHead: 'Ataques',
     },
     traits: {
-      paragraphs: [
-        'Alguns Pokémon selvagens não só perseguem: eles curam, protegem e chamam a horda, ou atacam de longe. Eles são poucos no meio da horda, então vale a pena ficar de olho.',
+      paragraphs: (from: string, cap: number, alive: number) => [
+        `Alguns Pokémon selvagens não só perseguem: eles curam, protegem e chamam a horda, ou atacam de longe. São tempero, não a maioria: a partir de ${from}, cada fase traz no máximo ${cap === 1 ? 'uma espécie' : `${cap} espécies`} com comportamento, ela aparece menos que as outras e nunca há mais de ${alive} vivos ao mesmo tempo. Vale a pena ficar de olho.`,
         'Todo ataque deles avisa antes: um "!" sobre a cabeça, um círculo vermelho, uma linha ou uma sombra no chão que pisca mais rápido quando o golpe está perto. Na primeira vez que cada um aparece numa partida, um aviso explica o que ele faz.',
       ],
       pokemonHead: 'Pokémon',

@@ -5,6 +5,7 @@ import { STARTERS } from '../data/starters'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
+import { weatherHere } from '../game/weather'
 import { formatPokeDollars, t } from '../i18n'
 import { coinIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { consumableIcon } from '../render/props'
@@ -138,9 +139,9 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     setStyle(xpFill, 'width', `${Math.min(100, (p.xp / p.xpNext) * 100).toFixed(1)}%`)
     setText(xpLabel, t().level(p.level))
     setText(clock, formatTime(g.time))
-    if (g.weather.id !== weatherKey) {
-      weatherKey = g.weather.id
-      const id = g.weather.id
+    if (weatherHere(g) !== weatherKey) {
+      const id = weatherHere(g)
+      weatherKey = id
       weather.classList.toggle('hidden', id === 'clear')
       if (id !== 'clear') weather.setAttribute('src', weatherIcon(id))
       weather.setAttribute('alt', t().world.weather[id])

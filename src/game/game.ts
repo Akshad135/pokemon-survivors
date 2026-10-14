@@ -205,10 +205,14 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   }
 
   g.time += dt
-  updateBiome(g)
-  updateWeather(g, dt)
-  // Inside a rift arena the horde and the map wait outside: no spawns, no props.
+  // Inside a rift arena the horde and the map wait outside: no spawns, props,
+  // map events, weather or biome changes. A biome change that came due meanwhile
+  // plays on the way out.
   const inArena = g.rift.arena !== null
+  if (!inArena) {
+    updateBiome(g)
+    updateWeather(g, dt)
+  }
   updatePlayer(g, input.move, dt)
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
