@@ -123,18 +123,24 @@ const migrate = (data: Record<string, unknown>): Record<string, unknown> | null 
 }
 
 /**
- * Parses raw `localStorage` text into a valid save. Never throws: corrupt JSON,
- * unknown versions or bad fields fall back to safe defaults, unknown upgrades
- * are dropped and ranks are clamped to each upgrade's max. Each field parses
- * on its own, so a save from before a field existed just gets it empty.
+ * Parses raw `localStorage` text into a valid save. Never throws: corrupt JSON
+ * falls back to an empty save (see `parseSaveData`).
  */
 export const parseSave = (raw: string | null): Save => {
-  let json: unknown
   try {
-    json = raw === null ? null : JSON.parse(raw)
+    return parseSaveData(raw === null ? null : JSON.parse(raw))
   } catch {
     return EMPTY_SAVE
   }
+}
+
+/**
+ * Turns untrusted save data (`localStorage`, a request body) into a valid save.
+ * Unknown versions or bad fields fall back to safe defaults, unknown upgrades
+ * are dropped and ranks are clamped to each upgrade's max. Each field parses
+ * on its own, so a save from before a field existed just gets it empty.
+ */
+export const parseSaveData = (json: unknown): Save => {
   const data = isRecord(json) ? migrate(json) : null
   if (!data) return EMPTY_SAVE
   const ranks = isRecord(data.ranks) ? data.ranks : {}

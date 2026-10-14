@@ -165,6 +165,20 @@ const advanceMissions = (save: MissionsSave, date: Date, next: (m: Mission, was:
 
 /* ---------------- Save ---------------- */
 
+/**
+ * Two boards of the same period. The most recent day (or week) wins; on the
+ * same one each mission keeps the most progress. Rewards were paid where a
+ * mission was completed, so merging pays nothing.
+ */
+const mergeBoard = (a: MissionBoard, b: MissionBoard): MissionBoard => {
+  if (a.key !== b.key) return a.key > b.key ? a : b
+  const progress = { ...a.progress }
+  for (const [id, v] of Object.entries(b.progress)) progress[id] = Math.max(progress[id] ?? 0, v)
+  return { key: a.key, progress }
+}
+
+export const mergeMissions = (a: MissionsSave, b: MissionsSave): MissionsSave => ({ daily: mergeBoard(a.daily, b.daily), weekly: mergeBoard(a.weekly, b.weekly) })
+
 const parseBoard = (raw: unknown): MissionBoard => {
   if (!isRecord(raw) || typeof raw.key !== 'string') return NO_MISSIONS.daily
   const progress = isRecord(raw.progress) ? raw.progress : {}

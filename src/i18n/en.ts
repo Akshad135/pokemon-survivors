@@ -104,6 +104,26 @@ export const en: Messages = {
     hintTouch: 'Tap or drag to adjust',
   },
 
+  account: {
+    title: 'ACCOUNT',
+    signIn: 'Sign in',
+    pitch: 'Sign in with Google to keep your progress in the cloud and pick it up on any device. Everything you got as a guest comes along.',
+    guest: 'Without an account, the game keeps saving on this device only.',
+    google: 'Sign in with Google',
+    failed: "Couldn't sign in. Please try again.",
+    busy: 'Connecting…',
+    signedInAs: (name) => (name ? `Signed in as *${name}*` : 'Signed in'),
+    synced: 'Progress saved in the cloud.',
+    syncing: 'Syncing…',
+    offline: "Can't reach the server. Your progress stays saved on this device and syncs later.",
+    syncNow: 'Sync now',
+    signOut: 'Sign out',
+    signOutNote: 'After signing out, your progress stays on this device.',
+    back: 'Back',
+    hintKeys: '↑ ↓ choose · ENTER confirm · ESC back',
+    hintTouch: 'Tap to choose',
+  },
+
   results: {
     victory: 'You defeated Mewtwo!',
     fainted: (name) => `${name} fainted!`,

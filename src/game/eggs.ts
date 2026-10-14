@@ -139,6 +139,30 @@ export const isUnlocked = (hatched: Hatched, id: PlayableId) => !isHatchling(id)
 
 /* ---------------- Save fields ---------------- */
 
+/** Rarest first, then the most walked: the order eggs keep their slot in `mergeEggs`. */
+const byValue = (x: Egg, y: Egg) => EGG_TIER_IDS.indexOf(y.tier) - EGG_TIER_IDS.indexOf(x.tier) || y.steps - x.steps
+
+const ofTier = (list: readonly Egg[], tier: EggTier) => list.filter((e) => e.tier === tier).sort(byValue)
+
+/**
+ * Both incubators in one. Eggs have no identity, so each tier keeps as many
+ * as the side with more of it, pairing the most walked with the most walked
+ * (each pair keeps the larger step count). Merging the same incubator again
+ * changes nothing. Past the slots, the rarest and most walked stay.
+ */
+export const mergeEggs = (a: readonly Egg[], b: readonly Egg[]): Egg[] =>
+  EGG_TIER_IDS.flatMap((tier) => {
+    const x = ofTier(a, tier)
+    const y = ofTier(b, tier)
+    return Array.from({ length: Math.max(x.length, y.length) }, (_, i) => ({ tier, steps: Math.max(x[i]?.steps ?? 0, y[i]?.steps ?? 0) }))
+  })
+    .sort(byValue)
+    .slice(0, EGGS.slots)
+
+/** Every family hatched on either side, shiny if it is shiny on either. */
+export const mergeHatched = (a: Hatched, b: Hatched): Hatched =>
+  Object.fromEntries(HATCHLING_IDS.flatMap((id) => (a[id] || b[id] ? [[id, { shiny: a[id]?.shiny === true || b[id]?.shiny === true }]] : [])))
+
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 const isTier = (v: unknown): v is EggTier => typeof v === 'string' && v in EGG_TIERS
 
