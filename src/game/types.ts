@@ -225,7 +225,7 @@ export type GameEvent =
   | { kind: 'boss'; enemy: EnemyId }
   | { kind: 'shiny'; enemy: EnemyId }
   | { kind: 'shinyPlayer' }
-  /** A shiny fainted: it's the player's now (Pokédex). */
+  /** First shiny of a species defeated this run; the shell toasts it only when the Pokédex didn't have it yet. */
   | { kind: 'caught'; enemy: EnemyId }
   | { kind: 'thunder' }
   | { kind: 'quake' }

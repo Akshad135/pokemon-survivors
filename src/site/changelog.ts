@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    pr: 0,
+    title: { pt: 'Aviso de captura só na primeira vez', en: 'Catch notice only the first time' },
+    notes: [
+      {
+        pt: 'Derrotar um shiny de uma espécie que já é sua não mostra mais o aviso de captura. Ele aparece só quando o shiny é novo na sua Pokédex.',
+        en: 'Defeating a shiny of a species you already own no longer shows the catch notice. It only shows when the shiny is new to your Pokédex.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     pr: 29,
     title: { pt: 'Ovos, Pokédex e missões juntos', en: 'Eggs, Pokédex and missions together' },
     notes: [

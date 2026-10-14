@@ -66,8 +66,11 @@ export const killEnemy = (g: Game, e: Enemy) => {
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })
   // A defeated shiny is caught: it joins the player's Pokédex as their own.
-  logDefeat(g.dexLog, ENEMIES[e.kind].dex, e.shiny)
-  if (e.shiny) g.events.push({ kind: 'caught', enemy: e.kind })
+  // Announced once per species per run; the shell skips ones the save already has.
+  const dex = ENEMIES[e.kind].dex
+  const fresh = e.shiny && !g.dexLog.shinies.has(dex)
+  logDefeat(g.dexLog, dex, e.shiny)
+  if (fresh) g.events.push({ kind: 'caught', enemy: e.kind })
 
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
