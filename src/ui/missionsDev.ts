@@ -42,7 +42,7 @@ export const missionDevTools = (refresh: () => void) => {
       return dayKey(today())
     },
     /** Unlocks one achievement, or all of them. Pays nothing. */
-    unlock: (id?: AchievementId) => {
+    unlockAchievement: (id?: AchievementId) => {
       const save = loadSave()
       const ids = id ? [id] : ACHIEVEMENT_IDS
       writeSave({ ...save, achievements: { ...save.achievements, unlocked: ACHIEVEMENT_IDS.filter((x) => ids.includes(x) || save.achievements.unlocked.includes(x)) } })

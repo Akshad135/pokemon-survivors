@@ -2,7 +2,8 @@ import { BOSS_PATTERNS, type BossPattern } from '../../data/bosses'
 import { ENEMIES, type EnemyDef } from '../../data/enemies'
 import { TIERS } from '../../data/roster'
 import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
-import { REGIONS, STARTERS, type StarterDef } from '../../data/starters'
+import { HATCHLINGS, isHatchling, PLAYABLE } from '../../data/hatchlings'
+import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
 import { starterStats } from '../../game/leveling'
@@ -35,7 +36,7 @@ const sheetsOf = (dex: number) => {
 }
 
 /** Species drawn at the same zoom: a whole evolution line, so Charmeleon never looks smaller than Charmander. */
-const family = (entry: DexEntry) => (entry.source.kind === 'starter' ? STARTERS[entry.source.id].line.map((s) => s.dex) : [entry.dex])
+const family = (entry: DexEntry) => (entry.source.kind === 'starter' ? PLAYABLE[entry.source.id].line.map((s) => s.dex) : [entry.dex])
 
 /**
  * Up to four stacked sheets (idle/walk × normal/shiny); CSS shows one at a time.
@@ -64,15 +65,18 @@ const moveChip = (id: MoveId, m: SiteMessages) => html`<li style="--type:${TYPE_
 const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const game = LOCALES[locale].messages
-  const { id, stage: i } = entry.source
-  const s: StarterDef = STARTERS[id]
+  const { id, stage: i, wild } = entry.source
+  const s: PlayableDef = PLAYABLE[id]
   const signature = MOVES[s.signature]
   const special = resolveSpecial(id, i)
   const final = special.final
   const line = s.line.map(
     (st, k) => html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li><a href="#${slugOf(st.name)}"${k === i ? html` aria-current="true"` : ''}><img src="${asset(st.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${st.name}</a></li>`,
   )
-  return html`<p class="blurb">${m.pokedex.stageOf(i)} · ${game.blurbs[id]}</p>
+  // A 2-stage line's second stage is already the final one.
+  const stageName = m.pokedex.stageOf(i > 0 && i === s.line.length - 1 ? 2 : i)
+  return html`<p class="blurb">${stageName} · ${game.blurbs[id]}</p>
+    ${isHatchling(id) && html`<p class="note">${m.pokedex.hatchNote(game.eggs.tiers[HATCHLINGS[id].egg])}</p>`}
     <h3>${m.pokedex.stats}</h3>
     ${statBars(entry, locale)}
     <h3>${m.pokedex.evolution}</h3>
@@ -82,7 +86,8 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <h3>${m.pokedex.special}</h3>
     <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${special.def.final.name})</small>`}<br />${game.specials[special.def.kind]}</p>
     <h3>${m.pokedex.learnset}</h3>
-    <ul class="chips">${s.learnset.map((mv) => moveChip(mv, m))}</ul>`
+    <ul class="chips">${s.learnset.map((mv) => moveChip(mv, m))}</ul>
+    ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`
 }
 
 const appearance = (a: Appearance, m: SiteMessages) => {

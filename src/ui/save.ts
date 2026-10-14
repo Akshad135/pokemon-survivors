@@ -1,4 +1,5 @@
 import type { TitleId } from '../data/achievements'
+import { depositEggs, type Egg } from '../game/eggs'
 import { parseSave, recordRun, type Save } from '../game/meta'
 import type { RunSummary } from '../game/tally'
 
@@ -21,12 +22,25 @@ export const writeSave = (save: Save) => {
   }
 }
 
+/** Applies `change` to the stored save and writes it back. */
+export const updateSave = (change: (save: Save) => Save) => writeSave(change(loadSave()))
+
 /** Adds run earnings to the wallet and returns the new balance. */
 export const depositPokeDollars = (amount: number) => {
   const save = loadSave()
   const next = { ...save, wallet: save.wallet + Math.max(0, Math.round(amount)) }
   writeSave(next)
   return next.wallet
+}
+
+/**
+ * Banks a run into the incubator: incubating eggs walk `steps`, new eggs take
+ * the free slots and the rest are paid in ₽ (see `depositEggs`).
+ */
+export const bankEggs = (steps: number, found: readonly Egg[]) => {
+  const { save, converted, refund } = depositEggs(loadSave(), steps, found)
+  writeSave(save)
+  return { converted, refund }
 }
 
 /* ---------------- Missions and achievements ---------------- */

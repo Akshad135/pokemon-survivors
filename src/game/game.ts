@@ -1,10 +1,11 @@
 import { dir8, type Vec } from '../engine/math'
 import { createRng } from '../engine/rng'
 import { createGrid } from '../engine/spatial'
-import { STARTERS, type StarterId } from '../data/starters'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
+import { createDexLog } from './dex'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
@@ -22,6 +23,7 @@ import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { updateArena } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
+import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
 import { createTally } from './tally'
@@ -32,16 +34,32 @@ import type { Game, Offer } from './types'
 
 export const EVOLUTION_TIME = 4.6
 
-export const playerDex = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.dex
+export const playerDex = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.dex
+
+/** What the save brings into a run besides the Poké Mart ranks. */
+export type RunPerks = {
+  /** The family hatched shiny: the whole run uses its shiny form. */
+  shiny?: boolean
+  /** The player never had an egg, so the first egg roll can't miss (`rollEgg`). */
+  luckyEgg?: boolean
+}
 
 /**
  * A fresh run. Pass `roster` when the shell drew it ahead of time to preload
  * its sprites (see `drawRoster`); otherwise it's drawn from the run's rng.
  */
-export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now(), ranks: Ranks = NO_RANKS, roster?: Roster): Game => {
-  const def = STARTERS[starter]
+export const createGame = (
+  starter: PlayableId,
+  view: Game['view'],
+  seed = Date.now(),
+  ranks: Ranks = NO_RANKS,
+  roster?: Roster,
+  perks: RunPerks = {},
+): Game => {
+  const def = PLAYABLE[starter]
   const rng = createRng(seed)
-  const shiny = rollShiny(rng, SHINY_ODDS.player)
+  const lucky = rollShiny(rng, SHINY_ODDS.player)
+  const shiny = lucky || perks.shiny === true
   const g: Game = {
     starter,
     rng,
@@ -66,6 +84,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
       radius: Math.max(6, Math.round(sprites(def.line[0].dex).bodyW * 0.3)),
       animTime: 0,
       shiny,
+      walked: 0,
     },
     enemies: [],
     attacks: [],
@@ -103,7 +122,10 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     rift: createRiftState(),
     endless: null,
     tally: createTally(),
-    events: shiny ? [{ kind: 'shinyPlayer' }] : [],
+    eggs: { found: [], lucky: perks.luckyEgg === true },
+    dexLog: createDexLog(),
+    // Only a lucky roll is news: a shiny hatch is shiny every run.
+    events: lucky && !perks.shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -120,8 +142,11 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
   if (moving) {
-    p.x += input.x * p.stats.speed * slow * dt
-    p.y += input.y * p.stats.speed * slow * dt
+    const dx = input.x * p.stats.speed * slow * dt
+    const dy = input.y * p.stats.speed * slow * dt
+    p.x += dx
+    p.y += dy
+    p.walked += Math.hypot(dx, dy)
     const len = Math.hypot(input.x, input.y)
     p.facing = { x: input.x / len, y: input.y / len }
     p.dir = dir8(input.x, input.y)
@@ -240,6 +265,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
 
   g.camera.x = g.player.x - g.view.w / 2
   g.camera.y = g.player.y - 10 - g.view.h / 2
+  updateSightings(g, dt)
 
   if (g.phase === 'playing' && g.pendingLevelUps > 0) advancePhase(g)
 }

@@ -8,7 +8,7 @@
 
 **A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
 
-Pick one of 27 starters, survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+Pick one of 27 starters (or hatch eggs for 25 more Pokémon), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
 
 [**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
 
@@ -92,6 +92,8 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
     </tr>
   </table>
 
+- **Eggs and 25 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 25 families from every type and generation (Pichu, Eevee, Machop, Gastly, Abra, Riolu, Zorua… and the rare Dratini, Larvitar, Beldum, Gible and Dreepy), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars.
+
 - **23 moves and 19 held items.** Max out a move, pair it with the right item, and it evolves (Ember + Charcoal → Flamethrower).
 - **Real type matchups**, burn, poison and paralysis, and a manual **special attack** per type that becomes Blast Burn, Hydro Cannon or Frenzy Plant at the final evolution.
 - **193 wild Pokémon from all 9 generations**, Dragon types included, in 5 tiers by base stat total. Every run draws its own cast, a few new faces per stage, from basic Pokémon early to evolved ones late, and each biome pulls the draw towards its types (more Grass and Bug in the forest, Rock and Ground in the cave).
@@ -99,14 +101,15 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 
   <img src="public/assets/pokemon/95/portrait.png" width="40" alt="Onix"> <img src="public/assets/pokemon/143/portrait.png" width="40" alt="Snorlax"> <img src="public/assets/pokemon/144/portrait.png" width="40" alt="Articuno"> <img src="public/assets/pokemon/145/portrait.png" width="40" alt="Zapdos"> <img src="public/assets/pokemon/146/portrait.png" width="40" alt="Moltres"> <img src="public/assets/pokemon/150/portrait.png" width="40" alt="Mewtwo"> <img src="public/assets/pokemon/151/portrait.png" width="40" alt="Mew">
 
-- **Legendary rifts**: a few times per run a rift opens on the map. Step in to duel Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena for big rewards, before it collapses.
+- **Legendary rifts**: three times per run a rift opens on the map. Step in to duel Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena for big rewards, before it collapses.
 - **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
+- **In-game Pokédex**: every species you've seen, how many you defeated and which you caught. A defeated shiny is yours. The end of a run shows what's new.
 - **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.
 - **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
 - **Map events** that make you pick where to go: buff altars, healing fountains, locked chests (stand in the ring while an ambush closes in), spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins. Off-screen ones get an arrow on the screen edge.
-- **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
+- **Meta progression**: hatch eggs into new partners, collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
 - **Missions and achievements**: three daily and two weekly missions, drawn from the date so everyone gets the same ones, pay ₽. 49 achievements earn bronze, silver and gold medals, and some grant a title (Shiny Hunter, Legend Tamer…) shown on the title and results screens.
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
@@ -140,7 +143,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode. For missions: `ps.missions()` lists them, `ps.mission(i, n)` sets one's progress (one short of done by default), `ps.completeMission(i)`, `ps.date('2026-10-19')` moves the missions' clock, `ps.unlock(id?)` and `ps.resetProgress()`.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` (`ps.spawn('pidgey', 1, true)` for a shiny), `ps.dex()` (saved Pokédex) and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode, and `ps.egg('rare')`, `ps.walk(500)`, `ps.hatch()`, `ps.hatch('gible', true, 2.8)`, `ps.unlockFamily()` and `ps.incubator()` for eggs. For missions: `ps.missions()` lists them, `ps.mission(i, n)` sets one's progress (one short of done by default), `ps.completeMission(i)`, `ps.date('2026-10-19')` moves the missions' clock, `ps.unlockAchievement(id?)` and `ps.resetProgress()`.
 
 ## How it's built
 
@@ -149,7 +152,7 @@ Vite + TypeScript and Canvas 2D, with no game engine. Everything is plain data p
 ```
 src/
   engine/   math, seeded rng, spatial hash, input, WebAudio sfx and music synth, pixel-art helpers
-  data/     pure game data: starters, enemies, waves, biomes, weather, held items, move evolutions, type chart, music scores
+  data/     pure game data: starters, egg families (hatchlings), enemies, waves, biomes, weather, held items, move evolutions, type chart, music scores
   game/     simulation (fixed 60 Hz tick): game.ts orchestrates the systems
             moves.ts (weapons) · attacks.ts (hitboxes) · enemies.ts · spawner.ts
             combat.ts · pickups.ts · leveling.ts · effects.ts · special.ts (manual special attack)
@@ -157,11 +160,13 @@ src/
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             mapEvents.ts (event director, altars, chests, traps, Meowth) · mapEventRules.ts (their pure rules)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts · biomes.ts · weather.ts
+            dex.ts (Pokédex rules and save format) · sightings.ts (who's on screen)
             rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
             endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
+            eggs.ts (egg drops, incubator, hatching: pure rules)
             tally.ts (run counters and summary) · missions.ts · achievements.ts (missions, medals, titles)
   render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
-  ui/       title screen, HUD, starter select, level-up, pause, settings, results, missions and achievements, toasts, language switch
+  ui/       title screen, HUD, Pokémon select (with the egg box), incubator and hatching scene, level-up, pause, settings, results, missions and achievements, toasts, language switch, Pokédex
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
@@ -169,13 +174,13 @@ src/
 <details>
 <summary><b>Architecture notes</b></summary>
 
-- **Simulation and presentation are decoupled.** `step(game, input, dt)` mutates the state and pushes `GameEvent`s. `main.ts` drains them each frame to play sounds and cries and show toasts.
+- **Simulation and presentation are decoupled.** `step(game, input, dt)` mutates the state and pushes `GameEvent`s. `main.ts` drains them each frame to play sounds and cries and show toasts. Toasts and banners go through one queue (`ui/toasts.ts`, rules in `ui/toastQueue.ts`): banners show one at a time, toasts stack in a column whose CSS `max-height` keeps it clear of the Pokémon, and both wait out menus with their clocks stopped, so nothing is covered or lost.
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
 - **Waves** live in `data/waves.ts`: spawn stages by time, each a list of tier slots, plus events (flyby swarms and closing rings by tier, bosses, optionally rare via `chance`).
 - **The wild roster** is generated: `npm run roster` checks a curated list of species against SpriteCollab and pulls names, types and base stats from PokeAPI into `data/roster.generated.json`. `data/roster.ts` assigns each a tier by base stat total and derives its game stats. `game/roster.ts` draws each run's cast (seeded, weighted by `biomeWeight` towards the types of the biome each stage plays in), keeps species with a trait to at most one per stage from minute 1, and the shell loads only the first stage before the run, streaming the rest (rift legendaries, Arceus and Meowth included).
 - **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/dex.mjs`.
 - **Map events** are data in `MAP_EVENTS` (`game/mapEvents.ts`): each kind has a spawn rule for the event director (earliest time, weight, max alive, lifetime, distance), a `create` for its state, an `update` with the interaction and reward, and optional `enter`/`expire` hooks. To add one, add its state to `MapEventStates`, its definition, its art in `render/mapEvents.ts` (plus an arrow in `MARKER` if it's important) and, if it talks to the player, a `MapEventNotice` handled in `ui/mapEvents.ts`.
-- **Rifts** keep the map side (`riftPortal.ts`: a portal opens, the player stands in it) apart from the arena (`riftArena.ts`). Entering sets the world aside (horde, hazards, pickups, props; map events, weather and the biome schedule pause) and leaving puts it back; the run clock keeps going. The portal stays out of `MAP_EVENTS`: it runs on a fixed schedule (`riftDue`) that the event director's random pacing can't promise. Legendaries, arena looks and timings live in `data/rifts.ts`.
+- **Rifts** keep the map side (`riftPortal.ts`: a portal opens, the player stands in it) apart from the arena (`riftArena.ts`). Entering sets the world aside (horde, hazards, pickups, props; map events, weather and the biome schedule pause) and leaving puts it back; the run clock keeps going. The portal stays out of `MAP_EVENTS`: it runs on a fixed schedule (`riftDue`: a slot every ~4 min, waiting up to 45 s for a living boss to fall) that the event director's random pacing can't promise. Legendaries, arena looks and timings live in `data/rifts.ts`.
 - **Endless mode** starts from the victory screen (`continueEndless`). `endlessPressure` raises the spawn rate past 15:00 and `endlessSystem.ts` runs rings, swarms and the reaper.
 - **Shinies:** each regular spawn has a 1/450 chance to be a shiny elite (8x HP, 10x EXP, drops a Poké Ball). Shiny sprites come from SpriteCollab's `0000/0001` form, stored in `public/assets/pokemon/<dex>/shiny/`.
 - **Status conditions:** moves declare `status: { kind, chance, duration, power }` in data (burn, poison, paralysis, slow; the Poké Flute inflicts sleep). Burn and poison deal damage over time, burn halves contact damage, poison stacks up to 5x, paralysis stuns and stutters (shorter on bosses).
@@ -185,6 +190,8 @@ src/
 - **Music** is code: `data/music.ts` holds the scores in a small tracker notation (`engine/score.ts`) and `engine/music.ts` plays them on two pulse channels, a triangle bass and a noise kit. The shell picks the theme each frame (`playTheme`). Music and effects have separate buses in `engine/audio.ts`, so music always sits under effects and cries.
 - **Biomes and weather:** `data/biomes.ts` holds the biome order (equal slices of the run), each biome's weather odds, theme and `affinity` (the types that feel at home there, which weight the enemy draw through `biomeWeight`). `game/biomes.ts` follows the schedule and `game/weather.ts` rolls weather spells and applies their rules (`data/weather.ts`): `weatherBoost`/`weatherPower` multiply damage by attack type in `combat.ts` (player moves, enemy bodies by their types, boss hazards by `HAZARD_TYPES`), and sandstorm/snow wear down anyone not immune. The ground and breakables are drawn per biome in `render/world.ts` and `render/props.ts`, the overlays in `render/weather.ts`.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
+- **Pokédex:** the simulation fills a run's `dexLog` (species on screen via `sightings.ts`, defeats and caught shinies in `killEnemy`); the shell folds it into the save's `dex` field when the run is banked. `game/dex.ts` holds the pure rules: a compact `[defeated, flags]` mark per dex number, `markCaught` (for any future capture source, like eggs) and `dexCounts` for anything that reads progress.
+- **Eggs:** `game/eggs.ts` holds the rules (drop odds per source, the per-run cap, steps per tier, the incubator, hatching, duplicates). A run counts `player.walked`; the shell banks steps and found eggs into the save (`eggs`, `hatched`) like ₽, and ready eggs hatch when the player leaves the run (`ui/incubator.ts`). The playable families live in `data/hatchlings.ts` with the starters' shape (`PlayableDef`), and `PLAYABLE` merges both. `grantEgg` gives an egg from outside a run (mission rewards).
 - **Missions and achievements** never reach into the simulation's systems: the run keeps a small `tally` (kills by type, weather and biome, shinies, bosses, map event notices), bumped only when something faints or a map event speaks. When the run ends the shell takes a `summarizeRun` snapshot and `recordRun` adds it to the missions (`game/missions.ts`, drawn from the local date via a seeded rng) and the lifetime records behind the achievements (`game/achievements.ts`). Recording works on the difference from the last snapshot, so a victory that goes on into endless mode is never counted twice. The catalogs live in `data/missions.ts` and `data/achievements.ts`.
 
 </details>

@@ -1,7 +1,7 @@
 import type { BiomeId, WeatherId } from '../data/biomes'
 import { evolvedFrom } from '../data/evolutions'
 import type { RiftLegend } from '../data/rifts'
-import type { StarterId } from '../data/starters'
+import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
 import { wonRun } from './meta'
 import type { MapEventNotice } from './mapEvents'
@@ -58,7 +58,8 @@ export const countNotice = (tally: RunTally, notice: MapEventNotice) => bump(tal
 
 /** Everything missions and achievements need to know about a run, as plain data. */
 export type RunSummary = {
-  starter: StarterId
+  /** The Pokémon played: a starter or a hatched family. */
+  starter: PlayableId
   shinyStarter: boolean
   /** Seconds survived, endless overtime included. */
   time: number

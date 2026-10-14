@@ -1,7 +1,7 @@
 import { formatTime } from '../engine/math'
 import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
-import { STARTERS } from '../data/starters'
+import { PLAYABLE } from '../data/hatchlings'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
@@ -176,7 +176,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       portrait.setAttribute('src', portraitUrl(dex, p.shiny))
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
-      setText(name, STARTERS[g.starter].line[p.stage]!.name)
+      setText(name, PLAYABLE[g.starter].line[p.stage]!.name)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)

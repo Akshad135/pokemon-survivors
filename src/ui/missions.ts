@@ -10,7 +10,8 @@ import { formatNumber, formatPokeDollars, t } from '../i18n'
 import { coinIcon, medalIcon } from '../render/art'
 import { h, later, rich, setText } from './dom'
 import { equipTitle, loadSave, today } from './save'
-import { hint, toast, type Screen } from './screens'
+import { hint, type Screen } from './screens'
+import { toast } from './toasts'
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
 

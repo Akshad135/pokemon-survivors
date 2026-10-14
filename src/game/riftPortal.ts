@@ -23,7 +23,7 @@ export const openPortal = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rif
   const { x, y } = at ?? { x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d }
   g.rift.portal = { x, y, left: RIFT.portalTime, charge: 0, legend }
   g.rift.met.push(legend)
-  g.rift.nextAt = nextRiftAt(g.time, g.rng)
+  g.rift.nextAt = nextRiftAt(g.rift.nextAt, g.time, g.rng)
   g.events.push({ kind: 'riftOpen' })
 }
 

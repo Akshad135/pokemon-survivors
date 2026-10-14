@@ -5,15 +5,17 @@
 Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around and let it attack on its own. Survive 15 minutes of wild Pokémon hordes, collect experience, learn moves, equip held items and evolve mid-run, then face Mewtwo. After the victory you can keep going in an endless mode, where the horde keeps scaling and Arceus hunts you as the reaper.
 
 - 27 starters, each with its full 3-stage evolution line, stats, signature move and learnset
+- Eggs: bosses, locked chests and rifts sometimes drop an egg; it waits in a 3-slot incubator and hatches with the steps walked in runs, unlocking one of 25 more playable families (every type and generation, e.g. Pichu, Eevee, Gastly, Riolu, Gible, Dreepy). 1% of hatchlings are shiny for good; duplicates become Poké Dollars
 - 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
 - Type matchups, burn, poison and paralysis, and a manual special attack per type (Blast Burn, Hydro Cannon, Frenzy Plant)
 - 193 wild Pokémon from all 9 generations (Dragon types included) in 5 tiers by base stat total; every run draws its own cast (basic Pokémon early, evolved ones late), weighted towards the types of each biome
 - Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
 - Five biomes per run (Route 1, Viridian Forest, Mt. Moon, Mt. Silver, Lavender Tower), each with its own music, and weather that shifts type matchups for everyone: harsh sunlight, rain, sandstorm, snow and fog
 - Special enemies with behavior traits, at most one per stage of a run: Chansey heals the horde, Bronzor and Bronzong shield it, Nidoqueen summons Nidoran, Voltorb, Electrode and Drifloon explode, Magnemite and Vikavolt fire telegraphed beams and Hitmonlee and Lokix leap over the horde
-- Legendary rifts: optional portals to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
+- Legendary rifts: three optional portals per run to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
 - Endless mode after Mewtwo, scored by time survived, with Arceus as a hunting reaper that can be defeated
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
+- In-game Pokédex: tracks every species seen and defeated; defeating a shiny catches it
 - Daily and weekly missions (the same for everyone on the same day) and 49 achievements with bronze, silver and gold medals; some grant a title shown on the title and results screens
 - Map events that make you choose where to go: buff altars, healing fountains, locked chests guarded by an ambush, spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins
 - Pokémon Mystery Dungeon-style pixel art (PMD SpriteCollab)

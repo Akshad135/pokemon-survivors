@@ -6,14 +6,15 @@ import { scaling, stageIndexAt } from '../data/waves'
 import { addBuff } from './buffs'
 import { hurtPlayer, killEnemy } from './combat'
 import { dropItem } from './consumables'
+import { logDefeat } from './dex'
 import { burst, floatText } from './effects'
 import { spawnEnemy } from './enemies'
 import { recomputeStats } from './leveling'
 import {
   ALTAR, altarDuration, BOMB, CHEST, chestCoins, chestProgress, DIRECTOR, FADE, fleeHeading, FOUNTAIN, fountainSip,
-  MEOWTH, meowthSpeed, rollAltarBuff, SPIKES, spikePhase, spawnSpot, type SpikePhase,
+  MEOWTH, MEOWTH_DEX, meowthSpeed, rollAltarBuff, SPIKES, spikePhase, spawnSpot, type SpikePhase,
 } from './mapEventRules'
-import { dropCoins, dropPickup } from './pickups'
+import { awardEgg, dropCoins, dropPickup } from './pickups'
 import { touches } from './props'
 import { isAlive } from './queries'
 import { countNotice } from './tally'
@@ -204,6 +205,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       dropCoins(g, ev.x, ev.y - 4, coins)
       dropPickup(g, ev.x + 8, ev.y, 'pokeball')
       dropItem(g, ev.x - 8, ev.y, rollDrop(DROP_TABLES.itemBall, g.time, g.rng))
+      awardEgg(g, 'chest', ev.x, ev.y)
       burst(g, ev.x, ev.y - 8, { colors: ['#f8d030', '#fff8c0', '#ffffff', '#c08800'], count: 50, speed: 140, ttl: 0.8, gravity: 60 })
       g.shake = Math.max(g.shake, 3)
       notify(g, { kind: 'chestOpen', coins: coins.reduce((a, b) => a + b, 0) })
@@ -280,6 +282,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       burst(g, ev.x, ev.y - 10, { colors: ['#f8d030', '#ffffff'], count: 5, speed: 60, ttl: 0.3 })
       if (s.hp > 0) return notify(g, { kind: 'meowthHit' })
       dropCoins(g, ev.x, ev.y - 6, MEOWTH.jackpot)
+      logDefeat(g.dexLog, MEOWTH_DEX, false)
       burst(g, ev.x, ev.y - 10, { colors: ['#f8d030', '#fff8c0', '#c08800', '#ffffff'], count: 40, speed: 130, ttl: 0.7, gravity: 80 })
       notify(g, { kind: 'payDay', coins: MEOWTH.jackpot.reduce<number>((a, b) => a + b, 0) })
       spend(ev)

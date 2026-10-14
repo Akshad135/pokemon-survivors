@@ -1445,13 +1445,33 @@ button {
   margin: 0;
 }
 
-.toast {
+/*
+ * One column under the HUD and the rift pill: news lines up instead of piling
+ * on one spot. `max-height` is its room (toasts.ts lets a toast in only while
+ * it fits): down to just above the Pokémon in the middle of the screen.
+ */
+.toasts {
   position: absolute;
   left: 50%;
-  top: calc(100px + var(--safe-t));
+  top: calc(126px + var(--safe-t));
+  max-height: calc(50% - 126px - var(--safe-t) - 16 * var(--px));
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   width: max-content;
   max-width: calc(100vw - 32px);
+}
+
+.toasts.held,
+.banner.held {
+  display: none;
+}
+
+.toast {
+  width: max-content;
+  max-width: 100%;
   padding: 10px 16px;
   font-size: 24px;
   line-height: 1;
@@ -1466,7 +1486,7 @@ button {
 
 @keyframes toast-in {
   from {
-    transform: translate(-50%, -20px);
+    transform: translateY(-20px);
     opacity: 0;
   }
 }
@@ -2105,8 +2125,11 @@ button {
     bottom: 8px;
     transform: scale(0.7);
   }
+  .toasts {
+    top: calc(132px + var(--safe-t));
+    max-height: calc(50% - 132px - var(--safe-t) - 16 * var(--px));
+  }
   .toast {
-    top: calc(124px + var(--safe-t));
     font-size: 20px;
   }
   .textbox {
@@ -2164,8 +2187,20 @@ button {
   .boss {
     top: 54px;
   }
+  /* No room above the Pokémon: the column moves to the right, under the ₽ and above the special button. */
+  .toasts {
+    top: calc(80px + var(--safe-t));
+    right: max(8px, env(safe-area-inset-right));
+    left: auto;
+    transform: none;
+    align-items: flex-end;
+    max-width: min(40vw, 320px);
+    max-height: calc(100% - 80px - var(--safe-t) - 110px);
+  }
   .toast {
-    top: calc(64px + var(--safe-t));
+    padding: 6px 10px;
+    font-size: 16px;
+    text-align: right;
   }
 }
 
@@ -2229,12 +2264,13 @@ button {
   height: 28px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 720px) and (min-height: 501px) {
+  .toasts {
+    max-width: 90vw;
+  }
   .toast {
     font-size: 18px;
     white-space: normal;
-    width: max-content;
-    max-width: 90vw;
   }
 }
 
@@ -2877,5 +2913,586 @@ button {
   }
   .mission-row {
     padding: 4px 8px;
+  }
+}
+
+/* ---------- Eggs: the box in the Pokémon select, the incubator and hatching ---------- */
+
+/* The egg box sits apart from the regions, after a divider. */
+.egg-tab {
+  position: relative;
+  margin-left: 10px;
+}
+
+.egg-tab::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 6px;
+  bottom: 6px;
+  border-left: 2px dashed #6878a8;
+}
+
+.egg-box-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.egg-box {
+  display: grid;
+  /* Keep the column count in sync with BOX_COLS in ui/starterSelect.ts. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.egg-cell {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding: 4px 2px;
+  background: #f8f8f8;
+  border: 2px solid #283040;
+  border-radius: 6px;
+}
+
+.egg-cell.locked {
+  background: #c8d0e0;
+}
+
+.egg-cell.selected {
+  background: #fff;
+  border-color: #ffcb05;
+  box-shadow: 0 0 0 2px #fff, 0 3px 0 #2a5aa8;
+}
+
+.egg-cell-sprite {
+  width: 72px;
+  max-width: 100%;
+  aspect-ratio: 48 / 40;
+}
+
+.egg-cell-tag {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+.incubator-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.incubator-entry img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.incubator-entry b {
+  color: #c89000;
+}
+
+.incubator-entry:hover,
+.incubator-entry:focus-visible {
+  --frame: #58b858;
+}
+
+.btn.confirm.locked {
+  color: #707088;
+  background: #d8d8e0;
+}
+
+.locked-blurb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.locked-blurb img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.incubator-intro,
+.incubator-note {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.incubator-note {
+  font-size: 18px;
+  color: #6878a8;
+}
+
+.incubator-note b {
+  color: var(--ink);
+  font-weight: normal;
+}
+
+.egg-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.egg-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 6px 12px;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-radius: 8px;
+}
+
+.egg-slot b {
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.egg-slot.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+.egg-slot.empty b {
+  color: #9898b0;
+}
+
+.egg-art {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+/* Empty slot: a dent in the straw. */
+.egg-hole {
+  width: 40px;
+  height: 48px;
+  border: 3px dashed #b8b8c8;
+  border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
+}
+
+/* A ready egg rocks in whole pixels, like the games. */
+.egg-slot.ready .egg-art {
+  animation: egg-rock 1.1s steps(1) infinite;
+}
+
+@keyframes egg-rock {
+  0%, 50%, 100% { transform: translateX(0); }
+  60%, 80% { transform: translateX(calc(var(--px) * -1)); }
+  70%, 90% { transform: translateX(var(--px)); }
+}
+
+.egg-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: #d0d0dc;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px #b8b8c8;
+}
+
+.egg-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #58b858;
+  border-radius: 2px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.egg-steps {
+  font-size: 18px;
+  line-height: 1;
+  text-align: center;
+}
+
+.egg-slot.ready .egg-steps {
+  color: #c89000;
+}
+
+.hatch {
+  align-items: center;
+  width: min(420px, 94vw);
+}
+
+/* 112 × 96 canvas at a whole-number scale. */
+.hatch-canvas {
+  width: 336px;
+  height: 288px;
+  background: radial-gradient(ellipse 34% 30% at 50% 66%, #dcebd0 0 99%, transparent 100%);
+}
+
+.hatch-text {
+  margin: 0;
+  min-height: 2.2em;
+  font-size: 22px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.hatch-text small {
+  display: block;
+  margin-top: 6px;
+  font-size: 18px;
+  color: #6878a8;
+}
+
+@media (max-width: 520px) {
+  .egg-cell-tag {
+    width: 12px;
+    height: 12px;
+  }
+  .egg-slots {
+    gap: 6px;
+  }
+  .egg-slot {
+    padding: 8px 4px 10px;
+  }
+  .egg-art {
+    width: 32px;
+    height: 32px;
+  }
+  .egg-steps {
+    font-size: 15px;
+  }
+  .hatch-canvas {
+    width: 224px;
+    height: 192px;
+  }
+}
+
+/* Phones in landscape: the hatching canvas fits the short screen. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hatch-canvas {
+    width: 224px;
+    height: 192px;
+  }
+}
+
+/* ---------- Pokédex ---------- */
+
+.dex-screen {
+  padding: max(8px, var(--safe-t)) max(8px, var(--safe-r)) max(8px, var(--safe-b)) max(8px, var(--safe-l));
+}
+
+/* Fixed height so the grid scrolls inside the dialog instead of the whole screen. */
+.dialog.dex {
+  width: min(880px, 100%);
+  height: min(680px, 100%);
+  padding: 16px;
+  gap: 10px;
+}
+
+.dex-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dex-progress {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dex-progress span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 18px;
+  line-height: 1;
+  color: #e8e8f8;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.dex-progress b {
+  font-family: var(--title);
+  font-size: 9px;
+  color: #f8d030;
+}
+
+.dex-tabs {
+  padding: 2px 2px 4px;
+}
+
+.dex-tab {
+  font-size: 8px;
+}
+
+/* The filter row has the keyboard focus: ring the active tab. */
+.dex-tab.selected.focused {
+  box-shadow: 0 0 0 3px #e83838, 0 3px 0 #2a5aa8;
+}
+
+.dex-body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 250px;
+  gap: 10px;
+}
+
+.dex-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 6px;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.dex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+}
+
+.dex-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #48527a;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.dex-cell > img:first-child {
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+}
+
+.dex-cell small {
+  position: absolute;
+  left: 2px;
+  bottom: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: #e8e8f8;
+  text-shadow: 1px 1px 0 #101020, -1px -1px 0 #101020;
+}
+
+.dex-cell.unseen {
+  background: #1c2238;
+}
+
+.dex-unknown {
+  font-family: var(--title);
+  font-size: 14px;
+  color: #48527a;
+}
+
+.dex-mark {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 14px;
+  height: 14px;
+}
+
+.dex-cell.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+.dex-list:not(:has(.focused)) .dex-cell.selected {
+  border-color: #a8b0d0;
+}
+
+.dex-cell.selected small {
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.dex-empty {
+  margin: 24px 0;
+  font-size: 22px;
+  text-align: center;
+  color: #c8d0f0;
+}
+
+.dex-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  background: #e8e8f0;
+  border-radius: 6px;
+  --accent: #6878a8;
+}
+
+.dex-detail .inspect-id {
+  align-self: stretch;
+}
+
+.dex-detail .types {
+  justify-content: flex-start;
+  min-height: 0;
+}
+
+.dex-detail.unseen .dex-sprite {
+  filter: brightness(0);
+  opacity: 0.45;
+}
+
+.dex-facts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dex-fact {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dex-fact b {
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.dex-tip {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: #707088;
+}
+
+.dex-detail .tag-shiny {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dex-detail .tag-shiny img {
+  width: 14px;
+  height: 14px;
+}
+
+a.btn.dex-site {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.dex-news {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dex-news b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #c83030;
+}
+
+.dex-news img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Phones in portrait: the detail becomes a strip above the grid. */
+@media (max-width: 600px) {
+  .dialog.dex {
+    height: 100%;
+    padding: 10px;
+    gap: 8px;
+  }
+  .dex-head .dialog-title {
+    font-size: 12px;
+  }
+  .dex-progress span {
+    font-size: 16px;
+    padding: 3px 6px;
+  }
+  .dex-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .dex-detail {
+    order: -1;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 6px;
+    overflow: visible;
+  }
+  .dex-detail .inspect-sprite {
+    width: 96px;
+    height: 96px;
+  }
+  .dex-detail .inspect-name {
+    font-size: 11px;
+  }
+  .dex-grid {
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  }
+  .dex .buttons .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Phones in landscape: everything side by side, no hint. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dialog.dex {
+    height: 100%;
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .dex-body {
+    grid-template-columns: 1fr 210px;
+  }
+  .dex-detail .inspect-sprite {
+    width: 96px;
+    height: 96px;
+  }
+  .dex .hint {
+    display: none;
+  }
+  .dex .buttons .btn {
+    min-height: 36px;
+    padding: 6px 12px;
   }
 }

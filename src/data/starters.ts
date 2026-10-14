@@ -12,7 +12,8 @@ export type EvolutionStage = {
   bonus: StatDelta
 }
 
-export type StarterDef = {
+/** What every playable Pokémon shares: the 27 starters and the families that hatch from eggs (`hatchlings.ts`). */
+export type PlayableDef = {
   name: string
   color: string
   stats: StatDelta
@@ -20,8 +21,11 @@ export type StarterDef = {
   signature: MoveId
   /** Moves this Pokémon can learn on level up (signature included). */
   learnset: readonly MoveId[]
-  line: readonly [EvolutionStage, EvolutionStage, EvolutionStage]
+  /** Two or three stages; the last one is the final evolution. */
+  line: readonly [EvolutionStage, EvolutionStage] | readonly [EvolutionStage, EvolutionStage, EvolutionStage]
 }
+
+export type StarterDef = PlayableDef & { line: readonly [EvolutionStage, EvolutionStage, EvolutionStage] }
 
 /** Builds a 3-stage line that evolves at Lv 12 and Lv 28. */
 const line = (

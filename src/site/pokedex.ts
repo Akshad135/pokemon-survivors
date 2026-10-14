@@ -1,6 +1,7 @@
 import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
+import { HATCHLING_IDS, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { REGIONS, STARTER_IDS, type Region } from '../data/starters'
 import type { PokeType } from '../data/types'
 import { RIFT, RIFT_LEGENDS } from '../data/rifts'
 import { SUMMONS } from '../data/traits'
@@ -14,7 +15,7 @@ import { MEOWTH_DEX } from '../game/mapEventRules'
  * the next build.
  */
 
-export const ROLES = ['starter', 'enemy', 'boss', 'legendary', 'event'] as const
+export const ROLES = ['starter', 'egg', 'enemy', 'boss', 'legendary', 'event'] as const
 
 export type Role = (typeof ROLES)[number]
 
@@ -38,8 +39,11 @@ export type DexEntry = {
   role: Role
   region: Region
   sprites: Sprites
-  /** `event`: met at a map event (the fleeing Meowth), not in the horde. */
-  source: { kind: 'starter'; id: StarterId; stage: number } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
+  /**
+   * `starter`: playable, a starter or an egg family (`role: 'egg'`); `wild` set when the species also roams the horde.
+   * `event`: met at a map event (the fleeing Meowth), not in the horde.
+   */
+  source: { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -83,11 +87,13 @@ const base = (dex: number, name: string, types: readonly PokeType[]) => ({
   sprites: spritesOf(dex),
 })
 
-const starterEntries = (id: StarterId): DexEntry[] =>
-  STARTERS[id].line.map((stage, i) => ({
+const wildByDex = new Map((Object.keys(ENEMIES) as EnemyId[]).map((id) => [ENEMIES[id].dex, id]))
+
+const playableEntries = (id: PlayableId, role: Role): DexEntry[] =>
+  PLAYABLE[id].line.map((stage, i) => ({
     ...base(stage.dex, stage.name, stage.types),
-    role: 'starter',
-    source: { kind: 'starter', id, stage: i },
+    role,
+    source: { kind: 'starter', id, stage: i, wild: wildByDex.get(stage.dex) },
   }))
 
 const wildEntry = (id: EnemyId): DexEntry => {
@@ -98,9 +104,13 @@ const wildEntry = (id: EnemyId): DexEntry => {
 
 const eventEntry = (): DexEntry => ({ ...base(MEOWTH_DEX, 'Meowth', ['normal']), role: 'event', source: { kind: 'event' } })
 
-/** Every Pokémon in the game, in national dex order. */
-export const pokedex = (): DexEntry[] =>
-  [...STARTER_IDS.flatMap(starterEntries), ...(Object.keys(ENEMIES) as EnemyId[]).map(wildEntry), eventEntry()].sort((a, b) => a.dex - b.dex)
+/** Every Pokémon in the game, in national dex order. Egg families that also roam the horde get one card, the playable one. */
+export const pokedex = (): DexEntry[] => {
+  const playable = [...STARTER_IDS.flatMap((id) => playableEntries(id, 'starter')), ...HATCHLING_IDS.flatMap((id) => playableEntries(id, 'egg'))]
+  const listed = new Set(playable.map((e) => e.dex))
+  const wild = (Object.keys(ENEMIES) as EnemyId[]).filter((id) => !listed.has(ENEMIES[id].dex)).map(wildEntry)
+  return [...playable, ...wild, eventEntry()].sort((a, b) => a.dex - b.dex)
+}
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
 

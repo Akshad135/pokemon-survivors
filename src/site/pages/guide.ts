@@ -15,6 +15,8 @@ import { EVENTS, RUN_LENGTH, scaling, STAGES, stageStart } from '../../data/wave
 import { createRng } from '../../engine/rng'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
+import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
+import { HATCHLING_IDS, HATCHLINGS } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
@@ -258,7 +260,7 @@ const rifts = (locale: Locale, m: SiteMessages) => {
   ])
   const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
   const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
-  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, shiny: Math.round(1 / RIFT.shinyOdds) }))}
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, shiny: Math.round(1 / RIFT.shinyOdds) }))}
     ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
     <p class="note">${r.hpNote(growth)}</p>
     <h3>${r.endlessTitle}</h3>
@@ -287,6 +289,28 @@ const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
   return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player)))}
     <p><a class="btn-link" href="${ROUTES.pokedex[locale]}">★ ${s.seeAll}</a></p>`
+}
+
+const eggs = (locale: Locale, m: SiteMessages) => {
+  const e = m.guide.eggs
+  const tiers = LOCALES[locale].messages.eggs.tiers
+  const num = (v: number) => v.toLocaleString(m.lang.tag)
+  const pct = (v: number) => `${Math.round(v * 100)}%`
+  const tierRows = EGG_TIER_IDS.map((tier) => [
+    tiers[tier],
+    num(EGG_TIERS[tier].steps),
+    `₽${num(EGG_TIERS[tier].refund)}`,
+    html`<span class="minis">${HATCHLING_IDS.filter((id) => HATCHLINGS[id].egg === tier).map((id) => html`<span class="with-mini">${portrait(HATCHLINGS[id].line[0].dex)}${HATCHLINGS[id].name}</span>`)}</span>`,
+  ])
+  const sourceRows = (Object.keys(EGG_SOURCES) as EggSource[]).map((source) => {
+    const odds: Partial<Record<(typeof EGG_TIER_IDS)[number], number>> = EGG_SOURCES[source].odds
+    const total = EGG_TIER_IDS.reduce((sum, tier) => sum + (odds[tier] ?? 0), 0)
+    const rarity = EGG_TIER_IDS.flatMap((tier) => (odds[tier] ? [`${tiers[tier]} ${pct(odds[tier] / total)}`] : [])).join(' · ')
+    return [e.sources[source], pct(EGG_SOURCES[source].chance), rarity]
+  })
+  return html`${paragraphs(e.paragraphs(STARTER_IDS.length, HATCHLING_IDS.length, EGGS.slots, EGGS.perRun, EGGS.stepPx, Math.round(1 / EGGS.shinyOdds), EGGS.newWeight))}
+    ${table([e.sourceHead, e.chanceHead, e.oddsHead], sourceRows)}
+    ${table([e.tierHead, e.stepsHead, e.refundHead, e.familiesHead], tierRows)}`
 }
 
 const items = (m: SiteMessages) => {
@@ -374,6 +398,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   traits,
   rifts,
   shinies,
+  eggs,
   items: (_, m) => items(m),
   mapEvents: (_, m) => mapEvents(m),
   mart,

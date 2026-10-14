@@ -2,10 +2,13 @@ import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS, type PokeType } from '../data/types'
 import { ENEMY_BERRY_CHANCE } from '../data/consumables'
+import { ENEMIES } from '../data/enemies'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
+import { logDefeat } from './dex'
 import { burst, floatText } from './effects'
+import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
-import { dropCoins, dropPickup, dropXp } from './pickups'
+import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
 import { countKill } from './tally'
 import { absorb } from './traits'
@@ -62,12 +65,16 @@ export const killEnemy = (g: Game, e: Enemy) => {
   const big = e.boss || e.shiny
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })
+  // A defeated shiny is caught: it joins the player's Pokédex as their own.
+  logDefeat(g.dexLog, ENEMIES[e.kind].dex, e.shiny)
+  if (e.shiny) g.events.push({ kind: 'caught', enemy: e.kind })
 
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.boss) {
     dropPickup(g, e.x, e.y, 'pokeball')
+    awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
     if (e.kind === 'mewtwo') {

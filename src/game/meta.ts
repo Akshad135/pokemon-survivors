@@ -1,6 +1,8 @@
 import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_REWARD, type TitleId } from '../data/achievements'
 import { NO_ACHIEVEMENTS, parseAchievements, parseTitle, recordAchievements, type AchievementsSave } from './achievements'
+import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
+import { parseEggs, parseHatched, type Egg, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { NO_MISSIONS, parseMissions, recordMissions, type MissionsSave } from './missions'
 import { isRecord, wholeNumber } from './parse'
@@ -72,10 +74,20 @@ export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, sk
 
 export const SAVE_VERSION = 1
 
+/**
+ * Saves from before a field existed load it empty, so every field below the
+ * upgrades is additive.
+ */
 export type Save = {
   version: typeof SAVE_VERSION
   wallet: number
   ranks: Ranks
+  /** Pokédex progress (`game/dex.ts`). */
+  dex: Pokedex
+  /** The incubator (`game/eggs.ts`). */
+  eggs: readonly Egg[]
+  /** Families unlocked from eggs (`game/eggs.ts`). */
+  hatched: Hatched
   /** Daily and weekly mission progress (`game/missions.ts`). */
   missions: MissionsSave
   /** Unlocked achievements and lifetime records (`game/achievements.ts`). */
@@ -84,7 +96,17 @@ export type Save = {
   title: TitleId | null
 }
 
-export const EMPTY_SAVE: Save = { version: SAVE_VERSION, wallet: 0, ranks: NO_RANKS, missions: NO_MISSIONS, achievements: NO_ACHIEVEMENTS, title: null }
+export const EMPTY_SAVE: Save = {
+  version: SAVE_VERSION,
+  wallet: 0,
+  ranks: NO_RANKS,
+  dex: EMPTY_DEX,
+  eggs: [],
+  hatched: {},
+  missions: NO_MISSIONS,
+  achievements: NO_ACHIEVEMENTS,
+  title: null,
+}
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
 const migrate = (data: Record<string, unknown>): Record<string, unknown> | null => {
@@ -117,6 +139,9 @@ export const parseSave = (raw: string | null): Save => {
     version: SAVE_VERSION,
     wallet: wholeNumber(data.wallet),
     ranks: Object.fromEntries(UPGRADE_IDS.map((id) => [id, wholeNumber(ranks[id], UPGRADES[id].maxRank)])) as Record<UpgradeId, number>,
+    dex: parseDex(data.dex),
+    eggs: parseEggs(data.eggs),
+    hatched: parseHatched(data.hatched),
     missions: parseMissions(data.missions),
     achievements,
     title: parseTitle(data.title, achievements.unlocked),
