@@ -19,6 +19,9 @@ export const writeSave = (save: Save) => {
   }
 }
 
+/** Applies `change` to the stored save and writes it back. */
+export const updateSave = (change: (save: Save) => Save) => writeSave(change(loadSave()))
+
 /** Adds run earnings to the wallet and returns the new balance. */
 export const depositPokeDollars = (amount: number) => {
   const save = loadSave()

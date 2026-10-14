@@ -19,6 +19,24 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    title: { pt: 'Pokédex dentro do jogo', en: 'An in-game Pokédex' },
+    notes: [
+      {
+        pt: 'O botão Pokédex do título agora abre a Pokédex do jogo: todas as espécies, com as que você viu, quantas derrotou e quais capturou. As que faltam aparecem como "?".',
+        en: 'The Pokédex button on the title now opens the in-game Pokédex: every species, with the ones you have seen, how many you defeated and which you caught. Missing ones show as "?".',
+      },
+      {
+        pt: 'Shiny derrotado vira seu: ele entra na Pokédex como capturado, com o brilho.',
+        en: 'A defeated shiny is yours: it joins the Pokédex as caught, sparkle and all.',
+      },
+      {
+        pt: 'O fim da partida mostra o que entrou de novo, como "+3 espécies novas · 1 shiny capturado".',
+        en: 'The end of a run shows what is new, like "+3 new species · 1 shiny caught".',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 24,
     title: { pt: 'Tudo junto: horda do bioma e Dragões', en: 'All together: biome hordes and Dragons' },
     notes: [

@@ -102,6 +102,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Legendary rifts**: a few times per run a rift opens on the map. Step in to duel Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena for big rewards, before it collapses.
 - **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
+- **In-game Pokédex**: every species you've seen, how many you defeated and which you caught. A defeated shiny is yours. The end of a run shows what's new.
 - **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.
 - **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
@@ -139,7 +140,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` (`ps.spawn('pidgey', 1, true)` for a shiny), `ps.dex()` (saved Pokédex) and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
 
 ## How it's built
 
@@ -156,10 +157,11 @@ src/
             consumables.ts (floor items, buffs) · props.ts (breakable item sources)
             mapEvents.ts (event director, altars, chests, traps, Meowth) · mapEventRules.ts (their pure rules)
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts · biomes.ts · weather.ts
+            dex.ts (Pokédex rules and save format) · sightings.ts (who's on screen)
             rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
             endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
   render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
-  ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
+  ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch, Pokédex
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
@@ -183,6 +185,7 @@ src/
 - **Music** is code: `data/music.ts` holds the scores in a small tracker notation (`engine/score.ts`) and `engine/music.ts` plays them on two pulse channels, a triangle bass and a noise kit. The shell picks the theme each frame (`playTheme`). Music and effects have separate buses in `engine/audio.ts`, so music always sits under effects and cries.
 - **Biomes and weather:** `data/biomes.ts` holds the biome order (equal slices of the run), each biome's weather odds, theme and `affinity` (the types that feel at home there, which weight the enemy draw through `biomeWeight`). `game/biomes.ts` follows the schedule and `game/weather.ts` rolls weather spells and applies their rules (`data/weather.ts`): `weatherBoost`/`weatherPower` multiply damage by attack type in `combat.ts` (player moves, enemy bodies by their types, boss hazards by `HAZARD_TYPES`), and sandstorm/snow wear down anyone not immune. The ground and breakables are drawn per biome in `render/world.ts` and `render/props.ts`, the overlays in `render/weather.ts`.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
+- **Pokédex:** the simulation fills a run's `dexLog` (species on screen via `sightings.ts`, defeats and caught shinies in `killEnemy`); the shell folds it into the save's `dex` field when the run is banked. `game/dex.ts` holds the pure rules: a compact `[defeated, flags]` mark per dex number, `markCaught` (for any future capture source, like eggs) and `dexCounts` for anything that reads progress.
 
 </details>
 

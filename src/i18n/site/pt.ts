@@ -336,6 +336,7 @@ export const sitePt = {
         `Cada Pokémon selvagem comum tem 1 chance em ${n(wild)} de nascer shiny. Ele vira uma elite com ${hp}x de HP e ${xp}x de EXP, e sempre solta uma Poké Ball e Poké Dollars. Chefes e lendários nunca são shiny.`,
         `O seu inicial tem 1 chance em ${player} de ser shiny, e continua shiny em todas as evoluções daquela partida.`,
         'A Poké Ball (de chefes e shinies) dá um upgrade aleatório na hora, ou uma evolução de golpe se alguma estiver pronta.',
+        'Shiny derrotado vira seu: ele fica marcado como capturado, com o brilho, na Pokédex do jogo (Pokédex, no menu do título). A Pokédex também lembra cada espécie que você viu e quantas derrotou, e o fim da partida mostra o que entrou de novo.',
       ],
       seeAll: 'Veja todos os shinies na Pokédex',
     },
@@ -479,7 +480,7 @@ export const sitePt = {
       'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho, e nunca é enviado para nenhum servidor:',
     ],
     storage: {
-      'ps:save': 'Poké Dollars e melhorias compradas no Poké Mart.',
+      'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart e a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou).',
       'ps:settings': 'Ajustes: volume da música e dos efeitos, som ligado ou desligado, números de dano e tremor de tela.',
       'ps:lang': 'Idioma escolhido (português ou inglês).',
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',

@@ -129,6 +129,28 @@ export const pt = {
     earnings: (coins: string, bonus: string) => `Moedas ${coins} · Bônus ${bonus}`,
     retry: 'Tentar de novo',
     change: 'Trocar Pokémon',
+    /** End-of-run Pokédex news, e.g. "+3 espécies novas · 1 shiny capturado". */
+    dexSpecies: (n: number) => (n === 1 ? '+1 espécie nova' : `+${n} espécies novas`),
+    dexShinies: (n: number) => (n === 1 ? '1 shiny capturado' : `${n} shinies capturados`),
+  },
+
+  /** In-game Pokédex (title menu). */
+  dex: {
+    seen: 'Vistos',
+    defeated: 'Derrotados',
+    caught: 'Capturados',
+    filters: { all: 'Todos', seen: 'Vistos', caught: 'Capturados', missing: 'Faltam' },
+    roles: { starter: 'Inicial', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário', event: 'Evento' },
+    owned: 'Capturado',
+    yes: 'Sim!',
+    no: 'Ainda não',
+    shiny: 'SHINY',
+    unseen: 'Ainda não visto. Continue explorando!',
+    empty: 'Nada aqui ainda.',
+    back: 'Voltar',
+    site: 'Onde encontrar ↗',
+    hintKeys: 'SETAS navegar · Q E filtro · ESC voltar',
+    hintTouch: 'Toque num Pokémon para ver detalhes',
   },
 
   mart: {
@@ -152,6 +174,7 @@ export const pt = {
     boss: (name: string) => `Um *${name}* selvagem apareceu!`,
     shiny: (name: string) => `Um *${name}* shiny apareceu!`,
     shinyPlayer: (name: string) => `Que sorte! Seu *${name}* é shiny!`,
+    caught: (name: string) => `*${name}* shiny é seu! Registrado na _Pokédex_.`,
     evolving: (name: string) => `Hã? ${name} está evoluindo!`,
     evolved: (from: string, to: string) => `Parabéns! ${from} evoluiu para ${to}!`,
     moveEvolved: (from: string, to: string) => `*${from}* evoluiu para *${to}*!`,

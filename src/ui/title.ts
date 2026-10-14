@@ -9,8 +9,8 @@ import { menu, type Screen } from './screens'
 
 /** Static site pages, one URL per language (they live outside the game bundle). */
 const SITE_PAGES = {
-  pt: { pokedex: '/pokedex/', guide: '/guia/', legal: '/legal/' },
-  en: { pokedex: '/en/pokedex/', guide: '/en/guide/', legal: '/en/legal/' },
+  pt: { guide: '/guia/', legal: '/legal/' },
+  en: { guide: '/en/guide/', legal: '/en/legal/' },
 } as const satisfies Record<Locale, Record<string, string>>
 
 const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
@@ -26,6 +26,8 @@ export type TitleActions = {
    * language may have changed), highlighting `focus`. No action, no button.
    */
   settings?: (focus: number) => Screen
+  /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
+  pokedex: (focus: number) => Screen
 }
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel. */
@@ -56,9 +58,9 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const { settings } = actions
   const items = [
     { label: m.play, run: actions.play },
-    { label: m.pokedex, run: () => location.assign(pages.pokedex) },
+    { label: m.pokedex, run: () => openOver(actions.pokedex) },
     { label: m.guide, run: () => location.assign(pages.guide) },
-    ...(settings ? [{ label: m.settings, run: () => openSettings(settings) }] : []),
+    ...(settings ? [{ label: m.settings, run: () => openOver(settings) }] : []),
   ]
 
   const logo = h('canvas', { class: 'title-logo', width: 1, height: 1, 'aria-hidden': 'true' })
@@ -86,7 +88,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   let nav: ReturnType<typeof menu> | null = null
   let closeLanguage: (() => void) | null = null
   let offIntro: (() => void) | null = null
-  let settingsScreen: Screen | null = null
+  /** Settings or the Pokédex, open over the meadow. */
+  let overScreen: Screen | null = null
 
   /** (Re)builds the menu buttons and their key/pointer handlers, with `focus` highlighted. */
   const showMenu = (focus: number) => {
@@ -100,14 +103,14 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     menuBox.replaceChildren(...buttons)
   }
 
-  /** Settings replace the title (only the meadow stays): its keys and language switch stay off until they close and the title is rebuilt. */
-  const openSettings = (open: (focus: number) => Screen) => {
+  /** Settings and the Pokédex replace the title (only the meadow stays): its keys and language switch stay off until they close and the title is rebuilt. */
+  const openOver = (open: (focus: number) => Screen) => {
     const at = nav?.index ?? 0
     nav?.off()
     closeLanguage?.()
     nav = closeLanguage = null
     el.classList.add('hidden')
-    settingsScreen = open(at)
+    overScreen = open(at)
   }
 
   const enterMenu = () => {
@@ -137,8 +140,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   return {
     el,
     dim: 0.12,
-    tick: () => logo.width > 1 && fitLogo(logo),
-    dispose: () => (settingsScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), el.remove()),
+    tick: (time: number) => (overScreen?.tick?.(time), logo.width > 1 && fitLogo(logo)),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), el.remove()),
   }
 }
 

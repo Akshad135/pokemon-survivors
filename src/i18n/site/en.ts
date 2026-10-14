@@ -325,6 +325,7 @@ export const siteEn: SiteMessages = {
         `Every regular wild Pokémon has a 1 in ${n(wild)} chance to spawn shiny. It becomes an elite with ${hp}x HP and ${xp}x EXP, and always drops a Poké Ball and Poké Dollars. Bosses and legendaries are never shiny.`,
         `Your starter has a 1 in ${player} chance to be shiny, and stays shiny through every evolution of that run.`,
         'A Poké Ball (from bosses and shinies) grants a random upgrade on the spot, or a move evolution if one is ready.',
+        'A defeated shiny is yours: it shows up as caught, sparkle and all, in the in-game Pokédex (Pokédex, on the title menu). The Pokédex also remembers every species you have seen and how many you defeated, and the end of a run shows what is new.',
       ],
       seeAll: 'See every shiny in the Pokédex',
     },
@@ -468,7 +469,7 @@ export const siteEn: SiteMessages = {
       'Everything the game remembers lives in your browser\'s localStorage, on your device, and is never sent to any server:',
     ],
     storage: {
-      'ps:save': 'Poké Dollars and the upgrades bought in the Poké Mart.',
+      'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart and the in-game Pokédex (species seen, how many you defeated and which you caught).',
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
       'ps:lang': 'Your language (Portuguese or English).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',

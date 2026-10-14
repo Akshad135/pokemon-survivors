@@ -14,6 +14,7 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - Legendary rifts: optional portals to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
 - Endless mode after Mewtwo, scored by time survived, with Arceus as a hunting reaper that can be defeated
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
+- In-game Pokédex: tracks every species seen and defeated; defeating a shiny catches it
 - Map events that make you choose where to go: buff altars, healing fountains, locked chests guarded by an ambush, spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins
 - Pokémon Mystery Dungeon-style pixel art (PMD SpriteCollab)
 - Original chiptune soundtrack composed in code; Settings for music and effects volume, damage numbers, screen shake and language
