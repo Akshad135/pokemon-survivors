@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    pr: 29,
     title: { pt: 'Ovos, Pokédex e missões juntos', en: 'Eggs, Pokédex and missions together' },
     notes: [
       {
