@@ -24,6 +24,13 @@ describe('effectiveness', () => {
     expect(effectiveness('fighting', ['ghost', 'poison'])).toBe(0.5)
     expect(effectiveness('fairy', ['fighting'])).toBe(1.5)
   })
+
+  it('lets Dragon resist the starter types and fall to Ice, Dragon and Fairy', () => {
+    for (const type of ['fire', 'water', 'grass', 'electric'] as const) expect(effectiveness(type, ['dragon'])).toBe(0.75)
+    expect(effectiveness('ice', ['dragon', 'ground'])).toBe(2)
+    expect(effectiveness('fairy', ['dragon'])).toBe(1.5)
+    expect(effectiveness('dragon', ['fairy'])).toBe(0.5)
+  })
 })
 
 describe('starter roster', () => {

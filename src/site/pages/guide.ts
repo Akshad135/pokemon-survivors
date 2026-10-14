@@ -19,7 +19,7 @@ import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
-import { drawRoster } from '../../game/roster'
+import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
@@ -85,7 +85,7 @@ const world = (locale: Locale, m: SiteMessages) => {
   const biomes = BIOME_ORDER.map((id, i) => {
     const odds: Partial<Record<WeatherId, number>> = BIOMES[id].weather
     const likely = WEATHER_IDS.filter((wid) => (odds[wid] ?? 0) > 0).sort((a, b) => odds[b]! - odds[a]!)
-    return [clock(i * BIOME_LENGTH), game.biomes[id], likely.map((wid) => game.weather[wid]).join(', ')]
+    return [clock(i * BIOME_LENGTH), game.biomes[id], html`${BIOMES[id].affinity.map((type) => typeBadge(type, m))}`, likely.map((wid) => game.weather[wid]).join(', ')]
   })
   // Every effect is read from the weather rules, so the guide follows any rebalance.
   const effect = (id: Exclude<WeatherId, 'clear'>) => {
@@ -103,8 +103,8 @@ const world = (locale: Locale, m: SiteMessages) => {
     return parts.join('; ')
   }
   const weather = WEATHER_IDS.flatMap((id) => (id === 'clear' ? [] : [[game.weather[id], effect(id)]]))
-  return html`${paragraphs(w.paragraphs(BIOME_ORDER.length, BIOME_LENGTH / 60))}
-    ${table([w.timeHead, w.biomeHead, w.weatherHead], biomes)}
+  return html`${paragraphs(w.paragraphs(BIOME_ORDER.length, BIOME_LENGTH / 60, AFFINITY_ODDS))}
+    ${table([w.timeHead, w.biomeHead, w.hordeHead, w.weatherHead], biomes)}
     <h3>${w.weatherTitle}</h3>
     ${table([w.weatherCol, w.effectHead], weather)}`
 }
@@ -122,7 +122,7 @@ const spread = <T>(items: readonly T[], count: number) =>
 
 const horde = (locale: Locale, m: SiteMessages) => {
   const r = m.roster
-  const perRun = new Set(drawRoster(createRng(1)).stages.flatMap((pool) => pool.map(([id]) => id))).size
+  const perRun = new Set(drawRoster(createRng(1), { weight: biomeWeight }).stages.flatMap((pool) => pool.map(([id]) => id))).size
   const tiers = TIERS.map((tier, i) => [
     r.tierOf(tier),
     r.total(TIER_FLOORS[i - 1] ?? 0, TIER_FLOORS[i] === undefined ? null : TIER_FLOORS[i] - 1),
@@ -278,7 +278,7 @@ const traits = (locale: Locale, m: SiteMessages) => {
     const { trait }: EnemyDef = ENEMIES[id]
     return trait ? [[bossName(locale, id), m.traits.names[trait], html`${traitText(trait, id, m)} <em>${m.traits.tips[trait]}</em>`]] : []
   })
-  return html`${paragraphs(t.paragraphs)}${table([t.pokemonHead, t.traitHead, t.effectHead], rows)}`
+  return html`${paragraphs(t.paragraphs(clock(stageStart(TRAIT_FROM)), TRAIT_CAP, TRAIT_ALIVE))}${table([t.pokemonHead, t.traitHead, t.effectHead], rows)}`
 }
 
 const shinies = (locale: Locale, m: SiteMessages) => {

@@ -213,12 +213,14 @@ export const siteEn: SiteMessages = {
       bossChance: (name: string, percent: number) => `Rare boss: ${name} (${n(percent)}% chance)`,
     },
     world: {
-      paragraphs: (count, minutes) => [
+      paragraphs: (count, minutes, odds) => [
         `A run walks through ${count} biomes, ${n(minutes)} minutes each, with no loading screen: the ground dissolves into the next place and every biome has its own music. Breakables change their look too (in the cave, tall grass becomes a rock and the berry tree a giant mushroom).`,
+        `Each biome pulls the horde towards its types: a stage's new species are ${n(odds)}x likelier to have a local type (more Grass and Bug in the forest, more Rock and Ground in the cave), without leaving the others out.`,
         'The weather changes a few times per run and applies to everyone: your moves and the enemies\' attacks alike. Each biome has its own likely weather, and the weather icon shows next to the clock.',
       ],
       timeHead: 'From',
       biomeHead: 'Biome',
+      hordeHead: 'Horde types',
       weatherHead: 'Weather (most to least common)',
       weatherTitle: 'Weather',
       weatherCol: 'Weather',
@@ -310,8 +312,8 @@ export const siteEn: SiteMessages = {
       attacksHead: 'Attacks',
     },
     traits: {
-      paragraphs: [
-        'Some wild Pokémon do more than chase: they heal, shield and call in the horde, or attack from afar. They are a few among the horde, so keep an eye out.',
+      paragraphs: (from, cap, alive) => [
+        `Some wild Pokémon do more than chase: they heal, shield and call in the horde, or attack from afar. They are seasoning, never the bulk: from ${from} on, each stage brings at most ${cap === 1 ? 'one species' : `${cap} species`} with a behavior, it shows up less than the rest and there are never more than ${alive} alive at once. Keep an eye out.`,
         'Every one of their attacks warns you first: a "!" over the head, a red circle, a line or a shadow on the ground that blinks faster as the hit gets close. The first time each one shows up in a run, a message explains what it does.',
       ],
       pokemonHead: 'Pokémon',

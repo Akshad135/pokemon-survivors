@@ -10,6 +10,7 @@ import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
+import { RIFT, RIFT_LEGENDS } from './data/rifts'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
 import type { TraitId } from './data/traits'
@@ -18,14 +19,14 @@ import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { setBiome } from './game/biomes'
 import { spawnEnemy } from './game/enemies'
-import { MAP_EVENT_KINDS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
+import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
-import { REAPER } from './game/endless'
+import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
 import { runEarnings, wonRun } from './game/meta'
-import { drawRoster, rosterSchedule, type Roster } from './game/roster'
+import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -199,18 +200,29 @@ type RunPlan = { seed: number; roster: Roster }
 
 const planRun = (): RunPlan => {
   const seed = Date.now()
-  return { seed, roster: drawRoster(createRng(seed)) }
+  return { seed, roster: drawRoster(createRng(seed), { weight: biomeWeight }) }
 }
 
 let upcoming = planRun()
+
+/**
+ * Species a run may need outside its drawn cast, with when they can first show
+ * up: the fleeing Meowth, the rift legendaries and the endless mode's reaper.
+ */
+const EXTRAS = [
+  { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
+  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.firstAt })),
+  { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
+]
 
 /** Dex numbers of a cast's first stage, the only enemies a run waits for. */
 const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) => (s.at === 0 ? [s.dex] : []))
 
 /**
  * Loads the starter's evolution line and the first stage's species, then starts
- * a fresh run. The rest of the cast (later stages, swarms, bosses) streams in
- * the background in the order the run needs it, then the next run's opening.
+ * a fresh run. The rest of the cast (later stages, swarms, bosses) and the
+ * `EXTRAS` stream in the background in the order the run needs them, then the
+ * next run's opening.
  */
 const startRun = async (starter: StarterId) => {
   setScreen(null)
@@ -227,8 +239,8 @@ const startRun = async (starter: StarterId) => {
   loading.remove()
   run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
   track('run_start', { starter })
-  const later = rosterSchedule(plan.roster).flatMap((s) => (s.at > 0 ? [s.dex] : []))
-  void streamSpecies([...later, MEOWTH_DEX, ...openingDex(upcoming)], () => run?.game === game)
+  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
+  void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
 const runHud = (game: Game) => {

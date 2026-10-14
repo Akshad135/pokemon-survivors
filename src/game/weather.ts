@@ -57,6 +57,9 @@ export const weatherFits = (biome: BiomeId, weather: WeatherId) => {
   return weather === 'clear' || (odds[weather] ?? 0) > 0
 }
 
+/** The weather where the player stands: a rift arena is outside it, so always clear skies. */
+export const weatherHere = (g: Game): WeatherId => (g.rift.arena ? 'clear' : g.weather.id)
+
 /** Starts a weather spell now (also the dev console's `ps.weather`). */
 export const setWeather = (g: Game, id: WeatherId) => {
   const prev = g.weather.id

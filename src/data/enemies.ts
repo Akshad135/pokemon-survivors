@@ -40,6 +40,11 @@ export const ENEMIES = {
   hitmonlee: { dex: 106, name: 'Hitmonlee', types: ['fighting'], hp: 50, speed: 40, damage: 12, xp: 4, mass: 1.4, trait: 'leaper', tier: 3 },
   bronzong: { dex: 437, name: 'Bronzong', types: ['steel', 'psychic'], hp: 80, speed: 24, damage: 10, xp: 6, mass: 2.8, trait: 'shield', tier: 4 },
   nidoqueen: { dex: 31, name: 'Nidoqueen', types: ['poison', 'ground'], hp: 110, speed: 28, damage: 14, xp: 8, mass: 2.4, trait: 'summoner', tier: 5 },
+  // Roster species whose look fits a trait keep their derived stats.
+  bronzor: { ...ROSTER.bronzor, trait: 'shield' },
+  drifloon: { ...ROSTER.drifloon, trait: 'kamikaze' },
+  lokix: { ...ROSTER.lokix, trait: 'leaper' },
+  vikavolt: { ...ROSTER.vikavolt, trait: 'beam' },
   nidoranF: { dex: 29, name: 'Nidoran♀', types: ['poison'], hp: 16, speed: 46, damage: 6, xp: 1, mass: 0.9 },
   nidoranM: { dex: 32, name: 'Nidoran♂', types: ['poison'], hp: 16, speed: 48, damage: 7, xp: 1, mass: 0.9 },
   onix: { dex: 95, name: 'Onix', types: ['rock', 'ground'], hp: 1100, speed: 36, damage: 18, xp: 50, mass: 20, boss: true },

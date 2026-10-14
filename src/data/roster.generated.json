@@ -560,6 +560,36 @@
       "speed": 105
     }
   },
+  "dratini": {
+    "dex": 147,
+    "name": "Dratini",
+    "types": [
+      "dragon"
+    ],
+    "stats": {
+      "hp": 41,
+      "attack": 64,
+      "defense": 45,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 50
+    }
+  },
+  "dragonair": {
+    "dex": 148,
+    "name": "Dragonair",
+    "types": [
+      "dragon"
+    ],
+    "stats": {
+      "hp": 61,
+      "attack": 84,
+      "defense": 65,
+      "spAttack": 70,
+      "spDefense": 70,
+      "speed": 70
+    }
+  },
   "hoothoot": {
     "dex": 163,
     "name": "Hoothoot",
@@ -1075,6 +1105,38 @@
       "speed": 105
     }
   },
+  "vibrava": {
+    "dex": 329,
+    "name": "Vibrava",
+    "types": [
+      "ground",
+      "dragon"
+    ],
+    "stats": {
+      "hp": 50,
+      "attack": 70,
+      "defense": 50,
+      "spAttack": 50,
+      "spDefense": 50,
+      "speed": 70
+    }
+  },
+  "flygon": {
+    "dex": 330,
+    "name": "Flygon",
+    "types": [
+      "ground",
+      "dragon"
+    ],
+    "stats": {
+      "hp": 80,
+      "attack": 100,
+      "defense": 80,
+      "spAttack": 80,
+      "spDefense": 80,
+      "speed": 100
+    }
+  },
   "cacnea": {
     "dex": 331,
     "name": "Cacnea",
@@ -1106,6 +1168,22 @@
       "speed": 55
     }
   },
+  "altaria": {
+    "dex": 334,
+    "name": "Altaria",
+    "types": [
+      "dragon",
+      "flying"
+    ],
+    "stats": {
+      "hp": 75,
+      "attack": 70,
+      "defense": 90,
+      "spAttack": 70,
+      "spDefense": 105,
+      "speed": 80
+    }
+  },
   "zangoose": {
     "dex": 335,
     "name": "Zangoose",
@@ -1134,6 +1212,21 @@
       "spAttack": 100,
       "spDefense": 60,
       "speed": 65
+    }
+  },
+  "bagon": {
+    "dex": 371,
+    "name": "Bagon",
+    "types": [
+      "dragon"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 75,
+      "defense": 60,
+      "spAttack": 40,
+      "spDefense": 30,
+      "speed": 50
     }
   },
   "starly": {
@@ -1322,6 +1415,38 @@
       "spAttack": 24,
       "spDefense": 86,
       "speed": 23
+    }
+  },
+  "gible": {
+    "dex": 443,
+    "name": "Gible",
+    "types": [
+      "dragon",
+      "ground"
+    ],
+    "stats": {
+      "hp": 58,
+      "attack": 70,
+      "defense": 45,
+      "spAttack": 40,
+      "spDefense": 45,
+      "speed": 42
+    }
+  },
+  "gabite": {
+    "dex": 444,
+    "name": "Gabite",
+    "types": [
+      "dragon",
+      "ground"
+    ],
+    "stats": {
+      "hp": 68,
+      "attack": 90,
+      "defense": 65,
+      "spAttack": 50,
+      "spDefense": 55,
+      "speed": 82
     }
   },
   "hippopotas": {
@@ -1714,6 +1839,37 @@
       "speed": 80
     }
   },
+  "axew": {
+    "dex": 610,
+    "name": "Axew",
+    "types": [
+      "dragon"
+    ],
+    "stats": {
+      "hp": 46,
+      "attack": 87,
+      "defense": 60,
+      "spAttack": 30,
+      "spDefense": 40,
+      "speed": 57
+    }
+  },
+  "deino": {
+    "dex": 633,
+    "name": "Deino",
+    "types": [
+      "dark",
+      "dragon"
+    ],
+    "stats": {
+      "hp": 52,
+      "attack": 65,
+      "defense": 50,
+      "spAttack": 45,
+      "spDefense": 50,
+      "speed": 38
+    }
+  },
   "bunnelby": {
     "dex": 659,
     "name": "Bunnelby",
@@ -1903,6 +2059,21 @@
       "speed": 45
     }
   },
+  "goomy": {
+    "dex": 704,
+    "name": "Goomy",
+    "types": [
+      "dragon"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 50,
+      "defense": 35,
+      "spAttack": 55,
+      "spDefense": 75,
+      "speed": 40
+    }
+  },
   "klefki": {
     "dex": 707,
     "name": "Klefki",
@@ -1949,6 +2120,22 @@
       "spAttack": 65,
       "spDefense": 82,
       "speed": 56
+    }
+  },
+  "noibat": {
+    "dex": 714,
+    "name": "Noibat",
+    "types": [
+      "flying",
+      "dragon"
+    ],
+    "stats": {
+      "hp": 40,
+      "attack": 30,
+      "defense": 35,
+      "spAttack": 45,
+      "spDefense": 40,
+      "speed": 55
     }
   },
   "pikipek": {
@@ -2183,6 +2370,21 @@
       "spAttack": 50,
       "spDefense": 105,
       "speed": 96
+    }
+  },
+  "jangmoO": {
+    "dex": 782,
+    "name": "Jangmo-o",
+    "types": [
+      "dragon"
+    ],
+    "stats": {
+      "hp": 45,
+      "attack": 55,
+      "defense": 65,
+      "spAttack": 45,
+      "spDefense": 45,
+      "speed": 45
     }
   },
   "skwovet": {
@@ -2432,6 +2634,22 @@
       "speed": 60
     }
   },
+  "dreepy": {
+    "dex": 885,
+    "name": "Dreepy",
+    "types": [
+      "dragon",
+      "ghost"
+    ],
+    "stats": {
+      "hp": 28,
+      "attack": 60,
+      "defense": 30,
+      "spAttack": 40,
+      "spDefense": 30,
+      "speed": 82
+    }
+  },
   "lechonk": {
     "dex": 915,
     "name": "Lechonk",
@@ -2662,6 +2880,22 @@
       "spAttack": 50,
       "spDefense": 97,
       "speed": 68
+    }
+  },
+  "frigibax": {
+    "dex": 996,
+    "name": "Frigibax",
+    "types": [
+      "dragon",
+      "ice"
+    ],
+    "stats": {
+      "hp": 65,
+      "attack": 75,
+      "defense": 45,
+      "spAttack": 35,
+      "spDefense": 45,
+      "speed": 55
     }
   }
 }

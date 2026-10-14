@@ -9,13 +9,13 @@ import { dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
 import { absorb } from './traits'
 import type { Attack, DamageSource, Enemy, Game } from './types'
-import { weatherBoost, weatherPower } from './weather'
+import { weatherBoost, weatherHere, weatherPower } from './weather'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8', warded: '#88b8f8' } as const
 
 export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   const eff = effectiveness(attack.type, e.types)
-  const raw = Math.max(1, Math.round(attack.damage * eff * weatherBoost(g.weather.id, attack.type) * range(g.rng, 0.9, 1.1)))
+  const raw = Math.max(1, Math.round(attack.damage * eff * weatherBoost(weatherHere(g), attack.type) * range(g.rng, 0.9, 1.1)))
   // A Bronzong ward soaks the hit first.
   const dmg = absorb(e.trait, raw)
   e.hp -= dmg
@@ -86,7 +86,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
 export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? []) => {
   const p = g.player
   if (p.iframes > 0 || isRepelled(g) || g.phase !== 'playing') return
-  const dmg = Math.max(1, Math.round(amount * weatherPower(g.weather.id, types) - p.stats.armor))
+  const dmg = Math.max(1, Math.round(amount * weatherPower(weatherHere(g), types) - p.stats.armor))
   p.hp -= dmg
   p.iframes = 0.5
   p.hurt = 0.3

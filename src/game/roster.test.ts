@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
+import { BIOMES } from '../data/biomes'
 import { EVENTS, STAGES, stageStart } from '../data/waves'
-import { byTypes, drawRoster, rosterSchedule, type SpeciesWeight } from './roster'
+import { biomeWeight, byTypes, drawRoster, pickSpawn, rosterSchedule, stageBiome, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM, type SpeciesWeight } from './roster'
 
 const def = (id: EnemyId): EnemyDef => ENEMIES[id]
 const ids = (pool: ReadonlyArray<readonly [EnemyId, number]>) => pool.map(([id]) => id)
@@ -53,6 +54,55 @@ describe('drawRoster', () => {
     const plain = seeds.reduce((n, s) => n + rocky(s), 0)
     const cave = seeds.reduce((n, s) => n + rocky(s, byTypes({ rock: 6 })), 0)
     expect(cave).toBeGreaterThan(plain * 2)
+  })
+})
+
+describe('biomeWeight', () => {
+  const seeds = Array.from({ length: 60 }, (_, i) => i + 1)
+
+  it('plays each stage in the biome at its middle', () => {
+    expect(STAGES.map((_, i) => stageBiome(i))).toEqual(['meadow', 'meadow', 'meadow', 'forest', 'cave', 'cave', 'snow', 'tower'])
+  })
+
+  it('pulls new species towards the biome types without filling the stage with them', () => {
+    const forest = STAGES.findIndex((_, i) => stageBiome(i) === 'forest')
+    const affinity: readonly string[] = BIOMES.forest.affinity
+    const fits = (weight?: SpeciesWeight) =>
+      seeds.flatMap((seed) => ids(drawRoster(createRng(seed), { weight }).stages[forest]!)).map((id) => def(id).types.some((t) => affinity.includes(t)))
+    const share = (list: boolean[]) => list.filter(Boolean).length / list.length
+    expect(share(fits(biomeWeight))).toBeGreaterThan(share(fits()) * 1.4)
+    expect(share(fits(biomeWeight))).toBeLessThan(0.8)
+  })
+})
+
+describe('trait species', () => {
+  it('appear at most once per stage, never in the first minute, and spawn less than the rest', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const { stages } = drawRoster(createRng(seed), { weight: biomeWeight })
+      stages.forEach((pool, i) => {
+        const traited = pool.filter(([id]) => def(id).trait)
+        expect(traited.length).toBeLessThanOrEqual(i < TRAIT_FROM ? 0 : TRAIT_CAP)
+        for (const [, w] of traited) expect(w).toBeLessThan(Math.min(...pool.filter(([id]) => !def(id).trait).map(([, x]) => x)))
+      })
+    }
+  })
+
+  it('stop spawning once enough of them are alive', () => {
+    const rng = createRng(5)
+    const pool = [['bronzong', 100], ['rattata', 1]] as const
+    expect(pickSpawn(rng, pool, TRAIT_ALIVE - 1)).toBe('bronzong')
+    for (let i = 0; i < 20; i++) expect(pickSpawn(rng, pool, TRAIT_ALIVE)).toBe('rattata')
+    expect(pickSpawn(rng, [['bronzong', 1]], TRAIT_ALIVE)).toBeNull()
+  })
+
+  it('never lead a drawn swarm or ring', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const { events } = drawRoster(createRng(seed))
+      EVENTS.forEach((e, i) => {
+        const id = events[i]
+        if (id && !('enemy' in e)) expect(def(id).trait).toBeUndefined()
+      })
+    }
   })
 })
 
