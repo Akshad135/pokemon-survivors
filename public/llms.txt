@@ -8,6 +8,7 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
 - Type matchups, burn, poison and paralysis, and a manual special attack per type (Blast Burn, Hydro Cannon, Frenzy Plant)
 - Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
+- Five biomes per run (Route 1, Viridian Forest, Mt. Moon, Mt. Silver, Lavender Tower), each with its own music, and weather that shifts type matchups for everyone: harsh sunlight, rain, sandstorm, snow and fog
 - Special enemies with behavior traits: Chansey heals the horde, Bronzong shields it, Nidoqueen summons Nidoran, Voltorb and Electrode explode, Magnemite fires telegraphed beams and Hitmonlee leaps over the horde
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - Map events that make you choose where to go: buff altars, healing fountains, locked chests guarded by an ambush, spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins
@@ -25,7 +26,7 @@ Good fit for people looking for: a Pokémon version of Vampire Survivors, a Pok�
 ## Guides and reference
 
 - [Pokédex](https://www.pokemonsurvivors.com/en/pokedex/): every Pokémon in the game (27 starters with their evolutions, wild enemies, bosses and legendaries) with animated and shiny sprites, types, in-game stats, moves, specials and when each one shows up. Portuguese: [Pokédex](https://www.pokemonsurvivors.com/pokedex/)
-- [How to play](https://www.pokemonsurvivors.com/en/guide/): controls (keyboard, gamepad, touch), how a run works, levels and moves, move evolutions with held items, the special attack, types and status, boss timeline, special enemies, shinies, map items, map events and the Poké Mart, with the game's numbers. Portuguese: [Guia](https://www.pokemonsurvivors.com/guia/)
+- [How to play](https://www.pokemonsurvivors.com/en/guide/): controls (keyboard, gamepad, touch), how a run works, biomes and weather, levels and moves, move evolutions with held items, the special attack, types and status, boss timeline, special enemies, shinies, map items, map events and the Poké Mart, with the game's numbers. Portuguese: [Guia](https://www.pokemonsurvivors.com/guia/)
 - [Changelog](https://www.pokemonsurvivors.com/en/changelog/): every update, newest first. Portuguese: [Novidades](https://www.pokemonsurvivors.com/novidades/)
 - [Legal, privacy and credits](https://www.pokemonsurvivors.com/en/legal/): unofficial fan game, no ads or purchases, licenses, no personal data collected (localStorage only). Portuguese: [Legal](https://www.pokemonsurvivors.com/legal/)
 

@@ -146,6 +146,7 @@ export const sitePt = {
     sections: {
       controls: 'Controles',
       run: 'A partida',
+      world: 'Biomas e clima',
       levels: 'Níveis e golpes',
       moveEvolutions: 'Evolução de golpes',
       special: 'Ataque especial',
@@ -191,6 +192,22 @@ export const sitePt = {
       ring: (count: number, name: string) => `Cerco: um círculo de ${count} ${name} se fecha ao seu redor`,
       boss: (name: string) => `Chefe: ${name}`,
       bossChance: (name: string, percent: number) => `Chefe raro: ${name} (${n(percent)}% de chance)`,
+    },
+    world: {
+      paragraphs: (count: number, minutes: number) => [
+        `A partida atravessa ${count} biomas, ${n(minutes)} minutos em cada um, sem tela de carregamento: o chão se dissolve no cenário seguinte e cada bioma tem a sua música. Os itens quebráveis também mudam de cara (na caverna, a grama alta vira uma rocha e a árvore de frutas vira um cogumelo gigante).`,
+        'O clima muda algumas vezes por partida e vale para todo mundo: para os seus golpes e para os ataques dos inimigos. Cada bioma tem os seus climas mais prováveis, e o ícone do clima aparece ao lado do relógio.',
+      ],
+      timeHead: 'A partir de',
+      biomeHead: 'Bioma',
+      weatherHead: 'Climas (do mais ao menos comum)',
+      weatherTitle: 'Climas',
+      weatherCol: 'Clima',
+      effectHead: 'Efeito',
+      power: (type: string, mult: number) => `golpes de ${type} ×${n(mult)}`,
+      chip: (enemy: number, boss: number, player: number, every: number, floor: number, immune: readonly string[]) =>
+        `a cada ${n(every)}s, inimigos perdem ${n(enemy)}% do HP máximo (chefes, ${n(boss)}%) e você perde ${n(player)}%, mas nunca abaixo de ${n(floor)}% do HP. Os tipos ${list(immune)} ficam imunes`,
+      fog: 'a visão fica curta: só dá para ver bem perto do seu Pokémon',
     },
     levels: {
       paragraphs: (moves: number, items: number, moveLevel: number) => [

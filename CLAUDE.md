@@ -25,7 +25,7 @@ npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs)
 npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
 ```
 
-In dev builds, the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing) and `ps.event(kind, dx?, dy?)`, which places a map event (`altar`, `fountain`, `chest`, `spikes`, `bomb`, `meowth`) `dx`, `dy` px from the player (default 70 px to the right) and returns it, so you can tweak its `state`. Handy for staging screenshots: set `ps.run().game.hitstop = 9999` to freeze the simulation while it keeps rendering.
+In dev builds, the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')` and `ps.weather('rain')` (both hold until the next scheduled change), `ps.spawn('chansey', 3)` (enemies in an arc ahead of you) and `ps.event(kind, dx?, dy?)`, which places a map event (`altar`, `fountain`, `chest`, `spikes`, `bomb`, `meowth`) `dx`, `dy` px from the player (default 70 px to the right) and returns it, so you can tweak its `state`. Handy for staging screenshots: set `ps.run().game.hitstop = 9999` to freeze the simulation while it keeps rendering.
 
 ## Assets
 

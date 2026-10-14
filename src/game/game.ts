@@ -4,6 +4,7 @@ import { createGrid } from '../engine/spatial'
 import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
+import { createBiome, updateBiome } from './biomes'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
@@ -18,6 +19,7 @@ import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
+import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
@@ -84,6 +86,8 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     mapEvents: createMapEvents(),
     revives: 0,
     flash: 0,
+    biome: createBiome(),
+    weather: createWeather(),
     traits: { seen: new Set(), nextIntro: 0 },
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
@@ -189,6 +193,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   }
 
   g.time += dt
+  updateBiome(g)
+  updateWeather(g, dt)
   updatePlayer(g, input.move, dt)
   updateSpecial(g, input.special, dt)
   updateSpawner(g, dt)

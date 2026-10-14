@@ -1,6 +1,6 @@
 import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
-import { effectiveness, TYPE_COLORS } from '../data/types'
+import { effectiveness, TYPE_COLORS, type PokeType } from '../data/types'
 import { ENEMY_BERRY_CHANCE } from '../data/consumables'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { burst, floatText } from './effects'
@@ -9,12 +9,13 @@ import { dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
 import { absorb } from './traits'
 import type { Attack, DamageSource, Enemy, Game } from './types'
+import { weatherBoost, weatherPower } from './weather'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8', warded: '#88b8f8' } as const
 
 export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   const eff = effectiveness(attack.type, e.types)
-  const raw = Math.max(1, Math.round(attack.damage * eff * range(g.rng, 0.9, 1.1)))
+  const raw = Math.max(1, Math.round(attack.damage * eff * weatherBoost(g.weather.id, attack.type) * range(g.rng, 0.9, 1.1)))
   // A Bronzong ward soaks the hit first.
   const dmg = absorb(e.trait, raw)
   e.hp -= dmg
@@ -78,11 +79,14 @@ export const killEnemy = (g: Game, e: Enemy) => {
   }
 }
 
-/** Damages the player. `from` (a body that touched them) gets shoved back; hazards pass none. */
-export const hurtPlayer = (g: Game, amount: number, from?: Enemy) => {
+/**
+ * Damages the player. `from` (a body that touched them) gets shoved back; hazards pass none.
+ * `types` is the attack's typing for the weather (a body attacks with its own types).
+ */
+export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? []) => {
   const p = g.player
   if (p.iframes > 0 || isRepelled(g) || g.phase !== 'playing') return
-  const dmg = Math.max(1, Math.round(amount - p.stats.armor))
+  const dmg = Math.max(1, Math.round(amount * weatherPower(g.weather.id, types) - p.stats.armor))
   p.hp -= dmg
   p.iframes = 0.5
   p.hurt = 0.3

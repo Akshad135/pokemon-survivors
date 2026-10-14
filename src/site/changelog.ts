@@ -19,6 +19,25 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-13',
+    pr: 21,
+    title: { pt: 'Biomas e clima', en: 'Biomes and weather' },
+    notes: [
+      {
+        pt: 'A partida agora atravessa cinco biomas: Rota 1, Floresta de Viridian, Monte Moon, Monte Prateado e Torre de Lavender, cada um com visual, itens quebráveis e música próprios.',
+        en: 'A run now walks through five biomes: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own look, breakables and music.',
+      },
+      {
+        pt: 'Clima que muda durante a partida e vale para todos: sol forte (Fogo ×1,5, Água ×0,75), chuva (o inverso), tempestade de areia, neve e névoa.',
+        en: 'Weather that changes during the run and applies to everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm, snow and fog.',
+      },
+      {
+        pt: 'Quatro temas novos na trilha sonora, um por bioma.',
+        en: 'Four new soundtrack themes, one per biome.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 20,
     title: { pt: 'Inimigos com personalidade', en: 'Enemies with personality' },
     notes: [

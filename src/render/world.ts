@@ -1,9 +1,11 @@
-import { context2d, createCanvas, fromStrings, type PixelSprite } from '../engine/pixelart'
+import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
+import type { BiomeId } from '../data/biomes'
 
 /**
- * Infinite procedural meadow, generated in cached chunks. Everything is
- * deterministic from world coordinates, so revisiting an area looks the same.
+ * Infinite procedural ground, one look per biome, generated in cached chunks.
+ * Everything is deterministic from world coordinates, so revisiting an area
+ * looks the same. Biome changes cross-dissolve with an ordered dither.
  */
 const CHUNK = 256
 const TILE = 16
@@ -27,30 +29,258 @@ const noise = (x: number, y: number, scale: number, seed: number) => {
   return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty
 }
 
-const hex = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as const
+type Rgb = readonly [number, number, number]
+/** Three shades of one ground color: base, then the sparse lighter/darker dither pixels. */
+type Shades = readonly [Rgb, Rgb, Rgb]
 
-const LIGHT = ['#8fd068', '#88c862', '#80c05c'].map(hex)
-const DARK = ['#74b452', '#6eac4e', '#67a448'].map(hex)
-const PATH = ['#d8c088', '#d0b880', '#c8b078'].map(hex)
+const hex = (h: string): Rgb => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
+const shades = (a: string, b: string, c: string): Shades => [hex(a), hex(b), hex(c)]
+
+/** Where a decor sprite goes in a 16px tile: `x`, `y` jittered, `dense` inside a thicket (tall grass, graves…). */
+type Spot = { x: number; y: number; jx: number; jy: number; wx: number; wy: number; roll: number; dense: boolean }
+
+type GroundStyle = {
+  base: Shades
+  /** Noise-dense zones (darker meadow, undergrowth, rough rock…). */
+  alt: Shades
+  path: Shades
+  /** Fine noise peaks: sun dapples in the forest, drifts in the snow. */
+  spots?: Shades
+  /** Paths become staggered stone tiles (graveyard walkways). */
+  tiles?: boolean
+  /** Noise level above which tiles are `dense` (thickets); lower means more of them. */
+  thicket?: number
+  /** Builds the biome's decor sprites once and returns how to dress a tile. */
+  decor: () => (ctx: CanvasRenderingContext2D, s: Spot) => void
+}
+
+const sprite = (rows: readonly string[], palette: Palette) => fromStrings(rows, palette)
+
+/* ---------------- Meadow (Route 1) ---------------- */
 
 const TUFT = ['.1...1.', '121.121', '1221221', '.12221.']
 const BLADES = ['1.1', '.1.']
 const ROCK = ['.111.', '12221', '12231', '.111.']
+const FLOWER = ['.1.', '121', '.1.']
 
-const decor = (() => {
-  let cache: { tuft: PixelSprite; blades: PixelSprite; rock: PixelSprite; flowers: PixelSprite[] } | null = null
-  return () =>
-    (cache ??= {
-      tuft: fromStrings(TUFT, { 1: '#2f7a3a', 2: '#4f9e48' }),
-      blades: fromStrings(BLADES, { 1: '#5a9a40' }),
-      rock: fromStrings(ROCK, { 1: '#6a6458', 2: '#a8a090', 3: '#d8d0c0' }),
-      flowers: ['#ffffff', '#f8e048', '#f87890', '#a8c8f8'].map((petal) =>
-        fromStrings(['.1.', '121', '.1.'], { 1: petal, 2: '#f8b030' }),
-      ),
-    })
-})()
+const meadowDecor = () => {
+  const tuft = sprite(TUFT, { 1: '#2f7a3a', 2: '#4f9e48' })
+  const blades = sprite(BLADES, { 1: '#5a9a40' })
+  const rock = sprite(ROCK, { 1: '#6a6458', 2: '#a8a090', 3: '#d8d0c0' })
+  const flowers = ['#ffffff', '#f8e048', '#f87890', '#a8c8f8'].map((petal) => sprite(FLOWER, { 1: petal, 2: '#f8b030' }))
+  return (ctx: CanvasRenderingContext2D, s: Spot) => {
+    if (s.dense) {
+      // Tall grass patch – the classic encounter tile.
+      ctx.drawImage(tuft, s.x + 1, s.y + 3)
+      ctx.drawImage(tuft, s.x + 9, s.y + 3)
+      ctx.drawImage(tuft, s.x + 5, s.y + 10)
+    } else if (s.roll < 0.05) {
+      const flower = flowers[Math.floor(hash2(s.wx, s.wy, SEED + 6) * flowers.length)]!
+      ctx.drawImage(flower, s.x + s.jx, s.y + s.jy)
+      ctx.drawImage(flower, s.x + ((s.jx + 5) % 12), s.y + ((s.jy + 4) % 12))
+    } else if (s.roll < 0.2) {
+      ctx.drawImage(blades, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.215) {
+      ctx.drawImage(rock, s.x + s.jx, s.y + s.jy)
+    }
+  }
+}
 
-const buildChunk = (cx: number, cy: number) => {
+/* ---------------- Forest (Viridian Forest) ---------------- */
+
+const BUSH = ['...111...', '.112221..', '12232221.', '122222321', '1222222221', '.11111111.']
+/** A canopy seen from above: the undergrowth of the forest is packed with them. */
+const TREE = [
+  '....11111.....', '..112333211...', '.12233332221..', '1223333222221.', '12333222224221', '12232222242221',
+  '12222224222221', '.1222422222211', '.122222222221.', '..112222211...', '....115511....', '.....1561.....',
+]
+const MUSHROOM = ['.111.', '12321', '11111', '.454.']
+const LEAVES = ['1..', '.2.', '..1']
+const FERN = ['1...1', '.1.1.', '1.1.1', '.111.', '..1..']
+const STUMP = ['.111.', '12321', '14441', '14441', '.111.']
+
+const forestDecor = () => {
+  const bush = sprite(BUSH, { 1: '#1c4a24', 2: '#2f7032', 3: '#4f9444' })
+  const tree = sprite(TREE, { 1: '#0f2c16', 2: '#22582a', 3: '#3c8038', 4: '#16401e', 5: '#4a3018', 6: '#6c4828' })
+  const mushroom = sprite(MUSHROOM, { 1: '#902820', 2: '#e04838', 3: '#f8e0d0', 4: '#c8b8a0', 5: '#e8d8c0' })
+  const leaves = [
+    sprite(LEAVES, { 1: '#c87830', 2: '#e8a040' }),
+    sprite(LEAVES, { 1: '#a89030', 2: '#d8c048' }),
+  ]
+  const fern = sprite(FERN, { 1: '#2a6a30' })
+  const stump = sprite(STUMP, { 1: '#4a3018', 2: '#a07848', 3: '#c8a070', 4: '#704c28' })
+  return (ctx: CanvasRenderingContext2D, s: Spot) => {
+    if (s.dense) {
+      // Thicket: canopies packed close, like the walls of a Mystery Dungeon forest.
+      ctx.drawImage(tree, s.x + (s.jx >> 1) - 2, s.y + (s.jy >> 1) - 2)
+      if (s.roll < 0.3) ctx.drawImage(bush, s.x + 8, s.y + 10)
+    } else if (s.roll < 0.035) {
+      ctx.drawImage(mushroom, s.x + s.jx, s.y + s.jy)
+      ctx.drawImage(mushroom, s.x + ((s.jx + 4) % 12), s.y + ((s.jy + 3) % 12))
+    } else if (s.roll < 0.16) {
+      ctx.drawImage(leaves[s.roll < 0.1 ? 0 : 1]!, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.22) {
+      ctx.drawImage(fern, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.228) {
+      ctx.drawImage(stump, s.x + s.jx, s.y + s.jy)
+    }
+  }
+}
+
+/* ---------------- Cave (Mt. Moon) ---------------- */
+
+const PEBBLES = ['1..', '..2', '.1.']
+const CRACK = ['1.....', '.1....', '.11...', '...1..', '...11.', '.....1']
+const STALAGMITE = ['..1..', '..2..', '.123.', '.123.', '12233', '12223', '.111.']
+const CRYSTAL = ['..1...', '.121.1', '.1231.', '1223.1', '12231.', '.111..']
+const BOULDER = ['...1111...', '..122231..', '.12222331.', '1222223331', '1222222231', '1222222221', '.11111111.']
+
+const caveDecor = () => {
+  const pebbles = sprite(PEBBLES, { 1: '#4a3e40', 2: '#a89a98' })
+  const crack = sprite(CRACK, { 1: '#40363a' })
+  const stalagmite = sprite(STALAGMITE, { 1: '#2c2426', 2: '#867878', 3: '#b0a4a0' })
+  const crystals = [
+    sprite(CRYSTAL, { 1: '#283878', 2: '#5880d8', 3: '#b8d0ff' }),
+    sprite(CRYSTAL, { 1: '#582878', 2: '#a058d8', 3: '#e8c0ff' }),
+  ]
+  const boulder = sprite(BOULDER, { 1: '#2c2426', 2: '#7c6e6e', 3: '#a89c98' })
+  return (ctx: CanvasRenderingContext2D, s: Spot) => {
+    if (s.dense) {
+      // Rough ground: boulders and stalagmites heaped like a rock wall.
+      ctx.drawImage(boulder, s.x + (s.jx >> 1) - 2, s.y + (s.jy >> 1) - 1)
+      if (s.roll < 0.5) ctx.drawImage(stalagmite, s.x + 10, s.y + 8)
+      else ctx.drawImage(boulder, s.x + 7, s.y + 9)
+    } else if (s.roll < 0.012) {
+      ctx.drawImage(crystals[s.jx % 2]!, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.12) {
+      ctx.drawImage(pebbles, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.17) {
+      ctx.drawImage(crack, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.19) {
+      ctx.drawImage(stalagmite, s.x + s.jx, s.y + s.jy)
+    }
+  }
+}
+
+/* ---------------- Snow (Mt. Silver) ---------------- */
+
+const PINE = [
+  '....1....', '...121...', '...131...', '..12221..', '..13331..', '.1222221.', '.1333331.',
+  '122222221', '133333331', '111141111', '....4....',
+]
+const MOUND = ['..111..', '.12221.', '1222223']
+const FROST = ['1.1', '.1.', '1.1']
+const SNOW_ROCK = ['.111.', '12221', '13341', '.333.']
+
+const snowDecor = () => {
+  const pine = sprite(PINE, { 1: '#183c38', 2: '#f8fcff', 3: '#2f6a58', 4: '#5a3c28' })
+  const mound = sprite(MOUND, { 1: '#f8fcff', 2: '#ffffff', 3: '#b8c8e0' })
+  const frost = sprite(FROST, { 1: '#90b0d0' })
+  const rock = sprite(SNOW_ROCK, { 1: '#f8fcff', 2: '#ffffff', 3: '#7888a0', 4: '#505c70' })
+  return (ctx: CanvasRenderingContext2D, s: Spot) => {
+    if (s.dense) {
+      // A stand of snowy pines.
+      ctx.drawImage(pine, s.x + (s.jx >> 1) - 1, s.y + (s.jy >> 1) - 2)
+      if (s.roll < 0.4) ctx.drawImage(pine, s.x + 9, s.y + 7)
+    } else if (s.roll < 0.06) {
+      ctx.drawImage(mound, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.15) {
+      ctx.drawImage(frost, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.165) {
+      ctx.drawImage(rock, s.x + s.jx, s.y + s.jy)
+    }
+  }
+}
+
+/* ---------------- Tower (Lavender Town graveyard) ---------------- */
+
+const GRAVE = ['..111..', '.12221.', '1233321', '1231321', '1233321', '1233321', '1222221', '4444444']
+const CANDLE = ['.1.', '121', '.3.', '343', '343', '555']
+const DEAD_TUFT = ['1...1', '.1.1.', '.121.']
+const WISP_FLOWER = ['1.1', '.2.', '1.1']
+
+const towerDecor = () => {
+  const grave = sprite(GRAVE, { 1: '#383048', 2: '#9890a8', 3: '#c0b8d0', 4: '#463c56' })
+  const candle = sprite(CANDLE, { 1: '#f8a030', 2: '#fff0a0', 3: '#e8e0f0', 4: '#c8c0d8', 5: '#504060' })
+  const tuft = sprite(DEAD_TUFT, { 1: '#4c4060', 2: '#6c6080' })
+  const flower = sprite(WISP_FLOWER, { 1: '#b070c8', 2: '#f0d0ff' })
+  return (ctx: CanvasRenderingContext2D, s: Spot) => {
+    if (s.dense) {
+      // Graves stand in neat rows, one per tile, with a candle now and then.
+      ctx.drawImage(grave, s.x + 4, s.y + 4)
+      if (s.roll < 0.2) ctx.drawImage(candle, s.x + 12, s.y + 6)
+    } else if (s.roll < 0.04) {
+      ctx.drawImage(flower, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.16) {
+      ctx.drawImage(tuft, s.x + s.jx, s.y + s.jy)
+    } else if (s.roll < 0.172) {
+      ctx.drawImage(candle, s.x + s.jx, s.y + s.jy)
+    }
+  }
+}
+
+/* ---------------- Styles ---------------- */
+
+const STYLES: Record<BiomeId, GroundStyle> = {
+  meadow: {
+    base: shades('#8fd068', '#88c862', '#80c05c'),
+    alt: shades('#74b452', '#6eac4e', '#67a448'),
+    path: shades('#d8c088', '#d0b880', '#c8b078'),
+    decor: meadowDecor,
+  },
+  forest: {
+    base: shades('#4a8a40', '#44823c', '#3e7a38'),
+    alt: shades('#356a32', '#30622e', '#2b5a2a'),
+    path: shades('#a08050', '#98784a', '#8c6c40'),
+    spots: shades('#68a84c', '#70b050', '#60a048'),
+    thicket: 0.6,
+    decor: forestDecor,
+  },
+  cave: {
+    base: shades('#76686a', '#706264', '#6a5c5e'),
+    alt: shades('#544848', '#4e4243', '#483c3e'),
+    path: shades('#9c8c7c', '#a49484', '#948474'),
+    thicket: 0.62,
+    decor: caveDecor,
+  },
+  snow: {
+    base: shades('#e4ecf6', '#eef4fa', '#d8e2f0'),
+    alt: shades('#d4e0f0', '#dce6f4', '#c8d6ea'),
+    path: shades('#a8d0ec', '#c8e4f8', '#98c4e4'),
+    spots: shades('#f6faff', '#ffffff', '#eaf2fa'),
+    thicket: 0.64,
+    decor: snowDecor,
+  },
+  tower: {
+    base: shades('#7a7088', '#746a82', '#6e647c'),
+    alt: shades('#625a72', '#5c546c', '#565066'),
+    path: shades('#a098ac', '#a8a0b4', '#9890a4'),
+    tiles: true,
+    thicket: 0.64,
+    decor: towerDecor,
+  },
+}
+
+const decorCache = new Map<BiomeId, (ctx: CanvasRenderingContext2D, s: Spot) => void>()
+
+const decorFor = (biome: BiomeId) => {
+  let decorate = decorCache.get(biome)
+  if (!decorate) decorCache.set(biome, (decorate = STYLES[biome].decor()))
+  return decorate
+}
+
+const MORTAR = hex('#4c4458')
+
+/** Graveyard walkway: 12x8 stones in staggered rows, split by dark mortar lines. */
+const isMortar = (wx: number, wy: number) => {
+  const row = Math.floor(wy / 8)
+  return wy % 8 === 0 || (wx + (row % 2) * 6) % 12 === 0
+}
+
+const pathAt = (wx: number, wy: number, width: number) => Math.abs(noise(wx, wy, 220, SEED + 7) - 0.5) < width
+
+const buildChunk = (biome: BiomeId, cx: number, cy: number) => {
+  const style = STYLES[biome]
   const canvas = createCanvas(CHUNK, CHUNK)
   const ctx = context2d(canvas)
   const img = ctx.createImageData(CHUNK, CHUNK)
@@ -61,12 +291,13 @@ const buildChunk = (cx: number, cy: number) => {
     for (let x = 0; x < CHUNK; x++) {
       const wx = ox + x
       const wy = oy + y
-      const meadow = noise(wx, wy, 96, SEED)
-      const path = Math.abs(noise(wx, wy, 220, SEED + 7) - 0.5) < 0.025
-      const palette = path ? PATH : meadow > 0.55 ? DARK : LIGHT
-      // Ordered-ish dither: mostly the base shade with sparse lighter/darker pixels.
+      const path = pathAt(wx, wy, 0.025)
       const r = hash2(wx, wy, SEED + 1)
-      const [cr, cg, cb] = palette[r < 0.7 ? 0 : r < 0.9 ? 1 : 2]!
+      let palette = path ? style.path : noise(wx, wy, 96, SEED) > 0.55 ? style.alt : style.base
+      if (!path && style.spots && noise(wx, wy, 20, SEED + 9) > 0.76) palette = style.spots
+      // Ordered-ish dither: mostly the base shade with sparse lighter/darker pixels.
+      let [cr, cg, cb] = palette[r < 0.7 ? 0 : r < 0.9 ? 1 : 2]
+      if (path && style.tiles && isMortar(wx, wy)) [cr, cg, cb] = MORTAR
       const i = (y * CHUNK + x) * 4
       img.data[i] = cr
       img.data[i + 1] = cg
@@ -76,33 +307,22 @@ const buildChunk = (cx: number, cy: number) => {
   }
   ctx.putImageData(img, 0, 0)
 
-  const art = decor()
+  const decorate = decorFor(biome)
   for (let ty = 0; ty < CHUNK / TILE; ty++) {
     for (let tx = 0; tx < CHUNK / TILE; tx++) {
       const wx = ox + tx * TILE
       const wy = oy + ty * TILE
-      if (Math.abs(noise(wx, wy, 220, SEED + 7) - 0.5) < 0.04) continue // keep paths clean
-      const x = tx * TILE
-      const y = ty * TILE
-      if (noise(wx, wy, 140, SEED + 3) > 0.68) {
-        // Tall grass patch – the classic encounter tile.
-        ctx.drawImage(art.tuft, x + 1, y + 3)
-        ctx.drawImage(art.tuft, x + 9, y + 3)
-        ctx.drawImage(art.tuft, x + 5, y + 10)
-        continue
-      }
-      const roll = hash2(tx + cx * 64, ty + cy * 64, SEED + 2)
-      const jx = Math.floor(hash2(wx, wy, SEED + 4) * 10)
-      const jy = Math.floor(hash2(wx, wy, SEED + 5) * 10)
-      if (roll < 0.05) {
-        const flower = art.flowers[Math.floor(hash2(wx, wy, SEED + 6) * art.flowers.length)]!
-        ctx.drawImage(flower, x + jx, y + jy)
-        ctx.drawImage(flower, x + ((jx + 5) % 12), y + ((jy + 4) % 12))
-      } else if (roll < 0.2) {
-        ctx.drawImage(art.blades, x + jx, y + jy)
-      } else if (roll < 0.215) {
-        ctx.drawImage(art.rock, x + jx, y + jy)
-      }
+      if (pathAt(wx, wy, 0.04)) continue // keep paths clean
+      decorate(ctx, {
+        x: tx * TILE,
+        y: ty * TILE,
+        wx,
+        wy,
+        dense: noise(wx, wy, 140, SEED + 3) > (style.thicket ?? 0.68),
+        roll: hash2(tx + cx * 64, ty + cy * 64, SEED + 2),
+        jx: Math.floor(hash2(wx, wy, SEED + 4) * 10),
+        jy: Math.floor(hash2(wx, wy, SEED + 5) * 10),
+      })
     }
   }
   return canvas
@@ -110,24 +330,106 @@ const buildChunk = (cx: number, cy: number) => {
 
 const chunks = new Map<string, HTMLCanvasElement>()
 
-const chunkAt = (cx: number, cy: number) => {
-  const key = `${cx},${cy}`
+const chunkKey = (biome: BiomeId, cx: number, cy: number) => `${biome}:${cx},${cy}`
+
+/** Least recently used goes first: a hit moves the chunk to the back, so on-screen chunks are never evicted. */
+const chunkAt = (biome: BiomeId, cx: number, cy: number) => {
+  const key = chunkKey(biome, cx, cy)
   let chunk = chunks.get(key)
-  if (!chunk) {
-    chunk = buildChunk(cx, cy)
-    chunks.set(key, chunk)
-    if (chunks.size > MAX_CHUNKS) chunks.delete(chunks.keys().next().value!)
-  }
+  if (chunk) chunks.delete(key)
+  else chunk = buildChunk(biome, cx, cy)
+  chunks.set(key, chunk)
+  if (chunks.size > MAX_CHUNKS) chunks.delete(chunks.keys().next().value!)
   return chunk
 }
 
-/** Draws the ground under a camera whose top-left is (camX, camY). */
-export const drawGround = (ctx: CanvasRenderingContext2D, camX: number, camY: number, w: number, h: number) => {
-  const x0 = Math.floor(camX / CHUNK)
-  const y0 = Math.floor(camY / CHUNK)
-  const x1 = Math.floor((camX + w) / CHUNK)
-  const y1 = Math.floor((camY + h) / CHUNK)
+/** Chunk range covering a `w`×`h` view at (camX, camY). */
+const chunkSpan = (camX: number, camY: number, w: number, h: number) => ({
+  x0: Math.floor(camX / CHUNK),
+  y0: Math.floor(camY / CHUNK),
+  x1: Math.floor((camX + w) / CHUNK),
+  y1: Math.floor((camY + h) / CHUNK),
+})
+
+const drawChunks = (ctx: CanvasRenderingContext2D, biome: BiomeId, camX: number, camY: number, w: number, h: number) => {
+  const { x0, y0, x1, y1 } = chunkSpan(camX, camY, w, h)
   for (let cy = y0; cy <= y1; cy++) {
-    for (let cx = x0; cx <= x1; cx++) ctx.drawImage(chunkAt(cx, cy), cx * CHUNK - camX, cy * CHUNK - camY)
+    for (let cx = x0; cx <= x1; cx++) ctx.drawImage(chunkAt(biome, cx, cy), cx * CHUNK - camX, cy * CHUNK - camY)
+  }
+}
+
+/* ---------------- Biome dissolve ---------------- */
+
+/** 4x4 Bayer matrix: the order pixels switch over during a dissolve. */
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+
+/** One dither mask per step: step `n` lets `n` of every 16 pixels through. */
+const masks = (() => {
+  let cache: PixelSprite[] | null = null
+  return () =>
+    (cache ??= Array.from({ length: 17 }, (_, n) => {
+      const c = createCanvas(4, 4)
+      const mctx = context2d(c)
+      mctx.fillStyle = '#000'
+      BAYER.forEach((v, i) => v < n && mctx.fillRect(i % 4, Math.floor(i / 4), 1, 1))
+      return c
+    }))
+})()
+
+let scratch: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; patterns: CanvasPattern[] } | null = null
+
+const scratchFor = (w: number, h: number) => {
+  if (!scratch || scratch.canvas.width !== w || scratch.canvas.height !== h) {
+    const canvas = createCanvas(w, h)
+    const ctx = context2d(canvas)
+    scratch = { canvas, ctx, patterns: masks().map((m) => ctx.createPattern(m, 'repeat')!) }
+  }
+  return scratch
+}
+
+const mod = (a: number, n: number) => ((a % n) + n) % n
+
+/**
+ * Draws the ground under a camera whose top-left is (camX, camY). While `fade`
+ * runs (k from 0 to 1), `fade.from` dissolves into `biome` in 16 dithered steps
+ * locked to the world grid, so the pattern doesn't swim as the camera moves.
+ */
+export const drawGround = (
+  ctx: CanvasRenderingContext2D,
+  camX: number,
+  camY: number,
+  w: number,
+  h: number,
+  biome: BiomeId = 'meadow',
+  fade: { from: BiomeId; k: number } | null = null,
+) => {
+  const step = fade ? Math.max(0, Math.min(16, Math.floor(fade.k * 17))) : 16
+  if (!fade || step >= 16) return drawChunks(ctx, biome, camX, camY, w, h)
+  drawChunks(ctx, fade.from, camX, camY, w, h)
+  if (step === 0) return
+  const s = scratchFor(w, h)
+  drawChunks(s.ctx, biome, camX, camY, w, h)
+  s.ctx.globalCompositeOperation = 'destination-in'
+  s.ctx.fillStyle = s.patterns[step]!
+  s.ctx.save()
+  s.ctx.translate(-mod(camX, 4), -mod(camY, 4))
+  s.ctx.fillRect(0, 0, w + 4, h + 4)
+  s.ctx.restore()
+  s.ctx.globalCompositeOperation = 'source-over'
+  ctx.drawImage(s.canvas, 0, 0)
+}
+
+/**
+ * Builds at most one missing chunk of `biome` under the view, so an upcoming
+ * biome is ready before its dissolve starts and the switch never stalls a frame.
+ */
+export const warmGround = (biome: BiomeId, camX: number, camY: number, w: number, h: number) => {
+  const { x0, y0, x1, y1 } = chunkSpan(camX, camY, w, h)
+  for (let cy = y0; cy <= y1; cy++) {
+    for (let cx = x0; cx <= x1; cx++) {
+      if (chunks.has(chunkKey(biome, cx, cy))) continue
+      chunkAt(biome, cx, cy)
+      return
+    }
   }
 }

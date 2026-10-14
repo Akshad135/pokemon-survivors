@@ -3,11 +3,13 @@ import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
+import type { BiomeId, WeatherId } from '../data/biomes'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { StarterId } from '../data/starters'
+import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { MoveId } from './moves'
@@ -16,6 +18,7 @@ import type { Prop } from './props'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
+import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
@@ -226,6 +229,9 @@ export type GameEvent =
   | { kind: 'propBreak' }
   | { kind: 'revive' }
   | { kind: 'victory' }
+  /** The run walked into another biome. */
+  | { kind: 'biome'; biome: BiomeId }
+  | { kind: 'weather'; weather: WeatherId; prev: WeatherId }
   /** An enemy trait warned (fuse lit, beam aimed, leap started) or went off. */
   | { kind: 'trait'; trait: TraitId; phase: 'warn' | 'fire' }
   /** First time a trait shows up on screen this run (one-time explainer toast). */
@@ -284,6 +290,10 @@ export type Game = {
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
   flash: number
+  /** Biome the run is in (`game/biomes.ts`). */
+  biome: BiomeState
+  /** Weather in play (`game/weather.ts`). */
+  weather: WeatherState
   /** Enemy traits already introduced this run (each gets one explainer toast), and the game time the next one may show. */
   traits: { seen: Set<TraitId>; nextIntro: number }
   events: GameEvent[]

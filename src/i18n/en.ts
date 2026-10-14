@@ -136,6 +136,38 @@ export const en: Messages = {
     revive: 'Your *Revive* got you back on your feet!',
   },
 
+  world: {
+    biomes: {
+      meadow: 'Route 1',
+      forest: 'Viridian Forest',
+      cave: 'Mt. Moon',
+      snow: 'Mt. Silver',
+      tower: 'Lavender Tower',
+    },
+    area: (n, total) => `Area ${n} of ${total}`,
+    weather: { clear: 'Clear skies', sun: 'Harsh sunlight', rain: 'Rain', sand: 'Sandstorm', snow: 'Snow', fog: 'Fog' },
+    weatherStart: {
+      sun: 'The sunlight turned *harsh*!',
+      rain: 'It started to *rain*!',
+      sand: 'A *sandstorm* kicked up!',
+      snow: 'It started to *snow*!',
+      fog: 'A *thick fog* rolled in!',
+    },
+    weatherHint: {
+      sun: 'Fire hits harder, Water weaker',
+      rain: 'Water hits harder, Fire weaker',
+      sand: 'Wears down anyone not Rock, Ground or Steel',
+      snow: 'Wears down anyone not Ice',
+      fog: 'Hard to see far',
+    },
+    weatherEnd: {
+      sun: 'The sunlight faded.',
+      rain: 'The rain stopped.',
+      sand: 'The sandstorm subsided.',
+      snow: 'The snow stopped.',
+      fog: 'The fog lifted.',
+    },
+  },
   mapEvents: {
     altar: (buff) => `The altar granted *${buff}*!`,
     fountain: 'The fountain restores your HP. Stay in it!',
