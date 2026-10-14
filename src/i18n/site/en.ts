@@ -73,10 +73,11 @@ export const siteEn: SiteMessages = {
     eventNote: 'Shows up as a map event: it runs from you and drops coins with every hit. Knock it out before it escapes for the Pay Day jackpot.',
     wildNote: 'Base values. Regular enemies get tougher every minute; bosses don\'t.',
     appears: 'When it shows up',
-    horde: (from: string, until: string) => `In the horde, from ${from} to ${until}`,
-    hordeEnd: (from: string) => `In the horde, from ${from} to the end`,
-    swarm: (at: string, count: number) => `Swarm of ${count} at ${at}`,
-    ring: (at: string, count: number) => `Ring of ${count} at ${at}`,
+    horde: (from: string, until: string) => `May join the horde, from ${from} to ${until}`,
+    hordeEnd: (from: string) => `May join the horde, from ${from} to the end`,
+    swarm: (at: string, count: number) => `May lead the swarm of ${count} at ${at}`,
+    ring: (at: string, count: number) => `May form the ring of ${count} at ${at}`,
+    ringFixed: (at: string, count: number) => `Forms the ring of ${count} at ${at}`,
     boss: (at: string) => `Boss at ${at}`,
     bossChance: (at: string, percent: number) => `Boss at ${at} (${n(percent)}% chance)`,
     rift: (from: string) => `Behind a legendary rift, from ${from} (optional arena)`,
@@ -126,6 +127,33 @@ export const siteEn: SiteMessages = {
     trail: (ttl: number, damage: number) => `Leaves a trail that burns for ${n(ttl)}s (${damage} damage)`,
   },
 
+  /** The wild roster: tiers and the cast each run draws (Pokédex filter and the guide's horde section). */
+  roster: {
+    tier: 'Tier',
+    tierOf: (tier: number) => `Tier ${tier}`,
+    allTiers: 'All',
+    paragraphs: (species: number, perRun: number) => [
+      `The horde has ${species} wild species from all 9 generations, and every run draws its own cast: about ${perRun} species, only a few new ones per stage, so you can tell who is coming.`,
+      'Each species sits in a tier set by its base stat total. The first stages draw from tier 1 (weak basic Pokémon) and the end of the run from tiers 4 and 5 (evolved Pokémon). Swarms take a flying Pokémon of their tier, and rings a Pokémon of their tier you have already met this run.',
+    ],
+    formula: 'In-game stats come from the base stats: HP from the tier and the bulk (HP, Defense and Special Defense), damage from the tier and the best attacking stat, speed from base Speed, EXP from HP, and knockback resistance from HP and Defense (flying and ghost types are lighter).',
+    tiersTitle: 'Tiers',
+    tierHead: 'Tier',
+    totalHead: 'Base stat total',
+    total: (min: number, max: number | null) => (max === null ? `${min} or more` : min === 0 ? `up to ${max}` : `${min} to ${max}`),
+    speciesHead: 'Species',
+    examplesHead: 'Examples',
+    stagesTitle: 'Tiers by stage',
+    timeHead: 'Time',
+    castHead: 'Cast tiers',
+    /** `groups` = [tier, slots] pairs. */
+    cast: (groups: readonly (readonly [number, number])[], fresh: number) =>
+      `${list(groups.map(([tier, count]) => `${count} from tier ${tier}`))} (${fresh} new)`,
+    swarm: (count: number, tier: number) => `Swarm: ${count} flying tier ${tier} Pokémon cross the screen`,
+    ring: (count: number, tier: number) => `Ring: a circle of ${count} tier ${tier} Pokémon closes in on you`,
+    ringOf: (count: number, name: string) => `Ring: a circle of ${count} ${name} closes in on you`,
+  },
+
   guide: {
     title: 'How to play Pokémon Survivors: complete guide',
     description:
@@ -138,6 +166,7 @@ export const siteEn: SiteMessages = {
       controls: 'Controls',
       run: 'The run',
       world: 'Biomes and weather',
+      horde: 'The wild horde',
       levels: 'Levels and moves',
       moveEvolutions: 'Move evolutions',
       special: 'Special attack',
@@ -180,8 +209,6 @@ export const siteEn: SiteMessages = {
       timeline: 'Timeline',
       timeHead: 'Time',
       eventHead: 'Event',
-      swarm: (count: number, name: string) => `Swarm: ${count} ${name} fly across the screen`,
-      ring: (count: number, name: string) => `Ring: a circle of ${count} ${name} closes in on you`,
       boss: (name: string) => `Boss: ${name}`,
       bossChance: (name: string, percent: number) => `Rare boss: ${name} (${n(percent)}% chance)`,
     },

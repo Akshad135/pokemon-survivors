@@ -8,7 +8,9 @@ import { STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
-import { EVENTS, RUN_LENGTH, scaling } from '../../data/waves'
+import { TIER_FLOORS, TIERS } from '../../data/roster'
+import { EVENTS, RUN_LENGTH, scaling, STAGES, stageStart } from '../../data/waves'
+import { createRng } from '../../engine/rng'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
 import { MAP_EVENTS } from '../../game/mapEvents'
@@ -17,6 +19,7 @@ import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
+import { drawRoster } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
@@ -59,16 +62,15 @@ const run = (locale: Locale, m: SiteMessages) => {
     return [clock(min * 60), num(s.hp), num(s.damage)] as const
   })
   const events = EVENTS.map((e) => {
+    if (e.kind === 'swarm') return [clock(e.at), m.roster.swarm(e.count, e.tier)]
+    if (e.kind === 'ring') {
+      if (!('enemy' in e)) return [clock(e.at), m.roster.ring(e.count, e.tier)]
+      const name = ENEMIES[e.enemy].name
+      return [clock(e.at), html`<a href="${dexLink(locale, name)}">${m.roster.ringOf(e.count, name)}</a>`]
+    }
     const name = ENEMIES[e.enemy].name
-    const text =
-      e.kind === 'boss'
-        ? e.chance !== undefined
-          ? r.bossChance(name, e.chance * 100)
-          : r.boss(name)
-        : e.kind === 'swarm'
-          ? r.swarm(e.count, name)
-          : r.ring(e.count, name)
-    return [clock(e.at), e.kind === 'boss' ? html`<a href="${dexLink(locale, name)}">${text}</a>` : text]
+    const text = e.chance !== undefined ? r.bossChance(name, e.chance * 100) : r.boss(name)
+    return [clock(e.at), html`<a href="${dexLink(locale, name)}">${text}</a>`]
   })
   return html`${paragraphs(r.paragraphs(RUN_LENGTH / 60, STARTER_IDS.length))}
     <p>${r.scaling(scale)}</p>
@@ -105,6 +107,42 @@ const world = (locale: Locale, m: SiteMessages) => {
     ${table([w.timeHead, w.biomeHead, w.weatherHead], biomes)}
     <h3>${w.weatherTitle}</h3>
     ${table([w.weatherCol, w.effectHead], weather)}`
+}
+
+/** Wild species that can be drawn, by tier, in dex order. */
+const tiered = TIERS.map((tier) =>
+  Object.values<EnemyDef>(ENEMIES)
+    .filter((e) => e.tier === tier)
+    .sort((a, b) => a.dex - b.dex),
+)
+
+/** `count` species spread over the tier's dex range, so the examples span generations. */
+const spread = <T>(items: readonly T[], count: number) =>
+  items.length <= count ? items : Array.from({ length: count }, (_, i) => items[Math.floor(((i + 0.5) * items.length) / count)]!)
+
+const horde = (locale: Locale, m: SiteMessages) => {
+  const r = m.roster
+  const perRun = new Set(drawRoster(createRng(1)).stages.flatMap((pool) => pool.map(([id]) => id))).size
+  const tiers = TIERS.map((tier, i) => [
+    r.tierOf(tier),
+    r.total(TIER_FLOORS[i - 1] ?? 0, TIER_FLOORS[i] === undefined ? null : TIER_FLOORS[i] - 1),
+    tiered[i]!.length,
+    html`<span class="minis">${spread(tiered[i]!, 4).map((e) => html`<a class="with-mini" href="${dexLink(locale, e.name)}">${portrait(e.dex)}${e.name}</a>`)}</span>`,
+  ])
+  const stages = STAGES.map((stage, i) => {
+    const groups = TIERS.flatMap((tier) => {
+      const count = stage.cast.filter((t) => t === tier).length
+      return count > 0 ? [[tier, count] as const] : []
+    })
+    const end = Math.min(stage.until, RUN_LENGTH)
+    return [`${clock(stageStart(i))}–${clock(end)}`, r.cast(groups, stage.fresh)]
+  })
+  return html`${paragraphs(r.paragraphs(tiered.flat().length, perRun))}
+    <p>${r.formula}</p>
+    <h3>${r.tiersTitle}</h3>
+    ${table([r.tierHead, r.totalHead, r.speciesHead, r.examplesHead], tiers)}
+    <h3>${r.stagesTitle}</h3>
+    ${table([r.timeHead, r.castHead], stages)}`
 }
 
 const levels = (locale: Locale, m: SiteMessages) => {
@@ -302,6 +340,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   controls: (_, m) => controls(m),
   run,
   world,
+  horde,
   levels,
   moveEvolutions,
   special,

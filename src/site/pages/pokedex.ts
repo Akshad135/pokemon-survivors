@@ -1,5 +1,6 @@
 import { BOSS_PATTERNS, type BossPattern } from '../../data/bosses'
 import { ENEMIES, type EnemyDef } from '../../data/enemies'
+import { TIERS } from '../../data/roster'
 import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
 import { REGIONS, STARTERS, type StarterDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
@@ -91,7 +92,7 @@ const appearance = (a: Appearance, m: SiteMessages) => {
     case 'swarm':
       return m.pokedex.swarm(clock(a.at), a.count)
     case 'ring':
-      return m.pokedex.ring(clock(a.at), a.count)
+      return a.fixed ? m.pokedex.ringFixed(clock(a.at), a.count) : m.pokedex.ring(clock(a.at), a.count)
     case 'boss':
       return a.chance < 1 ? m.pokedex.bossChance(clock(a.at), a.chance * 100) : m.pokedex.boss(clock(a.at))
     case 'rift':
@@ -140,6 +141,7 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
   const patterns = BOSS_PATTERNS[entry.source.id] ?? []
   const s = m.pokedex.wildStats
   return html`<dl class="facts">
+      ${e.tier !== undefined && html`<div><dt>${m.roster.tier}</dt><dd>${e.tier}</dd></div>`}
       <div><dt>${s.hp}</dt><dd>${e.hp}</dd></div>
       <div><dt>${s.damage}</dt><dd>${e.damage}</dd></div>
       <div><dt>${s.speed}</dt><dd>${e.speed}</dd></div>
@@ -153,10 +155,18 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
     ${entry.sprites.shiny && html`<p class="note">★ ${m.pokedex.shinyNote}</p>`}`
 }
 
+/** Horde tier of a wild card, for the tier filter. */
+const tierOf = (entry: DexEntry) => {
+  if (entry.source.kind !== 'wild') return undefined
+  const def: EnemyDef = ENEMIES[entry.source.id]
+  return def.tier
+}
+
 const card = (entry: DexEntry, locale: Locale, css: SpriteCss) => {
   const m = SITE_MESSAGES[locale]
   const { dex, name, slug, sprites, types, role, region } = entry
-  return html`<article class="dex-card box role-${role}" id="${slug}" data-region="${region.name.toLowerCase()}" data-types="${types.join(' ')}" data-roles="${filterRoles(role).join(' ')}" data-search="${slug} ${dex} ${String(dex).padStart(3, '0')}">
+  const tier = tierOf(entry)
+  return html`<article class="dex-card box role-${role}" id="${slug}" data-region="${region.name.toLowerCase()}" data-types="${types.join(' ')}" data-roles="${filterRoles(role).join(' ')}"${tier !== undefined ? html` data-tier="${tier}"` : ''} data-search="${slug} ${dex} ${String(dex).padStart(3, '0')}">
   <div class="card-top">
     <span class="dex-no">${dexNo(dex)}</span>
     <span class="role">${m.pokedex.roles[role]}</span>
@@ -183,6 +193,9 @@ const filters = (entries: readonly DexEntry[], m: SiteMessages) => {
     )}</select></label>
     <label class="field">${m.pokedex.type}<select name="type"><option value="">${m.pokedex.all}</option>${types.map(
       (t) => html`<option value="${t}">${m.types[t]}</option>`,
+    )}</select></label>
+    <label class="field">${m.roster.tier}<select name="tier"><option value="">${m.roster.allTiers}</option>${TIERS.map(
+      (t) => html`<option value="${t}">${m.roster.tierOf(t)}</option>`,
     )}</select></label>
     <fieldset class="roles"><legend>${m.pokedex.role}</legend>
       <label><input type="radio" name="role" value="" checked /><span>${m.pokedex.all}</span></label>

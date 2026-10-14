@@ -1,12 +1,12 @@
 import { dirTo } from '../engine/math'
 import { weightedPick } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
-import { stageAt } from '../data/waves'
+import { stageIndexAt } from '../data/waves'
 import { burst } from './effects'
 import { ENDLESS, endlessEventSize, REAPER, reaperDue, reaperHp, reaperSpeed, startEndless, type EndlessState } from './endless'
 import { spawnEnemy } from './enemies'
 import { dropCoins, dropPickup } from './pickups'
-import { runEvent } from './spawner'
+import { spawnRing, spawnSwarm } from './spawner'
 import type { Enemy, Game } from './types'
 
 /** Extra Poké Balls and ₽ dropped by a defeated Arceus, on top of a boss's usual drop. */
@@ -69,9 +69,9 @@ export const updateEndless = (g: Game) => {
   const s = g.endless
   if (!s || g.rift.arena) return
   if (g.time >= s.nextEvent) {
-    const enemy = weightedPick(g.rng, stageAt(g.time).pool)
+    const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
     const count = endlessEventSize(g.time)
-    runEvent(g, s.events % 2 === 0 ? { at: g.time, kind: 'ring', enemy, count } : { at: g.time, kind: 'swarm', enemy, count })
+    if (pool.length > 0) (s.events % 2 === 0 ? spawnRing : spawnSwarm)(g, weightedPick(g.rng, pool), count)
     s.events++
     s.nextEvent = g.time + ENDLESS.eventEvery
   }

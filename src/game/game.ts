@@ -18,6 +18,7 @@ import { createSpecialState, specialSpeedFactor, updateSpecial } from './special
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
+import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { updateArena } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
@@ -32,7 +33,11 @@ export const EVOLUTION_TIME = 4.6
 
 export const playerDex = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.dex
 
-export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now(), ranks: Ranks = NO_RANKS): Game => {
+/**
+ * A fresh run. Pass `roster` when the shell drew it ahead of time to preload
+ * its sprites (see `drawRoster`); otherwise it's drawn from the run's rng.
+ */
+export const createGame = (starter: StarterId, view: Game['view'], seed = Date.now(), ranks: Ranks = NO_RANKS, roster?: Roster): Game => {
   const def = STARTERS[starter]
   const rng = createRng(seed)
   const shiny = rollShiny(rng, SHINY_ODDS.player)
@@ -81,6 +86,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     pendingLevelUps: 0,
     offers: [],
     evolution: null,
+    roster: roster ?? drawRoster(rng),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,

@@ -8,8 +8,9 @@ import { createInput } from './engine/input'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
+import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
-import { ENEMIES, ENEMY_DEX, type EnemyDef, type EnemyId } from './data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
@@ -24,12 +25,13 @@ import { REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
 import { runEarnings, wonRun } from './game/meta'
+import { drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites } from './render/sprites'
+import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
@@ -192,20 +194,41 @@ const endRun = () => {
 
 const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, t().loading))
 
-/** Loads the starter's evolution line and every enemy, then starts a fresh run. */
+/** The next run's seed and wild cast, drawn ahead so the menus can warm up its first stage. */
+type RunPlan = { seed: number; roster: Roster }
+
+const planRun = (): RunPlan => {
+  const seed = Date.now()
+  return { seed, roster: drawRoster(createRng(seed)) }
+}
+
+let upcoming = planRun()
+
+/** Dex numbers of a cast's first stage, the only enemies a run waits for. */
+const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) => (s.at === 0 ? [s.dex] : []))
+
+/**
+ * Loads the starter's evolution line and the first stage's species, then starts
+ * a fresh run. The rest of the cast (later stages, swarms, bosses) streams in
+ * the background in the order the run needs it, then the next run's opening.
+ */
 const startRun = async (starter: StarterId) => {
   setScreen(null)
   endRun()
   lastStarter = starter
   const loading = loadingScreen()
   ui.append(loading)
-  // The player's shiny line is awaited (a shiny run must not start in normal colors); enemy shinies stream in.
-  await Promise.all([loadAll([...starterDex(starter), ...ENEMY_DEX, MEOWTH_DEX]), preloadShinies(starterDex(starter))])
-  void preloadShinies(ENEMY_DEX)
+  const plan = upcoming
+  upcoming = planRun()
+  await loadAll([...starterDex(starter), ...openingDex(plan)])
+  const game = createGame(starter, view, plan.seed, loadSave().ranks, plan.roster)
+  // A shiny run must not start in normal colors.
+  if (game.player.shiny) await preloadShinies(starterDex(starter))
   loading.remove()
-  const game = createGame(starter, view, Date.now(), loadSave().ranks)
   run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
   track('run_start', { starter })
+  const later = rosterSchedule(plan.roster).flatMap((s) => (s.at > 0 ? [s.dex] : []))
+  void streamSpecies([...later, MEOWTH_DEX, ...openingDex(upcoming)], () => run?.game === game)
 }
 
 const runHud = (game: Game) => {
@@ -536,10 +559,10 @@ const frame = (now: number) => {
 
 /**
  * Warms the sprite cache one species at a time so the menu stays responsive:
- * every region's trio first (menu cards), then the horde (needed by any run).
+ * every region's trio first (menu cards), then the next run's first stage.
  */
 const preloadInBackground = async () => {
-  const queue = [...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...ENEMY_DEX]
+  const queue = [...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)]
   for (const dex of queue) await loadSpecies(dex).catch(() => {})
 }
 

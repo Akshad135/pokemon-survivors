@@ -21,7 +21,8 @@ Browser survivors-like (Vampire Survivors–style) with Pokémon. Vite + TypeScr
 npm run dev        # vite dev server
 npm test           # vitest
 npm run build      # tsc --noEmit + vite build (must pass before any PR)
-npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs)
+npm run roster     # rebuild the wild horde (curated list in scripts/roster.mjs) from PokeAPI + SpriteCollab
+npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs; the horde comes from the roster)
 npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
 ```
 

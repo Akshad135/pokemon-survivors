@@ -29,7 +29,7 @@ const normalize = (text: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 
-const FILTERS = ['q', 'region', 'type', 'role'] as const
+const FILTERS = ['q', 'region', 'type', 'tier', 'role'] as const
 
 type Filters = Record<(typeof FILTERS)[number], string>
 
@@ -40,6 +40,7 @@ const matches = (card: HTMLElement, f: Filters) => {
     (!f.q || f.q.split(' ').every((w) => words.includes(w))) &&
     (!f.region || d.region === f.region) &&
     (!f.type || (d.types ?? '').split(' ').includes(f.type)) &&
+    (!f.tier || d.tier === f.tier) &&
     (!f.role || (d.roles ?? '').split(' ').includes(f.role))
   )
 }
@@ -65,7 +66,7 @@ const pokedex = (form: HTMLFormElement) => {
   const read = (): Filters => {
     const data = new FormData(form)
     const value = (name: string) => String(data.get(name) ?? '')
-    return { q: normalize(value('q')), region: value('region'), type: value('type'), role: value('role') }
+    return { q: normalize(value('q')), region: value('region'), type: value('type'), tier: value('tier'), role: value('role') }
   }
 
   const apply = () => {

@@ -1,3 +1,4 @@
+import { ROSTER, type Tier } from './roster'
 import type { TraitId } from './traits'
 import type { PokeType } from './types'
 
@@ -16,35 +17,29 @@ export type EnemyDef = {
   boss?: boolean
   /** Legendary bosses get the big entrance (flash, banner) and attack patterns from `data/bosses.ts`. */
   legendary?: boolean
+  /** Wild species with a tier can be drawn into a run's horde (see `game/roster.ts`); bosses have none. */
+  tier?: Tier
   /** Behavior on top of chasing (healer, shield, summoner, kamikaze, beam, leaper). See `data/traits.ts`. */
   trait?: TraitId
   /** Integer draw scale (and body size) for Pokémon that must loom over the rest, like the reaper. */
   scale?: number
 }
 
+/**
+ * Every enemy: the generated wild roster (`data/roster.ts`) plus the hand-tuned
+ * bosses. An entry here with the same key as a roster species replaces it, and
+ * any entry with a `tier` joins the horde draw.
+ */
 export const ENEMIES = {
-  rattata: { dex: 19, name: 'Rattata', types: ['normal'], hp: 8, speed: 40, damage: 5, xp: 1, mass: 1 },
-  caterpie: { dex: 10, name: 'Caterpie', types: ['bug'], hp: 10, speed: 26, damage: 4, xp: 1, mass: 1 },
-  pidgey: { dex: 16, name: 'Pidgey', types: ['normal', 'flying'], hp: 9, speed: 44, damage: 5, xp: 1, mass: 0.8 },
-  weedle: { dex: 13, name: 'Weedle', types: ['bug', 'poison'], hp: 14, speed: 28, damage: 6, xp: 1, mass: 1 },
-  spearow: { dex: 21, name: 'Spearow', types: ['normal', 'flying'], hp: 14, speed: 52, damage: 7, xp: 2, mass: 0.8 },
-  ekans: { dex: 23, name: 'Ekans', types: ['poison'], hp: 24, speed: 34, damage: 8, xp: 2, mass: 1.2 },
-  zubat: { dex: 41, name: 'Zubat', types: ['poison', 'flying'], hp: 10, speed: 58, damage: 6, xp: 1, mass: 0.6 },
-  oddish: { dex: 43, name: 'Oddish', types: ['grass', 'poison'], hp: 22, speed: 30, damage: 7, xp: 2, mass: 1 },
-  paras: { dex: 46, name: 'Paras', types: ['bug', 'grass'], hp: 28, speed: 30, damage: 8, xp: 2, mass: 1.2 },
-  venonat: { dex: 48, name: 'Venonat', types: ['bug', 'poison'], hp: 32, speed: 38, damage: 9, xp: 3, mass: 1.2 },
-  mankey: { dex: 56, name: 'Mankey', types: ['fighting'], hp: 34, speed: 54, damage: 10, xp: 3, mass: 1 },
-  gastly: { dex: 92, name: 'Gastly', types: ['ghost', 'poison'], hp: 36, speed: 46, damage: 10, xp: 3, mass: 0.7 },
-  machop: { dex: 66, name: 'Machop', types: ['fighting'], hp: 58, speed: 36, damage: 12, xp: 4, mass: 1.6 },
-  koffing: { dex: 109, name: 'Koffing', types: ['poison'], hp: 62, speed: 30, damage: 12, xp: 4, mass: 1.6 },
-  geodude: { dex: 74, name: 'Geodude', types: ['rock', 'ground'], hp: 75, speed: 26, damage: 13, xp: 5, mass: 2.6 },
-  voltorb: { dex: 100, name: 'Voltorb', types: ['electric'], hp: 20, speed: 50, damage: 9, xp: 2, mass: 0.9, trait: 'kamikaze' },
-  electrode: { dex: 101, name: 'Electrode', types: ['electric'], hp: 42, speed: 62, damage: 12, xp: 4, mass: 1, trait: 'kamikaze' },
-  magnemite: { dex: 81, name: 'Magnemite', types: ['electric', 'steel'], hp: 26, speed: 34, damage: 8, xp: 3, mass: 1, trait: 'beam' },
-  chansey: { dex: 113, name: 'Chansey', types: ['normal'], hp: 70, speed: 26, damage: 6, xp: 5, mass: 1.8, trait: 'healer' },
-  hitmonlee: { dex: 106, name: 'Hitmonlee', types: ['fighting'], hp: 50, speed: 40, damage: 12, xp: 4, mass: 1.4, trait: 'leaper' },
-  bronzong: { dex: 437, name: 'Bronzong', types: ['steel', 'psychic'], hp: 80, speed: 24, damage: 10, xp: 6, mass: 2.8, trait: 'shield' },
-  nidoqueen: { dex: 31, name: 'Nidoqueen', types: ['poison', 'ground'], hp: 110, speed: 28, damage: 14, xp: 8, mass: 2.4, trait: 'summoner' },
+  ...ROSTER,
+  // Species with a behavior trait (`data/traits.ts`): hand-tuned, with the tier matching when they used to show up.
+  voltorb: { dex: 100, name: 'Voltorb', types: ['electric'], hp: 20, speed: 50, damage: 9, xp: 2, mass: 0.9, trait: 'kamikaze', tier: 2 },
+  electrode: { dex: 101, name: 'Electrode', types: ['electric'], hp: 42, speed: 62, damage: 12, xp: 4, mass: 1, trait: 'kamikaze', tier: 5 },
+  magnemite: { dex: 81, name: 'Magnemite', types: ['electric', 'steel'], hp: 26, speed: 34, damage: 8, xp: 3, mass: 1, trait: 'beam', tier: 2 },
+  chansey: { dex: 113, name: 'Chansey', types: ['normal'], hp: 70, speed: 26, damage: 6, xp: 5, mass: 1.8, trait: 'healer', tier: 3 },
+  hitmonlee: { dex: 106, name: 'Hitmonlee', types: ['fighting'], hp: 50, speed: 40, damage: 12, xp: 4, mass: 1.4, trait: 'leaper', tier: 3 },
+  bronzong: { dex: 437, name: 'Bronzong', types: ['steel', 'psychic'], hp: 80, speed: 24, damage: 10, xp: 6, mass: 2.8, trait: 'shield', tier: 4 },
+  nidoqueen: { dex: 31, name: 'Nidoqueen', types: ['poison', 'ground'], hp: 110, speed: 28, damage: 14, xp: 8, mass: 2.4, trait: 'summoner', tier: 5 },
   nidoranF: { dex: 29, name: 'Nidoran♀', types: ['poison'], hp: 16, speed: 46, damage: 6, xp: 1, mass: 0.9 },
   nidoranM: { dex: 32, name: 'Nidoran♂', types: ['poison'], hp: 16, speed: 48, damage: 7, xp: 1, mass: 0.9 },
   onix: { dex: 95, name: 'Onix', types: ['rock', 'ground'], hp: 1100, speed: 36, damage: 18, xp: 50, mass: 20, boss: true },
@@ -66,5 +61,3 @@ export const ENEMIES = {
 } as const satisfies Record<string, EnemyDef>
 
 export type EnemyId = keyof typeof ENEMIES
-
-export const ENEMY_DEX = Object.values(ENEMIES).map((e) => e.dex)

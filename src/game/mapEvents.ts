@@ -2,7 +2,7 @@ import { dir8, dirTo, retain, TAU, type Dir8 } from '../engine/math'
 import { range, weightedPick } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { DROP_TABLES, rollDrop, type BuffId } from '../data/consumables'
-import { scaling, stageAt } from '../data/waves'
+import { scaling, stageIndexAt } from '../data/waves'
 import { addBuff } from './buffs'
 import { hurtPlayer, killEnemy } from './combat'
 import { dropItem } from './consumables'
@@ -134,7 +134,8 @@ const trapHit = (g: Game, x: number, y: number, r: number, damage: number, bossS
 
 /** A ring of wild Pokémon from the current wave closing in on the chest. */
 const ambush = (g: Game, x: number, y: number) => {
-  const pool = stageAt(g.time).pool
+  const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
+  if (pool.length === 0) return
   const count = CHEST.ambush + Math.floor(g.time / 60)
   const offset = range(g.rng, 0, TAU)
   for (let i = 0; i < count; i++) {

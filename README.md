@@ -94,6 +94,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 
 - **23 moves and 19 held items.** Max out a move, pair it with the right item, and it evolves (Ember + Charcoal → Flamethrower).
 - **Real type matchups**, burn, poison and paralysis, and a manual **special attack** per type that becomes Blast Burn, Hydro Cannon or Frenzy Plant at the final evolution.
+- **171 wild Pokémon from all 9 generations**, in 5 tiers by base stat total. Every run draws its own cast, a few new faces per stage, from basic Pokémon early to evolved ones late.
 - **Bosses with telegraphed attack patterns**: Onix, Snorlax, the legendary birds and Mewtwo. Mew sometimes shows up.
 
   <img src="public/assets/pokemon/95/portrait.png" width="40" alt="Onix"> <img src="public/assets/pokemon/143/portrait.png" width="40" alt="Snorlax"> <img src="public/assets/pokemon/144/portrait.png" width="40" alt="Articuno"> <img src="public/assets/pokemon/145/portrait.png" width="40" alt="Zapdos"> <img src="public/assets/pokemon/146/portrait.png" width="40" alt="Moltres"> <img src="public/assets/pokemon/150/portrait.png" width="40" alt="Mewtwo"> <img src="public/assets/pokemon/151/portrait.png" width="40" alt="Mew">
@@ -133,6 +134,7 @@ npm install
 npm run dev        # http://localhost:5173
 npm test           # focused rules tests (vitest)
 npm run build      # typecheck + production build
+npm run roster     # rebuild the wild roster from PokeAPI + SpriteCollab (data/roster.generated.json)
 npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
@@ -167,7 +169,8 @@ src/
 
 - **Simulation and presentation are decoupled.** `step(game, input, dt)` mutates the state and pushes `GameEvent`s. `main.ts` drains them each frame to play sounds and cries and show toasts.
 - **Moves** are data plus a `fire(game, stats)` function. Upgrades are stat deltas. Player modifiers (might, area, cooldown…) are applied in `moveStats`. Each hitbox is a generic `Attack` with a `motion` (linear, homing, orbit, boomerang, follow, static) and a `visual`.
-- **Waves** live in `data/waves.ts`: spawn stages by time, plus events (flyby swarms, closing rings, bosses, optionally rare via `chance`).
+- **Waves** live in `data/waves.ts`: spawn stages by time, each a list of tier slots, plus events (flyby swarms and closing rings by tier, bosses, optionally rare via `chance`).
+- **The wild roster** is generated: `npm run roster` checks a curated list of species against SpriteCollab and pulls names, types and base stats from PokeAPI into `data/roster.generated.json`. `data/roster.ts` assigns each a tier by base stat total and derives its game stats. `game/roster.ts` draws each run's cast (seeded, with an optional per-species weight for type affinity), and the shell loads only the first stage before the run, streaming the rest.
 - **Bosses** attack with data-driven patterns from `data/bosses.ts` (telegraphed `strikes`, projectile `ring`s, lingering `trail`s). They spawn `Hazard`s, which hurt the player. To add a legendary, add it to `ENEMIES` (`legendary: true`), add a boss event and its patterns, and add its dex to `scripts/dex.mjs`.
 - **Map events** are data in `MAP_EVENTS` (`game/mapEvents.ts`): each kind has a spawn rule for the event director (earliest time, weight, max alive, lifetime, distance), a `create` for its state, an `update` with the interaction and reward, and optional `enter`/`expire` hooks. To add one, add its state to `MapEventStates`, its definition, its art in `render/mapEvents.ts` (plus an arrow in `MARKER` if it's important) and, if it talks to the player, a `MapEventNotice` handled in `ui/mapEvents.ts`.
 - **Rifts** keep the map side (`riftPortal.ts`: a portal opens, the player stands in it) apart from the arena (`riftArena.ts`). Entering sets the world aside (horde, hazards, pickups, props) and leaving puts it back; the run clock keeps going. Legendaries, arena looks and timings live in `data/rifts.ts`.

@@ -1,5 +1,5 @@
 import manifest from '../data/sprites.generated.json'
-import { createCanvas, context2d } from '../engine/pixelart'
+import { createCanvas, context2d, fromStrings } from '../engine/pixelart'
 import type { Dir8 } from '../engine/math'
 
 /**
@@ -10,7 +10,7 @@ export type AnimName = 'Walk' | 'Idle' | 'Hurt'
 export type Dex = number
 
 type Sheet = {
-  img: HTMLImageElement
+  img: HTMLImageElement | HTMLCanvasElement
   white: HTMLCanvasElement
   fw: number
   fh: number
@@ -50,7 +50,7 @@ const loadImage = (src: string) =>
   })
 
 /** Solid white silhouette used for hit flashes and the evolution sequence. */
-const silhouette = (img: HTMLImageElement) => {
+const silhouette = (img: HTMLImageElement | HTMLCanvasElement) => {
   const canvas = createCanvas(img.width, img.height)
   const ctx = context2d(canvas)
   ctx.drawImage(img, 0, 0)
@@ -131,7 +131,7 @@ const fetchSpecies = async (dex: Dex, shiny: boolean): Promise<SpeciesSprites> =
 
   const [Walk, Idle, Hurt] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt')])
   // A missing portrait shouldn't block a run: fall back to the walk sheet.
-  const portrait = await loadImage(`${dir}/portrait.png`).catch(() => Walk.img)
+  const portrait = await loadImage(`${dir}/portrait.png`).catch(() => loadImage(`${dir}/Walk.png`))
   const sprites: SpeciesSprites = {
     dex,
     anims: { Walk, Idle, Hurt },
@@ -149,11 +149,61 @@ export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map((dex) =>
 export const preloadShinies = (dexes: readonly Dex[]) =>
   Promise.allSettled(dexes.filter(hasShiny).map((dex) => loadSpecies(dex, true)))
 
-export const sprites = (dex: Dex, shiny = false) => {
-  const s = (shiny && cache.get(cacheKey(dex, true))) || cache.get(cacheKey(dex, false))
-  if (!s) throw new Error(`Sprites for #${dex} not loaded`)
+/**
+ * Loads species one after another in the background (normal forms first, then
+ * their shinies), so a run's later stages stream in without hogging the network.
+ * Stops early once `keepGoing` turns false (the run ended).
+ */
+export const streamSpecies = async (dexes: readonly Dex[], keepGoing: () => boolean = () => true) => {
+  for (const dex of dexes) {
+    if (!keepGoing()) return
+    await loadSpecies(dex).catch(() => {})
+  }
+  for (const dex of dexes.filter(hasShiny)) {
+    if (!keepGoing()) return
+    await loadSpecies(dex, true).catch(() => {})
+  }
+}
+
+/** A puff of dust, drawn in place of a species that hasn't finished downloading. */
+const PUFF = [
+  '...1111.....',
+  '..122221.11.',
+  '.12233321221',
+  '123333333321',
+  '123333333331',
+  '.1233333321.',
+  '..11222211..',
+  '....1111....',
+]
+
+let puff: Sheet | null = null
+const standIns = new Map<Dex, SpeciesSprites>()
+const requested = new Set<Dex>()
+
+/** Stand-in sprites for `dex`, which also starts (once) downloading the real ones. */
+const pendingSprites = (dex: Dex): SpeciesSprites => {
+  if (!requested.has(dex)) {
+    requested.add(dex)
+    void loadSpecies(dex).catch(() => {})
+  }
+  let s = standIns.get(dex)
+  if (!s) {
+    if (!puff) {
+      const frame = fromStrings(PUFF, { 1: '#6c7058', 2: '#b0b098', 3: '#e0e0c8' })
+      const img = createCanvas(frame.width, frame.height * 8)
+      for (let row = 0; row < 8; row++) context2d(img).drawImage(frame, 0, row * frame.height)
+      puff = { img, white: silhouette(img), fw: frame.width, fh: frame.height, durations: [60], totalTicks: 60 }
+    }
+    s = { dex, anims: { Walk: puff, Idle: puff, Hurt: puff }, portrait: new Image(), cry: cryUrl(dex), ...measure(puff) }
+    standIns.set(dex, s)
+  }
   return s
 }
+
+/** Sprites of a species form, falling back to the normal form, then to a dust puff while it downloads. Never throws. */
+export const sprites = (dex: Dex, shiny = false) =>
+  (shiny && cache.get(cacheKey(dex, true))) || cache.get(cacheKey(dex, false)) || pendingSprites(dex)
 
 export const portraitUrl = (dex: Dex, shiny = false) =>
   `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`

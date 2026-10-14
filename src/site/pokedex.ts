@@ -1,5 +1,5 @@
 import manifest from '../data/sprites.generated.json'
-import { ENEMIES, type EnemyId } from '../data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { REGIONS, STARTER_IDS, STARTERS, type Region, type StarterId } from '../data/starters'
 import type { PokeType } from '../data/types'
 import { RIFT, RIFT_LEGENDS } from '../data/rifts'
@@ -105,9 +105,11 @@ export const pokedex = (): DexEntry[] =>
 /* ---------------- When a wild Pokémon shows up ---------------- */
 
 export type Appearance =
-  /** Part of the regular spawn pool between two run times (seconds). */
+  /** May be drawn into the regular spawn pool between two run times (seconds). */
   | { kind: 'horde'; from: number; until: number }
-  | { kind: 'swarm' | 'ring'; at: number; count: number }
+  /** May lead a swarm or ring (each run draws its own). */
+  /** `fixed`: the event always brings this species instead of drawing one from the run's horde. */
+  | { kind: 'swarm' | 'ring'; at: number; count: number; fixed?: boolean }
   /** `chance` is 1 for bosses that always come. */
   | { kind: 'boss'; at: number; chance: number }
   /** Waits behind a legendary rift, which first opens at `from`. */
@@ -119,10 +121,15 @@ export type Appearance =
 
 const isRiftLegend = (id: EnemyId): boolean => RIFT_LEGENDS.some((l) => l === id)
 
-/** Spawn-pool windows (contiguous stages merged), every timed event of an enemy, and rifts and the reaper. */
+/**
+ * When an enemy can show up: the spawn-pool windows of the stages with a slot
+ * of its tier (contiguous stages merged), the swarms (flyers only) and rings of
+ * its tier or naming it, its boss events, rifts, the reaper and summons.
+ */
 export const appearances = (id: EnemyId): Appearance[] => {
+  const def: EnemyDef = ENEMIES[id]
   const windows = STAGES.reduce<Array<{ kind: 'horde'; from: number; until: number }>>((acc, stage, i) => {
-    if (!stage.pool.some(([enemy]) => enemy === id)) return acc
+    if (def.tier === undefined || !stage.cast.includes(def.tier)) return acc
     const from = STAGES[i - 1]?.until ?? 0
     const until = Math.min(stage.until, RUN_LENGTH)
     const last = acc[acc.length - 1]
@@ -130,9 +137,12 @@ export const appearances = (id: EnemyId): Appearance[] => {
     else acc.push({ kind: 'horde', from, until })
     return acc
   }, [])
-  const events = EVENTS.filter((e) => e.enemy === id).map((e): Appearance =>
-    e.kind === 'boss' ? { kind: 'boss', at: e.at, chance: e.chance ?? 1 } : { kind: e.kind, at: e.at, count: e.count },
-  )
+  const events = EVENTS.flatMap((e): Appearance[] => {
+    if (e.kind === 'boss') return e.enemy === id ? [{ kind: 'boss', at: e.at, chance: e.chance ?? 1 }] : []
+    if ('enemy' in e) return e.enemy === id ? [{ kind: e.kind, at: e.at, count: e.count, fixed: true }] : []
+    if (e.tier !== def.tier || (e.kind === 'swarm' && !def.types.includes('flying'))) return []
+    return [{ kind: e.kind, at: e.at, count: e.count }]
+  })
   const rift: Appearance[] = isRiftLegend(id) ? [{ kind: 'rift', from: RIFT.firstAt }] : []
   const reaper: Appearance[] = id === REAPER ? [{ kind: 'reaper', at: ENDLESS.reaperAt }] : []
   const summoned = (Object.keys(SUMMONS) as Array<keyof typeof SUMMONS>)

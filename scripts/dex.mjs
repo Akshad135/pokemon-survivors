@@ -1,5 +1,8 @@
 // Every species the game loads, shared by the asset and credits scripts.
-// Keep in sync with src/data/starters.ts and src/data/enemies.ts
+// Keep in sync with src/data/starters.ts and src/data/enemies.ts; the wild
+// horde comes from src/data/roster.generated.json (npm run roster).
+import roster from '../src/data/roster.generated.json' with { type: 'json' }
+
 export const STARTERS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, // Kanto starters + evolutions
   152, 153, 154, 155, 156, 157, 158, 159, 160, // Johto
@@ -11,7 +14,7 @@ export const STARTERS = [
   810, 811, 812, 813, 814, 815, 816, 817, 818, // Galar
   906, 907, 908, 909, 910, 911, 912, 913, 914, // Paldea
 ]
-export const HORDE = [10, 13, 16, 19, 21, 23, 41, 43, 46, 48, 56, 66, 74, 92, 109]
+export const HORDE = Object.values(roster).map((s) => s.dex)
 /** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
 export const TRAITS = [29, 31, 32, 81, 100, 101, 106, 113, 437]
 export const BOSSES = [95, 143, 144, 145, 146, 150, 151]
