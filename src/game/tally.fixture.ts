@@ -20,6 +20,8 @@ export const summary = (over: Partial<RunSummary> = {}): RunSummary => ({
   legends: [],
   reaperDefeats: 0,
   moveEvolutions: 0,
+  steps: 0,
+  species: 0,
   killsByType: {},
   killsByWeather: {},
   killsByBiome: {},

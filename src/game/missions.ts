@@ -1,4 +1,5 @@
 import { createRng, pick, type Rng } from '../engine/rng'
+import type { EggTier } from './eggs'
 import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionGoal, type MissionPeriod, type MissionTemplate } from '../data/missions'
 import { isHatchling } from '../data/hatchlings'
 import { STARTERS } from '../data/starters'
@@ -13,7 +14,8 @@ import type { RunSummary } from './tally'
  * Everything here is pure; the shell persists the boards in the save.
  */
 
-export type Mission = { id: string; period: MissionPeriod; goal: MissionGoal; target: number; reward: number }
+/** `egg`: an egg of that tier comes with the ₽. */
+export type Mission = { id: string; period: MissionPeriod; goal: MissionGoal; target: number; reward: number; egg?: EggTier }
 
 export const MISSION_PERIODS = Object.keys(MISSION_SLOTS) as MissionPeriod[]
 
@@ -62,14 +64,14 @@ export const drawMissions = (period: MissionPeriod, date: Date): Mission[] => {
   return sample(rng, POOLS[period], MISSION_SLOTS[period]).map((template) => {
     const goal = pick(rng, template.goals)
     const [target, reward] = pick(rng, template.tiers)
-    return { id: missionId(goal, target), period, goal, target, reward }
+    return { id: missionId(goal, target), period, goal, target, reward, ...(template.egg && { egg: template.egg }) }
   })
 }
 
 /* ---------------- Progress ---------------- */
 
 /** Goals that keep the best single run instead of adding runs up. */
-export const BEST_GOALS: ReadonlySet<MissionGoal['kind']> = new Set(['survive', 'level', 'endless'])
+export const BEST_GOALS: ReadonlySet<MissionGoal['kind']> = new Set(['survive', 'level', 'endless', 'species'])
 
 /** No type: any Pokémon. With a type: a starter of that type (hatched families don't count, like the goal text says). */
 const starterIs = (s: RunSummary, type: PokeType | undefined) =>
@@ -95,6 +97,10 @@ export const goalValue = (goal: MissionGoal, s: RunSummary): number => {
     case 'survive': return starterIs(s, goal.type) ? Math.floor(s.time / 60) : 0
     case 'level': return s.level
     case 'endless': return s.victory ? Math.floor(overtime(s.time) / 60) : 0
+    case 'steps': return s.steps
+    case 'species': return s.species
+    // Eggs hatch outside runs: see `recordHatchMissions`.
+    case 'hatches': return 0
   }
 }
 
@@ -129,7 +135,17 @@ export const missionStatus = (save: MissionsSave, date: Date): MissionStatus[] =
  * recorded, then the run may go on in endless mode): only the difference counts,
  * so recording the same summary twice changes nothing.
  */
-export const recordMissions = (save: MissionsSave, summary: RunSummary, before: RunSummary | null, date: Date) => {
+export const recordMissions = (save: MissionsSave, summary: RunSummary, before: RunSummary | null, date: Date) =>
+  advanceMissions(save, date, (m, was) => {
+    const now = goalValue(m.goal, summary)
+    return BEST_GOALS.has(m.goal.kind) ? now : was + now - (before ? goalValue(m.goal, before) : 0)
+  })
+
+/** Adds a hatched egg to the current boards (`hatches` goals) and lists the missions it completed. */
+export const recordHatchMissions = (save: MissionsSave, date: Date) => advanceMissions(save, date, (m, was) => (m.goal.kind === 'hatches' ? was + 1 : was))
+
+/** Moves every open mission of the current boards to `next(mission, progress)`; progress never goes back. */
+const advanceMissions = (save: MissionsSave, date: Date, next: (m: Mission, was: number) => number) => {
   const completed: Mission[] = []
   const boards = MISSION_PERIODS.map((period) => {
     const board = boardFor(save, period, date)
@@ -137,9 +153,7 @@ export const recordMissions = (save: MissionsSave, summary: RunSummary, before: 
     for (const m of drawMissions(period, date)) {
       const was = progress[m.id] ?? 0
       if (was >= m.target) continue
-      const now = goalValue(m.goal, summary)
-      const gained = BEST_GOALS.has(m.goal.kind) ? now : was + now - (before ? goalValue(m.goal, before) : 0)
-      const value = Math.min(m.target, Math.max(was, gained))
+      const value = Math.min(m.target, Math.max(was, next(m, was)))
       if (value === was) continue
       progress[m.id] = value
       if (value >= m.target) completed.push(m)

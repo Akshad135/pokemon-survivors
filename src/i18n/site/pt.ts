@@ -47,10 +47,10 @@ export const sitePt = {
   pokedex: {
     title: 'Pokédex do Pokémon Survivors: iniciais, inimigos, chefes e lendários',
     description:
-      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
+      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 25 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
     h1: 'Pokédex',
     intro: (count: number) =>
-      `Os ${count} Pokémon que existem no Pokémon Survivors, com os números do jogo: iniciais de todas as regiões e suas evoluções, a horda selvagem, os chefes e os lendários. Passe o mouse (ou toque) para ver o sprite andando e use ★ para ver o shiny.`,
+      `Os ${count} Pokémon que existem no Pokémon Survivors, com os números do jogo: iniciais de todas as regiões, as famílias que saem dos ovos e suas evoluções, a horda selvagem, os chefes e os lendários. Passe o mouse (ou toque) para ver o sprite andando e use ★ para ver o shiny.`,
     filters: 'Filtros',
     search: 'Buscar',
     searchPlaceholder: 'Nome ou número',
@@ -336,17 +336,17 @@ export const sitePt = {
       effectHead: 'O que faz',
     },
     shinies: {
-      paragraphs: (wild: number, hp: number, xp: number, player: number) => [
-        `Cada Pokémon selvagem comum tem 1 chance em ${n(wild)} de nascer shiny. Ele vira uma elite com ${hp}x de HP e ${xp}x de EXP, e sempre solta uma Poké Ball e Poké Dollars. Chefes e lendários nunca são shiny.`,
+      paragraphs: (wild: number, hp: number, xp: number, player: number, rift: number, species: number) => [
+        `Cada Pokémon selvagem comum tem 1 chance em ${n(wild)} de nascer shiny. Ele vira uma elite com ${hp}x de HP e ${xp}x de EXP, e sempre solta uma Poké Ball e Poké Dollars. Os chefes do mapa, o Mewtwo e o Arceus nunca são shiny, mas o lendário de uma fenda tem 1 chance em ${rift} de ser, e paga mais.`,
         `O seu inicial tem 1 chance em ${player} de ser shiny, e continua shiny em todas as evoluções daquela partida.`,
         'A Poké Ball (de chefes e shinies) dá um upgrade aleatório na hora, ou uma evolução de golpe se alguma estiver pronta.',
-        'Shiny derrotado vira seu: ele fica marcado como capturado, com o brilho, na Pokédex do jogo (Pokédex, no menu do título). A Pokédex também lembra cada espécie que você viu e quantas derrotou, e o fim da partida mostra o que entrou de novo.',
+        `Shiny derrotado vira seu: ele fica marcado como capturado, com o brilho, na Pokédex do jogo (Pokédex, no menu do título). Também contam como capturados o Pokémon que sai de um ovo (e a linha evolutiva dele fica vista) e cada forma que você jogou, inclusive as que alcançou evoluindo. A Pokédex tem as ${species} espécies do jogo, lembra cada uma que você viu e quantas derrotou, e o fim da partida mostra o que entrou de novo.`,
       ],
       seeAll: 'Veja todos os shinies na Pokédex',
     },
     eggs: {
       paragraphs: (starters: number, families: number, slots: number, perRun: number, stepPx: number, shiny: number, weight: number) => [
-        `Além dos ${starters} iniciais, ${families} famílias de Pokémon jogáveis saem de ovos, de todos os tipos e gerações. Cada uma tem golpe inicial, especial, evolução no meio da partida e status próprios.`,
+        `Além dos ${starters} iniciais, ${families} famílias de Pokémon jogáveis saem de ovos, de todos os tipos e gerações: são ${starters + families} Pokémon para jogar. Cada uma tem golpe inicial, especial, evolução no meio da partida e status próprios.`,
         `Chefes, baús trancados e fendas às vezes deixam um ovo, no máximo ${perRun} por partida. Ele vai para a incubadora, que tem ${slots} vagas. Cada ${stepPx} px andados numa partida contam um passo, e todos os ovos da incubadora andam juntos. O ovo achado no meio da partida já conta os passos dados depois dele.`,
         `Quando um ovo fica pronto, ele choca ao sair da partida ou na incubadora (no menu inicial e na aba Ovos da escolha de parceiro). Famílias que você ainda não tem saem ${weight}x mais. O filhote tem 1 chance em ${shiny} de ser shiny, e aí fica shiny em todas as partidas.`,
         'Um repetido, ou um ovo achado com a incubadora cheia, vira Poké Dollars. O jogador que nunca teve um ovo ganha o primeiro com certeza.',
@@ -441,8 +441,8 @@ export const sitePt = {
     missions: {
       paragraphs: (daily: number, weekly: number, dailyRewards: string, weeklyRewards: string, medals: string) => [
         `Missões fica no menu da tela de título. Todo dia saem ${daily} missões diárias (${dailyRewards}) e toda semana ${weekly} semanais (${weeklyRewards}). Elas são sorteadas pela data do seu aparelho, então todo mundo recebe as mesmas no mesmo dia: as diárias trocam à meia-noite e as semanais na segunda-feira.`,
-        'O progresso conta no fim de cada partida, mesmo se você desistir pela pausa, e soma as partidas do dia ou da semana. Missões de sobreviver, de nível e do modo sem fim contam a sua melhor partida. As missões usam o que o jogo tem: derrotar Pokémon de um tipo, num clima ou num bioma, vencer fendas, abrir baús, pegar o Pay Day do Meowth, derrotar shinies e chefes, coletar Poké Dollars e vencer o Mewtwo com um inicial de certo tipo. A recompensa cai direto na carteira.',
-        `As conquistas são metas para a vida toda, com medalha de bronze, prata ou ouro (${medals}). Algumas dão um título, como Caçador de Shinies: toque nela na aba Conquistas para exibi-lo na tela de título e no resultado de cada partida.`,
+        'O progresso conta no fim de cada partida, mesmo se você desistir pela pausa, e soma as partidas do dia ou da semana. Missões de sobreviver, de nível, do modo sem fim e de espécies vistas contam a sua melhor partida. As missões usam o que o jogo tem: derrotar Pokémon de um tipo, num clima ou num bioma, vencer fendas, abrir baús, pegar o Pay Day do Meowth, derrotar shinies e chefes, coletar Poké Dollars, andar, ver espécies diferentes, chocar ovos (conta quando o ovo choca) e vencer o Mewtwo com um inicial de certo tipo. A recompensa cai direto na carteira, e algumas semanais também dão um ovo.',
+        `As conquistas são metas para a vida toda, com medalha de bronze, prata ou ouro (${medals}). Algumas dão um título, como Caçador de Shinies: toque nela na aba Conquistas para exibi-lo na tela de título e no resultado de cada partida. Ovos de recompensa vão para a incubadora (cheia, eles viram Poké Dollars) e, no fim de uma partida, dividem com os ovos achados o limite de ovos por partida.`,
       ],
       medalHead: 'Medalha',
       nameHead: 'Conquista',

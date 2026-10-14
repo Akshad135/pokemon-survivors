@@ -2799,6 +2799,13 @@ button {
   height: 32px;
 }
 
+.ach-row img.ach-egg {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 .ach-row.selected {
   background: #fff;
   border-color: #e83838;
@@ -2894,6 +2901,78 @@ button {
 .medal-report b {
   font-family: var(--title);
   font-size: 9px;
+}
+
+/* ---------- Results: one line of news and the missions the run moved ---------- */
+
+.result-news {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.news-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 18px;
+  line-height: 1;
+  background: #fff8d8;
+  border: 2px solid #e8c050;
+  border-radius: 6px;
+}
+
+.result-news img {
+  width: 18px;
+  height: 18px;
+}
+
+.news-chip.egg-ready {
+  background: #e0f4d8;
+  border-color: #58b858;
+}
+
+.report-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 3px 8px;
+  font-size: 18px;
+  line-height: 1;
+  background: #e8e8f0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.report-row .progress {
+  grid-column: 1 / -1;
+  height: 4px;
+}
+
+.report-row.fresh {
+  background: #fff8d8;
+  border-color: #e8c050;
+}
+
+.report-count {
+  display: flex;
+  gap: 6px;
+  color: #585870;
+}
+
+.report-row.done .report-count {
+  color: #38a038;
+}
+
+/* The way on stays in reach while a long result scrolls under it. */
+.result-buttons {
+  position: sticky;
+  bottom: calc(var(--px) * -1);
+  padding: 8px 0 2px;
+  background: linear-gradient(transparent, var(--paper) 35%);
 }
 
 .medal-chip {

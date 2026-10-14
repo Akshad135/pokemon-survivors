@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { addRun, achievementProgress, NO_ACHIEVEMENTS, NO_LIFETIME, parseAchievements, parseTitle, recordAchievements } from './achievements'
-import { EMPTY_SAVE, parseSave, recordRun } from './meta'
+import { ACHIEVEMENTS } from '../data/achievements'
+import { addRun, achievementProgress, NO_ACHIEVEMENTS, NO_LIFETIME, parseAchievements, parseTitle, recordAchievements, STARTER_LINE_DEX } from './achievements'
+import { EMPTY_DEX, markCaught, markSeen } from './dex'
+import { EGG_TIERS, EGGS } from './eggs'
+import { EMPTY_SAVE, parseSave, recordHatch, recordRun } from './meta'
 import { summary } from './tally.fixture'
 
 describe('lifetime records', () => {
@@ -38,6 +41,43 @@ describe('achievements', () => {
     expect(r.unlocked).toContain('kills100k')
     expect(r.save.wallet).toBe(r.reward)
     expect(r.reward).toBeGreaterThan(2000)
+  })
+})
+
+describe('Pokédex and egg achievements', () => {
+  const date = new Date(2026, 9, 13, 12)
+
+  it('read the Pokédex: species seen and every starter form caught', () => {
+    const seen = Array.from({ length: 100 }, (_, i) => i + 1).reduce(markSeen, EMPTY_DEX)
+    expect(recordAchievements(NO_ACHIEVEMENTS, summary(), null, 0, seen).unlocked).toContain('dex100')
+    expect(ACHIEVEMENTS.starterLines.target).toBe(STARTER_LINE_DEX.length)
+    const lines = STARTER_LINE_DEX.reduce((dex, n) => markCaught(dex, n), EMPTY_DEX)
+    expect(achievementProgress(NO_LIFETIME, 'starterLines', markSeen(lines, 1))).toEqual({ value: 81, target: 81 })
+    expect(achievementProgress(NO_LIFETIME, 'starterLines', markSeen(EMPTY_DEX, 1))).toEqual({ value: 0, target: 81 })
+  })
+
+  it('unlock on hatching, and a gold medal brings an egg', () => {
+    const first = recordHatch(EMPTY_SAVE, false, date)
+    expect(first.unlocked).toEqual(['firstHatch'])
+    expect(first.save.achievements.lifetime).toMatchObject({ hatches: 1, shinyHatches: 0 })
+    const shiny = recordHatch(first.save, true, date)
+    expect(shiny.unlocked).toEqual(['shinyHatch'])
+    expect(shiny.eggs).toEqual(['rare'])
+    expect(shiny.save.eggs).toEqual([{ tier: 'rare', steps: 0 }])
+  })
+
+  it('pay reward eggs in ₽ once the run used up its egg cap, or the incubator is full', () => {
+    const capped = recordRun(EMPTY_SAVE, summary({ kills: 100_000 }), null, date, 0)
+    expect(capped.unlocked).toContain('kills100k')
+    expect(capped.eggs).toEqual([])
+    expect(capped.save.eggs).toEqual([])
+    expect(capped.save.wallet).toBe(capped.reward)
+    expect(recordRun(EMPTY_SAVE, summary({ kills: 100_000 }), null, date).save.eggs).toHaveLength(1)
+    const full = { ...EMPTY_SAVE, eggs: Array.from({ length: EGGS.slots }, () => ({ tier: 'common' as const, steps: 0 })) }
+    const paid = recordHatch({ ...full, achievements: { ...NO_ACHIEVEMENTS, unlocked: ['firstHatch'] } }, true, date)
+    expect(paid.eggs).toEqual([])
+    expect(paid.save.wallet).toBe(paid.reward)
+    expect(paid.reward).toBeGreaterThanOrEqual(EGG_TIERS.rare.refund)
   })
 })
 

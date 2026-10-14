@@ -1,10 +1,10 @@
 import { chance, type Rng } from '../engine/rng'
-import { ACHIEVEMENTS, MEDAL_REWARD, type TitleId } from '../data/achievements'
-import { NO_ACHIEVEMENTS, parseAchievements, parseTitle, recordAchievements, type AchievementsSave } from './achievements'
+import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type TitleId } from '../data/achievements'
+import { NO_ACHIEVEMENTS, parseAchievements, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
-import { parseEggs, parseHatched, type Egg, type Hatched } from './eggs'
+import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
-import { NO_MISSIONS, parseMissions, recordMissions, type MissionsSave } from './missions'
+import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { isRecord, wholeNumber } from './parse'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
@@ -202,21 +202,57 @@ export const runEarnings = (g: Game) => {
 
 /* ---------------- Missions and achievements ---------------- */
 
+type Progress = { missions: MissionsSave; completed: readonly Mission[] }
+type Medals = { achievements: AchievementsSave; unlocked: readonly AchievementId[] }
+
+/** Eggs earned on top of the ₽: missions with an `egg` and medals listed in `MEDAL_EGG`. */
+const rewardEggs = (completed: readonly Mission[], unlocked: readonly AchievementId[]): EggTier[] => [
+  ...completed.flatMap((m) => (m.egg ? [m.egg] : [])),
+  ...unlocked.flatMap((id) => {
+    const egg = MEDAL_EGG[ACHIEVEMENTS[id].medal]
+    return egg ? [egg] : []
+  }),
+]
+
+type EggPay = { save: Save; eggs: EggTier[]; refund: number }
+
+/**
+ * Puts reward eggs in the incubator (`grantEgg`: a full one pays their ₽).
+ * Past `room` they are paid in ₽ too, so a run's rewards share its
+ * `EGGS.perRun` with the eggs it found.
+ */
+const payEggs = (save: Save, eggs: readonly EggTier[], room: number) =>
+  eggs.reduce<EggPay>(
+    (acc, tier, i) => {
+      if (i >= room) return { ...acc, save: { ...acc.save, wallet: acc.save.wallet + EGG_TIERS[tier].refund }, refund: acc.refund + EGG_TIERS[tier].refund }
+      const granted = grantEgg(acc.save, tier)
+      return { save: granted.save, eggs: granted.converted.length > 0 ? acc.eggs : [...acc.eggs, tier], refund: acc.refund + granted.refund }
+    },
+    { save, eggs: [], refund: 0 },
+  )
+
+/** Saves the boards and records, and pays every mission completed and medal earned (₽, then eggs). */
+const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
+  const coins = m.completed.reduce((sum, mission) => sum + mission.reward, 0) + a.unlocked.reduce((sum, id) => sum + MEDAL_REWARD[ACHIEVEMENTS[id].medal], 0)
+  const paid = payEggs({ ...save, wallet: save.wallet + coins, missions: m.missions, achievements: a.achievements }, rewardEggs(m.completed, a.unlocked), eggRoom)
+  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins + paid.refund, eggs: paid.eggs }
+}
+
 /**
  * Records a run (or what changed since `before`, the snapshot already recorded
- * for it) into the missions and lifetime records, and pays the ₽ of every
- * mission completed and medal earned.
+ * for it) into the missions and lifetime records, and pays the rewards. `save`
+ * already has the run's Pokédex log; `eggRoom` is how many reward eggs the run
+ * can still take (`EGGS.perRun` minus the eggs it found or got already).
  */
-export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date) => {
+export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date, eggRoom: number = EGGS.perRun) => {
   const m = recordMissions(save.missions, summary, before, date)
-  const a = recordAchievements(save.achievements, summary, before, m.completed.length)
-  const reward = m.completed.reduce((sum, mission) => sum + mission.reward, 0) + a.unlocked.reduce((sum, id) => sum + MEDAL_REWARD[ACHIEVEMENTS[id].medal], 0)
-  return {
-    save: { ...save, wallet: save.wallet + reward, missions: m.missions, achievements: a.achievements },
-    completed: m.completed,
-    unlocked: a.unlocked,
-    reward,
-  }
+  return settle(save, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
+}
+
+/** Records a hatched egg (`save` already has it hatched) into the missions and records, and pays the rewards. */
+export const recordHatch = (save: Save, shiny: boolean, date: Date) => {
+  const m = recordHatchMissions(save.missions, date)
+  return settle(save, m, recordHatchAchievements(save.achievements, shiny, m.completed.length, save.dex), Infinity)
 }
 
 export type RunRecord = ReturnType<typeof recordRun>

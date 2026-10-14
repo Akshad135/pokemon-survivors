@@ -1,6 +1,6 @@
 import type { TitleId } from '../data/achievements'
 import { depositEggs, type Egg } from '../game/eggs'
-import { parseSave, recordRun, type Save } from '../game/meta'
+import { parseSave, recordHatch, recordRun, type Save } from '../game/meta'
 import type { RunSummary } from '../game/tally'
 
 const KEY = 'ps:save'
@@ -56,11 +56,19 @@ export const setToday = (date: Date | null) => {
 }
 
 /**
- * Records a run into the missions and achievements, pays their ₽ and saves.
- * `before` is the snapshot already recorded for this run (see `recordRun`).
+ * Records a run into the missions and achievements, pays their rewards and saves.
+ * `before` is the snapshot already recorded for this run and `eggRoom` the
+ * reward eggs it can still take (see `recordRun`).
  */
-export const recordRunProgress = (summary: RunSummary, before: RunSummary | null) => {
-  const record = recordRun(loadSave(), summary, before, today())
+export const recordRunProgress = (summary: RunSummary, before: RunSummary | null, eggRoom: number) => {
+  const record = recordRun(loadSave(), summary, before, today(), eggRoom)
+  writeSave(record.save)
+  return record
+}
+
+/** Saves a hatched egg (`hatchEgg`'s save) with what it did for the missions and achievements. */
+export const saveHatch = (save: Save, shiny: boolean) => {
+  const record = recordHatch(save, shiny, today())
   writeSave(record.save)
   return record
 }

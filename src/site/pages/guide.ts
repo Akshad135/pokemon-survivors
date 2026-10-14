@@ -1,4 +1,4 @@
-import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_REWARD, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId } from '../../data/achievements'
+import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId } from '../../data/achievements'
 import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionTemplate } from '../../data/missions'
 import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
 import { BOSS_PATTERNS } from '../../data/bosses'
@@ -31,7 +31,7 @@ import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
 import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
-import { clock, slugOf } from '../pokedex'
+import { clock, pokedex, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
 import { patternText, traitText, typeBadge } from './pokedex'
 
@@ -287,7 +287,7 @@ const traits = (locale: Locale, m: SiteMessages) => {
 
 const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
-  return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player)))}
+  return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player), Math.round(1 / RIFT.shinyOdds), pokedex().length))}
     <p><a class="btn-link" href="${ROUTES.pokedex[locale]}">★ ${s.seeAll}</a></p>`
 }
 
@@ -365,7 +365,10 @@ const missions = (locale: Locale, m: SiteMessages) => {
     const all = pool.flatMap((t) => t.tiers.map(([, reward]) => reward))
     return `${money(Math.min(...all))}–${money(Math.max(...all))}`
   }
-  const medals = MEDALS.map((medal) => `${k.medals[medal]} ${money(MEDAL_REWARD[medal])}`).join(', ')
+  const medals = MEDALS.map((medal) => {
+    const egg = MEDAL_EGG[medal]
+    return `${k.medals[medal]} ${money(MEDAL_REWARD[medal])}${egg ? ` + ${LOCALES[locale].messages.eggs.tiers[egg]}` : ''}`
+  }).join(', ')
   const goal = (id: AchievementId) => {
     const def: AchievementDef = ACHIEVEMENTS[id]
     if (def.stat === 'region') return a.region(REGIONS.find((r) => r.gen === def.gen)?.name ?? '')

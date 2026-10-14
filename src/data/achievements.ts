@@ -1,11 +1,9 @@
+import type { EggTier } from '../game/eggs'
+
 /**
  * Achievements: lifetime goals with a bronze, silver or gold medal. Names,
  * titles and goal lines live in `i18n` (`achievements`); the rules in
  * `game/achievements.ts`. Some grant a title the player can show off.
- *
- * Waiting on other features (add them when those land):
- * - Pokédex: see 100 species (silver), catch every starter line (gold, title).
- * - Eggs: hatch the first egg (bronze), hatch a shiny (gold, title).
  */
 
 export const MEDALS = ['bronze', 'silver', 'gold'] as const
@@ -15,6 +13,9 @@ export type Medal = (typeof MEDALS)[number]
 /** ₽ paid when a medal is earned. */
 export const MEDAL_REWARD = { bronze: 100, silver: 500, gold: 2000 } as const satisfies Record<Medal, number>
 
+/** Egg given on top of the ₽ (through `grantEgg`, so a full incubator pays it out instead). */
+export const MEDAL_EGG: Partial<Record<Medal, EggTier>> = { gold: 'rare' }
+
 /** Lifetime numbers an achievement can track (see `statValue` in `game/achievements.ts`). */
 export type AchievementStat =
   | 'runs' | 'kills' | 'bestMinutes' | 'bestLevel' | 'finalStages'
@@ -22,6 +23,7 @@ export type AchievementStat =
   | 'shinyKills' | 'shinyStarters' | 'shinyLegends'
   | 'rifts' | 'legends' | 'overtimeMinutes' | 'reaperDefeats'
   | 'bossKills' | 'chests' | 'meowths' | 'altars' | 'coins' | 'moveEvolutions' | 'missions'
+  | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches'
 
 export type AchievementDef = {
   medal: Medal
@@ -63,6 +65,11 @@ export const ACHIEVEMENTS = {
   shiny10: { medal: 'silver', stat: 'shinyKills', target: 10 },
   shiny50: { medal: 'gold', stat: 'shinyKills', target: 50, title: true },
   shinyStarter: { medal: 'silver', stat: 'shinyStarters', target: 1, title: true },
+  dex100: { medal: 'silver', stat: 'dexSeen', target: 100 },
+  /** Every form of the 27 starter lines caught, i.e. each one taken to its final evolution. */
+  starterLines: { medal: 'gold', stat: 'starterLines', target: 81, title: true },
+  firstHatch: { medal: 'bronze', stat: 'hatches', target: 1 },
+  shinyHatch: { medal: 'gold', stat: 'shinyHatches', target: 1, title: true },
   rift1: { medal: 'bronze', stat: 'rifts', target: 1 },
   rift25: { medal: 'silver', stat: 'rifts', target: 25 },
   legends: { medal: 'gold', stat: 'legends', target: 6, title: true },

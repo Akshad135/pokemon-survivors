@@ -18,6 +18,7 @@ import {
   rollEgg,
   type Egg,
 } from './eggs'
+import { dexStatus } from './dex'
 import { starterStats } from './leveling'
 import { EMPTY_SAVE, parseSave, type Save } from './meta'
 
@@ -82,6 +83,15 @@ describe('hatching', () => {
     expect(HATCHLINGS[result.hatch.id].egg).toBe('rare')
     expect(result.save.eggs).toEqual([ready('common')])
     expect(isUnlocked(result.save.hatched, result.hatch.id)).toBe(true)
+  })
+
+  it('catches what came out in the Pokédex, shiny if it is, and sees its whole line', () => {
+    for (let seed = 0; seed < 300; seed++) {
+      const { save, hatch } = hatchEgg(withEggs([ready('common')]), 0, createRng(seed))!
+      const [first, ...rest] = HATCHLINGS[hatch.id].line
+      expect(dexStatus(save.dex, first!.dex)).toMatchObject({ caught: true, shiny: hatch.shiny })
+      for (const stage of rest) expect(dexStatus(save.dex, stage.dex)).toMatchObject({ seen: true, caught: false })
+    }
   })
 
   it('pays duplicates in ₽, but a shiny upgrades a family owned in normal colors', () => {

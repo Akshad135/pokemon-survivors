@@ -19,7 +19,7 @@ import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
-import { depositEggs, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
+import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
 import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
@@ -48,9 +48,9 @@ import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, today, updateSave, writeSave } from './ui/save'
+import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
-import { missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
+import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
 import { missionDevTools } from './ui/missionsDev'
 import { pokedexScreen } from './ui/pokedex'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
@@ -121,8 +121,9 @@ type Run = {
   missionsBefore: MissionStatus[]
   recorded: RunSummary | null
   unlocked: AchievementId[]
-  /** ₽ paid for missions and medals this run. */
+  /** ₽ paid for missions and medals this run, and the reward eggs they gave. */
   reward: number
+  rewardEggs: number
   /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
   hatchery: { steps: number; eggs: number; refund: number }
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
@@ -200,16 +201,19 @@ const showIncubator = (back: () => void) => {
   setScreen(incubator(ui, input, { onHatch: (i) => hatchAt(i, () => showIncubator(back)), onClose: back }))
 }
 
-/** Hatches the ready egg at `index` (saving the result) and plays its scene, then `then`. */
+/**
+ * Hatches the ready egg at `index`, saving it with its missions and medals,
+ * and plays its scene, then `then`. What it completed toasts once the scene is over.
+ */
 const hatchAt = (index: number, then: () => void) => {
   const result = hatchEgg(loadSave(), index, createRng(Date.now()))
   if (!result) return then()
-  writeSave(result.save)
-  showHatch(result.hatch, then)
+  const record = saveHatch(result.save, result.hatch.shiny)
+  showHatch(result.hatch, then, undefined, () => later(() => progressToast(ui, record)))
 }
 
-const showHatch = (hatch: Hatch, then: () => void, holdAt?: number) =>
-  setScreen(hatchScene(ui, input, hatch, { play: () => void startRun(hatch.id), done: then }, holdAt))
+const showHatch = (hatch: Hatch, then: () => void, holdAt?: number, after = () => {}) =>
+  setScreen(hatchScene(ui, input, hatch, { play: () => (void startRun(hatch.id), after()), done: () => (then(), after()) }, holdAt))
 
 /** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then `then`. */
 const afterRun = (then: () => void) => {
@@ -249,10 +253,12 @@ const bankRun = (r: Run, withBonus: boolean) => {
  */
 const recordProgress = (r: Run) => {
   const summary = summarizeRun(r.game)
-  const record = recordRunProgress(summary, r.recorded)
+  // Reward eggs share the run's egg cap with the eggs it found.
+  const record = recordRunProgress(summary, r.recorded, Math.max(0, EGGS.perRun - r.game.eggs.found.length - r.rewardEggs))
   r.recorded = summary
   r.unlocked.push(...record.unlocked)
   r.reward += record.reward
+  r.rewardEggs += record.eggs.length
   return record
 }
 
@@ -340,6 +346,7 @@ const startRun = async (starter: PlayableId) => {
     recorded: null,
     unlocked: [],
     reward: 0,
+    rewardEggs: 0,
     hatchery: { steps: 0, eggs: 0, refund: 0 },
     dexBase: save.dex,
   }
@@ -407,7 +414,8 @@ const syncOverlay = (r: Run) => {
         () => continueEndless(g),
         {
           badge: titleBadge(loadSave().title),
-          report: missionReport(r.missionsBefore, r.unlocked, r.reward),
+          report: missionReport(r.missionsBefore, r.reward, r.rewardEggs),
+          medals: medalChips(r.unlocked),
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
         },

@@ -76,6 +76,33 @@ describe('save parsing', () => {
     const save = buyUpgrade(rich(2000), 'carbos')!
     expect(parseSave(JSON.stringify(save))).toEqual(save)
   })
+  /** `ps:save` as each Phase 2 PR wrote it on its own, before they were merged. */
+  const OLD = { version: 1, wallet: 1234, ranks: { hpUp: 2, carbos: 1 } }
+  const PR_SAVES = {
+    dex: { ...OLD, dex: { 16: [42, 3], 19: [7, 0] } },
+    eggs: { ...OLD, eggs: [{ tier: 'rare', steps: 1200 }], hatched: { gible: { shiny: true } } },
+    missions: {
+      ...OLD,
+      missions: { daily: { key: '2026-10-13', progress: { 'kills:500': 120 } }, weekly: { key: '2026-10-12', progress: {} } },
+      achievements: { unlocked: ['firstRun', 'champion'], lifetime: { runs: 3, wins: 1, starters: ['charmander'] } },
+      title: 'champion',
+    },
+  }
+
+  it('loads a save from before Phase 2 and one from each of its PRs without losing anything', () => {
+    const old = parseSave(JSON.stringify(OLD))
+    expect(old).toEqual({ ...EMPTY_SAVE, wallet: 1234, ranks: { ...NO_RANKS, hpUp: 2, carbos: 1 } })
+    for (const raw of Object.values(PR_SAVES)) expect(parseSave(JSON.stringify(raw))).toMatchObject({ wallet: 1234, ranks: old.ranks })
+    expect(parseSave(JSON.stringify(PR_SAVES.dex)).dex).toEqual(PR_SAVES.dex.dex)
+    expect(parseSave(JSON.stringify(PR_SAVES.eggs))).toMatchObject({ eggs: PR_SAVES.eggs.eggs, hatched: PR_SAVES.eggs.hatched })
+    const missions = parseSave(JSON.stringify(PR_SAVES.missions))
+    expect(missions).toMatchObject({ missions: PR_SAVES.missions.missions, title: 'champion' })
+    expect(missions.achievements).toMatchObject({ unlocked: ['firstRun', 'champion'], lifetime: { runs: 3, wins: 1, starters: ['charmander'] } })
+    // All of them together, as the merged game writes it.
+    const merged = parseSave(JSON.stringify({ ...PR_SAVES.dex, ...PR_SAVES.eggs, ...PR_SAVES.missions }))
+    expect(parseSave(JSON.stringify(merged))).toEqual(merged)
+    expect(merged).toMatchObject({ dex: PR_SAVES.dex.dex, eggs: PR_SAVES.eggs.eggs, title: 'champion' })
+  })
 })
 
 describe('earning ₽', () => {

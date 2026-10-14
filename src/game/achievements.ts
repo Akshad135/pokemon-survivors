@@ -3,6 +3,7 @@ import { isHatchling } from '../data/hatchlings'
 import { RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { REGIONS, STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
 import { POKE_TYPES, type PokeType } from '../data/types'
+import { dexCounts, dexStatus, EMPTY_DEX, type Pokedex } from './dex'
 import { overtime } from './endless'
 import { isRecord, knownIds, wholeNumber } from './parse'
 import type { RunSummary } from './tally'
@@ -15,7 +16,7 @@ import type { RunSummary } from './tally'
 /** Run summary fields that add up over a lifetime as they are. */
 const SUMMED = ['kills', 'shinyKills', 'bossKills', 'shinyLegends', 'chests', 'meowths', 'altars', 'coins', 'moveEvolutions', 'reaperDefeats'] as const satisfies readonly (keyof RunSummary)[]
 
-const COUNTERS = [...SUMMED, 'runs', 'wins', 'rifts', 'finalStages', 'shinyStarters', 'missions', 'bestTime', 'bestLevel', 'bestOvertime'] as const
+const COUNTERS = [...SUMMED, 'runs', 'wins', 'rifts', 'finalStages', 'shinyStarters', 'missions', 'bestTime', 'bestLevel', 'bestOvertime', 'hatches', 'shinyHatches'] as const
 
 type Counter = (typeof COUNTERS)[number]
 
@@ -71,9 +72,14 @@ export const addRun = (l: Lifetime, s: RunSummary, before: RunSummary | null, mi
   }
 }
 
-/** Where a lifetime stands on an achievement's stat. */
-const statValue = (l: Lifetime, stat: AchievementStat): number => {
+/** Every form of every starter line, for `starterLines`. */
+export const STARTER_LINE_DEX = STARTER_IDS.flatMap((id) => STARTERS[id].line.map((stage) => stage.dex))
+
+/** Where a lifetime (and the Pokédex, for its goals) stands on an achievement's stat. */
+const statValue = (l: Lifetime, stat: AchievementStat, dex: Pokedex): number => {
   switch (stat) {
+    case 'dexSeen': return dexCounts(dex).seen
+    case 'starterLines': return STARTER_LINE_DEX.filter((n) => dexStatus(dex, n).caught).length
     case 'bestMinutes': return Math.floor(l.bestTime / 60)
     case 'overtimeMinutes': return Math.floor(l.bestOvertime / 60)
     case 'legends': return l.legends.length
@@ -85,25 +91,34 @@ const statValue = (l: Lifetime, stat: AchievementStat): number => {
 }
 
 /** Progress towards an achievement, as `value` out of `target`. */
-export const achievementProgress = (l: Lifetime, id: AchievementId) => {
+export const achievementProgress = (l: Lifetime, id: AchievementId, dex: Pokedex = EMPTY_DEX) => {
   const def: AchievementDef = ACHIEVEMENTS[id]
   if (def.stat === 'region') return { value: l.winGens.includes(def.gen) ? 1 : 0, target: 1 }
-  return { value: Math.min(def.target, statValue(l, def.stat)), target: def.target }
+  return { value: Math.min(def.target, statValue(l, def.stat, dex)), target: def.target }
 }
 
 export type AchievementsSave = { unlocked: readonly AchievementId[]; lifetime: Lifetime }
 
 export const NO_ACHIEVEMENTS: AchievementsSave = { unlocked: [], lifetime: NO_LIFETIME }
 
-/** Adds a run to the records and lists the achievements it unlocked, in list order. */
-export const recordAchievements = (save: AchievementsSave, s: RunSummary, before: RunSummary | null, missionsDone = 0) => {
-  const lifetime = addRun(save.lifetime, s, before, missionsDone)
+/** Moves the records to `lifetime` and lists the achievements that unlocks, in list order. */
+const advance = (save: AchievementsSave, lifetime: Lifetime, dex: Pokedex) => {
   const unlocked = ACHIEVEMENT_IDS.filter((id) => {
     if (save.unlocked.includes(id)) return false
-    const p = achievementProgress(lifetime, id)
+    const p = achievementProgress(lifetime, id, dex)
     return p.value >= p.target
   })
   return { achievements: { unlocked: [...save.unlocked, ...unlocked], lifetime }, unlocked }
+}
+
+/** Adds a run to the records and lists the achievements it unlocked. `dex` is the Pokédex with the run in it. */
+export const recordAchievements = (save: AchievementsSave, s: RunSummary, before: RunSummary | null, missionsDone = 0, dex: Pokedex = EMPTY_DEX) =>
+  advance(save, addRun(save.lifetime, s, before, missionsDone), dex)
+
+/** Adds a hatched egg to the records (and `missionsDone` missions it completed); `dex` already has it caught. */
+export const recordHatchAchievements = (save: AchievementsSave, shiny: boolean, missionsDone: number, dex: Pokedex) => {
+  const l = save.lifetime
+  return advance(save, { ...l, hatches: l.hatches + 1, shinyHatches: l.shinyHatches + (shiny ? 1 : 0), missions: l.missions + missionsDone }, dex)
 }
 
 /* ---------------- Save ---------------- */
