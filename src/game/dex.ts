@@ -109,6 +109,13 @@ export const dexNews = (dex: Pokedex, log: DexLog) => ({
 
 /* ---------------- Save ---------------- */
 
+/** Both Pokédexes in one: every species either saw, the most defeated, and caught (or shiny) if either caught it. */
+export const mergeDex = (a: Pokedex, b: Pokedex): Pokedex =>
+  Object.entries(b).reduce<Pokedex>((dex, [key, [defeated, flags]]) => {
+    const [d, f] = dex[Number(key)] ?? [0, 0]
+    return { ...dex, [key]: [Math.max(d, defeated), f | flags] }
+  }, a)
+
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0)
 
 /**

@@ -1618,6 +1618,83 @@ button {
   border-color: #a02028;
 }
 
+/* Account chip: top-right twin of the language switch, on the title screen. */
+.account-chip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 8px 6px 10px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--ink);
+  pointer-events: auto;
+}
+
+.account-chip:hover,
+.account-chip:focus-visible {
+  --frame: #e83838;
+}
+
+/* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: #58c858;
+  box-shadow: 0 0 0 2px #205828;
+}
+
+.sync-dot[data-sync='syncing'] {
+  background: #f8d030;
+  box-shadow: 0 0 0 2px #886818;
+  animation: blink 0.8s steps(2) infinite;
+}
+
+.sync-dot[data-sync='offline'] {
+  background: #8890a8;
+  box-shadow: 0 0 0 2px #485068;
+}
+
+.sync-dot[data-sync='guest'] {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px #8890a8;
+}
+
+.dialog.account {
+  width: min(460px, 94vw);
+}
+
+.account-line {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.account-line b {
+  color: #e83838;
+}
+
+.account-sync .sync-dot {
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: 2px;
+}
+
+.account-note {
+  font-size: 17px;
+  color: #6878a8;
+}
+
+.account-error {
+  color: #e83838;
+}
+
 .key-hint {
   font-family: var(--title);
   font-size: 8px;
@@ -1978,6 +2055,12 @@ button {
   .lang-option {
     min-width: 32px;
     min-height: 28px;
+  }
+  .account-chip {
+    top: 6px;
+    right: 6px;
+    min-height: 36px;
+    padding: 4px 8px;
   }
 }
 

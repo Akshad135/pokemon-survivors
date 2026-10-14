@@ -125,6 +125,25 @@ export const recordHatchAchievements = (save: AchievementsSave, shiny: boolean, 
 
 const GENS = REGIONS.map((r) => r.gen)
 
+/**
+ * Two sets of records in one: every achievement unlocked on either side, and
+ * each counter at the larger of the two (not the sum: merging the same
+ * records again must change nothing). Medals were paid where they unlocked.
+ */
+export const mergeAchievements = (a: AchievementsSave, b: AchievementsSave): AchievementsSave => {
+  const [x, y] = [a.lifetime, b.lifetime]
+  return {
+    unlocked: ACHIEVEMENT_IDS.filter((id) => a.unlocked.includes(id) || b.unlocked.includes(id)),
+    lifetime: {
+      ...(Object.fromEntries(COUNTERS.map((c) => [c, Math.max(x[c], y[c])])) as Record<Counter, number>),
+      legends: knownIds([...x.legends, ...y.legends], RIFT_LEGENDS),
+      winGens: knownIds([...x.winGens, ...y.winGens], GENS),
+      winTypes: knownIds([...x.winTypes, ...y.winTypes], POKE_TYPES),
+      starters: knownIds([...x.starters, ...y.starters], STARTER_IDS),
+    },
+  }
+}
+
 /** Parses the `achievements` field of the save, field by field; anything malformed falls back to empty. */
 export const parseAchievements = (raw: unknown): AchievementsSave => {
   const data = isRecord(raw) ? raw : {}

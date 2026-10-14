@@ -9,7 +9,7 @@ const section = (id: string, title: string, body: Html) =>
 
 const paragraphs = (texts: readonly string[]) => texts.map((t) => html`<p>${t}</p>`)
 
-/** `/legal/`: fan-game disclaimer, licenses and credits, privacy (localStorage only) and takedown contact. */
+/** `/legal/`: fan-game disclaimer, licenses and credits, privacy (localStorage, optional accounts) and takedown contact. */
 export const legalPage = (locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const l = m.legal
@@ -25,6 +25,7 @@ export const legalPage = (locale: Locale) => {
     <p><a class="btn-link" href="${REPO_URL}/blob/main/CREDITS.md">${l.licenses.creditsLink}</a></p>`
   const privacy = html`${paragraphs(l.privacy)}
     <dl class="defs">${Object.entries(l.storage).map(([key, text]) => html`<dt><code>${key}</code></dt><dd>${text}</dd>`)}</dl>
+    ${paragraphs(l.account)}
     ${paragraphs(l.privacyAfter)}`
   const contact = html`${paragraphs(l.contact)}
     <p class="links"><a class="btn-link" href="${REPO_URL}/issues">${l.issues}</a> <a class="btn-link" href="${REPO_URL}">${l.source}</a></p>`

@@ -17,6 +17,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
+import { accountsEnabled, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
@@ -29,7 +30,7 @@ import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } f
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
-import { dexNews, dexStatus, recordRun, type Pokedex } from './game/dex'
+import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
@@ -47,6 +48,7 @@ import { createTitleScene, drawTitleScene, stepTitleScene } from './render/title
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
+import { accountScreen } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
@@ -175,6 +177,8 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus })),
+      // Closing rebuilds the title, so a sign in's merged save (title badge) shows up.
+      account: accountsEnabled ? (focus) => accountScreen(ui, input, () => showTitle({ focus })) : undefined,
     }, opts),
   )
 }
@@ -209,6 +213,7 @@ const hatchAt = (index: number, then: () => void) => {
   const result = hatchEgg(loadSave(), index, createRng(Date.now()))
   if (!result) return then()
   const record = saveHatch(result.save, result.hatch.shiny)
+  void syncSave()
   showHatch(result.hatch, then, undefined, () => later(() => progressToast(ui, record)))
 }
 
@@ -244,7 +249,8 @@ const bankRun = (r: Run, withBonus: boolean) => {
   if (total > r.paid) depositPokeDollars(total - r.paid)
   r.paid = Math.max(r.paid, total)
   bankHatchery(r)
-  updateSave((save) => ({ ...save, dex: recordRun(r.dexBase, g.dexLog) }))
+  // Merged into the stored Pokédex, which an account sync may have grown during the run.
+  updateSave((save) => ({ ...save, dex: mergeDex(save.dex, recordRun(r.dexBase, g.dexLog)) }))
 }
 
 /**
@@ -279,6 +285,7 @@ const endRun = () => {
   // The toast waits for the next screen, so it lands on top of it.
   const record = recordProgress(run)
   later(() => progressToast(ui, record))
+  void syncSave()
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
@@ -727,6 +734,7 @@ const boot = () => {
   showTitle({ intro: true })
   requestAnimationFrame(frame)
   void preloadInBackground()
+  startAccount()
 }
 
 boot()

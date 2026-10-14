@@ -3,6 +3,7 @@ import type { Input } from '../engine/input'
 import { context2d } from '../engine/pixelart'
 import { locale, t, type Locale } from '../i18n'
 import { logoScale, titleLogo } from '../render/logo'
+import { accountChip } from './account'
 import { h, later } from './dom'
 import { languageSwitch } from './language'
 import { titleBadge } from './missions'
@@ -33,6 +34,8 @@ export type TitleActions = {
   settings?: (focus: number) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: number) => Screen
+  /** Opens the account dialog over the title, like `settings`. No action (accounts off), no button. */
+  account?: (focus: number) => Screen
 }
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel. */
@@ -54,13 +57,13 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 /**
  * Title screen over the live meadow: pixel logo, a blinking "press start",
  * then the main menu (Play, Incubator, Missions, Pokédex, How to play, Settings) with the language
- * switch and footer links. `intro: false` opens straight on the menu (coming
+ * switch, the account chip (when accounts are on) and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
 export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: number }): Screen => {
   const m = t().home
   const pages = SITE_PAGES[locale()]
-  const { settings } = actions
+  const { settings, account } = actions
   const items = [
     { label: m.play, run: actions.play },
     { label: m.incubator, run: actions.incubator },
@@ -96,6 +99,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   let nav: ReturnType<typeof menu> | null = null
   let closeLanguage: (() => void) | null = null
+  let closeAccount: (() => void) | null = null
   let offIntro: (() => void) | null = null
   /** Settings or the Pokédex, open over the meadow. */
   let overScreen: Screen | null = null
@@ -109,6 +113,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       later(items[i]!.run)
     }, { initial: focus })
     closeLanguage = languageSwitch(root, input, actions.language)
+    closeAccount = account ? accountChip(root, input, () => openOver(account)) : null
     menuBox.replaceChildren(...buttons)
   }
 
@@ -117,7 +122,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     const at = nav?.index ?? 0
     nav?.off()
     closeLanguage?.()
-    nav = closeLanguage = null
+    closeAccount?.()
+    nav = closeLanguage = closeAccount = null
     el.classList.add('hidden')
     overScreen = open(at)
   }
@@ -150,7 +156,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     el,
     dim: 0.12,
     tick: (time: number) => (overScreen?.tick?.(time), logo.width > 1 && fitLogo(logo)),
-    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), el.remove()),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), closeAccount?.(), el.remove()),
   }
 }
 

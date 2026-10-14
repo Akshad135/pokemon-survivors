@@ -471,7 +471,7 @@ export const siteEn: SiteMessages = {
   legal: {
     title: 'Legal, privacy and credits | Pokémon Survivors',
     description:
-      'Pokémon Survivors is an unofficial, free fan game with no ads and no purchases. Licenses (MIT code, CC BY-NC 4.0 sprites), privacy (no personal data collected), credits and contact.',
+      'Pokémon Survivors is an unofficial, free fan game with no ads and no purchases. Licenses (MIT code, CC BY-NC 4.0 sprites), privacy (optional accounts; as a guest, nothing leaves your device), credits and contact.',
     h1: 'Legal, privacy and credits',
     sections: {
       fanGame: 'Unofficial fan game',
@@ -504,15 +504,21 @@ export const siteEn: SiteMessages = {
       nonCommercial: 'Because the sprites are CC BY-NC, the game as a whole can\'t be used commercially.',
     },
     privacy: [
-      'The game has no sign-up, cookies, ads or trackers, and collects no personal data.',
-      'Everything the game remembers lives in your browser\'s localStorage, on your device, and is never sent to any server:',
+      'Playing as a guest is the default and needs no sign-up: that way the game has no cookies, ads or trackers, and collects no personal data.',
+      'Everything the game remembers lives in your browser\'s localStorage, on your device. As a guest, none of it is sent to any server:',
     ],
     storage: {
       'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs), the Pokémon hatched (hatched), mission progress, achievements, records (like Pokémon defeated and your longest survival) and the title you picked.',
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
       'ps:lang': 'Your language (Portuguese or English).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',
+      'ps:account': 'Only if you sign in: which account is signed in on this device (its id and your first name) and the last version of your progress it synced.',
     },
+    account: [
+      'Accounts are optional and keep your progress in the cloud so you can continue on another device. Sign-in is with Google, handled by Clerk (clerk.com), which gets your name, email and picture from Google and uses its own cookies to keep you signed in. The game never sees your password.',
+      'With an account, a copy of ps:save is kept on our server, tied to your account id. It is sent when you sign in, when you open the game and at the end of every run. Our server keeps only the account id, your progress and when it was created and last used, not your email.',
+      'Signing out keeps your progress on this device. To delete your account and the progress kept in it, ask through the contact below.',
+    ],
     privacyAfter: [
       'To delete this data, clear the site data in your browser settings.',
       'Sprites, sounds and fonts are served by this site, with no calls to third-party services. The site is hosted on Vercel which, like any web server, may log technical access data (such as IP addresses) to run and protect the service.',
