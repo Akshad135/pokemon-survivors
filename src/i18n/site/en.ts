@@ -38,10 +38,10 @@ export const siteEn: SiteMessages = {
   pokedex: {
     title: 'Pokémon Survivors Pokédex: starters, enemies, bosses and legendaries',
     description:
-      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
+      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 25 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
     h1: 'Pokédex',
     intro: (count: number) =>
-      `All ${count} Pokémon in Pokémon Survivors, with the game's own numbers: starters from every region and their evolutions, the wild horde, the bosses and the legendaries. Hover (or tap) to see the sprite walk, and use ★ to see the shiny.`,
+      `All ${count} Pokémon in Pokémon Survivors, with the game's own numbers: starters from every region, the families that hatch from eggs and their evolutions, the wild horde, the bosses and the legendaries. Hover (or tap) to see the sprite walk, and use ★ to see the shiny.`,
     filters: 'Filters',
     search: 'Search',
     searchPlaceholder: 'Name or number',
@@ -324,17 +324,17 @@ export const siteEn: SiteMessages = {
       effectHead: 'What it does',
     },
     shinies: {
-      paragraphs: (wild: number, hp: number, xp: number, player: number) => [
-        `Every regular wild Pokémon has a 1 in ${n(wild)} chance to spawn shiny. It becomes an elite with ${hp}x HP and ${xp}x EXP, and always drops a Poké Ball and Poké Dollars. Bosses and legendaries are never shiny.`,
+      paragraphs: (wild: number, hp: number, xp: number, player: number, rift: number, species: number) => [
+        `Every regular wild Pokémon has a 1 in ${n(wild)} chance to spawn shiny. It becomes an elite with ${hp}x HP and ${xp}x EXP, and always drops a Poké Ball and Poké Dollars. Map bosses, Mewtwo and Arceus are never shiny, but a rift's legendary has a 1 in ${rift} chance to be, and pays more.`,
         `Your starter has a 1 in ${player} chance to be shiny, and stays shiny through every evolution of that run.`,
         'A Poké Ball (from bosses and shinies) grants a random upgrade on the spot, or a move evolution if one is ready.',
-        'A defeated shiny is yours: it shows up as caught, sparkle and all, in the in-game Pokédex (Pokédex, on the title menu). The Pokédex also remembers every species you have seen and how many you defeated, and the end of a run shows what is new.',
+        `A defeated shiny is yours: it shows up as caught, sparkle and all, in the in-game Pokédex (Pokédex, on the title menu). The Pokémon that comes out of an egg counts as caught too (and its evolution line as seen), and so does every form you played, the ones you evolved into included. The Pokédex holds the game's ${species} species, remembers every one you have seen and how many you defeated, and the end of a run shows what is new.`,
       ],
       seeAll: 'See every shiny in the Pokédex',
     },
     eggs: {
       paragraphs: (starters, families, slots, perRun, stepPx, shiny, weight) => [
-        `Besides the ${starters} starters, ${families} playable Pokémon families hatch from eggs, from every type and generation. Each one has its own starting move, special, mid-run evolution and stats.`,
+        `Besides the ${starters} starters, ${families} playable Pokémon families hatch from eggs, from every type and generation: ${starters + families} Pokémon to play in all. Each one has its own starting move, special, mid-run evolution and stats.`,
         `Bosses, locked chests and rifts sometimes leave an egg, at most ${perRun} per run. It goes to the incubator, which has ${slots} slots. Every ${stepPx} px walked in a run counts as a step, and every egg in the incubator walks along. An egg found mid-run already counts the steps taken after it.`,
         `Once an egg is ready, it hatches when you leave the run or in the incubator (in the main menu and in the Eggs tab of the Pokémon select). Families you don't have yet come out ${weight}x more often. The hatchling has a 1 in ${shiny} chance to be shiny, and then it stays shiny in every run.`,
         'A duplicate, or an egg found with the incubator full, becomes Poké Dollars. A player who never had an egg is sure to get the first one.',
@@ -429,8 +429,8 @@ export const siteEn: SiteMessages = {
     missions: {
       paragraphs: (daily, weekly, dailyRewards, weeklyRewards, medals) => [
         `Missions is in the title screen menu. Every day brings ${daily} daily missions (${dailyRewards}) and every week ${weekly} weekly ones (${weeklyRewards}). They are drawn from your device's date, so everyone gets the same ones on the same day: dailies change at midnight and weeklies on Monday.`,
-        'Progress counts at the end of every run, even if you quit from the pause menu, and adds up the runs of the day or week. Survival, level and endless missions count your best run. Missions use what the game has: defeat Pokémon of a type, in a weather or in a biome, win rifts, open chests, grab Meowth\'s Pay Day, defeat shinies and bosses, collect Poké Dollars and beat Mewtwo with a starter of some type. The reward goes straight to your wallet.',
-        `Achievements are lifetime goals with a bronze, silver or gold medal (${medals}). Some grant a title, like Shiny Hunter: tap it on the Achievements tab to show it on the title screen and on every run's results.`,
+        'Progress counts at the end of every run, even if you quit from the pause menu, and adds up the runs of the day or week. Survival, level, endless and species missions count your best run. Missions use what the game has: defeat Pokémon of a type, in a weather or in a biome, win rifts, open chests, grab Meowth\'s Pay Day, defeat shinies and bosses, collect Poké Dollars, walk, see different species, hatch eggs (it counts when the egg hatches) and beat Mewtwo with a starter of some type. The reward goes straight to your wallet, and some weeklies also give an egg.',
+        `Achievements are lifetime goals with a bronze, silver or gold medal (${medals}). Some grant a title, like Shiny Hunter: tap it on the Achievements tab to show it on the title screen and on every run's results. Reward eggs go to the incubator (when it's full they become Poké Dollars) and, at the end of a run, share the per-run egg limit with the eggs you found.`,
       ],
       medalHead: 'Medal',
       nameHead: 'Achievement',

@@ -3,6 +3,7 @@ import { evolvedFrom } from '../data/evolutions'
 import type { RiftLegend } from '../data/rifts'
 import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
+import { toSteps } from './eggs'
 import { wonRun } from './meta'
 import type { MapEventNotice } from './mapEvents'
 import type { Enemy, Game } from './types'
@@ -83,6 +84,10 @@ export type RunSummary = {
   reaperDefeats: number
   /** Moves evolved with their paired held item. */
   moveEvolutions: number
+  /** Steps walked (`toSteps`). */
+  steps: number
+  /** Different species seen (the run's Pokédex log). */
+  species: number
   killsByType: Partial<Record<PokeType, number>>
   killsByWeather: Partial<Record<WeatherId, number>>
   killsByBiome: Partial<Record<BiomeId, number>>
@@ -110,6 +115,8 @@ export const summarizeRun = (g: Game): RunSummary => {
     legends: [...g.rift.cleared],
     reaperDefeats: g.endless?.reaperDefeats ?? 0,
     moveEvolutions: g.player.moves.filter((m) => evolvedFrom(m.id)).length,
+    steps: toSteps(g.player.walked),
+    species: g.dexLog.seen.size,
     killsByType: { ...t.killsByType },
     killsByWeather: { ...t.killsByWeather },
     killsByBiome: { ...t.killsByBiome },

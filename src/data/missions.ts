@@ -1,10 +1,12 @@
+import type { EggTier } from '../game/eggs'
 import type { BiomeId, WeatherId } from './biomes'
 import type { PokeType } from './types'
 
 /**
  * What a mission asks for, measured on a run summary (`game/tally.ts`).
- * Most goals add up across the day's (or week's) runs; `survive`, `level` and
- * `endless` keep the best single run (see `BEST_GOALS` in `game/missions.ts`).
+ * Most goals add up across the day's (or week's) runs; `survive`, `level`,
+ * `endless` and `species` keep the best single run (see `BEST_GOALS` in
+ * `game/missions.ts`). `hatches` counts eggs hatched, outside runs.
  */
 export type MissionGoal =
   | { kind: 'kills' }
@@ -27,12 +29,17 @@ export type MissionGoal =
   | { kind: 'level' }
   /** Endless minutes past Mewtwo in one run. */
   | { kind: 'endless' }
+  /** Steps walked (they also walk the incubator's eggs). */
+  | { kind: 'steps' }
+  /** Different species seen in one run (logged in the Pokédex). */
+  | { kind: 'species' }
+  | { kind: 'hatches' }
 
 /** Target and ₽ reward of one difficulty. */
 type Tier = readonly [target: number, reward: number]
 
-/** A family of missions: the draw picks one goal and one tier. */
-export type MissionTemplate = { goals: readonly MissionGoal[]; tiers: readonly Tier[] }
+/** A family of missions: the draw picks one goal and one tier. `egg` is given on top of the ₽. */
+export type MissionTemplate = { goals: readonly MissionGoal[]; tiers: readonly Tier[]; egg?: EggTier }
 
 /** Types common enough in the wild roster to hunt in a day. */
 const HUNTED_TYPES = ['normal', 'flying', 'bug', 'poison', 'fighting', 'ground', 'ghost', 'dark', 'dragon', 'rock', 'electric', 'steel', 'fire'] as const satisfies readonly PokeType[]
@@ -60,11 +67,13 @@ export const DAILY_POOL = [
   { goals: [{ kind: 'shinyKills' }], tiers: [[1, 250]] },
   { goals: [{ kind: 'level' }], tiers: [[20, 150], [30, 250]] },
   { goals: [{ kind: 'moveEvolutions' }], tiers: [[1, 200]] },
+  { goals: [{ kind: 'steps' }], tiers: [[1500, 150], [3000, 250]] },
+  { goals: [{ kind: 'species' }], tiers: [[12, 150], [20, 250]] },
 ] as const satisfies readonly MissionTemplate[]
 
 /** Two of these are drawn every week (weeks start on Monday). */
 export const WEEKLY_POOL = [
-  { goals: [{ kind: 'wins' }, ...STARTER_TYPES.map((type) => ({ kind: 'wins', type }) as const)], tiers: [[1, 1500], [3, 3000]] },
+  { goals: [{ kind: 'wins' }, ...STARTER_TYPES.map((type) => ({ kind: 'wins', type }) as const)], tiers: [[1, 1500], [3, 3000]], egg: 'rare' },
   { goals: [{ kind: 'rifts' }], tiers: [[3, 1200], [6, 2000]] },
   { goals: [{ kind: 'shinyKills' }], tiers: [[5, 1200], [10, 2000]] },
   { goals: [{ kind: 'kills' }], tiers: [[5000, 1000], [10_000, 2000]] },
@@ -73,6 +82,8 @@ export const WEEKLY_POOL = [
   { goals: [{ kind: 'chests' }, { kind: 'meowths' }], tiers: [[5, 1500]] },
   { goals: [{ kind: 'bossKills' }], tiers: [[15, 1200], [25, 2000]] },
   { goals: [{ kind: 'endless' }], tiers: [[3, 1500], [6, 2500]] },
+  { goals: [{ kind: 'hatches' }], tiers: [[1, 1000], [2, 1800]], egg: 'common' },
+  { goals: [{ kind: 'steps' }], tiers: [[15_000, 1200], [25_000, 2000]] },
 ] as const satisfies readonly MissionTemplate[]
 
 export const MISSION_SLOTS = { daily: 3, weekly: 2 } as const

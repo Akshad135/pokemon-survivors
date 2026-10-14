@@ -314,12 +314,36 @@ export type ResultEggs = { refund: number; ready: number }
 type DexNews = { species: number; shinies: number }
 
 /**
- * What the shell adds to the results: the equipped title and the missions
- * section (built by `ui/missions.ts`), the incubator and the Pokédex news.
+ * What the shell adds to the results: the equipped title, the missions the run
+ * moved and the medals it earned (built by `ui/missions.ts`), the incubator
+ * and the Pokédex news.
  */
-type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null; eggs: ResultEggs; news: DexNews }
+type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null; medals: readonly HTMLElement[]; eggs: ResultEggs; news: DexNews }
 
-const NO_EXTRAS: ResultsExtras = { badge: null, report: null, eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 } }
+const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 } }
+
+/**
+ * Everything new a run brought, as one wrapping line of chips under the stats
+ * (Pokédex, eggs, medals), so the results stay short on a phone held upright.
+ */
+const runNews = ({ eggs, news, medals }: ResultsExtras) => {
+  const m = t().results
+  const e = t().eggs
+  const chips = [
+    (news.species > 0 || news.shinies > 0) &&
+      h(
+        'span',
+        { class: 'news-chip dex-news' },
+        h('b', {}, 'POKéDEX'),
+        [news.species > 0 && m.dexSpecies(news.species), news.shinies > 0 && m.dexShinies(news.shinies)].filter(Boolean).join(' · '),
+        news.shinies > 0 && h('img', { src: sparkleIcon(), alt: '' }),
+      ),
+    eggs.ready > 0 && h('span', { class: 'news-chip egg-ready' }, h('img', { src: eggIcon('common'), alt: '' }), e.readyBadge(eggs.ready)),
+    eggs.refund > 0 && h('span', { class: 'news-chip' }, h('img', { src: coinIcon(1), alt: '' }), e.full(formatPokeDollars(eggs.refund))),
+    ...medals,
+  ].filter((chip) => chip instanceof HTMLElement)
+  return chips.length > 0 ? h('div', { class: 'result-news' }, ...chips) : null
+}
 
 /**
  * End of run. On a victory, `onContinue` adds the endless-mode button (first);
@@ -336,7 +360,6 @@ export const results = (
   onContinue?: () => void,
   extras: ResultsExtras = NO_EXTRAS,
 ): Screen => {
-  const { eggs, news } = extras
   const m = t().results
   const e = t().eggs
   const r = t().rifts
@@ -383,16 +406,7 @@ export const results = (
         g.eggs.found.length > 0 &&
           h('div', {}, h('span', {}, e.eggs), h('b', { class: 'result-legends' }, ...g.eggs.found.map((egg) => h('img', { src: eggIcon(egg.tier), alt: e.tiers[egg.tier], title: e.tiers[egg.tier] })))),
       ),
-      eggs.refund > 0 && h('p', { class: 'endless-hint' }, e.full(formatPokeDollars(eggs.refund))),
-      eggs.ready > 0 && h('div', { class: 'tag tag-shiny' }, e.readyBadge(eggs.ready)),
-      (news.species > 0 || news.shinies > 0) &&
-        h(
-          'div',
-          { class: 'dex-news' },
-          h('b', {}, 'POKéDEX'),
-          [news.species > 0 && m.dexSpecies(news.species), news.shinies > 0 && m.dexShinies(news.shinies)].filter(Boolean).join(' · '),
-          news.shinies > 0 && h('img', { src: sparkleIcon(), alt: '' }),
-        ),
+      runNews(extras),
       goOn && h('p', { class: 'endless-hint' }, r.continueHint),
       h(
         'div',
@@ -417,7 +431,7 @@ export const results = (
           )
         }),
       ),
-      h('div', { class: 'buttons' }, goOn, retry, back),
+      h('div', { class: 'buttons result-buttons' }, goOn, retry, back),
     ),
   )
   root.append(el)

@@ -11,12 +11,15 @@ const onScreen = (g: Game, x: number, y: number) =>
 
 /**
  * Logs every species on screen into the run's Pokédex log: wild Pokémon, the
- * fleeing Meowth and the player's own form (it counts as seen once played).
+ * fleeing Meowth and the player's own form, which also counts as caught (it's
+ * theirs, like an evolution on the handhelds).
  */
 export const updateSightings = (g: Game, dt: number) => {
   if (Math.floor(g.time * CHECKS_PER_SECOND) === Math.floor((g.time - dt) * CHECKS_PER_SECOND)) return
   const seen = g.dexLog.seen
-  seen.add(PLAYABLE[g.starter].line[g.player.stage]!.dex)
+  const form = PLAYABLE[g.starter].line[g.player.stage]!.dex
+  seen.add(form)
+  g.dexLog.own.set(form, g.player.shiny)
   for (const e of g.enemies) if (e.dying < 0 && onScreen(g, e.x, e.y)) seen.add(ENEMIES[e.kind].dex)
   for (const ev of g.mapEvents.list) if (ev.kind === 'meowth' && ev.gone < 0 && onScreen(g, ev.x, ev.y)) seen.add(MEOWTH_DEX)
 }

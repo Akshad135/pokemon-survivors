@@ -1,13 +1,13 @@
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
-import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId, type TitleId } from '../data/achievements'
+import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_EGG, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId, type TitleId } from '../data/achievements'
 import type { MissionGoal, MissionPeriod } from '../data/missions'
 import { REGIONS } from '../data/starters'
 import { achievementProgress } from '../game/achievements'
 import type { RunRecord } from '../game/meta'
 import { MISSION_PERIODS, missionStatus, periodEnd, type MissionStatus } from '../game/missions'
 import { formatNumber, formatPokeDollars, t } from '../i18n'
-import { coinIcon, medalIcon } from '../render/art'
+import { coinIcon, eggIcon, medalIcon } from '../render/art'
 import { h, later, rich, setText } from './dom'
 import { equipTitle, loadSave, today } from './save'
 import { hint, type Screen } from './screens'
@@ -51,7 +51,13 @@ const missionRow = (m: MissionStatus, opts: { gained?: number; fresh?: boolean }
     'div',
     { class: `mission-row${m.done ? ' done' : ''}${opts.fresh ? ' fresh' : ''}` },
     h('span', { class: 'mission-text' }, missionText(m.goal, m.target)),
-    h('span', { class: 'mission-reward' }, m.done ? '✓' : h('img', { src: coinIcon(0), alt: '' }), m.done ? '' : formatNumber(m.reward)),
+    h(
+      'span',
+      { class: 'mission-reward' },
+      m.done ? '✓' : h('img', { src: coinIcon(0), alt: '' }),
+      m.done ? '' : formatNumber(m.reward),
+      !m.done && m.egg && h('img', { src: eggIcon(m.egg), alt: t().eggs.tiers[m.egg], title: t().missions.rewardEgg(t().eggs.tiers[m.egg]) }),
+    ),
     h(
       'span',
       { class: 'mission-progress' },
@@ -71,13 +77,29 @@ const resetsIn = (period: MissionPeriod) => {
 /** Equipped title as a small badge, or nothing. */
 export const titleBadge = (title: TitleId | null) => (title ? h('div', { class: 'player-title' }, '★ ', t().achievements.titles[title], ' ★') : null)
 
+/** Results-screen line of a mission the run moved: goal, progress and what the run added (a check once done). */
+const reportRow = (m: MissionStatus, gained: number, fresh: boolean) =>
+  h(
+    'div',
+    { class: `report-row${m.done ? ' done' : ''}${fresh ? ' fresh' : ''}` },
+    h('span', { class: 'mission-text' }, missionText(m.goal, m.target)),
+    h('span', { class: 'report-count' }, m.done ? '✓' : `${formatNumber(m.progress)}/${formatNumber(m.target)}`, gained > 0 && h('b', { class: 'mission-gain' }, `+${formatNumber(gained)}`)),
+    progressBar(m.progress, m.target),
+  )
+
 /**
- * Results-screen section: the current missions with this run's progress
- * (`before` is the board when the run started) and the medals it earned.
+ * Results-screen section: only the missions this run moved (`before` is the
+ * board when the run started), with the ₽ and reward eggs that missions and
+ * medals paid. Null when the run moved none, so the results stay short.
  */
-export const missionReport = (before: readonly MissionStatus[], unlocked: readonly AchievementId[], reward: number) => {
+export const missionReport = (before: readonly MissionStatus[], reward: number, eggs: number) => {
   const m = t().missions
-  const now = missionStatus(loadSave().missions, today())
+  const moved = missionStatus(loadSave().missions, today()).flatMap((s) => {
+    const was = before.find((b) => b.id === s.id)
+    const gained = was ? s.progress - was.progress : 0
+    return gained > 0 ? [reportRow(s, gained, s.done && was?.done === false)] : []
+  })
+  if (moved.length === 0 && reward === 0 && eggs === 0) return null
   return h(
     'div',
     { class: 'mission-report' },
@@ -86,29 +108,25 @@ export const missionReport = (before: readonly MissionStatus[], unlocked: readon
       { class: 'mission-report-head' },
       h('b', {}, m.report),
       reward > 0 && h('span', { class: 'mission-report-reward' }, h('img', { src: coinIcon(1), alt: '' }), m.reportReward(formatPokeDollars(reward))),
+      eggs > 0 && h('span', { class: 'mission-report-reward' }, h('img', { src: eggIcon('rare'), alt: '' }), m.reportEggs(eggs)),
     ),
-    ...now.map((s) => {
-      const was = before.find((b) => b.id === s.id)
-      return missionRow(s, { gained: was ? s.progress - was.progress : 0, fresh: s.done && was?.done === false })
-    }),
-    unlocked.length > 0 &&
-      h(
-        'div',
-        { class: 'medal-report' },
-        h('b', {}, t().achievements.newMedals),
-        ...unlocked.map((id) => h('span', { class: 'medal-chip' }, h('img', { src: medalIcon(ACHIEVEMENTS[id].medal), alt: '' }), t().achievements.names[id])),
-      ),
+    ...moved,
   )
 }
 
-/** One toast for what a run completed without reaching the results screen (quitting from the pause menu). */
-export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward'>) => {
+/** The medals a run earned, as chips for the results' news line. */
+export const medalChips = (unlocked: readonly AchievementId[]) =>
+  unlocked.map((id) => h('span', { class: 'news-chip medal-chip' }, h('img', { src: medalIcon(ACHIEVEMENTS[id].medal), alt: t().achievements.medals[ACHIEVEMENTS[id].medal] }), t().achievements.names[id]))
+
+/** One toast for what was completed away from the results screen: a run quit from the pause menu, or a hatched egg. */
+export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward' | 'eggs'>) => {
   if (record.completed.length === 0 && record.unlocked.length === 0) return
   const m = t().missions
   const medal = record.unlocked[0]
   const lines = [
     record.completed.length > 0 && m.toastDone(record.completed.length, formatPokeDollars(record.reward)),
     medal && m.toastMedal(t().achievements.names[medal]),
+    record.eggs.length > 0 && m.toastEgg(record.eggs.length),
   ].filter((line) => typeof line === 'string')
   playSfx('levelUp')
   toast(root, h('span', { class: 'item-toast' }, h('img', { src: medal ? medalIcon(ACHIEVEMENTS[medal].medal) : coinIcon(1), alt: '' }), rich(lines.join(' · '))), 3600)
@@ -162,7 +180,8 @@ export const missionsScreen = (root: HTMLElement, input: Input, onClose: () => v
     const rows = ACHIEVEMENT_IDS.map((id) => {
       const def = ACHIEVEMENTS[id]
       const got = unlocked.includes(id)
-      const p = achievementProgress(lifetime, id)
+      const p = achievementProgress(lifetime, id, save.dex)
+      const egg = MEDAL_EGG[def.medal]
       const titled = 'title' in def
       return h(
         'button',
@@ -172,7 +191,7 @@ export const missionsScreen = (root: HTMLElement, input: Input, onClose: () => v
           'span',
           { class: 'ach-info' },
           h('b', {}, a.names[id]),
-          h('span', {}, achievementGoal(id)),
+          h('span', {}, achievementGoal(id), !got && egg && h('img', { class: 'ach-egg', src: eggIcon(egg), alt: t().eggs.tiers[egg], title: t().missions.rewardEgg(t().eggs.tiers[egg]) })),
           !got && p.target > 1 && h('span', { class: 'mission-progress' }, progressBar(p.value, p.target), h('span', {}, `${formatNumber(p.value)}/${formatNumber(p.target)}`)),
         ),
         titled && h('span', { class: save.title === id ? 'tag tag-new' : 'tag' }, save.title === id ? a.equipped : a.titleTag),

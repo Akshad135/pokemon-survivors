@@ -35,6 +35,14 @@ describe('a run', () => {
     expect(dexStatus(dex, 19)).toEqual({ seen: true, defeated: 7, caught: true, shiny: true })
   })
 
+  it('catches the forms the player played, shiny if the run was', () => {
+    const log = run()
+    log.own.set(4, false).set(5, true)
+    const dex = recordRun(EMPTY_DEX, log)
+    expect(dexStatus(dex, 4)).toMatchObject({ caught: true, shiny: false })
+    expect(dexStatus(dex, 5)).toMatchObject({ caught: true, shiny: true })
+  })
+
   it('reports only what is new', () => {
     expect(dexNews(EMPTY_DEX, run())).toEqual({ species: 2, shinies: 1 })
     expect(dexNews(markCaught(markSeen(EMPTY_DEX, 16), 19, true), run())).toEqual({ species: 0, shinies: 0 })

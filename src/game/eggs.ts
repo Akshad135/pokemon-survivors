@@ -2,6 +2,7 @@ import { chance, weightedPick, type Rng } from '../engine/rng'
 import type { EnemyId } from '../data/enemies'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, type HatchlingId, type PlayableId } from '../data/hatchlings'
 import { RIFT_LEGENDS } from '../data/rifts'
+import { markHatch } from './dex'
 import { REAPER } from './endless'
 import type { Save } from './meta'
 
@@ -110,7 +111,8 @@ export const hatchPool = (tier: EggTier, hatched: Hatched) =>
 /**
  * Hatches the ready egg at `index`. A new family, or the shiny form of one
  * owned in normal colors, unlocks it; anything else is a duplicate worth its
- * tier's ₽. Null when there is no ready egg there.
+ * tier's ₽. Either way the Pokédex catches what came out (`markHatch`). Null
+ * when there is no ready egg there.
  */
 export const hatchEgg = (save: Save, index: number, rng: Rng): { save: Save; hatch: Hatch } | null => {
   const egg = save.eggs[index]
@@ -126,6 +128,7 @@ export const hatchEgg = (save: Save, index: number, rng: Rng): { save: Save; hat
       eggs: save.eggs.filter((_, i) => i !== index),
       hatched: duplicate ? save.hatched : { ...save.hatched, [id]: { shiny } },
       wallet: save.wallet + refund,
+      dex: markHatch(save.dex, HATCHLINGS[id].line.map((stage) => stage.dex), shiny),
     },
     hatch: { id, tier: egg.tier, shiny, duplicate, refund },
   }

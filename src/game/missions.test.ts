@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MISSION_SLOTS } from '../data/missions'
-import { dayKey, drawMissions, goalValue, missionStatus, NO_MISSIONS, parseMissions, periodEnd, periodKey, recordMissions, type Mission } from './missions'
+import { dayKey, drawMissions, goalValue, missionStatus, NO_MISSIONS, parseMissions, periodEnd, periodKey, recordHatchMissions, recordMissions, type Mission } from './missions'
 import { summary } from './tally.fixture'
 
 /** Local time, like the player's clock. Months are 1-based here. */
@@ -90,6 +90,17 @@ describe('mission progress', () => {
     expect(missionStatus(done, date).find((m) => m.id === mission.id)).toMatchObject({ progress: mission.target, done: true })
     const tomorrow = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
     expect(missionStatus(done, tomorrow).filter((m) => m.period === 'daily').every((m) => m.progress === 0)).toBe(true)
+  })
+
+  it('counts hatched eggs outside runs, and only for hatch goals', () => {
+    const date = Array.from({ length: 20 }, (_, w) => at(2026, 10, 5 + w * 7)).find((d) => drawMissions('weekly', d).some((m) => m.goal.kind === 'hatches'))!
+    const mission = drawMissions('weekly', date).find((m) => m.goal.kind === 'hatches')!
+    expect(mission.egg).toBe('common')
+    expect(recordMissions(NO_MISSIONS, summary({ kills: 50, steps: 900 }), null, date).missions.weekly.progress[mission.id]).toBeUndefined()
+    const hatched = recordHatchMissions(NO_MISSIONS, date)
+    expect(hatched.missions.weekly.progress[mission.id]).toBe(1)
+    expect(Object.keys(hatched.missions.weekly.progress)).toEqual([mission.id])
+    expect(hatched.completed.map((m) => m.id)).toEqual(mission.target === 1 ? [mission.id] : [])
   })
 
   it('parses boards field by field', () => {

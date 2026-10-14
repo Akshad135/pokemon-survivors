@@ -38,8 +38,8 @@ export const markSeen = (dex: Pokedex, n: number) => update(dex, n, 0, 0)
 export const markDefeated = (dex: Pokedex, n: number, count = 1) => update(dex, n, Math.max(0, count), 0)
 
 /**
- * Registers a species as the player's own (and seen). Today a defeated shiny
- * is caught; later, hatched eggs will be too.
+ * Registers a species as the player's own (and seen): a defeated shiny, a
+ * hatched egg, or a form the player played (`DexLog.own`).
  */
 export const markCaught = (dex: Pokedex, n: number, shiny = false) => update(dex, n, 0, DEX_FLAGS.caught | (shiny ? DEX_FLAGS.shiny : 0))
 
@@ -63,12 +63,26 @@ export const dexCounts = (dex: Pokedex, among?: readonly number[]): DexCounts =>
   )
 }
 
+/**
+ * A hatched egg: the form that came out (`line[0]`) is caught, shiny if it
+ * hatched shiny, and the whole evolution line counts as seen.
+ */
+export const markHatch = (dex: Pokedex, line: readonly number[], shiny: boolean): Pokedex => {
+  const seen = line.reduce(markSeen, dex)
+  const [first] = line
+  return first === undefined ? seen : markCaught(seen, first, shiny)
+}
+
 /* ---------------- One run ---------------- */
 
-/** What a run added, filled by the simulation as it goes. `shinies` are the species caught by defeating a shiny. */
-export type DexLog = { seen: Set<number>; defeated: Map<number, number>; shinies: Set<number> }
+/**
+ * What a run added, filled by the simulation as it goes. `shinies` are the
+ * species caught by defeating a shiny; `own` the forms the player played
+ * (the starter and what it evolved into), each caught, shiny if the run was.
+ */
+export type DexLog = { seen: Set<number>; defeated: Map<number, number>; shinies: Set<number>; own: Map<number, boolean> }
 
-export const createDexLog = (): DexLog => ({ seen: new Set(), defeated: new Map(), shinies: new Set() })
+export const createDexLog = (): DexLog => ({ seen: new Set(), defeated: new Map(), shinies: new Set(), own: new Map() })
 
 export const logDefeat = (log: DexLog, n: number, shiny: boolean) => {
   log.seen.add(n)
@@ -83,7 +97,8 @@ export const logDefeat = (log: DexLog, n: number, shiny: boolean) => {
 export const recordRun = (dex: Pokedex, log: DexLog): Pokedex => {
   const withSeen = [...log.seen].reduce(markSeen, dex)
   const withDefeats = [...log.defeated].reduce((d, [n, count]) => markDefeated(d, n, count), withSeen)
-  return [...log.shinies].reduce((d, n) => markCaught(d, n, true), withDefeats)
+  const withOwn = [...log.own].reduce((d, [n, shiny]) => markCaught(d, n, shiny), withDefeats)
+  return [...log.shinies].reduce((d, n) => markCaught(d, n, true), withOwn)
 }
 
 /** End-of-run summary: species seen for the first time and shinies caught that weren't before. */
