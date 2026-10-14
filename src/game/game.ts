@@ -24,6 +24,7 @@ import { updateArena } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
+import { createTally } from './tally'
 import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
@@ -101,6 +102,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
     endless: null,
+    tally: createTally(),
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)

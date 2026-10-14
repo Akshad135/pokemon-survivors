@@ -107,6 +107,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
 - **Map events** that make you pick where to go: buff altars, healing fountains, locked chests (stand in the ring while an ambush closes in), spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins. Off-screen ones get an arrow on the screen edge.
 - **Meta progression**: collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
+- **Missions and achievements**: three daily and two weekly missions, drawn from the date so everyone gets the same ones, pay ₽. 49 achievements earn bronze, silver and gold medals, and some grant a title (Shiny Hunter, Legend Tamer…) shown on the title and results screens.
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
@@ -139,7 +140,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode. For missions: `ps.missions()` lists them, `ps.mission(i, n)` sets one's progress (one short of done by default), `ps.completeMission(i)`, `ps.date('2026-10-19')` moves the missions' clock, `ps.unlock(id?)` and `ps.resetProgress()`.
 
 ## How it's built
 
@@ -158,8 +159,9 @@ src/
             bosses.ts (boss attack patterns, enemy hazards) · shiny.ts · biomes.ts · weather.ts
             rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
             endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
+            tally.ts (run counters and summary) · missions.ts · achievements.ts (missions, medals, titles)
   render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
-  ui/       title screen, HUD, starter select, level-up, pause, settings, results, toasts, language switch
+  ui/       title screen, HUD, starter select, level-up, pause, settings, results, missions and achievements, toasts, language switch
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
@@ -183,6 +185,7 @@ src/
 - **Music** is code: `data/music.ts` holds the scores in a small tracker notation (`engine/score.ts`) and `engine/music.ts` plays them on two pulse channels, a triangle bass and a noise kit. The shell picks the theme each frame (`playTheme`). Music and effects have separate buses in `engine/audio.ts`, so music always sits under effects and cries.
 - **Biomes and weather:** `data/biomes.ts` holds the biome order (equal slices of the run), each biome's weather odds, theme and `affinity` (the types that feel at home there, which weight the enemy draw through `biomeWeight`). `game/biomes.ts` follows the schedule and `game/weather.ts` rolls weather spells and applies their rules (`data/weather.ts`): `weatherBoost`/`weatherPower` multiply damage by attack type in `combat.ts` (player moves, enemy bodies by their types, boss hazards by `HAZARD_TYPES`), and sandstorm/snow wear down anyone not immune. The ground and breakables are drawn per biome in `render/world.ts` and `render/props.ts`, the overlays in `render/weather.ts`.
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
+- **Missions and achievements** never reach into the simulation's systems: the run keeps a small `tally` (kills by type, weather and biome, shinies, bosses, map event notices), bumped only when something faints or a map event speaks. When the run ends the shell takes a `summarizeRun` snapshot and `recordRun` adds it to the missions (`game/missions.ts`, drawn from the local date via a seeded rng) and the lifetime records behind the achievements (`game/achievements.ts`). Recording works on the difference from the last snapshot, so a victory that goes on into endless mode is never counted twice. The catalogs live in `data/missions.ts` and `data/achievements.ts`.
 
 </details>
 

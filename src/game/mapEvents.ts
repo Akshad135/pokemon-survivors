@@ -16,6 +16,7 @@ import {
 import { dropCoins, dropPickup } from './pickups'
 import { touches } from './props'
 import { isAlive } from './queries'
+import { countNotice } from './tally'
 import type { Game } from './types'
 
 /**
@@ -102,7 +103,10 @@ export type MapEventDef<K extends MapEventKind> = {
 
 export const createMapEvents = (): MapEventsState => ({ list: [], next: DIRECTOR.first })
 
-const notify = (g: Game, notice: MapEventNotice) => g.events.push({ kind: 'mapEvent', notice })
+const notify = (g: Game, notice: MapEventNotice) => {
+  countNotice(g.tally, notice)
+  g.events.push({ kind: 'mapEvent', notice })
+}
 
 const spend = (ev: { gone: number }) => {
   ev.gone = 0

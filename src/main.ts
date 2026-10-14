@@ -13,6 +13,7 @@ import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes
 import { RIFT, RIFT_LEGENDS } from './data/rifts'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
+import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { track } from './analytics'
@@ -26,6 +27,8 @@ import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
 import { runEarnings, wonRun } from './game/meta'
+import { missionStatus, type MissionStatus } from './game/missions'
+import { summarizeRun, type RunSummary } from './game/tally'
 import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
@@ -38,9 +41,11 @@ import { consumableIcon } from './render/props'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
-import { h, rich } from './ui/dom'
+import { h, later, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { depositPokeDollars, loadSave } from './ui/save'
+import { depositPokeDollars, loadSave, recordRunProgress, today } from './ui/save'
+import { missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
+import { missionDevTools } from './ui/missionsDev'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
@@ -104,6 +109,12 @@ type Run = {
   paid: number
   /** True once the run's end was reported to analytics. */
   reported: boolean
+  /** Missions as the run started, and what the run has recorded so far (see `recordProgress`). */
+  missionsBefore: MissionStatus[]
+  recorded: RunSummary | null
+  unlocked: AchievementId[]
+  /** ₽ paid for missions and medals this run. */
+  reward: number
 }
 
 let screen: Screen | null = null
@@ -143,6 +154,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
   setScreen(
     titleScreen(ui, input, {
       play: () => showMenu(),
+      missions: () => showMissions(),
       // Every label is read at render time, so switching language just rebuilds the screen.
       language: (next) => (changeLanguage(next), showTitle()),
       ready: () => (pressedStart = true),
@@ -163,6 +175,8 @@ const showMenu = (initial: StarterId = lastStarter) => {
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
+const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 1 })))
+
 /**
  * Moves the run's ₽ not banked yet into the wallet. Quitting keeps coins but
  * forfeits the survival bonus, unless Mewtwo already fell (victory or endless).
@@ -172,6 +186,19 @@ const bankRun = (r: Run, withBonus: boolean) => {
   const total = withBonus ? runEarnings(g).total : g.coins
   if (total > r.paid) depositPokeDollars(total - r.paid)
   r.paid = Math.max(r.paid, total)
+}
+
+/**
+ * Records the run into missions and achievements. Safe to call again (victory,
+ * then endless mode, then the way out): only what changed since counts.
+ */
+const recordProgress = (r: Run) => {
+  const summary = summarizeRun(r.game)
+  const record = recordRunProgress(summary, r.recorded)
+  r.recorded = summary
+  r.unlocked.push(...record.unlocked)
+  r.reward += record.reward
+  return record
 }
 
 /** Reports how the run ended, once. */
@@ -187,6 +214,10 @@ const endRun = () => {
   if (!run) return
   bankRun(run, wonRun(run.game))
   reportRun(run)
+  // Only a quit run can complete something here: the results screen already showed the rest.
+  // The toast waits for the next screen, so it lands on top of it.
+  const record = recordProgress(run)
+  later(() => progressToast(ui, record))
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
@@ -237,7 +268,8 @@ const startRun = async (starter: StarterId) => {
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(starterDex(starter))
   loading.remove()
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
+  const missionsBefore = missionStatus(loadSave().missions, today())
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false, missionsBefore, recorded: null, unlocked: [], reward: 0 }
   track('run_start', { starter })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -293,7 +325,10 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g))
+      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g), {
+        badge: titleBadge(loadSave().title),
+        report: missionReport(r.missionsBefore, r.unlocked, r.reward),
+      })
       break
   }
 }
@@ -393,11 +428,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
     case 'gameover':
       bankRun(r, true)
+      recordProgress(r)
       reportRun(r)
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)
     case 'victory':
       bankRun(r, true)
+      recordProgress(r)
       return playSfx('evolve')
     case 'biome': {
       const w = t().world
@@ -622,6 +659,8 @@ if (import.meta.env.DEV) {
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
+      // Rebuilds the missions screen or the title so changes show up right away.
+      ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
     },
   })
 }

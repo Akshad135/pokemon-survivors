@@ -1,0 +1,263 @@
+import { playSfx } from '../engine/audio'
+import type { Input } from '../engine/input'
+import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId, type TitleId } from '../data/achievements'
+import type { MissionGoal, MissionPeriod } from '../data/missions'
+import { REGIONS } from '../data/starters'
+import { achievementProgress } from '../game/achievements'
+import type { RunRecord } from '../game/meta'
+import { MISSION_PERIODS, missionStatus, periodEnd, type MissionStatus } from '../game/missions'
+import { formatNumber, formatPokeDollars, t } from '../i18n'
+import { coinIcon, medalIcon } from '../render/art'
+import { h, later, rich, setText } from './dom'
+import { equipTitle, loadSave, today } from './save'
+import { hint, toast, type Screen } from './screens'
+
+const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
+
+/** The line a mission shows, e.g. "Defeat 80 Ghost-type Pokémon". */
+export const missionText = (goal: MissionGoal, target: number) => {
+  const g = t().missions.goals
+  const types = t().types
+  const n = formatNumber(target)
+  switch (goal.kind) {
+    case 'typeKills': return g.typeKills(n, types[goal.type])
+    case 'weatherKills': return g.weatherKills[goal.weather](n)
+    case 'biomeKills': return g.biomeKills[goal.biome](n)
+    case 'coins': return g.coins(formatPokeDollars(target))
+    case 'wins': return goal.type ? g.typeWins(n, types[goal.type]) : g.wins(n)
+    case 'survive': return goal.type ? g.typeSurvive(n, types[goal.type]) : g.survive(n)
+    default: return g[goal.kind](n)
+  }
+}
+
+/** The goal line under an achievement's name. */
+export const achievementGoal = (id: AchievementId) => {
+  const a = t().achievements
+  const def: AchievementDef = ACHIEVEMENTS[id]
+  if (def.stat === 'region') return a.region(REGIONS.find((r) => r.gen === def.gen)?.name ?? '')
+  return a.goals[def.stat](def.stat === 'coins' ? formatPokeDollars(def.target) : formatNumber(def.target))
+}
+
+const progressBar = (value: number, target: number) =>
+  h('span', { class: 'progress' }, h('span', { style: `width:${Math.round((Math.min(value, target) / target) * 100)}%` }))
+
+/**
+ * One mission: goal, reward (or a check once done) and a progress bar.
+ * `gained` adds what the last run contributed; `fresh` highlights a mission the run just completed.
+ */
+const missionRow = (m: MissionStatus, opts: { gained?: number; fresh?: boolean } = {}) =>
+  h(
+    'div',
+    { class: `mission-row${m.done ? ' done' : ''}${opts.fresh ? ' fresh' : ''}` },
+    h('span', { class: 'mission-text' }, missionText(m.goal, m.target)),
+    h('span', { class: 'mission-reward' }, m.done ? '✓' : h('img', { src: coinIcon(0), alt: '' }), m.done ? '' : formatNumber(m.reward)),
+    h(
+      'span',
+      { class: 'mission-progress' },
+      progressBar(m.progress, m.target),
+      h('span', {}, `${formatNumber(m.progress)}/${formatNumber(m.target)}`),
+      opts.gained ? h('b', { class: 'mission-gain' }, `+${formatNumber(opts.gained)}`) : null,
+    ),
+  )
+
+/** "renovam em 5h 12min": time left until the period's missions change. */
+const resetsIn = (period: MissionPeriod) => {
+  const left = Math.max(0, periodEnd(period, today()).getTime() - today().getTime())
+  const minutes = Math.ceil(left / 60_000)
+  return t().missions.resetsIn(t().missions.duration(Math.floor(minutes / 1440), Math.floor((minutes % 1440) / 60), minutes % 60))
+}
+
+/** Equipped title as a small badge, or nothing. */
+export const titleBadge = (title: TitleId | null) => (title ? h('div', { class: 'player-title' }, '★ ', t().achievements.titles[title], ' ★') : null)
+
+/**
+ * Results-screen section: the current missions with this run's progress
+ * (`before` is the board when the run started) and the medals it earned.
+ */
+export const missionReport = (before: readonly MissionStatus[], unlocked: readonly AchievementId[], reward: number) => {
+  const m = t().missions
+  const now = missionStatus(loadSave().missions, today())
+  return h(
+    'div',
+    { class: 'mission-report' },
+    h(
+      'div',
+      { class: 'mission-report-head' },
+      h('b', {}, m.report),
+      reward > 0 && h('span', { class: 'mission-report-reward' }, h('img', { src: coinIcon(1), alt: '' }), m.reportReward(formatPokeDollars(reward))),
+    ),
+    ...now.map((s) => {
+      const was = before.find((b) => b.id === s.id)
+      return missionRow(s, { gained: was ? s.progress - was.progress : 0, fresh: s.done && was?.done === false })
+    }),
+    unlocked.length > 0 &&
+      h(
+        'div',
+        { class: 'medal-report' },
+        h('b', {}, t().achievements.newMedals),
+        ...unlocked.map((id) => h('span', { class: 'medal-chip' }, h('img', { src: medalIcon(ACHIEVEMENTS[id].medal), alt: '' }), t().achievements.names[id])),
+      ),
+  )
+}
+
+/** One toast for what a run completed without reaching the results screen (quitting from the pause menu). */
+export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward'>) => {
+  if (record.completed.length === 0 && record.unlocked.length === 0) return
+  const m = t().missions
+  const medal = record.unlocked[0]
+  const lines = [
+    record.completed.length > 0 && m.toastDone(record.completed.length, formatPokeDollars(record.reward)),
+    medal && m.toastMedal(t().achievements.names[medal]),
+  ].filter((line) => typeof line === 'string')
+  playSfx('levelUp')
+  toast(root, h('span', { class: 'item-toast' }, h('img', { src: medal ? medalIcon(ACHIEVEMENTS[medal].medal) : coinIcon(1), alt: '' }), rich(lines.join(' · '))), 3600)
+}
+
+type Tab = 'missions' | 'achievements'
+
+/**
+ * Missions and achievements, opened from the title menu. Two tabs (← →),
+ * a scrolling list (↑ ↓) and Back. On the achievements tab, Enter or a tap on
+ * an unlocked achievement with a title shows that title (again hides it).
+ */
+export const missionsScreen = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
+  const m = t().missions
+  const a = t().achievements
+  let tab: Tab = 'missions'
+  let index = 0
+  let entries: HTMLElement[] = []
+  const resets: Array<[HTMLElement, MissionPeriod]> = []
+
+  const tabs = { missions: h('button', { class: 'tab' }, m.tab), achievements: h('button', { class: 'tab' }, a.tab) } as const
+  const list = h('div', { class: 'missions-list' })
+  const back = h('button', { class: 'btn' }, m.back)
+  const close = () => later(onClose)
+
+  const missionsTab = () => {
+    resets.length = 0
+    const all = missionStatus(loadSave().missions, today())
+    return MISSION_PERIODS.flatMap((period) => {
+      const left = h('span', {}, resetsIn(period))
+      resets.push([left, period])
+      const rows = all.filter((s) => s.period === period).map((s) => missionRow(s))
+      return [h('div', { class: 'missions-head' }, h('b', {}, m[period]), left), ...rows]
+    })
+  }
+
+  const achievementsTab = () => {
+    const save = loadSave()
+    const { unlocked, lifetime } = save.achievements
+    const medals = MEDALS.map((medal) => {
+      const ids = ACHIEVEMENT_IDS.filter((id) => ACHIEVEMENTS[id].medal === medal)
+      return h('span', { class: 'medal-count', title: a.medals[medal] }, h('img', { src: medalIcon(medal), alt: a.medals[medal] }), `${ids.filter((id) => unlocked.includes(id)).length}/${ids.length}`)
+    })
+    const summary = h(
+      'div',
+      { class: 'ach-summary' },
+      h('span', {}, a.count(unlocked.length, ACHIEVEMENT_IDS.length)),
+      h('span', { class: 'medal-counts' }, ...medals),
+      h('span', { class: 'ach-title' }, `${a.title}: `, h('b', {}, save.title ? a.titles[save.title] : a.noTitle)),
+    )
+    const rows = ACHIEVEMENT_IDS.map((id) => {
+      const def = ACHIEVEMENTS[id]
+      const got = unlocked.includes(id)
+      const p = achievementProgress(lifetime, id)
+      const titled = 'title' in def
+      return h(
+        'button',
+        { class: `ach-row${got ? '' : ' locked'}${titled && got ? ' titled' : ''}`, 'data-id': id },
+        h('img', { src: medalIcon(def.medal, !got), alt: a.medals[def.medal] }),
+        h(
+          'span',
+          { class: 'ach-info' },
+          h('b', {}, a.names[id]),
+          h('span', {}, achievementGoal(id)),
+          !got && p.target > 1 && h('span', { class: 'mission-progress' }, progressBar(p.value, p.target), h('span', {}, `${formatNumber(p.value)}/${formatNumber(p.target)}`)),
+        ),
+        titled && h('span', { class: save.title === id ? 'tag tag-new' : 'tag' }, save.title === id ? a.equipped : a.titleTag),
+      )
+    })
+    return [summary, ...rows]
+  }
+
+  const focus = (i: number, sound = true) => {
+    const next = Math.max(0, Math.min(entries.length - 1, i))
+    if (next !== index && sound) playSfx('move')
+    index = next
+    entries.forEach((e, j) => e.classList.toggle('selected', j === index))
+    entries[index]?.scrollIntoView({ block: 'nearest' })
+  }
+
+  const render = (keep = false) => {
+    const items = tab === 'missions' ? missionsTab() : achievementsTab()
+    list.replaceChildren(...items)
+    if (!keep) list.scrollTop = 0
+    for (const [id, el] of Object.entries(tabs)) el.classList.toggle('on', id === tab)
+    // Achievement rows are buttons; mission rows just scroll by.
+    entries = [...items.filter((el) => el.classList.contains('ach-row') || el.classList.contains('mission-row')), back]
+    entries.forEach((el, i) => {
+      el.addEventListener('pointerenter', (e) => !isTouch(e) && focus(i, false))
+      if (el !== back) el.addEventListener('click', () => (focus(i, false), activate(i)))
+    })
+    focus(keep ? index : 0, false)
+  }
+
+  const switchTab = (next: Tab) => {
+    if (next === tab) return
+    playSfx('move')
+    tab = next
+    index = 0
+    render()
+  }
+
+  const activate = (i: number) => {
+    const el = entries[i]
+    if (el === back) return close()
+    // Only unlocked achievements that grant a title do something.
+    const title = TITLE_IDS.find((id) => id === el?.dataset.id)
+    if (!title || !el?.classList.contains('titled')) return
+    equipTitle(loadSave().title === title ? null : title)
+    playSfx('select')
+    render(true)
+  }
+
+  tabs.missions.addEventListener('click', () => switchTab('missions'))
+  tabs.achievements.addEventListener('click', () => switchTab('achievements'))
+  back.addEventListener('click', close)
+
+  const off = input.onKey((key) => {
+    if (key === 'ArrowLeft' || key === 'KeyA' || key === 'KeyQ') switchTab('missions')
+    else if (key === 'ArrowRight' || key === 'KeyD' || key === 'KeyE') switchTab('achievements')
+    else if (key === 'ArrowUp' || key === 'KeyW') focus(index - 1)
+    else if (key === 'ArrowDown' || key === 'KeyS') focus(index + 1)
+    else if (key === 'Enter' || key === 'Space') activate(index)
+    else if (key === 'Escape' || key === 'Backspace') close()
+  })
+
+  const el = h(
+    'div',
+    { class: 'screen dim mart-screen' },
+    h(
+      'div',
+      { class: 'dialog box pop mart missions' },
+      h('div', { class: 'tabs', role: 'tablist' }, tabs.missions, tabs.achievements),
+      list,
+      h('div', { class: 'buttons' }, back),
+      hint(m.hintKeys, m.hintTouch),
+    ),
+  )
+  root.append(el)
+  render()
+
+  let lastTick = 0
+  return {
+    el,
+    // The countdowns tick once a second.
+    tick: (time) => {
+      if (time - lastTick < 1) return
+      lastTick = time
+      for (const [span, period] of resets) setText(span, resetsIn(period))
+    },
+    dispose: () => (off(), el.remove()),
+  }
+}

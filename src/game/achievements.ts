@@ -1,0 +1,127 @@
+import { ACHIEVEMENT_IDS, ACHIEVEMENTS, TITLE_IDS, type AchievementDef, type AchievementId, type AchievementStat, type TitleId } from '../data/achievements'
+import { RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
+import { REGIONS, STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
+import { POKE_TYPES, type PokeType } from '../data/types'
+import { overtime } from './endless'
+import { isRecord, knownIds, wholeNumber } from './parse'
+import type { RunSummary } from './tally'
+
+/**
+ * Lifetime records and the achievements they unlock. Pure: the shell
+ * persists the result in the save (`achievements` and `title`).
+ */
+
+/** Run summary fields that add up over a lifetime as they are. */
+const SUMMED = ['kills', 'shinyKills', 'bossKills', 'shinyLegends', 'chests', 'meowths', 'altars', 'coins', 'moveEvolutions', 'reaperDefeats'] as const satisfies readonly (keyof RunSummary)[]
+
+const COUNTERS = [...SUMMED, 'runs', 'wins', 'rifts', 'finalStages', 'shinyStarters', 'missions', 'bestTime', 'bestLevel', 'bestOvertime'] as const
+
+type Counter = (typeof COUNTERS)[number]
+
+export type Lifetime = Readonly<Record<Counter, number>> & {
+  /** Rift legendaries ever beaten. */
+  legends: readonly RiftLegend[]
+  /** Generations (regions) whose starter beat Mewtwo. */
+  winGens: readonly number[]
+  /** Base types of the starters that beat Mewtwo. */
+  winTypes: readonly PokeType[]
+  /** Starters ever played. */
+  starters: readonly StarterId[]
+}
+
+export const NO_LIFETIME: Lifetime = {
+  ...(Object.fromEntries(COUNTERS.map((c) => [c, 0])) as Record<Counter, number>),
+  legends: [],
+  winGens: [],
+  winTypes: [],
+  starters: [],
+}
+
+const union = <T>(list: readonly T[], ...more: readonly T[]) => [...new Set([...list, ...more])]
+
+const regionGen = (id: StarterId) => REGIONS.find((r) => r.starters.includes(id))?.gen ?? 0
+
+/**
+ * Adds a run to the lifetime records. Like missions, `before` is what was
+ * already recorded for this same run, so only the difference counts.
+ */
+export const addRun = (l: Lifetime, s: RunSummary, before: RunSummary | null, missionsDone = 0): Lifetime => {
+  const summed = Object.fromEntries(SUMMED.map((k) => [k, l[k] + s[k] - (before?.[k] ?? 0)])) as Record<(typeof SUMMED)[number], number>
+  const won = s.victory && !before?.victory
+  return {
+    ...l,
+    ...summed,
+    runs: l.runs + (before ? 0 : 1),
+    wins: l.wins + (won ? 1 : 0),
+    rifts: l.rifts + s.legends.length - (before?.legends.length ?? 0),
+    finalStages: l.finalStages + (s.stage >= 2 && (before?.stage ?? 0) < 2 ? 1 : 0),
+    shinyStarters: l.shinyStarters + (s.shinyStarter && !before ? 1 : 0),
+    missions: l.missions + missionsDone,
+    bestTime: Math.max(l.bestTime, s.time),
+    bestLevel: Math.max(l.bestLevel, s.level),
+    bestOvertime: Math.max(l.bestOvertime, s.victory ? overtime(s.time) : 0),
+    legends: union(l.legends, ...s.legends),
+    winGens: s.victory ? union(l.winGens, regionGen(s.starter)) : l.winGens,
+    winTypes: s.victory ? union(l.winTypes, ...STARTERS[s.starter].line[0].types.slice(0, 1)) : l.winTypes,
+    starters: union(l.starters, s.starter),
+  }
+}
+
+/** Where a lifetime stands on an achievement's stat. */
+const statValue = (l: Lifetime, stat: AchievementStat): number => {
+  switch (stat) {
+    case 'bestMinutes': return Math.floor(l.bestTime / 60)
+    case 'overtimeMinutes': return Math.floor(l.bestOvertime / 60)
+    case 'legends': return l.legends.length
+    case 'regions': return l.winGens.length
+    case 'starters': return l.starters.length
+    case 'trio': return l.winTypes.filter((t) => t === 'grass' || t === 'fire' || t === 'water').length
+    default: return l[stat]
+  }
+}
+
+/** Progress towards an achievement, as `value` out of `target`. */
+export const achievementProgress = (l: Lifetime, id: AchievementId) => {
+  const def: AchievementDef = ACHIEVEMENTS[id]
+  if (def.stat === 'region') return { value: l.winGens.includes(def.gen) ? 1 : 0, target: 1 }
+  return { value: Math.min(def.target, statValue(l, def.stat)), target: def.target }
+}
+
+export type AchievementsSave = { unlocked: readonly AchievementId[]; lifetime: Lifetime }
+
+export const NO_ACHIEVEMENTS: AchievementsSave = { unlocked: [], lifetime: NO_LIFETIME }
+
+/** Adds a run to the records and lists the achievements it unlocked, in list order. */
+export const recordAchievements = (save: AchievementsSave, s: RunSummary, before: RunSummary | null, missionsDone = 0) => {
+  const lifetime = addRun(save.lifetime, s, before, missionsDone)
+  const unlocked = ACHIEVEMENT_IDS.filter((id) => {
+    if (save.unlocked.includes(id)) return false
+    const p = achievementProgress(lifetime, id)
+    return p.value >= p.target
+  })
+  return { achievements: { unlocked: [...save.unlocked, ...unlocked], lifetime }, unlocked }
+}
+
+/* ---------------- Save ---------------- */
+
+const GENS = REGIONS.map((r) => r.gen)
+
+/** Parses the `achievements` field of the save, field by field; anything malformed falls back to empty. */
+export const parseAchievements = (raw: unknown): AchievementsSave => {
+  const data = isRecord(raw) ? raw : {}
+  const l = isRecord(data.lifetime) ? data.lifetime : {}
+  return {
+    unlocked: knownIds(data.unlocked, ACHIEVEMENT_IDS),
+    lifetime: {
+      ...(Object.fromEntries(COUNTERS.map((c) => [c, wholeNumber(l[c])])) as Record<Counter, number>),
+      legends: knownIds(l.legends, RIFT_LEGENDS),
+      winGens: knownIds(l.winGens, GENS),
+      winTypes: knownIds(l.winTypes, POKE_TYPES),
+      starters: knownIds(l.starters, STARTER_IDS),
+    },
+  }
+}
+
+/** The equipped title, kept only while its achievement is unlocked. */
+export const parseTitle = (raw: unknown, unlocked: readonly AchievementId[]): TitleId | null =>
+  TITLE_IDS.find((id) => id === raw && unlocked.includes(id)) ?? null

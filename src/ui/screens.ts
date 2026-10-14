@@ -306,11 +306,22 @@ const damageSource = (g: Game, id: DamageSource) => {
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
+/** Built by the shell (`ui/missions.ts`): the equipped title and the missions section. */
+type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null }
+
 /**
  * End of run. On a victory, `onContinue` adds the endless-mode button (first);
  * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
  */
-export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void, onContinue?: () => void): Screen => {
+export const results = (
+  root: HTMLElement,
+  input: Input,
+  g: Game,
+  onRetry: () => void,
+  onMenu: () => void,
+  onContinue?: () => void,
+  extras: ResultsExtras = { badge: null, report: null },
+): Screen => {
   const m = t().results
   const r = t().rifts
   const victory = g.phase === 'victory'
@@ -340,6 +351,7 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
         g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
       ),
       h('div', { class: 'dialog-title' }, victory ? m.victory : g.endless ? r.endlessOver(name) : m.fainted(name)),
+      extras.badge,
       g.player.shiny && h('div', { class: 'tag tag-shiny' }, m.shiny(name)),
       reaperDefeats > 0 && h('div', { class: 'tag tag-shiny' }, r.reaperDefeated(reaperDefeats)),
       h(
@@ -360,6 +372,7 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
         h('b', {}, `+${formatPokeDollars(earned.total)}`),
         h('span', {}, m.earnings(formatPokeDollars(earned.coins), formatPokeDollars(earned.bonus))),
       ),
+      extras.report,
       h(
         'div',
         { class: 'damage-list' },
