@@ -259,12 +259,14 @@ export const siteEn: SiteMessages = {
     },
     special: {
       paragraphs: (min: number) => [
-        'Besides the automatic moves, every Pokémon has a manual special attack: press Space, the A / ✕ gamepad button or the round button on screen. It charges for a moment (you move slower) and then fires in the direction you are walking.',
-        `The special depends on your starter's type. Its cooldown shrinks with the Cooldown stat, down to ${min}s. At the final evolution it becomes the stronger version, with more damage and area.`,
+        'Besides the automatic moves, every Pokémon has a manual special attack: press Space, the A / ✕ gamepad button or the round button on screen. It charges for a moment (you move slower) and then fires: some aim the way you are walking, others hit all around you or fall from the sky on the nearest foes.',
+        `Each of the 18 types has its own special, and your Pokémon uses its first type's. Its cooldown shrinks with the Cooldown stat, down to ${min}s. At the final evolution it becomes the stronger version, with more damage and area.`,
       ],
       typeHead: 'Type',
       moveHead: 'Special → final evolution',
       cooldownHead: 'Cooldown',
+      usersHead: 'Used by',
+      noUsers: 'No playable Pokémon yet',
     },
     types: {
       chart: (strong: string, double: string, weak: string, immune: string) =>

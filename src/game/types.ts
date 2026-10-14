@@ -114,7 +114,7 @@ export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
   | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
-  | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova'
+  | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova' | 'bolt' | 'meteor' | 'orb' | 'wave' | 'puddle'
   | EvolvedVisual
 
 /** What dealt the damage, for the results screen. */
@@ -201,8 +201,23 @@ export type Particle = {
   drag: number
 }
 
-/** `damage` marks damage numbers, which the settings can hide (heals and ₽ always show). */
-export type FloatText = { x: number; y: number; vy: number; life: number; text: string; color: string; damage: boolean }
+/**
+ * `damage` marks damage numbers, which the settings can hide (heals and ₽ always show).
+ * Numbers over an enemy carry its id as `target` (-1 otherwise), their running
+ * `amount` and the `slot` they hold over it (see `damageText.ts`).
+ */
+export type FloatText = {
+  x: number
+  y: number
+  vy: number
+  life: number
+  text: string
+  color: string
+  damage: boolean
+  target: number
+  amount: number
+  slot: number
+}
 
 export type Offer =
   | { kind: 'move'; id: MoveId; level: number }

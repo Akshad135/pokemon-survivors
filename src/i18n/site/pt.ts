@@ -271,12 +271,14 @@ export const sitePt = {
     },
     special: {
       paragraphs: (min: number) => [
-        'Além dos golpes automáticos, todo Pokémon tem um ataque especial manual: aperte Espaço, o botão A / ✕ do controle ou o botão redondo na tela. Ele carrega por um instante (você anda mais devagar) e depois dispara na direção em que você está andando.',
-        `O especial depende do tipo do seu inicial. A recarga diminui com o status Recarga, até o mínimo de ${min}s. Na evolução final ele vira a versão mais forte, com mais dano e área.`,
+        'Além dos golpes automáticos, todo Pokémon tem um ataque especial manual: aperte Espaço, o botão A / ✕ do controle ou o botão redondo na tela. Ele carrega por um instante (você anda mais devagar) e depois dispara: alguns miram na direção em que você está andando, outros acertam tudo ao redor ou caem do céu nos inimigos mais próximos.',
+        `Cada um dos 18 tipos tem o seu especial, e o seu Pokémon usa o do primeiro tipo dele. A recarga diminui com o status Recarga, até o mínimo de ${min}s. Na evolução final ele vira a versão mais forte, com mais dano e área.`,
       ],
       typeHead: 'Tipo',
       moveHead: 'Especial → evolução final',
       cooldownHead: 'Recarga',
+      usersHead: 'Quem usa',
+      noUsers: 'Nenhum Pokémon jogável ainda',
     },
     types: {
       chart: (strong: string, double: string, weak: string, immune: string) =>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createSpecialState, MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS, specialCooldown, specialIdFor, triggerSpecial } from './special'
+import { POKE_TYPES } from '../data/types'
+import { createSpecialState, MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS, specialCooldown, specialIdFor, specialOfType, triggerSpecial } from './special'
 import { BASE_STATS } from './stats'
 
 const DT = 1 / 60
@@ -35,10 +36,11 @@ describe('special trigger', () => {
 })
 
 describe('special resolution', () => {
-  it('picks by type, falling back to later types and then the generic special', () => {
+  it('gives every type its own special, picked by the first type', () => {
+    expect(new Set(POKE_TYPES.map(specialOfType)).size).toBe(POKE_TYPES.length)
+    for (const type of POKE_TYPES) expect(SPECIALS[specialOfType(type)].type).toBe(type)
     expect(specialIdFor('bulbasaur', ['grass', 'poison'])).toBe('frenzyPlant')
-    expect(specialIdFor('bulbasaur', ['poison', 'water'])).toBe('hydroCannon')
-    expect(specialIdFor('bulbasaur', ['electric'])).toBe('boomburst')
+    expect(specialIdFor('toxel', ['electric', 'poison'])).toBe('boltStrike')
   })
 
   it('upgrades to the signature hyper move at the final stage', () => {
@@ -46,5 +48,7 @@ describe('special resolution', () => {
     expect(resolveSpecial('charmander', 2).tier.name).toBe('Blast Burn')
     expect(resolveSpecial('squirtle', 2).tier.name).toBe('Hydro Cannon')
     expect(resolveSpecial('bulbasaur', 2).tier.name).toBe('Frenzy Plant')
+    expect(resolveSpecial('pichu', 0).tier.name).toBe('Thunderbolt')
+    expect(resolveSpecial('pichu', 2).tier.name).toBe('Bolt Strike')
   })
 })

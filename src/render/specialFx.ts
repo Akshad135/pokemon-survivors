@@ -1,7 +1,7 @@
 import { blitCentered, blitRotated, context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
-import { TYPE_COLORS } from '../data/types'
-import { resolveSpecial, specialReach, type SpecialId } from '../game/special'
+import { TYPE_COLORS, type PokeType } from '../data/types'
+import { resolveSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } from '../game/special'
 import type { Attack, Game } from '../game/types'
 import { FX, outlined, toIconUrl } from './art'
 
@@ -61,6 +61,156 @@ const beamSlab = (width: number, frame: number) => {
 
 const radius = (a: Attack) => (a.shape.kind === 'circle' ? a.shape.r : 0)
 
+/* ---------------- Shared forms (bolt, rain, ring, wave, trail) ---------------- */
+
+/** Per type: shade, base (the type color), light, highlight. Glyph rows index them as 1-4. */
+const PALETTES: Record<PokeType, readonly [string, string, string, string]> = {
+  normal: ['#605838', TYPE_COLORS.normal, '#d8d8b8', '#ffffff'],
+  fire: ['#a82010', TYPE_COLORS.fire, '#f8d030', '#fff0a0'],
+  water: ['#2848b0', TYPE_COLORS.water, '#a8d0f8', '#ffffff'],
+  grass: ['#386820', TYPE_COLORS.grass, '#a8e870', '#ffffff'],
+  electric: ['#a07810', TYPE_COLORS.electric, '#f8f088', '#ffffff'],
+  poison: ['#481858', TYPE_COLORS.poison, '#d088d8', '#f8e0f8'],
+  flying: ['#5848a8', TYPE_COLORS.flying, '#d8d0f8', '#ffffff'],
+  bug: ['#506010', TYPE_COLORS.bug, '#d8e870', '#ffffff'],
+  rock: ['#584818', TYPE_COLORS.rock, '#e0d088', '#fff8d8'],
+  ground: ['#685020', TYPE_COLORS.ground, '#f0e0a8', '#fff8e0'],
+  ghost: ['#302048', TYPE_COLORS.ghost, '#a890d0', '#f0e0ff'],
+  fighting: ['#601810', TYPE_COLORS.fighting, '#f87858', '#fff0e0'],
+  psychic: ['#a02858', TYPE_COLORS.psychic, '#f8b0c8', '#ffffff'],
+  ice: ['#3878a8', TYPE_COLORS.ice, '#d0f0f0', '#ffffff'],
+  steel: ['#585870', TYPE_COLORS.steel, '#e0e0f0', '#ffffff'],
+  dark: ['#281c20', TYPE_COLORS.dark, '#b098a0', '#e8d8e0'],
+  fairy: ['#a84868', TYPE_COLORS.fairy, '#f8d0e0', '#ffffff'],
+  dragon: ['#301888', TYPE_COLORS.dragon, '#b090f8', '#f0e8ff'],
+}
+
+/** Specials drawn by the shared forms; the four bespoke ones keep their own art below. */
+type FormSpecial = Exclude<SpecialId, 'blastBurn' | 'hydroCannon' | 'frenzyPlant' | 'boomburst'>
+
+/**
+ * Each shared-form special's piece (meteor, orb, blade…), also its icon. `turn`
+ * pieces rotate to face where they fly; the others stay upright.
+ */
+const GLYPHS: Record<FormSpecial, { rows: readonly string[]; turn?: boolean }> = {
+  boltStrike: { rows: ['...111.', '..1331.', '..131..', '.1331..', '.133111', '1333331', '1113331', '..1331.', '..131..', '.131...', '.11....'] },
+  doomDesire: { rows: ['....1....', '...121...', '...131...', '111343111', '.1234321.', '..13431..', '.1321231.', '.121.121.', '.11...11.'] },
+  lightOfRuin: { rows: ['..111....', '.1331..4.', '1331..444', '1331...4.', '1331.....', '13331...1', '.1333311.', '..11111..'] },
+  expandingForce: { rows: ['...111...', '.1122211.', '122333221', '123414321', '122333221', '.1122211.', '...111...'] },
+  nightDaze: { rows: ['1...1...1', '.1..2..1.', '..12321..', '..23332..', '123343321', '..23332..', '..12321..', '.1..2..1.', '1...1...1'] },
+  dracoMeteor: { rows: ['...3...', '..3.3..', '..232..', '.12321.', '.23432.', '1234321', '1234321', '.12321.', '..111..'] },
+  diamondStorm: { rows: ['..1111..', '.122341.', '12223431', '12222341', '11222221', '.112221.', '..1111..'] },
+  blizzard: { rows: ['12341', '12341', '.234.', '.234.', '.23..', '..3..', '..3..'] },
+  astralBarrage: { rows: ['..1111..', '.122221.', '12233221', '12334321', '12334321', '12233221', '.122221.', '..1111..'] },
+  auraSphere: { rows: ['..2222..', '.233332.', '23344332', '23444432', '23444432', '23344332', '.233332.', '..2222..'] },
+  attackOrder: { rows: ['1........', '11.......', '122233334', '11.......', '1........'], turn: true },
+  precipiceBlades: { rows: ['...4...', '...3...', '..434..', '..323..', '.12321.', '.12221.', '1222221', '1122211', '.11111.'] },
+  aeroblast: { rows: ['11....', '.22...', '..23..', '..234.', '..234.', '..234.', '..23..', '.22...', '11....'], turn: true },
+  malignantChain: { rows: ['...1...', '...1...', '..121..', '..131..', '.12331.', '1233431', '1233331', '.12221.', '..111..'] },
+}
+
+const glyphCache = new Map<FormSpecial, PixelSprite>()
+
+/** A special's piece, outlined so it reads on any biome. */
+const glyph = (id: FormSpecial) => {
+  const cached = glyphCache.get(id)
+  if (cached) return cached
+  const [c1, c2, c3, c4] = PALETTES[SPECIALS[id].type]
+  const sprite = outlined(fromStrings(GLYPHS[id].rows, { 1: c1, 2: c2, 3: c3, 4: c4 }))
+  glyphCache.set(id, sprite)
+  return sprite
+}
+
+const isForm = (id: SpecialId): id is FormSpecial => id in GLYPHS
+
+/** The piece for an attack: specials follow their type (see `specialOfType`). */
+const pieceOf = (a: Attack) => {
+  const id = specialOfType(a.type)
+  return isForm(id) ? { sprite: glyph(id), turn: GLYPHS[id].turn === true } : null
+}
+
+/** Integer scale for pieces that should read from across a phone screen. */
+const BIG = 2
+
+/** Sky strikes: telegraph blink, then a column that crashes down and an impact ring. Electric bolts zigzag. */
+const drawBolt = (ctx: Ctx, a: Attack, t: number) => {
+  const r = radius(a)
+  const [, mid, light, white] = PALETTES[a.type]
+  if (a.age < a.activeFrom) {
+    if (Math.floor(a.age * 30) % 2 === 0) pixelRing(ctx, a.x, a.y, Math.round(r * 0.6), 1, light)
+    return
+  }
+  const k = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
+  if (k < 0.45) {
+    const w = 2 * Math.round(r * 0.15) + 1
+    const jag = a.type === 'electric' ? 3 : 0
+    const frame = Math.floor(t * 30)
+    for (let seg = 0, y = a.y - 120; y < a.y; seg++, y += 6) {
+      const off = jag * (((seg * 73 + a.id * 31 + frame * 17) % 3) - 1)
+      const x = Math.round(a.x + off - w / 2)
+      ctx.fillStyle = mid
+      ctx.fillRect(x, Math.round(y), w, 6)
+      ctx.fillStyle = light
+      ctx.fillRect(x + 1, Math.round(y), w - 2, 6)
+      ctx.fillStyle = white
+      ctx.fillRect(x + (w >> 1), Math.round(y), 1, 6)
+    }
+    if (k < 0.2) blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.4)), light), a.x, a.y)
+  }
+  ctx.globalAlpha = Math.max(0, 1 - k)
+  pixelRing(ctx, a.x, a.y, Math.round(r * (0.7 + 0.6 * k)), 2, mid)
+  ctx.globalAlpha = 1
+}
+
+/** Seconds a falling piece is visible before it lands, and how fast it falls (px/s). */
+const FALL_TIME = 0.4
+const FALL_SPEED = 280
+const FALL_SLANT = 0.35
+
+/** Rain: the piece falls on a slant, then a splash ring where it lands. */
+const drawMeteor = (ctx: Ctx, a: Attack) => {
+  const fall = a.activeFrom - a.age
+  const piece = pieceOf(a)
+  if (fall > 0) {
+    if (fall > FALL_TIME || !piece) return
+    const h = fall * FALL_SPEED
+    const side = a.flip ? -1 : 1
+    blitRotated(ctx, piece.sprite, a.x + side * h * FALL_SLANT, a.y - h, Math.atan2(1, -side * FALL_SLANT) - Math.PI / 2, BIG)
+    return
+  }
+  const r = radius(a)
+  const [, mid, light] = PALETTES[a.type]
+  const k = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
+  ctx.globalAlpha = Math.max(0, 1 - k)
+  if (k < 0.35) blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.55)), light), a.x, a.y)
+  pixelRing(ctx, a.x, a.y, Math.round(r * (0.8 + 0.5 * k)), 2, mid)
+  ctx.globalAlpha = 1
+}
+
+/** Ring volleys: the piece, turned along its flight when it has a point. */
+const drawOrb = (ctx: Ctx, a: Attack) => {
+  const piece = pieceOf(a)
+  if (!piece || a.motion.kind !== 'linear') return
+  ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.15)
+  if (piece.turn) blitRotated(ctx, piece.sprite, a.x, a.y, Math.atan2(a.motion.vy, a.motion.vx))
+  else blitCentered(ctx, piece.sprite, a.x, a.y)
+  ctx.globalAlpha = 1
+}
+
+/** Wave segments at double size: wind turns to face its way, stone blades stand upright. */
+const drawWave = (ctx: Ctx, a: Attack) => {
+  const piece = pieceOf(a)
+  if (!piece || a.motion.kind !== 'linear') return
+  ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.2)
+  if (piece.turn) blitRotated(ctx, piece.sprite, a.x, a.y, Math.atan2(a.motion.vy, a.motion.vx), BIG)
+  else {
+    const w = piece.sprite.width * BIG
+    const h = piece.sprite.height * BIG
+    ctx.drawImage(piece.sprite, Math.round(a.x - w / 2), Math.round(a.y + 8 - h), w, h)
+  }
+  ctx.globalAlpha = 1
+}
+
 /** Ground layer (under entities): scorch marks, cracks, glows. */
 export const drawSpecialGround = (ctx: Ctx, a: Attack) => {
   const r = Math.round(radius(a))
@@ -75,6 +225,23 @@ export const drawSpecialGround = (ctx: Ctx, a: Attack) => {
       return blitCentered(ctx, ellipse(r + 4, Math.round((r + 4) * 0.5), 'rgba(248,128,48,0.4)'), a.x, a.y + 8)
     case 'roots':
       return blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.35)), 'rgba(40,24,8,0.5)'), a.x, a.y)
+    case 'meteor': {
+      // The landing shadow grows as the piece comes down.
+      const fall = a.activeFrom - a.age
+      if (fall <= 0 || fall > FALL_TIME) return
+      const k = 1 - (fall / FALL_TIME) * 0.6
+      return blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k * 0.45)), 'rgba(16,8,24,0.35)'), a.x, a.y)
+    }
+    case 'wave':
+      if (a.type === 'flying') return
+      return blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.4)), 'rgba(56,40,16,0.35)'), a.x, a.y + 8)
+    case 'puddle': {
+      ctx.globalAlpha = 0.6 * Math.min(1, (a.ttl - a.age) / 0.4, a.age / 0.1)
+      blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.5)), PALETTES[a.type][1]), a.x, a.y)
+      blitCentered(ctx, ellipse(Math.round(r * 0.6), Math.max(1, Math.round(r * 0.3)), PALETTES[a.type][2]), a.x - 1, a.y - 1)
+      ctx.globalAlpha = 1
+      return
+    }
   }
 }
 
@@ -149,8 +316,26 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = Math.max(0, 1 - a.age / a.ttl)
       pixelRing(ctx, a.x, a.y, R, 3, TYPE_COLORS[a.type])
       pixelRing(ctx, a.x, a.y, R - 4, 1, '#ffffff')
-      pixelRing(ctx, a.x, a.y, Math.round(R * 0.7), 1, '#f8f8e0')
+      pixelRing(ctx, a.x, a.y, Math.round(R * 0.7), 1, PALETTES[a.type][2])
       ctx.globalAlpha = 1
+      return
+    }
+    case 'bolt':
+      return drawBolt(ctx, a, t)
+    case 'meteor':
+      return drawMeteor(ctx, a)
+    case 'orb':
+      return drawOrb(ctx, a)
+    case 'wave':
+      return drawWave(ctx, a)
+    case 'puddle': {
+      // A bubble pops now and then on each patch.
+      const phase = (t * 2 + a.id * 0.37) % 1
+      if (phase > 0.35 || a.ttl - a.age < 0.4) return
+      ctx.fillStyle = PALETTES[a.type][3]
+      const bx = Math.round(a.x + ((a.id * 7) % 9) - 4)
+      const by = Math.round(a.y - 1 - phase * 6)
+      ctx.fillRect(bx, by, phase < 0.25 ? 1 : 2, 1)
       return
     }
   }
@@ -177,7 +362,7 @@ export const drawSpecialAura = (ctx: Ctx, g: Game, t: number) => {
 /* ---------------- Icons ---------------- */
 
 const FIRE = { 1: '#a82010', 2: '#e05018', 3: '#f8a030', 4: '#fff0a0' }
-const ICON_ART: Record<SpecialId, () => PixelSprite> = {
+const BESPOKE_ICONS: Record<Exclude<SpecialId, FormSpecial>, () => PixelSprite> = {
   blastBurn: () =>
     outlined(fromStrings(
       ['.....1.....', '.1...21..1.', '.21.1321.2.', '..1123321..', '.112344321.', '12344443211', '.123444321.', '..1234321..', '.1.12321.1.', '.2..121..2.', '.....1.....'],
@@ -196,4 +381,4 @@ const ICON_ART: Record<SpecialId, () => PixelSprite> = {
     ), '#383028'),
 }
 
-export const specialIcon = (id: SpecialId) => toIconUrl(`special:${id}`, ICON_ART[id])
+export const specialIcon = (id: SpecialId) => toIconUrl(`special:${id}`, isForm(id) ? () => glyph(id) : BESPOKE_ICONS[id])

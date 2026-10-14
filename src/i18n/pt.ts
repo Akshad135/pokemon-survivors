@@ -8,7 +8,7 @@ import type { ConsumableId } from '../game/consumables'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
-import type { SpecialKind } from '../game/special'
+import type { SpecialId } from '../game/special'
 
 /** One string per entry of a tuple, so every move upgrade gets exactly one line. */
 type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: string }
@@ -23,7 +23,8 @@ export type ContentTexts = {
   consumables: Record<ConsumableId, string>
   /** One-liner under the Pokémon's name in the inspect panel. */
   blurbs: Record<PlayableId, string>
-  specials: Record<SpecialKind, string>
+  /** Special attacks: what each one does, by `SPECIALS` id. */
+  specials: Record<SpecialId, string>
 }
 
 const typeBoost = (type: string) => `+10% de dano em golpes do tipo ${type}.`
@@ -893,10 +894,24 @@ export const pt = {
   },
 
   specials: {
-    dash: 'Investida em chamas que deixa um rastro de fogo.',
-    beam: 'Jato concentrado na direção em que você anda.',
-    roots: 'Anéis de raízes brotam do chão e desaceleram.',
-    nova: 'Onda de choque ao redor que empurra tudo.',
+    blastBurn: 'Investida em chamas que deixa um rastro de fogo.',
+    hydroCannon: 'Jato concentrado na direção em que você anda.',
+    frenzyPlant: 'Anéis de raízes brotam do chão e desaceleram.',
+    boomburst: 'Onda de choque ao redor que empurra tudo.',
+    boltStrike: 'Raios caem nos inimigos mais próximos e podem paralisar.',
+    doomDesire: 'Colunas de luz metálica caem nos inimigos mais próximos, poucas e pesadas.',
+    lightOfRuin: 'Feixes de luz caem nos inimigos mais próximos e podem fazer dormir.',
+    expandingForce: 'Ondas psíquicas ao redor que empurram e desaceleram.',
+    nightDaze: 'Ondas de escuridão ao redor que empurram e podem fazer dormir.',
+    dracoMeteor: 'Chuva de meteoros ao seu redor que pode queimar.',
+    diamondStorm: 'Chuva de pedras ao seu redor que empurra forte.',
+    blizzard: 'Chuva de pingentes de gelo ao seu redor que desacelera.',
+    astralBarrage: 'Anel de bolas sombrias disparadas para todos os lados, que podem paralisar.',
+    auraSphere: 'Anel de esferas de energia disparadas para todos os lados.',
+    attackOrder: 'Anel de ferrões disparados para todos os lados, que podem envenenar.',
+    precipiceBlades: 'Muralha de lâminas de pedra que avança na direção em que você anda e desacelera.',
+    aeroblast: 'Muralha de vento que avança na direção em que você anda e empurra.',
+    malignantChain: 'Você corre um pouco mais rápido e deixa um rastro de veneno.',
   },
 
   /** Explainer toast the first time each enemy trait shows up in a run. */

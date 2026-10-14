@@ -84,7 +84,7 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <h3>${m.pokedex.signature}</h3>
     <p class="move"><b>${signature.name}</b> ${typeBadge(signature.type, m)}<br />${game.moves[s.signature].description}</p>
     <h3>${m.pokedex.special}</h3>
-    <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${special.def.final.name})</small>`}<br />${game.specials[special.def.kind]}</p>
+    <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${special.def.final.name})</small>`}<br />${game.specials[special.id]}</p>
     <h3>${m.pokedex.learnset}</h3>
     <ul class="chips">${s.learnset.map((mv) => moveChip(mv, m))}</ul>
     ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`
