@@ -5,6 +5,7 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
+import { createDexLog } from './dex'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
@@ -22,6 +23,7 @@ import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { updateArena } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
+import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
 import { createWeather, updateWeather } from './weather'
@@ -119,6 +121,7 @@ export const createGame = (
     rift: createRiftState(),
     endless: null,
     eggs: { found: [], lucky: perks.luckyEgg === true },
+    dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny hatch is shiny every run.
     events: lucky && !perks.shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
@@ -260,6 +263,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
 
   g.camera.x = g.player.x - g.view.w / 2
   g.camera.y = g.player.y - 10 - g.view.h / 2
+  updateSightings(g, dt)
 
   if (g.phase === 'playing' && g.pendingLevelUps > 0) advancePhase(g)
 }

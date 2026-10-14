@@ -1,17 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { RIFT, RIFT_LEGENDS } from '../data/rifts'
-import { RUN_LENGTH } from '../data/waves'
+import { EVENTS, RUN_LENGTH } from '../data/waves'
 import { chargePortal, nextRiftAt, pickLegend, riftDue, riftLoot, riftScale } from './rift'
 
 const due = { time: 300, nextAt: 210, busy: false, bossAlive: false, endless: false }
 
 describe('rift schedule', () => {
-  it('opens a portal once due, but waits while one is open, a boss is alive or the player is in an arena', () => {
+  it('opens a portal once due, but waits while one is open or the player is in an arena', () => {
     expect(riftDue(due)).toBe(true)
     expect(riftDue({ ...due, time: 200 })).toBe(false)
     expect(riftDue({ ...due, busy: true })).toBe(false)
-    expect(riftDue({ ...due, bossAlive: true })).toBe(false)
+  })
+
+  it('waits for a living boss to fall, but only for so long; the endless reaper always holds it', () => {
+    const fight = { ...due, time: due.nextAt, bossAlive: true }
+    expect(riftDue(fight)).toBe(false)
+    expect(riftDue({ ...fight, time: due.nextAt + RIFT.bossWait - 1 })).toBe(false)
+    expect(riftDue({ ...fight, time: due.nextAt + RIFT.bossWait })).toBe(true)
+    expect(riftDue({ ...fight, time: due.nextAt + RIFT.bossWait, endless: true })).toBe(false)
   })
 
   it('never opens so late in a regular run that the arena could overlap Mewtwo, but does in endless mode', () => {
@@ -20,15 +27,28 @@ describe('rift schedule', () => {
     expect(riftDue({ ...late, endless: true })).toBe(true)
   })
 
-  it('fits three rifts in a regular run even with the latest jitter', () => {
-    const rng = () => 0.999
-    let at: number = RIFT.firstAt
+  /** Plays a regular run's clock second by second; each rift takes its full portal and arena time. */
+  const riftsInRun = (rng: () => number, bossAlive: (time: number) => boolean) => {
+    let nextAt: number = RIFT.firstAt
+    let busyUntil = 0
     const opened: number[] = []
-    while (riftDue({ ...due, time: at, nextAt: at })) {
-      opened.push(at)
-      at = nextRiftAt(at, rng)
+    for (let time = 0; time < RUN_LENGTH; time++) {
+      if (!riftDue({ time, nextAt, busy: time < busyUntil, bossAlive: bossAlive(time), endless: false })) continue
+      opened.push(time)
+      nextAt = nextRiftAt(nextAt, time, rng)
+      busyUntil = time + RIFT.portalTime + RIFT.arenaTime
     }
-    expect(opened.length).toBe(3)
+    return opened
+  }
+  const bosses = EVENTS.flatMap((e) => (e.kind === 'boss' && e.at < RUN_LENGTH ? [e.at] : []))
+
+  it.each([
+    ['the earliest', () => 0],
+    ['the latest', () => 0.999],
+  ])('gives three rifts with %s jitter, whether bosses fall at once or never', (_, rng) => {
+    expect(riftsInRun(rng, () => false)).toHaveLength(3)
+    // A weak build: every boss stays alive from its arrival to the end of the run.
+    expect(riftsInRun(rng, (time) => bosses.some((at) => at <= time))).toHaveLength(3)
   })
 })
 

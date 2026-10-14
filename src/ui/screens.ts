@@ -310,10 +310,14 @@ const damageSource = (g: Game, id: DamageSource) => {
 /** What the incubator made of the run: ₽ paid for eggs that didn't fit, and eggs now ready to hatch. */
 export type ResultEggs = { refund: number; ready: number }
 
+/** What the run added to the Pokédex (`dexNews`). */
+type DexNews = { species: number; shinies: number }
+
 /**
  * End of run. On a victory, `onContinue` adds the endless-mode button (first);
  * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
- * The steps walked and eggs found feed the incubator (`eggs`).
+ * The steps walked and eggs found feed the incubator (`eggs`), and `news`
+ * adds a one-line Pokédex summary when the run found something new.
  */
 export const results = (
   root: HTMLElement,
@@ -323,6 +327,7 @@ export const results = (
   onMenu: () => void,
   onContinue?: () => void,
   eggs: ResultEggs = { refund: 0, ready: 0 },
+  news: DexNews = { species: 0, shinies: 0 },
 ): Screen => {
   const m = t().results
   const e = t().eggs
@@ -371,6 +376,14 @@ export const results = (
       ),
       eggs.refund > 0 && h('p', { class: 'endless-hint' }, e.full(formatPokeDollars(eggs.refund))),
       eggs.ready > 0 && h('div', { class: 'tag tag-shiny' }, e.readyBadge(eggs.ready)),
+      (news.species > 0 || news.shinies > 0) &&
+        h(
+          'div',
+          { class: 'dex-news' },
+          h('b', {}, 'POKéDEX'),
+          [news.species > 0 && m.dexSpecies(news.species), news.shinies > 0 && m.dexShinies(news.shinies)].filter(Boolean).join(' · '),
+          news.shinies > 0 && h('img', { src: sparkleIcon(), alt: '' }),
+        ),
       goOn && h('p', { class: 'endless-hint' }, r.continueHint),
       h(
         'div',
@@ -401,28 +414,13 @@ export const results = (
   return { el, dispose: () => (nav.off(), el.remove()) }
 }
 
-/* ---------------- Text box & toasts ---------------- */
+/* ---------------- Text box & flash (toasts and banners: `toasts.ts`) ---------------- */
 
 /** Bottom dialog box, Pokémon style. Returns a disposer. */
 export const textBox = (root: HTMLElement, text: string) => {
   const el = h('div', { class: 'textbox box' }, h('p', {}, text))
   root.append(el)
   return () => el.remove()
-}
-
-export const toast = (root: HTMLElement, content: HTMLElement | string, ms = 2600) => {
-  const el = h('div', { class: 'toast box' }, content)
-  root.append(el)
-  setTimeout(() => el.classList.add('out'), ms)
-  setTimeout(() => el.remove(), ms + 400)
-}
-
-/** Big centered announcement (legendary entrances). Wraps on small screens. */
-export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600) => {
-  const el = h('div', { class: 'banner box' }, content)
-  root.append(el)
-  setTimeout(() => el.classList.add('out'), ms)
-  setTimeout(() => el.remove(), ms + 400)
 }
 
 /** Full-screen white flash that fades out by itself. */

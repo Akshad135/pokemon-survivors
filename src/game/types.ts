@@ -13,6 +13,7 @@ import type { PlayableId } from '../data/hatchlings'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
+import type { DexLog } from './dex'
 import type { EggTier, RunEggs } from './eggs'
 import type { EndlessState } from './endless'
 import type { MoveId } from './moves'
@@ -223,6 +224,8 @@ export type GameEvent =
   | { kind: 'boss'; enemy: EnemyId }
   | { kind: 'shiny'; enemy: EnemyId }
   | { kind: 'shinyPlayer' }
+  /** A shiny fainted: it's the player's now (Pokédex). */
+  | { kind: 'caught'; enemy: EnemyId }
   | { kind: 'thunder' }
   | { kind: 'quake' }
   /** The special attack started charging or was unleashed. */
@@ -321,6 +324,8 @@ export type Game = {
   rift: RiftState
   /** Set once the player goes on past Mewtwo (endless mode). */
   endless: EndlessState | null
+  /** Species seen, defeated and caught this run, for the Pokédex (`game/dex.ts`). */
+  dexLog: DexLog
   /** Eggs found this run (`eggs.ts`). */
   eggs: RunEggs
   events: GameEvent[]

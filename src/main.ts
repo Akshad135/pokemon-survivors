@@ -21,12 +21,14 @@ import { CONSUMABLES } from './game/consumables'
 import { depositEggs, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
 import { spawnEnemy } from './game/enemies'
+import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
+import { dexNews, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
@@ -43,14 +45,16 @@ import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { bankEggs, depositPokeDollars, loadSave, writeSave } from './ui/save'
+import { bankEggs, depositPokeDollars, loadSave, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
-import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
+import { pokedexScreen } from './ui/pokedex'
+import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
+import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 const STEP = 1 / 60
 
@@ -110,6 +114,8 @@ type Run = {
   reported: boolean
   /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
   hatchery: { steps: number; eggs: number; refund: number }
+  /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
+  dexBase: Pokedex
 }
 
 let screen: Screen | null = null
@@ -155,6 +161,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
+      pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus })),
     }, opts),
   )
 }
@@ -209,8 +216,9 @@ const bankHatchery = (r: Run) => {
 }
 
 /**
- * Moves the run's ₽ not banked yet into the wallet. Quitting keeps coins but
- * forfeits the survival bonus, unless Mewtwo already fell (victory or endless).
+ * Moves the run's ₽ not banked yet into the wallet and saves its Pokédex log.
+ * Quitting keeps coins but forfeits the survival bonus, unless Mewtwo already
+ * fell (victory or endless). Every species seen or defeated counts either way.
  */
 const bankRun = (r: Run, withBonus: boolean) => {
   const g = r.game
@@ -218,6 +226,7 @@ const bankRun = (r: Run, withBonus: boolean) => {
   if (total > r.paid) depositPokeDollars(total - r.paid)
   r.paid = Math.max(r.paid, total)
   bankHatchery(r)
+  updateSave((save) => ({ ...save, dex: recordRun(r.dexBase, g.dexLog) }))
 }
 
 /** Reports how the run ended, once. */
@@ -236,6 +245,7 @@ const endRun = () => {
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
+  clearToasts(ui)
   run = null
 }
 
@@ -287,7 +297,7 @@ const startRun = async (starter: PlayableId) => {
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
   loading.remove()
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false, hatchery: { steps: 0, eggs: 0, refund: 0 } }
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false, hatchery: { steps: 0, eggs: 0, refund: 0 }, dexBase: save.dex }
   track('run_start', { starter })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -343,10 +353,16 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => afterRun(() => void startRun(lastStarter)), () => afterRun(() => showMenu()), () => continueEndless(g), {
-        refund: r.hatchery.refund,
-        ready: loadSave().eggs.filter(isReady).length,
-      })
+      r.overlay = results(
+        ui,
+        input,
+        g,
+        () => afterRun(() => void startRun(lastStarter)),
+        () => afterRun(() => showMenu()),
+        () => continueEndless(g),
+        { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
+        dexNews(r.dexBase, g.dexLog),
+      )
       break
   }
 }
@@ -387,7 +403,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('specialCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.5)
       const who = PLAYABLE[g.starter].line[g.player.stage]!.name
-      return toast(ui, rich(t().toast.used(who, e.name)), 1600)
+      return toast(ui, rich(t().toast.used(who, e.name)), 1600, 'special')
     }
     case 'boss': {
       const def: EnemyDef = ENEMIES[e.enemy]
@@ -406,6 +422,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('shiny')
       playCry(sprites(def.dex).cry, 0.4)
       return toast(ui, rich(t().toast.shiny(def.name)), 3200)
+    }
+    case 'caught': {
+      const def = ENEMIES[e.enemy]
+      playSfx('shiny')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex, true), alt: '' }), rich(t().toast.caught(def.name))), 3600)
     }
     case 'shinyPlayer': {
       playSfx('shiny')
@@ -435,7 +456,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'consumable': {
       const def = CONSUMABLES[e.item]
       playSfx(def.sfx)
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), t().consumables[e.item]), 2200)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), t().consumables[e.item]), 2200, e.item)
     }
     case 'propBreak':
       return playSfx('break', 60)
@@ -511,11 +532,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
   }
 }
 
-/** Announces a weather change: what started (and what it does), or what just ended. */
+/** Announces a weather change: what started (and what it does), or what just ended. The newest replaces one still showing. */
 const weatherToast = (next: WeatherId, prev: WeatherId) => {
   const w = t().world
   if (next === 'clear') {
-    if (prev !== 'clear') toast(ui, h('span', { class: 'item-toast' }, h('img', { src: weatherIcon(prev), alt: '' }), w.weatherEnd[prev]), 2600)
+    if (prev !== 'clear') toast(ui, h('span', { class: 'item-toast' }, h('img', { src: weatherIcon(prev), alt: '' }), w.weatherEnd[prev]), 2600, 'weather')
     return
   }
   playSfx('select')
@@ -523,6 +544,7 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
     ui,
     h('span', { class: 'item-toast weather-toast' }, h('img', { src: weatherIcon(next), alt: '' }), h('span', {}, rich(w.weatherStart[next]), h('small', {}, w.weatherHint[next]))),
     3400,
+    'weather',
   )
 }
 
@@ -601,6 +623,8 @@ const frame = (now: number) => {
     for (const e of g.events.splice(0)) handleEvent(r, e)
     if (run === r) {
       syncOverlay(r)
+      // Toasts and banners wait out menus, level-ups and evolutions with their clocks stopped.
+      tickToasts(ui, dt, g.phase !== 'playing')
       // Redraw only when the simulation advanced: halves the work on 120 Hz phones and
       // idles the GPU while a menu is open over a frozen frame.
       if (steps > 0 || dirty) {
@@ -653,15 +677,19 @@ const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
 }
 
 // Dev-only handle for poking at the running game from the console.
-/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots). */
-const devSpawn = (kind: EnemyId, count = 1) => {
+/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots); `shiny` makes them shiny elites. */
+const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
   const g = run?.game
   if (!g) return
   const p = g.player
   const base = Math.atan2(p.facing.y, p.facing.x)
   for (let i = 0; i < count; i++) {
     const a = base + (i - (count - 1) / 2) * 0.35
-    spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+    const e = spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+    if (shiny) {
+      void preloadShinies([ENEMIES[kind].dex])
+      makeShiny(g, e)
+    }
   }
 }
 
@@ -709,6 +737,7 @@ if (import.meta.env.DEV) {
       theme: currentTheme,
       spawn: devSpawn,
       event: devEvent,
+      dex: () => loadSave().dex,
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),

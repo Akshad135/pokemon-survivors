@@ -285,7 +285,7 @@ export const siteEn: SiteMessages = {
     },
     rifts: {
       paragraphs: (r) => [
-        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s and never opens while a boss is alive.`,
+        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so every run gets 3 rifts, even when bosses take a while.`,
         `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to a closed arena, walled in, to face a legendary from another generation. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
         'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
         `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
@@ -327,6 +327,7 @@ export const siteEn: SiteMessages = {
         `Every regular wild Pokémon has a 1 in ${n(wild)} chance to spawn shiny. It becomes an elite with ${hp}x HP and ${xp}x EXP, and always drops a Poké Ball and Poké Dollars. Bosses and legendaries are never shiny.`,
         `Your starter has a 1 in ${player} chance to be shiny, and stays shiny through every evolution of that run.`,
         'A Poké Ball (from bosses and shinies) grants a random upgrade on the spot, or a move evolution if one is ready.',
+        'A defeated shiny is yours: it shows up as caught, sparkle and all, in the in-game Pokédex (Pokédex, on the title menu). The Pokédex also remembers every species you have seen and how many you defeated, and the end of a run shows what is new.',
       ],
       seeAll: 'See every shiny in the Pokédex',
     },
@@ -492,7 +493,7 @@ export const siteEn: SiteMessages = {
       'Everything the game remembers lives in your browser\'s localStorage, on your device, and is never sent to any server:',
     ],
     storage: {
-      'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the eggs in the incubator (eggs) and the Pokémon hatched (hatched).',
+      'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs) and the Pokémon hatched (hatched).',
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
       'ps:lang': 'Your language (Portuguese or English).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',

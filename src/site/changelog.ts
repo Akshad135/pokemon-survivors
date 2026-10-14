@@ -42,6 +42,44 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   },
   {
     date: '2026-10-13',
+    pr: 25,
+    title: { pt: 'Pokédex dentro do jogo', en: 'An in-game Pokédex' },
+    notes: [
+      {
+        pt: 'O botão Pokédex do título agora abre a Pokédex do jogo: todas as espécies, com as que você viu, quantas derrotou e quais capturou. As que faltam aparecem como "?".',
+        en: 'The Pokédex button on the title now opens the in-game Pokédex: every species, with the ones you have seen, how many you defeated and which you caught. Missing ones show as "?".',
+      },
+      {
+        pt: 'Shiny derrotado vira seu: ele entra na Pokédex como capturado, com o brilho.',
+        en: 'A defeated shiny is yours: it joins the Pokédex as caught, sparkle and all.',
+      },
+      {
+        pt: 'O fim da partida mostra o que entrou de novo, como "+3 espécies novas · 1 shiny capturado".',
+        en: 'The end of a run shows what is new, like "+3 new species · 1 shiny caught".',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
+    pr: 26,
+    title: { pt: 'Avisos em fila e 3 fendas por partida', en: 'Queued notices and 3 rifts per run' },
+    notes: [
+      {
+        pt: 'Os avisos agora fazem fila numa coluna, sem cobrir um ao outro, o HUD ou o seu Pokémon. Eles esperam o menu de nível e a evolução terminarem, então nenhum se perde. No celular deitado, eles ficam no canto direito.',
+        en: 'Notices now line up in a column, without covering each other, the HUD or your Pokémon. They wait for the level-up menu and evolutions to finish, so none get lost. On a phone held sideways, they sit on the right.',
+      },
+      {
+        pt: 'A fenda lendária espera um chefe vivo cair por até 45 segundos e depois abre mesmo assim. Toda partida tem 3 fendas, mesmo quando os chefes demoram.',
+        en: 'A legendary rift waits up to 45 seconds for a living boss to fall, then opens anyway. Every run gets 3 rifts, even when bosses take a while.',
+      },
+      {
+        pt: 'Ao sair de uma fenda, a troca de clima espera alguns segundos, para não chegar junto com o loot.',
+        en: 'When you leave a rift, the weather waits a few seconds to change, so it doesn\'t arrive along with the loot.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-13',
     pr: 24,
     title: { pt: 'Tudo junto: horda do bioma e Dragões', en: 'All together: biome hordes and Dragons' },
     notes: [
