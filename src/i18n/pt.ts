@@ -126,6 +126,26 @@ export const pt = {
     hintTouch: 'Toque ou arraste para ajustar',
   },
 
+  account: {
+    title: 'CONTA',
+    signIn: 'Entrar',
+    pitch: 'Entre com o Google para guardar seu progresso na nuvem e continuar em qualquer aparelho. O que você já conquistou como convidado vai junto.',
+    guest: 'Sem conta, o jogo continua salvando só neste aparelho.',
+    google: 'Entrar com Google',
+    failed: 'Não deu para entrar. Tente de novo.',
+    busy: 'Conectando…',
+    signedInAs: (name: string) => (name ? `Conectado como *${name}*` : 'Conectado'),
+    synced: 'Progresso salvo na nuvem.',
+    syncing: 'Sincronizando…',
+    offline: 'Sem conexão com o servidor. Seu progresso fica salvo neste aparelho e sincroniza depois.',
+    syncNow: 'Sincronizar',
+    signOut: 'Sair',
+    signOutNote: 'Ao sair, o progresso continua neste aparelho.',
+    back: 'Voltar',
+    hintKeys: '↑ ↓ escolher · ENTER confirmar · ESC voltar',
+    hintTouch: 'Toque para escolher',
+  },
+
   results: {
     victory: 'Você venceu Mewtwo!',
     fainted: (name: string) => `${name} desmaiou!`,

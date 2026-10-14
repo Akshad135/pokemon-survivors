@@ -19,6 +19,25 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    pr: 32,
+    title: { pt: 'Contas: seu progresso na nuvem', en: 'Accounts: your progress in the cloud' },
+    notes: [
+      {
+        pt: 'Entre com o Google pelo botão no canto da tela inicial para guardar o progresso na nuvem e continuar em qualquer aparelho. Jogar como convidado continua sendo o padrão, e nada muda para quem não entrar.',
+        en: 'Sign in with Google from the button in the corner of the title screen to keep your progress in the cloud and pick it up on any device. Playing as a guest is still the default, and nothing changes if you don\'t sign in.',
+      },
+      {
+        pt: 'Ao entrar, o que você conquistou como convidado vai junto: a Pokédex, os ovos, os Pokémon chocados e as conquistas se somam aos da conta, e cada melhoria, recorde e missão fica com o maior valor.',
+        en: 'When you sign in, everything you got as a guest comes along: the Pokédex, eggs, hatched Pokémon and achievements join the account\'s, and every upgrade, record and mission keeps the higher value.',
+      },
+      {
+        pt: 'O progresso sincroniza no fim de cada partida. Sem internet, o jogo segue normal e sincroniza depois.',
+        en: 'Progress syncs at the end of every run. Offline, the game plays as usual and syncs later.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     pr: 31,
     title: { pt: 'Um especial para cada tipo e números de dano legíveis', en: 'A special for every type and readable damage numbers' },
     notes: [

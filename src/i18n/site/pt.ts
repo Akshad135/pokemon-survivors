@@ -483,7 +483,7 @@ export const sitePt = {
   legal: {
     title: 'Legal, privacidade e créditos | Pokémon Survivors',
     description:
-      'Pokémon Survivors é um fan game não oficial e gratuito, sem anúncios e sem compras. Licenças (código MIT, sprites CC BY-NC 4.0), privacidade (sem coleta de dados pessoais), créditos e contato.',
+      'Pokémon Survivors é um fan game não oficial e gratuito, sem anúncios e sem compras. Licenças (código MIT, sprites CC BY-NC 4.0), privacidade (contas opcionais; como convidado, nada sai do seu aparelho), créditos e contato.',
     h1: 'Legal, privacidade e créditos',
     sections: {
       fanGame: 'Fan game não oficial',
@@ -516,15 +516,21 @@ export const sitePt = {
       nonCommercial: 'Como os sprites são CC BY-NC, o jogo como um todo não pode ser usado comercialmente.',
     },
     privacy: [
-      'O jogo não tem cadastro, cookies, anúncios nem rastreadores, e não coleta dados pessoais.',
-      'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho, e nunca é enviado para nenhum servidor:',
+      'Jogar como convidado é o padrão e não exige cadastro: assim o jogo não usa cookies, anúncios nem rastreadores, e não coleta dados pessoais.',
+      'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho. Como convidado, nada disso é enviado para nenhum servidor:',
     ],
     storage: {
       'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou), os ovos da incubadora (eggs), os Pokémon chocados (hatched), progresso das missões, conquistas, recordes (como Pokémon derrotados e o maior tempo sobrevivido) e o título escolhido.',
       'ps:settings': 'Ajustes: volume da música e dos efeitos, som ligado ou desligado, números de dano e tremor de tela.',
       'ps:lang': 'Idioma escolhido (português ou inglês).',
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',
+      'ps:account': 'Só se você entrar com uma conta: qual conta está conectada neste aparelho (o id dela e o seu primeiro nome) e a última versão do progresso que ele sincronizou.',
     },
+    account: [
+      'Contas são opcionais e servem para guardar o progresso na nuvem e continuar em outro aparelho. O login é com o Google, feito pelo Clerk (clerk.com), que recebe do Google seu nome, e-mail e foto e usa cookies próprios para manter você conectado. O jogo nunca vê sua senha.',
+      'Com uma conta, uma cópia do ps:save fica no nosso servidor, ligada ao id da sua conta. Ela é enviada quando você entra, quando abre o jogo e no fim de cada partida. No nosso servidor ficam só o id da conta, o progresso e as datas de criação e de uso, sem seu e-mail.',
+      'Ao sair da conta, o progresso continua neste aparelho. Para apagar a conta e o progresso guardado nela, peça pelo contato abaixo.',
+    ],
     privacyAfter: [
       'Para apagar esses dados, limpe os dados do site nas configurações do navegador.',
       'Sprites, sons e fontes vêm do próprio site, sem chamadas a serviços de terceiros. O site é hospedado na Vercel, que, como qualquer servidor, pode registrar dados técnicos de acesso (como endereço IP) para operar e proteger o serviço.',

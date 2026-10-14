@@ -115,8 +115,9 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
     entries[index]!.scrollIntoView({ block: 'nearest' })
   }
 
+  // Purchases start from the stored save: an account sync may have changed it while the Mart was open.
   const purchase = (id: UpgradeId) => {
-    const next = buyUpgrade(save, id)
+    const next = buyUpgrade(loadSave(), id)
     if (!next) return playSfx('denied')
     save = next
     writeSave(save)
@@ -131,7 +132,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
         confirm?.dispose()
         confirm = null
         if (!yes) return
-        save = refundAll(save)
+        save = refundAll(loadSave())
         writeSave(save)
         playSfx('buy')
         refresh()
