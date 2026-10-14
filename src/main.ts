@@ -19,12 +19,14 @@ import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { setBiome } from './game/biomes'
 import { spawnEnemy } from './game/enemies'
+import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
+import { dexNews, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
@@ -40,7 +42,8 @@ import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { depositPokeDollars, loadSave } from './ui/save'
+import { pokedexScreen } from './ui/pokedex'
+import { depositPokeDollars, loadSave, updateSave } from './ui/save'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
@@ -105,6 +108,8 @@ type Run = {
   paid: number
   /** True once the run's end was reported to analytics. */
   reported: boolean
+  /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
+  dexBase: Pokedex
 }
 
 let screen: Screen | null = null
@@ -149,6 +154,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
+      pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus })),
     }, opts),
   )
 }
@@ -165,14 +171,16 @@ const showMenu = (initial: StarterId = lastStarter) => {
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
 /**
- * Moves the run's ₽ not banked yet into the wallet. Quitting keeps coins but
- * forfeits the survival bonus, unless Mewtwo already fell (victory or endless).
+ * Moves the run's ₽ not banked yet into the wallet and saves its Pokédex log.
+ * Quitting keeps coins but forfeits the survival bonus, unless Mewtwo already
+ * fell (victory or endless). Every species seen or defeated counts either way.
  */
 const bankRun = (r: Run, withBonus: boolean) => {
   const g = r.game
   const total = withBonus ? runEarnings(g).total : g.coins
   if (total > r.paid) depositPokeDollars(total - r.paid)
   r.paid = Math.max(r.paid, total)
+  updateSave((save) => ({ ...save, dex: recordRun(r.dexBase, g.dexLog) }))
 }
 
 /** Reports how the run ended, once. */
@@ -235,11 +243,12 @@ const startRun = async (starter: StarterId) => {
   const plan = upcoming
   upcoming = planRun()
   await loadAll([...starterDex(starter), ...openingDex(plan)])
-  const game = createGame(starter, view, plan.seed, loadSave().ranks, plan.roster)
+  const save = loadSave()
+  const game = createGame(starter, view, plan.seed, save.ranks, plan.roster)
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(starterDex(starter))
   loading.remove()
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false, dexBase: save.dex }
   track('run_start', { starter })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -295,7 +304,7 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g))
+      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g), dexNews(r.dexBase, g.dexLog))
       break
   }
 }
@@ -355,6 +364,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('shiny')
       playCry(sprites(def.dex).cry, 0.4)
       return toast(ui, rich(t().toast.shiny(def.name)), 3200)
+    }
+    case 'caught': {
+      const def = ENEMIES[e.enemy]
+      playSfx('shiny')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex, true), alt: '' }), rich(t().toast.caught(def.name))), 3600)
     }
     case 'shinyPlayer': {
       playSfx('shiny')
@@ -600,15 +614,19 @@ const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
 }
 
 // Dev-only handle for poking at the running game from the console.
-/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots). */
-const devSpawn = (kind: EnemyId, count = 1) => {
+/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots); `shiny` makes them shiny elites. */
+const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
   const g = run?.game
   if (!g) return
   const p = g.player
   const base = Math.atan2(p.facing.y, p.facing.x)
   for (let i = 0; i < count; i++) {
     const a = base + (i - (count - 1) / 2) * 0.35
-    spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+    const e = spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+    if (shiny) {
+      void preloadShinies([ENEMIES[kind].dex])
+      makeShiny(g, e)
+    }
   }
 }
 
@@ -624,6 +642,7 @@ if (import.meta.env.DEV) {
       theme: currentTheme,
       spawn: devSpawn,
       event: devEvent,
+      dex: () => loadSave().dex,
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),

@@ -1,4 +1,5 @@
 import { chance, type Rng } from '../engine/rng'
+import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
 import { ENDLESS, overtime } from './endless'
 import type { StatDelta } from './stats'
 import type { Game } from './types'
@@ -67,9 +68,10 @@ export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, sk
 
 export const SAVE_VERSION = 1
 
-export type Save = { version: typeof SAVE_VERSION; wallet: number; ranks: Ranks }
+/** `dex` is the Pokédex progress (`game/dex.ts`); saves from before it start empty. */
+export type Save = { version: typeof SAVE_VERSION; wallet: number; ranks: Ranks; dex: Pokedex }
 
-export const EMPTY_SAVE: Save = { version: SAVE_VERSION, wallet: 0, ranks: NO_RANKS }
+export const EMPTY_SAVE: Save = { version: SAVE_VERSION, wallet: 0, ranks: NO_RANKS, dex: EMPTY_DEX }
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
@@ -105,6 +107,7 @@ export const parseSave = (raw: string | null): Save => {
     version: SAVE_VERSION,
     wallet: wholeNumber(data.wallet),
     ranks: Object.fromEntries(UPGRADE_IDS.map((id) => [id, wholeNumber(ranks[id], UPGRADES[id].maxRank)])) as Record<UpgradeId, number>,
+    dex: parseDex(data.dex),
   }
 }
 

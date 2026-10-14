@@ -5,6 +5,7 @@ import { STARTERS, type StarterId } from '../data/starters'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
+import { createDexLog } from './dex'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
@@ -22,6 +23,7 @@ import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { updateArena } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
+import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
 import { createWeather, updateWeather } from './weather'
@@ -101,6 +103,7 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
     endless: null,
+    dexLog: createDexLog(),
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
@@ -238,6 +241,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
 
   g.camera.x = g.player.x - g.view.w / 2
   g.camera.y = g.player.y - 10 - g.view.h / 2
+  updateSightings(g, dt)
 
   if (g.phase === 'playing' && g.pendingLevelUps > 0) advancePhase(g)
 }

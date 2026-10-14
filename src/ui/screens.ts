@@ -306,11 +306,23 @@ const damageSource = (g: Game, id: DamageSource) => {
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
+/** What the run added to the Pokédex (`dexNews`). */
+type DexNews = { species: number; shinies: number }
+
 /**
  * End of run. On a victory, `onContinue` adds the endless-mode button (first);
  * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
+ * `news` adds a one-line Pokédex summary when the run found something new.
  */
-export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () => void, onMenu: () => void, onContinue?: () => void): Screen => {
+export const results = (
+  root: HTMLElement,
+  input: Input,
+  g: Game,
+  onRetry: () => void,
+  onMenu: () => void,
+  onContinue?: () => void,
+  news: DexNews = { species: 0, shinies: 0 },
+): Screen => {
   const m = t().results
   const r = t().rifts
   const victory = g.phase === 'victory'
@@ -352,6 +364,14 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
         legends.length > 0 &&
           h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
       ),
+      (news.species > 0 || news.shinies > 0) &&
+        h(
+          'div',
+          { class: 'dex-news' },
+          h('b', {}, 'POKéDEX'),
+          [news.species > 0 && m.dexSpecies(news.species), news.shinies > 0 && m.dexShinies(news.shinies)].filter(Boolean).join(' · '),
+          news.shinies > 0 && h('img', { src: sparkleIcon(), alt: '' }),
+        ),
       goOn && h('p', { class: 'endless-hint' }, r.continueHint),
       h(
         'div',
