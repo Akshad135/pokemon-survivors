@@ -11,6 +11,7 @@ import { consumableIcon } from '../render/props'
 import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
+import { createRiftHud } from './riftHud'
 import { createSpecialControls } from './specialButton'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
@@ -23,6 +24,7 @@ const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-
  */
 export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () => void) => {
   const special = createSpecialControls(onSpecial)
+  const rift = createRiftHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
   const clock = h('span')
@@ -71,6 +73,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       ),
     ),
     boss,
+    rift.el,
     h(
       'div',
       { class: 'status box' },
@@ -146,6 +149,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     setText(kills, String(g.kills))
     setText(coins, formatPokeDollars(g.coins))
     special.update(g)
+    rift.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
     if (key !== loadoutKey) {

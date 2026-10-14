@@ -32,7 +32,7 @@ export const siteEn: SiteMessages = {
   types: {
     normal: 'Normal', fire: 'Fire', water: 'Water', grass: 'Grass', electric: 'Electric', poison: 'Poison',
     flying: 'Flying', bug: 'Bug', rock: 'Rock', ground: 'Ground', ghost: 'Ghost', fighting: 'Fighting',
-    psychic: 'Psychic', ice: 'Ice', steel: 'Steel', dark: 'Dark', fairy: 'Fairy',
+    psychic: 'Psychic', ice: 'Ice', steel: 'Steel', dark: 'Dark', fairy: 'Fairy', dragon: 'Dragon',
   },
 
   pokedex: {
@@ -79,6 +79,8 @@ export const siteEn: SiteMessages = {
     ring: (at: string, count: number) => `Ring of ${count} at ${at}`,
     boss: (at: string) => `Boss at ${at}`,
     bossChance: (at: string, percent: number) => `Boss at ${at} (${n(percent)}% chance)`,
+    rift: (from: string) => `Behind a legendary rift, from ${from} (optional arena)`,
+    reaper: (at: string) => `The endless mode's reaper, from ${at}`,
     attacks: 'Attacks',
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
     summoned: (by: string) => `Called in by ${by}`,
@@ -142,6 +144,7 @@ export const siteEn: SiteMessages = {
       types: 'Types and status',
       bosses: 'Bosses',
       traits: 'Special enemies',
+      rifts: 'Legendary rifts and endless mode',
       shinies: 'Shinies',
       items: 'Map items',
       mapEvents: 'Map events',
@@ -169,7 +172,7 @@ export const siteEn: SiteMessages = {
     run: {
       paragraphs: (minutes: number, starters: number) => [
         `Pick one of ${starters} starters, Kanto to Paldea. Each one has its own stats, starting move, learnset and special attack (see the Pokédex).`,
-        `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run.`,
+        `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run. After that you can keep going in endless mode.`,
         'If your HP hits zero the run is over (unless you are holding a Revive). The Poké Dollars you picked up go to your wallet.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
@@ -248,6 +251,26 @@ export const siteEn: SiteMessages = {
       },
       flute: 'Poké Flute (map item)',
       itemsNote: 'King\'s Rock raises the status chance, Toxic Orb raises burn and poison damage, and Light Clay makes statuses last longer.',
+    },
+    rifts: {
+      paragraphs: (r) => [
+        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s and never opens while a boss is alive.`,
+        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to a closed arena, walled in, to face a legendary from another generation. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
+        'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
+        `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
+      ],
+      legendHead: 'Legendary',
+      typesHead: 'Types',
+      hpHead: 'Base HP',
+      attacksHead: 'Attacks',
+      hpNote: (percent) => `Base HP is the first rift's, at 3:30. After that, the legendary's HP and contact damage grow with the clock: +${n(percent)}% HP per minute. Every rift brings a different legendary.`,
+      endlessTitle: 'Endless mode',
+      endless: (e) => [
+        'After you beat Mewtwo, the victory screen offers to keep going in endless mode. If you don\'t want to, you leave with the regular victory, and the bonus is paid right away.',
+        `The horde keeps growing: more enemies spawn, the on-screen cap rises and rings and swarms arrive every ${e.every} seconds. Rifts keep opening.`,
+        `At ${e.reaper}, Arceus descends to hunt you. It gets faster the longer it hunts, until nobody can outrun it, and it never loses you: wander off and it reappears at the edge of the screen. It can be beaten, but it has ${e.hp} HP; if it falls, it comes back ${e.returns} minutes later, stronger.`,
+        `Time survived is the main score: every minute past 15:00 pays ₽${n(e.perMinute)} in the bonus, and every defeated Arceus another ₽${e.reaperBonus}.`,
+      ],
     },
     bosses: {
       paragraphs: [

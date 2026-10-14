@@ -27,7 +27,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     damage: def.damage * (boss ? 1 : scale.damage),
     speed: def.speed * (0.92 + g.rng() * 0.16),
     mass: def.mass,
-    radius: radiusFor(def.dex),
+    radius: radiusFor(def.dex) * (def.scale ?? 1),
     xp: def.xp,
     boss,
     shiny: false,

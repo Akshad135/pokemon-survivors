@@ -40,7 +40,7 @@ export const sitePt = {
   types: {
     normal: 'Normal', fire: 'Fogo', water: 'Água', grass: 'Planta', electric: 'Elétrico', poison: 'Veneno',
     flying: 'Voador', bug: 'Inseto', rock: 'Pedra', ground: 'Terra', ghost: 'Fantasma', fighting: 'Lutador',
-    psychic: 'Psíquico', ice: 'Gelo', steel: 'Aço', dark: 'Sombrio', fairy: 'Fada',
+    psychic: 'Psíquico', ice: 'Gelo', steel: 'Aço', dark: 'Sombrio', fairy: 'Fada', dragon: 'Dragão',
   } satisfies Record<PokeType, string>,
 
   pokedex: {
@@ -87,6 +87,8 @@ export const sitePt = {
     ring: (at: string, count: number) => `Cerco de ${count} em ${at}`,
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
+    rift: (from: string) => `Atrás de uma fenda lendária, a partir de ${from} (arena opcional)`,
+    reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
     summoned: (by: string) => `Chamado por ${by}`,
@@ -153,6 +155,7 @@ export const sitePt = {
       types: 'Tipos e status',
       bosses: 'Chefes',
       traits: 'Inimigos especiais',
+      rifts: 'Fendas lendárias e modo sem fim',
       shinies: 'Shinies',
       items: 'Itens no mapa',
       mapEvents: 'Eventos no mapa',
@@ -180,7 +183,7 @@ export const sitePt = {
     run: {
       paragraphs: (minutes: number, starters: number) => [
         `Escolha um dos ${starters} iniciais, de Kanto a Paldea. Cada um tem status, golpe inicial, golpes que aprende e um ataque especial próprios (veja a Pokédex).`,
-        `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida.`,
+        `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida. Depois, se quiser, dá para continuar no modo sem fim.`,
         'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado). Os Poké Dollars coletados vão para a carteira.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
@@ -259,6 +262,26 @@ export const sitePt = {
       } satisfies Record<StatusKind, unknown>,
       flute: 'Poké Flute (item do mapa)',
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
+    },
+    rifts: {
+      paragraphs: (r: { first: string; every: number; portal: number; enter: number; arena: number; shiny: number }) => [
+        `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s e nunca aparece enquanto um chefe está vivo.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você a uma arena fechada, com uma parede que não dá para atravessar, para enfrentar um lendário de outra geração. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
+        'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
+        `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
+      ],
+      legendHead: 'Lendário',
+      typesHead: 'Tipos',
+      hpHead: 'HP base',
+      attacksHead: 'Ataques',
+      hpNote: (percent: number) => `O HP base é o da primeira fenda, às 3:30. Depois, o HP e o dano de contato do lendário crescem com o relógio: +${n(percent)}% de HP por minuto. Cada fenda traz um lendário diferente.`,
+      endlessTitle: 'Modo sem fim',
+      endless: (e: { every: number; reaper: string; hp: string; returns: number; perMinute: number; reaperBonus: string }) => [
+        'Depois de derrotar Mewtwo, a tela de vitória oferece continuar no modo sem fim. Quem não quiser sai com a vitória normal, e o bônus já é pago na hora.',
+        `A horda não para de crescer: nascem mais inimigos, o limite na tela sobe e cercos e revoadas chegam a cada ${e.every} segundos. As fendas continuam abrindo.`,
+        `Às ${e.reaper}, Arceus desce para caçar você. Ele fica mais rápido quanto mais tempo caça, até ninguém conseguir fugir, e nunca se perde: se você se afastar, ele reaparece na borda da tela. Dá para derrotá-lo, mas ele tem ${e.hp} de HP; se cair, volta ${e.returns} minutos depois, mais forte.`,
+        `O tempo sobrevivido é a métrica principal: cada minuto depois de 15:00 paga ₽${n(e.perMinute)} no bônus, e cada Arceus derrotado mais ₽${e.reaperBonus}.`,
+      ],
     },
     bosses: {
       paragraphs: [

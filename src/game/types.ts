@@ -4,6 +4,7 @@ import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
+import type { RiftLegend } from '../data/rifts'
 import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
@@ -12,9 +13,11 @@ import type { StarterId } from '../data/starters'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
+import type { EndlessState } from './endless'
 import type { MoveId } from './moves'
 import type { MapEventNotice, MapEventsState } from './mapEvents'
 import type { Prop } from './props'
+import type { RiftState } from './rift'
 import type { SpecialState } from './special'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
@@ -238,6 +241,15 @@ export type GameEvent =
   | { kind: 'traitIntro'; enemy: EnemyId; trait: TraitId }
   /** Something happened at a map event (altar, chest, Meowth…). */
   | { kind: 'mapEvent'; notice: MapEventNotice }
+  /** Legendary rifts: a portal opened or closed unused, the player stepped in, won, or came back. */
+  | { kind: 'riftOpen' }
+  | { kind: 'riftClosed' }
+  | { kind: 'riftEnter'; enemy: RiftLegend; shiny: boolean }
+  | { kind: 'riftCleared'; enemy: RiftLegend; shiny: boolean }
+  | { kind: 'riftExit'; outcome: 'won' | 'collapse' }
+  /** Endless mode: Arceus arrived (`defeats` so far) or fell. */
+  | { kind: 'reaper'; defeats: number }
+  | { kind: 'reaperDown'; defeats: number }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -296,5 +308,9 @@ export type Game = {
   weather: WeatherState
   /** Enemy traits already introduced this run (each gets one explainer toast), and the game time the next one may show. */
   traits: { seen: Set<TraitId>; nextIntro: number }
+  /** Legendary rifts: the portal on the map, the arena and what was met this run. */
+  rift: RiftState
+  /** Set once the player goes on past Mewtwo (endless mode). */
+  endless: EndlessState | null
   events: GameEvent[]
 }

@@ -27,6 +27,8 @@ body {
   overscroll-behavior: none;
   background: #101820;
   font-family: var(--body);
+  /* Press Start 2P maps "fi" to a ligature it has no glyph for ("sem fim" showed as "sem fm"). */
+  font-variant-ligatures: none;
   -webkit-font-smoothing: none;
   -webkit-text-size-adjust: 100%;
   -webkit-user-select: none;
@@ -2434,6 +2436,71 @@ button {
     height: 26px;
     padding: 2px 0;
   }
+}
+
+/* ---------------- Legendary rifts and endless mode ---------------- */
+
+.rift-pill {
+  position: absolute;
+  top: 98px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  font-size: 9px;
+  white-space: nowrap;
+  text-shadow: none;
+  color: #6030b8;
+}
+
+.rift-pill.rift-arena {
+  color: #b82838;
+}
+
+.rift-pill.rift-endless,
+.rift-pill.rift-reaper {
+  color: #986800;
+}
+
+.rift-pill.urgent {
+  animation: rift-pulse 0.5s steps(2) infinite;
+}
+
+@keyframes rift-pulse {
+  50% {
+    color: #f83030;
+  }
+}
+
+.endless-hint {
+  max-width: 34em;
+  margin: 0 auto;
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1.1;
+  color: #8a5a00;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .rift-pill {
+    top: 108px;
+    font-size: 7px;
+  }
+  .endless-hint {
+    font-size: 16px;
+  }
+}
+
+.result-legends {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+
+.result-legends img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
 }
 
 /* ---------- Biomes & weather ---------- */

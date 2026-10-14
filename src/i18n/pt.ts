@@ -206,6 +206,29 @@ export const pt = {
     payDay: (coins: string) => `*Pay Day!* Meowth largou ${coins}!`,
     meowthEscaped: 'O *Meowth* fugiu…',
   },
+  /** Legendary rifts and the endless mode after Mewtwo. */
+  rifts: {
+    open: 'Uma *fenda lendária* se abriu! Siga a seta.',
+    closed: 'A fenda se fechou.',
+    enter: (name: string) => `A fenda leva você até *${name}*!`,
+    enterShiny: (name: string) => `A fenda leva você até um *${name}* _shiny_!`,
+    cleared: (name: string) => `*${name}* derrotado! A fenda deixa um tesouro.`,
+    collapse: 'A fenda colapsou! Você foi jogado de volta.',
+    hudPortal: (time: string) => `Fenda ${time}`,
+    hudArena: (time: string) => `Colapso ${time}`,
+    hudEndless: (time: string) => `Sem fim +${time}`,
+    hudReaper: (time: string) => `Arceus em ${time}`,
+    hudHunting: 'Arceus caça você!',
+    reaper: '*Arceus* desceu para julgar você!',
+    reaperBack: '*Arceus* voltou, mais forte!',
+    reaperDown: 'Você derrotou *Arceus*! Um feito _lendário_!',
+    continue: 'Modo sem fim',
+    continueHint: 'A horda não para e Arceus vem caçar você às 20:00. Quanto tempo você aguenta?',
+    endlessOver: (name: string) => `${name} caiu no modo sem fim!`,
+    overtime: 'Tempo extra',
+    legends: 'Lendários',
+    reaperDefeated: (n: number) => (n === 1 ? 'Arceus derrotado!' : `Arceus derrotado ${n}x!`),
+  },
 
   moves: {
     ember: {

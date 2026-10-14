@@ -8,6 +8,7 @@ import { createBiome, updateBiome } from './biomes'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
+import { updateEndless } from './endlessSystem'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
@@ -17,6 +18,9 @@ import { createSpecialState, specialSpeedFactor, updateSpecial } from './special
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
+import { createRiftState } from './rift'
+import { updateArena } from './riftArena'
+import { updateRiftPortal } from './riftPortal'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
 import { createWeather, updateWeather } from './weather'
@@ -89,6 +93,8 @@ export const createGame = (starter: StarterId, view: Game['view'], seed = Date.n
     biome: createBiome(),
     weather: createWeather(),
     traits: { seen: new Set(), nextIntro: 0 },
+    rift: createRiftState(),
+    endless: null,
     events: shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
@@ -195,20 +201,27 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   g.time += dt
   updateBiome(g)
   updateWeather(g, dt)
+  // Inside a rift arena the horde and the map wait outside: no spawns, no props.
+  const inArena = g.rift.arena !== null
   updatePlayer(g, input.move, dt)
   updateSpecial(g, input.special, dt)
-  updateSpawner(g, dt)
+  if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)
   updateEnemies(g, dt)
   updateBosses(g, dt)
   updateHazards(g, dt)
   updateStatuses(g, dt)
+  updateRiftPortal(g, dt)
+  updateArena(g, dt)
+  updateEndless(g)
   rebuildGrid(g)
   updateTraits(g, dt)
   updateMoves(g, dt)
   updateAttacks(g, dt)
-  updateProps(g, dt)
-  updateMapEvents(g, dt)
+  if (!inArena) {
+    updateProps(g, dt)
+    updateMapEvents(g, dt)
+  }
   updatePickups(g, dt)
   updateConsumables(g, dt)
   updateEffects(g, dt)

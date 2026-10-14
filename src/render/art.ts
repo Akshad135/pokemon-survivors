@@ -127,6 +127,11 @@ export const HAZARD_FX = {
   ice: lazy(() => art(SHARD, { 1: '#3878a8', 2: '#98d8f8', 3: '#ffffff' }, '#183048')),
   psychic: lazy(() => art(SMALL_ORB, { 1: '#a02868', 2: '#f85888', 3: '#ffffff' }, '#401030')),
   rock: lazy(() => art(ROCK, { 1: '#584020', 2: '#a08040', 3: '#d8c080' }, '#181818')),
+  water: lazy(() => art(SMALL_ORB, { 1: '#2858b8', 2: '#58a8f8', 3: '#e0f8ff' }, '#102048')),
+  dragon: lazy(() => art(SMALL_ORB, { 1: '#4820a8', 2: '#a070f8', 3: '#f0e0ff' }, '#180840')),
+  steel: lazy(() => art(SMALL_ORB, { 1: '#4868a8', 2: '#a8c8f0', 3: '#ffffff' }, '#182040')),
+  aero: lazy(() => art(SMALL_ORB, { 1: '#7890c0', 2: '#d8e8f8', 3: '#ffffff' }, '#283858')),
+  judgment: lazy(() => art(SMALL_ORB, { 1: '#c09020', 2: '#f8e070', 3: '#ffffff' }, '#483008')),
 }
 
 /* ---------------- Enemy traits ---------------- */

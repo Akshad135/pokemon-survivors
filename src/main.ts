@@ -20,7 +20,10 @@ import { spawnEnemy } from './game/enemies'
 import { MAP_EVENT_KINDS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
-import { runEarnings } from './game/meta'
+import { REAPER } from './game/endless'
+import { continueEndless } from './game/endlessSystem'
+import { riftDevTools } from './game/riftDev'
+import { runEarnings, wonRun } from './game/meta'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -94,8 +97,10 @@ type Run = {
   /** Phase + offers snapshot the overlay was built for. */
   shown: { phase: Phase; offers: Game['offers'] } | null
   closeText: (() => void) | null
-  /** True once this run's ₽ went into the wallet. */
-  banked: boolean
+  /** ₽ of this run already in the wallet: a victory banks right away and again if the run goes on endless. */
+  paid: number
+  /** True once the run's end was reported to analytics. */
+  reported: boolean
 }
 
 let screen: Screen | null = null
@@ -155,19 +160,30 @@ const showMenu = (initial: StarterId = lastStarter) => {
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
-/** Moves the run's ₽ into the wallet once and reports how the run ended. Quitting keeps coins but forfeits the survival bonus. */
+/**
+ * Moves the run's ₽ not banked yet into the wallet. Quitting keeps coins but
+ * forfeits the survival bonus, unless Mewtwo already fell (victory or endless).
+ */
 const bankRun = (r: Run, withBonus: boolean) => {
-  if (r.banked) return
-  r.banked = true
   const g = r.game
-  depositPokeDollars(withBonus ? runEarnings(g).total : g.coins)
-  const outcome = g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
+  const total = withBonus ? runEarnings(g).total : g.coins
+  if (total > r.paid) depositPokeDollars(total - r.paid)
+  r.paid = Math.max(r.paid, total)
+}
+
+/** Reports how the run ended, once. */
+const reportRun = (r: Run) => {
+  if (r.reported) return
+  r.reported = true
+  const g = r.game
+  const outcome = g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
   track('run_end', { starter: g.starter, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
 }
 
 const endRun = () => {
   if (!run) return
-  bankRun(run, false)
+  bankRun(run, wonRun(run.game))
+  reportRun(run)
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
@@ -188,7 +204,7 @@ const startRun = async (starter: StarterId) => {
   void preloadShinies(ENEMY_DEX)
   loading.remove()
   const game = createGame(starter, view, Date.now(), loadSave().ranks)
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, banked: false }
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
   track('run_start', { starter })
 }
 
@@ -242,7 +258,7 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu())
+      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g))
       break
   }
 }
@@ -342,6 +358,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
     case 'gameover':
       bankRun(r, true)
+      reportRun(r)
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)
     case 'victory':
@@ -368,6 +385,36 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(def.dex).cry, 0.35)
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
     }
+    case 'riftOpen':
+      playSfx('shiny')
+      return toast(ui, rich(t().rifts.open), 3200)
+    case 'riftClosed':
+      return toast(ui, t().rifts.closed, 2000)
+    case 'riftEnter': {
+      const def = ENEMIES[e.enemy]
+      playSfx('legendary')
+      playCry(sprites(def.dex).cry, 0.7)
+      flashScreen(ui)
+      return banner(ui, rich(e.shiny ? t().rifts.enterShiny(def.name) : t().rifts.enter(def.name)))
+    }
+    case 'riftCleared':
+      playSfx('evolve')
+      return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)
+    case 'riftExit':
+      if (e.outcome === 'collapse') {
+        playSfx('quake')
+        return toast(ui, t().rifts.collapse, 3000)
+      }
+      return
+    case 'reaper':
+      playSfx('legendary')
+      playCry(sprites(ENEMIES[REAPER].dex).cry, 0.8)
+      flashScreen(ui)
+      return banner(ui, rich(e.defeats > 0 ? t().rifts.reaperBack : t().rifts.reaper))
+    case 'reaperDown':
+      playSfx('evolve')
+      flashScreen(ui)
+      return banner(ui, rich(t().rifts.reaperDown))
   }
 }
 
@@ -392,7 +439,8 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
-  return r.game.bossId !== null ? 'boss' : BIOMES[r.game.biome.id].theme
+  // A rift arena keeps the boss theme until the player is back, loot window included.
+  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : BIOMES[r.game.biome.id].theme
 }
 
 /* ---------------- Global keys ---------------- */
@@ -538,6 +586,7 @@ if (import.meta.env.DEV) {
       event: devEvent,
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
+      ...riftDevTools(() => run?.game),
     },
   })
 }

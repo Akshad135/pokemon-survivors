@@ -37,6 +37,11 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   ice: ['ice'],
   fire: ['fire'],
   psychic: ['psychic'],
+  water: ['water'],
+  dragon: ['dragon'],
+  steel: ['steel'],
+  aero: ['flying'],
+  judgment: ['normal'],
 }
 
 /** Rolls the next weather spell from the biome's odds, never repeating `current`. */

@@ -2,7 +2,7 @@
 
 > A free, unofficial Vampire Survivors-style Pokémon fan game (action roguelite / bullet heaven) that runs in the browser and on phones, with no download, no sign-up, no ads and no purchases. Available in English and Brazilian Portuguese. Made by Pedro Barretto; open source on GitHub.
 
-Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around and let it attack on its own. Survive 15 minutes of wild Pokémon hordes, collect experience, learn moves, equip held items and evolve mid-run, then face Mewtwo.
+Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around and let it attack on its own. Survive 15 minutes of wild Pokémon hordes, collect experience, learn moves, equip held items and evolve mid-run, then face Mewtwo. After the victory you can keep going in an endless mode, where the horde keeps scaling and Arceus hunts you as the reaper.
 
 - 27 starters, each with its full 3-stage evolution line, stats, signature move and learnset
 - 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
@@ -10,6 +10,8 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
 - Five biomes per run (Route 1, Viridian Forest, Mt. Moon, Mt. Silver, Lavender Tower), each with its own music, and weather that shifts type matchups for everyone: harsh sunlight, rain, sandstorm, snow and fog
 - Special enemies with behavior traits: Chansey heals the horde, Bronzong shields it, Nidoqueen summons Nidoran, Voltorb and Electrode explode, Magnemite fires telegraphed beams and Hitmonlee leaps over the horde
+- Legendary rifts: optional portals to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
+- Endless mode after Mewtwo, scored by time survived, with Arceus as a hunting reaper that can be defeated
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - Map events that make you choose where to go: buff altars, healing fountains, locked chests guarded by an ambush, spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins
 - Pokémon Mystery Dungeon-style pixel art (PMD SpriteCollab)
