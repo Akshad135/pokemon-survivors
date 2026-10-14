@@ -2,6 +2,7 @@ import { TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { EVENTS, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
+import { DIFFICULTIES } from './difficulty'
 import { endlessPressure } from './endless'
 import { spawnEnemy } from './enemies'
 import { hasTrait, pickSpawn } from './roster'
@@ -74,6 +75,7 @@ export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
   const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
   const pressure = endlessPressure(g.time)
+  const more = DIFFICULTIES[g.difficulty].spawnRate
   let regular = 0
   let traitsAlive = 0
   for (const e of g.enemies) {
@@ -82,10 +84,10 @@ export const updateSpawner = (g: Game, dt: number) => {
     if (hasTrait(e.kind)) traitsAlive++
   }
 
-  g.spawnBudget += stage.rate * pressure.rate * dt
+  g.spawnBudget += stage.rate * pressure.rate * more * dt
   while (g.spawnBudget >= 1) {
     g.spawnBudget--
-    if (regular >= stage.max * pressure.max) continue
+    if (regular >= stage.max * pressure.max * more) continue
     const kind = pickSpawn(g.rng, pool, traitsAlive)
     if (!kind) continue
     if (hasTrait(kind)) traitsAlive++

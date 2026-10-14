@@ -4,7 +4,7 @@ import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { BUFFS, DROP_TABLES, ENEMY_DROP_CHANCE, FLUTE_SLEEP, REPEL_RADIUS, rollDrop, type BuffId, type Drop } from '../data/consumables'
 import { addBuff, hasBuff, tickBuffs } from './buffs'
-import { killEnemy } from './combat'
+import { healPlayer, killEnemy } from './combat'
 import { burst, damageText, floatText } from './effects'
 import { gainXp, recomputeStats } from './leveling'
 import { dropPickup } from './pickups'
@@ -26,8 +26,7 @@ export type ConsumableDef = {
 
 const heal = (g: Game, amount: number) => {
   const p = g.player
-  const healed = Math.round(Math.min(amount, p.stats.maxHp - p.hp))
-  p.hp = Math.min(p.stats.maxHp, p.hp + amount)
+  const healed = Math.round(healPlayer(g, amount))
   floatText(g, p.x, p.y - 30, `+${healed}`, '#58e858')
   burst(g, p.x, p.y - 10, { colors: ['#58e858', '#c8f8c8', '#ffffff'], count: 16, speed: 60, ttl: 0.6, gravity: -40 })
 }

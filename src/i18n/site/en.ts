@@ -209,6 +209,10 @@ export const siteEn: SiteMessages = {
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Regular enemies get tougher every minute (bosses don't): ${rows.map(([at, hp, dmg]) => `at ${at}, ${hp}x HP and ${dmg}x damage`).join('; ')}.`,
+      difficulty: 'Difficulty',
+      difficultyIntro:
+        'Pick the difficulty on the Pokémon select screen, under the choose button (or with the X key). Every level is open from the start and your pick is saved. Normal is the base run; the other levels multiply:',
+      difficultyHead: ['Level', 'Enemy HP', 'Damage you take', 'Spawn rate', 'Scaling per minute', 'Healing'],
       timeline: 'Timeline',
       timeHead: 'Time',
       eventHead: 'Event',

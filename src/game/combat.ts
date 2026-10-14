@@ -5,6 +5,7 @@ import { ENEMY_BERRY_CHANCE } from '../data/consumables'
 import { ENEMIES } from '../data/enemies'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { logDefeat } from './dex'
+import { DIFFICULTIES } from './difficulty'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
@@ -98,7 +99,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
 export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? []) => {
   const p = g.player
   if (p.iframes > 0 || isRepelled(g) || g.phase !== 'playing') return
-  const dmg = Math.max(1, Math.round(amount * weatherPower(weatherHere(g), types) - p.stats.armor))
+  const dmg = Math.max(1, Math.round(amount * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) - p.stats.armor))
   p.hp -= dmg
   p.iframes = 0.5
   p.hurt = 0.3
@@ -118,4 +119,12 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
     g.phase = 'gameover'
     g.events.push({ kind: 'gameover' })
   }
+}
+
+/** Heals the player by `amount`, cut or not by the difficulty, up to max HP. Returns the HP actually restored. */
+export const healPlayer = (g: Game, amount: number) => {
+  const p = g.player
+  const healed = Math.max(0, Math.min(amount * DIFFICULTIES[g.difficulty].healing, p.stats.maxHp - p.hp))
+  p.hp += healed
+  return healed
 }

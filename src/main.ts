@@ -268,7 +268,7 @@ const reportRun = (r: Run) => {
   r.reported = true
   const g = r.game
   const outcome = g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
-  track('run_end', { starter: g.starter, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
+  track('run_end', { starter: g.starter, difficulty: g.difficulty, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
 }
 
 const endRun = () => {
@@ -330,6 +330,7 @@ const startRun = async (starter: PlayableId) => {
   const game = createGame(starter, view, plan.seed, save.ranks, plan.roster, {
     shiny: isHatchling(starter) && save.hatched[starter]?.shiny === true,
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
+    difficulty: save.difficulty,
   })
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
@@ -350,7 +351,7 @@ const startRun = async (starter: PlayableId) => {
     hatchery: { steps: 0, eggs: 0, refund: 0 },
     dexBase: save.dex,
   }
-  track('run_start', { starter })
+  track('run_start', { starter, difficulty: game.difficulty })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }

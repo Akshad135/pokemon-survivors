@@ -72,6 +72,16 @@ export const en: Messages = {
     hintTouch: 'Tap to choose',
   },
 
+  difficulty: {
+    label: 'Difficulty',
+    names: { normal: 'Normal', hard: 'Hard', nightmare: 'Nightmare' },
+    blurbs: {
+      normal: 'The run as it was meant to be played.',
+      hard: 'Much tougher hordes that hit harder. For a full Poké Mart.',
+      nightmare: 'Brutal hordes and half of every heal. Good luck.',
+    },
+  },
+
   pause: {
     title: 'PAUSED',
     resume: 'Resume',

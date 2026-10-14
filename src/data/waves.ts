@@ -36,8 +36,8 @@ export const STAGES: readonly WaveStage[] = [
   { until: 300, rate: 3.6, max: 130, cast: [1, 2, 2, 2, 3], fresh: 2 },
   { until: 420, rate: 4.2, max: 160, cast: [2, 3, 3, 3, 3], fresh: 3 },
   { until: 600, rate: 5, max: 200, cast: [3, 3, 4, 4], fresh: 2 },
-  { until: 780, rate: 6, max: 250, cast: [3, 4, 4, 4, 5], fresh: 2 },
-  { until: Infinity, rate: 7.5, max: 300, cast: [4, 4, 5, 5], fresh: 2 },
+  { until: 780, rate: 7, max: 250, cast: [3, 4, 4, 4, 5], fresh: 2 },
+  { until: Infinity, rate: 9, max: 300, cast: [4, 4, 5, 5], fresh: 2 },
 ]
 
 /** Sorted by `at`. Events sharing a time run in list order (the last boss gets the HP bar). */
@@ -71,8 +71,11 @@ export const stageStart = (index: number) => STAGES[index - 1]?.until ?? 0
 
 export const stageAt = (time: number) => STAGES[stageIndexAt(time)]!
 
-/** Regular enemies get tougher every minute; bosses keep their base stats. */
-export const scaling = (time: number) => {
+/**
+ * Regular enemies get tougher every minute; bosses keep their base stats.
+ * `ramp` steepens the slope (the difficulty's `ramp`).
+ */
+export const scaling = (time: number, ramp = 1) => {
   const minutes = time / 60
-  return { hp: 1 + minutes * 0.24 + Math.max(0, minutes - 8) * 0.25, damage: 1 + minutes * 0.07 }
+  return { hp: 1 + (minutes * 0.24 + Math.max(0, minutes - 8)) * ramp, damage: 1 + minutes * 0.07 * ramp }
 }

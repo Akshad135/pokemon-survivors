@@ -13,6 +13,7 @@ import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { EVENTS, RUN_LENGTH, scaling, STAGES, stageStart } from '../../data/waves'
 import { createRng } from '../../engine/rng'
+import { DIFFICULTIES, DIFFICULTY_IDS } from '../../game/difficulty'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
 import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
@@ -76,8 +77,17 @@ const run = (locale: Locale, m: SiteMessages) => {
     const text = e.chance !== undefined ? r.bossChance(name, e.chance * 100) : r.boss(name)
     return [clock(e.at), html`<a href="${dexLink(locale, name)}">${text}</a>`]
   })
+  const names = LOCALES[locale].messages.difficulty.names
+  const times = (v: number) => `${num(v)}x`
+  const levels = DIFFICULTY_IDS.map((id) => {
+    const d = DIFFICULTIES[id]
+    return [names[id], times(d.enemyHp), times(d.enemyDamage), times(d.spawnRate), times(d.ramp), times(d.healing)]
+  })
   return html`${paragraphs(r.paragraphs(RUN_LENGTH / 60, STARTER_IDS.length))}
     <p>${r.scaling(scale)}</p>
+    <h3>${r.difficulty}</h3>
+    <p>${r.difficultyIntro}</p>
+    ${table(r.difficultyHead, levels)}
     <h3>${r.timeline}</h3>
     ${table([r.timeHead, r.eventHead], events)}`
 }

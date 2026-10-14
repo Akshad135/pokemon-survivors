@@ -4,6 +4,7 @@ import type { Input } from '../engine/input'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from '../data/hatchlings'
 import { REGIONS, type PlayableDef, type Region } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
+import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
@@ -13,7 +14,7 @@ import { specialIcon } from '../render/specialFx'
 import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
-import { loadSave } from './save'
+import { loadSave, updateSave } from './save'
 import { STAT_BARS, statRatio } from './statBars'
 import { hint, typeBadge, type Screen } from './screens'
 
@@ -122,6 +123,51 @@ const lockedPanel = (id: HatchlingId, sprite: HTMLCanvasElement) => {
   )
 }
 
+/**
+ * Normal / Hard / Nightmare, with a line on what the picked one does. Every
+ * level is open from the start; a pick is saved right away, so the next run
+ * (and the next visit) plays it.
+ */
+const difficultyPicker = (initial: Difficulty) => {
+  const m = t().difficulty
+  let current = initial
+  const options = DIFFICULTY_IDS.map((id) =>
+    h('button', { class: `difficulty-option ${id}`, role: 'radio', onclick: () => set(id) }, m.names[id]),
+  )
+  const blurb = h('p', { class: 'difficulty-blurb' })
+  const render = () => {
+    options.forEach((o, i) => {
+      const on = DIFFICULTY_IDS[i] === current
+      o.classList.toggle('selected', on)
+      o.setAttribute('aria-checked', String(on))
+    })
+    blurb.textContent = m.blurbs[current]
+  }
+  const set = (id: Difficulty) => {
+    if (id === current) return
+    current = id
+    playSfx('move')
+    updateSave((save) => ({ ...save, difficulty: id }))
+    render()
+  }
+  /** The next level, wrapping around (the `X` key). */
+  const cycle = () => set(DIFFICULTY_IDS[(DIFFICULTY_IDS.indexOf(current) + 1) % DIFFICULTY_IDS.length]!)
+  render()
+  const el = h(
+    'div',
+    { class: 'difficulty-picker' },
+    h(
+      'div',
+      { class: 'difficulty-row' },
+      h('span', { class: 'difficulty-label' }, m.label),
+      h('div', { class: 'difficulty-options', role: 'radiogroup', 'aria-label': m.label }, ...options),
+      h('span', { class: 'key-hint' }, 'X'),
+    ),
+    blurb,
+  )
+  return { el, cycle }
+}
+
 /** A tab of the select: a region's starter trio, or the box of egg families. */
 type Group = { kind: 'region'; region: Region; ids: readonly PlayableId[] } | { kind: 'eggs'; ids: readonly PlayableId[] }
 
@@ -138,7 +184,8 @@ type SelectActions = { pick: (id: PlayableId) => void; incubator: () => void }
  * Region-tabbed Pokémon selector with an always-visible inspect panel. After
  * the 9 regions comes the egg box: hatched families to pick, the rest as
  * silhouettes, and the way into the incubator (`O`).
- * Keyboard: ←/→ Pokémon (wraps across tabs), ↑/↓ or Q/E tab (rows in the egg box), 1-9 jump to region, Enter confirms.
+ * Keyboard: ←/→ Pokémon (wraps across tabs), ↑/↓ or Q/E tab (rows in the egg box), 1-9 jump to region,
+ * X cycles the difficulty, Enter confirms.
  * Pointer: hover/tap highlights, clicking the highlighted card (or the button) confirms.
  * `selected` reads the highlighted Pokémon, so a rebuilt screen (language switch) keeps it.
  */
@@ -213,6 +260,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const inspectSprite = h('canvas', { width: 72, height: 72, class: 'inspect-sprite' })
   const inspect = h('div', { class: 'inspect box' })
   const confirmBtn = h('button', { class: 'btn confirm selected', onclick: () => confirm() })
+  const difficulty = difficultyPicker(save.difficulty)
 
   const renderGroup = () => {
     const g = group()
@@ -306,6 +354,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     else if (key === 'KeyQ' || key === 'PageUp') setCursor({ group: cursor.group - 1, slot: cursor.slot })
     else if (key === 'KeyE' || key === 'PageDown') setCursor({ group: cursor.group + 1, slot: cursor.slot })
     else if (key === 'KeyO') openIncubator()
+    else if (key === 'KeyX') difficulty.cycle()
     else if (key === 'Enter' || key === 'Space') confirm()
     else if (/^Digit[1-9]$/.test(key)) setCursor({ group: Number(key.slice(5)) - 1, slot: cursor.slot })
   })
@@ -320,7 +369,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       { class: 'select-layout' },
       h('div', { class: 'select-main' }, h('div', { class: 'region-tabs', role: 'tablist' }, ...tabs), trio, box, hint(m.title.hintKeys, m.title.hintTouch)),
       inspect,
-      h('div', { class: 'select-footer' }, confirmBtn),
+      h('div', { class: 'select-footer' }, difficulty.el, confirmBtn),
     ),
     h('p', { class: 'credits' }, m.title.credits),
   )

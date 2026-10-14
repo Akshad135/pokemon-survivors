@@ -1,5 +1,6 @@
 import { retain } from '../engine/math'
 import { RIFT, type RiftLegend } from '../data/rifts'
+import { healPlayer } from './combat'
 import { dropItem } from './consumables'
 import { burst, floatText } from './effects'
 import { spawnEnemy } from './enemies'
@@ -104,8 +105,7 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
   for (let i = 0; i < loot.pokeballs; i++) dropPickup(g, x - 8 + i * 8, y + 4, 'pokeball')
   loot.items.forEach((item, i) => dropItem(g, x + 10 + i * 6, y, item))
   const p = g.player
-  const heal = Math.round(p.stats.maxHp * loot.heal)
-  p.hp = Math.min(p.stats.maxHp, p.hp + heal)
+  const heal = Math.round(healPlayer(g, p.stats.maxHp * loot.heal))
   floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
   g.hazards.length = 0
   g.rift.cleared.push(arena.legend)

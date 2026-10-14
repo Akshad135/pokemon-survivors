@@ -2,6 +2,7 @@ import { dir8, dirTo, retain } from '../engine/math'
 import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
+import { DIFFICULTIES } from './difficulty'
 import { sprites } from '../render/sprites'
 import { hurtPlayer } from './combat'
 import { createStatus, statusAttack, statusPace } from './status'
@@ -13,18 +14,28 @@ const neighbors: number[] = []
 /** Body radius derived from the sprite so big Pokémon take up more space. */
 export const radiusFor = (dex: number) => Math.max(5, Math.round(sprites(dex).bodyW * 0.32))
 
+/**
+ * How much tougher than its base stats a regular enemy spawning now is: the
+ * minutes played (`scaling`) and the difficulty. Bosses only take the difficulty's HP.
+ */
+export const enemyScale = (g: Game) => {
+  const mods = DIFFICULTIES[g.difficulty]
+  const scale = scaling(g.time, mods.ramp)
+  return { hp: scale.hp * mods.enemyHp, damage: scale.damage }
+}
+
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
   const def: EnemyDef = ENEMIES[kind]
   const boss = def.boss === true
-  const scale = scaling(g.time)
-  const hp = Math.round(def.hp * (boss ? 1 : scale.hp))
+  const scale = boss ? { hp: DIFFICULTIES[g.difficulty].enemyHp, damage: 1 } : enemyScale(g)
+  const hp = Math.round(def.hp * scale.hp)
   const enemy: Enemy = {
     id: g.nextId++,
     kind,
     types: def.types,
     x, y, kx: 0, ky: 0,
     hp, maxHp: hp,
-    damage: def.damage * (boss ? 1 : scale.damage),
+    damage: def.damage * scale.damage,
     speed: def.speed * (0.92 + g.rng() * 0.16),
     mass: def.mass,
     radius: radiusFor(def.dex) * (def.scale ?? 1),
