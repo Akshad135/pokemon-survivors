@@ -278,6 +278,13 @@ button {
   display: none;
 }
 
+/* With a mouse there's no swipe and the scrollbar is hidden: wrap so Paldea and Eggs stay in sight. */
+@media (hover: hover) and (pointer: fine) {
+  .region-tabs {
+    flex-wrap: wrap;
+  }
+}
+
 .region-tab {
   flex: 1 0 auto;
   display: flex;

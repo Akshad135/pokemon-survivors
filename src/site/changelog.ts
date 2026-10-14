@@ -38,6 +38,10 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         en: 'A tidier run result: Pokédex, eggs and missions in one block that fits a phone held upright.',
       },
       {
+        pt: 'No computador, as abas de região da escolha de Pokémon quebram em duas linhas, então Paldea e a aba Ovos ficam sempre à vista.',
+        en: 'On a computer, the region tabs of the Pokémon select wrap onto two lines, so Paldea and the Eggs tab are always in sight.',
+      },
+      {
         pt: 'O Guia agora diz certo: os lendários das fendas podem ser shiny (1 em 8). Chefes do mapa, Mewtwo e Arceus nunca são.',
         en: 'The guide now gets it right: rift legendaries can be shiny (1 in 8). Map bosses, Mewtwo and Arceus never are.',
       },

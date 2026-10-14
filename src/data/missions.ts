@@ -68,7 +68,7 @@ export const DAILY_POOL = [
   { goals: [{ kind: 'level' }], tiers: [[20, 150], [30, 250]] },
   { goals: [{ kind: 'moveEvolutions' }], tiers: [[1, 200]] },
   { goals: [{ kind: 'steps' }], tiers: [[1500, 150], [3000, 250]] },
-  { goals: [{ kind: 'species' }], tiers: [[30, 150], [45, 250]] },
+  { goals: [{ kind: 'species' }], tiers: [[12, 150], [20, 250]] },
 ] as const satisfies readonly MissionTemplate[]
 
 /** Two of these are drawn every week (weeks start on Monday). */
