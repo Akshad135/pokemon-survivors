@@ -19,7 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
-    pr: 0,
+    pr: 30,
     title: { pt: 'Aviso de captura só na primeira vez', en: 'Catch notice only the first time' },
     notes: [
       {
