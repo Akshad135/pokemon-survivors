@@ -25,6 +25,10 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         pt: 'Ao tocar em Jogar sem estar conectado, o jogo pergunta se você quer entrar com o Google (a conta é criada no primeiro acesso) ou jogar como convidado. Escolhendo convidado, ele não pergunta de novo até recarregar a página.',
         en: "Tapping Play while signed out now asks whether you want to sign in with Google (the account is created the first time) or play as a guest. Pick guest and it won't ask again until the page reloads.",
       },
+      {
+        pt: 'Depois de entrar com o Google, o jogo volta direto para o menu, sem a tela de "Aperte qualquer tecla".',
+        en: 'After signing in with Google, the game comes back straight to the menu, skipping the "Press any key" screen.',
+      },
     ],
   },
   {

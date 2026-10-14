@@ -17,7 +17,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountState, accountsEnabled, onAccountChange, startAccount, syncSave } from './account'
+import { accountState, accountsEnabled, backFromSignIn, onAccountChange, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
@@ -172,7 +172,7 @@ const changeLanguage = (next: Locale) => {
 let pressedStart = false
 
 /**
- * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch);
+ * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch, not back from signing in);
  * coming back from the starter select goes straight to the menu. `focus` is the menu entry to highlight.
  */
 const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
@@ -812,7 +812,8 @@ const boot = () => {
   document.documentElement.lang = LOCALES[locale()].tag
   const shared = rankingEnabled ? parseHandle(new URLSearchParams(location.search).get(PROFILE_PARAM)) : null
   if (shared) showSharedProfile(shared)
-  else showTitle({ intro: true })
+  // Back from signing in, the player already pressed start before leaving: straight to the menu.
+  else showTitle({ intro: !backFromSignIn() })
   requestAnimationFrame(frame)
   void preloadInBackground()
   promptProfile()

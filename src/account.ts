@@ -27,6 +27,9 @@ const CALLBACK = 'login'
 
 const TIMEOUT_MS = 12_000
 
+/** True while the page is the one Google sent the player back to: boot skips the "press start" intro. */
+export const backFromSignIn = () => accountsEnabled && new URLSearchParams(location.search).has(CALLBACK)
+
 export type SyncStatus = 'syncing' | 'synced' | 'offline'
 
 /**
@@ -333,7 +336,7 @@ const finishSignIn = async () => {
  */
 export const startAccount = () => {
   if (!accountsEnabled) return
-  if (new URLSearchParams(location.search).has(CALLBACK)) return void finishSignIn()
+  if (backFromSignIn()) return void finishSignIn()
   const saved = readLink()
   if (!saved) return
   setState({ kind: 'signedIn', name: saved.name, sync: 'syncing', handle: saved.handle })
