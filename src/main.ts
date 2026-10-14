@@ -29,7 +29,7 @@ import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } f
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
-import { dexNews, recordRun, type Pokedex } from './game/dex'
+import { dexNews, dexStatus, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
@@ -482,6 +482,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'caught': {
       const def = ENEMIES[e.enemy]
+      if (dexStatus(r.dexBase, def.dex).shiny) return
       playSfx('shiny')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex, true), alt: '' }), rich(t().toast.caught(def.name))), 3600)
     }
