@@ -22,7 +22,7 @@ const entryRow = (e: BoardEntry, me: boolean) =>
     h('span', { class: 'rank-pos' }, `#${e.rank}`),
     h('img', { src: runPortrait(e.starter, e.stage), alt: runForm(e.starter, e.stage).name, title: runForm(e.starter, e.stage).name }),
     h('span', { class: 'rank-who' }, h('b', {}, e.name), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
-    h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), h('small', {}, t().ranking.outcomes[e.outcome])),
+    h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), e.verified === null ? h('small', { class: 'pending' }, t().ranking.pending) : h('small', {}, t().ranking.outcomes[e.outcome])),
   )
 
 /** The Pokémon filter: every starter by region, then the egg families. */

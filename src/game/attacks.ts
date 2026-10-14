@@ -4,6 +4,7 @@ import { query } from '../engine/spatial'
 import { damageEnemy } from './combat'
 import { nearestEnemy } from './queries'
 import type { Attack, Enemy, Game, Motion } from './types'
+import * as dm from '../engine/dmath'
 
 const neighbors: number[] = []
 
@@ -21,7 +22,7 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
         const k = Math.min(1, m.turn * dt)
         const vx = m.vx + (want.x * m.speed - m.vx) * k
         const vy = m.vy + (want.y * m.speed - m.vy) * k
-        const len = Math.hypot(vx, vy) || 1
+        const len = dm.hypot(vx, vy) || 1
         m.vx = (vx / len) * m.speed
         m.vy = (vy / len) * m.speed
       }
@@ -31,8 +32,8 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
     }
     case 'orbit':
       m.angle += m.spin * dt
-      a.x = p.x + Math.cos(m.angle) * m.radius
-      a.y = p.y - 8 + Math.sin(m.angle) * m.radius
+      a.x = p.x + dm.cos(m.angle) * m.radius
+      a.y = p.y - 8 + dm.sin(m.angle) * m.radius
       break
     case 'boomerang':
       m.vx += m.ax * dt
@@ -51,13 +52,13 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
 
 const overlaps = (a: Attack, e: Enemy) => {
   const ey = e.y - e.radius // enemy body center sits above its feet
-  if (a.shape.kind === 'circle') return (a.x - e.x) ** 2 + (a.y - ey) ** 2 < (a.shape.r + e.radius) ** 2
+  if (a.shape.kind === 'circle') return dm.sq(a.x - e.x) + dm.sq(a.y - ey) < dm.sq(a.shape.r + e.radius)
   const cx = Math.max(a.x - a.shape.w / 2, Math.min(e.x, a.x + a.shape.w / 2))
   const cy = Math.max(a.y - a.shape.h / 2, Math.min(ey, a.y + a.shape.h / 2))
-  return (cx - e.x) ** 2 + (cy - ey) ** 2 < e.radius ** 2
+  return dm.sq(cx - e.x) + dm.sq(cy - ey) < dm.sq(e.radius)
 }
 
-const reach = (a: Attack) => (a.shape.kind === 'circle' ? a.shape.r : Math.hypot(a.shape.w, a.shape.h) / 2)
+const reach = (a: Attack) => (a.shape.kind === 'circle' ? a.shape.r : dm.hypot(a.shape.w, a.shape.h) / 2)
 
 const collide = (g: Game, a: Attack) => {
   for (const i of query(g.grid, a.x, a.y, reach(a) + 40, neighbors)) {

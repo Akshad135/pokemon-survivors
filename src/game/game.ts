@@ -1,8 +1,8 @@
 import { dir8, type Vec } from '../engine/math'
 import { createRng } from '../engine/rng'
 import { createGrid } from '../engine/spatial'
+import { bodyOf } from '../data/bodies'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
-import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
@@ -33,6 +33,7 @@ import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
 import type { Game, Offer } from './types'
+import * as dm from '../engine/dmath'
 
 export const EVOLUTION_TIME = 4.6
 
@@ -86,7 +87,7 @@ export const createGame = (
       moves: [{ id: def.signature, level: 1, cooldown: 0.4 }],
       items: [],
       stats: BASE_STATS,
-      radius: Math.max(6, Math.round(sprites(def.line[0].dex).bodyW * 0.3)),
+      radius: Math.max(6, Math.round(bodyOf(def.line[0].dex).bodyW * 0.3)),
       animTime: 0,
       shiny,
       walked: 0,
@@ -151,8 +152,8 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
     const dy = input.y * p.stats.speed * slow * dt
     p.x += dx
     p.y += dy
-    p.walked += Math.hypot(dx, dy)
-    const len = Math.hypot(input.x, input.y)
+    p.walked += dm.hypot(dx, dy)
+    const len = dm.hypot(input.x, input.y)
     p.facing = { x: input.x / len, y: input.y / len }
     p.dir = dir8(input.x, input.y)
   }
@@ -219,7 +220,7 @@ const updateEvolution = (g: Game, dt: number) => {
   if (evo.t < EVOLUTION_TIME) return
   const p = g.player
   p.stage++
-  p.radius = Math.max(6, Math.round(sprites(evo.to).bodyW * 0.3))
+  p.radius = Math.max(6, Math.round(bodyOf(evo.to).bodyW * 0.3))
   recomputeStats(g)
   healPlayer(g, p.stats.maxHp * 0.5)
   g.evolution = null

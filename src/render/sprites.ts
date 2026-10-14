@@ -1,3 +1,4 @@
+import { bodyOf } from '../data/bodies'
 import manifest from '../data/sprites.generated.json'
 import { createCanvas, context2d, fromStrings } from '../engine/pixelart'
 import type { Dir8 } from '../engine/math'
@@ -25,7 +26,7 @@ export type SpeciesSprites = {
   cry: string
   /** Distance from frame center down to the feet, in px. */
   footY: number
-  /** Opaque body size measured on the first Walk frame. */
+  /** Opaque body size on the first Walk frame (`bodyOf`). */
   bodyW: number
   bodyH: number
 }
@@ -79,23 +80,6 @@ const tinted = (white: HTMLCanvasElement, color: string) => {
   return canvas
 }
 
-const measure = (sheet: Sheet) => {
-  const canvas = createCanvas(sheet.fw, sheet.fh)
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(sheet.img, 0, 0, sheet.fw, sheet.fh, 0, 0, sheet.fw, sheet.fh)
-  const { data } = ctx.getImageData(0, 0, sheet.fw, sheet.fh)
-  let minX = sheet.fw, maxX = 0, minY = sheet.fh, maxY = 0
-  for (let y = 0; y < sheet.fh; y++) {
-    for (let x = 0; x < sheet.fw; x++) {
-      if (data[(y * sheet.fw + x) * 4 + 3]! > 0) {
-        minX = Math.min(minX, x); maxX = Math.max(maxX, x)
-        minY = Math.min(minY, y); maxY = Math.max(maxY, y)
-      }
-    }
-  }
-  return { footY: maxY - sheet.fh / 2, bodyW: maxX - minX + 1, bodyH: maxY - minY + 1 }
-}
-
 const cache = new Map<string, SpeciesSprites>()
 const pending = new Map<string, Promise<SpeciesSprites>>()
 
@@ -137,7 +121,7 @@ const fetchSpecies = async (dex: Dex, shiny: boolean): Promise<SpeciesSprites> =
     anims: { Walk, Idle, Hurt },
     portrait,
     cry: cryUrl(dex),
-    ...measure(Walk),
+    ...bodyOf(dex, shiny),
   }
   cache.set(key, sprites)
   return sprites
@@ -195,7 +179,8 @@ const pendingSprites = (dex: Dex): SpeciesSprites => {
       for (let row = 0; row < 8; row++) context2d(img).drawImage(frame, 0, row * frame.height)
       puff = { img, white: silhouette(img), fw: frame.width, fh: frame.height, durations: [60], totalTicks: 60 }
     }
-    s = { dex, anims: { Walk: puff, Idle: puff, Hurt: puff }, portrait: new Image(), cry: cryUrl(dex), ...measure(puff) }
+    // The puff stands where the Pokémon will: same feet and body as its real sprite.
+    s = { dex, anims: { Walk: puff, Idle: puff, Hurt: puff }, portrait: new Image(), cry: cryUrl(dex), ...bodyOf(dex) }
     standIns.set(dex, s)
   }
   return s

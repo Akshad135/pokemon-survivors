@@ -3,6 +3,7 @@
 // Usage: npm run assets
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
+import { measureBody } from './body.mjs'
 import { DEX, SHINY, pad } from './dex.mjs'
 
 const ROOT = new URL('..', import.meta.url).pathname
@@ -65,7 +66,10 @@ const fetchVariant = async (dex, form, dir) => {
     }),
   )
   const portrait = await download(`${PORTRAITS}/${pad(dex)}${form}/Normal.png`, join(dir, 'portrait.png'))
-  return { anims: Object.fromEntries(entries.filter(Boolean)), portrait }
+  const walk = Object.fromEntries(entries.filter(Boolean)).Walk
+  // Hitboxes come from this, so they don't wait on the image in the game.
+  const body = walk ? await measureBody(join(dir, 'Walk.png'), walk.frameWidth, walk.frameHeight) : undefined
+  return { anims: Object.fromEntries(entries.filter(Boolean)), portrait, ...(body && { body }) }
 }
 
 const fetchSpecies = async (dex) => {

@@ -8,6 +8,7 @@ import { dropCoins, dropPickup } from './pickups'
 import { riftLoot, riftScale, type RiftArena } from './rift'
 import { rollShiny } from './shiny'
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * The arena behind a rift: a walled floor where the player duels one
@@ -121,8 +122,8 @@ export const updateArena = (g: Game, dt: number) => {
   keepInside(g.player, arena, arena.r - g.player.radius)
   for (const e of g.enemies) keepInside(e, arena, arena.r - e.radius)
   // Shots break on the wall.
-  const wall = (arena.r + 4) ** 2
-  retain(g.hazards, (h) => (h.x - arena.x) ** 2 + (h.y - arena.y) ** 2 < wall)
+  const wall = dm.sq(arena.r + 4)
+  retain(g.hazards, (h) => dm.sq(h.x - arena.x) + dm.sq(h.y - arena.y) < wall)
 
   if (arena.loot === null) {
     const boss = g.enemies.find((e) => e.id === arena.bossId)

@@ -6,6 +6,7 @@ Browser survivors-like (Vampire Survivors–style) with Pokémon. Vite + TypeScr
 
 - **Functional TypeScript only.** Use plain data (types/records) and functions. No classes or `this`. Never use `any`. Prefer inferred types and `as const satisfies` data tables, and keep content data-driven (`src/data/*`, `MOVES` in `src/game/moves.ts`).
 - The simulation mutates plain state for performance (hundreds of entities at 60 Hz), and that's fine. Keep hot loops allocation-light (see `retain`, the spatial grid).
+- **The simulation is deterministic**: the server re-simulates ranked runs from their replay (`src/game/replay.ts`) and must land on the same bits. In `src/game` (and anything it computes from `src/data`) use the seeded rng, never `Math.random` or the clock; use `engine/dmath` (`dm.sin`, `dm.cos`, `dm.atan2`, `dm.hypot`, `dm.exp`, `dm.pow`, `dm.sq`) instead of `Math.sin/cos/atan2/hypot/exp`, `**` or `Math.pow`, which differ between JS engines; size hitboxes from `bodyOf` (data), never from loaded sprites. Anything new the shell does to a running game (a pick, a button) goes through `recordEvent` and gets a case in `resimulate`.
 - **Simulation ≠ presentation.** `src/game/*` must not touch the DOM or audio. Notify the shell by pushing a `GameEvent`; `main.ts` handles sounds, cries and toasts.
 - **Pixel-perfect rendering.** The world is drawn at low internal resolution and integer-upscaled. Snap draw positions to whole pixels and use the hard-edged helpers in `engine/pixelart.ts`. New effect art is code-authored pixel strings (`render/art.ts`).
 - **Two languages: pt-BR and English.** Every player-facing string lives in `src/i18n` (`pt.ts` is the reference; `en.ts` must match it key for key, and the type checker enforces it, down to one line per move upgrade). Read text with `t()` at render time, never at module load. Pokémon, move and item names stay in English (official names) and live in the data files.
@@ -24,6 +25,7 @@ npm run build      # tsc --noEmit + vite build (must pass before any PR)
 npm run roster     # rebuild the wild horde (curated list in scripts/roster.mjs) from PokeAPI + SpriteCollab
 npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs; the horde comes from the roster)
 npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
+npm run bodies     # re-measure sprite bodies (hitboxes) into sprites.generated.json; `npm run assets` does it too
 npm run typecheck --prefix server   # the accounts API (server/), typechecked with the shared game code
 ```
 

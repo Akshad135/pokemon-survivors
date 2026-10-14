@@ -17,6 +17,7 @@ import {
   type RunRanks,
 } from '../../src/game/ranking'
 import type { PlayableId } from '../../src/data/hatchlings'
+import type { Replay } from '../../src/game/replay'
 import type { Sql } from './db'
 
 /** Which board: a difficulty and a period, optionally one Pokémon or only the friends of `viewer`. */
@@ -25,9 +26,17 @@ export type BoardQuery = { difficulty: Difficulty; period: BoardPeriod; starter:
 /** Why a run's end was refused. */
 export type FinishError = 'unknown' | 'mismatch' | 'clock'
 
-type RunRow = { starter: PlayableId; stage: number; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date }
+type RunRow = { starter: PlayableId; stage: number; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date; verified: boolean | null }
 
-const toRun = (r: RunRow): ProfileRun => ({ starter: r.starter, stage: r.stage, difficulty: r.difficulty, time: r.survived, outcome: r.outcome, at: r.started_at.toISOString() })
+const toRun = (r: RunRow): ProfileRun => ({
+  starter: r.starter,
+  stage: r.stage,
+  difficulty: r.difficulty,
+  time: r.survived,
+  outcome: r.outcome,
+  at: r.started_at.toISOString(),
+  verified: r.verified,
+})
 
 type EntryRow = RunRow & { user_id: string; handle: string; name: string; rank: number }
 
@@ -41,7 +50,8 @@ const isUniqueViolation = (err: unknown) => typeof err === 'object' && err !== n
 /**
  * Ranked runs, boards, profiles and follows. Boards rank each player once, by
  * their best run (ties go to who did it first), and only list players with a
- * handle. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
+ * handle. Runs whose re-simulation failed (`checks.ts`) count nowhere; runs
+ * still waiting for it count, marked. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
  * and a run counts for the period it started in.
  */
 export const rankingStore = (sql: Sql) => {
@@ -50,9 +60,9 @@ export const rankingStore = (sql: Sql) => {
   /** Every player's best run on a board, ranked, as a fragment to select from. */
   const ranked = ({ difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
     with best as (
-      select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.difficulty, r.survived, r.outcome, r.started_at
+      select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.difficulty, r.survived, r.outcome, r.started_at, r.verified
       from runs r
-      where r.finished_at is not null and r.difficulty = ${difficulty}
+      where r.finished_at is not null and r.verified is not false and r.difficulty = ${difficulty}
         ${period === 'all' ? sql`` : sql`and r.started_at >= (date_trunc(${period}, now() at time zone ${BOARD_TIME_ZONE}) at time zone ${BOARD_TIME_ZONE})`}
         ${starter ? sql`and r.starter = ${starter}` : sql``}
         ${friends && viewer ? sql`and (r.user_id = ${viewer} or r.user_id in (select followee_id from follows where follower_id = ${viewer}))` : sql``}
@@ -110,7 +120,7 @@ export const rankingStore = (sql: Sql) => {
      * allows that much play (`clockAllows`). A victory that goes on into endless
      * mode ends again later: the same run may only grow, on the same Pokémon and level.
      */
-    finishRun: (userId: string, token: string, result: RunResult): Promise<{ ok: true } | { ok: false; error: FinishError }> =>
+    finishRun: (userId: string, token: string, result: RunResult, replay: Replay | null): Promise<{ ok: true } | { ok: false; error: FinishError }> =>
       sql.begin(async (tx) => {
         if (!UUID.test(token)) return { ok: false, error: 'unknown' } as const
         const [run] = await tx<{ elapsed: number; finished: boolean; starter: string | null; difficulty: string | null; survived: number | null }[]>`
@@ -123,10 +133,33 @@ export const rankingStore = (sql: Sql) => {
         if (!clockAllows(run.elapsed, result.time)) return { ok: false, error: 'clock' } as const
         await tx`
           update runs set finished_at = now(), starter = ${result.starter}, stage = ${result.stage}, difficulty = ${result.difficulty},
-            survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version}
+            survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
+            replay = ${replay ? tx.json(replay) : null}, verified = null, checked_at = null, check_ms = null
           where id = ${token}`
         return { ok: true } as const
       }),
+
+    /** A finished run waiting for its re-simulation: what it reported, and its replay. Null when there's nothing to check. */
+    runToCheck: async (id: string) => {
+      const [row] = await sql<{ survived: number; kills: number; level: number; replay: unknown }[]>`
+        select survived, kills, level, replay from runs where id = ${id} and finished_at is not null and replay is not null and verified is null`
+      return row ? { time: row.survived, kills: row.kills, level: row.level, replay: row.replay } : null
+    },
+
+    /**
+     * Stores a check's verdict, unless the run grew since (endless mode sent it
+     * again: that newer report gets its own check). A verified run's replay
+     * isn't needed anymore; a failed one keeps it, to look into.
+     */
+    setVerified: async (id: string, time: number, ok: boolean, ms: number | null) => {
+      await sql`
+        update runs set verified = ${ok}, checked_at = now(), check_ms = ${ms}, replay = case when ${ok} then null else replay end
+        where id = ${id} and survived = ${time} and verified is null`
+    },
+
+    /** Runs still waiting for a check, oldest first (after a restart). */
+    uncheckedRuns: async () =>
+      (await sql<{ id: string }[]>`select id from runs where verified is null and replay is not null and finished_at is not null order by finished_at`).map((r) => r.id),
 
     /** Where the player stands on their difficulty's day, week and total boards. */
     runRanks: async (userId: string, difficulty: Difficulty): Promise<RunRanks> => {
@@ -154,12 +187,12 @@ export const rankingStore = (sql: Sql) => {
       if (!user) return null
       const [records, recent, [counts], [save]] = await Promise.all([
         sql<RunRow[]>`
-          select distinct on (difficulty) starter, stage, difficulty, survived, outcome, started_at
-          from runs where user_id = ${user.id} and finished_at is not null
+          select distinct on (difficulty) starter, stage, difficulty, survived, outcome, started_at, verified
+          from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by difficulty, survived desc, started_at`,
         sql<RunRow[]>`
-          select starter, stage, difficulty, survived, outcome, started_at
-          from runs where user_id = ${user.id} and finished_at is not null
+          select starter, stage, difficulty, survived, outcome, started_at, verified
+          from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by started_at desc limit 10`,
         sql<{ followers: number; following: number; followed: boolean }[]>`
           select

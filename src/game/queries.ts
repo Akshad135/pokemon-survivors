@@ -1,4 +1,5 @@
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 export const isAlive = (e: Enemy) => e.dying < 0
 
@@ -8,7 +9,7 @@ export const nearestEnemy = (g: Game, x: number, y: number, maxDist: number, exc
   let bestD = maxDist * maxDist
   for (const e of g.enemies) {
     if (!isAlive(e) || exclude?.has(e.id)) continue
-    const d = (e.x - x) ** 2 + (e.y - y) ** 2
+    const d = dm.sq(e.x - x) + dm.sq(e.y - y)
     if (d < bestD) {
       bestD = d
       best = e

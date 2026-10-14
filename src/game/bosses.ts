@@ -6,6 +6,7 @@ import { burst } from './effects'
 import { isAsleep } from './status'
 import type { Enemy, Game, Hazard } from './types'
 import { HAZARD_TYPES } from './weather'
+import * as dm from '../engine/dmath'
 
 type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 'ttl'> & Partial<Hazard>
 
@@ -28,8 +29,8 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern) => {
         spawnHazard(g, {
           kind: 'strike',
           visual: pattern.visual,
-          x: center.x + Math.cos(a) * d,
-          y: center.y + Math.sin(a) * d * 0.8,
+          x: center.x + dm.cos(a) * d,
+          y: center.y + dm.sin(a) * d * 0.8,
           r: pattern.radius,
           damage: pattern.damage,
           armAt: pattern.delay,
@@ -46,10 +47,10 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern) => {
         spawnHazard(g, {
           kind: 'shot',
           visual: pattern.visual,
-          x: boss.x + Math.cos(a) * boss.radius,
-          y: boss.y + Math.sin(a) * boss.radius,
-          vx: Math.cos(a) * pattern.speed,
-          vy: Math.sin(a) * pattern.speed,
+          x: boss.x + dm.cos(a) * boss.radius,
+          y: boss.y + dm.sin(a) * boss.radius,
+          vx: dm.cos(a) * pattern.speed,
+          vy: dm.sin(a) * pattern.speed,
           r: pattern.radius,
           damage: pattern.damage,
           ttl: 5,
@@ -77,14 +78,14 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern) => {
 
 /** Ticks every boss's attack patterns. Bosses only attack once they're close enough to be seen. */
 export const updateBosses = (g: Game, dt: number) => {
-  const reach = Math.hypot(g.view.w, g.view.h) * 0.6
+  const reach = dm.hypot(g.view.w, g.view.h) * 0.6
   for (const e of g.enemies) {
     const patterns = BOSS_PATTERNS[e.kind]
     if (!patterns || e.dying >= 0) continue
     // Stunned or asleep bosses hold their attacks (paralysis and the Poké Flute pay off here).
     if (e.status.stun > 0 || isAsleep(e.status)) continue
     if (e.cooldowns.length === 0) e.cooldowns = patterns.map((pt) => pt.every * 0.5)
-    const near = Math.hypot(e.x - g.player.x, e.y - g.player.y) < reach
+    const near = dm.hypot(e.x - g.player.x, e.y - g.player.y) < reach
     patterns.forEach((pattern, i) => {
       e.cooldowns[i]! -= dt
       if (e.cooldowns[i]! > 0 || !near) return
@@ -124,7 +125,7 @@ export const updateHazards = (g: Game, dt: number) => {
 
     if (h.age < h.armAt || h.age > h.disarmAt) continue
     const reach = h.r + p.radius * 0.7
-    if ((h.x - p.x) ** 2 + (h.y - p.y) ** 2 >= reach * reach) continue
+    if (dm.sq(h.x - p.x) + dm.sq(h.y - p.y) >= reach * reach) continue
     hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual])
     if (h.vanishOnHit) h.age = h.ttl
   }

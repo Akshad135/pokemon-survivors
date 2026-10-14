@@ -11,6 +11,7 @@ import { dropPickup } from './pickups'
 import { inView, isAlive } from './queries'
 import { applyStatus, type StatusSpec } from './status'
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Consumables are one-shot floor items (Vampire Survivors' chicken, vacuum,
@@ -137,7 +138,7 @@ const repel = (g: Game) => {
   const p = g.player
   for (const i of query(g.grid, p.x, p.y, REPEL_RADIUS + 16, neighbors)) {
     const e = g.enemies[i]
-    if (!e || !isAlive(e) || (e.x - p.x) ** 2 + (e.y - p.y) ** 2 > REPEL_RADIUS ** 2) continue
+    if (!e || !isAlive(e) || dm.sq(e.x - p.x) + dm.sq(e.y - p.y) > dm.sq(REPEL_RADIUS)) continue
     const d = dirTo(p.x, p.y, e.x, e.y)
     const push = e.boss ? 90 : 240
     e.kx = d.x * push

@@ -22,6 +22,7 @@ import {
   type TraitAct,
 } from './traits'
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Runs every enemy trait each tick (heal and ward pulses, summons, fuses,
@@ -90,8 +91,8 @@ const summon = (g: Game, e: Enemy, act: Act<'summoner'>) => {
   const pool = SUMMONS[e.kind]
   for (let i = 0; i < count; i++) {
     const a = range(g.rng, 0, TAU)
-    const x = e.x + Math.cos(a) * (e.radius + 14)
-    const y = e.y + Math.sin(a) * (e.radius + 8)
+    const x = e.x + dm.cos(a) * (e.radius + 14)
+    const y = e.y + dm.sin(a) * (e.radius + 8)
     const minion = spawnEnemy(g, pool[act.called++ % pool.length]!, x, y)
     minion.trait.summoner = e.id
     burst(g, x, y - 4, { colors: ['#c8a0e8', '#ffffff', '#9070b8'], count: 10, speed: 50, ttl: 0.4 })
@@ -122,7 +123,7 @@ const fuse = (g: Game, e: Enemy, act: Act<'kamikaze'>, dt: number) => {
   const k = TRAITS.kamikaze
   const p = g.player
   if (act.fuse < 0) {
-    if (Math.hypot(p.x - e.x, p.y - e.y) - e.radius - p.radius > k.trigger) return
+    if (dm.hypot(p.x - e.x, p.y - e.y) - e.radius - p.radius > k.trigger) return
     act.fuse = 0
     g.events.push({ kind: 'trait', trait: 'kamikaze', phase: 'warn' })
     return
@@ -137,7 +138,7 @@ const beam = (g: Game, e: Enemy, act: Act<'beam'>, dt: number) => {
   const p = g.player
   if (act.phase === 'idle') {
     act.cooldown -= dt
-    if (act.cooldown > 0 || (p.x - e.x) ** 2 + (p.y - e.y) ** 2 > b.range ** 2 || !onScreen(g, e)) return
+    if (act.cooldown > 0 || dm.sq(p.x - e.x) + dm.sq(p.y - e.y) > dm.sq(b.range) || !onScreen(g, e)) return
     // The aim locks now: the line on the ground is exactly where the beam will go.
     const oy = e.y - e.radius
     const aim = dirTo(e.x, oy, p.x, p.y - p.radius)
@@ -182,7 +183,7 @@ const leap = (g: Game, e: Enemy, act: Act<'leaper'>, dt: number) => {
   if (act.phase === 'idle') {
     act.cooldown -= dt
     if (act.cooldown > 0 || !onScreen(g, e)) return
-    const d = Math.hypot(p.x - e.x, p.y - e.y)
+    const d = dm.hypot(p.x - e.x, p.y - e.y)
     if (d < l.min || d > l.max) return
     // The landing spot locks now, where the player stands: the shadow marks it until touchdown.
     act.phase = 'crouch'
