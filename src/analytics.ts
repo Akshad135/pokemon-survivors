@@ -1,9 +1,10 @@
 import type { PlayableId } from './data/hatchlings'
+import type { Difficulty } from './game/difficulty'
 
 /** Custom events sent to Umami, with their payloads. Keep this list short: every event counts. */
 type AnalyticsEvents = {
-  run_start: { starter: PlayableId }
-  run_end: { starter: PlayableId; outcome: 'victory' | 'gameover' | 'endless' | 'quit'; minute: number; level: number; kills: number }
+  run_start: { starter: PlayableId; difficulty: Difficulty }
+  run_end: { starter: PlayableId; difficulty: Difficulty; outcome: 'victory' | 'gameover' | 'endless' | 'quit'; minute: number; level: number; kills: number }
 }
 
 declare global {

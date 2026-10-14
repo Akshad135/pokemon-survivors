@@ -2,6 +2,7 @@ import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type TitleId } from '../data/achievements'
 import { NO_ACHIEVEMENTS, parseAchievements, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
+import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficulty'
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
@@ -94,6 +95,8 @@ export type Save = {
   achievements: AchievementsSave
   /** Title shown on the title and results screens. */
   title: TitleId | null
+  /** Difficulty picked last on the starter select screen. */
+  difficulty: Difficulty
 }
 
 export const EMPTY_SAVE: Save = {
@@ -106,6 +109,7 @@ export const EMPTY_SAVE: Save = {
   missions: NO_MISSIONS,
   achievements: NO_ACHIEVEMENTS,
   title: null,
+  difficulty: DEFAULT_DIFFICULTY,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -151,6 +155,7 @@ export const parseSaveData = (json: unknown): Save => {
     missions: parseMissions(data.missions),
     achievements,
     title: parseTitle(data.title, achievements.unlocked),
+    difficulty: parseDifficulty(data.difficulty),
   }
 }
 

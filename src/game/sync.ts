@@ -26,6 +26,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks)
  *   what the merged upgrades cost, so ₽ spent on one side and kept on the
  *   other isn't counted twice.
  * - The title: `incoming`'s, if it shows one.
+ * - The difficulty picked last: `incoming`'s, a setting rather than progress.
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -39,6 +40,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     missions: mergeMissions(base.missions, incoming.missions),
     achievements: mergeAchievements(base.achievements, incoming.achievements),
     title: incoming.title ?? base.title,
+    difficulty: incoming.difficulty,
   }
 }
 

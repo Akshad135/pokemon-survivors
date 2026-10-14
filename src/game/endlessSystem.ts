@@ -4,6 +4,7 @@ import { ENEMIES } from '../data/enemies'
 import { stageIndexAt } from '../data/waves'
 import { burst } from './effects'
 import { ENDLESS, endlessEventSize, REAPER, reaperDue, reaperHp, reaperSpeed, startEndless, type EndlessState } from './endless'
+import { DIFFICULTIES } from './difficulty'
 import { spawnEnemy } from './enemies'
 import { dropCoins, dropPickup } from './pickups'
 import { hasTrait } from './roster'
@@ -24,7 +25,7 @@ export const continueEndless = (g: Game) => {
 const summonReaper = (g: Game, s: EndlessState) => {
   const p = g.player
   const reaper = spawnEnemy(g, REAPER, p.x, p.y - g.view.h / 2 - 24)
-  reaper.hp = reaper.maxHp = reaperHp(s.reaperDefeats)
+  reaper.hp = reaper.maxHp = Math.round(reaperHp(s.reaperDefeats) * DIFFICULTIES[g.difficulty].enemyHp)
   s.reaperId = reaper.id
   s.reaperSince = g.time
   g.bossId = reaper.id

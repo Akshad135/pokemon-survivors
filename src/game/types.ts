@@ -14,6 +14,7 @@ import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
 import type { DexLog } from './dex'
+import type { Difficulty } from './difficulty'
 import type { EggTier, RunEggs } from './eggs'
 import type { EndlessState } from './endless'
 import type { MoveId } from './moves'
@@ -284,6 +285,8 @@ export type Evolution = { from: number; to: number; t: number }
 export type Game = {
   /** The Pokémon this run plays: a starter or a hatched family. */
   starter: PlayableId
+  /** Multipliers this run plays with (`difficulty.ts`). */
+  difficulty: Difficulty
   rng: Rng
   time: number
   phase: Phase

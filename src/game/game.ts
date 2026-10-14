@@ -5,7 +5,9 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { sprites } from '../render/sprites'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
+import { healPlayer } from './combat'
 import { createDexLog } from './dex'
+import { DEFAULT_DIFFICULTY, type Difficulty } from './difficulty'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
@@ -37,7 +39,9 @@ export const EVOLUTION_TIME = 4.6
 export const playerDex = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.dex
 
 /** What the save brings into a run besides the Poké Mart ranks. */
-export type RunPerks = {
+export type RunOptions = {
+  /** Picked on the starter select screen; Normal when omitted. */
+  difficulty?: Difficulty
   /** The family hatched shiny: the whole run uses its shiny form. */
   shiny?: boolean
   /** The player never had an egg, so the first egg roll can't miss (`rollEgg`). */
@@ -54,14 +58,15 @@ export const createGame = (
   seed = Date.now(),
   ranks: Ranks = NO_RANKS,
   roster?: Roster,
-  perks: RunPerks = {},
+  options: RunOptions = {},
 ): Game => {
   const def = PLAYABLE[starter]
   const rng = createRng(seed)
   const lucky = rollShiny(rng, SHINY_ODDS.player)
-  const shiny = lucky || perks.shiny === true
+  const shiny = lucky || options.shiny === true
   const g: Game = {
     starter,
+    difficulty: options.difficulty ?? DEFAULT_DIFFICULTY,
     rng,
     time: 0,
     phase: 'playing',
@@ -122,10 +127,10 @@ export const createGame = (
     rift: createRiftState(),
     endless: null,
     tally: createTally(),
-    eggs: { found: [], lucky: perks.luckyEgg === true },
+    eggs: { found: [], lucky: options.luckyEgg === true },
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny hatch is shiny every run.
-    events: lucky && !perks.shiny ? [{ kind: 'shinyPlayer' }] : [],
+    events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -154,7 +159,7 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   p.animTime += dt
   p.iframes = Math.max(0, p.iframes - dt)
   p.hurt = Math.max(0, p.hurt - dt)
-  p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.regen * dt)
+  healPlayer(g, p.stats.regen * dt)
 }
 
 const updateMoves = (g: Game, dt: number) => {
@@ -216,7 +221,7 @@ const updateEvolution = (g: Game, dt: number) => {
   p.stage++
   p.radius = Math.max(6, Math.round(sprites(evo.to).bodyW * 0.3))
   recomputeStats(g)
-  p.hp = Math.min(p.stats.maxHp, p.hp + p.stats.maxHp * 0.5)
+  healPlayer(g, p.stats.maxHp * 0.5)
   g.evolution = null
   g.events.push({ kind: 'evolved', to: evo.to })
   advancePhase(g)

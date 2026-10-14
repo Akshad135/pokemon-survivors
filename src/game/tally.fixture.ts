@@ -3,6 +3,7 @@ import type { RunSummary } from './tally'
 /** A run that did nothing, to override per test. */
 export const summary = (over: Partial<RunSummary> = {}): RunSummary => ({
   starter: 'charmander',
+  difficulty: 'normal',
   shinyStarter: false,
   time: 0,
   level: 1,

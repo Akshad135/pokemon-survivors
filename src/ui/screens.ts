@@ -8,6 +8,7 @@ import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
+import type { Difficulty } from '../game/difficulty'
 import { toSteps } from '../game/eggs'
 import { overtime } from '../game/endless'
 import { runEarnings } from '../game/meta'
@@ -28,6 +29,9 @@ export type Screen = {
 }
 
 export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
+
+/** The level a run is played on, as a colored chip (pause menu, results). */
+const difficultyTag = (d: Difficulty) => h('span', { class: `difficulty-tag ${d}` }, t().difficulty.names[d])
 
 /** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
 const TAP_GUARD_MS = 350
@@ -279,6 +283,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
         'div',
         { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
         h('div', { class: 'dialog-title' }, m.title),
+        difficultyTag(g.difficulty),
         h(
           'div',
           { class: 'pause-grid' },
@@ -396,6 +401,7 @@ export const results = (
       h(
         'div',
         { class: 'result-stats' },
+        h('div', {}, h('span', {}, t().difficulty.label), h('b', {}, difficultyTag(g.difficulty))),
         h('div', {}, h('span', {}, m.time), h('b', {}, formatTime(g.time))),
         extra > 0 && h('div', {}, h('span', {}, r.overtime), h('b', {}, `+${formatTime(extra)}`)),
         h('div', {}, h('span', {}, m.level), h('b', {}, g.player.level)),

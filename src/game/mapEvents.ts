@@ -2,13 +2,13 @@ import { dir8, dirTo, retain, TAU, type Dir8 } from '../engine/math'
 import { range, weightedPick } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { DROP_TABLES, rollDrop, type BuffId } from '../data/consumables'
-import { scaling, stageIndexAt } from '../data/waves'
+import { stageIndexAt } from '../data/waves'
 import { addBuff } from './buffs'
-import { hurtPlayer, killEnemy } from './combat'
+import { healPlayer, hurtPlayer, killEnemy } from './combat'
 import { dropItem } from './consumables'
 import { logDefeat } from './dex'
 import { burst, damageText, floatText } from './effects'
-import { spawnEnemy } from './enemies'
+import { enemyScale, spawnEnemy } from './enemies'
 import { recomputeStats } from './leveling'
 import {
   ALTAR, altarDuration, BOMB, CHEST, chestCoins, chestProgress, DIRECTOR, FADE, fleeHeading, FOUNTAIN, fountainSip,
@@ -173,8 +173,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       const p = g.player
       const s = ev.state
       if (!fountainSip(s, within(g, ev.x, ev.y, FOUNTAIN.radius + p.radius), p.hp < p.stats.maxHp - 0.5, dt)) return
-      const heal = Math.round(p.stats.maxHp * FOUNTAIN.heal)
-      p.hp = Math.min(p.stats.maxHp, p.hp + heal)
+      const heal = Math.round(healPlayer(g, p.stats.maxHp * FOUNTAIN.heal))
       floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
       burst(g, ev.x, ev.y - 8, { colors: ['#a8d8f8', '#ffffff', '#58a8f0'], count: 10, speed: 50, ttl: 0.6, gravity: -50 })
       notify(g, { kind: s.visited ? 'sip' : 'fountain' })
@@ -221,7 +220,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       const rising = phase === 'up' && ev.state.phase !== 'up'
       ev.state.phase = phase
       if (!rising) return
-      trapHit(g, ev.x, ev.y, SPIKES.radius, SPIKES.damage * scaling(g.time).hp, 0.01, g.player.stats.maxHp * SPIKES.playerDamage)
+      trapHit(g, ev.x, ev.y, SPIKES.radius, SPIKES.damage * enemyScale(g).hp, 0.01, g.player.stats.maxHp * SPIKES.playerDamage)
       if (within(g, ev.x, ev.y, 260)) notify(g, { kind: 'spikes' })
     },
   },
@@ -246,7 +245,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       }
       s.fuse += dt
       if (s.fuse < BOMB.fuse) return
-      trapHit(g, ev.x, ev.y, BOMB.radius, BOMB.damage * scaling(g.time).hp, BOMB.bossDamage, g.player.stats.maxHp * BOMB.playerDamage)
+      trapHit(g, ev.x, ev.y, BOMB.radius, BOMB.damage * enemyScale(g).hp, BOMB.bossDamage, g.player.stats.maxHp * BOMB.playerDamage)
       burst(g, ev.x, ev.y - 6, { colors: ['#ffffff', '#f8e858', '#f87830', '#e83030', '#484848'], count: 50, speed: 180, ttl: 0.6 })
       g.shake = Math.max(g.shake, 6)
       notify(g, { kind: 'boom' })

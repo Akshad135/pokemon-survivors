@@ -1,5 +1,6 @@
 import { dirTo, retain } from '../engine/math'
 import { range } from '../engine/rng'
+import { healPlayer } from './combat'
 import { burst, floatText } from './effects'
 import { useConsumable } from './consumables'
 import { rollEgg, type EggSource } from './eggs'
@@ -64,8 +65,7 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     }
     case 'berry': {
-      const heal = Math.round(p.stats.maxHp * 0.3)
-      p.hp = Math.min(p.stats.maxHp, p.hp + heal)
+      const heal = Math.round(healPlayer(g, p.stats.maxHp * 0.3))
       floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
       burst(g, p.x, p.y - 10, { colors: ['#58e858', '#c8f8c8'], count: 12, speed: 60, ttl: 0.5, gravity: -40 })
       g.events.push({ kind: 'heal' })

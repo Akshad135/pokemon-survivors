@@ -221,6 +221,10 @@ export const sitePt = {
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Os inimigos comuns ficam mais fortes a cada minuto (chefes não): ${rows.map(([at, hp, dmg]) => `em ${at}, ${hp}x de HP e ${dmg}x de dano`).join('; ')}.`,
+      difficulty: 'Dificuldade',
+      difficultyIntro:
+        'Escolha a dificuldade na tela de seleção do Pokémon, embaixo do botão de escolher (ou com a tecla X). Todas já vêm liberadas e a escolha fica salva. O Normal é a partida base; os outros níveis multiplicam:',
+      difficultyHead: ['Nível', 'HP dos inimigos', 'Dano que você leva', 'Ritmo de spawn', 'Escala por minuto', 'Cura'],
       timeline: 'Linha do tempo',
       timeHead: 'Tempo',
       eventHead: 'Evento',

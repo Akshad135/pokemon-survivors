@@ -19,6 +19,25 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    pr: 33,
+    title: { pt: 'Dificuldades e um fim de partida que volta a assustar', en: 'Difficulty levels and an endgame that bites again' },
+    notes: [
+      {
+        pt: 'Três níveis na tela de seleção do Pokémon: Normal, Difícil e Pesadelo. Todos já vêm liberados e a escolha fica salva. O Difícil traz hordas bem mais duras, que batem mais forte. O Pesadelo vai além e corta toda a cura pela metade.',
+        en: 'Three levels on the Pokémon select screen: Normal, Hard and Nightmare. All of them are open from the start and your pick is saved. Hard brings much tougher hordes that hit harder. Nightmare goes further and halves every heal.',
+      },
+      {
+        pt: 'A dificuldade aparece na pausa e no resumo do fim da partida, e cada partida guarda a sua para o ranking que vem aí.',
+        en: 'The difficulty shows in the pause menu and on the results screen, and every run keeps its own for the upcoming ranking.',
+      },
+      {
+        pt: 'No Normal, os últimos minutos voltaram a ser uma ameaça. A partir de 8:00 os inimigos ganham HP mais rápido e, de 10:00 em diante, aparecem mais deles. Antes, um time pronto limpava a tela antes de qualquer inimigo encostar.',
+        en: 'On Normal, the last minutes are a threat again. From 8:00 enemies gain HP faster, and from 10:00 more of them show up. Before, a finished build cleared the screen before anything could touch you.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     pr: 32,
     title: { pt: 'Contas: seu progresso na nuvem', en: 'Accounts: your progress in the cloud' },
     notes: [

@@ -5,6 +5,7 @@ import type { PlayableId } from '../data/hatchlings'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
+import type { Difficulty } from '../game/difficulty'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -85,6 +86,17 @@ export const pt = {
     signature: 'INICIAL',
     credits: 'Fan game não oficial · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
   },
+
+  /** Difficulty picker on the starter select screen; the level shows in the pause menu and the results too. */
+  difficulty: {
+    label: 'Dificuldade',
+    names: { normal: 'Normal', hard: 'Difícil', nightmare: 'Pesadelo' },
+    blurbs: {
+      normal: 'A partida como ela foi pensada.',
+      hard: 'Hordas bem mais duras, que batem mais forte. Para quem já encheu a Poké Mart.',
+      nightmare: 'Hordas brutais e metade de toda a cura. Boa sorte.',
+    },
+  } satisfies { label: string; names: Record<Difficulty, string>; blurbs: Record<Difficulty, string> },
 
   hud: {
     pause: 'Pausar',

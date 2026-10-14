@@ -609,8 +609,132 @@ button {
   position: sticky;
   bottom: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   padding: 4px 0;
+}
+
+/* ---------- Difficulty picker (starter select footer) ---------- */
+
+.difficulty-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 4px 8px 6px;
+  background: rgba(16, 24, 48, 0.92);
+  border: 2px solid #6878a8;
+  border-radius: 6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.difficulty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.difficulty-label {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a8b0d0;
+  text-transform: uppercase;
+}
+
+.difficulty-options {
+  display: flex;
+  gap: 4px;
+}
+
+.difficulty-option {
+  --level: #58b858;
+  font-family: var(--title);
+  font-size: 9px;
+  min-height: 34px;
+  padding: 4px 10px;
+  color: #c8d0e8;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+
+.difficulty-option.hard {
+  --level: #f08030;
+}
+
+.difficulty-option.nightmare {
+  --level: #a040c8;
+}
+
+.difficulty-option:hover,
+.difficulty-option:focus-visible {
+  border-color: var(--level);
+}
+
+.difficulty-option.selected {
+  color: #fff;
+  background: var(--level);
+  border-color: #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.difficulty-blurb {
+  margin: 0;
+  max-width: 380px;
+  font-size: 17px;
+  line-height: 1;
+  text-align: center;
+  color: #e8e8f8;
+}
+
+/* The level a run is played on: a chip in the pause menu and on the results. */
+.difficulty-tag {
+  align-self: center;
+  font-family: var(--title);
+  font-size: 8px;
+  padding: 4px 8px 3px;
+  color: #fff;
+  background: #58b858;
+  border-radius: 4px;
+}
+
+.difficulty-tag.hard {
+  background: #f08030;
+}
+
+.difficulty-tag.nightmare {
+  background: #a040c8;
+}
+
+@media (max-width: 520px) {
+  .difficulty-label {
+    display: none;
+  }
+  .difficulty-option {
+    font-size: 8px;
+    padding: 4px 8px;
+  }
+  /* The footer sticks over the inspect panel here: keep it to one line. */
+  .difficulty-blurb {
+    display: none;
+  }
+  .difficulty-picker {
+    padding: 2px 6px;
+  }
+}
+
+/* Phones in landscape: the footer shares the left column with the cards, so it stays one line. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .select-footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .difficulty-blurb {
+    display: none;
+  }
 }
 
 .btn.confirm {

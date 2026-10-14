@@ -3,6 +3,7 @@ import { evolvedFrom } from '../data/evolutions'
 import type { RiftLegend } from '../data/rifts'
 import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
+import type { Difficulty } from './difficulty'
 import { toSteps } from './eggs'
 import { wonRun } from './meta'
 import type { MapEventNotice } from './mapEvents'
@@ -61,6 +62,8 @@ export const countNotice = (tally: RunTally, notice: MapEventNotice) => bump(tal
 export type RunSummary = {
   /** The Pokémon played: a starter or a hatched family. */
   starter: PlayableId
+  /** What the ranking files the run under: each level has its own board. */
+  difficulty: Difficulty
   shinyStarter: boolean
   /** Seconds survived, endless overtime included. */
   time: number
@@ -98,6 +101,7 @@ export const summarizeRun = (g: Game): RunSummary => {
   const t = g.tally
   return {
     starter: g.starter,
+    difficulty: g.difficulty,
     shinyStarter: g.player.shiny,
     time: g.time,
     level: g.player.level,

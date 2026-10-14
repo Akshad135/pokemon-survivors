@@ -5,6 +5,7 @@ import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
+import { healPlayer } from './combat'
 import { burst } from './effects'
 import { rankDeltas } from './meta'
 import { maxMoveLevel, MOVES, type MoveId } from './moves'
@@ -118,7 +119,7 @@ export const applyOffer = (g: Game, offer: Offer) => {
       break
     }
     case 'berry':
-      p.hp = Math.min(p.stats.maxHp, p.hp + 40)
+      healPlayer(g, 40)
       g.events.push({ kind: 'heal' })
       break
     case 'evolution':
