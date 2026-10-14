@@ -1,5 +1,6 @@
 import type { StarterId } from '../data/starters'
 import type { ItemId } from '../data/items'
+import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -577,6 +578,16 @@ export const pt = {
     roots: 'Anéis de raízes brotam do chão e desaceleram.',
     nova: 'Onda de choque ao redor que empurra tudo.',
   },
+
+  /** Explainer toast the first time each enemy trait shows up in a run. */
+  traits: {
+    healer: (name: string) => `*${name}* cura os aliados por perto. Derrube primeiro!`,
+    shield: (name: string) => `*${name}* protege os aliados com um _escudo_ que absorve dano.`,
+    summoner: (name: string) => `*${name}* chama reforços de tempos em tempos.`,
+    kamikaze: (name: string) => `*${name}* pisca e _explode_! Saia do círculo vermelho.`,
+    beam: (name: string) => `*${name}* mira um _raio_: saia da linha no chão!`,
+    leaper: (name: string) => `*${name}* salta sobre a horda: fuja da _sombra_!`,
+  } satisfies Record<TraitId, (name: string) => string>,
 } satisfies ContentTexts & Record<string, unknown>
 
 export type Messages = typeof pt

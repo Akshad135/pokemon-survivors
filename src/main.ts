@@ -2,17 +2,19 @@ import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
 
-import { playCry, playSfx, unlockAudio } from './engine/audio'
+import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { createPadButton, createPadKeys } from './engine/gamepad'
 import { createInput } from './engine/input'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
-import { ENEMIES, ENEMY_DEX, type EnemyDef } from './data/enemies'
+import { ENEMIES, ENEMY_DEX, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
+import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
+import { spawnEnemy } from './game/enemies'
 import { MAP_EVENT_KINDS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
@@ -21,7 +23,7 @@ import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, preloadShinies, sprites } from './render/sprites'
+import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
@@ -250,6 +252,16 @@ const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) =>
   return m.pokeballBerry
 }
 
+/** Sounds of enemy traits: the warning (fuse lit, beam aimed, leap) and the moment it goes off. */
+const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
+  healer: { warn: null, fire: 'enemyPulse' },
+  shield: { warn: null, fire: 'enemyPulse' },
+  summoner: { warn: null, fire: 'enemyPulse' },
+  kamikaze: { warn: 'selfDestruct', fire: 'blast' },
+  beam: { warn: 'beamCharge', fire: 'beam' },
+  leaper: { warn: 'leap', fire: 'quake' },
+}
+
 const handleEvent = (r: Run, e: GameEvent) => {
   const g = r.game
   switch (e.kind) {
@@ -331,6 +343,16 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'victory':
       bankRun(r, true)
       return playSfx('evolve')
+    case 'trait': {
+      const sfx = TRAIT_SFX[e.trait][e.phase]
+      if (sfx) playSfx(sfx, 120)
+      return
+    }
+    case 'traitIntro': {
+      const def = ENEMIES[e.enemy]
+      playCry(sprites(def.dex).cry, 0.35)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
+    }
   }
 }
 
@@ -460,4 +482,16 @@ const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
 }
 
 // Dev-only handle for poking at the running game from the console.
-if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, showTitle, showMenu, theme: currentTheme, event: devEvent } })
+/** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots). */
+const devSpawn = (kind: EnemyId, count = 1) => {
+  const g = run?.game
+  if (!g) return
+  const p = g.player
+  const base = Math.atan2(p.facing.y, p.facing.x)
+  for (let i = 0; i < count; i++) {
+    const a = base + (i - (count - 1) / 2) * 0.35
+    spawnEnemy(g, kind, p.x + Math.cos(a) * 90, p.y + Math.sin(a) * 90)
+  }
+}
+
+if (import.meta.env.DEV) Object.assign(window, { ps: { run: () => run, startRun, showTitle, showMenu, theme: currentTheme, spawn: devSpawn, event: devEvent } })

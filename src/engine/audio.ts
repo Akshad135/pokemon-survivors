@@ -182,6 +182,21 @@ const SFX = {
   }),
   escaped: () => [784, 659, 523].forEach((f, i) => tone(f, f * 0.9, 0.1, 'triangle', 0.12, i * 0.07)),
   gameOver: () => [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.97, 0.3, 'triangle', 0.2, i * 0.25)),
+  /* Enemy traits */
+  /** A kamikaze's lit fuse: beeps that speed up until the blast (about 1.1s). */
+  selfDestruct: () => [0, 0.32, 0.58, 0.78, 0.92, 1.02].forEach((d, i) => tone(1100 + i * 90, 1100 + i * 90, 0.05, 'square', 0.07, d)),
+  blast: () => {
+    noise(0.4, 0.24)
+    tone(160, 40, 0.35, 'sawtooth', 0.16)
+  },
+  beamCharge: () => tone(220, 880, 0.75, 'triangle', 0.09),
+  beam: () => {
+    noise(0.2, 0.08)
+    tone(1200, 300, 0.28, 'sawtooth', 0.09)
+  },
+  leap: () => tone(180, 520, 0.3, 'triangle', 0.1),
+  /** Soft chime for heal, ward and summon pulses. */
+  enemyPulse: () => tone(660, 990, 0.16, 'triangle', 0.06),
 } as const
 
 export type Sfx = keyof typeof SFX
