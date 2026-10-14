@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { clerkVerifier } from './auth'
 import { connect, migrate, saveStore } from './db'
+import { rankingStore } from './ranking'
 import { loadEnv } from './env'
 
 const env = loadEnv()
@@ -10,6 +11,7 @@ await migrate(sql, new URL('../migrations/', import.meta.url))
 
 const app = createApp({
   store: saveStore(sql),
+  ranking: rankingStore(sql),
   verify: clerkVerifier(env),
   allowedOrigin: env.allowedOrigin,
   ping: () => sql`select 1`.then(() => true, () => false),

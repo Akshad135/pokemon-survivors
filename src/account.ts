@@ -1,6 +1,7 @@
 import type { Clerk } from '@clerk/clerk-js'
 import { parseSaveData } from './game/meta'
 import { isRecord } from './game/parse'
+import type { ProfileName } from './game/ranking'
 import { loadSave, writeSave } from './ui/save'
 
 /**
@@ -15,7 +16,8 @@ import { loadSave, writeSave } from './ui/save'
  */
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
+/** Base URL of the API (`server/`), without a trailing slash. */
+export const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
 
 /** Without both keys the account button doesn't show and the game is guest only. */
 export const accountsEnabled = Boolean(PUBLISHABLE_KEY && API_URL)
@@ -27,24 +29,33 @@ const TIMEOUT_MS = 12_000
 
 export type SyncStatus = 'syncing' | 'synced' | 'offline'
 
-/** `failed`: the last sign in didn't go through. */
-export type AccountState = { kind: 'guest'; failed?: boolean } | { kind: 'busy' } | { kind: 'signedIn'; name: string; sync: SyncStatus }
+/**
+ * `failed`: the last sign in didn't go through. `handle`: the player's public
+ * handle, null before they pick one, undefined until the API said.
+ */
+export type AccountState = { kind: 'guest'; failed?: boolean } | { kind: 'busy' } | { kind: 'signedIn'; name: string; sync: SyncStatus; handle: string | null | undefined }
 
 /* ---------------- Device link ---------------- */
 
 const LINK_KEY = 'ps:account'
 
 /**
- * This device's account: who signed in, and the revision of the account's
- * save it last got (null until its first sync), which pushes build on.
+ * This device's account: who signed in, the revision of the account's save it
+ * last got (null until its first sync), which pushes build on, and the public
+ * handle (see `AccountState`). `name` is the profile's display name once there is one.
  */
-type Link = { userId: string; name: string; revision: number | null }
+type Link = { userId: string; name: string; revision: number | null; handle?: string | null }
 
 const readLink = (): Link | null => {
   try {
     const data: unknown = JSON.parse(localStorage.getItem(LINK_KEY) ?? 'null')
     if (!isRecord(data) || typeof data.userId !== 'string') return null
-    return { userId: data.userId, name: typeof data.name === 'string' ? data.name : '', revision: typeof data.revision === 'number' ? data.revision : null }
+    return {
+      userId: data.userId,
+      name: typeof data.name === 'string' ? data.name : '',
+      revision: typeof data.revision === 'number' ? data.revision : null,
+      handle: typeof data.handle === 'string' || data.handle === null ? data.handle : undefined,
+    }
   } catch {
     return null
   }
@@ -65,6 +76,9 @@ let state: AccountState = { kind: 'guest' }
 const listeners = new Set<(s: AccountState) => void>()
 
 export const accountState = () => state
+
+/** The signed-in player's user id, from this device's link (null for guests). */
+export const accountUserId = () => readLink()?.userId ?? null
 
 /** Calls `fn` on every change of the account state. Returns the unsubscribe. */
 export const onAccountChange = (fn: (s: AccountState) => void) => {
@@ -104,6 +118,19 @@ const displayName = (c: Clerk) => c.user?.firstName || c.user?.fullName || c.use
 
 const pageUrl = () => `${location.origin}${location.pathname}`
 
+/** Dev builds: `localStorage['ps:devToken']` stands in for Clerk's token, against a local API that accepts it. */
+const devToken = () => (import.meta.env.DEV ? localStorage.getItem('ps:devToken') : null)
+
+/** The signed-in player's session token for the API, or null for guests and when Clerk can't load. Never throws. */
+export const sessionToken = async () => {
+  if (!accountsEnabled || !readLink()) return null
+  try {
+    return devToken() ?? (await (await loadClerk()).session?.getToken()) ?? null
+  } catch {
+    return null
+  }
+}
+
 /* ---------------- Sync ---------------- */
 
 /** The API's answer to a push: what the account stores now. */
@@ -135,12 +162,71 @@ const push = async (c: Clerk, link: Link) => {
   if (unchanged || !pushed.merged) writeLink({ ...link, revision: pushed.revision })
 }
 
-/** Makes this device the signed-in user's, keeping its revision if it was theirs already. */
+/** Makes this device the signed-in user's, keeping its revision and profile if it was theirs already. */
 const relink = (c: Clerk, user: NonNullable<Clerk['user']>) => {
   const was = readLink()
-  const name = displayName(c)
-  writeLink({ userId: user.id, name, revision: was?.userId === user.id ? was.revision : null })
-  setState({ kind: 'signedIn', name, sync: 'syncing' })
+  const same = was?.userId === user.id
+  const name = same && was.handle ? was.name : displayName(c)
+  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined })
+  setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined })
+}
+
+/** Keeps a profile (or its absence) in the link and the state; a profile's name replaces Google's. */
+const setProfile = (profile: ProfileName | null) => {
+  const saved = readLink()
+  if (!saved) return
+  const name = profile?.name ?? saved.name
+  writeLink({ ...saved, name, handle: profile?.handle ?? null })
+  if (state.kind === 'signedIn') setState({ ...state, name, handle: profile?.handle ?? null })
+}
+
+/** Asks the API for the player's profile once per device link (`handle` undefined). A failure just asks again next sync. */
+const loadProfile = async (token: string) => {
+  if (readLink()?.handle !== undefined) return
+  try {
+    const res = await fetch(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const body: unknown = res.ok ? await res.json() : null
+    if (!isRecord(body)) throw new Error(`profile failed: ${res.status}`)
+    const p = body.profile
+    setProfile(isRecord(p) && typeof p.handle === 'string' && typeof p.name === 'string' ? { handle: p.handle, name: p.name } : null)
+  } catch (err) {
+    console.warn('profile failed', err)
+  }
+}
+
+/** What saving a profile came to: `taken` brings a free handle to suggest (null if none). */
+export type ProfileSaved = { ok: true } | { ok: false; reason: 'taken'; suggestion: string | null } | { ok: false; reason: 'invalid' | 'offline' }
+
+/** Sets the player's public handle and display name (`PUT /me`). Never throws. */
+export const saveProfile = async (profile: ProfileName): Promise<ProfileSaved> => {
+  const token = await sessionToken()
+  if (!token) return { ok: false, reason: 'offline' }
+  try {
+    const res = await fetch(`${API_URL}/me`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
+    const body: unknown = await res.json().catch(() => null)
+    if (res.status === 409) return { ok: false, reason: 'taken', suggestion: isRecord(body) && typeof body.suggestion === 'string' ? body.suggestion : null }
+    if (res.status === 400) return { ok: false, reason: 'invalid' }
+    if (!res.ok) return { ok: false, reason: 'offline' }
+    setProfile(profile)
+    return { ok: true }
+  } catch {
+    return { ok: false, reason: 'offline' }
+  }
+}
+
+/** The name Google gave the account, to suggest a handle and display name from. */
+export const accountRealName = async () => {
+  try {
+    const c = await loadClerk()
+    return c.user?.fullName || displayName(c)
+  } catch {
+    return readLink()?.name ?? ''
+  }
 }
 
 /** Links this device to the signed-in user and syncs. */
@@ -176,6 +262,8 @@ export const syncSave = async () => {
       if (c.user.id !== saved.userId) relink(c, c.user)
       await push(c, readLink() ?? saved)
       setSync('synced')
+      const token = devToken() ?? (await c.session?.getToken())
+      if (token) await loadProfile(token)
     } catch (err) {
       console.warn('account sync failed', err)
       setSync('offline')
@@ -248,6 +336,6 @@ export const startAccount = () => {
   if (new URLSearchParams(location.search).has(CALLBACK)) return void finishSignIn()
   const saved = readLink()
   if (!saved) return
-  setState({ kind: 'signedIn', name: saved.name, sync: 'syncing' })
+  setState({ kind: 'signedIn', name: saved.name, sync: 'syncing', handle: saved.handle })
   setTimeout(() => void syncSave(), 3000)
 }

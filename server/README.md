@@ -11,8 +11,19 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /health` | 200 while Postgres answers, else 503 |
 | `GET /save` | The player's `{ save, revision }`, 404 before the first push |
 | `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Returns `{ save, revision, merged }` |
+| `GET /me` | `{ profile }`: the player's `{ handle, name }`, `null` before they pick them |
+| `PUT /me` | Body `{ handle, name }`. 400 when invalid, 409 `{ suggestion }` when the handle is taken |
+| `POST /runs` | `{ token }` for a run that just started (the id of a new `runs` row). 429 past 30 starts in 10 minutes |
+| `PUT /runs/:token` | Body `RunResult` (`src/game/ranking.ts`). Records how the run ended and returns `{ ranks: { day, week, all } }`. 400 implausible, 404 unknown token, 409 contradicts what the run recorded, 422 more play than the wall clock since the token allows |
+| `GET /boards/:difficulty` | `?period=day\|week\|all&starter=<id>&friends=1`. `{ entries, me }`: the top 50, each player once with their best run, and the asker's own line |
+| `GET /profiles/:handle` | The public profile: name, title, Pokédex counts, records, recent runs, follower counts. 404 if nobody has the handle |
+| `PUT /follows/:handle`, `DELETE /follows/:handle` | Follows or unfollows. `{ followed, followers }` |
 
-`/save` needs `Authorization: Bearer <Clerk session token>`. CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs` and `/follows` need `Authorization: Bearer <Clerk session token>`. `/boards` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+
+### Ranked runs
+
+The game asks for a start token when a run begins and sends the result when it ends. The server takes it only if the wall clock since the token is at least the time survived, minus a 30 s slack for a token that arrived late (the simulation never runs faster than real time, and pausing only widens the gap). It also checks plausible numbers (`parseRunResult`) and limits run starts per player. A victory that goes on into endless mode sends again with the same token; the run may only grow. Day and week boards start at midnight and on Monday in America/Sao_Paulo, and a run counts for the period it started in.
 
 ## Environment
 
@@ -28,8 +39,10 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 
 Migrations are plain SQL files in `migrations/`, run in name order at boot (each once, tracked in the `migrations` table). To change the schema, add the next numbered file; never edit one that already ran.
 
-- `users`: one row per Clerk user id. The ranking adds its profile columns here.
+- `users`: one row per Clerk user id, with the public `handle` (unique, lower case) and display `name`, null until the player picks them.
 - `saves`: one JSONB save per user, with the save's schema `version` and a `revision` bumped on every push.
+- `runs`: one row per ranked run, created at its start (the id is the start token) and filled when it ends. Unfinished rows never show, and are dropped after 7 days.
+- `follows`: who follows whom, one way.
 
 ## Local development
 

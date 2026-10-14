@@ -15,6 +15,7 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - Legendary rifts: three optional portals per run to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
 - Endless mode after Mewtwo, scored by time survived, with Arceus as a hunting reaper that can be defeated
 - Three difficulty levels, all open from the start: Normal, Hard (much tougher hordes that hit harder) and Nightmare (brutal hordes and half of every heal)
+- Rankings by time survived, one per difficulty, for today, this week and all time (days and weeks follow Brasília time), filterable by starter and by friends (one-way follows). Signed-in players get a public profile at /?u=handle with their title, records, Pokédex progress and recent runs. The server checks each ranked run against a start token's wall clock
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - In-game Pokédex of 334 species: tracks every species seen and defeated; defeating a shiny, hatching an egg or playing a form catches it
 - Daily and weekly missions (the same for everyone on the same day) and 53 achievements with bronze, silver and gold medals; some grant a title shown on the title and results screens. Some weekly missions and every gold medal also give an egg

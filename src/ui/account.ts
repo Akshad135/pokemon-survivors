@@ -3,6 +3,7 @@ import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
+import { profileEditor, profileScreen } from './profile'
 import { hint, menu, type Screen } from './screens'
 
 /** Names longer than this are cut on the title's chip (the dialog shows them whole). */
@@ -37,8 +38,19 @@ export const accountChip = (root: HTMLElement, input: Input, onOpen: () => void)
 
 type Action = { label: string; run: () => void }
 
+/** Screens the dialog opens over itself: the profile editor and the player's profile. */
+type Open = { editor: () => void; profile: (handle: string) => void }
+
+/** The profile part of a signed-in dialog: the handle and a way to it, or the call to create one. */
+const profileContent = (handle: string | null | undefined, open: Open): { lines: Node[]; actions: Action[] } => {
+  const m = t().account
+  if (handle === undefined) return { lines: [], actions: [] }
+  if (handle === null) return { lines: [h('p', { class: 'account-line' }, m.noProfile)], actions: [{ label: m.createProfile, run: open.editor }] }
+  return { lines: [h('p', { class: 'account-line' }, rich(m.profile(handle)))], actions: [{ label: m.viewProfile, run: () => open.profile(handle) }] }
+}
+
 /** What the dialog says and offers in each state. */
-const content = (s: AccountState): { lines: Node[]; actions: Action[] } => {
+const content = (s: AccountState, open: Open): { lines: Node[]; actions: Action[] } => {
   const m = t().account
   const line = (text: string, cls = '') => h('p', { class: `account-line ${cls}` }, text)
   switch (s.kind) {
@@ -49,34 +61,53 @@ const content = (s: AccountState): { lines: Node[]; actions: Action[] } => {
         lines: [line(m.pitch), ...(s.failed ? [line(m.failed, 'account-error')] : []), line(m.guest, 'account-note')],
         actions: [{ label: m.google, run: () => void signIn() }],
       }
-    case 'signedIn':
+    case 'signedIn': {
+      const profile = profileContent(s.handle, open)
       return {
         lines: [
           h('p', { class: 'account-line' }, rich(m.signedInAs(s.name))),
           h('p', { class: `account-line account-sync ${s.sync}` }, h('span', { class: 'sync-dot', 'data-sync': s.sync, 'aria-hidden': 'true' }), m[s.sync]),
+          ...profile.lines,
           line(m.signOutNote, 'account-note'),
         ],
-        actions: [
-          { label: m.syncNow, run: () => void syncSave() },
-          { label: m.signOut, run: () => void signOut() },
-        ],
+        actions: [...profile.actions, { label: m.syncNow, run: () => void syncSave() }, { label: m.signOut, run: () => void signOut() }],
       }
+    }
   }
 }
 
 /**
  * Account dialog over the title: sign in with Google as a guest; once signed
- * in, the sync status, "Sync now" and "Sign out". It redraws on every change
- * of the account state. Back, Esc or Backspace close it and call `onClose`
- * after the current key dispatch.
+ * in, the sync status, the public profile (create it, or open it), "Sync now"
+ * and "Sign out". It redraws on every change of the account state. Back, Esc
+ * or Backspace close it and call `onClose` after the current key dispatch.
  */
 export const accountScreen = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
   const el = h('div', { class: 'screen dim' })
   let nav: ReturnType<typeof menu> | null = null
+  /** The profile or its editor, open over the dialog. */
+  let sub: Screen | null = null
+
+  /** Hides the dialog under `screen` until it closes, then draws it again. */
+  const openSub = (open: (back: () => void) => Screen) => {
+    nav?.off()
+    el.classList.add('hidden')
+    sub = open(() => {
+      sub = null
+      el.classList.remove('hidden')
+      build(accountState(), false)
+    })
+  }
+
+  const open: Open = {
+    editor: () => openSub((back) => profileEditor(root, input, back)),
+    profile: (handle) => openSub((back) => profileScreen(root, input, handle, back)),
+  }
 
   const build = (s: AccountState, opening: boolean) => {
+    if (sub) return
     const m = t().account
-    const { lines, actions } = content(s)
+    const { lines, actions } = content(s, open)
     const all = [...actions, { label: m.back, run: close }]
     const buttons = all.map((a) => h('button', { class: 'btn' }, a.label))
     nav?.off()
@@ -95,9 +126,10 @@ export const accountScreen = (root: HTMLElement, input: Input, onClose: () => vo
   }
 
   const offState = onAccountChange((s) => build(s, false))
-  const offKeys = input.onKey((key) => (key === 'Escape' || key === 'Backspace') && close())
+  const offKeys = input.onKey((key) => !sub && (key === 'Escape' || key === 'Backspace') && close())
 
   const dispose = () => {
+    sub?.dispose()
     nav?.off()
     offState()
     offKeys()

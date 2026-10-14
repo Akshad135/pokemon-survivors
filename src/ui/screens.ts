@@ -31,7 +31,7 @@ export type Screen = {
 export const typeBadge = (type: PokeType) => h('span', { class: 'type-badge', style: `--type:${TYPE_COLORS[type]}` }, type.toUpperCase())
 
 /** The level a run is played on, as a colored chip (pause menu, results). */
-const difficultyTag = (d: Difficulty) => h('span', { class: `difficulty-tag ${d}` }, t().difficulty.names[d])
+export const difficultyTag = (d: Difficulty) => h('span', { class: `difficulty-tag ${d}` }, t().difficulty.names[d])
 
 /** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
 const TAP_GUARD_MS = 350
@@ -318,14 +318,17 @@ export type ResultEggs = { refund: number; ready: number }
 /** What the run added to the Pokédex (`dexNews`). */
 type DexNews = { species: number; shinies: number }
 
+/** The run's ranking line (`rankPanel`) and the boards, opened over the results until `back`. */
+type ResultsRanking = { panel: HTMLElement; open: (back: () => void) => Screen }
+
 /**
  * What the shell adds to the results: the equipped title, the missions the run
- * moved and the medals it earned (built by `ui/missions.ts`), the incubator
- * and the Pokédex news.
+ * moved and the medals it earned (built by `ui/missions.ts`), the incubator,
+ * the Pokédex news and the ranking.
  */
-type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null; medals: readonly HTMLElement[]; eggs: ResultEggs; news: DexNews }
+type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null; medals: readonly HTMLElement[]; eggs: ResultEggs; news: DexNews; ranking: ResultsRanking | null }
 
-const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 } }
+const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null }
 
 /**
  * Everything new a run brought, as one wrapping line of chips under the stats
@@ -379,8 +382,24 @@ export const results = (
   const retry = h('button', { class: 'btn' }, m.retry)
   const back = h('button', { class: 'btn' }, m.change)
   const goOn = victory && onContinue ? h('button', { class: 'btn' }, r.continue) : null
-  const actions = goOn && onContinue ? [onContinue, onRetry, onMenu] : [onRetry, onMenu]
-  const nav = menu(input, goOn ? [goOn, retry, back] : [retry, back], (i) => actions[i]?.(), { horizontal: true })
+  const ranking = extras.ranking
+  const boards = ranking ? h('button', { class: 'btn' }, t().ranking.open) : null
+  /** The boards, open over the results. */
+  let sub: Screen | null = null
+  const openBoards = () => {
+    if (!ranking) return
+    nav.off()
+    el.classList.add('hidden')
+    sub = ranking.open(() => {
+      sub = null
+      el.classList.remove('hidden')
+      nav = bindNav(buttons.length - 1)
+    })
+  }
+  const buttons = [goOn, retry, back, boards].filter((b) => b !== null)
+  const actions = [goOn && onContinue, onRetry, onMenu, boards && (() => later(openBoards))].filter((a) => typeof a === 'function')
+  const bindNav = (initial = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial })
+  let nav = bindNav()
 
   const el = h(
     'div',
@@ -413,6 +432,7 @@ export const results = (
           h('div', {}, h('span', {}, e.eggs), h('b', { class: 'result-legends' }, ...g.eggs.found.map((egg) => h('img', { src: eggIcon(egg.tier), alt: e.tiers[egg.tier], title: e.tiers[egg.tier] })))),
       ),
       runNews(extras),
+      ranking?.panel,
       goOn && h('p', { class: 'endless-hint' }, r.continueHint),
       h(
         'div',
@@ -437,11 +457,11 @@ export const results = (
           )
         }),
       ),
-      h('div', { class: 'buttons result-buttons' }, goOn, retry, back),
+      h('div', { class: 'buttons result-buttons' }, ...buttons),
     ),
   )
   root.append(el)
-  return { el, dispose: () => (nav.off(), el.remove()) }
+  return { el, dispose: () => (sub?.dispose(), nav.off(), el.remove()) }
 }
 
 /* ---------------- Text box & flash (toasts and banners: `toasts.ts`) ---------------- */

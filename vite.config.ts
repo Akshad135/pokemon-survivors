@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { defineConfig, runnerImport, type Plugin } from 'vite'
 
@@ -58,9 +59,21 @@ const sitePages = (): Plugin => {
   }
 }
 
+/** The commit being built (Vercel says which; locally, git), for `__GAME_VERSION__`. */
+const gameVersion = () => {
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA
+  if (sha) return sha.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'dev'
+  } catch {
+    return 'dev'
+  }
+}
+
 // One page per language for the game (index.html, en/index.html); the site pages are added by `sitePages`.
 export default defineConfig({
   plugins: [sitePages()],
+  define: { __GAME_VERSION__: JSON.stringify(gameVersion()) },
   build: {
     rolldownOptions: {
       input: { main: 'index.html', en: 'en/index.html' },

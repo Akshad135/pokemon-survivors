@@ -475,7 +475,7 @@ export const siteEn: SiteMessages = {
   legal: {
     title: 'Legal, privacy and credits | Pokémon Survivors',
     description:
-      'Pokémon Survivors is an unofficial, free fan game with no ads and no purchases. Licenses (MIT code, CC BY-NC 4.0 sprites), privacy (optional accounts; as a guest, nothing leaves your device), credits and contact.',
+      'Pokémon Survivors is an unofficial, free fan game with no ads and no purchases. Licenses (MIT code, CC BY-NC 4.0 sprites), privacy (optional accounts with a public ranking profile; as a guest, nothing leaves your device), credits and contact.',
     h1: 'Legal, privacy and credits',
     sections: {
       fanGame: 'Unofficial fan game',
@@ -516,12 +516,15 @@ export const siteEn: SiteMessages = {
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
       'ps:lang': 'Your language (Portuguese or English).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',
-      'ps:account': 'Only if you sign in: which account is signed in on this device (its id and your first name) and the last version of your progress it synced.',
+      'ps:account': 'Only if you sign in: which account is signed in on this device (its id, your name and your username) and the last version of your progress it synced.',
+      'ps:runs': 'Only with an account: run results that have not reached the ranking yet (for example, while offline). They leave as soon as the server gets them.',
     },
     account: [
       'Accounts are optional and keep your progress in the cloud so you can continue on another device. Sign-in is with Google, handled by Clerk (clerk.com), which gets your name, email and picture from Google and uses its own cookies to keep you signed in. The game never sees your password.',
-      'With an account, a copy of ps:save is kept on our server, tied to your account id. It is sent when you sign in, when you open the game and at the end of every run. Our server keeps only the account id, your progress and when it was created and last used, not your email.',
-      'Signing out keeps your progress on this device. To delete your account and the progress kept in it, ask through the contact below.',
+      'With an account, a copy of ps:save is kept on our server, tied to your account id. It is sent when you sign in, when you open the game and at the end of every run. Our server keeps the account id, your progress, when it was created and last used and what the ranking needs (below), not your email.',
+      'With an account, every run also goes to the ranking: the Pokémon, the difficulty, the time survived, the level, how many enemies you defeated, whether you won and the game version, with when the run started and ended, tied to your account id. Guest runs never reach the ranking.',
+      'Your profile is public. When you sign in you pick a display name and a unique username, which goes in your profile link. Anyone, with or without an account, can see on the ranking and on your profile: those two names, your equipped title, your records per difficulty, your Pokédex progress, your recent runs and how many followers you have and how many you follow. Your email and picture never show. Who you follow and who follows you is kept on the server; the profile only shows the counts.',
+      'Signing out keeps your progress on this device. To delete your account, your profile, your ranked runs and the progress kept in it, ask through the contact below.',
     ],
     privacyAfter: [
       'To delete this data, clear the site data in your browser settings.',
