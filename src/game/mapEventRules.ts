@@ -3,6 +3,7 @@ import { range, weightedPick, type Rng } from '../engine/rng'
 import { BUFFS, type BuffId } from '../data/consumables'
 import { COIN_VALUES } from './meta'
 import type { Buff } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Pure rules and tuning of the map events (`mapEvents.ts`): no DOM, no game
@@ -43,9 +44,9 @@ export const spawnSpot = (
   for (let i = 0; i < 10; i++) {
     const a = range(rng, 0, TAU)
     const d = range(rng, distance[0], distance[1])
-    const x = Math.round(px + Math.cos(a) * d)
-    const y = Math.round(py + Math.sin(a) * d)
-    if (taken.every((o) => (o.x - x) ** 2 + (o.y - y) ** 2 >= spacing * spacing)) return { x, y }
+    const x = Math.round(px + dm.cos(a) * d)
+    const y = Math.round(py + dm.sin(a) * d)
+    if (taken.every((o) => dm.sq(o.x - x) + dm.sq(o.y - y) >= spacing * spacing)) return { x, y }
   }
   return null
 }
@@ -179,8 +180,8 @@ export const meowthSpeed = (dist: number) => lerp(MEOWTH.speedNear, MEOWTH.speed
 /** Heading away from the player, weaving side to side (up to ~35°) so it's not a straight line. */
 export const fleeHeading = (mx: number, my: number, px: number, py: number, t: number, seed: number): Vec => {
   const away = dirTo(px, py, mx, my)
-  const weave = Math.sin(t * 2.6 + seed) * 0.6
-  const c = Math.cos(weave)
-  const s = Math.sin(weave)
+  const weave = dm.sin(t * 2.6 + seed) * 0.6
+  const c = dm.cos(weave)
+  const s = dm.sin(weave)
   return { x: away.x * c - away.y * s, y: away.x * s + away.y * c }
 }

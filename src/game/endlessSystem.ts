@@ -10,6 +10,7 @@ import { dropCoins, dropPickup } from './pickups'
 import { hasTrait } from './roster'
 import { spawnRing, spawnSwarm } from './spawner'
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 /** Extra Poké Balls and ₽ dropped by a defeated Arceus, on top of a boss's usual drop. */
 const REAPER_LOOT = { pokeballs: 3, coins: [250, 250, 250, 250, 250, 250, 250, 250] } as const
@@ -56,12 +57,12 @@ const reaperDown = (g: Game, s: EndlessState, reaper: Enemy | undefined) => {
 const hunt = (g: Game, s: EndlessState, reaper: Enemy) => {
   reaper.speed = reaperSpeed(ENEMIES[REAPER].speed, g.time - s.reaperSince)
   const p = g.player
-  const far = Math.hypot(g.view.w, g.view.h) * 0.75
+  const far = dm.hypot(g.view.w, g.view.h) * 0.75
   const dx = reaper.x - p.x
   const dy = reaper.y - p.y
-  const d = Math.hypot(dx, dy)
+  const d = dm.hypot(dx, dy)
   if (d <= far) return
-  const edge = Math.hypot(g.view.w, g.view.h) / 2 + 16
+  const edge = dm.hypot(g.view.w, g.view.h) / 2 + 16
   reaper.x = p.x + (dx / d) * edge
   reaper.y = p.y + (dy / d) * edge
 }

@@ -6,6 +6,7 @@ import { enemiesInView, nearestEnemy } from './queries'
 import type { Game } from './types'
 import type { PlayerStats } from './stats'
 import { scaleStatus, type StatusSpec } from './status'
+import * as dm from '../engine/dmath'
 
 /**
  * Moves are the weapons. Each level-up upgrade adds a delta to the move's
@@ -60,7 +61,7 @@ const aimAngle = (g: Game, range: number) => {
   const p = g.player
   const target = nearestEnemy(g, p.x, p.y, range)
   const d = target ? dirTo(p.x, p.y, target.x, target.y) : p.facing
-  return Math.atan2(d.y, d.x)
+  return dm.atan2(d.y, d.x)
 }
 
 /** `count` angles evenly around the full circle, slowly rotating with game time. */
@@ -144,7 +145,7 @@ export const MOVES = {
     ],
     fire: (g, s) => {
       const p = g.player
-      const angle = Math.atan2(p.facing.y, p.facing.x)
+      const angle = dm.atan2(p.facing.y, p.facing.x)
       for (let i = 0; i < s.amount; i++) {
         const v = fromAngle(angle + range(g.rng, -0.08, 0.08), s.speed)
         spawnAttack(g, {
@@ -330,7 +331,7 @@ export const MOVES = {
     ],
     fire: (g, s) => {
       const p = g.player
-      const nearby = enemiesInView(g).filter((e) => (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 130 ** 2)
+      const nearby = enemiesInView(g).filter((e) => dm.sq(e.x - p.x) + dm.sq(e.y - p.y) < 130 * 130)
       for (let i = 0; i < s.amount; i++) {
         const t = nearby.length > 0 ? pick(g.rng, nearby) : { x: p.x + range(g.rng, -80, 80), y: p.y + range(g.rng, -60, 60) }
         spawnAttack(g, {
@@ -529,7 +530,7 @@ export const MOVES = {
     ],
     fire: (g, s) => {
       const p = g.player
-      const nearby = enemiesInView(g).filter((e) => (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 170 ** 2)
+      const nearby = enemiesInView(g).filter((e) => dm.sq(e.x - p.x) + dm.sq(e.y - p.y) < 170 * 170)
       for (let i = 0; i < s.amount; i++) {
         const t = nearby.length > 0 ? pick(g.rng, nearby) : { x: p.x + p.facing.x * 90, y: p.y + p.facing.y * 90 }
         spawnAttack(g, {
@@ -696,7 +697,7 @@ export const MOVES = {
     ],
     fire: (g, s) => {
       const p = g.player
-      const start = Math.atan2(p.facing.y, p.facing.x)
+      const start = dm.atan2(p.facing.y, p.facing.x)
       for (let i = 0; i < s.amount; i++) {
         spawnAttack(g, {
           move: 'leafBlade', type: 'grass', visual: 'blade', x: p.x, y: p.y,
@@ -723,7 +724,7 @@ export const MOVES = {
     ],
     fire: (g, s) => {
       const p = g.player
-      const start = Math.atan2(p.facing.y, p.facing.x)
+      const start = dm.atan2(p.facing.y, p.facing.x)
       for (let i = 0; i < s.amount; i++) {
         spawnAttack(g, {
           move: 'razorShell', type: 'water', visual: 'shell', x: p.x, y: p.y,
@@ -785,7 +786,7 @@ export const MOVES = {
     upgrades: [],
     fire: (g, s) => {
       const p = g.player
-      for (const [i, angle] of fan(Math.atan2(p.facing.y, p.facing.x), s.amount, 0.22).entries()) {
+      for (const [i, angle] of fan(dm.atan2(p.facing.y, p.facing.x), s.amount, 0.22).entries()) {
         const v = fromAngle(angle, s.speed)
         spawnAttack(g, {
           move: 'hydroPump', type: 'water', visual: 'hydroPump', x: p.x, y: p.y - 6,
@@ -914,7 +915,7 @@ export const MOVES = {
     upgrades: [],
     fire: (g, s) => {
       const p = g.player
-      const nearby = enemiesInView(g).filter((e) => (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < 160 ** 2)
+      const nearby = enemiesInView(g).filter((e) => dm.sq(e.x - p.x) + dm.sq(e.y - p.y) < 160 * 160)
       for (let i = 0; i < s.amount; i++) {
         const t = nearby.length > 0 ? pick(g.rng, nearby) : { x: p.x + range(g.rng, -100, 100), y: p.y + range(g.rng, -70, 70) }
         spawnAttack(g, {

@@ -1,3 +1,4 @@
+import * as dm from './dmath'
 export type Vec = { x: number; y: number }
 
 export const TAU = Math.PI * 2
@@ -6,17 +7,17 @@ export const clamp = (v: number, min: number, max: number) => Math.min(max, Math
 
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
-export const dist2 = (ax: number, ay: number, bx: number, by: number) => (ax - bx) ** 2 + (ay - by) ** 2
+export const dist2 = (ax: number, ay: number, bx: number, by: number) => dm.sq(ax - bx) + dm.sq(ay - by)
 
 /** Unit vector from (ax, ay) to (bx, by); falls back to `fallback` when both points coincide. */
 export const dirTo = (ax: number, ay: number, bx: number, by: number, fallback: Vec = { x: 1, y: 0 }): Vec => {
   const dx = bx - ax
   const dy = by - ay
-  const len = Math.hypot(dx, dy)
+  const len = dm.hypot(dx, dy)
   return len > 1e-6 ? { x: dx / len, y: dy / len } : fallback
 }
 
-export const fromAngle = (angle: number, length = 1): Vec => ({ x: Math.cos(angle) * length, y: Math.sin(angle) * length })
+export const fromAngle = (angle: number, length = 1): Vec => ({ x: dm.cos(angle) * length, y: dm.sin(angle) * length })
 
 /**
  * PMD sprite sheets store 8 directions as rows:
@@ -25,7 +26,7 @@ export const fromAngle = (angle: number, length = 1): Vec => ({ x: Math.cos(angl
 export type Dir8 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export const dir8 = (x: number, y: number): Dir8 => {
-  const octant = (Math.round(Math.atan2(y, x) / (Math.PI / 4)) + 8) % 8
+  const octant = (Math.round(dm.atan2(y, x) / (Math.PI / 4)) + 8) % 8
   return ((2 - octant + 8) % 8) as Dir8
 }
 

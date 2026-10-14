@@ -17,7 +17,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountsEnabled, startAccount, syncSave } from './account'
+import { accountState, accountsEnabled, onAccountChange, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
@@ -26,7 +26,7 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
-import { chooseOffer, createGame, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
@@ -34,7 +34,9 @@ import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/de
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
-import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
+import { parseHandle, rankable, runResult } from './game/ranking'
+import { rosterSchedule, type Roster } from './game/roster'
+import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -48,6 +50,7 @@ import { createTitleScene, drawTitleScene, stepTitleScene } from './render/title
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
+import { flushRuns, PROFILE_PARAM, rankingEnabled, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { accountScreen } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
@@ -55,6 +58,8 @@ import { hatchScene, incubator } from './ui/incubator'
 import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
 import { missionDevTools } from './ui/missionsDev'
 import { pokedexScreen } from './ui/pokedex'
+import { profileEditor, profileScreen } from './ui/profile'
+import { rankingScreen, rankPanel } from './ui/ranking'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
@@ -63,7 +68,8 @@ import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
-const STEP = 1 / 60
+/** Fixed simulation step: the replays the ranking re-simulates count on it. */
+const STEP = TICK
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!
 const ui = document.querySelector<HTMLDivElement>('#ui')!
@@ -130,6 +136,11 @@ type Run = {
   hatchery: { steps: number; eggs: number; refund: number }
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
   dexBase: Pokedex
+  /** Everything the simulation took from the player, for the ranking to re-simulate (`game/replay.ts`). */
+  recorder: Recorder
+  /** Signed in: the run's start token and its result, once reported (see `rankRun`). */
+  ranked: RankedRun | null
+  rank: Promise<RankOutcome> | null
 }
 
 let screen: Screen | null = null
@@ -179,6 +190,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus })),
       // Closing rebuilds the title, so a sign in's merged save (title badge) shows up.
       account: accountsEnabled ? (focus) => accountScreen(ui, input, () => showTitle({ focus })) : undefined,
+      ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
     }, opts),
   )
 }
@@ -268,6 +280,16 @@ const recordProgress = (r: Run) => {
   return record
 }
 
+/**
+ * Reports the run to the ranking (signed in): at a victory or a faint, and on
+ * the way out, which only sends again if the run went on into endless mode.
+ * Quits in the first minute aren't worth a line on the profile.
+ */
+const rankRun = (r: Run) => {
+  const result = runResult(r.game, __GAME_VERSION__)
+  if (r.ranked && rankable(result)) r.rank = r.ranked.submit(result, r.recorder.replay)
+}
+
 /** Reports how the run ended, once. */
 const reportRun = (r: Run) => {
   if (r.reported) return
@@ -281,6 +303,7 @@ const endRun = () => {
   if (!run) return
   bankRun(run, wonRun(run.game))
   reportRun(run)
+  rankRun(run)
   // Only a quit run can complete something here: the results screen already showed the rest.
   // The toast waits for the next screen, so it lands on top of it.
   const record = recordProgress(run)
@@ -300,7 +323,7 @@ type RunPlan = { seed: number; roster: Roster }
 
 const planRun = (): RunPlan => {
   const seed = Date.now()
-  return { seed, roster: drawRoster(createRng(seed), { weight: biomeWeight }) }
+  return { seed, roster: runRoster(seed) }
 }
 
 let upcoming = planRun()
@@ -330,15 +353,23 @@ const startRun = async (starter: PlayableId) => {
   lastStarter = starter
   const loading = loadingScreen()
   ui.append(loading)
+  // The start token's clock starts now, while the sprites load.
+  const ranked = startRanked()
   const plan = upcoming
   upcoming = planRun()
   await loadAll([...playableDex(starter), ...openingDex(plan)])
   const save = loadSave()
-  const game = createGame(starter, view, plan.seed, save.ranks, plan.roster, {
+  const start: ReplayStart = {
+    seed: plan.seed,
+    starter,
+    difficulty: save.difficulty,
+    ranks: save.ranks,
     shiny: isHatchling(starter) && save.hatched[starter]?.shiny === true,
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
-    difficulty: save.difficulty,
-  })
+    view: { w: view.w, h: view.h },
+  }
+  // Created like a replay is re-simulated (the roster drawn ahead is the same one).
+  const game = startGame(start, view)
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
   loading.remove()
@@ -357,6 +388,9 @@ const startRun = async (starter: PlayableId) => {
     rewardEggs: 0,
     hatchery: { steps: 0, eggs: 0, refund: 0 },
     dexBase: save.dex,
+    recorder: startRecording(start),
+    ranked,
+    rank: null,
   }
   track('run_start', { starter, difficulty: game.difficulty })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
@@ -406,7 +440,10 @@ const syncOverlay = (r: Run) => {
   r.shown = { phase: g.phase, offers: g.offers }
   switch (g.phase) {
     case 'levelup':
-      r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer), { reroll: () => rerollOffers(g), skip: () => skipLevelUp(g) })
+      r.overlay = levelUp(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)), {
+        reroll: () => (recordEvent(r.recorder, ['reroll']), rerollOffers(g)),
+        skip: () => (recordEvent(r.recorder, ['skip']), skipLevelUp(g)),
+      })
       break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
@@ -419,13 +456,14 @@ const syncOverlay = (r: Run) => {
         g,
         () => afterRun(() => void startRun(lastStarter)),
         () => afterRun(() => showMenu()),
-        () => continueEndless(g),
+        () => (recordEvent(r.recorder, ['endless']), continueEndless(g)),
         {
           badge: titleBadge(loadSave().title),
           report: missionReport(r.missionsBefore, r.reward, r.rewardEggs),
           medals: medalChips(r.unlocked),
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
+          ranking: rankingEnabled ? { panel: rankPanel(r.rank), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty }) } : null,
         },
       )
       break
@@ -535,11 +573,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
       bankRun(r, true)
       recordProgress(r)
       reportRun(r)
+      rankRun(r)
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)
     case 'victory':
       bankRun(r, true)
       recordProgress(r)
+      rankRun(r)
       return playSfx('evolve')
     case 'biome': {
       const w = t().world
@@ -679,7 +719,9 @@ const frame = (now: number) => {
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
       while (acc >= STEP) {
-        step(g, { move: input.readMove(), special: specialQueued }, STEP)
+        // The simulation gets the stick as the replay stores it (`moveCode`), so a re-simulation sees the same run.
+        if (specialQueued) recordEvent(r.recorder, ['special'])
+        step(g, { move: recordStep(r.recorder, view, input.readMove()), special: specialQueued }, STEP)
         specialQueued = false
         acc -= STEP
         steps++
@@ -730,12 +772,40 @@ const preloadInBackground = async () => {
   for (const dex of queue) await loadSpecies(dex).catch(() => {})
 }
 
+/** A shared profile link (`/?u=handle`): the game opens on that profile, and closing it leaves the link. */
+const showSharedProfile = (handle: string) => {
+  setScreen(
+    profileScreen(ui, input, handle, () => {
+      history.replaceState(null, '', location.pathname)
+      showTitle()
+    }),
+  )
+}
+
+/**
+ * Right after the first sign in on a device (no handle yet), the title gives
+ * way to the profile editor, so the player picks how they show up on the ranking.
+ */
+const promptProfile = () => {
+  let asked = false
+  onAccountChange((s) => {
+    if (asked || s.kind !== 'signedIn' || s.handle !== null || run || !screen?.el.classList.contains('title-home')) return
+    asked = true
+    setScreen(profileEditor(ui, input, () => showTitle()))
+  })
+}
+
 const boot = () => {
   document.documentElement.lang = LOCALES[locale()].tag
-  showTitle({ intro: true })
+  const shared = rankingEnabled ? parseHandle(new URLSearchParams(location.search).get(PROFILE_PARAM)) : null
+  if (shared) showSharedProfile(shared)
+  else showTitle({ intro: true })
   requestAnimationFrame(frame)
   void preloadInBackground()
+  promptProfile()
   startAccount()
+  // Results that didn't reach the ranking last time (offline) go now, once the account is back.
+  if (accountState().kind === 'signedIn') setTimeout(() => void flushRuns(), 5000)
 }
 
 boot()

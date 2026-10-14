@@ -487,7 +487,7 @@ export const sitePt = {
   legal: {
     title: 'Legal, privacidade e créditos | Pokémon Survivors',
     description:
-      'Pokémon Survivors é um fan game não oficial e gratuito, sem anúncios e sem compras. Licenças (código MIT, sprites CC BY-NC 4.0), privacidade (contas opcionais; como convidado, nada sai do seu aparelho), créditos e contato.',
+      'Pokémon Survivors é um fan game não oficial e gratuito, sem anúncios e sem compras. Licenças (código MIT, sprites CC BY-NC 4.0), privacidade (contas opcionais com perfil público no ranking; como convidado, nada sai do seu aparelho), créditos e contato.',
     h1: 'Legal, privacidade e créditos',
     sections: {
       fanGame: 'Fan game não oficial',
@@ -528,12 +528,15 @@ export const sitePt = {
       'ps:settings': 'Ajustes: volume da música e dos efeitos, som ligado ou desligado, números de dano e tremor de tela.',
       'ps:lang': 'Idioma escolhido (português ou inglês).',
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',
-      'ps:account': 'Só se você entrar com uma conta: qual conta está conectada neste aparelho (o id dela e o seu primeiro nome) e a última versão do progresso que ele sincronizou.',
+      'ps:account': 'Só se você entrar com uma conta: qual conta está conectada neste aparelho (o id dela, seu nome e seu nome de usuário) e a última versão do progresso que ele sincronizou.',
+      'ps:runs': 'Só com uma conta: resultados de partidas que ainda não chegaram ao ranking (por exemplo, sem internet). Saem daqui assim que o servidor recebe.',
     },
     account: [
       'Contas são opcionais e servem para guardar o progresso na nuvem e continuar em outro aparelho. O login é com o Google, feito pelo Clerk (clerk.com), que recebe do Google seu nome, e-mail e foto e usa cookies próprios para manter você conectado. O jogo nunca vê sua senha.',
-      'Com uma conta, uma cópia do ps:save fica no nosso servidor, ligada ao id da sua conta. Ela é enviada quando você entra, quando abre o jogo e no fim de cada partida. No nosso servidor ficam só o id da conta, o progresso e as datas de criação e de uso, sem seu e-mail.',
-      'Ao sair da conta, o progresso continua neste aparelho. Para apagar a conta e o progresso guardado nela, peça pelo contato abaixo.',
+      'Com uma conta, uma cópia do ps:save fica no nosso servidor, ligada ao id da sua conta. Ela é enviada quando você entra, quando abre o jogo e no fim de cada partida. No nosso servidor ficam o id da conta, o progresso, as datas de criação e de uso e o que o ranking precisa (abaixo), sem seu e-mail.',
+      'Com uma conta, cada partida também vai para o ranking: o Pokémon, a dificuldade, o tempo sobrevivido, o nível, quantos inimigos você derrotou, se venceu e a versão do jogo, com a hora em que a partida começou e terminou, ligados ao id da sua conta. Partidas de convidado não vão para o ranking. Junto vai o replay da partida (a semente e os comandos que você deu, sem nada pessoal), que o servidor joga de novo para conferir o resultado e apaga depois de conferir.',
+      'Seu perfil é público. Ao entrar, você escolhe um nome de exibição e um nome de usuário único, que vai no link do perfil. Qualquer pessoa, com ou sem conta, pode ver no ranking e no perfil: esses dois nomes, o título equipado, os recordes por dificuldade, o progresso da Pokédex, as partidas recentes e quantos seguidores você tem e quantos segue. Seu e-mail e sua foto nunca aparecem. Quem você segue e quem segue você fica guardado no servidor; o perfil mostra só as contagens.',
+      'Ao sair da conta, o progresso continua neste aparelho. Para apagar a conta, o perfil, as partidas do ranking e o progresso guardado nela, peça pelo contato abaixo.',
     ],
     privacyAfter: [
       'Para apagar esses dados, limpe os dados do site nas configurações do navegador.',

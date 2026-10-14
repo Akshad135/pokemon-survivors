@@ -8,13 +8,14 @@ import { spawnEnemy } from './enemies'
 import { hasTrait, pickSpawn } from './roster'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
 import type { Game } from './types'
+import * as dm from '../engine/dmath'
 
 /** Just outside the visible area, in a random direction around the player. */
-const ringDistance = (g: Game) => Math.hypot(g.view.w, g.view.h) / 2 + 12
+const ringDistance = (g: Game) => dm.hypot(g.view.w, g.view.h) / 2 + 12
 
 const offscreen = (g: Game, angle = range(g.rng, 0, TAU)) => {
   const d = ringDistance(g)
-  return { x: g.player.x + Math.cos(angle) * d, y: g.player.y + Math.sin(angle) * d }
+  return { x: g.player.x + dm.cos(angle) * d, y: g.player.y + dm.sin(angle) * d }
 }
 
 /** A closing circle of `count` × `species` around the player. The endless mode reuses it. */
@@ -23,7 +24,7 @@ export const spawnRing = (g: Game, species: EnemyId, count: number) => {
   const d = ringDistance(g) - 20
   for (let i = 0; i < count; i++) {
     const a = (i / count) * TAU
-    spawnEnemy(g, species, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d)
+    spawnEnemy(g, species, p.x + dm.cos(a) * d, p.y + dm.sin(a) * d)
   }
 }
 
@@ -33,16 +34,16 @@ export const spawnSwarm = (g: Game, species: EnemyId, count: number) => {
   const heading = range(g.rng, 0, TAU)
   const d = ringDistance(g)
   const speed = ENEMIES[species].speed * 1.7
-  const vx = Math.cos(heading) * speed
-  const vy = Math.sin(heading) * speed
+  const vx = dm.cos(heading) * speed
+  const vy = dm.sin(heading) * speed
   for (let i = 0; i < count; i++) {
     const spread = range(g.rng, -70, 70)
     const back = range(g.rng, 0, 60)
     spawnEnemy(
       g,
       species,
-      p.x - Math.cos(heading) * (d + back) - Math.sin(heading) * spread,
-      p.y - Math.sin(heading) * (d + back) + Math.cos(heading) * spread,
+      p.x - dm.cos(heading) * (d + back) - dm.sin(heading) * spread,
+      p.y - dm.sin(heading) * (d + back) + dm.cos(heading) * spread,
       { kind: 'flyby', vx, vy, ttl: (d * 2 + 120) / speed },
     )
   }
@@ -95,7 +96,7 @@ export const updateSpawner = (g: Game, dt: number) => {
       // Shinies pop in just inside the screen edge so their sparkle entrance is seen.
       const a = range(g.rng, 0, TAU)
       const d = Math.min(g.view.w, g.view.h) / 2 - 16
-      makeShiny(g, spawnEnemy(g, kind, g.player.x + Math.cos(a) * d, g.player.y + Math.sin(a) * d))
+      makeShiny(g, spawnEnemy(g, kind, g.player.x + dm.cos(a) * d, g.player.y + dm.sin(a) * d))
     } else {
       const pos = offscreen(g)
       spawnEnemy(g, kind, pos.x, pos.y)

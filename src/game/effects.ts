@@ -2,6 +2,7 @@ import { retain, TAU } from '../engine/math'
 import { pick, range } from '../engine/rng'
 import { placeDamage, SLOT_OFFSETS } from './damageText'
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 type BurstOpts = {
   colors: readonly string[]
@@ -23,8 +24,8 @@ export const burst = (g: Game, x: number, y: number, opts: BurstOpts) => {
     const s = range(g.rng, speed * 0.3, speed)
     g.particles.push({
       x, y,
-      vx: Math.cos(a) * s,
-      vy: Math.sin(a) * s,
+      vx: dm.cos(a) * s,
+      vy: dm.sin(a) * s,
       life: 0,
       ttl: range(g.rng, ttl * 0.6, ttl),
       color: pick(g.rng, colors),
@@ -77,7 +78,7 @@ export const updateEffects = (g: Game, dt: number) => {
   for (const p of g.particles) {
     p.life += dt
     p.vy += p.gravity * dt
-    const damp = Math.exp(-p.drag * dt)
+    const damp = dm.exp(-p.drag * dt)
     p.vx *= damp
     p.vy *= damp
     p.x += p.vx * dt
@@ -88,7 +89,7 @@ export const updateEffects = (g: Game, dt: number) => {
   for (const t of g.texts) {
     t.life += dt
     t.y += t.vy * dt
-    t.vy *= Math.exp(-5 * dt)
+    t.vy *= dm.exp(-5 * dt)
   }
   retain(g.texts, (t) => t.life < 0.7)
 

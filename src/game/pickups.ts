@@ -6,6 +6,7 @@ import { useConsumable } from './consumables'
 import { rollEgg, type EggSource } from './eggs'
 import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
 import type { Game, Pickup } from './types'
+import * as dm from '../engine/dmath'
 
 const MAX_XP_PICKUPS = 260
 
@@ -87,10 +88,10 @@ const collect = (g: Game, pickup: Pickup) => {
 
 export const updatePickups = (g: Game, dt: number) => {
   const p = g.player
-  const magnet2 = p.stats.magnet ** 2
+  const magnet2 = dm.sq(p.stats.magnet)
   for (const k of g.pickups) {
     k.age += dt
-    const d2 = (k.x - p.x) ** 2 + (k.y - (p.y - 6)) ** 2
+    const d2 = dm.sq(k.x - p.x) + dm.sq(k.y - (p.y - 6))
     if (!k.attracted && d2 < magnet2) {
       k.attracted = true
       // Tiny hop away before being sucked in – the classic survivors feel.
@@ -102,18 +103,18 @@ export const updatePickups = (g: Game, dt: number) => {
       const d = dirTo(k.x, k.y, p.x, p.y - 6)
       k.vx += d.x * 900 * dt
       k.vy += d.y * 900 * dt
-      const speed = Math.hypot(k.vx, k.vy)
+      const speed = dm.hypot(k.vx, k.vy)
       if (speed > 420) {
         k.vx *= 420 / speed
         k.vy *= 420 / speed
       }
     } else {
-      k.vx *= Math.exp(-6 * dt)
-      k.vy *= Math.exp(-6 * dt)
+      k.vx *= dm.exp(-6 * dt)
+      k.vy *= dm.exp(-6 * dt)
     }
     k.x += k.vx * dt
     k.y += k.vy * dt
-    if (k.attracted && d2 < (p.radius + 5) ** 2) {
+    if (k.attracted && d2 < dm.sq(p.radius + 5)) {
       collect(g, k)
       k.age = -1
     }

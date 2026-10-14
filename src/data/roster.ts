@@ -1,6 +1,7 @@
 import roster from './roster.generated.json'
 import type { EnemyDef } from './enemies'
 import { POKE_TYPES, type PokeType } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * The wild horde: species from every generation, fetched by `npm run roster`
@@ -69,7 +70,7 @@ export const deriveEnemy = (s: RosterSpecies): EnemyDef => {
     types: s.types,
     hp,
     speed: Math.round((8 + (60 * st.speed) / (st.speed + 45)) * stats.speed * (flying ? 1.12 : 1)),
-    damage: Math.max(3, Math.round(stats.damage * offense ** 0.7)),
+    damage: Math.max(3, Math.round(stats.damage * dm.pow(offense, 0.7))),
     xp: Math.max(1, Math.round(hp / 13)),
     mass: round1(clamp(((st.hp + st.defense) / 65) * (light ? 0.65 : 1), 0.5, 3)),
     tier,

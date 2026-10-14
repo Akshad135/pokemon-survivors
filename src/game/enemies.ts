@@ -3,16 +3,17 @@ import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { DIFFICULTIES } from './difficulty'
-import { sprites } from '../render/sprites'
+import { bodyOf } from '../data/bodies'
 import { hurtPlayer } from './combat'
 import { createStatus, statusAttack, statusPace } from './status'
 import { createTraitState, isAirborne, traitPace } from './traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
+import * as dm from '../engine/dmath'
 
 const neighbors: number[] = []
 
 /** Body radius derived from the sprite so big Pokémon take up more space. */
-export const radiusFor = (dex: number) => Math.max(5, Math.round(sprites(dex).bodyW * 0.32))
+export const radiusFor = (dex: number) => Math.max(5, Math.round(bodyOf(dex).bodyW * 0.32))
 
 /**
  * How much tougher than its base stats a regular enemy spawning now is: the
@@ -67,7 +68,7 @@ const FAINT_TIME = 0.4
 
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
-  const recycleDist = Math.hypot(g.view.w, g.view.h) * 0.85
+  const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
 
   for (const e of g.enemies) {
     if (e.dying >= 0) {
@@ -94,7 +95,7 @@ export const updateEnemies = (g: Game, dt: number) => {
 
     e.x += (vx + e.kx) * dt
     e.y += (vy + e.ky) * dt
-    const damp = Math.exp(-9 * dt)
+    const damp = dm.exp(-9 * dt)
     e.kx *= damp
     e.ky *= damp
     if (Math.abs(vx) + Math.abs(vy) > 1) e.dir = dir8(vx, vy)

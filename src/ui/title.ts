@@ -36,6 +36,8 @@ export type TitleActions = {
   pokedex: (focus: number) => Screen
   /** Opens the account dialog over the title, like `settings`. No action (accounts off), no button. */
   account?: (focus: number) => Screen
+  /** Opens the boards over the title, like `settings`. No action (no API), no entry. */
+  ranking?: (focus: number) => Screen
 }
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel. */
@@ -56,19 +58,20 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 
 /**
  * Title screen over the live meadow: pixel logo, a blinking "press start",
- * then the main menu (Play, Incubator, Missions, Pokédex, How to play, Settings) with the language
+ * then the main menu (Play, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
  * switch, the account chip (when accounts are on) and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
 export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: number }): Screen => {
   const m = t().home
   const pages = SITE_PAGES[locale()]
-  const { settings, account } = actions
+  const { settings, account, ranking } = actions
   const items = [
     { label: m.play, run: actions.play },
     { label: m.incubator, run: actions.incubator },
     { label: m.missions, run: actions.missions },
     { label: m.pokedex, run: () => openOver(actions.pokedex) },
+    ...(ranking ? [{ label: m.ranking, run: () => openOver(ranking) }] : []),
     { label: m.guide, run: () => location.assign(pages.guide) },
     ...(settings ? [{ label: m.settings, run: () => openOver(settings) }] : []),
   ]

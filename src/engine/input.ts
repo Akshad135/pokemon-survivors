@@ -63,6 +63,8 @@ export const createInput = (target: HTMLElement): Input => {
   let stick: Stick | null = null
 
   window.addEventListener('keydown', (e) => {
+    // Typing in a text field (the profile editor) is not playing: the field keeps its keys.
+    if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return
     if (e.code in MOVE_KEYS) e.preventDefault()
     held.add(e.code)
     if (!e.repeat) handlers.forEach((h) => h(e.code))
