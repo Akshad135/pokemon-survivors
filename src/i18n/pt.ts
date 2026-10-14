@@ -161,6 +161,11 @@ export const pt = {
     back: 'Voltar',
     hintKeys: '↑ ↓ escolher · ENTER confirmar · ESC voltar',
     hintTouch: 'Toque para escolher',
+    gateTitle: 'ANTES DE JOGAR',
+    gatePitch: 'Entre com o Google para guardar seu progresso na nuvem, continuar em qualquer aparelho e aparecer no ranking.',
+    gateNewAccount: 'Ainda não tem conta? Ela é criada no primeiro acesso.',
+    playAsGuest: 'Jogar como convidado',
+    gateGuestNote: 'Como convidado, o progresso fica só neste aparelho e suas partidas não entram no ranking.',
   },
 
   /** Boards (title menu, end of a run). Day and week follow Brasília's clock. */

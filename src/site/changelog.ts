@@ -19,6 +19,16 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    title: { pt: 'Entrar ou jogar como convidado', en: 'Sign in or play as a guest' },
+    notes: [
+      {
+        pt: 'Ao tocar em Jogar sem estar conectado, o jogo pergunta se você quer entrar com o Google (a conta é criada no primeiro acesso) ou jogar como convidado. Escolhendo convidado, ele não pergunta de novo até recarregar a página.',
+        en: "Tapping Play while signed out now asks whether you want to sign in with Google (the account is created the first time) or play as a guest. Pick guest and it won't ask again until the page reloads.",
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     pr: 35,
     title: { pt: 'Ranking conferido pelo servidor', en: 'A ranking the server checks' },
     notes: [

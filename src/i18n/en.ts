@@ -127,6 +127,11 @@ export const en: Messages = {
     back: 'Back',
     hintKeys: '↑ ↓ choose · ENTER confirm · ESC back',
     hintTouch: 'Tap to choose',
+    gateTitle: 'BEFORE YOU PLAY',
+    gatePitch: 'Sign in with Google to keep your progress in the cloud, pick it up on any device and show up on the ranking.',
+    gateNewAccount: "No account yet? It's created the first time you sign in.",
+    playAsGuest: 'Play as a guest',
+    gateGuestNote: "As a guest, your progress stays on this device only and your runs don't count for the ranking.",
   },
 
   ranking: {
