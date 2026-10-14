@@ -9,10 +9,11 @@ import type { BuffId } from '../data/consumables'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
-import type { StarterId } from '../data/starters'
+import type { PlayableId } from '../data/hatchlings'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
+import type { EggTier, RunEggs } from './eggs'
 import type { EndlessState } from './endless'
 import type { MoveId } from './moves'
 import type { MapEventNotice, MapEventsState } from './mapEvents'
@@ -49,8 +50,10 @@ export type Player = {
   stats: PlayerStats
   radius: number
   animTime: number
-  /** Rolled once per run; the whole evolution line uses shiny sprites. */
+  /** Rolled once per run (or owned from a shiny hatch); the whole evolution line uses shiny sprites. */
   shiny: boolean
+  /** Distance walked this run, in world px. Hatches the incubator's eggs (`eggs.ts`). */
+  walked: number
 }
 
 export type EnemyBehavior =
@@ -251,6 +254,8 @@ export type GameEvent =
   /** Endless mode: Arceus arrived (`defeats` so far) or fell. */
   | { kind: 'reaper'; defeats: number }
   | { kind: 'reaperDown'; defeats: number }
+  /** A boss, chest or rift left an egg; it goes to the incubator when the run is banked. */
+  | { kind: 'egg'; tier: EggTier }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -258,7 +263,8 @@ export type Buff = { id: BuffId; left: number; total: number }
 export type Evolution = { from: number; to: number; t: number }
 
 export type Game = {
-  starter: StarterId
+  /** The Pokémon this run plays: a starter or a hatched family. */
+  starter: PlayableId
   rng: Rng
   time: number
   phase: Phase
@@ -315,5 +321,7 @@ export type Game = {
   rift: RiftState
   /** Set once the player goes on past Mewtwo (endless mode). */
   endless: EndlessState | null
+  /** Eggs found this run (`eggs.ts`). */
+  eggs: RunEggs
   events: GameEvent[]
 }

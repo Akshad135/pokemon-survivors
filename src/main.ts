@@ -14,9 +14,11 @@ import { RIFT, RIFT_LEGENDS } from './data/rifts'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
 import type { TraitId } from './data/traits'
-import { REGIONS, STARTERS, starterDex, type StarterId } from './data/starters'
+import { REGIONS, STARTERS } from './data/starters'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { track } from './analytics'
 import { CONSUMABLES } from './game/consumables'
+import { depositEggs, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
 import { spawnEnemy } from './game/enemies'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
@@ -35,12 +37,14 @@ import { drawJoystick } from './render/joystick'
 import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
+import { eggIcon } from './render/art'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { depositPokeDollars, loadSave } from './ui/save'
+import { bankEggs, depositPokeDollars, loadSave, writeSave } from './ui/save'
+import { hatchScene, incubator } from './ui/incubator'
 import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
@@ -104,11 +108,13 @@ type Run = {
   paid: number
   /** True once the run's end was reported to analytics. */
   reported: boolean
+  /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
+  hatchery: { steps: number; eggs: number; refund: number }
 }
 
 let screen: Screen | null = null
 let run: Run | null = null
-let lastStarter: StarterId = 'charmander'
+let lastStarter: PlayableId = 'charmander'
 /** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
 let specialQueued = false
 const padA = createPadButton(0)
@@ -143,6 +149,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
   setScreen(
     titleScreen(ui, input, {
       play: () => showMenu(),
+      incubator: () => showIncubator(() => showTitle({ focus: 1 })),
       // Every label is read at render time, so switching language just rebuilds the screen.
       language: (next) => (changeLanguage(next), showTitle()),
       ready: () => (pressedStart = true),
@@ -152,16 +159,54 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
   )
 }
 
-/** Starter select, with the Poké Mart (top right) and the way back to the title (top left). */
-const showMenu = (initial: StarterId = lastStarter) => {
+/** Pokémon select, with the Poké Mart (top right) and the way back to the title (top left). */
+const showMenu = (initial: PlayableId = lastStarter) => {
   endRun()
-  const select = starterSelect(ui, input, (id) => setTimeout(() => void startRun(id), 250), initial)
+  const select = starterSelect(ui, input, {
+    pick: (id) => setTimeout(() => void startRun(id), 250),
+    incubator: () => showIncubator(() => showMenu(select.selected())),
+  }, initial)
   const closeMart = martButton(ui, input, () => showShop())
   const closeBack = titleButton(ui, input, () => showTitle())
   setScreen({ ...select, dispose: () => (closeMart(), closeBack(), select.dispose()) })
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
+
+/** The incubator; hatching a ready egg plays its scene and comes back here. */
+const showIncubator = (back: () => void) => {
+  endRun()
+  setScreen(incubator(ui, input, { onHatch: (i) => hatchAt(i, () => showIncubator(back)), onClose: back }))
+}
+
+/** Hatches the ready egg at `index` (saving the result) and plays its scene, then `then`. */
+const hatchAt = (index: number, then: () => void) => {
+  const result = hatchEgg(loadSave(), index, createRng(Date.now()))
+  if (!result) return then()
+  writeSave(result.save)
+  showHatch(result.hatch, then)
+}
+
+const showHatch = (hatch: Hatch, then: () => void, holdAt?: number) =>
+  setScreen(hatchScene(ui, input, hatch, { play: () => void startRun(hatch.id), done: then }, holdAt))
+
+/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then `then`. */
+const afterRun = (then: () => void) => {
+  endRun()
+  const ready = loadSave().eggs.findIndex(isReady)
+  if (ready < 0) return then()
+  hatchAt(ready, () => afterRun(then))
+}
+
+/** Moves the run's steps and new eggs into the incubator, once each (a victory banks, then endless banks again). */
+const bankHatchery = (r: Run) => {
+  const g = r.game
+  const steps = toSteps(g.player.walked)
+  const fresh = g.eggs.found.slice(r.hatchery.eggs).map((e) => ({ tier: e.tier, steps: steps - toSteps(e.at) }))
+  if (steps === r.hatchery.steps && fresh.length === 0) return
+  const { refund } = bankEggs(steps - r.hatchery.steps, fresh)
+  r.hatchery = { steps, eggs: g.eggs.found.length, refund: r.hatchery.refund + refund }
+}
 
 /**
  * Moves the run's ₽ not banked yet into the wallet. Quitting keeps coins but
@@ -172,6 +217,7 @@ const bankRun = (r: Run, withBonus: boolean) => {
   const total = withBonus ? runEarnings(g).total : g.coins
   if (total > r.paid) depositPokeDollars(total - r.paid)
   r.paid = Math.max(r.paid, total)
+  bankHatchery(r)
 }
 
 /** Reports how the run ended, once. */
@@ -224,7 +270,7 @@ const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) =>
  * `EXTRAS` stream in the background in the order the run needs them, then the
  * next run's opening.
  */
-const startRun = async (starter: StarterId) => {
+const startRun = async (starter: PlayableId) => {
   setScreen(null)
   endRun()
   lastStarter = starter
@@ -232,12 +278,16 @@ const startRun = async (starter: StarterId) => {
   ui.append(loading)
   const plan = upcoming
   upcoming = planRun()
-  await loadAll([...starterDex(starter), ...openingDex(plan)])
-  const game = createGame(starter, view, plan.seed, loadSave().ranks, plan.roster)
+  await loadAll([...playableDex(starter), ...openingDex(plan)])
+  const save = loadSave()
+  const game = createGame(starter, view, plan.seed, save.ranks, plan.roster, {
+    shiny: isHatchling(starter) && save.hatched[starter]?.shiny === true,
+    luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
+  })
   // A shiny run must not start in normal colors.
-  if (game.player.shiny) await preloadShinies(starterDex(starter))
+  if (game.player.shiny) await preloadShinies(playableDex(starter))
   loading.remove()
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false }
+  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false, hatchery: { steps: 0, eggs: 0, refund: 0 } }
   track('run_start', { starter })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -289,11 +339,14 @@ const syncOverlay = (r: Run) => {
       r.overlay = levelUp(ui, input, g, (offer) => chooseOffer(g, offer), { reroll: () => rerollOffers(g), skip: () => skipLevelUp(g) })
       break
     case 'paused':
-      r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => showMenu(), settings: (back) => runSettings(r, back) })
+      r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
       break
     case 'gameover':
     case 'victory':
-      r.overlay = results(ui, input, g, () => void startRun(lastStarter), () => showMenu(), () => continueEndless(g))
+      r.overlay = results(ui, input, g, () => afterRun(() => void startRun(lastStarter)), () => afterRun(() => showMenu()), () => continueEndless(g), {
+        refund: r.hatchery.refund,
+        ready: loadSave().eggs.filter(isReady).length,
+      })
       break
   }
 }
@@ -333,7 +386,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       if (e.phase === 'release') return playSfx('specialBlast', 0)
       playSfx('specialCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.5)
-      const who = STARTERS[g.starter].line[g.player.stage]!.name
+      const who = PLAYABLE[g.starter].line[g.player.stage]!.name
       return toast(ui, rich(t().toast.used(who, e.name)), 1600)
     }
     case 'boss': {
@@ -356,16 +409,16 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'shinyPlayer': {
       playSfx('shiny')
-      return toast(ui, rich(t().toast.shinyPlayer(STARTERS[g.starter].name)), 3600)
+      return toast(ui, rich(t().toast.shinyPlayer(PLAYABLE[g.starter].name)), 3600)
     }
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
-      r.closeText = textBox(ui, t().toast.evolving(STARTERS[g.starter].line[g.player.stage]!.name))
+      r.closeText = textBox(ui, t().toast.evolving(PLAYABLE[g.starter].line[g.player.stage]!.name))
       return
     }
     case 'evolved': {
-      const line = STARTERS[g.starter].line
+      const line = PLAYABLE[g.starter].line
       playSfx('evolve')
       playCry(sprites(e.to).cry)
       r.closeText?.()
@@ -450,6 +503,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('evolve')
       flashScreen(ui)
       return banner(ui, rich(t().rifts.reaperDown))
+    case 'egg': {
+      const m = t().eggs
+      playSfx('unlock')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: eggIcon(e.tier), alt: '' }), rich(m.found(m.tiers[e.tier]))), 3600)
+    }
   }
 }
 
@@ -607,6 +665,38 @@ const devSpawn = (kind: EnemyId, count = 1) => {
   }
 }
 
+/** Dev: eggs and hatching, to stage the incubator and the hatching scene. */
+const devEggs = {
+  /** Puts an egg in the incubator (a full one pays its ₽), like a mission reward. */
+  egg: (tier: EggTier = 'common') => {
+    const { save } = grantEgg(loadSave(), tier)
+    writeSave(save)
+    return save.eggs
+  },
+  /** Walks every incubating egg `steps` (all the way by default). */
+  walk: (steps = 99999) => {
+    const { save } = depositEggs(loadSave(), steps, [])
+    writeSave(save)
+    return save.eggs
+  },
+  /** Hatches every ready egg now, or plays the scene for `id` (unlocking it), held at `holdAt` seconds if given. */
+  hatch: (id?: HatchlingId, shiny = false, holdAt?: number) => {
+    if (!id) return afterRun(() => showMenu())
+    const save = loadSave()
+    writeSave({ ...save, hatched: { ...save.hatched, [id]: { shiny } } })
+    endRun()
+    showHatch({ id, tier: HATCHLINGS[id].egg, shiny, duplicate: false, refund: 0 }, () => showMenu(id), holdAt)
+  },
+  incubator: () => showIncubator(() => showMenu()),
+  /** Unlocks a family (every family without an argument). */
+  unlock: (id?: HatchlingId, shiny = false) => {
+    const save = loadSave()
+    const ids = id ? [id] : HATCHLING_IDS
+    writeSave({ ...save, hatched: { ...save.hatched, ...Object.fromEntries(ids.map((i) => [i, { shiny }])) } })
+  },
+  save: loadSave,
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -622,6 +712,7 @@ if (import.meta.env.DEV) {
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
+      ...devEggs,
     },
   })
 }

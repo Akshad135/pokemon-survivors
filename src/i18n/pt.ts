@@ -1,7 +1,8 @@
-import type { StarterId } from '../data/starters'
+import type { PlayableId } from '../data/hatchlings'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
+import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialKind } from '../game/special'
@@ -17,8 +18,8 @@ export type ContentTexts = {
   upgrades: Record<UpgradeId, string>
   /** Pickup toast line, shown after the item name. */
   consumables: Record<ConsumableId, string>
-  /** One-liner under the starter's name in the inspect panel. */
-  blurbs: Record<StarterId, string>
+  /** One-liner under the Pokémon's name in the inspect panel. */
+  blurbs: Record<PlayableId, string>
   specials: Record<SpecialKind, string>
 }
 
@@ -56,6 +57,7 @@ export const pt = {
     pressTouch: 'Toque para começar',
     play: 'Jogar',
     pokedex: 'Pokédex',
+    incubator: 'Incubadora',
     guide: 'Como jogar',
     settings: 'Ajustes',
     legal: 'Legal e créditos',
@@ -196,6 +198,42 @@ export const pt = {
       fog: 'A névoa se dissipou.',
     },
   },
+  /** Eggs: the incubator, the hatching scene and the egg box in the Pokémon select. */
+  eggs: {
+    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro' } satisfies Record<EggTier, string>,
+    found: (egg: string) => `Você achou um *${egg}*! Ele vai para a incubadora.`,
+    title: 'INCUBADORA',
+    intro: 'Os ovos chocam com os passos dados nas partidas. Todos os ovos da incubadora andam juntos.',
+    sources: 'Chefes, baús trancados e fendas às vezes deixam um ovo.',
+    empty: 'Vazio',
+    stepsLeft: (n: string) => `Faltam ${n} passos`,
+    ready: 'Pronto!',
+    hatch: 'Chocar!',
+    back: 'Voltar',
+    collection: (n: number, total: number) => `Coleção ${n}/${total}`,
+    hint: '← → escolher · ENTER chocar · ESC voltar',
+    hatching: 'Hã? O ovo está se mexendo!',
+    hatched: (name: string) => `Saiu um *${name}*!`,
+    hatchedShiny: (name: string) => `Saiu um *${name}* _shiny_!`,
+    unlocked: 'Agora ele pode ser escolhido como parceiro.',
+    shinyUnlocked: 'Agora ele é shiny em todas as partidas!',
+    duplicate: (name: string, coins: string) => `Você já tinha ${name}, então ele virou ${coins}.`,
+    play: (name: string) => `Jogar com ${name}`,
+    ok: 'OK',
+    skip: 'Toque para pular',
+    /** Pokémon select: the box of egg families. */
+    tab: 'OVOS',
+    locked: '???',
+    lockedBlurb: (egg: string) => `Ainda está no ovo. Sai de um *${egg}*.`,
+    lockedButton: 'Ainda no ovo',
+    incubator: (n: number, slots: number) => `Incubadora ${n}/${slots}`,
+    readyBadge: (n: number) => (n === 1 ? '1 ovo pronto!' : `${n} ovos prontos!`),
+    /** Results screen. */
+    steps: 'Passos',
+    eggs: 'Ovos',
+    full: (coins: string) => `Incubadora cheia: o ovo virou ${coins}.`,
+  },
+
   /** Map event toasts (altars, fountains, chests, Meowth). */
   mapEvents: {
     altar: (buff: string) => `O altar concedeu *${buff}*!`,
@@ -626,6 +664,31 @@ export const pt = {
     sprigatito: 'Trapaceira. Recarga curta e mais EXP.',
     fuecoco: 'Tranquilo. Muita vida e canções de fogo.',
     quaxly: 'Dançarino. Gira na água e golpeia.',
+    pichu: 'Elétrico. Raios rápidos, mas frágil.',
+    machop: 'Lutador. Socos fortes e muita vida.',
+    eevee: 'Adaptável. Cresce rápido e vira Umbreon.',
+    togepi: 'Sortudo. Regenera vida e ganha mais EXP.',
+    spheal: 'Rolante. Gordinho, resistente e gelado.',
+    starly: 'Veloz. Voa rápido e puxa itens de longe.',
+    budew: 'Venenosa. Status mais frequentes e fortes.',
+    rockruff: 'Leal. Mordidas rápidas que viram Lycanroc.',
+    grubbin: 'Bateria. Golpes maiores e mais duradouros.',
+    gastly: 'Assombração. Dano alto, pouca vida.',
+    abra: 'Psíquico. Recarga curtíssima, muito frágil.',
+    ralts: 'Empata. Área maior e regeneração.',
+    riolu: 'Aura. Rápido, forte e vira Lucario.',
+    zorua: 'Ilusionista. Veloz e com dano de sobra.',
+    larvesta: 'Sol. Área de fogo e chance de queimar.',
+    noibat: 'Ultrassom. Ondas grandes e velocidade.',
+    honedge: 'Espada viva. Defesa alta e cortes de aço.',
+    toxel: 'Roqueiro. Choques e venenos em ritmo.',
+    tinkatink: 'Martelo. Golpes pesados que tremem o chão.',
+    charcadet: 'Brasa. Disparos que ganham força e alcance.',
+    dratini: 'Raro. Equilibrado, cresce até Dragonite.',
+    larvitar: 'Fortaleza. Muita vida e defesa sísmica.',
+    beldum: 'Blindado. Defesa de aço e muita força.',
+    gible: 'Tubarão. Mordidas fortes e cada vez mais veloz.',
+    dreepy: 'Míssil. Dispara Dreepys rápidos e certeiros.',
   },
 
   specials: {

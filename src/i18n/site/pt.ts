@@ -1,6 +1,7 @@
 import type { Drop } from '../../data/consumables'
 import type { TraitId } from '../../data/traits'
 import type { PokeType } from '../../data/types'
+import type { EggSource } from '../../game/eggs'
 import type { StatusKind } from '../../game/status'
 
 /** Number in Brazilian format (`1.250`, `0,75`). */
@@ -63,8 +64,8 @@ export const sitePt = {
     results: (count: number) => `${count} ${s(count, 'Pokémon encontrado', 'Pokémon encontrados')}`,
     empty: 'Nenhum Pokémon com esses filtros.',
     clear: 'Limpar filtros',
-    roles: { starter: 'Inicial', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário', event: 'Evento' },
-    roleFilter: { starter: 'Iniciais', enemy: 'Selvagens', boss: 'Chefes', legendary: 'Lendários', event: 'Eventos' },
+    roles: { starter: 'Inicial', egg: 'Ovo', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário', event: 'Evento' },
+    roleFilter: { starter: 'Iniciais', egg: 'Ovos', enemy: 'Selvagens', boss: 'Chefes', legendary: 'Lendários', event: 'Eventos' },
     link: (name: string) => `Link para ${name}`,
     portrait: (name: string) => `Retrato de ${name}`,
     sprite: (name: string) => `Sprite animado de ${name}`,
@@ -72,6 +73,7 @@ export const sitePt = {
     statsNote: 'Sem itens nem melhorias do Poké Mart.',
     evolution: 'Linha evolutiva',
     evolvesAt: (level: number) => `Nv ${level}`,
+    hatchNote: (egg: string) => `Jogável depois de chocar de um ${egg}.`,
     stageOf: (stage: number) => ['Estágio inicial', 'Primeira evolução', 'Evolução final'][stage] ?? '',
     signature: 'Golpe inicial',
     special: 'Ataque especial',
@@ -186,6 +188,7 @@ export const sitePt = {
       traits: 'Inimigos especiais',
       rifts: 'Fendas lendárias e modo sem fim',
       shinies: 'Shinies',
+      eggs: 'Ovos e incubadora',
       items: 'Itens no mapa',
       mapEvents: 'Eventos no mapa',
       mart: 'Poké Mart e Poké Dollars',
@@ -339,6 +342,28 @@ export const sitePt = {
       ],
       seeAll: 'Veja todos os shinies na Pokédex',
     },
+    eggs: {
+      paragraphs: (starters: number, families: number, slots: number, perRun: number, stepPx: number, shiny: number, weight: number) => [
+        `Além dos ${starters} iniciais, ${families} famílias de Pokémon jogáveis saem de ovos, de todos os tipos e gerações. Cada uma tem golpe inicial, especial, evolução no meio da partida e status próprios.`,
+        `Chefes, baús trancados e fendas às vezes deixam um ovo, no máximo ${perRun} por partida. Ele vai para a incubadora, que tem ${slots} vagas. Cada ${stepPx} px andados numa partida contam um passo, e todos os ovos da incubadora andam juntos. O ovo achado no meio da partida já conta os passos dados depois dele.`,
+        `Quando um ovo fica pronto, ele choca ao sair da partida ou na incubadora (no menu inicial e na aba Ovos da escolha de parceiro). Famílias que você ainda não tem saem ${weight}x mais. O filhote tem 1 chance em ${shiny} de ser shiny, e aí fica shiny em todas as partidas.`,
+        'Um repetido, ou um ovo achado com a incubadora cheia, vira Poké Dollars. O jogador que nunca teve um ovo ganha o primeiro com certeza.',
+      ],
+      tierHead: 'Ovo',
+      stepsHead: 'Passos',
+      refundHead: 'Repetido ou sem vaga',
+      familiesHead: 'Pode chocar',
+      sourceHead: 'Onde cai',
+      chanceHead: 'Chance',
+      oddsHead: 'Raridade',
+      sources: {
+        boss: 'Onix, Snorlax e as aves lendárias',
+        chest: 'Baú trancado',
+        rift: 'Lendário de uma fenda',
+        final: 'Mewtwo e Mew',
+        reaper: 'Arceus, no modo sem fim',
+      } satisfies Record<EggSource, string>,
+    },
     items: {
       intro: 'Pelo mapa aparecem fontes de itens. Qualquer golpe quebra elas, e cada uma solta um item. Itens mais fortes ficam mais comuns no fim da partida.',
       sourceHead: 'Fonte',
@@ -479,7 +504,7 @@ export const sitePt = {
       'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho, e nunca é enviado para nenhum servidor:',
     ],
     storage: {
-      'ps:save': 'Poké Dollars e melhorias compradas no Poké Mart.',
+      'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, os ovos da incubadora (eggs) e os Pokémon chocados (hatched).',
       'ps:settings': 'Ajustes: volume da música e dos efeitos, som ligado ou desligado, números de dano e tremor de tela.',
       'ps:lang': 'Idioma escolhido (português ou inglês).',
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',

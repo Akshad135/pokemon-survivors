@@ -17,6 +17,8 @@ const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
 export type TitleActions = {
   play: () => void
+  /** Opens the egg incubator. */
+  incubator: () => void
   /** Must rebuild the title in the picked language (without the intro). */
   language: (next: Locale) => void
   /** The menu is up: after the "press start" gesture, so the browser lets audio play. */
@@ -46,7 +48,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 
 /**
  * Title screen over the live meadow: pixel logo, a blinking "press start",
- * then the main menu (Play, Pokédex, How to play, Settings) with the language
+ * then the main menu (Play, Incubator, Pokédex, How to play, Settings) with the language
  * switch and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
@@ -56,6 +58,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const { settings } = actions
   const items = [
     { label: m.play, run: actions.play },
+    { label: m.incubator, run: actions.incubator },
     { label: m.pokedex, run: () => location.assign(pages.pokedex) },
     { label: m.guide, run: () => location.assign(pages.guide) },
     ...(settings ? [{ label: m.settings, run: () => openSettings(settings) }] : []),

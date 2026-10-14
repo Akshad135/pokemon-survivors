@@ -13,7 +13,7 @@ import {
   ALTAR, altarDuration, BOMB, CHEST, chestCoins, chestProgress, DIRECTOR, FADE, fleeHeading, FOUNTAIN, fountainSip,
   MEOWTH, meowthSpeed, rollAltarBuff, SPIKES, spikePhase, spawnSpot, type SpikePhase,
 } from './mapEventRules'
-import { dropCoins, dropPickup } from './pickups'
+import { awardEgg, dropCoins, dropPickup } from './pickups'
 import { touches } from './props'
 import { isAlive } from './queries'
 import type { Game } from './types'
@@ -200,6 +200,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       dropCoins(g, ev.x, ev.y - 4, coins)
       dropPickup(g, ev.x + 8, ev.y, 'pokeball')
       dropItem(g, ev.x - 8, ev.y, rollDrop(DROP_TABLES.itemBall, g.time, g.rng))
+      awardEgg(g, 'chest', ev.x, ev.y)
       burst(g, ev.x, ev.y - 8, { colors: ['#f8d030', '#fff8c0', '#ffffff', '#c08800'], count: 50, speed: 140, ttl: 0.8, gravity: 60 })
       g.shake = Math.max(g.shake, 3)
       notify(g, { kind: 'chestOpen', coins: coins.reduce((a, b) => a + b, 0) })

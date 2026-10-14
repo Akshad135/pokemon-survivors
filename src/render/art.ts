@@ -1,5 +1,6 @@
 import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { ItemId } from '../data/items'
+import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 
@@ -105,6 +106,61 @@ export const FX = {
   note: lazy(() => art(NOTE, { 1: '#c03018', 2: '#f8b030' }, '#401008')),
   blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
 }
+
+/* ---------------- Eggs ---------------- */
+
+/** 1 shade, 2 shell, 3 shine, 4 spots. */
+const EGG = [
+  '....2222....',
+  '...222222...',
+  '..23222222..',
+  '..32224422..',
+  '.2222244422.',
+  '.2222224421.',
+  '.4422222221.',
+  '244422222221',
+  '244222222221',
+  '222222224421',
+  '222222244421',
+  '122222224211',
+  '.1222222211.',
+  '..11111111..',
+]
+/** The crack that splits the shell, revealed from the middle out as hatching goes on. */
+const EGG_CRACK = ['', '', '', '', '1...1...1...', '.1.1.1.1.1.1', '..1...1...1.']
+
+const EGG_PALETTES = {
+  common: { 1: '#c8b890', 2: '#f8f0d8', 3: '#ffffff', 4: '#58b858' },
+  rare: { 1: '#c8b890', 2: '#f8f0d8', 3: '#ffffff', 4: '#4888e8' },
+  ultra: { 1: '#282840', 2: '#45456a', 3: '#9090c0', 4: '#f8c830' },
+} as const satisfies Record<EggTier, Palette>
+
+const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0' } as const satisfies Record<EggTier, string>
+
+/** Memoized sprite per key (one per tier and crack stage). */
+const eggCache = new Map<string, PixelSprite>()
+const toSprite = (key: string, build: () => PixelSprite) => {
+  let s = eggCache.get(key)
+  if (!s) eggCache.set(key, (s = build()))
+  return s
+}
+
+export const eggSprite = (tier: EggTier) => toSprite(`egg:${tier}`, () => art(EGG, EGG_PALETTES[tier], '#181818'))
+
+/**
+ * Crack overlay for `stage` 1..3, aligned with `eggSprite` (outline included):
+ * each stage opens the crack two pixels further from the middle.
+ */
+export const eggCrack = (tier: EggTier, stage: number) =>
+  toSprite(`crack:${tier}:${stage}`, () => {
+    const half = stage * 2
+    const rows = EGG_CRACK.map((row) => [...row.padEnd(12, '.')].map((c, x) => (Math.abs(x - 5.5) < half ? c : '.')).join(''))
+    const canvas = createCanvas(14, 16)
+    context2d(canvas).drawImage(fromStrings(rows, { 1: CRACK_COLORS[tier] }), 1, 1)
+    return canvas
+  })
+
+export const eggIcon = (tier: EggTier) => toIconUrl(`egg:${tier}`, () => eggSprite(tier))
 
 /* ---------------- Shiny sparkles ---------------- */
 

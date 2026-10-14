@@ -2,7 +2,7 @@ import { retain } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import { evolvedFrom, readyEvolutions } from '../data/evolutions'
 import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
-import { STARTERS, type StarterId } from '../data/starters'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
 import { burst } from './effects'
@@ -29,7 +29,7 @@ export const gainXp = (g: Game, amount: number) => {
   }
 }
 
-export type Loadout = { starter: StarterId; moves: readonly OwnedMove[]; items: readonly OwnedItem[] }
+export type Loadout = { starter: PlayableId; moves: readonly OwnedMove[]; items: readonly OwnedItem[] }
 
 export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.player.moves, items: g.player.items })
 
@@ -37,7 +37,7 @@ export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.pla
 export const offerPool = ({ starter, moves, items }: Loadout): Array<readonly [Offer, number]> => {
   const ownedMoves = new Map(moves.map((m) => [m.id, m.level]))
   const ownedItems = new Map(items.map((i) => [i.id, i.level]))
-  const learnset: readonly MoveId[] = STARTERS[starter].learnset
+  const learnset: readonly MoveId[] = PLAYABLE[starter].learnset
   const learnsetTypes = new Set<PokeType>(learnset.map((id) => MOVES[id].type))
   // A base move whose evolution is already owned must not come back as a new move.
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
@@ -78,14 +78,14 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3): Offer[] => {
   return picked.length > 0 ? picked : [{ kind: 'berry' }]
 }
 
-/** Stat deltas a starter has at an evolution stage (0-2), before held items. */
-const starterDeltas = (id: StarterId, stage: number): StatDelta[] => {
-  const starter = STARTERS[id]
+/** Stat deltas a playable Pokémon has at an evolution stage, before held items. */
+const starterDeltas = (id: PlayableId, stage: number): StatDelta[] => {
+  const starter = PLAYABLE[id]
   return [starter.stats, ...starter.line.slice(0, stage + 1).map((s) => s.bonus)]
 }
 
-/** Player stats of a starter at an evolution stage, without items (used by the inspect panel). */
-export const starterStats = (id: StarterId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
+/** Player stats of a playable Pokémon at an evolution stage, without items (used by the inspect panel). */
+export const starterStats = (id: PlayableId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
 
 /** Rebuilds player stats from starter, Poké Mart ranks, evolution stage and held items. */
 export const recomputeStats = (g: Game) => {
@@ -146,7 +146,7 @@ const evolveMove = (g: Game, from: MoveId, to: MoveId) => {
 
 /** The next evolution, if the player's level has reached it. */
 export const pendingEvolution = (g: Game) => {
-  const line = STARTERS[g.starter].line
+  const line = PLAYABLE[g.starter].line
   const stage = line[g.player.stage]
   const next = line[g.player.stage + 1]
   return stage && next && 'evolveAt' in stage && g.player.level >= stage.evolveAt ? { from: stage.dex, to: next.dex } : null

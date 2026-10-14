@@ -1,6 +1,6 @@
 import { range, weightedPick, type Rng } from '../engine/rng'
 import { BIOMES, FIRST_WEATHER, WEATHER_IDS, WEATHER_SPELL, type BiomeId, type WeatherId } from '../data/biomes'
-import { STARTERS } from '../data/starters'
+import { PLAYABLE } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
 import { WEATHER, WEATHER_CHIP } from '../data/weather'
 import type { HazardVisual } from '../data/bosses'
@@ -67,7 +67,7 @@ export const setWeather = (g: Game, id: WeatherId) => {
   if (id !== prev) g.events.push({ kind: 'weather', weather: id, prev })
 }
 
-const playerTypes = (g: Game) => STARTERS[g.starter].line[g.player.stage]!.types
+const playerTypes = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.types
 
 /** Sandstorm and snow wear: a slice of max HP every few seconds to everyone who isn't immune. */
 const chip = (g: Game) => {
