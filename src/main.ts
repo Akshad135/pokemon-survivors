@@ -51,7 +51,7 @@ import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { flushRuns, PROFILE_PARAM, rankingEnabled, startRanked, type RankedRun, type RankOutcome } from './ranking'
-import { accountScreen } from './ui/account'
+import { accountScreen, playGate } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
@@ -179,7 +179,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
   endRun()
   setScreen(
     titleScreen(ui, input, {
-      play: () => showMenu(),
+      play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
       incubator: () => showIncubator(() => showTitle({ focus: 1 })),
       missions: () => showMissions(),
       // Every label is read at render time, so switching language just rebuilds the screen.
@@ -194,6 +194,19 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
     }, opts),
   )
 }
+
+/** Set once the player picks "play as a guest": the gate doesn't ask again until the page reloads. */
+let playingAsGuest = false
+
+/** Sign in or play as a guest, asked when a guest taps Play. */
+const showPlayGate = () =>
+  setScreen(
+    playGate(ui, input, {
+      play: () => showMenu(),
+      guest: () => ((playingAsGuest = true), showMenu()),
+      back: () => showTitle(),
+    }),
+  )
 
 /** Pokémon select, with the Poké Mart (top right) and the way back to the title (top left). */
 const showMenu = (initial: PlayableId = lastStarter) => {
