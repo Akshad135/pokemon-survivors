@@ -382,28 +382,13 @@ export const results = (root: HTMLElement, input: Input, g: Game, onRetry: () =>
   return { el, dispose: () => (nav.off(), el.remove()) }
 }
 
-/* ---------------- Text box & toasts ---------------- */
+/* ---------------- Text box & flash (toasts and banners: `toasts.ts`) ---------------- */
 
 /** Bottom dialog box, Pokémon style. Returns a disposer. */
 export const textBox = (root: HTMLElement, text: string) => {
   const el = h('div', { class: 'textbox box' }, h('p', {}, text))
   root.append(el)
   return () => el.remove()
-}
-
-export const toast = (root: HTMLElement, content: HTMLElement | string, ms = 2600) => {
-  const el = h('div', { class: 'toast box' }, content)
-  root.append(el)
-  setTimeout(() => el.classList.add('out'), ms)
-  setTimeout(() => el.remove(), ms + 400)
-}
-
-/** Big centered announcement (legendary entrances). Wraps on small screens. */
-export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600) => {
-  const el = h('div', { class: 'banner box' }, content)
-  root.append(el)
-  setTimeout(() => el.classList.add('out'), ms)
-  setTimeout(() => el.remove(), ms + 400)
 }
 
 /** Full-screen white flash that fades out by itself. */

@@ -41,12 +41,13 @@ import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
 import { depositPokeDollars, loadSave } from './ui/save'
-import { banner, flashScreen, levelUp, pauseMenu, results, textBox, toast, type Screen } from './ui/screens'
+import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
+import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 const STEP = 1 / 60
 
@@ -190,6 +191,7 @@ const endRun = () => {
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
+  clearToasts(ui)
   run = null
 }
 
@@ -334,7 +336,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('specialCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.5)
       const who = STARTERS[g.starter].line[g.player.stage]!.name
-      return toast(ui, rich(t().toast.used(who, e.name)), 1600)
+      return toast(ui, rich(t().toast.used(who, e.name)), 1600, 'special')
     }
     case 'boss': {
       const def: EnemyDef = ENEMIES[e.enemy]
@@ -382,7 +384,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'consumable': {
       const def = CONSUMABLES[e.item]
       playSfx(def.sfx)
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), t().consumables[e.item]), 2200)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon(e.item), alt: '' }), h('b', {}, def.name), t().consumables[e.item]), 2200, e.item)
     }
     case 'propBreak':
       return playSfx('break', 60)
@@ -453,11 +455,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
   }
 }
 
-/** Announces a weather change: what started (and what it does), or what just ended. */
+/** Announces a weather change: what started (and what it does), or what just ended. The newest replaces one still showing. */
 const weatherToast = (next: WeatherId, prev: WeatherId) => {
   const w = t().world
   if (next === 'clear') {
-    if (prev !== 'clear') toast(ui, h('span', { class: 'item-toast' }, h('img', { src: weatherIcon(prev), alt: '' }), w.weatherEnd[prev]), 2600)
+    if (prev !== 'clear') toast(ui, h('span', { class: 'item-toast' }, h('img', { src: weatherIcon(prev), alt: '' }), w.weatherEnd[prev]), 2600, 'weather')
     return
   }
   playSfx('select')
@@ -465,6 +467,7 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
     ui,
     h('span', { class: 'item-toast weather-toast' }, h('img', { src: weatherIcon(next), alt: '' }), h('span', {}, rich(w.weatherStart[next]), h('small', {}, w.weatherHint[next]))),
     3400,
+    'weather',
   )
 }
 
@@ -543,6 +546,8 @@ const frame = (now: number) => {
     for (const e of g.events.splice(0)) handleEvent(r, e)
     if (run === r) {
       syncOverlay(r)
+      // Toasts and banners wait out menus, level-ups and evolutions with their clocks stopped.
+      tickToasts(ui, dt, g.phase !== 'playing')
       // Redraw only when the simulation advanced: halves the work on 120 Hz phones and
       // idles the GPU while a menu is open over a frozen frame.
       if (steps > 0 || dirty) {

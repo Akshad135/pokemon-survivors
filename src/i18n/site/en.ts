@@ -283,7 +283,7 @@ export const siteEn: SiteMessages = {
     },
     rifts: {
       paragraphs: (r) => [
-        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s and never opens while a boss is alive.`,
+        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so every run gets 3 rifts, even when bosses take a while.`,
         `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to a closed arena, walled in, to face a legendary from another generation. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
         'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
         `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,

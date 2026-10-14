@@ -18,6 +18,8 @@ import type { Enemy, Game } from './types'
 const ARRIVAL_IFRAMES = 1.5
 /** The horde is pushed this far from the player when they come back. */
 const EXIT_CLEARANCE = 64
+/** A weather change that came due in the arena waits this long after the way out, so it doesn't land on the loot's news. */
+const EXIT_WEATHER_DELAY = 6
 
 /** Sends the player into `legend`'s arena, centered where the portal was. */
 export const enterArena = (g: Game, legend: RiftLegend, x: number, y: number) => {
@@ -78,6 +80,7 @@ export const exitArena = (g: Game, outcome: 'won' | 'collapse') => {
     e.y = p.y + (dy / d) * EXIT_CLEARANCE
   }
   p.iframes = Math.max(p.iframes, ARRIVAL_IFRAMES)
+  g.weather.next = Math.max(g.weather.next, g.time + EXIT_WEATHER_DELAY)
   g.flash = 0.6
   g.events.push({ kind: 'riftExit', outcome })
 }
