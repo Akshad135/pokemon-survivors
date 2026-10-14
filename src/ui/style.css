@@ -2614,6 +2614,308 @@ button {
   }
 }
 
+/* ---------- Missions & achievements ---------- */
+
+.dialog.missions {
+  width: min(620px, 100%);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px;
+  font-family: var(--title);
+  font-size: 10px;
+  color: #6878a8;
+  background: #dce0ec;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.tab.on {
+  color: #f8d030;
+  background: #283048;
+}
+
+.missions-list {
+  flex: 1 1 auto;
+  min-height: 120px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px;
+  text-align: left;
+}
+
+.missions-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 4px 2px;
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.missions-head span {
+  font-family: var(--body);
+  font-size: 18px;
+  color: #6878a8;
+}
+
+.mission-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  font-size: 20px;
+  line-height: 1;
+  text-align: left;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.mission-row.done {
+  background: #ddf0d4;
+}
+
+.mission-row.selected {
+  border-color: #e83838;
+}
+
+.mission-row.fresh {
+  background: #fff8d8;
+  border-color: #e8c050;
+}
+
+.mission-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #a86000;
+}
+
+.mission-reward img {
+  width: 16px;
+  height: 16px;
+}
+
+.mission-row.done .mission-reward {
+  font-size: 14px;
+  color: #38a038;
+}
+
+.mission-progress {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  color: #585870;
+}
+
+.progress {
+  flex: 1;
+  height: 8px;
+  background: #c8c8d8;
+  border: 1px solid #8888a0;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: #48c048;
+}
+
+.mission-gain {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #2878d8;
+}
+
+.ach-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 10px;
+  font-size: 18px;
+  line-height: 1;
+  color: #f8f8f8;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.medal-counts {
+  display: flex;
+  gap: 10px;
+}
+
+.medal-count {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.medal-count img {
+  width: 20px;
+  height: 20px;
+}
+
+.ach-title b {
+  font-family: var(--title);
+  font-size: 9px;
+  color: #f8d030;
+}
+
+.ach-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  text-align: left;
+  color: var(--ink);
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.ach-row img {
+  width: 32px;
+  height: 32px;
+}
+
+.ach-row.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+.ach-row.locked {
+  color: #707088;
+}
+
+.ach-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.ach-info b {
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.player-title {
+  align-self: center;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #c89000;
+}
+
+.title-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.title-head .player-title {
+  font-size: 10px;
+  color: #ffcb05;
+  text-shadow: 2px 2px 0 #101020;
+}
+
+.mission-report {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.mission-report-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 8px;
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.mission-report-reward {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--body);
+  font-size: 18px;
+  color: #a86000;
+}
+
+.mission-report-reward img {
+  width: 18px;
+  height: 18px;
+}
+
+.mission-report .mission-row {
+  padding: 4px 8px;
+  font-size: 18px;
+}
+
+.medal-report {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 8px;
+  font-size: 18px;
+  background: #fff8d8;
+  border: 3px solid #e8c050;
+  border-radius: 6px;
+}
+
+.medal-report b {
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.medal-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.medal-chip img {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-height: 500px) {
+  .title-head {
+    gap: 6px;
+  }
+  .mission-row {
+    padding: 4px 8px;
+  }
+}
+
 /* ---------- Eggs: the box in the Pokémon select, the incubator and hatching ---------- */
 
 /* The egg box sits apart from the regions, after a divider. */

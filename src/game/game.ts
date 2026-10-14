@@ -26,6 +26,7 @@ import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
 import { updateStatuses } from './statusSystem'
+import { createTally } from './tally'
 import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
@@ -120,6 +121,7 @@ export const createGame = (
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
     endless: null,
+    tally: createTally(),
     eggs: { found: [], lucky: perks.luckyEgg === true },
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny hatch is shiny every run.

@@ -314,10 +314,18 @@ export type ResultEggs = { refund: number; ready: number }
 type DexNews = { species: number; shinies: number }
 
 /**
+ * What the shell adds to the results: the equipped title and the missions
+ * section (built by `ui/missions.ts`), the incubator and the Pokédex news.
+ */
+type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null; eggs: ResultEggs; news: DexNews }
+
+const NO_EXTRAS: ResultsExtras = { badge: null, report: null, eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 } }
+
+/**
  * End of run. On a victory, `onContinue` adds the endless-mode button (first);
  * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
- * The steps walked and eggs found feed the incubator (`eggs`), and `news`
- * adds a one-line Pokédex summary when the run found something new.
+ * The steps walked and eggs found feed the incubator (`extras.eggs`), and
+ * `extras.news` adds a one-line Pokédex summary when the run found something new.
  */
 export const results = (
   root: HTMLElement,
@@ -326,9 +334,9 @@ export const results = (
   onRetry: () => void,
   onMenu: () => void,
   onContinue?: () => void,
-  eggs: ResultEggs = { refund: 0, ready: 0 },
-  news: DexNews = { species: 0, shinies: 0 },
+  extras: ResultsExtras = NO_EXTRAS,
 ): Screen => {
+  const { eggs, news } = extras
   const m = t().results
   const e = t().eggs
   const r = t().rifts
@@ -359,6 +367,7 @@ export const results = (
         g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
       ),
       h('div', { class: 'dialog-title' }, victory ? m.victory : g.endless ? r.endlessOver(name) : m.fainted(name)),
+      extras.badge,
       g.player.shiny && h('div', { class: 'tag tag-shiny' }, m.shiny(name)),
       reaperDefeats > 0 && h('div', { class: 'tag tag-shiny' }, r.reaperDefeated(reaperDefeats)),
       h(
@@ -392,6 +401,7 @@ export const results = (
         h('b', {}, `+${formatPokeDollars(earned.total)}`),
         h('span', {}, m.earnings(formatPokeDollars(earned.coins), formatPokeDollars(earned.bonus))),
       ),
+      extras.report,
       h(
         'div',
         { class: 'damage-list' },

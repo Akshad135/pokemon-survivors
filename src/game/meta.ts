@@ -1,8 +1,13 @@
 import { chance, type Rng } from '../engine/rng'
+import { ACHIEVEMENTS, MEDAL_REWARD, type TitleId } from '../data/achievements'
+import { NO_ACHIEVEMENTS, parseAchievements, parseTitle, recordAchievements, type AchievementsSave } from './achievements'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
 import { parseEggs, parseHatched, type Egg, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
+import { NO_MISSIONS, parseMissions, recordMissions, type MissionsSave } from './missions'
+import { isRecord, wholeNumber } from './parse'
 import type { StatDelta } from './stats'
+import type { RunSummary } from './tally'
 import type { Game } from './types'
 
 /**
@@ -70,18 +75,38 @@ export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, sk
 export const SAVE_VERSION = 1
 
 /**
- * `dex` is the Pokédex progress (`game/dex.ts`); `eggs` (the incubator) and
- * `hatched` (families unlocked from eggs) live in `eggs.ts`. Saves from before
- * a field existed load it empty.
+ * Saves from before a field existed load it empty, so every field below the
+ * upgrades is additive.
  */
-export type Save = { version: typeof SAVE_VERSION; wallet: number; ranks: Ranks; dex: Pokedex; eggs: readonly Egg[]; hatched: Hatched }
+export type Save = {
+  version: typeof SAVE_VERSION
+  wallet: number
+  ranks: Ranks
+  /** Pokédex progress (`game/dex.ts`). */
+  dex: Pokedex
+  /** The incubator (`game/eggs.ts`). */
+  eggs: readonly Egg[]
+  /** Families unlocked from eggs (`game/eggs.ts`). */
+  hatched: Hatched
+  /** Daily and weekly mission progress (`game/missions.ts`). */
+  missions: MissionsSave
+  /** Unlocked achievements and lifetime records (`game/achievements.ts`). */
+  achievements: AchievementsSave
+  /** Title shown on the title and results screens. */
+  title: TitleId | null
+}
 
-export const EMPTY_SAVE: Save = { version: SAVE_VERSION, wallet: 0, ranks: NO_RANKS, dex: EMPTY_DEX, eggs: [], hatched: {} }
-
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
-
-const wholeNumber = (v: unknown, max = Number.MAX_SAFE_INTEGER) =>
-  typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(0, Math.floor(v))) : 0
+export const EMPTY_SAVE: Save = {
+  version: SAVE_VERSION,
+  wallet: 0,
+  ranks: NO_RANKS,
+  dex: EMPTY_DEX,
+  eggs: [],
+  hatched: {},
+  missions: NO_MISSIONS,
+  achievements: NO_ACHIEVEMENTS,
+  title: null,
+}
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
 const migrate = (data: Record<string, unknown>): Record<string, unknown> | null => {
@@ -96,7 +121,8 @@ const migrate = (data: Record<string, unknown>): Record<string, unknown> | null 
 /**
  * Parses raw `localStorage` text into a valid save. Never throws: corrupt JSON,
  * unknown versions or bad fields fall back to safe defaults, unknown upgrades
- * are dropped and ranks are clamped to each upgrade's max.
+ * are dropped and ranks are clamped to each upgrade's max. Each field parses
+ * on its own, so a save from before a field existed just gets it empty.
  */
 export const parseSave = (raw: string | null): Save => {
   let json: unknown
@@ -108,6 +134,7 @@ export const parseSave = (raw: string | null): Save => {
   const data = isRecord(json) ? migrate(json) : null
   if (!data) return EMPTY_SAVE
   const ranks = isRecord(data.ranks) ? data.ranks : {}
+  const achievements = parseAchievements(data.achievements)
   return {
     version: SAVE_VERSION,
     wallet: wholeNumber(data.wallet),
@@ -115,6 +142,9 @@ export const parseSave = (raw: string | null): Save => {
     dex: parseDex(data.dex),
     eggs: parseEggs(data.eggs),
     hatched: parseHatched(data.hatched),
+    missions: parseMissions(data.missions),
+    achievements,
+    title: parseTitle(data.title, achievements.unlocked),
   }
 }
 
@@ -169,3 +199,24 @@ export const runEarnings = (g: Game) => {
   const bonus = runBonus({ time: g.time, kills: g.kills, victory: wonRun(g), greed: g.player.stats.greed, reaperDefeats: g.endless?.reaperDefeats })
   return { coins: g.coins, bonus, total: g.coins + bonus }
 }
+
+/* ---------------- Missions and achievements ---------------- */
+
+/**
+ * Records a run (or what changed since `before`, the snapshot already recorded
+ * for it) into the missions and lifetime records, and pays the ₽ of every
+ * mission completed and medal earned.
+ */
+export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date) => {
+  const m = recordMissions(save.missions, summary, before, date)
+  const a = recordAchievements(save.achievements, summary, before, m.completed.length)
+  const reward = m.completed.reduce((sum, mission) => sum + mission.reward, 0) + a.unlocked.reduce((sum, id) => sum + MEDAL_REWARD[ACHIEVEMENTS[id].medal], 0)
+  return {
+    save: { ...save, wallet: save.wallet + reward, missions: m.missions, achievements: a.achievements },
+    completed: m.completed,
+    unlocked: a.unlocked,
+    reward,
+  }
+}
+
+export type RunRecord = ReturnType<typeof recordRun>

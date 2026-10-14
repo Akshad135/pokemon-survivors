@@ -1,10 +1,12 @@
+import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_REWARD, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId } from '../../data/achievements'
+import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionTemplate } from '../../data/missions'
 import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
 import { BOSS_PATTERNS } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { EVOLUTIONS } from '../../data/evolutions'
 import { ITEM_IDS, ITEMS } from '../../data/items'
-import { STARTER_IDS, STARTERS } from '../../data/starters'
+import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
@@ -355,6 +357,29 @@ const mart = (locale: Locale, m: SiteMessages) => {
     ${table([k.upgradeHead, k.effectHead, k.pricesHead], rows)}`
 }
 
+const missions = (locale: Locale, m: SiteMessages) => {
+  const k = m.guide.missions
+  const a = LOCALES[locale].messages.achievements
+  const money = (v: number) => `₽${v.toLocaleString(m.lang.tag)}`
+  const rewards = (pool: readonly MissionTemplate[]) => {
+    const all = pool.flatMap((t) => t.tiers.map(([, reward]) => reward))
+    return `${money(Math.min(...all))}–${money(Math.max(...all))}`
+  }
+  const medals = MEDALS.map((medal) => `${k.medals[medal]} ${money(MEDAL_REWARD[medal])}`).join(', ')
+  const goal = (id: AchievementId) => {
+    const def: AchievementDef = ACHIEVEMENTS[id]
+    if (def.stat === 'region') return a.region(REGIONS.find((r) => r.gen === def.gen)?.name ?? '')
+    return a.goals[def.stat](def.stat === 'coins' ? money(def.target) : def.target.toLocaleString(m.lang.tag))
+  }
+  const titleOf = (id: AchievementId) => TITLE_IDS.find((t) => t === id)
+  const rows = ACHIEVEMENT_IDS.map((id) => {
+    const title = titleOf(id)
+    return [a.names[id], k.medals[ACHIEVEMENTS[id].medal], goal(id), title ? a.titles[title] : '—']
+  })
+  return html`${paragraphs(k.paragraphs(MISSION_SLOTS.daily, MISSION_SLOTS.weekly, rewards(DAILY_POOL), rewards(WEEKLY_POOL), medals))}
+    ${table([k.nameHead, k.medalHead, k.goalHead, k.titleHead], rows)}`
+}
+
 const settings = (m: SiteMessages) => {
   const s = m.guide.settings
   return html`${paragraphs(s.paragraphs)}${table([s.optionHead, s.effectHead], s.rows)}`
@@ -377,6 +402,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   items: (_, m) => items(m),
   mapEvents: (_, m) => mapEvents(m),
   mart,
+  missions,
   settings: (_, m) => settings(m),
 }
 

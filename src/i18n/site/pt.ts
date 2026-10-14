@@ -192,6 +192,7 @@ export const sitePt = {
       items: 'Itens no mapa',
       mapEvents: 'Eventos no mapa',
       mart: 'Poké Mart e Poké Dollars',
+      missions: 'Missões e conquistas',
       settings: 'Ajustes e música',
     },
     controls: {
@@ -437,6 +438,18 @@ export const sitePt = {
       effectHead: 'Efeito',
       pricesHead: 'Preço por nível',
     },
+    missions: {
+      paragraphs: (daily: number, weekly: number, dailyRewards: string, weeklyRewards: string, medals: string) => [
+        `Missões fica no menu da tela de título. Todo dia saem ${daily} missões diárias (${dailyRewards}) e toda semana ${weekly} semanais (${weeklyRewards}). Elas são sorteadas pela data do seu aparelho, então todo mundo recebe as mesmas no mesmo dia: as diárias trocam à meia-noite e as semanais na segunda-feira.`,
+        'O progresso conta no fim de cada partida, mesmo se você desistir pela pausa, e soma as partidas do dia ou da semana. Missões de sobreviver, de nível e do modo sem fim contam a sua melhor partida. As missões usam o que o jogo tem: derrotar Pokémon de um tipo, num clima ou num bioma, vencer fendas, abrir baús, pegar o Pay Day do Meowth, derrotar shinies e chefes, coletar Poké Dollars e vencer o Mewtwo com um inicial de certo tipo. A recompensa cai direto na carteira.',
+        `As conquistas são metas para a vida toda, com medalha de bronze, prata ou ouro (${medals}). Algumas dão um título, como Caçador de Shinies: toque nela na aba Conquistas para exibi-lo na tela de título e no resultado de cada partida.`,
+      ],
+      medalHead: 'Medalha',
+      nameHead: 'Conquista',
+      goalHead: 'Como conseguir',
+      titleHead: 'Título',
+      medals: { bronze: 'Bronze', silver: 'Prata', gold: 'Ouro' },
+    },
     settings: {
       paragraphs: [
         'Os Ajustes ficam no menu da tela de título e no menu de pausa, que tem só Continuar · Ajustes · Desistir. Tudo vale na hora e fica salvo neste navegador.',
@@ -505,7 +518,7 @@ export const sitePt = {
       'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho, e nunca é enviado para nenhum servidor:',
     ],
     storage: {
-      'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou), os ovos da incubadora (eggs) e os Pokémon chocados (hatched).',
+      'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou), os ovos da incubadora (eggs), os Pokémon chocados (hatched), progresso das missões, conquistas, recordes (como Pokémon derrotados e o maior tempo sobrevivido) e o título escolhido.',
       'ps:settings': 'Ajustes: volume da música e dos efeitos, som ligado ou desligado, números de dano e tremor de tela.',
       'ps:lang': 'Idioma escolhido (português ou inglês).',
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',

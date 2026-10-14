@@ -1,0 +1,27 @@
+import type { RunSummary } from './tally'
+
+/** A run that did nothing, to override per test. */
+export const summary = (over: Partial<RunSummary> = {}): RunSummary => ({
+  starter: 'charmander',
+  shinyStarter: false,
+  time: 0,
+  level: 1,
+  stage: 0,
+  victory: false,
+  kills: 0,
+  coins: 0,
+  shinyKills: 0,
+  bossKills: 0,
+  shinyLegends: 0,
+  traitKills: 0,
+  chests: 0,
+  meowths: 0,
+  altars: 0,
+  legends: [],
+  reaperDefeats: 0,
+  moveEvolutions: 0,
+  killsByType: {},
+  killsByWeather: {},
+  killsByBiome: {},
+  ...over,
+})

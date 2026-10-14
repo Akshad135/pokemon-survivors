@@ -180,6 +180,7 @@ export const siteEn: SiteMessages = {
       items: 'Map items',
       mapEvents: 'Map events',
       mart: 'Poké Mart and Poké Dollars',
+      missions: 'Missions and achievements',
       settings: 'Settings and music',
     },
     controls: {
@@ -425,6 +426,18 @@ export const siteEn: SiteMessages = {
       effectHead: 'Effect',
       pricesHead: 'Price per rank',
     },
+    missions: {
+      paragraphs: (daily, weekly, dailyRewards, weeklyRewards, medals) => [
+        `Missions is in the title screen menu. Every day brings ${daily} daily missions (${dailyRewards}) and every week ${weekly} weekly ones (${weeklyRewards}). They are drawn from your device's date, so everyone gets the same ones on the same day: dailies change at midnight and weeklies on Monday.`,
+        'Progress counts at the end of every run, even if you quit from the pause menu, and adds up the runs of the day or week. Survival, level and endless missions count your best run. Missions use what the game has: defeat Pokémon of a type, in a weather or in a biome, win rifts, open chests, grab Meowth\'s Pay Day, defeat shinies and bosses, collect Poké Dollars and beat Mewtwo with a starter of some type. The reward goes straight to your wallet.',
+        `Achievements are lifetime goals with a bronze, silver or gold medal (${medals}). Some grant a title, like Shiny Hunter: tap it on the Achievements tab to show it on the title screen and on every run's results.`,
+      ],
+      medalHead: 'Medal',
+      nameHead: 'Achievement',
+      goalHead: 'How to earn it',
+      titleHead: 'Title',
+      medals: { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' },
+    },
     settings: {
       paragraphs: [
         'Settings live in the title screen menu and in the pause menu, which is just Resume · Settings · Quit. Changes apply right away and are saved in this browser.',
@@ -493,7 +506,7 @@ export const siteEn: SiteMessages = {
       'Everything the game remembers lives in your browser\'s localStorage, on your device, and is never sent to any server:',
     ],
     storage: {
-      'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs) and the Pokémon hatched (hatched).',
+      'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs), the Pokémon hatched (hatched), mission progress, achievements, records (like Pokémon defeated and your longest survival) and the title you picked.',
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
       'ps:lang': 'Your language (Portuguese or English).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',

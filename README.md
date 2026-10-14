@@ -110,6 +110,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
 - **Map events** that make you pick where to go: buff altars, healing fountains, locked chests (stand in the ring while an ambush closes in), spike and bomb traps that hurt the horde too, and a fleeing Meowth that drops coins. Off-screen ones get an arrow on the screen edge.
 - **Meta progression**: hatch eggs into new partners, collect Poké Dollars and spend them in the Poké Mart on permanent upgrades (HP Up, Protein, Exp. Charm…).
+- **Missions and achievements**: three daily and two weekly missions, drawn from the date so everyone gets the same ones, pay ₽. 49 achievements earn bronze, silver and gold medals, and some grant a title (Shiny Hunter, Legend Tamer…) shown on the title and results screens.
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Settings**: music and effects volume, damage numbers, screen shake and language, saved in the browser.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
@@ -142,7 +143,7 @@ npm run assets     # re-download sprites/cries (already committed in public/)
 npm run credits    # regenerate CREDITS.md from SpriteCollab
 ```
 
-In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` (`ps.spawn('pidgey', 1, true)` for a shiny), `ps.dex()` (saved Pokédex) and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode, and `ps.egg('rare')`, `ps.walk(500)`, `ps.hatch()`, `ps.hatch('gible', true, 2.8)`, `ps.unlock()` and `ps.incubator()` for eggs.
+In dev builds the browser console exposes `ps.run()` (current run state), `ps.startRun('squirtle')`, `ps.theme()` (music theme playing), `ps.biome('cave')`, `ps.weather('rain')`, `ps.spawn('chansey', 3)` (`ps.spawn('pidgey', 1, true)` for a shiny), `ps.dex()` (saved Pokédex) and `ps.event('chest')` (places a map event next to you), plus `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()` and `ps.reaper()` to stage rifts and the endless mode, and `ps.egg('rare')`, `ps.walk(500)`, `ps.hatch()`, `ps.hatch('gible', true, 2.8)`, `ps.unlockFamily()` and `ps.incubator()` for eggs. For missions: `ps.missions()` lists them, `ps.mission(i, n)` sets one's progress (one short of done by default), `ps.completeMission(i)`, `ps.date('2026-10-19')` moves the missions' clock, `ps.unlockAchievement(id?)` and `ps.resetProgress()`.
 
 ## How it's built
 
@@ -163,8 +164,9 @@ src/
             rift.ts (rift rules) · riftPortal.ts (portal on the map) · riftArena.ts (the arena)
             endless.ts (endless rules) · endlessSystem.ts (horde events, Arceus)
             eggs.ts (egg drops, incubator, hatching: pure rules)
+            tally.ts (run counters and summary) · missions.ts · achievements.ts (missions, medals, titles)
   render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
-  ui/       title screen, HUD, Pokémon select (with the egg box), incubator and hatching scene, level-up, pause, settings, results, toasts, language switch, Pokédex
+  ui/       title screen, HUD, Pokémon select (with the egg box), incubator and hatching scene, level-up, pause, settings, results, missions and achievements, toasts, language switch, Pokédex
   i18n/     every player-facing string: pt.ts (reference) and en.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
 ```
@@ -190,6 +192,7 @@ src/
 - **Meta progression** is saved in `localStorage`. `game/meta.ts` holds the pure rules.
 - **Pokédex:** the simulation fills a run's `dexLog` (species on screen via `sightings.ts`, defeats and caught shinies in `killEnemy`); the shell folds it into the save's `dex` field when the run is banked. `game/dex.ts` holds the pure rules: a compact `[defeated, flags]` mark per dex number, `markCaught` (for any future capture source, like eggs) and `dexCounts` for anything that reads progress.
 - **Eggs:** `game/eggs.ts` holds the rules (drop odds per source, the per-run cap, steps per tier, the incubator, hatching, duplicates). A run counts `player.walked`; the shell banks steps and found eggs into the save (`eggs`, `hatched`) like ₽, and ready eggs hatch when the player leaves the run (`ui/incubator.ts`). The playable families live in `data/hatchlings.ts` with the starters' shape (`PlayableDef`), and `PLAYABLE` merges both. `grantEgg` gives an egg from outside a run (mission rewards).
+- **Missions and achievements** never reach into the simulation's systems: the run keeps a small `tally` (kills by type, weather and biome, shinies, bosses, map event notices), bumped only when something faints or a map event speaks. When the run ends the shell takes a `summarizeRun` snapshot and `recordRun` adds it to the missions (`game/missions.ts`, drawn from the local date via a seeded rng) and the lifetime records behind the achievements (`game/achievements.ts`). Recording works on the difference from the last snapshot, so a victory that goes on into endless mode is never counted twice. The catalogs live in `data/missions.ts` and `data/achievements.ts`.
 
 </details>
 

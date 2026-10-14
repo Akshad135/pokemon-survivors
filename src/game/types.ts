@@ -22,6 +22,7 @@ import type { Prop } from './props'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
 import type { SpecialState } from './special'
+import type { RunTally } from './tally'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
@@ -328,5 +329,7 @@ export type Game = {
   dexLog: DexLog
   /** Eggs found this run (`eggs.ts`). */
   eggs: RunEggs
+  /** Counters for missions and achievements (`game/tally.ts`). */
+  tally: RunTally
   events: GameEvent[]
 }

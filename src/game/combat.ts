@@ -10,6 +10,7 @@ import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
+import { countKill } from './tally'
 import { absorb } from './traits'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
@@ -60,6 +61,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
   e.dying = 0
   e.hp = 0
   g.kills++
+  countKill(g.tally, e, weatherHere(g), g.biome.id)
   const big = e.boss || e.shiny
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })

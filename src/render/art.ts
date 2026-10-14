@@ -1,4 +1,5 @@
 import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
+import type { Medal } from '../data/achievements'
 import type { ItemId } from '../data/items'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
@@ -388,3 +389,36 @@ export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICK
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
 export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))
+
+/* ---------------- Medals ---------------- */
+
+/** Achievement medal: a two-tone ribbon over a disc with a star. 1 outline, 2-3 ribbon, 4 star, 5 rim, 6 face. */
+const MEDAL = [
+  '.111...111.',
+  '.122...331.',
+  '..122.331..',
+  '...12331...',
+  '....121....',
+  '...11111...',
+  '..1566651..',
+  '.156646651.',
+  '.154444451.',
+  '.156444651.',
+  '.156464651.',
+  '..1566651..',
+  '...11111...',
+]
+
+const MEDAL_METAL = {
+  bronze: { 4: '#f8c890', 5: '#985028', 6: '#d88848' },
+  silver: { 4: '#ffffff', 5: '#788098', 6: '#c8d0e0' },
+  gold: { 4: '#fff0a0', 5: '#b07010', 6: '#f8c838' },
+} as const satisfies Record<Medal, Palette>
+
+const MEDAL_RIBBON = { 1: '#282830', 2: '#e04848', 3: '#4878e0' } as const
+
+/** Locked medals are a flat silhouette of the same shape. */
+const MEDAL_LOCKED = { 1: '#383848', 2: '#686878', 3: '#585868', 4: '#9898a8', 5: '#585868', 6: '#787888' } as const
+
+export const medalIcon = (medal: Medal, locked = false) =>
+  toIconUrl(`medal:${locked ? 'locked' : medal}`, () => art(MEDAL, locked ? MEDAL_LOCKED : { ...MEDAL_RIBBON, ...MEDAL_METAL[medal] }))

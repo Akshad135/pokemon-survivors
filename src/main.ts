@@ -13,6 +13,7 @@ import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes
 import { RIFT, RIFT_LEGENDS } from './data/rifts'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
+import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
@@ -30,6 +31,8 @@ import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
 import { dexNews, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
+import { missionStatus, type MissionStatus } from './game/missions'
+import { summarizeRun, type RunSummary } from './game/tally'
 import { biomeWeight, drawRoster, rosterSchedule, type Roster } from './game/roster'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
@@ -43,10 +46,12 @@ import { eggIcon } from './render/art'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
-import { h, rich } from './ui/dom'
+import { h, later, rich } from './ui/dom'
 import { createHud, type Hud } from './ui/hud'
-import { bankEggs, depositPokeDollars, loadSave, updateSave, writeSave } from './ui/save'
+import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, today, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
+import { missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
+import { missionDevTools } from './ui/missionsDev'
 import { pokedexScreen } from './ui/pokedex'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
@@ -112,6 +117,12 @@ type Run = {
   paid: number
   /** True once the run's end was reported to analytics. */
   reported: boolean
+  /** Missions as the run started, and what the run has recorded so far (see `recordProgress`). */
+  missionsBefore: MissionStatus[]
+  recorded: RunSummary | null
+  unlocked: AchievementId[]
+  /** ₽ paid for missions and medals this run. */
+  reward: number
   /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
   hatchery: { steps: number; eggs: number; refund: number }
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
@@ -156,6 +167,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
     titleScreen(ui, input, {
       play: () => showMenu(),
       incubator: () => showIncubator(() => showTitle({ focus: 1 })),
+      missions: () => showMissions(),
       // Every label is read at render time, so switching language just rebuilds the screen.
       language: (next) => (changeLanguage(next), showTitle()),
       ready: () => (pressedStart = true),
@@ -179,6 +191,8 @@ const showMenu = (initial: PlayableId = lastStarter) => {
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
+
+const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 2 })))
 
 /** The incubator; hatching a ready egg plays its scene and comes back here. */
 const showIncubator = (back: () => void) => {
@@ -229,6 +243,19 @@ const bankRun = (r: Run, withBonus: boolean) => {
   updateSave((save) => ({ ...save, dex: recordRun(r.dexBase, g.dexLog) }))
 }
 
+/**
+ * Records the run into missions and achievements. Safe to call again (victory,
+ * then endless mode, then the way out): only what changed since counts.
+ */
+const recordProgress = (r: Run) => {
+  const summary = summarizeRun(r.game)
+  const record = recordRunProgress(summary, r.recorded)
+  r.recorded = summary
+  r.unlocked.push(...record.unlocked)
+  r.reward += record.reward
+  return record
+}
+
 /** Reports how the run ended, once. */
 const reportRun = (r: Run) => {
   if (r.reported) return
@@ -242,6 +269,10 @@ const endRun = () => {
   if (!run) return
   bankRun(run, wonRun(run.game))
   reportRun(run)
+  // Only a quit run can complete something here: the results screen already showed the rest.
+  // The toast waits for the next screen, so it lands on top of it.
+  const record = recordProgress(run)
+  later(() => progressToast(ui, record))
   run.overlay?.dispose()
   run.closeText?.()
   run.hud.dispose()
@@ -297,7 +328,21 @@ const startRun = async (starter: PlayableId) => {
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
   loading.remove()
-  run = { game, hud: runHud(game), overlay: null, shown: null, closeText: null, paid: 0, reported: false, hatchery: { steps: 0, eggs: 0, refund: 0 }, dexBase: save.dex }
+  run = {
+    game,
+    hud: runHud(game),
+    overlay: null,
+    shown: null,
+    closeText: null,
+    paid: 0,
+    reported: false,
+    missionsBefore: missionStatus(save.missions, today()),
+    recorded: null,
+    unlocked: [],
+    reward: 0,
+    hatchery: { steps: 0, eggs: 0, refund: 0 },
+    dexBase: save.dex,
+  }
   track('run_start', { starter })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -360,8 +405,12 @@ const syncOverlay = (r: Run) => {
         () => afterRun(() => void startRun(lastStarter)),
         () => afterRun(() => showMenu()),
         () => continueEndless(g),
-        { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
-        dexNews(r.dexBase, g.dexLog),
+        {
+          badge: titleBadge(loadSave().title),
+          report: missionReport(r.missionsBefore, r.unlocked, r.reward),
+          eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
+          news: dexNews(r.dexBase, g.dexLog),
+        },
       )
       break
   }
@@ -467,11 +516,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
     case 'gameover':
       bankRun(r, true)
+      recordProgress(r)
       reportRun(r)
       playSfx('gameOver')
       return playCry(sprites(playerDex(g)).cry)
     case 'victory':
       bankRun(r, true)
+      recordProgress(r)
       return playSfx('evolve')
     case 'biome': {
       const w = t().world
@@ -641,6 +692,8 @@ const frame = (now: number) => {
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
     ctx.fillRect(0, 0, view.w, view.h)
+    // Menu news (what a quit run completed) shares the run's queue.
+    tickToasts(ui, dt, false)
   }
   screen?.tick?.(t)
   playTheme(themeFor(run))
@@ -717,7 +770,7 @@ const devEggs = {
   },
   incubator: () => showIncubator(() => showMenu()),
   /** Unlocks a family (every family without an argument). */
-  unlock: (id?: HatchlingId, shiny = false) => {
+  unlockFamily: (id?: HatchlingId, shiny = false) => {
     const save = loadSave()
     const ids = id ? [id] : HATCHLING_IDS
     writeSave({ ...save, hatched: { ...save.hatched, ...Object.fromEntries(ids.map((i) => [i, { shiny }])) } })
@@ -741,6 +794,8 @@ if (import.meta.env.DEV) {
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
+      // Rebuilds the missions screen or the title so changes show up right away.
+      ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,
     },
   })

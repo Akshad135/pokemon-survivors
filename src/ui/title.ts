@@ -5,6 +5,8 @@ import { locale, t, type Locale } from '../i18n'
 import { logoScale, titleLogo } from '../render/logo'
 import { h, later } from './dom'
 import { languageSwitch } from './language'
+import { titleBadge } from './missions'
+import { loadSave } from './save'
 import { menu, type Screen } from './screens'
 
 /** Static site pages, one URL per language (they live outside the game bundle). */
@@ -17,6 +19,7 @@ const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
 export type TitleActions = {
   play: () => void
+  missions: () => void
   /** Opens the egg incubator. */
   incubator: () => void
   /** Must rebuild the title in the picked language (without the intro). */
@@ -50,7 +53,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 
 /**
  * Title screen over the live meadow: pixel logo, a blinking "press start",
- * then the main menu (Play, Incubator, Pokédex, How to play, Settings) with the language
+ * then the main menu (Play, Incubator, Missions, Pokédex, How to play, Settings) with the language
  * switch and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
@@ -61,6 +64,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const items = [
     { label: m.play, run: actions.play },
     { label: m.incubator, run: actions.incubator },
+    { label: m.missions, run: actions.missions },
     { label: m.pokedex, run: () => openOver(actions.pokedex) },
     { label: m.guide, run: () => location.assign(pages.guide) },
     ...(settings ? [{ label: m.settings, run: () => openOver(settings) }] : []),
@@ -86,7 +90,9 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     ' · ',
     h('a', { href: GITHUB_URL, target: '_blank', rel: 'noopener' }, 'GitHub'),
   )
-  const el = h('div', { class: 'screen title-home' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), logo, prompt, footer)
+  const badge = titleBadge(loadSave().title)
+  const head = h('div', { class: 'title-head' }, logo, badge)
+  const el = h('div', { class: 'screen title-home' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), head, prompt, footer)
 
   let nav: ReturnType<typeof menu> | null = null
   let closeLanguage: (() => void) | null = null

@@ -1,5 +1,7 @@
+import type { TitleId } from '../data/achievements'
 import { depositEggs, type Egg } from '../game/eggs'
-import { parseSave, type Save } from '../game/meta'
+import { parseSave, recordRun, type Save } from '../game/meta'
+import type { RunSummary } from '../game/tally'
 
 const KEY = 'ps:save'
 
@@ -40,6 +42,31 @@ export const bankEggs = (steps: number, found: readonly Egg[]) => {
   writeSave(save)
   return { converted, refund }
 }
+
+/* ---------------- Missions and achievements ---------------- */
+
+/** Dev-only shift of the missions' clock (`ps.date`), in ms. */
+let clockOffset = 0
+
+/** The date missions are drawn for: the local clock, unless the dev console moved it. */
+export const today = () => new Date(Date.now() + clockOffset)
+
+export const setToday = (date: Date | null) => {
+  clockOffset = date ? date.getTime() - Date.now() : 0
+}
+
+/**
+ * Records a run into the missions and achievements, pays their ₽ and saves.
+ * `before` is the snapshot already recorded for this run (see `recordRun`).
+ */
+export const recordRunProgress = (summary: RunSummary, before: RunSummary | null) => {
+  const record = recordRun(loadSave(), summary, before, today())
+  writeSave(record.save)
+  return record
+}
+
+/** Shows `title` on the title and results screens (null hides it). */
+export const equipTitle = (title: TitleId | null) => writeSave({ ...loadSave(), title })
 
 /* ---------------- Settings ---------------- */
 
