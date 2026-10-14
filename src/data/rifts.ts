@@ -39,6 +39,11 @@ export const RIFT = {
   firstAt: 210,
   every: 240,
   jitter: 30,
+  /**
+   * A portal that comes due during a boss fight waits for the boss to fall,
+   * but no longer than this, so slow fights don't cost the run its rifts.
+   */
+  bossWait: 45,
   /** How long a portal waits on the map before closing. */
   portalTime: 40,
   /** Seconds the player must stand inside the portal to step in. */

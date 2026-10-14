@@ -11,7 +11,7 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 - Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
 - Five biomes per run (Route 1, Viridian Forest, Mt. Moon, Mt. Silver, Lavender Tower), each with its own music, and weather that shifts type matchups for everyone: harsh sunlight, rain, sandstorm, snow and fog
 - Special enemies with behavior traits, at most one per stage of a run: Chansey heals the horde, Bronzor and Bronzong shield it, Nidoqueen summons Nidoran, Voltorb, Electrode and Drifloon explode, Magnemite and Vikavolt fire telegraphed beams and Hitmonlee and Lokix leap over the horde
-- Legendary rifts: optional portals to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
+- Legendary rifts: three optional portals per run to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
 - Endless mode after Mewtwo, scored by time survived, with Arceus as a hunting reaper that can be defeated
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - In-game Pokédex: tracks every species seen and defeated; defeating a shiny catches it

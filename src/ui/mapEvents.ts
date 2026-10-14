@@ -8,7 +8,7 @@ import { fountainIcon } from '../render/mapEvents'
 import { consumableIcon } from '../render/props'
 import { cryUrl, portraitUrl } from '../render/sprites'
 import { h, rich } from './dom'
-import { toast } from './screens'
+import { toast } from './toasts'
 
 /** Toast with a small icon on the left, like the item pickups. */
 const iconToast = (root: HTMLElement, icon: string, text: string, ms = 2600) =>

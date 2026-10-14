@@ -43,15 +43,26 @@ export type RiftState = {
 
 export const createRiftState = (): RiftState => ({ nextAt: RIFT.firstAt, portal: null, arena: null, met: [], cleared: [] })
 
-/** When the portal after one opening at `time` is due. */
-export const nextRiftAt = (time: number, rng: Rng) => time + RIFT.every + range(rng, -RIFT.jitter, RIFT.jitter)
+/**
+ * When the portal after the one due at `slot` (opening at `time`) is due.
+ * Counted from the schedule, not from the opening, so a portal that waited on
+ * a boss doesn't push the run's later rifts back; never before this rift's
+ * portal and arena could be over.
+ */
+export const nextRiftAt = (slot: number, time: number, rng: Rng) =>
+  Math.max(slot + RIFT.every + range(rng, -RIFT.jitter, RIFT.jitter), time + RIFT.portalTime + RIFT.arenaTime)
 
 /**
- * Whether a portal opens now. It waits while a world boss is alive, and in a
- * normal run it never opens so late that the arena could overlap Mewtwo.
+ * Whether a portal opens now. During a boss fight it waits for the boss to
+ * fall, for up to `RIFT.bossWait` in a regular run (always for the endless
+ * mode's reaper), and in a regular run it never opens so late that the arena
+ * could overlap Mewtwo.
  */
 export const riftDue = (s: { time: number; nextAt: number; busy: boolean; bossAlive: boolean; endless: boolean }) =>
-  s.time >= s.nextAt && !s.busy && !s.bossAlive && (s.endless || s.time + RIFT.portalTime + RIFT.arenaTime < RUN_LENGTH)
+  s.time >= s.nextAt &&
+  !s.busy &&
+  (!s.bossAlive || (!s.endless && s.time >= s.nextAt + RIFT.bossWait)) &&
+  (s.endless || s.time + RIFT.portalTime + RIFT.arenaTime < RUN_LENGTH)
 
 /** A legendary not met yet this run; once all were met, any of them. */
 export const pickLegend = (rng: Rng, met: readonly RiftLegend[]): RiftLegend => {
