@@ -17,8 +17,8 @@ import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFo
 import { createMapEvents, updateMapEvents } from './mapEvents'
 import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
-import { MOVES, moveStats } from './moves'
-import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
+import { isManual, MOVES, moveStats } from './moves'
+import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
@@ -141,8 +141,11 @@ export const createGame = (
   return g
 }
 
-/** Per-tick player input, as plain data so the simulation stays DOM-free. `mega` presses the Mega button. */
-export type StepInput = { move: Vec; special: boolean; mega?: boolean }
+/**
+ * Per-tick player input, as plain data so the simulation stays DOM-free. `mega`
+ * presses the Mega button and `lunge` fires the manual moves (Quick Attack).
+ */
+export type StepInput = { move: Vec; special: boolean; mega?: boolean; lunge?: boolean }
 
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
@@ -168,10 +171,19 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   healPlayer(g, p.stats.regen * dt)
 }
 
-const updateMoves = (g: Game, dt: number) => {
+/**
+ * Casts every move whose cooldown ran out. A manual move instead waits,
+ * recharged, for a `press`, and holds it while the special moves the player.
+ */
+const updateMoves = (g: Game, press: boolean, dt: number) => {
   for (const owned of g.player.moves) {
-    owned.cooldown -= dt
-    if (owned.cooldown > 0) continue
+    if (isManual(owned.id)) {
+      owned.cooldown = Math.max(0, owned.cooldown - dt)
+      if (!press || owned.cooldown > 0 || specialBusy(g.special)) continue
+    } else {
+      owned.cooldown -= dt
+      if (owned.cooldown > 0) continue
+    }
     const s = moveStats(owned.id, owned.level, g.player.stats)
     MOVES[owned.id].fire(g, s)
     owned.cooldown += s.cooldown
@@ -267,7 +279,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateEndless(g)
   rebuildGrid(g)
   updateTraits(g, dt)
-  updateMoves(g, dt)
+  updateMoves(g, input.lunge === true, dt)
   updateAttacks(g, dt)
   if (!inArena) {
     updateProps(g, dt)

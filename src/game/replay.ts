@@ -28,7 +28,7 @@ export const TICK = 1 / 60
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
  * Replays from before the field existed are rules 1.
  */
-export const RULES_VERSION = 8
+export const RULES_VERSION = 9
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -52,11 +52,14 @@ export type ReplayStart = {
 
 /**
  * What the shell did to the run at a tick (before that tick's step): the
- * special attack, the Mega button, a level-up pick (index into the offers), a
+ * special attack, the Mega button, a manual lunge (Quick Attack), a level-up pick (index into the offers), a
  * reroll or skip, going on into endless mode, and a new screen size (rotation, resize).
  */
+/** The buttons a run steps with (`StepInput`). */
+type Press = 'special' | 'mega' | 'lunge'
+
 export type ReplayEvent =
-  | readonly [tick: number, kind: 'special' | 'mega' | 'reroll' | 'skip' | 'endless']
+  | readonly [tick: number, kind: Press | 'reroll' | 'skip' | 'endless']
   | readonly [tick: number, kind: 'offer', index: number]
   | readonly [tick: number, kind: 'view', w: number, h: number]
 
@@ -133,7 +136,7 @@ const parseEvent = (raw: unknown): ReplayEvent | null => {
   const [tick, kind, a, b] = raw
   if (kind === 'offer') return isWhole(a) && a < 8 ? [tick, kind, a] : null
   if (kind === 'view') return isWhole(a) && isWhole(b) && a > 0 && b > 0 && a <= 4096 && b <= 4096 ? [tick, kind, a, b] : null
-  return kind === 'special' || kind === 'mega' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
+  return kind === 'special' || kind === 'mega' || kind === 'lunge' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
 }
 
 /**
@@ -180,6 +183,7 @@ const applyEvent = (g: Game, e: ReplayEvent) => {
     // Presses reach the next step as input (`resimulate`).
     case 'special':
     case 'mega':
+    case 'lunge':
       return
     case 'offer': {
       const offer = g.offers[e[2]]
@@ -215,22 +219,24 @@ export const resimulate = (replay: Replay, g: Game = startGame(replay.start)): R
   const applyDue = () => {
     let special = false
     let mega = false
+    let lunge = false
     while (next < events.length && events[next]![0] === tick) {
       const e = events[next++]!
       special ||= e[1] === 'special'
       mega ||= e[1] === 'mega'
+      lunge ||= e[1] === 'lunge'
       applyEvent(g, e)
     }
-    return { special, mega }
+    return { special, mega, lunge }
   }
   for (let i = 0; i < moves.length; i += 2) {
     const move = moveOf(moves[i]!)
     for (let n = 0; n < moves[i + 1]!; n++) {
-      const { special, mega } = applyDue()
+      const { special, mega, lunge } = applyDue()
       if (g.phase !== 'playing' && g.phase !== 'evolving') {
         return { time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: true }
       }
-      step(g, { move, special, mega }, TICK)
+      step(g, { move, special, mega, lunge }, TICK)
       g.events.length = 0
       tick++
     }
