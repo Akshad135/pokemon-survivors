@@ -10,6 +10,7 @@ import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialId } from '../game/special'
+import type { Stance } from '../game/stance'
 
 /** One string per entry of a tuple, so every move upgrade gets exactly one line. */
 type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: string }
@@ -103,6 +104,10 @@ export const pt = {
     pause: 'Pausar',
     specialAttack: 'Ataque especial',
     specialTitle: (name: string) => `${name} (Espaço)`,
+    /** Aegislash's forme, shown on the special button (Stance Change). */
+    stances: { shield: 'Escudo', blade: 'Lâmina' } satisfies Record<Stance, string>,
+    /** Jumps left in a running chain dash. */
+    jumps: (n: number) => `×${n}`,
   },
 
   levelUp: {
@@ -300,6 +305,7 @@ export const pt = {
 
   toast: {
     used: (who: string, move: string) => `${who} usou *${move}*!`,
+    stance: (who: string, forme: string) => `${who} mudou para a *Forma ${forme}*!`,
     legendary: (name: string) => `Um *${name}* _lendário_ apareceu!`,
     boss: (name: string) => `Um *${name}* selvagem apareceu!`,
     shiny: (name: string) => `Um *${name}* shiny apareceu!`,
@@ -1035,6 +1041,12 @@ export const pt = {
     precipiceBlades: 'Muralha de lâminas de pedra que avança na direção em que você anda e desacelera.',
     aeroblast: 'Muralha de vento que avança na direção em que você anda e empurra.',
     malignantChain: 'Você corre um pouco mais rápido e deixa um rastro de veneno.',
+    solarBlade: 'Avança cortando até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
+    closeCombat: 'Avança golpeando até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
+    dragonRush: 'Avança como um dragão até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
+    braveBird: 'Mergulha no inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
+    ironHead: 'Avança com a lâmina até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
+    stanceChange: 'Alterna entre a Forma Escudo (−30% de dano recebido, golpes ×0,7) e a Forma Lâmina (golpes ×1,3, +10% de dano recebido).',
   },
 
   /** Explainer toast the first time each enemy trait shows up in a run. */

@@ -59,6 +59,8 @@ export const en: Messages = {
     pause: 'Pause',
     specialAttack: 'Special attack',
     specialTitle: (name) => `${name} (Space)`,
+    stances: { shield: 'Shield', blade: 'Blade' },
+    jumps: (n) => `×${n}`,
   },
 
   levelUp: {
@@ -260,6 +262,7 @@ export const en: Messages = {
 
   toast: {
     used: (who, move) => `${who} used *${move}*!`,
+    stance: (who, forme) => `${who} switched to *${forme} Forme*!`,
     legendary: (name) => `A _legendary_ *${name}* appeared!`,
     boss: (name) => `A wild *${name}* appeared!`,
     shiny: (name) => `A shiny *${name}* appeared!`,
@@ -986,6 +989,12 @@ export const en: Messages = {
     precipiceBlades: 'A wall of stone blades that sweeps the way you move and slows foes.',
     aeroblast: 'A wall of wind that sweeps the way you move and pushes foes back.',
     malignantChain: 'You run a little faster and leave a poison trail behind.',
+    solarBlade: 'Slashes through to the nearest foe. Press again right after a hit to jump to the next one.',
+    closeCombat: 'Strikes through to the nearest foe. Press again right after a hit to jump to the next one.',
+    dragonRush: 'Rushes like a dragon into the nearest foe. Press again right after a hit to jump to the next one.',
+    braveBird: 'Dives into the nearest foe. Press again right after a hit to jump to the next one.',
+    ironHead: 'Lunges blade first into the nearest foe. Press again right after a hit to jump to the next one.',
+    stanceChange: 'Swaps between Shield Forme (−30% damage taken, moves ×0.7) and Blade Forme (moves ×1.3, +10% damage taken).',
   },
 
   traits: {

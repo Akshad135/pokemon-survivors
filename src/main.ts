@@ -37,6 +37,7 @@ import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
 import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
+import { resolveSpecial } from './game/special'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -515,11 +516,17 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'thunder': return playSfx('thunder', 150)
     case 'quake': return playSfx('quake', 150)
     case 'special': {
-      if (e.phase === 'release') return playSfx('specialBlast', 0)
+      // A chain dash "releases" on every landing: a cut, not an explosion.
+      if (e.phase === 'release') return playSfx(resolveSpecial(g.starter, g.player.stage).def.kind === 'chain' ? 'slash' : 'specialBlast', 0)
       playSfx('specialCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.5)
       const who = PLAYABLE[g.starter].line[g.player.stage]!.name
       return toast(ui, rich(t().toast.used(who, e.name)), 1600, 'special')
+    }
+    case 'stance': {
+      playSfx('stance', 0)
+      const who = PLAYABLE[g.starter].line[g.player.stage]!.name
+      return toast(ui, rich(t().toast.stance(who, t().hud.stances[e.stance])), 1200, 'special')
     }
     case 'boss': {
       const def: EnemyDef = ENEMIES[e.enemy]

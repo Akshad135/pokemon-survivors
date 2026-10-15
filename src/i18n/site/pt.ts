@@ -277,6 +277,7 @@ export const sitePt = {
       paragraphs: (min: number) => [
         'Além dos golpes automáticos, todo Pokémon tem um ataque especial manual: aperte Espaço, o botão A / ✕ do controle ou o botão redondo na tela. Ele carrega por um instante (você anda mais devagar) e depois dispara: alguns miram na direção em que você está andando, outros acertam tudo ao redor ou caem do céu nos inimigos mais próximos.',
         `Cada um dos 18 tipos tem o seu especial, e o seu Pokémon usa o do primeiro tipo dele. A recarga diminui com o status Recarga, até o mínimo de ${min}s. Na evolução final ele vira a versão mais forte, com mais dano e área.`,
+        'Algumas linhagens ágeis trocam o especial do tipo por uma investida em cadeia: o Pokémon avança cortando até o inimigo mais próximo e, se acertar, tem meio segundo para apertar de novo e saltar ao próximo, até o limite de saltos. A recarga só começa quando a cadeia acaba. O Aegislash troca o especial pela Mudança de Postura: alterna entre a Forma Escudo, que recebe menos dano, e a Forma Lâmina, que bate mais forte.',
       ],
       typeHead: 'Tipo',
       moveHead: 'Especial → evolução final',

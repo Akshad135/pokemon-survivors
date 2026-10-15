@@ -4,6 +4,7 @@ import { hash2 } from '../engine/rng'
 import { biomeAt } from '../data/biomes'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
+import { TYPE_COLORS } from '../data/types'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
@@ -14,7 +15,7 @@ import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
-import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
+import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, drawStanceBadge } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
@@ -395,15 +396,29 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
 
+/** Chain dash afterimages: fading type-colored copies of the player along the lunge. */
+const drawAfterimages = (ctx: Ctx, g: Game) => {
+  const p = g.player
+  const s = sprites(playerDex(g), p.shiny)
+  for (const a of g.attacks) {
+    if (a.visual !== 'afterimage' || a.age < 0) continue
+    const k = a.age / a.ttl
+    drawPokemon(ctx, s, 'Walk', p.dir, p.animTime, a.x, a.y, { alpha: 0.7 * (1 - k), tint: { color: TYPE_COLORS[a.type], amount: 1 } })
+  }
+}
+
 const drawPlayer = (ctx: Ctx, g: Game) => {
   const p = g.player
   const s = sprites(playerDex(g), p.shiny)
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging ? 0.6 : 0 })
+  // Aegislash flashes white for a moment as it swaps stance.
+  const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
+  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0 })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
+  drawStanceBadge(ctx, g, p.y - s.bodyH, p.animTime)
 
   // GBA-style HP bar under the feet.
   const w = 22
@@ -544,6 +559,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     if (d === 'player') shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
     else if (d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
   }
+  drawAfterimages(ctx, g)
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
     else drawEnemy(ctx, d, g.time, t)

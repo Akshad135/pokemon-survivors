@@ -29,15 +29,17 @@ const moveRow = (id: MoveId, signature: boolean) => {
   )
 }
 
-/** The manual special (Space / round button): base move, upgraded at the final stage. */
+/** The manual special (Space / round button): base move, upgraded (or swapped, for Aegislash) at the final stage. */
 const specialRow = (id: PlayableId) => {
-  const { id: special, def } = resolveSpecial(id, 0)
+  const first = resolveSpecial(id, 0)
+  const last = resolveSpecial(id, PLAYABLE[id].line.length - 1)
+  const desc = first.id === last.id ? t().specials[first.id] : `${t().specials[first.id]} ${last.tier.name}: ${t().specials[last.id]}`
   return h(
     'div',
     { class: 'move-row signature' },
-    h('img', { src: specialIcon(special), alt: '' }),
-    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${def.base.name} → ${def.final.name}`), h('div', { class: 'move-desc' }, t().specials[special])),
-    typeBadge(def.type),
+    h('img', { src: specialIcon(first.id), alt: '' }),
+    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${first.tier.name} → ${last.tier.name}`), h('div', { class: 'move-desc' }, desc)),
+    typeBadge(first.def.type),
   )
 }
 

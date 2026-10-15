@@ -1,13 +1,15 @@
-import { dir8, fromAngle, TAU } from '../engine/math'
+import { dir8, dirTo, fromAngle, TAU } from '../engine/math'
 import { chance, pick, range } from '../engine/rng'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
-import { enemiesInView } from './queries'
+import { recomputeStats } from './leveling'
+import { enemiesInView, inView, isAlive } from './queries'
 import { spawnAttack } from './spawn'
+import { FIRST_STANCE, otherStance, STANCES, type Stance } from './stance'
 import type { StatusSpec } from './status'
 import type { PlayerStats } from './stats'
-import type { Game } from './types'
+import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
 
 /**
@@ -15,8 +17,8 @@ import * as dm from '../engine/dmath'
  * types has one, as data: a form (`SpecialKind`) tuned by its tiers, plus the
  * type's color and condition. Fire, Water and Grass keep their bespoke forms;
  * the rest share six parametrized ones (bolt, nova, rain, ring, wave, trail).
- * Per-species overrides can win over the type. The final evolution stage swaps
- * in the stronger tier.
+ * Per-species overrides can win over the type (the agile lines' chain dash,
+ * Aegislash's Stance Change). The final evolution stage swaps in the stronger tier.
  */
 
 /**
@@ -25,8 +27,10 @@ import * as dm from '../engine/dmath'
  * - nova: shock waves around the player · bolt: strikes from the sky on the nearest foes
  * - rain: projectiles falling around the player · ring: a volley fired all around
  * - wave: an aimed wall sweeping forward · trail: hazard patches left behind while moving
+ * - chain: lunges into the nearest foe; each landing opens a short window to jump to the next
+ * - stance: swaps Aegislash between Shield and Blade Forme (`stance.ts`), no damage
  */
-export type SpecialKind = 'dash' | 'beam' | 'roots' | 'nova' | 'bolt' | 'rain' | 'ring' | 'wave' | 'trail'
+export type SpecialKind = 'dash' | 'beam' | 'roots' | 'nova' | 'bolt' | 'rain' | 'ring' | 'wave' | 'trail' | 'chain' | 'stance'
 
 type SpecialTier = {
   name: string
@@ -34,8 +38,8 @@ type SpecialTier = {
   area: number
   /**
    * How many pieces the form makes: rings of roots, shock waves, bolts, falling
-   * projectiles, projectiles in the ring, wave segments or trail patches.
-   * Dash and beam ignore it.
+   * projectiles, projectiles in the ring, wave segments, trail patches or the
+   * jumps a chain dash can make. Dash, beam and stance ignore it.
    */
   count: number
 }
@@ -156,6 +160,38 @@ export const SPECIALS = {
     final: { name: 'Malignant Chain', damage: 50, area: 1.25, count: 26 },
     status: { kind: 'poison', chance: 1, duration: 3, power: 0.3 },
   },
+  /* Chain dashes, given per species (`BY_SPECIES`). The cooldown starts when the chain ends. */
+  solarBlade: {
+    type: 'grass', kind: 'chain', cooldown: 8, charge: 0,
+    base: { name: 'Leaf Blade', damage: 24, area: 1, count: 3 },
+    final: { name: 'Solar Blade', damage: 40, area: 1.2, count: 4 },
+  },
+  closeCombat: {
+    type: 'fighting', kind: 'chain', cooldown: 8, charge: 0,
+    base: { name: 'Force Palm', damage: 24, area: 1, count: 3 },
+    final: { name: 'Close Combat', damage: 40, area: 1.2, count: 4 },
+  },
+  dragonRush: {
+    type: 'dragon', kind: 'chain', cooldown: 8, charge: 0,
+    base: { name: 'Dual Chop', damage: 26, area: 1, count: 3 },
+    final: { name: 'Dragon Rush', damage: 44, area: 1.25, count: 4 },
+  },
+  braveBird: {
+    type: 'flying', kind: 'chain', cooldown: 8, charge: 0,
+    base: { name: 'Aerial Ace', damage: 22, area: 1, count: 3 },
+    final: { name: 'Brave Bird', damage: 38, area: 1.2, count: 4 },
+  },
+  ironHead: {
+    type: 'steel', kind: 'chain', cooldown: 8, charge: 0,
+    base: { name: 'Smart Strike', damage: 24, area: 1, count: 3 },
+    final: { name: 'Iron Head', damage: 40, area: 1.2, count: 4 },
+  },
+  /** Aegislash only: swaps formes on a short, fixed cooldown (the floor doesn't apply). */
+  stanceChange: {
+    type: 'steel', kind: 'stance', cooldown: 2, charge: 0,
+    base: { name: 'Stance Change', damage: 0, area: 1, count: 1 },
+    final: { name: 'Stance Change', damage: 0, area: 1, count: 1 },
+  },
 } as const satisfies Record<string, SpecialDef>
 
 export type SpecialId = keyof typeof SPECIALS
@@ -171,18 +207,33 @@ const BY_TYPE = {
   fairy: 'lightOfRuin', dragon: 'dracoMeteor',
 } as const satisfies Record<PokeType, SpecialId>
 
-/** Per-species overrides win over the type table (e.g. a Pikachu starter could get its own). */
-const BY_SPECIES: Partial<Record<PlayableId, SpecialId>> = {}
+/**
+ * Per-species overrides win over the type table: one special for the whole
+ * line, or one per evolution stage (the last entry holds for later stages).
+ * The agile lines dash in chains; Aegislash swaps stances instead.
+ */
+const BY_SPECIES: Partial<Record<PlayableId, SpecialId | readonly SpecialId[]>> = {
+  treecko: 'solarBlade',
+  sprigatito: 'solarBlade',
+  riolu: 'closeCombat',
+  gible: 'dragonRush',
+  starly: 'braveBird',
+  honedge: ['ironHead', 'ironHead', 'stanceChange'],
+}
 
 export const specialOfType = (type: PokeType): SpecialId => BY_TYPE[type]
 
-/** Species override, else the special of its first type. */
-export const specialIdFor = (species: PlayableId, types: readonly PokeType[]): SpecialId =>
-  BY_SPECIES[species] ?? specialOfType(types[0] ?? 'normal')
+/** Species override at that stage, else the special of its first type. */
+export const specialIdFor = (species: PlayableId, types: readonly PokeType[], stage = 0): SpecialId => {
+  const own = BY_SPECIES[species]
+  const fallback = specialOfType(types[0] ?? 'normal')
+  if (own === undefined) return fallback
+  return typeof own === 'string' ? own : (own[Math.min(stage, own.length - 1)] ?? fallback)
+}
 
 export const resolveSpecial = (starter: PlayableId, stage: number) => {
   const species = PLAYABLE[starter]
-  const id = specialIdFor(starter, species.line[0].types)
+  const id = specialIdFor(starter, species.line[0].types, stage)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1
   return { id, def, final, tier: final ? def.final : def.base }
@@ -205,21 +256,38 @@ export type SpecialState = {
   active: number
   /** Aim locked at release, in radians. */
   angle: number
-  /** Distance dashed (dash) or seconds walked (trail) since the last trail patch. */
+  /** Distance dashed (dash, chain) or seconds walked (trail) since the last trail patch or afterimage. */
   trail: number
+  /** Chain dash: a chain is running, from its first jump until its cooldown starts. */
+  chaining: boolean
+  /** Chain dash: jumps left in the running chain. */
+  jumps: number
+  /** Chain dash: seconds left to press for the next jump (opens when a jump lands on a foe). */
+  window: number
+  /** Chain dash: px the current jump covers. */
+  reach: number
+  /** Chain dash: id of the foe the last jump went for (-1 for none), skipped by the next jump. */
+  target: number
+  /** Stance Change: Aegislash's forme; null for every other special. */
+  stance: Stance | null
 }
 
 export const SPECIAL_BUFFER = 0.25
 export const MIN_SPECIAL_COOLDOWN = 4
 
-export const createSpecialState = (): SpecialState => ({ cooldown: 0, total: 1, buffer: 0, charge: 0, active: 0, angle: 0, trail: 0 })
+export const createSpecialState = (): SpecialState => ({
+  cooldown: 0, total: 1, buffer: 0, charge: 0, active: 0, angle: 0, trail: 0,
+  chaining: false, jumps: 0, window: 0, reach: 0, target: -1, stance: null,
+})
 
 type Timers = Pick<SpecialState, 'cooldown' | 'buffer' | 'charge' | 'active'>
 
 export const specialBusy = (s: Timers) => s.charge > 0 || s.active > 0
 export const specialReady = (s: Timers) => s.cooldown <= 0 && !specialBusy(s)
 
-export const specialCooldown = (def: SpecialDef, stats: PlayerStats) => Math.max(MIN_SPECIAL_COOLDOWN, def.cooldown * stats.cooldown)
+/** Seconds of cooldown after a use: scaled by the cooldown stat down to the floor. Stance Change keeps its own short one. */
+export const specialCooldown = (def: SpecialDef, stats: PlayerStats) =>
+  def.kind === 'stance' ? def.cooldown : Math.max(MIN_SPECIAL_COOLDOWN, def.cooldown * stats.cooldown)
 
 /** Ticks the cooldown and input buffer. True on the tick a (possibly buffered) press should start the special. */
 export const triggerSpecial = (s: Timers, pressed: boolean, dt: number) => {
@@ -230,16 +298,59 @@ export const triggerSpecial = (s: Timers, pressed: boolean, dt: number) => {
   return true
 }
 
+/* ---------------- Chain dash timers (pure) ---------------- */
+
+/** After a jump lands on a foe, a press within this many seconds jumps again. */
+export const CHAIN_WINDOW = 0.5
+/**
+ * Invulnerability per jump. Well under the 4 s cooldown floor and under the
+ * 0.5 s a hit already grants, so chaining never adds up to permanent i-frames.
+ */
+export const CHAIN_IFRAMES = 0.3
+
+type ChainTimers = Pick<SpecialState, 'cooldown' | 'total' | 'chaining' | 'jumps' | 'window'>
+
+/** Spends one jump, opening a chain of `count` jumps on its first press. No cooldown yet. */
+export const beginJump = (s: ChainTimers, count: number) => {
+  if (!s.chaining) {
+    s.chaining = true
+    s.jumps = count
+  }
+  s.jumps = Math.max(0, s.jumps - 1)
+  s.window = 0
+}
+
+/** Ends the chain: only now does the cooldown start. */
+export const endChain = (s: ChainTimers, cooldown: number) => {
+  s.chaining = false
+  s.jumps = 0
+  s.window = 0
+  s.cooldown = s.total = cooldown
+}
+
+/** A jump landed: on a foe with jumps left it opens the window for the next press, otherwise the chain ends. */
+export const landJump = (s: ChainTimers, hit: boolean, cooldown: number) => {
+  if (hit && s.jumps > 0) s.window = CHAIN_WINDOW
+  else endChain(s, cooldown)
+}
+
+/** Counts the window down between jumps; the chain ends when it runs out. */
+export const tickChain = (s: ChainTimers, dt: number, cooldown: number) => {
+  if (s.window <= 0) return
+  s.window = Math.max(0, s.window - dt)
+  if (s.window <= 0) endChain(s, cooldown)
+}
+
 /**
  * Player speed multiplier: slower while charging and beaming, 0 while dashing
- * (the dash moves the player) and a little faster while laying a trail.
+ * (the dash or lunge moves the player) and a little faster while laying a trail.
  */
 export const specialSpeedFactor = (g: Game) => {
   const s = g.special
   if (s.charge > 0) return 0.45
   if (s.active <= 0) return 1
   const kind = resolveSpecial(g.starter, g.player.stage).def.kind
-  return kind === 'dash' ? 0 : kind === 'trail' ? TRAIL_SPEED : 0.3
+  return kind === 'dash' || kind === 'chain' ? 0 : kind === 'trail' ? TRAIL_SPEED : 0.3
 }
 
 /* ---------------- Simulation ---------------- */
@@ -272,6 +383,17 @@ const TRAIL_EVERY = 0.09
 const TRAIL_SPEED = 1.15
 /** How long a strike from the sky (bolt, rain) hurts after landing. */
 const IMPACT_WINDOW = 0.1
+/** Chain dash: lunge seconds, how far it looks for a foe, how far past it it lands, and the dash with no foe in reach. */
+const CHAIN_TIME = 0.1
+const CHAIN_RANGE = 170
+const CHAIN_OVERSHOOT = 10
+const CHAIN_MISS = 70
+/** Spacing of the capsule's circles and of the afterimages, in px. */
+const CHAIN_STEP = 8
+const CHAIN_GHOST = 14
+/** Share of the power dealt along the path and by the slash at the landing. */
+const CHAIN_PATH = 0.6
+const CHAIN_SLASH = 1
 
 const power = (g: Game, r: ResolvedSpecial) => r.tier.damage * g.player.stats.might * (1 + 0.04 * (g.player.level - 1))
 const areaOf = (g: Game, r: ResolvedSpecial) => r.tier.area * g.player.stats.area
@@ -417,6 +539,10 @@ const release = (g: Game, r: ResolvedSpecial) => {
       s.active = r.tier.count * TRAIL_EVERY
       s.trail = TRAIL_EVERY
       return
+    // Chain and stance never charge: `updateSpecial` runs them on the press.
+    case 'chain':
+    case 'stance':
+      return
   }
 }
 
@@ -506,12 +632,147 @@ const trailTick = (g: Game, r: ResolvedSpecial, dt: number) => {
   }
 }
 
+/* ---------------- Chain dash ---------------- */
+
+/** Nearest living foe on screen within reach of a jump, skipping the one the last jump went for. */
+const chainTarget = (g: Game, skip: number) => {
+  const p = g.player
+  let best: Enemy | null = null
+  let bestD = dm.sq(CHAIN_RANGE)
+  for (const e of g.enemies) {
+    if (!isAlive(e) || e.id === skip || !inView(g, e.x, e.y, -8)) continue
+    const d = dm.sq(e.x - p.x) + dm.sq(e.y - p.y)
+    if (d < bestD) {
+      bestD = d
+      best = e
+    }
+  }
+  return best
+}
+
+/**
+ * One jump: aims at the nearest foe (or dashes ahead when none is in reach)
+ * and lays the capsule along the path, stepped circles that switch on as the
+ * player passes and share one hit list, so each foe on the path is hit once.
+ */
+const startJump = (g: Game, r: ResolvedSpecial) => {
+  const s = g.special
+  const p = g.player
+  const first = !s.chaining
+  beginJump(s, r.tier.count)
+  const foe = chainTarget(g, s.target)
+  const dir = foe ? dirTo(p.x, p.y, foe.x, foe.y, p.facing) : p.facing
+  s.reach = foe ? dm.hypot(foe.x - p.x, foe.y - p.y) + CHAIN_OVERSHOOT : CHAIN_MISS
+  s.angle = dm.atan2(dir.y, dir.x)
+  s.target = foe ? foe.id : -1
+  s.active = CHAIN_TIME
+  s.trail = 0
+  p.iframes = Math.max(p.iframes, CHAIN_IFRAMES)
+  if (first) g.events.push({ kind: 'special', phase: 'charge', name: r.tier.name })
+
+  const area = areaOf(g, r)
+  const dmg = power(g, r) * CHAIN_PATH
+  const hits = new Map<number, number>()
+  const speed = s.reach / CHAIN_TIME
+  const from = { x: p.x, y: p.y - 8 }
+  for (let d = 0; d <= s.reach; d += CHAIN_STEP) {
+    const at = d / speed
+    spawnAttack(g, {
+      move: 'special', type: r.def.type, visual: 'streak', x: from.x + dir.x * d, y: from.y + dir.y * d,
+      shape: { kind: 'circle', r: 11 * area }, motion: { kind: 'static' }, hits, from,
+      damage: dmg, knockback: 90, status: r.def.status ?? null, activeFrom: at, activeUntil: at + 0.05, ttl: at + 0.25,
+    })
+  }
+  burst(g, p.x, p.y - 10, { colors: typeColors(r.def.type), count: 10, speed: 70, ttl: 0.25 })
+}
+
+/** Moves the player `moved` px along the jump, leaving afterimages behind (cosmetic: never active). */
+const lungeTick = (g: Game, r: ResolvedSpecial, moved: number) => {
+  const s = g.special
+  const p = g.player
+  const dir = fromAngle(s.angle)
+  p.x += dir.x * moved
+  p.y += dir.y * moved
+  p.dir = dir8(dir.x, dir.y)
+  s.trail += moved
+  for (; s.trail >= CHAIN_GHOST; s.trail -= CHAIN_GHOST) {
+    const back = s.trail - CHAIN_GHOST
+    spawnAttack(g, {
+      move: 'special', type: r.def.type, visual: 'afterimage', x: p.x - dir.x * back, y: p.y - dir.y * back,
+      shape: { kind: 'circle', r: 1 }, motion: { kind: 'static' }, damage: 0, activeFrom: Infinity, ttl: 0.3,
+    })
+  }
+}
+
+/** The landing: a slash where the jump ends, a screen kick, then the window for the next jump (or the cooldown). */
+const landChain = (g: Game, r: ResolvedSpecial, cooldown: number) => {
+  const s = g.special
+  const p = g.player
+  const hit = s.target >= 0
+  const area = areaOf(g, r)
+  const back = fromAngle(s.angle, 12)
+  spawnAttack(g, {
+    move: 'special', type: r.def.type, visual: 'slash', x: p.x, y: p.y - 8,
+    shape: { kind: 'circle', r: 22 * area }, motion: { kind: 'static' }, from: { x: p.x - back.x, y: p.y - 8 - back.y },
+    damage: power(g, r) * CHAIN_SLASH, knockback: 220, status: r.def.status ?? null, activeUntil: 0.07, ttl: 0.3, flip: chance(g.rng, 0.5),
+  })
+  burst(g, p.x, p.y - 8, { colors: typeColors(r.def.type), count: hit ? 18 : 8, speed: hit ? 130 : 80, ttl: 0.3 })
+  g.shake = Math.max(g.shake, hit ? 4 : 2)
+  if (hit) {
+    g.hitstop = Math.max(g.hitstop, 0.03)
+    g.events.push({ kind: 'special', phase: 'release', name: r.tier.name })
+  }
+  landJump(s, hit, cooldown)
+}
+
+/**
+ * Chain dash each tick: the window counts down between jumps, a (buffered)
+ * press when ready or inside the window jumps, and the lunge runs its course.
+ */
+const updateChain = (g: Game, r: ResolvedSpecial, pressed: boolean, dt: number) => {
+  const s = g.special
+  const cooldown = specialCooldown(r.def, g.player.stats)
+  if (s.active <= 0) tickChain(s, dt, cooldown)
+  if (triggerSpecial(s, pressed, dt)) startJump(g, r)
+  if (s.active <= 0) return
+  const moved = (s.reach / CHAIN_TIME) * Math.min(dt, s.active)
+  s.active = Math.max(0, s.active - dt)
+  lungeTick(g, r, moved)
+  if (s.active <= 0) landChain(g, r, cooldown)
+}
+
+/* ---------------- Stance Change ---------------- */
+
+/** Keeps the stance in step with the special: Shield when Aegislash arrives, none for anyone else. */
+const syncStance = (g: Game, r: ResolvedSpecial) => {
+  const want = r.def.kind === 'stance' ? (g.special.stance ?? FIRST_STANCE) : null
+  if (want === g.special.stance) return
+  g.special.stance = want
+  recomputeStats(g)
+}
+
+const swapStance = (g: Game) => {
+  const s = g.special
+  const p = g.player
+  const stance = otherStance(s.stance ?? FIRST_STANCE)
+  s.stance = stance
+  recomputeStats(g)
+  g.events.push({ kind: 'stance', stance })
+  burst(g, p.x, p.y - 12, { colors: [STANCES[stance].color, '#ffffff', '#f8d030'], count: 24, speed: 110, ttl: 0.35 })
+  g.shake = Math.max(g.shake, 2)
+}
+
 /** Runs the special each tick: trigger → charge → release → active phase. */
 export const updateSpecial = (g: Game, pressed: boolean, dt: number) => {
   const s = g.special
   const r = resolveSpecial(g.starter, g.player.stage)
+  syncStance(g, r)
+  if (r.def.kind === 'chain') return updateChain(g, r, pressed, dt)
+  // An evolution can swap the chain out mid-window.
+  if (s.chaining) endChain(s, specialCooldown(r.def, g.player.stats))
   if (triggerSpecial(s, pressed, dt)) {
     s.cooldown = s.total = specialCooldown(r.def, g.player.stats)
+    if (r.def.kind === 'stance') return swapStance(g)
     s.charge = r.def.charge
     g.events.push({ kind: 'special', phase: 'charge', name: r.tier.name })
   }

@@ -153,6 +153,13 @@ const SFX = {
     tone(150, 32, 0.55, 'sawtooth', 0.22)
     tone(90, 30, 0.7, 'square', 0.14, 0.05)
   },
+  /** A chain dash landing: a short swish and a bright cut. */
+  slash: () => {
+    noise(0.09, 0.14)
+    tone(1800, 420, 0.1, 'square', 0.08)
+  },
+  /** Aegislash's Stance Change: a metallic two-note shing. */
+  stance: () => [880, 1320].forEach((f, i) => tone(f, f * 1.4, 0.07, 'square', 0.1, i * 0.05)),
   /* Map events */
   altar: () => {
     ;[523, 784, 1047, 1568].forEach((f, i) => tone(f, f * 1.01, 0.2, 'triangle', 0.16, i * 0.07))

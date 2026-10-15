@@ -9,6 +9,7 @@ import { healPlayer } from './combat'
 import { burst } from './effects'
 import { rankDeltas } from './meta'
 import { maxMoveLevel, MOVES, type MoveId } from './moves'
+import { stanceStats } from './stance'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove } from './types'
 
@@ -88,16 +89,17 @@ const starterDeltas = (id: PlayableId, stage: number): StatDelta[] => {
 /** Player stats of a playable Pokémon at an evolution stage, without items (used by the inspect panel). */
 export const starterStats = (id: PlayableId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
 
-/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage and held items. */
+/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage, held items, buffs and Aegislash's stance. */
 export const recomputeStats = (g: Game) => {
   const p = g.player
   const before = p.stats.maxHp
-  p.stats = applyDeltas(BASE_STATS, [
+  const deltas = applyDeltas(BASE_STATS, [
     ...starterDeltas(g.starter, p.stage),
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
   ])
+  p.stats = stanceStats(deltas, g.special.stance)
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before
   p.hp = Math.min(p.hp, p.stats.maxHp)
 }
