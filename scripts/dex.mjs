@@ -50,4 +50,17 @@ export const FORMS = {
   448: { mega: '0001' },
 }
 
+/**
+ * Forms with a cry of their own, by key, mapped to their PokeAPI Pokémon name.
+ * The cry lands in `public/assets/pokemon/<dex>/<key>/cry.ogg` and sets `forms.<key>.cry` in the manifest.
+ */
+export const FORM_CRIES = {
+  6: { megaX: 'charizard-mega-x' },
+  65: { mega: 'alakazam-mega' },
+  94: { mega: 'gengar-mega' },
+  248: { mega: 'tyranitar-mega' },
+  282: { mega: 'gardevoir-mega' },
+  448: { mega: 'lucario-mega' },
+}
+
 export const pad = (n) => String(n).padStart(4, '0')
