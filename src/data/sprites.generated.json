@@ -503,6 +503,7 @@
           "bodyH": 26,
           "footY": 5
         },
+        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -3112,6 +3113,7 @@
           "bodyH": 34,
           "footY": 4
         },
+        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -4283,6 +4285,7 @@
           "bodyH": 26,
           "footY": 8
         },
+        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -8744,7 +8747,8 @@
           "bodyW": 29,
           "bodyH": 29,
           "footY": 5
-        }
+        },
+        "cry": true
       }
     }
   },
@@ -10422,6 +10426,7 @@
           "bodyH": 26,
           "footY": 5
         },
+        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -15106,6 +15111,7 @@
           "bodyH": 28,
           "footY": 5
         },
+        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {

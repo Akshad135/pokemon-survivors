@@ -35,7 +35,7 @@ type ManifestAnims = Partial<Record<AnimName, { frameWidth: number; frameHeight:
 type ManifestVariant = { anims: ManifestAnims; portrait?: boolean; body?: Body }
 type ManifestEntry = ManifestVariant & {
   shiny?: ManifestVariant
-  forms?: Record<string, ManifestVariant & { shiny?: ManifestVariant }>
+  forms?: Record<string, ManifestVariant & { cry?: boolean; shiny?: ManifestVariant }>
 }
 const MANIFEST = manifest as Record<string, ManifestEntry>
 
@@ -134,7 +134,7 @@ const fetchSpecies = async (dex: Dex, shiny: boolean, form?: Form): Promise<Spec
     dex,
     anims: { Walk, Idle, Hurt },
     portrait,
-    cry: cryUrl(dex),
+    cry: cryUrl(dex, form),
     // A form's own body only places its sheets; hitboxes keep the species' `bodyOf`.
     ...((form && variant.body) || bodyOf(dex, shiny)),
   }
@@ -241,7 +241,9 @@ export const portraitUrl = (dex: Dex, shiny = false) =>
 /** Sprites if already loaded, without throwing (menus draw progressively). */
 export const loadedSprites = (dex: Dex, shiny = false): SpeciesSprites | undefined => cache.get(cacheKey(dex, shiny))
 
-export const cryUrl = (dex: Dex) => `${base(dex)}/cry.ogg`
+/** A species' cry, or its form's own (Megas) when PokeAPI has one. */
+export const cryUrl = (dex: Dex, form?: Form) =>
+  form && MANIFEST[String(dex)]?.forms?.[form]?.cry ? `${variantBase(dex, false, form)}/cry.ogg` : `${base(dex)}/cry.ogg`
 
 const frameIndex = (sheet: Sheet, seconds: number, loop: boolean) => {
   let tick = Math.floor(seconds * 60)

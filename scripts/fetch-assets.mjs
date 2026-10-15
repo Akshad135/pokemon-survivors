@@ -4,7 +4,7 @@
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { measureBody } from './body.mjs'
-import { DEX, FORMS, SHINY, pad } from './dex.mjs'
+import { DEX, FORM_CRIES, FORMS, SHINY, pad } from './dex.mjs'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const OUT = join(ROOT, 'public/assets/pokemon')
@@ -13,6 +13,7 @@ const MANIFEST = join(ROOT, 'src/data/sprites.generated.json')
 const SPRITES = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite'
 const PORTRAITS = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait'
 const CRIES = 'https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest'
+const POKEAPI = 'https://pokeapi.co/api/v2/pokemon'
 
 const ANIMS = ['Walk', 'Idle', 'Hurt']
 
@@ -73,14 +74,25 @@ const fetchVariant = async (dex, form, dir, withPortrait = true) => {
   return { anims: Object.fromEntries(entries.filter(Boolean)), ...(withPortrait && { portrait }), ...(body && { body }) }
 }
 
-/** An alternate form (`FORMS`) and, for species that can roll shiny, its shiny under `<id>/0001`. */
+/** A form's own cry (`FORM_CRIES`), looked up by its PokeAPI name. False when PokeAPI has none. */
+const fetchFormCry = async (name, dest) => {
+  if (await exists(dest)) return true
+  const res = await fetch(`${POKEAPI}/${name}`)
+  if (!res.ok) return false
+  const url = (await res.json()).cries?.latest
+  return Boolean(url) && download(url, dest)
+}
+
+/** An alternate form (`FORMS`), its cry if it has one, and for species that can roll shiny, its shiny under `<id>/0001`. */
 const fetchForm = async (dex, key, id, dir) => {
+  const cryName = FORM_CRIES[dex]?.[key]
   const [form, shiny] = await Promise.all([
     fetchVariant(dex, `/${id}`, join(dir, key), false),
     SHINY.has(dex) ? fetchVariant(dex, `/${id}/0001`, join(dir, key, 'shiny'), false) : null,
   ])
   if (!form) throw new Error(`#${dex} form ${key}: missing AnimData.xml`)
-  return [key, { ...form, ...(shiny && { shiny }) }]
+  const cry = cryName && await fetchFormCry(cryName, join(dir, key, 'cry.ogg'))
+  return [key, { ...form, ...(cry && { cry }), ...(shiny && { shiny }) }]
 }
 
 const fetchSpecies = async (dex) => {

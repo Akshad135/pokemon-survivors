@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-15',
+    pr: 47,
+    title: { pt: 'Gritos das Megas', en: 'Mega cries' },
+    notes: [
+      {
+        pt: 'As Megas agora têm o próprio cry: o Pokémon solta o grito da forma Mega ao terminar a transformação, ao usar o especial e se cair enquanto ela dura.',
+        en: 'Megas now have their own cry: the Pokémon lets out its Mega form\'s cry as the transformation lands, when it uses its special and if it faints while the form lasts.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-15',
     pr: 46,
     title: { pt: 'Mega Evolução', en: 'Mega Evolution' },
     notes: [

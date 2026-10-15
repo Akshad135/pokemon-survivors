@@ -48,7 +48,7 @@ import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
+import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { eggIcon } from './render/art'
@@ -170,6 +170,9 @@ const queueMega = () => {
 
 /** The player's name right now: its stage's, or its Mega form's while that lasts. */
 const playerName = (g: Game) => (g.mega.active > 0 && megaOf(g.starter)?.name) || PLAYABLE[g.starter].line[g.player.stage]!.name
+
+/** The player's cry right now: its Mega form's own while that lasts. */
+const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? megaOf(g.starter)?.form : undefined)
 
 const queueSpecial = () => {
   unlockAudio()
@@ -538,7 +541,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       // A chain dash "releases" on every landing: a cut, not an explosion.
       if (e.phase === 'release') return playSfx(gameSpecial(g).def.kind === 'chain' ? 'slash' : 'specialBlast', 0)
       playSfx('specialCharge', 0)
-      playCry(sprites(playerDex(g)).cry, 0.5)
+      playCry(playerCry(g), 0.5)
       return toast(ui, rich(t().toast.used(playerName(g), e.name)), 1600, 'special')
     }
     case 'megaStone': {
@@ -562,7 +565,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'mega': {
       playSfx('megaBurst', 0)
-      playCry(sprites(playerDex(g)).cry, 0.9)
+      playCry(playerCry(g), 0.9)
       return banner(ui, rich(t().mega.evolved(PLAYABLE[g.starter].line[g.player.stage]!.name, e.name)), 2400)
     }
     case 'megaEnd':
@@ -631,7 +634,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'moveEvolved':
       playSfx('evolve')
-      playCry(sprites(playerDex(g)).cry, 0.3)
+      playCry(playerCry(g), 0.3)
       return toast(ui, rich(t().toast.moveEvolved(MOVES[e.from].name, MOVES[e.to].name), { class: 'toast-evo' }), 3500)
     case 'pokeball':
       playSfx('levelUp')
@@ -654,7 +657,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       reportRun(r)
       rankRun(r)
       playSfx('gameOver')
-      return playCry(sprites(playerDex(g)).cry)
+      return playCry(playerCry(g))
     case 'victory':
       bankRun(r, true)
       recordProgress(r)
