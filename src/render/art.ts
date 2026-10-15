@@ -84,6 +84,33 @@ const QUICK = ['......1111.', '11...122221', '....1233321', '111.1234321', '....
 /** Two targets (3) joined by a jagged arc (2). */
 const CHAIN = ['33........', '332.......', '..2.......', '..2222....', '.....2....', '.....2222.', '........33', '........33']
 
+/* Gen 3 type moves (`render/draw.ts`, `render/evolved.ts`) */
+/** Ice shard pointing right: 1 edge, 2 ice, 3 light, 4 shine. */
+const ICE_SHARD = ['..11.....', '.12211...', '1233321..', '123444321', '1233321..', '.12211...', '..11.....']
+/** Three crystals stuck in the ground (a shard that stopped). */
+const ICICLES = [
+  '....1....', '...141...', '.1.131...', '141131.1.', '131131141', '131232131', '123222321', '.1111111.',
+]
+/** Boulder: 1 rim, 2 stone, 3 light, 4 shade. */
+const BOULDER = [
+  '...11111....', '..1233321...', '.123332221..', '12333222221.', '123322222241',
+  '122222222441', '122222224441', '.1222244441.', '..11111111..',
+]
+/** Jagged stone pillar, drawn rising out of the ground. */
+const PILLAR = [
+  '...1...', '...1...', '..131..', '..131..', '..1321.', '.13321.', '.13221.',
+  '.132221', '1332221', '1322241', '1322441', '1222441', '1224441', '1111111',
+]
+/** Needle pointing right: 1 fletching, 2 shaft, 3 tip. */
+const NEEDLE = ['11......', '.1222223', '11......']
+/** Horn pointing right. */
+const HORN = ['111..........', '1221111......', '.1222221111..', '.123333333441', '.1222221111..', '1221111......', '111..........']
+const SNOWFLAKE = ['....1....', '.1..1..1.', '..1.1.1..', '...121...', '111222111', '...121...', '..1.1.1..', '.1..1..1.', '....1....']
+
+const ICE = { 1: '#3878a8', 2: '#98d8f8', 3: '#d8f0ff', 4: '#ffffff' }
+const STONE = { 1: '#3a2a18', 2: '#a08048', 3: '#d8c080', 4: '#685028' }
+const DRAGON_CONE = { 1: '#2a1070', 2: '#7038f8', 3: '#a070f8', 4: '#f0e0ff' }
+
 const TRI_PALETTES: readonly Palette[] = [
   { 1: '#a02010', 2: '#f06020', 3: '#ffd080' },
   { 1: '#2060a0', 2: '#60c0f0', 3: '#e0f8ff' },
@@ -141,6 +168,16 @@ export const FX = {
     const pal = { 1: '#801008', 2: '#e03010', 3: '#f88020', 4: '#fff0a0' }
     return [outlined(fromStrings(FLAME, pal), '#300808'), outlined(fromStrings(FLAME, pal, { mirror: true }), '#300808')]
   }),
+  iceShard: lazy(() => art(ICE_SHARD, ICE, '#183048')),
+  icicles: lazy(() => art(ICICLES, ICE, '#183048')),
+  /** Blizzard's shards: whiter, with a frosty outline. */
+  blizzardShard: lazy(() => art(ICE_SHARD, { 1: '#78b8e8', 2: '#d8f0ff', 3: '#ffffff', 4: '#ffffff' }, '#3878a8')),
+  blizzardIcicles: lazy(() => art(ICICLES, { 1: '#5898c8', 2: '#c8e8ff', 3: '#ffffff', 4: '#ffffff' }, '#183048')),
+  boulder: lazy(() => art(BOULDER, STONE, '#181008')),
+  pillar: lazy(() => art(PILLAR, STONE, '#181008')),
+  pin: lazy(() => art(NEEDLE, { 1: '#587018', 2: '#d8f070', 3: '#ffffff' }, '#203008')),
+  horn: lazy(() => art(HORN, { 1: '#585870', 2: '#c8c8d8', 3: '#e8e8f0', 4: '#ffffff' }, '#202030')),
+  snowflake: lazy(() => art(SNOWFLAKE, { 1: '#98d8f8', 2: '#ffffff' }, '#183048')),
 }
 
 /* ---------------- Eggs ---------------- */
@@ -354,6 +391,14 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   barbBarrage: () => FX.barbs(),
   willOWisp: () => FX.wisp()[0]!,
   inferno: () => FX.inferno()[0]!,
+  iceShard: () => FX.iceShard(),
+  blizzard: () => FX.snowflake(),
+  rockTomb: () => FX.boulder(),
+  stoneEdge: () => compose(12, 16, [[FX.pillar(), 0, 0], [FX.pillar(), 4, 2]]),
+  pinMissile: () => compose(10, 11, [[FX.pin(), 0, 0], [FX.pin(), 2, 3], [FX.pin(), 0, 6]]),
+  megahorn: () => FX.horn(),
+  dragonBreath: () => art(CONE, DRAGON_CONE, '#180840'),
+  outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -372,6 +417,10 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   silkScarf: [['11111111', '12222221', '11111221', '....1221', '....1221', '...12221', '...1..11'], { 1: '#9898a8', 2: '#f8f8f8' }],
   poisonBarb: [['......1', '.....11', '....121', '...121.', '..121..', '.121...', '111....'], { 1: '#502060', 2: '#c060d0' }],
   sharpBeak: [['.111....', '12221...', '122221..', '1222221.', '1111111.', '.12221..', '..111...'], { 1: '#806010', 2: '#f8c030' }],
+  neverMeltIce: [['...1...', '..121..', '.12321.', '1233421', '1234421', '.12421.', '..121..', '...1...'], ICE],
+  hardStone: [['..1111..', '.122221.', '12233221', '12232221', '12222211', '.112211.', '..1111..'], { 1: '#404040', 2: '#888078', 3: '#c8c0b0' }],
+  silverPowder: [['.3...3.', '..1.1..', '.12221.', '1222221', '1232221', '1222221', '.11111.'], { 1: '#686878', 2: '#d8d8e8', 3: '#ffffff' }],
+  dragonFang: [['1111111', '1333331', '1222221', '.12221.', '.1221..', '..121..', '..11...'], { 1: '#605838', 2: '#f8f0d0', 3: '#a070f8' }],
   magnet: [['33....44', '33....44', '11....11', '11....11', '11....11', '.11..11.', '..1111..'], { 1: '#808088', 3: '#e83030', 4: '#3060e0' }],
   kingsRock: [['3...3...3', '2...2...2', '22.222.22', '222242222', '211111112', '222222222'], { 1: '#c89000', 2: '#f8d830', 3: '#f8f8c0', 4: '#e83838' }],
   toxicOrb: [['..1111..', '.122221.', '12233221', '12322321', '12232321', '12223321', '.122221.', '..1111..'], { 1: '#502060', 2: '#a040c0', 3: '#e0a0f8' }],

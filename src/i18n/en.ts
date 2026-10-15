@@ -938,6 +938,54 @@ export const en: Messages = {
         '+1 flame per volley and +3 damage',
       ],
     },
+    iceShard: {
+      description: 'Throws ice shards that slow down and stick in the ground, hurting and slowing anyone who steps on them.',
+      upgrades: [
+        '+1 shard',
+        '+3 damage',
+        'Lasts +1s',
+        '+1 shard',
+        '0.2s faster cooldown',
+        '+4 damage and +20% slow chance',
+        '+2 shards and +20% area',
+      ],
+    },
+    rockTomb: {
+      description: 'Boulders fall on the nearest foes and pin down and slow whoever they hit. Their shadow shows where they land.',
+      upgrades: [
+        '+1 boulder',
+        '+6 damage',
+        '+20% area',
+        '0.3s faster cooldown',
+        '+1 boulder',
+        '+8 damage',
+        '+1 boulder and +20% area',
+      ],
+    },
+    pinMissile: {
+      description: 'A volley of needles that leave from your flanks and curve into the nearest foe. May poison.',
+      upgrades: [
+        '+1 needle',
+        '+2 damage',
+        '+1 needle',
+        '0.15s faster cooldown',
+        'Pierces +1 foe',
+        '+3 damage and +10% poison chance',
+        '+2 needles',
+      ],
+    },
+    dragonBreath: {
+      description: 'Breathes a cone of dragon fire at the nearest foe; the middle of the cone hits hardest. May burn.',
+      upgrades: [
+        'Cone +1 puff wider',
+        '+3 damage',
+        '+20% area',
+        '0.15s faster cooldown',
+        'Cone +1 puff wider',
+        '+4 damage and +10% burn chance',
+        'Cone +2 puffs wider',
+      ],
+    },
     flamethrower: {
       description: 'A continuous stream of fire that pierces everything ahead.',
       upgrades: [],
@@ -994,6 +1042,22 @@ export const en: Messages = {
       description: 'Leaves a bonfire that shoots fire blasts for a long time. Often burns.',
       upgrades: [],
     },
+    blizzard: {
+      description: 'A blizzard drives a ring of ice into the ground around you that hurts and slows anyone trying to cross it.',
+      upgrades: [],
+    },
+    stoneEdge: {
+      description: 'Rows of stone pillars burst from the ground towards the nearest foes.',
+      upgrades: [],
+    },
+    megahorn: {
+      description: 'Huge horns bore through the whole horde, flinging foes away and poisoning them.',
+      upgrades: [],
+    },
+    outrage: {
+      description: 'Draconic rampage: breathes cones of fire in several directions at once, turning every time.',
+      upgrades: [],
+    },
   },
 
   items: {
@@ -1018,6 +1082,10 @@ export const en: Messages = {
     magnet: typeBoost('Electric'),
     poisonBarb: typeBoost('Poison'),
     sharpBeak: typeBoost('Flying'),
+    neverMeltIce: typeBoost('Ice'),
+    hardStone: typeBoost('Rock'),
+    silverPowder: typeBoost('Bug'),
+    dragonFang: typeBoost('Dragon'),
   },
 
   upgrades: {

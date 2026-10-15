@@ -14,7 +14,7 @@ import { inSolid, overTerrain, type Solid } from '../game/terrain'
 import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
-import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
+import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
@@ -91,6 +91,22 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
         ctx.fillStyle = '#78c850'
         ctx.fillRect(x - 1, y - 4, 3, 1)
       }
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'iceShard':
+      return drawFrost(ctx, a, r)
+    case 'rockTomb': {
+      // A growing shadow (and a blinking rim) warns where the boulder lands; then the dust ring spreads.
+      if (a.age < a.activeFrom) {
+        const k = 0.4 + 0.6 * (a.age / a.activeFrom)
+        blitCentered(ctx, ellipse(Math.round(r * k), Math.max(1, Math.round(r * 0.5 * k)), 'rgba(24,16,8,0.4)'), a.x, a.y)
+        if (Math.floor(a.age * 24) % 2 === 0) dashedRing(ctx, a.x, a.y, r, 0, ['#d8c080'], 0.9, 0.5)
+        return
+      }
+      const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
+      ctx.globalAlpha = Math.max(0, 1 - e)
+      dashedRing(ctx, a.x, a.y, r * (0.7 + e * 0.6), a.id, ['#685028', '#a08048', '#d8c080'], 0.7, 0.5)
       ctx.globalAlpha = 1
       return
     }
@@ -258,6 +274,21 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = 1
       return
     }
+    case 'iceShard':
+      return drawShard(ctx, a, FX.iceShard(), FX.icicles())
+    case 'rockTomb': {
+      // Falls from above, speeding up, then sits cracked where it landed until it crumbles.
+      const k = Math.min(1, a.age / a.activeFrom)
+      const drop = Math.round(80 * (1 - k * k))
+      ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.25)
+      blitCentered(ctx, FX.boulder(), a.x + (a.flip ? 1 : 0), a.y - 5 - drop)
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'pin':
+      return blitRotated(ctx, FX.pin(), a.x, a.y, m.kind === 'homing' ? Math.atan2(m.vy, m.vx) : 0)
+    case 'dragonBreath':
+      return drawPuff(ctx, a, t, ['rgba(72,32,168,0.55)', 'rgba(112,56,248,0.8)', '#a070f8', '#f0e0ff'])
     case 'whirlpool':
     case 'quake':
     case 'drumRoots':
