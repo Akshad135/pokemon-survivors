@@ -1286,6 +1286,7 @@ button {
 .status-head {
   display: flex;
   justify-content: space-between;
+  gap: 6px;
   font-size: 10px;
 }
 
@@ -1585,6 +1586,86 @@ button {
   .special-button {
     display: grid;
   }
+}
+
+/* ---------- Mega Evolution (HUD badge + touch button, shown once the run holds its Mega Stone) ---------- */
+
+.mega {
+  --type: #a878f8;
+}
+
+/* Waiting for the final stage: the symbol greys out under the level it comes at. */
+.mega.locked img {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+/* Ready, and in Mega form: the keystone's rainbow cycles around the rim (in Mega form the shade drains with the time left). */
+.mega.ready,
+.mega.active {
+  animation: mega-rainbow 0.6s steps(1, jump-none) infinite;
+}
+
+.mega.active {
+  animation-duration: 1.2s;
+}
+
+@keyframes mega-rainbow {
+  0% {
+    box-shadow: inset 0 0 0 2px #f85858, 0 0 0 3px #f8e858;
+  }
+  33% {
+    box-shadow: inset 0 0 0 2px #68d868, 0 0 0 3px #58a8f8;
+  }
+  66% {
+    box-shadow: inset 0 0 0 2px #a878f8, 0 0 0 3px #f8a838;
+  }
+}
+
+.mega-button {
+  display: none;
+  position: absolute;
+  right: calc(max(18px, env(safe-area-inset-right)) + 10px);
+  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 90px);
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mega-button img {
+  width: 34px;
+  height: 34px;
+}
+
+.mega-button::after {
+  background: conic-gradient(transparent calc(var(--fill) * 360deg), rgba(8, 8, 20, 0.62) 0);
+}
+
+.mega-button:active {
+  transform: translateY(2px);
+}
+
+.mega-button .special-tag {
+  top: auto;
+  bottom: 3px;
+  font-size: 7px;
+}
+
+@media (pointer: coarse) {
+  .mega-button {
+    display: grid;
+  }
+}
+
+/* Mega names run long ("Mega Charizard X"): a size down keeps the level beside them. */
+.mega-name {
+  align-self: center;
+  font-size: 8px;
+  color: #8850e0;
 }
 
 /* ---------- Text box & toasts ---------- */
@@ -2827,14 +2908,16 @@ button {
   font-size: clamp(12px, 3vw, 22px);
 }
 
-.weather-toast > span {
+.weather-toast > span,
+.mega-toast > span {
   display: flex;
   flex-direction: column;
   gap: 4px;
   text-align: left;
 }
 
-.weather-toast small {
+.weather-toast small,
+.mega-toast small {
   font-size: 0.8em;
   color: #6070a0;
 }

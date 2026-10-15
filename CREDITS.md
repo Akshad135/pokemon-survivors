@@ -22,6 +22,8 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 5 | Charmeleon (shiny) | ShyStarryRain, [Emmuffin](https://twitter.com/Ernmuffin) | ShyStarryRain |
 | 6 | Charizard | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/), [0palite](https://zeropalart.tumblr.com/) |
 | 6 | Charizard (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), Emboarger, [Emmuffin](https://twitter.com/Ernmuffin) | Adrian, SuperFabbioGuy, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 6 | Charizard (Mega X) | [Kevin0itachi](https://www.deviantart.com/kevin0itachi), [G〜](https://bsky.app/profile/justtr4sh.pmd.social), Kevin | — |
+| 6 | Charizard (Mega X, shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | — |
 | 7 | Squirtle | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 7 | Squirtle (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), ShyStarryRain | ShyStarryRain |
 | 8 | Wartortle | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
@@ -228,22 +230,30 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 93 | Haunter (shiny) | Tacocoa | [Moo](https://twitter.com/MoonMoonMemes), [PhillipsYoung](https://twitter.com/PhilliYoung196), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 94 | Gengar | [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 94 | Gengar (shiny) | Tacocoa, Emboarger | [PhillipsYoung](https://twitter.com/PhilliYoung196) |
+| 94 | Gengar (Mega) | [Michael12](https://www.deviantart.com/michael12dz), Emboarger, baronessfaron | — |
+| 94 | Gengar (Mega, shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
 | 63 | Abra | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain, [cosmosully](https://twitter.com/cosmosully) |
 | 63 | Abra (shiny) | Tacocoa, 3Monika4, [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, [Noo](https://artfight.net/~NooNoo_Skidoo), [cosmosully](https://twitter.com/cosmosully) |
 | 64 | Kadabra | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [0palite](https://zeropalart.tumblr.com/), baronessfaron |
 | 64 | Kadabra (shiny) | El_Pangoro_Parse | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 65 | Alakazam | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__) |
 | 65 | Alakazam (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social), [Emmuffin](https://twitter.com/Ernmuffin) | [Audino](https://github.com/audinowho), [Morei](https://bsky.app/profile/murpia57.bsky.social) |
+| 65 | Alakazam (Mega) | [Michael12](https://www.deviantart.com/michael12dz), baronessfaron | — |
+| 65 | Alakazam (Mega, shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
 | 280 | Ralts | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain, [NeroIntruder](https://twitter.com/NeroIntruder) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 280 | Ralts (shiny) | [Moo](https://twitter.com/MoonMoonMemes), [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 281 | Kirlia | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
 | 281 | Kirlia (shiny) | JFain, [Morei](https://bsky.app/profile/murpia57.bsky.social) | [PhillipsYoung](https://twitter.com/PhilliYoung196) |
 | 282 | Gardevoir | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 282 | Gardevoir (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 282 | Gardevoir (Mega) | baronessfaron | — |
+| 282 | Gardevoir (Mega, shiny) | baronessfaron | — |
 | 447 | Riolu | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Fearless-Quit |
 | 447 | Riolu (shiny) | Anonymous | Anonymous, Fearless-Quit, Emboarger |
 | 448 | Lucario | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Deeshura](https://bsky.app/profile/deeshura.bsky.social), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 | 448 | Lucario (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin), [Deeshura](https://bsky.app/profile/deeshura.bsky.social), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 448 | Lucario (Mega) | baronessfaron | — |
+| 448 | Lucario (Mega, shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
 | 570 | Zorua | [Emmuffin](https://twitter.com/Ernmuffin), baronessfaron | baronessfaron, [MilesFarber](https://github.com/MilesFarber) |
 | 570 | Zorua (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron, [MilesFarber](https://github.com/MilesFarber) |
 | 571 | Zoroark | baronessfaron | [0palite](https://zeropalart.tumblr.com/), baronessfaron, [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
@@ -290,6 +300,7 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 247 | Pupitar (shiny) | Tacocoa | Lovi |
 | 248 | Tyranitar | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Ichor |
 | 248 | Tyranitar (shiny) | Prismatic | Lovi, [Deeshura](https://bsky.app/profile/deeshura.bsky.social) |
+| 248 | Tyranitar (Mega) | JFain | — |
 | 374 | Beldum | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Anonymous |
 | 374 | Beldum (shiny) | [Audino](https://github.com/audinowho) | [Moo](https://twitter.com/MoonMoonMemes), ShyStarryRain, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 375 | Metang | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain, <ElGian> |

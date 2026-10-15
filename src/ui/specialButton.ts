@@ -1,5 +1,5 @@
 import { TYPE_COLORS } from '../data/types'
-import { resolveSpecial, specialReady } from '../game/special'
+import { gameSpecial, specialReady } from '../game/special'
 import { STANCES } from '../game/stance'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
@@ -32,7 +32,7 @@ export const createSpecialControls = (onPress: () => void) => {
   let key = ''
 
   const update = (g: Game) => {
-    const r = resolveSpecial(g.starter, g.player.stage)
+    const r = gameSpecial(g)
     const s = g.special
     const look = `${r.tier.name}|${s.stance}`
     if (key !== look) {

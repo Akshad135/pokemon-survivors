@@ -99,6 +99,11 @@ export const FX = {
     const pal = { 1: '#c03018', 2: '#f07020', 3: '#f8b830', 4: '#fff8c0' }
     return [fromStrings(FLAME, pal), fromStrings(FLAME, pal, { mirror: true })]
   }),
+  /** Mega Charizard X's blue dragon fire (Dragon Flare). */
+  dragonFlame: lazy(() => {
+    const pal = { 1: '#2830a0', 2: '#3870f0', 3: '#78c8f8', 4: '#e8f8ff' }
+    return [fromStrings(FLAME, pal), fromStrings(FLAME, pal, { mirror: true })]
+  }),
   water: lazy(() => art(DROPLET, { 1: '#2848b0', 2: '#6890f0', 3: '#a8d0f8', 4: '#ffffff' })),
   leaf: lazy(() => art(LEAF, { 1: '#285820', 2: '#58b838', 3: '#a8e870' })),
   star: lazy(() => art(STAR, { 1: '#c88800', 2: '#f8d830', 3: '#fff8c0' })),

@@ -41,6 +41,13 @@ export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, .
  */
 export const FORMS = {
   681: { blade: '0001' }, // Aegislash's Blade Forme (Stance Change)
+  // Mega Evolutions (src/data/megas.ts). Only these Megas have sprites on SpriteCollab so far.
+  6: { megaX: '0001' },
+  65: { mega: '0001' },
+  94: { mega: '0001' },
+  248: { mega: '0001' },
+  282: { mega: '0001' },
+  448: { mega: '0001' },
 }
 
 export const pad = (n) => String(n).padStart(4, '0')

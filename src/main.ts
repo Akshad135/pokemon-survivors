@@ -10,6 +10,8 @@ import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
+import { bodyOf } from './data/bodies'
+import { MEGA_LINES, megaOf } from './data/megas'
 import { RIFT, RIFT_LEGENDS } from './data/rifts'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
@@ -27,6 +29,9 @@ import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { recomputeStats } from './game/leveling'
+import { grantStone } from './game/mega'
+import { dropPickup } from './game/pickups'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
@@ -37,7 +42,7 @@ import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
 import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
-import { resolveSpecial } from './game/special'
+import { gameSpecial } from './game/special'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -47,6 +52,7 @@ import { loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprite
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { eggIcon } from './render/art'
+import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
@@ -149,10 +155,21 @@ let run: Run | null = null
 let lastStarter: PlayableId = 'charmander'
 /** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
 let specialQueued = false
+/** Mega Evolution press (E, the Mega button, gamepad Y), consumed like the special. */
+let megaQueued = false
 const padA = createPadButton(0)
+const padY = createPadButton(3)
 const padKeys = createPadKeys()
 /** The meadow with wandering Pokémon behind every menu. Lives across screens, so it never pops. */
 const scene = createTitleScene(Date.now())
+
+const queueMega = () => {
+  unlockAudio()
+  if (run?.game.phase === 'playing') megaQueued = true
+}
+
+/** The player's name right now: its stage's, or its Mega form's while that lasts. */
+const playerName = (g: Game) => (g.mega.active > 0 && megaOf(g.starter)?.name) || PLAYABLE[g.starter].line[g.player.stage]!.name
 
 const queueSpecial = () => {
   unlockAudio()
@@ -414,7 +431,7 @@ const startRun = async (starter: PlayableId) => {
 }
 
 const runHud = (game: Game) => {
-  const hud = createHud(ui, queueSpecial, () => game.phase === 'playing' && (game.phase = 'paused'))
+  const hud = createHud(ui, queueSpecial, queueMega, () => game.phase === 'playing' && (game.phase = 'paused'))
   requestAnimationFrame(syncMarkerInsets)
   return hud
 }
@@ -519,12 +536,41 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'quake': return playSfx('quake', 150)
     case 'special': {
       // A chain dash "releases" on every landing: a cut, not an explosion.
-      if (e.phase === 'release') return playSfx(resolveSpecial(g.starter, g.player.stage).def.kind === 'chain' ? 'slash' : 'specialBlast', 0)
+      if (e.phase === 'release') return playSfx(gameSpecial(g).def.kind === 'chain' ? 'slash' : 'specialBlast', 0)
       playSfx('specialCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.5)
-      const who = PLAYABLE[g.starter].line[g.player.stage]!.name
-      return toast(ui, rich(t().toast.used(who, e.name)), 1600, 'special')
+      return toast(ui, rich(t().toast.used(playerName(g), e.name)), 1600, 'special')
     }
+    case 'megaStone': {
+      const def = megaOf(g.starter)
+      if (!def) return
+      const line = PLAYABLE[g.starter].line
+      const final = g.player.stage >= line.length - 1
+      playSfx('unlock')
+      return toast(
+        ui,
+        h('span', { class: 'item-toast mega-toast' }, h('img', { src: megaStoneIcon(def), alt: '' }), h('span', {}, rich(t().mega.stone(def.stone)), h('small', {}, rich(final ? t().mega.stoneReady : t().mega.stoneLocked(line.at(-1)!.name))))),
+        4200,
+        'mega',
+      )
+    }
+    case 'megaStart': {
+      const def = megaOf(g.starter)
+      playSfx('megaCharge', 0)
+      playCry(sprites(playerDex(g)).cry, 0.6)
+      return def && toast(ui, rich(t().mega.reacting(def.stone)), 1400, 'mega')
+    }
+    case 'mega': {
+      playSfx('megaBurst', 0)
+      playCry(sprites(playerDex(g)).cry, 0.9)
+      return banner(ui, rich(t().mega.evolved(PLAYABLE[g.starter].line[g.player.stage]!.name, e.name)), 2400)
+    }
+    case 'megaEnd':
+      playSfx('stance', 0)
+      return toast(ui, t().mega.ended(playerName(g)), 1800, 'mega')
+    case 'megaReady':
+      playSfx('shiny')
+      return toast(ui, rich(t().mega.ready), 2400, 'mega')
     case 'stance': {
       playSfx('stance', 0)
       const who = PLAYABLE[g.starter].line[g.player.stage]!.name
@@ -708,6 +754,7 @@ input.onKey((key) => {
   const g = run.game
   if ((key === 'Escape' || key === 'KeyP') && g.phase === 'playing') g.phase = 'paused'
   if (key === 'Space') queueSpecial()
+  if (key === 'KeyE') queueMega()
 })
 // Touch only counts as a user activation on pointerup/touchend (not pointerdown).
 for (const type of ['pointerdown', 'pointerup', 'touchend'] as const) window.addEventListener(type, unlockAudio)
@@ -748,20 +795,24 @@ const frame = (now: number) => {
     const r = run
     const g = r.game
     if (padA()) queueSpecial()
+    if (padY()) queueMega()
     let steps = 0
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
       while (acc >= STEP) {
         // The simulation gets the stick as the replay stores it (`moveCode`), so a re-simulation sees the same run.
         if (specialQueued) recordEvent(r.recorder, ['special'])
-        step(g, { move: recordStep(r.recorder, view, input.readMove()), special: specialQueued }, STEP)
+        if (megaQueued) recordEvent(r.recorder, ['mega'])
+        step(g, { move: recordStep(r.recorder, view, input.readMove()), special: specialQueued, mega: megaQueued }, STEP)
         specialQueued = false
+        megaQueued = false
         acc -= STEP
         steps++
       }
     } else {
       acc = 0
       specialQueued = false
+      megaQueued = false
     }
     for (const e of g.events.splice(0)) handleEvent(r, e)
     if (run === r) {
@@ -868,6 +919,24 @@ const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
   }
 }
 
+/**
+ * Dev: stages the run's Mega Evolution. `now` (default) jumps to the final stage with
+ * the stone and presses the Mega button; `ready` stops before the press; `stone`
+ * drops the Mega Stone 40 px to the right instead, as a rift would.
+ */
+const devMega = (mode: 'now' | 'ready' | 'stone' = 'now') => {
+  const g = run?.game
+  if (!g || !megaOf(g.starter)) return `Start a run with a Mega line: ${MEGA_LINES.join(', ')}`
+  const p = g.player
+  if (mode === 'stone') return dropPickup(g, p.x + 40, p.y, 'megaStone')
+  p.stage = PLAYABLE[g.starter].line.length - 1
+  p.radius = Math.max(6, Math.round(bodyOf(playerDex(g)).bodyW * 0.3))
+  recomputeStats(g)
+  grantStone(g)
+  g.mega.charge = 0
+  if (mode === 'now') queueMega()
+}
+
 /** Dev: eggs and hatching, to stage the incubator and the hatching scene. */
 const devEggs = {
   /** Puts an egg in the incubator (a full one pays its ₽), like a mission reward. */
@@ -911,6 +980,7 @@ if (import.meta.env.DEV) {
       showMenu,
       theme: currentTheme,
       spawn: devSpawn,
+      mega: devMega,
       event: devEvent,
       dex: () => loadSave().dex,
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),

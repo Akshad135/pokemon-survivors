@@ -3,6 +3,7 @@ import type { Rng } from '../engine/rng'
 import { evolvedFrom, readyEvolutions } from '../data/evolutions'
 import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { megaOf } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
 import { healPlayer } from './combat'
@@ -89,7 +90,7 @@ const starterDeltas = (id: PlayableId, stage: number): StatDelta[] => {
 /** Player stats of a playable Pokémon at an evolution stage, without items (used by the inspect panel). */
 export const starterStats = (id: PlayableId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
 
-/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage, held items, buffs and Aegislash's stance. */
+/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage, held items, buffs, the Mega form and Aegislash's stance. */
 export const recomputeStats = (g: Game) => {
   const p = g.player
   const before = p.stats.maxHp
@@ -98,6 +99,7 @@ export const recomputeStats = (g: Game) => {
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
+    ...(g.mega.active > 0 ? [megaOf(g.starter)?.stats ?? {}] : []),
   ])
   p.stats = stanceStats(deltas, g.special.stance)
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before

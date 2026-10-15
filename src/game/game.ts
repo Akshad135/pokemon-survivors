@@ -15,6 +15,7 @@ import { updateEndless } from './endlessSystem'
 import { rebuildGrid, updateEnemies } from './enemies'
 import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
+import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { MOVES, moveStats } from './moves'
 import { createSpecialState, specialSpeedFactor, updateSpecial } from './special'
@@ -105,6 +106,7 @@ export const createGame = (
     shake: 0,
     hitstop: 0,
     special: createSpecialState(),
+    mega: createMegaState(),
     kills: 0,
     ranks,
     coins: 0,
@@ -139,8 +141,8 @@ export const createGame = (
   return g
 }
 
-/** Per-tick player input, as plain data so the simulation stays DOM-free. */
-export type StepInput = { move: Vec; special: boolean }
+/** Per-tick player input, as plain data so the simulation stays DOM-free. `mega` presses the Mega button. */
+export type StepInput = { move: Vec; special: boolean; mega?: boolean }
 
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
@@ -235,6 +237,8 @@ const updateEvolution = (g: Game, dt: number) => {
 export const step = (g: Game, input: StepInput, dt: number) => {
   if (g.phase === 'evolving') return updateEvolution(g, dt)
   if (g.phase !== 'playing') return
+  // The Mega Evolution plays with the world held still.
+  if (updateMegaIntro(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
     return
@@ -250,6 +254,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
     updateWeather(g, dt)
   }
   updatePlayer(g, input.move, dt)
+  updateMega(g, input.mega === true, dt)
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)

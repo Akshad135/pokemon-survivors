@@ -45,7 +45,8 @@ const rows = DEX.flatMap((dex) => {
   const forms = Object.keys(manifest[dex]?.forms ?? {}).flatMap((key) => {
     const node = entry.subgroups[FORMS[dex][key]]
     const formShiny = manifest[dex].forms[key].shiny && node.subgroups['0001']
-    return [row(`${entry.name} (${node.name})`, node, false), ...(formShiny ? [row(`${entry.name} (${node.name}, shiny)`, formShiny, false)] : [])]
+    const name = node.name.replaceAll('_', ' ')
+    return [row(`${entry.name} (${name})`, node, false), ...(formShiny ? [row(`${entry.name} (${name}, shiny)`, formShiny, false)] : [])]
   })
   return [row(entry.name, entry), ...(shiny ? [row(`${entry.name} (shiny)`, shiny)] : []), ...forms]
 })

@@ -280,6 +280,31 @@ export const en: Messages = {
     revive: 'Your *Revive* got you back on your feet!',
   },
 
+  mega: {
+    button: 'MEGA',
+    key: 'E',
+    title: 'Mega Evolution (E)',
+    section: 'Mega Evolution',
+    locked: (name) => `Evolve into ${name} to Mega Evolve`,
+    stone: (stone) => `You got the *${stone}*!`,
+    stoneReady: '*MEGA* button or *E* key: Mega Evolve!',
+    stoneLocked: (name) => `Evolve into _${name}_ to Mega Evolve.`,
+    reacting: (stone) => `The *${stone}* is reacting to the Key Stone!`,
+    evolved: (from, to) => `${from} has Mega Evolved into *${to}*!`,
+    ended: (name) => `${name} went back to normal.`,
+    ready: '*Mega Evolution* is ready again!',
+    how: (stone, seconds, recharge) =>
+      `Beat a rift legendary to get the ${stone}. At the final evolution, Mega Evolve for ${seconds} s (${recharge} s recharge):`,
+    effects: {
+      charmander: 'moves +30%, speed +8 and armor +1. The special becomes Dragon Flare, a dash in blue dragon flames.',
+      abra: 'every special also fires 2 of your moves (like Metronome), cooldowns −15% and moves +10%. The special becomes Psystrike.',
+      gastly: 'foes within 90 px lose 45% of their speed, moves +25% and cooldowns −10%. The special becomes Poltergeist.',
+      ralts: 'Normal and Fairy moves +30%, moves +15% and 1.5 HP/s regen. The special becomes Moonblast.',
+      riolu: 'Fighting and Steel moves +35% and speed +10. The chain dash jumps up to 6 times and every landing bursts a ring of Aura Spheres.',
+      larvitar: "whips up a sandstorm (outside rifts) that wears the horde down and doesn't touch Tyranitar. HP +60, armor +3 and moves +20%. The special becomes Stone Edge.",
+    },
+  },
+
   world: {
     biomes: {
       meadow: 'Route 1',
@@ -482,6 +507,8 @@ export const en: Messages = {
       shinyHatch: 'Shiny clutch',
       rift1: 'Rift breaker',
       rift25: 'Rift walker',
+      mega1: 'Mega Bond',
+      mega25: 'Mega Master',
       legends: 'Legend Tamer',
       shinyLegend: 'Shining legend',
       champion: 'Champion',
@@ -544,6 +571,7 @@ export const en: Messages = {
       starterLines: () => 'Catch every form of the 27 starters (take each to its final evolution)',
       hatches: (n) => (n === '1' ? 'Hatch an egg' : `Hatch ${n} eggs`),
       shinyHatches: () => 'Hatch a shiny Pokémon (1 in 100)',
+      megas: (n) => (n === '1' ? 'Mega Evolve once' : `Mega Evolve ${n} times`),
     },
     region: (name) => `Defeat Mewtwo with a starter from ${name}`,
   },
@@ -1074,6 +1102,12 @@ export const en: Messages = {
     braveBird: 'Dives into the nearest foe. Press again right after a hit to jump to the next one.',
     ironHead: 'Lunges blade first into the nearest foe. Press again right after a hit to jump to the next one.',
     stanceChange: 'Swaps between Shield Forme (−30% damage taken, moves ×0.7) and Blade Forme (moves ×1.3, +10% damage taken).',
+    dragonFlare: 'A long dash in blue dragon flames, with a fire trail and a blast at the end.',
+    psystrike: 'Three huge psychic waves around you that push and slow.',
+    poltergeist: 'A ring of 24 shadow shots in every direction that may paralyze.',
+    moonblast: 'Twelve moonbeams strike the nearest foes and may put them to sleep.',
+    auraStorm: 'A chain dash of up to 6 jumps; every landing bursts a ring of Aura Spheres.',
+    stoneEdge: 'A heavy rain of stone blades around you.',
   },
 
   traits: {

@@ -1,6 +1,7 @@
 import { dir8, dirTo, fromAngle, TAU } from '../engine/math'
 import { chance, pick, range } from '../engine/rng'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { megaOf } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
@@ -19,7 +20,8 @@ import * as dm from '../engine/dmath'
  * type's color and condition. Fire, Water and Grass keep their bespoke forms;
  * the rest share six parametrized ones (bolt, nova, rain, ring, wave, trail).
  * Per-species overrides can win over the type (the agile lines' chain dash,
- * Aegislash's Stance Change). The final evolution stage swaps in the stronger tier.
+ * Aegislash's Stance Change). The final evolution stage swaps in the stronger tier,
+ * and a Mega form (`data/megas.ts`) swaps in its own special while it lasts.
  */
 
 /**
@@ -57,6 +59,8 @@ export type SpecialDef = {
   final: SpecialTier
   /** The type's condition, rolled on every hit. */
   status?: StatusSpec
+  /** Chain dash: a ring of this many of the type's orbs bursts from every landing (Mega Lucario). */
+  orbs?: number
 }
 
 export const SPECIALS = {
@@ -193,6 +197,40 @@ export const SPECIALS = {
     base: { name: 'Stance Change', damage: 0, area: 1, count: 1 },
     final: { name: 'Stance Change', damage: 0, area: 1, count: 1 },
   },
+  /* Mega forms only (`MEGAS`): one tier, stronger than any final one, on a shorter cooldown. */
+  dragonFlare: {
+    type: 'dragon', kind: 'dash', cooldown: 8, charge: 0.2,
+    base: { name: 'Dragon Flare', damage: 84, area: 1.6, count: 1 },
+    final: { name: 'Dragon Flare', damage: 84, area: 1.6, count: 1 },
+  },
+  psystrike: {
+    type: 'psychic', kind: 'nova', cooldown: 7, charge: 0.2,
+    base: { name: 'Psystrike', damage: 64, area: 1.6, count: 3 },
+    final: { name: 'Psystrike', damage: 64, area: 1.6, count: 3 },
+    status: { kind: 'slow', chance: 0.8, duration: 1.5, power: 0.5 },
+  },
+  poltergeist: {
+    type: 'ghost', kind: 'ring', cooldown: 7, charge: 0.2,
+    base: { name: 'Poltergeist', damage: 66, area: 1.35, count: 24 },
+    final: { name: 'Poltergeist', damage: 66, area: 1.35, count: 24 },
+    status: { kind: 'paralysis', chance: 0.4, duration: 1.2, power: 0 },
+  },
+  moonblast: {
+    type: 'fairy', kind: 'bolt', cooldown: 7, charge: 0.25,
+    base: { name: 'Moonblast', damage: 66, area: 1.3, count: 12 },
+    final: { name: 'Moonblast', damage: 66, area: 1.3, count: 12 },
+    status: { kind: 'sleep', chance: 0.35, duration: 1.5, power: 0 },
+  },
+  auraStorm: {
+    type: 'fighting', kind: 'chain', cooldown: 7, charge: 0, orbs: 8,
+    base: { name: 'Aura Sphere', damage: 56, area: 1.3, count: 6 },
+    final: { name: 'Aura Sphere', damage: 56, area: 1.3, count: 6 },
+  },
+  stoneEdge: {
+    type: 'rock', kind: 'rain', cooldown: 8, charge: 0.3,
+    base: { name: 'Stone Edge', damage: 70, area: 1.4, count: 22 },
+    final: { name: 'Stone Edge', damage: 70, area: 1.4, count: 22 },
+  },
 } as const satisfies Record<string, SpecialDef>
 
 export type SpecialId = keyof typeof SPECIALS
@@ -232,15 +270,20 @@ export const specialIdFor = (species: PlayableId, types: readonly PokeType[], st
   return typeof own === 'string' ? own : (own[Math.min(stage, own.length - 1)] ?? fallback)
 }
 
-export const resolveSpecial = (starter: PlayableId, stage: number) => {
+/** The special at an evolution stage; in Mega form (`mega`), the Mega's own. */
+export const resolveSpecial = (starter: PlayableId, stage: number, mega = false) => {
   const species = PLAYABLE[starter]
-  const id = specialIdFor(starter, species.line[0].types, stage)
+  const own = mega ? megaOf(starter)?.special : undefined
+  const id: SpecialId = own ?? specialIdFor(starter, species.line[0].types, stage)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1
   return { id, def, final, tier: final ? def.final : def.base }
 }
 
 export type ResolvedSpecial = ReturnType<typeof resolveSpecial>
+
+/** The special the player has right now: its stage's, or its Mega form's while that lasts. */
+export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0)
 
 /* ---------------- Timers (pure) ---------------- */
 
@@ -373,7 +416,7 @@ export const specialSpeedFactor = (g: Game) => {
   const s = g.special
   if (s.charge > 0) return 0.45
   if (s.active <= 0) return 1
-  const kind = resolveSpecial(g.starter, g.player.stage).def.kind
+  const kind = gameSpecial(g).def.kind
   return kind === 'dash' || kind === 'chain' ? 0 : kind === 'trail' ? TRAIL_SPEED : 0.3
 }
 
@@ -777,8 +820,22 @@ const landChain = (g: Game, r: ResolvedSpecial, cooldown: number) => {
     g.hitstop = Math.max(g.hitstop, 0.03)
     g.events.push({ kind: 'special', phase: 'release', name: r.tier.name })
   }
+  if (r.def.orbs) orbBurst(g, r, r.def.orbs)
   landJump(s, hit, cooldown)
   arrivalCombo(g, comboCasts(g.player.stats.comboMoves, s.chaining))
+}
+
+/** Mega Lucario: a ring of `count` orbs from the landing, each at half the jump's power. */
+const orbBurst = (g: Game, r: ResolvedSpecial, count: number) => {
+  const p = g.player
+  for (let i = 0; i < count; i++) {
+    const v = fromAngle(g.special.angle + (i / count) * TAU, RING_SPEED)
+    spawnAttack(g, {
+      move: 'special', type: r.def.type, visual: 'orb', x: p.x, y: p.y - 8,
+      shape: { kind: 'circle', r: 6 * areaOf(g, r) }, motion: { kind: 'linear', vx: v.x, vy: v.y },
+      damage: power(g, r) * 0.5, knockback: 150, ttl: RING_TTL * 0.7, status: r.def.status ?? null,
+    })
+  }
 }
 
 /**
@@ -822,7 +879,7 @@ const swapStance = (g: Game) => {
 /** Runs the special each tick: trigger → charge → release → active phase. */
 export const updateSpecial = (g: Game, pressed: boolean, dt: number) => {
   const s = g.special
-  const r = resolveSpecial(g.starter, g.player.stage)
+  const r = gameSpecial(g)
   syncStance(g, r)
   rechargeSpecial(s, g.player.stats.specialRecharge)
   if (r.def.kind === 'chain') return updateChain(g, r, pressed, dt)

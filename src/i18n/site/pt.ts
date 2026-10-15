@@ -198,6 +198,7 @@ export const sitePt = {
       bosses: 'Chefes',
       traits: 'Inimigos especiais',
       rifts: 'Fendas lendárias e modo sem fim',
+      megas: 'Mega Evolução',
       shinies: 'Shinies',
       eggs: 'Ovos e incubadora',
       items: 'Itens no mapa',
@@ -211,6 +212,7 @@ export const sitePt = {
       rows: [
         ['Andar', 'WASD ou setas', '— (ainda não)', 'Arraste em qualquer lugar da tela (joystick flutuante)'],
         ['Ataque especial', 'Espaço', 'A (Xbox) ou ✕ (PlayStation)', 'Botão redondo no canto inferior direito'],
+        ['Mega Evolução', 'E', 'Y (Xbox) ou △ (PlayStation)', 'Botão MEGA, acima do especial'],
         ['Pausar', 'Esc ou P', 'Start', 'Botão no canto superior direito'],
         ['Navegar nos menus', 'Setas, Enter confirma, Esc volta', 'D-pad ou analógico esquerdo, A confirma, B volta', 'Toque'],
         ['Escolher upgrade', '1 a 3, ou ↑ ↓ e Enter', 'D-pad e A', 'Toque na opção'],
@@ -313,6 +315,16 @@ export const sitePt = {
       } satisfies Record<StatusKind, unknown>,
       flute: 'Poké Flute (item do mapa)',
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
+    },
+    megas: {
+      paragraphs: (m: { duration: number; recharge: number; intro: string }) => [
+        'Seis linhagens podem Mega Evoluir. O primeiro lendário de fenda que você vencer com uma delas deixa a Mega Stone da linhagem junto com o tesouro. Com ela na mão e o Pokémon na evolução final, aparece o botão MEGA (tecla E, ou Y no controle).',
+        `Ao apertar, a Pedra-chave reage: o mundo para por ${m.intro}s enquanto a energia de arco-íris envolve o Pokémon, e a Mega Evolução termina numa explosão que empurra e fere a horda ao redor e deixa você invulnerável por um instante. A forma Mega dura ${m.duration}s, ganha os status abaixo, troca o especial pelo dela (pronto para usar na hora) e ativa a habilidade. Depois ela volta ao normal e precisa de ${m.recharge}s para Mega Evoluir de novo: guarde para um chefe, uma fenda ou um cerco.`,
+      ],
+      megaHead: 'Mega',
+      stoneHead: 'Mega Stone',
+      abilityHead: 'Habilidade',
+      specialHead: 'Especial Mega',
     },
     rifts: {
       paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; shiny: number }) => [

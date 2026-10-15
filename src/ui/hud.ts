@@ -2,6 +2,7 @@ import { formatTime } from '../engine/math'
 import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
 import { PLAYABLE } from '../data/hatchlings'
+import { megaOf } from '../data/megas'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import type { Game } from '../game/types'
@@ -13,18 +14,20 @@ import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
+import { createMegaControls } from './megaButton'
 import { createSpecialControls } from './specialButton'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
 
 /**
  * In-run heads-up display. `update` is called every frame and only touches what changed.
- * `onSpecial` fires when the touch special button is pressed; `onPause` backs the
- * on-screen pause button (phones have no Esc key). Labels are read at creation:
- * rebuild the HUD after a language switch.
+ * `onSpecial` and `onMega` fire when the touch special and Mega buttons are pressed;
+ * `onPause` backs the on-screen pause button (phones have no Esc key). Labels are
+ * read at creation: rebuild the HUD after a language switch.
  */
-export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () => void) => {
+export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () => void, onPause: () => void) => {
   const special = createSpecialControls(onSpecial)
+  const mega = createMegaControls(onMega)
   const rift = createRiftHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
@@ -59,7 +62,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     h(
       'div',
       { class: 'hud-row' },
-      h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots, buffs), special.badge),
+      h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots, buffs), special.badge, mega.badge),
       timer,
       h(
         'div',
@@ -88,6 +91,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
       ),
     ),
     special.button,
+    mega.button,
   )
   // First child, so a HUD rebuilt mid-run still sits under open menus and toasts.
   root.prepend(el)
@@ -150,6 +154,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     setText(kills, String(g.kills))
     setText(coins, formatPokeDollars(g.coins))
     special.update(g)
+    mega.update(g)
     rift.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
@@ -171,12 +176,14 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onPause: () 
     })
 
     const dex = playerDex(g)
-    if (`${dex}${p.shiny}` !== portraitKey) {
-      portraitKey = `${dex}${p.shiny}`
+    const megaName = g.mega.active > 0 ? megaOf(g.starter)?.name : undefined
+    if (`${dex}${p.shiny}${megaName}` !== portraitKey) {
+      portraitKey = `${dex}${p.shiny}${megaName}`
       portrait.setAttribute('src', portraitUrl(dex, p.shiny))
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
-      setText(name, PLAYABLE[g.starter].line[p.stage]!.name)
+      name.classList.toggle('mega-name', megaName !== undefined)
+      setText(name, megaName ?? PLAYABLE[g.starter].line[p.stage]!.name)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)

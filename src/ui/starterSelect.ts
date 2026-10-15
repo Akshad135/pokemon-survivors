@@ -9,6 +9,8 @@ import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
+import { isMegaLine, MEGA, MEGAS, type MegaLine } from '../data/megas'
+import { megaIcon } from '../render/megaFx'
 import { eggIcon, moveIcon, PICKUPS, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
@@ -40,6 +42,22 @@ const specialRow = (id: PlayableId) => {
     h('img', { src: specialIcon(first.id), alt: '' }),
     h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${first.tier.name} → ${last.tier.name}`), h('div', { class: 'move-desc' }, desc)),
     typeBadge(first.def.type),
+  )
+}
+
+/** A Mega line's Mega Evolution: how it's earned, how long it lasts, its ability and what it does. */
+const megaRow = (id: MegaLine) => {
+  const def = MEGAS[id]
+  return h(
+    'div',
+    { class: 'move-row signature' },
+    h('img', { src: megaIcon(), alt: '' }),
+    h(
+      'div',
+      { class: 'move-text' },
+      h('div', { class: 'move-name' }, `${def.name} · ${def.ability}`),
+      h('div', { class: 'move-desc' }, `${t().mega.how(def.stone, MEGA.duration, MEGA.recharge)} ${t().mega.effects[id]}`),
+    ),
   )
 }
 
@@ -98,6 +116,7 @@ const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) =>
     h('div', { class: 'evo-line' }, ...evo),
     h('div', { class: 'inspect-section' }, m.title.special, h('span', { class: 'legend' }, m.spaceKey)),
     specialRow(id),
+    ...(isMegaLine(id) ? [h('div', { class: 'inspect-section' }, m.mega.section, h('span', { class: 'legend' }, m.mega.key)), megaRow(id)] : []),
     h('div', { class: 'inspect-section' }, m.title.moves),
     h('div', { class: 'move-list' }, ...s.learnset.map((m) => moveRow(m, m === s.signature))),
   )
