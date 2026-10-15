@@ -18,8 +18,12 @@ export type WaveStage = {
 }
 
 export type WaveEvent =
-  /** `chance` (0..1) makes the boss a rare appearance; omitted = always. */
-  | { at: number; kind: 'boss'; enemy: EnemyId; chance?: number }
+  /**
+   * `chance` (0..1) makes the boss a rare appearance; omitted = always.
+   * `finale`: the climax (Mewtwo). It blasts the horde back on arrival and thins
+   * the regular spawns while it lives (`FINALE`), so the fight is about its attacks.
+   */
+  | { at: number; kind: 'boss'; enemy: EnemyId; chance?: number; finale?: true }
   /** A flock crossing the screen in a straight line: a flyer of `tier` from the run's horde. */
   | { at: number; kind: 'swarm'; tier: Tier; count: number }
   /** A closing circle around the player: a species of `tier` from the run's horde. */
@@ -57,8 +61,56 @@ export const EVENTS: readonly WaveEvent[] = [
   { at: 720, kind: 'boss', enemy: 'moltres' },
   { at: 810, kind: 'swarm', tier: 1, count: 60 },
   { at: RUN_LENGTH, kind: 'boss', enemy: 'mew', chance: 0.1 },
-  { at: RUN_LENGTH, kind: 'boss', enemy: 'mewtwo' },
+  { at: RUN_LENGTH, kind: 'boss', enemy: 'mewtwo', finale: true },
 ]
+
+/**
+ * While the finale boss lives in the regular run, regular spawns run at `rate`
+ * of the stage's and the horde is capped at `max` of its usual size. `push` is
+ * the knockback its arrival gives every regular enemy.
+ */
+export const FINALE = { rate: 0.2, max: 0.25, push: 1100 } as const
+
+/**
+ * For the first `duration` seconds of any other wave boss, while it's close
+ * enough to attack, regular spawns run at `rate` of the stage's (the cap
+ * stays): the boss gets a minute to itself while the horde on the field thins
+ * out, then the horde comes back, so a boss left standing gets crowded.
+ */
+export const BOSS_FIGHT = { rate: 0.3, max: 1, duration: 60 } as const
+
+/**
+ * Elites: once the regular horde passes `fill` of its effective cap (stage ×
+ * difficulty × pressure), every new regular spawn is an elite, with `hp`, `xp`
+ * and `damage` multipliers and a body `size` times wider, as long as elites
+ * stay under `share` of the cap. With the horde renewing at the cap
+ * (`game/renewal.ts`) a full horde turns partly elite, but never into a wall
+ * of them (measured: without `share` a struggling Nightmare run hit ~300).
+ * None spawn while the finale boss lives: the last fight stays a duel.
+ */
+export const ELITE = { fill: 0.9, share: 0.3, hp: 1.6, xp: 1.6, damage: 1.25, size: 1.15 } as const
+
+/**
+ * Runners: from stage `from` on, one of each stage's new species (drawn with the
+ * roster) spawns as runners, with spawn `weight` (a fresh species has 4), so
+ * about one spawn in eight: `speed` times faster (never above `maxSpeed` px/s,
+ * under the player's base 68), `hp` times the HP, and they aim where the player
+ * will be, leading by up to `lead` seconds of the player's velocity.
+ */
+export const RUNNER = { from: 1, weight: 2, speed: 1.6, maxSpeed: 62, hp: 0.7, lead: 1 } as const
+
+/** When the wave a boss belongs to arrives (its scheduled event), or null for bosses off the schedule (rifts, Arceus). */
+export const bossWaveAt = (enemy: EnemyId) => EVENTS.find((e) => e.kind === 'boss' && e.enemy === enemy)?.at ?? null
+
+/**
+ * Each wave boss has until the next one: when a boss of the wave at `at`
+ * arrives, an earlier wave's boss still around flees. Bosses of the same wave
+ * (Mew and Mewtwo) stay together, and bosses off the schedule never flee.
+ */
+export const fleesFrom = (enemy: EnemyId, at: number) => {
+  const own = bossWaveAt(enemy)
+  return own !== null && own < at
+}
 
 /** Index into `STAGES` of the stage active at `time`. */
 export const stageIndexAt = (time: number) => {
@@ -73,9 +125,11 @@ export const stageAt = (time: number) => STAGES[stageIndexAt(time)]!
 
 /**
  * Regular enemies get tougher every minute; bosses keep their base stats.
- * `ramp` steepens the slope (the difficulty's `ramp`).
+ * HP climbs faster after 8:00, when evolved moves sweep the screen, but only
+ * so far that a horde sized for the minute still dies to them: late pressure
+ * comes from spawn density, not sponges. `ramp` steepens the slope (the difficulty's `ramp`).
  */
 export const scaling = (time: number, ramp = 1) => {
   const minutes = time / 60
-  return { hp: 1 + (minutes * 0.24 + Math.max(0, minutes - 8)) * ramp, damage: 1 + minutes * 0.07 * ramp }
+  return { hp: 1 + (minutes * 0.24 + Math.max(0, minutes - 8) * 0.6) * ramp, damage: 1 + minutes * 0.07 * ramp }
 }

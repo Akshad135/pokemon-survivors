@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { BIOMES } from '../data/biomes'
-import { EVENTS, STAGES, stageStart } from '../data/waves'
+import { EVENTS, RUNNER, STAGES, stageStart } from '../data/waves'
 import { biomeWeight, byTypes, drawRoster, pickSpawn, rosterSchedule, stageBiome, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM, type SpeciesWeight } from './roster'
 
 const def = (id: EnemyId): EnemyDef => ENEMIES[id]
@@ -26,6 +26,18 @@ describe('drawRoster', () => {
         expect(fresh.length).toBeLessThanOrEqual(3)
         expect(new Set(ids(pool)).size).toBe(pool.length)
         for (const id of ids(pool)) seen.add(id)
+      })
+    }
+  })
+
+  it('picks each stage’s runner among its plain species, none in the opening stage', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const r = drawRoster(createRng(seed))
+      r.runners.forEach((runner, i) => {
+        if (i < RUNNER.from) return expect(runner).toBeNull()
+        expect(runner).not.toBeNull()
+        expect(ids(r.stages[i]!)).toContain(runner)
+        expect(def(runner!).trait).toBeUndefined()
       })
     }
   })

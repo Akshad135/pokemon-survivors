@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { chooseOffer, step } from './game'
 import { NO_RANKS } from './meta'
-import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, startGame, startRecording, TICK, type ReplayStart } from './replay'
+import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
 const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, view: { w: 480, h: 270 } }
 
@@ -82,5 +82,15 @@ describe('replays', () => {
     expect(parseReplay({ ...json, events: [[5, 'special'], [2, 'special']] })).toBeNull()
     expect(parseReplay({ ...json, start: { ...json.start, starter: 'mewtwo' } })).toBeNull()
     expect(parseReplay({ ...json, start: { ...json.start, ranks: { hpUp: 99 } } })!.start.ranks.hpUp).toBe(5)
+  })
+
+  it('carry the rules they were recorded under, and only those are judged as they are', () => {
+    const json = JSON.parse(JSON.stringify(play(2).replay))
+    expect(parseReplay(json)!.rules).toBe(RULES_VERSION)
+    const { rules: _, ...before } = json
+    expect(parseReplay(before)!.rules).toBe(1)
+    expect(rulesStanding(RULES_VERSION)).toBe('same')
+    expect(rulesStanding(1)).toBe('older')
+    expect(rulesStanding(RULES_VERSION + 1)).toBe('newer')
   })
 })

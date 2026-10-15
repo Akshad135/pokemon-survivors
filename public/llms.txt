@@ -6,15 +6,16 @@ Pick one of 27 starter Pokémon from every region (Kanto to Paldea), walk around
 
 - 27 starters, each with its full 3-stage evolution line, stats, signature move and learnset
 - Eggs: bosses, locked chests and rifts sometimes drop an egg; it waits in a 3-slot incubator and hatches with the steps walked in runs, unlocking one of 25 more playable families (every type and generation, e.g. Pichu, Eevee, Gastly, Riolu, Gible, Dreepy). 1% of hatchlings are shiny for good; duplicates become Poké Dollars
-- 23 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
+- 28 moves and 19 held items; a maxed move plus the right item evolves (Ember + Charcoal → Flamethrower)
 - Type matchups, burn, poison, paralysis, slow and sleep, and a manual special attack for each of the 18 types that grows stronger at the final evolution (Blast Burn, Hydro Cannon, Frenzy Plant, Bolt Strike, Draco Meteor, Astral Barrage, Precipice Blades, Aeroblast and more). Agile lines (Treecko, Sprigatito, Riolu, Gible, Starly, Honedge) get a chain dash instead: a lunge into the nearest foe that can jump again to the next one right after a hit; Aegislash gets Stance Change, swapping between Shield Forme (takes less damage) and Blade Forme (hits harder)
 - 193 wild Pokémon from all 9 generations (Dragon types included) in 5 tiers by base stat total; every run draws its own cast (basic Pokémon early, evolved ones late), weighted towards the types of each biome
-- Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo
+- Legendary bosses with telegraphed attacks: Onix, Snorlax, Articuno, Zapdos, Moltres, Mew and Mewtwo. Each one switches between close and ranged attacks and enrages under half HP, the horde thins for the first minute of each boss, and each boss has until the next one arrives, then it flees; Mewtwo, the finale, blasts the horde away and thins it further while it stands
+- Elites and runners: when the horde nearly fills, new enemies come in as tougher elites (except during the Mewtwo duel), and one new species each stage runs and aims where the player is heading
 - Five biomes per run (Route 1, Viridian Forest, Mt. Moon, Mt. Silver, Lavender Tower), each with its own music, and weather that shifts type matchups for everyone: harsh sunlight, rain, sandstorm, snow and fog
 - Special enemies with behavior traits, at most one per stage of a run: Chansey heals the horde, Bronzor and Bronzong shield it, Nidoqueen summons Nidoran, Voltorb, Electrode and Drifloon explode, Magnemite and Vikavolt fire telegraphed beams and Hitmonlee and Lokix leap over the horde
 - Legendary rifts: three optional portals per run to walled arenas with Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza and Dialga (possibly shiny), for big rewards
 - Endless mode after Mewtwo, scored by time survived, with Arceus as a hunting reaper that can be defeated
-- Three difficulty levels, all open from the start: Normal, Hard (much tougher hordes that hit harder) and Nightmare (brutal hordes and half of every heal)
+- Three difficulty levels, all open from the start: Normal, Hard (faster, denser hordes that hit harder) and Nightmare (brutal, fast and dense hordes and half of every heal)
 - Rankings by time survived, one per difficulty, for today, this week and all time (days and weeks follow Brasília time), filterable by starter and by friends (one-way follows). Signed-in players get a public profile at /?u=handle with their title, records, Pokédex progress and recent runs. The server checks each ranked run against a start token's wall clock and re-simulates its replay (the simulation is deterministic across browsers) before it counts as verified
 - Shiny wild Pokémon and shiny starters; Poké Dollars and permanent upgrades in the Poké Mart
 - In-game Pokédex of 334 species: tracks every species seen and defeated; defeating a shiny, hatching an egg or playing a form catches it

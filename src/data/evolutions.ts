@@ -19,6 +19,10 @@ export const EVOLUTIONS = [
   { from: 'thunder', item: 'magnet', to: 'wildboltStorm' },
   { from: 'sludgeBomb', item: 'poisonBarb', to: 'gunkShot' },
   { from: 'gust', item: 'sharpBeak', to: 'hurricane' },
+  { from: 'quickAttack', item: 'silkScarf', to: 'extremeSpeed' },
+  { from: 'shockWave', item: 'magnet', to: 'thunderbolt' },
+  { from: 'toxicSpikes', item: 'poisonBarb', to: 'barbBarrage' },
+  { from: 'willOWisp', item: 'charcoal', to: 'inferno' },
 ] as const satisfies readonly MoveEvolution[]
 
 /** The evolution a base move can go through, if any. */

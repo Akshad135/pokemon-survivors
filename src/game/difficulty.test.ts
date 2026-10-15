@@ -5,7 +5,7 @@ import { parseSave } from './meta'
 
 describe('difficulty levels', () => {
   it('Normal is the base run: every multiplier is 1', () => {
-    expect(Object.values(DIFFICULTIES.normal)).toEqual([1, 1, 1, 1, 1])
+    expect(Object.values(DIFFICULTIES.normal).every((v) => v === 1)).toBe(true)
   })
 
   it('never gets easier from one level to the next in any multiplier', () => {
@@ -15,6 +15,7 @@ describe('difficulty levels', () => {
       expect(next.enemyHp).toBeGreaterThanOrEqual(prev.enemyHp)
       expect(next.enemyDamage).toBeGreaterThanOrEqual(prev.enemyDamage)
       expect(next.spawnRate).toBeGreaterThanOrEqual(prev.spawnRate)
+      expect(next.enemySpeed).toBeGreaterThanOrEqual(prev.enemySpeed)
       expect(next.ramp).toBeGreaterThanOrEqual(prev.ramp)
       expect(next.healing).toBeLessThanOrEqual(prev.healing)
     })
@@ -24,6 +25,14 @@ describe('difficulty levels', () => {
     expect(scaling(0, 2)).toEqual(scaling(0))
     expect(scaling(10 * 60, 1.5).hp).toBeGreaterThan(scaling(10 * 60).hp)
     expect(scaling(10 * 60, 1.5).damage).toBeGreaterThan(scaling(10 * 60).damage)
+  })
+
+  it('late in the run, Nightmare regulars take about twice the hits of Normal ones, not a wall of HP', () => {
+    for (const min of [10, 15, 18]) {
+      const hp = (id: keyof typeof DIFFICULTIES) => scaling(min * 60, DIFFICULTIES[id].ramp).hp * DIFFICULTIES[id].enemyHp
+      expect(hp('nightmare') / hp('normal')).toBeGreaterThan(1.6)
+      expect(hp('nightmare') / hp('normal')).toBeLessThan(2.4)
+    }
   })
 
   it('keeps the saved level and falls back to Normal for anything else', () => {
