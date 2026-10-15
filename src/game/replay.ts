@@ -1,3 +1,4 @@
+import type { EnemyId } from '../data/enemies'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { createRng } from '../engine/rng'
 import * as dm from '../engine/dmath'
@@ -7,6 +8,7 @@ import { continueEndless } from './endlessSystem'
 import { chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
 import { UPGRADE_IDS, UPGRADES, type Ranks } from './meta'
 import { isRecord, wholeNumber } from './parse'
+import { OUTBREAK_SPECIES, withOutbreak } from './outbreak'
 import { biomeWeight, drawRoster } from './roster'
 import type { Game } from './types'
 
@@ -28,7 +30,7 @@ export const TICK = 1 / 60
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
  * Replays from before the field existed are rules 1.
  */
-export const RULES_VERSION = 9
+export const RULES_VERSION = 10
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -50,6 +52,11 @@ export type ReplayStart = {
    */
   shiny: boolean
   luckyEgg: boolean
+  /** The day's outbreak species (`game/outbreak.ts`); the server checks it against the day the run started. */
+  outbreak: EnemyId | null
+  /** Bag items used up as the run started (`game/bag.ts`): a Lure and an Incense. */
+  lure: boolean
+  incense: boolean
   /** World px the screen showed at the start: spawns and despawns depend on it. */
   view: { w: number; h: number }
 }
@@ -135,6 +142,8 @@ export const recordStep = (rec: Recorder, view: { w: number; h: number }, move: 
 
 const isWhole = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0
 
+const isOutbreakSpecies = (v: unknown): v is EnemyId => OUTBREAK_SPECIES.some((id) => id === v)
+
 const parseEvent = (raw: unknown): ReplayEvent | null => {
   if (!Array.isArray(raw) || !isWhole(raw[0])) return null
   const [tick, kind, a, b] = raw
@@ -166,6 +175,9 @@ export const parseReplay = (raw: unknown): Replay | null => {
       ranks: Object.fromEntries(UPGRADE_IDS.map((id) => [id, wholeNumber(ranks[id], UPGRADES[id].maxRank)])) as Ranks,
       shiny: s.shiny === true,
       luckyEgg: s.luckyEgg === true,
+      outbreak: isOutbreakSpecies(s.outbreak) ? s.outbreak : null,
+      lure: s.lure === true,
+      incense: s.incense === true,
       view: { w: view.w, h: view.h },
     },
     moves: raw.moves,
@@ -175,12 +187,19 @@ export const parseReplay = (raw: unknown): Replay | null => {
 
 /* ---------------- Re-simulation ---------------- */
 
-/** The wild cast a run draws from its seed (the shell draws it ahead to preload its sprites). */
-export const runRoster = (seed: number) => drawRoster(createRng(seed), { weight: biomeWeight })
+/** The wild cast a run draws from its seed, with the day's outbreak (the shell draws it ahead to preload its sprites). */
+export const runRoster = (seed: number, outbreak: EnemyId | null) => withOutbreak(drawRoster(createRng(seed), { weight: biomeWeight }), outbreak)
 
 /** A fresh run from a replay's start, exactly as the shell creates it. */
 export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.view }) =>
-  createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed), { shiny: start.shiny, luckyEgg: start.luckyEgg, difficulty: start.difficulty })
+  createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed, start.outbreak), {
+    shiny: start.shiny,
+    luckyEgg: start.luckyEgg,
+    difficulty: start.difficulty,
+    outbreak: start.outbreak,
+    lure: start.lure,
+    incense: start.incense,
+  })
 
 const applyEvent = (g: Game, e: ReplayEvent) => {
   switch (e[1]) {

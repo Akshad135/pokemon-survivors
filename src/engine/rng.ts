@@ -34,3 +34,10 @@ export const hash2 = (x: number, y: number, seed = 0) => {
   h = Math.imul(h ^ (h >>> 13), 1274126177)
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296
 }
+
+/** FNV-1a: a stable 32-bit seed from text (a date, a period key), for draws everyone gets the same. */
+export const seedFrom = (text: string) => {
+  let h = 0x811c9dc5
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193)
+  return h >>> 0
+}

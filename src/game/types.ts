@@ -373,8 +373,12 @@ export type Game = {
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null
-  /** This run's wild cast, drawn at the start (`game/roster.ts`). */
+  /** This run's wild cast, drawn at the start (`game/roster.ts`), with the day's outbreak in every stage. */
   roster: Roster
+  /** The day's outbreak species, or null (`game/outbreak.ts`): its spawns roll `OUTBREAK.shinyOdds`. */
+  outbreak: EnemyId | null
+  /** Multiplier on wild shiny odds: Shiny Charm ranks and a Lure (`shinyBoost`). */
+  shinyBoost: number
   spawnBudget: number
   nextEvent: number
   bossId: number | null

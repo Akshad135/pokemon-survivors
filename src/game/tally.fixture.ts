@@ -12,6 +12,7 @@ export const summary = (over: Partial<RunSummary> = {}): RunSummary => ({
   kills: 0,
   coins: 0,
   shinyKills: 0,
+  outbreakKills: 0,
   bossKills: 0,
   shinyLegends: 0,
   traitKills: 0,

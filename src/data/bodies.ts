@@ -16,3 +16,6 @@ const FALLBACK: Body = { bodyW: 18, bodyH: 20, footY: 6 }
  */
 export const bodyOf = (dex: number, shiny = false): Body =>
   (shiny ? MANIFEST[String(dex)]?.shiny?.body : undefined) ?? MANIFEST[String(dex)]?.body ?? FALLBACK
+
+/** SpriteCollab has the species' shiny colors (read from data, so the server agrees). */
+export const hasShinySprite = (dex: number) => MANIFEST[String(dex)]?.shiny !== undefined

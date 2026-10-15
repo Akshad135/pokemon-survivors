@@ -1,4 +1,5 @@
-import { createRng, pick, type Rng } from '../engine/rng'
+import { createRng, pick, seedFrom, type Rng } from '../engine/rng'
+import type { BagItem } from './bag'
 import type { EggTier } from './eggs'
 import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionGoal, type MissionPeriod, type MissionTemplate } from '../data/missions'
 import { isHatchling } from '../data/hatchlings'
@@ -14,8 +15,8 @@ import type { RunSummary } from './tally'
  * Everything here is pure; the shell persists the boards in the save.
  */
 
-/** `egg`: an egg of that tier comes with the ₽. */
-export type Mission = { id: string; period: MissionPeriod; goal: MissionGoal; target: number; reward: number; egg?: EggTier }
+/** `egg`: an egg of that tier comes with the ₽; `item`: one of that item goes into the bag. */
+export type Mission = { id: string; period: MissionPeriod; goal: MissionGoal; target: number; reward: number; egg?: EggTier; item?: BagItem }
 
 export const MISSION_PERIODS = Object.keys(MISSION_SLOTS) as MissionPeriod[]
 
@@ -40,13 +41,6 @@ export const periodEnd = (period: MissionPeriod, d: Date) => {
 
 /* ---------------- Draw ---------------- */
 
-/** FNV-1a: a stable 32-bit seed from text. */
-const seedOf = (text: string) => {
-  let h = 0x811c9dc5
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193)
-  return h >>> 0
-}
-
 /** The first `n` items of a seeded shuffle. */
 const sample = <T>(rng: Rng, items: readonly T[], n: number) => {
   const rest = [...items]
@@ -60,11 +54,11 @@ const POOLS: Record<MissionPeriod, readonly MissionTemplate[]> = { daily: DAILY_
 
 /** The missions of the period holding `date`, one per drawn template, seeded by the period's key. */
 export const drawMissions = (period: MissionPeriod, date: Date): Mission[] => {
-  const rng = createRng(seedOf(`${period}:${periodKey(period, date)}`))
+  const rng = createRng(seedFrom(`${period}:${periodKey(period, date)}`))
   return sample(rng, POOLS[period], MISSION_SLOTS[period]).map((template) => {
     const goal = pick(rng, template.goals)
     const [target, reward] = pick(rng, template.tiers)
-    return { id: missionId(goal, target), period, goal, target, reward, ...(template.egg && { egg: template.egg }) }
+    return { id: missionId(goal, target), period, goal, target, reward, ...(template.egg && { egg: template.egg }), ...(template.item && { item: template.item }) }
   })
 }
 
@@ -86,6 +80,7 @@ export const goalValue = (goal: MissionGoal, s: RunSummary): number => {
     case 'biomeKills': return s.killsByBiome[goal.biome] ?? 0
     case 'traitKills': return s.traitKills
     case 'shinyKills': return s.shinyKills
+    case 'outbreakKills': return s.outbreakKills
     case 'bossKills': return s.bossKills
     case 'rifts': return s.legends.length
     case 'chests': return s.chests

@@ -2,7 +2,9 @@ import { dir8, type Vec } from '../engine/math'
 import { createRng } from '../engine/rng'
 import { createGrid } from '../engine/spatial'
 import { bodyOf } from '../data/bodies'
+import type { EnemyId } from '../data/enemies'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { BAG_ITEMS } from './bag'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
@@ -20,8 +22,9 @@ import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { isManual, MOVES, moveStats } from './moves'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
-import { rollShiny, SHINY_ODDS } from './shiny'
+import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
+import { withOutbreak } from './outbreak'
 import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { updateArena } from './riftArena'
@@ -48,6 +51,11 @@ export type RunOptions = {
   shiny?: boolean
   /** The player never had an egg, so the first egg roll can't miss (`rollEgg`). */
   luckyEgg?: boolean
+  /** The day's outbreak species (`game/outbreak.ts`), put in every stage of the roster (`withOutbreak`, which a roster drawn ahead may already have). */
+  outbreak?: EnemyId | null
+  /** Bag items the run uses (`game/bag.ts`): a Lure doubles wild shinies, an Incense egg drops. */
+  lure?: boolean
+  incense?: boolean
 }
 
 /**
@@ -116,7 +124,7 @@ export const createGame = (
     pendingLevelUps: 0,
     offers: [],
     evolution: null,
-    roster: roster ?? drawRoster(rng),
+    roster: withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
@@ -132,7 +140,9 @@ export const createGame = (
     rift: createRiftState(),
     endless: null,
     tally: createTally(),
-    eggs: { found: [], lucky: options.luckyEgg === true },
+    eggs: { found: [], lucky: options.luckyEgg === true, boost: options.incense ? BAG_ITEMS.incense.boost : 1 },
+    outbreak: options.outbreak ?? null,
+    shinyBoost: shinyBoost(ranks.shinyCharm, options.lure === true),
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],

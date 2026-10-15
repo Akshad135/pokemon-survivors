@@ -36,6 +36,10 @@ describe('upgrade prices', () => {
     expect(refundAll(save)).toEqual(rich(10_000))
   })
 
+  it('doubles the Shiny Charm with every rank', () => {
+    expect([0, 1, 2].map((r) => upgradePrice('shinyCharm', r))).toEqual([6000, 12_000, 24_000])
+  })
+
   it('refuses purchases past max rank or without enough ₽', () => {
     expect(buyUpgrade(rich(upgradePrice('hpUp', 0) - 1), 'hpUp')).toBeNull()
     const maxed = { ...rich(1_000_000), ranks: { ...NO_RANKS, ppUp: UPGRADES.ppUp.maxRank } }

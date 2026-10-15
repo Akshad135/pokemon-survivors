@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { MISSION_SLOTS } from '../data/missions'
 import { dayKey, drawMissions, goalValue, missionStatus, NO_MISSIONS, parseMissions, periodEnd, periodKey, recordHatchMissions, recordMissions, type Mission } from './missions'
+import { bagCount } from './bag'
+import { EMPTY_SAVE, recordRun } from './meta'
 import { summary } from './tally.fixture'
 
 /** Local time, like the player's clock. Months are 1-based here. */
@@ -61,6 +63,16 @@ describe('mission progress', () => {
     expect(second.completed.map((m) => m.id)).toContain(mission.id)
     expect(second.missions.daily.progress[mission.id]).toBe(mission.target)
     expect(recordMissions(second.missions, summary({ kills: 999 }), null, date).completed).toEqual([])
+  })
+
+  it("counts the day's outbreak defeated, and pays its item into the bag", () => {
+    const { date, mission } = dayWith('outbreakKills')
+    expect(mission.item).toBe('lure')
+    expect(goalValue(mission.goal, summary({ kills: 900, outbreakKills: 240 }))).toBe(240)
+    const run = summary({ outbreakKills: mission.target })
+    const record = recordRun({ ...EMPTY_SAVE }, run, null, date)
+    expect(record.items).toContain('lure')
+    expect(bagCount(record.save.bag, 'lure')).toBeGreaterThanOrEqual(1)
   })
 
   it('counts only what changed since the snapshot already recorded for the same run', () => {
