@@ -1,7 +1,7 @@
 import { dir8, dirTo, fromAngle, TAU } from '../engine/math'
 import { chance, pick, range } from '../engine/rng'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
-import { megaOf } from '../data/megas'
+import { MEGAS, type MegaId } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
@@ -59,7 +59,7 @@ export type SpecialDef = {
   final: SpecialTier
   /** The type's condition, rolled on every hit. */
   status?: StatusSpec
-  /** Chain dash: a ring of this many of the type's orbs bursts from every landing (Mega Lucario). */
+  /** Chain dash: a ring of this many of the type's orbs bursts from every landing (Mega Lucario, Sceptile…). */
   orbs?: number
 }
 
@@ -231,6 +231,115 @@ export const SPECIALS = {
     base: { name: 'Stone Edge', damage: 70, area: 1.4, count: 22 },
     final: { name: 'Stone Edge', damage: 70, area: 1.4, count: 22 },
   },
+  petalBlizzard: {
+    type: 'grass', kind: 'nova', cooldown: 7, charge: 0.25,
+    base: { name: 'Petal Blizzard', damage: 64, area: 1.6, count: 3 },
+    final: { name: 'Petal Blizzard', damage: 64, area: 1.6, count: 3 },
+    status: { kind: 'slow', chance: 1, duration: 0.8, power: 0.6 },
+  },
+  heatWave: {
+    type: 'fire', kind: 'nova', cooldown: 7, charge: 0.2,
+    base: { name: 'Heat Wave', damage: 68, area: 1.7, count: 2 },
+    final: { name: 'Heat Wave', damage: 68, area: 1.7, count: 2 },
+    status: { kind: 'burn', chance: 0.6, duration: 2, power: 0.35 },
+  },
+  waterPulse: {
+    type: 'water', kind: 'nova', cooldown: 7, charge: 0.2,
+    base: { name: 'Water Pulse', damage: 60, area: 1.5, count: 4 },
+    final: { name: 'Water Pulse', damage: 60, area: 1.5, count: 4 },
+    status: { kind: 'slow', chance: 0.6, duration: 1.2, power: 0.5 },
+  },
+  voltTackle: {
+    type: 'electric', kind: 'chain', cooldown: 7, charge: 0, orbs: 6,
+    base: { name: 'Volt Tackle', damage: 62, area: 1.3, count: 6 },
+    final: { name: 'Volt Tackle', damage: 62, area: 1.3, count: 6 },
+  },
+  risingVoltage: {
+    type: 'electric', kind: 'bolt', cooldown: 7, charge: 0.25,
+    base: { name: 'Rising Voltage', damage: 66, area: 1.3, count: 14 },
+    final: { name: 'Rising Voltage', damage: 66, area: 1.3, count: 14 },
+    status: { kind: 'paralysis', chance: 0.6, duration: 1.6, power: 0 },
+  },
+  hurricane: {
+    type: 'flying', kind: 'wave', cooldown: 7, charge: 0.25,
+    base: { name: 'Hurricane', damage: 70, area: 1.5, count: 9 },
+    final: { name: 'Hurricane', damage: 70, area: 1.5, count: 9 },
+  },
+  solarBeam: {
+    type: 'grass', kind: 'bolt', cooldown: 7, charge: 0.3,
+    base: { name: 'Solar Beam', damage: 68, area: 1.35, count: 12 },
+    final: { name: 'Solar Beam', damage: 68, area: 1.35, count: 12 },
+  },
+  waveCrash: {
+    type: 'water', kind: 'chain', cooldown: 7, charge: 0,
+    base: { name: 'Wave Crash', damage: 58, area: 1.3, count: 6 },
+    final: { name: 'Wave Crash', damage: 58, area: 1.3, count: 6 },
+  },
+  dragonClaw: {
+    type: 'dragon', kind: 'chain', cooldown: 7, charge: 0, orbs: 8,
+    base: { name: 'Dragon Claw', damage: 54, area: 1.3, count: 6 },
+    final: { name: 'Dragon Claw', damage: 54, area: 1.3, count: 6 },
+  },
+  blazeKick: {
+    type: 'fire', kind: 'chain', cooldown: 7, charge: 0,
+    base: { name: 'Blaze Kick', damage: 64, area: 1.3, count: 6 },
+    final: { name: 'Blaze Kick', damage: 64, area: 1.3, count: 6 },
+    status: { kind: 'burn', chance: 0.5, duration: 2, power: 0.3 },
+  },
+  muddyWater: {
+    type: 'water', kind: 'nova', cooldown: 7, charge: 0.25,
+    base: { name: 'Muddy Water', damage: 64, area: 1.6, count: 3 },
+    final: { name: 'Muddy Water', damage: 64, area: 1.6, count: 3 },
+    status: { kind: 'slow', chance: 1, duration: 1, power: 0.5 },
+  },
+  meteorMash: {
+    type: 'steel', kind: 'rain', cooldown: 7, charge: 0.3,
+    base: { name: 'Meteor Mash', damage: 70, area: 1.4, count: 20 },
+    final: { name: 'Meteor Mash', damage: 70, area: 1.4, count: 20 },
+  },
+  skyAttack: {
+    type: 'flying', kind: 'chain', cooldown: 7, charge: 0, orbs: 6,
+    base: { name: 'Sky Attack', damage: 56, area: 1.3, count: 6 },
+    final: { name: 'Sky Attack', damage: 56, area: 1.3, count: 6 },
+  },
+  earthPower: {
+    type: 'ground', kind: 'nova', cooldown: 7, charge: 0.25,
+    base: { name: 'Earth Power', damage: 70, area: 1.6, count: 3 },
+    final: { name: 'Earth Power', damage: 70, area: 1.6, count: 3 },
+    status: { kind: 'slow', chance: 1, duration: 1, power: 0.5 },
+  },
+  scaleShot: {
+    type: 'dragon', kind: 'ring', cooldown: 7, charge: 0.2,
+    base: { name: 'Scale Shot', damage: 64, area: 1.3, count: 24 },
+    final: { name: 'Scale Shot', damage: 64, area: 1.3, count: 24 },
+  },
+  focusBlast: {
+    type: 'fighting', kind: 'bolt', cooldown: 7, charge: 0.3,
+    base: { name: 'Focus Blast', damage: 70, area: 1.4, count: 10 },
+    final: { name: 'Focus Blast', damage: 70, area: 1.4, count: 10 },
+  },
+  heatCrash: {
+    type: 'fire', kind: 'bolt', cooldown: 7, charge: 0.3,
+    base: { name: 'Heat Crash', damage: 74, area: 1.45, count: 8 },
+    final: { name: 'Heat Crash', damage: 74, area: 1.45, count: 8 },
+    status: { kind: 'burn', chance: 0.5, duration: 2, power: 0.3 },
+  },
+  spikyShield: {
+    type: 'grass', kind: 'nova', cooldown: 7, charge: 0.2,
+    base: { name: 'Spiky Shield', damage: 62, area: 1.4, count: 2 },
+    final: { name: 'Spiky Shield', damage: 62, area: 1.4, count: 2 },
+  },
+  mysticalFire: {
+    type: 'fire', kind: 'nova', cooldown: 7, charge: 0.25,
+    base: { name: 'Mystical Fire', damage: 66, area: 1.6, count: 3 },
+    final: { name: 'Mystical Fire', damage: 66, area: 1.6, count: 3 },
+    status: { kind: 'burn', chance: 0.5, duration: 2, power: 0.3 },
+  },
+  nightSlash: {
+    type: 'dark', kind: 'chain', cooldown: 7, charge: 0, orbs: 6,
+    base: { name: 'Night Slash', damage: 56, area: 1.3, count: 6 },
+    final: { name: 'Night Slash', damage: 56, area: 1.3, count: 6 },
+  },
 } as const satisfies Record<string, SpecialDef>
 
 export type SpecialId = keyof typeof SPECIALS
@@ -271,9 +380,9 @@ export const specialIdFor = (species: PlayableId, types: readonly PokeType[], st
 }
 
 /** The special at an evolution stage; in Mega form (`mega`), the Mega's own. */
-export const resolveSpecial = (starter: PlayableId, stage: number, mega = false) => {
+export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId | null = null) => {
   const species = PLAYABLE[starter]
-  const own = mega ? megaOf(starter)?.special : undefined
+  const own = mega ? MEGAS[mega].special : undefined
   const id: SpecialId = own ?? specialIdFor(starter, species.line[0].types, stage)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1
@@ -283,7 +392,7 @@ export const resolveSpecial = (starter: PlayableId, stage: number, mega = false)
 export type ResolvedSpecial = ReturnType<typeof resolveSpecial>
 
 /** The special the player has right now: its stage's, or its Mega form's while that lasts. */
-export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0)
+export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0 ? g.mega.stone : null)
 
 /* ---------------- Timers (pure) ---------------- */
 

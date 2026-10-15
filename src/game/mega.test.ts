@@ -1,30 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import { PLAYABLE } from '../data/hatchlings'
-import { MEGA, MEGA_LINES, MEGAS, megaOf } from '../data/megas'
+import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
 import { createGame, step } from './game'
 import { recomputeStats } from './leveling'
-import { createMegaState, grantStone, isFinalStage, megaPhase, tickMega } from './mega'
+import { createMegaState, dropMegaStones, grantStone, isFinalStage, megaPhase, tickMega } from './mega'
+import { updatePickups } from './pickups'
 import { resolveSpecial, SPECIALS } from './special'
 
 const DT = 1 / 60
-const MANIFEST: Record<string, { anims: unknown; forms?: Record<string, unknown> }> = manifest
+const MANIFEST: Record<string, { anims: unknown; formCries?: string[] }> = manifest
 
 describe('mega data', () => {
-  it('gives every Mega the sprite form of its final stage and a special of its own', () => {
-    for (const line of MEGA_LINES) {
-      const def = MEGAS[line]
-      const final = PLAYABLE[line].line.at(-1)!
-      expect(MANIFEST[String(final.dex)]?.forms?.[def.form], def.name).toBeDefined()
-      expect(SPECIALS[def.special].final.damage).toBeGreaterThan(resolveSpecial(line, PLAYABLE[line].line.length - 1).tier.damage)
+  it('gives every Mega its own cry and a special stronger than its final stage', () => {
+    for (const id of MEGA_IDS) {
+      const def: MegaDef = MEGAS[id]
+      const final = PLAYABLE[def.line].line.at(-1)!
+      expect(MANIFEST[String(final.dex)]?.formCries, def.name).toContain(def.form)
+      expect(SPECIALS[def.special].final.damage, def.name).toBeGreaterThan(resolveSpecial(def.line, PLAYABLE[def.line].line.length - 1).tier.damage)
     }
   })
 
-  it('swaps the special only in Mega form, and only for lines with a Mega', () => {
-    expect(resolveSpecial('charmander', 2, true).id).toBe('dragonFlare')
+  it('tells apart the forms and stones of a line with two Megas', () => {
+    for (const line of MEGA_LINES) {
+      const defs = megasOf(line).map((id): MegaDef => MEGAS[id])
+      expect(new Set(defs.map((d) => d.form)).size).toBe(defs.length)
+      expect(new Set(defs.map((d) => d.stone)).size).toBe(defs.length)
+    }
+    expect(megasOf('charmander')).toEqual(['charizardX', 'charizardY'])
+    expect(megasOf('squirtle')).toEqual(['blastoise'])
+    expect(megasOf('cyndaquil')).toEqual([])
+  })
+
+  it('swaps the special only in Mega form, for the Mega of the stone held', () => {
+    expect(resolveSpecial('charmander', 2, 'charizardX').id).toBe('dragonFlare')
+    expect(resolveSpecial('charmander', 2, 'charizardY').id).toBe('heatWave')
     expect(resolveSpecial('charmander', 2).id).toBe('blastBurn')
-    expect(resolveSpecial('squirtle', 2, true).id).toBe('hydroCannon')
-    expect(megaOf('squirtle')).toBeNull()
   })
 })
 
@@ -32,7 +43,7 @@ describe('mega timers', () => {
   it('waits for the stone, then for the final stage', () => {
     const s = createMegaState()
     expect(megaPhase(s, true)).toBe('none')
-    s.stone = true
+    s.stone = 'charizardX'
     expect(megaPhase(s, false)).toBe('locked')
     expect(megaPhase(s, true)).toBe('ready')
     s.intro = 0.5
@@ -40,7 +51,7 @@ describe('mega timers', () => {
   })
 
   it('lasts its duration, then recharges before it is ready again', () => {
-    const s = { ...createMegaState(), stone: true, active: MEGA.duration }
+    const s = { ...createMegaState(), stone: 'charizardX' as const, active: MEGA.duration }
     let end = 0
     for (let t = 0; t < MEGA.duration + 0.5; t += DT) end += Number(tickMega(s, DT) === 'end')
     expect(end).toBe(1)
@@ -62,7 +73,7 @@ describe('mega evolution', () => {
     const g = createGame('charmander', { w: 480, h: 270 }, 1)
     g.player.stage = 2
     recomputeStats(g)
-    grantStone(g)
+    grantStone(g, 'charizardX')
     return g
   }
 
@@ -75,16 +86,30 @@ describe('mega evolution', () => {
     expect(g.time).toBe(time)
     step(g, { move: { x: 0, y: 0 }, special: false }, DT)
     expect(g.mega.active).toBe(MEGA.duration)
-    expect(g.player.stats.might).toBeCloseTo(might + MEGAS.charmander.stats.might)
+    expect(g.player.stats.might).toBeCloseTo(might + MEGAS.charizardX.stats.might)
     g.mega.active = DT / 2
     step(g, { move: { x: 0, y: 0 }, special: false }, DT)
     expect(g.player.stats.might).toBeCloseTo(might)
     expect(g.mega.charge).toBe(MEGA.recharge)
   })
 
-  it('only drops a stone for a Mega line', () => {
-    const g = createGame('squirtle', { w: 480, h: 270 }, 1)
-    grantStone(g)
-    expect(g.mega.stone).toBe(false)
+  it('only takes a stone of its own line', () => {
+    const g = createGame('cyndaquil', { w: 480, h: 270 }, 1)
+    grantStone(g, 'charizardX')
+    expect(g.mega.stone).toBeNull()
+  })
+
+  it('lets a line with two Megas keep the stone it touches; the other crumbles', () => {
+    const g = createGame('charmander', { w: 480, h: 270 }, 1)
+    g.player.stats.magnet = 500
+    dropMegaStones(g, g.player.x, g.player.y + 6)
+    const stones = () => g.pickups.filter((k) => k.kind === 'megaStone')
+    expect(stones()).toHaveLength(2)
+    updatePickups(g, DT)
+    expect(stones().every((k) => !k.attracted)).toBe(true)
+    g.player.x = stones()[1]!.x
+    updatePickups(g, DT)
+    expect(g.mega.stone).toBe('charizardY')
+    expect(stones()).toHaveLength(0)
   })
 })

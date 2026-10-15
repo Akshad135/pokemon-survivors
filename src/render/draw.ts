@@ -481,7 +481,7 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   // Aegislash flashes white for a moment as it swaps stance.
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
   const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink && mega.flash === 0 ? 0.45 : 1, flash })
+  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink && mega.flash === 0 ? 0.45 : 1, flash, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
   drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
@@ -510,7 +510,7 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
       continue
     }
     if (k.kind === 'megaStone') {
-      drawMegaStone(ctx, g, k.x, k.y + bob, t)
+      drawMegaStone(ctx, k.mega, k.x, k.y + bob, t)
       continue
     }
     const sprite =

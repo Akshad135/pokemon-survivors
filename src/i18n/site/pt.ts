@@ -317,8 +317,8 @@ export const sitePt = {
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
     },
     megas: {
-      paragraphs: (m: { duration: number; recharge: number; intro: string }) => [
-        'Seis linhagens podem Mega Evoluir. O primeiro lendário de fenda que você vencer com uma delas deixa a Mega Stone da linhagem junto com o tesouro. Com ela na mão e o Pokémon na evolução final, aparece o botão MEGA (tecla E, ou Y no controle).',
+      paragraphs: (m: { lines: number; twins: string; duration: number; recharge: number; intro: string }) => [
+        `${m.lines} linhagens podem Mega Evoluir. O primeiro lendário de fenda que você vencer com uma delas deixa a Mega Stone da linhagem junto com o tesouro. ${m.twins} têm duas Megas: o lendário deixa as duas pedras e a que você pegar decide a Mega (a outra se desfaz). Com a pedra na mão e o Pokémon na evolução final, aparece o botão MEGA (tecla E, ou Y no controle).`,
         `Ao apertar, a Pedra-chave reage: o mundo para por ${m.intro}s enquanto a energia de arco-íris envolve o Pokémon, e a Mega Evolução termina numa explosão que empurra e fere a horda ao redor e deixa você invulnerável por um instante. A forma Mega dura ${m.duration}s, ganha os status abaixo, troca o especial pelo dela (pronto para usar na hora) e ativa a habilidade. Depois ela volta ao normal e precisa de ${m.recharge}s para Mega Evoluir de novo: guarde para um chefe, uma fenda ou um cerco.`,
       ],
       megaHead: 'Mega',

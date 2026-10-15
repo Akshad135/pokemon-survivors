@@ -41,7 +41,8 @@ export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, .
  */
 export const FORMS = {
   681: { blade: '0001' }, // Aegislash's Blade Forme (Stance Change)
-  // Mega Evolutions (src/data/megas.ts). Only these Megas have sprites on SpriteCollab so far.
+  // Mega Evolutions (src/data/megas.ts). Only these Megas have sprites on SpriteCollab so far; the
+  // others wear their final stage's sprite until theirs land there (then add the form id here).
   6: { megaX: '0001' },
   65: { mega: '0001' },
   94: { mega: '0001' },
@@ -51,16 +52,33 @@ export const FORMS = {
 }
 
 /**
- * Forms with a cry of their own, by key, mapped to their PokeAPI Pokémon name.
- * The cry lands in `public/assets/pokemon/<dex>/<key>/cry.ogg` and sets `forms.<key>.cry` in the manifest.
+ * Forms with a cry of their own, by key, mapped to their PokeAPI Pokémon name, with or without
+ * sheets in `FORMS`. The cry lands in `public/assets/pokemon/<dex>/<key>/cry.ogg` and the key in
+ * the species' `formCries` in the manifest.
  */
 export const FORM_CRIES = {
-  6: { megaX: 'charizard-mega-x' },
+  3: { mega: 'venusaur-mega' },
+  6: { megaX: 'charizard-mega-x', megaY: 'charizard-mega-y' },
+  9: { mega: 'blastoise-mega' },
+  26: { megaX: 'raichu-mega-x', megaY: 'raichu-mega-y' },
   65: { mega: 'alakazam-mega' },
   94: { mega: 'gengar-mega' },
+  149: { mega: 'dragonite-mega' },
+  154: { mega: 'meganium-mega' },
+  160: { mega: 'feraligatr-mega' },
   248: { mega: 'tyranitar-mega' },
+  254: { mega: 'sceptile-mega' },
+  257: { mega: 'blaziken-mega' },
+  260: { mega: 'swampert-mega' },
   282: { mega: 'gardevoir-mega' },
-  448: { mega: 'lucario-mega' },
+  376: { mega: 'metagross-mega' },
+  398: { mega: 'staraptor-mega' },
+  445: { mega: 'garchomp-mega', megaZ: 'garchomp-mega-z' },
+  448: { mega: 'lucario-mega', megaZ: 'lucario-mega-z' },
+  500: { mega: 'emboar-mega' },
+  652: { mega: 'chesnaught-mega' },
+  655: { mega: 'delphox-mega' },
+  658: { mega: 'greninja-mega' },
 }
 
 export const pad = (n) => String(n).padStart(4, '0')

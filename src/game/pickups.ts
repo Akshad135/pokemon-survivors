@@ -11,7 +11,7 @@ import * as dm from '../engine/dmath'
 
 const MAX_XP_PICKUPS = 260
 
-type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable'>
+type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone'>
 
 export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
@@ -82,7 +82,7 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     }
     case 'megaStone':
-      grantStone(g)
+      grantStone(g, pickup.mega)
       break
     case 'consumable':
       useConsumable(g, pickup.item)
@@ -90,12 +90,27 @@ const collect = (g: Game, pickup: Pickup) => {
   }
 }
 
+/** Mega Stones on the ground: two or more means the player is choosing one, so the magnet leaves them be. */
+const megaStones = (g: Game) => {
+  let n = 0
+  for (const k of g.pickups) if (k.kind === 'megaStone') n++
+  return n
+}
+
 export const updatePickups = (g: Game, dt: number) => {
   const p = g.player
   const magnet2 = dm.sq(p.stats.magnet)
+  const choosing = megaStones(g) > 1
   for (const k of g.pickups) {
     k.age += dt
     const d2 = dm.sq(k.x - p.x) + dm.sq(k.y - (p.y - 6))
+    if (choosing && k.kind === 'megaStone') {
+      if (d2 < dm.sq(p.radius + 8)) {
+        collect(g, k)
+        k.age = -1
+      }
+      continue
+    }
     if (!k.attracted && d2 < magnet2) {
       k.attracted = true
       // Tiny hop away before being sucked in – the classic survivors feel.

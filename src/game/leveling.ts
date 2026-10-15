@@ -3,7 +3,7 @@ import type { Rng } from '../engine/rng'
 import { evolvedFrom, readyEvolutions } from '../data/evolutions'
 import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
-import { megaOf } from '../data/megas'
+import { MEGAS } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
 import { healPlayer } from './combat'
@@ -99,7 +99,7 @@ export const recomputeStats = (g: Game) => {
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
-    ...(g.mega.active > 0 ? [megaOf(g.starter)?.stats ?? {}] : []),
+    ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),
   ])
   p.stats = stanceStats(deltas, g.special.stance)
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before

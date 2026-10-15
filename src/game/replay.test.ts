@@ -76,11 +76,11 @@ describe('replays', () => {
   })
 
   it('re-simulate a Mega Evolution, its transformation and its special', () => {
-    /** Mega Charizard X's line at its final stage with the stone, as if a rift had dropped it. */
+    /** Charizard with the Charizardite Y, as if a rift had dropped it: Drought brings the sun in. */
     const megaReady = (g: Game) => {
       g.player.stage = 2
       recomputeStats(g)
-      grantStone(g)
+      grantStone(g, 'charizardY')
     }
     const start: ReplayStart = { ...START, starter: 'charmander' }
     const { g, replay } = play(40, start, 90, megaReady)

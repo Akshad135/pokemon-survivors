@@ -230,7 +230,10 @@
       "bodyW": 25,
       "bodyH": 25,
       "footY": 9
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "4": {
     "anims": {
@@ -503,7 +506,6 @@
           "bodyH": 26,
           "footY": 5
         },
-        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -542,7 +544,11 @@
           }
         }
       }
-    }
+    },
+    "formCries": [
+      "megaX",
+      "megaY"
+    ]
   },
   "7": {
     "anims": {
@@ -789,7 +795,10 @@
       "bodyW": 26,
       "bodyH": 24,
       "footY": 4
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "10": {
     "anims": {
@@ -1777,7 +1786,11 @@
       "bodyW": 29,
       "bodyH": 26,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "megaX",
+      "megaY"
+    ]
   },
   "29": {
     "anims": {
@@ -3113,7 +3126,6 @@
           "bodyH": 34,
           "footY": 4
         },
-        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -3160,7 +3172,10 @@
           }
         }
       }
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "66": {
     "anims": {
@@ -4285,7 +4300,6 @@
           "bodyH": 26,
           "footY": 8
         },
-        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -4328,7 +4342,10 @@
           }
         }
       }
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "95": {
     "anims": {
@@ -5592,7 +5609,10 @@
       "bodyW": 25,
       "bodyH": 32,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "150": {
     "anims": {
@@ -5913,7 +5933,10 @@
       "bodyW": 21,
       "bodyH": 29,
       "footY": 6
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "155": {
     "anims": {
@@ -6379,7 +6402,10 @@
       "bodyW": 30,
       "bodyH": 28,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "163": {
     "anims": {
@@ -8747,10 +8773,12 @@
           "bodyW": 29,
           "bodyH": 29,
           "footY": 5
-        },
-        "cry": true
+        }
       }
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "249": {
     "anims": {
@@ -9123,7 +9151,10 @@
       "bodyW": 23,
       "bodyH": 25,
       "footY": 7
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "255": {
     "anims": {
@@ -9354,7 +9385,10 @@
       "bodyW": 27,
       "bodyH": 29,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "258": {
     "anims": {
@@ -9599,7 +9633,10 @@
       "bodyW": 24,
       "bodyH": 23,
       "footY": 4
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "261": {
     "anims": {
@@ -10426,7 +10463,6 @@
           "bodyH": 26,
           "footY": 5
         },
-        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -10465,7 +10501,10 @@
           }
         }
       }
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "285": {
     "anims": {
@@ -12327,7 +12366,10 @@
       "bodyW": 35,
       "bodyH": 26,
       "footY": 7
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "382": {
     "anims": {
@@ -13622,7 +13664,10 @@
       "bodyW": 17,
       "bodyH": 27,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "399": {
     "anims": {
@@ -14909,7 +14954,11 @@
       "bodyW": 31,
       "bodyH": 30,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega",
+      "megaZ"
+    ]
   },
   "447": {
     "anims": {
@@ -15111,7 +15160,6 @@
           "bodyH": 28,
           "footY": 5
         },
-        "cry": true,
         "shiny": {
           "anims": {
             "Walk": {
@@ -15156,7 +15204,11 @@
           }
         }
       }
-    }
+    },
+    "formCries": [
+      "mega",
+      "megaZ"
+    ]
   },
   "449": {
     "anims": {
@@ -16246,7 +16298,10 @@
       "bodyW": 30,
       "bodyH": 27,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "501": {
     "anims": {
@@ -18757,7 +18812,10 @@
       "bodyW": 34,
       "bodyH": 30,
       "footY": 6
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "653": {
     "anims": {
@@ -19014,7 +19072,10 @@
       "bodyW": 23,
       "bodyH": 29,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "656": {
     "anims": {
@@ -19283,7 +19344,10 @@
       "bodyW": 24,
       "bodyH": 25,
       "footY": 5
-    }
+    },
+    "formCries": [
+      "mega"
+    ]
   },
   "659": {
     "anims": {

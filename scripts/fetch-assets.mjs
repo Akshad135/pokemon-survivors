@@ -83,16 +83,24 @@ const fetchFormCry = async (name, dest) => {
   return Boolean(url) && download(url, dest)
 }
 
-/** An alternate form (`FORMS`), its cry if it has one, and for species that can roll shiny, its shiny under `<id>/0001`. */
+/** An alternate form (`FORMS`) and, for species that can roll shiny, its shiny under `<id>/0001`. */
 const fetchForm = async (dex, key, id, dir) => {
-  const cryName = FORM_CRIES[dex]?.[key]
   const [form, shiny] = await Promise.all([
     fetchVariant(dex, `/${id}`, join(dir, key), false),
     SHINY.has(dex) ? fetchVariant(dex, `/${id}/0001`, join(dir, key, 'shiny'), false) : null,
   ])
   if (!form) throw new Error(`#${dex} form ${key}: missing AnimData.xml`)
-  const cry = cryName && await fetchFormCry(cryName, join(dir, key, 'cry.ogg'))
-  return [key, { ...form, ...(cry && { cry }), ...(shiny && { shiny }) }]
+  return [key, { ...form, ...(shiny && { shiny }) }]
+}
+
+/** The forms of a species with a cry of their own (`FORM_CRIES`), sheets or not: the keys that got one. */
+const fetchFormCries = async (dex, dir) => {
+  const got = await Promise.all(Object.entries(FORM_CRIES[dex] ?? {}).map(async ([key, name]) => {
+    await mkdir(join(dir, key), { recursive: true })
+    return (await fetchFormCry(name, join(dir, key, 'cry.ogg'))) && key
+  }))
+  const keys = got.filter(Boolean)
+  return keys.length > 0 ? keys : null
 }
 
 const fetchSpecies = async (dex) => {
@@ -104,15 +112,17 @@ const fetchSpecies = async (dex) => {
   ])
   if (!normal) throw new Error(`#${dex}: missing AnimData.xml`)
   const forms = FORMS[dex] && Object.fromEntries(await Promise.all(Object.entries(FORMS[dex]).map(([key, id]) => fetchForm(dex, key, id, dir))))
+  const formCries = await fetchFormCries(dex, dir)
 
   const tags = [
     normal.portrait && '+portrait',
     cry && '+cry',
     shiny && `+shiny(${Object.keys(shiny.anims).join(', ')})`,
     forms && `+forms(${Object.keys(forms).join(', ')})`,
+    formCries && `+cries(${formCries.join(', ')})`,
   ]
   console.log(`#${dex}: ${Object.keys(normal.anims).join(', ')} ${tags.filter(Boolean).join(' ')}`)
-  return [dex, { ...normal, cry, ...(shiny && { shiny }), ...(forms && { forms }) }]
+  return [dex, { ...normal, cry, ...(shiny && { shiny }), ...(forms && { forms }), ...(formCries && { formCries }) }]
 }
 
 const species = []

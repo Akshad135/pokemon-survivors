@@ -2,9 +2,9 @@ import { formatTime } from '../engine/math'
 import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
 import { PLAYABLE } from '../data/hatchlings'
-import { megaOf } from '../data/megas'
 import { playerDex } from '../game/game'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
+import { heldMega } from '../game/mega'
 import type { Game } from '../game/types'
 import { weatherHere } from '../game/weather'
 import { formatPokeDollars, t } from '../i18n'
@@ -176,7 +176,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     })
 
     const dex = playerDex(g)
-    const megaName = g.mega.active > 0 ? megaOf(g.starter)?.name : undefined
+    const megaName = g.mega.active > 0 ? heldMega(g)?.name : undefined
     if (`${dex}${p.shiny}${megaName}` !== portraitKey) {
       portraitKey = `${dex}${p.shiny}${megaName}`
       portrait.setAttribute('src', portraitUrl(dex, p.shiny))
