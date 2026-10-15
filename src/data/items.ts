@@ -32,6 +32,10 @@ export const ITEMS = {
   kingsRock: { name: "King's Rock", levels: repeat({ statusChance: 0.06 }, 5) },
   toxicOrb: { name: 'Toxic Orb', levels: repeat({ statusDamage: 0.2 }, 5) },
   assaultVest: { name: 'Assault Vest', levels: repeat({ maxHp: 20, armor: 1 }, 3) },
+  /** Fires loadout moves where the special lands (`arrivalCombo` in `special.ts`). */
+  metronome: { name: 'Metronome', levels: repeat({ comboMoves: 1 }, 2) },
+  /** Kills made by the special cut its cooldown (`rechargeSpecial` in `special.ts`). */
+  powerHerb: { name: 'Power Herb', levels: repeat({ specialRecharge: 0.25 }, 3) },
   charcoal: typeItem('fire', 'Charcoal'),
   mysticWater: typeItem('water', 'Mystic Water'),
   miracleSeed: typeItem('grass', 'Miracle Seed'),

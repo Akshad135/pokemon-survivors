@@ -46,7 +46,7 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   burst(g, e.x, e.y - e.radius, { colors: [TYPE_COLORS[attack.type], '#ffffff'], count: eff > 1 ? 6 : 3, speed: 70, ttl: 0.25 })
   g.events.push({ kind: 'hit', effective: eff })
 
-  if (e.hp <= 0) killEnemy(g, e)
+  if (e.hp <= 0) killEnemy(g, e, attack.move)
 }
 
 /** Damage-over-time tick: no knockback or hit sound, number in the status color. */
@@ -55,13 +55,15 @@ export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource 
   e.hp -= dmg
   if (move) g.damageByMove[move] = (g.damageByMove[move] ?? 0) + dmg
   damageText(g, e, dmg, STATUS_RULES[kind].color)
-  if (e.hp <= 0) killEnemy(g, e)
+  if (e.hp <= 0) killEnemy(g, e, move)
 }
 
-export const killEnemy = (g: Game, e: Enemy) => {
+/** Faints an enemy. `source` (when known) lets a kill by the special, or any kill mid-chain, feed Power Herb. */
+export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   e.dying = 0
   e.hp = 0
   g.kills++
+  if (source === 'special' || g.special.chaining) g.special.kills++
   countKill(g.tally, e, weatherHere(g), g.biome.id)
   const big = e.boss || e.shiny
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })

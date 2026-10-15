@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { POKE_TYPES } from '../data/types'
 import {
-  beginJump, CHAIN_IFRAMES, CHAIN_WINDOW, createSpecialState, landJump, MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, SPECIALS,
+  beginJump, CHAIN_IFRAMES, CHAIN_WINDOW, comboCasts, createSpecialState, endChain, landJump, MIN_SPECIAL_COOLDOWN, rechargeSpecial, resolveSpecial, SPECIAL_IDS, SPECIALS,
   specialCooldown, specialIdFor, specialOfType, specialReady, tickChain, triggerSpecial, type SpecialDef,
 } from './special'
 import { stanceStats, STANCES } from './stance'
@@ -125,5 +125,50 @@ describe('species specials', () => {
     expect(blade.might).toBeCloseTo(1.5 * 1.3)
     expect(blade.damageTaken).toBeGreaterThan(shield.damageTaken)
     expect(stanceStats(stats, null)).toBe(stats)
+  })
+})
+
+describe('Power Herb', () => {
+  it('cuts the cooldown by each kill the special made', () => {
+    const s = { ...createSpecialState(), cooldown: 10, total: 10, kills: 4 }
+    rechargeSpecial(s, 0.5)
+    expect([s.cooldown, s.kills]).toEqual([8, 0])
+  })
+
+  it('banks kills made mid-chain until the cooldown starts', () => {
+    const s = createSpecialState()
+    beginJump(s, 3)
+    s.kills = 6
+    rechargeSpecial(s, 0.5)
+    expect([s.cooldown, s.kills]).toEqual([0, 6])
+    endChain(s, 8)
+    rechargeSpecial(s, 0.5)
+    expect([s.cooldown, s.kills]).toEqual([5, 0])
+  })
+
+  it('never brings a use closer than the cooldown floor to the next', () => {
+    const s = { ...createSpecialState(), cooldown: 6, total: 8, kills: 50 }
+    rechargeSpecial(s, 0.75)
+    // 2 s already went by, so 2 s are left before the 4 s floor.
+    expect(s.cooldown).toBeCloseTo(MIN_SPECIAL_COOLDOWN - 2)
+    const late = { ...createSpecialState(), cooldown: 1, total: 8, kills: 2 }
+    rechargeSpecial(late, 0.25)
+    expect(late.cooldown).toBeCloseTo(0.5)
+  })
+
+  it('wastes kills while the special is ready', () => {
+    const s = { ...createSpecialState(), kills: 3 }
+    rechargeSpecial(s, 0.5)
+    expect([s.cooldown, s.kills]).toEqual([0, 0])
+  })
+})
+
+describe('Metronome', () => {
+  it('fires one move per jump and saves the second for the chain\'s last jump', () => {
+    expect(comboCasts(1, true)).toBe(1)
+    expect(comboCasts(1, false)).toBe(1)
+    expect(comboCasts(2, true)).toBe(1)
+    expect(comboCasts(2, false)).toBe(2)
+    expect(comboCasts(0, false)).toBe(0)
   })
 })
