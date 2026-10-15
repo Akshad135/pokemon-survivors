@@ -23,6 +23,7 @@ import type { Prop } from './props'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
 import type { SpecialState } from './special'
+import type { Stance } from './stance'
 import type { RunTally } from './tally'
 import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
@@ -133,6 +134,8 @@ export type Visual =
   | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova' | 'bolt' | 'meteor' | 'orb' | 'wave' | 'puddle'
+  /** Chain dash: the capsule along the path, the slash at the landing and the player's afterimages (drawn by `render/draw.ts`). */
+  | 'streak' | 'slash' | 'afterimage'
   | EvolvedVisual
   | TacticVisual
 
@@ -283,6 +286,8 @@ export type GameEvent =
   | { kind: 'quake' }
   /** The special attack started charging or was unleashed. */
   | { kind: 'special'; phase: 'charge' | 'release'; name: string }
+  /** Aegislash swapped formes (Stance Change). */
+  | { kind: 'stance'; stance: Stance }
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }

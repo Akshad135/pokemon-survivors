@@ -25,7 +25,7 @@ import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../.
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
-import { MIN_SPECIAL_COOLDOWN, resolveSpecial, specialOfType, SPECIALS } from '../../game/special'
+import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { LOCALES, type Locale } from '../../i18n'
@@ -191,11 +191,12 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
 const special = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.special
   const game = LOCALES[locale].messages
-  // One special per type; a Pokémon uses its first type's, so some have no user yet.
-  const rows = POKE_TYPES.map((type) => {
-    const id = specialOfType(type)
+  // One special per type (a Pokémon uses its first type's, so some have no user yet), then the per-species ones.
+  const byType = POKE_TYPES.map(specialOfType)
+  const ids = [...byType, ...SPECIAL_IDS.filter((id) => !byType.includes(id))]
+  const rows = ids.map((id) => {
     const def = SPECIALS[id]
-    const users = [...STARTER_IDS, ...HATCHLING_IDS].filter((p) => resolveSpecial(p, 0).id === id)
+    const users = [...STARTER_IDS, ...HATCHLING_IDS].filter((p) => PLAYABLE[p].line.some((_, stage) => resolveSpecial(p, stage).id === id))
     return [
       typeBadge(def.type, m),
       html`<b>${def.base.name} → ${def.final.name}</b><br /><small>${game.specials[id]}</small>`,

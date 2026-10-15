@@ -70,6 +70,7 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
   const signature = MOVES[s.signature]
   const special = resolveSpecial(id, i)
   const final = special.final
+  const last = resolveSpecial(id, s.line.length - 1)
   const line = s.line.map(
     (st, k) => html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li><a href="#${slugOf(st.name)}"${k === i ? html` aria-current="true"` : ''}><img src="${asset(st.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${st.name}</a></li>`,
   )
@@ -84,7 +85,7 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <h3>${m.pokedex.signature}</h3>
     <p class="move"><b>${signature.name}</b> ${typeBadge(signature.type, m)}<br />${game.moves[s.signature].description}</p>
     <h3>${m.pokedex.special}</h3>
-    <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${special.def.final.name})</small>`}<br />${game.specials[special.id]}</p>
+    <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${last.tier.name})</small>`}<br />${game.specials[special.id]}</p>
     <h3>${m.pokedex.learnset}</h3>
     <ul class="chips">${s.learnset.map((mv) => moveChip(mv, m))}</ul>
     ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`

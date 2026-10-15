@@ -35,6 +35,8 @@ export type PlayerStats = {
   statusChance: number
   /** extra burn/poison damage (0.2 = +20%) */
   statusDamage: number
+  /** multiplier on the damage the player takes, before armor (Aegislash's stances) */
+  damageTaken: number
 }
 
 export type StatDelta = Partial<PlayerStats>
@@ -56,6 +58,7 @@ export const BASE_STATS: PlayerStats = {
   typeDamage: {},
   statusChance: 0,
   statusDamage: 0,
+  damageTaken: 1,
 }
 
 export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): PlayerStats =>

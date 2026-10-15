@@ -99,7 +99,7 @@ export const killEnemy = (g: Game, e: Enemy) => {
 export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? []) => {
   const p = g.player
   if (p.iframes > 0 || isRepelled(g) || g.phase !== 'playing') return
-  const dmg = Math.max(1, Math.round(amount * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) - p.stats.armor))
+  const dmg = Math.max(1, Math.round(amount * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken - p.stats.armor))
   p.hp -= dmg
   p.iframes = 0.5
   p.hurt = 0.3

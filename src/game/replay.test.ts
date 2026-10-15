@@ -6,11 +6,14 @@ import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RUL
 
 const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, view: { w: 480, h: 270 } }
 
-/** Plays `seconds` like the shell would, with a wandering stick, picks and a rotation, recording it. */
-const play = (seconds: number) => {
-  const view = { ...START.view }
-  const g = startGame(START, view)
-  const rec = startRecording(START)
+/**
+ * Plays `seconds` like the shell would, with a wandering stick, picks and a
+ * rotation, recording it. The special is pressed every `every` ticks.
+ */
+const play = (seconds: number, start = START, every = 300) => {
+  const view = { ...start.view }
+  const g = startGame(start, view)
+  const rec = startRecording(start)
   const bot = createRng(3)
   let angle = 0
   while (g.time < seconds && g.phase !== 'gameover') {
@@ -22,7 +25,7 @@ const play = (seconds: number) => {
     }
     if (rec.tick === 600) Object.assign(view, { w: 300, h: 520 })
     angle += (bot() - 0.5) * 0.2
-    const special = rec.tick % 300 === 0
+    const special = rec.tick % every === 0
     if (special) recordEvent(rec, ['special'])
     step(g, { move: recordStep(rec, view, { x: Math.cos(angle), y: Math.sin(angle) }), special }, TICK)
   }
@@ -58,6 +61,11 @@ describe('replays', () => {
     const again = resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)
     expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
     expect(replay.events.some((e) => e[1] === 'view')).toBe(true)
+  })
+
+  it('re-simulate a chain dash run, presses inside the windows included', () => {
+    const { g, replay } = play(40, { ...START, starter: 'treecko' }, 20)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
   })
 
   it('give a run played on another seed away', () => {

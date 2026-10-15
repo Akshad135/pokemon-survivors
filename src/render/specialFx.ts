@@ -2,6 +2,7 @@ import { blitCentered, blitRotated, context2d, createCanvas, ellipse, fromString
 import { TAU } from '../engine/math'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { resolveSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } from '../game/special'
+import { STANCES, type Stance } from '../game/stance'
 import type { Attack, Game } from '../game/types'
 import { FX, outlined, toIconUrl } from './art'
 
@@ -85,8 +86,11 @@ const PALETTES: Record<PokeType, readonly [string, string, string, string]> = {
   dragon: ['#301888', TYPE_COLORS.dragon, '#b090f8', '#f0e8ff'],
 }
 
-/** Specials drawn by the shared forms; the four bespoke ones keep their own art below. */
-type FormSpecial = Exclude<SpecialId, 'blastBurn' | 'hydroCannon' | 'frenzyPlant' | 'boomburst'>
+/** Chain dashes and Stance Change: their icons come from the slash and the stance art below. */
+type OwnArtSpecial = { [K in SpecialId]: (typeof SPECIALS)[K]['kind'] extends 'chain' | 'stance' ? K : never }[SpecialId]
+
+/** Specials drawn by the shared forms; the bespoke ones keep their own art below. */
+type FormSpecial = Exclude<SpecialId, 'blastBurn' | 'hydroCannon' | 'frenzyPlant' | 'boomburst' | OwnArtSpecial>
 
 /**
  * Each shared-form special's piece (meteor, orb, blade…), also its icon. `turn`
@@ -211,6 +215,98 @@ const drawWave = (ctx: Ctx, a: Attack) => {
   ctx.globalAlpha = 1
 }
 
+/* ---------------- Chain dash ---------------- */
+
+/** A crescent cut, convex side up; turned to face the lunge. Also the chain dash icon. */
+const SLASH = [
+  '.....1111111.....',
+  '...11223333211...',
+  '..1234444444321..',
+  '.124.........421.',
+  '.13...........31.',
+  '1.1...........1.1',
+]
+
+const slashCache = new Map<PokeType, PixelSprite>()
+
+const slashSprite = (type: PokeType) => {
+  const cached = slashCache.get(type)
+  if (cached) return cached
+  const [c1, c2, c3, c4] = PALETTES[type]
+  const sprite = fromStrings(SLASH, { 1: c1, 2: c2, 3: c3, 4: c4 })
+  slashCache.set(type, sprite)
+  return sprite
+}
+
+const streakCache = new Map<PokeType, PixelSprite>()
+
+/** One 10 px slice of the speed line the lunge leaves: type-colored edges, white core. */
+const streakSprite = (type: PokeType) => {
+  const cached = streakCache.get(type)
+  if (cached) return cached
+  const [, mid, light] = PALETTES[type]
+  const sprite = fromStrings(['2222222222', '4444444444', '3333333333'], { 2: mid, 3: light, 4: '#ffffff' })
+  streakCache.set(type, sprite)
+  return sprite
+}
+
+/** The capsule's speed line: each slice lights up as the player passes, then fades. */
+const drawStreak = (ctx: Ctx, a: Attack) => {
+  if (a.age < a.activeFrom) return
+  const k = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
+  ctx.globalAlpha = Math.max(0, 1 - k)
+  blitRotated(ctx, streakSprite(a.type), a.x, a.y, Math.atan2(a.y - a.from.y, a.x - a.from.x))
+  ctx.globalAlpha = 1
+}
+
+/** The landing cut: a crescent swept across the foe, growing and fading, with a white flash first. */
+const drawSlash = (ctx: Ctx, a: Attack) => {
+  const k = a.age / a.ttl
+  const angle = Math.atan2(a.y - a.from.y, a.x - a.from.x) + Math.PI / 2 + (a.flip ? 0.5 : -0.5)
+  const scale = k < 0.15 ? 2 : 3
+  ctx.globalAlpha = Math.max(0, 1 - k * k)
+  blitRotated(ctx, slashSprite(a.type), a.x, a.y, angle, scale)
+  if (k < 0.12) blitCentered(ctx, ellipse(Math.round(radius(a) * 0.25), Math.round(radius(a) * 0.25), '#ffffff'), a.x, a.y)
+  ctx.globalAlpha = 1
+}
+
+/* ---------------- Stance Change ---------------- */
+
+const SHIELD = ['.1111111.', '122222221', '123343321', '123444321', '123343321', '.1233321.', '.1223221.', '..12221..', '...121...', '....1....']
+const SWORD = ['...1...', '..141..', '..131..', '..131..', '..131..', '..131..', '..131..', '..131..', '1122211', '1222221', '..151..', '..151..', '..111..']
+
+/** Aegislash's forme as a small icon: a gold shield or its sword, in the stance color. */
+const STANCE_ART = {
+  shield: lazy(() => outlined(fromStrings(SHIELD, { 1: '#584010', 2: '#f8d030', 3: STANCES.shield.color, 4: '#ffffff' }))),
+  blade: lazy(() => outlined(fromStrings(SWORD, { 1: '#282838', 2: STANCES.blade.color, 3: '#c8d0e0', 4: '#ffffff', 5: '#584010' }))),
+} as const satisfies Record<Stance, () => PixelSprite>
+
+export const stanceIcon = (stance: Stance) => toIconUrl(`stance:${stance}`, STANCE_ART[stance])
+
+/** Ground ring in the stance color under Aegislash, so the forme reads at a glance. */
+const drawStanceRing = (ctx: Ctx, g: Game, t: number) => {
+  const stance = g.special.stance
+  if (!stance) return
+  const p = g.player
+  ctx.fillStyle = STANCES[stance].color
+  const rx = 13
+  const ry = 5
+  const spin = stance === 'blade' ? t * 3 : 0
+  for (let i = 0; i < 24; i++) {
+    if (stance === 'blade' && i % 3 === 0) continue
+    const a = (i / 24) * TAU + spin
+    ctx.fillRect(Math.round(p.x + Math.cos(a) * rx), Math.round(p.y + 1 + Math.sin(a) * ry), 1, 1)
+  }
+}
+
+/** The forme's icon floating over Aegislash's head (`top` is the sprite's top edge). */
+export const drawStanceBadge = (ctx: Ctx, g: Game, top: number, t: number) => {
+  const stance = g.special.stance
+  if (!stance) return
+  const bob = Math.round(Math.sin(t * 3) * 1)
+  blitCentered(ctx, STANCE_ART[stance](), g.player.x, top - 7 + bob)
+}
+
 /** Ground layer (under entities): scorch marks, cracks, glows. */
 export const drawSpecialGround = (ctx: Ctx, a: Attack) => {
   const r = Math.round(radius(a))
@@ -328,6 +424,10 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
       return drawOrb(ctx, a)
     case 'wave':
       return drawWave(ctx, a)
+    case 'streak':
+      return drawStreak(ctx, a)
+    case 'slash':
+      return drawSlash(ctx, a)
     case 'puddle': {
       // A bubble pops now and then on each patch.
       const phase = (t * 2 + a.id * 0.37) % 1
@@ -341,9 +441,10 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
   }
 }
 
-/** Charge-up: a shrinking type-colored ring and, for aimed specials, a dotted aim line. */
+/** Ground aura: Aegislash's stance ring, and while charging a shrinking type-colored ring plus, for aimed specials, a dotted aim line. */
 export const drawSpecialAura = (ctx: Ctx, g: Game, t: number) => {
   const s = g.special
+  drawStanceRing(ctx, g, t)
   if (s.charge <= 0) return
   const p = g.player
   const r = resolveSpecial(g.starter, g.player.stage)
@@ -379,6 +480,12 @@ const BESPOKE_ICONS: Record<Exclude<SpecialId, FormSpecial>, () => PixelSprite> 
       ['......1...', '...1...1..', '.1..1...1.', '121..1..1.', '1221.1..1.', '121..1..1.', '.1..1...1.', '...1...1..', '......1...'],
       { 1: '#f8f0d0', 2: '#a8a878' },
     ), '#383028'),
+  solarBlade: () => outlined(slashSprite('grass')),
+  closeCombat: () => outlined(slashSprite('fighting')),
+  dragonRush: () => outlined(slashSprite('dragon')),
+  braveBird: () => outlined(slashSprite('flying')),
+  ironHead: () => outlined(slashSprite('steel')),
+  stanceChange: STANCE_ART.shield,
 }
 
 export const specialIcon = (id: SpecialId) => toIconUrl(`special:${id}`, isForm(id) ? () => glyph(id) : BESPOKE_ICONS[id])

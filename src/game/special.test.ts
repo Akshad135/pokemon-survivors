@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { POKE_TYPES } from '../data/types'
-import { createSpecialState, MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIALS, specialCooldown, specialIdFor, specialOfType, triggerSpecial } from './special'
+import {
+  beginJump, CHAIN_IFRAMES, CHAIN_WINDOW, createSpecialState, landJump, MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, SPECIALS,
+  specialCooldown, specialIdFor, specialOfType, specialReady, tickChain, triggerSpecial, type SpecialDef,
+} from './special'
+import { stanceStats, STANCES } from './stance'
 import { BASE_STATS } from './stats'
 
 const DT = 1 / 60
@@ -50,5 +54,76 @@ describe('special resolution', () => {
     expect(resolveSpecial('bulbasaur', 2).tier.name).toBe('Frenzy Plant')
     expect(resolveSpecial('pichu', 0).tier.name).toBe('Thunderbolt')
     expect(resolveSpecial('pichu', 2).tier.name).toBe('Bolt Strike')
+  })
+})
+
+describe('chain dash', () => {
+  it('keeps the cooldown off while the chain runs and opens a window after each hit', () => {
+    const s = createSpecialState()
+    beginJump(s, 3)
+    expect([s.chaining, s.jumps, s.cooldown]).toEqual([true, 2, 0])
+    landJump(s, true, 8)
+    expect(s.window).toBe(CHAIN_WINDOW)
+    expect(s.cooldown).toBe(0)
+    expect(specialReady(s)).toBe(true)
+  })
+
+  it('starts the cooldown when the window runs out', () => {
+    const s = createSpecialState()
+    beginJump(s, 3)
+    landJump(s, true, 8)
+    let ticks = 0
+    while (s.chaining) {
+      tickChain(s, DT, 8)
+      ticks++
+    }
+    expect(ticks).toBeCloseTo(CHAIN_WINDOW / DT, -1)
+    expect([s.cooldown, s.total, s.jumps]).toEqual([8, 8, 0])
+  })
+
+  it('ends after its last jump or at once on a miss', () => {
+    const s = createSpecialState()
+    for (let i = 0; i < 3; i++) {
+      beginJump(s, 3)
+      landJump(s, true, 8)
+    }
+    expect([s.chaining, s.cooldown]).toEqual([false, 8])
+
+    const miss = createSpecialState()
+    beginJump(miss, 3)
+    landJump(miss, false, 8)
+    expect([miss.chaining, miss.window, miss.cooldown]).toEqual([false, 0, 8])
+  })
+
+  it('never stacks i-frames into permanent invulnerability', () => {
+    const chains = SPECIAL_IDS.map((id): SpecialDef => SPECIALS[id]).filter((def) => def.kind === 'chain')
+    expect(chains.length).toBeGreaterThan(0)
+    // A whole chain at its most jumps stays invulnerable for under half the shortest possible cooldown.
+    for (const def of chains) expect(def.final.count * CHAIN_IFRAMES).toBeLessThan(MIN_SPECIAL_COOLDOWN / 2)
+    expect(specialCooldown(chains[0]!, { ...BASE_STATS, cooldown: 0.05 })).toBe(MIN_SPECIAL_COOLDOWN)
+  })
+})
+
+describe('species specials', () => {
+  it('gives the agile lines the chain dash and Aegislash alone Stance Change', () => {
+    for (const id of ['treecko', 'sprigatito', 'riolu', 'gible', 'starly'] as const) expect(resolveSpecial(id, 0).def.kind).toBe('chain')
+    expect(resolveSpecial('honedge', 0).def.kind).toBe('chain')
+    expect(resolveSpecial('honedge', 1).def.kind).toBe('chain')
+    expect(resolveSpecial('honedge', 2).def.kind).toBe('stance')
+  })
+
+  it('swaps stance on a short fixed cooldown, below the special floor', () => {
+    expect(specialCooldown(SPECIALS.stanceChange, { ...BASE_STATS, cooldown: 1.5 })).toBe(2)
+  })
+
+  it('trades damage for defense between the two formes', () => {
+    const stats = { ...BASE_STATS, might: 1.5 }
+    const shield = stanceStats(stats, 'shield')
+    const blade = stanceStats(stats, 'blade')
+    expect(shield.might).toBeCloseTo(1.5 * STANCES.shield.might)
+    expect(shield.damageTaken).toBeCloseTo(0.7)
+    expect(blade.might).toBeCloseTo(1.5 * 1.3)
+    expect(blade.damageTaken).toBeGreaterThan(shield.damageTaken)
+    expect(stanceStats(stats, null)).toBe(stats)
   })
 })

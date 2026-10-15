@@ -270,6 +270,7 @@ export const siteEn: SiteMessages = {
       paragraphs: (min: number) => [
         'Besides the automatic moves, every Pokémon has a manual special attack: press Space, the A / ✕ gamepad button or the round button on screen. It charges for a moment (you move slower) and then fires: some aim the way you are walking, others hit all around you or fall from the sky on the nearest foes.',
         `Each of the 18 types has its own special, and your Pokémon uses its first type's. Its cooldown shrinks with the Cooldown stat, down to ${min}s. At the final evolution it becomes the stronger version, with more damage and area.`,
+        'Some agile lines trade their type special for a chain dash: the Pokémon slashes through to the nearest foe and, on a hit, has half a second to press again and jump to the next one, up to its jump limit. The cooldown only starts when the chain ends. Aegislash trades its special for Stance Change instead: it swaps between Shield Forme, which takes less damage, and Blade Forme, which hits harder.',
       ],
       typeHead: 'Type',
       moveHead: 'Special → final evolution',

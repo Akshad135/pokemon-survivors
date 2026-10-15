@@ -1550,6 +1550,34 @@ button {
   transform: translateY(2px);
 }
 
+/* Jumps left in a chain dash, or Aegislash's forme. */
+.special-tag {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+  padding: 1px 2px;
+  font-size: 6px;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
+  background: var(--type);
+  border: 1px solid #101018;
+}
+
+.special-button .special-tag {
+  top: auto;
+  bottom: 6px;
+  font-size: 8px;
+}
+
+/* The chain window is short: pulse fast so the next press feels urgent. */
+.special.chain {
+  animation-duration: 0.24s;
+}
+
 @media (pointer: coarse) {
   .special-badge {
     display: none;
