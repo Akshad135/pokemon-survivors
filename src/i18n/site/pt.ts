@@ -56,7 +56,7 @@ export const sitePt = {
   pokedex: {
     title: 'Pokédex do Pokémon Survivors: iniciais, inimigos, chefes e lendários',
     description:
-      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 25 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
+      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 51 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Os ${count} Pokémon que existem no Pokémon Survivors, com os números do jogo: iniciais de todas as regiões, as famílias que saem dos ovos e suas evoluções, a horda selvagem, os chefes e os lendários. Passe o mouse (ou toque) para ver o sprite andando e use ★ para ver o shiny.`,

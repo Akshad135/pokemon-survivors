@@ -8,7 +8,7 @@
 
 **A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
 
-Pick one of 27 starters (or hatch eggs for 25 more Pokémon, 52 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+Pick one of 27 starters (or hatch eggs for 51 more Pokémon, 78 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
 
 [**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
 
@@ -92,7 +92,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
     </tr>
   </table>
 
-- **Eggs and 25 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 25 families from every type and generation (Pichu, Eevee, Machop, Gastly, Abra, Riolu, Zorua… and the rare Dratini, Larvitar, Beldum, Gible and Dreepy), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars.
+- **Eggs and 51 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 51 families from every type and generation (Pichu, Eevee, Pidgey, Geodude, Gastly, Abra, Magikarp, Riolu, Zorua… and the rarest Dratini, Larvitar, Beldum, Bagon, Gible, Dreepy, Slakoth and Feebas), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars.
 
 - **32 moves and 25 held items.** Max out a move, pair it with the right item, and it evolves (Ember + Charcoal → Flamethrower).
 - **Real type matchups**, burn, poison and paralysis, and a manual **special attack** for each of the 18 types that grows stronger at the final evolution: Blast Burn, Hydro Cannon, Frenzy Plant, Bolt Strike, Draco Meteor, Astral Barrage, Precipice Blades and more.
@@ -108,7 +108,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
 - **Three difficulty levels**, picked on the select screen and all open from the start: Normal, Hard (faster, denser hordes that hit harder) and Nightmare (brutal, fast and dense hordes and half of every heal). Each run records its level for the ranking.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
-- **In-game Pokédex** of 567 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
+- **In-game Pokédex** of 568 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
 - **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.
 - **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
