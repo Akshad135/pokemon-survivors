@@ -221,7 +221,11 @@ export const HATCHLINGS = {
     stats: { maxHp: 20, armor: 1, speed: -5 },
     signature: 'iceShard',
     learnset: ['iceShard', 'earthquake', 'rockTomb', 'crunch', 'swift', 'whirlpool'],
-    line: line2(['Swinub', 220, ['ice', 'ground']], ['Piloswine', 221, ['ice', 'ground']], { maxHp: 55, armor: 1, might: 0.22, area: 0.1 }),
+    // The only Gen 4 member of these families: Mamoswine completes the line, a slow, heavy-hitting tank.
+    line: line3(['Swinub', 220, ['ice', 'ground']], ['Piloswine', 221, ['ice', 'ground']], ['Mamoswine', 473, ['ice', 'ground']], [
+      { maxHp: 30, armor: 1, might: 0.08 },
+      { maxHp: 55, armor: 1, might: 0.22, area: 0.1 },
+    ]),
   },
   snorunt: {
     name: 'Snorunt',

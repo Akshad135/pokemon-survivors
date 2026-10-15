@@ -108,7 +108,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
 - **Three difficulty levels**, picked on the select screen and all open from the start: Normal, Hard (faster, denser hordes that hit harder) and Nightmare (brutal, fast and dense hordes and half of every heal). Each run records its level for the ranking.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
-- **In-game Pokédex** of 567 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
+- **In-game Pokédex** of 568 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
 - **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.
 - **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.

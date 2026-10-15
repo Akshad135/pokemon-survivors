@@ -363,6 +363,8 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 220 | Swinub (shiny) | Tacocoa, [Caitemis](https://caitemis-art.tumblr.com/) | Tacocoa, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 221 | Piloswine | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 221 | Piloswine (shiny) | Scizivire | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 473 | Mamoswine | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 473 | Mamoswine (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 | 361 | Snorunt | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) |
 | 361 | Snorunt (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 362 | Glalie | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
