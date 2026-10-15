@@ -1,4 +1,4 @@
-import { bodyOf } from '../data/bodies'
+import { bodyOf, type Body } from '../data/bodies'
 import manifest from '../data/sprites.generated.json'
 import { createCanvas, context2d, fromStrings } from '../engine/pixelart'
 import type { Dir8 } from '../engine/math'
@@ -32,13 +32,27 @@ export type SpeciesSprites = {
 }
 
 type ManifestAnims = Partial<Record<AnimName, { frameWidth: number; frameHeight: number; durations: number[] }>>
-type ManifestEntry = { anims: ManifestAnims; shiny?: { anims: ManifestAnims; portrait: boolean } }
+type ManifestVariant = { anims: ManifestAnims; portrait?: boolean; body?: Body }
+type ManifestEntry = ManifestVariant & {
+  shiny?: ManifestVariant
+  forms?: Record<string, ManifestVariant & { shiny?: ManifestVariant }>
+}
 const MANIFEST = manifest as Record<string, ManifestEntry>
 
+type Manifest = typeof manifest
+/** An alternate form with its own sheets (`FORMS` in scripts/dex.mjs), like Aegislash's `blade`. Inferred from the manifest. */
+export type Form = { [K in keyof Manifest]: Manifest[K] extends { forms: infer F } ? keyof F : never }[keyof Manifest]
+
 const base = (dex: Dex) => `${import.meta.env.BASE_URL}assets/pokemon/${dex}`
-/** Shiny forms live in a `shiny/` subfolder with their own sheets and portrait. */
-const variantBase = (dex: Dex, shiny: boolean) => (shiny ? `${base(dex)}/shiny` : base(dex))
-const cacheKey = (dex: Dex, shiny: boolean) => (shiny ? `${dex}s` : String(dex))
+/** Alternate forms live in a `<form>/` subfolder, shinies in a `shiny/` one below the form's, each with their own sheets. */
+const variantBase = (dex: Dex, shiny: boolean, form?: Form) => `${base(dex)}${form ? `/${form}` : ''}${shiny ? '/shiny' : ''}`
+const cacheKey = (dex: Dex, shiny: boolean, form?: Form) => `${dex}${form ? `:${form}` : ''}${shiny ? 's' : ''}`
+
+const manifestVariant = (dex: Dex, shiny: boolean, form?: Form) => {
+  const entry = MANIFEST[String(dex)]
+  const variant = form ? entry?.forms?.[form] : entry
+  return shiny ? variant?.shiny : variant
+}
 
 export const hasShiny = (dex: Dex) => MANIFEST[String(dex)]?.shiny !== undefined
 
@@ -83,22 +97,22 @@ const tinted = (white: HTMLCanvasElement, color: string) => {
 const cache = new Map<string, SpeciesSprites>()
 const pending = new Map<string, Promise<SpeciesSprites>>()
 
-/** Loads (once) every sheet, the portrait and cry URL of a species form. Concurrent calls share one request. */
-export const loadSpecies = (dex: Dex, shiny = false): Promise<SpeciesSprites> => {
-  const key = cacheKey(dex, shiny)
+/** Loads (once) every sheet, the portrait and cry URL of a species variant. Concurrent calls share one request. */
+export const loadSpecies = (dex: Dex, shiny = false, form?: Form): Promise<SpeciesSprites> => {
+  const key = cacheKey(dex, shiny, form)
   const cached = cache.get(key)
   if (cached) return Promise.resolve(cached)
-  const inFlight = pending.get(key) ?? fetchSpecies(dex, shiny).finally(() => pending.delete(key))
+  const inFlight = pending.get(key) ?? fetchSpecies(dex, shiny, form).finally(() => pending.delete(key))
   pending.set(key, inFlight)
   return inFlight
 }
 
-const fetchSpecies = async (dex: Dex, shiny: boolean): Promise<SpeciesSprites> => {
-  const key = cacheKey(dex, shiny)
-  const entry = MANIFEST[String(dex)]
-  const anims = shiny ? entry?.shiny?.anims : entry?.anims
-  if (!anims) throw new Error(`Missing ${shiny ? 'shiny ' : ''}sprites for #${dex}. Run npm run assets.`)
-  const dir = variantBase(dex, shiny)
+const fetchSpecies = async (dex: Dex, shiny: boolean, form?: Form): Promise<SpeciesSprites> => {
+  const key = cacheKey(dex, shiny, form)
+  const variant = manifestVariant(dex, shiny, form)
+  const anims = variant?.anims
+  if (!anims) throw new Error(`Missing ${shiny ? 'shiny ' : ''}${form ?? ''} sprites for #${dex}. Run npm run assets.`)
+  const dir = variantBase(dex, shiny, form)
 
   const loadSheet = async (name: AnimName): Promise<Sheet> => {
     const meta = anims[name] ?? anims.Walk!
@@ -114,14 +128,15 @@ const fetchSpecies = async (dex: Dex, shiny: boolean): Promise<SpeciesSprites> =
   }
 
   const [Walk, Idle, Hurt] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt')])
-  // A missing portrait shouldn't block a run: fall back to the walk sheet.
-  const portrait = await loadImage(`${dir}/portrait.png`).catch(() => loadImage(`${dir}/Walk.png`))
+  // A missing portrait shouldn't block a run: fall back to the walk sheet. Forms ship none and use the normal one.
+  const portrait = await loadImage(form ? portraitUrl(dex, shiny) : `${dir}/portrait.png`).catch(() => loadImage(`${dir}/Walk.png`))
   const sprites: SpeciesSprites = {
     dex,
     anims: { Walk, Idle, Hurt },
     portrait,
     cry: cryUrl(dex),
-    ...bodyOf(dex, shiny),
+    // A form's own body only places its sheets; hitboxes keep the species' `bodyOf`.
+    ...((form && variant.body) || bodyOf(dex, shiny)),
   }
   cache.set(key, sprites)
   return sprites
@@ -163,7 +178,8 @@ const PUFF = [
 
 let puff: Sheet | null = null
 const standIns = new Map<Dex, SpeciesSprites>()
-const requested = new Set<Dex>()
+/** Downloads `sprites` already kicked off: dex numbers (normal forms) and alternate form cache keys. */
+const requested = new Set<Dex | string>()
 
 /** Stand-in sprites for `dex`, which also starts (once) downloading the real ones. */
 const pendingSprites = (dex: Dex): SpeciesSprites => {
@@ -186,9 +202,37 @@ const pendingSprites = (dex: Dex): SpeciesSprites => {
   return s
 }
 
-/** Sprites of a species form, falling back to the normal form, then to a dust puff while it downloads. Never throws. */
-export const sprites = (dex: Dex, shiny = false) =>
-  (shiny && cache.get(cacheKey(dex, true))) || cache.get(cacheKey(dex, false)) || pendingSprites(dex)
+/** Loads every alternate form (and its shiny, if asked) of these species in the background, so a swap never waits. */
+export const preloadForms = (dexes: readonly Dex[], shiny: boolean) =>
+  Promise.allSettled(
+    dexes.flatMap((dex) =>
+      Object.keys(MANIFEST[String(dex)]?.forms ?? {}).flatMap((form) =>
+        // Keys come from the manifest the `Form` type is inferred from.
+        [loadSpecies(dex, false, form as Form), ...(shiny ? [loadSpecies(dex, true, form as Form)] : [])],
+      ),
+    ),
+  )
+
+/** An alternate form's sprites if loaded; otherwise starts (once) loading them and returns undefined. */
+const formSprites = (dex: Dex, shiny: boolean, form: Form) => {
+  const key = cacheKey(dex, shiny, form)
+  const s = cache.get(key)
+  if (!s && !requested.has(key) && manifestVariant(dex, shiny, form)) {
+    requested.add(key)
+    void loadSpecies(dex, shiny, form).catch(() => {})
+  }
+  return s
+}
+
+/**
+ * Sprites of a species variant: an alternate form falls back to the species' own colors,
+ * a shiny to the normal colors, then to a dust puff while it downloads. Never throws.
+ */
+export const sprites = (dex: Dex, shiny = false, form?: Form) =>
+  (form && formSprites(dex, shiny, form)) ||
+  (shiny && cache.get(cacheKey(dex, true))) ||
+  cache.get(cacheKey(dex, false)) ||
+  pendingSprites(dex)
 
 export const portraitUrl = (dex: Dex, shiny = false) =>
   `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`

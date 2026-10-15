@@ -19844,6 +19844,98 @@
       "bodyW": 25,
       "bodyH": 29,
       "footY": 4
+    },
+    "forms": {
+      "blade": {
+        "anims": {
+          "Walk": {
+            "frameWidth": 32,
+            "frameHeight": 56,
+            "durations": [
+              10,
+              10,
+              6,
+              6,
+              10,
+              10,
+              6,
+              6
+            ]
+          },
+          "Idle": {
+            "frameWidth": 32,
+            "frameHeight": 56,
+            "durations": [
+              12,
+              10,
+              9,
+              9,
+              12,
+              10,
+              9,
+              9
+            ]
+          },
+          "Hurt": {
+            "frameWidth": 48,
+            "frameHeight": 88,
+            "durations": [
+              2,
+              8
+            ]
+          }
+        },
+        "body": {
+          "bodyW": 29,
+          "bodyH": 26,
+          "footY": 4
+        },
+        "shiny": {
+          "anims": {
+            "Walk": {
+              "frameWidth": 32,
+              "frameHeight": 56,
+              "durations": [
+                10,
+                10,
+                6,
+                6,
+                10,
+                10,
+                6,
+                6
+              ]
+            },
+            "Idle": {
+              "frameWidth": 32,
+              "frameHeight": 56,
+              "durations": [
+                12,
+                10,
+                9,
+                9,
+                12,
+                10,
+                9,
+                9
+              ]
+            },
+            "Hurt": {
+              "frameWidth": 48,
+              "frameHeight": 88,
+              "durations": [
+                2,
+                8
+              ]
+            }
+          },
+          "body": {
+            "bodyW": 29,
+            "bodyH": 26,
+            "footY": 4
+          }
+        }
+      }
     }
   },
   "686": {

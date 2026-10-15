@@ -43,7 +43,7 @@ import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
-import { loadAll, loadSpecies, portraitUrl, preloadShinies, sprites, streamSpecies } from './render/sprites'
+import { loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { eggIcon } from './render/art'
@@ -386,6 +386,8 @@ const startRun = async (starter: PlayableId) => {
   const game = startGame(start, view)
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
+  // Alternate forms (Aegislash's Blade Forme) stream in behind; until then the normal form stands in.
+  void preloadForms(playableDex(starter), game.player.shiny)
   loading.remove()
   run = {
     game,
