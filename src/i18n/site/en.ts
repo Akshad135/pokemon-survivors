@@ -5,6 +5,8 @@ const n = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 2 })
 const s = (count: number, one: string, many: string) => (count === 1 ? one : many)
 /** `a, b and c` */
 const list = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`)
+/** `a, b or c` */
+const either = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} or ${items.at(-1)}`)
 
 /** English copy of the static site pages. Must match `pt.ts` key for key. */
 export const siteEn: SiteMessages = {
@@ -81,6 +83,7 @@ export const siteEn: SiteMessages = {
     ringFixed: (at: string, count: number) => `Forms the ring of ${count} at ${at}`,
     boss: (at: string) => `Boss at ${at}`,
     bossChance: (at: string, percent: number) => `Boss at ${at} (${n(percent)}% chance)`,
+    trio: (at: string, trio: string) => `Boss at ${at} in runs that draw the ${trio} trio (1 in 3)`,
     rift: (from: string) => `Behind a legendary rift, from ${from} (optional arena)`,
     reaper: (at: string) => `The endless mode's reaper, from ${at}`,
     attacks: 'Attacks',
@@ -125,8 +128,13 @@ export const siteEn: SiteMessages = {
       `${count} marked ${s(count, 'strike', 'strikes')} on the ground near you every ${n(every)}s (${damage} damage)`,
     strikesSelf: (every: number, damage: number) => `Area slam around itself every ${n(every)}s (${damage} damage)`,
     ring: (count: number, every: number, damage: number) => `Ring of ${count} projectiles every ${n(every)}s (${damage} damage)`,
-    trail: (ttl: number, damage: number) => `Leaves a trail that burns for ${n(ttl)}s (${damage} damage)`,
+    trail: (ttl: number, damage: number) => `Leaves a harmful trail for ${n(ttl)}s (${damage} damage)`,
     stance: { close: 'Up close', ranged: 'At range' },
+  },
+
+  trios: {
+    names: { birds: 'Kanto birds', beasts: 'Johto beasts', regis: 'Hoenn Regis' },
+    either,
   },
 
   /** The wild roster: tiers and the cast each run draws (Pokédex filter and the guide's horde section). */
@@ -226,6 +234,7 @@ export const siteEn: SiteMessages = {
       eventHead: 'Event',
       boss: (name: string) => `Boss: ${name}`,
       bossChance: (name: string, percent: number) => `Rare boss: ${name} (${n(percent)}% chance)`,
+      bossTrio: (names: string) => `Boss: the run's legendary trio (${names})`,
     },
     world: {
       paragraphs: (count, minutes, odds) => [
@@ -312,7 +321,7 @@ export const siteEn: SiteMessages = {
     rifts: {
       paragraphs: (r) => [
         `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so every run gets 3 rifts, even when bosses take a while.`,
-        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
+        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away, an island ringed by surf, a meteor in space. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
         'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
         `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
       ],
@@ -335,6 +344,10 @@ export const siteEn: SiteMessages = {
         `Each boss switches between two ways of fighting every ${r.stance[0]} to ${r.stance[1]} seconds: up close, it rushes in and slams the area around itself; at range, it stops a few steps away and aims at you. Under ${n(r.below * 100)}% HP it enrages (red outline, cry and a screen flash): ${n(Math.round((r.speed - 1) * 100))}% faster, ${n(Math.round((1 - r.wait) * 100))}% less time between attacks and, ${n(r.chain * 100)}% of the time, a second attack right after the first.`,
         'Bosses don\'t get tougher over time, and each one drops a Poké Ball and a shower of Poké Dollars.',
         `For each boss's first ${r.window}s, while it's nearby, only ${n(r.fight * 100)}% of the regular enemies spawn, so the fight is with it; then the horde comes back. Each boss has until the next one arrives: if it's still standing when the next boss shows up, it flees and leaves nothing behind. Mewtwo is the last one: it blasts the horde away when it arrives and, while it stands, only ${n(r.finale * 100)}% of the regular enemies spawn, so the fight is about dodging its attacks.`,
+      ],
+      trios: (times, trios, mythicals, percent) => [
+        `At ${list(times)} come the three members of a legendary trio, drawn at the start of each run: ${list(trios)}. HP, contact damage and speed belong to the time slot, not the Pokémon, so no draw is easier than another; what changes is the attacks.`,
+        `At the end, with a ${n(percent)}% chance, a mythical Pokémon joins Mewtwo: ${mythicals}, also drawn per run.`,
       ],
       timeHead: 'Time',
       bossHead: 'Boss',
@@ -374,10 +387,10 @@ export const siteEn: SiteMessages = {
       chanceHead: 'Chance',
       oddsHead: 'Rarity',
       sources: {
-        boss: 'Onix, Snorlax and the legendary birds',
+        boss: 'Onix, Snorlax and the legendary trio',
         chest: 'Locked chest',
         rift: 'A rift legendary',
-        final: 'Mewtwo and Mew',
+        final: 'Mewtwo and the rare mythical (Mew, Celebi or Jirachi)',
         reaper: 'Arceus, in endless mode',
       },
     },

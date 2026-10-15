@@ -12,7 +12,7 @@ import { effectiveness, POKE_TYPES } from '../../data/types'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../../data/megas'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
-import { BOSS_FIGHT, ELITE, EVENTS, FINALE, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart } from '../../data/waves'
+import { BOSS_FIGHT, bossCandidates, ELITE, EVENTS, FINALE, MYTHICALS, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart, TRIO_IDS, TRIOS, type BossEvent } from '../../data/waves'
 import { createRng } from '../../engine/rng'
 import { DIFFICULTIES, DIFFICULTY_IDS } from '../../game/difficulty'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
@@ -74,9 +74,9 @@ const run = (locale: Locale, m: SiteMessages) => {
       const name = ENEMIES[e.enemy].name
       return [clock(e.at), html`<a href="${dexLink(locale, name)}">${m.roster.ringOf(e.count, name)}</a>`]
     }
-    const name = ENEMIES[e.enemy].name
-    const text = e.chance !== undefined ? r.bossChance(name, e.chance * 100) : r.boss(name)
-    return [clock(e.at), html`<a href="${dexLink(locale, name)}">${text}</a>`]
+    const names = bossCandidates(e).map((id) => ENEMIES[id].name)
+    const text = 'trio' in e ? r.bossTrio(m.trios.either(names)) : e.chance !== undefined ? r.bossChance(m.trios.either(names), e.chance * 100) : r.boss(names[0]!)
+    return [clock(e.at), names.length > 1 ? text : html`<a href="${dexLink(locale, names[0]!)}">${text}</a>`]
   })
   const names = LOCALES[locale].messages.difficulty.names
   const times = (v: number) => `${num(v)}x`
@@ -253,20 +253,24 @@ const types = (m: SiteMessages) => {
 
 const bosses = (locale: Locale, m: SiteMessages) => {
   const b = m.guide.bosses
-  const rows = EVENTS.flatMap((e) =>
-    e.kind === 'boss'
-      ? [
-          [
-            e.chance !== undefined ? `${clock(e.at)} (${Math.round(e.chance * 100)}%)` : clock(e.at),
-            bossName(locale, e.enemy),
-            ENEMIES[e.enemy].hp.toLocaleString(m.lang.tag),
-            html`<ul class="list">${(BOSS_PATTERNS[e.enemy] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`,
-          ],
-        ]
-      : [],
-  )
+  const pct = (v: number) => Math.round(v * 1000) / 10
+  /** One row per boss an event may bring: a trio slot lists each trio's member, a rare slot splits its chance. */
+  const rowsOf = (e: BossEvent) => {
+    const candidates = bossCandidates(e)
+    return candidates.map((id, i) => [
+      e.chance !== undefined ? `${clock(e.at)} (${pct(e.chance / candidates.length)}%)` : clock(e.at),
+      'trio' in e ? html`${bossName(locale, id)} <small>${m.trios.names[TRIO_IDS[i]!]}</small>` : bossName(locale, id),
+      ENEMIES[id].hp.toLocaleString(m.lang.tag),
+      html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`,
+    ])
+  }
+  const rows = EVENTS.flatMap((e) => (e.kind === 'boss' ? rowsOf(e) : []))
   const rules = { ...BOSS_RAGE, fight: BOSS_FIGHT.rate, window: BOSS_FIGHT.duration, finale: FINALE.rate }
-  return html`${paragraphs(b.paragraphs(rules))}${table([b.timeHead, b.bossHead, b.hpHead, b.attacksHead], rows)}`
+  const trioTimes = EVENTS.flatMap((e) => (e.kind === 'boss' && 'trio' in e ? [clock(e.at)] : []))
+  const rare = EVENTS.find((e): e is BossEvent => e.kind === 'boss' && 'mythical' in e)
+  const trios = TRIO_IDS.map((id) => `${m.trios.names[id]} (${TRIOS[id].map((enemy) => ENEMIES[enemy].name).join(', ')})`)
+  const mythicals = m.trios.either(MYTHICALS.map((id) => ENEMIES[id].name))
+  return html`${paragraphs(b.paragraphs(rules))}${paragraphs(b.trios(trioTimes, trios, mythicals, pct(rare?.chance ?? 0)))}${table([b.timeHead, b.bossHead, b.hpHead, b.attacksHead], rows)}`
 }
 
 const rifts = (locale: Locale, m: SiteMessages) => {

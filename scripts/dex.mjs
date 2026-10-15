@@ -23,11 +23,12 @@ export const HATCHLINGS = [
 export const HORDE = Object.values(roster).map((s) => s.dex)
 /** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
 export const TRAITS = [29, 31, 32, 81, 100, 101, 106, 113, 437]
-export const BOSSES = [95, 143, 144, 145, 146, 150, 151]
+/** Wave bosses: Onix, Snorlax, the three legendary trios (one drawn per run), Mewtwo and the rare mythicals. */
+export const BOSSES = [95, 143, 144, 145, 146, 243, 244, 245, 377, 378, 379, 150, 151, 251, 385]
 /** Map event Pokémon (the fleeing Meowth). Keep in sync with MEOWTH_DEX in src/game/mapEventRules.ts */
 export const CRITTERS = [52]
 /** Rift legendaries (src/data/rifts.ts), which can also roll shiny. */
-export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483]
+export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483, 380, 381, 386]
 /** Arceus, the endless mode's reaper. */
 export const REAPER = [493]
 export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER])]

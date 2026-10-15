@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../data/hatchlings'
 import { POKE_TYPES } from '../data/types'
+import { MYTHICALS } from '../data/waves'
 import manifest from '../data/sprites.generated.json'
 import { regionOf } from '../site/pokedex'
 import {
@@ -42,11 +43,14 @@ describe('egg drops', () => {
     for (let i = 0; i < 200; i++) expect(['rare', 'ultra']).toContain(rollEgg(rng, 'rift', { found: [], lucky: true }))
   })
 
-  it('give rift legendaries, Arceus and Mewtwo their own rule', () => {
+  it('give rift legendaries, Arceus, Mewtwo and the mythicals their own rule', () => {
     expect(bossEggSource('onix')).toBe('boss')
+    expect(bossEggSource('raikou')).toBe('boss')
     expect(bossEggSource('kyogre')).toBe('rift')
+    expect(bossEggSource('deoxys')).toBe('rift')
     expect(bossEggSource('arceus')).toBe('reaper')
     expect(bossEggSource('mewtwo')).toBe('final')
+    for (const id of MYTHICALS) expect(bossEggSource(id)).toBe('final')
   })
 })
 

@@ -47,6 +47,33 @@ const column = (): Piece => {
   return { sprite: toSprite(g), ax: 13, ay: 58 }
 }
 
+/** A leaning palm: a ringed trunk, drooping fronds and a few coconuts (Southern Island). */
+const palm = (): Piece => {
+  const g = grid(44, 60)
+  const cx = 20
+  const ground = 56
+  const trunk: Ramp = ['#3c2814', '#684424', '#94683c', '#b88c58', '#d8b078']
+  const leaves: Ramp = ['#10401c', '#20682c', '#38903c', '#60b850', '#a0d870']
+  // The trunk bends a little to the right as it rises, darker at every ring.
+  const bend = (t: number) => cx + 6 * t * t
+  for (let i = 0; i < 8; i++) {
+    const t0 = i / 8
+    const t1 = (i + 1) / 8
+    limb(g, bend(t0), ground - t0 * 38, bend(t1), ground - t1 * 38, 3.2 - t0, 3.2 - t1, i % 2 ? trunk : trunk.slice(0, 4))
+  }
+  const top = { x: bend(1), y: ground - 39 }
+  // Fronds rise out of the crown and droop at the tips.
+  for (const [dx, dy, droop] of [[-17, -5, 9], [-11, -11, 6], [0, -13, 4], [11, -11, 6], [18, -4, 9], [-9, 2, 7], [10, 3, 7]] as const) {
+    const mx = top.x + dx * 0.6
+    const my = top.y + dy * 0.6 - 2
+    limb(g, top.x, top.y, mx, my, 2.2, 1.8, leaves)
+    limb(g, mx, my, top.x + dx, top.y + dy + droop, 1.8, 0.6, leaves)
+  }
+  for (const [x, y] of [[-2, 2], [2, 3], [0, 4]] as const) limb(g, top.x + x, top.y + y, top.x + x + 0.5, top.y + y + 0.5, 1.5, 1.5, ['#2c1808', '#4c3018', '#6c4824', '#8c6434'])
+  outline(g, '#0c1408')
+  return { sprite: toSprite(g), ax: cx, ay: ground }
+}
+
 export const ARENA_PIECES: Record<ArenaPiece, (variant: number) => Piece> = {
   seaRock: (v) => boulder({ stone: ['#1c2840', '#2c3c5c', '#46608a', '#6c88b0', '#98b4d8'], outline: '#0a1020', moss: ['#1c5050', '#2c7068', '#48907c'] }, 14, v),
   redPillar,
@@ -57,10 +84,13 @@ export const ARENA_PIECES: Record<ArenaPiece, (variant: number) => Piece> = {
   jadeStump: (v) => brokenPillar({ stone: ['#142a1c', '#24442c', '#36603e', '#4e7c56', '#6c9c70'], outline: '#081008' }, v),
   column,
   marbleStump: (v) => brokenPillar({ stone: MARBLE, outline: '#141828' }, v + 2),
+  palm,
+  meteorCrystal: (v) =>
+    stalagmites({ stone: ['#100c18', '#201a2c', '#342c44', '#4c4260', '#6a5e80'], outline: '#06040c', crystal: ['#802810', '#d05818', '#f89850', '#fff0c8'] }, v + 1),
 }
 
 /** Shadow width of each piece, and which ones are tall enough to go see-through. */
-export const ARENA_SHADOW: Record<ArenaPiece, number> = { seaRock: 10, redPillar: 7, bell: 16, stalagmite: 8, basalt: 10, jadeStump: 8, column: 9, marbleStump: 8 }
+export const ARENA_SHADOW: Record<ArenaPiece, number> = { seaRock: 10, redPillar: 7, bell: 16, stalagmite: 8, basalt: 10, jadeStump: 8, column: 9, marbleStump: 8, palm: 9, meteorCrystal: 8 }
 export const ARENA_TALL: Record<ArenaPiece, boolean> = {
   seaRock: false,
   redPillar: true,
@@ -70,4 +100,6 @@ export const ARENA_TALL: Record<ArenaPiece, boolean> = {
   jadeStump: false,
   column: true,
   marbleStump: false,
+  palm: true,
+  meteorCrystal: true,
 }

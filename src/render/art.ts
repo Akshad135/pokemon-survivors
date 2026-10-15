@@ -217,6 +217,8 @@ const ROCK = ['..1111..', '.122221.', '12233221', '12232221', '12222211', '.1122
 
 export const HAZARD_FX = {
   ice: lazy(() => art(SHARD, { 1: '#3878a8', 2: '#98d8f8', 3: '#ffffff' }, '#183048')),
+  /** A leaf blade, flown point first like the ice shard. */
+  grass: lazy(() => art(SHARD, { 1: '#286820', 2: '#70d048', 3: '#e0f8a0' }, '#103010')),
   psychic: lazy(() => art(SMALL_ORB, { 1: '#a02868', 2: '#f85888', 3: '#ffffff' }, '#401030')),
   rock: lazy(() => art(ROCK, { 1: '#584020', 2: '#a08040', 3: '#d8c080' }, '#181818')),
   water: lazy(() => art(SMALL_ORB, { 1: '#2858b8', 2: '#58a8f8', 3: '#e0f8ff' }, '#102048')),

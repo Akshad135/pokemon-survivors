@@ -637,7 +637,7 @@ export const pt = {
       shinyStarters: () => 'Comece uma partida com um inicial shiny (1 em 64)',
       shinyLegends: () => 'Derrote um lendário shiny numa fenda',
       rifts: (n: string) => (n === '1' ? 'Vença uma fenda lendária' : `Vença ${n} fendas lendárias`),
-      legends: () => 'Derrote os 6 lendários das fendas',
+      legends: (n: string) => `Derrote os ${n} lendários das fendas`,
       overtimeMinutes: (n: string) => (n === '1' ? 'Sobreviva 1 min no modo sem fim' : `Sobreviva ${n} min no modo sem fim`),
       reaperDefeats: () => 'Derrote o Arceus no modo sem fim',
       bossKills: (n: string) => `Derrote ${n} chefes`,
