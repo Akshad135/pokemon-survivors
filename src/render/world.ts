@@ -89,11 +89,6 @@ const meadowDecor = () => {
 /* ---------------- Forest (Viridian Forest) ---------------- */
 
 const BUSH = ['...111...', '.112221..', '12232221.', '122222321', '1222222221', '.11111111.']
-/** A canopy seen from above: the undergrowth of the forest is packed with them. */
-const TREE = [
-  '....11111.....', '..112333211...', '.12233332221..', '1223333222221.', '12333222224221', '12232222242221',
-  '12222224222221', '.1222422222211', '.122222222221.', '..112222211...', '....115511....', '.....1561.....',
-]
 const MUSHROOM = ['.111.', '12321', '11111', '.454.']
 const LEAVES = ['1..', '.2.', '..1']
 const FERN = ['1...1', '.1.1.', '1.1.1', '.111.', '..1..']
@@ -101,7 +96,6 @@ const STUMP = ['.111.', '12321', '14441', '14441', '.111.']
 
 const forestDecor = () => {
   const bush = sprite(BUSH, { 1: '#1c4a24', 2: '#2f7032', 3: '#4f9444' })
-  const tree = sprite(TREE, { 1: '#0f2c16', 2: '#22582a', 3: '#3c8038', 4: '#16401e', 5: '#4a3018', 6: '#6c4828' })
   const mushroom = sprite(MUSHROOM, { 1: '#902820', 2: '#e04838', 3: '#f8e0d0', 4: '#c8b8a0', 5: '#e8d8c0' })
   const leaves = [
     sprite(LEAVES, { 1: '#c87830', 2: '#e8a040' }),
@@ -111,9 +105,9 @@ const forestDecor = () => {
   const stump = sprite(STUMP, { 1: '#4a3018', 2: '#a07848', 3: '#c8a070', 4: '#704c28' })
   return (ctx: CanvasRenderingContext2D, s: Spot) => {
     if (s.dense) {
-      // Thicket: canopies packed close, like the walls of a Mystery Dungeon forest.
-      ctx.drawImage(tree, s.x + (s.jx >> 1) - 2, s.y + (s.jy >> 1) - 2)
-      if (s.roll < 0.3) ctx.drawImage(bush, s.x + 8, s.y + 10)
+      // Undergrowth: low bushes and ferns. Anything taller is a real tree (`render/terrain.ts`), which blocks.
+      ctx.drawImage(bush, s.x + (s.jx >> 1) - 1, s.y + (s.jy >> 1))
+      if (s.roll < 0.4) ctx.drawImage(fern, s.x + 10, s.y + 9)
     } else if (s.roll < 0.035) {
       ctx.drawImage(mushroom, s.x + s.jx, s.y + s.jy)
       ctx.drawImage(mushroom, s.x + ((s.jx + 4) % 12), s.y + ((s.jy + 3) % 12))
@@ -133,7 +127,6 @@ const PEBBLES = ['1..', '..2', '.1.']
 const CRACK = ['1.....', '.1....', '.11...', '...1..', '...11.', '.....1']
 const STALAGMITE = ['..1..', '..2..', '.123.', '.123.', '12233', '12223', '.111.']
 const CRYSTAL = ['..1...', '.121.1', '.1231.', '1223.1', '12231.', '.111..']
-const BOULDER = ['...1111...', '..122231..', '.12222331.', '1222223331', '1222222231', '1222222221', '.11111111.']
 
 const caveDecor = () => {
   const pebbles = sprite(PEBBLES, { 1: '#4a3e40', 2: '#a89a98' })
@@ -143,13 +136,12 @@ const caveDecor = () => {
     sprite(CRYSTAL, { 1: '#283878', 2: '#5880d8', 3: '#b8d0ff' }),
     sprite(CRYSTAL, { 1: '#582878', 2: '#a058d8', 3: '#e8c0ff' }),
   ]
-  const boulder = sprite(BOULDER, { 1: '#2c2426', 2: '#7c6e6e', 3: '#a89c98' })
   return (ctx: CanvasRenderingContext2D, s: Spot) => {
     if (s.dense) {
-      // Rough ground: boulders and stalagmites heaped like a rock wall.
-      ctx.drawImage(boulder, s.x + (s.jx >> 1) - 2, s.y + (s.jy >> 1) - 1)
-      if (s.roll < 0.5) ctx.drawImage(stalagmite, s.x + 10, s.y + 8)
-      else ctx.drawImage(boulder, s.x + 7, s.y + 9)
+      // Rough ground: rubble and cracks, flat enough to walk over. Real rocks block (`render/terrain.ts`).
+      ctx.drawImage(pebbles, s.x + s.jx, s.y + s.jy)
+      ctx.drawImage(pebbles, s.x + ((s.jx + 6) % 12), s.y + ((s.jy + 5) % 12))
+      if (s.roll < 0.1) ctx.drawImage(crack, s.x + 4, s.y + 6)
     } else if (s.roll < 0.012) {
       ctx.drawImage(crystals[s.jx % 2]!, s.x + s.jx, s.y + s.jy)
     } else if (s.roll < 0.12) {
@@ -164,24 +156,19 @@ const caveDecor = () => {
 
 /* ---------------- Snow (Mt. Silver) ---------------- */
 
-const PINE = [
-  '....1....', '...121...', '...131...', '..12221..', '..13331..', '.1222221.', '.1333331.',
-  '122222221', '133333331', '111141111', '....4....',
-]
 const MOUND = ['..111..', '.12221.', '1222223']
 const FROST = ['1.1', '.1.', '1.1']
 const SNOW_ROCK = ['.111.', '12221', '13341', '.333.']
 
 const snowDecor = () => {
-  const pine = sprite(PINE, { 1: '#183c38', 2: '#f8fcff', 3: '#2f6a58', 4: '#5a3c28' })
   const mound = sprite(MOUND, { 1: '#f8fcff', 2: '#ffffff', 3: '#b8c8e0' })
   const frost = sprite(FROST, { 1: '#90b0d0' })
   const rock = sprite(SNOW_ROCK, { 1: '#f8fcff', 2: '#ffffff', 3: '#7888a0', 4: '#505c70' })
   return (ctx: CanvasRenderingContext2D, s: Spot) => {
     if (s.dense) {
-      // A stand of snowy pines.
-      ctx.drawImage(pine, s.x + (s.jx >> 1) - 1, s.y + (s.jy >> 1) - 2)
-      if (s.roll < 0.4) ctx.drawImage(pine, s.x + 9, s.y + 7)
+      // Drifts: snow mounds and frost, flat enough to walk over. Real pines block (`render/terrain.ts`).
+      ctx.drawImage(mound, s.x + (s.jx >> 1), s.y + (s.jy >> 1) + 2)
+      if (s.roll < 0.4) ctx.drawImage(frost, s.x + 10, s.y + 9)
     } else if (s.roll < 0.06) {
       ctx.drawImage(mound, s.x + s.jx, s.y + s.jy)
     } else if (s.roll < 0.15) {
