@@ -47,7 +47,7 @@ export const STARTERS = {
     color: '#78c850',
     stats: { regen: 0.4, maxHp: 10 },
     signature: 'razorLeaf',
-    learnset: ['razorLeaf', 'vineWhip', 'sludgeBomb', 'earthquake', 'swift', 'thunder', 'gust'],
+    learnset: ['razorLeaf', 'vineWhip', 'sludgeBomb', 'earthquake', 'swift', 'thunder', 'gust', 'toxicSpikes'],
     line: line(['Bulbasaur', 'Ivysaur', 'Venusaur'], 1, [['grass', 'poison'], ['grass', 'poison'], ['grass', 'poison']], [
       { maxHp: 30, regen: 0.4, might: 0.08 },
       { maxHp: 45, regen: 0.6, might: 0.15, area: 0.15 },
@@ -58,7 +58,7 @@ export const STARTERS = {
     color: '#f08030',
     stats: { might: 0.15, maxHp: -10 },
     signature: 'ember',
-    learnset: ['ember', 'fireSpin', 'gust', 'crunch', 'swift', 'thunder', 'sludgeBomb'],
+    learnset: ['ember', 'fireSpin', 'gust', 'crunch', 'swift', 'thunder', 'sludgeBomb', 'willOWisp'],
     line: line(['Charmander', 'Charmeleon', 'Charizard'], 4, [['fire'], ['fire'], ['fire', 'flying']], [
       { maxHp: 25, might: 0.1, speed: 3 },
       { maxHp: 40, might: 0.2, speed: 6, area: 0.1 },
@@ -93,7 +93,7 @@ export const STARTERS = {
     color: '#f8a040',
     stats: { area: 0.15, duration: 0.15, maxHp: -5 },
     signature: 'fireSpin',
-    learnset: ['fireSpin', 'ember', 'earthquake', 'swift', 'thunder', 'gust'],
+    learnset: ['fireSpin', 'ember', 'earthquake', 'swift', 'thunder', 'gust', 'willOWisp'],
     line: line(['Cyndaquil', 'Quilava', 'Typhlosion'], 155, [['fire'], ['fire'], ['fire']], [
       { maxHp: 25, might: 0.08, area: 0.1 },
       { maxHp: 40, might: 0.18, area: 0.15, speed: 4 },
@@ -128,7 +128,7 @@ export const STARTERS = {
     color: '#f87838',
     stats: { might: 0.1, speed: 4, maxHp: -5 },
     signature: 'ember',
-    learnset: ['ember', 'machPunch', 'fireSpin', 'gust', 'swift', 'thunder'],
+    learnset: ['ember', 'machPunch', 'fireSpin', 'gust', 'swift', 'thunder', 'quickAttack'],
     line: line(['Torchic', 'Combusken', 'Blaziken'], 255, [['fire'], ['fire', 'fighting'], ['fire', 'fighting']], [
       { maxHp: 25, might: 0.12, speed: 3 },
       { maxHp: 40, might: 0.25, speed: 4 },
@@ -222,7 +222,7 @@ export const STARTERS = {
     color: '#80b050',
     stats: { maxHp: 25, armor: 2, speed: -6 },
     signature: 'razorLeaf',
-    learnset: ['razorLeaf', 'vineWhip', 'machPunch', 'earthquake', 'swift', 'sludgeBomb'],
+    learnset: ['razorLeaf', 'vineWhip', 'machPunch', 'earthquake', 'swift', 'sludgeBomb', 'toxicSpikes'],
     line: line(['Chespin', 'Quilladin', 'Chesnaught'], 650, [['grass'], ['grass'], ['grass', 'fighting']], [
       { maxHp: 35, armor: 1, might: 0.05 },
       { maxHp: 60, armor: 2, might: 0.15, area: 0.1 },
@@ -233,7 +233,7 @@ export const STARTERS = {
     color: '#f09048',
     stats: { area: 0.1, duration: 0.2, might: 0.05, maxHp: -10 },
     signature: 'psyshock',
-    learnset: ['psyshock', 'ember', 'fireSpin', 'disarmingVoice', 'swift', 'thunder'],
+    learnset: ['psyshock', 'ember', 'fireSpin', 'disarmingVoice', 'swift', 'thunder', 'willOWisp'],
     line: line(['Fennekin', 'Braixen', 'Delphox'], 653, [['fire'], ['fire'], ['fire', 'psychic']], [
       { maxHp: 20, might: 0.1, area: 0.05 },
       { maxHp: 35, might: 0.2, area: 0.15, cooldown: -0.05 },
@@ -257,7 +257,7 @@ export const STARTERS = {
     color: '#a8a060',
     stats: { projectileSpeed: 0.1, magnet: 15, might: 0.05 },
     signature: 'spiritShackle',
-    learnset: ['spiritShackle', 'razorLeaf', 'leafBlade', 'gust', 'swift', 'sludgeBomb'],
+    learnset: ['spiritShackle', 'razorLeaf', 'leafBlade', 'gust', 'swift', 'sludgeBomb', 'hex'],
     line: line(['Rowlet', 'Dartrix', 'Decidueye'], 722, [['grass', 'flying'], ['grass', 'flying'], ['grass', 'ghost']], [
       { maxHp: 25, might: 0.08, projectileSpeed: 0.05 },
       { maxHp: 40, might: 0.18, projectileSpeed: 0.1, amount: 1 },
@@ -268,7 +268,7 @@ export const STARTERS = {
     color: '#d84848',
     stats: { might: 0.12, maxHp: 5, speed: -2 },
     signature: 'ember',
-    learnset: ['ember', 'crunch', 'fireSpin', 'machPunch', 'earthquake', 'swift'],
+    learnset: ['ember', 'crunch', 'fireSpin', 'machPunch', 'earthquake', 'swift', 'willOWisp'],
     line: line(['Litten', 'Torracat', 'Incineroar'], 725, [['fire'], ['fire'], ['fire', 'dark']], [
       { maxHp: 30, might: 0.1, armor: 1 },
       { maxHp: 55, might: 0.22, armor: 1 },

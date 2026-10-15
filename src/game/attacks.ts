@@ -1,9 +1,11 @@
-import { dirTo, retain } from '../engine/math'
+import { dir8, dirTo, fromAngle, retain } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { damageEnemy } from './combat'
+import { mineArmed, mineBlast, TURRET_RANGE } from './moveRules'
 import { nearestEnemy } from './queries'
-import type { Attack, Enemy, Game, Motion } from './types'
+import { spawnAttack } from './spawn'
+import type { Attack, Enemy, Game, Motion, Turret } from './types'
 import * as dm from '../engine/dmath'
 
 const neighbors: number[] = []
@@ -47,6 +49,50 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
       break
     case 'static':
       break
+    case 'lunge': {
+      const step = Math.min(dt, m.left)
+      m.left -= step
+      p.x += m.vx * step
+      p.y += m.vy * step
+      if (m.left > 0) p.dir = dir8(m.vx, m.vy)
+      a.x = p.x
+      a.y = p.y - 8
+      break
+    }
+  }
+}
+
+/** Blows a mine up: a short blast hits everything around it, then the mine is gone. */
+const detonate = (g: Game, a: Attack, expired: boolean) => {
+  spawnAttack(g, {
+    move: a.move, type: a.type, visual: a.blastVisual, x: a.x, y: a.y - 4,
+    shape: { kind: 'circle', r: a.blast }, motion: { kind: 'static' },
+    damage: mineBlast(a.damage, expired), knockback: a.knockback, status: a.status,
+    ttl: 0.32, activeUntil: 0.05,
+  })
+  a.pierce = 0
+}
+
+/** Turrets shoot at the nearest foe in range, `amount` shots in a small fan. */
+const shoot = (g: Game, a: Attack, t: Turret, dt: number) => {
+  t.left -= dt
+  if (t.left > 0) return
+  const y = a.y - 12
+  const target = nearestEnemy(g, a.x, y, TURRET_RANGE)
+  if (!target) {
+    t.left = 0
+    return
+  }
+  t.left += t.every
+  const aim = dirTo(a.x, y, target.x, target.y - target.radius)
+  const center = dm.atan2(aim.y, aim.x)
+  for (let i = 0; i < t.amount; i++) {
+    const v = fromAngle(center + (i - (t.amount - 1) / 2) * 0.22, t.speed)
+    spawnAttack(g, {
+      move: a.move, type: a.type, visual: t.shot, x: a.x, y,
+      shape: { kind: 'circle', r: 4 }, motion: { kind: 'linear', vx: v.x, vy: v.y },
+      damage: a.damage, knockback: a.knockback, pierce: 1, status: a.status, ttl: 1.2,
+    })
   }
 }
 
@@ -65,6 +111,7 @@ const collide = (g: Game, a: Attack) => {
     const e = g.enemies[i]
     if (!e || e.dying >= 0 || !overlaps(a, e)) continue
     if ((a.hits.get(e.id) ?? -1) > g.time) continue
+    if (a.blast > 0) return detonate(g, a, false)
     a.hits.set(e.id, g.time + a.hitInterval)
     damageEnemy(g, e, a)
     if (--a.pierce <= 0) return
@@ -113,7 +160,9 @@ export const updateAttacks = (g: Game, dt: number) => {
     move(g, a, a.motion, dt)
     if (a.grow > 0 && a.shape.kind === 'circle') a.shape = { kind: 'circle', r: a.shape.r + a.grow * dt }
     trail(g, a)
-    if (a.age >= a.activeFrom && a.age <= a.activeUntil) collide(g, a)
+    if (a.turret) shoot(g, a, a.turret, dt)
+    if (a.age >= a.activeFrom && a.age <= a.activeUntil && (a.blast === 0 || mineArmed(a.age))) collide(g, a)
+    if (a.blast > 0 && a.pierce > 0 && a.age >= a.ttl) detonate(g, a, true)
   }
   retain(g.attacks, (a) => a.age < a.ttl && a.pierce > 0)
 }

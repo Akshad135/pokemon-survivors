@@ -22,6 +22,21 @@ import type { Game } from './types'
 /** The fixed simulation step, the same in the shell and here. */
 export const TICK = 1 / 60
 
+/**
+ * Version of the rules a replay plays by. Bump it with any change that makes
+ * the same inputs end somewhere else (balance, spawns, boss rules, a new
+ * random draw): the server only judges replays of its own rules (`rulesStanding`).
+ * Replays from before the field existed are rules 1.
+ */
+export const RULES_VERSION = 5
+
+/**
+ * How this build stands to a replay's rules: it can judge the `same`; a
+ * `newer` one waits for the server to catch up; an `older` one can't be
+ * re-simulated faithfully anymore.
+ */
+export const rulesStanding = (rules: number) => (rules === RULES_VERSION ? 'same' : rules > RULES_VERSION ? 'newer' : 'older')
+
 /** What a run starts from besides the seed: the save's side of `createGame`. */
 export type ReplayStart = {
   seed: number
@@ -46,10 +61,11 @@ export type ReplayEvent =
   | readonly [tick: number, kind: 'view', w: number, h: number]
 
 /**
- * A recorded run. `moves` is the stick per tick, run-length encoded as
- * `[code, count, code, count…]` (see `moveCode`); `events` are in tick order.
+ * A recorded run, under `rules` (`RULES_VERSION` when recorded). `moves` is the
+ * stick per tick, run-length encoded as `[code, count, code, count…]` (see
+ * `moveCode`); `events` are in tick order.
  */
-export type Replay = { start: ReplayStart; moves: number[]; events: ReplayEvent[] }
+export type Replay = { rules: number; start: ReplayStart; moves: number[]; events: ReplayEvent[] }
 
 /* ---------------- Movement ---------------- */
 
@@ -85,7 +101,7 @@ export const moveOf = (code: number): Vec => MOVES[code] ?? MOVES[0]!
 /** A replay being written while the run plays. */
 export type Recorder = { replay: Replay; tick: number; view: { w: number; h: number } }
 
-export const startRecording = (start: ReplayStart): Recorder => ({ replay: { start, moves: [], events: [] }, tick: 0, view: { ...start.view } })
+export const startRecording = (start: ReplayStart): Recorder => ({ replay: { rules: RULES_VERSION, start, moves: [], events: [] }, tick: 0, view: { ...start.view } })
 
 /** Notes something the shell did to the run, before the next step. */
 export const recordEvent = (rec: Recorder, event: ReplayEvent extends readonly [number, ...infer Rest] ? Rest : never) =>
@@ -120,7 +136,10 @@ const parseEvent = (raw: unknown): ReplayEvent | null => {
   return kind === 'special' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
 }
 
-/** A replay from an untrusted body, or null when its shape is wrong. Ranks are clamped to the Poké Mart's limits. */
+/**
+ * A replay from an untrusted body, or null when its shape is wrong. Ranks are
+ * clamped to the Poké Mart's limits; a replay without `rules` predates them (1).
+ */
 export const parseReplay = (raw: unknown): Replay | null => {
   if (!isRecord(raw) || !isRecord(raw.start) || !Array.isArray(raw.moves) || !Array.isArray(raw.events)) return null
   const s = raw.start
@@ -132,6 +151,7 @@ export const parseReplay = (raw: unknown): Replay | null => {
   if (events.some((e) => e === null) || events.some((e, i) => i > 0 && e![0] < events[i - 1]![0])) return null
   const ranks = isRecord(s.ranks) ? s.ranks : {}
   return {
+    rules: isWhole(raw.rules) && raw.rules > 0 ? raw.rules : 1,
     start: {
       seed: s.seed,
       starter: s.starter as PlayableId,

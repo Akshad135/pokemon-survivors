@@ -1,3 +1,4 @@
+import type { BossStance } from '../../data/bosses'
 import type { Drop } from '../../data/consumables'
 import type { TraitId } from '../../data/traits'
 import type { PokeType } from '../../data/types'
@@ -9,6 +10,11 @@ const n = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
 const s = (count: number, one: string, many: string) => (count === 1 ? one : many)
 /** `a, b e c` */
 const list = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} e ${items.at(-1)}`)
+
+/** The boss rules the guide quotes (`BOSS_RAGE`, and the spawn share of `BOSS_FIGHT` and `FINALE`). */
+type BossRules = { stance: readonly [number, number]; below: number; speed: number; wait: number; chain: number; fight: number; window: number; finale: number }
+/** Elites and runners as the guide quotes them (`ELITE`, `RUNNER`; `from` is a clock like `1:00`). */
+type HordeRules = { fill: number; share: number; hp: number; damage: number; from: string; speed: number; frail: number; lead: number }
 
 /**
  * Copy of the static site pages (Pokédex, guide, changelog, legal), in Brazilian
@@ -138,6 +144,7 @@ export const sitePt = {
     strikesSelf: (every: number, damage: number) => `Pancada em área ao redor de si a cada ${n(every)}s (${damage} de dano)`,
     ring: (count: number, every: number, damage: number) => `Anel de ${count} projéteis a cada ${n(every)}s (${damage} de dano)`,
     trail: (ttl: number, damage: number) => `Deixa um rastro que queima por ${n(ttl)}s (${damage} de dano)`,
+    stance: { close: 'De perto', ranged: 'De longe' } satisfies Record<BossStance, string>,
   },
 
   /** The wild roster: tiers and the cast each run draws (Pokédex filter and the guide's horde section). */
@@ -148,6 +155,10 @@ export const sitePt = {
     paragraphs: (species: number, perRun: number) => [
       `A horda tem ${species} espécies selvagens das 9 gerações, e cada partida sorteia o seu elenco: cerca de ${perRun} espécies, poucas novas por fase, para você reconhecer quem está chegando.`,
       'Cada espécie entra numa faixa pelo total de status base. As primeiras fases puxam da faixa 1 (Pokémon básicos fracos) e o fim da partida, das faixas 4 e 5 (evoluções). As revoadas pegam um Pokémon voador da faixa indicada e os cercos, um Pokémon da faixa que você já encontrou na partida.',
+    ],
+    special: (r: HordeRules) => [
+      `Quando a horda passa de ${n(r.fill * 100)}% do limite da fase, quem nasce vem como elite (até ${n(r.share * 100)}% do limite), com contorno vermelho: ${n(r.hp)}x de HP e de EXP e ${n(r.damage)}x de dano. Limpar a tela evita que ela vire uma horda de elites. Na luta com o Mewtwo não nascem elites.`,
+      `A partir de ${r.from}, uma das espécies novas de cada fase corre: ${n(r.speed)}x mais rápida (nunca mais que você sem bônus), com ${n(r.frail * 100)}% do HP, rastros de velocidade e mira em onde você vai estar, até ${n(r.lead)}s à frente. Correr em círculos não despista ela.`,
     ],
     formula: 'Os status no jogo saem dos status base: o HP vem da faixa e da defesa (HP, Defesa e Defesa Especial), o dano da faixa e do melhor ataque, a velocidade da Velocidade base, a EXP do HP e a resistência a empurrão do HP e da Defesa (voadores e fantasmas são mais leves).',
     tiersTitle: 'Faixas',
@@ -224,7 +235,7 @@ export const sitePt = {
       difficulty: 'Dificuldade',
       difficultyIntro:
         'Escolha a dificuldade na tela de seleção do Pokémon, embaixo do botão de escolher (ou com a tecla X). Todas já vêm liberadas e a escolha fica salva. O Normal é a partida base; os outros níveis multiplicam:',
-      difficultyHead: ['Nível', 'HP dos inimigos', 'Dano que você leva', 'Ritmo de spawn', 'Escala por minuto', 'Cura'],
+      difficultyHead: ['Nível', 'HP dos inimigos', 'Dano que você leva', 'Ritmo de spawn', 'Velocidade dos inimigos', 'Escala por minuto', 'Cura'],
       timeline: 'Linha do tempo',
       timeHead: 'Tempo',
       eventHead: 'Evento',
@@ -324,9 +335,11 @@ export const sitePt = {
       ],
     },
     bosses: {
-      paragraphs: [
+      paragraphs: (r: BossRules) => [
         'Os chefes chegam em horários fixos. Os lendários entram com flash na tela, cry e um aviso. Todos têm uma barra de HP no topo e ataques próprios: os círculos marcados no chão avisam onde o golpe vai cair, então saia de dentro deles.',
+        `Cada chefe alterna entre dois jeitos de lutar a cada ${r.stance[0]} a ${r.stance[1]} segundos: de perto, ele avança rápido e bate em área ao redor de si; de longe, para a alguns passos e mira em você. Abaixo de ${n(r.below * 100)}% do HP ele fica furioso (contorno vermelho, cry e flash na tela): ${n(Math.round((r.speed - 1) * 100))}% mais rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% mais seguido e, ${n(r.chain * 100)}% das vezes, emenda um segundo ataque logo depois do primeiro.`,
         'Chefes não ficam mais fortes com o tempo, mas cada um solta uma Poké Ball e uma chuva de Poké Dollars.',
+        `Nos primeiros ${r.window}s de cada chefe, com ele por perto, nascem só ${n(r.fight * 100)}% dos inimigos comuns, então a luta é com ele; depois a horda volta. Cada chefe tem até o próximo chegar: se ainda estiver de pé quando o seguinte aparecer, ele foge e não deixa nada. Mewtwo é o último: ao chegar, empurra a horda para longe e, enquanto ele estiver de pé, nascem só ${n(r.finale * 100)}% dos inimigos comuns, então a luta é desviar dos ataques dele.`,
       ],
       timeHead: 'Tempo',
       bossHead: 'Chefe',

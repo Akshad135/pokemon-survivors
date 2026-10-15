@@ -65,6 +65,25 @@ const FIRE_STAR = [
 ]
 const JET = ['......1111111..', '...11122222221.', '.1122233333321.', '122333444443321', '.1122233333321.', '...11122222221.', '......1111111..']
 const TRIANGLE = ['....1....', '...121...', '...121...', '..12321..', '..12321..', '.1233321.', '.1222221.', '111111111']
+/* Lunges, chains, mines and turrets (`render/moveFx.ts`) */
+/** Caltrop: 1 tips, 2 spikes, 3 core. */
+const SPIKE = ['....1....', '...121...', '1..121..1', '.1123211.', '..12321..', '.1.121.1.', '1...1...1']
+/** A cluster of barbs: 1 tips, 2 spikes, 3 core, 4 shine. */
+const BARBS = [
+  '1....1....1', '.1...2...1.', '..2.121.2..', '...12321...', '12223432221',
+  '...12321...', '..2.121.2..', '.1...2...1.', '1....1....1',
+]
+/** Ghost flame: 1 rim, 2 body, 3 glow, 4 core. */
+const WISP = [
+  '......1....', '.....12....', '....121....', '...12321...', '..1223221..', '..1233321..', '.122343221.',
+  '.123444321.', '12334443321', '12344444321', '12334443321', '.123333321.', '..1222221..', '...11111...',
+]
+const WISP_SHOT = ['.111.', '12321', '13431', '12321', '.111.']
+/** Speed streak pointing right: 1 trail, 2-4 lighter towards the tip. */
+const QUICK = ['......1111.', '11...122221', '....1233321', '111.1234321', '....1233321', '11...122221', '......1111.']
+/** Two targets (3) joined by a jagged arc (2). */
+const CHAIN = ['33........', '332.......', '..2.......', '..2222....', '.....2....', '.....2222.', '........33', '........33']
+
 const TRI_PALETTES: readonly Palette[] = [
   { 1: '#a02010', 2: '#f06020', 3: '#ffd080' },
   { 1: '#2060a0', 2: '#60c0f0', 3: '#e0f8ff' },
@@ -106,6 +125,17 @@ export const FX = {
   heart: lazy(() => art(HEART, { 1: '#a02858', 2: '#f878a8', 3: '#ffffff' }, '#401020')),
   note: lazy(() => art(NOTE, { 1: '#c03018', 2: '#f8b030' }, '#401008')),
   blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
+  spikes: lazy(() => art(SPIKE, { 1: '#e0b8f0', 2: '#a040c0', 3: '#502060' }, '#201028')),
+  barbs: lazy(() => art(BARBS, { 1: '#f0d8f8', 2: '#b058d0', 3: '#6a2a88', 4: '#88c040' }, '#201028')),
+  wisp: lazy(() => {
+    const pal = { 1: '#3040a0', 2: '#5870e8', 3: '#a8c0ff', 4: '#ffffff' }
+    return [outlined(fromStrings(WISP, pal), '#181838'), outlined(fromStrings(WISP, pal, { mirror: true }), '#181838')]
+  }),
+  wispShot: lazy(() => art(WISP_SHOT, { 1: '#3040a0', 2: '#78a0f8', 3: '#c8d8ff', 4: '#ffffff' })),
+  inferno: lazy(() => {
+    const pal = { 1: '#801008', 2: '#e03010', 3: '#f88020', 4: '#fff0a0' }
+    return [outlined(fromStrings(FLAME, pal), '#300808'), outlined(fromStrings(FLAME, pal, { mirror: true }), '#300808')]
+  }),
 }
 
 /* ---------------- Eggs ---------------- */
@@ -308,6 +338,15 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   torchSong: () => FX.note(),
   leafBlade: () => FX.blade(),
   razorShell: () => art(SHELL, { 1: '#284880', 2: '#e8f0f8', 3: '#a8c8e8' }, '#101830'),
+  quickAttack: () => art(QUICK, { 1: '#8890b0', 2: '#c8d0e8', 3: '#f0f4ff', 4: '#ffffff' }, '#303850'),
+  extremeSpeed: () => art(QUICK, { 1: '#c89000', 2: '#f8d030', 3: '#fff8b0', 4: '#ffffff' }, '#503800'),
+  shockWave: () => art(CHAIN, { 2: '#f8e030', 3: '#ffffff' }, '#504010'),
+  thunderbolt: () => art(CHAIN, { 2: '#fff8a0', 3: '#f8a030' }, '#a03800'),
+  hex: () => art(CHAIN, { 2: '#a070d8', 3: '#f0e0ff' }, '#281838'),
+  toxicSpikes: () => FX.spikes(),
+  barbBarrage: () => FX.barbs(),
+  willOWisp: () => FX.wisp()[0]!,
+  inferno: () => FX.inferno()[0]!,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {

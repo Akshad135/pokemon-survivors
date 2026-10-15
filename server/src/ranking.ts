@@ -157,6 +157,11 @@ export const rankingStore = (sql: Sql) => {
         where id = ${id} and survived = ${time} and verified is null`
     },
 
+    /** Forgets the replay of a run no check can judge (recorded under older rules): it stays unverified, like a run sent without one. */
+    dropReplay: async (id: string) => {
+      await sql`update runs set replay = null where id = ${id} and verified is null`
+    },
+
     /** Runs still waiting for a check, oldest first (after a restart). */
     uncheckedRuns: async () =>
       (await sql<{ id: string }[]>`select id from runs where verified is null and replay is not null and finished_at is not null order by finished_at`).map((r) => r.id),

@@ -131,7 +131,7 @@ export const traitText = (trait: TraitId, id: keyof typeof ENEMIES, m: SiteMessa
   }
 }
 
-export const patternText = (p: BossPattern, m: SiteMessages) => {
+const attackText = (p: BossPattern, m: SiteMessages) => {
   switch (p.kind) {
     case 'strikes':
       return p.target === 'player' ? m.patterns.strikesPlayer(p.count, p.every, p.damage) : m.patterns.strikesSelf(p.every, p.damage)
@@ -141,6 +141,9 @@ export const patternText = (p: BossPattern, m: SiteMessages) => {
       return m.patterns.trail(p.ttl, p.damage)
   }
 }
+
+/** One boss attack, led by its stance when it only fires in one (`BossStance`). */
+export const patternText = (p: BossPattern, m: SiteMessages) => (p.stance ? `${m.patterns.stance[p.stance]}: ${attackText(p, m)}` : attackText(p, m))
 
 const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessages) => {
   const e: EnemyDef = ENEMIES[entry.source.id]

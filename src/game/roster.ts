@@ -4,7 +4,7 @@ import { biomeAt, BIOMES, type BiomeId } from '../data/biomes'
 import type { Tier } from '../data/roster'
 import { isSummoner, SUMMONS } from '../data/traits'
 import type { PokeType } from '../data/types'
-import { EVENTS, RUN_LENGTH, STAGES, stageIndexAt, stageStart, type WaveEvent, type WaveStage } from '../data/waves'
+import { EVENTS, RUN_LENGTH, RUNNER, STAGES, stageIndexAt, stageStart, type WaveEvent, type WaveStage } from '../data/waves'
 
 /** Weighted spawn pool of one stage, as `weightedPick` takes it. */
 export type StagePool = ReadonlyArray<readonly [EnemyId, number]>
@@ -15,6 +15,8 @@ export type Roster = {
   stages: readonly StagePool[]
   /** Species of each swarm and ring, aligned with `EVENTS` (`null` for bosses, which name their own). */
   events: readonly (EnemyId | null)[]
+  /** Per stage, the species whose regular spawns are runners (`RUNNER`), or null. */
+  runners: readonly (EnemyId | null)[]
 }
 
 /**
@@ -85,7 +87,9 @@ const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((
  * previous stage's newest species. Swarms take a flyer of their tier the run
  * has already met (else any flyer of the tier, else the fastest met), rings a
  * species of their tier the run has already met; neither ever takes a trait
- * species, which stay within `TRAIT_CAP` per stage. Same seed, same cast.
+ * species, which stay within `TRAIT_CAP` per stage. From stage `RUNNER.from`,
+ * one of each stage's new species without a trait is its runner (spawning at
+ * `RUNNER.weight`). Same seed, same cast.
  */
 export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events = EVENTS }: RosterOptions = {}): Roster => {
   const used = new Set<EnemyId>()
@@ -144,12 +148,19 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
     return fastest ? fastest[0] : draw(ofTier(e.tier, false), stage)
   })
 
+  // Drawn last, so the cast itself is the same with or without runners.
+  const runners = casts.map(({ fresh }, i) => {
+    const plain = fresh.filter((id) => !hasTrait(id))
+    return i >= RUNNER.from && plain.length > 0 ? pick(rng, plain) : null
+  })
+
   return {
-    stages: casts.map(({ carried, fresh }) => [
+    stages: casts.map(({ carried, fresh }, i) => [
       ...carried.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : CARRIED] as const),
-      ...fresh.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : FRESH] as const),
+      ...fresh.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : id === runners[i] ? RUNNER.weight : FRESH] as const),
     ]),
     events: eventSpecies,
+    runners,
   }
 }
 

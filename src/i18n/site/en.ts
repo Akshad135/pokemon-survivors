@@ -126,6 +126,7 @@ export const siteEn: SiteMessages = {
     strikesSelf: (every: number, damage: number) => `Area slam around itself every ${n(every)}s (${damage} damage)`,
     ring: (count: number, every: number, damage: number) => `Ring of ${count} projectiles every ${n(every)}s (${damage} damage)`,
     trail: (ttl: number, damage: number) => `Leaves a trail that burns for ${n(ttl)}s (${damage} damage)`,
+    stance: { close: 'Up close', ranged: 'At range' },
   },
 
   /** The wild roster: tiers and the cast each run draws (Pokédex filter and the guide's horde section). */
@@ -136,6 +137,10 @@ export const siteEn: SiteMessages = {
     paragraphs: (species: number, perRun: number) => [
       `The horde has ${species} wild species from all 9 generations, and every run draws its own cast: about ${perRun} species, only a few new ones per stage, so you can tell who is coming.`,
       'Each species sits in a tier set by its base stat total. The first stages draw from tier 1 (weak basic Pokémon) and the end of the run from tiers 4 and 5 (evolved Pokémon). Swarms take a flying Pokémon of their tier, and rings a Pokémon of their tier you have already met this run.',
+    ],
+    special: (r) => [
+      `Once the horde passes ${n(r.fill * 100)}% of the stage's cap, new arrivals come in as elites (up to ${n(r.share * 100)}% of the cap), with a red outline: ${n(r.hp)}x HP and EXP and ${n(r.damage)}x damage. Keeping the screen clear keeps it from turning into a horde of elites. No elites spawn during the Mewtwo fight.`,
+      `From ${r.from}, one of each stage's new species runs: ${n(r.speed)}x faster (never faster than you without bonuses), with ${n(r.frail * 100)}% of the HP, speed lines, and it aims where you're going to be, up to ${n(r.lead)}s ahead. Running in circles won't shake it.`,
     ],
     formula: 'In-game stats come from the base stats: HP from the tier and the bulk (HP, Defense and Special Defense), damage from the tier and the best attacking stat, speed from base Speed, EXP from HP, and knockback resistance from HP and Defense (flying and ghost types are lighter).',
     tiersTitle: 'Tiers',
@@ -212,7 +217,7 @@ export const siteEn: SiteMessages = {
       difficulty: 'Difficulty',
       difficultyIntro:
         'Pick the difficulty on the Pokémon select screen, under the choose button (or with the X key). Every level is open from the start and your pick is saved. Normal is the base run; the other levels multiply:',
-      difficultyHead: ['Level', 'Enemy HP', 'Damage you take', 'Spawn rate', 'Scaling per minute', 'Healing'],
+      difficultyHead: ['Level', 'Enemy HP', 'Damage you take', 'Spawn rate', 'Enemy speed', 'Scaling per minute', 'Healing'],
       timeline: 'Timeline',
       timeHead: 'Time',
       eventHead: 'Event',
@@ -312,9 +317,11 @@ export const siteEn: SiteMessages = {
       ],
     },
     bosses: {
-      paragraphs: [
+      paragraphs: (r) => [
         'Bosses arrive at fixed times. Legendaries make an entrance with a screen flash, their cry and a banner. All of them get an HP bar at the top and their own attacks: marked circles on the ground show where a hit will land, so step out of them.',
+        `Each boss switches between two ways of fighting every ${r.stance[0]} to ${r.stance[1]} seconds: up close, it rushes in and slams the area around itself; at range, it stops a few steps away and aims at you. Under ${n(r.below * 100)}% HP it enrages (red outline, cry and a screen flash): ${n(Math.round((r.speed - 1) * 100))}% faster, ${n(Math.round((1 - r.wait) * 100))}% less time between attacks and, ${n(r.chain * 100)}% of the time, a second attack right after the first.`,
         'Bosses don\'t get tougher over time, and each one drops a Poké Ball and a shower of Poké Dollars.',
+        `For each boss's first ${r.window}s, while it's nearby, only ${n(r.fight * 100)}% of the regular enemies spawn, so the fight is with it; then the horde comes back. Each boss has until the next one arrives: if it's still standing when the next boss shows up, it flees and leaves nothing behind. Mewtwo is the last one: it blasts the horde away when it arrives and, while it stands, only ${n(r.finale * 100)}% of the regular enemies spawn, so the fight is about dodging its attacks.`,
       ],
       timeHead: 'Time',
       bossHead: 'Boss',
