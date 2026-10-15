@@ -871,6 +871,66 @@ export const pt = {
         '+1 golpe e +6 de dano',
       ],
     },
+    quickAttack: {
+      description: 'Avança num bote curto contra o inimigo à sua frente, acertando tudo no caminho e ficando invulnerável por um instante.',
+      upgrades: [
+        '+5 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+6 de dano',
+        'Bote mais longo',
+        'Recarga 0.3s mais rápida',
+        '+8 de dano e +20% de área',
+      ],
+    },
+    shockWave: {
+      description: 'Um choque salta de inimigo em inimigo, perdendo força a cada salto. Pode paralisar.',
+      upgrades: [
+        '+1 salto',
+        '+4 de dano',
+        'Recarga 0.2s mais rápida',
+        '+1 salto',
+        '+5 de dano e +10% de chance de paralisar',
+        'Salta 25% mais longe',
+        '+2 saltos',
+      ],
+    },
+    hex: {
+      description: 'Uma maldição salta de inimigo em inimigo. Causa ×1.7 de dano em quem está com status.',
+      upgrades: [
+        '+1 salto',
+        '+4 de dano',
+        'Recarga 0.2s mais rápida',
+        '+1 salto',
+        '+5 de dano',
+        'Salta 25% mais longe',
+        '+2 saltos',
+      ],
+    },
+    toxicSpikes: {
+      description: 'Deixa espinhos venenosos no chão que explodem quando um inimigo pisa. Se ninguém pisar, explodem com metade do dano.',
+      upgrades: [
+        '+6 de dano',
+        '+1 espinho',
+        '+20% de área',
+        'Duram +2s',
+        '+8 de dano e venenos +25% mais fortes',
+        '+1 espinho',
+        '+25% de área e +6 de dano',
+      ],
+    },
+    willOWisp: {
+      description: 'Deixa para trás um fogo-fátuo que atira chamas sozinho no inimigo mais próximo. Pode queimar.',
+      upgrades: [
+        '+3 de dano',
+        'Dura +1.5s',
+        '+1 chama por disparo',
+        'Recarga 1s mais rápida',
+        '+4 de dano e +10% de chance de queimar',
+        'Dura +1.5s',
+        '+1 chama por disparo e +3 de dano',
+      ],
+    },
     flamethrower: {
       description: 'Jorro de fogo contínuo que atravessa tudo pela frente.',
       upgrades: [],
@@ -909,6 +969,22 @@ export const pt = {
     },
     hurricane: {
       description: 'Tornados giram ao seu redor, sugando e jogando inimigos longe.',
+      upgrades: [],
+    },
+    extremeSpeed: {
+      description: 'Um bote relâmpago que atravessa a horda e termina numa onda de choque.',
+      upgrades: [],
+    },
+    thunderbolt: {
+      description: 'Um raio salta por até 9 inimigos, paralisando muitos deles.',
+      upgrades: [],
+    },
+    barbBarrage: {
+      description: 'Espalha punhados de farpas venenosas que explodem em grandes nuvens tóxicas.',
+      upgrades: [],
+    },
+    inferno: {
+      description: 'Deixa uma fogueira que dispara rajadas de fogo por muito tempo. Queima com frequência.',
       upgrades: [],
     },
   },
