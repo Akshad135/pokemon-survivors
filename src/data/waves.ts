@@ -86,6 +86,7 @@ export const BOSS_FIGHT = { rate: 0.3, max: 1, duration: 60 } as const
  * stay under `share` of the cap. With the horde renewing at the cap
  * (`game/renewal.ts`) a full horde turns partly elite, but never into a wall
  * of them (measured: without `share` a struggling Nightmare run hit ~300).
+ * None spawn while the finale boss lives: the last fight stays a duel.
  */
 export const ELITE = { fill: 0.9, share: 0.3, hp: 1.6, xp: 1.6, damage: 1.25, size: 1.15 } as const
 

@@ -91,8 +91,8 @@ const CALM = { rate: 1, max: 1 } as const
  * chose it, a thin horde while the finale boss lives, and a thinner one for the
  * first minute of any other wave boss in the fight (`bossNear`, `BOSS_FIGHT`).
  */
-const pressureOf = (g: Game, bossNear: boolean) =>
-  g.endless ? endlessPressure(g.time) : finaleAlive(g) ? FINALE : bossNear ? BOSS_FIGHT : CALM
+const pressureOf = (g: Game, finale: boolean, bossNear: boolean) =>
+  g.endless ? endlessPressure(g.time) : finale ? FINALE : bossNear ? BOSS_FIGHT : CALM
 
 /** Retires one long-lived off-screen enemy per tick (`RENEWAL.maxAge`), cap or not; the spawner refills the room. */
 const retireOld = (g: Game) => {
@@ -103,8 +103,9 @@ const retireOld = (g: Game) => {
 /**
  * Regular spawns: the stage's rate and cap times the difficulty and the
  * pressure. At the cap the oldest off-screen enemy makes room (renewal); past
- * `ELITE.fill` of the cap new spawns come in as elites, and the stage's runner
- * species as runners. Shinies are neither.
+ * `ELITE.fill` of the cap new spawns come in as elites (never while the finale
+ * boss lives, so the last fight stays a duel), and the stage's runner species
+ * as runners. Shinies are neither.
  */
 export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
@@ -129,7 +130,8 @@ export const updateSpawner = (g: Game, dt: number) => {
     if (e.elite) elites++
     if (hasTrait(e.kind)) traitsAlive++
   }
-  const pressure = pressureOf(g, bossNear)
+  const finale = finaleAlive(g)
+  const pressure = pressureOf(g, finale, bossNear)
   const cap = stage.max * pressure.max * more
 
   g.spawnBudget += stage.rate * pressure.rate * more * dt
@@ -156,7 +158,7 @@ export const updateSpawner = (g: Game, dt: number) => {
     } else {
       const pos = offscreen(g)
       const e = spawnEnemy(g, kind, pos.x, pos.y)
-      if (eliteSpawn(regular, elites, cap)) {
+      if (!finale && eliteSpawn(regular, elites, cap)) {
         makeElite(e)
         elites++
       }
