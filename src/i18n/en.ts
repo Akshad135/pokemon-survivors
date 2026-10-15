@@ -821,6 +821,66 @@ export const en: Messages = {
         '+1 slash and +6 damage',
       ],
     },
+    quickAttack: {
+      description: 'Lunges a short hop at the foe ahead, hitting everything on the way and staying invulnerable for an instant.',
+      upgrades: [
+        '+5 damage',
+        '+20% area',
+        '0.3s faster cooldown',
+        '+6 damage',
+        'Longer lunge',
+        '0.3s faster cooldown',
+        '+8 damage and +20% area',
+      ],
+    },
+    shockWave: {
+      description: 'A shock jumps from foe to foe, weakening with each jump. May paralyze.',
+      upgrades: [
+        '+1 jump',
+        '+4 damage',
+        '0.2s faster cooldown',
+        '+1 jump',
+        '+5 damage and +10% paralysis chance',
+        'Jumps 25% farther',
+        '+2 jumps',
+      ],
+    },
+    hex: {
+      description: 'A curse jumps from foe to foe. Deals ×1.7 damage to foes with a status condition.',
+      upgrades: [
+        '+1 jump',
+        '+4 damage',
+        '0.2s faster cooldown',
+        '+1 jump',
+        '+5 damage',
+        'Jumps 25% farther',
+        '+2 jumps',
+      ],
+    },
+    toxicSpikes: {
+      description: 'Leaves poison spikes on the ground that burst when a foe steps on them. Untouched, they burst for half damage.',
+      upgrades: [
+        '+6 damage',
+        '+1 spike',
+        '+20% area',
+        'Last +2s',
+        '+8 damage and 25% stronger poison',
+        '+1 spike',
+        '+25% area and +6 damage',
+      ],
+    },
+    willOWisp: {
+      description: 'Leaves a wisp behind that shoots flames at the nearest foe on its own. May burn.',
+      upgrades: [
+        '+3 damage',
+        'Lasts +1.5s',
+        '+1 flame per volley',
+        '1s faster cooldown',
+        '+4 damage and +10% burn chance',
+        'Lasts +1.5s',
+        '+1 flame per volley and +3 damage',
+      ],
+    },
     flamethrower: {
       description: 'A continuous stream of fire that pierces everything ahead.',
       upgrades: [],
@@ -859,6 +919,22 @@ export const en: Messages = {
     },
     hurricane: {
       description: 'Tornadoes spin around you, sucking foes in and flinging them away.',
+      upgrades: [],
+    },
+    extremeSpeed: {
+      description: 'A lightning-fast lunge that cuts through the horde and ends in a shockwave.',
+      upgrades: [],
+    },
+    thunderbolt: {
+      description: 'A bolt jumps across up to 9 foes, paralyzing many of them.',
+      upgrades: [],
+    },
+    barbBarrage: {
+      description: 'Scatters handfuls of poison barbs that burst into big toxic clouds.',
+      upgrades: [],
+    },
+    inferno: {
+      description: 'Leaves a bonfire that shoots fire blasts for a long time. Often burns.',
       upgrades: [],
     },
   },

@@ -13,6 +13,7 @@ import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
+import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
@@ -89,6 +90,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     default:
       drawEvolvedGround(ctx, a, t)
+      drawMoveFxGround(ctx, a)
       return drawSpecialGround(ctx, a)
   }
 }
@@ -256,6 +258,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       return
     default:
       drawEvolvedAttack(ctx, a, t)
+      drawMoveFxAttack(ctx, a, t)
       return drawSpecialAttack(ctx, a, t)
   }
 }

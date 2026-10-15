@@ -1,11 +1,17 @@
 import { dirTo, fromAngle, TAU } from '../engine/math'
-import { pick, range } from '../engine/rng'
+import { chance, pick, range } from '../engine/rng'
 import type { PokeType } from '../data/types'
 import { spawnAttack } from './spawn'
+import { damageEnemy } from './combat'
 import { enemiesInView, nearestEnemy } from './queries'
-import type { Game } from './types'
+import {
+  CHAIN_JUMP, CHAIN_RANGE, chainDamage, chainTargets, HEX_BONUS, LUNGE_IFRAMES, LUNGE_MIN_COOLDOWN, LUNGE_OVERSHOOT,
+  LUNGE_SEEK, LUNGE_TIME, lungeLength, lungeTarget, mineCap,
+} from './moveRules'
+import { specialBusy } from './special'
+import type { Attack, Game, Visual } from './types'
 import type { PlayerStats } from './stats'
-import { scaleStatus, type StatusSpec } from './status'
+import { isAfflicted, scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
 
 /**
@@ -46,8 +52,13 @@ export type MoveDef = {
   upgrades: readonly Upgrade[]
   /** Condition its hits may inflict (chance and power scale with upgrades and items). */
   status?: StatusSpec
+  /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
+  minCooldown?: number
   fire: (g: Game, s: CastStats) => void
 }
+
+/** What a cast helper needs to name and paint its hitboxes. */
+type Look = { move: MoveId; type: PokeType; visual: Visual }
 
 const stats = (s: Partial<MoveStats>): MoveStats => ({
   damage: 0, cooldown: 1, area: 1, amount: 1, speed: 0, duration: 1, pierce: Infinity, knockback: 0, statusChance: 0, statusDamage: 0, ...s,
@@ -72,6 +83,97 @@ const radial = (g: Game, count: number, spin = 1.7) =>
 const reachOffset = (angle: number, dist: number) => {
   const d = fromAngle(angle, dist)
   return { ox: d.x, oy: d.y - 8 }
+}
+
+/**
+ * Lunge: carries the player a short hop through the nearest foe ahead of the
+ * stick (any foe when standing still), hitting everything along the way, with
+ * a short i-frame window. Holds fire when nothing is in reach or the special is
+ * busy moving the player. `burst` (> 0) adds a shockwave where it lands.
+ */
+const lunge = (g: Game, s: CastStats, look: Look, burst = 0) => {
+  const p = g.player
+  if (specialBusy(g.special)) return
+  const length = lungeLength(s.speed)
+  const target = lungeTarget(g.enemies, p, p.facing, p.moving, length + LUNGE_SEEK)
+  if (!target) return
+  const d = dirTo(p.x, p.y, target.x, target.y, p.facing)
+  const dist = Math.min(length, dm.hypot(target.x - p.x, target.y - p.y) + LUNGE_OVERSHOOT)
+  const v = dist / LUNGE_TIME
+  p.iframes = Math.max(p.iframes, LUNGE_IFRAMES)
+  spawnAttack(g, {
+    ...look, x: p.x, y: p.y - 8,
+    shape: { kind: 'circle', r: 11 * s.area },
+    motion: { kind: 'lunge', vx: d.x * v, vy: d.y * v, left: LUNGE_TIME },
+    damage: s.damage, knockback: s.knockback, ttl: LUNGE_TIME + 0.12, activeUntil: LUNGE_TIME,
+  })
+  if (burst > 0) {
+    spawnAttack(g, {
+      ...look, x: p.x + d.x * dist, y: p.y + d.y * dist - 4,
+      shape: { kind: 'circle', r: 6 }, motion: { kind: 'static' },
+      damage: s.damage * 0.6, knockback: s.knockback, ttl: 0.3, grow: burst / 0.3, age: -LUNGE_TIME,
+    })
+  }
+}
+
+/**
+ * Chain: strikes the nearest foe, then jumps to the next nearest ones (`amount`
+ * hits in all), ×0.85 damage per jump and ×`hexBonus` on foes with a status
+ * condition. The hits land at once, without knockback; each jump leaves a
+ * visual-only arc from the previous foe, a few ms apart.
+ */
+const chain = (g: Game, s: CastStats, look: Look, hexBonus = 1) => {
+  const p = g.player
+  const targets = chainTargets(g.enemies, p, s.amount, CHAIN_RANGE, CHAIN_JUMP * s.area)
+  let from = { x: p.x, y: p.y - 10 }
+  targets.forEach((e, hop) => {
+    const to = { x: e.x, y: e.y - e.radius }
+    const arc = spawnAttack(g, {
+      ...look, ...to, from,
+      shape: { kind: 'circle', r: 4 * s.area }, motion: { kind: 'static' },
+      damage: chainDamage(s.damage, hop, isAfflicted(e.status), hexBonus), status: s.status,
+      ttl: 0.28, activeFrom: Infinity, age: -hop * 0.035,
+    })
+    damageEnemy(g, e, arc)
+    from = to
+  })
+}
+
+/**
+ * Mine: drops `amount` mines at the player's feet (scattered after the first).
+ * They arm after `MINE_ARM`, blow up when a foe steps on one and blow for half
+ * when they expire. Over the cap (`mineCap`), the oldest go off early.
+ */
+const mine = (g: Game, s: CastStats, look: Look, blastVisual: Visual) => {
+  const p = g.player
+  const mines: Attack[] = []
+  for (const a of g.attacks) if (a.move === look.move && a.blast > 0 && a.pierce > 0) mines.push(a)
+  // Attacks stay in spawn order, so the first ones are the oldest: they expire now.
+  const extra = mines.length + s.amount - mineCap(s.amount)
+  for (let i = 0; i < extra && i < mines.length; i++) mines[i]!.ttl = mines[i]!.age
+  for (let i = 0; i < s.amount; i++) {
+    const off = i === 0 ? { x: 0, y: 0 } : fromAngle(range(g.rng, 0, TAU), range(g.rng, 10, 20))
+    spawnAttack(g, {
+      ...look, x: p.x + off.x, y: p.y + off.y * 0.7,
+      shape: { kind: 'circle', r: 9 * s.area }, motion: { kind: 'static' },
+      damage: s.damage, knockback: s.knockback, pierce: 1, status: s.status, ttl: s.duration,
+      blast: 30 * s.area, blastVisual, flip: chance(g.rng, 0.5),
+    })
+  }
+}
+
+/**
+ * Turret: leaves a static wisp just behind the player; for `duration` it shoots
+ * `amount` shots at the nearest foe every `every` seconds. It never hits by itself.
+ */
+const turret = (g: Game, s: CastStats, look: Look, shot: Visual, every: number) => {
+  const p = g.player
+  spawnAttack(g, {
+    ...look, x: p.x - p.facing.x * 10, y: p.y - p.facing.y * 10,
+    shape: { kind: 'circle', r: 6 * s.area }, motion: { kind: 'static' },
+    damage: s.damage, knockback: s.knockback, status: s.status, ttl: s.duration, activeFrom: Infinity,
+    turret: { every, left: 0.25, amount: s.amount, speed: s.speed, shot },
+  })
 }
 
 export const MOVES = {
@@ -736,6 +838,90 @@ export const MOVES = {
     },
   },
 
+  quickAttack: {
+    name: 'Quick Attack',
+    type: 'normal',
+    base: stats({ damage: 14, cooldown: 2.4, speed: 360, knockback: 90 }),
+    minCooldown: LUNGE_MIN_COOLDOWN,
+    upgrades: [
+      { damage: 5 },
+      { area: 0.2 },
+      { cooldown: -0.3 },
+      { damage: 6 },
+      { speed: 70 },
+      { cooldown: -0.3 },
+      { damage: 8, area: 0.2 },
+    ],
+    fire: (g, s) => lunge(g, s, { move: 'quickAttack', type: 'normal', visual: 'quick' }),
+  },
+
+  shockWave: {
+    name: 'Shock Wave',
+    type: 'electric',
+    base: stats({ damage: 12, cooldown: 1.6, amount: 3 }),
+    status: { kind: 'paralysis', chance: 0.2, duration: 1.5, power: 0 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 4 },
+      { cooldown: -0.2 },
+      { amount: 1 },
+      { damage: 5, statusChance: 0.1 },
+      { area: 0.25 },
+      { amount: 2 },
+    ],
+    fire: (g, s) => chain(g, s, { move: 'shockWave', type: 'electric', visual: 'shock' }),
+  },
+
+  hex: {
+    name: 'Hex',
+    type: 'ghost',
+    base: stats({ damage: 11, cooldown: 1.5, amount: 3 }),
+    upgrades: [
+      { amount: 1 },
+      { damage: 4 },
+      { cooldown: -0.2 },
+      { amount: 1 },
+      { damage: 5 },
+      { area: 0.25 },
+      { amount: 2 },
+    ],
+    fire: (g, s) => chain(g, s, { move: 'hex', type: 'ghost', visual: 'hex' }, HEX_BONUS),
+  },
+
+  toxicSpikes: {
+    name: 'Toxic Spikes',
+    type: 'poison',
+    base: stats({ damage: 18, cooldown: 1.4, amount: 1, duration: 6, knockback: 50 }),
+    status: { kind: 'poison', chance: 0.6, duration: 3, power: 0.3 },
+    upgrades: [
+      { damage: 6 },
+      { amount: 1 },
+      { area: 0.2 },
+      { duration: 2 },
+      { damage: 8, statusDamage: 0.25 },
+      { amount: 1 },
+      { area: 0.25, damage: 6 },
+    ],
+    fire: (g, s) => mine(g, s, { move: 'toxicSpikes', type: 'poison', visual: 'spikes' }, 'spikesBlast'),
+  },
+
+  willOWisp: {
+    name: 'Will-O-Wisp',
+    type: 'fire',
+    base: stats({ damage: 9, cooldown: 6.5, amount: 1, speed: 170, duration: 5, knockback: 20 }),
+    status: { kind: 'burn', chance: 0.3, duration: 2.5, power: 0.3 },
+    upgrades: [
+      { damage: 3 },
+      { duration: 1.5 },
+      { amount: 1 },
+      { cooldown: -1 },
+      { damage: 4, statusChance: 0.1 },
+      { duration: 1.5 },
+      { amount: 1, damage: 3 },
+    ],
+    fire: (g, s) => turret(g, s, { move: 'willOWisp', type: 'fire', visual: 'wisp' }, 'wispShot', 0.6),
+  },
+
   /* ---------- Evolved moves (max level move + paired held item, see data/evolutions.ts) ---------- */
 
   flamethrower: {
@@ -947,6 +1133,42 @@ export const MOVES = {
       }
     },
   },
+
+  extremeSpeed: {
+    name: 'Extreme Speed',
+    type: 'normal',
+    base: stats({ damage: 36, cooldown: 1.5, speed: 560, area: 1.4, knockback: 160 }),
+    minCooldown: LUNGE_MIN_COOLDOWN,
+    upgrades: [],
+    fire: (g, s) => lunge(g, s, { move: 'extremeSpeed', type: 'normal', visual: 'extremeSpeed' }, 44),
+  },
+
+  thunderbolt: {
+    name: 'Thunderbolt',
+    type: 'electric',
+    base: stats({ damage: 30, cooldown: 1.1, amount: 9, area: 1.3 }),
+    status: { kind: 'paralysis', chance: 0.35, duration: 2, power: 0 },
+    upgrades: [],
+    fire: (g, s) => chain(g, s, { move: 'thunderbolt', type: 'electric', visual: 'thunderbolt' }),
+  },
+
+  barbBarrage: {
+    name: 'Barb Barrage',
+    type: 'poison',
+    base: stats({ damage: 42, cooldown: 1, amount: 3, duration: 7, area: 1.5, knockback: 70 }),
+    status: { kind: 'poison', chance: 0.8, duration: 3.5, power: 0.4 },
+    upgrades: [],
+    fire: (g, s) => mine(g, s, { move: 'barbBarrage', type: 'poison', visual: 'barbs' }, 'barbsBlast'),
+  },
+
+  inferno: {
+    name: 'Inferno',
+    type: 'fire',
+    base: stats({ damage: 22, cooldown: 4.5, amount: 3, speed: 200, duration: 8, knockback: 30 }),
+    status: { kind: 'burn', chance: 0.6, duration: 3, power: 0.4 },
+    upgrades: [],
+    fire: (g, s) => turret(g, s, { move: 'inferno', type: 'fire', visual: 'inferno' }, 'infernoShot', 0.45),
+  },
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES
@@ -966,7 +1188,7 @@ export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastS
   return {
     ...s,
     damage: s.damage * player.might * (1 + (player.typeDamage[def.type] ?? 0)),
-    cooldown: Math.max(0.1, s.cooldown * player.cooldown),
+    cooldown: Math.max(def.minCooldown ?? 0.1, s.cooldown * player.cooldown),
     area: s.area * player.area,
     amount: s.amount + player.amount,
     speed: s.speed * player.projectileSpeed,

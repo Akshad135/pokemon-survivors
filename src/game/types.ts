@@ -110,6 +110,8 @@ export type Motion =
   /** Stays glued to the player at an offset. */
   | { kind: 'follow'; ox: number; oy: number }
   | { kind: 'static' }
+  /** Carries the player along (vx, vy) for `left` more seconds (Quick Attack); the hitbox rides at body height. */
+  | { kind: 'lunge'; vx: number; vy: number; left: number }
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
@@ -117,6 +119,7 @@ export type Visual =
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova' | 'bolt' | 'meteor' | 'orb' | 'wave' | 'puddle'
   | EvolvedVisual
+  | TacticVisual
 
 /** What dealt the damage, for the results screen. */
 export type DamageSource = MoveId | 'special'
@@ -125,6 +128,15 @@ export type DamageSource = MoveId | 'special'
 export type EvolvedVisual =
   | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
   | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
+
+/** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
+export type TacticVisual =
+  | 'quick' | 'extremeSpeed' | 'shock' | 'thunderbolt' | 'hex'
+  | 'spikes' | 'barbs' | 'spikesBlast' | 'barbsBlast'
+  | 'wisp' | 'wispShot' | 'inferno' | 'infernoShot'
+
+/** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
+export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
@@ -155,6 +167,11 @@ export type Attack = {
   /** Where it was launched from (lobbed attacks animate from here). */
   from: { x: number; y: number }
   flip: boolean
+  /** Mines: blast radius when a foe steps on it, or half damage when it expires (0 = not a mine). */
+  blast: number
+  /** Blast visual of a mine. */
+  blastVisual: Visual
+  turret: Turret | null
 }
 
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
