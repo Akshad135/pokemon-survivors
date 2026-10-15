@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { POKE_TYPES } from '../data/types'
 import {
-  beginJump, CHAIN_IFRAMES, CHAIN_WINDOW, createSpecialState, endChain, landJump, MIN_SPECIAL_COOLDOWN, rechargeSpecial, resolveSpecial, SPECIAL_IDS, SPECIALS,
+  beginJump, CHAIN_IFRAMES, CHAIN_WINDOW, comboCasts, createSpecialState, endChain, landJump, MIN_SPECIAL_COOLDOWN, rechargeSpecial, resolveSpecial, SPECIAL_IDS, SPECIALS,
   specialCooldown, specialIdFor, specialOfType, specialReady, tickChain, triggerSpecial, type SpecialDef,
 } from './special'
 import { stanceStats, STANCES } from './stance'
@@ -160,5 +160,15 @@ describe('Power Herb', () => {
     const s = { ...createSpecialState(), kills: 3 }
     rechargeSpecial(s, 0.5)
     expect([s.cooldown, s.kills]).toEqual([0, 0])
+  })
+})
+
+describe('Metronome', () => {
+  it('fires one move per jump and saves the second for the chain\'s last jump', () => {
+    expect(comboCasts(1, true)).toBe(1)
+    expect(comboCasts(1, false)).toBe(1)
+    expect(comboCasts(2, true)).toBe(1)
+    expect(comboCasts(2, false)).toBe(2)
+    expect(comboCasts(0, false)).toBe(0)
   })
 })

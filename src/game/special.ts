@@ -664,13 +664,20 @@ const trailTick = (g: Game, r: ResolvedSpecial, dt: number) => {
 /* ---------------- Metronome ---------------- */
 
 /**
- * Metronome: fires `comboMoves` different moves of the loadout (drawn with the
+ * How many moves Metronome fires at a landing. A jump with the chain still
+ * going fires one at most; the chain's last jump, a lone dash and every other
+ * trigger fire all `combo` (2 at max level).
+ */
+export const comboCasts = (combo: number, chainGoesOn: boolean) => (chainGoesOn ? Math.min(combo, 1) : combo)
+
+/**
+ * Metronome: fires `casts` different moves of the loadout (drawn with the
  * run's rng) from where the special landed, which is where the player stands.
  * Every move's `fire` is safe to call off-cycle (Whirlpool only refreshes its aura).
  */
-const arrivalCombo = (g: Game) => {
+const arrivalCombo = (g: Game, casts = g.player.stats.comboMoves) => {
   const p = g.player
-  const n = Math.min(p.stats.comboMoves, p.moves.length)
+  const n = Math.min(casts, p.moves.length)
   if (n <= 0) return
   const pool = [...p.moves]
   for (let i = 0; i < n; i++) {
@@ -771,7 +778,7 @@ const landChain = (g: Game, r: ResolvedSpecial, cooldown: number) => {
     g.events.push({ kind: 'special', phase: 'release', name: r.tier.name })
   }
   landJump(s, hit, cooldown)
-  arrivalCombo(g)
+  arrivalCombo(g, comboCasts(g.player.stats.comboMoves, s.chaining))
 }
 
 /**
