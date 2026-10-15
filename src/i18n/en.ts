@@ -582,7 +582,7 @@ export const en: Messages = {
       shinyStarters: () => 'Start a run with a shiny starter (1 in 64)',
       shinyLegends: () => 'Defeat a shiny legendary in a rift',
       rifts: (n) => (n === '1' ? 'Win a legendary rift' : `Win ${n} legendary rifts`),
-      legends: () => 'Defeat all 6 rift legendaries',
+      legends: (n: string) => `Defeat all ${n} rift legendaries`,
       overtimeMinutes: (n) => (n === '1' ? 'Survive 1 min in endless mode' : `Survive ${n} min in endless mode`),
       reaperDefeats: () => 'Defeat Arceus in endless mode',
       bossKills: (n) => `Defeat ${n} bosses`,

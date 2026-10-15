@@ -41,6 +41,7 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   dragon: ['dragon'],
   steel: ['steel'],
   aero: ['flying'],
+  grass: ['grass'],
   judgment: ['normal'],
 }
 

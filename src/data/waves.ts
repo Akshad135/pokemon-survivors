@@ -17,13 +17,37 @@ export type WaveStage = {
   fresh: number
 }
 
+/**
+ * The legendary trios. Each run draws one with the roster (`game/roster.ts`)
+ * and its members take the trio slots at 7:00, 9:30 and 12:00, in dex order.
+ * A slot's stats belong to the slot (`TRIO_SLOTS` in `data/enemies.ts`), so no
+ * draw is easier than another; each member brings its own patterns.
+ */
+export const TRIOS = {
+  birds: ['articuno', 'zapdos', 'moltres'],
+  beasts: ['raikou', 'entei', 'suicune'],
+  regis: ['regirock', 'regice', 'registeel'],
+} as const satisfies Record<string, readonly [EnemyId, EnemyId, EnemyId]>
+
+export type TrioId = keyof typeof TRIOS
+export const TRIO_IDS = Object.keys(TRIOS) as TrioId[]
+export type TrioSlot = 0 | 1 | 2
+
+/** The rare finale guest: each run draws one of these, which may join Mewtwo (its event's `chance`). */
+export const MYTHICALS = ['mew', 'celebi', 'jirachi'] as const satisfies readonly EnemyId[]
+export type Mythical = (typeof MYTHICALS)[number]
+
+/**
+ * Who a boss event brings: a fixed `enemy`, the run's trio member for `trio`
+ * slot, or the run's `mythical`. `chance` (0..1) makes the boss a rare
+ * appearance; omitted = always. `finale`: the climax (Mewtwo). It blasts the
+ * horde back on arrival and thins the regular spawns while it lives
+ * (`FINALE`), so the fight is about its attacks.
+ */
+export type BossEvent = { at: number; kind: 'boss'; chance?: number; finale?: true } & ({ enemy: EnemyId } | { trio: TrioSlot } | { mythical: true })
+
 export type WaveEvent =
-  /**
-   * `chance` (0..1) makes the boss a rare appearance; omitted = always.
-   * `finale`: the climax (Mewtwo). It blasts the horde back on arrival and thins
-   * the regular spawns while it lives (`FINALE`), so the fight is about its attacks.
-   */
-  | { at: number; kind: 'boss'; enemy: EnemyId; chance?: number; finale?: true }
+  | BossEvent
   /** A flock crossing the screen in a straight line: a flyer of `tier` from the run's horde. */
   | { at: number; kind: 'swarm'; tier: Tier; count: number }
   /** A closing circle around the player: a species of `tier` from the run's horde. */
@@ -53,14 +77,14 @@ export const EVENTS: readonly WaveEvent[] = [
   { at: 270, kind: 'ring', enemy: 'voltorb', count: 10 },
   { at: 300, kind: 'boss', enemy: 'snorlax' },
   { at: 390, kind: 'swarm', tier: 1, count: 36 },
-  { at: 420, kind: 'boss', enemy: 'articuno' },
+  { at: 420, kind: 'boss', trio: 0 },
   { at: 480, kind: 'ring', tier: 3, count: 30 },
   { at: 540, kind: 'swarm', tier: 1, count: 40 },
-  { at: 570, kind: 'boss', enemy: 'zapdos' },
+  { at: 570, kind: 'boss', trio: 1 },
   { at: 660, kind: 'ring', tier: 3, count: 40 },
-  { at: 720, kind: 'boss', enemy: 'moltres' },
+  { at: 720, kind: 'boss', trio: 2 },
   { at: 810, kind: 'swarm', tier: 1, count: 60 },
-  { at: RUN_LENGTH, kind: 'boss', enemy: 'mew', chance: 0.1 },
+  { at: RUN_LENGTH, kind: 'boss', mythical: true, chance: 0.1 },
   { at: RUN_LENGTH, kind: 'boss', enemy: 'mewtwo', finale: true },
 ]
 
@@ -99,8 +123,16 @@ export const ELITE = { fill: 0.9, share: 0.3, hp: 1.6, xp: 1.6, damage: 1.25, si
  */
 export const RUNNER = { from: 1, weight: 2, speed: 1.6, maxSpeed: 62, hp: 0.7, lead: 1 } as const
 
+/** Every boss a boss event may bring: its fixed enemy, its slot's member of each trio, or every mythical. */
+export const bossCandidates = (e: BossEvent): readonly EnemyId[] =>
+  'enemy' in e ? [e.enemy] : 'trio' in e ? TRIO_IDS.map((id) => TRIOS[id][e.trio]) : MYTHICALS
+
+/** Who a boss event brings in a run that drew `trio` and `mythical`. */
+export const bossOf = (e: BossEvent, trio: TrioId, mythical: Mythical): EnemyId =>
+  'enemy' in e ? e.enemy : 'trio' in e ? TRIOS[trio][e.trio] : mythical
+
 /** When the wave a boss belongs to arrives (its scheduled event), or null for bosses off the schedule (rifts, Arceus). */
-export const bossWaveAt = (enemy: EnemyId) => EVENTS.find((e) => e.kind === 'boss' && e.enemy === enemy)?.at ?? null
+export const bossWaveAt = (enemy: EnemyId) => EVENTS.find((e) => e.kind === 'boss' && bossCandidates(e).includes(enemy))?.at ?? null
 
 /**
  * Each wave boss has until the next one: when a boss of the wave at `at`

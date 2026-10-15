@@ -1,6 +1,7 @@
 import type { BossStance } from '../../data/bosses'
 import type { Drop } from '../../data/consumables'
 import type { TraitId } from '../../data/traits'
+import type { TrioId } from '../../data/waves'
 import type { PokeType } from '../../data/types'
 import type { EggSource } from '../../game/eggs'
 import type { StatusKind } from '../../game/status'
@@ -10,6 +11,8 @@ const n = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
 const s = (count: number, one: string, many: string) => (count === 1 ? one : many)
 /** `a, b e c` */
 const list = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} e ${items.at(-1)}`)
+/** `a, b ou c` */
+const either = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} ou ${items.at(-1)}`)
 
 /** The boss rules the guide quotes (`BOSS_RAGE`, and the spawn share of `BOSS_FIGHT` and `FINALE`). */
 type BossRules = { stance: readonly [number, number]; below: number; speed: number; wait: number; chain: number; fight: number; window: number; finale: number }
@@ -96,6 +99,7 @@ export const sitePt = {
     ringFixed: (at: string, count: number) => `Forma o cerco de ${count} em ${at}`,
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
+    trio: (at: string, trio: string) => `Chefe em ${at} nas partidas que sorteiam o trio ${trio} (1 em 3)`,
     rift: (from: string) => `Atrás de uma fenda lendária, a partir de ${from} (arena opcional)`,
     reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
@@ -143,8 +147,14 @@ export const sitePt = {
       `${count} ${s(count, 'impacto marcado', 'impactos marcados')} no chão perto de você a cada ${n(every)}s (${damage} de dano)`,
     strikesSelf: (every: number, damage: number) => `Pancada em área ao redor de si a cada ${n(every)}s (${damage} de dano)`,
     ring: (count: number, every: number, damage: number) => `Anel de ${count} projéteis a cada ${n(every)}s (${damage} de dano)`,
-    trail: (ttl: number, damage: number) => `Deixa um rastro que queima por ${n(ttl)}s (${damage} de dano)`,
+    trail: (ttl: number, damage: number) => `Deixa um rastro que fere por ${n(ttl)}s (${damage} de dano)`,
     stance: { close: 'De perto', ranged: 'De longe' } satisfies Record<BossStance, string>,
+  },
+
+  /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
+  trios: {
+    names: { birds: 'Aves de Kanto', beasts: 'Feras de Johto', regis: 'Regis de Hoenn' } satisfies Record<TrioId, string>,
+    either,
   },
 
   /** The wild roster: tiers and the cast each run draws (Pokédex filter and the guide's horde section). */
@@ -244,6 +254,7 @@ export const sitePt = {
       eventHead: 'Evento',
       boss: (name: string) => `Chefe: ${name}`,
       bossChance: (name: string, percent: number) => `Chefe raro: ${name} (${n(percent)}% de chance)`,
+      bossTrio: (names: string) => `Chefe: o trio lendário da partida (${names})`,
     },
     world: {
       paragraphs: (count: number, minutes: number, odds: number) => [
@@ -330,7 +341,7 @@ export const sitePt = {
     rifts: {
       paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; shiny: number }) => [
         `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então toda partida tem 3 fendas, mesmo que os chefes demorem.`,
-        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
         'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
         `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
       ],
@@ -353,6 +364,10 @@ export const sitePt = {
         `Cada chefe alterna entre dois jeitos de lutar a cada ${r.stance[0]} a ${r.stance[1]} segundos: de perto, ele avança rápido e bate em área ao redor de si; de longe, para a alguns passos e mira em você. Abaixo de ${n(r.below * 100)}% do HP ele fica furioso (contorno vermelho, cry e flash na tela): ${n(Math.round((r.speed - 1) * 100))}% mais rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% mais seguido e, ${n(r.chain * 100)}% das vezes, emenda um segundo ataque logo depois do primeiro.`,
         'Chefes não ficam mais fortes com o tempo, mas cada um solta uma Poké Ball e uma chuva de Poké Dollars.',
         `Nos primeiros ${r.window}s de cada chefe, com ele por perto, nascem só ${n(r.fight * 100)}% dos inimigos comuns, então a luta é com ele; depois a horda volta. Cada chefe tem até o próximo chegar: se ainda estiver de pé quando o seguinte aparecer, ele foge e não deixa nada. Mewtwo é o último: ao chegar, empurra a horda para longe e, enquanto ele estiver de pé, nascem só ${n(r.finale * 100)}% dos inimigos comuns, então a luta é desviar dos ataques dele.`,
+      ],
+      trios: (times: readonly string[], trios: readonly string[], mythicals: string, percent: number) => [
+        `Às ${list(times)} chegam os três membros de um trio lendário, sorteado no começo de cada partida: ${list(trios)}. HP, dano de contato e velocidade são do horário, não do Pokémon, então nenhum sorteio é mais fácil que outro; o que muda são os ataques.`,
+        `No fim, com ${n(percent)}% de chance, um Pokémon mítico chega junto com o Mewtwo: ${mythicals}, também sorteado por partida.`,
       ],
       timeHead: 'Tempo',
       bossHead: 'Chefe',
@@ -392,10 +407,10 @@ export const sitePt = {
       chanceHead: 'Chance',
       oddsHead: 'Raridade',
       sources: {
-        boss: 'Onix, Snorlax e as aves lendárias',
+        boss: 'Onix, Snorlax e o trio lendário',
         chest: 'Baú trancado',
         rift: 'Lendário de uma fenda',
-        final: 'Mewtwo e Mew',
+        final: 'Mewtwo e o mítico raro (Mew, Celebi ou Jirachi)',
         reaper: 'Arceus, no modo sem fim',
       } satisfies Record<EggSource, string>,
     },

@@ -283,6 +283,7 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   dragon: ['#a070f8', 'rgba(112,56,248,0.3)'],
   steel: ['#c8e0f8', 'rgba(104,136,200,0.3)'],
   aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
+  grass: ['#78d850', 'rgba(112,208,72,0.28)'],
   judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
 }
 
@@ -320,7 +321,8 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     const y = h.y - 6
     switch (h.visual) {
       case 'ice':
-        return blitRotated(ctx, HAZARD_FX.ice(), h.x, y, Math.atan2(h.vy, h.vx))
+      case 'grass':
+        return blitRotated(ctx, HAZARD_FX[h.visual](), h.x, y, Math.atan2(h.vy, h.vx))
       case 'fire':
         return blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
       case 'rock':
