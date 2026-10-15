@@ -319,6 +319,10 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 886 | Drakloak (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 887 | Dragapult | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 887 | Dragapult (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 446 | Munchlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
+| 446 | Munchlax (shiny) | El_Pangoro_Parse | Lovi |
+| 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
+| 143 | Snorlax (shiny) | El_Pangoro_Parse | El_Pangoro_Parse |
 | 10 | Caterpie | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Frostdrop1, baronessfaron |
 | 10 | Caterpie (shiny) | [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563) | [Moo](https://twitter.com/MoonMoonMemes), Emboarger, baronessfaron |
 | 13 | Weedle | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Novie |
@@ -662,7 +666,6 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 437 | Bronzong | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 437 | Bronzong (shiny) | Lovi, ShyStarryRain | Lovi, ShyStarryRain |
 | 95 | Onix | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
-| 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
 | 144 | Articuno | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 145 | Zapdos | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 146 | Moltres | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |

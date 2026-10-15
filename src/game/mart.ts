@@ -34,15 +34,15 @@ export const COUNTER_EGGS = {
   common: { price: 1500, weight: 60 },
   rare: { price: 4000, weight: 34 },
   ultra: { price: 9000, weight: 6 },
-} as const satisfies Record<EggTier, { price: number; weight: number }>
+} as const satisfies Record<Exclude<EggTier, 'friend'>, { price: number; weight: number }>
 
 /** What the counter offers on a day. */
-export type Counter = { day: DayKey; egg: EggTier; sale: CounterSlot }
+export type Counter = { day: DayKey; egg: keyof typeof COUNTER_EGGS; sale: CounterSlot }
 
 /** The counter of a Brasília day, drawn from the date. */
 export const counterOf = (day: DayKey): Counter => {
   const rng = createRng(seedFrom(`counter:${day}`))
-  const egg = weightedPick(rng, (Object.entries(COUNTER_EGGS) as Array<[EggTier, { weight: number }]>).map(([tier, e]) => [tier, e.weight] as const))
+  const egg = weightedPick(rng, (Object.entries(COUNTER_EGGS) as Array<[keyof typeof COUNTER_EGGS, { weight: number }]>).map(([tier, e]) => [tier, e.weight] as const))
   return { day, egg, sale: pick(rng, COUNTER_SLOTS) }
 }
 

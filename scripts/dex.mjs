@@ -19,6 +19,7 @@ export const HATCHLINGS = [
   172, 25, 26, 66, 67, 68, 133, 197, 175, 176, 468, 363, 364, 365, 396, 397, 398, 406, 315, 407, 744, 745, 736, 737, 738, // common
   92, 93, 94, 63, 64, 65, 280, 281, 282, 447, 448, 570, 571, 636, 637, 714, 715, 679, 680, 681, 848, 849, 957, 958, 959, 935, 936, // rare
   147, 148, 149, 246, 247, 248, 374, 375, 376, 443, 444, 445, 885, 886, 887, // ultra rare
+  446, 143, // Friendship Egg (invites)
 ]
 export const HORDE = Object.values(roster).map((s) => s.dex)
 /** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
