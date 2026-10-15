@@ -4421,3 +4421,447 @@ a.btn.dex-site {
     gap: 6px;
   }
 }
+
+/* ---------- Shiny starters: the Normal/Shiny pick ---------- */
+
+.starter-card {
+  position: relative;
+}
+
+.starter-shiny {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+}
+
+.shiny-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shiny-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #505068;
+  background: #e8e8f0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+
+.shiny-option img {
+  width: 14px;
+  height: 14px;
+}
+
+.shiny-option span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shiny-option.selected {
+  color: #fff;
+  background: #6878a8;
+  border-color: #283040;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.shiny-option.selected:last-of-type {
+  color: #483000;
+  background: #f8d030;
+  border-color: #b08000;
+}
+
+@media (pointer: coarse) {
+  .shiny-picker .key-hint {
+    display: none;
+  }
+}
+
+/* ---------- Share: the button on the results and the card's preview ---------- */
+
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.share-button img {
+  width: 16px;
+  height: 16px;
+}
+
+/* A run worth showing off: the button twinkles in gold. */
+.share-button.glow {
+  background: #fff4c0;
+  border-color: #f0b800;
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+.share-button.glow.selected {
+  border-color: #e83838;
+}
+
+@keyframes share-glow {
+  50% {
+    box-shadow: 0 0 0 3px #ffe060;
+  }
+}
+
+.share-screen {
+  padding: max(8px, var(--safe-t)) max(8px, var(--safe-r)) max(8px, var(--safe-b)) max(8px, var(--safe-l));
+}
+
+.dialog.share {
+  width: auto;
+  max-width: min(600px, 100%);
+  align-items: center;
+  padding: 16px;
+  gap: 10px;
+}
+
+.share-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.share-figure {
+  display: grid;
+  place-items: center;
+  min-width: 200px;
+  min-height: 120px;
+}
+
+/* Sized in whole device px per card px by `sharePreview`, so the pixels stay square. */
+.share-image {
+  display: block;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.share-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-status {
+  margin: 0;
+  min-height: 20px;
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+  color: #2a5aa8;
+}
+
+.share-status.error {
+  color: #c83030;
+}
+
+.btn[disabled] {
+  cursor: default;
+}
+
+@media (max-width: 520px) {
+  .dialog.share {
+    padding: 10px;
+  }
+  .share .buttons .btn {
+    flex: 1;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+  .share .buttons .btn.confirm {
+    flex-basis: 100%;
+  }
+}
+
+/* Phones in landscape: the card on the left, the buttons beside it. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dialog.share {
+    max-width: 100%;
+    padding: 8px 12px;
+    gap: 4px;
+  }
+  .share .dialog-title {
+    display: none;
+  }
+  .share-body {
+    flex-direction: row;
+    gap: 16px;
+  }
+  .share-side {
+    max-width: 240px;
+  }
+  .share .buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .share .buttons .btn {
+    min-height: 38px;
+    padding: 6px 12px;
+  }
+  .share .hint {
+    display: none;
+  }
+}
+
+/* ---------- Caixa do PC ---------- */
+
+.pc-screen {
+  padding: max(8px, var(--safe-t)) max(8px, var(--safe-r)) max(8px, var(--safe-b)) max(8px, var(--safe-l));
+}
+
+.dialog.pc {
+  width: min(600px, 100%);
+  padding: 16px;
+  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.pc-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  color: #f8d030;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.pc-count img {
+  width: 14px;
+  height: 14px;
+}
+
+.pc-count b {
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.pc-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pc-box-name {
+  flex: 1;
+  padding: 8px 10px 6px;
+  font-family: var(--title);
+  font-size: 10px;
+  text-align: center;
+  color: #fff;
+  background: #2a5aa8;
+  border: 2px solid #283040;
+  border-radius: 6px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.pc-arrow {
+  min-width: 44px;
+  min-height: 36px;
+  font-family: var(--title);
+  font-size: 12px;
+  color: #fff;
+  background: #6878a8;
+  border: 2px solid #283040;
+  border-radius: 6px;
+}
+
+.pc-nav.focused .pc-box-name {
+  box-shadow: 0 0 0 3px #e83838, inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Keep the 6×5 layout in sync with BOX in ui/pcBox.ts. */
+.pc-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+  background: var(--wallpaper) 0 0 / calc(var(--px) * 16) calc(var(--px) * 16) #5070b8;
+  image-rendering: pixelated;
+  border: 3px solid #283040;
+  border-radius: 6px;
+}
+
+.pc-slot {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 0;
+  background: rgba(16, 24, 56, 0.28);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+}
+
+.pc-slot.filled {
+  background: #f8f8f8;
+  border-color: #283040;
+  box-shadow: inset 0 0 0 2px #e0a828, 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.pc-slot.selected {
+  border-color: #e83838;
+  box-shadow: 0 0 0 2px #fff, 0 3px 0 #2a5aa8;
+}
+
+.pc-slot.filled.selected {
+  box-shadow: inset 0 0 0 2px #e0a828, 0 0 0 2px #fff, 0 3px 0 #2a5aa8;
+}
+
+.pc-grid:not(.focused) .pc-slot.selected {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.pc-sprite {
+  width: 100%;
+  height: 100%;
+}
+
+.pc-mark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
+}
+
+.pc-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 10px;
+  background: #e8e8f0;
+  border-radius: 6px;
+}
+
+.pc-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--title);
+  font-size: 11px;
+}
+
+.pc-name small {
+  font-family: var(--body);
+  font-size: 18px;
+  color: #707088;
+}
+
+.pc-name img {
+  width: 14px;
+  height: 14px;
+}
+
+.pc-name.empty {
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1;
+  color: #707088;
+}
+
+.dex-pc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dex-pc img {
+  width: 14px;
+  height: 14px;
+}
+
+@media (pointer: coarse) {
+  .dex-pc .key-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .dialog.pc {
+    padding: 10px;
+    gap: 8px;
+  }
+  .pc-grid {
+    gap: 4px;
+    padding: 6px;
+  }
+  .pc-detail {
+    flex-wrap: wrap;
+  }
+  .pc .buttons .btn {
+    flex: 1;
+  }
+}
+
+/* Phones in landscape: the box on the left, everything else on the right. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dialog.pc {
+    width: min(760px, 100%);
+    padding: 8px 12px;
+    gap: 6px 12px;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'head head'
+      'grid nav'
+      'grid detail'
+      'grid buttons';
+    align-content: start;
+  }
+  .pc-head {
+    grid-area: head;
+  }
+  .pc-nav {
+    grid-area: nav;
+  }
+  .pc-grid {
+    grid-area: grid;
+    width: calc((100dvh - 80px) * 6 / 5);
+    padding: 4px;
+    gap: 3px;
+  }
+  .pc-detail {
+    grid-area: detail;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  .pc .buttons {
+    grid-area: buttons;
+    flex-direction: column;
+  }
+  .pc .buttons .btn {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
+  .pc .hint {
+    display: none;
+  }
+}

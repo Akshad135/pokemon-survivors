@@ -88,6 +88,10 @@ export const pt = {
     special: 'Especial',
     moves: 'Golpes',
     signature: 'INICIAL',
+    /** Normal/Shiny pick, for a Pokémon whose shiny the player once rolled (key `Z`). */
+    normal: 'Normal',
+    shiny: 'Shiny',
+    shinyPick: 'Cores',
     credits: 'Fan game não oficial · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
   },
 
@@ -229,6 +233,7 @@ export const pt = {
     recent: 'Partidas recentes',
     noRuns: 'Nenhuma partida no ranking ainda.',
     share: 'Compartilhar',
+    card: 'Cartão de Treinador',
     copied: 'Link do perfil copiado!',
     edit: 'Editar',
     loading: 'Carregando…',
@@ -275,6 +280,71 @@ export const pt = {
     dexShinies: (n: number) => (n === 1 ? '1 shiny capturado' : `${n} shinies capturados`),
   },
 
+  /** Share cards (`render/card.ts`): the preview with its buttons, the text that goes along and the card's own labels. */
+  share: {
+    button: 'Compartilhar',
+    title: 'COMPARTILHAR',
+    trainerTitle: 'CARTÃO DE TREINADOR',
+    rendering: 'Desenhando o cartão…',
+    failed: 'Não deu para desenhar o cartão. Tente de novo.',
+    share: 'Compartilhar',
+    copy: 'Copiar imagem',
+    download: 'Baixar PNG',
+    back: 'Voltar',
+    copied: 'Imagem copiada! É só colar.',
+    saved: 'Imagem salva!',
+    hintKeys: '← → escolher · ENTER confirmar · ESC voltar',
+    hintTouch: 'Toque para escolher',
+    /** The text that goes with the run's card, e.g. "Sobrevivi 15:00 com Charizard ✨ e peguei 6 shinies. Me supera: <link>". */
+    runText: (r: { name: string; shiny: boolean; time: string; outcome: 'victory' | 'fainted' | 'endless'; shinies: number; link: string }) => {
+      const who = `${r.name}${r.shiny ? ' ✨' : ''}`
+      const caught = r.shinies === 0 ? '' : r.shinies === 1 ? ' e peguei 1 shiny' : ` e peguei ${r.shinies} shinies`
+      return r.outcome === 'victory' ? `Venci o Mewtwo com ${who}${caught}! Me supera: ${r.link}` : `Sobrevivi ${r.time} com ${who}${caught}. Me supera: ${r.link}`
+    },
+    trainerText: (shinies: number, caught: number, link: string) =>
+      `Meu Cartão de Treinador no Pokémon Survivors: ${shinies === 1 ? '1 shiny' : `${shinies} shinies`} e ${caught} Pokémon na Pokédex. Vem jogar: ${link}`,
+    card: {
+      shiny: 'SHINY',
+      outcomes: { victory: 'VITÓRIA', fainted: 'DESMAIOU', endless: 'SEM FIM' },
+      time: 'Tempo',
+      level: 'Nível',
+      kills: 'Derrotados',
+      shinies: 'SHINIES DA RUN',
+      newShinies: (n: number) => (n === 1 ? '1 novo na Pokédex' : `${n} novos na Pokédex`),
+      newSpecies: 'NOVOS NA POKÉDEX',
+      speciesCount: (n: number) => (n === 1 ? '1 espécie' : `${n} espécies`),
+      moves: 'GOLPES MAIS FORTES',
+      topMove: 'Golpe mais forte',
+      more: 'mais',
+      /** Header of the Trainer Card, one line each. */
+      trainerCard: ['CARTÃO DE', 'TREINADOR'],
+      idLabel: 'Treinador(a)',
+      guest: 'Visitante',
+      medals: 'Medalhas',
+      shinyTotal: 'Shinies',
+      pokedex: 'Pokédex',
+      best: 'Recorde',
+      showcase: 'SHINIES',
+      inBox: (n: number) => `${n} na Caixa do PC`,
+      noShinies: 'Nenhum shiny ainda',
+      play: 'Jogue grátis no navegador',
+    },
+  },
+
+  /** The Caixa do PC: every shiny caught, in boxes of 30. */
+  pc: {
+    title: 'CAIXA DO PC',
+    box: (n: number, total: number) => `CAIXA ${n}/${total}`,
+    prev: 'Caixa anterior',
+    next: 'Próxima caixa',
+    empty: 'Espaço vazio',
+    none: 'Ainda sem shinies. Todo shiny que você derrota vem morar aqui!',
+    trainer: 'Cartão de Treinador',
+    back: 'Voltar',
+    hintKeys: 'SETAS navegar · Q E caixa · ESC voltar',
+    hintTouch: 'Toque num shiny para ver · ◀ ▶ trocam de caixa',
+  },
+
   /** In-game Pokédex (title menu). */
   dex: {
     seen: 'Vistos',
@@ -290,6 +360,7 @@ export const pt = {
     empty: 'Nada aqui ainda.',
     back: 'Voltar',
     site: 'Onde encontrar ↗',
+    pc: 'Caixa do PC',
     hintKeys: 'SETAS navegar · Q E filtro · ESC voltar',
     hintTouch: 'Toque num Pokémon para ver detalhes',
   },
@@ -315,7 +386,7 @@ export const pt = {
     legendary: (name: string) => `Um *${name}* _lendário_ apareceu!`,
     boss: (name: string) => `Um *${name}* selvagem apareceu!`,
     bossFled: (name: string) => `O *${name}* selvagem fugiu!`,    shiny: (name: string) => `Um *${name}* shiny apareceu!`,
-    shinyPlayer: (name: string) => `Que sorte! Seu *${name}* é shiny!`,
+    shinyPlayer: (name: string) => `Que sorte! Seu *${name}* é shiny! Agora ele fica _liberado_ na seleção.`,
     caught: (name: string) => `*${name}* shiny é seu! Registrado na _Pokédex_.`,
     evolving: (name: string) => `Hã? ${name} está evoluindo!`,
     evolved: (from: string, to: string) => `Parabéns! ${from} evoluiu para ${to}!`,

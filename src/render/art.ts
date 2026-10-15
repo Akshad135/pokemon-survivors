@@ -466,5 +466,14 @@ const MEDAL_RIBBON = { 1: '#282830', 2: '#e04848', 3: '#4878e0' } as const
 /** Locked medals are a flat silhouette of the same shape. */
 const MEDAL_LOCKED = { 1: '#383848', 2: '#686878', 3: '#585868', 4: '#9898a8', 5: '#585868', 6: '#787888' } as const
 
-export const medalIcon = (medal: Medal, locked = false) =>
-  toIconUrl(`medal:${locked ? 'locked' : medal}`, () => art(MEDAL, locked ? MEDAL_LOCKED : { ...MEDAL_RIBBON, ...MEDAL_METAL[medal] }))
+const MEDAL_SPRITES = new Map<string, PixelSprite>()
+
+/** A medal as a sprite (share cards draw it on a canvas), cached. */
+export const medalSprite = (medal: Medal, locked = false) => {
+  const key = locked ? 'locked' : medal
+  let sprite = MEDAL_SPRITES.get(key)
+  if (!sprite) MEDAL_SPRITES.set(key, (sprite = art(MEDAL, locked ? MEDAL_LOCKED : { ...MEDAL_RIBBON, ...MEDAL_METAL[medal] })))
+  return sprite
+}
+
+export const medalIcon = (medal: Medal, locked = false) => toIconUrl(`medal:${locked ? 'locked' : medal}`, () => medalSprite(medal, locked))

@@ -305,8 +305,8 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
 
 /* ---------------- Results ---------------- */
 
-/** Icon, name and type for a results-screen damage row. */
-const damageSource = (g: Game, id: DamageSource) => {
+/** Icon, name and type for a results-screen damage row (and the run's share card). */
+export const damageSource = (g: Game, id: DamageSource) => {
   if (id !== 'special') return { icon: moveIcon(id), name: MOVES[id].name, type: MOVES[id].type }
   const r = resolveSpecial(g.starter, g.player.stage)
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
@@ -321,14 +321,25 @@ type DexNews = { species: number; shinies: number }
 /** The run's ranking line (`rankPanel`) and the boards, opened over the results until `back`. */
 type ResultsRanking = { panel: HTMLElement; open: (back: () => void) => Screen }
 
+/** The share preview of the run's card, opened over the results until `back`; `glow` when the run is worth showing off. */
+type ResultsShare = { open: (back: () => void) => Screen; glow: boolean }
+
 /**
  * What the shell adds to the results: the equipped title, the missions the run
  * moved and the medals it earned (built by `ui/missions.ts`), the incubator,
  * the Pokédex news and the ranking.
  */
-type ResultsExtras = { badge: HTMLElement | null; report: HTMLElement | null; medals: readonly HTMLElement[]; eggs: ResultEggs; news: DexNews; ranking: ResultsRanking | null }
+type ResultsExtras = {
+  badge: HTMLElement | null
+  report: HTMLElement | null
+  medals: readonly HTMLElement[]
+  eggs: ResultEggs
+  news: DexNews
+  ranking: ResultsRanking | null
+  share: ResultsShare | null
+}
 
-const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null }
+const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null, share: null }
 
 /**
  * Everything new a run brought, as one wrapping line of chips under the stats
@@ -384,20 +395,28 @@ export const results = (
   const goOn = victory && onContinue ? h('button', { class: 'btn' }, r.continue) : null
   const ranking = extras.ranking
   const boards = ranking ? h('button', { class: 'btn' }, t().ranking.open) : null
-  /** The boards, open over the results. */
+  const share = extras.share ? h('button', { class: extras.share.glow ? 'btn share-button glow' : 'btn share-button' }, h('img', { src: sparkleIcon(), alt: '' }), t().share.button) : null
+  /** The boards or the share preview, open over the results. */
   let sub: Screen | null = null
-  const openBoards = () => {
-    if (!ranking) return
+  /** Hides the results under `open`'s screen until it closes, then comes back on the same button. */
+  const openSub = (open: ((back: () => void) => Screen) | undefined, button: HTMLButtonElement) => {
+    if (!open) return
     nav.off()
     el.classList.add('hidden')
-    sub = ranking.open(() => {
+    sub = open(() => {
       sub = null
       el.classList.remove('hidden')
-      nav = bindNav(buttons.length - 1)
+      nav = bindNav(buttons.indexOf(button))
     })
   }
-  const buttons = [goOn, retry, back, boards].filter((b) => b !== null)
-  const actions = [goOn && onContinue, onRetry, onMenu, boards && (() => later(openBoards))].filter((a) => typeof a === 'function')
+  const buttons = [goOn, retry, back, share, boards].filter((b) => b !== null)
+  const actions = [
+    goOn && onContinue,
+    onRetry,
+    onMenu,
+    share && (() => later(() => openSub(extras.share?.open, share))),
+    boards && (() => later(() => openSub(ranking?.open, boards))),
+  ].filter((a) => typeof a === 'function')
   const bindNav = (initial = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial })
   let nav = bindNav()
 

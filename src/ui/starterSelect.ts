@@ -6,6 +6,7 @@ import { REGIONS, type PlayableDef, type Region } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
+import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
@@ -61,8 +62,25 @@ const megaRow = (id: MegaId) => {
   )
 }
 
-/** Detailed sheet of a playable Pokémon: sprite, types, stat bars, evolution line and every move it can learn. */
-const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) => void, sprite: HTMLCanvasElement) => {
+/**
+ * Normal / Shiny, for a Pokémon whose shiny the player rolled once (`Z`
+ * flips it). The pick is saved right away, so the next run plays it.
+ */
+const shinyPicker = (shiny: boolean, set: (shiny: boolean) => void) => {
+  const m = t().title
+  const option = (value: boolean, label: Node | string) =>
+    h('button', { class: value === shiny ? 'shiny-option selected' : 'shiny-option', role: 'radio', 'aria-checked': String(value === shiny), onclick: () => set(value) }, label)
+  return h(
+    'div',
+    { class: 'shiny-picker', role: 'radiogroup', 'aria-label': m.shinyPick },
+    option(false, m.normal),
+    option(true, h('span', {}, h('img', { src: sparkleIcon(), alt: '' }), m.shiny)),
+    h('span', { class: 'key-hint' }, 'Z'),
+  )
+}
+
+/** Detailed sheet of a playable Pokémon: sprite, types, stat bars, evolution line and every move it can learn. `picker`: its Normal/Shiny pick, when unlocked. */
+const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) => void, sprite: HTMLCanvasElement, picker: HTMLElement | null) => {
   const m = t()
   const s: PlayableDef = PLAYABLE[id]
   const form = s.line[stage]!
@@ -108,6 +126,7 @@ const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) =>
         { class: 'inspect-id' },
         h('div', { class: 'inspect-name' }, h('small', {}, `#${String(form.dex).padStart(3, '0')}`), form.name),
         h('div', { class: 'types' }, ...form.types.map(typeBadge)),
+        picker,
         h('div', { class: 'inspect-blurb' }, m.blurbs[id]),
       ),
     ),
@@ -207,7 +226,7 @@ type SelectActions = { pick: (id: PlayableId) => void; incubator: () => void }
  * the 9 regions comes the egg box: hatched families to pick, the rest as
  * silhouettes, and the way into the incubator (`O`).
  * Keyboard: ←/→ Pokémon (wraps across tabs), ↑/↓ or Q/E tab (rows in the egg box), 1-9 jump to region,
- * X cycles the difficulty, Enter confirms.
+ * X cycles the difficulty, Z flips Normal/Shiny (once its shiny is unlocked), Enter confirms.
  * Pointer: hover/tap highlights, clicking the highlighted card (or the button) confirms.
  * `selected` reads the highlighted Pokémon, so a rebuilt screen (language switch) keeps it.
  */
@@ -215,7 +234,11 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const m = t()
   const save = loadSave()
   const unlocked = (id: PlayableId) => isUnlocked(save.hatched, id)
-  const shinyOf = (id: PlayableId) => isHatchling(id) && save.hatched[id]?.shiny === true
+  /** A shiny hatch is shiny for good; a shiny rolled once can be picked (`shinyStarters`). */
+  const hatchedShiny = (id: PlayableId) => isHatchling(id) && save.hatched[id]?.shiny === true
+  let picks: ShinyStarters = save.shinyStarters
+  const canPick = (id: PlayableId) => id in picks && !hatchedShiny(id)
+  const shinyOf = (id: PlayableId) => hatchedShiny(id) || picks[id] === true
   const start = Math.max(0, GROUPS.findIndex((g) => g.ids.includes(initial)))
   const cursor: Cursor = { group: start, slot: Math.max(0, GROUPS[start]!.ids.indexOf(initial)) }
   let stage = 0
@@ -247,7 +270,8 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const cardCanvases = [0, 1, 2].map(() => h('canvas', { width: 64, height: 56, class: 'starter-sprite' }))
   const cardNames = [0, 1, 2].map(() => h('div', { class: 'starter-name' }))
   const cardTypes = [0, 1, 2].map(() => h('div', { class: 'types' }))
-  const cards = [0, 1, 2].map((slot) => pickable(h('button', { class: 'starter-card box' }, cardCanvases[slot]!, cardNames[slot]!, cardTypes[slot]!), slot))
+  const cardShiny = [0, 1, 2].map(() => h('img', { class: 'starter-shiny hidden', src: sparkleIcon(), alt: 'Shiny' }))
+  const cards = [0, 1, 2].map((slot) => pickable(h('button', { class: 'starter-card box' }, cardCanvases[slot]!, cardShiny[slot]!, cardNames[slot]!, cardTypes[slot]!), slot))
   const trio = h('div', { class: 'starters' }, ...cards)
 
   const cellCanvases = HATCHLING_IDS.map(() => h('canvas', { width: 48, height: 40, class: 'egg-cell-sprite' }))
@@ -303,6 +327,8 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       cards[slot]!.classList.toggle('selected', slot === cursor.slot)
       cardNames[slot]!.textContent = s.name
       cardTypes[slot]!.replaceChildren(...s.line[0].types.map(typeBadge))
+      cardShiny[slot]!.classList.toggle('hidden', !shinyOf(id))
+      if (shinyOf(id)) void loadSpecies(s.line[0].dex, true).catch(() => {})
     })
     // Menu sprites load on demand: the visible trio first, the rest in the background (see main.ts).
     void loadAll(g.ids.map((id) => PLAYABLE[id].line[0].dex)).catch(() => {})
@@ -321,10 +347,21 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
             stage = i
             playSfx('move')
             renderInspect()
-          }, inspectSprite),
+          }, inspectSprite, canPick(id) ? shinyPicker(shinyOf(id), setShiny) : null),
     )
     confirmBtn.textContent = open ? m.title.choose(PLAYABLE[id].name) : m.eggs.lockedButton
     confirmBtn.classList.toggle('locked', !open)
+  }
+
+  /** Picks Normal or Shiny for the highlighted Pokémon, saved for its next run. */
+  function setShiny(shiny: boolean) {
+    const id = current()
+    if (!canPick(id) || shinyOf(id) === shiny) return
+    picks = pickShinyStarter(picks, id, shiny)
+    updateSave((s) => ({ ...s, shinyStarters: pickShinyStarter(s.shinyStarters, id, shiny) }))
+    playSfx(shiny ? 'shiny' : 'move')
+    renderGroup()
+    renderInspect()
   }
 
   const setCursor = (next: Cursor, sound = true) => {
@@ -377,6 +414,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     else if (key === 'KeyE' || key === 'PageDown') setCursor({ group: cursor.group + 1, slot: cursor.slot })
     else if (key === 'KeyO') openIncubator()
     else if (key === 'KeyX') difficulty.cycle()
+    else if (key === 'KeyZ') setShiny(!shinyOf(current()))
     else if (key === 'Enter' || key === 'Space') confirm()
     else if (/^Digit[1-9]$/.test(key)) setCursor({ group: Number(key.slice(5)) - 1, slot: cursor.slot })
   })
@@ -414,7 +452,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       HATCHLING_IDS.forEach((id, slot) =>
         draw(cellCanvases[slot]!, PLAYABLE[id].line[0].dex, t, { walking: slot === cursor.slot, shiny: shinyOf(id), locked: !unlocked(id) }),
       )
-    else g.ids.forEach((id, slot) => draw(cardCanvases[slot]!, PLAYABLE[id].line[0].dex, t, { walking: slot === cursor.slot }))
+    else g.ids.forEach((id, slot) => draw(cardCanvases[slot]!, PLAYABLE[id].line[0].dex, t, { walking: slot === cursor.slot, shiny: shinyOf(id) }))
     const id = current()
     draw(inspectSprite, PLAYABLE[id].line[stage]!.dex, t, { walking: true, shiny: shinyOf(id), locked: !unlocked(id) })
   }
