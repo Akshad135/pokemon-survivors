@@ -43,6 +43,10 @@ export const ITEMS = {
   magnet: typeItem('electric', 'Magnet'),
   poisonBarb: typeItem('poison', 'Poison Barb'),
   sharpBeak: typeItem('flying', 'Sharp Beak'),
+  neverMeltIce: typeItem('ice', 'Never-Melt Ice'),
+  hardStone: typeItem('rock', 'Hard Stone'),
+  silverPowder: typeItem('bug', 'Silver Powder'),
+  dragonFang: typeItem('dragon', 'Dragon Fang'),
 } as const satisfies Record<string, ItemDef>
 
 export type ItemId = keyof typeof ITEMS

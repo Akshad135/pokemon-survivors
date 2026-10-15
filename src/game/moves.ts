@@ -175,6 +175,48 @@ const turret = (g: Game, s: CastStats, look: Look, shot: Visual, every: number) 
   })
 }
 
+/**
+ * Shards: ice shards fly out along `angles`, lose speed (`drag`) until they stick
+ * in the ground, and stay for `duration`, hurting and chilling whatever touches
+ * them every half second (Ice Shard, Blizzard).
+ */
+const shards = (g: Game, s: CastStats, look: Look, angles: readonly number[], drag: number) => {
+  const p = g.player
+  for (const angle of angles) {
+    const v = fromAngle(angle, s.speed)
+    spawnAttack(g, {
+      ...look, x: p.x, y: p.y - 6,
+      shape: { kind: 'circle', r: 5 * s.area }, motion: { kind: 'drift', vx: v.x, vy: v.y, drag },
+      damage: s.damage, knockback: s.knockback, hitInterval: 0.5, ttl: s.duration, status: s.status,
+    })
+  }
+}
+
+/**
+ * Breath: a cone of `puffs` growing puffs blown towards `angle`, the middle one
+ * first and the edges a beat later, each a little off its line and pace so the
+ * cone fills up. The middle of the cone, where puffs overlap, hits hardest
+ * (Dragon Breath, Outrage).
+ */
+const breath = (g: Game, s: CastStats, look: Look, angle: number, puffs: number) => {
+  const p = g.player
+  fan(angle, puffs, 0.2).forEach((a, i) => {
+    const v = fromAngle(a + range(g.rng, -0.08, 0.08), s.speed * range(g.rng, 0.55, 1.1))
+    spawnAttack(g, {
+      ...look, x: p.x, y: p.y - 8,
+      shape: { kind: 'circle', r: 3 * s.area }, motion: { kind: 'linear', vx: v.x, vy: v.y },
+      damage: s.damage, knockback: s.knockback, ttl: 0.45, grow: 14 * s.area, status: s.status,
+      age: -Math.abs(i - (puffs - 1) / 2) * 0.04,
+    })
+  })
+}
+
+/** Seconds a Rock Tomb boulder takes to fall: its shadow is the warning. */
+const ROCK_FALL = 0.32
+/** Pillars in each Stone Edge line, and the gap between them (px, scaled by area). */
+const EDGE_PILLARS = 6
+const EDGE_GAP = 15
+
 export const MOVES = {
   ember: {
     name: 'Ember',
@@ -922,6 +964,110 @@ export const MOVES = {
     fire: (g, s) => turret(g, s, { move: 'willOWisp', type: 'fire', visual: 'wisp' }, 'wispShot', 0.6),
   },
 
+  iceShard: {
+    name: 'Ice Shard',
+    type: 'ice',
+    base: stats({ damage: 7, cooldown: 1.4, amount: 2, speed: 240, duration: 2.4, knockback: 10 }),
+    status: { kind: 'slow', chance: 0.5, duration: 1.5, power: 0.5 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 3 },
+      { duration: 1 },
+      { amount: 1 },
+      { cooldown: -0.2 },
+      { damage: 4, statusChance: 0.2 },
+      { amount: 2, area: 0.2 },
+    ],
+    fire: (g, s) => shards(g, s, { move: 'iceShard', type: 'ice', visual: 'iceShard' }, fan(aimAngle(g, 240), s.amount, 0.32), 3.4),
+  },
+
+  rockTomb: {
+    name: 'Rock Tomb',
+    type: 'rock',
+    base: stats({ damage: 16, cooldown: 2.2, amount: 2, knockback: 40 }),
+    status: { kind: 'slow', chance: 1, duration: 1.2, power: 0.5 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 6 },
+      { area: 0.2 },
+      { cooldown: -0.3 },
+      { amount: 1 },
+      { damage: 8 },
+      { amount: 1, area: 0.2 },
+    ],
+    // Boulders drop on the nearest foes, a little ahead of them (they walk at you while it falls).
+    fire: (g, s) => {
+      const p = g.player
+      const taken = new Set<number>()
+      const first = nearestEnemy(g, p.x, p.y, 170)
+      if (!first) return
+      for (let i = 0; i < s.amount; i++) {
+        const t = i === 0 ? first : nearestEnemy(g, p.x, p.y, 170, taken)
+        if (t) taken.add(t.id)
+        const foe = t ?? first
+        const d = dirTo(foe.x, foe.y, p.x, p.y)
+        const lead = Math.min(foe.speed * ROCK_FALL, dm.hypot(foe.x - p.x, foe.y - p.y) * 0.5)
+        // No foe left for this boulder: it lands around the first one.
+        const off = t ? { x: 0, y: 0 } : fromAngle(i * 2.4, 20 * s.area)
+        spawnAttack(g, {
+          move: 'rockTomb', type: 'rock', visual: 'rockTomb', x: foe.x + d.x * lead + off.x, y: foe.y + d.y * lead + off.y,
+          shape: { kind: 'circle', r: 15 * s.area }, motion: { kind: 'static' },
+          damage: s.damage, knockback: s.knockback, ttl: ROCK_FALL + 0.6, activeFrom: ROCK_FALL, activeUntil: ROCK_FALL + 0.08,
+          status: s.status, flip: i % 2 === 1, age: -i * 0.1,
+        })
+      }
+    },
+  },
+
+  pinMissile: {
+    name: 'Pin Missile',
+    type: 'bug',
+    base: stats({ damage: 5, cooldown: 1.2, amount: 3, speed: 280, pierce: 1, knockback: 12 }),
+    status: { kind: 'poison', chance: 0.15, duration: 2.5, power: 0.2 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 2 },
+      { amount: 1 },
+      { cooldown: -0.15 },
+      { pierce: 1 },
+      { damage: 3, statusChance: 0.1 },
+      { amount: 2 },
+    ],
+    // Needles leave from both flanks and curve into the nearest foe.
+    fire: (g, s) => {
+      const p = g.player
+      const target = nearestEnemy(g, p.x, p.y, 260)
+      const aim = target ? dm.atan2(target.y - p.y, target.x - p.x) : dm.atan2(p.facing.y, p.facing.x)
+      for (let i = 0; i < s.amount; i++) {
+        const side = i % 2 === 0 ? 1 : -1
+        const v = fromAngle(aim + side * (0.9 + 0.15 * Math.floor(i / 2)), s.speed)
+        spawnAttack(g, {
+          move: 'pinMissile', type: 'bug', visual: 'pin', x: p.x, y: p.y - 8,
+          shape: { kind: 'circle', r: 3 * s.area },
+          motion: { kind: 'homing', vx: v.x, vy: v.y, speed: s.speed, turn: 9, target },
+          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 1, status: s.status, age: -i * 0.06,
+        })
+      }
+    },
+  },
+
+  dragonBreath: {
+    name: 'Dragon Breath',
+    type: 'dragon',
+    base: stats({ damage: 8, cooldown: 1.3, amount: 3, speed: 170, knockback: 35 }),
+    status: { kind: 'burn', chance: 0.2, duration: 2, power: 0.3 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.15 },
+      { amount: 1 },
+      { damage: 4, statusChance: 0.1 },
+      { amount: 2 },
+    ],
+    fire: (g, s) => breath(g, s, { move: 'dragonBreath', type: 'dragon', visual: 'dragonBreath' }, aimAngle(g, 200), s.amount),
+  },
+
   /* ---------- Evolved moves (max level move + paired held item, see data/evolutions.ts) ---------- */
 
   flamethrower: {
@@ -1169,6 +1315,79 @@ export const MOVES = {
     status: { kind: 'burn', chance: 0.6, duration: 3, power: 0.4 },
     upgrades: [],
     fire: (g, s) => turret(g, s, { move: 'inferno', type: 'fire', visual: 'inferno' }, 'infernoShot', 0.45),
+  },
+  blizzard: {
+    name: 'Blizzard',
+    type: 'ice',
+    base: stats({ damage: 20, cooldown: 1.8, amount: 10, speed: 260, duration: 3, area: 1.4, knockback: 30 }),
+    status: { kind: 'slow', chance: 1, duration: 1.5, power: 0.6 },
+    upgrades: [],
+    // A ring of shards all around: a frozen fence that the horde has to wade through.
+    fire: (g, s) => shards(g, s, { move: 'blizzard', type: 'ice', visual: 'blizzard' }, radial(g, s.amount, 0.9), 3),
+  },
+
+  stoneEdge: {
+    name: 'Stone Edge',
+    type: 'rock',
+    base: stats({ damage: 34, cooldown: 1.5, amount: 3, area: 1.3, knockback: 90 }),
+    upgrades: [],
+    // Lines of stone pillars burst from the ground towards the nearest foes, one after another.
+    fire: (g, s) => {
+      const p = g.player
+      const taken = new Set<number>()
+      const aim = aimAngle(g, 220)
+      for (let i = 0; i < s.amount; i++) {
+        const t = nearestEnemy(g, p.x, p.y, 220, taken)
+        if (t) taken.add(t.id)
+        const d = fromAngle(t ? dm.atan2(t.y - p.y, t.x - p.x) : aim + (i / s.amount) * TAU)
+        for (let k = 0; k < EDGE_PILLARS; k++) {
+          const dist = (14 + k * EDGE_GAP) * s.area
+          spawnAttack(g, {
+            move: 'stoneEdge', type: 'rock', visual: 'stoneEdge', x: p.x + d.x * dist, y: p.y + d.y * dist,
+            shape: { kind: 'circle', r: 10 * s.area }, motion: { kind: 'static' },
+            damage: s.damage, knockback: s.knockback, ttl: 0.6, activeUntil: 0.12, flip: (i + k) % 2 === 0,
+            age: -k * 0.045 - i * 0.06,
+          })
+        }
+      }
+      g.shake = Math.max(g.shake, 2)
+    },
+  },
+
+  megahorn: {
+    name: 'Megahorn',
+    type: 'bug',
+    base: stats({ damage: 44, cooldown: 1.2, amount: 3, speed: 300, area: 1.5, knockback: 140 }),
+    status: { kind: 'poison', chance: 0.3, duration: 3, power: 0.3 },
+    upgrades: [],
+    // Huge horns that bore through everything in their way, bending towards a foe each.
+    fire: (g, s) => {
+      const p = g.player
+      const taken = new Set<number>()
+      fan(aimAngle(g, 300), s.amount, 0.5).forEach((angle, i) => {
+        const target = nearestEnemy(g, p.x, p.y, 300, taken)
+        if (target) taken.add(target.id)
+        const v = fromAngle(angle, s.speed)
+        spawnAttack(g, {
+          move: 'megahorn', type: 'bug', visual: 'megahorn', x: p.x, y: p.y - 8,
+          shape: { kind: 'circle', r: 7 * s.area },
+          motion: { kind: 'homing', vx: v.x, vy: v.y, speed: s.speed, turn: 3.5, target },
+          damage: s.damage, knockback: s.knockback, ttl: 1.4, status: s.status, age: -i * 0.05,
+        })
+      })
+    },
+  },
+
+  outrage: {
+    name: 'Outrage',
+    type: 'dragon',
+    base: stats({ damage: 26, cooldown: 0.9, amount: 3, speed: 200, area: 1.4, knockback: 70 }),
+    status: { kind: 'burn', chance: 0.3, duration: 2.5, power: 0.35 },
+    upgrades: [],
+    // A rampage: a breath cone in `amount` directions at once, turning a little every cast.
+    fire: (g, s) => {
+      for (const angle of radial(g, s.amount, 2.3)) breath(g, s, { move: 'outrage', type: 'dragon', visual: 'outrage' }, angle, 3)
+    },
   },
 } as const satisfies Record<string, MoveDef>
 

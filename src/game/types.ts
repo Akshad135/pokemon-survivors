@@ -131,10 +131,13 @@ export type Motion =
   | { kind: 'static' }
   /** Carries the player along (vx, vy) for `left` more seconds (Quick Attack); the hitbox rides at body height. */
   | { kind: 'lunge'; vx: number; vy: number; left: number }
+  /** Flies along (vx, vy) losing `drag` of its speed per second until it stops and stays put (Ice Shard). */
+  | { kind: 'drift'; vx: number; vy: number; drag: number }
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
   | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
+  | 'iceShard' | 'rockTomb' | 'pin' | 'dragonBreath'
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova' | 'bolt' | 'meteor' | 'orb' | 'wave' | 'puddle'
   /** Chain dash: the capsule along the path, the slash at the landing and the player's afterimages (drawn by `render/draw.ts`). */
@@ -151,6 +154,7 @@ export type DamageSource = MoveId | 'special'
 export type EvolvedVisual =
   | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
   | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
+  | 'blizzard' | 'stoneEdge' | 'megahorn' | 'outrage'
 
 /** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
 export type TacticVisual =

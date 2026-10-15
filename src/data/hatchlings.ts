@@ -79,7 +79,7 @@ export const HATCHLINGS = {
     egg: 'common',
     stats: { maxHp: 30, armor: 1, speed: -6 },
     signature: 'whirlpool',
-    learnset: ['whirlpool', 'waterGun', 'earthquake', 'crunch', 'swift', 'razorShell'],
+    learnset: ['whirlpool', 'waterGun', 'earthquake', 'crunch', 'swift', 'razorShell', 'iceShard'],
     line: line3(['Spheal', 363, ['ice', 'water']], ['Sealeo', 364, ['ice', 'water']], ['Walrein', 365, ['ice', 'water']], [
       { maxHp: 35, armor: 1, might: 0.05 },
       { maxHp: 65, armor: 2, might: 0.15, area: 0.1 },
@@ -115,7 +115,7 @@ export const HATCHLINGS = {
     egg: 'common',
     stats: { speed: 5, might: 0.08 },
     signature: 'crunch',
-    learnset: ['crunch', 'earthquake', 'swift', 'machPunch', 'flashCannon', 'psyshock'],
+    learnset: ['crunch', 'earthquake', 'swift', 'machPunch', 'flashCannon', 'psyshock', 'rockTomb'],
     line: line2(['Rockruff', 744, ['rock']], ['Lycanroc', 745, ['rock']], { maxHp: 55, might: 0.25, speed: 5, armor: 1 }),
   },
   grubbin: {
@@ -124,7 +124,7 @@ export const HATCHLINGS = {
     egg: 'common',
     stats: { area: 0.1, duration: 0.1, maxHp: 10, speed: -5 },
     signature: 'flashCannon',
-    learnset: ['flashCannon', 'thunder', 'vineWhip', 'razorLeaf', 'swift', 'earthquake'],
+    learnset: ['flashCannon', 'thunder', 'vineWhip', 'razorLeaf', 'swift', 'earthquake', 'pinMissile'],
     line: line3(['Grubbin', 736, ['bug']], ['Charjabug', 737, ['bug', 'electric']], ['Vikavolt', 738, ['bug', 'electric']], [
       { maxHp: 35, armor: 1, might: 0.06 },
       { maxHp: 45, might: 0.2, area: 0.15 },
@@ -192,7 +192,7 @@ export const HATCHLINGS = {
     egg: 'rare',
     stats: { area: 0.1, statusChance: 0.05, speed: -2 },
     signature: 'fireSpin',
-    learnset: ['fireSpin', 'ember', 'gust', 'razorLeaf', 'psyshock', 'swift'],
+    learnset: ['fireSpin', 'ember', 'gust', 'razorLeaf', 'psyshock', 'swift', 'pinMissile'],
     line: line2(['Larvesta', 636, ['bug', 'fire']], ['Volcarona', 637, ['bug', 'fire']], { maxHp: 50, might: 0.25, area: 0.15, regen: 0.2 }),
   },
   noibat: {
@@ -201,7 +201,7 @@ export const HATCHLINGS = {
     egg: 'rare',
     stats: { area: 0.12, speed: 4, maxHp: -10 },
     signature: 'gust',
-    learnset: ['gust', 'disarmingVoice', 'crunch', 'swift', 'fireSpin', 'psyshock'],
+    learnset: ['gust', 'disarmingVoice', 'crunch', 'swift', 'fireSpin', 'psyshock', 'dragonBreath'],
     line: line2(['Noibat', 714, ['flying', 'dragon']], ['Noivern', 715, ['flying', 'dragon']], { maxHp: 45, might: 0.22, area: 0.15, speed: 4 }),
   },
   honedge: {
@@ -254,7 +254,7 @@ export const HATCHLINGS = {
     egg: 'ultra',
     stats: { maxHp: 10, regen: 0.15, might: 0.05 },
     signature: 'whirlpool',
-    learnset: ['whirlpool', 'thunder', 'gust', 'fireSpin', 'waterGun', 'swift'],
+    learnset: ['whirlpool', 'thunder', 'gust', 'fireSpin', 'waterGun', 'swift', 'dragonBreath'],
     line: line3(['Dratini', 147, ['dragon']], ['Dragonair', 148, ['dragon']], ['Dragonite', 149, ['dragon', 'flying']], [
       { maxHp: 35, might: 0.1, area: 0.05 },
       { maxHp: 60, might: 0.25, armor: 1, speed: 4 },
@@ -266,7 +266,7 @@ export const HATCHLINGS = {
     egg: 'ultra',
     stats: { maxHp: 30, armor: 2, speed: -7 },
     signature: 'earthquake',
-    learnset: ['earthquake', 'crunch', 'machPunch', 'flashCannon', 'fireSpin', 'thunder'],
+    learnset: ['earthquake', 'crunch', 'machPunch', 'flashCannon', 'fireSpin', 'thunder', 'rockTomb'],
     line: line3(['Larvitar', 246, ['rock', 'ground']], ['Pupitar', 247, ['rock', 'ground']], ['Tyranitar', 248, ['rock', 'dark']], [
       { maxHp: 40, armor: 1, might: 0.08 },
       { maxHp: 75, armor: 2, might: 0.25, area: 0.1 },
@@ -290,7 +290,7 @@ export const HATCHLINGS = {
     egg: 'ultra',
     stats: { might: 0.1, speed: 3, maxHp: 5 },
     signature: 'crunch',
-    learnset: ['crunch', 'earthquake', 'fireSpin', 'machPunch', 'sludgeBomb', 'swift'],
+    learnset: ['crunch', 'earthquake', 'fireSpin', 'machPunch', 'sludgeBomb', 'swift', 'dragonBreath'],
     line: line3(['Gible', 443, ['dragon', 'ground']], ['Gabite', 444, ['dragon', 'ground']], ['Garchomp', 445, ['dragon', 'ground']], [
       { maxHp: 30, might: 0.1, speed: 3 },
       { maxHp: 55, might: 0.25, speed: 6, armor: 1 },
@@ -302,7 +302,7 @@ export const HATCHLINGS = {
     egg: 'ultra',
     stats: { projectileSpeed: 0.2, speed: 6, maxHp: -15 },
     signature: 'spiritShackle',
-    learnset: ['spiritShackle', 'thunder', 'fireSpin', 'gust', 'psyshock', 'swift', 'hex'],
+    learnset: ['spiritShackle', 'thunder', 'fireSpin', 'gust', 'psyshock', 'swift', 'hex', 'dragonBreath'],
     line: line3(['Dreepy', 885, ['dragon', 'ghost']], ['Drakloak', 886, ['dragon', 'ghost']], ['Dragapult', 887, ['dragon', 'ghost']], [
       { maxHp: 20, might: 0.1, projectileSpeed: 0.1 },
       { maxHp: 35, might: 0.22, speed: 6, amount: 1 },

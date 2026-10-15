@@ -993,6 +993,54 @@ export const pt = {
         '+1 chama por disparo e +3 de dano',
       ],
     },
+    iceShard: {
+      description: 'Lança estilhaços de gelo que perdem força e se cravam no chão, ferindo e desacelerando quem pisa neles.',
+      upgrades: [
+        '+1 estilhaço',
+        '+3 de dano',
+        'Duram +1s',
+        '+1 estilhaço',
+        'Recarga 0.2s mais rápida',
+        '+4 de dano e +20% de chance de desacelerar',
+        '+2 estilhaços e +20% de área',
+      ],
+    },
+    rockTomb: {
+      description: 'Pedregulhos caem sobre os inimigos mais próximos, prendendo e desacelerando quem é atingido. A sombra avisa onde vão cair.',
+      upgrades: [
+        '+1 pedregulho',
+        '+6 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+1 pedregulho',
+        '+8 de dano',
+        '+1 pedregulho e +20% de área',
+      ],
+    },
+    pinMissile: {
+      description: 'Rajada de agulhas que saem pelos lados e fazem a curva até o inimigo mais próximo. Pode envenenar.',
+      upgrades: [
+        '+1 agulha',
+        '+2 de dano',
+        '+1 agulha',
+        'Recarga 0.15s mais rápida',
+        'Atravessa +1 inimigo',
+        '+3 de dano e +10% de chance de envenenar',
+        '+2 agulhas',
+      ],
+    },
+    dragonBreath: {
+      description: 'Sopra um cone de fogo dracônico no inimigo mais próximo; o meio do cone acerta mais forte. Pode queimar.',
+      upgrades: [
+        'Cone +1 sopro mais largo',
+        '+3 de dano',
+        '+20% de área',
+        'Recarga 0.15s mais rápida',
+        'Cone +1 sopro mais largo',
+        '+4 de dano e +10% de chance de queimar',
+        'Cone +2 sopros mais largo',
+      ],
+    },
     flamethrower: {
       description: 'Jorro de fogo contínuo que atravessa tudo pela frente.',
       upgrades: [],
@@ -1049,6 +1097,22 @@ export const pt = {
       description: 'Deixa uma fogueira que dispara rajadas de fogo por muito tempo. Queima com frequência.',
       upgrades: [],
     },
+    blizzard: {
+      description: 'Uma nevasca crava um anel de gelo à sua volta que fere e desacelera quem tenta atravessar.',
+      upgrades: [],
+    },
+    stoneEdge: {
+      description: 'Fileiras de pilares de pedra irrompem do chão até os inimigos mais próximos.',
+      upgrades: [],
+    },
+    megahorn: {
+      description: 'Chifres enormes atravessam a horda inteira, empurrando longe e envenenando.',
+      upgrades: [],
+    },
+    outrage: {
+      description: 'Fúria dracônica: sopra cones de fogo em várias direções ao mesmo tempo, girando a cada vez.',
+      upgrades: [],
+    },
   },
 
   items: {
@@ -1073,6 +1137,10 @@ export const pt = {
     magnet: typeBoost('Elétrico'),
     poisonBarb: typeBoost('Veneno'),
     sharpBeak: typeBoost('Voador'),
+    neverMeltIce: typeBoost('Gelo'),
+    hardStone: typeBoost('Pedra'),
+    silverPowder: typeBoost('Inseto'),
+    dragonFang: typeBoost('Dragão'),
   },
 
   upgrades: {
