@@ -4,6 +4,7 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
+import { MOVES, moveStats } from './moves'
 import { enemiesInView, inView, isAlive } from './queries'
 import { spawnAttack } from './spawn'
 import { FIRST_STANCE, otherStance, STANCES, type Stance } from './stance'
@@ -270,6 +271,8 @@ export type SpecialState = {
   target: number
   /** Stance Change: Aegislash's forme; null for every other special. */
   stance: Stance | null
+  /** Kills the special made (or made mid-chain) not yet turned into cooldown by Power Herb (`rechargeSpecial`). */
+  kills: number
 }
 
 export const SPECIAL_BUFFER = 0.25
@@ -277,7 +280,7 @@ export const MIN_SPECIAL_COOLDOWN = 4
 
 export const createSpecialState = (): SpecialState => ({
   cooldown: 0, total: 1, buffer: 0, charge: 0, active: 0, angle: 0, trail: 0,
-  chaining: false, jumps: 0, window: 0, reach: 0, target: -1, stance: null,
+  chaining: false, jumps: 0, window: 0, reach: 0, target: -1, stance: null, kills: 0,
 })
 
 type Timers = Pick<SpecialState, 'cooldown' | 'buffer' | 'charge' | 'active'>
@@ -339,6 +342,27 @@ export const tickChain = (s: ChainTimers, dt: number, cooldown: number) => {
   if (s.window <= 0) return
   s.window = Math.max(0, s.window - dt)
   if (s.window <= 0) endChain(s, cooldown)
+}
+
+/* ---------------- Power Herb (pure) ---------------- */
+
+type RechargeTimers = Pick<SpecialState, 'cooldown' | 'total' | 'chaining' | 'kills'>
+
+/**
+ * Power Herb: each kill the special made cuts `cut` seconds off its cooldown.
+ * Kills made mid-chain wait until the chain ends and the cooldown starts. The
+ * cut never brings the time from the start of the cooldown to ready below the
+ * floor (`MIN_SPECIAL_COOLDOWN`, or a shorter cooldown like Stance Change's);
+ * kills while the special is ready go to waste.
+ */
+export const rechargeSpecial = (s: RechargeTimers, cut: number) => {
+  if (s.chaining || s.kills === 0) return
+  const kills = s.kills
+  s.kills = 0
+  if (s.cooldown <= 0 || cut <= 0) return
+  const elapsed = s.total - s.cooldown
+  const floor = Math.max(0, Math.min(s.total, MIN_SPECIAL_COOLDOWN) - elapsed)
+  s.cooldown = Math.max(floor, s.cooldown - kills * cut)
 }
 
 /**
@@ -453,6 +477,8 @@ const release = (g: Game, r: ResolvedSpecial) => {
   g.shake = Math.max(g.shake, 5)
   g.events.push({ kind: 'special', phase: 'release', name: r.tier.name })
   burst(g, p.x, p.y - 10, { colors: typeColors(r.def.type), count: 24, speed: 120, ttl: 0.35 })
+  // The fire dash fires Metronome where it lands; every other charged special right away.
+  if (r.def.kind !== 'dash') arrivalCombo(g)
 
   switch (r.def.kind) {
     case 'dash': {
@@ -597,7 +623,10 @@ const dashTick = (g: Game, r: ResolvedSpecial, dt: number) => {
   p.dir = dir8(dir.x, dir.y)
   s.trail += v * dt
   for (; s.trail >= TRAIL_STEP; s.trail -= TRAIL_STEP) fireTrail(g, r, area, power(g, r))
-  if (s.active <= 0) explode(g, r, p.x + dir.x * 10, p.y - 6 + dir.y * 10, 52 * area, power(g, r) * 1.2)
+  if (s.active <= 0) {
+    explode(g, r, p.x + dir.x * 10, p.y - 6 + dir.y * 10, 52 * area, power(g, r) * 1.2)
+    arrivalCombo(g)
+  }
 }
 
 /** Spray along the beam while it fires. */
@@ -630,6 +659,25 @@ const trailTick = (g: Game, r: ResolvedSpecial, dt: number) => {
       damage: power(g, r) * 0.3, knockback: 0, hitInterval: 0.4, ttl: range(g.rng, 2, 2.6), status: r.def.status ?? null, flip: chance(g.rng, 0.5),
     })
   }
+}
+
+/* ---------------- Metronome ---------------- */
+
+/**
+ * Metronome: fires `comboMoves` different moves of the loadout (drawn with the
+ * run's rng) from where the special landed, which is where the player stands.
+ * Every move's `fire` is safe to call off-cycle (Whirlpool only refreshes its aura).
+ */
+const arrivalCombo = (g: Game) => {
+  const p = g.player
+  const n = Math.min(p.stats.comboMoves, p.moves.length)
+  if (n <= 0) return
+  const pool = [...p.moves]
+  for (let i = 0; i < n; i++) {
+    const [owned] = pool.splice(Math.floor(g.rng() * pool.length), 1)
+    if (owned) MOVES[owned.id].fire(g, moveStats(owned.id, owned.level, p.stats))
+  }
+  burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#f8d030', '#f878a8'], count: 10, speed: 90, ttl: 0.3 })
 }
 
 /* ---------------- Chain dash ---------------- */
@@ -723,6 +771,7 @@ const landChain = (g: Game, r: ResolvedSpecial, cooldown: number) => {
     g.events.push({ kind: 'special', phase: 'release', name: r.tier.name })
   }
   landJump(s, hit, cooldown)
+  arrivalCombo(g)
 }
 
 /**
@@ -760,6 +809,7 @@ const swapStance = (g: Game) => {
   g.events.push({ kind: 'stance', stance })
   burst(g, p.x, p.y - 12, { colors: [STANCES[stance].color, '#ffffff', '#f8d030'], count: 24, speed: 110, ttl: 0.35 })
   g.shake = Math.max(g.shake, 2)
+  arrivalCombo(g)
 }
 
 /** Runs the special each tick: trigger → charge → release → active phase. */
@@ -767,6 +817,7 @@ export const updateSpecial = (g: Game, pressed: boolean, dt: number) => {
   const s = g.special
   const r = resolveSpecial(g.starter, g.player.stage)
   syncStance(g, r)
+  rechargeSpecial(s, g.player.stats.specialRecharge)
   if (r.def.kind === 'chain') return updateChain(g, r, pressed, dt)
   // An evolution can swap the chain out mid-window.
   if (s.chaining) endChain(s, specialCooldown(r.def, g.player.stats))

@@ -37,6 +37,10 @@ export type PlayerStats = {
   statusDamage: number
   /** multiplier on the damage the player takes, before armor (Aegislash's stances) */
   damageTaken: number
+  /** loadout moves fired where the special lands (Metronome) */
+  comboMoves: number
+  /** seconds cut from the special's cooldown per kill it makes (Power Herb) */
+  specialRecharge: number
 }
 
 export type StatDelta = Partial<PlayerStats>
@@ -59,6 +63,8 @@ export const BASE_STATS: PlayerStats = {
   statusChance: 0,
   statusDamage: 0,
   damageTaken: 1,
+  comboMoves: 0,
+  specialRecharge: 0,
 }
 
 export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): PlayerStats =>

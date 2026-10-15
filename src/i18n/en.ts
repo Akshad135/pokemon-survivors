@@ -879,6 +879,8 @@ export const en: Messages = {
     kingsRock: '+6% chance to inflict status (burn, poison, paralysis).',
     toxicOrb: 'Burn and poison deal +20% damage.',
     assaultVest: '+20 max HP and +1 defense.',
+    metronome: 'At the end of every jump or dash (and when other specials go off), fires +1 of your moves from there.',
+    powerHerb: 'Each foe the special defeats (or any defeated mid-chain) cuts 0.25 s off its cooldown.',
     charcoal: typeBoost('Fire'),
     mysticWater: typeBoost('Water'),
     miracleSeed: typeBoost('Grass'),

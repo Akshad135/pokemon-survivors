@@ -931,6 +931,8 @@ export const pt = {
     kingsRock: '+6% de chance de causar status (queimar, envenenar, paralisar).',
     toxicOrb: 'Queimadura e veneno causam +20% de dano.',
     assaultVest: '+20 HP máximo e +1 de defesa.',
+    metronome: 'Ao fim de cada salto ou investida (e ao soltar os outros especiais), dispara +1 dos seus golpes dali.',
+    powerHerb: 'Cada inimigo derrubado pelo especial (ou durante uma cadeia) corta 0,25 s da recarga dele.',
     charcoal: typeBoost('Fogo'),
     mysticWater: typeBoost('Água'),
     miracleSeed: typeBoost('Planta'),

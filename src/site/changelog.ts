@@ -19,6 +19,20 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    title: { pt: 'Metronome e Power Herb', en: 'Metronome and Power Herb' },
+    notes: [
+      {
+        pt: 'Novo item, Metronome: ao fim de cada salto da investida em cadeia, da investida de fogo ou de uma troca de postura (e ao soltar os outros especiais), dispara um dos seus golpes dali. No nível máximo, dois.',
+        en: 'New item, Metronome: at the end of every chain dash jump, fire dash or stance swap (and when other specials go off), it fires one of your moves from there. Two at max level.',
+      },
+      {
+        pt: 'Novo item, Power Herb: cada inimigo derrubado pelo especial, ou durante uma cadeia, corta 0,25 s da recarga dele (até 0,75 s no nível máximo). A recarga nunca fica abaixo do mínimo de 4 s.',
+        en: 'New item, Power Herb: each foe the special defeats, or any defeated mid-chain, cuts 0.25 s off its cooldown (up to 0.75 s at max level). The cooldown never drops below the 4 s minimum.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     title: { pt: 'Investida em cadeia e Mudança de Postura', en: 'Chain dash and Stance Change' },
     notes: [
       {
