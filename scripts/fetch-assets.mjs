@@ -4,7 +4,7 @@
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { measureBody } from './body.mjs'
-import { DEX, SHINY, pad } from './dex.mjs'
+import { DEX, FORMS, SHINY, pad } from './dex.mjs'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const OUT = join(ROOT, 'public/assets/pokemon')
@@ -47,10 +47,11 @@ const resolveAnim = (anims, name) => {
 }
 
 /**
- * Downloads one sprite variant (normal or a form like shiny `0000/0001`) into `dir`.
+ * Downloads one sprite variant (normal, shiny `/0000/0001` or an alternate form like `/0001`) into `dir`.
  * Returns the anims found plus whether a portrait exists, or null when the variant is missing.
+ * Alternate forms skip the portrait (`withPortrait`): menus only show the normal form.
  */
-const fetchVariant = async (dex, form, dir) => {
+const fetchVariant = async (dex, form, dir, withPortrait = true) => {
   const res = await fetch(`${SPRITES}/${pad(dex)}${form}/AnimData.xml`)
   if (!res.ok) return null
   await mkdir(dir, { recursive: true })
@@ -65,11 +66,21 @@ const fetchVariant = async (dex, form, dir) => {
       return [name, { frameWidth: anim.frameWidth, frameHeight: anim.frameHeight, durations: anim.durations }]
     }),
   )
-  const portrait = await download(`${PORTRAITS}/${pad(dex)}${form}/Normal.png`, join(dir, 'portrait.png'))
+  const portrait = withPortrait && await download(`${PORTRAITS}/${pad(dex)}${form}/Normal.png`, join(dir, 'portrait.png'))
   const walk = Object.fromEntries(entries.filter(Boolean)).Walk
   // Hitboxes come from this, so they don't wait on the image in the game.
   const body = walk ? await measureBody(join(dir, 'Walk.png'), walk.frameWidth, walk.frameHeight) : undefined
-  return { anims: Object.fromEntries(entries.filter(Boolean)), portrait, ...(body && { body }) }
+  return { anims: Object.fromEntries(entries.filter(Boolean)), ...(withPortrait && { portrait }), ...(body && { body }) }
+}
+
+/** An alternate form (`FORMS`) and, for species that can roll shiny, its shiny under `<id>/0001`. */
+const fetchForm = async (dex, key, id, dir) => {
+  const [form, shiny] = await Promise.all([
+    fetchVariant(dex, `/${id}`, join(dir, key), false),
+    SHINY.has(dex) ? fetchVariant(dex, `/${id}/0001`, join(dir, key, 'shiny'), false) : null,
+  ])
+  if (!form) throw new Error(`#${dex} form ${key}: missing AnimData.xml`)
+  return [key, { ...form, ...(shiny && { shiny }) }]
 }
 
 const fetchSpecies = async (dex) => {
@@ -80,10 +91,16 @@ const fetchSpecies = async (dex) => {
     mkdir(dir, { recursive: true }).then(() => download(`${CRIES}/${dex}.ogg`, join(dir, 'cry.ogg'))),
   ])
   if (!normal) throw new Error(`#${dex}: missing AnimData.xml`)
+  const forms = FORMS[dex] && Object.fromEntries(await Promise.all(Object.entries(FORMS[dex]).map(([key, id]) => fetchForm(dex, key, id, dir))))
 
-  const tags = [normal.portrait && '+portrait', cry && '+cry', shiny && `+shiny(${Object.keys(shiny.anims).join(', ')})`]
+  const tags = [
+    normal.portrait && '+portrait',
+    cry && '+cry',
+    shiny && `+shiny(${Object.keys(shiny.anims).join(', ')})`,
+    forms && `+forms(${Object.keys(forms).join(', ')})`,
+  ]
   console.log(`#${dex}: ${Object.keys(normal.anims).join(', ')} ${tags.filter(Boolean).join(' ')}`)
-  return [dex, { ...normal, cry, ...(shiny && { shiny }) }]
+  return [dex, { ...normal, cry, ...(shiny && { shiny }), ...(forms && { forms }) }]
 }
 
 const species = []

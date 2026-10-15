@@ -17,7 +17,7 @@ import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
-import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, drawStanceBadge } from './specialFx'
+import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
@@ -470,7 +470,8 @@ const drawAfterimages = (ctx: Ctx, g: Game) => {
 
 const drawPlayer = (ctx: Ctx, g: Game) => {
   const p = g.player
-  const s = sprites(playerDex(g), p.shiny)
+  // Aegislash wears its Blade Forme sprite in Blade stance; the ring and the special button tell the stance too.
+  const s = sprites(playerDex(g), p.shiny, g.special.stance ? STANCE_FORMS[g.special.stance] : undefined)
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
@@ -479,7 +480,6 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0 })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
-  drawStanceBadge(ctx, g, p.y - s.bodyH, p.animTime)
 
   // GBA-style HP bar under the feet.
   const w = 22

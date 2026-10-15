@@ -34,4 +34,13 @@ export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS,
 /** Species that can roll shiny: the player lines, regular enemies and rift legendaries. */
 export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS])
 
+/**
+ * Alternate formes the game draws, by key, mapped to their SpriteCollab form id
+ * (`sprite/<dex>/<id>/`, shiny under `<id>/0001/`). They land in
+ * `public/assets/pokemon/<dex>/<key>/` and under `forms.<key>` in the manifest.
+ */
+export const FORMS = {
+  681: { blade: '0001' }, // Aegislash's Blade Forme (Stance Change)
+}
+
 export const pad = (n) => String(n).padStart(4, '0')

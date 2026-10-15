@@ -5,6 +5,7 @@ import { resolveSpecial, SPECIALS, specialOfType, specialReach, type SpecialId }
 import { STANCES, type Stance } from '../game/stance'
 import type { Attack, Game } from '../game/types'
 import { FX, outlined, toIconUrl } from './art'
+import type { Form } from './sprites'
 
 /** Code-drawn pixel art for the special attacks (`game/special.ts`). */
 
@@ -299,13 +300,8 @@ const drawStanceRing = (ctx: Ctx, g: Game, t: number) => {
   }
 }
 
-/** The forme's icon floating over Aegislash's head (`top` is the sprite's top edge). */
-export const drawStanceBadge = (ctx: Ctx, g: Game, top: number, t: number) => {
-  const stance = g.special.stance
-  if (!stance) return
-  const bob = Math.round(Math.sin(t * 3) * 1)
-  blitCentered(ctx, STANCE_ART[stance](), g.player.x, top - 7 + bob)
-}
+/** The sprite form Aegislash wears in each stance, like in the games: Shield is its normal sprite. */
+export const STANCE_FORMS = { shield: undefined, blade: 'blade' } as const satisfies Record<Stance, Form | undefined>
 
 /** Ground layer (under entities): scorch marks, cracks, glows. */
 export const drawSpecialGround = (ctx: Ctx, a: Attack) => {

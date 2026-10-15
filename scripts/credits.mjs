@@ -3,7 +3,7 @@
 // Usage: npm run credits
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { DEX, pad } from './dex.mjs'
+import { DEX, FORMS, pad } from './dex.mjs'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const MANIFEST = join(ROOT, 'src/data/sprites.generated.json')
@@ -39,8 +39,15 @@ const artists = (credit) =>
 const rows = DEX.flatMap((dex) => {
   const entry = tracker[pad(dex)]
   const shiny = manifest[dex]?.shiny && entry.subgroups['0000']?.subgroups['0001']
-  const row = (label, node) => `| ${dex} | ${label} | ${artists(node.sprite_credit)} | ${artists(node.portrait_credit)} |`
-  return [row(entry.name, entry), ...(shiny ? [row(`${entry.name} (shiny)`, shiny)] : [])]
+  const row = (label, node, portrait = true) =>
+    `| ${dex} | ${label} | ${artists(node.sprite_credit)} | ${portrait ? artists(node.portrait_credit) : '—'} |`
+  // Alternate forms ship sprites only (no portrait); their shiny sits under `<id>/0001`.
+  const forms = Object.keys(manifest[dex]?.forms ?? {}).flatMap((key) => {
+    const node = entry.subgroups[FORMS[dex][key]]
+    const formShiny = manifest[dex].forms[key].shiny && node.subgroups['0001']
+    return [row(`${entry.name} (${node.name})`, node, false), ...(formShiny ? [row(`${entry.name} (${node.name}, shiny)`, formShiny, false)] : [])]
+  })
+  return [row(entry.name, entry), ...(shiny ? [row(`${entry.name} (shiny)`, shiny)] : []), ...forms]
 })
 
 const md = `# Credits

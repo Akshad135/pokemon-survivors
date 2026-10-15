@@ -262,6 +262,8 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 680 | Doublade (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 681 | Aegislash | Top_Kec | baronessfaron, [Emmuffin](https://twitter.com/Ernmuffin) |
 | 681 | Aegislash (shiny) | Top_Kec | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 681 | Aegislash (Blade) | Top_Kec | — |
+| 681 | Aegislash (Blade, shiny) | Top_Kec | — |
 | 848 | Toxel | baronessfaron | [EzerArt](https://twitter.com/EzerArt_), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 848 | Toxel (shiny) | [Keldaan](https://github.com/keldaan-ag) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 849 | Toxtricity | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |

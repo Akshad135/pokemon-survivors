@@ -18,6 +18,17 @@ export type ChangelogEntry = {
  */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-15',
+    pr: 0,
+    title: { pt: 'Aegislash na Forma Lâmina', en: 'Aegislash in Blade Forme' },
+    notes: [
+      {
+        pt: 'Na Forma Lâmina, o Aegislash agora aparece com o sprite da Forma Lâmina (também na versão shiny), como nos jogos. O ícone sobre a cabeça saiu: o próprio sprite, o anel no chão e o botão do especial mostram a postura.',
+        en: 'In Blade Forme, Aegislash now shows its Blade Forme sprite (shiny too), like in the games. The icon over its head is gone: the sprite itself, the ring at its feet and the special button show the stance.',
+      },
+    ],
+  },
+  {
     date: '2026-10-14',
     pr: 43,
     title: { pt: 'Metronome e Power Herb', en: 'Metronome and Power Herb' },
