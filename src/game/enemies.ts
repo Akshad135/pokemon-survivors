@@ -82,6 +82,11 @@ const FAINT_TIME = 0.4
 /** Seconds a fleeing boss takes to glide off and fade out (`chaseOffBosses`). */
 export const FLEE_TIME = 0.9
 
+/** Removes an enemy without a faint: no EXP, no drop, gone at the end of this tick's `updateEnemies`. */
+export const despawnEnemy = (e: Enemy) => {
+  e.dying = FAINT_TIME
+}
+
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
   const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
@@ -110,7 +115,7 @@ export const updateEnemies = (g: Game, dt: number) => {
       vx = frozen ? 0 : e.behavior.vx
       vy = frozen ? 0 : e.behavior.vy
       e.behavior.ttl -= dt
-      if (e.behavior.ttl <= 0) e.dying = FAINT_TIME // despawn silently
+      if (e.behavior.ttl <= 0) despawnEnemy(e)
     }
 
     e.x += (vx + e.kx) * dt

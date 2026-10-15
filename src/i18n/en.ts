@@ -97,6 +97,7 @@ export const en: Messages = {
     sfx: 'Effects',
     sound: 'Sound',
     damageNumbers: 'Damage numbers',
+    damageModes: { all: 'All', reduced: 'Reduced', off: 'OFF' },
     screenShake: 'Screen shake',
     on: 'ON',
     off: 'OFF',

@@ -3,6 +3,7 @@ import type { Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALES, nextLocale, setLocale, t } from '../i18n'
 import { h, later } from './dom'
+import { DAMAGE_NUMBERS } from '../render/damageNumbers'
 import { loadSettings, writeSettings, type Settings } from './save'
 import { hint, menu, type Screen } from './screens'
 
@@ -91,6 +92,26 @@ const toggle = (label: string, read: (s: Settings) => boolean, write: (on: boole
   }
 }
 
+/** `◀ Reduced ▶`: ← → step through the damage numbers modes, Enter or a tap goes to the next one (wrapping). */
+const damageRow = (): Row => {
+  const value = h('b', { class: 'setting-choice' })
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().settings.damageNumbers), value)
+  const step = (dir: -1 | 1) => {
+    const i = DAMAGE_NUMBERS.indexOf(current.damageNumbers)
+    const n = DAMAGE_NUMBERS.length
+    updateSettings({ damageNumbers: DAMAGE_NUMBERS[(i + dir + n) % n]! })
+    playSfx('select')
+  }
+  return {
+    el,
+    adjust: step,
+    activate: () => step(1),
+    sync: () => {
+      value.textContent = `◀ ${t().settings.damageModes[current.damageNumbers]} ▶`
+    },
+  }
+}
+
 /** `◀ Português ▶`: any press cycles the language (there are only two, so direction doesn't matter). */
 const languageRow = (onSwitch: () => void): Row => {
   const el = h(
@@ -138,7 +159,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
       slider(m.music, 'musicVolume'),
       slider(m.sfx, 'sfxVolume', () => playSfx('pickup', 90)),
       toggle(m.sound, (s) => !s.muted, (on) => ({ muted: !on })),
-      toggle(m.damageNumbers, (s) => s.damageNumbers, (on) => ({ damageNumbers: on })),
+      damageRow(),
       toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
       languageRow(switchLanguage),
       backRow(m.back, close),

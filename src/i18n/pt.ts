@@ -131,6 +131,7 @@ export const pt = {
     sfx: 'Efeitos',
     sound: 'Som',
     damageNumbers: 'Números de dano',
+    damageModes: { all: 'Todos', reduced: 'Reduzidos', off: 'OFF' },
     screenShake: 'Tremor de tela',
     on: 'ON',
     off: 'OFF',
