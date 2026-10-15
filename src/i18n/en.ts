@@ -264,6 +264,7 @@ export const en: Messages = {
     legendary: (name) => `A _legendary_ *${name}* appeared!`,
     boss: (name) => `A wild *${name}* appeared!`,
     bossFled: (name) => `The wild *${name}* fled!`,
+    enraged: (name) => `*${name}* is _enraged_!`,
     shiny: (name) => `A shiny *${name}* appeared!`,
     shinyPlayer: (name) => `Lucky! Your *${name}* is shiny!`,
     caught: (name) => `Shiny *${name}* is yours! Added to the _Pokédex_.`,

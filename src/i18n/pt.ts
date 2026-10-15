@@ -304,6 +304,7 @@ export const pt = {
     legendary: (name: string) => `Um *${name}* _lendário_ apareceu!`,
     boss: (name: string) => `Um *${name}* selvagem apareceu!`,
     bossFled: (name: string) => `O *${name}* selvagem fugiu!`,
+    enraged: (name: string) => `O *${name}* ficou _furioso_!`,
     shiny: (name: string) => `Um *${name}* shiny apareceu!`,
     shinyPlayer: (name: string) => `Que sorte! Seu *${name}* é shiny!`,
     caught: (name: string) => `*${name}* shiny é seu! Registrado na _Pokédex_.`,

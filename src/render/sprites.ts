@@ -217,6 +217,8 @@ export type DrawOpts = {
   scale?: number
   /** Colored overlay (status conditions); `amount` is 0..1 opacity. */
   tint?: { color: string; amount: number }
+  /** A hard 1 px outline in this color around the silhouette (elites, enraged bosses). */
+  outline?: string
 }
 
 /** Draws a species at its feet position (x, y). */
@@ -242,6 +244,13 @@ export const drawPokemon = (
   const alpha = opts.alpha ?? 1
   const flash = opts.flash ?? 0
   if (alpha !== 1) ctx.globalAlpha = alpha
+  if (opts.outline) {
+    const edge = tinted(sheet.white, opts.outline)
+    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx - 1, dy, dw, dh)
+    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx + 1, dy, dw, dh)
+    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx, dy - 1, dw, dh)
+    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx, dy + 1, dw, dh)
+  }
   if (flash < 1) ctx.drawImage(sheet.img, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
   const tint = opts.tint
   if (tint && tint.amount > 0 && flash < 1) {

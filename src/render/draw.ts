@@ -397,8 +397,58 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
   }
   // Leapers are drawn lifted mid-jump; their shadow stays on the ground.
   const y = e.y - traitLift(e)
-  drawPokemon(ctx, s, enemyAnim(e), e.dir, e.animTime, e.x, y, { flash: e.flash > 0.08 ? 0.85 : 0, tint: traitTint(e) ?? statusTint(e.status, t, e.id), scale })
+  const size = Math.max(s.bodyW, s.bodyH) * scale
+  const rage = e.fight?.enraged === true
+  const anim = enemyAnim(e)
+  if (e.runner && anim === 'Walk' && e.status.stun <= 0) drawSpeedLines(ctx, e, y - Math.round((s.bodyH * scale) / 2), s.bodyW * scale, t)
+  if (rage) RAGE_TINT.amount = 0.15 + 0.15 * pulse(t, 3)
+  const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (rage ? RAGE_TINT : undefined)
+  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: e.flash > 0.08 ? 0.85 : 0, tint, scale, outline: outlineOf(e, t) })
   if (e.shiny) drawSparkles(ctx, e.x, y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
+  if (rage) drawRageEmbers(ctx, e.x, y - (s.bodyH * scale) / 2, size, t, e.id)
+}
+
+/** Reused red overlay of an enraged boss (no allocation per frame). */
+const RAGE_TINT = { color: '#f83020', amount: 0 }
+
+/** 0..1 triangle wave at `hz`. */
+const pulse = (t: number, hz: number) => Math.abs(((t * hz) % 2) - 1)
+
+/** Enraged bosses flicker red and orange fast; elites keep a slow crimson throb so a crowd of them reads at a glance on a phone. */
+const outlineOf = (e: Enemy, t: number) => {
+  if (e.fight?.enraged) return Math.floor(t * 8) % 2 === 0 ? '#f83020' : '#f8a020'
+  if (e.elite) return Math.floor(t * 2.5 + e.id * 0.37) % 2 === 0 ? '#e02838' : '#f86858'
+  return undefined
+}
+
+/** Unit steps per `Dir8` (0 Down, 1 DownRight, 2 Right, 3 UpRight, 4 Up, 5 UpLeft, 6 Left, 7 DownLeft). */
+const DIR_STEP: readonly (readonly [number, number])[] = [[0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1], [-1, 0], [-1, 1]]
+
+/** A runner's three flickering white streaks trailing behind its body (`cy` is mid-body, `w` the body width). */
+const drawSpeedLines = (ctx: Ctx, e: Enemy, cy: number, w: number, t: number) => {
+  const [dx, dy] = DIR_STEP[e.dir]!
+  const back = Math.round(w / 2) + 1
+  const frame = Math.floor(t * 14)
+  ctx.fillStyle = '#ffffff'
+  ctx.globalAlpha = 0.8
+  for (let i = -1; i <= 1; i++) {
+    const len = 3 + ((frame + i * 3 + e.id) & 3) - (i === 0 ? 0 : 1)
+    const ox = Math.round(e.x - dx * back - dy * i * 3)
+    const oy = Math.round(cy - dy * back + dx * i * 3)
+    for (let k = 0; k < len; k++) ctx.fillRect(ox - dx * k, oy - dy * k, 1, 1)
+  }
+  ctx.globalAlpha = 1
+}
+
+/** Embers rising off an enraged boss (`cy` mid-body, `size` its body size). */
+const drawRageEmbers = (ctx: Ctx, x: number, cy: number, size: number, t: number, seed: number) => {
+  for (let i = 0; i < 8; i++) {
+    const phase = (t * 0.9 + hash2(seed, i, 3)) % 1
+    ctx.globalAlpha = 1 - phase
+    ctx.fillStyle = i % 2 === 0 ? '#f83020' : '#f8c030'
+    ctx.fillRect(Math.round(x + (hash2(seed, i, 4) - 0.5) * size), Math.round(cy + size * 0.4 - phase * size), 2, 2)
+  }
+  ctx.globalAlpha = 1
 }
 
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')

@@ -2,9 +2,12 @@ import { dir8, dirTo, retain } from '../engine/math'
 import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
+import { STANCES } from '../data/bosses'
 import { DIFFICULTIES } from './difficulty'
 import { bodyOf } from '../data/bodies'
+import { fightPace } from './bossFight'
 import { hurtPlayer } from './combat'
+import { leadTime } from './horde'
 import { createStatus, statusAttack, statusPace } from './status'
 import { createTraitState, isAirborne, traitPace } from './traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
@@ -44,6 +47,9 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     xp: def.xp,
     boss,
     shiny: false,
+    elite: false,
+    runner: false,
+    fight: null,
     bornAt: g.time,
     cooldowns: [],
     behavior,
@@ -108,9 +114,21 @@ export const updateEnemies = (g: Game, dt: number) => {
     let vx = 0
     let vy = 0
     if (e.behavior.kind === 'chase') {
-      const d = dirTo(e.x, e.y, p.x, p.y)
-      vx = d.x * pace
-      vy = d.y * pace
+      // Runners head where the player is going; a boss in a fight walks at its stance's pace and a ranged one holds its distance.
+      let tx = p.x
+      let ty = p.y
+      let speed = pace
+      if (e.runner) {
+        const t = leadTime(dm.hypot(p.x - e.x, p.y - e.y), pace)
+        tx += p.vx * t
+        ty += p.vy * t
+      } else if (e.fight) {
+        const hold = STANCES[e.fight.stance].hold
+        speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+      }
+      const d = dirTo(e.x, e.y, tx, ty)
+      vx = d.x * speed
+      vy = d.y * speed
     } else {
       vx = frozen ? 0 : e.behavior.vx
       vy = frozen ? 0 : e.behavior.vy
