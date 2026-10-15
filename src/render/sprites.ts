@@ -225,11 +225,12 @@ const formSprites = (dex: Dex, shiny: boolean, form: Form) => {
 }
 
 /**
- * Sprites of a species variant: an alternate form falls back to the species' own colors,
- * a shiny to the normal colors, then to a dust puff while it downloads. Never throws.
+ * Sprites of a species variant: a shiny form SpriteCollab lacks (Mega Tyranitar) wears the form's
+ * normal colors, an alternate form falls back to the species' own colors, a shiny to the normal
+ * colors, then to a dust puff while it downloads. Never throws.
  */
 export const sprites = (dex: Dex, shiny = false, form?: Form) =>
-  (form && formSprites(dex, shiny, form)) ||
+  (form && (formSprites(dex, shiny, form) || (shiny && !manifestVariant(dex, true, form) && formSprites(dex, false, form)))) ||
   (shiny && cache.get(cacheKey(dex, true))) ||
   cache.get(cacheKey(dex, false)) ||
   pendingSprites(dex)
