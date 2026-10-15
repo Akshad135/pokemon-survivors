@@ -4,7 +4,8 @@ import type { EnemyId } from './enemies'
 /**
  * Legendary rifts: portals that open on the map a few times per run and lead
  * to a closed arena with a legendary from another generation. Each one has
- * its entry in `ENEMIES`, its patterns in `data/bosses.ts` and an arena look here.
+ * its entry in `ENEMIES`, its patterns in `data/bosses.ts`, its colors here and its
+ * floor plan in `data/arenas.ts`.
  */
 export const RIFT_LEGENDS = ['lugia', 'hoOh', 'kyogre', 'groudon', 'rayquaza', 'dialga'] as const satisfies readonly EnemyId[]
 
@@ -51,7 +52,6 @@ export const RIFT = {
   portalRadius: 18,
   /** Seconds before the arena collapses and throws the player back. */
   arenaTime: 60,
-  arenaRadius: 140,
   /** Seconds to grab the loot after the legendary falls. */
   lootTime: 3,
   /** Chance the legendary behind a rift is shiny (double ₽, an extra Poké Ball). */

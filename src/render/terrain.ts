@@ -2,6 +2,8 @@ import { context2d, createCanvas, ellipse, type PixelSprite } from '../engine/pi
 import type { BiomeId } from '../data/biomes'
 import { CLIFF_CRESTS, CLIFFS, LAKES, TERRAIN as RULES, type SolidKind, type Tier } from '../data/terrain'
 import { featuresNear, groundAt, type Solid } from '../game/terrain'
+import type { ArenaPiece } from '../data/arenas'
+import { ARENA_PIECES, ARENA_SHADOW, ARENA_TALL } from './arenaPieces'
 import type { Game } from '../game/types'
 import {
   cone,
@@ -708,6 +710,8 @@ const mountain = (set: TerrainSet, variant: number): Piece => {
 
 type PieceKind = SolidKind | 'lake'
 
+const isArenaPiece = (kind: PieceKind | ArenaPiece): kind is ArenaPiece => kind in ARENA_PIECES
+
 const VARIANTS: Record<PieceKind, number> = { rock: RULES.rockVariants, tree: RULES.treeVariants, tower: 1, cliff: CLIFFS.length, lake: LAKES.length }
 
 const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
@@ -728,10 +732,12 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
 
 const pieces = new Map<string, Piece>()
 
-const pieceOf = (biome: BiomeId, kind: PieceKind, variant: number) => {
-  const key = `${biome}:${kind}:${variant}`
+const pieceOf = (biome: BiomeId, kind: PieceKind | ArenaPiece, variant: number) => {
+  const arena = isArenaPiece(kind)
+  // The arenas' scenery looks the same whatever the biome outside.
+  const key = arena ? `arena:${kind}:${variant}` : `${biome}:${kind}:${variant}`
   let piece = pieces.get(key)
-  if (!piece) pieces.set(key, (piece = build(biome, kind, variant)))
+  if (!piece) pieces.set(key, (piece = arena ? ARENA_PIECES[kind](variant) : build(biome, kind, variant)))
   return piece
 }
 
@@ -755,7 +761,7 @@ const mountainShadows = CLIFFS.map((tiers) => {
 const blit = (ctx: CanvasRenderingContext2D, p: Piece, x: number, y: number) => ctx.drawImage(p.sprite, Math.round(x - p.ax), Math.round(y - p.ay))
 
 /** The solids around the view, for the depth sort with the Pokémon. */
-export const solidsInView = (g: Game, camX: number, camY: number, w: number, h: number, out: Solid[]) => {
+export const solidsInView = (g: Game, camX: number, camY: number, w: number, h: number, out: { push: (s: Solid) => unknown }) => {
   // Generous margins: towers and mountains reach far above their footprint.
   for (const f of featuresNear(g, camX + w / 2, camY + h / 2 + 60, w / 2 + 90, h / 2 + 150)) for (const s of f.solids) out.push(s)
 }
@@ -774,7 +780,7 @@ export const drawTerrainGround = (ctx: CanvasRenderingContext2D, g: Game, biome:
         blit(ctx, mountainShadows[s.variant]!(), s.x + 5, s.y + 3)
         ctx.globalAlpha = 1
       } else {
-        const rx = SHADOW_RX[s.kind]
+        const rx = isArenaPiece(s.kind) ? ARENA_SHADOW[s.kind] : SHADOW_RX[s.kind]
         ctx.drawImage(ellipse(rx, Math.round(rx * 0.4), SHADOW), Math.round(s.x + 2 - rx), Math.round(s.y - rx * 0.4))
       }
     }
@@ -811,7 +817,7 @@ export const drawSolid = (ctx: CanvasRenderingContext2D, g: Game, s: Solid, biom
   const hx = Math.round(p.x) - HOLE - x
   const hy = Math.round(p.y) - 12 - HOLE - y
   const behind =
-    TALL[s.kind] && p.y < s.y && hx > -HOLE * 2 && hy > -HOLE * 2 && hx < piece.sprite.width && hy < piece.sprite.height
+    (isArenaPiece(s.kind) ? ARENA_TALL[s.kind] : TALL[s.kind]) && p.y < s.y && hx > -HOLE * 2 && hy > -HOLE * 2 && hx < piece.sprite.width && hy < piece.sprite.height
   if (!behind) return ctx.drawImage(piece.sprite, x, y)
   if (!scratch || scratch.canvas.width < piece.sprite.width || scratch.canvas.height < piece.sprite.height) {
     const canvas = createCanvas(Math.max(piece.sprite.width, scratch?.canvas.width ?? 0), Math.max(piece.sprite.height, scratch?.canvas.height ?? 0))

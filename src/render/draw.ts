@@ -20,7 +20,7 @@ import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } 
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
-import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
+import { drawArena, drawRiftArrow, drawRiftPortal, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
@@ -607,7 +607,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const upcoming = biomeAt(g.time + BIOME_WARMUP)
   if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
   // One terrain sprite per frame at most: this biome's first, then the next one's.
-  if (!warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
+  if (g.rift.arena) warmArena(g.rift.arena)
+  else if (!warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
   // Scenery changes outfit halfway through the dissolve, like the breakables.
   const look = fade && fade.k < 0.5 ? fade.from : g.biome.id
   ctx.save()
@@ -615,7 +616,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
-  if (!g.rift.arena) drawTerrainGround(ctx, g, look, camX, camY)
+  drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
@@ -631,7 +632,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawables.length = 0
   for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
   drawables.push('player')
-  if (!g.rift.arena) solidsInView(g, camX, camY, w, h, drawables as Solid[])
+  solidsInView(g, camX, camY, w, h, drawables)
   // Mid-jump leapers sort last so they fly over the horde, and so does a flyer over a rock or a mountain.
   const depth = (d: Drawable) =>
     d === 'player' ? g.player.y : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
