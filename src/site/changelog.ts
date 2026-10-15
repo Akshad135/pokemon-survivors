@@ -19,7 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-15',
-    pr: 0,
+    pr: 45,
     title: { pt: 'Aegislash na Forma Lâmina', en: 'Aegislash in Blade Forme' },
     notes: [
       {
