@@ -91,7 +91,7 @@ const PALETTES: Record<PokeType, readonly [string, string, string, string]> = {
 type OwnArtSpecial = { [K in SpecialId]: (typeof SPECIALS)[K]['kind'] extends 'chain' | 'stance' ? K : never }[SpecialId]
 
 /** Specials drawn by the shared forms; the bespoke ones keep their own art below. */
-type FormSpecial = Exclude<SpecialId, 'blastBurn' | 'hydroCannon' | 'frenzyPlant' | 'boomburst' | OwnArtSpecial>
+type FormSpecial = Exclude<SpecialId, 'blastBurn' | 'dragonFlare' | 'hydroCannon' | 'frenzyPlant' | 'boomburst' | OwnArtSpecial>
 
 /**
  * Each shared-form special's piece (meteor, orb, blade…), also its icon. `turn`
@@ -112,6 +112,11 @@ const GLYPHS: Record<FormSpecial, { rows: readonly string[]; turn?: boolean }> =
   precipiceBlades: { rows: ['...4...', '...3...', '..434..', '..323..', '.12321.', '.12221.', '1222221', '1122211', '.11111.'] },
   aeroblast: { rows: ['11....', '.22...', '..23..', '..234.', '..234.', '..234.', '..23..', '.22...', '11....'], turn: true },
   malignantChain: { rows: ['...1...', '...1...', '..121..', '..131..', '.12331.', '1233431', '1233331', '.12221.', '..111..'] },
+  /* Mega specials: their icons (in the world, pieces follow the type like every other special). */
+  psystrike: { rows: ['..1...1..', '.121.121.', '.1232321.', '..13431..', '.1234321.', '..13431..', '.1232321.', '.121.121.', '..1...1..'] },
+  poltergeist: { rows: ['...111...', '..12221..', '.1233321.', '.1341431.', '.1233321.', '.1233321.', '.123.321.', '.12...21.', '.1.....1.'] },
+  moonblast: { rows: ['...1111..', '..12331..', '.1234.1..', '.1234....', '.1234....', '.12334.1.', '..1233321', '...11111.'] },
+  stoneEdge: { rows: ['....1....', '...141...', '...131...', '..13431..', '..12321..', '.1233321.', '.1222221.', '122222221', '111111111'] },
 }
 
 const glyphCache = new Map<FormSpecial, PixelSprite>()
@@ -303,18 +308,29 @@ const drawStanceRing = (ctx: Ctx, g: Game, t: number) => {
 /** The sprite form Aegislash wears in each stance, like in the games: Shield is its normal sprite. */
 export const STANCE_FORMS = { shield: undefined, blade: 'blade' } as const satisfies Record<Stance, Form | undefined>
 
+/**
+ * The fire dash's look: orange flames, or Mega Charizard X's blue dragon fire
+ * (Dragon Flare). `ball` runs from the fireball's rim to its pale core.
+ */
+const FLARES = {
+  fire: { frames: FX.flame, ball: ['#c03020', '#f08030', '#f8d030', '#fff8c0'], body: 'rgba(248,160,48,0.35)', glow: 'rgba(248,128,48,0.4)', scorch: 'rgba(56,16,8,0.4)' },
+  dragon: { frames: FX.dragonFlame, ball: ['#2028a0', '#3870f0', '#78c8f8', '#e8f8ff'], body: 'rgba(72,136,248,0.35)', glow: 'rgba(72,120,248,0.4)', scorch: 'rgba(8,16,56,0.4)' },
+} as const
+
+const flareOf = (a: Attack) => (a.type === 'dragon' ? FLARES.dragon : FLARES.fire)
+
 /** Ground layer (under entities): scorch marks, cracks, glows. */
 export const drawSpecialGround = (ctx: Ctx, a: Attack) => {
   const r = Math.round(radius(a))
   switch (a.visual) {
     case 'fireTrail': {
       ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.4)
-      blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), 'rgba(56,16,8,0.4)'), a.x, a.y + 2)
+      blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), flareOf(a).scorch), a.x, a.y + 2)
       ctx.globalAlpha = 1
       return
     }
     case 'blitz':
-      return blitCentered(ctx, ellipse(r + 4, Math.round((r + 4) * 0.5), 'rgba(248,128,48,0.4)'), a.x, a.y + 8)
+      return blitCentered(ctx, ellipse(r + 4, Math.round((r + 4) * 0.5), flareOf(a).glow), a.x, a.y + 8)
     case 'roots':
       return blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.35)), 'rgba(40,24,8,0.5)'), a.x, a.y)
     case 'meteor': {
@@ -344,13 +360,14 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'fireTrail': {
       const left = a.ttl - a.age
       if (left < 0.3 && Math.floor(left * 30) % 2 === 0) return
-      const frames = FX.flame()
+      const frames = flareOf(a).frames()
       return blitCentered(ctx, frames[(Math.floor((t + a.id * 0.37) * 10) + (a.flip ? 1 : 0)) % 2]!, a.x, a.y - 4)
     }
     case 'blitz': {
-      blitCentered(ctx, ellipse(Math.round(r), Math.round(r), 'rgba(248,160,48,0.35)'), a.x, a.y)
-      pixelRing(ctx, a.x, a.y, Math.round(r), 2, Math.floor(t * 20) % 2 ? '#f8d030' : '#fff8c0')
-      const frames = FX.flame()
+      const f = flareOf(a)
+      blitCentered(ctx, ellipse(Math.round(r), Math.round(r), f.body), a.x, a.y)
+      pixelRing(ctx, a.x, a.y, Math.round(r), 2, Math.floor(t * 20) % 2 ? f.ball[2] : f.ball[3])
+      const frames = f.frames()
       for (let i = 0; i < 6; i++) {
         const ang = (i / 6) * TAU + a.age * 18
         blitCentered(ctx, frames[i % 2]!, a.x + Math.cos(ang) * r, a.y + Math.sin(ang) * r * 0.8)
@@ -359,21 +376,22 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'blast': {
       const R = Math.round(r)
+      const [deep, mid, light, pale] = flareOf(a).ball
       // Translucent fireball while it deals damage, then a fading shock ring.
       if (a.age > a.activeUntil) {
         const k = (a.age - a.activeUntil) / (a.ttl - a.activeUntil)
         ctx.globalAlpha = Math.max(0, 1 - k)
-        pixelRing(ctx, a.x, a.y, R + Math.round(k * 10), 3, '#f08030')
-        pixelRing(ctx, a.x, a.y, R + Math.round(k * 10) - 3, 1, '#fff8c0')
+        pixelRing(ctx, a.x, a.y, R + Math.round(k * 10), 3, mid)
+        pixelRing(ctx, a.x, a.y, R + Math.round(k * 10) - 3, 1, pale)
         ctx.globalAlpha = 1
         return
       }
       ctx.globalAlpha = 0.8
-      blitCentered(ctx, ellipse(R, R, '#c03020'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(R * 0.78), Math.round(R * 0.78), '#f08030'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(R * 0.52), Math.round(R * 0.52), '#f8d030'), a.x, a.y)
+      blitCentered(ctx, ellipse(R, R, deep), a.x, a.y)
+      blitCentered(ctx, ellipse(Math.round(R * 0.78), Math.round(R * 0.78), mid), a.x, a.y)
+      blitCentered(ctx, ellipse(Math.round(R * 0.52), Math.round(R * 0.52), light), a.x, a.y)
       blitCentered(ctx, ellipse(Math.round(R * 0.26), Math.round(R * 0.26), '#ffffff'), a.x, a.y)
-      pixelRing(ctx, a.x, a.y, R + 3, 1, '#fff8c0')
+      pixelRing(ctx, a.x, a.y, R + 3, 1, pale)
       ctx.globalAlpha = 1
       return
     }
@@ -482,6 +500,16 @@ const BESPOKE_ICONS: Record<Exclude<SpecialId, FormSpecial>, () => PixelSprite> 
   braveBird: () => outlined(slashSprite('flying')),
   ironHead: () => outlined(slashSprite('steel')),
   stanceChange: STANCE_ART.shield,
+  dragonFlare: () =>
+    outlined(fromStrings(
+      ['.....1.....', '.1...21..1.', '.21.1321.2.', '..1123321..', '.112344321.', '12344443211', '.123444321.', '..1234321..', '.1.12321.1.', '.2..121..2.', '.....1.....'],
+      { 1: '#2028a0', 2: '#3870f0', 3: '#78c8f8', 4: '#e8f8ff' },
+    )),
+  auraStorm: () =>
+    outlined(fromStrings(
+      ['1..2222..1', '.1233332.1', '.23344332.', '2344444432', '2344444432', '.23344332.', '1.233332.1', '1..2222..1'],
+      { 1: PALETTES.fighting[2], 2: PALETTES.fighting[1], 3: PALETTES.fighting[2], 4: '#ffffff' },
+    )),
 }
 
 export const specialIcon = (id: SpecialId) => toIconUrl(`special:${id}`, isForm(id) ? () => glyph(id) : BESPOKE_ICONS[id])

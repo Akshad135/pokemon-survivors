@@ -19,6 +19,7 @@ import type { EggTier, RunEggs } from './eggs'
 import type { EndlessState } from './endless'
 import type { MoveId } from './moves'
 import type { MapEventNotice, MapEventsState } from './mapEvents'
+import type { MegaState } from './mega'
 import type { Prop } from './props'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
@@ -136,6 +137,8 @@ export type Visual =
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova' | 'bolt' | 'meteor' | 'orb' | 'wave' | 'puddle'
   /** Chain dash: the capsule along the path, the slash at the landing and the player's afterimages (drawn by `render/draw.ts`). */
   | 'streak' | 'slash' | 'afterimage'
+  /** The rainbow burst that ends a Mega Evolution (`mega.ts`), drawn by `render/megaFx.ts`. */
+  | 'megaWave'
   | EvolvedVisual
   | TacticVisual
 
@@ -222,7 +225,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'consumable'; item: ConsumableId })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone' } | { kind: 'consumable'; item: ConsumableId })
 
 export type Particle = {
   x: number
@@ -288,6 +291,12 @@ export type GameEvent =
   | { kind: 'special'; phase: 'charge' | 'release'; name: string }
   /** Aegislash swapped formes (Stance Change). */
   | { kind: 'stance'; stance: Stance }
+  /** Mega Evolution (`mega.ts`): the stone was found, the transformation started, the form landed, ran out, or can come back. */
+  | { kind: 'megaStone' }
+  | { kind: 'megaStart' }
+  | { kind: 'mega'; name: string }
+  | { kind: 'megaEnd' }
+  | { kind: 'megaReady' }
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
@@ -346,6 +355,8 @@ export type Game = {
   /** Seconds the simulation stays frozen for impact (hit-stop). */
   hitstop: number
   special: SpecialState
+  /** Mega Stone, Mega form and its recharge (`mega.ts`). */
+  mega: MegaState
   kills: number
   /** Permanent Poké Mart ranks this run was started with. */
   ranks: Ranks

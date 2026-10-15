@@ -1,4 +1,5 @@
 import { retain } from '../engine/math'
+import { megaOf } from '../data/megas'
 import { RIFT, type RiftLegend } from '../data/rifts'
 import { healPlayer } from './combat'
 import { dropItem } from './consumables'
@@ -105,6 +106,8 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
   dropCoins(g, x, y, loot.coins)
   for (let i = 0; i < loot.pokeballs; i++) dropPickup(g, x - 8 + i * 8, y + 4, 'pokeball')
   loot.items.forEach((item, i) => dropItem(g, x + 10 + i * 6, y, item))
+  // A Mega line's first beaten legendary also leaves its Mega Stone.
+  if (megaOf(g.starter) && !g.mega.stone && !g.pickups.some((k) => k.kind === 'megaStone')) dropPickup(g, x, y - 10, 'megaStone')
   const p = g.player
   const heal = Math.round(healPlayer(g, p.stats.maxHp * loot.heal))
   floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')

@@ -28,7 +28,7 @@ export const TICK = 1 / 60
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
  * Replays from before the field existed are rules 1.
  */
-export const RULES_VERSION = 6
+export const RULES_VERSION = 7
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -52,11 +52,11 @@ export type ReplayStart = {
 
 /**
  * What the shell did to the run at a tick (before that tick's step): the
- * special attack, a level-up pick (index into the offers), a reroll or skip,
- * going on into endless mode, and a new screen size (rotation, resize).
+ * special attack, the Mega button, a level-up pick (index into the offers), a
+ * reroll or skip, going on into endless mode, and a new screen size (rotation, resize).
  */
 export type ReplayEvent =
-  | readonly [tick: number, kind: 'special' | 'reroll' | 'skip' | 'endless']
+  | readonly [tick: number, kind: 'special' | 'mega' | 'reroll' | 'skip' | 'endless']
   | readonly [tick: number, kind: 'offer', index: number]
   | readonly [tick: number, kind: 'view', w: number, h: number]
 
@@ -133,7 +133,7 @@ const parseEvent = (raw: unknown): ReplayEvent | null => {
   const [tick, kind, a, b] = raw
   if (kind === 'offer') return isWhole(a) && a < 8 ? [tick, kind, a] : null
   if (kind === 'view') return isWhole(a) && isWhole(b) && a > 0 && b > 0 && a <= 4096 && b <= 4096 ? [tick, kind, a, b] : null
-  return kind === 'special' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
+  return kind === 'special' || kind === 'mega' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
 }
 
 /**
@@ -177,7 +177,9 @@ export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.vi
 
 const applyEvent = (g: Game, e: ReplayEvent) => {
   switch (e[1]) {
+    // Presses reach the next step as input (`resimulate`).
     case 'special':
+    case 'mega':
       return
     case 'offer': {
       const offer = g.offers[e[2]]
@@ -202,31 +204,33 @@ export type Resimulated = { time: number; kills: number; level: number; phase: G
 /**
  * Plays a replay again from its seed, step by step, applying each event at its
  * tick, and returns where the run ended. Steps only while the run plays or
- * evolves, like the shell; a level-up waits for the replay's pick.
+ * evolves, like the shell; a level-up waits for the replay's pick. `g` is the
+ * run it starts from: the replay's own start, unless a test staged one.
  */
-export const resimulate = (replay: Replay): Resimulated => {
-  const g = startGame(replay.start)
+export const resimulate = (replay: Replay, g: Game = startGame(replay.start)): Resimulated => {
   const { moves, events } = replay
   let next = 0
   let tick = 0
-  /** Applies the events due at this tick; true when one was the special attack. */
+  /** Applies the events due at this tick; returns the presses among them. */
   const applyDue = () => {
     let special = false
+    let mega = false
     while (next < events.length && events[next]![0] === tick) {
       const e = events[next++]!
       special ||= e[1] === 'special'
+      mega ||= e[1] === 'mega'
       applyEvent(g, e)
     }
-    return special
+    return { special, mega }
   }
   for (let i = 0; i < moves.length; i += 2) {
     const move = moveOf(moves[i]!)
     for (let n = 0; n < moves[i + 1]!; n++) {
-      const special = applyDue()
+      const { special, mega } = applyDue()
       if (g.phase !== 'playing' && g.phase !== 'evolving') {
         return { time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: true }
       }
-      step(g, { move, special }, TICK)
+      step(g, { move, special, mega }, TICK)
       g.events.length = 0
       tick++
     }

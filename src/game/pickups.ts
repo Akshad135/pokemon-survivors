@@ -5,6 +5,7 @@ import { burst, floatText } from './effects'
 import { useConsumable } from './consumables'
 import { rollEgg, type EggSource } from './eggs'
 import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
+import { grantStone } from './mega'
 import type { Game, Pickup } from './types'
 import * as dm from '../engine/dmath'
 
@@ -80,6 +81,9 @@ const collect = (g: Game, pickup: Pickup) => {
       if (offer?.kind !== 'evolution') g.events.push({ kind: 'pokeball', offer: offer ?? null })
       break
     }
+    case 'megaStone':
+      grantStone(g)
+      break
     case 'consumable':
       useConsumable(g, pickup.item)
       break

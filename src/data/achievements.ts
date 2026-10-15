@@ -23,7 +23,7 @@ export type AchievementStat =
   | 'shinyKills' | 'shinyStarters' | 'shinyLegends'
   | 'rifts' | 'legends' | 'overtimeMinutes' | 'reaperDefeats'
   | 'bossKills' | 'chests' | 'meowths' | 'altars' | 'coins' | 'moveEvolutions' | 'missions'
-  | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches'
+  | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches' | 'megas'
 
 export type AchievementDef = {
   medal: Medal
@@ -72,6 +72,8 @@ export const ACHIEVEMENTS = {
   shinyHatch: { medal: 'gold', stat: 'shinyHatches', target: 1, title: true },
   rift1: { medal: 'bronze', stat: 'rifts', target: 1 },
   rift25: { medal: 'silver', stat: 'rifts', target: 25 },
+  mega1: { medal: 'bronze', stat: 'megas', target: 1 },
+  mega25: { medal: 'silver', stat: 'megas', target: 25 },
   legends: { medal: 'gold', stat: 'legends', target: 6, title: true },
   shinyLegend: { medal: 'gold', stat: 'shinyLegends', target: 1 },
   champion: { medal: 'silver', stat: 'wins', target: 1, title: true },

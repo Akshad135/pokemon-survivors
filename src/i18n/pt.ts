@@ -2,6 +2,7 @@ import type { AchievementId, AchievementStat, TitleId } from '../data/achievemen
 import type { BiomeId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
+import type { MegaLine } from '../data/megas'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
@@ -323,6 +324,32 @@ export const pt = {
     revive: 'O *Revive* te pôs de pé!',
   },
 
+  /** Mega Evolution: the button, its toasts, the inspect panel and what each Mega form does. */
+  mega: {
+    button: 'MEGA',
+    key: 'E',
+    title: 'Mega Evolução (E)',
+    section: 'Mega Evolução',
+    locked: (name: string) => `Evolua para ${name} para Mega Evoluir`,
+    stone: (stone: string) => `Você obteve a *${stone}*!`,
+    stoneReady: 'Botão *MEGA* ou tecla *E*: Mega Evolua!',
+    stoneLocked: (name: string) => `Evolua para _${name}_ para Mega Evoluir.`,
+    reacting: (stone: string) => `A *${stone}* reage à Pedra-chave!`,
+    evolved: (from: string, to: string) => `${from} Mega Evoluiu em *${to}*!`,
+    ended: (name: string) => `${name} voltou ao normal.`,
+    ready: 'A *Mega Evolução* está pronta de novo!',
+    how: (stone: string, seconds: number, recharge: number) =>
+      `Vença um lendário de fenda para ganhar a ${stone}. Na evolução final, Mega Evolua por ${seconds} s (recarga de ${recharge} s):`,
+    effects: {
+      charmander: 'golpes +30%, velocidade +8 e defesa +1. O especial vira Dragon Flare, uma investida em chamas azuis de dragão.',
+      abra: 'cada especial também dispara 2 dos seus golpes (como o Metronome), recargas −15% e golpes +10%. O especial vira Psystrike.',
+      gastly: 'inimigos a até 90 px perdem 45% da velocidade, golpes +25% e recargas −10%. O especial vira Poltergeist.',
+      ralts: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
+      riolu: 'golpes Lutador e Aço +35% e velocidade +10. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
+      larvitar: 'levanta uma tempestade de areia (fora das fendas) que desgasta a horda e não afeta o Tyranitar. HP +60, defesa +3 e golpes +20%. O especial vira Stone Edge.',
+    } satisfies Record<MegaLine, string>,
+  },
+
   /** Biomes and weather: banners, toasts and the HUD weather icon. */
   world: {
     biomes: {
@@ -534,6 +561,8 @@ export const pt = {
       shinyHatch: 'Ninhada brilhante',
       rift1: 'Desbravador de fendas',
       rift25: 'Viajante das fendas',
+      mega1: 'Laço Mega',
+      mega25: 'Mestre Mega',
       legends: 'Domador de Lendas',
       shinyLegend: 'Lenda brilhante',
       champion: 'Campeão',
@@ -596,6 +625,7 @@ export const pt = {
       starterLines: () => 'Capture todas as formas dos 27 iniciais (leve cada um à evolução final)',
       hatches: (n: string) => (n === '1' ? 'Choque um ovo' : `Choque ${n} ovos`),
       shinyHatches: () => 'Choque um Pokémon shiny (1 em 100)',
+      megas: (n: string) => (n === '1' ? 'Mega Evolua uma vez' : `Mega Evolua ${n} vezes`),
     } satisfies Record<AchievementStat, (n: string) => string>,
     region: (name: string) => `Vença o Mewtwo com um inicial de ${name}`,
   },
@@ -1126,6 +1156,12 @@ export const pt = {
     braveBird: 'Mergulha no inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
     ironHead: 'Avança com a lâmina até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
     stanceChange: 'Alterna entre a Forma Escudo (−30% de dano recebido, golpes ×0,7) e a Forma Lâmina (golpes ×1,3, +10% de dano recebido).',
+    dragonFlare: 'Investida longa em chamas azuis de dragão, com rastro de fogo e explosão no fim.',
+    psystrike: 'Três ondas psíquicas enormes ao redor que empurram e desaceleram.',
+    poltergeist: 'Anel de 24 projéteis sombrios para todos os lados, que podem paralisar.',
+    moonblast: 'Doze raios de luar caem nos inimigos mais próximos e podem fazer dormir.',
+    auraStorm: 'Investida em cadeia de até 6 saltos; cada pouso solta um anel de Aura Spheres.',
+    stoneEdge: 'Chuva pesada de lâminas de pedra ao seu redor.',
   },
 
   /** Explainer toast the first time each enemy trait shows up in a run. */
