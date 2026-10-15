@@ -9,6 +9,7 @@ import { fightPace } from './bossFight'
 import { hurtPlayer } from './combat'
 import { leadTime } from './horde'
 import { createStatus, statusAttack, statusPace } from './status'
+import { enemyGroundPace } from './terrain'
 import { createTraitState, isAirborne, traitPace } from './traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
 import * as dm from '../engine/dmath'
@@ -109,7 +110,7 @@ export const updateEnemies = (g: Game, dt: number) => {
     const frozen = e.status.stun > 0
     if (!frozen) e.animTime += dt
     e.flash = Math.max(0, e.flash - dt)
-    const pace = e.speed * statusPace(e.status) * traitPace(e) * (e.flash > 0 ? 0.35 : 1)
+    const pace = e.speed * statusPace(e.status) * traitPace(e) * (e.flash > 0 ? 0.35 : 1) * enemyGroundPace(g, e)
 
     let vx = 0
     let vy = 0
