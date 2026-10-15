@@ -22,6 +22,7 @@ import type { MoveId } from './moves'
 import type { MapEventNotice, MapEventsState } from './mapEvents'
 import type { MegaState } from './mega'
 import type { Prop } from './props'
+import type { TerrainState } from './terrain'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
 import type { SpecialState } from './special'
@@ -382,6 +383,8 @@ export type Game = {
   props: Prop[]
   /** World cells whose prop was already broken, so it never respawns. */
   brokenProps: Set<number>
+  /** Rocks, trees, mountains, towers and lakes on the map (`game/terrain.ts`). */
+  terrain: TerrainState
   buffs: Buff[]
   /** Points of interest placed by the event director (`mapEvents.ts`). */
   mapEvents: MapEventsState

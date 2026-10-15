@@ -4,6 +4,7 @@ import { RIFT, type RiftLegend } from '../data/rifts'
 import { burst } from './effects'
 import { chargePortal, nextRiftAt, pickLegend, riftDue } from './rift'
 import { enterArena } from './riftArena'
+import { clearSpot } from './terrain'
 import type { Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -21,7 +22,7 @@ export const openPortal = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rif
   const p = g.player
   const a = range(g.rng, 0, TAU)
   const d = dm.hypot(g.view.w, g.view.h) / 2 + 60
-  const { x, y } = at ?? { x: p.x + dm.cos(a) * d, y: p.y + dm.sin(a) * d }
+  const { x, y } = at ?? clearSpot(g, { x: p.x + dm.cos(a) * d, y: p.y + dm.sin(a) * d }, RIFT.portalRadius + 4)
   g.rift.portal = { x, y, left: RIFT.portalTime, charge: 0, legend }
   g.rift.met.push(legend)
   g.rift.nextAt = nextRiftAt(g.rift.nextAt, g.time, g.rng)

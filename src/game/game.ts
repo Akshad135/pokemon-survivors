@@ -22,6 +22,7 @@ import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } fr
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS } from './shiny'
 import { updateProps } from './props'
+import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
 import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { updateArena } from './riftArena'
@@ -33,6 +34,7 @@ import { createTally } from './tally'
 import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
+import { TERRAIN } from '../data/terrain'
 import type { Game, Offer } from './types'
 import * as dm from '../engine/dmath'
 
@@ -122,6 +124,7 @@ export const createGame = (
     bossId: null,
     props: [],
     brokenProps: new Set(),
+    terrain: createTerrain(seed),
     buffs: [],
     mapEvents: createMapEvents(),
     revives: 0,
@@ -154,14 +157,28 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
-  p.vx = moving ? input.x * p.stats.speed * slow : 0
-  p.vy = moving ? input.y * p.stats.speed * slow : 0
-  if (moving) {
+  const ground = groundAt(g, p.x, p.y)
+  const pace = p.stats.speed * slow * (ground === 'water' ? playerWaterPace(g) : 1)
+  const vx = moving ? input.x * pace : 0
+  const vy = moving ? input.y * pace : 0
+  // On ice the player's speed only slowly follows the stick, so they slide.
+  const ice = ground === 'ice' && slow > 0
+  if (ice) {
+    const grip = 1 - dm.exp(-TERRAIN.iceGrip * dt)
+    p.vx += (vx - p.vx) * grip
+    p.vy += (vy - p.vy) * grip
+  } else {
+    p.vx = vx
+    p.vy = vy
+  }
+  if (moving || (ice && Math.abs(p.vx) + Math.abs(p.vy) > 1)) {
     const dx = p.vx * dt
     const dy = p.vy * dt
     p.x += dx
     p.y += dy
     p.walked += dm.hypot(dx, dy)
+  }
+  if (moving) {
     const len = dm.hypot(input.x, input.y)
     p.facing = { x: input.x / len, y: input.y / len }
     p.dir = dir8(input.x, input.y)
@@ -282,6 +299,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateTraits(g, dt)
   updateMoves(g, input.lunge === true, dt)
   updateAttacks(g, dt)
+  updateTerrain(g, dt)
   if (!inArena) {
     updateProps(g, dt)
     updateMapEvents(g, dt)

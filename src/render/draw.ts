@@ -10,6 +10,7 @@ import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
 import { isAsleep } from '../game/status'
+import { inSolid, overTerrain, type Solid } from '../game/terrain'
 import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
@@ -19,12 +20,13 @@ import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } 
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
-import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
+import { drawArena, drawRiftArrow, drawRiftPortal, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather } from './weather'
+import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
 import { drawGround, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
 
@@ -568,7 +570,9 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 /* ---------------- Frame ---------------- */
 
-const drawables: Array<Enemy | 'player'> = []
+type Drawable = Enemy | 'player' | Solid
+const drawables: Drawable[] = []
+const isSolid = (d: Drawable): d is Solid => d !== 'player' && 'foot' in d
 
 /* ---------------- Biome ---------------- */
 
@@ -602,15 +606,21 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   else drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
   const upcoming = biomeAt(g.time + BIOME_WARMUP)
   if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
+  // One terrain sprite per frame at most: this biome's first, then the next one's.
+  if (g.rift.arena) warmArena(g.rift.arena)
+  else if (!warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
+  // Scenery changes outfit halfway through the dissolve, like the breakables.
+  const look = fade && fade.k < 0.5 ? fade.from : g.biome.id
   ctx.save()
   ctx.translate(-camX, -camY)
 
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
+  drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
-  drawProps(ctx, g, t, fade && fade.k < 0.5 ? fade.from : g.biome.id)
+  drawProps(ctx, g, t, look)
   // Map events wait outside with the rest of the world while the player is in an arena.
   if (!g.rift.arena) drawMapEvents(ctx, g, t)
   if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
@@ -622,22 +632,28 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawables.length = 0
   for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
   drawables.push('player')
-  // Mid-jump leapers sort last so they fly over the horde.
-  const depth = (d: Enemy | 'player') => (d === 'player' ? g.player.y : isAirborne(d) ? d.y + 4096 : d.y)
+  solidsInView(g, camX, camY, w, h, drawables)
+  // Mid-jump leapers sort last so they fly over the horde, and so does a flyer over a rock or a mountain.
+  const depth = (d: Drawable) =>
+    d === 'player' ? g.player.y : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
   drawables.sort((a, b) => depth(a) - depth(b))
 
   for (const d of drawables) {
-    if (d === 'player') shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
-    else if (d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
+    if (d === 'player') {
+      shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
+      drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
+    }
+    else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
   }
   drawAfterimages(ctx, g)
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
+    else if (isSolid(d)) drawSolid(ctx, g, d, look)
     else drawEnemy(ctx, d, g.time, t)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {
-    if (d !== 'player' && d.boss && d.dying < 0) {
+    if (d !== 'player' && !isSolid(d) && d.boss && d.dying < 0) {
       const def: EnemyDef = ENEMIES[d.kind]
       drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
     }
