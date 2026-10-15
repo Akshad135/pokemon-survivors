@@ -309,23 +309,53 @@ export const signOut = async () => {
   setState({ kind: 'guest' })
 }
 
+/**
+ * Where the callback sends a sign in that needs more than Google (Clerk
+ * Protect's bot check, a sign up missing a field, a code by email): the
+ * matching page of Clerk's Account Portal, which finishes it and comes back.
+ */
+const portalSteps = (portal: string) => ({
+  signInUrl: `${portal}/sign-in`,
+  signUpUrl: `${portal}/sign-up`,
+  firstFactorUrl: `${portal}/sign-in/factor-one`,
+  secondFactorUrl: `${portal}/sign-in/factor-two`,
+  resetPasswordUrl: `${portal}/sign-in/reset-password`,
+  signInProtectCheckUrl: `${portal}/sign-in/protect-check`,
+  continueSignUpUrl: `${portal}/sign-up/continue`,
+  verifyEmailAddressUrl: `${portal}/sign-up/verify-email-address`,
+  verifyPhoneNumberUrl: `${portal}/sign-up/verify-phone-number`,
+  signUpProtectCheckUrl: `${portal}/sign-up/protect-check`,
+})
+
 /** Back from Google: completes the sign in (or sign up), cleans the URL and links the device. */
 const finishSignIn = async () => {
   setState({ kind: 'busy' })
   const home = pageUrl()
+  let leaving = false
   try {
     const c = await loadClerk()
-    // Whatever the callback says, a session in place means the player is in.
-    await withTimeout(c.handleRedirectCallback({ signInForceRedirectUrl: home, signUpForceRedirectUrl: home }, async (to) => history.replaceState(null, '', to))).catch(
-      (err: unknown) => console.warn('sign in callback', err),
-    )
+    const portal = new URL(c.buildSignInUrl()).origin
+    // Pages of this site just replace the URL; the Account Portal is left for, and sends the player back to `?login`.
+    const navigate = async (to: string) => {
+      const url = new URL(to, location.href)
+      if (url.origin === location.origin) return history.replaceState(null, '', url)
+      url.searchParams.set('redirect_url', `${home}?${CALLBACK}`)
+      leaving = true
+      location.assign(url)
+    }
+    // Whatever the callback says, a session in place means the player is in (back from the portal, it already is).
+    if (!c.user)
+      await withTimeout(c.handleRedirectCallback({ ...portalSteps(portal), signInForceRedirectUrl: home, signUpForceRedirectUrl: home }, navigate)).catch((err: unknown) =>
+        console.warn('sign in callback', err),
+      )
+    if (leaving) return
     if (!c.user) throw new Error('not signed in')
     await link(c)
   } catch (err) {
     console.warn('sign in failed', err)
     setState({ kind: 'guest', failed: true })
   } finally {
-    if (location.search.includes(CALLBACK)) history.replaceState(null, '', home)
+    if (!leaving && location.search.includes(CALLBACK)) history.replaceState(null, '', home)
   }
 }
 
