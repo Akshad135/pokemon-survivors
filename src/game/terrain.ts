@@ -1,6 +1,8 @@
 import { hash2, weightedPick } from '../engine/rng'
 import { PLAYABLE } from '../data/hatchlings'
+import { ARENA_LAYOUTS, type ArenaPiece } from '../data/arenas'
 import { CLIFFS, CLUSTER_SLOTS, LAKES, SOLID_FOOT, TERRAIN, type Ellipse, type FeatureKind, type SolidKind } from '../data/terrain'
+import { arenaGround } from './arenaFloor'
 import { burst } from './effects'
 import { isAirborne } from './traits'
 import type { Enemy, Game } from './types'
@@ -11,10 +13,11 @@ import type { Enemy, Game } from './types'
  * the run's seed, so the replay rebuilds the same map. Solids push walkers
  * out and break enemy shots; lakes slow walkers (ice makes the player slide).
  * Flyers, ghosts and bosses ignore all of it, and so do the player's attacks.
+ * Inside a rift arena the arena's own scenery and ground take the map's place.
  */
 
 /** Something that blocks, with its footprint in world px. */
-export type Solid = { kind: SolidKind; x: number; y: number; variant: number; foot: readonly Ellipse[] }
+export type Solid = { kind: SolidKind | ArenaPiece; x: number; y: number; variant: number; foot: readonly Ellipse[] }
 export type Lake = { x: number; y: number; variant: number; foot: readonly Ellipse[] }
 export type Feature = { solids: readonly Solid[]; lake: Lake | null }
 
@@ -102,6 +105,10 @@ const NEAR: Feature[] = []
 /** Features whose cells overlap the box around (x, y). Reuses one array: copy it if you keep it. */
 export const featuresNear = (g: Game, x: number, y: number, rx: number, ry = rx): readonly Feature[] => {
   NEAR.length = 0
+  if (g.rift.arena) {
+    NEAR.push(g.rift.arena.terrain)
+    return NEAR
+  }
   const C = TERRAIN.cell
   for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
     for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
@@ -166,11 +173,12 @@ export const clearSpot = (g: Game, o: Pos, r: number) => {
 export const isOpen = (g: Game, x: number, y: number, r: number) =>
   !featuresNear(g, x, y, r).some((f) => f.solids.some((s) => inside(s.foot, x, y, r)) || (f.lake !== null && inside(f.lake.foot, x, y, r)))
 
-export type Ground = 'land' | 'water' | 'ice'
+export type Ground = 'land' | 'water' | 'ice' | 'lava'
 
-/** What the ground is at (x, y): lakes are water, or ice in the snow. */
+/** What the ground is at (x, y): lakes are water, or ice in the snow; an arena has its own (`arenaGround`). */
 export const groundAt = (g: Game, x: number, y: number): Ground => {
-  if (g.rift.arena) return 'land'
+  const arena = g.rift.arena
+  if (arena) return arenaGround(ARENA_LAYOUTS[arena.legend], x - arena.x, y - arena.y)
   for (const f of featuresNear(g, x, y, 0)) if (f.lake && inside(f.lake.foot, x, y, 0)) return g.biome.id === 'snow' ? 'ice' : 'water'
   return 'land'
 }
@@ -183,8 +191,10 @@ export const overTerrain = (e: Enemy) =>
 export const enemyGroundPace = (g: Game, e: Enemy) =>
   overTerrain(e) || e.types.includes('water') || groundAt(g, e.x, e.y) !== 'water' ? 1 : TERRAIN.waterPace
 
+export const playerTypes = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.types
+
 /** The player's pace in water: Water types swim at full speed. */
-export const playerWaterPace = (g: Game) => (PLAYABLE[g.starter].line[g.player.stage]!.types.includes('water') ? 1 : TERRAIN.waterPace)
+export const playerWaterPace = (g: Game) => (playerTypes(g).includes('water') ? 1 : TERRAIN.waterPace)
 
 /**
  * Nudges an enemy pressed against a solid along its edge, toward the player's
@@ -211,9 +221,8 @@ const SHOT_SPARKS = ['#ffffff', '#d8d0c0', '#a89c90'] as const
 
 /** Keeps walkers out of solids, breaks enemy shots on them and drops cells far behind the player. */
 export const updateTerrain = (g: Game, dt: number) => {
-  if (g.rift.arena) return
   const p = g.player
-  if (Math.floor(g.time) !== Math.floor(g.time - dt)) {
+  if (!g.rift.arena && Math.floor(g.time) !== Math.floor(g.time - dt)) {
     const C = TERRAIN.cell
     const pcx = Math.floor(p.x / C)
     const pcy = Math.floor(p.y / C)

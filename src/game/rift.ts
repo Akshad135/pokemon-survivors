@@ -2,6 +2,7 @@ import { pick, range, type Rng } from '../engine/rng'
 import { RIFT, RIFT_ITEMS, RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
 import type { Prop } from './props'
+import type { Feature } from './terrain'
 import type { Enemy, Hazard, Pickup } from './types'
 
 /**
@@ -18,10 +19,9 @@ export type RiftStash = { enemies: Enemy[]; hazards: Hazard[]; pickups: Pickup[]
 export type RiftArena = {
   legend: RiftLegend
   shiny: boolean
-  /** Center and radius of the walled floor. */
+  /** Center of the floor (where the portal was); its plan is `ARENA_LAYOUTS[legend]`. */
   x: number
   y: number
-  r: number
   /** Seconds until the rift collapses. */
   left: number
   age: number
@@ -29,6 +29,8 @@ export type RiftArena = {
   /** Seconds left to grab the loot once the legendary falls; null while it stands. */
   loot: number | null
   stash: RiftStash
+  /** What stands on the floor, in world px: map terrain's rules (`game/terrain.ts`) collide with it. */
+  terrain: Feature
 }
 
 export type RiftState = {
