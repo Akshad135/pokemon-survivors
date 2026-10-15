@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-15',
+    pr: 60,
     title: { pt: 'Traga amigos: convites, Presente Misterioso e Munchlax', en: 'Bring friends: invites, Mystery Gifts and Munchlax' },
     notes: [
       {
