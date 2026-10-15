@@ -1,7 +1,7 @@
 import { blitCentered, blitRotated, context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { resolveSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } from '../game/special'
+import { gameSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } from '../game/special'
 import { STANCES, type Stance } from '../game/stance'
 import type { Attack, Game } from '../game/types'
 import { FX, outlined, toIconUrl } from './art'
@@ -461,7 +461,7 @@ export const drawSpecialAura = (ctx: Ctx, g: Game, t: number) => {
   drawStanceRing(ctx, g, t)
   if (s.charge <= 0) return
   const p = g.player
-  const r = resolveSpecial(g.starter, g.player.stage)
+  const r = gameSpecial(g)
   const { def } = r
   const k = s.charge / def.charge
   const color = TYPE_COLORS[def.type]

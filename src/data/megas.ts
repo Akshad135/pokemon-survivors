@@ -109,6 +109,8 @@ export const MEGA_LINES = Object.keys(MEGAS) as MegaLine[]
 
 const BY_LINE: Partial<Record<PlayableId, MegaDef>> = MEGAS
 
+export const isMegaLine = (line: PlayableId): line is MegaLine => Object.hasOwn(MEGAS, line)
+
 /** The Mega Evolution of a line, or null for the lines without one. */
 export const megaOf = (line: PlayableId): MegaDef | null => BY_LINE[line] ?? null
 

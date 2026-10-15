@@ -160,6 +160,16 @@ const SFX = {
   },
   /** Aegislash's Stance Change: a metallic two-note shing. */
   stance: () => [880, 1320].forEach((f, i) => tone(f, f * 1.4, 0.07, 'square', 0.1, i * 0.05)),
+  /** Mega Evolution: the keystone's shimmer climbing through the transformation, then the burst with a major chord. */
+  megaCharge: () => {
+    tone(220, 1760, 1.05, 'triangle', 0.1)
+    ;[523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => tone(f, f, 0.1, 'square', 0.05, i * 0.14))
+  },
+  megaBurst: () => {
+    noise(0.6, 0.22)
+    tone(110, 36, 0.6, 'sawtooth', 0.2)
+    ;[523, 659, 784, 1047].forEach((f) => tone(f, f, 0.6, 'triangle', 0.1, 0.05))
+  },
   /* Map events */
   altar: () => {
     ;[523, 784, 1047, 1568].forEach((f, i) => tone(f, f * 1.01, 0.2, 'triangle', 0.16, i * 0.07))

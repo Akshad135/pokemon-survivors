@@ -99,7 +99,7 @@ const transform = (g: Game, def: MegaDef) => {
   })
   burst(g, p.x, p.y - 12, { colors: [...rainbow, '#ffffff'], count: 70, speed: 180, ttl: 0.8, size: 2, drag: 3 })
   g.shake = Math.max(g.shake, 8)
-  g.flash = Math.max(g.flash, 0.5)
+  g.flash = Math.max(g.flash, 0.3)
   // Sand Stream: the weather lives outside, so a rift arena keeps its clear skies.
   if (def.effect.kind === 'weather' && !g.rift.arena) setWeather(g, def.effect.weather)
   g.events.push({ kind: 'mega', name: def.name })

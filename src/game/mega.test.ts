@@ -8,7 +8,7 @@ import { createMegaState, grantStone, isFinalStage, megaPhase, tickMega } from '
 import { resolveSpecial, SPECIALS } from './special'
 
 const DT = 1 / 60
-const MANIFEST: Record<string, { forms?: Record<string, unknown> }> = manifest
+const MANIFEST: Record<string, { anims: unknown; forms?: Record<string, unknown> }> = manifest
 
 describe('mega data', () => {
   it('gives every Mega the sprite form of its final stage and a special of its own', () => {

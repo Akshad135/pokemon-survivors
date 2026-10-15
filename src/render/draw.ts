@@ -15,6 +15,7 @@ import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
+import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
@@ -262,6 +263,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     default:
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
+      drawMegaAttack(ctx, a)
       return drawSpecialAttack(ctx, a, t)
   }
 }
@@ -460,7 +462,7 @@ const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8
 /** Chain dash afterimages: fading type-colored copies of the player along the lunge. */
 const drawAfterimages = (ctx: Ctx, g: Game) => {
   const p = g.player
-  const s = sprites(playerDex(g), p.shiny)
+  const s = sprites(playerDex(g), p.shiny, megaLook(g).form)
   for (const a of g.attacks) {
     if (a.visual !== 'afterimage' || a.age < 0) continue
     const k = a.age / a.ttl
@@ -470,16 +472,19 @@ const drawAfterimages = (ctx: Ctx, g: Game) => {
 
 const drawPlayer = (ctx: Ctx, g: Game) => {
   const p = g.player
-  // Aegislash wears its Blade Forme sprite in Blade stance; the ring and the special button tell the stance too.
-  const s = sprites(playerDex(g), p.shiny, g.special.stance ? STANCE_FORMS[g.special.stance] : undefined)
+  // A Mega wears its Mega form (flickering white while it transforms); Aegislash its Blade Forme in Blade stance.
+  const mega = megaLook(g)
+  const s = sprites(playerDex(g), p.shiny, mega.form ?? (g.special.stance ? STANCE_FORMS[g.special.stance] : undefined))
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
   // Aegislash flashes white for a moment as it swaps stance.
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink ? 0.45 : 1, flash: p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0 })
+  const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
+  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink && mega.flash === 0 ? 0.45 : 1, flash })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
+  drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
 
   // GBA-style HP bar under the feet.
   const w = 22
@@ -502,6 +507,10 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
     if (!k.attracted) blitCentered(ctx, ellipse(3, 1, 'rgba(16,40,16,0.25)'), k.x, k.y + 4)
     if (k.kind === 'consumable') {
       drawConsumable(ctx, k.item, k.x, k.y + bob, k.id, t)
+      continue
+    }
+    if (k.kind === 'megaStone') {
+      drawMegaStone(ctx, g, k.x, k.y + bob, t)
       continue
     }
     const sprite =
@@ -606,6 +615,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   if (!g.rift.arena) drawMapEvents(ctx, g, t)
   if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
   drawSpecialAura(ctx, g, t)
+  drawMegaGround(ctx, g, camX, camY, t)
   drawTraitGround(ctx, g, visible)
   drawPickups(ctx, g, t)
 
