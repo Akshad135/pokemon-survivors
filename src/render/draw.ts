@@ -22,6 +22,7 @@ import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather } from './weather'
 import { drawGround, warmGround } from './world'
+import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -502,7 +503,7 @@ const biomeFade = (g: Game) => {
 /** Player preferences from the settings screen. */
 const TEXT_PASSES = [false, true] as const
 
-export type RenderOptions = { damageNumbers: boolean; screenShake: boolean }
+export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean }
 
 export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const { w, h } = g.view
@@ -574,10 +575,12 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.save()
   ctx.translate(-camX, -camY)
   // Two passes: super-effective and critical numbers (`12!`) land on top of the rest.
+  const mode = opts.damageNumbers
+  const budget = damageBudget(g.texts, g.bossId)
   for (const bang of TEXT_PASSES) {
     for (const text of g.texts) {
-      if ((text.damage && !opts.damageNumbers) || text.text.endsWith('!') !== bang) continue
-      ctx.globalAlpha = Math.min(1, (0.7 - text.life) * 5)
+      if (text.text.endsWith('!') !== bang || !showsText(text, mode, g.bossId, budget)) continue
+      ctx.globalAlpha = textAlpha(text, mode)
       blitCentered(ctx, textSprite(text.text, text.color), text.x, text.y)
     }
   }

@@ -2,6 +2,7 @@ import type { TitleId } from '../data/achievements'
 import { depositEggs, type Egg } from '../game/eggs'
 import { parseSave, recordHatch, recordRun, type Save } from '../game/meta'
 import type { RunSummary } from '../game/tally'
+import { DAMAGE_NUMBERS, type DamageNumbers } from '../render/damageNumbers'
 
 const KEY = 'ps:save'
 
@@ -87,14 +88,18 @@ export type Settings = {
   musicVolume: number
   sfxVolume: number
   muted: boolean
-  damageNumbers: boolean
+  /** `reduced` keeps the biggest few on a crowded screen (`render/damageNumbers.ts`). */
+  damageNumbers: DamageNumbers
   screenShake: boolean
 }
 
-export const DEFAULT_SETTINGS: Settings = { musicVolume: 0.6, sfxVolume: 1, muted: false, damageNumbers: true, screenShake: true }
+export const DEFAULT_SETTINGS: Settings = { musicVolume: 0.6, sfxVolume: 1, muted: false, damageNumbers: 'reduced', screenShake: true }
 
 const volume = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback)
 const flag = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback)
+/** The old on/off flag maps to `reduced` (on was the default, never a choice) or `off`. */
+const damageMode = (v: unknown, fallback: DamageNumbers): DamageNumbers =>
+  typeof v === 'boolean' ? (v ? 'reduced' : 'off') : (DAMAGE_NUMBERS.find((m) => m === v) ?? fallback)
 
 /** Parses stored settings field by field: anything missing or malformed falls back to `defaults`. */
 export const parseSettings = (raw: string | null, defaults = DEFAULT_SETTINGS): Settings => {
@@ -109,7 +114,7 @@ export const parseSettings = (raw: string | null, defaults = DEFAULT_SETTINGS): 
     musicVolume: volume(data.musicVolume, defaults.musicVolume),
     sfxVolume: volume(data.sfxVolume, defaults.sfxVolume),
     muted: flag(data.muted, defaults.muted),
-    damageNumbers: flag(data.damageNumbers, defaults.damageNumbers),
+    damageNumbers: damageMode(data.damageNumbers, defaults.damageNumbers),
     screenShake: flag(data.screenShake, defaults.screenShake),
   }
 }

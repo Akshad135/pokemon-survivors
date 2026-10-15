@@ -10,7 +10,13 @@ describe('parseSettings', () => {
 
   it('keeps valid fields and replaces only the bad ones', () => {
     const stored = JSON.stringify({ musicVolume: 0.3, sfxVolume: 'loud', damageNumbers: false, screenShake: 0 })
-    expect(parseSettings(stored)).toEqual({ ...DEFAULT_SETTINGS, musicVolume: 0.3, damageNumbers: false })
+    expect(parseSettings(stored)).toEqual({ ...DEFAULT_SETTINGS, musicVolume: 0.3, damageNumbers: 'off' })
+  })
+
+  it('reads the damage numbers mode, and maps the old on/off flag to reduced/off', () => {
+    expect(parseSettings(JSON.stringify({ damageNumbers: 'all' })).damageNumbers).toBe('all')
+    expect(parseSettings(JSON.stringify({ damageNumbers: true })).damageNumbers).toBe('reduced')
+    expect(parseSettings(JSON.stringify({ damageNumbers: 'lots' })).damageNumbers).toBe(DEFAULT_SETTINGS.damageNumbers)
   })
 
   it('clamps volumes to 0..1', () => {
