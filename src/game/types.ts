@@ -10,6 +10,7 @@ import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
+import type { MegaId } from '../data/megas'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
@@ -225,7 +226,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone' } | { kind: 'consumable'; item: ConsumableId })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId })
 
 export type Particle = {
   x: number
@@ -291,7 +292,8 @@ export type GameEvent =
   | { kind: 'special'; phase: 'charge' | 'release'; name: string }
   /** Aegislash swapped formes (Stance Change). */
   | { kind: 'stance'; stance: Stance }
-  /** Mega Evolution (`mega.ts`): the stone was found, the transformation started, the form landed, ran out, or can come back. */
+  /** Mega Evolution (`mega.ts`): two stones to choose from dropped, the stone was found, the transformation started, the form landed, ran out, or can come back. */
+  | { kind: 'megaChoice' }
   | { kind: 'megaStone' }
   | { kind: 'megaStart' }
   | { kind: 'mega'; name: string }

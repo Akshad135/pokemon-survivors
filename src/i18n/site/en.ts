@@ -300,7 +300,7 @@ export const siteEn: SiteMessages = {
     },
     megas: {
       paragraphs: (m) => [
-        'Six lines can Mega Evolve. The first rift legendary you beat with one of them leaves the line\'s Mega Stone with its loot. With the stone in hand and your Pokémon at its final evolution, the MEGA button shows up (E key, or Y on a gamepad).',
+        `${m.lines} lines can Mega Evolve. The first rift legendary you beat with one of them leaves the line's Mega Stone with its loot. ${m.twins} have two Megas: the legendary leaves both stones and the one you pick up decides the Mega (the other crumbles). With the stone in hand and your Pokémon at its final evolution, the MEGA button shows up (E key, or Y on a gamepad).`,
         `Press it and the Key Stone reacts: the world holds still for ${m.intro}s while rainbow energy wraps your Pokémon, and the Mega Evolution ends in a burst that pushes back and hurts the horde around you and makes you invulnerable for a moment. The Mega form lasts ${m.duration}s, gets the stats below, swaps the special for its own (ready to use right away) and turns its ability on. Then it goes back to normal and needs ${m.recharge}s before it can Mega Evolve again: save it for a boss, a rift or a closing ring.`,
       ],
       megaHead: 'Mega',

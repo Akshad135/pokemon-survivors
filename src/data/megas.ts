@@ -1,18 +1,21 @@
 import type { SpecialId } from '../game/special'
-import type { Form } from '../render/sprites'
 import type { StatDelta } from '../game/stats'
 import type { StatusSpec } from '../game/status'
 import type { WeatherId } from './biomes'
 import type { PlayableId } from './hatchlings'
 
 /**
- * Mega Evolutions: the final stage of a few lines can Mega Evolve once the run
- * finds its Mega Stone (beating a rift legendary drops it). The Mega form lasts
+ * Mega Evolutions: the final stage of a line with a Mega can Mega Evolve once
+ * the run finds its Mega Stone (beating a rift legendary drops it; a line with
+ * two Megas gets both stones and keeps the one it picks up). The Mega form lasts
  * `MEGA.duration` seconds, then needs `MEGA.recharge` seconds before the next
  * one. While it lasts the form adds its `stats`, swaps the special for its own
  * and plays its ability. Rules in `game/mega.ts`; names stay in English
  * (official), what the ability does lives in `i18n` (`megas`).
  */
+
+/** Asset folder of a Mega form. X/Y and Z tell apart the lines with two Megas. */
+export type MegaForm = 'mega' | 'megaX' | 'megaY' | 'megaZ'
 
 /** What a Mega's ability does beyond its stats. */
 export type MegaEffect =
@@ -20,15 +23,20 @@ export type MegaEffect =
   | { kind: 'stats' }
   /** Every `every` seconds, foes within `radius` px of the player get `status` (Shadow Tag). */
   | { kind: 'aura'; radius: number; every: number; status: StatusSpec }
-  /** Mega Evolving outside a rift arena starts this weather (Sand Stream). */
+  /** Mega Evolving outside a rift arena starts this weather (Sand Stream, Drought, Swift Swim's rain). */
   | { kind: 'weather'; weather: WeatherId }
 
 export type MegaDef = {
+  line: PlayableId
   name: string
-  /** The line's Mega Stone, dropped by the first rift legendary the run beats. */
+  /** Its Mega Stone, dropped by the first rift legendary the run beats. */
   stone: string
-  /** Sprite form of the final stage (`forms` in sprites.generated.json, `FORMS` in scripts/dex.mjs). */
-  form: Form
+  /**
+   * Where the form's assets live (`<dex>/<form>/`): its sheets once SpriteCollab
+   * has them (`FORMS` in scripts/dex.mjs; until then the final stage wears a
+   * rainbow outline) and its cry (`FORM_CRIES`).
+   */
+  form: MegaForm
   /** The stone's look: shell, shine and the helix inside. */
   colors: readonly [shell: string, shine: string, helix: string]
   ability: string
@@ -39,9 +47,21 @@ export type MegaDef = {
   special: SpecialId
 }
 
-/** Mega Evolutions by line. To add one: its entry here, its form in `scripts/dex.mjs`, its special and i18n lines. */
+/** Mega Evolutions by id, in Pokédex order. To add one: its entry here, its cry (and sprite, once SpriteCollab has it) in `scripts/dex.mjs`, its special and i18n lines. */
 export const MEGAS = {
-  charmander: {
+  venusaur: {
+    line: 'bulbasaur',
+    name: 'Mega Venusaur',
+    stone: 'Venusaurite',
+    form: 'mega',
+    colors: ['#386838', '#90d080', '#f07888'],
+    ability: 'Thick Fat',
+    effect: { kind: 'stats' },
+    stats: { maxHp: 50, armor: 3, regen: 1 },
+    special: 'petalBlizzard',
+  },
+  charizardX: {
+    line: 'charmander',
     name: 'Mega Charizard X',
     stone: 'Charizardite X',
     form: 'megaX',
@@ -51,7 +71,52 @@ export const MEGAS = {
     stats: { might: 0.3, speed: 8, armor: 1 },
     special: 'dragonFlare',
   },
-  abra: {
+  charizardY: {
+    line: 'charmander',
+    name: 'Mega Charizard Y',
+    stone: 'Charizardite Y',
+    form: 'megaY',
+    colors: ['#c05020', '#f8b058', '#f8e070'],
+    ability: 'Drought',
+    effect: { kind: 'weather', weather: 'sun' },
+    stats: { might: 0.25, area: 0.15 },
+    special: 'heatWave',
+  },
+  blastoise: {
+    line: 'squirtle',
+    name: 'Mega Blastoise',
+    stone: 'Blastoisinite',
+    form: 'mega',
+    colors: ['#2850a0', '#90c0f0', '#a87838'],
+    ability: 'Mega Launcher',
+    effect: { kind: 'stats' },
+    stats: { amount: 1, projectileSpeed: 0.3, armor: 2 },
+    special: 'waterPulse',
+  },
+  raichuX: {
+    line: 'pichu',
+    name: 'Mega Raichu X',
+    stone: 'Raichunite X',
+    form: 'megaX',
+    colors: ['#c87828', '#f8d060', '#3858c0'],
+    ability: 'Electric Surge',
+    effect: { kind: 'aura', radius: 70, every: 0.5, status: { kind: 'paralysis', chance: 0.2, duration: 0.8, power: 0 } },
+    stats: { might: 0.3, typeDamage: { electric: 0.25 } },
+    special: 'voltTackle',
+  },
+  raichuY: {
+    line: 'pichu',
+    name: 'Mega Raichu Y',
+    stone: 'Raichunite Y',
+    form: 'megaY',
+    colors: ['#d89830', '#f8e888', '#e85840'],
+    ability: 'No Guard',
+    effect: { kind: 'stats' },
+    stats: { area: 0.25, projectileSpeed: 0.3, cooldown: -0.1, speed: 8 },
+    special: 'risingVoltage',
+  },
+  alakazam: {
+    line: 'abra',
     name: 'Mega Alakazam',
     stone: 'Alakazite',
     form: 'mega',
@@ -61,7 +126,8 @@ export const MEGAS = {
     stats: { comboMoves: 2, cooldown: -0.15, might: 0.1 },
     special: 'psystrike',
   },
-  gastly: {
+  gengar: {
+    line: 'gastly',
     name: 'Mega Gengar',
     stone: 'Gengarite',
     form: 'mega',
@@ -71,27 +137,41 @@ export const MEGAS = {
     stats: { might: 0.25, cooldown: -0.1 },
     special: 'poltergeist',
   },
-  ralts: {
-    name: 'Mega Gardevoir',
-    stone: 'Gardevoirite',
+  dragonite: {
+    line: 'dratini',
+    name: 'Mega Dragonite',
+    stone: 'Dragoninite',
     form: 'mega',
-    colors: ['#38985a', '#b8f0c8', '#f06888'],
-    ability: 'Pixilate',
+    colors: ['#d88838', '#f8d898', '#3868b0'],
+    ability: 'Multiscale',
     effect: { kind: 'stats' },
-    stats: { might: 0.15, typeDamage: { normal: 0.3, fairy: 0.3 }, regen: 1.5 },
-    special: 'moonblast',
+    stats: { damageTaken: -0.25, might: 0.25, speed: 6 },
+    special: 'hurricane',
   },
-  riolu: {
-    name: 'Mega Lucario',
-    stone: 'Lucarionite',
+  meganium: {
+    line: 'chikorita',
+    name: 'Mega Meganium',
+    stone: 'Meganiumite',
     form: 'mega',
-    colors: ['#2858a0', '#a8c8f8', '#202028'],
-    ability: 'Adaptability',
+    colors: ['#48a048', '#b8f098', '#f878b0'],
+    ability: 'Mega Sol',
     effect: { kind: 'stats' },
-    stats: { speed: 10, typeDamage: { fighting: 0.35, steel: 0.35 } },
-    special: 'auraStorm',
+    stats: { maxHp: 40, regen: 2, typeDamage: { grass: 0.3, fairy: 0.3 } },
+    special: 'solarBeam',
   },
-  larvitar: {
+  feraligatr: {
+    line: 'totodile',
+    name: 'Mega Feraligatr',
+    stone: 'Feraligite',
+    form: 'mega',
+    colors: ['#2878a0', '#88d0e8', '#c83838'],
+    ability: 'Dragonize',
+    effect: { kind: 'stats' },
+    stats: { might: 0.25, typeDamage: { water: 0.2, dragon: 0.35 }, armor: 1 },
+    special: 'waveCrash',
+  },
+  tyranitar: {
+    line: 'larvitar',
     name: 'Mega Tyranitar',
     stone: 'Tyranitarite',
     form: 'mega',
@@ -101,18 +181,173 @@ export const MEGAS = {
     stats: { maxHp: 60, armor: 3, might: 0.2 },
     special: 'stoneEdge',
   },
-} as const satisfies Partial<Record<PlayableId, MegaDef>>
+  sceptile: {
+    line: 'treecko',
+    name: 'Mega Sceptile',
+    stone: 'Sceptilite',
+    form: 'mega',
+    colors: ['#287838', '#88d068', '#d83838'],
+    ability: 'Lightning Rod',
+    effect: { kind: 'stats' },
+    stats: { speed: 12, might: 0.2, typeDamage: { grass: 0.2, dragon: 0.2 } },
+    special: 'dragonClaw',
+  },
+  blaziken: {
+    line: 'torchic',
+    name: 'Mega Blaziken',
+    stone: 'Blazikenite',
+    form: 'mega',
+    colors: ['#b82820', '#f89058', '#f8d860'],
+    ability: 'Speed Boost',
+    effect: { kind: 'stats' },
+    stats: { speed: 16, might: 0.25, cooldown: -0.1 },
+    special: 'blazeKick',
+  },
+  swampert: {
+    line: 'mudkip',
+    name: 'Mega Swampert',
+    stone: 'Swampertite',
+    form: 'mega',
+    colors: ['#3868b0', '#98c8f0', '#f08838'],
+    ability: 'Swift Swim',
+    effect: { kind: 'weather', weather: 'rain' },
+    stats: { maxHp: 50, might: 0.25, speed: 8 },
+    special: 'muddyWater',
+  },
+  gardevoir: {
+    line: 'ralts',
+    name: 'Mega Gardevoir',
+    stone: 'Gardevoirite',
+    form: 'mega',
+    colors: ['#38985a', '#b8f0c8', '#f06888'],
+    ability: 'Pixilate',
+    effect: { kind: 'stats' },
+    stats: { might: 0.15, typeDamage: { normal: 0.3, fairy: 0.3 }, regen: 1.5 },
+    special: 'moonblast',
+  },
+  metagross: {
+    line: 'beldum',
+    name: 'Mega Metagross',
+    stone: 'Metagrossite',
+    form: 'mega',
+    colors: ['#385890', '#a8c0e0', '#e8e8f0'],
+    ability: 'Tough Claws',
+    effect: { kind: 'stats' },
+    stats: { might: 0.3, armor: 2, speed: 6 },
+    special: 'meteorMash',
+  },
+  staraptor: {
+    line: 'starly',
+    name: 'Mega Staraptor',
+    stone: 'Staraptite',
+    form: 'mega',
+    colors: ['#504848', '#b0a8a0', '#e84030'],
+    ability: 'Contrary',
+    effect: { kind: 'stats' },
+    stats: { might: 0.3, speed: 10 },
+    special: 'skyAttack',
+  },
+  garchomp: {
+    line: 'gible',
+    name: 'Mega Garchomp',
+    stone: 'Garchompite',
+    form: 'mega',
+    colors: ['#384878', '#8898d0', '#e84838'],
+    ability: 'Sand Force',
+    effect: { kind: 'stats' },
+    stats: { might: 0.3, armor: 1, typeDamage: { ground: 0.3, rock: 0.3, steel: 0.3 } },
+    special: 'earthPower',
+  },
+  garchompZ: {
+    line: 'gible',
+    name: 'Mega Garchomp Z',
+    stone: 'Garchompite Z',
+    form: 'megaZ',
+    colors: ['#283058', '#6878b8', '#f8c040'],
+    ability: 'Levitate',
+    effect: { kind: 'stats' },
+    stats: { speed: 14, cooldown: -0.15, might: 0.15 },
+    special: 'scaleShot',
+  },
+  lucario: {
+    line: 'riolu',
+    name: 'Mega Lucario',
+    stone: 'Lucarionite',
+    form: 'mega',
+    colors: ['#2858a0', '#a8c8f8', '#202028'],
+    ability: 'Adaptability',
+    effect: { kind: 'stats' },
+    stats: { speed: 10, typeDamage: { fighting: 0.35, steel: 0.35 } },
+    special: 'auraStorm',
+  },
+  lucarioZ: {
+    line: 'riolu',
+    name: 'Mega Lucario Z',
+    stone: 'Lucarionite Z',
+    form: 'megaZ',
+    colors: ['#203868', '#7898d8', '#f8d848'],
+    ability: 'Aura Guard',
+    effect: { kind: 'stats' },
+    stats: { armor: 2, damageTaken: -0.2, typeDamage: { fighting: 0.25, steel: 0.25 } },
+    special: 'focusBlast',
+  },
+  emboar: {
+    line: 'tepig',
+    name: 'Mega Emboar',
+    stone: 'Emboarite',
+    form: 'mega',
+    colors: ['#a02818', '#f08848', '#282020'],
+    ability: 'Mold Breaker',
+    effect: { kind: 'stats' },
+    stats: { might: 0.35, maxHp: 40 },
+    special: 'heatCrash',
+  },
+  chesnaught: {
+    line: 'chespin',
+    name: 'Mega Chesnaught',
+    stone: 'Chesnaughtite',
+    form: 'mega',
+    colors: ['#587038', '#c0d890', '#a86838'],
+    ability: 'Bulletproof',
+    effect: { kind: 'stats' },
+    stats: { damageTaken: -0.3, armor: 2, maxHp: 50 },
+    special: 'spikyShield',
+  },
+  delphox: {
+    line: 'fennekin',
+    name: 'Mega Delphox',
+    stone: 'Delphoxite',
+    form: 'mega',
+    colors: ['#b83830', '#f8a868', '#f8e068'],
+    ability: 'Levitate',
+    effect: { kind: 'stats' },
+    stats: { cooldown: -0.15, might: 0.2, area: 0.15 },
+    special: 'mysticalFire',
+  },
+  greninja: {
+    line: 'froakie',
+    name: 'Mega Greninja',
+    stone: 'Greninjite',
+    form: 'mega',
+    colors: ['#204878', '#78a8e0', '#f070a0'],
+    ability: 'Protean',
+    effect: { kind: 'stats' },
+    stats: { might: 0.3, speed: 8, cooldown: -0.1 },
+    special: 'nightSlash',
+  },
+} as const satisfies Record<string, MegaDef>
 
-export type MegaLine = keyof typeof MEGAS
+export type MegaId = keyof typeof MEGAS
 
-export const MEGA_LINES = Object.keys(MEGAS) as MegaLine[]
+export const MEGA_IDS = Object.keys(MEGAS) as MegaId[]
 
-const BY_LINE: Partial<Record<PlayableId, MegaDef>> = MEGAS
+/** The lines with a Mega Evolution. */
+export type MegaLine = (typeof MEGAS)[MegaId]['line']
 
-export const isMegaLine = (line: PlayableId): line is MegaLine => Object.hasOwn(MEGAS, line)
+export const MEGA_LINES = [...new Set(MEGA_IDS.map((id) => MEGAS[id].line))]
 
-/** The Mega Evolution of a line, or null for the lines without one. */
-export const megaOf = (line: PlayableId): MegaDef | null => BY_LINE[line] ?? null
+/** The Mega Evolutions of a line, in data order (empty for the lines without one). Charizard, Raichu, Garchomp and Lucario have two. */
+export const megasOf = (line: PlayableId): readonly MegaId[] => MEGA_IDS.filter((id) => MEGAS[id].line === line)
 
 /** Timing and the burst of a Mega Evolution, in seconds and world px. */
 export const MEGA = {

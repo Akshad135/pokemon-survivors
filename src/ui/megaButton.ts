@@ -1,5 +1,5 @@
 import { PLAYABLE } from '../data/hatchlings'
-import { MEGA, megaOf } from '../data/megas'
+import { MEGA } from '../data/megas'
 import { isFinalStage, megaPhase } from '../game/mega'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
@@ -32,8 +32,7 @@ export const createMegaControls = (onPress: () => void) => {
   button.addEventListener('contextmenu', (e) => e.preventDefault())
 
   const update = (g: Game) => {
-    const def = megaOf(g.starter)
-    const phase = def ? megaPhase(g.mega, isFinalStage(g.starter, g.player.stage)) : 'none'
+    const phase = megaPhase(g.mega, isFinalStage(g.starter, g.player.stage))
     const line = PLAYABLE[g.starter].line
     const before = line[line.length - 2]
     const tag = phase === 'locked' && before && 'evolveAt' in before ? t().levelShort(before.evolveAt) : phase === 'ready' ? t().mega.button : ''

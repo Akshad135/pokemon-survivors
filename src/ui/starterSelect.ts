@@ -9,7 +9,7 @@ import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
-import { isMegaLine, MEGA, MEGAS, type MegaLine } from '../data/megas'
+import { MEGA, MEGAS, megasOf, type MegaId } from '../data/megas'
 import { megaIcon } from '../render/megaFx'
 import { eggIcon, moveIcon, PICKUPS, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
@@ -45,8 +45,8 @@ const specialRow = (id: PlayableId) => {
   )
 }
 
-/** A Mega line's Mega Evolution: how it's earned, how long it lasts, its ability and what it does. */
-const megaRow = (id: MegaLine) => {
+/** One of a line's Mega Evolutions: how it's earned, how long it lasts, its ability and what it does. */
+const megaRow = (id: MegaId) => {
   const def = MEGAS[id]
   return h(
     'div',
@@ -84,6 +84,7 @@ const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) =>
     ),
   )
 
+  const megas = megasOf(id)
   const evo = s.line.flatMap((st, i) => [
     i > 0 && h('span', { class: 'evo-arrow' }, m.level(s.line[i - 1]!.evolveAt!), h('br'), '▶'),
     h(
@@ -116,7 +117,7 @@ const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) =>
     h('div', { class: 'evo-line' }, ...evo),
     h('div', { class: 'inspect-section' }, m.title.special, h('span', { class: 'legend' }, m.spaceKey)),
     specialRow(id),
-    ...(isMegaLine(id) ? [h('div', { class: 'inspect-section' }, m.mega.section, h('span', { class: 'legend' }, m.mega.key)), megaRow(id)] : []),
+    ...(megas.length > 0 ? [h('div', { class: 'inspect-section' }, megas.length > 1 ? m.mega.sectionTwo : m.mega.section, h('span', { class: 'legend' }, m.mega.key)), ...megas.map(megaRow)] : []),
     h('div', { class: 'inspect-section' }, m.title.moves),
     h('div', { class: 'move-list' }, ...s.learnset.map((m) => moveRow(m, m === s.signature))),
   )

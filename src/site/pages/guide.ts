@@ -9,7 +9,7 @@ import { ITEM_IDS, ITEMS } from '../../data/items'
 import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
-import { MEGA, MEGA_LINES, MEGAS, megaOf } from '../../data/megas'
+import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../../data/megas'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { BOSS_FIGHT, ELITE, EVENTS, FINALE, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart } from '../../data/waves'
@@ -198,7 +198,7 @@ const special = (locale: Locale, m: SiteMessages) => {
   const rows = ids.map((id) => {
     const def = SPECIALS[id]
     // Mega specials list the line whose Mega form uses them.
-    const users = [...STARTER_IDS, ...HATCHLING_IDS].filter((p) => PLAYABLE[p].line.some((_, stage) => resolveSpecial(p, stage).id === id) || megaOf(p)?.special === id)
+    const users = [...STARTER_IDS, ...HATCHLING_IDS].filter((p) => PLAYABLE[p].line.some((_, stage) => resolveSpecial(p, stage).id === id) || megasOf(p).some((mega) => MEGAS[mega].special === id))
     const name = def.base.name === def.final.name ? def.final.name : `${def.base.name} → ${def.final.name}`
     return [
       typeBadge(def.type, m),
@@ -300,18 +300,26 @@ const rifts = (locale: Locale, m: SiteMessages) => {
 const megas = (locale: Locale, m: SiteMessages) => {
   const g = m.guide.megas
   const game = LOCALES[locale].messages
-  const rows = MEGA_LINES.map((line) => {
-    const def = MEGAS[line]
-    const final = PLAYABLE[line].line.at(-1)!
+  const rows = MEGA_IDS.map((id) => {
+    const def: MegaDef = MEGAS[id]
+    const final = PLAYABLE[def.line].line.at(-1)!
     const special = SPECIALS[def.special]
     return [
       html`<span class="with-mini">${portrait(final.dex)}${def.name}</span>`,
       def.stone,
-      html`<b>${def.ability}</b><br /><small>${game.mega.effects[line]}</small>`,
+      html`<b>${def.ability}</b><br /><small>${game.mega.effects[id]}</small>`,
       html`${typeBadge(special.type, m)} <b>${special.final.name}</b><br /><small>${game.specials[def.special]}</small>`,
     ]
   })
-  return html`${paragraphs(g.paragraphs({ duration: MEGA.duration, recharge: MEGA.recharge, intro: MEGA.intro.toLocaleString(m.lang.tag) }))}
+  const twins = MEGA_LINES.filter((line) => megasOf(line).length > 1).map((line) => PLAYABLE[line].line.at(-1)!.name)
+  const paras = g.paragraphs({
+    lines: MEGA_LINES.length,
+    twins: new Intl.ListFormat(m.lang.tag, { type: 'conjunction' }).format(twins),
+    duration: MEGA.duration,
+    recharge: MEGA.recharge,
+    intro: MEGA.intro.toLocaleString(m.lang.tag),
+  })
+  return html`${paragraphs(paras)}
     ${table([g.megaHead, g.stoneHead, g.abilityHead, g.specialHead], rows)}`
 }
 

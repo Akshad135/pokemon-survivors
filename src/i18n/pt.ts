@@ -2,7 +2,7 @@ import type { AchievementId, AchievementStat, TitleId } from '../data/achievemen
 import type { BiomeId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
-import type { MegaLine } from '../data/megas'
+import type { MegaId } from '../data/megas'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
@@ -330,6 +330,7 @@ export const pt = {
     key: 'E',
     title: 'Mega Evolução (E)',
     section: 'Mega Evolução',
+    sectionTwo: 'Mega Evolução (escolha uma)',
     locked: (name: string) => `Evolua para ${name} para Mega Evoluir`,
     stone: (stone: string) => `Você obteve a *${stone}*!`,
     stoneReady: 'Botão *MEGA* ou tecla *E*: Mega Evolua!',
@@ -338,16 +339,37 @@ export const pt = {
     evolved: (from: string, to: string) => `${from} Mega Evoluiu em *${to}*!`,
     ended: (name: string) => `${name} voltou ao normal.`,
     ready: 'A *Mega Evolução* está pronta de novo!',
+    choose: (a: string, b: string) => `O lendário deixou a *${a}* e a *${b}*: pegue uma e a outra se desfaz.`,
     how: (stone: string, seconds: number, recharge: number) =>
       `Vença um lendário de fenda para ganhar a ${stone}. Na evolução final, Mega Evolua por ${seconds} s (recarga de ${recharge} s):`,
     effects: {
-      charmander: 'golpes +30%, velocidade +8 e defesa +1. O especial vira Dragon Flare, uma investida em chamas azuis de dragão.',
-      abra: 'cada especial também dispara 2 dos seus golpes (como o Metronome), recargas −15% e golpes +10%. O especial vira Psystrike.',
-      gastly: 'inimigos a até 90 px perdem 45% da velocidade, golpes +25% e recargas −10%. O especial vira Poltergeist.',
-      ralts: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
-      riolu: 'golpes Lutador e Aço +35% e velocidade +10. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
-      larvitar: 'levanta uma tempestade de areia (fora das fendas) que desgasta a horda e não afeta o Tyranitar. HP +60, defesa +3 e golpes +20%. O especial vira Stone Edge.',
-    } satisfies Record<MegaLine, string>,
+      venusaur: 'HP +50, defesa +3 e regenera 1 HP/s. O especial vira Petal Blizzard.',
+      charizardX: 'golpes +30%, velocidade +8 e defesa +1. O especial vira Dragon Flare, uma investida em chamas azuis de dragão.',
+      charizardY: 'faz sol forte (fora das fendas), que deixa golpes de Fogo ×1,5; golpes +25% e área +15%. O especial vira Heat Wave.',
+      blastoise: '+1 projétil por golpe, projéteis 30% mais rápidos e defesa +2. O especial vira Water Pulse.',
+      raichuX: 'inimigos a até 70 px podem ficar paralisados, golpes +30% e golpes Elétricos +25%. O especial vira Volt Tackle, uma investida em cadeia que solta raios a cada pouso.',
+      raichuY: 'área +25%, projéteis 30% mais rápidos, recargas −10% e velocidade +8. O especial vira Rising Voltage.',
+      alakazam: 'cada especial também dispara 2 dos seus golpes (como o Metronome), recargas −15% e golpes +10%. O especial vira Psystrike.',
+      gengar: 'inimigos a até 90 px perdem 45% da velocidade, golpes +25% e recargas −10%. O especial vira Poltergeist.',
+      dragonite: 'recebe 25% menos dano, golpes +25% e velocidade +6. O especial vira Hurricane.',
+      meganium: 'HP +40, regenera 2 HP/s e golpes Planta e Fada +30%. O especial vira Solar Beam.',
+      feraligatr: 'golpes Dragão +35%, golpes Água +20%, golpes +25% e defesa +1. O especial vira Wave Crash, uma investida em cadeia.',
+      tyranitar: 'levanta uma tempestade de areia (fora das fendas) que desgasta a horda e não afeta o Tyranitar. HP +60, defesa +3 e golpes +20%. O especial vira Stone Edge.',
+      sceptile: 'velocidade +12, golpes +20% e golpes Planta e Dragão +20%. A investida em cadeia vira Dragon Claw e cada pouso solta um anel de energia dracônica.',
+      blaziken: 'velocidade +16, golpes +25% e recargas −10%. O especial vira Blaze Kick, uma investida em cadeia que pode queimar.',
+      swampert: 'faz chover (fora das fendas), o que deixa golpes de Água ×1,5; HP +50, golpes +25% e velocidade +8. O especial vira Muddy Water.',
+      gardevoir: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
+      metagross: 'golpes +30%, defesa +2 e velocidade +6. O especial vira Meteor Mash.',
+      staraptor: 'golpes +30% e velocidade +10. A investida em cadeia vira Sky Attack e cada pouso solta um anel de lâminas de vento.',
+      garchomp: 'golpes +30%, golpes Terra, Pedra e Aço +30% e defesa +1. O especial vira Earth Power.',
+      garchompZ: 'velocidade +14, recargas −15% e golpes +15%. O especial vira Scale Shot.',
+      lucario: 'golpes Lutador e Aço +35% e velocidade +10. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
+      lucarioZ: 'recebe 20% menos dano, defesa +2 e golpes Lutador e Aço +25%. O especial vira Focus Blast.',
+      emboar: 'golpes +35% e HP +40. O especial vira Heat Crash.',
+      chesnaught: 'recebe 30% menos dano, defesa +2 e HP +50. O especial vira Spiky Shield.',
+      delphox: 'recargas −15%, golpes +20% e área +15%. O especial vira Mystical Fire.',
+      greninja: 'golpes +30%, velocidade +8 e recargas −10%. O especial vira Night Slash, uma investida em cadeia que solta um anel de ondas sombrias a cada pouso.',
+    } satisfies Record<MegaId, string>,
   },
 
   /** Biomes and weather: banners, toasts and the HUD weather icon. */
@@ -1162,6 +1184,26 @@ export const pt = {
     moonblast: 'Doze raios de luar caem nos inimigos mais próximos e podem fazer dormir.',
     auraStorm: 'Investida em cadeia de até 6 saltos; cada pouso solta um anel de Aura Spheres.',
     stoneEdge: 'Chuva pesada de lâminas de pedra ao seu redor.',
+    petalBlizzard: 'Três ondas de pétalas ao redor que desaceleram.',
+    heatWave: 'Duas ondas de calor enormes ao redor que podem queimar.',
+    waterPulse: 'Quatro pulsos de água ao redor que podem desacelerar.',
+    voltTackle: 'Investida elétrica em cadeia de até 6 saltos; cada pouso solta um anel de raios.',
+    risingVoltage: 'Catorze raios caem nos inimigos mais próximos e podem paralisar.',
+    hurricane: 'Muralha de vento enorme que avança na direção em que você anda.',
+    solarBeam: 'Doze raios de sol caem nos inimigos mais próximos.',
+    waveCrash: 'Investida em cadeia de até 6 saltos, envolta em água.',
+    dragonClaw: 'Investida em cadeia de até 6 saltos; cada pouso solta um anel de energia dracônica.',
+    blazeKick: 'Investida em cadeia de até 6 saltos em chamas, que pode queimar.',
+    muddyWater: 'Três ondas de lama ao redor que desaceleram.',
+    meteorMash: 'Chuva pesada de meteoros de aço ao seu redor.',
+    skyAttack: 'Investida em cadeia de até 6 saltos; cada pouso solta um anel de lâminas de vento.',
+    earthPower: 'Três ondas de terra ao redor que desaceleram.',
+    scaleShot: 'Anel de 24 escamas disparadas para todos os lados.',
+    focusBlast: 'Dez esferas de energia caem nos inimigos mais próximos.',
+    heatCrash: 'Oito impactos em chamas caem nos inimigos mais próximos e podem queimar.',
+    spikyShield: 'Duas ondas de espinhos ao redor que empurram tudo.',
+    mysticalFire: 'Três ondas de fogo místico ao redor que podem queimar.',
+    nightSlash: 'Investida em cadeia de até 6 saltos; cada pouso solta um anel de ondas sombrias.',
   },
 
   /** Explainer toast the first time each enemy trait shows up in a run. */

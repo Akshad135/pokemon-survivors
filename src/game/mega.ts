@@ -1,4 +1,4 @@
-import { MEGA, megaOf, type MegaDef } from '../data/megas'
+import { MEGA, MEGAS, megasOf, type MegaDef, type MegaId } from '../data/megas'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
@@ -12,15 +12,16 @@ import * as dm from '../engine/dmath'
 
 /**
  * Mega Evolution in a run. Beating a rift legendary drops the line's Mega
- * Stone; from the final stage on, a press (the Mega button, E, gamepad Y)
+ * Stone (both, for a line with two Megas: the player keeps the one picked up
+ * and the other crumbles); from the final stage on, a press (the Mega button, E, gamepad Y)
  * plays the transformation, then the Mega form lasts `MEGA.duration` and
  * recharges for `MEGA.recharge`. The press reaches `step()` as data
  * (`StepInput.mega`), so replays re-simulate it like the special.
  */
 
 export type MegaState = {
-  /** The line's Mega Stone was found this run. */
-  stone: boolean
+  /** The Mega Stone found this run, which picks the Mega (null: none yet). */
+  stone: MegaId | null
   /** Seconds left in Mega form (0: not Mega). */
   active: number
   /** Seconds until the next Mega Evolution can start (0: ready, given the stone and the final stage). */
@@ -33,7 +34,7 @@ export type MegaState = {
   count: number
 }
 
-export const createMegaState = (): MegaState => ({ stone: false, active: 0, charge: 0, intro: 0, pulse: 0, count: 0 })
+export const createMegaState = (): MegaState => ({ stone: null, active: 0, charge: 0, intro: 0, pulse: 0, count: 0 })
 
 /** The final stage of the line: the only one that can Mega Evolve. */
 export const isFinalStage = (line: PlayableId, stage: number) => stage >= PLAYABLE[line].line.length - 1
@@ -61,11 +62,35 @@ export const tickMega = (s: Pick<MegaState, 'active' | 'charge'>, dt: number): '
   return s.charge <= 0 ? 'ready' : null
 }
 
-/** The Mega Stone was picked up: Mega Evolution is ready as soon as the line reaches its final stage. */
-export const grantStone = (g: Game) => {
-  if (g.mega.stone || !megaOf(g.starter)) return
-  g.mega.stone = true
+/** The Mega the run holds the stone of, or null. */
+export const heldMega = (g: Game): MegaDef | null => (g.mega.stone ? MEGAS[g.mega.stone] : null)
+
+/** Gap between the two stones of a line with two Megas, so the player can walk to just one. */
+const STONE_GAP = 40
+
+/**
+ * Drops the line's Mega Stones around (x, y): one, or two side by side to choose
+ * from. A choice isn't pulled by the magnet (`updatePickups`), it waits to be touched.
+ */
+export const dropMegaStones = (g: Game, x: number, y: number) => {
+  const ids = megasOf(g.starter)
+  ids.forEach((mega, i) => {
+    const dx = ids.length > 1 ? (i - (ids.length - 1) / 2) * STONE_GAP : 0
+    g.pickups.push({ id: g.nextId++, x: x + dx, y, vx: 0, vy: 0, attracted: false, age: 0, kind: 'megaStone', mega })
+  })
+  if (ids.length > 1) g.events.push({ kind: 'megaChoice' })
+}
+
+/** A Mega Stone was picked up: it picks the Mega, the others on the ground crumble, and Mega Evolution is ready from the final stage on. */
+export const grantStone = (g: Game, mega: MegaId) => {
+  if (g.mega.stone || MEGAS[mega].line !== g.starter) return
+  g.mega.stone = mega
   g.mega.charge = 0
+  for (const k of g.pickups) {
+    if (k.kind !== 'megaStone' || k.mega === mega || k.age < 0) continue
+    burst(g, k.x, k.y, { colors: ['#a8a0b8', '#686078', '#ffffff'], count: 14, speed: 60, ttl: 0.5, gravity: 60 })
+    k.age = -1
+  }
   const p = g.player
   burst(g, p.x, p.y - 12, { colors: [...rainbow], count: 40, speed: 120, ttl: 0.7, gravity: -30 })
   g.events.push({ kind: 'megaStone' })
@@ -100,7 +125,7 @@ const transform = (g: Game, def: MegaDef) => {
   burst(g, p.x, p.y - 12, { colors: [...rainbow, '#ffffff'], count: 70, speed: 180, ttl: 0.8, size: 2, drag: 3 })
   g.shake = Math.max(g.shake, 8)
   g.flash = Math.max(g.flash, 0.3)
-  // Sand Stream: the weather lives outside, so a rift arena keeps its clear skies.
+  // Sand Stream, Drought, Swift Swim: the weather lives outside, so a rift arena keeps its clear skies.
   if (def.effect.kind === 'weather' && !g.rift.arena) setWeather(g, def.effect.weather)
   g.events.push({ kind: 'mega', name: def.name })
 }
@@ -130,7 +155,7 @@ const auraTick = (g: Game, def: MegaDef, dt: number) => {
 
 /** Runs the transformation while the simulation waits. True while it's still playing. */
 export const updateMegaIntro = (g: Game, dt: number) => {
-  const def = megaOf(g.starter)
+  const def = heldMega(g)
   if (!def || g.mega.intro <= 0) return false
   g.mega.intro -= dt
   if (g.mega.intro <= 0) transform(g, def)
@@ -139,7 +164,7 @@ export const updateMegaIntro = (g: Game, dt: number) => {
 
 /** Each tick: a press when ready starts the transformation; otherwise the form and its recharge tick on. */
 export const updateMega = (g: Game, pressed: boolean, dt: number) => {
-  const def = megaOf(g.starter)
+  const def = heldMega(g)
   if (!def) return
   const s = g.mega
   const final = isFinalStage(g.starter, g.player.stage)

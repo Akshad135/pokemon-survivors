@@ -11,7 +11,7 @@ import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
 import { bodyOf } from './data/bodies'
-import { MEGA_LINES, megaOf } from './data/megas'
+import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
 import { RIFT, RIFT_LEGENDS } from './data/rifts'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
@@ -30,8 +30,7 @@ import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from '.
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { recomputeStats } from './game/leveling'
-import { grantStone } from './game/mega'
-import { dropPickup } from './game/pickups'
+import { dropMegaStones, grantStone, heldMega } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
@@ -169,10 +168,10 @@ const queueMega = () => {
 }
 
 /** The player's name right now: its stage's, or its Mega form's while that lasts. */
-const playerName = (g: Game) => (g.mega.active > 0 && megaOf(g.starter)?.name) || PLAYABLE[g.starter].line[g.player.stage]!.name
+const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || PLAYABLE[g.starter].line[g.player.stage]!.name
 
 /** The player's cry right now: its Mega form's own while that lasts. */
-const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? megaOf(g.starter)?.form : undefined)
+const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? heldMega(g)?.form : undefined)
 
 const queueSpecial = () => {
   unlockAudio()
@@ -544,8 +543,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(playerCry(g), 0.5)
       return toast(ui, rich(t().toast.used(playerName(g), e.name)), 1600, 'special')
     }
+    case 'megaChoice': {
+      const [a, b] = megasOf(g.starter).map((id) => MEGAS[id].stone)
+      playSfx('unlock')
+      return a && b && toast(ui, rich(t().mega.choose(a, b)), 4200, 'mega')
+    }
     case 'megaStone': {
-      const def = megaOf(g.starter)
+      const def = heldMega(g)
       if (!def) return
       const line = PLAYABLE[g.starter].line
       const final = g.player.stage >= line.length - 1
@@ -558,7 +562,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       )
     }
     case 'megaStart': {
-      const def = megaOf(g.starter)
+      const def = heldMega(g)
       playSfx('megaCharge', 0)
       playCry(sprites(playerDex(g)).cry, 0.6)
       return def && toast(ui, rich(t().mega.reacting(def.stone)), 1400, 'mega')
@@ -924,18 +928,22 @@ const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
 
 /**
  * Dev: stages the run's Mega Evolution. `now` (default) jumps to the final stage with
- * the stone and presses the Mega button; `ready` stops before the press; `stone`
- * drops the Mega Stone 40 px to the right instead, as a rift would.
+ * the stone of `mega` (the line's first Mega by default) and presses the Mega button;
+ * `ready` stops before the press; `stone` drops the line's stones 40 px to the right
+ * instead, as a rift would.
  */
-const devMega = (mode: 'now' | 'ready' | 'stone' = 'now') => {
+const devMega = (mode: 'now' | 'ready' | 'stone' = 'now', mega?: MegaId) => {
   const g = run?.game
-  if (!g || !megaOf(g.starter)) return `Start a run with a Mega line: ${MEGA_LINES.join(', ')}`
+  const ids = g ? megasOf(g.starter) : []
+  if (!g || !ids[0]) return `Start a run with a Mega line: ${MEGA_LINES.join(', ')}`
   const p = g.player
-  if (mode === 'stone') return dropPickup(g, p.x + 40, p.y, 'megaStone')
+  if (mode === 'stone') return dropMegaStones(g, p.x + 40, p.y)
+  if (mega && !ids.includes(mega)) return `${PLAYABLE[g.starter].name}'s Megas: ${ids.join(', ')}`
   p.stage = PLAYABLE[g.starter].line.length - 1
   p.radius = Math.max(6, Math.round(bodyOf(playerDex(g)).bodyW * 0.3))
   recomputeStats(g)
-  grantStone(g)
+  g.mega.stone = null
+  grantStone(g, mega ?? ids[0])
   g.mega.charge = 0
   if (mode === 'now') queueMega()
 }

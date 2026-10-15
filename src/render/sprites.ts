@@ -1,4 +1,5 @@
 import { bodyOf, type Body } from '../data/bodies'
+import type { MegaForm } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
 import { createCanvas, context2d, fromStrings } from '../engine/pixelart'
 import type { Dir8 } from '../engine/math'
@@ -35,7 +36,9 @@ type ManifestAnims = Partial<Record<AnimName, { frameWidth: number; frameHeight:
 type ManifestVariant = { anims: ManifestAnims; portrait?: boolean; body?: Body }
 type ManifestEntry = ManifestVariant & {
   shiny?: ManifestVariant
-  forms?: Record<string, ManifestVariant & { cry?: boolean; shiny?: ManifestVariant }>
+  forms?: Record<string, ManifestVariant & { shiny?: ManifestVariant }>
+  /** Forms with a cry of their own in `<form>/cry.ogg` (`FORM_CRIES`), with or without sheets. */
+  formCries?: string[]
 }
 const MANIFEST = manifest as Record<string, ManifestEntry>
 
@@ -43,12 +46,15 @@ type Manifest = typeof manifest
 /** An alternate form with its own sheets (`FORMS` in scripts/dex.mjs), like Aegislash's `blade`. Inferred from the manifest. */
 export type Form = { [K in keyof Manifest]: Manifest[K] extends { forms: infer F } ? keyof F : never }[keyof Manifest]
 
+/** A form the game may ask for: one with sheets, or a Mega's, whose sheets SpriteCollab may not have yet (then the normal ones stand in). */
+type FormKey = Form | MegaForm
+
 const base = (dex: Dex) => `${import.meta.env.BASE_URL}assets/pokemon/${dex}`
 /** Alternate forms live in a `<form>/` subfolder, shinies in a `shiny/` one below the form's, each with their own sheets. */
-const variantBase = (dex: Dex, shiny: boolean, form?: Form) => `${base(dex)}${form ? `/${form}` : ''}${shiny ? '/shiny' : ''}`
-const cacheKey = (dex: Dex, shiny: boolean, form?: Form) => `${dex}${form ? `:${form}` : ''}${shiny ? 's' : ''}`
+const variantBase = (dex: Dex, shiny: boolean, form?: FormKey) => `${base(dex)}${form ? `/${form}` : ''}${shiny ? '/shiny' : ''}`
+const cacheKey = (dex: Dex, shiny: boolean, form?: FormKey) => `${dex}${form ? `:${form}` : ''}${shiny ? 's' : ''}`
 
-const manifestVariant = (dex: Dex, shiny: boolean, form?: Form) => {
+const manifestVariant = (dex: Dex, shiny: boolean, form?: FormKey) => {
   const entry = MANIFEST[String(dex)]
   const variant = form ? entry?.forms?.[form] : entry
   return shiny ? variant?.shiny : variant
@@ -98,7 +104,7 @@ const cache = new Map<string, SpeciesSprites>()
 const pending = new Map<string, Promise<SpeciesSprites>>()
 
 /** Loads (once) every sheet, the portrait and cry URL of a species variant. Concurrent calls share one request. */
-export const loadSpecies = (dex: Dex, shiny = false, form?: Form): Promise<SpeciesSprites> => {
+export const loadSpecies = (dex: Dex, shiny = false, form?: FormKey): Promise<SpeciesSprites> => {
   const key = cacheKey(dex, shiny, form)
   const cached = cache.get(key)
   if (cached) return Promise.resolve(cached)
@@ -107,7 +113,7 @@ export const loadSpecies = (dex: Dex, shiny = false, form?: Form): Promise<Speci
   return inFlight
 }
 
-const fetchSpecies = async (dex: Dex, shiny: boolean, form?: Form): Promise<SpeciesSprites> => {
+const fetchSpecies = async (dex: Dex, shiny: boolean, form?: FormKey): Promise<SpeciesSprites> => {
   const key = cacheKey(dex, shiny, form)
   const variant = manifestVariant(dex, shiny, form)
   const anims = variant?.anims
@@ -214,7 +220,7 @@ export const preloadForms = (dexes: readonly Dex[], shiny: boolean) =>
   )
 
 /** An alternate form's sprites if loaded; otherwise starts (once) loading them and returns undefined. */
-const formSprites = (dex: Dex, shiny: boolean, form: Form) => {
+const formSprites = (dex: Dex, shiny: boolean, form: FormKey) => {
   const key = cacheKey(dex, shiny, form)
   const s = cache.get(key)
   if (!s && !requested.has(key) && manifestVariant(dex, shiny, form)) {
@@ -229,7 +235,7 @@ const formSprites = (dex: Dex, shiny: boolean, form: Form) => {
  * normal colors, an alternate form falls back to the species' own colors, a shiny to the normal
  * colors, then to a dust puff while it downloads. Never throws.
  */
-export const sprites = (dex: Dex, shiny = false, form?: Form) =>
+export const sprites = (dex: Dex, shiny = false, form?: FormKey) =>
   (form && (formSprites(dex, shiny, form) || (shiny && !manifestVariant(dex, true, form) && formSprites(dex, false, form)))) ||
   (shiny && cache.get(cacheKey(dex, true))) ||
   cache.get(cacheKey(dex, false)) ||
@@ -242,8 +248,11 @@ export const portraitUrl = (dex: Dex, shiny = false) =>
 export const loadedSprites = (dex: Dex, shiny = false): SpeciesSprites | undefined => cache.get(cacheKey(dex, shiny))
 
 /** A species' cry, or its form's own (Megas) when PokeAPI has one. */
-export const cryUrl = (dex: Dex, form?: Form) =>
-  form && MANIFEST[String(dex)]?.forms?.[form]?.cry ? `${variantBase(dex, false, form)}/cry.ogg` : `${base(dex)}/cry.ogg`
+export const cryUrl = (dex: Dex, form?: FormKey) =>
+  form && MANIFEST[String(dex)]?.formCries?.includes(form) ? `${base(dex)}/${form}/cry.ogg` : `${base(dex)}/cry.ogg`
+
+/** True when a form has sheets of its own; without them `sprites` draws the normal form. */
+export const hasSheets = (dex: Dex, form: FormKey) => manifestVariant(dex, false, form) !== undefined
 
 const frameIndex = (sheet: Sheet, seconds: number, loop: boolean) => {
   let tick = Math.floor(seconds * 60)
