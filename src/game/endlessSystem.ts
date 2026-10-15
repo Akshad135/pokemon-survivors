@@ -1,11 +1,10 @@
-import { dirTo } from '../engine/math'
 import { weightedPick } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
 import { stageIndexAt } from '../data/waves'
 import { burst } from './effects'
 import { ENDLESS, endlessEventSize, REAPER, reaperDue, reaperHp, reaperSpeed, startEndless, type EndlessState } from './endless'
 import { DIFFICULTIES } from './difficulty'
-import { spawnEnemy } from './enemies'
+import { blastHorde, spawnEnemy } from './enemies'
 import { dropCoins, dropPickup } from './pickups'
 import { hasTrait } from './roster'
 import { spawnRing, spawnSwarm } from './spawner'
@@ -30,12 +29,7 @@ const summonReaper = (g: Game, s: EndlessState) => {
   s.reaperId = reaper.id
   s.reaperSince = g.time
   g.bossId = reaper.id
-  for (const e of g.enemies) {
-    if (e.boss || e.dying >= 0) continue
-    const d = dirTo(p.x, p.y, e.x, e.y)
-    e.kx += (d.x * 320) / e.mass
-    e.ky += (d.y * 320) / e.mass
-  }
+  blastHorde(g, 320)
   g.flash = 1
   g.shake = 12
   g.events.push({ kind: 'reaper', defeats: s.reaperDefeats })

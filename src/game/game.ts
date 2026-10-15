@@ -75,6 +75,7 @@ export const createGame = (
     player: {
       x: 0, y: 0,
       facing: { x: 1, y: 0 },
+      vx: 0, vy: 0,
       dir: 0,
       moving: false,
       hp: 0,
@@ -147,9 +148,11 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
+  p.vx = moving ? input.x * p.stats.speed * slow : 0
+  p.vy = moving ? input.y * p.stats.speed * slow : 0
   if (moving) {
-    const dx = input.x * p.stats.speed * slow * dt
-    const dy = input.y * p.stats.speed * slow * dt
+    const dx = p.vx * dt
+    const dy = p.vy * dt
     p.x += dx
     p.y += dy
     p.walked += dm.hypot(dx, dy)

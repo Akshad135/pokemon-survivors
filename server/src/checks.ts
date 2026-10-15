@@ -1,5 +1,5 @@
 import { Worker } from 'node:worker_threads'
-import type { Replay, Resimulated } from '../../src/game/replay'
+import { parseReplay, rulesStanding, type Replay, type Resimulated } from '../../src/game/replay'
 import type { RankingStore } from './ranking'
 
 type Answer = { result: Resimulated; ms: number }
@@ -51,6 +51,10 @@ const inlineRunner = (): Runner => async (_id, replay) => {
  * run is verified when its replay ends on the same time, faints and level it
  * reported; otherwise it's marked failed and leaves the boards. When the
  * machinery fails instead, the run stays pending for the next start.
+ * Only replays of this build's rules are judged (`RULES_VERSION`): an older
+ * one (a run that straddled a balance deploy) loses its replay and stays
+ * unverified, like a run from a game that sent none; a newer one waits for
+ * this server to be updated (a deploy restarts it, and `resume` picks it up).
  * `schedule` queues a run (again, if it grew in endless mode); `resume`
  * queues whatever was pending when the server last stopped.
  */
@@ -67,6 +71,13 @@ export const createChecks = (ranking: RankingStore) => {
       try {
         const reported = await ranking.runToCheck(id)
         if (!reported) continue
+        const rules = parseReplay(reported.replay)?.rules
+        const standing = rules === undefined ? 'same' : rulesStanding(rules)
+        if (standing !== 'same') {
+          if (standing === 'older') await ranking.dropReplay(id)
+          console.log(`check ${id}: replay under ${standing} rules (${rules}), left unverified`)
+          continue
+        }
         const answer = await run(id, reported.replay)
         if (!answer) continue
         const r = answer.result

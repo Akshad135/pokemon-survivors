@@ -2,9 +2,12 @@ import { dir8, dirTo, retain } from '../engine/math'
 import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
+import { STANCES } from '../data/bosses'
 import { DIFFICULTIES } from './difficulty'
 import { bodyOf } from '../data/bodies'
+import { fightPace } from './bossFight'
 import { hurtPlayer } from './combat'
+import { leadTime } from './horde'
 import { createStatus, statusAttack, statusPace } from './status'
 import { createTraitState, isAirborne, traitPace } from './traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
@@ -28,7 +31,8 @@ export const enemyScale = (g: Game) => {
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
   const def: EnemyDef = ENEMIES[kind]
   const boss = def.boss === true
-  const scale = boss ? { hp: DIFFICULTIES[g.difficulty].enemyHp, damage: 1 } : enemyScale(g)
+  const mods = DIFFICULTIES[g.difficulty]
+  const scale = boss ? { hp: mods.enemyHp, damage: 1 } : enemyScale(g)
   const hp = Math.round(def.hp * scale.hp)
   const enemy: Enemy = {
     id: g.nextId++,
@@ -37,12 +41,15 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     x, y, kx: 0, ky: 0,
     hp, maxHp: hp,
     damage: def.damage * scale.damage,
-    speed: def.speed * (0.92 + g.rng() * 0.16),
+    speed: def.speed * (boss ? 1 : mods.enemySpeed) * (0.92 + g.rng() * 0.16),
     mass: def.mass,
     radius: radiusFor(def.dex) * (def.scale ?? 1),
     xp: def.xp,
     boss,
     shiny: false,
+    elite: false,
+    runner: false,
+    fight: null,
     bornAt: g.time,
     cooldowns: [],
     behavior,
@@ -52,9 +59,21 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     status: createStatus(),
     trait: createTraitState(def.trait, g.rng()),
     dying: -1,
+    fled: false,
   }
   g.enemies.push(enemy)
   return enemy
+}
+
+/** Knocks every regular enemy away from the player (Arceus descending, Mewtwo arriving). */
+export const blastHorde = (g: Game, force: number) => {
+  const p = g.player
+  for (const e of g.enemies) {
+    if (e.boss || e.dying >= 0) continue
+    const d = dirTo(p.x, p.y, e.x, e.y)
+    e.kx += (d.x * force) / e.mass
+    e.ky += (d.y * force) / e.mass
+  }
 }
 
 export const rebuildGrid = (g: Game) => {
@@ -66,6 +85,14 @@ export const rebuildGrid = (g: Game) => {
 
 const FAINT_TIME = 0.4
 
+/** Seconds a fleeing boss takes to glide off and fade out (`chaseOffBosses`). */
+export const FLEE_TIME = 0.9
+
+/** Removes an enemy without a faint: no EXP, no drop, gone at the end of this tick's `updateEnemies`. */
+export const despawnEnemy = (e: Enemy) => {
+  e.dying = FAINT_TIME
+}
+
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
   const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
@@ -73,6 +100,10 @@ export const updateEnemies = (g: Game, dt: number) => {
   for (const e of g.enemies) {
     if (e.dying >= 0) {
       e.dying += dt
+      if (e.fled) {
+        e.x += e.kx * dt
+        e.y += e.ky * dt
+      }
       continue
     }
     const frozen = e.status.stun > 0
@@ -83,14 +114,26 @@ export const updateEnemies = (g: Game, dt: number) => {
     let vx = 0
     let vy = 0
     if (e.behavior.kind === 'chase') {
-      const d = dirTo(e.x, e.y, p.x, p.y)
-      vx = d.x * pace
-      vy = d.y * pace
+      // Runners head where the player is going; a boss in a fight walks at its stance's pace and a ranged one holds its distance.
+      let tx = p.x
+      let ty = p.y
+      let speed = pace
+      if (e.runner) {
+        const t = leadTime(dm.hypot(p.x - e.x, p.y - e.y), pace)
+        tx += p.vx * t
+        ty += p.vy * t
+      } else if (e.fight) {
+        const hold = STANCES[e.fight.stance].hold
+        speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+      }
+      const d = dirTo(e.x, e.y, tx, ty)
+      vx = d.x * speed
+      vy = d.y * speed
     } else {
       vx = frozen ? 0 : e.behavior.vx
       vy = frozen ? 0 : e.behavior.vy
       e.behavior.ttl -= dt
-      if (e.behavior.ttl <= 0) e.dying = FAINT_TIME // despawn silently
+      if (e.behavior.ttl <= 0) despawnEnemy(e)
     }
 
     e.x += (vx + e.kx) * dt
@@ -139,5 +182,5 @@ export const updateEnemies = (g: Game, dt: number) => {
     }
   })
 
-  retain(g.enemies, (e) => e.dying < FAINT_TIME)
+  retain(g.enemies, (e) => e.dying < (e.fled ? FLEE_TIME : FAINT_TIME))
 }
