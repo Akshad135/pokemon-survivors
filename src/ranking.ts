@@ -1,9 +1,12 @@
-import { accountUserId, API_URL, sessionToken } from './account'
+import { track } from './analytics'
+import { accountHandle, accountUserId, API_URL, sessionToken } from './account'
 import type { PlayableId } from './data/hatchlings'
 import type { Difficulty } from './game/difficulty'
 import { isRecord } from './game/parse'
 import { parseRunResult, type Board, type BoardPeriod, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
+import { firstTouch, landingRef, REF_PARAM } from './game/referral'
 import type { Replay } from './game/replay'
+import { SITE_URL } from './site/routes'
 import { locale, type Locale } from './i18n'
 
 /**
@@ -188,5 +191,56 @@ const PLAY_PATH = { pt: '/', en: '/en/' } as const satisfies Record<Locale, stri
 /** Query parameter of a shared profile link (`/?u=handle`). */
 export const PROFILE_PARAM = 'u'
 
-/** The shareable link to a profile: the game opens straight on it. */
-export const profileUrl = (handle: string) => `${location.origin}${PLAY_PATH[locale()]}?${PROFILE_PARAM}=${encodeURIComponent(handle)}`
+/** The shareable link to a profile: the game opens straight on it, crediting whoever shares it when that's someone else (`?ref=`). */
+export const profileUrl = (handle: string) => {
+  const own = accountHandle()
+  const ref = own && own !== handle ? `&${REF_PARAM}=${encodeURIComponent(own)}` : ''
+  return `${location.origin}${PLAY_PATH[locale()]}?${PROFILE_PARAM}=${encodeURIComponent(handle)}${ref}`
+}
+
+/**
+ * The game's link for a share card or its text, crediting `handle` (`?ref=`)
+ * when the player has one. Always the public site, so a card shared from a
+ * preview build still sends people to the game.
+ */
+export const gameUrl = (handle: string | null) => `${SITE_URL}${PLAY_PATH[locale()]}${handle ? `?${REF_PARAM}=${encodeURIComponent(handle)}` : ''}`
+
+/* ---------------- Invites ---------------- */
+
+const REF_KEY = 'ps:ref'
+
+/** The first inviter's handle this device landed with (`captureRef`), for the sign up to credit. */
+export const storedRef = () => {
+  try {
+    return localStorage.getItem(REF_KEY)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * On boot: a link with `?ref=` (or a profile's `?u=`) keeps its handle as the
+ * device's inviter, first touch only and never the player's own, and counts
+ * the landing. `?ref=` then leaves the address bar, so a reload isn't counted again.
+ */
+export const captureRef = () => {
+  const params = new URLSearchParams(location.search)
+  const landed = landingRef(params, PROFILE_PARAM)
+  if (!landed) return
+  const own = accountHandle()
+  const stored = storedRef()
+  const keep = firstTouch(stored, landed, own)
+  if (keep !== stored && keep !== null) {
+    try {
+      localStorage.setItem(REF_KEY, keep)
+    } catch {
+      // Storage blocked: the invite just isn't remembered.
+    }
+  }
+  if (landed !== own) track('ref_land', { ref: landed, via: params.has(REF_PARAM) ? 'ref' : 'profile', first: stored === null ? 1 : 0 })
+  if (params.has(REF_PARAM)) {
+    params.delete(REF_PARAM)
+    const query = params.toString()
+    history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`)
+  }
+}
