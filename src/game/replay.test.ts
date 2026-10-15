@@ -12,7 +12,7 @@ const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal',
 /**
  * Plays `seconds` like the shell would, with a wandering stick, picks and a
  * rotation, recording it. The special is pressed every `every` ticks, the Mega
- * button every 400 ticks. `stage` sets the run up first (a test-only shortcut).
+ * button every 400 ticks and the lunge every 100. `stage` sets the run up first (a test-only shortcut).
  */
 const play = (seconds: number, start = START, every = 300, stage: (g: Game) => void = () => {}) => {
   const view = { ...start.view }
@@ -32,9 +32,11 @@ const play = (seconds: number, start = START, every = 300, stage: (g: Game) => v
     angle += (bot() - 0.5) * 0.2
     const special = rec.tick % every === 0
     const mega = rec.tick % 400 === 100
+    const lunge = rec.tick % 100 === 50
     if (special) recordEvent(rec, ['special'])
     if (mega) recordEvent(rec, ['mega'])
-    step(g, { move: recordStep(rec, view, { x: Math.cos(angle), y: Math.sin(angle) }), special, mega }, TICK)
+    if (lunge) recordEvent(rec, ['lunge'])
+    step(g, { move: recordStep(rec, view, { x: Math.cos(angle), y: Math.sin(angle) }), special, mega, lunge }, TICK)
   }
   return { g, replay: rec.replay }
 }
@@ -87,6 +89,17 @@ describe('replays', () => {
     expect(g.mega.count).toBe(1)
     const staged = startGame(start)
     megaReady(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate Quick Attack, which only lunges on a press', () => {
+    const quickAttack = (g: Game) => {
+      g.player.moves.push({ id: 'quickAttack', level: 1, cooldown: 0 })
+    }
+    const start: ReplayStart = { ...START, starter: 'riolu' }
+    const { g, replay } = play(40, start, 300, quickAttack)
+    const staged = startGame(start)
+    quickAttack(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
   })
 

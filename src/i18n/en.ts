@@ -11,6 +11,7 @@ export const en: Messages = {
   new: 'NEW!',
   language: 'Language',
   spaceKey: 'SPACE',
+  shiftKey: 'SHIFT',
   stats: {
     hp: 'HP',
     attack: 'Attack',
@@ -59,6 +60,8 @@ export const en: Messages = {
     pause: 'Pause',
     specialAttack: 'Special attack',
     specialTitle: (name) => `${name} (Space)`,
+    lunge: 'Lunge',
+    lungeTitle: (name) => `${name} (Shift)`,
     stances: { shield: 'Shield', blade: 'Blade' },
     jumps: (n) => `×${n}`,
   },
@@ -876,7 +879,7 @@ export const en: Messages = {
       ],
     },
     quickAttack: {
-      description: 'Lunges a short hop at the foe ahead, hitting everything on the way and staying invulnerable for an instant.',
+      description: 'Press Shift or the lunge button: you lunge a short hop at the foe ahead, hitting everything on the way and staying invulnerable for an instant.',
       upgrades: [
         '+5 damage',
         '+20% area',
@@ -976,7 +979,7 @@ export const en: Messages = {
       upgrades: [],
     },
     extremeSpeed: {
-      description: 'A lightning-fast lunge that cuts through the horde and ends in a shockwave.',
+      description: 'Press Shift or the lunge button: a lightning-fast lunge that cuts through the horde and ends in a shockwave.',
       upgrades: [],
     },
     thunderbolt: {

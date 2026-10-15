@@ -45,6 +45,7 @@ export const pt = {
   new: 'NOVO!',
   language: 'Idioma',
   spaceKey: 'ESPAÇO',
+  shiftKey: 'SHIFT',
   stats: {
     hp: 'HP',
     attack: 'Ataque',
@@ -105,6 +106,9 @@ export const pt = {
     pause: 'Pausar',
     specialAttack: 'Ataque especial',
     specialTitle: (name: string) => `${name} (Espaço)`,
+    /** The manual lunge button (Quick Attack, Extreme Speed). */
+    lunge: 'Bote',
+    lungeTitle: (name: string) => `${name} (Shift)`,
     /** Aegislash's forme, shown on the special button (Stance Change). */
     stances: { shield: 'Escudo', blade: 'Lâmina' } satisfies Record<Stance, string>,
     /** Jumps left in a running chain dash. */
@@ -930,7 +934,7 @@ export const pt = {
       ],
     },
     quickAttack: {
-      description: 'Avança num bote curto contra o inimigo à sua frente, acertando tudo no caminho e ficando invulnerável por um instante.',
+      description: 'Aperte Shift ou o botão de bote: você avança num bote curto contra o inimigo à frente, acertando tudo no caminho e ficando invulnerável por um instante.',
       upgrades: [
         '+5 de dano',
         '+20% de área',
@@ -1030,7 +1034,7 @@ export const pt = {
       upgrades: [],
     },
     extremeSpeed: {
-      description: 'Um bote relâmpago que atravessa a horda e termina numa onda de choque.',
+      description: 'Aperte Shift ou o botão de bote: um bote relâmpago que atravessa a horda e termina numa onda de choque.',
       upgrades: [],
     },
     thunderbolt: {

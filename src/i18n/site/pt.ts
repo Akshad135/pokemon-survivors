@@ -213,6 +213,7 @@ export const sitePt = {
         ['Andar', 'WASD ou setas', '— (ainda não)', 'Arraste em qualquer lugar da tela (joystick flutuante)'],
         ['Ataque especial', 'Espaço', 'A (Xbox) ou ✕ (PlayStation)', 'Botão redondo no canto inferior direito'],
         ['Mega Evolução', 'E', 'Y (Xbox) ou △ (PlayStation)', 'Botão MEGA, acima do especial'],
+        ['Bote (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) ou □ (PlayStation)', 'Botão redondo à esquerda do especial'],
         ['Pausar', 'Esc ou P', 'Start', 'Botão no canto superior direito'],
         ['Navegar nos menus', 'Setas, Enter confirma, Esc volta', 'D-pad ou analógico esquerdo, A confirma, B volta', 'Toque'],
         ['Escolher upgrade', '1 a 3, ou ↑ ↓ e Enter', 'D-pad e A', 'Toque na opção'],
@@ -288,7 +289,7 @@ export const sitePt = {
     },
     special: {
       paragraphs: (min: number) => [
-        'Além dos golpes automáticos, todo Pokémon tem um ataque especial manual: aperte Espaço, o botão A / ✕ do controle ou o botão redondo na tela. Ele carrega por um instante (você anda mais devagar) e depois dispara: alguns miram na direção em que você está andando, outros acertam tudo ao redor ou caem do céu nos inimigos mais próximos.',
+        'Além dos golpes automáticos, todo Pokémon tem um ataque especial manual: aperte Espaço, o botão A / ✕ do controle ou o botão redondo na tela. Ele carrega por um instante (você anda mais devagar) e depois dispara: alguns miram na direção em que você está andando, outros acertam tudo ao redor ou caem do céu nos inimigos mais próximos. Quick Attack e Extreme Speed também são manuais, porque movem você: aperte Shift, X / □ ou o botão de bote para avançar contra o inimigo à frente.',
         `Cada um dos 18 tipos tem o seu especial, e o seu Pokémon usa o do primeiro tipo dele. A recarga diminui com o status Recarga, até o mínimo de ${min}s. Na evolução final ele vira a versão mais forte, com mais dano e área.`,
         'Algumas linhagens ágeis trocam o especial do tipo por uma investida em cadeia: o Pokémon avança cortando até o inimigo mais próximo e, se acertar, tem meio segundo para apertar de novo e saltar ao próximo, até o limite de saltos. A recarga só começa quando a cadeia acaba. O Aegislash troca o especial pela Mudança de Postura: alterna entre a Forma Escudo, que recebe menos dano, e a Forma Lâmina, que bate mais forte.',
       ],

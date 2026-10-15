@@ -3,6 +3,7 @@ import {
   CHAIN_FALLOFF, chainDamage, chainTargets, HEX_BONUS, LUNGE_IFRAMES, LUNGE_MAX, LUNGE_MIN_COOLDOWN, lungeLength, lungeTarget,
   MINE_ARM, mineArmed, mineBlast, mineCap,
 } from './moveRules'
+import { createGame, step } from './game'
 import { maxMoveLevel, moveStats } from './moves'
 import { BASE_STATS } from './stats'
 
@@ -19,6 +20,18 @@ describe('lunge', () => {
     expect(LUNGE_IFRAMES).toBeLessThan(LUNGE_MIN_COOLDOWN / 2)
     // Other moves keep their usual floor.
     expect(moveStats('ember', 1, hasted).cooldown).toBeLessThan(LUNGE_MIN_COOLDOWN)
+  })
+
+  it('waits for the press, then hops ahead even with no foe in reach', () => {
+    const g = createGame('riolu', { w: 480, h: 270 }, 1)
+    g.player.moves = [{ id: 'quickAttack', level: 1, cooldown: 0 }]
+    g.enemies.length = 0
+    const right = { x: 1, y: 0 }
+    for (let i = 0; i < 120; i++) step(g, { move: right, special: false }, 1 / 60)
+    expect(g.attacks.some((a) => a.move === 'quickAttack')).toBe(false)
+    step(g, { move: right, special: false, lunge: true }, 1 / 60)
+    expect(g.attacks.some((a) => a.move === 'quickAttack')).toBe(true)
+    expect(g.player.moves[0]!.cooldown).toBeGreaterThan(1)
   })
 
   it('caps its length however fast it gets', () => {
