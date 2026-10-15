@@ -44,7 +44,7 @@ export const playerDex = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.
 export type RunOptions = {
   /** Picked on the starter select screen; Normal when omitted. */
   difficulty?: Difficulty
-  /** The family hatched shiny: the whole run uses its shiny form. */
+  /** The run plays shiny from the start (a shiny hatch, or the shiny starter picked): the whole run uses its shiny form. */
   shiny?: boolean
   /** The player never had an egg, so the first egg roll can't miss (`rollEgg`). */
   luckyEgg?: boolean
@@ -92,6 +92,7 @@ export const createGame = (
       radius: Math.max(6, Math.round(bodyOf(def.line[0].dex).bodyW * 0.3)),
       animTime: 0,
       shiny,
+      luckyShiny: lucky,
       walked: 0,
     },
     enemies: [],
@@ -133,7 +134,7 @@ export const createGame = (
     tally: createTally(),
     eggs: { found: [], lucky: options.luckyEgg === true },
     dexLog: createDexLog(),
-    // Only a lucky roll is news: a shiny hatch is shiny every run.
+    // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
   }
   recomputeStats(g)

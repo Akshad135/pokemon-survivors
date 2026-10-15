@@ -11,6 +11,7 @@ const guest = save({
   dex: { 1: [10, 1], 25: [2, 0] },
   eggs: [{ tier: 'common', steps: 1500 }],
   hatched: { eevee: { shiny: true } },
+  shinyStarters: { charmander: false },
   missions: { daily: { key: '2026-10-14', progress: { 'kills:500': 300 } }, weekly: { key: '2026-10-12', progress: {} } },
   achievements: { unlocked: ['survive5'], lifetime: { ...NO_ACHIEVEMENTS.lifetime, kills: 900, legends: ['lugia'] } },
 })
@@ -21,6 +22,7 @@ const account = save({
   dex: { 1: [40, 0], 150: [1, 0] },
   eggs: [{ tier: 'common', steps: 200 }, { tier: 'rare', steps: 0 }],
   hatched: { eevee: { shiny: false }, gible: { shiny: false } },
+  shinyStarters: { pichu: true },
   missions: { daily: { key: '2026-10-13', progress: { 'kills:500': 500 } }, weekly: { key: '2026-10-12', progress: { 'steps:5000': 4000 } } },
   achievements: { unlocked: ['firstRun'], lifetime: { ...NO_ACHIEVEMENTS.lifetime, kills: 600, runs: 40, legends: ['kyogre'] } },
 })
@@ -31,6 +33,7 @@ describe('mergeSaves', () => {
     expect(m.ranks).toMatchObject({ hpUp: 3, protein: 2, iron: 0 })
     expect(m.dex).toEqual({ 1: [40, 1], 25: [2, 0], 150: [1, 0] })
     expect(m.hatched).toEqual({ eevee: { shiny: true }, gible: { shiny: false } })
+    expect(m.shinyStarters).toEqual({ charmander: false, pichu: true })
     expect(m.eggs).toEqual([{ tier: 'rare', steps: 0 }, { tier: 'common', steps: 1500 }])
     expect(m.achievements.unlocked).toEqual(expect.arrayContaining(['survive5', 'firstRun']))
     expect(m.achievements.lifetime).toMatchObject({ kills: 900, runs: 40 })

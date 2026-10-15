@@ -60,8 +60,10 @@ export type Player = {
   stats: PlayerStats
   radius: number
   animTime: number
-  /** Rolled once per run (or owned from a shiny hatch); the whole evolution line uses shiny sprites. */
+  /** Rolled once per run, or picked (a shiny hatch, a shiny starter unlocked before); the whole evolution line uses shiny sprites. */
   shiny: boolean
+  /** The run's 1/64 roll hit: the only shiny the `shinyStarter` medal counts, and what unlocks the shiny starter for good. */
+  luckyShiny: boolean
   /** Distance walked this run, in world px. Hatches the incubator's eggs (`eggs.ts`). */
   walked: number
 }

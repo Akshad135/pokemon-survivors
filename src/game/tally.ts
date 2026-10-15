@@ -64,6 +64,7 @@ export type RunSummary = {
   starter: PlayableId
   /** What the ranking files the run under: each level has its own board. */
   difficulty: Difficulty
+  /** The 1/64 roll hit (a shiny picked on the select screen doesn't count). */
   shinyStarter: boolean
   /** Seconds survived, endless overtime included. */
   time: number
@@ -104,7 +105,7 @@ export const summarizeRun = (g: Game): RunSummary => {
   return {
     starter: g.starter,
     difficulty: g.difficulty,
-    shinyStarter: g.player.shiny,
+    shinyStarter: g.player.luckyShiny,
     time: g.time,
     level: g.player.level,
     stage: g.player.stage,
