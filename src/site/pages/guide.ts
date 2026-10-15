@@ -1,7 +1,7 @@
 import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId } from '../../data/achievements'
 import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionTemplate } from '../../data/missions'
 import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
-import { BOSS_PATTERNS } from '../../data/bosses'
+import { BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { EVOLUTIONS } from '../../data/evolutions'
@@ -11,7 +11,7 @@ import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
-import { EVENTS, RUN_LENGTH, scaling, STAGES, stageStart } from '../../data/waves'
+import { BOSS_FIGHT, ELITE, EVENTS, FINALE, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart } from '../../data/waves'
 import { createRng } from '../../engine/rng'
 import { DIFFICULTIES, DIFFICULTY_IDS } from '../../game/difficulty'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
@@ -151,8 +151,10 @@ const horde = (locale: Locale, m: SiteMessages) => {
     const end = Math.min(stage.until, RUN_LENGTH)
     return [`${clock(stageStart(i))}–${clock(end)}`, r.cast(groups, stage.fresh)]
   })
+  const special = r.special({ fill: ELITE.fill, share: ELITE.share, hp: ELITE.hp, damage: ELITE.damage, from: clock(stageStart(RUNNER.from)), speed: RUNNER.speed, frail: RUNNER.hp, lead: RUNNER.lead })
   return html`${paragraphs(r.paragraphs(tiered.flat().length, perRun))}
     <p>${r.formula}</p>
+    ${paragraphs(special)}
     <h3>${r.tiersTitle}</h3>
     ${table([r.tierHead, r.totalHead, r.speciesHead, r.examplesHead], tiers)}
     <h3>${r.stagesTitle}</h3>
@@ -259,7 +261,8 @@ const bosses = (locale: Locale, m: SiteMessages) => {
         ]
       : [],
   )
-  return html`${paragraphs(b.paragraphs)}${table([b.timeHead, b.bossHead, b.hpHead, b.attacksHead], rows)}`
+  const rules = { ...BOSS_RAGE, fight: BOSS_FIGHT.rate, window: BOSS_FIGHT.duration, finale: FINALE.rate }
+  return html`${paragraphs(b.paragraphs(rules))}${table([b.timeHead, b.bossHead, b.hpHead, b.attacksHead], rows)}`
 }
 
 const rifts = (locale: Locale, m: SiteMessages) => {

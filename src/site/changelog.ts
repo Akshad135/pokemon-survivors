@@ -19,6 +19,24 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-14',
+    title: { pt: 'Chefes furiosos, elites e corredores', en: 'Enraged bosses, elites and runners' },
+    notes: [
+      {
+        pt: 'Os chefes do mapa agora alternam entre lutar de perto, avançando e batendo em área ao redor de si, e de longe, parados mirando em você. Abaixo da metade do HP eles ficam furiosos: contorno vermelho, cry, mais velocidade, menos pausa entre ataques e às vezes dois ataques seguidos.',
+        en: 'Map bosses now switch between fighting up close, rushing in and slamming the area around them, and at range, standing back and aiming at you. Under half HP they enrage: red outline, a cry, more speed, shorter pauses between attacks and sometimes two attacks in a row.',
+      },
+      {
+        pt: 'No primeiro minuto de cada chefe nascem bem menos inimigos comuns, então a luta é com ele. Depois disso a horda volta, então não vale enrolar.',
+        en: "For each boss's first minute far fewer regular enemies spawn, so the fight is with it. After that the horde comes back, so don't drag it out.",
+      },
+      {
+        pt: 'Quando a horda quase enche, quem nasce vem como elite: contorno vermelho, mais HP, mais EXP e mais dano. E uma espécie nova de cada fase corre, com rastros de velocidade, e mira em onde você vai estar, então correr em círculos não despista mais.',
+        en: "When the horde is nearly full, new arrivals come in as elites: red outline, more HP, more EXP and more damage. And one new species each stage runs, with speed lines, aiming where you're going to be, so running in circles no longer shakes it.",
+      },
+    ],
+  },
+  {
+    date: '2026-10-14',
     pr: 40,
     title: { pt: 'Fim de partida sem impasse', en: 'No more endgame stalemates' },
     notes: [
