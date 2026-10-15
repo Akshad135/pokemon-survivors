@@ -1,11 +1,13 @@
 import { TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
-import { chaseOffBosses, finaleEntrance } from './bosses'
+import { BOSS_FIGHT, bossWaveAt, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
+import { bossReach, chaseOffBosses, finaleEntrance } from './bosses'
 import { DIFFICULTIES } from './difficulty'
 import { endlessPressure } from './endless'
-import { spawnEnemy } from './enemies'
+import { despawnEnemy, spawnEnemy } from './enemies'
+import { eliteSpawn, makeElite, makeRunner } from './horde'
+import { oldestRenewable, RENEWAL } from './renewal'
 import { hasTrait, pickSpawn } from './roster'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
 import type { Game } from './types'
@@ -82,26 +84,69 @@ const finaleAlive = (g: Game) => {
   return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && e.enemy === boss.kind)
 }
 
-/** Spawn multipliers on top of the stage: endless escalation once the player chose it, a thin horde while the finale boss lives. */
-const pressureOf = (g: Game) => (g.endless ? endlessPressure(g.time) : finaleAlive(g) ? FINALE : { rate: 1, max: 1 })
+const CALM = { rate: 1, max: 1 } as const
 
+/**
+ * Spawn multipliers on top of the stage: endless escalation once the player
+ * chose it, a thin horde while the finale boss lives, and a thinner one for the
+ * first minute of any other wave boss in the fight (`bossNear`, `BOSS_FIGHT`).
+ */
+const pressureOf = (g: Game, finale: boolean, bossNear: boolean) =>
+  g.endless ? endlessPressure(g.time) : finale ? FINALE : bossNear ? BOSS_FIGHT : CALM
+
+/** Retires one long-lived off-screen enemy per tick (`RENEWAL.maxAge`), cap or not; the spawner refills the room. */
+const retireOld = (g: Game) => {
+  const old = oldestRenewable(g.enemies, g.camera, g.view, g.time)
+  if (old >= 0 && g.time - g.enemies[old]!.bornAt >= RENEWAL.maxAge) despawnEnemy(g.enemies[old]!)
+}
+
+/**
+ * Regular spawns: the stage's rate and cap times the difficulty and the
+ * pressure. At the cap the oldest off-screen enemy makes room (renewal); past
+ * `ELITE.fill` of the cap new spawns come in as elites (never while the finale
+ * boss lives, so the last fight stays a duel), and the stage's runner species
+ * as runners. Shinies are neither.
+ */
 export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
-  const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
-  const pressure = pressureOf(g)
+  const index = stageIndexAt(g.time)
+  const pool = g.roster.stages[index] ?? []
+  const runner = g.roster.runners[index] ?? null
+  const reach = bossReach(g)
   const more = DIFFICULTIES[g.difficulty].spawnRate
   let regular = 0
   let traitsAlive = 0
+  let elites = 0
+  let bossNear = false
   for (const e of g.enemies) {
-    if (e.dying >= 0 || e.boss) continue
+    if (e.dying >= 0) continue
+    if (e.boss) {
+      if (!bossNear && g.time - e.bornAt < BOSS_FIGHT.duration && bossWaveAt(e.kind) !== null) {
+        bossNear = dm.sq(e.x - g.player.x) + dm.sq(e.y - g.player.y) < reach * reach
+      }
+      continue
+    }
     if (e.behavior.kind === 'chase') regular++
+    if (e.elite) elites++
     if (hasTrait(e.kind)) traitsAlive++
   }
+  const finale = finaleAlive(g)
+  const pressure = pressureOf(g, finale, bossNear)
+  const cap = stage.max * pressure.max * more
 
   g.spawnBudget += stage.rate * pressure.rate * more * dt
   while (g.spawnBudget >= 1) {
     g.spawnBudget--
-    if (regular >= stage.max * pressure.max * more) continue
+    if (regular >= cap) {
+      // At the cap, swap the oldest off-screen enemy for the fresh pick so the horde keeps turning over.
+      const old = oldestRenewable(g.enemies, g.camera, g.view, g.time)
+      if (old < 0) continue
+      const gone = g.enemies[old]!
+      if (hasTrait(gone.kind)) traitsAlive--
+      if (gone.elite) elites--
+      despawnEnemy(gone)
+      regular--
+    }
     const kind = pickSpawn(g.rng, pool, traitsAlive)
     if (!kind) continue
     if (hasTrait(kind)) traitsAlive++
@@ -112,9 +157,17 @@ export const updateSpawner = (g: Game, dt: number) => {
       makeShiny(g, spawnEnemy(g, kind, g.player.x + dm.cos(a) * d, g.player.y + dm.sin(a) * d))
     } else {
       const pos = offscreen(g)
-      spawnEnemy(g, kind, pos.x, pos.y)
+      const e = spawnEnemy(g, kind, pos.x, pos.y)
+      if (!finale && eliteSpawn(regular, elites, cap)) {
+        makeElite(e)
+        elites++
+      }
+      if (kind === runner) makeRunner(e)
     }
+    regular++
   }
+
+  retireOld(g)
 
   while (g.nextEvent < EVENTS.length && EVENTS[g.nextEvent]!.at <= g.time) {
     runEvent(g, EVENTS[g.nextEvent]!, g.nextEvent)

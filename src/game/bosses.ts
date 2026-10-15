@@ -1,7 +1,8 @@
 import { dir8, dirTo, retain, TAU } from '../engine/math'
-import { range } from '../engine/rng'
-import { BOSS_PATTERNS, type BossPattern, type HazardVisual } from '../data/bosses'
+import { chance, range } from '../engine/rng'
+import { BOSS_PATTERNS, BOSS_RAGE, type BossPattern, type HazardVisual } from '../data/bosses'
 import { FINALE, fleesFrom } from '../data/waves'
+import { attackWait, chainTarget, createFight, fightsInStances, patternLive, shouldEnrage, tickStance } from './bossFight'
 import { hurtPlayer } from './combat'
 import { burst } from './effects'
 import { blastHorde } from './enemies'
@@ -109,26 +110,56 @@ export const finaleEntrance = (g: Game) => {
   g.shake = Math.max(g.shake, 10)
 }
 
-/** Ticks every boss's attack patterns. Bosses only attack once they're close enough to be seen. */
+/** How far from the player a boss attacks from (and counts as in the fight, `bossInFight`). */
+export const bossReach = (g: Game) => dm.hypot(g.view.w, g.view.h) * 0.6
+
+/** A wave boss under half HP enrages: a red burst, a jolt and a cue for the shell (cry, flash, toast). */
+const enrage = (g: Game, e: Enemy) => {
+  e.fight!.enraged = true
+  burst(g, e.x, e.y - e.radius, { colors: ['#f83020', '#f8a020', '#ffffff'], count: 48, speed: 160, ttl: 0.6, size: 2, drag: 4 })
+  g.shake = Math.max(g.shake, 6)
+  g.events.push({ kind: 'enrage', enemy: e.kind })
+}
+
+/**
+ * Ticks every boss's attack patterns. Bosses only attack once they're close
+ * enough to be seen. Wave bosses also swap stance (only the live stance's
+ * patterns count down; entering one holds its attacks `BOSS_RAGE.open` s) and,
+ * once enraged, attack sooner and sometimes chain a second attack.
+ */
 export const updateBosses = (g: Game, dt: number) => {
-  const reach = dm.hypot(g.view.w, g.view.h) * 0.6
+  const reach = bossReach(g)
   for (const e of g.enemies) {
     const patterns = BOSS_PATTERNS[e.kind]
     if (!patterns || e.dying >= 0) continue
+    if (e.fight === null && fightsInStances(e.kind)) e.fight = createFight(g.rng)
+    const fight = e.fight
+    if (fight && shouldEnrage(fight, e.hp, e.maxHp)) enrage(g, e)
     // Stunned or asleep bosses hold their attacks (paralysis and the Poké Flute pay off here).
     if (e.status.stun > 0 || isAsleep(e.status)) continue
     if (e.cooldowns.length === 0) e.cooldowns = patterns.map((pt) => pt.every * 0.5)
+    if (fight && tickStance(fight, dt, g.rng)) {
+      patterns.forEach((pt, i) => {
+        if (pt.stance === fight.stance) e.cooldowns[i] = Math.max(e.cooldowns[i]!, BOSS_RAGE.open)
+      })
+    }
     const near = dm.hypot(e.x - g.player.x, e.y - g.player.y) < reach
     patterns.forEach((pattern, i) => {
+      if (fight && !patternLive(pattern, fight.stance)) return
       e.cooldowns[i]! -= dt
       if (e.cooldowns[i]! > 0 || !near) return
       fire(g, e, pattern)
-      e.cooldowns[i]! += pattern.every
+      e.cooldowns[i]! += attackWait(pattern.every, fight)
+      if (!fight?.enraged || pattern.kind === 'trail' || !chance(g.rng, BOSS_RAGE.chain)) return
+      const next = chainTarget(patterns, fight.stance, i)
+      if (next >= 0) e.cooldowns[next] = Math.min(e.cooldowns[next]!, BOSS_RAGE.gap)
     })
   }
 }
 
 const IMPACT: Partial<Record<HazardVisual, { colors: readonly string[]; event: 'thunder' | 'quake' }>> = {
+  ice: { colors: ['#98d8f8', '#e0f8ff', '#ffffff'], event: 'quake' },
+  fire: { colors: ['#f86830', '#f8c030', '#fff0a0'], event: 'quake' },
   rock: { colors: ['#b8a038', '#786028', '#e0c068'], event: 'quake' },
   slam: { colors: ['#e0c068', '#a8a878', '#ffffff'], event: 'quake' },
   thunder: { colors: ['#f8d030', '#ffffff', '#fff8a0'], event: 'thunder' },

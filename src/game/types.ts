@@ -28,6 +28,7 @@ import type { PlayerStats } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
+import type { BossFight } from './bossFight'
 
 export type OwnedMove = { id: MoveId; level: number; cooldown: number }
 export type OwnedItem = { id: ItemId; level: number }
@@ -37,6 +38,9 @@ export type Player = {
   y: number
   /** Last non-zero movement direction (unit vector). Aimed moves use it. */
   facing: { x: number; y: number }
+  /** Walking velocity this tick, px/s (0 while still or dashing). Runners lead their aim with it. */
+  vx: number
+  vy: number
   dir: Dir8
   moving: boolean
   hp: number
@@ -83,6 +87,12 @@ export type Enemy = {
   boss: boolean
   /** Shiny elite: more HP and EXP, drops a Poké Ball. */
   shiny: boolean
+  /** Spawned while the horde was nearly full (`ELITE`): tougher, worth more, outlined. */
+  elite: boolean
+  /** Fast and frail, aims ahead of the player (`RUNNER`). */
+  runner: boolean
+  /** A wave boss's stance and rage (`bossFight.ts`); null for everyone else until `updateBosses` starts it. */
+  fight: BossFight | null
   /** Game time it spawned at (sparkle timing). */
   bornAt: number
   /** Seconds until each boss pattern fires, indexed like `BOSS_PATTERNS[kind]`. */
@@ -246,6 +256,8 @@ export type GameEvent =
   | { kind: 'boss'; enemy: EnemyId }
   /** A wave boss ran off because the next wave's boss arrived (`chaseOffBosses`). */
   | { kind: 'bossFled'; enemy: EnemyId }
+  /** A wave boss fell under half HP and enraged. */
+  | { kind: 'enrage'; enemy: EnemyId }
   | { kind: 'shiny'; enemy: EnemyId }
   | { kind: 'shinyPlayer' }
   /** First shiny of a species defeated this run; the shell toasts it only when the Pokédex didn't have it yet. */
