@@ -112,6 +112,11 @@ describe('species specials', () => {
     expect(resolveSpecial('honedge', 2).def.kind).toBe('stance')
   })
 
+  it('moves lines that evolve out of Normal onto their new type’s special', () => {
+    expect([0, 1, 2].map((stage) => resolveSpecial('azurill', stage).id)).toEqual(['boomburst', 'hydroCannon', 'hydroCannon'])
+    expect([0, 1].map((stage) => resolveSpecial('swablu', stage).id)).toEqual(['boomburst', 'dracoMeteor'])
+  })
+
   it('swaps stance on a short fixed cooldown, below the special floor', () => {
     expect(specialCooldown(SPECIALS.stanceChange, { ...BASE_STATS, cooldown: 1.5 })).toBe(2)
   })

@@ -8,7 +8,7 @@
 
 **A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
 
-Pick one of 27 starters (or hatch eggs for 25 more Pokémon, 52 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+Pick one of 27 starters (or hatch eggs for 51 more Pokémon, 78 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
 
 [**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
 
@@ -92,7 +92,7 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
     </tr>
   </table>
 
-- **Eggs and 25 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 25 families from every type and generation (Pichu, Eevee, Machop, Gastly, Abra, Riolu, Zorua… and the rare Dratini, Larvitar, Beldum, Gible and Dreepy), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars.
+- **Eggs and 51 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 51 families from every type and generation (Pichu, Eevee, Pidgey, Geodude, Gastly, Abra, Magikarp, Riolu, Zorua… and the rarest Dratini, Larvitar, Beldum, Bagon, Gible, Dreepy, Slakoth and Feebas), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars.
 
 - **32 moves and 25 held items.** Max out a move, pair it with the right item, and it evolves (Ember + Charcoal → Flamethrower).
 - **Real type matchups**, burn, poison and paralysis, and a manual **special attack** for each of the 18 types that grows stronger at the final evolution: Blast Burn, Hydro Cannon, Frenzy Plant, Bolt Strike, Draco Meteor, Astral Barrage, Precipice Blades and more.
