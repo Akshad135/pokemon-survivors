@@ -327,6 +327,25 @@ const portalSteps = (portal: string) => ({
   signUpProtectCheckUrl: `${portal}/sign-up/protect-check`,
 })
 
+/**
+ * True when a new Google account comes back to a sign up stuck at Protect's
+ * bot check past its deadline (5 minutes). An attempt that never finished
+ * keeps that sign up on the client, Clerk doesn't reissue its check, and the
+ * callback sends every new attempt to it before creating a fresh sign up.
+ */
+const staleSignUp = (c: Clerk) => {
+  const expiresAt = c.client?.signUp.protectCheck?.expiresAt
+  return expiresAt !== undefined && expiresAt < Date.now() && c.client?.signIn.firstFactorVerification.status === 'transferable'
+}
+
+/** Turns the sign in Google just finished into a new sign up: done, it signs in; otherwise the callback takes it on (a fresh check, a missing step). */
+const freshSignUp = async (c: Clerk, callback: () => Promise<unknown>) => {
+  if (!c.client) return
+  const signUp = await withTimeout(c.client.signUp.create({ transfer: true }))
+  if (signUp.createdSessionId) await c.setActive({ session: signUp.createdSessionId })
+  else await callback()
+}
+
 /** Back from Google: completes the sign in (or sign up), cleans the URL and links the device. */
 const finishSignIn = async () => {
   setState({ kind: 'busy' })
@@ -343,11 +362,15 @@ const finishSignIn = async () => {
       leaving = true
       location.assign(url)
     }
-    // Whatever the callback says, a session in place means the player is in (back from the portal, it already is).
-    if (!c.user)
-      await withTimeout(c.handleRedirectCallback({ ...portalSteps(portal), signInForceRedirectUrl: home, signUpForceRedirectUrl: home }, navigate)).catch((err: unknown) =>
+    const callback = () =>
+      withTimeout(c.handleRedirectCallback({ ...portalSteps(portal), signInForceRedirectUrl: home, signUpForceRedirectUrl: home }, navigate)).catch((err: unknown) =>
         console.warn('sign in callback', err),
       )
+    // Whatever the callback says, a session in place means the player is in (back from the portal, it already is).
+    if (!c.user) {
+      if (staleSignUp(c)) await freshSignUp(c, callback)
+      else await callback()
+    }
     if (leaving) return
     if (!c.user) throw new Error('not signed in')
     await link(c)

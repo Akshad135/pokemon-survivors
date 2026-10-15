@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-15',
+    pr: 51,
+    title: { pt: 'Cadastro com Google destravado', en: 'Google sign up unstuck' },
+    notes: [
+      {
+        pt: 'Quem começou a criar a conta e parou na verificação anti-robô ficava preso numa tela de "Verification didn\'t complete in time" em toda tentativa seguinte. Agora uma nova tentativa recomeça o cadastro do zero e entra normalmente.',
+        en: 'If you started creating your account and stopped at the bot check, every later try got stuck on a "Verification didn\'t complete in time" screen. Now a new try starts the sign up over and gets you in.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-15',
     pr: 50,
     title: { pt: 'Login com Google mais firme', en: 'Sturdier Google sign in' },
     notes: [
