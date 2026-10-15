@@ -1,7 +1,8 @@
 import { TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { EVENTS, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
+import { EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
+import { chaseOffBosses, finaleEntrance } from './bosses'
 import { DIFFICULTIES } from './difficulty'
 import { endlessPressure } from './endless'
 import { spawnEnemy } from './enemies'
@@ -55,11 +56,13 @@ const runEvent = (g: Game, event: WaveEvent, index: number) => {
   switch (event.kind) {
     case 'boss': {
       if (event.chance !== undefined && !chance(g.rng, event.chance)) break
+      chaseOffBosses(g, event.at)
       const pos = offscreen(g)
       const boss = spawnEnemy(g, event.enemy, pos.x, pos.y)
       const def: EnemyDef = ENEMIES[event.enemy]
       g.bossId = boss.id
       g.shake = def.legendary ? 9 : 5
+      if (event.finale) finaleEntrance(g)
       g.events.push({ kind: 'boss', enemy: event.enemy })
       break
     }
@@ -72,10 +75,20 @@ const runEvent = (g: Game, event: WaveEvent, index: number) => {
   }
 }
 
+/** The finale boss (Mewtwo) is alive in the regular run. It's the last boss to arrive, so while it lives `bossId` points at it. */
+const finaleAlive = (g: Game) => {
+  if (g.endless || g.bossId === null) return false
+  const boss = g.enemies.find((e) => e.id === g.bossId)
+  return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && e.enemy === boss.kind)
+}
+
+/** Spawn multipliers on top of the stage: endless escalation once the player chose it, a thin horde while the finale boss lives. */
+const pressureOf = (g: Game) => (g.endless ? endlessPressure(g.time) : finaleAlive(g) ? FINALE : { rate: 1, max: 1 })
+
 export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
   const pool = g.roster.stages[stageIndexAt(g.time)] ?? []
-  const pressure = endlessPressure(g.time)
+  const pressure = pressureOf(g)
   const more = DIFFICULTIES[g.difficulty].spawnRate
   let regular = 0
   let traitsAlive = 0

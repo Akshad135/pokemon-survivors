@@ -533,6 +533,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(def.dex).cry, 0.5)
       return toast(ui, rich(t().toast.boss(def.name)), 3200)
     }
+    case 'bossFled': {
+      const def = ENEMIES[e.enemy]
+      playCry(sprites(def.dex).cry, 0.3)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().toast.bossFled(def.name))), 3200)
+    }
     case 'shiny': {
       const def = ENEMIES[e.enemy]
       playSfx('shiny')

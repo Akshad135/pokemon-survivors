@@ -212,7 +212,7 @@ export const siteEn: SiteMessages = {
       difficulty: 'Difficulty',
       difficultyIntro:
         'Pick the difficulty on the Pokémon select screen, under the choose button (or with the X key). Every level is open from the start and your pick is saved. Normal is the base run; the other levels multiply:',
-      difficultyHead: ['Level', 'Enemy HP', 'Damage you take', 'Spawn rate', 'Scaling per minute', 'Healing'],
+      difficultyHead: ['Level', 'Enemy HP', 'Damage you take', 'Spawn rate', 'Enemy speed', 'Scaling per minute', 'Healing'],
       timeline: 'Timeline',
       timeHead: 'Time',
       eventHead: 'Event',
@@ -314,6 +314,7 @@ export const siteEn: SiteMessages = {
       paragraphs: [
         'Bosses arrive at fixed times. Legendaries make an entrance with a screen flash, their cry and a banner. All of them get an HP bar at the top and their own attacks: marked circles on the ground show where a hit will land, so step out of them.',
         'Bosses don\'t get tougher over time, and each one drops a Poké Ball and a shower of Poké Dollars.',
+        'Each boss has until the next one arrives: if it\'s still standing when the next boss shows up, it flees and leaves nothing behind. Mewtwo is the last one: it blasts the horde away when it arrives and, while it stands, regular enemies barely spawn, so the fight is about dodging its attacks.',
       ],
       timeHead: 'Time',
       bossHead: 'Boss',

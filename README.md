@@ -98,13 +98,13 @@ The game is in Brazilian Portuguese 🇧🇷 and English 🇺🇸, picked from y
 - **Real type matchups**, burn, poison and paralysis, and a manual **special attack** for each of the 18 types that grows stronger at the final evolution: Blast Burn, Hydro Cannon, Frenzy Plant, Bolt Strike, Draco Meteor, Astral Barrage, Precipice Blades and more.
 - **Readable damage numbers**: hits on the same target add up into one growing number, a few per target at most, with super-effective hits kept apart.
 - **193 wild Pokémon from all 9 generations**, Dragon types included, in 5 tiers by base stat total. Every run draws its own cast, a few new faces per stage, from basic Pokémon early to evolved ones late, and each biome pulls the draw towards its types (more Grass and Bug in the forest, Rock and Ground in the cave).
-- **Bosses with telegraphed attack patterns**: Onix, Snorlax, the legendary birds and Mewtwo. Mew sometimes shows up.
+- **Bosses with telegraphed attack patterns**: Onix, Snorlax, the legendary birds and Mewtwo. Mew sometimes shows up. Each boss has until the next one arrives, then it flees with its reward; Mewtwo blasts the horde away and thins it, so the finale is a duel.
 
   <img src="public/assets/pokemon/95/portrait.png" width="40" alt="Onix"> <img src="public/assets/pokemon/143/portrait.png" width="40" alt="Snorlax"> <img src="public/assets/pokemon/144/portrait.png" width="40" alt="Articuno"> <img src="public/assets/pokemon/145/portrait.png" width="40" alt="Zapdos"> <img src="public/assets/pokemon/146/portrait.png" width="40" alt="Moltres"> <img src="public/assets/pokemon/150/portrait.png" width="40" alt="Mewtwo"> <img src="public/assets/pokemon/151/portrait.png" width="40" alt="Mew">
 
 - **Legendary rifts**: three times per run a rift opens on the map. Step in to duel Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza or Dialga in a walled arena for big rewards, before it collapses.
 - **Endless mode**: after Mewtwo, keep going while the horde scales forever and Arceus, the reaper, hunts you from 20:00. Time survived is the score.
-- **Three difficulty levels**, picked on the select screen and all open from the start: Normal, Hard (much tougher hordes that hit harder) and Nightmare (brutal hordes and half of every heal). Each run records its level for the ranking.
+- **Three difficulty levels**, picked on the select screen and all open from the start: Normal, Hard (faster, denser hordes that hit harder) and Nightmare (brutal, fast and dense hordes and half of every heal). Each run records its level for the ranking.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450), and your starter has a 1/64 chance to be shiny for the whole run.
 - **In-game Pokédex** of 334 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
 - **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.

@@ -94,8 +94,8 @@ export const pt = {
     names: { normal: 'Normal', hard: 'Difícil', nightmare: 'Pesadelo' },
     blurbs: {
       normal: 'A partida como ela foi pensada.',
-      hard: 'Hordas bem mais duras, que batem mais forte. Para quem já encheu a Poké Mart.',
-      nightmare: 'Hordas brutais e metade de toda a cura. Boa sorte.',
+      hard: 'Hordas mais rápidas, cheias e duras, que batem mais forte. Para quem já encheu a Poké Mart.',
+      nightmare: 'Hordas brutais, rápidas e densas, e metade de toda a cura. Boa sorte.',
     },
   } satisfies { label: string; names: Record<Difficulty, string>; blurbs: Record<Difficulty, string> },
 
@@ -302,6 +302,7 @@ export const pt = {
     used: (who: string, move: string) => `${who} usou *${move}*!`,
     legendary: (name: string) => `Um *${name}* _lendário_ apareceu!`,
     boss: (name: string) => `Um *${name}* selvagem apareceu!`,
+    bossFled: (name: string) => `O *${name}* selvagem fugiu!`,
     shiny: (name: string) => `Um *${name}* shiny apareceu!`,
     shinyPlayer: (name: string) => `Que sorte! Seu *${name}* é shiny!`,
     caught: (name: string) => `*${name}* shiny é seu! Registrado na _Pokédex_.`,

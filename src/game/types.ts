@@ -95,8 +95,13 @@ export type Enemy = {
   status: EnemyStatus
   /** Behavior trait (healer, kamikaze…) and the wards/heals it gets from allies. */
   trait: TraitState
-  /** -1 while alive; otherwise seconds since fainting. */
+  /** -1 while alive; otherwise seconds since fainting (or since fleeing). */
   dying: number
+  /**
+   * A wave boss that ran off when the next one arrived (`fleesFrom`): out of
+   * play like a fainted one, gliding away along its knockback, with no reward.
+   */
+  fled: boolean
 }
 
 export type Shape = { kind: 'circle'; r: number } | { kind: 'rect'; w: number; h: number }
@@ -239,6 +244,8 @@ export type GameEvent =
   | { kind: 'hurt' }
   | { kind: 'levelup' }
   | { kind: 'boss'; enemy: EnemyId }
+  /** A wave boss ran off because the next wave's boss arrived (`chaseOffBosses`). */
+  | { kind: 'bossFled'; enemy: EnemyId }
   | { kind: 'shiny'; enemy: EnemyId }
   | { kind: 'shinyPlayer' }
   /** First shiny of a species defeated this run; the shell toasts it only when the Pokédex didn't have it yet. */

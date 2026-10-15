@@ -11,6 +11,8 @@ export type DifficultyMods = {
   enemyDamage: number
   /** Regular spawns per second and how many can be alive at once. */
   spawnRate: number
+  /** How fast regular enemies walk (bosses keep their pace, their patterns are tuned to it). */
+  enemySpeed: number
   /** Slope of the per-minute toughening (`scaling`): above 1, late enemies outgrow the base run. */
   ramp: number
   /** Every heal: regen, berries, potions, fountains, evolving, rift loot. */
@@ -18,15 +20,17 @@ export type DifficultyMods = {
 }
 
 /**
- * Measured with a headless bot (see the PR that added them): late-game DPS
- * outgrows linear multipliers, so the flat HP boost carries most of the weight,
- * slowing the build from the start. Hard puts a player with a full Poké Mart
- * about where Normal puts a fresh one; Nightmare is meant to beat them often.
+ * Harder levels press harder instead of soaking more hits: a crowd that walks
+ * faster, spawns thicker and hits harder, and only about twice Normal's HP late
+ * in the run (`enemyHp` × the steeper `ramp`), so the horde still melts under a
+ * build that fits the minute. Measured with a headless bot: when Nightmare
+ * leaned on HP (×3.5, ×4.5 Normal's late HP) the horde stopped dying, filled its
+ * cap and buried Mewtwo in a blob nobody could reach.
  */
 export const DIFFICULTIES = {
-  normal: { enemyHp: 1, enemyDamage: 1, spawnRate: 1, ramp: 1, healing: 1 },
-  hard: { enemyHp: 2.5, enemyDamage: 1.25, spawnRate: 1.1, ramp: 1.15, healing: 1 },
-  nightmare: { enemyHp: 3.5, enemyDamage: 1.5, spawnRate: 1.2, ramp: 1.3, healing: 0.5 },
+  normal: { enemyHp: 1, enemyDamage: 1, spawnRate: 1, enemySpeed: 1, ramp: 1, healing: 1 },
+  hard: { enemyHp: 1.4, enemyDamage: 1.45, spawnRate: 1.25, enemySpeed: 1.1, ramp: 1.12, healing: 1 },
+  nightmare: { enemyHp: 1.8, enemyDamage: 2, spawnRate: 1.5, enemySpeed: 1.2, ramp: 1.25, healing: 0.5 },
 } as const satisfies Record<string, DifficultyMods>
 
 export type Difficulty = keyof typeof DIFFICULTIES

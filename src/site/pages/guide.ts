@@ -81,7 +81,7 @@ const run = (locale: Locale, m: SiteMessages) => {
   const times = (v: number) => `${num(v)}x`
   const levels = DIFFICULTY_IDS.map((id) => {
     const d = DIFFICULTIES[id]
-    return [names[id], times(d.enemyHp), times(d.enemyDamage), times(d.spawnRate), times(d.ramp), times(d.healing)]
+    return [names[id], times(d.enemyHp), times(d.enemyDamage), times(d.spawnRate), times(d.enemySpeed), times(d.ramp), times(d.healing)]
   })
   return html`${paragraphs(r.paragraphs(RUN_LENGTH / 60, STARTER_IDS.length))}
     <p>${r.scaling(scale)}</p>

@@ -78,8 +78,8 @@ export const en: Messages = {
     names: { normal: 'Normal', hard: 'Hard', nightmare: 'Nightmare' },
     blurbs: {
       normal: 'The run as it was meant to be played.',
-      hard: 'Much tougher hordes that hit harder. For a full Poké Mart.',
-      nightmare: 'Brutal hordes and half of every heal. Good luck.',
+      hard: 'Faster, denser, tougher hordes that hit harder. For a full Poké Mart.',
+      nightmare: 'Brutal, fast and dense hordes, and half of every heal. Good luck.',
     },
   },
 
@@ -262,6 +262,7 @@ export const en: Messages = {
     used: (who, move) => `${who} used *${move}*!`,
     legendary: (name) => `A _legendary_ *${name}* appeared!`,
     boss: (name) => `A wild *${name}* appeared!`,
+    bossFled: (name) => `The wild *${name}* fled!`,
     shiny: (name) => `A shiny *${name}* appeared!`,
     shinyPlayer: (name) => `Lucky! Your *${name}* is shiny!`,
     caught: (name) => `Shiny *${name}* is yours! Added to the _Pokédex_.`,
