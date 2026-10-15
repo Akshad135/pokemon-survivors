@@ -2849,6 +2849,54 @@ button {
   font-style: normal;
 }
 
+/* Presente Misterioso: the box, why it came and what it brought. */
+.gift-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.gift-box {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  animation: gift-hop 0.9s steps(3) 2;
+}
+
+@keyframes gift-hop {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.gift-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.gift-text small {
+  font-size: 7px;
+  color: #c04890;
+}
+
+.gift-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.gift-line img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
 /* ---------- Settings ---------- */
 
 .dialog.settings {
@@ -3386,6 +3434,52 @@ button {
 }
 
 .outbreak-text span {
+  font-size: 17px;
+  line-height: 1;
+  color: #505870;
+}
+
+/* A guest who came by a friend's link: who invited them and what signing up brings. */
+.invite-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, 92vw);
+  padding: 11px 14px 11px 11px;
+  border-color: #581830;
+  --frame: #e05888;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.invite-banner img {
+  width: 30px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.invite-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.invite-head {
+  color: var(--ink);
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.invite-head b {
+  font-weight: normal;
+  color: #c04890;
+}
+
+.invite-blurb {
   font-size: 17px;
   line-height: 1;
   color: #505870;

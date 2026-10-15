@@ -170,9 +170,10 @@ const EGG_PALETTES = {
   common: { 1: '#c8b890', 2: '#f8f0d8', 3: '#ffffff', 4: '#58b858' },
   rare: { 1: '#c8b890', 2: '#f8f0d8', 3: '#ffffff', 4: '#4888e8' },
   ultra: { 1: '#282840', 2: '#45456a', 3: '#9090c0', 4: '#f8c830' },
+  friend: { 1: '#d888a0', 2: '#f8d0dc', 3: '#ffffff', 4: '#e84870' },
 } as const satisfies Record<EggTier, Palette>
 
-const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0' } as const satisfies Record<EggTier, string>
+const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048' } as const satisfies Record<EggTier, string>
 
 /** Memoized sprite per key (one per tier and crack stage). */
 const eggCache = new Map<string, PixelSprite>()
@@ -449,6 +450,23 @@ export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICK
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
 export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))
+
+/** Presente Misterioso: a wrapped box with a bow. 1 outline, 2 ribbon, 3 paper, 4 paper shade, 5 ribbon shade. */
+const GIFT = [
+  '..11....11..',
+  '.1221..1221.',
+  '.1222112221.',
+  '..11122111..',
+  '133332233331',
+  '144442254441',
+  '111111111111',
+  '.1333223331.',
+  '.1333223331.',
+  '.1444225441.',
+  '.1111111111.',
+]
+
+export const giftIcon = () => toIconUrl('gift', () => art(GIFT, { 1: '#301018', 2: '#f8d030', 3: '#e83850', 4: '#a82038', 5: '#c89000' }))
 
 /* ---------------- Medals ---------------- */
 

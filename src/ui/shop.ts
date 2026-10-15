@@ -160,8 +160,10 @@ const stylePicture = <S extends StyleSlot>(slot: S, id: StyleId<S>, big: boolean
 /** The style shelf: every frame, background and wallpaper, the owned ones to wear and the rest to buy (and wear). */
 const styleRows = (slot: StyleSlot): Row[] =>
   styleIds(slot).flatMap((id) => {
-    const price = stylePrice(slot, id)
-    if (price === null) return []
+    const listed = stylePrice(slot, id)
+    // Gift-only styles show once owned, to wear.
+    if (listed === null && !ownsStyle(loadSave().style, slot, id)) return []
+    const price = listed ?? 0
     const name = (t().mart.styles[slot] as Readonly<Record<string, string>>)[id] ?? id
     const shell = rowShell(stylePicture(slot, id, false), name)
     const status = (save: Save) => {

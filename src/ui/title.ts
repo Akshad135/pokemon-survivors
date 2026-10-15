@@ -6,8 +6,11 @@ import { ENEMIES } from '../data/enemies'
 import { sparkleIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies } from '../render/sprites'
+import { accountState, accountsEnabled } from '../account'
+import { eggIcon } from '../render/art'
+import { inviterName } from '../ranking'
 import { accountChip } from './account'
-import { h, later } from './dom'
+import { h, later, rich } from './dom'
 import { languageSwitch } from './language'
 import { titleBadge } from './missions'
 import { loadSave, outbreakToday } from './save'
@@ -75,6 +78,27 @@ const outbreakBanner = () => {
   return { el, tick }
 }
 
+/**
+ * "<Name> te convidou!": a guest who came by a friend's link sees who and
+ * what signing up brings (a Friendship Egg each). It shows once the
+ * inviter's name comes back, and never offline; tapping it opens the account.
+ */
+const inviteBanner = (head: HTMLElement, open: (() => void) | null) => {
+  if (!accountsEnabled || accountState().kind === 'signedIn') return
+  void inviterName().then((name) => {
+    if (!name || !head.isConnected || accountState().kind === 'signedIn') return
+    const m = t().invite
+    const el = h(
+      'button',
+      { class: 'invite-banner box pop', type: 'button' },
+      h('img', { src: eggIcon('friend'), alt: '' }),
+      h('span', { class: 'invite-text' }, rich(m.banner(name), { class: 'invite-head' }), h('span', { class: 'invite-blurb' }, m.blurb)),
+    )
+    if (open) el.addEventListener('click', (e) => (e.stopPropagation(), open()))
+    head.append(el)
+  })
+}
+
 /** Fits the logo to the viewport in whole device pixels per logo pixel. */
 const fitLogo = (canvas: HTMLCanvasElement) => {
   const vw = window.innerWidth
@@ -134,6 +158,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const badge = titleBadge(loadSave().title)
   const outbreak = outbreakBanner()
   const head = h('div', { class: 'title-head' }, logo, badge, outbreak.el)
+  inviteBanner(head, account ? () => openOver(account) : null)
   const el = h('div', { class: 'screen title-home' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), head, prompt, footer)
 
   let nav: ReturnType<typeof menu> | null = null

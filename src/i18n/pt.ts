@@ -1,4 +1,4 @@
-import type { AchievementId, AchievementStat, TitleId } from '../data/achievements'
+import type { AchievementId, AchievementStat, GiftTitleId, TitleId } from '../data/achievements'
 import type { BiomeId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
@@ -227,6 +227,7 @@ export const pt = {
     unfollow: 'Seguindo',
     followers: (n: number) => (n === 1 ? '1 seguidor' : `${n} seguidores`),
     following: (n: number) => `${n} seguindo`,
+    brought: (n: number) => (n === 1 ? '1 amigo trazido' : `${n} amigos trazidos`),
     followGuest: 'Entre com uma conta para seguir treinadores.',
     records: 'Recordes',
     noRecord: '—',
@@ -399,7 +400,7 @@ export const pt = {
       wallpaper: 'Papel de parede da Caixa do PC.',
     } satisfies Record<StyleSlot, string>,
     styles: {
-      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball' } satisfies Record<FrameId, string>,
+      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)' } satisfies Record<FrameId, string>,
       background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender' } satisfies Record<BackgroundId, string>,
       wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas' } satisfies Record<WallpaperId, string>,
     },
@@ -411,6 +412,25 @@ export const pt = {
     blurb: 'Aparece em todas as partidas de hoje: uns 2 shinies dele por partida.',
     started: (name: string) => `Surto de *${name}*!`,
     hint: 'Ele aparece muito mais hoje, e o shiny também.',
+  },
+
+  /** Invites: the banner a guest who came by a friend's link sees on the title screen. */
+  invite: {
+    banner: (name: string) => `*${name}* te convidou!`,
+    blurb: 'Crie uma conta e vocês dois ganham um Ovo da Amizade.',
+  },
+
+  /** Presente Misterioso: gifts from the server (invites, and later ribbons). */
+  gifts: {
+    title: 'Presente Misterioso!',
+    egg: (egg: string) => `Um *${egg}* foi para a incubadora.`,
+    coins: (coins: string) => `Você ganhou *${coins}*.`,
+    newTitle: (title: string) => `Novo título: *${title}*! Já está em uso.`,
+    style: (name: string) => `Novo estilo: *${name}*! Já está em uso.`,
+    shinyHatch: (name: string) => `Um *${name}* _shiny_ veio para você!`,
+    wait: 'Um Presente Misterioso espera espaço na incubadora.',
+    welcome: (from: string | null) => (from ? `Por entrar com o convite de @${from}` : 'Por entrar com um convite'),
+    friends: (n: number) => (n === 1 ? 'Por trazer seu primeiro amigo' : `Por trazer ${n} amigos`),
   },
 
   /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */
@@ -527,7 +547,7 @@ export const pt = {
   },
   /** Eggs: the incubator, the hatching scene and the egg box in the Pokémon select. */
   eggs: {
-    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro' } satisfies Record<EggTier, string>,
+    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade' } satisfies Record<EggTier, string>,
     found: (egg: string) => `Você achou um *${egg}*! Ele vai para a incubadora.`,
     title: 'INCUBADORA',
     intro: 'Os ovos chocam com os passos dados nas partidas. Todos os ovos da incubadora andam juntos.',
@@ -552,6 +572,7 @@ export const pt = {
     tab: 'OVOS',
     locked: '???',
     lockedBlurb: (egg: string) => `Ainda está no ovo. Sai de um *${egg}*.`,
+    friendBlurb: 'Só sai do *Ovo da Amizade*: convide amigos pelo seu link para ganhar um.',
     lockedButton: 'Ainda no ovo',
     incubator: (n: number, slots: number) => `Incubadora ${n}/${slots}`,
     readyBadge: (n: number) => (n === 1 ? '1 ovo pronto!' : `${n} ovos prontos!`),
@@ -670,6 +691,8 @@ export const pt = {
     noTitle: 'nenhum',
     titleTag: 'TÍTULO',
     equipped: 'EM USO',
+    /** Titles that come as a Mystery Gift, with how they were earned. */
+    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo' } satisfies Record<GiftTitleId, string>,
     newMedals: 'Novas medalhas',
     names: {
       firstRun: 'Primeiros passos',
@@ -742,6 +765,7 @@ export const pt = {
       champion: 'Campeão',
       regions: 'Mestre das Regiões',
       reaperDown: 'Lenda Viva',
+      ambassador: 'Embaixador(a)',
     } satisfies Record<TitleId, string>,
     goals: {
       runs: (n: string) => (n === '1' ? 'Jogue uma partida' : `Jogue ${n} partidas`),
@@ -1276,6 +1300,7 @@ export const pt = {
     beldum: 'Blindado. Defesa de aço e muita força.',
     gible: 'Tubarão. Mordidas fortes e cada vez mais veloz.',
     dreepy: 'Míssil. Dispara Dreepys rápidos e certeiros.',
+    munchlax: 'Tanque guloso. Muita vida, defesa e regeneração; puxa os itens de longe.',
   },
 
   specials: {

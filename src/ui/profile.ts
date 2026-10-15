@@ -133,7 +133,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
           h('img', { class: 'profile-portrait', src: headPortrait(p), alt: '' }),
           h('div', { class: 'profile-id' }, h('b', { class: 'profile-name' }, p.name), h('span', { class: 'profile-handle' }, `@${p.handle}`), titleBadge(p.title)),
         ),
-        h('p', { class: 'profile-social' }, `${m.followers(p.followers)} · ${m.following(p.following)}`),
+        h('p', { class: 'profile-social' }, [m.followers(p.followers), m.following(p.following), ...(p.brought ? [m.brought(p.brought)] : [])].join(' · ')),
         !p.self && !signedIn ? note(m.followGuest) : null,
         section(m.records, h('div', { class: 'profile-records' }, ...DIFFICULTY_IDS.map((d) => recordCell(d, p.records[d])))),
         section(

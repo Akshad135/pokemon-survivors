@@ -58,9 +58,10 @@ const inlineRunner = (): Runner => async (_id, replay) => {
  * unverified, like a run from a game that sent none; a newer one waits for
  * this server to be updated (a deploy restarts it, and `resume` picks it up).
  * `schedule` queues a run (again, if it grew in endless mode); `resume`
- * queues whatever was pending when the server last stopped.
+ * queues whatever was pending when the server last stopped. `onVerified`
+ * hears of every verified run (invites count after a few).
  */
-export const createChecks = (ranking: RankingStore) => {
+export const createChecks = (ranking: RankingStore, onVerified: (userId: string) => Promise<void> = async () => {}) => {
   const run: Runner = import.meta.url.endsWith('.ts') ? inlineRunner() : workerRunner()
   const queue: string[] = []
   let busy = false
@@ -93,6 +94,8 @@ export const createChecks = (ranking: RankingStore) => {
         const ok = !r.stuck && r.time === reported.time && r.kills === reported.kills && r.level === reported.level
         await ranking.setVerified(id, reported.time, ok, answer.ms)
         console.log(`check ${id}: ${ok ? 'verified' : 'failed'} in ${answer.ms} ms`)
+        // A verified run may be the one that makes the player's invite count (`gifts.ts`).
+        if (ok) await onVerified(reported.userId)
       } catch (err) {
         console.error('check failed', id, err)
       }

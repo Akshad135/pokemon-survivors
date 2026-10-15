@@ -5,7 +5,8 @@
  * `render/cosmetics.ts`, keyed by the same ids; names in `i18n` (`mart.styles`).
  */
 export const STYLE_SHELF = {
-  frame: { classic: 0, poke: 1000, great: 2000, ultra: 3500, master: 5000 },
+  /** The Ambassador frame comes with bringing 3 friends (`game/referral.ts`). */
+  frame: { classic: 0, poke: 1000, great: 2000, ultra: 3500, master: 5000, ambassador: null },
   background: { night: 0, meadow: 1500, forest: 1500, cave: 1500, snow: 1500, tower: 2000 },
   wallpaper: { classic: 0, forest: 1000, cave: 1000, snow: 1000, tower: 1500 },
 } as const satisfies Record<string, Record<string, number | null>>

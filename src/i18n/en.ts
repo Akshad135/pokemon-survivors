@@ -181,6 +181,7 @@ export const en: Messages = {
     unfollow: 'Following',
     followers: (n) => (n === 1 ? '1 follower' : `${n} followers`),
     following: (n) => `${n} following`,
+    brought: (n) => (n === 1 ? '1 friend brought' : `${n} friends brought`),
     followGuest: 'Sign in to follow trainers.',
     records: 'Records',
     noRecord: '—',
@@ -347,7 +348,7 @@ export const en: Messages = {
       wallpaper: 'Wallpaper of the PC Box.',
     },
     styles: {
-      frame: { classic: 'Classic', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball' },
+      frame: { classic: 'Classic', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Ambassador' },
       background: { night: 'Starry night', meadow: 'Route 1', forest: 'Viridian Forest', cave: 'Mt. Moon', snow: 'Mt. Silver', tower: 'Lavender Tower' },
       wallpaper: { classic: 'Classic', forest: 'Leaves', cave: 'Pebbles', snow: 'Snowflakes', tower: 'Little ghosts' },
     },
@@ -358,6 +359,23 @@ export const en: Messages = {
     blurb: 'Shows up in every run today: about 2 of its shinies per run.',
     started: (name) => `Mass outbreak of *${name}*!`,
     hint: 'It shows up a lot more today, and so does its shiny.',
+  },
+
+  invite: {
+    banner: (name) => `*${name}* invited you!`,
+    blurb: 'Create an account and you both get a Friendship Egg.',
+  },
+
+  gifts: {
+    title: 'Mystery Gift!',
+    egg: (egg) => `A *${egg}* went to the incubator.`,
+    coins: (coins) => `You got *${coins}*.`,
+    newTitle: (title) => `New title: *${title}*! It's on already.`,
+    style: (name) => `New style: *${name}*! It's on already.`,
+    shinyHatch: (name) => `A _shiny_ *${name}* came for you!`,
+    wait: 'A Mystery Gift is waiting for room in the incubator.',
+    welcome: (from) => (from ? `For joining with @${from}'s invite` : 'For joining with an invite'),
+    friends: (n) => (n === 1 ? 'For bringing your first friend' : `For bringing ${n} friends`),
   },
 
   bag: {
@@ -470,7 +488,7 @@ export const en: Messages = {
     },
   },
   eggs: {
-    tiers: { common: 'Common Egg', rare: 'Rare Egg', ultra: 'Ultra Rare Egg' },
+    tiers: { common: 'Common Egg', rare: 'Rare Egg', ultra: 'Ultra Rare Egg', friend: 'Friendship Egg' },
     found: (egg) => `You found a *${egg}*! It goes to the incubator.`,
     title: 'INCUBATOR',
     intro: 'Eggs hatch with the steps you take in runs. Every egg in the incubator walks along.',
@@ -494,6 +512,7 @@ export const en: Messages = {
     tab: 'EGGS',
     locked: '???',
     lockedBlurb: (egg) => `Still in its egg. It hatches from a *${egg}*.`,
+    friendBlurb: 'Only hatches from the *Friendship Egg*: invite friends with your link to get one.',
     lockedButton: 'Still an egg',
     incubator: (n, slots) => `Incubator ${n}/${slots}`,
     readyBadge: (n) => (n === 1 ? '1 egg ready!' : `${n} eggs ready!`),
@@ -606,6 +625,7 @@ export const en: Messages = {
     noTitle: 'none',
     titleTag: 'TITLE',
     equipped: 'SHOWN',
+    giftTitles: { ambassador: 'Brought 3 friends to the game' },
     newMedals: 'New medals',
     names: {
       firstRun: 'First steps',
@@ -678,6 +698,7 @@ export const en: Messages = {
       champion: 'Champion',
       regions: 'Master of Regions',
       reaperDown: 'Living Legend',
+      ambassador: 'Ambassador',
     },
     goals: {
       runs: (n) => (n === '1' ? 'Play a run' : `Play ${n} runs`),
@@ -1212,6 +1233,7 @@ export const en: Messages = {
     beldum: 'Armored. Steel defense and raw power.',
     gible: 'Land shark. Strong bites, faster and faster.',
     dreepy: 'Missile. Fires quick, precise Dreepys.',
+    munchlax: 'Hungry tank. Lots of HP, defense and regen; pulls items from afar.',
   },
 
   specials: {
