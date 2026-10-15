@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-15',
+    pr: 50,
+    title: { pt: 'Login com Google mais firme', en: 'Sturdier Google sign in' },
+    notes: [
+      {
+        pt: 'Quando criar a conta pede uma etapa a mais depois do Google (uma verificação anti-robô ou um dado que faltou), o jogo agora te leva para a página da conta, termina por lá e te traz de volta, em vez de falhar o login.',
+        en: 'When creating your account needs one more step after Google (a bot check or a missing detail), the game now takes you to the account page, finishes there and brings you back, instead of failing the sign in.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-15',
     title: { pt: 'Quick Attack no seu comando', en: 'Quick Attack on your command' },
     notes: [
       {
