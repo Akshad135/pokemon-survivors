@@ -1,8 +1,10 @@
-import { retain, TAU } from '../engine/math'
+import { dir8, dirTo, retain, TAU } from '../engine/math'
 import { range } from '../engine/rng'
 import { BOSS_PATTERNS, type BossPattern, type HazardVisual } from '../data/bosses'
+import { FINALE, fleesFrom } from '../data/waves'
 import { hurtPlayer } from './combat'
 import { burst } from './effects'
+import { blastHorde } from './enemies'
 import { isAsleep } from './status'
 import type { Enemy, Game, Hazard } from './types'
 import { HAZARD_TYPES } from './weather'
@@ -74,6 +76,37 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern) => {
       return
     }
   }
+}
+
+/** How fast a fleeing boss glides off the screen, px/s. */
+const FLEE_SPEED = 260
+
+/**
+ * A new wave's boss arrives at `at`: earlier wave bosses still around run off
+ * (`fleesFrom`). They leave play at once, glide away from the player in a puff
+ * of dust and drop nothing; the shell toasts it.
+ */
+export const chaseOffBosses = (g: Game, at: number) => {
+  const p = g.player
+  for (const e of g.enemies) {
+    if (!e.boss || e.dying >= 0 || !fleesFrom(e.kind, at)) continue
+    const d = dirTo(p.x, p.y, e.x, e.y)
+    e.dying = 0
+    e.fled = true
+    e.kx = d.x * FLEE_SPEED
+    e.ky = d.y * FLEE_SPEED
+    e.dir = dir8(d.x, d.y)
+    if (g.bossId === e.id) g.bossId = null
+    burst(g, e.x, e.y - e.radius * 0.5, { colors: ['#ffffff', '#e0d8c8', '#b0a890'], count: 36, speed: 120, ttl: 0.6, size: 2, drag: 5 })
+    g.events.push({ kind: 'bossFled', enemy: e.kind })
+  }
+}
+
+/** The finale boss arrives: a psychic shockwave from the player blasts the horde back (`FINALE.push`). */
+export const finaleEntrance = (g: Game) => {
+  blastHorde(g, FINALE.push)
+  burst(g, g.player.x, g.player.y - 8, { colors: ['#f85888', '#f8b0d0', '#ffffff'], count: 90, speed: 320, ttl: 0.55, size: 2, drag: 2 })
+  g.shake = Math.max(g.shake, 10)
 }
 
 /** Ticks every boss's attack patterns. Bosses only attack once they're close enough to be seen. */

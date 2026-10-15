@@ -28,7 +28,8 @@ export const enemyScale = (g: Game) => {
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
   const def: EnemyDef = ENEMIES[kind]
   const boss = def.boss === true
-  const scale = boss ? { hp: DIFFICULTIES[g.difficulty].enemyHp, damage: 1 } : enemyScale(g)
+  const mods = DIFFICULTIES[g.difficulty]
+  const scale = boss ? { hp: mods.enemyHp, damage: 1 } : enemyScale(g)
   const hp = Math.round(def.hp * scale.hp)
   const enemy: Enemy = {
     id: g.nextId++,
@@ -37,7 +38,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     x, y, kx: 0, ky: 0,
     hp, maxHp: hp,
     damage: def.damage * scale.damage,
-    speed: def.speed * (0.92 + g.rng() * 0.16),
+    speed: def.speed * (boss ? 1 : mods.enemySpeed) * (0.92 + g.rng() * 0.16),
     mass: def.mass,
     radius: radiusFor(def.dex) * (def.scale ?? 1),
     xp: def.xp,
@@ -52,9 +53,21 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     status: createStatus(),
     trait: createTraitState(def.trait, g.rng()),
     dying: -1,
+    fled: false,
   }
   g.enemies.push(enemy)
   return enemy
+}
+
+/** Knocks every regular enemy away from the player (Arceus descending, Mewtwo arriving). */
+export const blastHorde = (g: Game, force: number) => {
+  const p = g.player
+  for (const e of g.enemies) {
+    if (e.boss || e.dying >= 0) continue
+    const d = dirTo(p.x, p.y, e.x, e.y)
+    e.kx += (d.x * force) / e.mass
+    e.ky += (d.y * force) / e.mass
+  }
 }
 
 export const rebuildGrid = (g: Game) => {
@@ -66,6 +79,9 @@ export const rebuildGrid = (g: Game) => {
 
 const FAINT_TIME = 0.4
 
+/** Seconds a fleeing boss takes to glide off and fade out (`chaseOffBosses`). */
+export const FLEE_TIME = 0.9
+
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
   const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
@@ -73,6 +89,10 @@ export const updateEnemies = (g: Game, dt: number) => {
   for (const e of g.enemies) {
     if (e.dying >= 0) {
       e.dying += dt
+      if (e.fled) {
+        e.x += e.kx * dt
+        e.y += e.ky * dt
+      }
       continue
     }
     const frozen = e.status.stun > 0
@@ -139,5 +159,5 @@ export const updateEnemies = (g: Game, dt: number) => {
     }
   })
 
-  retain(g.enemies, (e) => e.dying < FAINT_TIME)
+  retain(g.enemies, (e) => e.dying < (e.fled ? FLEE_TIME : FAINT_TIME))
 }

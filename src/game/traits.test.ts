@@ -18,6 +18,7 @@ const enemy = (over: Partial<Enemy> = {}): Enemy => ({
   status: createStatus(),
   trait: createTraitState(undefined, 0),
   dying: -1,
+  fled: false,
   ...over,
 })
 

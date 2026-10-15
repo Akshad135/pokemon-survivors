@@ -64,7 +64,8 @@ export const reaperSpeed = (base: number, hunting: number) => base * Math.min(EN
 
 /**
  * Extra spawn pressure on top of the last wave stage, growing per overtime
- * minute. It is 1 during the regular run, so the 15 minutes play as before.
+ * minute. The spawner applies it only once the player chose endless mode, so
+ * a regular run that outlasts 15:00 (Mewtwo still standing) doesn't escalate.
  */
 export const endlessPressure = (time: number) => {
   const minutes = overtime(time) / 60

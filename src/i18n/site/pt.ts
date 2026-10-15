@@ -224,7 +224,7 @@ export const sitePt = {
       difficulty: 'Dificuldade',
       difficultyIntro:
         'Escolha a dificuldade na tela de seleção do Pokémon, embaixo do botão de escolher (ou com a tecla X). Todas já vêm liberadas e a escolha fica salva. O Normal é a partida base; os outros níveis multiplicam:',
-      difficultyHead: ['Nível', 'HP dos inimigos', 'Dano que você leva', 'Ritmo de spawn', 'Escala por minuto', 'Cura'],
+      difficultyHead: ['Nível', 'HP dos inimigos', 'Dano que você leva', 'Ritmo de spawn', 'Velocidade dos inimigos', 'Escala por minuto', 'Cura'],
       timeline: 'Linha do tempo',
       timeHead: 'Tempo',
       eventHead: 'Evento',
@@ -326,6 +326,7 @@ export const sitePt = {
       paragraphs: [
         'Os chefes chegam em horários fixos. Os lendários entram com flash na tela, cry e um aviso. Todos têm uma barra de HP no topo e ataques próprios: os círculos marcados no chão avisam onde o golpe vai cair, então saia de dentro deles.',
         'Chefes não ficam mais fortes com o tempo, mas cada um solta uma Poké Ball e uma chuva de Poké Dollars.',
+        'Cada chefe tem até o próximo chegar: se ainda estiver de pé quando o seguinte aparecer, ele foge e não deixa nada. Mewtwo é o último: ao chegar, empurra a horda para longe e, enquanto ele estiver de pé, quase não nascem inimigos comuns, então a luta é desviar dos ataques dele.',
       ],
       timeHead: 'Tempo',
       bossHead: 'Chefe',

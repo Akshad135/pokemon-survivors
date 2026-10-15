@@ -4,6 +4,7 @@ import { hash2 } from '../engine/rng'
 import { biomeAt } from '../data/biomes'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
+import { FLEE_TIME } from '../game/enemies'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
@@ -382,6 +383,12 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
   const def: EnemyDef = ENEMIES[e.kind]
   const s = sprites(def.dex, e.shiny)
   const scale = def.scale ?? 1
+  if (e.fled) {
+    // Running off: it keeps walking away, rising a little, and fades out at the end.
+    const k = e.dying / FLEE_TIME
+    drawPokemon(ctx, s, 'Walk', e.dir, e.animTime + e.dying * 2, e.x, e.y - Math.round(k * 18), { alpha: 1 - k * k, scale })
+    return
+  }
   if (e.dying >= 0) {
     const k = e.dying / 0.4
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false, scale })
