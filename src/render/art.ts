@@ -1,6 +1,7 @@
 import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { Medal } from '../data/achievements'
 import type { ItemId } from '../data/items'
+import type { BagItem } from '../game/bag'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
@@ -399,6 +400,13 @@ const UPGRADE_ART: Record<UpgradeId, readonly [readonly string[], Palette]> = {
   amuletCoin: [['1......1', '.1....1.', '..1111..', '.122221.', '12233221', '12322321', '12233221', '.122221.', '..1111..'], { 1: '#805000', 2: '#f8c830', 3: '#fff8b0' }],
   abilityCapsule: [['..1111..', '.122221.', '12222221', '12222221', '13333331', '13333331', '13333331', '.133331.', '..1111..'], { 1: '#283048', 2: '#e85878', 3: '#f8f0f8' }],
   escapeRope: [['..1111..', '.12..21.', '12.11.21', '1.1221.1', '1.1..1.1', '12.11.21', '.12..21.', '..1111..'], { 1: '#805828', 2: '#d8a868' }],
+  shinyCharm: [['....1....', '...131...', '...121...', '.1122211.', '122232221', '.1122211.', '...121...', '...121...', '....1....'], { 1: '#805000', 2: '#f8c830', 3: '#ffffff' }],
+}
+
+/** The bag's items: a Lure spray (pink, like the games') and an Incense jar with its smoke. */
+const BAG_ART: Record<BagItem, readonly [readonly string[], Palette]> = {
+  lure: [['...11...', '..1221..', '.111111.', '.133331.', '.134431.', '.134431.', '.133331.', '.133331.', '..1111..'], { 1: '#402030', 2: '#f8f8f8', 3: '#f070b0', 4: '#ffe0f0' }],
+  incense: [['..2..2..', '.2..2...', '..2..2..', '.111111.', '13333331', '13444431', '13333331', '.133331.', '..1111..'], { 1: '#302018', 2: '#d8d0f0', 3: '#c88848', 4: '#f8d8a0' }],
 }
 
 const iconCache = new Map<string, string>()
@@ -421,6 +429,12 @@ export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id
 export const itemIcon = (id: ItemId) =>
   toIconUrl(`item:${id}`, () => {
     const [rows, pal] = ITEM_ART[id]
+    return art(rows, pal, '#181818')
+  })
+
+export const bagIcon = (id: BagItem) =>
+  toIconUrl(`bag:${id}`, () => {
+    const [rows, pal] = BAG_ART[id]
     return art(rows, pal, '#181818')
   })
 

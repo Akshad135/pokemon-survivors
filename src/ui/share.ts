@@ -10,6 +10,7 @@ import { TYPE_COLORS } from '../data/types'
 import { dexCounts, dexNews, type Pokedex } from '../game/dex'
 import type { DamageSource, Game } from '../game/types'
 import { CARD, cardBlob, drawRunCard, drawTrainerCard, type CardMon, type CardTrainer, type RunCardData, type TrainerCardData } from '../render/card'
+import type { CardStyle } from '../render/cosmetics'
 import { logoScale } from '../render/logo'
 import { gameUrl } from '../ranking'
 import { pokedex } from '../site/pokedex'
@@ -41,6 +42,12 @@ let names: Map<number, string> | null = null
 const nameOf = (dex: number) => (names ??= new Map(pokedex().map((e) => [e.dex, e.name]))).get(dex) ?? `#${dex}`
 
 const mon = (dex: number, shiny: boolean): CardMon => ({ dex, name: nameOf(dex), shiny })
+
+/** The frame and background the player wears (bought on the Poké Mart's style shelf), read when the card is drawn. */
+const wornStyle = (): CardStyle => {
+  const { frame, background } = loadSave().style.equipped
+  return { frame, background }
+}
 
 /** Who shares: the handle and title, and the game's link crediting the handle (shown without the scheme). */
 const trainerLine = (title: TitleId | null): CardTrainer & { url: string } => {
@@ -79,7 +86,7 @@ export const runShare = (g: Game, dexBase: Pokedex): ShareCard => {
   }
   return {
     kind: 'run',
-    draw: () => drawRunCard(card),
+    draw: () => drawRunCard(card, wornStyle()),
     text: t().share.runText({ name: form.name, shiny: g.player.shiny, time: formatTime(g.time), outcome, shinies: shinies.length, link: trainer.url }),
     file: `pokemon-survivors-${form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`,
   }
@@ -120,7 +127,7 @@ export const trainerShare = (partner: PlayableId): ShareCard => {
   }
   return {
     kind: 'trainer',
-    draw: () => drawTrainerCard(card),
+    draw: () => drawTrainerCard(card, wornStyle()),
     text: t().share.trainerText(shinies.length, counts.caught, trainer.url),
     file: 'pokemon-survivors-trainer-card.png',
   }

@@ -7,6 +7,8 @@ import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
 import type { Difficulty } from '../game/difficulty'
+import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
+import type { BagItem } from '../game/bag'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -377,7 +379,50 @@ export const pt = {
     refundConfirm: (amount: string) => `Reembolsar tudo e receber ${amount}?`,
     yes: 'Sim',
     no: 'Não',
-    hint: '↑ ↓ escolher · ENTER comprar · ESC voltar',
+    hint: 'Q E prateleira · ↑ ↓ escolher · ENTER comprar · ESC voltar',
+    tabs: { upgrades: 'Melhorias', counter: 'Balcão do dia', style: 'Estilo' },
+    counterIntro: (time: string) => `Igual para todo mundo, com estoque do dia. Renova em ${time}.`,
+    stock: (left: number, max: number) => `Estoque ${left}/${max}`,
+    inBag: (n: number) => `Na bolsa: ${n}`,
+    sale: (pct: number) => `-${pct}%`,
+    saleNote: (pct: number) => `Promoção do dia: ${pct}% off!`,
+    soldOut: 'Esgotado hoje',
+    incubatorFull: 'Incubadora cheia',
+    eggDescription: (steps: string) => `Vai direto para a incubadora e choca com ${steps} passos.`,
+    owned: 'Seu',
+    equipped: 'Equipado',
+    equip: 'Equipar',
+    styleSlots: { frame: 'Molduras', background: 'Fundos', wallpaper: 'Papéis de parede' } satisfies Record<StyleSlot, string>,
+    styleDescriptions: {
+      frame: 'Moldura do cartão da run e do Cartão de Treinador que você compartilha.',
+      background: 'Céu do cartão da run e do Cartão de Treinador.',
+      wallpaper: 'Papel de parede da Caixa do PC.',
+    } satisfies Record<StyleSlot, string>,
+    styles: {
+      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball' } satisfies Record<FrameId, string>,
+      background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender' } satisfies Record<BackgroundId, string>,
+      wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas' } satisfies Record<WallpaperId, string>,
+    },
+  },
+
+  /** Surto do dia: one species everywhere today, its shiny far likelier. */
+  outbreak: {
+    title: 'Surto de hoje',
+    blurb: 'Aparece em todas as partidas de hoje: uns 2 shinies dele por partida.',
+    started: (name: string) => `Surto de *${name}*!`,
+    hint: 'Ele aparece muito mais hoje, e o shiny também.',
+  },
+
+  /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */
+  bag: {
+    label: 'Bolsa',
+    descriptions: {
+      lure: 'Shinies selvagens 2× mais comuns na próxima partida (os do surto também).',
+      incense: 'Chance de ovo 2× maior na próxima partida.',
+    } satisfies Record<BagItem, string>,
+    active: { lure: 'Shinies 2× mais comuns nesta partida!', incense: 'Chance de ovo 2× maior nesta partida!' } satisfies Record<BagItem, string>,
+    toggle: (name: string, n: number) => `${name} ×${n}`,
+    pickHint: 'Usar na próxima partida',
   },
 
   toast: {
@@ -574,6 +619,9 @@ export const pt = {
     toastEgg: (n: number) => (n === 1 ? 'Um *ovo* foi para a incubadora!' : `${n} *ovos* foram para a incubadora!`),
     rewardEgg: (tier: string) => `+ ${tier}`,
     reportEggs: (n: number) => (n === 1 ? '+1 ovo' : `+${n} ovos`),
+    rewardItem: (name: string) => `+ ${name} (vai para a bolsa)`,
+    reportItems: (n: number) => (n === 1 ? '+1 item na bolsa' : `+${n} itens na bolsa`),
+    toastItem: (n: number) => (n === 1 ? 'Um *item* foi para a bolsa!' : `${n} *itens* foram para a bolsa!`),
     goals: {
       kills: (n: string) => `Derrote ${n} Pokémon`,
       typeKills: (n: string, type: string) => `Derrote ${n} Pokémon do tipo ${type}`,
@@ -593,6 +641,7 @@ export const pt = {
       } satisfies Record<BiomeId, (n: string) => string>,
       traitKills: (n: string) => `Derrote ${n} Pokémon com comportamento`,
       shinyKills: (n: string) => (n === '1' ? 'Derrote um Pokémon shiny' : `Derrote ${n} Pokémon shiny`),
+      outbreakKills: (n: string, name: string) => `Derrote ${n} ${name} do surto de hoje`,
       bossKills: (n: string) => `Derrote ${n} chefes`,
       rifts: (n: string) => (n === '1' ? 'Vença uma fenda lendária' : `Vença ${n} fendas lendárias`),
       chests: (n: string) => (n === '1' ? 'Abra um baú' : `Abra ${n} baús`),
@@ -1158,6 +1207,7 @@ export const pt = {
     amuletCoin: '+10% de ₽ ganhos por nível.',
     abilityCapsule: '+1 troca de opções por partida ao subir de nível.',
     escapeRope: '+1 pulo de subida de nível por partida.',
+    shinyCharm: 'Shinies selvagens mais comuns: +1/3 da chance por nível (1/450 → 1/225 no máximo).',
   },
 
   consumables: {

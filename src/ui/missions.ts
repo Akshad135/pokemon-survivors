@@ -7,9 +7,11 @@ import { achievementProgress } from '../game/achievements'
 import type { RunRecord } from '../game/meta'
 import { MISSION_PERIODS, missionStatus, periodEnd, type MissionStatus } from '../game/missions'
 import { formatNumber, formatPokeDollars, t } from '../i18n'
-import { coinIcon, eggIcon, medalIcon } from '../render/art'
+import { ENEMIES } from '../data/enemies'
+import { BAG_ITEMS, type BagItem } from '../game/bag'
+import { bagIcon, coinIcon, eggIcon, medalIcon } from '../render/art'
 import { h, later, rich, setText } from './dom'
-import { equipTitle, loadSave, today } from './save'
+import { equipTitle, loadSave, outbreakToday, today } from './save'
 import { hint, type Screen } from './screens'
 import { toast } from './toasts'
 
@@ -27,6 +29,7 @@ export const missionText = (goal: MissionGoal, target: number) => {
     case 'coins': return g.coins(formatPokeDollars(target))
     case 'wins': return goal.type ? g.typeWins(n, types[goal.type]) : g.wins(n)
     case 'survive': return goal.type ? g.typeSurvive(n, types[goal.type]) : g.survive(n)
+    case 'outbreakKills': return g.outbreakKills(n, ENEMIES[outbreakToday()].name)
     default: return g[goal.kind](n)
   }
 }
@@ -57,6 +60,7 @@ const missionRow = (m: MissionStatus, opts: { gained?: number; fresh?: boolean }
       m.done ? '✓' : h('img', { src: coinIcon(0), alt: '' }),
       m.done ? '' : formatNumber(m.reward),
       !m.done && m.egg && h('img', { src: eggIcon(m.egg), alt: t().eggs.tiers[m.egg], title: t().missions.rewardEgg(t().eggs.tiers[m.egg]) }),
+      !m.done && m.item && h('img', { src: bagIcon(m.item), alt: BAG_ITEMS[m.item].name, title: t().missions.rewardItem(BAG_ITEMS[m.item].name) }),
     ),
     h(
       'span',
@@ -92,14 +96,14 @@ const reportRow = (m: MissionStatus, gained: number, fresh: boolean) =>
  * board when the run started), with the ₽ and reward eggs that missions and
  * medals paid. Null when the run moved none, so the results stay short.
  */
-export const missionReport = (before: readonly MissionStatus[], reward: number, eggs: number) => {
+export const missionReport = (before: readonly MissionStatus[], reward: number, eggs: number, items: readonly BagItem[] = []) => {
   const m = t().missions
   const moved = missionStatus(loadSave().missions, today()).flatMap((s) => {
     const was = before.find((b) => b.id === s.id)
     const gained = was ? s.progress - was.progress : 0
     return gained > 0 ? [reportRow(s, gained, s.done && was?.done === false)] : []
   })
-  if (moved.length === 0 && reward === 0 && eggs === 0) return null
+  if (moved.length === 0 && reward === 0 && eggs === 0 && items.length === 0) return null
   return h(
     'div',
     { class: 'mission-report' },
@@ -109,6 +113,7 @@ export const missionReport = (before: readonly MissionStatus[], reward: number, 
       h('b', {}, m.report),
       reward > 0 && h('span', { class: 'mission-report-reward' }, h('img', { src: coinIcon(1), alt: '' }), m.reportReward(formatPokeDollars(reward))),
       eggs > 0 && h('span', { class: 'mission-report-reward' }, h('img', { src: eggIcon('rare'), alt: '' }), m.reportEggs(eggs)),
+      items[0] && h('span', { class: 'mission-report-reward' }, h('img', { src: bagIcon(items[0]), alt: '' }), m.reportItems(items.length)),
     ),
     ...moved,
   )
@@ -119,7 +124,7 @@ export const medalChips = (unlocked: readonly AchievementId[]) =>
   unlocked.map((id) => h('span', { class: 'news-chip medal-chip' }, h('img', { src: medalIcon(ACHIEVEMENTS[id].medal), alt: t().achievements.medals[ACHIEVEMENTS[id].medal] }), t().achievements.names[id]))
 
 /** One toast for what was completed away from the results screen: a run quit from the pause menu, or a hatched egg. */
-export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward' | 'eggs'>) => {
+export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward' | 'eggs' | 'items'>) => {
   if (record.completed.length === 0 && record.unlocked.length === 0) return
   const m = t().missions
   const medal = record.unlocked[0]
@@ -127,6 +132,7 @@ export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'comple
     record.completed.length > 0 && m.toastDone(record.completed.length, formatPokeDollars(record.reward)),
     medal && m.toastMedal(t().achievements.names[medal]),
     record.eggs.length > 0 && m.toastEgg(record.eggs.length),
+    record.items.length > 0 && m.toastItem(record.items.length),
   ].filter((line) => typeof line === 'string')
   playSfx('levelUp')
   toast(root, h('span', { class: 'item-toast' }, h('img', { src: medal ? medalIcon(ACHIEVEMENTS[medal].medal) : coinIcon(1), alt: '' }), rich(lines.join(' · '))), 3600)

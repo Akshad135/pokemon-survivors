@@ -6,13 +6,14 @@ import { REGIONS, type PlayableDef, type Region } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
+import { armItem, BAG_ITEM_IDS, BAG_ITEMS, bagCount, type Bag, type BagItem } from '../game/bag'
 import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
 import { MEGA, MEGAS, megasOf, type MegaId } from '../data/megas'
 import { megaIcon } from '../render/megaFx'
-import { eggIcon, moveIcon, PICKUPS, sparkleIcon } from '../render/art'
+import { bagIcon, eggIcon, moveIcon, PICKUPS, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { t } from '../i18n'
@@ -209,6 +210,64 @@ const difficultyPicker = (initial: Difficulty) => {
   return { el, cycle }
 }
 
+/** Keys that flip each bag item on the select screen. */
+const BAG_KEYS = { lure: 'KeyC', incense: 'KeyV' } as const satisfies Record<BagItem, string>
+
+/**
+ * The bag's items for the next run: a toggle per item the player has (`C`
+ * Lure, `V` Incense), saved right away; the run uses them up as it starts.
+ * Hidden while the bag is empty.
+ */
+const bagPicker = (initial: Bag) => {
+  const m = t().bag
+  let bag = initial
+  const counts = Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, h('b', {})])) as Record<BagItem, HTMLElement>
+  const options = BAG_ITEM_IDS.map((id) =>
+    h(
+      'button',
+      { class: 'bag-option', role: 'switch', title: m.descriptions[id], onclick: () => toggle(id) },
+      h('img', { src: bagIcon(id), alt: '' }),
+      h('span', {}, BAG_ITEMS[id].name),
+      counts[id],
+      h('span', { class: 'key-hint' }, BAG_KEYS[id].slice(3)),
+    ),
+  )
+  const blurb = h('p', { class: 'difficulty-blurb' })
+  const render = () => {
+    BAG_ITEM_IDS.forEach((id, i) => {
+      const n = bagCount(bag, id)
+      options[i]!.classList.toggle('hidden', n === 0)
+      options[i]!.classList.toggle('selected', bag.armed[id])
+      options[i]!.setAttribute('aria-checked', String(bag.armed[id]))
+      counts[id].textContent = `×${n}`
+    })
+    const armed = BAG_ITEM_IDS.filter((id) => bag.armed[id])
+    blurb.textContent = armed.length > 0 ? armed.map((id) => m.descriptions[id]).join(' ') : m.pickHint
+    el.classList.toggle('hidden', BAG_ITEM_IDS.every((id) => bagCount(bag, id) === 0))
+  }
+  const toggle = (id: BagItem) => {
+    if (bagCount(bag, id) === 0) return
+    const on = !bag.armed[id]
+    bag = armItem(bag, id, on)
+    updateSave((save) => ({ ...save, bag: armItem(save.bag, id, on) }))
+    playSfx(on ? 'shiny' : 'move')
+    render()
+  }
+  const el = h(
+    'div',
+    { class: 'difficulty-picker bag-picker' },
+    h('div', { class: 'difficulty-row' }, h('span', { class: 'difficulty-label' }, m.label), h('div', { class: 'bag-options' }, ...options)),
+    blurb,
+  )
+  render()
+  /** A key press: flips the item it belongs to. */
+  const onKey = (key: string) => {
+    const id = BAG_ITEM_IDS.find((i) => BAG_KEYS[i] === key)
+    if (id) toggle(id)
+  }
+  return { el, onKey }
+}
+
 /** A tab of the select: a region's starter trio, or the box of egg families. */
 type Group = { kind: 'region'; region: Region; ids: readonly PlayableId[] } | { kind: 'eggs'; ids: readonly PlayableId[] }
 
@@ -226,7 +285,7 @@ type SelectActions = { pick: (id: PlayableId) => void; incubator: () => void }
  * the 9 regions comes the egg box: hatched families to pick, the rest as
  * silhouettes, and the way into the incubator (`O`).
  * Keyboard: ←/→ Pokémon (wraps across tabs), ↑/↓ or Q/E tab (rows in the egg box), 1-9 jump to region,
- * X cycles the difficulty, Z flips Normal/Shiny (once its shiny is unlocked), Enter confirms.
+ * X cycles the difficulty, Z flips Normal/Shiny (once its shiny is unlocked), C and V arm a Lure and an Incense, Enter confirms.
  * Pointer: hover/tap highlights, clicking the highlighted card (or the button) confirms.
  * `selected` reads the highlighted Pokémon, so a rebuilt screen (language switch) keeps it.
  */
@@ -307,6 +366,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const inspect = h('div', { class: 'inspect box' })
   const confirmBtn = h('button', { class: 'btn confirm selected', onclick: () => confirm() })
   const difficulty = difficultyPicker(save.difficulty)
+  const bag = bagPicker(save.bag)
 
   const renderGroup = () => {
     const g = group()
@@ -417,6 +477,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     else if (key === 'KeyZ') setShiny(!shinyOf(current()))
     else if (key === 'Enter' || key === 'Space') confirm()
     else if (/^Digit[1-9]$/.test(key)) setCursor({ group: Number(key.slice(5)) - 1, slot: cursor.slot })
+    else bag.onKey(key)
   })
 
   const el = h(
@@ -429,7 +490,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       { class: 'select-layout' },
       h('div', { class: 'select-main' }, h('div', { class: 'region-tabs', role: 'tablist' }, ...tabs), trio, box, hint(m.title.hintKeys, m.title.hintTouch)),
       inspect,
-      h('div', { class: 'select-footer' }, difficulty.el, confirmBtn),
+      h('div', { class: 'select-footer' }, difficulty.el, bag.el, confirmBtn),
     ),
     h('p', { class: 'credits' }, m.title.credits),
   )

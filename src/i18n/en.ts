@@ -327,7 +327,48 @@ export const en: Messages = {
     refundConfirm: (amount) => `Refund everything and get ${amount} back?`,
     yes: 'Yes',
     no: 'No',
-    hint: '↑ ↓ choose · ENTER buy · ESC back',
+    hint: 'Q E shelf · ↑ ↓ choose · ENTER buy · ESC back',
+    tabs: { upgrades: 'Upgrades', counter: "Today's counter", style: 'Style' },
+    counterIntro: (time) => `The same for everyone, with a daily stock. Restocks in ${time}.`,
+    stock: (left, max) => `Stock ${left}/${max}`,
+    inBag: (n) => `In the bag: ${n}`,
+    sale: (pct) => `-${pct}%`,
+    saleNote: (pct) => `Today's deal: ${pct}% off!`,
+    soldOut: 'Sold out today',
+    incubatorFull: 'Incubator full',
+    eggDescription: (steps) => `Goes straight to the incubator and hatches in ${steps} steps.`,
+    owned: 'Owned',
+    equipped: 'Equipped',
+    equip: 'Equip',
+    styleSlots: { frame: 'Frames', background: 'Backgrounds', wallpaper: 'Wallpapers' },
+    styleDescriptions: {
+      frame: 'Frame of the run card and the Trainer Card you share.',
+      background: 'Sky of the run card and the Trainer Card.',
+      wallpaper: 'Wallpaper of the PC Box.',
+    },
+    styles: {
+      frame: { classic: 'Classic', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball' },
+      background: { night: 'Starry night', meadow: 'Route 1', forest: 'Viridian Forest', cave: 'Mt. Moon', snow: 'Mt. Silver', tower: 'Lavender Tower' },
+      wallpaper: { classic: 'Classic', forest: 'Leaves', cave: 'Pebbles', snow: 'Snowflakes', tower: 'Little ghosts' },
+    },
+  },
+
+  outbreak: {
+    title: "Today's outbreak",
+    blurb: 'Shows up in every run today: about 2 of its shinies per run.',
+    started: (name) => `Mass outbreak of *${name}*!`,
+    hint: 'It shows up a lot more today, and so does its shiny.',
+  },
+
+  bag: {
+    label: 'Bag',
+    descriptions: {
+      lure: 'Wild shinies twice as common in your next run (the outbreak too).',
+      incense: 'Eggs twice as likely in your next run.',
+    },
+    active: { lure: 'Shinies twice as common this run!', incense: 'Eggs twice as likely this run!' },
+    toggle: (name, n) => `${name} ×${n}`,
+    pickHint: 'Use in the next run',
   },
 
   toast: {
@@ -515,6 +556,9 @@ export const en: Messages = {
     toastEgg: (n) => (n === 1 ? 'An *egg* went to the incubator!' : `${n} *eggs* went to the incubator!`),
     rewardEgg: (tier) => `+ ${tier}`,
     reportEggs: (n) => (n === 1 ? '+1 egg' : `+${n} eggs`),
+    rewardItem: (name) => `+ ${name} (goes to the bag)`,
+    reportItems: (n) => (n === 1 ? '+1 item in the bag' : `+${n} items in the bag`),
+    toastItem: (n) => (n === 1 ? 'An *item* went to the bag!' : `${n} *items* went to the bag!`),
     goals: {
       kills: (n) => `Defeat ${n} Pokémon`,
       typeKills: (n, type) => `Defeat ${n} ${type}-type Pokémon`,
@@ -534,6 +578,7 @@ export const en: Messages = {
       },
       traitKills: (n) => `Defeat ${n} Pokémon with a behavior`,
       shinyKills: (n) => (n === '1' ? 'Defeat a shiny Pokémon' : `Defeat ${n} shiny Pokémon`),
+      outbreakKills: (n, name) => `Defeat ${n} ${name} from today's outbreak`,
       bossKills: (n) => `Defeat ${n} bosses`,
       rifts: (n) => (n === '1' ? 'Win a legendary rift' : `Win ${n} legendary rifts`),
       chests: (n) => (n === '1' ? 'Open a chest' : `Open ${n} chests`),
@@ -1098,6 +1143,7 @@ export const en: Messages = {
     amuletCoin: '+10% ₽ earned per rank.',
     abilityCapsule: '+1 level-up reroll per run.',
     escapeRope: '+1 level-up skip per run.',
+    shinyCharm: 'Wild shinies more common: +1/3 of the odds per level (1/450 → 1/225 at most).',
   },
 
   consumables: {

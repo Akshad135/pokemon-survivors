@@ -1,6 +1,7 @@
 import { formatTime } from '../engine/math'
-import { context2d, createCanvas, ellipse, type PixelSprite } from '../engine/pixelart'
+import { context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from '../engine/pixelart'
 import { MEDALS, type Medal } from '../data/achievements'
+import type { BackgroundId, FrameId } from '../data/style'
 import type { Difficulty } from '../game/difficulty'
 import { formatNumber, locale, LOCALES, t } from '../i18n'
 import { medalSprite, outlined, PICKUPS, SPARKLE } from './art'
@@ -221,9 +222,10 @@ const blit = (ctx: CanvasRenderingContext2D, sprite: PixelSprite, cx: number, cy
 
 /* ---------------- Backdrop and frame ---------------- */
 
-/** Night sky in bands, dithered where they meet, with a deterministic sprinkle of stars. */
-const drawBackground = (ctx: CanvasRenderingContext2D, bg: CardBackground) => {
-  const { w, h } = CARD
+type Size = { w: number; h: number }
+
+/** Sky in bands, dithered where they meet, with a deterministic sprinkle of stars. */
+const drawBackground = (ctx: CanvasRenderingContext2D, bg: CardBackground, { w, h }: Size = CARD) => {
   const band = Math.ceil(h / bg.sky.length)
   bg.sky.forEach((color, i) => rect(ctx, 0, i * band, w, band, color))
   bg.sky.slice(1).forEach((color, i) => {
@@ -239,7 +241,8 @@ const drawBackground = (ctx: CanvasRenderingContext2D, bg: CardBackground) => {
   // A tiny LCG keeps the sky the same on every card.
   let seed = 20261015
   const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648)
-  for (let i = 0; i < bg.stars; i++) {
+  const stars = Math.round((bg.stars * w * h) / (CARD.w * CARD.h))
+  for (let i = 0; i < stars; i++) {
     const x = Math.floor(rand() * w)
     const y = Math.floor(rand() * h)
     const color = bg.starColors[Math.floor(rand() * bg.starColors.length)]!
@@ -252,9 +255,12 @@ const drawBackground = (ctx: CanvasRenderingContext2D, bg: CardBackground) => {
   }
 }
 
-/** The card's border, with rounded corners and a dot of the accent in each. */
-const drawFrame = (ctx: CanvasRenderingContext2D, f: CardFrame) => {
-  const { w, h } = CARD
+/**
+ * The card's border, with rounded corners and a dot of the accent (or the
+ * frame's ball) in each. A frame with a `lower` color splits its band in
+ * halves with a dark line across each side, like a Poké Ball.
+ */
+const drawFrame = (ctx: CanvasRenderingContext2D, f: CardFrame, { w, h }: Size = CARD) => {
   const ring = (i: number, color: string) => {
     rect(ctx, i, i, w - i * 2, 1, color)
     rect(ctx, i, h - 1 - i, w - i * 2, 1, color)
@@ -262,6 +268,16 @@ const drawFrame = (ctx: CanvasRenderingContext2D, f: CardFrame) => {
     rect(ctx, w - 1 - i, i, 1, h - i * 2, color)
   }
   ;[f.edge, f.light, f.main, f.main, f.edge, f.shade].forEach((color, i) => ring(i, color))
+  if (f.lower) {
+    const mid = Math.floor(h / 2)
+    for (const i of [2, 3]) {
+      rect(ctx, i, h - 1 - i, w - i * 2, 1, f.lower)
+      rect(ctx, i, mid, 1, h - 1 - i - mid, f.lower)
+      rect(ctx, w - 1 - i, mid, 1, h - 1 - i - mid, f.lower)
+    }
+    rect(ctx, 0, mid - 1, 6, 2, f.edge)
+    rect(ctx, w - 6, mid - 1, 6, 2, f.edge)
+  }
   // Rounded outer corners: the page shows through.
   for (const [x, y] of [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]] as const) {
     ctx.clearRect(x, y, 1, 1)
@@ -269,7 +285,22 @@ const drawFrame = (ctx: CanvasRenderingContext2D, f: CardFrame) => {
     ctx.clearRect(x, y === 0 ? 1 : y - 1, 1, 1)
     rect(ctx, x === 0 ? 1 : x - 1, y === 0 ? 1 : y - 1, 1, 1, f.edge)
   }
-  for (const [x, y] of [[2, 2], [w - 4, 2], [2, h - 4], [w - 4, h - 4]] as const) rect(ctx, x, y, 2, 2, f.accent)
+  if (f.ball) {
+    const ballSprite = fromStrings(f.ball[0], f.ball[1])
+    for (const [x, y] of [[1, 1], [w - 8, 1], [1, h - 8], [w - 8, h - 8]] as const) ctx.drawImage(ballSprite, x, y)
+  } else for (const [x, y] of [[2, 2], [w - 4, 2], [2, h - 4], [w - 4, h - 4]] as const) rect(ctx, x, y, 2, 2, f.accent)
+}
+
+/**
+ * A card's look in small (`w`×`h` px), for the Poké Mart's style shelf: the
+ * sky, with the frame around it unless `frame` is null.
+ */
+export const styleThumb = (frame: FrameId | null, background: BackgroundId, w = 54, h = 68) => {
+  const canvas = createCanvas(w, h)
+  const ctx = context2d(canvas)
+  drawBackground(ctx, CARD_BACKGROUNDS[background], { w, h })
+  if (frame) drawFrame(ctx, CARD_FRAMES[frame], { w, h })
+  return canvas
 }
 
 /* ---------------- Pieces ---------------- */

@@ -204,7 +204,10 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     }
   }
 
-  return { update, dispose: () => el.remove() }
+  /** Hides the touch buttons (special, Mega, lunge) while a menu or the results screen is up, so they never cover its buttons. */
+  const setMenuOpen = (open: boolean) => el.classList.toggle('menu-open', open)
+
+  return { update, setMenuOpen, dispose: () => el.remove() }
 }
 
 export type Hud = ReturnType<typeof createHud>

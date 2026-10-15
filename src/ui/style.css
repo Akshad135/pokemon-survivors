@@ -689,6 +689,52 @@ button {
   color: #e8e8f8;
 }
 
+/* Bag items armed for the next run (Lure, Incense), under the difficulty. */
+.bag-options {
+  display: flex;
+  gap: 4px;
+}
+
+.bag-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  min-height: 34px;
+  padding: 3px 8px;
+  color: #c8d0e8;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 4px;
+}
+
+.bag-option img {
+  width: 22px;
+  height: 22px;
+}
+
+.bag-option b {
+  font-weight: normal;
+  color: #a8b0d0;
+}
+
+.bag-option:hover,
+.bag-option:focus-visible {
+  border-color: #f070b0;
+}
+
+.bag-option.selected {
+  color: #fff;
+  background: #c04890;
+  border-color: #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.bag-option.selected b {
+  color: #fff;
+}
+
 /* The level a run is played on: a chip in the pause menu and on the results. */
 .difficulty-tag {
   align-self: center;
@@ -1696,6 +1742,13 @@ button {
   }
 }
 
+/* A menu or the results screen is up: the touch buttons step aside so they never cover its buttons. */
+.hud.menu-open .special-button,
+.hud.menu-open .mega-button,
+.hud.menu-open .lunge-button {
+  display: none;
+}
+
 /* Mega names run long ("Mega Charizard X"): a size down keeps the level beside them. */
 .mega-name {
   align-self: center;
@@ -2282,6 +2335,89 @@ button {
 .mart-buy {
   flex-shrink: 0;
   color: var(--ink);
+}
+
+/* Shelves: Upgrades, the day's counter, Style. */
+.mart-tabs .tab {
+  min-height: 34px;
+  padding: 6px;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.mart-intro {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #505870;
+}
+
+.mart-sub {
+  font-size: 17px;
+  line-height: 1;
+  color: #505870;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mart-sub:empty {
+  display: none;
+}
+
+.mart-group {
+  margin-top: 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #6878a8;
+}
+
+.mart-group:first-child {
+  margin-top: 0;
+}
+
+.mart-row.on-sale {
+  background: #fff4d0;
+}
+
+.mart-sale {
+  padding: 1px 3px;
+  color: #fff;
+  background: #e83838;
+  border-radius: 3px;
+}
+
+/* Pixel pictures (frame balls, a corner of a sky) scaled in whole steps. */
+.mart-pixel {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+
+.mart-tile {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #283048;
+  border-radius: 4px;
+  background: var(--wallpaper) 0 0 / 32px 32px;
+  image-rendering: pixelated;
+}
+
+.mart-tile.big {
+  width: 40px;
+  height: 40px;
+}
+
+.mart-desc-icon.wide {
+  width: 58px;
+  height: 72px;
+  background: transparent;
+}
+
+.mart-preview {
+  width: 54px;
+  height: 68px;
+  image-rendering: pixelated;
 }
 
 .btn[disabled] {
@@ -3202,6 +3338,57 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 18px;
+}
+
+/* "Surto de hoje": the day's outbreak under the logo. */
+.outbreak-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, 92vw);
+  padding: 6px 12px 6px 6px;
+}
+
+.outbreak-sprites {
+  width: 114px;
+  height: 60px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.outbreak-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.outbreak-text small {
+  font-family: var(--title);
+  font-size: 7px;
+  color: #c04890;
+  text-transform: uppercase;
+}
+
+.outbreak-text b {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--title);
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.outbreak-text b img {
+  width: 12px;
+  height: 12px;
+}
+
+.outbreak-text span {
+  font-size: 17px;
+  line-height: 1;
+  color: #505870;
 }
 
 .title-head .player-title {
