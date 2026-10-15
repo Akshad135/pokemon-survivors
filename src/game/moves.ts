@@ -8,7 +8,6 @@ import {
   CHAIN_JUMP, CHAIN_RANGE, chainDamage, chainTargets, HEX_BONUS, LUNGE_IFRAMES, LUNGE_MIN_COOLDOWN, LUNGE_OVERSHOOT,
   LUNGE_SEEK, LUNGE_TIME, lungeLength, lungeTarget, mineCap,
 } from './moveRules'
-import { specialBusy } from './special'
 import type { Attack, Game, Visual } from './types'
 import type { PlayerStats } from './stats'
 import { isAfflicted, scaleStatus, type StatusSpec } from './status'
@@ -54,6 +53,8 @@ export type MoveDef = {
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
   minCooldown?: number
+  /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
+  manual?: true
   fire: (g: Game, s: CastStats) => void
 }
 
@@ -86,19 +87,17 @@ const reachOffset = (angle: number, dist: number) => {
 }
 
 /**
- * Lunge: carries the player a short hop through the nearest foe ahead of the
- * stick (any foe when standing still), hitting everything along the way, with
- * a short i-frame window. Holds fire when nothing is in reach or the special is
- * busy moving the player. `burst` (> 0) adds a shockwave where it lands.
+ * Lunge (a manual move): carries the player a short hop through the nearest foe
+ * ahead of the stick (any foe when standing still), hitting everything along
+ * the way, with a short i-frame window. With no foe in reach it hops its full
+ * length the way the player faces. `burst` (> 0) adds a shockwave where it lands.
  */
 const lunge = (g: Game, s: CastStats, look: Look, burst = 0) => {
   const p = g.player
-  if (specialBusy(g.special)) return
   const length = lungeLength(s.speed)
   const target = lungeTarget(g.enemies, p, p.facing, p.moving, length + LUNGE_SEEK)
-  if (!target) return
-  const d = dirTo(p.x, p.y, target.x, target.y, p.facing)
-  const dist = Math.min(length, dm.hypot(target.x - p.x, target.y - p.y) + LUNGE_OVERSHOOT)
+  const d = target ? dirTo(p.x, p.y, target.x, target.y, p.facing) : p.facing
+  const dist = target ? Math.min(length, dm.hypot(target.x - p.x, target.y - p.y) + LUNGE_OVERSHOOT) : length
   const v = dist / LUNGE_TIME
   p.iframes = Math.max(p.iframes, LUNGE_IFRAMES)
   spawnAttack(g, {
@@ -843,6 +842,7 @@ export const MOVES = {
     type: 'normal',
     base: stats({ damage: 14, cooldown: 2.4, speed: 360, knockback: 90 }),
     minCooldown: LUNGE_MIN_COOLDOWN,
+    manual: true,
     upgrades: [
       { damage: 5 },
       { area: 0.2 },
@@ -1139,6 +1139,7 @@ export const MOVES = {
     type: 'normal',
     base: stats({ damage: 36, cooldown: 1.5, speed: 560, area: 1.4, knockback: 160 }),
     minCooldown: LUNGE_MIN_COOLDOWN,
+    manual: true,
     upgrades: [],
     fire: (g, s) => lunge(g, s, { move: 'extremeSpeed', type: 'normal', visual: 'extremeSpeed' }, 44),
   },
@@ -1176,6 +1177,12 @@ export type MoveId = keyof typeof MOVES
 export const MOVE_IDS = Object.keys(MOVES) as MoveId[]
 
 export const maxMoveLevel = (id: MoveId) => MOVES[id].upgrades.length + 1
+
+/** Whether the move waits for the player's press (`MoveDef.manual`). */
+export const isManual = (id: MoveId) => {
+  const def: MoveDef = MOVES[id]
+  return def.manual === true
+}
 
 /** Final stats of a move at `level`, after upgrades and player modifiers (incl. type boosts). */
 export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastStats => {

@@ -14,6 +14,7 @@ import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
+import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
 import { createSpecialControls } from './specialButton'
 
@@ -21,13 +22,14 @@ const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-
 
 /**
  * In-run heads-up display. `update` is called every frame and only touches what changed.
- * `onSpecial` and `onMega` fire when the touch special and Mega buttons are pressed;
+ * `onSpecial`, `onMega` and `onLunge` fire when the touch special, Mega and lunge buttons are pressed;
  * `onPause` backs the on-screen pause button (phones have no Esc key). Labels are
  * read at creation: rebuild the HUD after a language switch.
  */
-export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () => void, onPause: () => void) => {
+export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () => void, onLunge: () => void, onPause: () => void) => {
   const special = createSpecialControls(onSpecial)
   const mega = createMegaControls(onMega)
+  const lunge = createLungeControls(onLunge)
   const rift = createRiftHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
@@ -62,7 +64,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     h(
       'div',
       { class: 'hud-row' },
-      h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots, buffs), special.badge, mega.badge),
+      h('div', { class: 'hud-left' }, h('div', { class: 'loadout' }, moveSlots, itemSlots, buffs), special.badge, lunge.badge, mega.badge),
       timer,
       h(
         'div',
@@ -92,6 +94,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     ),
     special.button,
     mega.button,
+    lunge.button,
   )
   // First child, so a HUD rebuilt mid-run still sits under open menus and toasts.
   root.prepend(el)
@@ -155,6 +158,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     setText(coins, formatPokeDollars(g.coins))
     special.update(g)
     mega.update(g)
+    lunge.update(g)
     rift.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()

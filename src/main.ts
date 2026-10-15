@@ -156,7 +156,10 @@ let lastStarter: PlayableId = 'charmander'
 let specialQueued = false
 /** Mega Evolution press (E, the Mega button, gamepad Y), consumed like the special. */
 let megaQueued = false
+/** Manual lunge press (Shift, the lunge button, gamepad X) for Quick Attack, consumed like the special. */
+let lungeQueued = false
 const padA = createPadButton(0)
+const padX = createPadButton(2)
 const padY = createPadButton(3)
 const padKeys = createPadKeys()
 /** The meadow with wandering Pokémon behind every menu. Lives across screens, so it never pops. */
@@ -176,6 +179,11 @@ const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? heldMega
 const queueSpecial = () => {
   unlockAudio()
   if (run?.game.phase === 'playing') specialQueued = true
+}
+
+const queueLunge = () => {
+  unlockAudio()
+  if (run?.game.phase === 'playing') lungeQueued = true
 }
 
 const setScreen = (next: Screen | null) => {
@@ -433,7 +441,7 @@ const startRun = async (starter: PlayableId) => {
 }
 
 const runHud = (game: Game) => {
-  const hud = createHud(ui, queueSpecial, queueMega, () => game.phase === 'playing' && (game.phase = 'paused'))
+  const hud = createHud(ui, queueSpecial, queueMega, queueLunge, () => game.phase === 'playing' && (game.phase = 'paused'))
   requestAnimationFrame(syncMarkerInsets)
   return hud
 }
@@ -762,6 +770,7 @@ input.onKey((key) => {
   if ((key === 'Escape' || key === 'KeyP') && g.phase === 'playing') g.phase = 'paused'
   if (key === 'Space') queueSpecial()
   if (key === 'KeyE') queueMega()
+  if (key === 'ShiftLeft' || key === 'ShiftRight') queueLunge()
 })
 // Touch only counts as a user activation on pointerup/touchend (not pointerdown).
 for (const type of ['pointerdown', 'pointerup', 'touchend'] as const) window.addEventListener(type, unlockAudio)
@@ -803,6 +812,7 @@ const frame = (now: number) => {
     const g = r.game
     if (padA()) queueSpecial()
     if (padY()) queueMega()
+    if (padX()) queueLunge()
     let steps = 0
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
@@ -810,9 +820,11 @@ const frame = (now: number) => {
         // The simulation gets the stick as the replay stores it (`moveCode`), so a re-simulation sees the same run.
         if (specialQueued) recordEvent(r.recorder, ['special'])
         if (megaQueued) recordEvent(r.recorder, ['mega'])
-        step(g, { move: recordStep(r.recorder, view, input.readMove()), special: specialQueued, mega: megaQueued }, STEP)
+        if (lungeQueued) recordEvent(r.recorder, ['lunge'])
+        step(g, { move: recordStep(r.recorder, view, input.readMove()), special: specialQueued, mega: megaQueued, lunge: lungeQueued }, STEP)
         specialQueued = false
         megaQueued = false
+        lungeQueued = false
         acc -= STEP
         steps++
       }
@@ -820,6 +832,7 @@ const frame = (now: number) => {
       acc = 0
       specialQueued = false
       megaQueued = false
+      lungeQueued = false
     }
     for (const e of g.events.splice(0)) handleEvent(r, e)
     if (run === r) {
