@@ -6,6 +6,7 @@ import { isDifficulty, type Difficulty } from './difficulty'
 import { wonRun } from './meta'
 import { isRecord } from './parse'
 import type { RibbonTier } from './ribbons'
+import type { SupporterTier } from './supporters'
 import type { Game } from './types'
 
 /**
@@ -184,7 +185,17 @@ export const BOARD_SIZE = 50
  * `verified` is null while the server hasn't re-simulated it yet (runs that
  * failed never show).
  */
-export type BoardEntry = ProfileName & { rank: number; starter: PlayableId; stage: number; time: number; outcome: RunOutcome; at: string; verified: boolean | null }
+export type BoardEntry = ProfileName & {
+  rank: number
+  starter: PlayableId
+  stage: number
+  time: number
+  outcome: RunOutcome
+  at: string
+  verified: boolean | null
+  /** The player's supporter badge (`game/supporters.ts`), null when they have none or hide it. Missing from an older API. */
+  supporter?: SupporterTier | null
+}
 
 /** The top of a board, plus the asking player's own line (null if they're not on it). */
 export type Board = { entries: BoardEntry[]; me: BoardEntry | null }
@@ -230,5 +241,8 @@ export type PublicProfile = ProfileName & {
   brought?: number
   /** Desafio do dia ribbons won, by tier (`game/ribbons.ts`). Missing from an older API. */
   ribbons?: Record<RibbonTier, number>
+  /** The supporter badge (always one's own, else only if shown) and since when (ISO). Missing from an older API. */
+  supporter?: SupporterTier | null
+  supporterSince?: string | null
   self: boolean
 }

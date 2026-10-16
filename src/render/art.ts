@@ -2,6 +2,7 @@ import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } 
 import type { Medal } from '../data/achievements'
 import type { ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
+import type { SupporterTier } from '../game/supporters'
 import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
@@ -501,6 +502,11 @@ export const coinIcon = (tier = 0) => toIconUrl(`coin:${tier}`, () => PICKUPS.co
 export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICKUPS.candy()[tier]!)
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
+export const heartIcon = () => toIconUrl('heart', FX.heart)
+
+/** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
+export const supporterIcon = (tier: SupporterTier) =>
+  tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()
 export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))
 
 /** Presente Misterioso: a wrapped box with a bow. 1 outline, 2 ribbon, 3 paper, 4 paper shade, 5 ribbon shade. */

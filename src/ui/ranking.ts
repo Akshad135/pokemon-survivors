@@ -12,19 +12,19 @@ import { fetchBoard, fetchChallengeBoard, type BoardFilter, type RankOutcome } f
 import { formatDay, t } from '../i18n'
 import { today } from './save'
 import { h, later, rich } from './dom'
-import { profileScreen, runForm, runPortrait } from './profile'
+import { profileScreen, runForm, runPortrait, supporterBadge } from './profile'
 import { hint, menu, type Screen } from './screens'
 
 const step = <T>(list: readonly T[], at: T, by: number) => list[(list.indexOf(at) + by + list.length) % list.length]!
 
-/** One player's line: position, Pokémon, name and handle, time. */
+/** One player's line: position, Pokémon, name (with their supporter badge) and handle, time. */
 const entryRow = (e: BoardEntry, me: boolean) =>
   h(
     'button',
     { class: `rank-row${me ? ' me' : ''}${e.rank <= 3 ? ` top${e.rank}` : ''}` },
     h('span', { class: 'rank-pos' }, `#${e.rank}`),
     h('img', { src: runPortrait(e.starter, e.stage), alt: runForm(e.starter, e.stage).name, title: runForm(e.starter, e.stage).name }),
-    h('span', { class: 'rank-who' }, h('b', {}, e.name), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
+    h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
     h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), e.verified === null ? h('small', { class: 'pending' }, t().ranking.pending) : h('small', {}, t().ranking.outcomes[e.outcome])),
   )
 

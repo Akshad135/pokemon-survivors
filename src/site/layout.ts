@@ -99,6 +99,7 @@ const footer = (locale: Locale) => {
       <a href="${ROUTES.legal[locale]}">${m.footer.legal}</a>
       <a href="${REPO_URL}/blob/main/CREDITS.md">${m.footer.credits}</a>
       <a href="${REPO_URL}">${m.footer.source}</a>
+      <a class="support-link" href="${ROUTES.support[locale]}">♥ ${m.footer.support}</a>
     </p>
   </footer>`
 }

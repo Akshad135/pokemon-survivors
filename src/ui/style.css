@@ -1851,6 +1851,43 @@ button {
   color: #8850e0;
 }
 
+/* ---------- Fixed joystick ---------- */
+
+/*
+ * Where the fixed touch joystick sits (Settings → Controls): bottom-left, clear
+ * of the safe area and the screen edge. The canvas draws the stick centered on
+ * `.stick-anchor`, so its size is the base's diameter (2 × STICK_RADIUS in
+ * engine/input.ts). The status box steps aside while the mode is on.
+ */
+:root {
+  --stick-size: 104px;
+  --stick-left: max(28px, calc(var(--safe-l) + 12px));
+  --stick-bottom: max(32px, calc(var(--safe-b) + 16px));
+}
+
+.stick-anchor {
+  position: fixed;
+  left: var(--stick-left);
+  bottom: var(--stick-bottom);
+  width: var(--stick-size);
+  height: var(--stick-size);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Portrait and desktop: the status box goes above the stick. */
+[data-stick='fixed'] .status {
+  bottom: calc(var(--stick-bottom) + var(--stick-size) + 16px);
+}
+
+/* Landscape phones have no height to spare: it goes to the stick's right instead. */
+@media (max-height: 500px) {
+  [data-stick='fixed'] .status {
+    left: calc(var(--stick-left) + var(--stick-size) + 20px);
+    bottom: max(8px, var(--safe-b));
+  }
+}
+
 /* ---------- Text box & toasts ---------- */
 
 .textbox {
@@ -1875,6 +1912,8 @@ button {
  */
 .toasts {
   position: absolute;
+  /* Above the screens, whichever was built last (the title is rebuilt under news already showing). */
+  z-index: 2;
   left: 50%;
   top: calc(126px + var(--safe-t));
   max-height: calc(50% - 126px - var(--safe-t) - 16 * var(--px));
@@ -1963,10 +2002,6 @@ button {
 }
 
 .mart-entry {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2036,10 +2071,6 @@ button {
 
 /* Account chip: top-right twin of the language switch, on the title screen. */
 .account-chip {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2054,6 +2085,63 @@ button {
 .account-chip:hover,
 .account-chip:focus-visible {
   --frame: #e83838;
+}
+
+/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
+.top-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.support-chip {
+  order: -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px 6px 8px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #a02858;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.support-chip img {
+  width: 21px;
+  height: 21px;
+}
+
+.support-chip:hover,
+.support-chip:focus-visible {
+  --frame: #f878a8;
+}
+
+/* Phones and tablets: just the heart, so the corner clears the centered logo. */
+@media (max-width: 960px), (max-height: 500px) {
+  .support-chip {
+    padding: 6px 8px;
+  }
+  .support-chip span {
+    display: none;
+  }
+}
+
+/* Phones in landscape put the title menu right of the logo: the heart goes under the account chip, clear of it. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .top-right:has(.account-chip) {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .top-right:has(.account-chip) .support-chip {
+    order: 0;
+  }
 }
 
 /* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
@@ -2218,6 +2306,24 @@ button {
 .title-footer a:hover,
 .title-footer a:focus-visible {
   color: #ffcb05;
+}
+
+/* Support page link under a victory's buttons. */
+.result-support {
+  display: block;
+  margin-top: 10px;
+  padding: 6px;
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+  color: #c03060;
+  text-underline-offset: 3px;
+}
+
+.result-support:hover,
+.result-support:focus-visible {
+  color: #e83838;
 }
 
 /* Starter select's way back to the title: top-left twin of the Poké Mart entry. */
@@ -2530,10 +2636,13 @@ button {
   .mart-buy {
     width: 100%;
   }
-  /* Compact entry so it clears the centered logo on phones. */
-  .mart-entry {
+  /* Compact corner so it clears the centered logo on phones. */
+  .top-right {
     top: 6px;
     right: 6px;
+    gap: 6px;
+  }
+  .mart-entry {
     flex-direction: column;
     gap: 2px;
     padding: 6px 8px;
@@ -2556,8 +2665,6 @@ button {
     min-height: 28px;
   }
   .account-chip {
-    top: 6px;
-    right: 6px;
     min-height: 36px;
     padding: 4px 8px;
   }
@@ -2913,6 +3020,7 @@ button {
 
 .banner {
   position: absolute;
+  z-index: 2;
   left: 50%;
   top: 28%;
   transform: translateX(-50%);
@@ -2934,6 +3042,11 @@ button {
 
 .banner.out {
   opacity: 0;
+}
+
+.banner.dismissible {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .banner b {
@@ -2978,6 +3091,17 @@ button {
   color: #c04890;
 }
 
+/* Gifts that came together share one banner, grouped by why they came. */
+.gift-group + .gift-group {
+  margin-top: 4px;
+}
+
+.gift-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .gift-line {
   display: flex;
   align-items: center;
@@ -2999,10 +3123,15 @@ button {
   width: min(460px, 94vw);
 }
 
-.settings-list {
+.settings-list,
+.settings-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.settings-list {
+  gap: 12px;
 }
 
 .setting-row {
@@ -3085,6 +3214,14 @@ button {
   color: #e83838;
 }
 
+.settings-section {
+  padding: 0 4px 4px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #6878a8;
+  border-bottom: 2px solid #d8d8e8;
+}
+
 @media (max-width: 600px) {
   .setting-row {
     min-height: 44px;
@@ -3093,10 +3230,21 @@ button {
   }
 }
 
-/* Landscape phones: tighter rows so the whole dialog fits without scrolling. */
+/* Landscape phones: tighter rows, and each section in its own column, so the whole dialog fits without scrolling. */
 @media (max-height: 500px) {
+  .dialog.settings {
+    width: min(820px, 94vw);
+  }
+  /* The browser balances the sections across both columns by height. */
   .settings-list {
+    display: block;
+    columns: 2;
+    column-gap: 12px;
+  }
+  .settings-group {
+    break-inside: avoid;
     gap: 4px;
+    padding-bottom: 6px;
   }
   .setting-row {
     min-height: 36px;
@@ -3104,6 +3252,9 @@ button {
   }
   .settings .hint {
     display: none;
+  }
+  .settings-section {
+    padding-bottom: 2px;
   }
   .slider {
     flex: 1 1 160px;
@@ -5482,5 +5633,322 @@ a.btn.dex-site {
   .challenge .buttons .btn {
     min-height: 36px;
     padding: 6px 12px;
+  }
+}
+
+/* ---------- Apoiadores (supporters) ---------- */
+
+.support-chip {
+  cursor: pointer;
+  font-family: var(--title);
+}
+
+.dialog.supporters {
+  width: min(520px, 94vw);
+  gap: 10px;
+}
+
+.dialog-title .title-heart {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+
+.supporter-since {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.supporter-since img {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.pick-label {
+  margin: 4px 0 0;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #6878a8;
+}
+
+.pick-label:empty {
+  display: none;
+}
+
+.supporter-perks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.supporter-perks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.supporter-perks img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  object-fit: contain;
+}
+
+.supporter-perks b {
+  color: #e83838;
+}
+
+/* Two columns of buttons, so the dialog fits a phone held upright. */
+.supporter-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.supporter-buttons .btn:first-child,
+.supporter-buttons .btn:last-child:nth-child(even) {
+  grid-column: 1 / -1;
+}
+
+.supporter-buttons .btn.glow {
+  background: #fff4c0;
+  border-color: #f0b800;
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+.supporter-buttons .btn.glow.selected {
+  border-color: #e83838;
+}
+
+/* Pickers: a scrolling grid of portraits over the footer's buttons. */
+.dialog.picker {
+  max-height: 100%;
+}
+
+.pick-scroll {
+  min-height: 0;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.pick-scroll .pick-label {
+  color: #a8b0d0;
+}
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+}
+
+.pick-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #48527a;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.pick-cell > img:first-child {
+  width: 40px;
+  height: 40px;
+}
+
+.pick-cell.selected {
+  border-color: #e83838;
+}
+
+.pick-cell.picked {
+  background: #fff;
+  border-color: #ffcb05;
+}
+
+.pick-cell.picked.selected {
+  border-color: #e83838;
+}
+
+.pick-egg {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 12px;
+  height: 14px;
+}
+
+.pick-reveal {
+  align-items: center;
+}
+
+/* The poll: one row per option, with its share of the votes. */
+.poll-rows,
+.wall-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 6px;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.poll-row,
+.wall-row {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 8px;
+  text-align: left;
+  color: #e8e8f8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.poll-row {
+  grid-template-columns: 32px minmax(0, 1fr) minmax(60px, 1.2fr) auto;
+}
+
+.wall-row {
+  grid-template-columns: 18px auto 1fr;
+}
+
+.poll-row.selected,
+.wall-row.selected {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #e83838;
+}
+
+.poll-row.mine {
+  background: rgba(255, 203, 5, 0.22);
+}
+
+.poll-row[disabled] {
+  opacity: 1;
+  cursor: default;
+}
+
+.poll-row img {
+  width: 32px;
+  height: 32px;
+}
+
+.poll-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 20px;
+}
+
+.poll-row small,
+.wall-row small {
+  font-size: 17px;
+  color: #a8b0d0;
+}
+
+.wall-row img {
+  width: 18px;
+  height: 18px;
+}
+
+.wall-row b {
+  font-weight: normal;
+  font-size: 20px;
+}
+
+.wall-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The heart by a supporter's name on the boards and profiles. */
+.supporter-badge,
+.rank-row .supporter-badge {
+  width: 12px;
+  height: 12px;
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+
+.profile-name .supporter-badge {
+  width: 16px;
+  height: 16px;
+}
+
+.profile-supporter {
+  font-size: 16px;
+  color: #c04890;
+}
+
+/* The victory screen's thanks. */
+.supporter-credits {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px 8px;
+  font-size: 17px;
+  line-height: 1.15;
+  text-align: center;
+  color: #505870;
+}
+
+.supporter-credits img {
+  width: 14px;
+  height: 14px;
+}
+
+.supporter-credits small {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a02858;
+}
+
+.supporter-credits span {
+  flex-basis: 100%;
+}
+
+.support-chip.waiting {
+  --frame: #f8d030;
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+.support-chip .support-sparkle {
+  width: 14px;
+  height: 14px;
+  margin-left: -4px;
+}
+
+@media (max-width: 420px) {
+  .supporter-buttons .btn {
+    padding: 8px 6px;
+  }
+  .supporter-perks {
+    font-size: 16px;
   }
 }

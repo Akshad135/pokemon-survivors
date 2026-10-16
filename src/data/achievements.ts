@@ -103,8 +103,11 @@ export const ACHIEVEMENT_IDS = Object.keys(ACHIEVEMENTS) as AchievementId[]
 /** Achievements that grant a title. */
 export type MedalTitleId = { [K in AchievementId]: (typeof ACHIEVEMENTS)[K] extends { title: true } ? K : never }[AchievementId]
 
-/** Titles that only come as a Mystery Gift (`game/gifts.ts`), kept in the save's `titles`. */
-export const GIFT_TITLES = ['ambassador'] as const
+/**
+ * Titles that only come as a Mystery Gift (`game/gifts.ts`), kept in the save's `titles`:
+ * the Ambassador's for bringing friends (`game/referral.ts`), the Supporter's for donating (`game/supporters.ts`).
+ */
+export const GIFT_TITLES = ['ambassador', 'supporter'] as const
 
 export type GiftTitleId = (typeof GIFT_TITLES)[number]
 

@@ -3,6 +3,7 @@ import { changelogPage } from './pages/changelog'
 import { guidePage } from './pages/guide'
 import { legalPage } from './pages/legal'
 import { pokedexPage } from './pages/pokedex'
+import { supportPage } from './pages/support'
 import { PAGE_IDS, ROUTES, type PageId } from './routes'
 
 export { sitemap } from './routes'
@@ -12,6 +13,7 @@ const RENDER: Record<PageId, (locale: Locale) => string> = {
   guide: guidePage,
   changelog: changelogPage,
   legal: legalPage,
+  support: supportPage,
 }
 
 export type SitePage = {

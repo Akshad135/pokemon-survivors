@@ -15,6 +15,7 @@ import { languageSwitch } from './language'
 import { titleBadge } from './missions'
 import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
+import { supportButton } from './supporters'
 import { ROUTES } from '../site/routes'
 
 const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
@@ -41,6 +42,8 @@ export type TitleActions = {
   account?: (focus: number) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no entry. */
   ranking?: (focus: number) => Screen
+  /** Opens Apoiadores over the title (the heart chip), like `settings`; `pick` goes straight to the shiny picker. */
+  supporters: (focus: number, open: 'pick' | null) => Screen
 }
 
 /**
@@ -115,7 +118,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 /**
  * Title screen over the live meadow: pixel logo, the day's outbreak, a blinking "press start",
  * then the main menu (Play, Daily Challenge, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
- * switch, the account chip (when accounts are on) and footer links. `intro: false` opens straight on the menu (coming
+ * switch, the account chip (when accounts are on), the support chip and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
 export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: number }): Screen => {
@@ -162,6 +165,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   let nav: ReturnType<typeof menu> | null = null
   let closeLanguage: (() => void) | null = null
   let closeAccount: (() => void) | null = null
+  let closeSupport: (() => void) | null = null
   let offIntro: (() => void) | null = null
   /** Settings or the Pokédex, open over the meadow. */
   let overScreen: Screen | null = null
@@ -176,6 +180,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     }, { initial: focus })
     closeLanguage = languageSwitch(root, input, actions.language)
     closeAccount = account ? accountChip(root, input, () => openOver(account)) : null
+    // A shiny ticket waiting for its pick opens straight on the picker.
+    closeSupport = supportButton(root, () => openOver((focus) => actions.supporters(focus, 'pick')))
     menuBox.replaceChildren(...buttons)
   }
 
@@ -185,7 +191,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     nav?.off()
     closeLanguage?.()
     closeAccount?.()
-    nav = closeLanguage = closeAccount = null
+    closeSupport?.()
+    nav = closeLanguage = closeAccount = closeSupport = null
     el.classList.add('hidden')
     overScreen = open(at)
   }
@@ -218,7 +225,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     el,
     dim: 0.12,
     tick: (time: number) => (overScreen?.tick?.(time), outbreak.tick(time), logo.width > 1 && fitLogo(logo)),
-    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), closeAccount?.(), el.remove()),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), closeAccount?.(), closeSupport?.(), el.remove()),
   }
 }
 

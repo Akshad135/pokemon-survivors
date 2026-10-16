@@ -19,6 +19,7 @@ export const siteEn: SiteMessages = {
     guide: 'Guide',
     changelog: 'Changelog',
     legal: 'Legal',
+    support: 'Support',
     language: 'Language',
   },
   footer: {
@@ -27,6 +28,7 @@ export const siteEn: SiteMessages = {
     legal: 'Legal and privacy',
     credits: 'Credits',
     source: 'Source on GitHub',
+    support: 'Support the project',
   },
   home: 'Home',
   playCta: 'Play for free',
@@ -507,6 +509,67 @@ export const siteEn: SiteMessages = {
     pr: (n: number) => `PR #${n}`,
   },
 
+  support: {
+    title: 'Support Pokémon Survivors | Donate by card, Apple Pay or Google Pay',
+    description:
+      'Pokémon Survivors is free, with no ads and nothing for sale. If you want to help pay for the servers, donate by card, Apple Pay or Google Pay from any country (Stripe), or by Pix or a Brazilian card from Brazil (AbacatePay). With an account, donors get a cosmetic thank-you in the game: a title, a card frame, a badge, a shiny of their choice and a companion.',
+    h1: 'Support the project',
+    lead: 'The game is free and will stay that way, with no ads and nothing for sale. If you had fun and want to help pay for the servers (accounts, rankings and the Daily Challenge), any amount helps. As a thank-you, donors with an account get cosmetic rewards in the game, nothing that changes a run.',
+    thanks: 'Thank you for your support! ♥',
+    status: {
+      pending: 'Confirming the payment… It may take a few minutes (keep this page open).',
+      late: "The payment isn't confirmed yet. Come back to this page in a little while to see your code.",
+      sent: (handle: string) => `The rewards went to @${handle}. They arrive as a Mystery Gift the next time the game syncs.`,
+      code: 'Your redeem code:',
+      codeHint: "In the game, sign in and open the ♥ on the title → I have a code. It works once, for the account that redeems it: it can be a friend's.",
+      copy: 'Copy',
+      copied: 'Copied!',
+      used: "This donation's code was already redeemed.",
+    },
+    account: {
+      title: 'Who gets the rewards',
+      label: 'Your @ in the game',
+      placeholder: 'your_handle',
+      hint: "Optional. With an account's @ (yours or a friend's), the rewards go straight to it. Without one, you get a code to redeem in the game.",
+      checking: 'Looking…',
+      found: (name: string) => `For ${name}`,
+      missing: 'Nobody has that @ in the game.',
+    },
+    perks: {
+      title: 'What donors get',
+      items: [
+        'The Supporter title and card frame.',
+        'A ♥ badge by their @ on the ranking and their profile.',
+        "A shiny of their choice: any starter or egg family (a family not hatched yet comes with it).",
+        'A companion that follows them in runs.',
+        'Their name on the wall below and in the victory thanks.',
+        'A vote on the next egg Pokémon.',
+        'Gold, with R$ 50 or US$ 10 in all: a golden card background, PC Box wallpaper and badge.',
+      ],
+      note: 'All cosmetic: nothing changes a run or the ranking. Rewards need an account in the game (signing in with Google is free).',
+    },
+    wall: { title: 'Supporters wall', empty: 'Nobody here yet. Your name could be the first!' },
+    pick: 'Choose how to pay',
+    suggested: 'Suggested for you',
+    br: {
+      title: 'In Brazil',
+      methods: 'Pix or credit card, in Brazilian reais.',
+      amount: 'Donation amount',
+      other: 'Other amount',
+      range: (min: number, max: number) => `From R$ ${min} to R$ ${max}, whole reais.`,
+      cta: (amount: number) => `Donate R$ ${amount}`,
+      loading: 'Opening the payment…',
+      error: "Couldn't open the payment right now. Please try again in a moment.",
+      via: 'The payment opens on AbacatePay. Your payment details go straight to them.',
+    },
+    intl: {
+      title: 'Other countries',
+      methods: 'Card, Apple Pay or Google Pay, in US dollars.',
+      cta: 'Donate with Stripe',
+      via: 'You choose the amount on the next page, on Stripe. Your payment details go straight to them.',
+    },
+  },
+
   legal: {
     title: 'Legal, privacy and credits | Pokémon Survivors',
     description:
@@ -527,6 +590,7 @@ export const siteEn: SiteMessages = {
     free: [
       'The game is free and will stay that way: no ads, no paid content and no in-app purchases.',
       'Poké Dollars (₽) exist only inside the game and can\'t be bought with real money.',
+      'If you want, you can donate on the Support the project page. Donations are voluntary and, with an account, only bring a cosmetic thank-you (a title, a card frame, a badge, a shiny of your choice, a companion), nothing that changes a run or the ranking.',
     ],
     licenses: {
       code: 'Source code',
@@ -565,6 +629,7 @@ export const siteEn: SiteMessages = {
       'To delete this data, clear the site data in your browser settings.',
       'Sprites, sounds and fonts are served by this site, with no calls to third-party services. The site is hosted on Vercel which, like any web server, may log technical access data (such as IP addresses) to run and protect the service.',
       'To know how many people visit and play, the site uses Vercel Web Analytics and its own Umami instance, on our own server. They count visits anonymously and in aggregate (page, country, browser, device and referring site) and, in Umami\'s case, a summary of each run (starter Pokémon, the minute and level you reached and whether you won), with no cookies and without identifying you or following you across sites.',
+      'Donations are paid on AbacatePay\'s pages (abacatepay.com: Pix and Brazilian cards) or Stripe\'s (stripe.com: cards from other countries, Apple Pay and Google Pay). Your payment details go straight to them, and the game never sees your card. They show us the amount and, as they would to anyone receiving a payment, details of who paid (such as name and email), which we use for nothing but recording the donation. If you give an @ (or redeem the donation\'s code), it\'s tied to that game account so the rewards reach it; the amount is never shown publicly, only the supporter badge, which you can hide.',
     ],
     contact: [
       'If you hold rights to any material used here and want it removed or changed, open an issue on GitHub. It will be addressed promptly.',

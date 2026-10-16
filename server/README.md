@@ -22,8 +22,16 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /gifts` | `{ gifts }`: the player's unclaimed Mystery Gifts (`{ id, content, reason, at }`), oldest first, 20 at most |
 | `POST /gifts/claim` | Body `{ ids }`: marks those gifts claimed once the game applied them. `{ claimed }` |
 | `POST /referral` | Body `{ ref }`: the inviter's handle a new account came with. `{ referred }`, whether it counted |
+| `POST /donations` | Body `{ amount, page, handle? }`: `amount` whole reais (`parseDonation` in `src/data/donations.ts`), `page` the site path to come back to, `handle` the account that gets the rewards. `{ url }`, an AbacatePay checkout (Pix or a Brazilian card) that returns to `page?thanks=<ref>` once paid. 400 for an amount out of range or a handle nobody has, 503 without `ABACATEPAY_API_KEY` |
+| `GET /donations/:ref` | For the thank-you page: `{ paid, handle, code, redeemed }` (`DonationStatus`). 404 until the payment is known (Stripe's row comes with its webhook) |
+| `POST /donations/redeem` | Body `{ code }`: credits a donation's code to the player. `{ tier }`; 404 unknown code, 409 already used |
+| `POST /webhooks/stripe` | Stripe's `checkout.session.completed` and `async_payment_succeeded`, signed with `STRIPE_WEBHOOK_SECRET`. 401 bad signature, 503 without the secret |
+| `POST /webhooks/abacatepay` | AbacatePay's `checkout.completed`, signed the Standard Webhooks way (`webhook-id`, `webhook-timestamp`, `webhook-signature`, with the `whsec_` secret in `ABACATEPAY_WEBHOOK_SECRET`). A webhook made before 01/10/2026 sends `?webhookSecret=` and `X-Webhook-Signature` instead, also accepted. 401 bad signature, 503 without the secret |
+| `GET /me/supporter`, `PUT /me/supporter` | The player's tier, since when, whether they show it and their vote (`SupporterStatus`). `PUT` with `{ public }` shows or hides the badge and name |
+| `GET /supporters` | `{ supporters }`: the wall, supporters who show themselves and have a handle, oldest first (500 at most) |
+| `GET /poll`, `PUT /poll` | `{ id, votes }`, the supporters' poll (`POLL` in `src/data/supporters.ts`). `PUT` with `{ choice }` votes (or changes the vote); 403 for anyone who isn't a supporter |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts` and `/referral` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter` and `PUT /poll` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
@@ -48,6 +56,15 @@ Invites are counted here, never on the device:
 - After each verified run (`checks.ts` calls `credit`), once the newcomer has 3 verified runs the invite counts for the inviter (once: `referral_credited_at`), who gets the milestone's gifts (`key` `friends:<count>:<i>`): 1 friend, a Friendship Egg; 3, the Ambassador title and frame; 10, a shiny Munchlax.
 - Public profiles show `brought`, the friends whose invite counted.
 
+### Supporters
+
+Donating with an account brings a cosmetic thank-you, sent as Mystery Gifts (`src/game/supporters.ts`). Nothing of it touches a run.
+
+- A donation is tied to an account by its handle: the support page sends it to `POST /donations` (AbacatePay, whose checkout gets `externalId` `pokemon-survivors-donation:<ref>`) or puts it in the Stripe Payment Link as `client_reference_id`. Both come back to the page with `?thanks=<ref>` (Stripe's redirect, set in its dashboard, uses `{CHECKOUT_SESSION_ID}`).
+- The webhooks (`src/webhooks.ts`) say it's paid. `src/supporters.ts` records it once (`donations.ref` is unique, so retries change nothing) and credits it: its points (`donationPoints`: one per centavo, five per US cent) join `users.supporter_points`, and each tier the total reaches sends its gifts once (`TIER_GIFTS`, `key` `support:<tier>:<i>`): any donation brings the Supporter title and frame and a shiny of one's choice; 5,000 points (R$ 50 or US$ 10) the gold background and wallpaper.
+- A paid donation without an account gets a code (`PS-XXXX-XXXX`) that the thank-you page shows; any signed-in player can redeem it once (`POST /donations/redeem`).
+- Boards and profiles show the badge (`supporter`) unless the player hides it (`users.supporter_public`); the same flag keeps them off the wall and the victory's credits. The supporters' poll keeps one vote per player per poll (`poll_votes`).
+
 ### Verification by re-simulation
 
 The result comes with the run's replay (`src/game/replay.ts`). After answering, the API re-simulates it from the seed (`src/checks.ts`), one run at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported; otherwise it's marked failed and counts nowhere. Boards and profiles show pending runs marked (`verified: null`). A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
@@ -70,6 +87,10 @@ The cost grows with the horde: late endless minutes are the heavy ones. A VPS co
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API keys → Secret key (required) |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWT public key (PEM), to verify tokens without fetching Clerk's keys |
 | `CORS_ORIGINS` | Optional. Extra allowed origins, comma separated (e.g. a Vercel preview) |
+| `ABACATEPAY_API_KEY` | Optional. AbacatePay API key (v2) for donations; a dev key simulates payments. Each amount becomes a product `pokemon-survivors-donation-<reais>` the first time it's given |
+| `ABACATEPAY_WEBHOOK_SECRET` | Optional. The AbacatePay webhook's secret: `whsec_` plus base64 (`echo "whsec_$(openssl rand -base64 32)"`), the same one typed in its dashboard. Without it the webhook answers 503 |
+| `STRIPE_WEBHOOK_SECRET` | Optional. The Stripe webhook endpoint's signing secret (`whsec_…`). Without it the webhook answers 503 |
+| `STRIPE_PAYMENT_LINK` | Optional. The donation Payment Link's id (`plink_…`): set, the webhook ignores other Checkout Sessions of the account |
 | `PORT` | Default `3000` |
 
 ## Database
@@ -84,6 +105,8 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
 - `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.
 - `runs.challenge`, `runs.official`: the Desafio do dia a run plays (its day) and whether it's the player's official attempt of that day.
+- `donations`: one row per donation (`provider`, its `ref`, the account it's for, the amount and points, the `code` of one with no account, `paid_at`, `credited_at`).
+- `users.supporter_points`, `supporter_since`, `supporter_public`: a supporter's total, since when, and whether they show it. `poll_votes`: the supporters' poll.
 
 ## Local development
 
@@ -130,6 +153,7 @@ New versions roll out with no downtime:
 | --- | --- | --- |
 | `DATABASE_URL` | Dokploy (`api`) | Internal connection string of `survivors-postgres-kwkfm5` |
 | `CLERK_SECRET_KEY` | Dokploy (`api`) | Production instance secret key |
+| `ABACATEPAY_API_KEY` | Dokploy (`api`) | AbacatePay production key, with `CHECKOUT:CREATE`, `PRODUCT:CREATE` and `PRODUCT:READ` |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
 | `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
 
