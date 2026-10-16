@@ -15,12 +15,7 @@ import { languageSwitch } from './language'
 import { titleBadge } from './missions'
 import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
-
-/** Static site pages, one URL per language (they live outside the game bundle). */
-const SITE_PAGES = {
-  pt: { guide: '/guia/', legal: '/legal/' },
-  en: { guide: '/en/guide/', legal: '/en/legal/' },
-} as const satisfies Record<Locale, Record<string, string>>
+import { ROUTES } from '../site/routes'
 
 const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
@@ -125,7 +120,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
  */
 export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: number }): Screen => {
   const m = t().home
-  const pages = SITE_PAGES[locale()]
+  const lang = locale()
   const { settings, account, ranking } = actions
   const items = [
     { label: m.play, run: actions.play },
@@ -134,7 +129,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     { label: m.missions, run: actions.missions },
     { label: m.pokedex, run: () => openOver(actions.pokedex) },
     ...(ranking ? [{ label: m.ranking, run: () => openOver(ranking) }] : []),
-    { label: m.guide, run: () => location.assign(pages.guide) },
+    { label: m.guide, run: () => location.assign(ROUTES.guide[lang]) },
     ...(settings ? [{ label: m.settings, run: () => openOver(settings) }] : []),
   ]
 
@@ -154,7 +149,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     { class: 'title-footer' },
     m.fanGame,
     ' · ',
-    h('a', { href: pages.legal }, m.legal),
+    h('a', { href: ROUTES.legal[lang] }, m.legal),
     ' · ',
     h('a', { href: GITHUB_URL, target: '_blank', rel: 'noopener' }, 'GitHub'),
   )

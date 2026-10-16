@@ -14,7 +14,7 @@ const byDate = (entries: readonly ChangelogEntry[]) =>
     return groups
   }, [])
 
-/** `/novidades/`: the bilingual changelog from `site/changelog.ts`. */
+/** `/novidades/`: the changelog, in every language, from `site/changelog.ts`. */
 export const changelogPage = (locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const longDate = (iso: string) =>

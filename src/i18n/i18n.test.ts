@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectLocale, nextLocale } from '.'
+import { detectLocale, LOCALE_IDS, nextLocale, type Locale } from '.'
 
 describe('detectLocale', () => {
   it('keeps a saved choice over the browser language', () => {
@@ -8,6 +8,7 @@ describe('detectLocale', () => {
 
   it('picks the first supported browser language, any region', () => {
     expect(detectLocale(null, ['pt-PT', 'en-US'])).toBe('pt')
+    expect(detectLocale(null, ['es-MX', 'en-US'])).toBe('es')
     expect(detectLocale(null, ['fr-FR', 'en-GB', 'pt-BR'])).toBe('en')
   })
 
@@ -17,8 +18,10 @@ describe('detectLocale', () => {
 })
 
 describe('nextLocale', () => {
-  it('cycles through every language', () => {
-    expect(nextLocale(nextLocale('pt'))).toBe('pt')
-    expect(nextLocale('pt')).toBe('en')
+  it('visits every language once, then wraps around', () => {
+    let l: Locale = 'pt'
+    const seen = LOCALE_IDS.map(() => (l = nextLocale(l)))
+    expect(new Set(seen).size).toBe(LOCALE_IDS.length)
+    expect(seen.at(-1)).toBe('pt')
   })
 })
