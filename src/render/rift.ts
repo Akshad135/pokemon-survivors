@@ -113,7 +113,33 @@ const jade: Pattern = (x, y, t) => {
   return (tu + tv) % 2 === 0 ? base : alt
 }
 
-const PATTERNS: Record<FloorPattern, Pattern> = { rings, planks, slabs, basalt, wetRock, jade }
+/** Beach sand in wind ripples, with darker grains and a few pale shells. */
+const sand: Pattern = (x, y, t) => {
+  const [base, alt, grout] = t.floor
+  const h = hash2(Math.floor(x), Math.floor(y), 3)
+  if (h < 0.03) return grout
+  if (h > 0.997) return '#f8f0e0'
+  return (y + Math.sin(x / 11) * 3 + 400) % 9 < 1.2 ? alt : base
+}
+
+/** Meteor rock: blotchy stone pitted with craters, their far wall catching the light. */
+const craters: Pattern = (x, y, t) => {
+  const [base, alt, grout] = t.floor
+  const S = 34
+  const gx = Math.floor((x + 400) / S)
+  const gy = Math.floor((y + 400) / S)
+  const dx = x - ((gx + 0.3 + hash2(gx, gy, 1) * 0.4) * S - 400)
+  const dy = y - ((gy + 0.3 + hash2(gx, gy, 2) * 0.4) * S - 400)
+  const r = 4 + hash2(gx, gy, 3) * 9
+  const d = Math.sqrt(dx * dx + dy * dy)
+  if (d < r) return d > r - 1.5 && dx + dy > 0 ? alt : mix(base, grout, 0.5)
+  if (d < r + 1) return grout
+  const h = hash2(Math.floor(x), Math.floor(y), 4)
+  if (h > 0.996) return t.wall[0]
+  return hash2(Math.floor((x + 400) / 9), Math.floor((y + 400) / 7), 1) > 0.6 ? alt : base
+}
+
+const PATTERNS: Record<FloorPattern, Pattern> = { rings, planks, slabs, basalt, wetRock, jade, sand, craters }
 
 /** Inlays drawn over the pattern: the Bell Tower's gold band and the Spear Pillar's clock. */
 const INLAYS: Partial<Record<RiftLegend, (x: number, y: number, t: ArenaTheme) => string | null>> = {
@@ -139,6 +165,9 @@ const FACES: Record<RiftLegend, Ramp> = {
   groudon: ['#100604', '#241010', '#3a1c14', '#52281c'],
   rayquaza: ['#0c1a10', '#1c3424', '#2c4c34', '#3c6448'],
   dialga: ['#101428', '#20284a', '#30385c', '#444c70'],
+  latias: ['#3c2c18', '#5c4428', '#7c6038', '#987848'],
+  latios: ['#2c2014', '#4a3824', '#685034', '#806444'],
+  deoxys: ['#0c0814', '#1c1428', '#2c2038', '#3c3050'],
 }
 
 const SIZE = 380

@@ -16,7 +16,7 @@ export type Poly = { kind: 'poly'; pts: readonly Pt[] }
 export type ArenaShape = Circle | Poly
 
 /** Scenery standing in an arena (cover against the legendary's shots). */
-export type ArenaPiece = 'seaRock' | 'redPillar' | 'bell' | 'stalagmite' | 'basalt' | 'jadeStump' | 'column' | 'marbleStump'
+export type ArenaPiece = 'seaRock' | 'redPillar' | 'bell' | 'stalagmite' | 'basalt' | 'jadeStump' | 'column' | 'marbleStump' | 'palm' | 'meteorCrystal'
 
 /** What each piece stands on, around its anchor. */
 export const ARENA_FEET: Record<ArenaPiece, Ellipse> = {
@@ -28,12 +28,14 @@ export const ARENA_FEET: Record<ArenaPiece, Ellipse> = {
   jadeStump: { x: 0, y: -1, rx: 8, ry: 4 },
   column: { x: 0, y: 0, rx: 10, ry: 4 },
   marbleStump: { x: 0, y: -1, rx: 8, ry: 4 },
+  palm: { x: 0, y: 0, rx: 7, ry: 4 },
+  meteorCrystal: { x: 0, y: -1, rx: 9, ry: 4 },
 }
 
 /** Every few seconds a rule steps the arena (the tide rises, the edge falls), with a warning before. */
 export type ArenaStepRule = { every: number; warn: number; max: number; px: number }
 
-export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs'
+export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs' | 'sand' | 'craters'
 
 export type ArenaLayout = {
   floor: readonly ArenaShape[]
@@ -64,6 +66,22 @@ const around = (n: number, r: number, turn = 0) =>
   Array.from({ length: n }, (_, i): Pt => [Math.round(dm.cos(turn + (i / n) * Math.PI * 2) * r), Math.round(dm.sin(turn + (i / n) * Math.PI * 2) * r)])
 
 const LUGIA_ISLANDS = around(6, 104, 0.5).map(([x, y]) => circle(x, Math.round(y * 0.96), 28))
+
+/** Southern Island: a sandy island with palms for cover, ringed by surf that slows whoever wades. Latias and Latios share it. */
+const SOUTHERN_ISLAND: ArenaLayout = {
+  floor: [circle(0, 0, R)],
+  shallow: [circle(0, 0, R)],
+  islands: [circle(0, 4, 108), circle(-96, -80, 22), circle(100, 76, 20)],
+  solids: [
+    { piece: 'palm', x: -72, y: -24 },
+    { piece: 'palm', x: 74, y: -38 },
+    { piece: 'palm', x: -50, y: 60 },
+    { piece: 'palm', x: 58, y: 54 },
+  ],
+  pattern: 'sand',
+  boss: [0, -60],
+  player: [0, 50],
+}
 
 export const ARENA_LAYOUTS: Record<RiftLegend, ArenaLayout> = {
   /** Whirl Islands: a sunken temple, islands of floor in shallow water that slows whoever wades. */
@@ -154,6 +172,23 @@ export const ARENA_LAYOUTS: Record<RiftLegend, ArenaLayout> = {
     pattern: 'slabs',
     boss: [0, -100],
     player: [0, 70],
+  },
+  latias: SOUTHERN_ISLAND,
+  latios: SOUTHERN_ISLAND,
+  /** A meteorite adrift in space: a lumpy, cratered rock with clusters of crystal to hide behind. */
+  deoxys: {
+    floor: [circle(0, 0, 112), circle(-78, -58, 62), circle(88, -40, 58), circle(66, 82, 56), circle(-86, 64, 54), circle(4, -104, 44)],
+    solids: [
+      { piece: 'meteorCrystal', x: -98, y: -56 },
+      { piece: 'meteorCrystal', x: 104, y: -34 },
+      { piece: 'meteorCrystal', x: 74, y: 96 },
+      { piece: 'meteorCrystal', x: -96, y: 74 },
+      { piece: 'meteorCrystal', x: -46, y: -6 },
+      { piece: 'meteorCrystal', x: 48, y: 18 },
+    ],
+    pattern: 'craters',
+    boss: [0, -60],
+    player: [0, 50],
   },
 }
 

@@ -1,7 +1,7 @@
 import { TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { BOSS_FIGHT, bossWaveAt, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
+import { BOSS_FIGHT, bossCandidates, bossWaveAt, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
 import { bossReach, chaseOffBosses, finaleEntrance } from './bosses'
 import { DIFFICULTIES } from './difficulty'
 import { endlessPressure } from './endless'
@@ -52,22 +52,31 @@ export const spawnSwarm = (g: Game, species: EnemyId, count: number) => {
   }
 }
 
-/** `index` points into `EVENTS`; swarms and rings take their species from the run's roster. */
+/**
+ * A wave boss arrives off screen: the earlier wave's boss flees (`at` is the
+ * wave's time), it takes the HP bar and the shell gets its entrance. The dev
+ * console's `ps.boss` calls it too.
+ */
+export const spawnWaveBoss = (g: Game, enemy: EnemyId, at: number, finale = false) => {
+  chaseOffBosses(g, at)
+  const pos = offscreen(g)
+  const boss = spawnEnemy(g, enemy, pos.x, pos.y)
+  const def: EnemyDef = ENEMIES[enemy]
+  g.bossId = boss.id
+  g.shake = def.legendary ? 9 : 5
+  if (finale) finaleEntrance(g)
+  g.events.push({ kind: 'boss', enemy })
+  return boss
+}
+
+/** `index` points into `EVENTS`; every event takes its species from the run's roster (bosses drawn there too). */
 const runEvent = (g: Game, event: WaveEvent, index: number) => {
   const species = g.roster.events[index]
   switch (event.kind) {
-    case 'boss': {
-      if (event.chance !== undefined && !chance(g.rng, event.chance)) break
-      chaseOffBosses(g, event.at)
-      const pos = offscreen(g)
-      const boss = spawnEnemy(g, event.enemy, pos.x, pos.y)
-      const def: EnemyDef = ENEMIES[event.enemy]
-      g.bossId = boss.id
-      g.shake = def.legendary ? 9 : 5
-      if (event.finale) finaleEntrance(g)
-      g.events.push({ kind: 'boss', enemy: event.enemy })
+    case 'boss':
+      if (!species || (event.chance !== undefined && !chance(g.rng, event.chance))) break
+      spawnWaveBoss(g, species, event.at, event.finale)
       break
-    }
     case 'ring':
       if (species) spawnRing(g, species, event.count)
       break
@@ -81,7 +90,7 @@ const runEvent = (g: Game, event: WaveEvent, index: number) => {
 const finaleAlive = (g: Game) => {
   if (g.endless || g.bossId === null) return false
   const boss = g.enemies.find((e) => e.id === g.bossId)
-  return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && e.enemy === boss.kind)
+  return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && bossCandidates(e).includes(boss.kind))
 }
 
 const CALM = { rate: 1, max: 1 } as const

@@ -214,9 +214,6 @@ type Group = { kind: 'region'; region: Region; ids: readonly PlayableId[] } | { 
 
 const GROUPS: readonly Group[] = [...REGIONS.map((region) => ({ kind: 'region', region, ids: region.starters }) as const), { kind: 'eggs', ids: HATCHLING_IDS }]
 
-/** Columns of the egg box; ↑/↓ move a row inside it. Keep in sync with `.egg-box` in CSS. */
-const BOX_COLS = 5
-
 type Cursor = { group: number; slot: number }
 
 type SelectActions = { pick: (id: PlayableId) => void; incubator: () => void }
@@ -289,10 +286,13 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   )
   const ready = save.eggs.filter(isReady).length
   const openIncubator = () => (playSfx('select'), later(actions.incubator))
+  const grid = h('div', { class: 'egg-box' }, ...cells)
+  /** Columns the egg box shows right now (CSS changes them with the screen); ↑/↓ move a row inside it. */
+  const boxCols = () => getComputedStyle(grid).gridTemplateColumns.split(' ').length || 1
   const box = h(
     'div',
     { class: 'egg-box-wrap hidden' },
-    h('div', { class: 'egg-box' }, ...cells),
+    grid,
     h(
       'button',
       { class: 'incubator-entry box', onclick: openIncubator },
@@ -316,6 +316,8 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     box.classList.toggle('hidden', g.kind !== 'eggs')
     if (g.kind === 'eggs') {
       cells.forEach((c, i) => c.classList.toggle('selected', i === cursor.slot))
+      // The box scrolls on its own: keep the highlighted cell in it.
+      cells[cursor.slot]!.scrollIntoView({ block: 'nearest', inline: 'nearest' })
       // Silhouettes need the sprites too.
       void loadAll(HATCHLING_IDS.map((id) => PLAYABLE[id].line[0].dex)).catch(() => {})
       for (const id of HATCHLING_IDS) if (shinyOf(id)) void loadSpecies(PLAYABLE[id].line[0].dex, true).catch(() => {})
@@ -389,7 +391,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
 
   /** ↑/↓: the next tab, or a row up/down inside the egg box. */
   const stepRow = (delta: number) => {
-    const slot = cursor.slot + delta * BOX_COLS
+    const slot = cursor.slot + delta * boxCols()
     if (group().kind === 'eggs' && slot >= 0 && slot < group().ids.length) return setCursor({ group: cursor.group, slot })
     setCursor({ group: cursor.group + delta, slot: cursor.slot })
   }

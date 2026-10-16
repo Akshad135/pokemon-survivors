@@ -5,7 +5,7 @@ import { REGIONS, STARTER_IDS, type Region } from '../data/starters'
 import type { PokeType } from '../data/types'
 import { RIFT, RIFT_LEGENDS } from '../data/rifts'
 import { SUMMONS } from '../data/traits'
-import { EVENTS, RUN_LENGTH, STAGES } from '../data/waves'
+import { bossCandidates, EVENTS, RUN_LENGTH, STAGES, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
 import { ENDLESS, REAPER } from '../game/endless'
 import { MEOWTH_DEX } from '../game/mapEventRules'
 
@@ -120,8 +120,10 @@ export type Appearance =
   /** May lead a swarm or ring (each run draws its own). */
   /** `fixed`: the event always brings this species instead of drawing one from the run's horde. */
   | { kind: 'swarm' | 'ring'; at: number; count: number; fixed?: boolean }
-  /** `chance` is 1 for bosses that always come. */
+  /** `chance` is 1 for bosses that always come (a rare slot drawn among several splits its chance). */
   | { kind: 'boss'; at: number; chance: number }
+  /** A trio slot's boss, in the runs that draw `trio`. */
+  | { kind: 'trio'; at: number; trio: TrioId }
   /** Waits behind a legendary rift, which first opens at `from`. */
   | { kind: 'rift'; from: number }
   /** Hunts the player in endless mode from `at`. */
@@ -148,7 +150,12 @@ export const appearances = (id: EnemyId): Appearance[] => {
     return acc
   }, [])
   const events = EVENTS.flatMap((e): Appearance[] => {
-    if (e.kind === 'boss') return e.enemy === id ? [{ kind: 'boss', at: e.at, chance: e.chance ?? 1 }] : []
+    if (e.kind === 'boss') {
+      const candidates = bossCandidates(e)
+      if (!candidates.includes(id)) return []
+      const trio = 'trio' in e ? TRIO_IDS.find((t) => TRIOS[t][e.trio] === id) : undefined
+      return trio ? [{ kind: 'trio', at: e.at, trio }] : [{ kind: 'boss', at: e.at, chance: (e.chance ?? 1) / candidates.length }]
+    }
     if ('enemy' in e) return e.enemy === id ? [{ kind: e.kind, at: e.at, count: e.count, fixed: true }] : []
     if (e.tier !== def.tier || (e.kind === 'swarm' && !def.types.includes('flying'))) return []
     return [{ kind: e.kind, at: e.at, count: e.count }]

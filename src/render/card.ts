@@ -401,6 +401,9 @@ const movesHeight = (moves: number) => moves * MOVE_ROW + 8
 
 const STRIP_H = 42
 
+/** Number sizes a stat may take, biggest first: a long one ("217/568") steps down until it fits its column. */
+const STAT_SIZES = [32, 24, 16] as const
+
 /** A paper strip of three stats: small label, big number. */
 const statStrip = (ctx: CanvasRenderingContext2D, stats: ReadonlyArray<readonly [string, string]>, x: number, y: number, w: number) => {
   paperBox(ctx, x, y, w, STRIP_H)
@@ -409,7 +412,8 @@ const statStrip = (ctx: CanvasRenderingContext2D, stats: ReadonlyArray<readonly 
     const cx = x + 4 + col * i + Math.floor(col / 2)
     if (i > 0) rect(ctx, x + 4 + col * i, y + 8, 1, STRIP_H - 16, '#d8dce8')
     text(ctx, label, cx, y + 13, { align: 'center', color: MUTED })
-    text(ctx, value, cx, y + 36, { size: 32, align: 'center' })
+    const size = STAT_SIZES.find((s) => textWidth(value, 'body', s) <= col - 6) ?? 16
+    text(ctx, value, cx, y + 36, { size, align: 'center' })
   })
 }
 

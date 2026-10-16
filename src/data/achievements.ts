@@ -1,4 +1,5 @@
 import type { EggTier } from '../game/eggs'
+import { RIFT_LEGENDS } from './rifts'
 
 /**
  * Achievements: lifetime goals with a bronze, silver or gold medal. Names,
@@ -74,7 +75,8 @@ export const ACHIEVEMENTS = {
   rift25: { medal: 'silver', stat: 'rifts', target: 25 },
   mega1: { medal: 'bronze', stat: 'megas', target: 1 },
   mega25: { medal: 'silver', stat: 'megas', target: 25 },
-  legends: { medal: 'gold', stat: 'legends', target: 6, title: true },
+  /** Every rift legendary beaten at least once (unlocked ones stay unlocked when the list grows). */
+  legends: { medal: 'gold', stat: 'legends', target: RIFT_LEGENDS.length, title: true },
   shinyLegend: { medal: 'gold', stat: 'shinyLegends', target: 1 },
   champion: { medal: 'silver', stat: 'wins', target: 1, title: true },
   wins10: { medal: 'gold', stat: 'wins', target: 10 },
