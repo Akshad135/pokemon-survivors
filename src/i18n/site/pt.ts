@@ -43,6 +43,7 @@ export const sitePt = {
     legal: 'Legal e privacidade',
     credits: 'Créditos',
     source: 'Código no GitHub',
+    support: 'Apoie no Ko-fi',
   },
   home: 'Início',
   playCta: 'Jogar grátis',

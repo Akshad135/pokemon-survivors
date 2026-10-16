@@ -937,3 +937,7 @@ td small {
 .footer-links a {
   padding: 8px 0;
 }
+
+.footer-links .support-link {
+  color: #ff98b8;
+}

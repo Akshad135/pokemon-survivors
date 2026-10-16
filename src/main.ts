@@ -5,6 +5,7 @@ import './ui/style.css'
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { createPadButton, createPadKeys } from './engine/gamepad'
 import { createInput } from './engine/input'
+import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
 import { fitView } from './engine/viewport'
@@ -84,6 +85,7 @@ import { runShare, sharePreview, trainerShare } from './ui/share'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
+import { supportButton } from './ui/support'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
@@ -92,7 +94,20 @@ const STEP = TICK
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!
 const ui = document.querySelector<HTMLDivElement>('#ui')!
 const ctx = context2d(canvas)
-const input = createInput(canvas)
+/** Invisible box CSS puts where the fixed joystick sits (corner, safe area); the stick is centered on it. */
+const stickAnchor = h('div', { class: 'stick-anchor', 'aria-hidden': 'true' })
+document.body.append(stickAnchor)
+/** The anchor's center, measured once per layout (cleared on resize). */
+let stickCenter: Vec | null = null
+const fixedStickCenter = (): Vec | null => {
+  if (settings().joystick !== 'fixed') return null
+  if (!stickCenter) {
+    const r = stickAnchor.getBoundingClientRect()
+    stickCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }
+  return stickCenter
+}
+const input = createInput(canvas, fixedStickCenter)
 /** Internal canvas size in world px. Shared by reference with the running game. */
 const view = { w: 480, h: 270 }
 /** CSS px per world px (integer in device px, see `fitView`). */
@@ -106,6 +121,7 @@ let dirty = true
  * the result actually changed, because resizing clears it.
  */
 const resize = () => {
+  stickCenter = null
   const width = window.visualViewport?.width ?? window.innerWidth
   const height = window.visualViewport?.height ?? window.innerHeight
   const fit = fitView(width, height, window.devicePixelRatio || 1)
@@ -258,7 +274,7 @@ const showPlayGate = () =>
     }),
   )
 
-/** Pokémon select, with the Poké Mart (top right) and the way back to the title (top left). */
+/** Pokémon select, with the Poké Mart and the Ko-fi chip (top right) and the way back to the title (top left). */
 const showMenu = (initial: PlayableId = lastStarter) => {
   endRun()
   const select = starterSelect(ui, input, {
@@ -267,7 +283,8 @@ const showMenu = (initial: PlayableId = lastStarter) => {
   }, initial)
   const closeMart = martButton(ui, input, () => showShop())
   const closeBack = titleButton(ui, input, () => showTitle())
-  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), select.dispose()) })
+  const closeSupport = supportButton(ui)
+  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), closeSupport(), select.dispose()) })
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
@@ -580,8 +597,10 @@ const runSettings = (r: Run, back: () => void) => {
     if (locale() !== before) {
       r.hud.dispose()
       r.hud = runHud(r.game)
-      dirty = true
     }
+    // The joystick mode moves the status box and shows or hides the fixed stick.
+    dirty = true
+    requestAnimationFrame(syncMarkerInsets)
     back()
   })
 }

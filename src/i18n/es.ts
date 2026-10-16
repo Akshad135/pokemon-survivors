@@ -38,6 +38,7 @@ export const es: Messages = {
     settings: 'Ajustes',
     legal: 'Legal y créditos',
     fanGame: 'Fan game no oficial',
+    support: 'Apoya el proyecto',
     back: 'Título',
   },
 
@@ -102,12 +103,17 @@ export const es: Messages = {
 
   settings: {
     title: 'AJUSTES',
+    audio: 'Audio',
+    game: 'Juego',
     music: 'Música',
     sfx: 'Efectos',
     sound: 'Sonido',
     damageNumbers: 'Números de daño',
     damageModes: { all: 'Todos', reduced: 'Reducidos', off: 'OFF' },
     screenShake: 'Temblor de pantalla',
+    controls: 'Controles',
+    joystick: 'Joystick',
+    joystickModes: { floating: 'Sigue el dedo', fixed: 'Fijo' },
     on: 'ON',
     off: 'OFF',
     back: 'Volver',
@@ -246,6 +252,7 @@ export const es: Messages = {
     change: 'Cambiar Pokémon',
     dexSpecies: (n) => (n === 1 ? '+1 especie nueva' : `+${n} especies nuevas`),
     dexShinies: (n) => (n === 1 ? '1 shiny capturado' : `${n} shinies capturados`),
+    support: '¿Te gusta? Apoya el proyecto en Ko-fi',
   },
 
   share: {

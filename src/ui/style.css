@@ -1756,6 +1756,43 @@ button {
   color: #8850e0;
 }
 
+/* ---------- Fixed joystick ---------- */
+
+/*
+ * Where the fixed touch joystick sits (Settings → Controls): bottom-left, clear
+ * of the safe area and the screen edge. The canvas draws the stick centered on
+ * `.stick-anchor`, so its size is the base's diameter (2 × STICK_RADIUS in
+ * engine/input.ts). The status box steps aside while the mode is on.
+ */
+:root {
+  --stick-size: 104px;
+  --stick-left: max(28px, calc(var(--safe-l) + 12px));
+  --stick-bottom: max(32px, calc(var(--safe-b) + 16px));
+}
+
+.stick-anchor {
+  position: fixed;
+  left: var(--stick-left);
+  bottom: var(--stick-bottom);
+  width: var(--stick-size);
+  height: var(--stick-size);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Portrait and desktop: the status box goes above the stick. */
+[data-stick='fixed'] .status {
+  bottom: calc(var(--stick-bottom) + var(--stick-size) + 16px);
+}
+
+/* Landscape phones have no height to spare: it goes to the stick's right instead. */
+@media (max-height: 500px) {
+  [data-stick='fixed'] .status {
+    left: calc(var(--stick-left) + var(--stick-size) + 20px);
+    bottom: max(8px, var(--safe-b));
+  }
+}
+
 /* ---------- Text box & toasts ---------- */
 
 .textbox {
@@ -1868,10 +1905,6 @@ button {
 }
 
 .mart-entry {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1941,10 +1974,6 @@ button {
 
 /* Account chip: top-right twin of the language switch, on the title screen. */
 .account-chip {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1959,6 +1988,63 @@ button {
 .account-chip:hover,
 .account-chip:focus-visible {
   --frame: #e83838;
+}
+
+/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the Ko-fi chip on their left. */
+.top-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.support-chip {
+  order: -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px 6px 8px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #a02858;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.support-chip img {
+  width: 21px;
+  height: 21px;
+}
+
+.support-chip:hover,
+.support-chip:focus-visible {
+  --frame: #f878a8;
+}
+
+/* Phones and tablets: just the heart, so the corner clears the centered logo. */
+@media (max-width: 960px), (max-height: 500px) {
+  .support-chip {
+    padding: 6px 8px;
+  }
+  .support-chip span {
+    display: none;
+  }
+}
+
+/* Phones in landscape put the title menu right of the logo: the heart goes under the account chip, clear of it. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .top-right:has(.account-chip) {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .top-right:has(.account-chip) .support-chip {
+    order: 0;
+  }
 }
 
 /* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
@@ -2123,6 +2209,24 @@ button {
 .title-footer a:hover,
 .title-footer a:focus-visible {
   color: #ffcb05;
+}
+
+/* Ko-fi link under a victory's buttons. */
+.result-support {
+  display: block;
+  margin-top: 10px;
+  padding: 6px;
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+  color: #c03060;
+  text-underline-offset: 3px;
+}
+
+.result-support:hover,
+.result-support:focus-visible {
+  color: #e83838;
 }
 
 /* Starter select's way back to the title: top-left twin of the Poké Mart entry. */
@@ -2435,10 +2539,13 @@ button {
   .mart-buy {
     width: 100%;
   }
-  /* Compact entry so it clears the centered logo on phones. */
-  .mart-entry {
+  /* Compact corner so it clears the centered logo on phones. */
+  .top-right {
     top: 6px;
     right: 6px;
+    gap: 6px;
+  }
+  .mart-entry {
     flex-direction: column;
     gap: 2px;
     padding: 6px 8px;
@@ -2461,8 +2568,6 @@ button {
     min-height: 28px;
   }
   .account-chip {
-    top: 6px;
-    right: 6px;
     min-height: 36px;
     padding: 4px 8px;
   }
@@ -2903,10 +3008,15 @@ button {
   width: min(460px, 94vw);
 }
 
-.settings-list {
+.settings-list,
+.settings-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.settings-list {
+  gap: 12px;
 }
 
 .setting-row {
@@ -2989,6 +3099,14 @@ button {
   color: #e83838;
 }
 
+.settings-section {
+  padding: 0 4px 4px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #6878a8;
+  border-bottom: 2px solid #d8d8e8;
+}
+
 @media (max-width: 600px) {
   .setting-row {
     min-height: 44px;
@@ -2997,10 +3115,21 @@ button {
   }
 }
 
-/* Landscape phones: tighter rows so the whole dialog fits without scrolling. */
+/* Landscape phones: tighter rows, and each section in its own column, so the whole dialog fits without scrolling. */
 @media (max-height: 500px) {
+  .dialog.settings {
+    width: min(820px, 94vw);
+  }
+  /* The browser balances the sections across both columns by height. */
   .settings-list {
+    display: block;
+    columns: 2;
+    column-gap: 12px;
+  }
+  .settings-group {
+    break-inside: avoid;
     gap: 4px;
+    padding-bottom: 6px;
   }
   .setting-row {
     min-height: 36px;
@@ -3008,6 +3137,9 @@ button {
   }
   .settings .hint {
     display: none;
+  }
+  .settings-section {
+    padding-bottom: 2px;
   }
   .slider {
     flex: 1 1 160px;

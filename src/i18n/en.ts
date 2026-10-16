@@ -38,6 +38,7 @@ export const en: Messages = {
     settings: 'Settings',
     legal: 'Legal & credits',
     fanGame: 'Unofficial fan game',
+    support: 'Support the project',
     back: 'Title',
   },
 
@@ -102,12 +103,17 @@ export const en: Messages = {
 
   settings: {
     title: 'SETTINGS',
+    audio: 'Audio',
+    game: 'Game',
     music: 'Music',
     sfx: 'Effects',
     sound: 'Sound',
     damageNumbers: 'Damage numbers',
     damageModes: { all: 'All', reduced: 'Reduced', off: 'OFF' },
     screenShake: 'Screen shake',
+    controls: 'Controls',
+    joystick: 'Joystick',
+    joystickModes: { floating: 'Follows finger', fixed: 'Fixed' },
     on: 'ON',
     off: 'OFF',
     back: 'Back',
@@ -246,6 +252,7 @@ export const en: Messages = {
     change: 'Change Pokémon',
     dexSpecies: (n) => (n === 1 ? '+1 new species' : `+${n} new species`),
     dexShinies: (n) => (n === 1 ? '1 shiny caught' : `${n} shinies caught`),
+    support: 'Enjoying it? Support the project on Ko-fi',
   },
 
   share: {
