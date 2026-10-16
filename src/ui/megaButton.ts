@@ -4,6 +4,7 @@ import { isFinalStage, megaPhase } from '../game/mega'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { megaIcon } from '../render/megaFx'
+import { boundKey } from './controls'
 import { h, setStyle, setText } from './dom'
 
 /**
@@ -15,8 +16,9 @@ import { h, setStyle, setText } from './dom'
  */
 export const createMegaControls = (onPress: () => void) => {
   const badgeTag = h('span', { class: 'special-tag mega-tag hidden' })
+  const keyLabel = h('span', { class: 'special-key' })
   const buttonTag = h('span', { class: 'special-tag mega-tag hidden' })
-  const badge = h('div', { class: 'special mega special-badge hidden' }, h('img', { src: megaIcon(), alt: '' }), h('span', { class: 'special-key' }, t().mega.key), badgeTag)
+  const badge = h('div', { class: 'special mega special-badge hidden' }, h('img', { src: megaIcon(), alt: '' }), keyLabel, badgeTag)
   const button = h(
     'button',
     { class: 'special mega mega-button hidden', type: 'button', 'aria-label': t().mega.section },
@@ -44,6 +46,7 @@ export const createMegaControls = (onPress: () => void) => {
       el.classList.toggle('active', phase === 'active')
       setStyle(el, '--fill', fill.toFixed(3))
     }
+    setText(keyLabel, boundKey('mega'))
     for (const el of [badgeTag, buttonTag]) {
       setText(el, tag)
       el.classList.toggle('hidden', tag === '')

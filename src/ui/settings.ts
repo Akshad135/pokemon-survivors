@@ -2,6 +2,7 @@ import { playSfx, setMix } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALES, nextLocale, setLocale, t } from '../i18n'
+import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
 import { loadSettings, writeSettings, type Settings } from './save'
@@ -33,8 +34,11 @@ export const isSettingsOpen = () => refresh !== null
 
 /* ---------------- Screen ---------------- */
 
-/** One focusable line. `adjust` handles ← →, `activate` Enter or a tap, `sync` redraws its value. */
-type Row = { el: HTMLElement; adjust: (dir: -1 | 1) => void; activate: () => void; sync: () => void }
+/**
+ * One focusable line. `adjust` handles ← →, `activate` Enter or a tap, `sync` redraws its value.
+ * `section` titles a group that starts at this line.
+ */
+type Row = { el: HTMLElement; adjust: (dir: -1 | 1) => void; activate: () => void; sync: () => void; section?: string }
 
 const SLIDER_STEPS = 10
 
@@ -123,6 +127,12 @@ const languageRow = (onSwitch: () => void): Row => {
   return { el, adjust: onSwitch, activate: onSwitch, sync: () => {} }
 }
 
+/** Opens the remap screen (keyboard keys and gamepad buttons). */
+const controlsRow = (open: () => void): Row => {
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().controls.open), h('b', { class: 'setting-choice' }, '▶'))
+  return { el, adjust: (dir) => dir > 0 && open(), activate: open, sync: () => {}, section: t().controls.section }
+}
+
 const backRow = (label: string, close: () => void): Row => {
   const el = h('button', { class: 'btn' }, label)
   return { el, adjust: () => {}, activate: close, sync: () => {} }
@@ -130,7 +140,7 @@ const backRow = (label: string, close: () => void): Row => {
 
 /**
  * Settings dialog: music and effects volume, mute, damage numbers, screen
- * shake and language. Changes apply and persist immediately.
+ * shake, language and, under Controles, the remap screen. Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
  * input). The Back button, Esc or Backspace (gamepad B) close it: it removes itself, then calls
@@ -142,6 +152,9 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
   const el = h('div', { class: 'screen dim' })
   let rows: Row[] = []
   let nav: ReturnType<typeof menu> | null = null
+  /** The remap screen open on top: this one hides and ignores keys until it closes. */
+  let sub: Screen | null = null
+  let away = false
 
   const sync = () => rows.forEach((r) => r.sync())
 
@@ -162,6 +175,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
       damageRow(),
       toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
       languageRow(switchLanguage),
+      controlsRow(showControls),
       backRow(m.back, close),
     ]
     nav?.off()
@@ -172,7 +186,11 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
         'div',
         { class: opening ? 'dialog box pop settings' : 'dialog box settings' },
         h('div', { class: 'dialog-title' }, m.title),
-        h('div', { class: 'settings-list' }, ...rows.slice(0, -1).map((r) => r.el)),
+        h(
+          'div',
+          { class: 'settings-list' },
+          ...rows.slice(0, -1).flatMap((r) => (r.section ? [h('div', { class: 'settings-section' }, r.section), r.el] : [r.el])),
+        ),
         h('div', { class: 'buttons' }, back),
         hint(m.hintKeys, m.hintTouch),
       ),
@@ -180,7 +198,25 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     sync()
   }
 
+  const showControls = () => {
+    playSfx('select')
+    nav?.off()
+    away = true
+    el.classList.add('hidden')
+    // Open after this key dispatch, or the new screen would receive the same press.
+    later(() => {
+      if (!el.isConnected) return
+      sub = openControls(root, input, () => {
+        sub = null
+        away = false
+        el.classList.remove('hidden')
+        build(nav?.index ?? 0, false)
+      })
+    })
+  }
+
   const offKeys = input.onKey((key) => {
+    if (away) return
     const row = nav && rows[nav.index]
     if (key === 'ArrowLeft' || key === 'KeyA') row?.adjust(-1)
     else if (key === 'ArrowRight' || key === 'KeyD') row?.adjust(1)
@@ -188,6 +224,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
   })
 
   const dispose = () => {
+    sub?.dispose()
     nav?.off()
     offKeys()
     el.remove()

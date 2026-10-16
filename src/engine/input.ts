@@ -1,17 +1,31 @@
+import { ACTIONS, keyCode, type Action, type Bindings } from './bindings'
+import { padActions, readPads } from './gamepad'
 import type { Vec } from './math'
 
 /**
- * Keyboard + pointer (floating virtual joystick) input. `readMove` returns a
- * vector with length ≤ 1. `readStick` exposes the joystick (CSS px) so the
- * shell can draw it. Discrete key presses are delivered through `onKey`.
+ * Keyboard + gamepad + pointer (floating virtual joystick) input. `readMove`
+ * returns a vector with length ≤ 1. `readStick` exposes the joystick (CSS px)
+ * so the shell can draw it. Discrete presses are delivered through `onKey` as
+ * key codes, after the player's bindings (see `engine/bindings.ts`): a remapped
+ * key and a gamepad button arrive as the codes the screens already handle.
  */
 export type Input = {
   readMove: () => Vec
   readStick: () => Stick | null
   onKey: (handler: (key: string) => void) => () => void
-  /** Delivers a key press that didn't come from the keyboard (gamepad menu navigation). */
+  /** Delivers a key press that didn't come from the keyboard. */
   press: (key: string) => void
+  /** Reads the gamepads. Call once per frame; `playing` (a run, not a menu) picks what the buttons mean. */
+  poll: (playing: boolean) => void
+  /**
+   * Hands every raw key and pad button press to `take`, bypassing the bindings
+   * and `onKey`, until the returned function is called (the remap screen).
+   */
+  capture: (take: (press: RawPress) => void) => () => void
 }
+
+/** A press before the bindings: a `KeyboardEvent.code` or a standard-mapping button. */
+export type RawPress = { device: 'key'; code: string } | { device: 'pad'; button: number }
 
 /** Joystick state in CSS px: where the base sits and where the knob is drawn. */
 export type Stick = { origin: Vec; knob: Vec; vec: Vec }
@@ -56,18 +70,33 @@ export const joystick = (origin: Vec, pointer: Vec): Stick => {
   return { origin: base, knob: { x: base.x + dx, y: base.y + dy }, vec }
 }
 
-export const createInput = (target: HTMLElement): Input => {
-  const held = new Set<string>()
+/** `bindings` is read on every press, so a remap applies at once. */
+export const createInput = (target: HTMLElement, bindings: () => Bindings): Input => {
+  /** Keys held down, by physical code, with the code they typed (the bindings may change while one is held). */
+  const held = new Map<string, string>()
   const handlers = new Set<(key: string) => void>()
+  const dispatch = (key: string) => handlers.forEach((h) => h(key))
+  let capturing: ((press: RawPress) => void) | null = null
   let pointerId: number | null = null
   let stick: Stick | null = null
+  let padButtons = new Set<number>()
+  let padStick = new Set<Action>()
+  /** Codes the pads hold in a run (the directions), read by `readMove` like held keys. */
+  let padHeld: string[] = []
 
   window.addEventListener('keydown', (e) => {
     // Typing in a text field (the profile editor) is not playing: the field keeps its keys.
     if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return
-    if (e.code in MOVE_KEYS) e.preventDefault()
-    held.add(e.code)
-    if (!e.repeat) handlers.forEach((h) => h(e.code))
+    if (capturing) {
+      e.preventDefault()
+      if (!e.repeat && e.code) capturing({ device: 'key', code: e.code })
+      return
+    }
+    const code = keyCode(bindings().key, e.code)
+    if (code === null) return
+    if (code in MOVE_KEYS || code !== e.code) e.preventDefault()
+    held.set(e.code, code)
+    if (!e.repeat) dispatch(code)
   })
   window.addEventListener('keyup', (e) => held.delete(e.code))
   window.addEventListener('blur', () => {
@@ -99,7 +128,7 @@ export const createInput = (target: HTMLElement): Input => {
     if (stick) return stick.vec
     let x = 0
     let y = 0
-    for (const code of held) {
+    for (const code of [...held.values(), ...padHeld]) {
       const v = MOVE_KEYS[code]
       if (v) {
         x += v.x
@@ -115,5 +144,24 @@ export const createInput = (target: HTMLElement): Input => {
     return () => void handlers.delete(handler)
   }
 
-  return { readMove, readStick: () => stick, onKey, press: (key) => handlers.forEach((h) => h(key)) }
+  // Edge-detected per button, not per code: a button held across a run/menu switch doesn't press again.
+  const poll = (playing: boolean) => {
+    const { buttons, stick: axes } = readPads()
+    const fresh = new Set([...buttons].filter((b) => !padButtons.has(b)))
+    const freshStick = new Set([...axes].filter((a) => !padStick.has(a)))
+    padButtons = buttons
+    padStick = axes
+    const pad = bindings().pad
+    padHeld = playing ? padActions(pad, buttons, axes, true).map((a) => ACTIONS[a].code) : []
+    if (capturing) return fresh.forEach((button) => capturing?.({ device: 'pad', button }))
+    padActions(pad, fresh, freshStick, playing).forEach((a) => dispatch(ACTIONS[a].code))
+  }
+
+  const capture = (take: (press: RawPress) => void) => {
+    capturing = take
+    held.clear()
+    return () => void (capturing === take && (capturing = null))
+  }
+
+  return { readMove, readStick: () => stick, onKey, press: dispatch, poll, capture }
 }
