@@ -1990,7 +1990,7 @@ button {
   --frame: #e83838;
 }
 
-/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the Ko-fi chip on their left. */
+/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
 .top-right {
   position: absolute;
   top: 10px;
@@ -2211,7 +2211,7 @@ button {
   color: #ffcb05;
 }
 
-/* Ko-fi link under a victory's buttons. */
+/* Support page link under a victory's buttons. */
 .result-support {
   display: block;
   margin-top: 10px;

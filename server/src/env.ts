@@ -18,6 +18,8 @@ export const loadEnv = () => {
     clerkSecretKey: required('CLERK_SECRET_KEY'),
     /** Optional PEM public key: verifies tokens without fetching Clerk's keys. */
     clerkJwtKey: process.env.CLERK_JWT_KEY || undefined,
+    /** Optional AbacatePay key (donations by Pix and Brazilian cards). Without it `POST /donations` answers 503. */
+    abacatePayKey: process.env.ABACATEPAY_API_KEY || undefined,
     /** Whether the game at `origin` may call the API (CORS) and own its tokens (`azp`). */
     allowedOrigin: (origin: string) => origins.includes(origin) || LOCALHOST.test(origin),
   }

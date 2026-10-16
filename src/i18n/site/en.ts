@@ -19,6 +19,7 @@ export const siteEn: SiteMessages = {
     guide: 'Guide',
     changelog: 'Changelog',
     legal: 'Legal',
+    support: 'Support',
     language: 'Language',
   },
   footer: {
@@ -27,7 +28,7 @@ export const siteEn: SiteMessages = {
     legal: 'Legal and privacy',
     credits: 'Credits',
     source: 'Source on GitHub',
-    support: 'Support on Ko-fi',
+    support: 'Support the project',
   },
   home: 'Home',
   playCta: 'Play for free',
@@ -508,6 +509,34 @@ export const siteEn: SiteMessages = {
     pr: (n: number) => `PR #${n}`,
   },
 
+  support: {
+    title: 'Support Pokémon Survivors | Donate by card, Apple Pay or Google Pay',
+    description:
+      'Pokémon Survivors is free, with no ads and nothing for sale. If you want to help pay for the servers, donate by card, Apple Pay or Google Pay from any country (Stripe), or by Pix or a Brazilian card from Brazil (AbacatePay). Donating gives nothing in the game.',
+    h1: 'Support the project',
+    lead: 'The game is free and will stay that way, with no ads and nothing for sale. If you had fun and want to help pay for the servers (accounts, rankings and the Daily Challenge), any amount helps. Donating gives nothing in the game.',
+    thanks: 'Thank you for your support! The payment may take a few minutes to be confirmed. ♥',
+    pick: 'Choose how to pay',
+    suggested: 'Suggested for you',
+    br: {
+      title: 'In Brazil',
+      methods: 'Pix or credit card, in Brazilian reais.',
+      amount: 'Donation amount',
+      other: 'Other amount',
+      range: (min: number, max: number) => `From R$ ${min} to R$ ${max}, whole reais.`,
+      cta: (amount: number) => `Donate R$ ${amount}`,
+      loading: 'Opening the payment…',
+      error: "Couldn't open the payment right now. Please try again in a moment.",
+      via: 'The payment opens on AbacatePay. Your payment details go straight to them.',
+    },
+    intl: {
+      title: 'Other countries',
+      methods: 'Card, Apple Pay or Google Pay, in US dollars.',
+      cta: 'Donate with Stripe',
+      via: 'You choose the amount on the next page, on Stripe. Your payment details go straight to them.',
+    },
+  },
+
   legal: {
     title: 'Legal, privacy and credits | Pokémon Survivors',
     description:
@@ -528,6 +557,7 @@ export const siteEn: SiteMessages = {
     free: [
       'The game is free and will stay that way: no ads, no paid content and no in-app purchases.',
       'Poké Dollars (₽) exist only inside the game and can\'t be bought with real money.',
+      'If you want, you can donate on the Support the project page. Donations are voluntary and give nothing in the game.',
     ],
     licenses: {
       code: 'Source code',
@@ -566,6 +596,7 @@ export const siteEn: SiteMessages = {
       'To delete this data, clear the site data in your browser settings.',
       'Sprites, sounds and fonts are served by this site, with no calls to third-party services. The site is hosted on Vercel which, like any web server, may log technical access data (such as IP addresses) to run and protect the service.',
       'To know how many people visit and play, the site uses Vercel Web Analytics and its own Umami instance, on our own server. They count visits anonymously and in aggregate (page, country, browser, device and referring site) and, in Umami\'s case, a summary of each run (starter Pokémon, the minute and level you reached and whether you won), with no cookies and without identifying you or following you across sites.',
+      'Donations are paid on AbacatePay\'s pages (abacatepay.com: Pix and Brazilian cards) or Stripe\'s (stripe.com: cards from other countries, Apple Pay and Google Pay). Your payment details go straight to them, and the game never sees your card. They show us the amount and, as they would to anyone receiving a payment, details of who paid (such as name and email), which we use for nothing but recording the donation. It isn\'t tied to your game account.',
     ],
     contact: [
       'If you hold rights to any material used here and want it removed or changed, open an issue on GitHub. It will be addressed promptly.',

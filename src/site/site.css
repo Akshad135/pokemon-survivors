@@ -909,6 +909,103 @@ td small {
   gap: 10px;
 }
 
+/* ---------- Support page (donations) ---------- */
+
+.donate-ways {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.donate-way {
+  padding: 18px 20px 20px;
+}
+
+.donate-way h2 {
+  margin: 0 0 10px;
+  font-size: clamp(12px, 2.4vw, 15px);
+  color: var(--ink);
+}
+
+.donate-way p {
+  margin: 0 0 12px;
+}
+
+.donate-way .btn-play {
+  margin-bottom: 12px;
+  border-color: var(--line);
+  cursor: pointer;
+}
+
+.donate-way .btn-play:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+/* "Suggested for you", only on the way the time zone picked (`client.ts`). */
+.donate-guess {
+  display: none;
+  font-family: var(--title);
+  font-size: 8px;
+  color: var(--blue);
+}
+
+.donate-way.is-guess .donate-guess {
+  display: block;
+}
+
+.donate-amounts {
+  margin-bottom: 12px;
+}
+
+.donate-amounts legend,
+.donate-other span {
+  color: var(--muted);
+}
+
+.donate-other {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 4px;
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.donate-other input {
+  width: 10ch;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 3px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 22px;
+}
+
+.donate-other:focus-within > span {
+  outline: none;
+}
+
+.donate-error {
+  color: var(--red);
+}
+
+.donate-thanks {
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 22px;
+}
+
+/* Without JS the form can't reach the API, so only the Stripe link is offered. */
+html:not(.js) #donate-br {
+  display: none;
+}
+
 /* ---------- Footer ---------- */
 
 .site-footer {

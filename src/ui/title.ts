@@ -116,7 +116,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 /**
  * Title screen over the live meadow: pixel logo, the day's outbreak, a blinking "press start",
  * then the main menu (Play, Daily Challenge, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
- * switch, the account chip (when accounts are on), the Ko-fi chip and footer links. `intro: false` opens straight on the menu (coming
+ * switch, the account chip (when accounts are on), the support chip and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
 export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: number }): Screen => {
