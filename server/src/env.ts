@@ -20,7 +20,10 @@ export const loadEnv = () => {
     clerkJwtKey: process.env.CLERK_JWT_KEY || undefined,
     /** Optional AbacatePay key (donations by Pix and Brazilian cards). Without it `POST /donations` answers 503. */
     abacatePayKey: process.env.ABACATEPAY_API_KEY || undefined,
-    /** Optional: the secret in the AbacatePay webhook's URL (`?webhookSecret=`). Without it `POST /webhooks/abacatepay` answers 503. */
+    /**
+     * Optional: the AbacatePay webhook's secret, `whsec_…` (Standard Webhooks), or for a webhook made
+     * before 01/10/2026 the one in its URL (`?webhookSecret=`). Without it `POST /webhooks/abacatepay` answers 503.
+     */
     abacatePayWebhookSecret: process.env.ABACATEPAY_WEBHOOK_SECRET || undefined,
     /** Optional: the Stripe webhook's signing secret (`whsec_…`). Without it `POST /webhooks/stripe` answers 503. */
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,

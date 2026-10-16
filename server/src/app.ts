@@ -20,7 +20,7 @@ import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
 import type { SupporterStore } from './supporters'
-import { abacateDonation, ABACATE_REF, stripeDonation, verifyAbacate, verifyStripe } from './webhooks'
+import { abacateDonation, ABACATE_REF, stripeDonation, verifyAbacate, verifyStandard, verifyStripe } from './webhooks'
 
 export type AppDeps = {
   store: SaveStore
@@ -94,8 +94,9 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `GET /donations/:ref`: `DonationStatus`, for the thank-you page (404 until the payment is known).
  * - `POST /donations/redeem` (auth) `{ code }`: credits a donation's code to the player. `{ tier }`;
  *   404 for an unknown code, 409 for one already used.
- * - `POST /webhooks/stripe`, `POST /webhooks/abacatepay?webhookSecret=`: the payment providers say a
- *   donation is paid (signed: `webhooks.ts`). 401 for a bad signature, 503 without the secret.
+ * - `POST /webhooks/stripe`, `POST /webhooks/abacatepay`: the payment providers say a donation is paid
+ *   (signed: `webhooks.ts`; AbacatePay's the Standard Webhooks way, or with `?webhookSecret=` for an
+ *   older webhook). 401 for a bad signature, 503 without the secret.
  * - `GET /me/supporter` (auth): `SupporterStatus`. `PUT /me/supporter` (auth) `{ public }`: shows or hides the badge and name.
  * - `GET /supporters`: `{ supporters }`, the wall (`WallEntry[]`).
  * - `GET /poll`: `Poll`. `PUT /poll` (auth) `{ choice }`: a supporter's vote, 403 for anyone else.
@@ -272,10 +273,16 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     return c.json({ received: true })
   })
 
+  // AbacatePay signs the Standard Webhooks way since 01/10/2026; webhooks made before still send the URL secret and the public-key HMAC.
   app.post('/webhooks/abacatepay', hookBody, async (c) => {
-    if (!webhooks.abacatePaySecret) return c.json({ error: 'webhook off' }, 503)
+    const secret = webhooks.abacatePaySecret
+    if (!secret) return c.json({ error: 'webhook off' }, 503)
     const raw = await c.req.text()
-    if (c.req.query('webhookSecret') !== webhooks.abacatePaySecret || !verifyAbacate(raw, c.req.header('X-Webhook-Signature'))) return c.json({ error: 'bad signature' }, 401)
+    const standard = { id: c.req.header('webhook-id'), timestamp: c.req.header('webhook-timestamp'), signature: c.req.header('webhook-signature') }
+    const ok = standard.signature
+      ? verifyStandard(raw, standard, secret, Date.now() / 1000)
+      : c.req.query('webhookSecret') === secret && verifyAbacate(raw, c.req.header('X-Webhook-Signature'))
+    if (!ok) return c.json({ error: 'bad signature' }, 401)
     const paid = abacateDonation(JSON.parse(raw))
     if (paid) await supporters.paid(paid)
     return c.json({ received: true })

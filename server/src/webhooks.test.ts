@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { ABACATE_REF, abacateDonation, ABACATEPAY_PUBLIC_KEY, stripeDonation, verifyAbacate, verifyStripe } from './webhooks'
+import { ABACATE_REF, abacateDonation, ABACATEPAY_PUBLIC_KEY, stripeDonation, verifyAbacate, verifyStandard, verifyStripe } from './webhooks'
 
 const SECRET = 'whsec_test'
 
@@ -49,5 +49,26 @@ describe('AbacatePay webhooks', () => {
     expect(abacateDonation(event(`${ABACATE_REF}1234`))).toEqual({ provider: 'abacatepay', ref: '1234', amount: 2500, currency: 'brl', handle: null })
     expect(abacateDonation(event('chatdeia-plan-9'))).toBeNull()
     expect(abacateDonation(event(`${ABACATE_REF}1234`, 'PENDING'))).toBeNull()
+  })
+})
+
+describe('Standard Webhooks (AbacatePay since 01/10/2026)', () => {
+  const secret = `whsec_${Buffer.from('a 32-byte key for the test suite').toString('base64')}`
+  const sign = (id: string, t: number, body: string) =>
+    `v1,${createHmac('sha256', Buffer.from(secret.slice(6), 'base64')).update(`${id}.${t}.${body}`).digest('base64')}`
+
+  it('takes a fresh delivery signed with the secret, among several signatures', () => {
+    const body = '{"event":"checkout.completed"}'
+    const signature = `v1,bm9wZQ== ${sign('msg_1', 1000, body)}`
+    expect(verifyStandard(body, { id: 'msg_1', timestamp: '1000', signature }, secret, 1010)).toBe(true)
+  })
+
+  it('refuses another id, a changed body, an old delivery or a missing header', () => {
+    const body = '{"event":"checkout.completed"}'
+    const signature = sign('msg_1', 1000, body)
+    expect(verifyStandard(body, { id: 'msg_2', timestamp: '1000', signature }, secret, 1010)).toBe(false)
+    expect(verifyStandard(`${body} `, { id: 'msg_1', timestamp: '1000', signature }, secret, 1010)).toBe(false)
+    expect(verifyStandard(body, { id: 'msg_1', timestamp: '1000', signature }, secret, 2000)).toBe(false)
+    expect(verifyStandard(body, { id: 'msg_1', timestamp: undefined, signature }, secret, 1010)).toBe(false)
   })
 })

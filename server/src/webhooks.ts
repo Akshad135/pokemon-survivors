@@ -67,6 +67,24 @@ export const ABACATEPAY_PUBLIC_KEY =
 export const verifyAbacate = (body: string, signature: string | undefined, publicKey = ABACATEPAY_PUBLIC_KEY) =>
   signature !== undefined && sameText(signature, createHmac('sha256', publicKey).update(body).digest('base64'))
 
+/** A Standard Webhooks delivery's headers (`webhook-id`, `webhook-timestamp`, `webhook-signature`). */
+export type StandardHeaders = { id: string | undefined; timestamp: string | undefined; signature: string | undefined }
+
+/**
+ * Whether a delivery signed the Standard Webhooks way (standardwebhooks.com,
+ * AbacatePay's since 01/10/2026) is ours: an HMAC-SHA256 of `id.timestamp.body`
+ * with the secret's key (the base64 after `whsec_`), base64, among the
+ * header's space-separated `v1,<signature>`, within `STRIPE_TOLERANCE` of `now` (seconds).
+ */
+export const verifyStandard = (body: string, h: StandardHeaders, secret: string, now: number) => {
+  if (!h.id || !h.timestamp || !h.signature) return false
+  const t = Number(h.timestamp)
+  if (!Number.isInteger(t) || Math.abs(now - t) > STRIPE_TOLERANCE) return false
+  const key = Buffer.from(secret.startsWith('whsec_') ? secret.slice('whsec_'.length) : secret, 'base64')
+  const expected = createHmac('sha256', key).update(`${h.id}.${t}.${body}`).digest('base64')
+  return h.signature.split(' ').some((part) => part.startsWith('v1,') && sameText(part.slice(3), expected))
+}
+
 /** The donation an AbacatePay event pays, or null: a `checkout.completed` of one of our checkouts, paid. */
 export const abacateDonation = (event: unknown): PaidDonation | null => {
   if (!isRecord(event) || event.event !== 'checkout.completed' || !isRecord(event.data) || !isRecord(event.data.checkout)) return null

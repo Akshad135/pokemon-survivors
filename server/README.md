@@ -26,7 +26,7 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /donations/:ref` | For the thank-you page: `{ paid, handle, code, redeemed }` (`DonationStatus`). 404 until the payment is known (Stripe's row comes with its webhook) |
 | `POST /donations/redeem` | Body `{ code }`: credits a donation's code to the player. `{ tier }`; 404 unknown code, 409 already used |
 | `POST /webhooks/stripe` | Stripe's `checkout.session.completed` and `async_payment_succeeded`, signed with `STRIPE_WEBHOOK_SECRET`. 401 bad signature, 503 without the secret |
-| `POST /webhooks/abacatepay?webhookSecret=` | AbacatePay's `checkout.completed`: the URL secret (`ABACATEPAY_WEBHOOK_SECRET`) and the HMAC in `X-Webhook-Signature`. 401 bad secret or signature, 503 without the secret |
+| `POST /webhooks/abacatepay` | AbacatePay's `checkout.completed`, signed the Standard Webhooks way (`webhook-id`, `webhook-timestamp`, `webhook-signature`, with the `whsec_` secret in `ABACATEPAY_WEBHOOK_SECRET`). A webhook made before 01/10/2026 sends `?webhookSecret=` and `X-Webhook-Signature` instead, also accepted. 401 bad signature, 503 without the secret |
 | `GET /me/supporter`, `PUT /me/supporter` | The player's tier, since when, whether they show it and their vote (`SupporterStatus`). `PUT` with `{ public }` shows or hides the badge and name |
 | `GET /supporters` | `{ supporters }`: the wall, supporters who show themselves and have a handle, oldest first (500 at most) |
 | `GET /poll`, `PUT /poll` | `{ id, votes }`, the supporters' poll (`POLL` in `src/data/supporters.ts`). `PUT` with `{ choice }` votes (or changes the vote); 403 for anyone who isn't a supporter |
@@ -88,7 +88,7 @@ The cost grows with the horde: late endless minutes are the heavy ones. A VPS co
 | `CLERK_JWT_KEY` | Optional. Clerk's JWT public key (PEM), to verify tokens without fetching Clerk's keys |
 | `CORS_ORIGINS` | Optional. Extra allowed origins, comma separated (e.g. a Vercel preview) |
 | `ABACATEPAY_API_KEY` | Optional. AbacatePay API key (v2) for donations; a dev key simulates payments. Each amount becomes a product `pokemon-survivors-donation-<reais>` the first time it's given |
-| `ABACATEPAY_WEBHOOK_SECRET` | Optional. The secret in the AbacatePay webhook's URL (`?webhookSecret=`); the HMAC uses AbacatePay's public key. Without it the webhook answers 503 |
+| `ABACATEPAY_WEBHOOK_SECRET` | Optional. The AbacatePay webhook's secret: `whsec_` plus base64 (`echo "whsec_$(openssl rand -base64 32)"`), the same one typed in its dashboard. Without it the webhook answers 503 |
 | `STRIPE_WEBHOOK_SECRET` | Optional. The Stripe webhook endpoint's signing secret (`whsec_…`). Without it the webhook answers 503 |
 | `STRIPE_PAYMENT_LINK` | Optional. The donation Payment Link's id (`plink_…`): set, the webhook ignores other Checkout Sessions of the account |
 | `PORT` | Default `3000` |
