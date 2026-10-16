@@ -4,8 +4,12 @@ export const SITE_URL = 'https://www.pokemonsurvivors.com'
 
 export const REPO_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
-/** Donations page, linked from the title, the victory screen and the site footer. Never tied to in-game rewards. */
-export const KOFI_URL = 'https://ko-fi.com/pokemonsurvivors'
+/**
+ * Stripe Payment Link for donations from outside Brazil (cards, Apple Pay and
+ * Google Pay, in US$; the donor picks the amount there). Linked from the support
+ * page, whose `?thanks=1` the link redirects to once paid. Never tied to in-game rewards.
+ */
+export const STRIPE_DONATION_URL = 'https://donate.stripe.com/5kQ28l1x45My6ci4ibcjS00'
 
 /**
  * Every public URL, per language. `play` is the game itself (`index.html`,
@@ -18,6 +22,7 @@ export const ROUTES = {
   guide: { pt: '/guia/', en: '/en/guide/', es: '/es/guia/' },
   changelog: { pt: '/novidades/', en: '/en/changelog/', es: '/es/novedades/' },
   legal: { pt: '/legal/', en: '/en/legal/', es: '/es/legal/' },
+  support: { pt: '/apoie/', en: '/en/support/', es: '/es/apoya/' },
 } as const satisfies Record<string, Record<Locale, string>>
 
 export type RouteId = keyof typeof ROUTES

@@ -35,6 +35,7 @@ export const sitePt = {
     guide: 'Guia',
     changelog: 'Novidades',
     legal: 'Legal',
+    support: 'Apoie',
     language: 'Idioma',
   },
   footer: {
@@ -43,7 +44,7 @@ export const sitePt = {
     legal: 'Legal e privacidade',
     credits: 'Créditos',
     source: 'Código no GitHub',
-    support: 'Apoie no Ko-fi',
+    support: 'Apoie o projeto',
   },
   home: 'Início',
   playCta: 'Jogar grátis',
@@ -528,6 +529,34 @@ export const sitePt = {
     pr: (n: number) => `PR #${n}`,
   },
 
+  support: {
+    title: 'Apoie o Pokémon Survivors | Doe por Pix ou cartão',
+    description:
+      'O Pokémon Survivors é grátis, sem anúncios e sem compras. Se quiser ajudar a pagar os servidores, doe por Pix ou cartão brasileiro (AbacatePay) ou, de outros países, com cartão, Apple Pay ou Google Pay (Stripe). Doar não dá nada dentro do jogo.',
+    h1: 'Apoie o projeto',
+    lead: 'O jogo é grátis e vai continuar assim, sem anúncios e sem nada à venda. Se ele te divertiu e você quiser ajudar a pagar os servidores (contas, ranking e o Desafio do dia), qualquer valor ajuda. Doar não dá nada dentro do jogo.',
+    thanks: 'Obrigado pelo apoio! Pode levar alguns minutos para o pagamento ser confirmado. ♥',
+    pick: 'Escolha como pagar',
+    suggested: 'Sugerido para você',
+    br: {
+      title: 'No Brasil',
+      methods: 'Pix ou cartão de crédito, em reais.',
+      amount: 'Valor da doação',
+      other: 'Outro valor',
+      range: (min: number, max: number) => `De R$ ${min} a R$ ${max}, sem centavos.`,
+      cta: (amount: number) => `Doar R$ ${amount}`,
+      loading: 'Abrindo o pagamento…',
+      error: 'Não deu para abrir o pagamento agora. Tente de novo em instantes.',
+      via: 'O pagamento abre na AbacatePay. Seus dados de pagamento vão direto para eles.',
+    },
+    intl: {
+      title: 'Outros países',
+      methods: 'Cartão, Apple Pay ou Google Pay, em dólares.',
+      cta: 'Doar pelo Stripe',
+      via: 'Você escolhe o valor na próxima página, que abre no Stripe. Seus dados de pagamento vão direto para eles.',
+    },
+  },
+
   legal: {
     title: 'Legal, privacidade e créditos | Pokémon Survivors',
     description:
@@ -548,6 +577,7 @@ export const sitePt = {
     free: [
       'O jogo é gratuito e vai continuar assim: não tem anúncios, conteúdo pago nem compras dentro do app.',
       'Poké Dollars (₽) existem só dentro do jogo e não podem ser comprados com dinheiro de verdade.',
+      'Quem quiser pode doar na página Apoie o projeto. Doações são voluntárias e não dão nada dentro do jogo.',
     ],
     licenses: {
       code: 'Código-fonte',
@@ -586,6 +616,7 @@ export const sitePt = {
       'Para apagar esses dados, limpe os dados do site nas configurações do navegador.',
       'Sprites, sons e fontes vêm do próprio site, sem chamadas a serviços de terceiros. O site é hospedado na Vercel, que, como qualquer servidor, pode registrar dados técnicos de acesso (como endereço IP) para operar e proteger o serviço.',
       'Para saber quantas pessoas visitam o site e jogam, usamos o Vercel Web Analytics e uma instância própria do Umami, num servidor nosso. Eles contam visitas de forma anônima e agregada (página, país, navegador, dispositivo e site de origem) e, no caso do Umami, também o resumo de cada partida (Pokémon inicial, até que minuto e nível você chegou e se venceu), sem cookies e sem identificar ou seguir você entre sites.',
+      'Doações são pagas nas páginas da AbacatePay (abacatepay.com: Pix e cartões brasileiros) ou do Stripe (stripe.com: cartões de outros países, Apple Pay e Google Pay). Os dados de pagamento vão direto para eles, e o jogo nunca vê seu cartão. Eles nos mostram o valor e, como a qualquer recebedor, dados de quem pagou (como nome e e-mail), que não usamos para nada além de registrar a doação. Ela não fica ligada à sua conta no jogo.',
     ],
     contact: [
       'Se você tem direitos sobre algum material usado aqui e quer que ele seja removido ou ajustado, abra uma issue no GitHub. O pedido vai ser atendido rapidamente.',

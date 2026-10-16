@@ -22,6 +22,7 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /gifts` | `{ gifts }`: the player's unclaimed Mystery Gifts (`{ id, content, reason, at }`), oldest first, 20 at most |
 | `POST /gifts/claim` | Body `{ ids }`: marks those gifts claimed once the game applied them. `{ claimed }` |
 | `POST /referral` | Body `{ ref }`: the inviter's handle a new account came with. `{ referred }`, whether it counted |
+| `POST /donations` | Body `{ amount, page }`: `amount` whole reais (`parseDonation` in `src/data/donations.ts`), `page` the site path to come back to. `{ url }`, an AbacatePay checkout (Pix or a Brazilian card) that returns to `page?thanks=1` once paid. 400 for an amount out of range, 503 without `ABACATEPAY_API_KEY` |
 
 `/save`, `/me`, `/runs`, `/follows`, `/gifts` and `/referral` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
@@ -70,6 +71,7 @@ The cost grows with the horde: late endless minutes are the heavy ones. A VPS co
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API keys → Secret key (required) |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWT public key (PEM), to verify tokens without fetching Clerk's keys |
 | `CORS_ORIGINS` | Optional. Extra allowed origins, comma separated (e.g. a Vercel preview) |
+| `ABACATEPAY_API_KEY` | Optional. AbacatePay API key (v2) for donations; a dev key simulates payments. Each amount becomes a product `pokemon-survivors-donation-<reais>` the first time it's given |
 | `PORT` | Default `3000` |
 
 ## Database
@@ -130,6 +132,7 @@ New versions roll out with no downtime:
 | --- | --- | --- |
 | `DATABASE_URL` | Dokploy (`api`) | Internal connection string of `survivors-postgres-kwkfm5` |
 | `CLERK_SECRET_KEY` | Dokploy (`api`) | Production instance secret key |
+| `ABACATEPAY_API_KEY` | Dokploy (`api`) | AbacatePay production key, with `CHECKOUT:CREATE`, `PRODUCT:CREATE` and `PRODUCT:READ` |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
 | `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
 

@@ -274,7 +274,7 @@ const showPlayGate = () =>
     }),
   )
 
-/** Pokémon select, with the Poké Mart and the Ko-fi chip (top right) and the way back to the title (top left). */
+/** Pokémon select, with the Poké Mart and the support chip (top right) and the way back to the title (top left). */
 const showMenu = (initial: PlayableId = lastStarter) => {
   endRun()
   const select = starterSelect(ui, input, {

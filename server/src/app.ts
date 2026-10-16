@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { logger } from 'hono/logger'
 import { challengeOpen } from '../../src/game/challenge'
+import { parseDonation } from '../../src/data/donations'
 import { isDayKey } from '../../src/game/day'
 import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
@@ -13,6 +14,7 @@ import { parseReplay } from '../../src/game/replay'
 import type { Verify } from './auth'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
+import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
 
@@ -23,6 +25,8 @@ export type AppDeps = {
   /** Re-simulates finished runs after the answer went out. */
   checks: Pick<Checks, 'schedule'>
   verify: Verify
+  /** Donation checkouts (AbacatePay), null when the server has no key for them. */
+  donate: Donate | null
   allowedOrigin: (origin: string) => boolean
   /** Whether the database answers, for `/health`. */
   ping: () => Promise<boolean>
@@ -31,6 +35,12 @@ export type AppDeps = {
 type Auth = { Variables: { userId: string } }
 
 type MaybeAuth = { Variables: { userId: string | null } }
+
+/** Where donors land when the site that sent them isn't one we know. */
+const SITE = 'https://www.pokemonsurvivors.com'
+
+/** A same-site path to come back to (`/apoie/`, `/en/support/`). */
+const SITE_PATH = /^\/[a-z0-9/-]{0,40}$/
 
 /** What a run's end answers when it's refused, by `FinishError`. */
 const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
@@ -67,8 +77,11 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /gifts/claim` (auth) `{ ids }`: marks those gifts claimed (the game applied them). `{ claimed }`.
  * - `POST /referral` (auth) `{ ref }`: the inviter's handle a new account came with. `{ referred }`:
  *   whether it counted (only a new account, never oneself: `canRefer`).
+ * - `POST /donations` `{ amount, page }`: `{ url }`, an AbacatePay checkout (Pix or a
+ *   Brazilian card) for `amount` whole reais (`parseDonation`). The donor comes back
+ *   to `page` on the site, with `?thanks=1` once paid. 503 without an AbacatePay key.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin, ping }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, allowedOrigin, ping }: AppDeps) => {
   const app = new Hono()
 
   app.use(logger())
@@ -195,6 +208,18 @@ export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin
     const ref = isRecord(body) ? parseHandle(body.ref) : null
     if (!ref) return c.json({ error: 'expected { ref }' }, 400)
     return c.json({ referred: await gifts.refer(c.var.userId, ref) })
+  })
+
+  app.post('/donations', smallBody, async (c) => {
+    if (!donate) return c.json({ error: 'donations are off' }, 503)
+    const body = await json(c)
+    const amount = isRecord(body) ? parseDonation(body.amount) : null
+    if (!amount) return c.json({ error: 'expected { amount } in whole reais' }, 400)
+    const origin = c.req.header('Origin')
+    const base = origin && allowedOrigin(origin) ? origin : SITE
+    const page = isRecord(body) && typeof body.page === 'string' && SITE_PATH.test(body.page) ? body.page : '/'
+    const url = await donate(amount, { completionUrl: `${base}${page}?thanks=1`, returnUrl: `${base}${page}` })
+    return c.json({ url })
   })
 
   app.onError((err, c) => {

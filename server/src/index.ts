@@ -4,6 +4,7 @@ import { clerkVerifier } from './auth'
 import { connect, migrate, saveStore } from './db'
 import { createChecks } from './checks'
 import { createRibbons } from './challenge'
+import { abacatePay } from './donations'
 import { giftStore } from './gifts'
 import { rankingStore } from './ranking'
 import { loadEnv } from './env'
@@ -26,6 +27,7 @@ const app = createApp({
   gifts,
   checks,
   verify: clerkVerifier(env),
+  donate: env.abacatePayKey ? abacatePay(env.abacatePayKey) : null,
   allowedOrigin: env.allowedOrigin,
   ping: () => sql`select 1`.then(() => true, () => false),
 })

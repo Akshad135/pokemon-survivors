@@ -252,7 +252,7 @@ export const es: Messages = {
     change: 'Cambiar Pokémon',
     dexSpecies: (n) => (n === 1 ? '+1 especie nueva' : `+${n} especies nuevas`),
     dexShinies: (n) => (n === 1 ? '1 shiny capturado' : `${n} shinies capturados`),
-    support: '¿Te gusta? Apoya el proyecto en Ko-fi',
+    support: '¿Te gusta? Apoya el proyecto',
   },
 
   share: {

@@ -1,9 +1,12 @@
 /**
  * Progressive enhancement for the static site pages. The HTML is complete
  * without it; this only adds the Pokédex filters, shiny toggles and tap-to-walk,
- * and remembers the language for the game. It must never import game code, so
- * the game and the site never load each other's bundles.
+ * the donation form, and remembers the language for the game. It must never
+ * import game code (plain data like `data/donations` is fine), so the game and
+ * the site never load each other's bundles.
  */
+
+import { inBrazil, parseDonation } from '../data/donations'
 
 /** Same key as `src/i18n`: picking PT/EN/ES here makes "Play" open the game in that language. */
 const LANG_KEY = 'ps:lang'
@@ -129,3 +132,78 @@ const pokedex = (form: HTMLFormElement) => {
 
 const form = document.querySelector<HTMLFormElement>('#dex-filters')
 if (form) pokedex(form)
+
+/** The accounts API, which opens AbacatePay checkouts (`POST /donations`). */
+const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
+
+/**
+ * The support page: puts first (and marks) the way to pay that the time zone
+ * suggests, says thanks when a checkout comes back with `?thanks=1`, and turns
+ * the Brazilian form into an AbacatePay checkout.
+ */
+const support = (ways: HTMLElement) => {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const guess = document.getElementById(inBrazil(zone) ? 'donate-br' : 'donate-intl')
+  if (guess) {
+    ways.prepend(guess)
+    guess.classList.add('is-guess')
+  }
+
+  const thanks = document.getElementById('donate-thanks')
+  if (thanks && new URLSearchParams(location.search).has('thanks')) thanks.hidden = false
+
+  const form = document.querySelector<HTMLFormElement>('#donate-form')
+  if (!form) return
+  const button = form.querySelector('button')
+  const error = form.querySelector<HTMLElement>('.donate-error')
+  const other = form.elements.namedItem('other')
+  const presets = form.querySelectorAll<HTMLInputElement>('input[name="preset"]')
+  if (!button || !error || !(other instanceof HTMLInputElement)) return
+
+  const amount = () => parseDonation(other.value || (new FormData(form).get('preset') ?? ''))
+  const sync = () => {
+    const value = amount()
+    // The label holds one number ("Doar R$ 10"); swap in the chosen amount.
+    button.textContent = (form.dataset.cta ?? '').replace(/\d+/, String(value ?? '…'))
+    button.disabled = value === null
+  }
+
+  // Typing an amount unpicks the presets, and picking one clears it.
+  other.addEventListener('input', () => {
+    if (other.value) for (const p of presets) p.checked = false
+    sync()
+  })
+  for (const p of presets) p.addEventListener('change', () => ((other.value = ''), sync()))
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const value = amount()
+    if (value === null) return
+    error.hidden = true
+    button.disabled = true
+    button.textContent = form.dataset.loading ?? ''
+    try {
+      if (!API_URL) throw new Error('no API')
+      const res = await fetch(`${API_URL}/donations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: value, page: location.pathname }),
+      })
+      const body: unknown = await res.json()
+      const url = typeof body === 'object' && body !== null && 'url' in body && typeof body.url === 'string' ? body.url : null
+      if (!res.ok || !url) throw new Error(`donation: ${res.status}`)
+      location.href = url
+    } catch {
+      error.textContent = form.dataset.error ?? ''
+      error.hidden = false
+      sync()
+    }
+  })
+
+  // Back from the checkout, the page may come from the bfcache with the button still "Opening…".
+  window.addEventListener('pageshow', sync)
+  sync()
+}
+
+const ways = document.getElementById('donate-ways')
+if (ways) support(ways)
