@@ -931,6 +931,18 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && run?.game.phase === 'playing') run.game.phase = 'paused'
 })
 
+/**
+ * Asks before closing or reloading the tab while a run is on (paused and
+ * level-up included; the results screen isn't). Every page navigation the
+ * game makes (signing in, the guide, the title's links) starts from a menu,
+ * with no run, so none of them is asked. iOS Safari ignores this prompt.
+ */
+window.addEventListener('beforeunload', (e) => {
+  if (!run || run.game.phase === 'gameover' || run.game.phase === 'victory') return
+  e.preventDefault()
+  e.returnValue = true
+})
+
 /* ---------------- Loop ---------------- */
 
 let last = performance.now()
