@@ -6,7 +6,8 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { handleProblem, normalizeHandle, parseDisplayName, suggestHandle, type ProfileRun, type PublicProfile } from '../game/ranking'
 import { RIBBON_TIERS, type RibbonTier } from '../game/ribbons'
-import { pokeballIcon, ribbonIcon } from '../render/art'
+import type { SupporterTier } from '../game/supporters'
+import { pokeballIcon, ribbonIcon, supporterIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { fetchProfile, profileUrl, setFollow } from '../ranking'
 import { pokedex } from '../site/pokedex'
@@ -25,8 +26,12 @@ export const runForm = (starter: PlayableId, stage: number) => {
 
 export const runPortrait = (starter: PlayableId, stage: number) => portraitUrl(runForm(starter, stage).dex)
 
-/** Day and month of a run, in the current language (`14/10`, `10/14`). */
-const runDay = (iso: string) => new Date(iso).toLocaleDateString(LOCALES[locale()].tag, { day: '2-digit', month: '2-digit' })
+/** Day and month of a run, in the current language (`14/10`, `10/14`), with the year for `long`. */
+const runDay = (iso: string, long = false) => new Date(iso).toLocaleDateString(LOCALES[locale()].tag, { day: '2-digit', month: '2-digit', ...(long ? { year: 'numeric' } : {}) })
+
+/** The supporter's heart by a name (rose, or gold for the gold tier), or nothing. */
+export const supporterBadge = (tier: SupporterTier | null | undefined) =>
+  tier ? h('img', { class: 'supporter-badge', src: supporterIcon(tier), alt: t().supporters.badge(tier), title: t().supporters.badge(tier) }) : null
 
 type Action = { label: string; run: () => void }
 
@@ -148,7 +153,14 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
           'div',
           { class: 'profile-head' },
           h('img', { class: 'profile-portrait', src: headPortrait(p), alt: '' }),
-          h('div', { class: 'profile-id' }, h('b', { class: 'profile-name' }, p.name), h('span', { class: 'profile-handle' }, `@${p.handle}`), titleBadge(p.title)),
+          h(
+            'div',
+            { class: 'profile-id' },
+            h('b', { class: 'profile-name' }, p.name, supporterBadge(p.supporter)),
+            h('span', { class: 'profile-handle' }, `@${p.handle}`),
+            titleBadge(p.title),
+            p.supporter && p.supporterSince ? h('small', { class: 'profile-supporter' }, t().supporters.profileSince(runDay(p.supporterSince, true))) : null,
+          ),
         ),
         h('p', { class: 'profile-social' }, [m.followers(p.followers), m.following(p.following), ...(p.brought ? [m.brought(p.brought)] : [])].join(' · ')),
         !p.self && !signedIn ? note(m.followGuest) : null,

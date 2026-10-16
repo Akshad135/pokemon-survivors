@@ -8,6 +8,7 @@ import { outbreakAt } from '../game/outbreak'
 import { depositEggs, type Egg } from '../game/eggs'
 import { parseSave, recordHatch, recordRun, type Save } from '../game/meta'
 import type { RunSummary } from '../game/tally'
+import { STICK_MODES, type StickMode } from '../engine/input'
 import { DAMAGE_NUMBERS, type DamageNumbers } from '../render/damageNumbers'
 
 const KEY = 'ps:save'
@@ -138,9 +139,11 @@ export type Settings = {
   /** `reduced` keeps the biggest few on a crowded screen (`render/damageNumbers.ts`). */
   damageNumbers: DamageNumbers
   screenShake: boolean
+  /** Touch joystick: follows the thumb (the default) or waits in the bottom-left corner. */
+  joystick: StickMode
 }
 
-export const DEFAULT_SETTINGS: Settings = { musicVolume: 0.6, sfxVolume: 1, muted: false, damageNumbers: 'reduced', screenShake: true }
+export const DEFAULT_SETTINGS: Settings = { musicVolume: 0.6, sfxVolume: 1, muted: false, damageNumbers: 'reduced', screenShake: true, joystick: 'floating' }
 
 const volume = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback)
 const flag = (v: unknown, fallback: boolean) => (typeof v === 'boolean' ? v : fallback)
@@ -163,6 +166,7 @@ export const parseSettings = (raw: string | null, defaults = DEFAULT_SETTINGS): 
     muted: flag(data.muted, defaults.muted),
     damageNumbers: damageMode(data.damageNumbers, defaults.damageNumbers),
     screenShake: flag(data.screenShake, defaults.screenShake),
+    joystick: STICK_MODES.find((m) => m === data.joystick) ?? defaults.joystick,
   }
 }
 

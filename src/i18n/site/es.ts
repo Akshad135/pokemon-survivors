@@ -19,6 +19,7 @@ export const siteEs: SiteMessages = {
     guide: 'Guía',
     changelog: 'Novedades',
     legal: 'Legal',
+    support: 'Apoya',
     language: 'Idioma',
   },
   footer: {
@@ -27,6 +28,7 @@ export const siteEs: SiteMessages = {
     legal: 'Legal y privacidad',
     credits: 'Créditos',
     source: 'Código en GitHub',
+    support: 'Apoya el proyecto',
   },
   home: 'Inicio',
   playCta: 'Jugar gratis',
@@ -511,6 +513,67 @@ export const siteEs: SiteMessages = {
     pr: (n: number) => `PR #${n}`,
   },
 
+  support: {
+    title: 'Apoya Pokémon Survivors | Dona con tarjeta, Apple Pay o Google Pay',
+    description:
+      'Pokémon Survivors es gratis, sin anuncios y sin nada a la venta. Si quieres ayudar a pagar los servidores, dona con tarjeta, Apple Pay o Google Pay desde cualquier país (Stripe), o con Pix o tarjeta brasileña desde Brasil (AbacatePay). Con una cuenta, quien dona recibe un agradecimiento cosmético en el juego: título, marco, sello, un shiny a su elección y un compañero.',
+    h1: 'Apoya el proyecto',
+    lead: 'El juego es gratis y seguirá así, sin anuncios y sin nada a la venta. Si te divirtió y quieres ayudar a pagar los servidores (cuentas, ranking y el Desafío del día), cualquier monto ayuda. Como agradecimiento, quien dona con una cuenta recibe recompensas cosméticas en el juego, nada que cambie una partida.',
+    thanks: '¡Gracias por tu apoyo! ♥',
+    status: {
+      pending: 'Confirmando el pago… Puede tardar unos minutos (deja esta página abierta).',
+      late: 'El pago aún no se confirmó. Vuelve a esta página en un rato para ver tu código.',
+      sent: (handle: string) => `Las recompensas fueron para @${handle}. Llegan como Regalo Misterioso la próxima vez que el juego se sincronice.`,
+      code: 'Tu código de canje:',
+      codeHint: 'En el juego, inicia sesión y abre el ♥ del título → Tengo un código. Vale una vez, para la cuenta que lo canjee: puede ser la de un amigo.',
+      copy: 'Copiar',
+      copied: '¡Copiado!',
+      used: 'El código de esta donación ya se canjeó.',
+    },
+    account: {
+      title: 'Para quién son las recompensas',
+      label: 'Tu @ en el juego',
+      placeholder: 'tu_usuario',
+      hint: 'Opcional. Con el @ de una cuenta (la tuya o la de un amigo), las recompensas van directo a ella. Sin él, recibes un código para canjear en el juego.',
+      checking: 'Buscando…',
+      found: (name: string) => `Para ${name}`,
+      missing: 'Nadie tiene ese @ en el juego.',
+    },
+    perks: {
+      title: 'Lo que recibe quien dona',
+      items: [
+        'El título y el marco de tarjeta Patrocinador(a).',
+        'Un sello ♥ junto al @ en el ranking y en el perfil.',
+        'Un shiny a su elección: cualquier inicial o familia de huevo (una familia que aún no eclosionó viene con él).',
+        'Un compañero que lo sigue en las partidas.',
+        'Su nombre en el mural de abajo y en los agradecimientos de la victoria.',
+        'Voto en el próximo Pokémon de los huevos.',
+        'Oro, con R$ 50 o US$ 10 en total: fondo de tarjeta, fondo de la Caja del PC y sello dorados.',
+      ],
+      note: 'Todo cosmético: nada cambia una partida ni el ranking. Las recompensas necesitan una cuenta en el juego (entrar con Google es gratis).',
+    },
+    wall: { title: 'Mural de patrocinadores', empty: 'Todavía no hay nadie. ¡Tu nombre puede ser el primero!' },
+    pick: 'Elige cómo pagar',
+    suggested: 'Sugerido para ti',
+    br: {
+      title: 'En Brasil',
+      methods: 'Pix o tarjeta de crédito, en reales.',
+      amount: 'Monto de la donación',
+      other: 'Otro monto',
+      range: (min: number, max: number) => `De R$ ${min} a R$ ${max}, sin centavos.`,
+      cta: (amount: number) => `Donar R$ ${amount}`,
+      loading: 'Abriendo el pago…',
+      error: 'No se pudo abrir el pago ahora. Inténtalo de nuevo en unos instantes.',
+      via: 'El pago se abre en AbacatePay. Tus datos de pago van directo a ellos.',
+    },
+    intl: {
+      title: 'Otros países',
+      methods: 'Tarjeta, Apple Pay o Google Pay, en dólares.',
+      cta: 'Donar con Stripe',
+      via: 'Eliges el monto en la página siguiente, en Stripe. Tus datos de pago van directo a ellos.',
+    },
+  },
+
   legal: {
     title: 'Legal, privacidad y créditos | Pokémon Survivors',
     description:
@@ -531,6 +594,7 @@ export const siteEs: SiteMessages = {
     free: [
       'El juego es gratuito y va a seguir así: no tiene anuncios, contenido pago ni compras dentro de la app.',
       'Los Poké Dollars (₽) existen solo dentro del juego y no se pueden comprar con dinero real.',
+      'Si quieres, puedes donar en la página Apoya el proyecto. Las donaciones son voluntarias y, con una cuenta, solo dan un agradecimiento cosmético (título, marco, sello, un shiny a tu elección, un compañero), nada que cambie una partida o el ranking.',
     ],
     licenses: {
       code: 'Código fuente',
@@ -569,6 +633,7 @@ export const siteEs: SiteMessages = {
       'Para borrar estos datos, elimina los datos del sitio en la configuración del navegador.',
       'Los sprites, sonidos y fuentes vienen del propio sitio, sin llamadas a servicios de terceros. El sitio está alojado en Vercel, que, como cualquier servidor, puede registrar datos técnicos de acceso (como la dirección IP) para operar y proteger el servicio.',
       'Para saber cuántas personas visitan el sitio y juegan, usamos Vercel Web Analytics y una instancia propia de Umami, en un servidor nuestro. Cuentan las visitas de forma anónima y agregada (página, país, navegador, dispositivo y sitio de origen) y, en el caso de Umami, también el resumen de cada partida (Pokémon inicial, hasta qué minuto y nivel llegaste y si ganaste), sin cookies y sin identificarte ni seguirte entre sitios.',
+      'Las donaciones se pagan en las páginas de AbacatePay (abacatepay.com: Pix y tarjetas brasileñas) o de Stripe (stripe.com: tarjetas de otros países, Apple Pay y Google Pay). Tus datos de pago van directo a ellos, y el juego nunca ve tu tarjeta. Nos muestran el monto y, como a cualquiera que recibe un pago, datos de quien pagó (como nombre y correo), que solo usamos para registrar la donación. Si das un @ (o canjeas el código de la donación), queda ligada a esa cuenta del juego para que lleguen las recompensas; el monto nunca se muestra en público, solo el sello de patrocinador, que puedes ocultar.',
     ],
     contact: [
       'Si tienes derechos sobre algún material usado aquí y quieres que se retire o se modifique, abre un issue en GitHub. La solicitud se atenderá rápidamente.',
