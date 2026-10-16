@@ -21,6 +21,7 @@ import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { accountState, accountsEnabled, backFromSignIn, onAccountChange, startAccount, syncSave } from './account'
 import { track } from './analytics'
+import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
@@ -53,7 +54,7 @@ import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { eggIcon } from './render/art'
+import { bagIcon, eggIcon } from './render/art'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
@@ -62,9 +63,10 @@ import { h, later, rich } from './ui/dom'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { accountScreen, playGate } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
-import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
+import { bankEggs, depositPokeDollars, loadSave, outbreakToday, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
 import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
+import { martDevTools } from './ui/martDev'
 import { missionDevTools } from './ui/missionsDev'
 import { pcBoxScreen } from './ui/pcBox'
 import { pokedexScreen } from './ui/pokedex'
@@ -140,9 +142,10 @@ type Run = {
   missionsBefore: MissionStatus[]
   recorded: RunSummary | null
   unlocked: AchievementId[]
-  /** ₽ paid for missions and medals this run, and the reward eggs they gave. */
+  /** ₽ paid for missions and medals this run, and the reward eggs and bag items they gave. */
   reward: number
   rewardEggs: number
+  rewardItems: BagItem[]
   /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
   hatchery: { steps: number; eggs: number; refund: number }
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
@@ -259,7 +262,7 @@ const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
 /** The Caixa do PC (from the Pokédex); its Trainer Card stands the last Pokémon played beside the trainer. */
 const showPcBox = (back: () => void) =>
-  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(lastStarter), close) })
+  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(lastStarter), close) }, loadSave().style.equipped.wallpaper)
 
 const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 2 })))
 
@@ -329,6 +332,7 @@ const recordProgress = (r: Run) => {
   r.unlocked.push(...record.unlocked)
   r.reward += record.reward
   r.rewardEggs += record.eggs.length
+  r.rewardItems.push(...record.items)
   return record
 }
 
@@ -370,12 +374,13 @@ const endRun = () => {
 
 const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, t().loading))
 
-/** The next run's seed and wild cast, drawn ahead so the menus can warm up its first stage. */
-type RunPlan = { seed: number; roster: Roster }
+/** The next run's seed, the day's outbreak and the wild cast, drawn ahead so the menus can warm up its first stage. */
+type RunPlan = { seed: number; outbreak: EnemyId; roster: Roster }
 
 const planRun = (): RunPlan => {
   const seed = Date.now()
-  return { seed, roster: runRoster(seed) }
+  const outbreak = outbreakToday()
+  return { seed, outbreak, roster: runRoster(seed, outbreak) }
 }
 
 let upcoming = planRun()
@@ -407,9 +412,15 @@ const startRun = async (starter: PlayableId) => {
   ui.append(loading)
   // The start token's clock starts now, while the sprites load.
   const ranked = startRanked()
-  const plan = upcoming
+  // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
+  const plan = upcoming.outbreak === outbreakToday() ? upcoming : planRun()
   upcoming = planRun()
   await loadAll([...playableDex(starter), ...openingDex(plan)])
+  // The outbreak's shiny can show up in the first minute.
+  void preloadShinies([ENEMIES[plan.outbreak].dex])
+  // Armed bag items are used up as the run starts.
+  const { bag, used } = useArmed(loadSave().bag)
+  updateSave((s) => ({ ...s, bag }))
   const save = loadSave()
   const start: ReplayStart = {
     seed: plan.seed,
@@ -419,6 +430,9 @@ const startRun = async (starter: PlayableId) => {
     // A shiny hatch is shiny for good; a starter rolled shiny once plays shiny when picked so.
     shiny: (isHatchling(starter) && save.hatched[starter]?.shiny === true) || save.shinyStarters[starter] === true,
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
+    outbreak: plan.outbreak,
+    lure: used.lure,
+    incense: used.incense,
     view: { w: view.w, h: view.h },
   }
   // Created like a replay is re-simulated (the roster drawn ahead is the same one).
@@ -443,6 +457,7 @@ const startRun = async (starter: PlayableId) => {
     unlocked: [],
     reward: 0,
     rewardEggs: 0,
+    rewardItems: [],
     hatchery: { steps: 0, eggs: 0, refund: 0 },
     dexBase: save.dex,
     recorder: startRecording(start),
@@ -451,8 +466,20 @@ const startRun = async (starter: PlayableId) => {
     bestBefore: save.achievements.lifetime.bestTime,
   }
   track('run_start', { starter, difficulty: game.difficulty })
+  announceRun(start)
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
+}
+
+/** The run's first toasts: the day's outbreak, then each bag item it used. */
+const announceRun = (start: ReplayStart) => {
+  if (start.outbreak) {
+    const def = ENEMIES[start.outbreak]
+    toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
+  }
+  for (const id of BAG_ITEM_IDS) {
+    if (start[id]) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon(id), alt: '' }), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
+  }
 }
 
 const runHud = (game: Game) => {
@@ -496,6 +523,7 @@ const syncOverlay = (r: Run) => {
   r.overlay?.dispose()
   r.overlay = null
   r.shown = { phase: g.phase, offers: g.offers }
+  r.hud.setMenuOpen(g.phase !== 'playing' && g.phase !== 'evolving')
   switch (g.phase) {
     case 'levelup':
       r.overlay = levelUp(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)), {
@@ -517,7 +545,7 @@ const syncOverlay = (r: Run) => {
         () => (recordEvent(r.recorder, ['endless']), continueEndless(g)),
         {
           badge: titleBadge(loadSave().title),
-          report: missionReport(r.missionsBefore, r.reward, r.rewardEggs),
+          report: missionReport(r.missionsBefore, r.reward, r.rewardEggs, r.rewardItems),
           medals: medalChips(r.unlocked),
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
@@ -1069,6 +1097,13 @@ if (import.meta.env.DEV) {
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,
+      ...martDevTools(() => {
+        // A new outbreak plays from the next run's plan, and the title, the Mart or the select shows it.
+        upcoming = planRun()
+        if (screen?.el.classList.contains('title-home')) showTitle()
+        else if (screen?.el.classList.contains('mart-screen')) showShop()
+        else if (screen?.el.querySelector('.select-layout')) showMenu()
+      }),
     },
   })
 }

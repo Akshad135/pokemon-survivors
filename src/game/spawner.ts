@@ -159,7 +159,7 @@ export const updateSpawner = (g: Game, dt: number) => {
     const kind = pickSpawn(g.rng, pool, traitsAlive)
     if (!kind) continue
     if (hasTrait(kind)) traitsAlive++
-    if (rollShiny(g.rng, SHINY_ODDS.enemy)) {
+    if (rollShiny(g.rng, SHINY_ODDS.enemy * g.shinyBoost)) {
       // Shinies pop in just inside the screen edge so their sparkle entrance is seen.
       const a = range(g.rng, 0, TAU)
       const d = Math.min(g.view.w, g.view.h) / 2 - 16

@@ -4,10 +4,11 @@ import { chooseOffer, step } from './game'
 import { recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
+import { OUTBREAK_SPECIES } from './outbreak'
 import type { Game } from './types'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
-const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
 
 /**
  * Plays `seconds` like the shell would, with a wandering stick, picks and a
@@ -108,6 +109,16 @@ describe('replays', () => {
     const staged = startGame(start)
     quickAttack(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+  })
+
+  it("re-simulate a run of the day's outbreak with a Lure and an Incense, which change how it plays", () => {
+    const start: ReplayStart = { ...START, outbreak: OUTBREAK_SPECIES[0]!, lure: true, incense: true }
+    const { g, replay } = play(40, start)
+    expect(g.roster.stages.every((pool) => pool.some(([id]) => id === start.outbreak))).toBe(true)
+    expect(g.shinyBoost).toBe(2)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
+    expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
   })
 
   it('give a run played on another seed away', () => {

@@ -1,6 +1,7 @@
 import type { TitleId } from '../data/achievements'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { RUN_LENGTH } from '../data/waves'
+import { DAY_TIME_ZONE } from './day'
 import { isDifficulty, type Difficulty } from './difficulty'
 import { wonRun } from './meta'
 import { isRecord } from './parse'
@@ -163,9 +164,10 @@ export type ProfileName = { handle: string; name: string }
 /**
  * Day and week boards follow Brazil's clock (no daylight saving since 2019):
  * most players are there, so the day turns at their midnight and the week on
- * their Monday, like the missions on their devices.
+ * their Monday, like the missions on their devices. The same day as the
+ * Surto do dia and the Poké Mart's counter (`game/day.ts`).
  */
-export const BOARD_TIME_ZONE = 'America/Sao_Paulo'
+export const BOARD_TIME_ZONE = DAY_TIME_ZONE
 
 export const BOARD_PERIODS = ['day', 'week', 'all'] as const
 

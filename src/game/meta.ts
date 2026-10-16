@@ -6,7 +6,10 @@ import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficul
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
+import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
+import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
 import { isRecord, wholeNumber } from './parse'
+import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
@@ -21,10 +24,14 @@ type UpgradeDef = {
   /** Official English name; descriptions live in `i18n`. */
   name: string
   maxRank: number
-  /** Price of the first rank; later ranks grow by PRICE_GROWTH. */
+  /** Price of the first rank; each later one costs `growth` times more (`PRICE_GROWTH` by default). */
   basePrice: number
-  /** Either a stat bonus per rank or one extra per-run level-up charge per rank. */
-  effect: { stat: StatDelta } | { charge: 'rerolls' | 'skips' }
+  growth?: number
+  /**
+   * A stat bonus per rank, one extra per-run level-up charge per rank, or
+   * better wild shiny odds (`shinyBoost` in `game/shiny.ts`).
+   */
+  effect: { stat: StatDelta } | { charge: 'rerolls' | 'skips' } | { odds: 'shiny' }
 }
 
 export const UPGRADES = {
@@ -39,6 +46,7 @@ export const UPGRADES = {
   amuletCoin: { name: 'Amulet Coin', maxRank: 5, basePrice: 250, effect: { stat: { greed: 0.1 } } },
   abilityCapsule: { name: 'Ability Capsule', maxRank: 3, basePrice: 500, effect: { charge: 'rerolls' } },
   escapeRope: { name: 'Escape Rope', maxRank: 3, basePrice: 300, effect: { charge: 'skips' } },
+  shinyCharm: { name: 'Shiny Charm', maxRank: 3, basePrice: 6000, growth: 2, effect: { odds: 'shiny' } },
 } as const satisfies Record<string, UpgradeDef>
 
 export type UpgradeId = keyof typeof UPGRADES
@@ -54,7 +62,10 @@ export const NO_RANKS: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, 0
 const PRICE_GROWTH = 1.6
 
 /** Price of the next rank when `rank` ranks are already owned. Rounded to ₽10. */
-export const upgradePrice = (id: UpgradeId, rank: number) => Math.round((UPGRADES[id].basePrice * PRICE_GROWTH ** rank) / 10) * 10
+export const upgradePrice = (id: UpgradeId, rank: number) => {
+  const def: UpgradeDef = UPGRADES[id]
+  return Math.round((def.basePrice * (def.growth ?? PRICE_GROWTH) ** rank) / 10) * 10
+}
 
 /** Everything spent on the given ranks, i.e. what a full refund gives back. */
 export const totalSpent = (ranks: Ranks) =>
@@ -100,6 +111,14 @@ export type Save = {
   difficulty: Difficulty
   /** Shiny starters unlocked by a lucky roll, and the Normal/Shiny pick of each (`game/shinyStarters.ts`). */
   shinyStarters: ShinyStarters
+  /** Lures and Incenses, and the ones armed for the next run (`game/bag.ts`). */
+  bag: Bag
+  /** What was bought from the Poké Mart's daily counter today (`game/mart.ts`). */
+  counter: CounterSave
+  /** Card frames, backgrounds and PC wallpapers owned and worn (`game/style.ts`). */
+  style: StyleSave
+  /** ₽ ever spent at the counter and on styles: the sync counts it as part of the fortune (`game/sync.ts`). */
+  spent: number
 }
 
 export const EMPTY_SAVE: Save = {
@@ -114,6 +133,10 @@ export const EMPTY_SAVE: Save = {
   title: null,
   difficulty: DEFAULT_DIFFICULTY,
   shinyStarters: NO_SHINY_STARTERS,
+  bag: EMPTY_BAG,
+  counter: NO_COUNTER,
+  style: NO_STYLES,
+  spent: 0,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -161,6 +184,10 @@ export const parseSaveData = (json: unknown): Save => {
     title: parseTitle(data.title, achievements.unlocked),
     difficulty: parseDifficulty(data.difficulty),
     shinyStarters: parseShinyStarters(data.shinyStarters),
+    bag: parseBag(data.bag),
+    counter: parseCounter(data.counter),
+    style: parseStyle(data.style),
+    spent: wholeNumber(data.spent),
   }
 }
 
@@ -247,11 +274,13 @@ const payEggs = (save: Save, eggs: readonly EggTier[], room: number) =>
     { save, eggs: [], refund: 0 },
   )
 
-/** Saves the boards and records, and pays every mission completed and medal earned (₽, then eggs). */
+/** Saves the boards and records, and pays every mission completed and medal earned (₽, then items into the bag, then eggs). */
 const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
   const coins = m.completed.reduce((sum, mission) => sum + mission.reward, 0) + a.unlocked.reduce((sum, id) => sum + MEDAL_REWARD[ACHIEVEMENTS[id].medal], 0)
-  const paid = payEggs({ ...save, wallet: save.wallet + coins, missions: m.missions, achievements: a.achievements }, rewardEggs(m.completed, a.unlocked), eggRoom)
-  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins + paid.refund, eggs: paid.eggs }
+  const items = m.completed.flatMap((mission): BagItem[] => (mission.item ? [mission.item] : []))
+  const bag = items.reduce((b, id) => addToBag(b, id), save.bag)
+  const paid = payEggs({ ...save, wallet: save.wallet + coins, bag, missions: m.missions, achievements: a.achievements }, rewardEggs(m.completed, a.unlocked), eggRoom)
+  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins + paid.refund, eggs: paid.eggs, items }
 }
 
 /**

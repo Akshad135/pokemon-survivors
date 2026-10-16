@@ -64,14 +64,14 @@ export const bossEggSource = (kind: EnemyId): EggSource =>
 /** An egg found this run, with the distance walked (px) when it was found. */
 export type FoundEgg = { tier: EggTier; at: number }
 
-/** `lucky`: this player never had an egg, so the next roll can't miss. */
-export type RunEggs = { found: FoundEgg[]; lucky: boolean }
+/** `lucky`: this player never had an egg, so the next roll can't miss. `boost` multiplies every source's chance (Incense). */
+export type RunEggs = { found: FoundEgg[]; lucky: boolean; boost: number }
 
 /** Whether `source` leaves an egg, and which. Null on a miss or once the run's cap is reached. */
 export const rollEgg = (rng: Rng, source: EggSource, eggs: RunEggs): EggTier | null => {
   if (eggs.found.length >= EGGS.perRun) return null
   const rule: DropRule = EGG_SOURCES[source]
-  if (!eggs.lucky && !chance(rng, rule.chance)) return null
+  if (!eggs.lucky && !chance(rng, Math.min(1, rule.chance * eggs.boost))) return null
   return weightedPick(rng, EGG_TIER_IDS.flatMap((tier) => (rule.odds[tier] ? [[tier, rule.odds[tier]] as const] : [])))
 }
 

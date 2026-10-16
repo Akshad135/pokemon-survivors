@@ -64,7 +64,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   e.hp = 0
   g.kills++
   if (source === 'special' || g.special.chaining) g.special.kills++
-  countKill(g.tally, e, weatherHere(g), g.biome.id)
+  countKill(g.tally, e, weatherHere(g), g.biome.id, g.outbreak)
   const big = e.boss || e.shiny
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })

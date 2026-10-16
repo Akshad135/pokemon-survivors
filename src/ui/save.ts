@@ -1,4 +1,8 @@
 import type { TitleId } from '../data/achievements'
+import type { EnemyId } from '../data/enemies'
+import { brasiliaDay } from '../game/day'
+import { counterOf } from '../game/mart'
+import { outbreakAt } from '../game/outbreak'
 import { depositEggs, type Egg } from '../game/eggs'
 import { parseSave, recordHatch, recordRun, type Save } from '../game/meta'
 import type { RunSummary } from '../game/tally'
@@ -55,6 +59,19 @@ export const today = () => new Date(Date.now() + clockOffset)
 export const setToday = (date: Date | null) => {
   clockOffset = date ? date.getTime() - Date.now() : 0
 }
+
+/** Dev-only outbreak held instead of the day's (`ps.outbreak`). */
+let outbreakOverride: EnemyId | null = null
+
+/** The outbreak of the day (Brasília) on the missions' clock, unless the dev console holds another. */
+export const outbreakToday = (): EnemyId => outbreakOverride ?? outbreakAt(today())
+
+export const setOutbreak = (id: EnemyId | null) => {
+  outbreakOverride = id
+}
+
+/** Today's Poké Mart counter (Brasília day, on the missions' clock). */
+export const counterToday = () => counterOf(brasiliaDay(today()))
 
 /**
  * Records a run into the missions and achievements, pays their rewards and saves.

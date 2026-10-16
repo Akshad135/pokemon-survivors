@@ -1,3 +1,4 @@
+import type { BagItem } from '../game/bag'
 import type { EggTier } from '../game/eggs'
 import type { BiomeId, WeatherId } from './biomes'
 import type { PokeType } from './types'
@@ -15,6 +16,8 @@ export type MissionGoal =
   | { kind: 'biomeKills'; biome: BiomeId }
   | { kind: 'traitKills' }
   | { kind: 'shinyKills' }
+  /** Pokémon of the day's outbreak (`game/outbreak.ts`). */
+  | { kind: 'outbreakKills' }
   | { kind: 'bossKills' }
   | { kind: 'rifts' }
   | { kind: 'chests' }
@@ -38,8 +41,8 @@ export type MissionGoal =
 /** Target and ₽ reward of one difficulty. */
 type Tier = readonly [target: number, reward: number]
 
-/** A family of missions: the draw picks one goal and one tier. `egg` is given on top of the ₽. */
-export type MissionTemplate = { goals: readonly MissionGoal[]; tiers: readonly Tier[]; egg?: EggTier }
+/** A family of missions: the draw picks one goal and one tier. `egg` and `item` (one, into the bag) are given on top of the ₽. */
+export type MissionTemplate = { goals: readonly MissionGoal[]; tiers: readonly Tier[]; egg?: EggTier; item?: BagItem }
 
 /** Types common enough in the wild roster to hunt in a day. */
 const HUNTED_TYPES = ['normal', 'flying', 'bug', 'poison', 'fighting', 'ground', 'ghost', 'dark', 'dragon', 'rock', 'electric', 'steel', 'fire'] as const satisfies readonly PokeType[]
@@ -49,6 +52,9 @@ const WEATHERS = ['sun', 'rain', 'sand', 'snow', 'fog'] as const satisfies reado
 const LATE_BIOMES = ['forest', 'cave', 'snow', 'tower'] as const satisfies readonly BiomeId[]
 
 const typeKills = HUNTED_TYPES.map((type) => ({ kind: 'typeKills', type }) as const)
+
+/** Targets of the daily outbreak mission: about a third and two thirds of what a full run defeats of it. */
+const OUTBREAK_TIERS = [150, 300] as const
 
 /** Three of these are drawn every day, one per template. */
 export const DAILY_POOL = [
@@ -64,23 +70,24 @@ export const DAILY_POOL = [
   { goals: [{ kind: 'altars' }], tiers: [[2, 150], [3, 200]] },
   { goals: [{ kind: 'coins' }], tiers: [[400, 150], [1000, 250]] },
   { goals: [{ kind: 'rifts' }], tiers: [[1, 250]] },
-  { goals: [{ kind: 'shinyKills' }], tiers: [[1, 250]] },
+  { goals: [{ kind: 'shinyKills' }], tiers: [[1, 250]], item: 'lure' },
+  { goals: [{ kind: 'outbreakKills' }], tiers: [[OUTBREAK_TIERS[0], 150], [OUTBREAK_TIERS[1], 250]], item: 'lure' },
   { goals: [{ kind: 'level' }], tiers: [[20, 150], [30, 250]] },
   { goals: [{ kind: 'moveEvolutions' }], tiers: [[1, 200]] },
   { goals: [{ kind: 'steps' }], tiers: [[1500, 150], [3000, 250]] },
-  { goals: [{ kind: 'species' }], tiers: [[12, 150], [20, 250]] },
+  { goals: [{ kind: 'species' }], tiers: [[12, 150], [20, 250]], item: 'incense' },
 ] as const satisfies readonly MissionTemplate[]
 
 /** Two of these are drawn every week (weeks start on Monday). */
 export const WEEKLY_POOL = [
   { goals: [{ kind: 'wins' }, ...STARTER_TYPES.map((type) => ({ kind: 'wins', type }) as const)], tiers: [[1, 1500], [3, 3000]], egg: 'rare' },
   { goals: [{ kind: 'rifts' }], tiers: [[3, 1200], [6, 2000]] },
-  { goals: [{ kind: 'shinyKills' }], tiers: [[5, 1200], [10, 2000]] },
+  { goals: [{ kind: 'shinyKills' }], tiers: [[5, 1200], [10, 2000]], item: 'lure' },
   { goals: [{ kind: 'kills' }], tiers: [[5000, 1000], [10_000, 2000]] },
   { goals: typeKills, tiers: [[600, 1200], [1000, 2000]] },
   { goals: [{ kind: 'coins' }], tiers: [[5000, 1200], [10_000, 2000]] },
   { goals: [{ kind: 'chests' }, { kind: 'meowths' }], tiers: [[5, 1500]] },
-  { goals: [{ kind: 'bossKills' }], tiers: [[15, 1200], [25, 2000]] },
+  { goals: [{ kind: 'bossKills' }], tiers: [[15, 1200], [25, 2000]], item: 'incense' },
   { goals: [{ kind: 'endless' }], tiers: [[3, 1500], [6, 2500]] },
   { goals: [{ kind: 'hatches' }], tiers: [[1, 1000], [2, 1800]], egg: 'common' },
   { goals: [{ kind: 'steps' }], tiers: [[15_000, 1200], [25_000, 2000]] },

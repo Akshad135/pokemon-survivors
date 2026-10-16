@@ -30,17 +30,26 @@ describe('egg drops', () => {
   it('stop at the per-run cap, even for a sure source', () => {
     const rng = createRng(1)
     const found = Array.from({ length: EGGS.perRun }, () => ({ tier: 'common' as const, at: 0 }))
-    expect(rollEgg(rng, 'final', { found, lucky: true })).toBeNull()
-    expect(rollEgg(rng, 'final', { found: [], lucky: false })).not.toBeNull()
+    expect(rollEgg(rng, 'final', { found, lucky: true, boost: 1 })).toBeNull()
+    expect(rollEgg(rng, 'final', { found: [], lucky: false, boost: 1 })).not.toBeNull()
   })
 
   it('never miss for a player who never had an egg', () => {
-    for (let seed = 0; seed < 50; seed++) expect(rollEgg(createRng(seed), 'chest', { found: [], lucky: true })).not.toBeNull()
+    for (let seed = 0; seed < 50; seed++) expect(rollEgg(createRng(seed), 'chest', { found: [], lucky: true, boost: 1 })).not.toBeNull()
+  })
+
+  it('drop about twice as often with an Incense', () => {
+    const drops = (boost: number) => {
+      const rng = createRng(11)
+      return Array.from({ length: 4000 }, () => rollEgg(rng, 'chest', { found: [], lucky: false, boost })).filter((e) => e !== null).length
+    }
+    expect(drops(2) / drops(1)).toBeGreaterThan(1.8)
+    expect(drops(2) / drops(1)).toBeLessThan(2.2)
   })
 
   it('only give the tiers a source lists', () => {
     const rng = createRng(7)
-    for (let i = 0; i < 200; i++) expect(['rare', 'ultra']).toContain(rollEgg(rng, 'rift', { found: [], lucky: true }))
+    for (let i = 0; i < 200; i++) expect(['rare', 'ultra']).toContain(rollEgg(rng, 'rift', { found: [], lucky: true, boost: 1 }))
   })
 
   it('give rift legendaries, Arceus, Mewtwo and the mythicals their own rule', () => {

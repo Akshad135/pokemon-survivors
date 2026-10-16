@@ -139,11 +139,11 @@ export const rankingStore = (sql: Sql) => {
         return { ok: true } as const
       }),
 
-    /** A finished run waiting for its re-simulation: what it reported, and its replay. Null when there's nothing to check. */
+    /** A finished run waiting for its re-simulation: what it reported, when it started, and its replay. Null when there's nothing to check. */
     runToCheck: async (id: string) => {
-      const [row] = await sql<{ survived: number; kills: number; level: number; replay: unknown }[]>`
-        select survived, kills, level, replay from runs where id = ${id} and finished_at is not null and replay is not null and verified is null`
-      return row ? { time: row.survived, kills: row.kills, level: row.level, replay: row.replay } : null
+      const [row] = await sql<{ survived: number; kills: number; level: number; started_at: Date; replay: unknown }[]>`
+        select survived, kills, level, started_at, replay from runs where id = ${id} and finished_at is not null and replay is not null and verified is null`
+      return row ? { time: row.survived, kills: row.kills, level: row.level, startedAt: row.started_at, replay: row.replay } : null
     },
 
     /**

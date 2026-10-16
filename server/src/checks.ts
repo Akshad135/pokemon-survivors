@@ -1,4 +1,5 @@
 import { Worker } from 'node:worker_threads'
+import { outbreakFits } from '../../src/game/outbreak'
 import { parseReplay, rulesStanding, type Replay, type Resimulated } from '../../src/game/replay'
 import type { RankingStore } from './ranking'
 
@@ -49,7 +50,8 @@ const inlineRunner = (): Runner => async (_id, replay) => {
 /**
  * Re-simulation of ranked runs, one at a time, after the API has answered. A
  * run is verified when its replay ends on the same time, faints and level it
- * reported; otherwise it's marked failed and leaves the boards. When the
+ * reported; otherwise it's marked failed and leaves the boards. A replay that
+ * played another day's outbreak (`outbreakFits`) fails without re-simulating. When the
  * machinery fails instead, the run stays pending for the next start.
  * Only replays of this build's rules are judged (`RULES_VERSION`): an older
  * one (a run that straddled a balance deploy) loses its replay and stays
@@ -71,11 +73,18 @@ export const createChecks = (ranking: RankingStore) => {
       try {
         const reported = await ranking.runToCheck(id)
         if (!reported) continue
-        const rules = parseReplay(reported.replay)?.rules
+        const parsed = parseReplay(reported.replay)
+        const rules = parsed?.rules
         const standing = rules === undefined ? 'same' : rulesStanding(rules)
         if (standing !== 'same') {
           if (standing === 'older') await ranking.dropReplay(id)
           console.log(`check ${id}: replay under ${standing} rules (${rules}), left unverified`)
+          continue
+        }
+        // The outbreak is a run input: it must be the one of the day the run started (or the day before).
+        if (parsed && !outbreakFits(parsed.start.outbreak, reported.startedAt)) {
+          await ranking.setVerified(id, reported.time, false, null)
+          console.log(`check ${id}: failed, outbreak ${parsed.start.outbreak} isn't the one of ${reported.startedAt.toISOString()}`)
           continue
         }
         const answer = await run(id, reported.replay)

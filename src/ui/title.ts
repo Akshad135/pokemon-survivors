@@ -2,12 +2,15 @@ import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { context2d } from '../engine/pixelart'
 import { locale, t, type Locale } from '../i18n'
+import { ENEMIES } from '../data/enemies'
+import { sparkleIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
+import { drawPokemon, loadedSprites, loadSpecies } from '../render/sprites'
 import { accountChip } from './account'
 import { h, later } from './dom'
 import { languageSwitch } from './language'
 import { titleBadge } from './missions'
-import { loadSave } from './save'
+import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
 
 /** Static site pages, one URL per language (they live outside the game bundle). */
@@ -40,6 +43,38 @@ export type TitleActions = {
   ranking?: (focus: number) => Screen
 }
 
+/**
+ * "Surto de hoje": the day's outbreak species, walking in its normal and
+ * shiny colors side by side, with what it means. `tick` animates the sprites.
+ */
+const outbreakBanner = () => {
+  const m = t().outbreak
+  const def = ENEMIES[outbreakToday()]
+  const canvas = h('canvas', { class: 'outbreak-sprites', width: 76, height: 40, 'aria-hidden': 'true' })
+  void Promise.allSettled([loadSpecies(def.dex), loadSpecies(def.dex, true)])
+  const el = h(
+    'div',
+    { class: 'outbreak-banner box' },
+    canvas,
+    h(
+      'div',
+      { class: 'outbreak-text' },
+      h('small', {}, m.title),
+      h('b', {}, def.name, h('img', { src: sparkleIcon(), alt: '' })),
+      h('span', {}, m.blurb),
+    ),
+  )
+  const tick = (time: number) => {
+    const ctx = context2d(canvas)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const normal = loadedSprites(def.dex)
+    const shiny = loadedSprites(def.dex, true)
+    if (normal) drawPokemon(ctx, normal, 'Walk', 0, time, 19, canvas.height - 4)
+    if (shiny) drawPokemon(ctx, shiny, 'Walk', 0, time + 0.3, 57, canvas.height - 4)
+  }
+  return { el, tick }
+}
+
 /** Fits the logo to the viewport in whole device pixels per logo pixel. */
 const fitLogo = (canvas: HTMLCanvasElement) => {
   const vw = window.innerWidth
@@ -57,7 +92,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 }
 
 /**
- * Title screen over the live meadow: pixel logo, a blinking "press start",
+ * Title screen over the live meadow: pixel logo, the day's outbreak, a blinking "press start",
  * then the main menu (Play, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
  * switch, the account chip (when accounts are on) and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
@@ -97,7 +132,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     h('a', { href: GITHUB_URL, target: '_blank', rel: 'noopener' }, 'GitHub'),
   )
   const badge = titleBadge(loadSave().title)
-  const head = h('div', { class: 'title-head' }, logo, badge)
+  const outbreak = outbreakBanner()
+  const head = h('div', { class: 'title-head' }, logo, badge, outbreak.el)
   const el = h('div', { class: 'screen title-home' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), head, prompt, footer)
 
   let nav: ReturnType<typeof menu> | null = null
@@ -158,7 +194,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   return {
     el,
     dim: 0.12,
-    tick: (time: number) => (overScreen?.tick?.(time), logo.width > 1 && fitLogo(logo)),
+    tick: (time: number) => (overScreen?.tick?.(time), outbreak.tick(time), logo.width > 1 && fitLogo(logo)),
     dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), closeAccount?.(), el.remove()),
   }
 }

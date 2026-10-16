@@ -1,5 +1,6 @@
 import { ACHIEVEMENT_IDS, type AchievementId } from '../data/achievements'
 import { NO_ACHIEVEMENTS } from '../game/achievements'
+import { addToBag } from '../game/bag'
 import { dayKey, missionStatus, NO_MISSIONS, periodKey } from '../game/missions'
 import { loadSave, setToday, today, writeSave } from './save'
 
@@ -25,13 +26,13 @@ export const missionDevTools = (refresh: () => void) => {
     /** Today's and this week's missions with progress. */
     missions: () => console.table(missionStatus(loadSave().missions, today()).map(({ id, period, progress, target, reward }) => ({ id, period, progress, target, reward }))),
     mission,
-    /** Completes mission `i` and pays its reward. */
+    /** Completes mission `i` and pays its reward (₽ and its bag item). */
     completeMission: (i: number) => {
       const m = missionStatus(loadSave().missions, today())[i]
       if (!m) return 'Missions: 0-2 daily, 3-4 weekly'
       const result = mission(i, m.target)
       const save = loadSave()
-      writeSave({ ...save, wallet: save.wallet + m.reward })
+      writeSave({ ...save, wallet: save.wallet + m.reward, bag: m.item ? addToBag(save.bag, m.item) : save.bag })
       refresh()
       return result
     },

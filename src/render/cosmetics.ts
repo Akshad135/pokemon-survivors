@@ -1,32 +1,55 @@
 import { context2d, createCanvas, fromStrings } from '../engine/pixelart'
+import type { BackgroundId, FrameId, WallpaperId } from '../data/style'
 
 /**
  * Looks the player can show off: the frame and background of the share cards
  * (`render/card.ts`) and the Caixa do PC's wallpaper (`ui/pcBox.ts`). Each is
- * plain data keyed by id, so new ones (the Poké Mart's style shelf) are a new
- * entry here; everything that draws takes the equipped one, or the default.
+ * plain data keyed by id, so a new one is a new entry here (and a price on
+ * the shelf, `data/style.ts`); everything that draws takes the equipped one,
+ * or the default.
  */
 
-/** A card's border, outside in: `edge` line, `light` line, `main` band (2 px), `shade` line. `accent` dots the corners. */
-export type CardFrame = { edge: string; light: string; main: string; shade: string; accent: string }
+/** A ball emblem for a frame's corners: 7×7 pixel strings and their palette. */
+export type BallArt = readonly [rows: readonly string[], palette: Readonly<Record<string, string>>]
+
+/**
+ * A card's border, outside in: `edge` line, `light` line, `main` band (2 px),
+ * `shade` line. `accent` dots the corners, unless a `ball` sits there. With
+ * `lower`, the band's lower half takes that color and a dark line splits
+ * them on the sides, like a Poké Ball's two halves.
+ */
+export type CardFrame = { edge: string; light: string; main: string; shade: string; accent: string; lower?: string; ball?: BallArt }
+
+/** A ball's rows: 2 the top half, 5 its marks, 3 the bottom half, 4 the button. */
+const ball = (top: string, marks: string): BallArt => [
+  ['..111..', '.15251.', '1522251', '1114111', '1333331', '.13331.', '..111..'],
+  { 1: '#181820', 2: top, 3: '#f0f0f0', 4: '#f8f8f8', 5: marks },
+]
 
 export const CARD_FRAMES = {
   /** The game's own dialog box: dark line, paper, blue. */
   classic: { edge: '#283040', light: '#f8f8f8', main: '#6878a8', shade: '#101830', accent: '#ffcb05' },
-} as const satisfies Record<string, CardFrame>
+  poke: { edge: '#201818', light: '#f8f8f8', main: '#e03838', shade: '#581818', accent: '#f8f8f8', lower: '#e8e8f0', ball: ball('#e03838', '#e03838') },
+  great: { edge: '#101c40', light: '#f8f8f8', main: '#3070e0', shade: '#0c1848', accent: '#e83838', lower: '#e8e8f0', ball: ball('#3070e0', '#e83838') },
+  ultra: { edge: '#080808', light: '#f8d030', main: '#303038', shade: '#000000', accent: '#f8d030', lower: '#e8e8f0', ball: ball('#303038', '#f8d030') },
+  master: { edge: '#200830', light: '#f8b8f0', main: '#8040c8', shade: '#180428', accent: '#f070c0', lower: '#e8e8f0', ball: ball('#8040c8', '#f070c0') },
+} as const satisfies Record<FrameId, CardFrame>
 
-export type CardFrameId = keyof typeof CARD_FRAMES
-
-/** A card's backdrop: sky bands top to bottom (dithered where they meet) and how many stars. */
+/** A card's backdrop: sky bands top to bottom (dithered where they meet) and how many stars (fireflies, crystals, snow…). */
 export type CardBackground = { sky: readonly string[]; stars: number; starColors: readonly string[] }
 
+/** Night skies: the classic one and each biome at dusk, all dark enough for the card's white text. */
 export const CARD_BACKGROUNDS = {
   night: { sky: ['#080c20', '#0e1430', '#141c40', '#1a2450', '#202c5c'], stars: 90, starColors: ['#ffffff', '#a8b8f8', '#f8e070', '#6878a8'] },
-} as const satisfies Record<string, CardBackground>
+  meadow: { sky: ['#0a1a24', '#0e2630', '#123438', '#18443c', '#205440'], stars: 60, starColors: ['#f8f070', '#c0f070', '#ffffff', '#58a868'] },
+  forest: { sky: ['#041008', '#08180c', '#0c2412', '#103018', '#163c1e'], stars: 70, starColors: ['#e8f870', '#a8e858', '#f8f8c0', '#2c6830'] },
+  cave: { sky: ['#0e0806', '#18100a', '#22160e', '#2c1e12', '#362618'], stars: 50, starColors: ['#80d0f8', '#c8a8f8', '#f8f8f8', '#6a5440'] },
+  snow: { sky: ['#0a1428', '#101e3c', '#182a50', '#203664', '#2a4478'], stars: 130, starColors: ['#ffffff', '#d8e8f8', '#a8c8f0', '#ffffff'] },
+  tower: { sky: ['#0e0616', '#160a24', '#1e0e32', '#281240', '#32164e'], stars: 70, starColors: ['#b080f8', '#80f0d0', '#f8f8f8', '#5a4078'] },
+} as const satisfies Record<BackgroundId, CardBackground>
 
-export type CardBackgroundId = keyof typeof CARD_BACKGROUNDS
-
-export type CardStyle = { frame: CardFrameId; background: CardBackgroundId }
+/** What a card wears. */
+export type CardStyle = { frame: FrameId; background: BackgroundId }
 
 export const DEFAULT_CARD_STYLE: CardStyle = { frame: 'classic', background: 'night' }
 
@@ -56,11 +79,117 @@ export const PC_WALLPAPERS = {
     ],
     palette: { 1: '#5070b8', 2: '#5878c0', 3: '#6888d0', 4: '#80a0e0' },
   },
-} as const satisfies Record<string, Wallpaper>
-
-export type WallpaperId = keyof typeof PC_WALLPAPERS
+  /** Leaves on green, like Viridian Forest. */
+  forest: {
+    tile: [
+      '1111111111111111',
+      '1111112211111111',
+      '1111122321111111',
+      '1111223332111111',
+      '1112233332111111',
+      '1112333321111111',
+      '1111233211111111',
+      '1111144111111111',
+      '1111141111111111',
+      '1111111111111111',
+      '1111111111122111',
+      '1111111111223211',
+      '1111111112233321',
+      '1111111112333211',
+      '1111111111232111',
+      '1111111111141111',
+    ],
+    palette: { 1: '#3a7a3a', 2: '#2e662e', 3: '#58a048', 4: '#285428' },
+  },
+  /** Pebbles on brown, like Mt. Moon. */
+  cave: {
+    tile: [
+      '1111111111111111',
+      '1112221111111111',
+      '1123332111111111',
+      '1233333211111111',
+      '1233343211111111',
+      '1123332111111211',
+      '1112221111112321',
+      '1111111111111211',
+      '1111111111111111',
+      '1111111122211111',
+      '1111111233321111',
+      '1121111233432111',
+      '1232111123321111',
+      '1121111112211111',
+      '1111111111111111',
+      '1111111111111111',
+    ],
+    palette: { 1: '#6a5440', 2: '#54402e', 3: '#8a7258', 4: '#a89070' },
+  },
+  /** Snowflakes on ice blue, like Mt. Silver. */
+  snow: {
+    tile: [
+      '1111111111111111',
+      '1111111211111111',
+      '1111121212111111',
+      '1111112321111111',
+      '1112223432221111',
+      '1111112321111111',
+      '1111121212111111',
+      '1111111211111111',
+      '1111111111111111',
+      '1111111111111121',
+      '1111111111111111',
+      '1121111111111111',
+      '1232111111111111',
+      '1121111111111111',
+      '1111111111111111',
+      '1111111111111111',
+    ],
+    palette: { 1: '#88b0d8', 2: '#a8c8e8', 3: '#d0e4f8', 4: '#ffffff' },
+  },
+  /** Little ghosts on purple, like Lavender Tower. */
+  tower: {
+    tile: [
+      '1111111111111111',
+      '1111112222111111',
+      '1111123333211111',
+      '1111233333321111',
+      '1111234334321111',
+      '1111233333321111',
+      '1111233333321111',
+      '1111232323221111',
+      '1111121212111111',
+      '1111111111111111',
+      '1111111111111111',
+      '1111111111111311',
+      '1111111111113331',
+      '1111111111111311',
+      '1111111111111111',
+      '1111111111111111',
+    ],
+    palette: { 1: '#5a4078', 2: '#6a4c8c', 3: '#8468a8', 4: '#3a2850' },
+  },
+} as const satisfies Record<WallpaperId, Wallpaper>
 
 export const DEFAULT_WALLPAPER: WallpaperId = 'classic'
+
+const frameIcons = new Map<FrameId, string>()
+
+/** A frame as a small icon (the Poké Mart's rows): its ball, or its rings as nested squares. */
+export const frameIcon = (id: FrameId) => {
+  let url = frameIcons.get(id)
+  if (!url) {
+    const f: CardFrame = CARD_FRAMES[id]
+    const canvas = createCanvas(7, 7)
+    const ctx = context2d(canvas)
+    if (f.ball) ctx.drawImage(fromStrings(f.ball[0], f.ball[1]), 0, 0)
+    else
+      [f.edge, f.light, f.main, f.accent].forEach((color, i) => {
+        ctx.fillStyle = color
+        ctx.fillRect(i, i, 7 - i * 2, 7 - i * 2)
+      })
+    frameIcons.set(id, (url = canvas.toDataURL()))
+  }
+  return url
+}
 
 const wallpaperUrls = new Map<WallpaperId, string>()
 

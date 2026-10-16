@@ -1,4 +1,7 @@
 import { mergeAchievements } from './achievements'
+import { mergeBag } from './bag'
+import { mergeCounter } from './mart'
+import { mergeStyle } from './style'
 import { mergeDex } from './dex'
 import { mergeEggs, mergeHatched } from './eggs'
 import { SAVE_VERSION, totalSpent, UPGRADE_IDS, type Ranks, type Save, type UpgradeId } from './meta'
@@ -10,8 +13,11 @@ import { mergeShinyStarters } from './shinyStarters'
  * saves become one, and what a push stores. Pure, so both sides agree.
  */
 
-/** Everything a save ever got in ₽: the wallet plus what its upgrades cost. Buying or refunding doesn't change it. */
-const worth = (s: Save) => s.wallet + totalSpent(s.ranks)
+/**
+ * Everything a save ever got in ₽: the wallet plus what its upgrades cost and
+ * what it spent at the counter and on styles. Buying or refunding doesn't change it.
+ */
+const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
 
 /**
  * Two saves of the same player in one (a guest save joining an account, or
@@ -23,18 +29,22 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks)
  *   unions; the incubator keeps the most eggs of each tier (`mergeEggs`).
  * - Upgrades, records, counters and mission progress keep the larger value
  *   (missions of an older day or week give way to the current ones).
- * - ₽: the larger fortune (wallet plus upgrades, see `worth`) wins, minus
- *   what the merged upgrades cost, so ₽ spent on one side and kept on the
- *   other isn't counted twice.
+ * - ₽: the larger fortune (wallet plus upgrades and other spending, see
+ *   `worth`) wins, minus what the merged upgrades cost and the larger
+ *   spending, so ₽ spent on one side and kept on the other isn't counted twice.
  * - The title: `incoming`'s, if it shows one.
  * - The difficulty picked last: `incoming`'s, a setting rather than progress.
  * - Shiny starters: a union; each Normal/Shiny pick is `incoming`'s when it has one.
+ * - The bag: each item's got and used counters keep the larger side; what's
+ *   armed is `incoming`'s. The daily counter: the most recent day, the most
+ *   bought of each item on the same day. Styles: a union, worn as `incoming`.
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
+  const spent = Math.max(base.spent, incoming.spent)
   return {
     version: SAVE_VERSION,
-    wallet: Math.max(0, Math.max(worth(base), worth(incoming)) - totalSpent(ranks)),
+    wallet: Math.max(0, Math.max(worth(base), worth(incoming)) - totalSpent(ranks) - spent),
     ranks,
     dex: mergeDex(base.dex, incoming.dex),
     eggs: mergeEggs(base.eggs, incoming.eggs),
@@ -44,6 +54,10 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     title: incoming.title ?? base.title,
     difficulty: incoming.difficulty,
     shinyStarters: mergeShinyStarters(base.shinyStarters, incoming.shinyStarters),
+    bag: mergeBag(base.bag, incoming.bag),
+    counter: mergeCounter(base.counter, incoming.counter),
+    style: mergeStyle(base.style, incoming.style),
+    spent,
   }
 }
 

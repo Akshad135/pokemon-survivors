@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { NO_ACHIEVEMENTS } from './achievements'
 import { buyUpgrade, EMPTY_SAVE, NO_RANKS, refundAll, upgradePrice, type Save } from './meta'
+import { bagCount } from './bag'
+import { buyFromCounter, buyStyle, counterOf } from './mart'
 import { applyPush, mergeSaves } from './sync'
 
 const save = (patch: Partial<Save>): Save => ({ ...EMPTY_SAVE, ...patch })
@@ -28,6 +30,16 @@ const account = save({
 })
 
 describe('mergeSaves', () => {
+  it("never pays back what one side spent at the counter or on styles", () => {
+    const before = save({ wallet: 10_000 })
+    const shopped = buyStyle(buyFromCounter(before, counterOf('2026-10-15'), 'lure')!, 'frame', 'master')!
+    const m = mergeSaves(before, shopped)
+    expect(m.wallet).toBe(shopped.wallet)
+    expect(m.style.owned.frame).toEqual(['master'])
+    expect(bagCount(m.bag, 'lure')).toBe(1)
+    expect(mergeSaves(m, before)).toEqual({ ...m, style: { ...m.style, equipped: before.style.equipped }, bag: { ...m.bag, armed: before.bag.armed } })
+  })
+
   it('joins the collection and keeps the larger upgrades and records', () => {
     const m = mergeSaves(account, guest)
     expect(m.ranks).toMatchObject({ hpUp: 3, protein: 2, iron: 0 })
