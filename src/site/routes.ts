@@ -9,7 +9,7 @@ export const REPO_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
  * Google Pay, in US$; the donor picks the amount there). Linked from the support
  * page, whose `?thanks=1` the link redirects to once paid. Never tied to in-game rewards.
  */
-export const STRIPE_DONATION_URL = ''
+export const STRIPE_DONATION_URL = 'https://donate.stripe.com/5kQ28l1x45My6ci4ibcjS00'
 
 /**
  * Every public URL, per language. `play` is the game itself (`index.html`,

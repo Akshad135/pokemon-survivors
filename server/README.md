@@ -71,7 +71,7 @@ The cost grows with the horde: late endless minutes are the heavy ones. A VPS co
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API keys → Secret key (required) |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWT public key (PEM), to verify tokens without fetching Clerk's keys |
 | `CORS_ORIGINS` | Optional. Extra allowed origins, comma separated (e.g. a Vercel preview) |
-| `ABACATEPAY_API_KEY` | Optional. AbacatePay API key (v2) for donations; a dev key simulates payments. Each amount becomes a product `donation-<reais>` the first time it's given |
+| `ABACATEPAY_API_KEY` | Optional. AbacatePay API key (v2) for donations; a dev key simulates payments. Each amount becomes a product `pokemon-survivors-donation-<reais>` the first time it's given |
 | `PORT` | Default `3000` |
 
 ## Database

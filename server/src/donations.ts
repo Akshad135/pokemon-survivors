@@ -11,12 +11,17 @@ type Envelope<T> = { data: T | null; error: string | null; success: boolean }
 /**
  * Donations through AbacatePay's hosted checkout (Pix and Brazilian cards).
  * A checkout only sells catalog products, so each amount gets its own product
- * ("Doação R$ 25", `externalId` `donation-25`), found or created the first time
+ * ("Doação Pokémon Survivors (R$ 25)", `externalId` `pokemon-survivors-donation-25`, prefixed because
+ * the AbacatePay account may sell other things), found or created the first time
  * someone gives it and remembered afterwards. Amounts come from `parseDonation`,
  * so there are at most a thousand of them.
  */
 export const abacatePay = (apiKey: string): Donate => {
-  /** One API call: its `data`, null for a 404, and a throw for any other failure. */
+  /**
+   * One API call: its `data`, or null when AbacatePay refuses the request
+   * (a 4xx such as "Product not found", which it answers with 400, not 404).
+   * Throws when the key is refused, on rate limits, server errors and network failures.
+   */
   const call = async <T>(path: string, init?: { body: unknown }): Promise<T | null> => {
     const res = await fetch(`${API}${path}`, {
       method: init ? 'POST' : 'GET',
@@ -24,27 +29,28 @@ export const abacatePay = (apiKey: string): Donate => {
       body: init && JSON.stringify(init.body),
     })
     const body = (await res.json().catch(() => null)) as Envelope<T> | null
-    if (res.status === 404) return null
-    if (!res.ok || !body?.success || !body.data) throw new Error(`AbacatePay ${path}: ${res.status} ${body?.error ?? ''}`)
-    return body.data
+    if (res.ok && body?.success && body.data) return body.data
+    if (res.status >= 400 && res.status < 500 && ![401, 403, 429].includes(res.status)) return null
+    throw new Error(`AbacatePay ${path}: ${res.status} ${body?.error ?? ''}`)
   }
 
   const products = new Map<number, Promise<string>>()
 
   const findOrCreate = async (amount: number) => {
-    const externalId = `donation-${amount}`
-    const known = await call<{ id: string }>(`/products/get?externalId=${externalId}`)
-    if (known) return known.id
-    const product = await call<{ id: string }>('/products/create', {
+    const externalId = `pokemon-survivors-donation-${amount}`
+    const find = () => call<{ id: string }>(`/products/get?externalId=${externalId}`)
+    const create = () => call<{ id: string }>('/products/create', {
       body: {
         externalId,
-        name: `Doação R$ ${amount}`,
+        name: `Doação Pokémon Survivors (R$ ${amount})`,
         description: 'Apoio ao Pokémon Survivors, um fan game gratuito. Não dá nada dentro do jogo.',
         price: amount * 100,
         currency: 'BRL',
       },
     })
-    if (!product) throw new Error('AbacatePay /products/create: 404')
+    // Found, else created, else found again: another instance may have just created it.
+    const product = (await find()) ?? (await create()) ?? (await find())
+    if (!product) throw new Error(`AbacatePay: no product ${externalId}`)
     return product.id
   }
 
@@ -65,7 +71,7 @@ export const abacatePay = (apiKey: string): Donate => {
     const checkout = await call<{ url: string }>('/checkouts/create', {
       body: { items: [{ id, quantity: 1 }], methods: ['PIX', 'CARD'], ...urls },
     })
-    if (!checkout) throw new Error('AbacatePay /checkouts/create: 404')
+    if (!checkout) throw new Error(`AbacatePay refused a checkout of R$ ${amount}`)
     return checkout.url
   }
 }
