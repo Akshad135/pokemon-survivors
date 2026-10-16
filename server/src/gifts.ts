@@ -22,12 +22,18 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
  * the newcomer has enough verified runs (`creditDue`) and sends the
  * milestone gifts (`milestoneGifts`). Everything is counted here, never on the device.
  */
-/** Sends a gift inside a transaction (`userId` must have a users row). With a `key`, only the first send of that key lands. */
-export const sendGift = async (q: TransactionSql, userId: string, content: GiftContent, reason: GiftReason | null, key: string | null) => {
-  await q`
-    insert into gifts (user_id, kind, payload, reason, key)
-    values (${userId}, ${content.kind}, ${q.json(content)}, ${reason ? q.json(reason) : null}, ${key})
-    on conflict (user_id, key) do nothing`
+/**
+ * Sends a gift inside a transaction (`userId` must have a users row). With a
+ * `key`, only the first send of that key lands. `sentBy` is the admin who
+ * sent it by hand. Whether it landed now.
+ */
+export const sendGift = async (q: TransactionSql, userId: string, content: GiftContent, reason: GiftReason | null, key: string | null, sentBy: string | null = null) => {
+  const rows = await q`
+    insert into gifts (user_id, kind, payload, reason, key, sent_by)
+    values (${userId}, ${content.kind}, ${q.json(content)}, ${reason ? q.json(reason) : null}, ${key}, ${sentBy})
+    on conflict (user_id, key) do nothing
+    returning id`
+  return rows.length > 0
 }
 
 export const giftStore = (sql: Sql) => {

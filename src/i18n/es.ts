@@ -466,6 +466,7 @@ export const es: Messages = {
     friends: (n) => (n === 1 ? 'Por traer a tu primer amigo' : `Por traer a ${n} amigos`),
     shinyPick: '¡Un *shiny a tu elección*! Toca el ♥ del título para elegirlo.',
     support: (tier) => (tier === 'gold' ? 'Por llegar a Patrocinador(a) Oro ♥' : 'Por apoyar el proyecto ♥'),
+    staff: (from) => (from ? `Un regalo de @${from}, que hace el juego ♥` : 'Un regalo de quien hace el juego ♥'),
   },
 
   supporters: {

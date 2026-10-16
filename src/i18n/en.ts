@@ -466,6 +466,7 @@ export const en: Messages = {
     friends: (n) => (n === 1 ? 'For bringing your first friend' : `For bringing ${n} friends`),
     shinyPick: 'A *shiny of your choice*! Tap the ♥ on the title to pick it.',
     support: (tier) => (tier === 'gold' ? 'For reaching Gold Supporter ♥' : 'For supporting the project ♥'),
+    staff: (from) => (from ? `A present from @${from}, who makes the game ♥` : 'A present from the game\'s maker ♥'),
   },
 
   supporters: {

@@ -1,7 +1,9 @@
 import { accountState, onAccountChange, signIn, signOut, syncSave, type AccountState } from '../account'
+import { isAdmin } from '../admin'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { t } from '../i18n'
+import { adminScreen } from './admin'
 import { h, later, rich, topRight } from './dom'
 import { profileEditor, profileScreen } from './profile'
 import { hint, menu, type Screen } from './screens'
@@ -38,8 +40,8 @@ export const accountChip = (root: HTMLElement, input: Input, onOpen: () => void)
 
 type Action = { label: string; run: () => void }
 
-/** Screens the dialog opens over itself: the profile editor and the player's profile. */
-type Open = { editor: () => void; profile: (handle: string) => void }
+/** Screens the dialog opens over itself: the profile editor, the player's profile and, for the admin, the gift desk. */
+type Open = { editor: () => void; profile: (handle: string) => void; admin: () => void }
 
 /** The profile part of a signed-in dialog: the handle and a way to it, or the call to create one. */
 const profileContent = (handle: string | null | undefined, open: Open): { lines: Node[]; actions: Action[] } => {
@@ -49,8 +51,8 @@ const profileContent = (handle: string | null | undefined, open: Open): { lines:
   return { lines: [h('p', { class: 'account-line' }, rich(m.profile(handle)))], actions: [{ label: m.viewProfile, run: () => open.profile(handle) }] }
 }
 
-/** What the dialog says and offers in each state. */
-const content = (s: AccountState, open: Open): { lines: Node[]; actions: Action[] } => {
+/** What the dialog says and offers in each state. `admin`: the API said this account runs the gift desk. */
+const content = (s: AccountState, open: Open, admin: boolean): { lines: Node[]; actions: Action[] } => {
   const m = t().account
   const line = (text: string, cls = '') => h('p', { class: `account-line ${cls}` }, text)
   switch (s.kind) {
@@ -70,7 +72,13 @@ const content = (s: AccountState, open: Open): { lines: Node[]; actions: Action[
           ...profile.lines,
           line(m.signOutNote, 'account-note'),
         ],
-        actions: [...profile.actions, { label: m.syncNow, run: () => void syncSave() }, { label: m.signOut, run: () => void signOut() }],
+        actions: [
+          ...profile.actions,
+          // Admin only, so not translated (see `ui/admin.ts`).
+          ...(admin ? [{ label: 'Painel admin', run: open.admin }] : []),
+          { label: m.syncNow, run: () => void syncSave() },
+          { label: m.signOut, run: () => void signOut() },
+        ],
       }
     }
   }
@@ -87,6 +95,8 @@ export const accountScreen = (root: HTMLElement, input: Input, onClose: () => vo
   let nav: ReturnType<typeof menu> | null = null
   /** The profile or its editor, open over the dialog. */
   let sub: Screen | null = null
+  /** Whether the API said this account is admin (asked once the player is signed in). */
+  let admin = false
 
   /** Hides the dialog under `screen` until it closes, then draws it again. */
   const openSub = (open: (back: () => void) => Screen) => {
@@ -102,12 +112,14 @@ export const accountScreen = (root: HTMLElement, input: Input, onClose: () => vo
   const open: Open = {
     editor: () => openSub((back) => profileEditor(root, input, back)),
     profile: (handle) => openSub((back) => profileScreen(root, input, handle, back)),
+    admin: () => openSub((back) => adminScreen(root, input, back)),
   }
 
   const build = (s: AccountState, opening: boolean) => {
     if (sub) return
     const m = t().account
-    const { lines, actions } = content(s, open)
+    if (s.kind === 'signedIn' && !admin) void isAdmin().then((yes) => yes && !closed && ((admin = true), build(accountState(), false)))
+    const { lines, actions } = content(s, open, admin)
     const all = [...actions, { label: m.back, run: close }]
     const buttons = all.map((a) => h('button', { class: 'btn' }, a.label))
     nav?.off()
