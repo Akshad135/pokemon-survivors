@@ -1,6 +1,6 @@
 import type { EggTier } from '../game/eggs'
 import type { StatDelta } from '../game/stats'
-import { STARTERS, type EvolutionStage, type PlayableDef, type StarterId } from './starters'
+import { STARTER_IDS, STARTERS, type EvolutionStage, type PlayableDef, type StarterId } from './starters'
 import type { PokeType } from './types'
 
 /**
@@ -600,6 +600,8 @@ export const HATCHLING_IDS = Object.keys(HATCHLINGS) as HatchlingId[]
 export const PLAYABLE = { ...STARTERS, ...HATCHLINGS }
 
 export type PlayableId = StarterId | HatchlingId
+
+export const PLAYABLE_IDS: readonly PlayableId[] = [...STARTER_IDS, ...HATCHLING_IDS]
 
 export const isHatchling = (id: PlayableId): id is HatchlingId => id in HATCHLINGS
 

@@ -43,7 +43,11 @@ export type ReplayStart = {
   starter: PlayableId
   difficulty: Difficulty
   ranks: Ranks
-  /** The hatched family is shiny (`RunOptions.shiny`). */
+  /**
+   * The run plays shiny from the start (`RunOptions.shiny`): a family hatched
+   * shiny, or a shiny starter picked on the select screen. It only changes the
+   * colors: the 1/64 roll is still drawn, so the rng stays in step.
+   */
   shiny: boolean
   luckyEgg: boolean
   /** World px the screen showed at the start: spawns and despawns depend on it. */

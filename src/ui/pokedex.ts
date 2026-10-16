@@ -38,7 +38,7 @@ type Zone = 'tabs' | 'grid' | 'footer'
  * sprite, types, defeats, caught and shiny). Keyboard and pad: arrows move,
  * ↑ from the top row reaches the filter, Esc/B goes back. Touch: tap a cell.
  */
-export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
+export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => void, openPc?: (back: () => void) => Screen): Screen => {
   const m = t().dex
   const save: Pokedex = loadSave().dex
   const entries = pokedex()
@@ -89,9 +89,24 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
   const facts = h('div', { class: 'dex-facts' })
   const detail = h('div', { class: 'dex-detail' }, sprite, h('div', { class: 'inspect-id' }, name, types, facts))
 
+  /** The Caixa do PC, open over the Pokédex until it closes. */
+  let sub: Screen | null = null
+  const showPc = () => {
+    if (!openPc || sub) return
+    playSfx('select')
+    later(() => {
+      el.classList.add('hidden')
+      sub = openPc(() => {
+        sub = null
+        el.classList.remove('hidden')
+      })
+    })
+  }
+
   const back = h('button', { class: 'btn', onclick: close }, m.back)
+  const pc = openPc ? h('button', { class: 'btn dex-pc', onclick: showPc }, h('img', { src: sparkleIcon(), alt: '' }), m.pc, h('span', { class: 'key-hint' }, 'P')) : null
   const site = h('a', { class: 'btn dex-site', href: SITE_POKEDEX[locale()] }, m.site)
-  const footer = [back, site]
+  const footer = [back, ...(pc ? [pc] : []), site]
 
   /** A caught shiny shows off its shiny form, when the species has one. */
   const shinyForm = (i: number) => status[i]!.shiny && hasShiny(entries[i]!.dex)
@@ -179,6 +194,8 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
   }
 
   const off = input.onKey((key) => {
+    if (sub) return
+    if (key === 'KeyP') return showPc()
     const left = key === 'ArrowLeft' || key === 'KeyA'
     const right = key === 'ArrowRight' || key === 'KeyD'
     const up = key === 'ArrowUp' || key === 'KeyW'
@@ -218,7 +235,7 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
       h('div', { class: 'dex-head' }, h('div', { class: 'dialog-title' }, 'POKéDEX'), progress),
       h('div', { class: 'region-tabs dex-tabs', role: 'tablist' }, ...tabs),
       h('div', { class: 'dex-body' }, h('div', { class: 'dex-list' }, grid, empty), detail),
-      h('div', { class: 'buttons' }, back, site),
+      h('div', { class: 'buttons' }, ...footer),
       hint(m.hintKeys, m.hintTouch),
     ),
   )
@@ -227,6 +244,7 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
   later(() => cells[current]?.scrollIntoView({ block: 'center' }))
 
   const tick = (time: number) => {
+    if (sub) return sub.tick?.(time)
     const e = entries[current]
     const s = status[current]
     if (!e || !s) return
@@ -238,5 +256,5 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
     else blitCentered(ctx, PICKUPS.pokeball(), sprite.width / 2, sprite.height / 2 + Math.round(Math.sin(time * 6) * 2))
   }
 
-  return { el, tick, dim: 0.5, dispose: () => (off(), el.remove()) }
+  return { el, tick, dim: 0.5, dispose: () => (sub?.dispose(), off(), el.remove()) }
 }

@@ -44,6 +44,7 @@ import { parseHandle, rankable, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
 import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
+import { unlockShinyStarter } from './game/shinyStarters'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -58,19 +59,21 @@ import { createTitleScene, drawTitleScene, stepTitleScene } from './render/title
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
-import { flushRuns, PROFILE_PARAM, rankingEnabled, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { accountScreen, playGate } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, depositPokeDollars, loadSave, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { hatchScene, incubator } from './ui/incubator'
 import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
 import { missionDevTools } from './ui/missionsDev'
+import { pcBoxScreen } from './ui/pcBox'
 import { pokedexScreen } from './ui/pokedex'
 import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
+import { runShare, sharePreview, trainerShare } from './ui/share'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
@@ -149,6 +152,8 @@ type Run = {
   /** Signed in: the run's start token and its result, once reported (see `rankRun`). */
   ranked: RankedRun | null
   rank: Promise<RankOutcome> | null
+  /** The longest run on record before this one: beating it lights up the Share button. */
+  bestBefore: number
 }
 
 let screen: Screen | null = null
@@ -217,7 +222,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
-      pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus })),
+      pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       // Closing rebuilds the title, so a sign in's merged save (title badge) shows up.
       account: accountsEnabled ? (focus) => accountScreen(ui, input, () => showTitle({ focus })) : undefined,
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
@@ -251,6 +256,10 @@ const showMenu = (initial: PlayableId = lastStarter) => {
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
+
+/** The Caixa do PC (from the Pokédex); its Trainer Card stands the last Pokémon played beside the trainer. */
+const showPcBox = (back: () => void) =>
+  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(lastStarter), close) })
 
 const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 2 })))
 
@@ -407,12 +416,15 @@ const startRun = async (starter: PlayableId) => {
     starter,
     difficulty: save.difficulty,
     ranks: save.ranks,
-    shiny: isHatchling(starter) && save.hatched[starter]?.shiny === true,
+    // A shiny hatch is shiny for good; a starter rolled shiny once plays shiny when picked so.
+    shiny: (isHatchling(starter) && save.hatched[starter]?.shiny === true) || save.shinyStarters[starter] === true,
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
     view: { w: view.w, h: view.h },
   }
   // Created like a replay is re-simulated (the roster drawn ahead is the same one).
   const game = startGame(start, view)
+  // The 1/64 roll unlocks this Pokémon's shiny for good (Normal/Shiny on the select screen).
+  if (game.player.luckyShiny) updateSave((s) => ({ ...s, shinyStarters: unlockShinyStarter(s.shinyStarters, starter) }))
   // A shiny run must not start in normal colors.
   if (game.player.shiny) await preloadShinies(playableDex(starter))
   // Alternate forms (Aegislash's Blade Forme) stream in behind; until then the normal form stands in.
@@ -436,6 +448,7 @@ const startRun = async (starter: PlayableId) => {
     recorder: startRecording(start),
     ranked,
     rank: null,
+    bestBefore: save.achievements.lifetime.bestTime,
   }
   track('run_start', { starter, difficulty: game.difficulty })
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
@@ -509,6 +522,10 @@ const syncOverlay = (r: Run) => {
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
           ranking: rankingEnabled ? { panel: rankPanel(r.rank), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty }) } : null,
+          share: {
+            open: (back) => sharePreview(ui, input, runShare(g, r.dexBase), back),
+            glow: g.player.shiny || g.dexLog.shinies.size > 0 || wonRun(g) || g.time > r.bestBefore,
+          },
         },
       )
       break
@@ -903,6 +920,8 @@ const promptProfile = () => {
 
 const boot = () => {
   document.documentElement.lang = LOCALES[locale()].tag
+  // Someone's link (`?ref=`, a profile): remember who brought this device, before anything reads the URL.
+  captureRef()
   const shared = rankingEnabled ? parseHandle(new URLSearchParams(location.search).get(PROFILE_PARAM)) : null
   if (shared) showSharedProfile(shared)
   // Back from signing in, the player already pressed start before leaving: straight to the menu.
@@ -986,6 +1005,12 @@ const devEggs = {
     showHatch({ id, tier: HATCHLINGS[id].egg, shiny, duplicate: false, refund: 0 }, () => showMenu(id), holdAt)
   },
   incubator: () => showIncubator(() => showMenu()),
+  /** Unlocks the shiny of a Pokémon (every one without an argument), as if its 1/64 roll hit. */
+  unlockShiny: (id?: PlayableId) => {
+    const save = loadSave()
+    const ids = id ? [id] : (Object.keys(PLAYABLE) as PlayableId[])
+    writeSave({ ...save, shinyStarters: ids.reduce(unlockShinyStarter, save.shinyStarters) })
+  },
   /** Unlocks a family (every family without an argument). */
   unlockFamily: (id?: HatchlingId, shiny = false) => {
     const save = loadSave()
@@ -1034,6 +1059,9 @@ if (import.meta.env.DEV) {
       mega: devMega,
       event: devEvent,
       dex: () => loadSave().dex,
+      /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
+      pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
+      card: (partner: PlayableId = lastStarter) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),

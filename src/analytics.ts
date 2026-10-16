@@ -5,6 +5,10 @@ import type { Difficulty } from './game/difficulty'
 type AnalyticsEvents = {
   run_start: { starter: PlayableId; difficulty: Difficulty }
   run_end: { starter: PlayableId; difficulty: Difficulty; outcome: 'victory' | 'gameover' | 'endless' | 'quit'; minute: number; level: number; kills: number }
+  /** A share card left the game: the run's or the Trainer Card, through the share sheet, the clipboard or a download. */
+  share: { kind: 'run' | 'trainer'; method: 'share' | 'copy' | 'download' }
+  /** The game opened from a link carrying someone's handle (`?ref=` or a profile's `?u=`); `first`: the device had no inviter yet. */
+  ref_land: { ref: string; via: 'ref' | 'profile'; first: 0 | 1 }
 }
 
 declare global {

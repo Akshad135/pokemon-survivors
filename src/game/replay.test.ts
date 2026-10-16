@@ -72,6 +72,13 @@ describe('replays', () => {
     expect(replay.events.some((e) => e[1] === 'view')).toBe(true)
   })
 
+  it('play the same run whether the starter was picked shiny or not', () => {
+    const { replay } = play(30)
+    const normal = resimulate(replay)
+    const picked = resimulate({ ...replay, start: { ...replay.start, shiny: true } })
+    expect(picked).toEqual(normal)
+  })
+
   it('re-simulate a chain dash run, presses inside the windows included', () => {
     const { g, replay } = play(40, { ...START, starter: 'treecko' }, 20)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })

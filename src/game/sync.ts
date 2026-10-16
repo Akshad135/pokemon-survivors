@@ -3,6 +3,7 @@ import { mergeDex } from './dex'
 import { mergeEggs, mergeHatched } from './eggs'
 import { SAVE_VERSION, totalSpent, UPGRADE_IDS, type Ranks, type Save, type UpgradeId } from './meta'
 import { mergeMissions } from './missions'
+import { mergeShinyStarters } from './shinyStarters'
 
 /**
  * Account sync rules, shared by the game and the API (`server/`): how two
@@ -27,6 +28,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks)
  *   other isn't counted twice.
  * - The title: `incoming`'s, if it shows one.
  * - The difficulty picked last: `incoming`'s, a setting rather than progress.
+ * - Shiny starters: a union; each Normal/Shiny pick is `incoming`'s when it has one.
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -41,6 +43,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     achievements: mergeAchievements(base.achievements, incoming.achievements),
     title: incoming.title ?? base.title,
     difficulty: incoming.difficulty,
+    shinyStarters: mergeShinyStarters(base.shinyStarters, incoming.shinyStarters),
   }
 }
 

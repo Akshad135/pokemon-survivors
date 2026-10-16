@@ -12,6 +12,7 @@ import { pokedex } from '../site/pokedex'
 import { LOCALES, locale, t } from '../i18n'
 import { h, later } from './dom'
 import { titleBadge } from './missions'
+import { sharePreview, trainerShare } from './share'
 import { difficultyTag, hint, menu, type Screen } from './screens'
 import { toast } from './toasts'
 
@@ -120,7 +121,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
       },
     }
     const actions = [
-      ...(p.self ? [{ label: m.edit, run: openEditor }] : signedIn ? [follow] : []),
+      ...(p.self ? [{ label: m.edit, run: openEditor }, { label: m.card, run: () => openCard(p) }] : signedIn ? [follow] : []),
       { label: m.share, run: () => void share(root, p) },
       back(),
     ]
@@ -154,6 +155,21 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
     if (p === 'missing') return frame([note(m.missing(current))], [back()])
     if (!p) return frame([note(m.offline)], [{ label: m.retry, run: () => void load() }, back()])
     show(p)
+  }
+
+  /**
+   * The Trainer Card's share preview over one's own profile: drawn from this
+   * device's save, with the Pokémon of the longest record as the partner.
+   */
+  const openCard = (p: PublicProfile) => {
+    nav?.off()
+    el.classList.add('hidden')
+    const best = Object.values(p.records).sort((a, b) => b.time - a.time)[0]
+    sub = sharePreview(root, input, trainerShare(best?.starter ?? 'charmander'), () => {
+      sub = null
+      el.classList.remove('hidden')
+      show(p)
+    })
   }
 
   /** The editor replaces the profile until it closes; a saved one may have a new handle. */

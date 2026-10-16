@@ -83,6 +83,12 @@ export const accountState = () => state
 /** The signed-in player's user id, from this device's link (null for guests). */
 export const accountUserId = () => readLink()?.userId ?? null
 
+/** This device's public handle, known from its link even before Clerk loads (null for guests or before one is picked). */
+export const accountHandle = () => {
+  const s = state
+  return s.kind === 'signedIn' && s.handle ? s.handle : (readLink()?.handle ?? null)
+}
+
 /** Calls `fn` on every change of the account state. Returns the unsubscribe. */
 export const onAccountChange = (fn: (s: AccountState) => void) => {
   listeners.add(fn)

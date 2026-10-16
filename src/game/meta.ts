@@ -7,6 +7,7 @@ import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggT
 import { ENDLESS, overtime } from './endless'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { isRecord, wholeNumber } from './parse'
+import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
 import type { Game } from './types'
@@ -97,6 +98,8 @@ export type Save = {
   title: TitleId | null
   /** Difficulty picked last on the starter select screen. */
   difficulty: Difficulty
+  /** Shiny starters unlocked by a lucky roll, and the Normal/Shiny pick of each (`game/shinyStarters.ts`). */
+  shinyStarters: ShinyStarters
 }
 
 export const EMPTY_SAVE: Save = {
@@ -110,6 +113,7 @@ export const EMPTY_SAVE: Save = {
   achievements: NO_ACHIEVEMENTS,
   title: null,
   difficulty: DEFAULT_DIFFICULTY,
+  shinyStarters: NO_SHINY_STARTERS,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -156,6 +160,7 @@ export const parseSaveData = (json: unknown): Save => {
     achievements,
     title: parseTitle(data.title, achievements.unlocked),
     difficulty: parseDifficulty(data.difficulty),
+    shinyStarters: parseShinyStarters(data.shinyStarters),
   }
 }
 
