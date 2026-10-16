@@ -280,8 +280,12 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     if (!webhooks.stripeSecret) return c.json({ error: 'webhook off' }, 503)
     const raw = await c.req.text()
     if (!verifyStripe(raw, c.req.header('Stripe-Signature'), webhooks.stripeSecret, Date.now() / 1000)) return c.json({ error: 'bad signature' }, 401)
-    const paid = stripeDonation(JSON.parse(raw), webhooks.stripePaymentLink)
+    const event: unknown = JSON.parse(raw)
+    const paid = stripeDonation(event, webhooks.stripePaymentLink)
     if (paid) await supporters.paid(paid)
+    // A paid session dropped only for its link is usually a mistyped STRIPE_PAYMENT_LINK (ids are case-sensitive).
+    const dropped = paid ? null : stripeDonation(event, null)
+    if (dropped) console.warn(`stripe session ${dropped.ref} is paid but ignored: its payment link isn't STRIPE_PAYMENT_LINK (${webhooks.stripePaymentLink})`)
     return c.json({ received: true })
   })
 
