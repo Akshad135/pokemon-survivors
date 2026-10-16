@@ -206,7 +206,7 @@ export const siteEs: SiteMessages = {
     controls: {
       head: { action: 'Acción', keyboard: 'Teclado', gamepad: 'Control', touch: 'Táctil' },
       rows: [
-        ['Moverse', 'WASD o flechas', '— (todavía no)', 'Arrastra en cualquier parte de la pantalla (joystick flotante)'],
+        ['Moverse', 'WASD o flechas', 'D-pad o stick izquierdo', 'Arrastra en cualquier parte de la pantalla (joystick flotante)'],
         ['Ataque especial', 'Espacio', 'A (Xbox) o ✕ (PlayStation)', 'Botón redondo abajo a la derecha'],
         ['Megaevolución', 'E', 'Y (Xbox) o △ (PlayStation)', 'Botón MEGA, arriba del especial'],
         ['Embestida (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) o □ (PlayStation)', 'Botón redondo a la izquierda del especial'],
@@ -219,7 +219,8 @@ export const siteEs: SiteMessages = {
         ['Idioma', 'I en la pantalla de título, o Ajustes', 'Ajustes', 'PT | EN | ES en la pantalla de título, o Ajustes'],
       ],
       notes: [
-        'Con control, el D-pad y el stick izquierdo navegan por todos los menús, A confirma, B vuelve y Start pausa. Durante la partida, A usa el ataque especial, pero el control todavía no mueve al Pokémon: para moverte, usa el teclado o la pantalla táctil.',
+        'Con control, el D-pad y el stick izquierdo mueven al Pokémon y navegan por todos los menús, A confirma, B vuelve y Start pausa. Durante la partida, A usa el ataque especial.',
+        'En Ajustes → Controles → Teclado y control, puedes cambiar la tecla y el botón del control de cada acción (moverse, especial, Mega, embestida, pausa, confirmar y volver). Las flechas y Esc siempre funcionan.',
         'En el celular puedes instalar el juego como app a pantalla completa: abre el menú del navegador y elige "Agregar a la pantalla de inicio".',
       ],
     },

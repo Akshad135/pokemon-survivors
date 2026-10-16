@@ -202,7 +202,7 @@ export const siteEn: SiteMessages = {
     controls: {
       head: { action: 'Action', keyboard: 'Keyboard', gamepad: 'Gamepad', touch: 'Touch' },
       rows: [
-        ['Move', 'WASD or arrow keys', '— (not yet)', 'Drag anywhere on the screen (floating joystick)'],
+        ['Move', 'WASD or arrow keys', 'D-pad or left stick', 'Drag anywhere on the screen (floating joystick)'],
         ['Special attack', 'Space', 'A (Xbox) or ✕ (PlayStation)', 'Round button, bottom right'],
         ['Mega Evolution', 'E', 'Y (Xbox) or △ (PlayStation)', 'MEGA button, above the special'],
         ['Lunge (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) or □ (PlayStation)', 'Round button, left of the special'],
@@ -215,7 +215,8 @@ export const siteEn: SiteMessages = {
         ['Language', 'I on the title screen, or Settings', 'Settings', 'PT | EN | ES on the title screen, or Settings'],
       ],
       notes: [
-        'On a gamepad, the D-pad and left stick navigate every menu, A confirms, B goes back and Start pauses. In a run, A fires the special attack, but the gamepad can\'t move your Pokémon yet: use the keyboard or touch to move.',
+        'On a gamepad, the D-pad and left stick move your Pokémon and navigate every menu, A confirms, B goes back and Start pauses. In a run, A fires the special attack.',
+        'In Settings → Controls → Keyboard and gamepad, you can change the key and the gamepad button of every action (move, special, Mega, lunge, pause, confirm and back). The arrows and Esc always work.',
         'On phones you can install the game as a fullscreen app: open the browser menu and choose "Add to Home Screen".',
       ],
     },

@@ -11,7 +11,6 @@ export const es: Messages = {
   new: '¡NUEVO!',
   language: 'Idioma',
   spaceKey: 'ESPACIO',
-  shiftKey: 'SHIFT',
   stats: {
     hp: 'HP',
     attack: 'Ataque',
@@ -119,6 +118,39 @@ export const es: Messages = {
     back: 'Volver',
     hintKeys: '↑ ↓ elegir · ← → ajustar · ESC volver',
     hintTouch: 'Toca o arrastra para ajustar',
+  },
+
+  controls: {
+    open: 'Teclado y control',
+    title: 'CONTROLES',
+    keyboard: 'Teclado',
+    gamepad: 'Control',
+    actions: {
+      up: 'Moverse arriba',
+      down: 'Moverse abajo',
+      left: 'Moverse a la izquierda',
+      right: 'Moverse a la derecha',
+      special: 'Ataque especial',
+      mega: 'Megaevolución',
+      lunge: 'Embestida',
+      pause: 'Pausa',
+      confirm: 'Confirmar',
+      back: 'Volver',
+    },
+    pressKey: (action: string) => `*${action}*: presiona una tecla… (ESC cancela)`,
+    pressButton: (action: string) => `*${action}*: presiona un botón del control… (ESC cancela)`,
+    reserved: 'Las flechas y ESC son fijas. Elige otra tecla.',
+    bound: (action: string, key: string) => `*${action}* ahora usa ${key}.`,
+    moved: (key: string, action: string, to: string | null) =>
+      to ? `${key} estaba en *${action}*, que ahora usa ${to}.` : `${key} estaba en *${action}*, que quedó sin atajo.`,
+    restore: 'Restaurar valores',
+    restored: 'Controles de vuelta a los valores de fábrica.',
+    fixed: 'Las flechas y ESC siempre funcionan. El stick izquierdo siempre mueve.',
+    touchNote: 'En pantalla táctil, el joystick y los botones en pantalla no cambian. Conecta un teclado o un control para reasignar.',
+    unbound: '—',
+    back: 'Volver',
+    hintKeys: '↑ ↓ elegir · ← → columna · ENTER cambiar · ESC volver',
+    hintTouch: 'Toca una tecla o un botón para cambiarlo',
   },
 
   account: {
@@ -547,7 +579,6 @@ export const es: Messages = {
 
   mega: {
     button: 'MEGA',
-    key: 'E',
     title: 'Megaevolución (E)',
     section: 'Megaevolución',
     sectionTwo: 'Megaevolución (elige una)',

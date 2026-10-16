@@ -3167,6 +3167,143 @@ button {
   }
 }
 
+/* Group title inside the settings list (Controles). */
+.settings-section {
+  margin-top: 6px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #6878a8;
+  text-transform: uppercase;
+}
+
+/* ---------- Controls (remap screen) ---------- */
+
+.dialog.controls {
+  width: min(520px, 96vw);
+}
+
+.controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 56vh;
+  overflow-y: auto;
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: 1fr 88px 88px;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.control-row.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+.control-head {
+  min-height: 0;
+  padding-block: 0;
+  font-size: 8px;
+  color: #6878a8;
+  text-align: center;
+  background: none;
+}
+
+.control-cell {
+  min-height: 30px;
+  padding: 6px 4px 5px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid #c8c8d8;
+  border-radius: 4px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.control-cell.focus {
+  border-color: #e83838;
+  color: #e83838;
+}
+
+/* Waiting for the new key or button. */
+.control-cell.listening {
+  color: #fff;
+  background: #e83838;
+  border-color: #e83838;
+}
+
+.controls-status {
+  min-height: 2.6em;
+  margin: 8px 0 0;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #4a5478;
+}
+
+.controls-note {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #4a5478;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .controls-note {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  .control-row {
+    grid-template-columns: 1fr 64px 64px;
+    padding-left: 8px;
+    font-size: 8px;
+  }
+  .control-cell {
+    font-size: 8px;
+  }
+}
+
+/* Landscape phones: a tighter dialog, and the list scrolls between its header and buttons. */
+@media (max-height: 500px) {
+  .dialog.controls {
+    gap: 6px;
+    padding: 10px 16px;
+  }
+  .controls-note,
+  .controls-status {
+    min-height: 0;
+    margin: 0;
+    font-size: 15px;
+  }
+  .controls-list {
+    max-height: 34vh;
+  }
+  .control-row {
+    min-height: 32px;
+    padding-block: 2px;
+  }
+  .control-cell {
+    min-height: 26px;
+    padding-block: 4px 3px;
+  }
+  .controls .hint {
+    display: none;
+  }
+}
+
 /* ---------------- Legendary rifts and endless mode ---------------- */
 
 .rift-pill {

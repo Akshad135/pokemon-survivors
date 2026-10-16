@@ -3,7 +3,6 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
-import { createPadButton, createPadKeys } from './engine/gamepad'
 import { createInput } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
@@ -109,7 +108,7 @@ const fixedStickCenter = (): Vec | null => {
   }
   return stickCenter
 }
-const input = createInput(canvas, fixedStickCenter)
+const input = createInput(canvas, () => settings().controls, fixedStickCenter)
 /** Internal canvas size in world px. Shared by reference with the running game. */
 const view = { w: 480, h: 270 }
 /** CSS px per world px (integer in device px, see `fitView`). */
@@ -199,10 +198,6 @@ let specialQueued = false
 let megaQueued = false
 /** Manual lunge press (Shift, the lunge button, gamepad X) for Quick Attack, consumed like the special. */
 let lungeQueued = false
-const padA = createPadButton(0)
-const padX = createPadButton(2)
-const padY = createPadButton(3)
-const padKeys = createPadKeys()
 /** The meadow with wandering Pokémon behind every menu. Lives across screens, so it never pops. */
 const scene = createTitleScene(Date.now())
 
@@ -974,15 +969,12 @@ const frame = (now: number) => {
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   const t = now / 1000
-  // Gamepads drive the menus through the same key codes as the keyboard.
-  for (const key of padKeys()) input.press(key)
+  // Gamepads type the keyboard's codes: menus get confirm/back, a run its special, Mega and lunge.
+  input.poll(run?.game.phase === 'playing')
 
   if (run) {
     const r = run
     const g = r.game
-    if (padA()) queueSpecial()
-    if (padY()) queueMega()
-    if (padX()) queueLunge()
     let steps = 0
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt

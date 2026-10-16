@@ -11,7 +11,6 @@ export const en: Messages = {
   new: 'NEW!',
   language: 'Language',
   spaceKey: 'SPACE',
-  shiftKey: 'SHIFT',
   stats: {
     hp: 'HP',
     attack: 'Attack',
@@ -119,6 +118,39 @@ export const en: Messages = {
     back: 'Back',
     hintKeys: '↑ ↓ choose · ← → adjust · ESC back',
     hintTouch: 'Tap or drag to adjust',
+  },
+
+  controls: {
+    open: 'Keyboard and gamepad',
+    title: 'CONTROLS',
+    keyboard: 'Keyboard',
+    gamepad: 'Gamepad',
+    actions: {
+      up: 'Move up',
+      down: 'Move down',
+      left: 'Move left',
+      right: 'Move right',
+      special: 'Special attack',
+      mega: 'Mega Evolution',
+      lunge: 'Lunge',
+      pause: 'Pause',
+      confirm: 'Confirm',
+      back: 'Back',
+    },
+    pressKey: (action: string) => `*${action}*: press a key… (ESC cancels)`,
+    pressButton: (action: string) => `*${action}*: press a gamepad button… (ESC cancels)`,
+    reserved: 'The arrows and ESC are fixed. Pick another key.',
+    bound: (action: string, key: string) => `*${action}* now uses ${key}.`,
+    moved: (key: string, action: string, to: string | null) =>
+      to ? `${key} was on *${action}*, which now uses ${to}.` : `${key} was on *${action}*, which is now unassigned.`,
+    restore: 'Restore defaults',
+    restored: 'Controls back to the defaults.',
+    fixed: 'The arrows and ESC always work. The left stick always moves.',
+    touchNote: 'On touch, the joystick and the on-screen buttons stay the same. Connect a keyboard or gamepad to remap.',
+    unbound: '—',
+    back: 'Back',
+    hintKeys: '↑ ↓ choose · ← → column · ENTER change · ESC back',
+    hintTouch: 'Tap a key or a button to change it',
   },
 
   account: {
@@ -546,7 +578,6 @@ export const en: Messages = {
 
   mega: {
     button: 'MEGA',
-    key: 'E',
     title: 'Mega Evolution (E)',
     section: 'Mega Evolution',
     sectionTwo: 'Mega Evolution (pick one)',

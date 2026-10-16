@@ -222,7 +222,7 @@ export const sitePt = {
     controls: {
       head: { action: 'Ação', keyboard: 'Teclado', gamepad: 'Controle', touch: 'Toque' },
       rows: [
-        ['Andar', 'WASD ou setas', '— (ainda não)', 'Arraste em qualquer lugar da tela (joystick flutuante)'],
+        ['Andar', 'WASD ou setas', 'D-pad ou analógico esquerdo', 'Arraste em qualquer lugar da tela (joystick flutuante)'],
         ['Ataque especial', 'Espaço', 'A (Xbox) ou ✕ (PlayStation)', 'Botão redondo no canto inferior direito'],
         ['Mega Evolução', 'E', 'Y (Xbox) ou △ (PlayStation)', 'Botão MEGA, acima do especial'],
         ['Bote (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) ou □ (PlayStation)', 'Botão redondo à esquerda do especial'],
@@ -235,7 +235,8 @@ export const sitePt = {
         ['Idioma', 'I na tela de título, ou Ajustes', 'Ajustes', 'PT | EN | ES na tela de título, ou Ajustes'],
       ],
       notes: [
-        'No controle, o D-pad e o analógico esquerdo navegam em todos os menus, A confirma, B volta e Start pausa. Dentro da partida, A usa o ataque especial, mas o controle ainda não move o Pokémon: para andar, use o teclado ou o toque.',
+        'No controle, o D-pad e o analógico esquerdo movem o Pokémon e navegam em todos os menus, A confirma, B volta e Start pausa. Dentro da partida, A usa o ataque especial.',
+        'Em Ajustes → Controles → Teclado e controle, dá para trocar a tecla e o botão do controle de cada ação (andar, especial, Mega, bote, pausar, confirmar e voltar). As setas e o Esc sempre funcionam.',
         'No celular, dá para instalar o jogo como app em tela cheia: abra o menu do navegador e escolha "Adicionar à tela inicial".',
       ],
     },

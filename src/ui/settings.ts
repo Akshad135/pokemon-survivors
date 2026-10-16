@@ -2,6 +2,7 @@ import { playSfx, setMix } from '../engine/audio'
 import { STICK_MODES, type Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALES, nextLocale, setLocale, t } from '../i18n'
+import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
 import { loadSettings, writeSettings, type Settings } from './save'
@@ -130,6 +131,12 @@ const languageRow = (onSwitch: () => void): Row => {
   return { el, adjust: onSwitch, activate: onSwitch, sync: () => {} }
 }
 
+/** Opens the remap screen (keyboard keys and gamepad buttons). */
+const controlsRow = (open: () => void): Row => {
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().controls.open), h('b', { class: 'setting-choice' }, '▶'))
+  return { el, adjust: (dir) => dir > 0 && open(), activate: open, sync: () => {} }
+}
+
 const backRow = (label: string, close: () => void): Row => {
   const el = h('button', { class: 'btn' }, label)
   return { el, adjust: () => {}, activate: close, sync: () => {} }
@@ -138,16 +145,16 @@ const backRow = (label: string, close: () => void): Row => {
 /** A group of rows under a heading. */
 type Section = { title: string; rows: Row[] }
 
-/** The Controls section: how the player moves. */
-const controlRows = (): Row[] => {
+/** The Controls section: how the player moves, and the remap screen (`openRemap`). */
+const controlRows = (openRemap: () => void): Row[] => {
   const m = t().settings
-  return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode])]
+  return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(openRemap)]
 }
 
 /**
  * Settings dialog in three sections: Audio (music and effects volume, mute),
- * Game (damage numbers, screen shake, language) and Controls (touch joystick).
- * Changes apply and persist immediately.
+ * Game (damage numbers, screen shake, language) and Controls (touch joystick
+ * and the remap screen). Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
  * input). The Back button, Esc or Backspace (gamepad B) close it: it removes itself, then calls
@@ -159,6 +166,9 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
   const el = h('div', { class: 'screen dim' })
   let rows: Row[] = []
   let nav: ReturnType<typeof menu> | null = null
+  /** The remap screen open on top: this one hides and ignores keys until it closes. */
+  let sub: Screen | null = null
+  let away = false
 
   const sync = () => rows.forEach((r) => r.sync())
 
@@ -189,7 +199,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           languageRow(switchLanguage),
         ],
       },
-      { title: m.controls, rows: controlRows() },
+      { title: m.controls, rows: controlRows(showControls) },
     ]
     const back = backRow(m.back, close)
     rows = [...sections.flatMap((s) => s.rows), back]
@@ -212,7 +222,25 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     sync()
   }
 
+  const showControls = () => {
+    playSfx('select')
+    nav?.off()
+    away = true
+    el.classList.add('hidden')
+    // Open after this key dispatch, or the new screen would receive the same press.
+    later(() => {
+      if (!el.isConnected) return
+      sub = openControls(root, input, () => {
+        sub = null
+        away = false
+        el.classList.remove('hidden')
+        build(nav?.index ?? 0, false)
+      })
+    })
+  }
+
   const offKeys = input.onKey((key) => {
+    if (away) return
     const row = nav && rows[nav.index]
     if (key === 'ArrowLeft' || key === 'KeyA') row?.adjust(-1)
     else if (key === 'ArrowRight' || key === 'KeyD') row?.adjust(1)
@@ -220,6 +248,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
   })
 
   const dispose = () => {
+    sub?.dispose()
     nav?.off()
     offKeys()
     el.remove()

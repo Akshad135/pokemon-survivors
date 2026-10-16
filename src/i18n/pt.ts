@@ -16,6 +16,7 @@ import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialId } from '../game/special'
 import type { Stance } from '../game/stance'
+import type { Action } from '../engine/bindings'
 
 /** One string per entry of a tuple, so every move upgrade gets exactly one line. */
 type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: string }
@@ -49,7 +50,6 @@ export const pt = {
   new: 'NOVO!',
   language: 'Idioma',
   spaceKey: 'ESPAÇO',
-  shiftKey: 'SHIFT',
   stats: {
     hp: 'HP',
     attack: 'Ataque',
@@ -164,6 +164,41 @@ export const pt = {
     back: 'Voltar',
     hintKeys: '↑ ↓ escolher · ← → ajustar · ESC voltar',
     hintTouch: 'Toque ou arraste para ajustar',
+  },
+
+  /** Remapping keys and gamepad buttons (Ajustes → Controles). */
+  controls: {
+    open: 'Teclado e controle',
+    title: 'CONTROLES',
+    keyboard: 'Teclado',
+    gamepad: 'Controle',
+    actions: {
+      up: 'Mover para cima',
+      down: 'Mover para baixo',
+      left: 'Mover para a esquerda',
+      right: 'Mover para a direita',
+      special: 'Ataque especial',
+      mega: 'Mega Evolução',
+      lunge: 'Bote',
+      pause: 'Pausar',
+      confirm: 'Confirmar',
+      back: 'Voltar',
+    } satisfies Record<Action, string>,
+    pressKey: (action: string) => `*${action}*: pressione uma tecla… (ESC cancela)`,
+    pressButton: (action: string) => `*${action}*: pressione um botão do controle… (ESC cancela)`,
+    reserved: 'As setas e o ESC são fixos. Escolha outra tecla.',
+    bound: (action: string, key: string) => `*${action}* agora usa ${key}.`,
+    /** A key or button taken from another action: it got the old one back (`to`) or none. */
+    moved: (key: string, action: string, to: string | null) =>
+      to ? `${key} estava em *${action}*, que agora usa ${to}.` : `${key} estava em *${action}*, que ficou sem atalho.`,
+    restore: 'Restaurar padrão',
+    restored: 'Controles de volta ao padrão.',
+    fixed: 'As setas e o ESC sempre funcionam. O analógico esquerdo sempre move.',
+    touchNote: 'No toque, o joystick e os botões da tela não mudam. Conecte um teclado ou controle para remapear.',
+    unbound: '—',
+    back: 'Voltar',
+    hintKeys: '↑ ↓ escolher · ← → coluna · ENTER trocar · ESC voltar',
+    hintTouch: 'Toque numa tecla ou num botão para trocar',
   },
 
   account: {
@@ -617,7 +652,6 @@ export const pt = {
   /** Mega Evolution: the button, its toasts, the inspect panel and what each Mega form does. */
   mega: {
     button: 'MEGA',
-    key: 'E',
     title: 'Mega Evolução (E)',
     section: 'Mega Evolução',
     sectionTwo: 'Mega Evolução (escolha uma)',
