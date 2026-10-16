@@ -32,6 +32,12 @@ const HEART: BallArt = [
   { 1: '#301018', 2: '#f05888', 4: '#ffffff' },
 ]
 
+/** The Supporter's star, for its corners (same palette keys as a ball: 1 outline, 2 the star, 4 its shine). */
+const STAR: BallArt = [
+  ['...1...', '..141..', '1112111', '1222221', '.12221.', '.12121.', '.11.11.'],
+  { 1: '#4a3008', 2: '#f8d030', 4: '#fff8c8' },
+]
+
 export const CARD_FRAMES = {
   /** The game's own dialog box: dark line, paper, blue. */
   classic: { edge: '#283040', light: '#f8f8f8', main: '#6878a8', shade: '#101830', accent: '#ffcb05' },
@@ -41,6 +47,8 @@ export const CARD_FRAMES = {
   master: { edge: '#200830', light: '#f8b8f0', main: '#8040c8', shade: '#180428', accent: '#f070c0', lower: '#e8e8f0', ball: ball('#8040c8', '#f070c0') },
   /** A gift for bringing friends: rose and gold, hearts in the corners. */
   ambassador: { edge: '#301018', light: '#f8e098', main: '#e05888', shade: '#581830', accent: '#f8d030', ball: HEART },
+  /** A donor's thank-you: emerald and gold, gold stars in the corners. */
+  supporter: { edge: '#0c2418', light: '#f8e8a0', main: '#30a070', shade: '#0c3820', accent: '#f8d030', ball: STAR },
 } as const satisfies Record<FrameId, CardFrame>
 
 /** A card's backdrop: sky bands top to bottom (dithered where they meet) and how many stars (fireflies, crystals, snow…). */
@@ -54,6 +62,8 @@ export const CARD_BACKGROUNDS = {
   cave: { sky: ['#0e0806', '#18100a', '#22160e', '#2c1e12', '#362618'], stars: 50, starColors: ['#80d0f8', '#c8a8f8', '#f8f8f8', '#6a5440'] },
   snow: { sky: ['#0a1428', '#101e3c', '#182a50', '#203664', '#2a4478'], stars: 130, starColors: ['#ffffff', '#d8e8f8', '#a8c8f0', '#ffffff'] },
   tower: { sky: ['#0e0616', '#160a24', '#1e0e32', '#281240', '#32164e'], stars: 70, starColors: ['#b080f8', '#80f0d0', '#f8f8f8', '#5a4078'] },
+  /** The gold supporters' sky: a warm dusk full of golden stars. */
+  supporter: { sky: ['#0c0814', '#180e22', '#26142a', '#341c2c', '#44262c'], stars: 120, starColors: ['#f8d030', '#fff4b0', '#ffffff', '#c89038'] },
 } as const satisfies Record<BackgroundId, CardBackground>
 
 /** What a card wears. */
@@ -174,6 +184,28 @@ export const PC_WALLPAPERS = {
       '1111111111111111',
     ],
     palette: { 1: '#5a4078', 2: '#6a4c8c', 3: '#8468a8', 4: '#3a2850' },
+  },
+  /** Gold stars on emerald, for the gold supporters (the Supporter frame's colors). */
+  supporter: {
+    tile: [
+      '1111111111111111',
+      '1111111311111111',
+      '1111113331111111',
+      '1113333433331111',
+      '1111333333311111',
+      '1111133333111111',
+      '1111133133111111',
+      '1111311111311111',
+      '1111111111111111',
+      '1111111111111111',
+      '1111111111111311',
+      '1111111111113431',
+      '1111111111111311',
+      '1111111111111111',
+      '1121111111111111',
+      '1111111111111111',
+    ],
+    palette: { 1: '#1e6a4a', 2: '#2a7e5a', 3: '#f8d030', 4: '#fff4b0' },
   },
 } as const satisfies Record<WallpaperId, Wallpaper>
 

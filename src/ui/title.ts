@@ -15,7 +15,7 @@ import { languageSwitch } from './language'
 import { titleBadge } from './missions'
 import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
-import { supportButton } from './support'
+import { supportButton } from './supporters'
 import { ROUTES } from '../site/routes'
 
 const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
@@ -42,6 +42,8 @@ export type TitleActions = {
   account?: (focus: number) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no entry. */
   ranking?: (focus: number) => Screen
+  /** Opens Apoiadores over the title (the heart chip), like `settings`; `pick` goes straight to the shiny picker. */
+  supporters: (focus: number, open: 'pick' | null) => Screen
 }
 
 /**
@@ -178,7 +180,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     }, { initial: focus })
     closeLanguage = languageSwitch(root, input, actions.language)
     closeAccount = account ? accountChip(root, input, () => openOver(account)) : null
-    closeSupport = supportButton(root)
+    // A shiny ticket waiting for its pick opens straight on the picker.
+    closeSupport = supportButton(root, () => openOver((focus) => actions.supporters(focus, 'pick')))
     menuBox.replaceChildren(...buttons)
   }
 

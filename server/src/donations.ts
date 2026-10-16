@@ -3,8 +3,11 @@ const API = 'https://api.abacatepay.com/v2'
 /** Where AbacatePay's checkout sends the donor back to. */
 export type DonationUrls = { completionUrl: string; returnUrl: string }
 
-/** Opens a checkout for a donation of `amount` reais and returns its URL. */
-export type Donate = (amount: number, urls: DonationUrls) => Promise<string>
+/**
+ * Opens a checkout for a donation of `amount` reais and returns its URL.
+ * `externalId` comes back in the webhook that says it's paid (`webhooks.ts`).
+ */
+export type Donate = (amount: number, urls: DonationUrls, externalId: string) => Promise<string>
 
 type Envelope<T> = { data: T | null; error: string | null; success: boolean }
 
@@ -43,7 +46,7 @@ export const abacatePay = (apiKey: string): Donate => {
       body: {
         externalId,
         name: `Doação Pokémon Survivors (R$ ${amount})`,
-        description: 'Apoio ao Pokémon Survivors, um fan game gratuito. Não dá nada dentro do jogo.',
+        description: 'Apoio ao Pokémon Survivors, um fan game gratuito. Com uma conta, dá um agradecimento cosmético no jogo.',
         price: amount * 100,
         currency: 'BRL',
       },
@@ -66,10 +69,10 @@ export const abacatePay = (apiKey: string): Donate => {
     return id
   }
 
-  return async (amount, urls) => {
+  return async (amount, urls, externalId) => {
     const id = await productFor(amount)
     const checkout = await call<{ url: string }>('/checkouts/create', {
-      body: { items: [{ id, quantity: 1 }], methods: ['PIX', 'CARD'], ...urls },
+      body: { items: [{ id, quantity: 1 }], methods: ['PIX', 'CARD'], externalId, ...urls },
     })
     if (!checkout) throw new Error(`AbacatePay refused a checkout of R$ ${amount}`)
     return checkout.url

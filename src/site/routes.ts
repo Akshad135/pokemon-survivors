@@ -7,7 +7,8 @@ export const REPO_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 /**
  * Stripe Payment Link for donations from outside Brazil (cards, Apple Pay and
  * Google Pay, in US$; the donor picks the amount there). Linked from the support
- * page, whose `?thanks=1` the link redirects to once paid. Never tied to in-game rewards.
+ * page with the account's handle as `client_reference_id`; once paid it redirects to
+ * the support page with `?thanks={CHECKOUT_SESSION_ID}` (set in Stripe's dashboard).
  */
 export const STRIPE_DONATION_URL = 'https://donate.stripe.com/5kQ28l1x45My6ci4ibcjS00'
 

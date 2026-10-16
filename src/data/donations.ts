@@ -1,7 +1,7 @@
 /**
  * Donations, in whole reais through AbacatePay (Pix and Brazilian cards). The
  * support page (`/apoie/`) offers the presets or any amount in range, and the
- * API (`POST /donations`) refuses anything else. Donating never gives anything in the game.
+ * API (`POST /donations`) refuses anything else. What a donation brings in the game is in `game/supporters.ts`.
  */
 export const DONATION = {
   presets: [5, 10, 25, 50],
