@@ -30,8 +30,12 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /me/supporter`, `PUT /me/supporter` | The player's tier, since when, whether they show it and their vote (`SupporterStatus`). `PUT` with `{ public }` shows or hides the badge and name |
 | `GET /supporters` | `{ supporters }`: the wall, supporters who show themselves and have a handle, oldest first (500 at most) |
 | `GET /poll`, `PUT /poll` | `{ id, votes }`, the supporters' poll (`POLL` in `src/data/supporters.ts`). `PUT` with `{ choice }` votes (or changes the vote); 403 for anyone who isn't a supporter |
+| `GET /admin` | `{ admin: true }` for an admin (see [Admin gift desk](#admin-gift-desk)), 403 for anyone else, like every `/admin` route |
+| `GET /admin/users` | `?q=` a handle (with or without `@`, in part) or an email (in part, asked of Clerk). `{ users }`: up to 10 `AdminUser` with their email and when they were last seen |
+| `POST /admin/gifts` | Body `{ userId, content, request }`: sends a Mystery Gift (`parseAdminGift`: any `GiftContent` but a ribbon). `request` is a uuid per send, so a retry sends nothing twice: `{ sent }`, false when it already went. 404 for an unknown player |
+| `GET /admin/gifts` | `{ gifts }`: the last 30 gifts sent by hand (`AdminSent`), with when they were claimed |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter` and `PUT /poll` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
@@ -64,6 +68,14 @@ Donating with an account brings a cosmetic thank-you, sent as Mystery Gifts (`sr
 - The webhooks (`src/webhooks.ts`) say it's paid. `src/supporters.ts` records it once (`donations.ref` is unique, so retries change nothing) and credits it: its points (`donationPoints`: one per centavo, five per US cent) join `users.supporter_points`, and each tier the total reaches sends its gifts once (`TIER_GIFTS`, `key` `support:<tier>:<i>`): any donation brings the Supporter title and frame and a shiny of one's choice; 5,000 points (R$ 50 or US$ 10) the gold background and wallpaper.
 - A paid donation without an account gets a code (`PS-XXXX-XXXX`) that the thank-you page shows; any signed-in player can redeem it once (`POST /donations/redeem`).
 - Boards and profiles show the badge (`supporter`) unless the player hides it (`users.supporter_public`); the same flag keeps them off the wall and the victory's credits. The supporters' poll keeps one vote per player per poll (`poll_votes`).
+
+### Admin gift desk
+
+For gifting players by hand (someone who talked about the game on social media, say). The desk lives in the game's account dialog ("Painel admin", `src/ui/admin.ts`), shown only when `GET /admin` answers 200.
+
+- Who is admin is decided here and nowhere else: a signed-in user with a **verified** email in `ADMIN_EMAILS` (comma separated). The API asks Clerk (`users.getUser`) and keeps the answer 5 minutes per user (`src/admin.ts`); without `ADMIN_EMAILS` nobody is admin and Clerk is never asked. Every `/admin` route sits behind the same check, so whatever the page shows, a request from anyone else gets 403.
+- The search reads handles from our `users` table and emails from Clerk (we don't store them). A Clerk account that never synced still shows and can get a gift: it gets its `users` row, and the gift waits in its inbox.
+- A gift goes through the same inbox as every other (`sendGift`), with reason `{ kind: 'staff', from: <admin's handle> }` (the banner says "Um presente de @…"), key `staff:<request>` and `gifts.sent_by` the admin, which is what the recent list reads. Each send is logged.
 
 ### Verification by re-simulation
 

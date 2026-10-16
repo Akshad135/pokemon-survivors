@@ -3,6 +3,7 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { logger } from 'hono/logger'
+import { parseAdminGift, parseAdminQuery } from '../../src/game/admin'
 import { challengeOpen } from '../../src/game/challenge'
 import { parseDonation } from '../../src/data/donations'
 import { isPollOption } from '../../src/data/supporters'
@@ -13,6 +14,7 @@ import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, parseDisplayName, parseHandle, parseRunResult } from '../../src/game/ranking'
 import { parseReplay } from '../../src/game/replay'
 import { parseCode } from '../../src/game/supporters'
+import type { AdminStore } from './admin'
 import type { Verify } from './auth'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
@@ -32,6 +34,8 @@ export type AppDeps = {
   /** Donation checkouts (AbacatePay), null when the server has no key for them. */
   donate: Donate | null
   supporters: SupporterStore
+  /** The gift desk: who is admin (asked of Clerk), finding players and sending them gifts. */
+  admin: Pick<AdminStore, 'isAdmin' | 'search' | 'send' | 'recent'>
   /** Webhook secrets: Stripe's signing secret and Payment Link, AbacatePay's URL secret. Unset ones answer 503. */
   webhooks: { stripeSecret?: string; stripePaymentLink: string | null; abacatePaySecret?: string }
   allowedOrigin: (origin: string) => boolean
@@ -51,6 +55,9 @@ const SITE_PATH = /^\/[a-z0-9/-]{0,40}$/
 
 /** A donation's `ref`: our uuid (AbacatePay) or a Stripe Checkout Session id. */
 const DONATION_REF = /^(?:[0-9a-f-]{36}|cs_(?:test|live)_[A-Za-z0-9]{10,200})$/
+
+/** What a hand-sent gift answers when it doesn't go, by `SendOutcome`. */
+const SEND_ERRORS = { unknown: 404, 'bad request': 400 } as const
 
 /** What a run's end answers when it's refused, by `FinishError`. */
 const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
@@ -100,8 +107,13 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `GET /me/supporter` (auth): `SupporterStatus`. `PUT /me/supporter` (auth) `{ public }`: shows or hides the badge and name.
  * - `GET /supporters`: `{ supporters }`, the wall (`WallEntry[]`).
  * - `GET /poll`: `Poll`. `PUT /poll` (auth) `{ choice }`: a supporter's vote, 403 for anyone else.
+ * - `/admin…` (admin): the gift desk, 403 for anyone whose verified email isn't in `ADMIN_EMAILS`.
+ *   `GET /admin`: `{ admin: true }`. `GET /admin/users?q=`: `{ users }` (`AdminUser[]`) by handle or email.
+ *   `POST /admin/gifts` `{ userId, content, request }`: sends a gift (`parseAdminGift`), `{ sent }`
+ *   (false when that `request` already went); 404 for an unknown player. `GET /admin/gifts`: `{ gifts }`
+ *   (`AdminSent[]`), the latest sent by hand.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, webhooks, allowedOrigin, ping }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, admin, webhooks, allowedOrigin, ping }: AppDeps) => {
   const app = new Hono()
 
   app.use(logger())
@@ -311,6 +323,37 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     if (!(await supporters.vote(c.var.userId, choice))) return c.json({ error: 'supporters only' }, 403)
     return c.json(await supporters.poll())
   })
+
+  /** The desk's routes, all behind a valid token whose user Clerk says is admin. Everyone else gets 403, whatever they send. */
+  const desk = new Hono<Auth>()
+
+  desk.use(auth, async (c, next) => {
+    if (!(await admin.isAdmin(c.var.userId))) return c.json({ error: 'forbidden' }, 403)
+    await next()
+  })
+
+  desk.get('/', (c) => c.json({ admin: true }))
+
+  desk.get('/users', async (c) => {
+    const q = parseAdminQuery(c.req.query('q'))
+    if (!q) return c.json({ error: 'expected ?q= a handle or an email' }, 400)
+    return c.json({ users: await admin.search(q) })
+  })
+
+  desk.post('/gifts', smallBody, async (c) => {
+    const body = await json(c)
+    const content = isRecord(body) ? parseAdminGift(body.content) : null
+    if (!isRecord(body) || typeof body.userId !== 'string' || typeof body.request !== 'string' || !content) {
+      return c.json({ error: 'expected { userId, content, request }' }, 400)
+    }
+    const outcome = await admin.send(c.var.userId, body.userId, content, body.request)
+    if (outcome === 'unknown' || outcome === 'bad request') return c.json({ error: outcome }, SEND_ERRORS[outcome])
+    return c.json({ sent: outcome === 'sent' })
+  })
+
+  desk.get('/gifts', async (c) => c.json({ gifts: await admin.recent() }))
+
+  app.route('/admin', desk)
 
   app.onError((err, c) => {
     console.error(err)

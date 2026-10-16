@@ -534,6 +534,7 @@ export const pt = {
     friends: (n: number) => (n === 1 ? 'Por trazer seu primeiro amigo' : `Por trazer ${n} amigos`),
     shinyPick: 'Um *shiny à sua escolha*! Toque no ♥ do título para escolher.',
     support: (tier: SupporterTier): string => (tier === 'gold' ? 'Por chegar a Apoiador(a) Ouro ♥' : 'Por apoiar o projeto ♥'),
+    staff: (from: string | null) => (from ? `Um presente de @${from}, que faz o jogo ♥` : 'Um presente de quem faz o jogo ♥'),
   },
 
   /**
