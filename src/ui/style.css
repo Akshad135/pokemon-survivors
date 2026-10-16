@@ -2125,6 +2125,28 @@ button {
   color: #ffcb05;
 }
 
+/* Ko-fi link: on the title footer and under a victory's buttons. */
+.title-footer .support-link {
+  color: #ff98b8;
+}
+
+.result-support {
+  display: block;
+  margin-top: 10px;
+  padding: 6px;
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+  color: #c03060;
+  text-underline-offset: 3px;
+}
+
+.result-support:hover,
+.result-support:focus-visible {
+  color: #e83838;
+}
+
 /* Starter select's way back to the title: top-left twin of the Poké Mart entry. */
 .back-entry {
   position: absolute;

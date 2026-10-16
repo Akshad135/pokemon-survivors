@@ -27,6 +27,7 @@ export const siteEn: SiteMessages = {
     legal: 'Legal and privacy',
     credits: 'Credits',
     source: 'Source on GitHub',
+    support: 'Support on Ko-fi',
   },
   home: 'Home',
   playCta: 'Play for free',

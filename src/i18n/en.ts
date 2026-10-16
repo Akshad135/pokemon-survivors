@@ -38,6 +38,7 @@ export const en: Messages = {
     settings: 'Settings',
     legal: 'Legal & credits',
     fanGame: 'Unofficial fan game',
+    support: 'Support the project',
     back: 'Title',
   },
 
@@ -246,6 +247,7 @@ export const en: Messages = {
     change: 'Change Pokémon',
     dexSpecies: (n) => (n === 1 ? '+1 new species' : `+${n} new species`),
     dexShinies: (n) => (n === 1 ? '1 shiny caught' : `${n} shinies caught`),
+    support: 'Enjoying it? Support the project on Ko-fi',
   },
 
   share: {

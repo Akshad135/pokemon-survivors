@@ -15,7 +15,7 @@ import { languageSwitch } from './language'
 import { titleBadge } from './missions'
 import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
-import { ROUTES } from '../site/routes'
+import { KOFI_URL, ROUTES } from '../site/routes'
 
 const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
@@ -152,6 +152,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     h('a', { href: ROUTES.legal[lang] }, m.legal),
     ' · ',
     h('a', { href: GITHUB_URL, target: '_blank', rel: 'noopener' }, 'GitHub'),
+    ' · ',
+    h('a', { class: 'support-link', href: KOFI_URL, target: '_blank', rel: 'noopener' }, `♥ ${m.support}`),
   )
   const badge = titleBadge(loadSave().title)
   const outbreak = outbreakBanner()
