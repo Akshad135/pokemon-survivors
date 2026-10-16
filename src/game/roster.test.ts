@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { BIOMES } from '../data/biomes'
-import { EVENTS, RUNNER, STAGES, stageStart } from '../data/waves'
-import { biomeWeight, byTypes, drawRoster, pickSpawn, rosterSchedule, stageBiome, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM, type SpeciesWeight } from './roster'
+import { bossCandidates, EVENTS, MYTHICALS, RUNNER, STAGES, stageStart, TRIO_IDS, TRIOS } from '../data/waves'
+import { biomeWeight, byTypes, drawRoster, pickSpawn, rosterSchedule, stageBiome, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM, withTrio, type SpeciesWeight } from './roster'
 
 const def = (id: EnemyId): EnemyDef => ENEMIES[id]
 const ids = (pool: ReadonlyArray<readonly [EnemyId, number]>) => pool.map(([id]) => id)
@@ -48,7 +48,7 @@ describe('drawRoster', () => {
       const met = new Set(r.stages.flatMap(ids))
       EVENTS.forEach((e, i) => {
         const id = r.events[i]
-        if (e.kind === 'boss') return expect(id).toBeNull()
+        if (e.kind === 'boss') return expect(bossCandidates(e)).toContain(id)
         if ('enemy' in e) return expect(id).toBe(e.enemy)
         expect(id && def(id).tier).toBe(e.tier)
         if (e.kind === 'swarm') expect(def(id!).types).toContain('flying')
@@ -112,9 +112,38 @@ describe('trait species', () => {
       const { events } = drawRoster(createRng(seed))
       EVENTS.forEach((e, i) => {
         const id = events[i]
-        if (id && !('enemy' in e)) expect(def(id).trait).toBeUndefined()
+        if (id && e.kind !== 'boss' && !('enemy' in e)) expect(def(id).trait).toBeUndefined()
       })
     }
+  })
+})
+
+describe('the legendary trio and the rare mythical', () => {
+  const trioBosses = (events: readonly (EnemyId | null)[]) => EVENTS.flatMap((e, i) => (e.kind === 'boss' && 'trio' in e ? [events[i]] : []))
+  const mythical = (events: readonly (EnemyId | null)[]) => events[EVENTS.findIndex((e) => e.kind === 'boss' && 'mythical' in e)]
+
+  it('draws one trio per run, the same for the same seed, and puts its members in the slots in order', () => {
+    expect(drawRoster(createRng(42)).trio).toBe(drawRoster(createRng(42)).trio)
+    for (let seed = 1; seed <= 30; seed++) {
+      const r = drawRoster(createRng(seed), { weight: biomeWeight })
+      expect(trioBosses(r.events)).toEqual(TRIOS[r.trio])
+    }
+  })
+
+  it('covers every trio and every mythical across seeds', () => {
+    const runs = Array.from({ length: 60 }, (_, i) => drawRoster(createRng(i + 1)))
+    expect(new Set(runs.map((r) => r.trio))).toEqual(new Set(TRIO_IDS))
+    expect(new Set(runs.map((r) => mythical(r.events)))).toEqual(new Set(MYTHICALS))
+  })
+
+  it('withTrio swaps only the trio slots', () => {
+    const r = drawRoster(createRng(5))
+    const other = TRIO_IDS.find((t) => t !== r.trio)!
+    const swapped = withTrio(r, other)
+    expect(trioBosses(swapped.events)).toEqual(TRIOS[other])
+    EVENTS.forEach((e, i) => {
+      if (!(e.kind === 'boss' && 'trio' in e)) expect(swapped.events[i]).toBe(r.events[i])
+    })
   })
 })
 

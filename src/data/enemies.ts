@@ -26,6 +26,19 @@ export type EnemyDef = {
 }
 
 /**
+ * Stats of the three legendary trio slots (7:00, 9:30, 12:00). They belong to
+ * the slot, not the species: whichever trio a run draws fights at the same strength.
+ */
+const TRIO_SLOTS = [
+  { hp: 5200, speed: 46, damage: 26, xp: 150, mass: 30, boss: true, legendary: true },
+  { hp: 8000, speed: 50, damage: 30, xp: 200, mass: 30, boss: true, legendary: true },
+  { hp: 11500, speed: 54, damage: 34, xp: 250, mass: 30, boss: true, legendary: true },
+] as const
+
+/** Stats of the rare mythical that may join Mewtwo at the end. */
+const MYTHICAL = { hp: 9000, speed: 70, damage: 30, xp: 300, mass: 40, boss: true, legendary: true } as const
+
+/**
  * Every enemy: the generated wild roster (`data/roster.ts`) plus the hand-tuned
  * bosses. An entry here with the same key as a roster species replaces it, and
  * any entry with a `tier` joins the horde draw.
@@ -49,10 +62,20 @@ export const ENEMIES = {
   nidoranM: { dex: 32, name: 'Nidoran♂', types: ['poison'], hp: 16, speed: 48, damage: 7, xp: 1, mass: 0.9 },
   onix: { dex: 95, name: 'Onix', types: ['rock', 'ground'], hp: 1100, speed: 36, damage: 18, xp: 50, mass: 20, boss: true },
   snorlax: { dex: 143, name: 'Snorlax', types: ['normal'], hp: 2800, speed: 30, damage: 24, xp: 90, mass: 30, boss: true },
-  articuno: { dex: 144, name: 'Articuno', types: ['ice', 'flying'], hp: 5200, speed: 46, damage: 26, xp: 150, mass: 30, boss: true, legendary: true },
-  zapdos: { dex: 145, name: 'Zapdos', types: ['electric', 'flying'], hp: 8000, speed: 50, damage: 30, xp: 200, mass: 30, boss: true, legendary: true },
-  moltres: { dex: 146, name: 'Moltres', types: ['fire', 'flying'], hp: 11500, speed: 54, damage: 34, xp: 250, mass: 30, boss: true, legendary: true },
-  mew: { dex: 151, name: 'Mew', types: ['psychic'], hp: 9000, speed: 70, damage: 30, xp: 300, mass: 40, boss: true, legendary: true },
+  // The legendary trios (`TRIOS` in `data/waves.ts`): each member wears its slot's stats, so every draw is as hard.
+  articuno: { dex: 144, name: 'Articuno', types: ['ice', 'flying'], ...TRIO_SLOTS[0] },
+  zapdos: { dex: 145, name: 'Zapdos', types: ['electric', 'flying'], ...TRIO_SLOTS[1] },
+  moltres: { dex: 146, name: 'Moltres', types: ['fire', 'flying'], ...TRIO_SLOTS[2] },
+  raikou: { dex: 243, name: 'Raikou', types: ['electric'], ...TRIO_SLOTS[0] },
+  entei: { dex: 244, name: 'Entei', types: ['fire'], ...TRIO_SLOTS[1] },
+  suicune: { dex: 245, name: 'Suicune', types: ['water'], ...TRIO_SLOTS[2] },
+  regirock: { dex: 377, name: 'Regirock', types: ['rock'], ...TRIO_SLOTS[0] },
+  regice: { dex: 378, name: 'Regice', types: ['ice'], ...TRIO_SLOTS[1] },
+  registeel: { dex: 379, name: 'Registeel', types: ['steel'], ...TRIO_SLOTS[2] },
+  // The rare finale guests (`MYTHICALS` in `data/waves.ts`), all on the same stats.
+  mew: { dex: 151, name: 'Mew', types: ['psychic'], ...MYTHICAL },
+  celebi: { dex: 251, name: 'Celebi', types: ['psychic', 'grass'], ...MYTHICAL },
+  jirachi: { dex: 385, name: 'Jirachi', types: ['steel', 'psychic'], ...MYTHICAL },
   mewtwo: { dex: 150, name: 'Mewtwo', types: ['psychic'], hp: 22000, speed: 62, damage: 45, xp: 0, mass: 50, boss: true, legendary: true },
   // Rift legendaries (`data/rifts.ts`): HP and contact damage are their 3:30 values, scaled by `riftScale`.
   lugia: { dex: 249, name: 'Lugia', types: ['psychic', 'flying'], hp: 3400, speed: 56, damage: 28, xp: 0, mass: 40, boss: true, legendary: true },
@@ -61,6 +84,9 @@ export const ENEMIES = {
   groudon: { dex: 383, name: 'Groudon', types: ['ground'], hp: 4200, speed: 38, damage: 32, xp: 0, mass: 40, boss: true, legendary: true },
   rayquaza: { dex: 384, name: 'Rayquaza', types: ['dragon', 'flying'], hp: 3000, speed: 66, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
   dialga: { dex: 483, name: 'Dialga', types: ['steel', 'dragon'], hp: 3600, speed: 46, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
+  latias: { dex: 380, name: 'Latias', types: ['dragon', 'psychic'], hp: 3200, speed: 64, damage: 28, xp: 0, mass: 40, boss: true, legendary: true },
+  latios: { dex: 381, name: 'Latios', types: ['dragon', 'psychic'], hp: 3200, speed: 66, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
+  deoxys: { dex: 386, name: 'Deoxys', types: ['psychic'], hp: 2800, speed: 70, damage: 32, xp: 0, mass: 40, boss: true, legendary: true },
   // The endless mode's reaper (`game/endless.ts`): it hunts the player from 20:00.
   arceus: { dex: 493, name: 'Arceus', types: ['normal'], hp: 300000, speed: 60, damage: 90, xp: 0, mass: 999, boss: true, legendary: true, scale: 2 },
 } as const satisfies Record<string, EnemyDef>

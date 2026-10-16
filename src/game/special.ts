@@ -367,6 +367,11 @@ const BY_SPECIES: Partial<Record<PlayableId, SpecialId | readonly SpecialId[]>> 
   gible: 'dragonRush',
   starly: 'braveBird',
   honedge: ['ironHead', 'ironHead', 'stanceChange'],
+  // Lines that leave their Normal type behind when they evolve take the new type's special;
+  // Pidgey's line is all about wind.
+  azurill: ['boomburst', 'hydroCannon'],
+  swablu: ['boomburst', 'dracoMeteor'],
+  pidgey: 'aeroblast',
 }
 
 export const specialOfType = (type: PokeType): SpecialId => BY_TYPE[type]

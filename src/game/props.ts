@@ -5,6 +5,7 @@ import { DROP_TABLES, PROPS, rollDrop, type PropKind } from '../data/consumables
 import { dropItem } from './consumables'
 import { burst } from './effects'
 import { inView } from './queries'
+import { isOpen } from './terrain'
 import type { Attack, Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -58,7 +59,8 @@ const materialize = (g: Game) => {
       const cell = cellKey(cx, cy)
       if (g.brokenProps.has(cell) || g.props.some((p) => p.cell === cell)) continue
       const spot = propAt(cx, cy)
-      if (spot) g.props.push({ id: g.nextId++, cell, ...spot, hp: PROPS[spot.kind].hp, hitCooldown: 0, shake: 0 })
+      // Breakables never stand in a lake or inside a rock.
+      if (spot && isOpen(g, spot.x, spot.y, 14)) g.props.push({ id: g.nextId++, cell, ...spot, hp: PROPS[spot.kind].hp, hitCooldown: 0, shake: 0 })
     }
   }
 }

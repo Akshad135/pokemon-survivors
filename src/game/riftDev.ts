@@ -1,14 +1,17 @@
+import type { EnemyId } from '../data/enemies'
 import type { RiftLegend } from '../data/rifts'
-import { EVENTS, RUN_LENGTH } from '../data/waves'
+import { bossWaveAt, EVENTS, RUN_LENGTH, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
 import { startEndless } from './endless'
 import { pickLegend } from './rift'
 import { enterArena } from './riftArena'
 import { openPortal } from './riftPortal'
+import { withTrio } from './roster'
+import { spawnWaveBoss } from './spawner'
 import type { Game } from './types'
 
 /**
- * Dev-console shortcuts for staging rifts and the endless mode
- * (`ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
+ * Dev-console shortcuts for staging bosses, rifts and the endless mode
+ * (`ps.trio()`, `ps.boss()`, `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
  * Wired in `main.ts` for dev builds only.
  */
 export const riftDevTools = (game: () => Game | undefined) => {
@@ -22,6 +25,15 @@ export const riftDevTools = (game: () => Game | undefined) => {
     g.nextEvent = EVENTS.length
   }
   return {
+    /** Swaps the run's legendary trio for the upcoming trio slots (`ps.trio('beasts')`); returns its members. */
+    trio: (id: TrioId) => {
+      const g = game()
+      if (!g || !TRIO_IDS.includes(id)) return `Trios: ${TRIO_IDS.join(', ')}`
+      g.roster = withTrio(g.roster, id)
+      return TRIOS[id]
+    },
+    /** Brings a boss in now, with its wave entrance (`ps.boss('entei')`); an earlier wave's boss flees as it would. */
+    boss: (enemy: EnemyId) => playing((g) => spawnWaveBoss(g, enemy, bossWaveAt(enemy) ?? g.time))(),
     /** Steps straight into a rift arena (a random legendary, or the one given). */
     rift: (legend?: RiftLegend) => playing((g) => enterArena(g, legend ?? pickLegend(g.rng, g.rift.met), g.player.x, g.player.y))(),
     /** Opens a portal right next to the player. */

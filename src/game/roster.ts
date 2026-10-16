@@ -4,7 +4,7 @@ import { biomeAt, BIOMES, type BiomeId } from '../data/biomes'
 import type { Tier } from '../data/roster'
 import { isSummoner, SUMMONS } from '../data/traits'
 import type { PokeType } from '../data/types'
-import { EVENTS, RUN_LENGTH, RUNNER, STAGES, stageIndexAt, stageStart, type WaveEvent, type WaveStage } from '../data/waves'
+import { bossOf, EVENTS, MYTHICALS, RUN_LENGTH, RUNNER, STAGES, stageIndexAt, stageStart, TRIO_IDS, TRIOS, type TrioId, type WaveEvent, type WaveStage } from '../data/waves'
 
 /** Weighted spawn pool of one stage, as `weightedPick` takes it. */
 export type StagePool = ReadonlyArray<readonly [EnemyId, number]>
@@ -13,8 +13,10 @@ export type StagePool = ReadonlyArray<readonly [EnemyId, number]>
 export type Roster = {
   /** One pool per `STAGES` entry. */
   stages: readonly StagePool[]
-  /** Species of each swarm and ring, aligned with `EVENTS` (`null` for bosses, which name their own). */
+  /** Species of each event, aligned with `EVENTS`: the boss (fixed, the trio's member or the mythical), or the swarm's or ring's. */
   events: readonly (EnemyId | null)[]
+  /** The legendary trio that takes the 7:00, 9:30 and 12:00 slots (`TRIOS`). */
+  trio: TrioId
   /** Per stage, the species whose regular spawns are runners (`RUNNER`), or null. */
   runners: readonly (EnemyId | null)[]
 }
@@ -89,7 +91,8 @@ const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((
  * species of their tier the run has already met; neither ever takes a trait
  * species, which stay within `TRAIT_CAP` per stage. From stage `RUNNER.from`,
  * one of each stage's new species without a trait is its runner (spawning at
- * `RUNNER.weight`). Same seed, same cast.
+ * `RUNNER.weight`). Last come the run's legendary trio and the mythical its
+ * rare finale slot would bring. Same seed, same cast.
  */
 export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events = EVENTS }: RosterOptions = {}): Roster => {
   const used = new Set<EnemyId>()
@@ -154,15 +157,29 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
     return i >= RUNNER.from && plain.length > 0 ? pick(rng, plain) : null
   })
 
+  const trio = pick(rng, TRIO_IDS)
+  const mythical = pick(rng, MYTHICALS)
+
   return {
     stages: casts.map(({ carried, fresh }, i) => [
       ...carried.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : CARRIED] as const),
       ...fresh.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : id === runners[i] ? RUNNER.weight : FRESH] as const),
     ]),
-    events: eventSpecies,
+    events: events.map((e, i) => (e.kind === 'boss' ? bossOf(e, trio, mythical) : eventSpecies[i] ?? null)),
     runners,
+    trio,
   }
 }
+
+/** The roster with `trio` in the trio slots instead of the one drawn (the dev console's `ps.trio`). */
+export const withTrio = (roster: Roster, trio: TrioId, events: readonly WaveEvent[] = EVENTS): Roster => ({
+  ...roster,
+  trio,
+  events: roster.events.map((id, i) => {
+    const e = events[i]
+    return e?.kind === 'boss' && 'trio' in e ? TRIOS[trio][e.trio] : id
+  }),
+})
 
 /**
  * Type affinity as a `SpeciesWeight`: a species takes the highest factor among
@@ -201,7 +218,7 @@ export const rosterSchedule = (roster: Roster, events: readonly WaveEvent[] = EV
   const needs = [
     ...roster.stages.flatMap((pool, i) => pool.flatMap(([id]) => [id, ...summonsOf(id)].map((need) => ({ id: need, at: stageStart(i) })))),
     ...events.flatMap((e, i) => {
-      const id = e.kind === 'boss' ? e.enemy : roster.events[i]
+      const id = roster.events[i]
       return id ? [{ id, at: e.at }] : []
     }),
   ].sort((a, b) => a.at - b.at)

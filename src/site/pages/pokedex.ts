@@ -101,6 +101,8 @@ const appearance = (a: Appearance, m: SiteMessages) => {
       return a.fixed ? m.pokedex.ringFixed(clock(a.at), a.count) : m.pokedex.ring(clock(a.at), a.count)
     case 'boss':
       return a.chance < 1 ? m.pokedex.bossChance(clock(a.at), a.chance * 100) : m.pokedex.boss(clock(a.at))
+    case 'trio':
+      return m.pokedex.trio(clock(a.at), m.trios.names[a.trio])
     case 'rift':
       return m.pokedex.rift(clock(a.from))
     case 'reaper':
