@@ -5,10 +5,14 @@
  * `render/cosmetics.ts`, keyed by the same ids; names in `i18n` (`mart.styles`).
  */
 export const STYLE_SHELF = {
-  /** The Ambassador frame comes with bringing 3 friends (`game/referral.ts`). */
-  frame: { classic: 0, poke: 1000, great: 2000, ultra: 3500, master: 5000, ambassador: null },
-  background: { night: 0, meadow: 1500, forest: 1500, cave: 1500, snow: 1500, tower: 2000 },
-  wallpaper: { classic: 0, forest: 1000, cave: 1000, snow: 1000, tower: 1500 },
+  /**
+   * The Ambassador frame comes with bringing 3 friends (`game/referral.ts`);
+   * the Supporter frame with a donation, its background and wallpaper with
+   * the gold tier (`game/supporters.ts`).
+   */
+  frame: { classic: 0, poke: 1000, great: 2000, ultra: 3500, master: 5000, ambassador: null, supporter: null },
+  background: { night: 0, meadow: 1500, forest: 1500, cave: 1500, snow: 1500, tower: 2000, supporter: null },
+  wallpaper: { classic: 0, forest: 1000, cave: 1000, snow: 1000, tower: 1500, supporter: null },
 } as const satisfies Record<string, Record<string, number | null>>
 
 export type StyleSlot = keyof typeof STYLE_SHELF

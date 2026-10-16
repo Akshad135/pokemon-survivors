@@ -2,7 +2,7 @@ import { HATCHLINGS } from '../data/hatchlings'
 import type { GiftArrival } from '../account'
 import type { Gift } from '../game/gifts'
 import { formatDay, formatPokeDollars, t } from '../i18n'
-import { coinIcon, eggIcon, giftIcon, medalIcon, ribbonIcon } from '../render/art'
+import { coinIcon, eggIcon, giftIcon, medalIcon, ribbonIcon, sparkleIcon } from '../render/art'
 import { frameIcon } from '../render/cosmetics'
 import { portraitUrl } from '../render/sprites'
 import { h, rich } from './dom'
@@ -27,16 +27,25 @@ const contentLine = (gift: Gift): { src: string; text: string } => {
       return { src: portraitUrl(HATCHLINGS[c.family].line[0].dex, true), text: m.shinyHatch(HATCHLINGS[c.family].name) }
     case 'ribbon':
       return { src: ribbonIcon(c.ribbon.tier), text: m.ribbon(t().ribbons.names[c.ribbon.tier]) }
+    case 'shinyPick':
+      return { src: sparkleIcon(), text: m.shinyPick }
   }
 }
 
-/** Why it came: an invite, friends brought, or a day of the challenge (the place is in the ribbon). */
+/** Why it came: an invite, friends brought, a donation, or a day of the challenge (the place is in the ribbon). */
 const reasonLine = (gift: Gift) => {
   const c = gift.content
   if (c.kind === 'ribbon') return t().gifts.ribbonWhy(formatDay(c.ribbon.day), c.ribbon.rank, c.ribbon.total)
   const r = gift.reason
   if (!r) return null
-  return r.kind === 'welcome' ? t().gifts.welcome(r.from) : t().gifts.friends(r.count)
+  switch (r.kind) {
+    case 'welcome':
+      return t().gifts.welcome(r.from)
+    case 'friends':
+      return t().gifts.friends(r.count)
+    case 'support':
+      return t().gifts.support(r.tier)
+  }
 }
 
 /**

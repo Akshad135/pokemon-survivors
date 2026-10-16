@@ -1001,9 +1001,129 @@ td small {
   font-size: 22px;
 }
 
-/* Without JS the form can't reach the API, so only the Stripe link is offered. */
-html:not(.js) #donate-br {
+/* Without JS the form can't reach the API, so only the Stripe link is offered (and no @ to carry). */
+html:not(.js) #donate-br,
+html:not(.js) #donate-account {
   display: none;
+}
+
+.donate-thanks p {
+  margin: 0 0 10px;
+}
+
+.donate-thanks p:last-child {
+  margin-bottom: 0;
+}
+
+.donate-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.donate-code-row code {
+  padding: 6px 12px;
+  font-family: var(--title);
+  font-size: clamp(13px, 3vw, 18px);
+  letter-spacing: 2px;
+  color: var(--ink);
+  background: #fff;
+  border: 3px solid var(--line);
+  border-radius: 6px;
+}
+
+.donate-code-row .btn-play {
+  cursor: pointer;
+}
+
+.donate-account,
+.donate-perks,
+.donate-wall {
+  margin: 20px 0;
+  padding: 18px 20px 20px;
+}
+
+.donate-account h2,
+.donate-perks h2,
+.donate-wall h2 {
+  margin: 0 0 12px;
+  font-size: clamp(12px, 2.4vw, 15px);
+  color: var(--ink);
+}
+
+.donate-handle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.donate-handle-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  background: #fff;
+  border: 3px solid var(--line);
+  border-radius: 6px;
+}
+
+.donate-handle-box b {
+  font-family: var(--body);
+  font-size: 22px;
+  color: var(--muted);
+}
+
+.donate-handle-box input {
+  width: 16ch;
+  min-height: 38px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 22px;
+  outline: none;
+}
+
+.donate-handle-status {
+  min-height: 1.2em;
+  margin: 8px 0;
+  color: var(--blue);
+}
+
+.donate-handle-status.error {
+  color: var(--red);
+}
+
+.donate-perks ul {
+  margin: 0 0 12px;
+  padding-left: 1.2em;
+}
+
+.donate-perks li {
+  margin-bottom: 4px;
+}
+
+.donate-wall-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.donate-wall-names li {
+  color: #a02858;
+}
+
+.donate-wall-names li.gold {
+  color: #a87808;
 }
 
 /* ---------- Footer ---------- */

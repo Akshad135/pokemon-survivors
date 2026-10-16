@@ -5520,3 +5520,320 @@ a.btn.dex-site {
     padding: 6px 12px;
   }
 }
+
+/* ---------- Apoiadores (supporters) ---------- */
+
+.support-chip {
+  cursor: pointer;
+  font-family: var(--title);
+}
+
+.dialog.supporters {
+  width: min(520px, 94vw);
+  gap: 10px;
+}
+
+.dialog-title .title-heart {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+
+.supporter-since {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.supporter-since img {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.pick-label {
+  margin: 4px 0 0;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #6878a8;
+}
+
+.pick-label:empty {
+  display: none;
+}
+
+.supporter-perks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.supporter-perks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.supporter-perks img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  object-fit: contain;
+}
+
+.supporter-perks b {
+  color: #e83838;
+}
+
+/* Two columns of buttons, so the dialog fits a phone held upright. */
+.supporter-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.supporter-buttons .btn:first-child,
+.supporter-buttons .btn:last-child:nth-child(even) {
+  grid-column: 1 / -1;
+}
+
+.supporter-buttons .btn.glow {
+  background: #fff4c0;
+  border-color: #f0b800;
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+.supporter-buttons .btn.glow.selected {
+  border-color: #e83838;
+}
+
+/* Pickers: a scrolling grid of portraits over the footer's buttons. */
+.dialog.picker {
+  max-height: 100%;
+}
+
+.pick-scroll {
+  min-height: 0;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.pick-scroll .pick-label {
+  color: #a8b0d0;
+}
+
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+}
+
+.pick-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #48527a;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.pick-cell > img:first-child {
+  width: 40px;
+  height: 40px;
+}
+
+.pick-cell.selected {
+  border-color: #e83838;
+}
+
+.pick-cell.picked {
+  background: #fff;
+  border-color: #ffcb05;
+}
+
+.pick-cell.picked.selected {
+  border-color: #e83838;
+}
+
+.pick-egg {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 12px;
+  height: 14px;
+}
+
+.pick-reveal {
+  align-items: center;
+}
+
+/* The poll: one row per option, with its share of the votes. */
+.poll-rows,
+.wall-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 6px;
+  background: #283048;
+  border-radius: 6px;
+}
+
+.poll-row,
+.wall-row {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 8px;
+  text-align: left;
+  color: #e8e8f8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.poll-row {
+  grid-template-columns: 32px minmax(0, 1fr) minmax(60px, 1.2fr) auto;
+}
+
+.wall-row {
+  grid-template-columns: 18px auto 1fr;
+}
+
+.poll-row.selected,
+.wall-row.selected {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #e83838;
+}
+
+.poll-row.mine {
+  background: rgba(255, 203, 5, 0.22);
+}
+
+.poll-row[disabled] {
+  opacity: 1;
+  cursor: default;
+}
+
+.poll-row img {
+  width: 32px;
+  height: 32px;
+}
+
+.poll-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 20px;
+}
+
+.poll-row small,
+.wall-row small {
+  font-size: 17px;
+  color: #a8b0d0;
+}
+
+.wall-row img {
+  width: 18px;
+  height: 18px;
+}
+
+.wall-row b {
+  font-weight: normal;
+  font-size: 20px;
+}
+
+.wall-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The heart by a supporter's name on the boards and profiles. */
+.supporter-badge,
+.rank-row .supporter-badge {
+  width: 12px;
+  height: 12px;
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+
+.profile-name .supporter-badge {
+  width: 16px;
+  height: 16px;
+}
+
+.profile-supporter {
+  font-size: 16px;
+  color: #c04890;
+}
+
+/* The victory screen's thanks. */
+.supporter-credits {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px 8px;
+  font-size: 17px;
+  line-height: 1.15;
+  text-align: center;
+  color: #505870;
+}
+
+.supporter-credits img {
+  width: 14px;
+  height: 14px;
+}
+
+.supporter-credits small {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a02858;
+}
+
+.supporter-credits span {
+  flex-basis: 100%;
+}
+
+.support-chip.waiting {
+  --frame: #f8d030;
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+.support-chip .support-sparkle {
+  width: 14px;
+  height: 14px;
+  margin-left: -4px;
+}
+
+@media (max-width: 420px) {
+  .supporter-buttons .btn {
+    padding: 8px 6px;
+  }
+  .supporter-perks {
+    font-size: 16px;
+  }
+}

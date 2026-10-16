@@ -7,6 +7,7 @@ import { createRibbons } from './challenge'
 import { abacatePay } from './donations'
 import { giftStore } from './gifts'
 import { rankingStore } from './ranking'
+import { supporterStore } from './supporters'
 import { loadEnv } from './env'
 
 const env = loadEnv()
@@ -28,6 +29,8 @@ const app = createApp({
   checks,
   verify: clerkVerifier(env),
   donate: env.abacatePayKey ? abacatePay(env.abacatePayKey) : null,
+  supporters: supporterStore(sql),
+  webhooks: { stripeSecret: env.stripeWebhookSecret, stripePaymentLink: env.stripePaymentLink, abacatePaySecret: env.abacatePayWebhookSecret },
   allowedOrigin: env.allowedOrigin,
   ping: () => sql`select 1`.then(() => true, () => false),
 })

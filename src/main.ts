@@ -49,6 +49,8 @@ import { rosterSchedule, type Roster } from './game/roster'
 import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
+import { canWalkWith, isSupporter, TIER_GIFTS, type SupporterTier } from './game/supporters'
+import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
 import { setWeather } from './game/weather'
@@ -85,7 +87,7 @@ import { runShare, sharePreview, trainerShare } from './ui/share'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
-import { supportButton } from './ui/support'
+import { creditsLine, supportButton, supportersScreen } from './ui/supporters'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
@@ -184,6 +186,8 @@ type Run = {
    * device keeps (`saveAttempt`). Null for any other run.
    */
   challenge: { day: DayKey; official: boolean; attempt: boolean } | null
+  /** The supporter's companion walking along, drawn only (`render/companion.ts`). */
+  companion: CompanionView | null
 }
 
 let screen: Screen | null = null
@@ -257,6 +261,7 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       // Closing rebuilds the title, so a sign in's merged save (title badge) shows up.
       account: accountsEnabled ? (focus) => accountScreen(ui, input, () => showTitle({ focus })) : undefined,
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
+      supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
     }, opts),
   )
 }
@@ -283,8 +288,21 @@ const showMenu = (initial: PlayableId = lastStarter) => {
   }, initial)
   const closeMart = martButton(ui, input, () => showShop())
   const closeBack = titleButton(ui, input, () => showTitle())
-  const closeSupport = supportButton(ui)
+  const closeSupport = supportButton(ui, () => showSupporters(() => showMenu(select.selected())))
   setScreen({ ...select, dispose: () => (closeMart(), closeBack(), closeSupport(), select.dispose()) })
+}
+
+/** Apoiadores from the starter select's heart chip; closing it comes back with `back`. */
+const showSupporters = (back: () => void) => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, 'pick'))
+
+/** The save's companion for a run starting now, if it's a supporter's and still allowed (its sprites start loading). */
+const runCompanion = (at: Vec): CompanionView | null => {
+  const save = loadSave()
+  const c = save.companion
+  if (!c || !isSupporter(save) || !canWalkWith(save, c)) return null
+  const dex = PLAYABLE[c.id].line[0].dex
+  void (c.shiny ? preloadShinies([dex]) : loadSpecies(dex)).catch(() => {})
+  return createCompanion(dex, c.shiny, at)
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
@@ -547,6 +565,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     rank: null,
     bestBefore: save.achievements.lifetime.bestTime,
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
+    companion: runCompanion(game.player),
   }
   track('run_start', { starter, difficulty: game.difficulty, ...(daily ? { challenge: daily.official ? 'official' : 'practice' } : {}) })
   announceRun(start, run.challenge)
@@ -645,6 +664,7 @@ const syncOverlay = (r: Run) => {
             open: (back) => sharePreview(ui, input, runShare(g, r.dexBase, r.challenge && r.rank ? r.rank.then((o) => (o.kind === 'ranked' ? o.challenge : null)) : null), back),
             glow: g.player.shiny || g.dexLog.shinies.size > 0 || wonRun(g) || g.time > r.bestBefore,
           },
+          credits: g.phase === 'victory' && rankingEnabled ? creditsLine() : null,
         },
       )
       break
@@ -991,9 +1011,10 @@ const frame = (now: number) => {
       tickToasts(ui, dt, g.phase !== 'playing')
       // Redraw only when the simulation advanced: halves the work on 120 Hz phones and
       // idles the GPU while a menu is open over a frozen frame.
+      if (r.companion && steps > 0) stepCompanion(r.companion, g.player, steps * STEP)
       if (steps > 0 || dirty) {
         dirty = false
-        render(ctx, g, t, settings())
+        render(ctx, g, t, { ...settings(), companion: r.companion })
         const stick = input.readStick()
         if (stick && g.phase === 'playing') drawJoystick(ctx, stick, cssScale)
         r.hud.update(g)
@@ -1156,16 +1177,24 @@ const devGifts = {
   /**
    * Lands a Mystery Gift as if the account brought it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
    * `ps.gift('title')`, `ps.gift('style', 'ambassador')` (a frame), `ps.gift('shinyHatch', 'munchlax')`,
-   * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340).
+   * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice).
    * `why`: an inviter's handle (welcome) or a count of friends brought.
    */
   gift: (kind: GiftKind = 'egg', arg?: string, why?: string | number) => {
-    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' }, ribbon: { ribbon: { day: previousDay(brasiliaDay(today())), tier: arg ?? 'gold', rank: 12, total: 340 } } }[kind]
+    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' }, ribbon: { ribbon: { day: previousDay(brasiliaDay(today())), tier: arg ?? 'gold', rank: 12, total: 340 } }, shinyPick: {} }[kind]
     const content = parseGiftContent({ kind, ...raw })
-    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier)'
+    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick'
     const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
     return receiveGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
+  /**
+   * Lands the thank-you of a supporter tier (`supporter` or `gold`) as Mystery Gifts, as if a donation was credited:
+   * the title, the frame and a shiny ticket, or the gold background and wallpaper.
+   */
+  supporter: (tier: SupporterTier = 'supporter') =>
+    receiveGifts(TIER_GIFTS[tier].map((content, i) => ({ id: `dev-support-${tier}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier } }))),
+  /** Takes `id` along as the companion (`shiny` if owned so); no argument walks alone. Shows from the next run. */
+  companion: (id?: PlayableId, shiny = false) => updateSave((s) => ({ ...s, companion: id ? { id, shiny } : null })),
   /** Lands as a guest invited by `handle` (shown as `name`): the title shows the invite banner. */
   invite: (handle = 'ash', name = 'Ash') => {
     stageInvite(handle, name)

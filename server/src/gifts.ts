@@ -22,23 +22,24 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
  * the newcomer has enough verified runs (`creditDue`) and sends the
  * milestone gifts (`milestoneGifts`). Everything is counted here, never on the device.
  */
-export const giftStore = (sql: Sql) => {
-  const send = async (q: TransactionSql, userId: string, content: GiftContent, reason: GiftReason | null, key: string | null) => {
-    await q`
-      insert into gifts (user_id, kind, payload, reason, key)
-      values (${userId}, ${content.kind}, ${q.json(content)}, ${reason ? q.json(reason) : null}, ${key})
-      on conflict (user_id, key) do nothing`
-  }
+/** Sends a gift inside a transaction (`userId` must have a users row). With a `key`, only the first send of that key lands. */
+export const sendGift = async (q: TransactionSql, userId: string, content: GiftContent, reason: GiftReason | null, key: string | null) => {
+  await q`
+    insert into gifts (user_id, kind, payload, reason, key)
+    values (${userId}, ${content.kind}, ${q.json(content)}, ${reason ? q.json(reason) : null}, ${key})
+    on conflict (user_id, key) do nothing`
+}
 
+export const giftStore = (sql: Sql) => {
   return {
     /** Sends a gift to `userId` (who must have a users row). With a `key`, only the first send of that key lands. */
     send: (userId: string, content: GiftContent, reason: GiftReason | null = null, key: string | null = null) =>
-      sql.begin((tx) => send(tx, userId, content, reason, key)),
+      sql.begin((tx) => sendGift(tx, userId, content, reason, key)),
 
     /** Sends many gifts in one go (a day's ribbons), each like `send`. */
     sendAll: (list: ReadonlyArray<{ userId: string; content: GiftContent; key: string }>) =>
       sql.begin(async (tx) => {
-        for (const g of list) await send(tx, g.userId, g.content, null, g.key)
+        for (const g of list) await sendGift(tx, g.userId, g.content, null, g.key)
       }),
 
     /** The player's unclaimed gifts, oldest first. */
@@ -75,7 +76,7 @@ export const giftStore = (sql: Sql) => {
         if (!ok || !inviter) return false
         await tx`update users set referred_by = ${inviter.id}, referred_at = now() where id = ${userId}`
         await tx`insert into follows (follower_id, followee_id) values (${userId}, ${inviter.id}), (${inviter.id}, ${userId}) on conflict do nothing`
-        await send(tx, userId, WELCOME_GIFT, { kind: 'welcome', from: inviter.handle }, 'welcome')
+        await sendGift(tx, userId, WELCOME_GIFT, { kind: 'welcome', from: inviter.handle }, 'welcome')
         return true
       }),
 
@@ -97,7 +98,7 @@ export const giftStore = (sql: Sql) => {
         const [brought] = await tx<{ n: number }[]>`select count(*)::int as n from users where referred_by = ${me.referred_by} and referral_credited_at is not null`
         const friends = brought?.n ?? 0
         const gifts = milestoneGifts(friends)
-        for (const [i, content] of gifts.entries()) await send(tx, me.referred_by, content, { kind: 'friends', count: friends }, `friends:${friends}:${i}`)
+        for (const [i, content] of gifts.entries()) await sendGift(tx, me.referred_by, content, { kind: 'friends', count: friends }, `friends:${friends}:${i}`)
         console.log(`invite of ${userId} counted for ${me.referred_by} (${friends} friends, ${gifts.length} gifts)`)
       }),
   }
