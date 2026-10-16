@@ -7,8 +7,8 @@ import type { DayKey } from './game/day'
 import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
 import { firstTouch, landingRef, REF_PARAM } from './game/referral'
 import type { Replay } from './game/replay'
-import { SITE_URL } from './site/routes'
-import { locale, type Locale } from './i18n'
+import { ROUTES, SITE_URL } from './site/routes'
+import { locale } from './i18n'
 
 /**
  * Ranked runs and the public side of accounts (boards, profiles, follows),
@@ -193,9 +193,6 @@ export const setFollow = async (handle: string, follow: boolean) => {
 
 /* ---------------- Links ---------------- */
 
-/** The game's page per language: a profile link opens the game in the language it was shared in. */
-const PLAY_PATH = { pt: '/', en: '/en/' } as const satisfies Record<Locale, string>
-
 /** Query parameter of a shared profile link (`/?u=handle`). */
 export const PROFILE_PARAM = 'u'
 
@@ -203,7 +200,7 @@ export const PROFILE_PARAM = 'u'
 export const profileUrl = (handle: string) => {
   const own = accountHandle()
   const ref = own && own !== handle ? `&${REF_PARAM}=${encodeURIComponent(own)}` : ''
-  return `${location.origin}${PLAY_PATH[locale()]}?${PROFILE_PARAM}=${encodeURIComponent(handle)}${ref}`
+  return `${location.origin}${ROUTES.play[locale()]}?${PROFILE_PARAM}=${encodeURIComponent(handle)}${ref}`
 }
 
 /**
@@ -211,7 +208,7 @@ export const profileUrl = (handle: string) => {
  * when the player has one. Always the public site, so a card shared from a
  * preview build still sends people to the game.
  */
-export const gameUrl = (handle: string | null) => `${SITE_URL}${PLAY_PATH[locale()]}${handle ? `?${REF_PARAM}=${encodeURIComponent(handle)}` : ''}`
+export const gameUrl = (handle: string | null) => `${SITE_URL}${ROUTES.play[locale()]}${handle ? `?${REF_PARAM}=${encodeURIComponent(handle)}` : ''}`
 
 /* ---------------- Invites ---------------- */
 

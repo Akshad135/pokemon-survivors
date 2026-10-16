@@ -70,13 +70,13 @@ const gameVersion = () => {
   }
 }
 
-// One page per language for the game (index.html, en/index.html); the site pages are added by `sitePages`.
+// One page per language for the game (index.html, en/index.html, es/index.html); the site pages are added by `sitePages`.
 export default defineConfig({
   plugins: [sitePages()],
   define: { __GAME_VERSION__: JSON.stringify(gameVersion()) },
   build: {
     rolldownOptions: {
-      input: { main: 'index.html', en: 'en/index.html' },
+      input: { main: 'index.html', en: 'en/index.html', es: 'es/index.html' },
     },
   },
 })

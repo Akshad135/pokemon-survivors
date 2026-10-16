@@ -3,7 +3,7 @@ import { locale, LOCALE_IDS, LOCALES, nextLocale, t, type Locale } from '../i18n
 import { h, later } from './dom'
 
 /**
- * PT | EN switch in the title screen's top-left corner (mirrors the Poké Mart
+ * PT | EN | ES switch in the title screen's top-left corner (mirrors the Poké Mart
  * entry on the right). Tapping a language picks it and `I` cycles them.
  * `onPick` must rebuild the screen. Returns a disposer.
  */

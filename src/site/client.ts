@@ -5,7 +5,7 @@
  * the game and the site never load each other's bundles.
  */
 
-/** Same key as `src/i18n`: picking PT/EN here makes "Play" open the game in that language. */
+/** Same key as `src/i18n`: picking PT/EN/ES here makes "Play" open the game in that language. */
 const LANG_KEY = 'ps:lang'
 
 document.documentElement.classList.add('js')

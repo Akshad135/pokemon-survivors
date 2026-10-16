@@ -230,7 +230,7 @@ export const sitePt = {
         ['Escolher o inicial', '← → parceiro, ↑ ↓ região, 1 a 9, Enter', 'D-pad e A', 'Toque para ver, toque de novo para escolher'],
         ['Abrir o Poké Mart', 'L na escolha de parceiro', '—', 'Botão POKé MART, no canto superior direito'],
         ['Som liga/desliga', 'M', 'Ajustes', 'Ajustes'],
-        ['Idioma', 'I na tela de título, ou Ajustes', 'Ajustes', 'PT | EN na tela de título, ou Ajustes'],
+        ['Idioma', 'I na tela de título, ou Ajustes', 'Ajustes', 'PT | EN | ES na tela de título, ou Ajustes'],
       ],
       notes: [
         'No controle, o D-pad e o analógico esquerdo navegam em todos os menus, A confirma, B volta e Start pausa. Dentro da partida, A usa o ataque especial, mas o controle ainda não move o Pokémon: para andar, use o teclado ou o toque.',
@@ -512,7 +512,7 @@ export const sitePt = {
         ['Som', 'Liga ou desliga todo o som (atalho: M).'],
         ['Números de dano', 'Mostra ou esconde os números de dano na tela.'],
         ['Tremor de tela', 'Liga ou desliga o tremor em explosões e golpes fortes.'],
-        ['Idioma', 'Troca entre português e inglês.'],
+        ['Idioma', 'Troca entre português, inglês e espanhol.'],
       ],
     },
     cta: 'Pronto? Escolha seu parceiro e jogue.',
@@ -569,7 +569,7 @@ export const sitePt = {
     storage: {
       'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou), os ovos da incubadora (eggs), os Pokémon chocados (hatched), progresso das missões, conquistas, recordes (como Pokémon derrotados e o maior tempo sobrevivido) e o título escolhido.',
       'ps:settings': 'Ajustes: volume da música e dos efeitos, som ligado ou desligado, números de dano e tremor de tela.',
-      'ps:lang': 'Idioma escolhido (português ou inglês).',
+      'ps:lang': 'Idioma escolhido (português, inglês ou espanhol).',
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',
       'ps:account': 'Só se você entrar com uma conta: qual conta está conectada neste aparelho (o id dela, seu nome e seu nome de usuário) e a última versão do progresso que ele sincronizou.',
       'ps:runs': 'Só com uma conta: resultados de partidas que ainda não chegaram ao ranking (por exemplo, sem internet). Saem daqui assim que o servidor recebe.',

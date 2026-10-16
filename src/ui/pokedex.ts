@@ -5,13 +5,11 @@ import { dexCounts, dexStatus, type DexStatus, type Pokedex } from '../game/dex'
 import { pokedex, type DexEntry } from '../site/pokedex'
 import { PICKUPS, pokeballIcon, sparkleIcon } from '../render/art'
 import { cryUrl, drawPokemon, hasShiny, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
-import { locale, t, type Locale } from '../i18n'
+import { locale, t } from '../i18n'
 import { h, later } from './dom'
 import { loadSave } from './save'
 import { hint, typeBadge, type Screen } from './screens'
-
-/** The static Pokédex page, now a secondary link: it lists where each species shows up. */
-const SITE_POKEDEX = { pt: '/pokedex/', en: '/en/pokedex/' } as const satisfies Record<Locale, string>
+import { ROUTES } from '../site/routes'
 
 const DEX_FILTERS = ['all', 'seen', 'caught', 'missing'] as const
 
@@ -105,7 +103,7 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
 
   const back = h('button', { class: 'btn', onclick: close }, m.back)
   const pc = openPc ? h('button', { class: 'btn dex-pc', onclick: showPc }, h('img', { src: sparkleIcon(), alt: '' }), m.pc, h('span', { class: 'key-hint' }, 'P')) : null
-  const site = h('a', { class: 'btn dex-site', href: SITE_POKEDEX[locale()] }, m.site)
+  const site = h('a', { class: 'btn dex-site', href: ROUTES.pokedex[locale()] }, m.site)
   const footer = [back, ...(pc ? [pc] : []), site]
 
   /** A caught shiny shows off its shiny form, when the species has one. */

@@ -210,7 +210,7 @@ export const siteEn: SiteMessages = {
         ['Pick your starter', '← → partner, ↑ ↓ region, 1 to 9, Enter', 'D-pad and A', 'Tap to inspect, tap again to pick'],
         ['Open the Poké Mart', 'L on the starter select', '—', 'POKé MART button, top right'],
         ['Sound on/off', 'M', 'Settings', 'Settings'],
-        ['Language', 'I on the title screen, or Settings', 'Settings', 'PT | EN on the title screen, or Settings'],
+        ['Language', 'I on the title screen, or Settings', 'Settings', 'PT | EN | ES on the title screen, or Settings'],
       ],
       notes: [
         'On a gamepad, the D-pad and left stick navigate every menu, A confirms, B goes back and Start pauses. In a run, A fires the special attack, but the gamepad can\'t move your Pokémon yet: use the keyboard or touch to move.',
@@ -492,7 +492,7 @@ export const siteEn: SiteMessages = {
         ['Sound', 'Turns all sound on or off (shortcut: M).'],
         ['Damage numbers', 'Shows or hides damage numbers on screen.'],
         ['Screen shake', 'Turns screen shake on explosions and big hits on or off.'],
-        ['Language', 'Switches between English and Portuguese.'],
+        ['Language', 'Switches between English, Portuguese and Spanish.'],
       ],
     },
     cta: 'Ready? Pick your partner and play.',
@@ -549,7 +549,7 @@ export const siteEn: SiteMessages = {
     storage: {
       'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs), the Pokémon hatched (hatched), mission progress, achievements, records (like Pokémon defeated and your longest survival) and the title you picked.',
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
-      'ps:lang': 'Your language (Portuguese or English).',
+      'ps:lang': 'Your language (Portuguese, English or Spanish).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',
       'ps:account': 'Only if you sign in: which account is signed in on this device (its id, your name and your username) and the last version of your progress it synced.',
       'ps:runs': 'Only with an account: run results that have not reached the ranking yet (for example, while offline). They leave as soon as the server gets them.',

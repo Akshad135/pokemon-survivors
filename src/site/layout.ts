@@ -1,7 +1,7 @@
-import type { Locale } from '../i18n'
+import { LOCALE_IDS, type Locale } from '../i18n'
 import { SITE_MESSAGES } from '../i18n/site'
 import { html, jsonLd, raw, type Html } from './html'
-import { absolute, alternates, REPO_URL, ROUTES, type PageId, type RouteId } from './routes'
+import { absolute, alternates, HREFLANG, REPO_URL, ROUTES, type PageId, type RouteId } from './routes'
 
 export type PageMeta = {
   id: PageId
@@ -16,7 +16,7 @@ export type PageMeta = {
 
 const NAV: readonly RouteId[] = ['play', 'pokedex', 'guide', 'changelog']
 
-const other = (locale: Locale): Locale => (locale === 'pt' ? 'en' : 'pt')
+const others = (locale: Locale) => LOCALE_IDS.filter((l) => l !== locale)
 
 const head = ({ id, locale, title, description, schema = [], css }: PageMeta) => {
   const m = SITE_MESSAGES[locale]
@@ -60,8 +60,7 @@ const head = ({ id, locale, title, description, schema = [], css }: PageMeta) =>
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:locale" content="${m.lang.og}" />
-    <meta property="og:locale:alternate" content="${SITE_MESSAGES[other(locale)].lang.og}" />
-    <meta name="twitter:card" content="summary_large_image" />
+    ${others(locale).map((l) => html`<meta property="og:locale:alternate" content="${SITE_MESSAGES[l].lang.og}" />\n    `)}    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/assets/pokemon/4/portrait.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/site/site.css" />
@@ -75,7 +74,6 @@ const head = ({ id, locale, title, description, schema = [], css }: PageMeta) =>
 
 const header = (id: PageId, locale: Locale) => {
   const m = SITE_MESSAGES[locale]
-  const to = other(locale)
   return html`<a class="skip" href="#content">${m.skip}</a>
   <header class="site-header">
     <a class="brand" href="${ROUTES.play[locale]}"><img src="/assets/pokemon/4/portrait.png" width="40" height="40" alt="" /><span>Pokémon<br />Survivors</span></a>
@@ -85,8 +83,10 @@ const header = (id: PageId, locale: Locale) => {
       )}
     </nav>
     <nav class="lang" aria-label="${m.nav.language}">
-      <a href="${ROUTES[id].pt}" hreflang="pt-BR" lang="pt-BR" data-lang="pt"${locale === 'pt' ? html` aria-current="true"` : ''}>PT</a>
-      <a href="${ROUTES[id].en}" hreflang="en" lang="en" data-lang="en" title="${SITE_MESSAGES[to].lang.switchTo}"${locale === 'en' ? html` aria-current="true"` : ''}>EN</a>
+      ${LOCALE_IDS.map(
+        (l) =>
+          html`<a href="${ROUTES[id][l]}" hreflang="${HREFLANG[l]}" lang="${SITE_MESSAGES[l].lang.tag}" data-lang="${l}"${l === locale ? html` aria-current="true"` : html` title="${SITE_MESSAGES[l].lang.switchTo}"`}>${SITE_MESSAGES[l].lang.short}</a>`,
+      )}
     </nav>
   </header>`
 }
