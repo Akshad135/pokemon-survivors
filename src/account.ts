@@ -1,4 +1,7 @@
 import type { Clerk } from '@clerk/clerk-js'
+import { track } from './analytics'
+import type { Hatch } from './game/eggs'
+import { applyGift, parseGift, type Gift } from './game/gifts'
 import { parseSaveData } from './game/meta'
 import { isRecord } from './game/parse'
 import type { ProfileName } from './game/ranking'
@@ -10,6 +13,9 @@ import { loadSave, writeSave } from './ui/save'
  * only mirrors it to the API (`server/`), merging saves with `applyPush`
  * (`game/sync.ts`). Clerk is loaded only when the player signs in, or on
  * boot for a device that already did, so guests never download it.
+ *
+ * Each sync also brings the Mystery Gifts waiting in the account (`GET /gifts`)
+ * and, on a device's first sync, the invite it landed with (`POST /referral`).
  *
  * Nothing here may block the game: offline, a missing API or a Clerk outage
  * just leave the save local and the sync status `offline`.
@@ -70,6 +76,27 @@ const writeLink = (link: Link | null) => {
     else localStorage.removeItem(LINK_KEY)
   } catch {
     // Storage blocked: the device just syncs as a fresh sign in next time.
+  }
+}
+
+/* ---------------- Invite ---------------- */
+
+const REF_KEY = 'ps:ref'
+
+/** The first inviter's handle this device landed with (`captureRef` in `ranking.ts`), for the first sign in to credit. */
+export const storedRef = () => {
+  try {
+    return localStorage.getItem(REF_KEY)
+  } catch {
+    return null
+  }
+}
+
+export const storeRef = (handle: string) => {
+  try {
+    localStorage.setItem(REF_KEY, handle)
+  } catch {
+    // Storage blocked: the invite just isn't remembered.
   }
 }
 
@@ -245,6 +272,84 @@ const link = (c: Clerk) => {
   return syncSave()
 }
 
+/**
+ * A device's first sync for an account brings the invite it landed with,
+ * before the save goes up: the API counts it only for an account with no
+ * save yet (`canRefer`). Any answer is final; no connection tries next time.
+ */
+const sendReferral = async (token: string) => {
+  const ref = storedRef()
+  if (!ref || readLink()?.revision !== null) return
+  try {
+    const res = await fetch(`${API_URL}/referral`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
+    const body: unknown = res.ok ? await res.json() : null
+    if (isRecord(body) && body.referred === true) track('ref_signup', { ref })
+  } catch (err) {
+    console.warn('referral failed', err)
+  }
+}
+
+/* ---------------- Mystery Gifts ---------------- */
+
+/** A gift that landed in the save, with the hatch to play for a shiny hatch. */
+export type GiftArrival = { gift: Gift; hatch: Hatch | null }
+
+const giftListeners = new Set<(arrived: readonly GiftArrival[], waiting: number) => void>()
+
+/** Calls `fn` whenever gifts land in the save (and with how many wait for room in the incubator). Returns the unsubscribe. */
+export const onGifts = (fn: (arrived: readonly GiftArrival[], waiting: number) => void) => {
+  giftListeners.add(fn)
+  return () => void giftListeners.delete(fn)
+}
+
+/**
+ * Applies gifts to the local save, one by one (`applyGift`), and tells the
+ * listeners what landed. Returns the ids the account may mark claimed: the
+ * ones that landed now or before. (Dev helpers stage gifts through it too.)
+ */
+export const receiveGifts = (gifts: readonly Gift[]) => {
+  const arrived: GiftArrival[] = []
+  const claim: string[] = []
+  let waiting = 0
+  for (const gift of gifts) {
+    const out = applyGift(loadSave(), gift)
+    if (out.status === 'wait') waiting++
+    else claim.push(gift.id)
+    if (out.status === 'applied') {
+      writeSave(out.save)
+      arrived.push({ gift, hatch: out.hatch })
+    }
+  }
+  if (arrived.length > 0 || waiting > 0) giftListeners.forEach((fn) => fn(arrived, waiting))
+  return { claim, landed: arrived.length > 0 }
+}
+
+/**
+ * Fetches the account's unclaimed gifts, applies them and marks them
+ * claimed. A gift this build doesn't know stays unclaimed for a newer one.
+ * True when the save changed (it needs another push). Never throws.
+ */
+const fetchGifts = async (token: string) => {
+  try {
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    const res = await fetch(`${API_URL}/gifts`, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const body: unknown = res.ok ? await res.json() : null
+    if (!isRecord(body) || !Array.isArray(body.gifts)) return false
+    const { claim, landed } = receiveGifts(body.gifts.flatMap((g: unknown) => parseGift(g) ?? []))
+    // The save already holds what landed, so a failed claim just lists those gifts again next time.
+    if (claim.length > 0) await fetch(`${API_URL}/gifts/claim`, { method: 'POST', headers, body: JSON.stringify({ ids: claim }), signal: AbortSignal.timeout(TIMEOUT_MS) })
+    return landed
+  } catch (err) {
+    console.warn('gifts failed', err)
+    return false
+  }
+}
+
 let syncing = false
 let again = false
 
@@ -269,10 +374,15 @@ export const syncSave = async () => {
         break
       }
       if (c.user.id !== saved.userId) relink(c, c.user)
+      const token = devToken() ?? (await c.session?.getToken())
+      if (token) await sendReferral(token)
       await push(c, readLink() ?? saved)
       setSync('synced')
-      const token = devToken() ?? (await c.session?.getToken())
-      if (token) await loadProfile(token)
+      if (token) {
+        await loadProfile(token)
+        // Gifts that landed changed the save: push it again.
+        if (await fetchGifts(token)) again = true
+      }
     } catch (err) {
       console.warn('account sync failed', err)
       setSync('offline')

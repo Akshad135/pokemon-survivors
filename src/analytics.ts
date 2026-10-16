@@ -9,6 +9,8 @@ type AnalyticsEvents = {
   share: { kind: 'run' | 'trainer'; method: 'share' | 'copy' | 'download' }
   /** The game opened from a link carrying someone's handle (`?ref=` or a profile's `?u=`); `first`: the device had no inviter yet. */
   ref_land: { ref: string; via: 'ref' | 'profile'; first: 0 | 1 }
+  /** A new account signed up with an invite and the API counted it (`POST /referral`). */
+  ref_signup: { ref: string }
 }
 
 declare global {

@@ -16,6 +16,7 @@ const guest = save({
   shinyStarters: { charmander: false },
   missions: { daily: { key: '2026-10-14', progress: { 'kills:500': 300 } }, weekly: { key: '2026-10-12', progress: {} } },
   achievements: { unlocked: ['survive5'], lifetime: { ...NO_ACHIEVEMENTS.lifetime, kills: 900, legends: ['lugia'] } },
+  gifts: ['gift-a'],
 })
 
 const account = save({
@@ -27,6 +28,8 @@ const account = save({
   shinyStarters: { pichu: true },
   missions: { daily: { key: '2026-10-13', progress: { 'kills:500': 500 } }, weekly: { key: '2026-10-12', progress: { 'steps:5000': 4000 } } },
   achievements: { unlocked: ['firstRun'], lifetime: { ...NO_ACHIEVEMENTS.lifetime, kills: 600, runs: 40, legends: ['kyogre'] } },
+  titles: ['ambassador'],
+  gifts: ['gift-b', 'gift-a'],
 })
 
 describe('mergeSaves', () => {
@@ -50,6 +53,8 @@ describe('mergeSaves', () => {
     expect(m.achievements.unlocked).toEqual(expect.arrayContaining(['survive5', 'firstRun']))
     expect(m.achievements.lifetime).toMatchObject({ kills: 900, runs: 40 })
     expect(m.achievements.lifetime.legends).toEqual(expect.arrayContaining(['kyogre', 'lugia']))
+    expect(m.titles).toEqual(['ambassador'])
+    expect(m.gifts).toEqual(['gift-a', 'gift-b'])
   })
 
   it('keeps the current day of missions, and the most progress on the same week', () => {

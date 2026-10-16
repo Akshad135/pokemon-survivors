@@ -143,7 +143,7 @@ const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) =>
   )
 }
 
-/** A family still in its egg: a silhouette, "???" and the egg it hatches from. */
+/** A family still in its egg: a silhouette, "???" and the egg it hatches from (the Friendship Egg says how to get one). */
 const lockedPanel = (id: HatchlingId, sprite: HTMLCanvasElement) => {
   const m = t()
   const tier = HATCHLINGS[id].egg
@@ -158,7 +158,7 @@ const lockedPanel = (id: HatchlingId, sprite: HTMLCanvasElement) => {
         'div',
         { class: 'inspect-id' },
         h('div', { class: 'inspect-name' }, m.eggs.locked),
-        h('div', { class: 'inspect-blurb locked-blurb' }, h('img', { src: eggIcon(tier), alt: '' }), rich(m.eggs.lockedBlurb(m.eggs.tiers[tier]))),
+        h('div', { class: 'inspect-blurb locked-blurb' }, h('img', { src: eggIcon(tier), alt: '' }), rich(tier === 'friend' ? m.eggs.friendBlurb : m.eggs.lockedBlurb(m.eggs.tiers[tier]))),
       ),
     ),
     h('p', { class: 'inspect-blurb' }, m.eggs.intro),

@@ -11,11 +11,13 @@ import { parseReplay } from '../../src/game/replay'
 import type { Verify } from './auth'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
+import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
 
 export type AppDeps = {
   store: SaveStore
   ranking: RankingStore
+  gifts: Pick<GiftStore, 'inbox' | 'claim' | 'refer'>
   /** Re-simulates finished runs after the answer went out. */
   checks: Pick<Checks, 'schedule'>
   verify: Verify
@@ -54,8 +56,12 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422 } as const
  *   `friends` needs a token.
  * - `GET /profiles/:handle`: `PublicProfile`, 404 if nobody has that handle.
  * - `PUT|DELETE /follows/:handle` (auth): follows or unfollows. `{ followed, followers }`.
+ * - `GET /gifts` (auth): `{ gifts }`, the player's unclaimed Mystery Gifts, oldest first.
+ * - `POST /gifts/claim` (auth) `{ ids }`: marks those gifts claimed (the game applied them). `{ claimed }`.
+ * - `POST /referral` (auth) `{ ref }`: the inviter's handle a new account came with. `{ referred }`:
+ *   whether it counted (only a new account, never oneself: `canRefer`).
  */
-export const createApp = ({ store, ranking, checks, verify, allowedOrigin, ping }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin, ping }: AppDeps) => {
   const app = new Hono()
 
   app.use(logger())
@@ -151,6 +157,22 @@ export const createApp = ({ store, ranking, checks, verify, allowedOrigin, ping 
       return followed ? c.json(followed) : c.json({ error: 'no such player' }, 404)
     })
   }
+
+  app.get('/gifts', auth, async (c) => c.json({ gifts: await gifts.inbox(c.var.userId) }))
+
+  app.post('/gifts/claim', auth, smallBody, async (c) => {
+    const body = await json(c)
+    const ids = isRecord(body) && Array.isArray(body.ids) ? body.ids.filter((id): id is string => typeof id === 'string').slice(0, 50) : null
+    if (!ids) return c.json({ error: 'expected { ids }' }, 400)
+    return c.json({ claimed: await gifts.claim(c.var.userId, ids) })
+  })
+
+  app.post('/referral', auth, smallBody, async (c) => {
+    const body = await json(c)
+    const ref = isRecord(body) ? parseHandle(body.ref) : null
+    if (!ref) return c.json({ error: 'expected { ref }' }, 400)
+    return c.json({ referred: await gifts.refer(c.var.userId, ref) })
+  })
 
   app.onError((err, c) => {
     console.error(err)

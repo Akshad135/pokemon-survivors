@@ -19,7 +19,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountState, accountsEnabled, backFromSignIn, onAccountChange, startAccount, syncSave } from './account'
+import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
@@ -60,7 +60,9 @@ import { createTitleScene, drawTitleScene, stepTitleScene } from './render/title
 import { weatherIcon } from './render/weather'
 import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
-import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
+import { announceGifts } from './ui/gifts'
 import { accountScreen, playGate } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, depositPokeDollars, loadSave, outbreakToday, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
@@ -287,13 +289,35 @@ const hatchAt = (index: number, then: () => void) => {
 const showHatch = (hatch: Hatch, then: () => void, holdAt?: number, after = () => {}) =>
   setScreen(hatchScene(ui, input, hatch, { play: () => (void startRun(hatch.id), after()), done: () => (then(), after()) }, holdAt))
 
-/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then `then`. */
+/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then the gifts' hatches, then `then`. */
 const afterRun = (then: () => void) => {
   endRun()
   const ready = loadSave().eggs.findIndex(isReady)
-  if (ready < 0) return then()
+  if (ready < 0) return playGiftHatches(then)
   hatchAt(ready, () => afterRun(then))
 }
+
+/** Shiny hatches a Mystery Gift brought (already in the save), waiting to play out of a run. */
+const giftHatches: Hatch[] = []
+
+/** Plays each waiting gift hatch's scene (recording it in the missions and medals), then `then`. */
+const playGiftHatches = (then: () => void) => {
+  const hatch = giftHatches.shift()
+  if (!hatch) return then()
+  const record = saveHatch(loadSave(), hatch.shiny)
+  void syncSave()
+  showHatch(hatch, () => playGiftHatches(then), undefined, () => later(() => progressToast(ui, record)))
+}
+
+/**
+ * Mystery Gifts that landed in the save (a sync, or a dev helper): a banner
+ * each, and a shiny hatch plays right away on the title, else after the run.
+ */
+onGifts((arrived, waiting) => {
+  announceGifts(ui, arrived, waiting)
+  giftHatches.push(...arrived.flatMap((a) => (a.hatch ? [a.hatch] : [])))
+  if (giftHatches.length > 0 && !run && screen?.el.classList.contains('title-home')) playGiftHatches(() => showTitle())
+})
 
 /** Moves the run's steps and new eggs into the incubator, once each (a victory banks, then endless banks again). */
 const bankHatchery = (r: Run) => {
@@ -1048,6 +1072,27 @@ const devEggs = {
   save: loadSave,
 }
 
+/** Dev: Mystery Gifts and invites, to stage the gift banners, the Ambassador's rewards and the title's invite banner. */
+const devGifts = {
+  /**
+   * Lands a Mystery Gift as if the account brought it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
+   * `ps.gift('title')`, `ps.gift('style', 'ambassador')` (a frame), `ps.gift('shinyHatch', 'munchlax')`.
+   * `why`: an inviter's handle (welcome) or a count of friends brought.
+   */
+  gift: (kind: GiftKind = 'egg', arg?: string, why?: string | number) => {
+    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' } }[kind]
+    const content = parseGiftContent({ kind, ...raw })
+    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family)'
+    const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
+    return receiveGifts([{ id: `dev-${Date.now()}`, content, reason }])
+  },
+  /** Lands as a guest invited by `handle` (shown as `name`): the title shows the invite banner. */
+  invite: (handle = 'ash', name = 'Ash') => {
+    stageInvite(handle, name)
+    if (screen?.el.classList.contains('title-home')) showTitle()
+  },
+}
+
 /**
  * Dev: walks the player to the nearest piece of terrain of a kind (`rock`,
  * `tree`, `cliff`, `tower` or `lake`), standing `dy` px south of it, e.g. `ps.terrain('cliff')`.
@@ -1097,6 +1142,7 @@ if (import.meta.env.DEV) {
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,
+      ...devGifts,
       ...martDevTools(() => {
         // A new outbreak plays from the next run's plan, and the title, the Mart or the select shows it.
         upcoming = planRun()

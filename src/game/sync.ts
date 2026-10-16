@@ -1,4 +1,5 @@
-import { mergeAchievements } from './achievements'
+import { mergeAchievements, mergeGiftTitles } from './achievements'
+import { mergeClaimedGifts } from './gifts'
 import { mergeBag } from './bag'
 import { mergeCounter } from './mart'
 import { mergeStyle } from './style'
@@ -38,6 +39,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - The bag: each item's got and used counters keep the larger side; what's
  *   armed is `incoming`'s. The daily counter: the most recent day, the most
  *   bought of each item on the same day. Styles: a union, worn as `incoming`.
+ * - Gift titles and the ids of the Mystery Gifts applied: unions, so a gift
+ *   applied on either side never lands again.
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -58,6 +61,8 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     counter: mergeCounter(base.counter, incoming.counter),
     style: mergeStyle(base.style, incoming.style),
     spent,
+    titles: mergeGiftTitles(base.titles, incoming.titles),
+    gifts: mergeClaimedGifts(base.gifts, incoming.gifts),
   }
 }
 

@@ -26,6 +26,12 @@ const ball = (top: string, marks: string): BallArt => [
   { 1: '#181820', 2: top, 3: '#f0f0f0', 4: '#f8f8f8', 5: marks },
 ]
 
+/** The Ambassador's heart, for its corners (same palette keys as a ball: 1 outline, 2 the heart, 4 its shine). */
+const HEART: BallArt = [
+  ['.11.11.', '1421221', '1222221', '1222221', '.12221.', '..121..', '...1...'],
+  { 1: '#301018', 2: '#f05888', 4: '#ffffff' },
+]
+
 export const CARD_FRAMES = {
   /** The game's own dialog box: dark line, paper, blue. */
   classic: { edge: '#283040', light: '#f8f8f8', main: '#6878a8', shade: '#101830', accent: '#ffcb05' },
@@ -33,6 +39,8 @@ export const CARD_FRAMES = {
   great: { edge: '#101c40', light: '#f8f8f8', main: '#3070e0', shade: '#0c1848', accent: '#e83838', lower: '#e8e8f0', ball: ball('#3070e0', '#e83838') },
   ultra: { edge: '#080808', light: '#f8d030', main: '#303038', shade: '#000000', accent: '#f8d030', lower: '#e8e8f0', ball: ball('#303038', '#f8d030') },
   master: { edge: '#200830', light: '#f8b8f0', main: '#8040c8', shade: '#180428', accent: '#f070c0', lower: '#e8e8f0', ball: ball('#8040c8', '#f070c0') },
+  /** A gift for bringing friends: rose and gold, hearts in the corners. */
+  ambassador: { edge: '#301018', light: '#f8e098', main: '#e05888', shade: '#581830', accent: '#f8d030', ball: HEART },
 } as const satisfies Record<FrameId, CardFrame>
 
 /** A card's backdrop: sky bands top to bottom (dithered where they meet) and how many stars (fireflies, crystals, snow…). */

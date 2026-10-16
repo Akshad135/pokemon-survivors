@@ -5,7 +5,8 @@ import type { PokeType } from './types'
 
 /**
  * Playable families that hatch from eggs (`game/eggs.ts`), on top of the 27
- * starters. They share the starters' shape; `egg` is the egg tier they hatch from.
+ * starters. They share the starters' shape; `egg` is the egg tier they hatch from
+ * (Munchlax alone hatches from the Friendship Egg, which only invites bring).
  */
 export type HatchlingDef = PlayableDef & { egg: EggTier }
 
@@ -589,6 +590,16 @@ export const HATCHLINGS = {
     signature: 'whirlpool',
     learnset: ['whirlpool', 'waterGun', 'dragonBreath', 'iceShard', 'disarmingVoice', 'swift'],
     line: line2(['Feebas', 349, ['water']], ['Milotic', 350, ['water']], { maxHp: 95, might: 0.5, regen: 0.8, area: 0.2, armor: 1 }),
+  },
+  /* ---------- Friendship Egg (only from an invite's Mystery Gift) ---------- */
+  munchlax: {
+    name: 'Munchlax',
+    color: '#3f6f80',
+    egg: 'friend',
+    stats: { maxHp: 40, armor: 2, regen: 0.25, magnet: 10, speed: -8 },
+    signature: 'earthquake',
+    learnset: ['earthquake', 'crunch', 'machPunch', 'flashCannon', 'sludgeBomb', 'thunder', 'whirlpool', 'swift'],
+    line: line2(['Munchlax', 446, ['normal']], ['Snorlax', 143, ['normal']], { maxHp: 90, armor: 2, might: 0.22, regen: 0.4, area: 0.1 }),
   },
 } as const satisfies Record<string, HatchlingDef>
 

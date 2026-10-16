@@ -9,7 +9,7 @@ import { MISSION_PERIODS, missionStatus, periodEnd, type MissionStatus } from '.
 import { formatNumber, formatPokeDollars, t } from '../i18n'
 import { ENEMIES } from '../data/enemies'
 import { BAG_ITEMS, type BagItem } from '../game/bag'
-import { bagIcon, coinIcon, eggIcon, medalIcon } from '../render/art'
+import { bagIcon, coinIcon, eggIcon, giftIcon, medalIcon } from '../render/art'
 import { h, later, rich, setText } from './dom'
 import { equipTitle, loadSave, outbreakToday, today } from './save'
 import { hint, type Screen } from './screens'
@@ -203,7 +203,17 @@ export const missionsScreen = (root: HTMLElement, input: Input, onClose: () => v
         titled && h('span', { class: save.title === id ? 'tag tag-new' : 'tag' }, save.title === id ? a.equipped : a.titleTag),
       )
     })
-    return [summary, ...rows]
+    // Titles a Mystery Gift gave come first, to wear like any other.
+    const gifted = save.titles.map((id) =>
+      h(
+        'button',
+        { class: 'ach-row titled', 'data-id': id },
+        h('img', { src: giftIcon(), alt: '' }),
+        h('span', { class: 'ach-info' }, h('b', {}, a.titles[id]), h('span', {}, a.giftTitles[id])),
+        h('span', { class: save.title === id ? 'tag tag-new' : 'tag' }, save.title === id ? a.equipped : a.titleTag),
+      ),
+    )
+    return [summary, ...gifted, ...rows]
   }
 
   const focus = (i: number, sound = true) => {

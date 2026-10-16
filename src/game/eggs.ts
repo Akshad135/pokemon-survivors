@@ -18,6 +18,8 @@ export const EGG_TIERS = {
   common: { steps: 2000, refund: 300 },
   rare: { steps: 4000, refund: 600 },
   ultra: { steps: 8000, refund: 1200 },
+  /** The Friendship Egg: only a Mystery Gift for an invite brings it (`game/referral.ts`), and only Munchlax comes out. */
+  friend: { steps: 2000, refund: 600 },
 } as const satisfies Record<string, { steps: number; refund: number }>
 
 export type EggTier = keyof typeof EGG_TIERS

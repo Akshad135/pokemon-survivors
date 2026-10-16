@@ -1,5 +1,5 @@
 import { track } from './analytics'
-import { accountHandle, accountUserId, API_URL, sessionToken } from './account'
+import { accountHandle, accountUserId, API_URL, sessionToken, storedRef, storeRef } from './account'
 import type { PlayableId } from './data/hatchlings'
 import type { Difficulty } from './game/difficulty'
 import { isRecord } from './game/parse'
@@ -207,15 +207,24 @@ export const gameUrl = (handle: string | null) => `${SITE_URL}${PLAY_PATH[locale
 
 /* ---------------- Invites ---------------- */
 
-const REF_KEY = 'ps:ref'
+const inviters = new Map<string, Promise<string | null>>()
 
-/** The first inviter's handle this device landed with (`captureRef`), for the sign up to credit. */
-export const storedRef = () => {
-  try {
-    return localStorage.getItem(REF_KEY)
-  } catch {
-    return null
-  }
+/**
+ * The display name of the device's inviter (`storedRef`), for the title's
+ * invite banner: asked once per page, null offline or when nobody has that handle.
+ */
+export const inviterName = (): Promise<string | null> => {
+  const ref = storedRef()
+  if (!ref || !rankingEnabled) return Promise.resolve(null)
+  let name = inviters.get(ref)
+  if (!name) inviters.set(ref, (name = fetchProfile(ref).then((p) => (p && p !== 'missing' ? p.name : null))))
+  return name
+}
+
+/** Dev: lands as if invited by `handle` (shown as `name`), without asking the API. */
+export const stageInvite = (handle: string, name: string = handle) => {
+  storeRef(handle)
+  inviters.set(handle, Promise.resolve(name))
 }
 
 /**
@@ -230,13 +239,7 @@ export const captureRef = () => {
   const own = accountHandle()
   const stored = storedRef()
   const keep = firstTouch(stored, landed, own)
-  if (keep !== stored && keep !== null) {
-    try {
-      localStorage.setItem(REF_KEY, keep)
-    } catch {
-      // Storage blocked: the invite just isn't remembered.
-    }
-  }
+  if (keep !== stored && keep !== null) storeRef(keep)
   if (landed !== own) track('ref_land', { ref: landed, via: params.has(REF_PARAM) ? 'ref' : 'profile', first: stored === null ? 1 : 0 })
   if (params.has(REF_PARAM)) {
     params.delete(REF_PARAM)

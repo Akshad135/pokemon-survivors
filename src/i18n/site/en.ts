@@ -40,7 +40,7 @@ export const siteEn: SiteMessages = {
   pokedex: {
     title: 'Pokémon Survivors Pokédex: starters, enemies, bosses and legendaries',
     description:
-      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 51 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
+      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 52 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `All ${count} Pokémon in Pokémon Survivors, with the game's own numbers: starters from every region, the families that hatch from eggs and their evolutions, the wild horde, the bosses and the legendaries. Hover (or tap) to see the sprite walk, and use ★ to see the shiny.`,
@@ -378,6 +378,7 @@ export const siteEn: SiteMessages = {
         `Bosses, locked chests and rifts sometimes leave an egg, at most ${perRun} per run. It goes to the incubator, which has ${slots} slots. Every ${stepPx} px walked in a run counts as a step, and every egg in the incubator walks along. An egg found mid-run already counts the steps taken after it.`,
         `Once an egg is ready, it hatches when you leave the run or in the incubator (in the main menu and in the Eggs tab of the Pokémon select). Families you don't have yet come out ${weight}x more often. The hatchling has a 1 in ${shiny} chance to be shiny, and then it stays shiny in every run.`,
         'A duplicate, or an egg found with the incubator full, becomes Poké Dollars. A player who never had an egg is sure to get the first one.',
+        "The Friendship Egg never drops in runs: it comes as a Mystery Gift when you sign up through someone's invite, and when a friend you invited plays 3 verified runs. Only Munchlax hatches from it. At 3 friends you get the Ambassador title and an exclusive frame, and at 10, a shiny Munchlax.",
       ],
       tierHead: 'Egg',
       stepsHead: 'Steps',

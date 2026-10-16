@@ -18,12 +18,25 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /boards/:difficulty` | `?period=day\|week\|all&starter=<id>&friends=1`. `{ entries, me }`: the top 50, each player once with their best run, and the asker's own line |
 | `GET /profiles/:handle` | The public profile: name, title, Pokédex counts, records, recent runs, follower counts. 404 if nobody has the handle |
 | `PUT /follows/:handle`, `DELETE /follows/:handle` | Follows or unfollows. `{ followed, followers }` |
+| `GET /gifts` | `{ gifts }`: the player's unclaimed Mystery Gifts (`{ id, content, reason, at }`), oldest first, 20 at most |
+| `POST /gifts/claim` | Body `{ ids }`: marks those gifts claimed once the game applied them. `{ claimed }` |
+| `POST /referral` | Body `{ ref }`: the inviter's handle a new account came with. `{ referred }`, whether it counted |
 
-`/save`, `/me`, `/runs` and `/follows` need `Authorization: Bearer <Clerk session token>`. `/boards` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts` and `/referral` need `Authorization: Bearer <Clerk session token>`. `/boards` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
 The game asks for a start token when a run begins and sends the result when it ends. The server takes it only if the wall clock since the token is at least the time survived, minus a 30 s slack for a token that arrived late (the simulation never runs faster than real time, and pausing only widens the gap). It also checks plausible numbers (`parseRunResult`) and limits run starts per player. A victory that goes on into endless mode sends again with the same token; the run may only grow. Day and week boards start at midnight and on Monday in America/Sao_Paulo, and a run counts for the period it started in.
+
+### Invites and Mystery Gifts
+
+Every reward outside a run goes through the gift inbox (`src/gifts.ts`): `send(userId, content, reason, key)` adds a gift, and a `key` keeps one gift per occasion (sending the same key again does nothing), so a job can safely retry. The game fetches the unclaimed ones on every sync, applies them (`applyGift` in `src/game/gifts.ts`, which keeps the applied ids in the save) and claims them. A kind an older game doesn't know stays unclaimed until a newer one picks it up.
+
+Invites are counted here, never on the device:
+
+- `POST /referral` records `referred_by` only for a new account: no save stored yet, first seen in the last 48 hours, no inviter yet, and not the player's own handle (`canRefer` in `src/game/referral.ts`). The game sends it on a device's first sync, before the save goes up. Both players then follow each other and the newcomer gets a Friendship Egg (`key` `welcome`).
+- After each verified run (`checks.ts` calls `credit`), once the newcomer has 3 verified runs the invite counts for the inviter (once: `referral_credited_at`), who gets the milestone's gifts (`key` `friends:<count>:<i>`): 1 friend, a Friendship Egg; 3, the Ambassador title and frame; 10, a shiny Munchlax.
+- Public profiles show `brought`, the friends whose invite counted.
 
 ### Verification by re-simulation
 
@@ -58,6 +71,8 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `runs`: one row per ranked run, created at its start (the id is the start token) and filled when it ends. Unfinished rows never show, and are dropped after 7 days.
 - `follows`: who follows whom, one way.
 - `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending).
+- `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
+- `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.
 
 ## Local development
 

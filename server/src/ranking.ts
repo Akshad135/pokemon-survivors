@@ -141,9 +141,9 @@ export const rankingStore = (sql: Sql) => {
 
     /** A finished run waiting for its re-simulation: what it reported, when it started, and its replay. Null when there's nothing to check. */
     runToCheck: async (id: string) => {
-      const [row] = await sql<{ survived: number; kills: number; level: number; started_at: Date; replay: unknown }[]>`
-        select survived, kills, level, started_at, replay from runs where id = ${id} and finished_at is not null and replay is not null and verified is null`
-      return row ? { time: row.survived, kills: row.kills, level: row.level, startedAt: row.started_at, replay: row.replay } : null
+      const [row] = await sql<{ user_id: string; survived: number; kills: number; level: number; started_at: Date; replay: unknown }[]>`
+        select user_id, survived, kills, level, started_at, replay from runs where id = ${id} and finished_at is not null and replay is not null and verified is null`
+      return row ? { userId: row.user_id, time: row.survived, kills: row.kills, level: row.level, startedAt: row.started_at, replay: row.replay } : null
     },
 
     /**
@@ -199,10 +199,11 @@ export const rankingStore = (sql: Sql) => {
           select starter, stage, difficulty, survived, outcome, started_at, verified
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by started_at desc limit 10`,
-        sql<{ followers: number; following: number; followed: boolean }[]>`
+        sql<{ followers: number; following: number; followed: boolean; brought: number }[]>`
           select
             (select count(*)::int from follows where followee_id = ${user.id}) as followers,
             (select count(*)::int from follows where follower_id = ${user.id}) as following,
+            (select count(*)::int from users where referred_by = ${user.id} and referral_credited_at is not null) as brought,
             exists (select 1 from follows where follower_id = ${viewer ?? ''} and followee_id = ${user.id}) as followed`,
         sql<{ data: unknown }[]>`select data from saves where user_id = ${user.id}`,
       ])
@@ -218,6 +219,7 @@ export const rankingStore = (sql: Sql) => {
         followers: counts?.followers ?? 0,
         following: counts?.following ?? 0,
         followed: counts?.followed ?? false,
+        brought: counts?.brought ?? 0,
         self: viewer === user.id,
       }
     },

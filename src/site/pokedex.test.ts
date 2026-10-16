@@ -14,7 +14,7 @@ describe('pokedex', () => {
 
   it('gives legendaries, bosses and regular enemies their role', () => {
     const role = (name: string) => entries.find((e) => e.name === name)?.role
-    expect([role('Charizard'), role('Rattata'), role('Snorlax'), role('Mewtwo')]).toEqual(['starter', 'enemy', 'boss', 'legendary'])
+    expect([role('Charizard'), role('Rattata'), role('Onix'), role('Mewtwo')]).toEqual(['starter', 'enemy', 'boss', 'legendary'])
   })
 })
 

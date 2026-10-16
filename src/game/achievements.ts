@@ -1,4 +1,4 @@
-import { ACHIEVEMENT_IDS, ACHIEVEMENTS, TITLE_IDS, type AchievementDef, type AchievementId, type AchievementStat, type TitleId } from '../data/achievements'
+import { ACHIEVEMENT_IDS, ACHIEVEMENTS, GIFT_TITLES, TITLE_IDS, type AchievementDef, type AchievementId, type AchievementStat, type GiftTitleId, type TitleId } from '../data/achievements'
 import { isHatchling } from '../data/hatchlings'
 import { RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { REGIONS, STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
@@ -160,6 +160,12 @@ export const parseAchievements = (raw: unknown): AchievementsSave => {
   }
 }
 
-/** The equipped title, kept only while its achievement is unlocked. */
-export const parseTitle = (raw: unknown, unlocked: readonly AchievementId[]): TitleId | null =>
-  TITLE_IDS.find((id) => id === raw && unlocked.includes(id)) ?? null
+/** The equipped title, kept only while it's owned: its achievement unlocked, or the gift (`gifts`) received. */
+export const parseTitle = (raw: unknown, unlocked: readonly AchievementId[], gifts: readonly GiftTitleId[] = []): TitleId | null =>
+  TITLE_IDS.find((id) => id === raw && (unlocked.some((a) => a === id) || gifts.some((g) => g === id))) ?? null
+
+/** The save's `titles` (gift titles owned): unknown ones are dropped. */
+export const parseGiftTitles = (raw: unknown): GiftTitleId[] => knownIds(raw, GIFT_TITLES)
+
+/** Both sets of gift titles in one (a union). */
+export const mergeGiftTitles = (a: readonly GiftTitleId[], b: readonly GiftTitleId[]): GiftTitleId[] => knownIds([...a, ...b], GIFT_TITLES)

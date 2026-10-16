@@ -203,5 +203,7 @@ export type PublicProfile = ProfileName & {
   followers: number
   following: number
   followed: boolean
+  /** Friends this player brought whose invite counted (`game/referral.ts`). Missing from an older API. */
+  brought?: number
   self: boolean
 }
