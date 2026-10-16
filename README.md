@@ -122,14 +122,14 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Ranking and public profiles**: signed-in runs go to a board per difficulty, for today, this week and all time, plus the Daily Challenge's board for today and yesterday (days and weeks turn over in Brasília time), filterable by Pokémon and by friends (one-way follows). Each trainer picks a display name and a unique handle and gets a shareable profile (`/?u=handle`) with their title, records, challenge ribbons, Pokédex progress and recent runs. The server only takes a run that fits the wall clock since its start token.
 - **Optional accounts**: sign in with Google to keep your progress in the cloud and continue on any device. Guest play stays the default; signing in brings the guest progress along (the collection joins, each upgrade and record keeps the higher value) and it syncs at the end of every run, offline-safe.
-- **Settings**: music and effects volume, damage numbers (all, reduced or off), screen shake and language, saved in the browser.
+- **Settings**: music and effects volume, damage numbers (all, reduced or off), screen shake, language and, under Controls, a touch joystick that follows the thumb or stays fixed in the bottom-left corner, saved in the browser.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
 
 ## Controls
 
 | | Keyboard / gamepad | Touch |
 | --- | --- | --- |
-| Move | WASD / arrows | Drag anywhere (floating joystick) |
+| Move | WASD / arrows | Drag anywhere (floating joystick), or the fixed joystick in the bottom-left corner (Settings → Controls) |
 | Special attack | `Space` / A (✕) | Round button, bottom right |
 | Mega Evolution | `E` / Y (△) | MEGA button, above the special |
 | Pause | `Esc` / `P` / Start | Pause button, top right |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { joystick, STICK_RADIUS } from './input'
+import { fixedJoystick, joystick, STICK_RADIUS } from './input'
 import { deviceScale, fitView } from './viewport'
 
 describe('joystick', () => {
@@ -14,6 +14,20 @@ describe('joystick', () => {
     expect(far.origin).toEqual({ x: 30, y: 0 })
     expect(far.knob).toEqual({ x: STICK_RADIUS + 30, y: 0 })
     expect(Math.hypot(far.vec.x, far.vec.y)).toBeCloseTo(1)
+  })
+})
+
+describe('fixedJoystick', () => {
+  it('keeps the base in place and stops the knob at the rim', () => {
+    const center = { x: 80, y: 700 }
+    const far = fixedJoystick(center, { x: 80, y: 700 - STICK_RADIUS - 40 })
+    expect(far.origin).toEqual(center)
+    expect(far.knob).toEqual({ x: 80, y: 700 - STICK_RADIUS })
+    expect(far.vec.y).toBeCloseTo(-1)
+  })
+
+  it('uses the same dead zone as the floating stick', () => {
+    expect(fixedJoystick({ x: 0, y: 0 }, { x: 3, y: -4 }).vec).toEqual({ x: 0, y: 0 })
   })
 })
 

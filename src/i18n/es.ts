@@ -103,12 +103,17 @@ export const es: Messages = {
 
   settings: {
     title: 'AJUSTES',
+    audio: 'Audio',
+    game: 'Juego',
     music: 'Música',
     sfx: 'Efectos',
     sound: 'Sonido',
     damageNumbers: 'Números de daño',
     damageModes: { all: 'Todos', reduced: 'Reducidos', off: 'OFF' },
     screenShake: 'Temblor de pantalla',
+    controls: 'Controles',
+    joystick: 'Joystick',
+    joystickModes: { floating: 'Sigue el dedo', fixed: 'Fijo' },
     on: 'ON',
     off: 'OFF',
     back: 'Volver',
