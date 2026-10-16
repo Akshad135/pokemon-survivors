@@ -5146,3 +5146,225 @@ a.btn.dex-site {
     display: none;
   }
 }
+
+/* ---------- Desafio do dia ---------- */
+
+.dialog.challenge {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  gap: 10px;
+}
+
+.challenge-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: #e8ecf6;
+  border-left: 4px solid var(--accent, #6878a8);
+  border-radius: 6px;
+}
+
+.challenge-sprite {
+  width: 96px;
+  height: 96px;
+  flex: none;
+  image-rendering: pixelated;
+}
+
+.challenge-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.challenge-id small {
+  font-size: 18px;
+  line-height: 1;
+  color: #6878a8;
+}
+
+.challenge-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--title);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.challenge-name img {
+  width: 14px;
+  height: 14px;
+}
+
+.challenge-id .types {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.challenge-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  font-size: 18px;
+  line-height: 1.15;
+  text-align: center;
+  background: #eceef4;
+  border: 2px solid #a0a8c0;
+  border-radius: 6px;
+}
+
+.challenge-status b {
+  font-family: var(--title);
+  font-size: 10px;
+  color: #6878a8;
+}
+
+.challenge-status.official {
+  background: #fff6d8;
+  border-color: #e0a828;
+}
+
+.challenge-status.official b {
+  color: #b07010;
+}
+
+.challenge-attempt {
+  font-weight: bold;
+  color: #2a5aa8;
+}
+
+.challenge-rules,
+.challenge-note,
+.challenge-clock {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.challenge-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #505870;
+}
+
+.challenge-note img {
+  width: 22px;
+  height: 28px;
+  flex: none;
+}
+
+.challenge-clock b {
+  font-family: var(--title);
+  font-size: 10px;
+  color: #e83838;
+}
+
+.challenge .buttons .btn {
+  flex: 1;
+}
+
+/* The challenge board's head line: the day's Pokémon, difficulty and how many played. */
+.rank-challenge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.rank-challenge img {
+  width: 28px;
+  height: 28px;
+}
+
+.rank-panel-challenge {
+  flex-basis: 100%;
+}
+
+.rank-panel-challenge:empty {
+  display: none;
+}
+
+.rank-challenge-place b {
+  font-family: var(--title);
+  font-size: 10px;
+  color: #e83838;
+}
+
+.profile-ribbons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.profile-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 4px;
+  background: #fff6d8;
+  border-radius: 6px;
+}
+
+.profile-ribbon img {
+  width: 22px;
+  height: 28px;
+}
+
+.profile-ribbon b {
+  font-family: var(--title);
+  font-size: 11px;
+}
+
+.profile-ribbon.empty {
+  background: #e8e8f0;
+}
+
+.profile-ribbon.empty img {
+  opacity: 0.35;
+}
+
+@media (max-width: 520px) {
+  .dialog.challenge {
+    padding: 12px 10px;
+  }
+  .challenge-sprite {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+/* Phones in landscape: a shorter dialog, no hint. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dialog.challenge {
+    width: min(720px, 100%);
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  .challenge .hint {
+    display: none;
+  }
+  .challenge-sprite {
+    width: 64px;
+    height: 64px;
+  }
+  .challenge .buttons .btn {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
+}

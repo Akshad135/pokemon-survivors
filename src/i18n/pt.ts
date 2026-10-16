@@ -345,7 +345,9 @@ export const pt = {
       showcase: 'SHINIES',
       inBox: (n: number) => `${n} na Caixa do PC`,
       noShinies: 'Nenhum shiny ainda',
-      challenge: (date: string, rank: number, total: number) => `Desafio de ${date}: #${rank} de ${total}`,
+      /** An official challenge attempt, in the header: "Desafio de 15/10" over "#12 DE 340". */
+      challenge: (date: string) => `Desafio de ${date}`,
+      challengePlace: (rank: number, total: number) => `#${rank} DE ${total}`,
       ribbons: 'Fitas',
       play: 'Jogue grátis no navegador',
     },

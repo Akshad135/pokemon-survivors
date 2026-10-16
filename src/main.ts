@@ -18,6 +18,7 @@ import { ITEMS } from './data/items'
 import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
+import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
 import { track } from './analytics'
@@ -25,7 +26,7 @@ import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
-import { brasiliaDay, previousDay } from './game/day'
+import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
@@ -53,18 +54,19 @@ import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, eggIcon } from './render/art'
+import { bagIcon, eggIcon, ribbonIcon } from './render/art'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
-import { locale, LOCALES, setLocale, t, type Locale } from './i18n'
+import { formatDay, locale, LOCALES, setLocale, t, type Locale } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { announceGifts } from './ui/gifts'
 import { accountScreen, playGate } from './ui/account'
 import { createHud, type Hud } from './ui/hud'
-import { bankEggs, depositPokeDollars, loadSave, outbreakToday, recordRunProgress, saveHatch, today, updateSave, writeSave } from './ui/save'
+import { bankEggs, challengeToday, depositPokeDollars, loadAttempt, loadSave, outbreakToday, recordRunProgress, saveAttempt, saveHatch, today, updateSave, writeSave } from './ui/save'
+import { challengeScreen, challengeShiny } from './ui/challenge'
 import { hatchScene, incubator } from './ui/incubator'
 import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
 import { martDevTools } from './ui/martDev'
@@ -158,6 +160,12 @@ type Run = {
   rank: Promise<RankOutcome> | null
   /** The longest run on record before this one: beating it lights up the Share button. */
   bestBefore: number
+  /**
+   * A Desafio do dia run: its day, whether it started as the official attempt
+   * (what the screen said; the API decides), and whether it's the attempt this
+   * device keeps (`saveAttempt`). Null for any other run.
+   */
+  challenge: { day: DayKey; official: boolean; attempt: boolean } | null
 }
 
 let screen: Screen | null = null
@@ -219,7 +227,8 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
   setScreen(
     titleScreen(ui, input, {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
-      incubator: () => showIncubator(() => showTitle({ focus: 1 })),
+      challenge: () => showChallenge(),
+      incubator: () => showIncubator(() => showTitle({ focus: 2 })),
       missions: () => showMissions(),
       // Every label is read at render time, so switching language just rebuilds the screen.
       language: (next) => (changeLanguage(next), showTitle()),
@@ -265,7 +274,25 @@ const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 const showPcBox = (back: () => void) =>
   pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(lastStarter), close) }, loadSave().style.equipped.wallpaper)
 
-const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 2 })))
+const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 3 })))
+
+/** The Desafio do dia's screen (from the title); its board opens over it and comes back to it. */
+const showChallenge = () => {
+  endRun()
+  setScreen(
+    challengeScreen(ui, input, {
+      play: (c, official) => setTimeout(() => void startRun(c.starter, { challenge: c, official }), 250),
+      board: rankingEnabled ? () => setScreen(rankingScreen(ui, input, () => showChallenge(), { challenge: true })) : undefined,
+      onClose: () => showTitle({ focus: 1 }),
+    }),
+  )
+}
+
+/** Today's challenge again (Try again after one): practice now, unless the attempt didn't count (a quit in the first minute). */
+const replayChallenge = () => {
+  const c = challengeToday()
+  return startRun(c.starter, { challenge: c, official: nextIsOfficial(c.day, loadAttempt(), null) })
+}
 
 /** The incubator; hatching a ready egg plays its scene and comes back here. */
 const showIncubator = (back: () => void) => {
@@ -366,7 +393,14 @@ const recordProgress = (r: Run) => {
  */
 const rankRun = (r: Run) => {
   const result = runResult(r.game, __GAME_VERSION__)
-  if (r.ranked && rankable(result)) r.rank = r.ranked.submit(result, r.recorder.replay)
+  if (!rankable(result)) return
+  if (r.ranked) r.rank = r.ranked.submit(result, r.recorder.replay)
+  // The first challenge run of the day that counts is this device's attempt; it grows if it goes on into endless mode.
+  const c = r.challenge
+  if (c && (c.attempt || loadAttempt()?.day !== c.day)) {
+    c.attempt = true
+    saveAttempt({ day: c.day, time: result.time })
+  }
 }
 
 /** Reports how the run ended, once. */
@@ -400,6 +434,9 @@ const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loadi
 /** The next run's seed, the day's outbreak and the wild cast, drawn ahead so the menus can warm up its first stage. */
 type RunPlan = { seed: number; outbreak: EnemyId; roster: Roster }
 
+/** A Desafio do dia run, as `startRun` takes it: the challenge, and whether the screen called it official. */
+type ChallengeRun = { challenge: Challenge; official: boolean }
+
 const planRun = (): RunPlan => {
   const seed = Date.now()
   const outbreak = outbreakToday()
@@ -423,29 +460,32 @@ const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) =>
 
 /**
  * Loads the starter's evolution line and the first stage's species, then starts
- * a fresh run. The rest of the cast (later stages, swarms, bosses) and the
+ * a fresh run: a regular one from the save (upgrades, the Bag's armed items),
+ * or the Desafio do dia's (`challengeStart`: its seed, nothing from the save
+ * but the shiny colors). The rest of the cast (later stages, swarms, bosses) and the
  * `EXTRAS` stream in the background in the order the run needs them, then the
  * next run's opening.
  */
-const startRun = async (starter: PlayableId) => {
+const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) => {
   setScreen(null)
   endRun()
-  lastStarter = starter
+  const c = daily?.challenge ?? null
+  if (!c) lastStarter = starter
   const loading = loadingScreen()
   ui.append(loading)
   // The start token's clock starts now, while the sprites load.
-  const ranked = startRanked()
+  const ranked = startRanked(c?.day ?? null)
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
-  const plan = upcoming.outbreak === outbreakToday() ? upcoming : planRun()
-  upcoming = planRun()
+  const plan = c ? { seed: c.seed, outbreak: c.outbreak, roster: runRoster(c.seed, c.outbreak) } : upcoming.outbreak === outbreakToday() ? upcoming : planRun()
+  if (!c) upcoming = planRun()
   await loadAll([...playableDex(starter), ...openingDex(plan)])
   // The outbreak's shiny can show up in the first minute.
   void preloadShinies([ENEMIES[plan.outbreak].dex])
-  // Armed bag items are used up as the run starts.
-  const { bag, used } = useArmed(loadSave().bag)
+  // Armed bag items are used up as the run starts (the challenge leaves them in the Bag).
+  const { bag, used } = c ? { bag: loadSave().bag, used: { lure: false, incense: false } } : useArmed(loadSave().bag)
   updateSave((s) => ({ ...s, bag }))
   const save = loadSave()
-  const start: ReplayStart = {
+  const start: ReplayStart = c ? challengeStart(c, view, challengeShiny(c)) : {
     seed: plan.seed,
     starter,
     difficulty: save.difficulty,
@@ -487,15 +527,20 @@ const startRun = async (starter: PlayableId) => {
     ranked,
     rank: null,
     bestBefore: save.achievements.lifetime.bestTime,
+    challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
   }
-  track('run_start', { starter, difficulty: game.difficulty })
-  announceRun(start)
+  track('run_start', { starter, difficulty: game.difficulty, ...(daily ? { challenge: daily.official ? 'official' : 'practice' } : {}) })
+  announceRun(start, run.challenge)
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
-/** The run's first toasts: the day's outbreak, then each bag item it used. */
-const announceRun = (start: ReplayStart) => {
+/** The run's first toasts: the challenge it plays, the day's outbreak, then each bag item it used. */
+const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
+  if (challenge) {
+    const m = t().challenge
+    toast(ui, h('span', { class: 'item-toast' }, h('img', { src: ribbonIcon('gold'), alt: '' }), h('span', {}, rich(m.started(formatDay(challenge.day))), h('small', {}, challenge.official ? m.startedOfficial : m.startedPractice))), 4200, 'challenge')
+  }
   if (start.outbreak) {
     const def = ENEMIES[start.outbreak]
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
@@ -563,7 +608,7 @@ const syncOverlay = (r: Run) => {
         ui,
         input,
         g,
-        () => afterRun(() => void startRun(lastStarter)),
+        () => afterRun(() => void (r.challenge ? replayChallenge() : startRun(lastStarter))),
         () => afterRun(() => showMenu()),
         () => (recordEvent(r.recorder, ['endless']), continueEndless(g)),
         {
@@ -572,9 +617,11 @@ const syncOverlay = (r: Run) => {
           medals: medalChips(r.unlocked),
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
-          ranking: rankingEnabled ? { panel: rankPanel(r.rank), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty }) } : null,
+          ranking: rankingEnabled
+            ? { panel: rankPanel(r.rank, r.challenge !== null), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, challenge: r.challenge !== null }) }
+            : null,
           share: {
-            open: (back) => sharePreview(ui, input, runShare(g, r.dexBase), back),
+            open: (back) => sharePreview(ui, input, runShare(g, r.dexBase, r.challenge && r.rank ? r.rank.then((o) => (o.kind === 'ranked' ? o.challenge : null)) : null), back),
             glow: g.player.shiny || g.dexLog.shinies.size > 0 || wonRun(g) || g.time > r.bestBefore,
           },
         },
@@ -1093,6 +1140,20 @@ const devGifts = {
   },
 }
 
+/**
+ * Dev: the Desafio do dia. `ps.challenge()` opens its screen, `'play'` starts
+ * today's run, `'done'` marks this device's attempt as made (`time` seconds),
+ * `'reset'` forgets it. Returns today's challenge.
+ */
+const devChallenge = (mode?: 'play' | 'done' | 'reset', time = 754) => {
+  const c = challengeToday()
+  if (mode === 'play') void replayChallenge()
+  else if (mode === 'done') saveAttempt({ day: c.day, time })
+  else if (mode === 'reset') saveAttempt(null)
+  if (mode !== 'play' && !run) showChallenge()
+  return c
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -1106,6 +1167,7 @@ if (import.meta.env.DEV) {
       spawn: devSpawn,
       mega: devMega,
       event: devEvent,
+      challenge: devChallenge,
       dex: () => loadSave().dex,
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),

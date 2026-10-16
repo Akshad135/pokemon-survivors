@@ -8,6 +8,8 @@ import { ENEMIES } from '../data/enemies'
 import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS } from '../data/types'
 import { dexCounts, dexNews, type Pokedex } from '../game/dex'
+import type { ChallengePlace } from '../game/ranking'
+import { ribbonCounts } from '../game/ribbons'
 import type { DamageSource, Game } from '../game/types'
 import { CARD, cardBlob, drawRunCard, drawTrainerCard, type CardMon, type CardTrainer, type RunCardData, type TrainerCardData } from '../render/card'
 import type { CardStyle } from '../render/cosmetics'
@@ -56,8 +58,20 @@ const trainerLine = (title: TitleId | null): CardTrainer & { url: string } => {
   return { handle, title: title ? t().achievements.titles[title] : null, link: url.replace(/^https?:\/\/(www\.)?/, ''), url }
 }
 
-/** The run's card, from the run as it ended and the Pokédex it started from. */
-export const runShare = (g: Game, dexBase: Pokedex): ShareCard => {
+/** How long the card waits for the challenge's place before it's drawn without it (offline, a slow API). */
+const PLACE_WAIT_MS = 4000
+
+/** The place an official challenge attempt got, when the API tells it in time; null otherwise (practice, offline). */
+const officialPlace = async (place: Promise<ChallengePlace | null>): Promise<RunCardData['challenge']> => {
+  const got = await Promise.race([place, new Promise<null>((resolve) => setTimeout(() => resolve(null), PLACE_WAIT_MS))])
+  return got?.official && got.rank !== null ? { day: got.day, rank: got.rank, total: got.total } : null
+}
+
+/**
+ * The run's card, from the run as it ended and the Pokédex it started from.
+ * `place`: a Desafio do dia run's place, as the API answers it at the end of the run.
+ */
+export const runShare = (g: Game, dexBase: Pokedex, place: Promise<ChallengePlace | null> | null = null): ShareCard => {
   const form = PLAYABLE[g.starter].line[g.player.stage]!
   const trainer = trainerLine(loadSave().title)
   const outcome = g.endless ? 'endless' : g.phase === 'victory' ? 'victory' : 'fainted'
@@ -82,11 +96,12 @@ export const runShare = (g: Game, dexBase: Pokedex): ShareCard => {
     newSpecies: [...g.dexLog.seen].filter((dex) => !dexBase[dex]).map((dex) => mon(dex, false)),
     moves,
     legends: g.rift.cleared.map((id) => ENEMIES[id].dex),
+    challenge: null,
     trainer,
   }
   return {
     kind: 'run',
-    draw: () => drawRunCard(card, wornStyle()),
+    draw: async () => drawRunCard({ ...card, challenge: place ? await officialPlace(place) : null }, wornStyle()),
     text: t().share.runText({ name: form.name, shiny: g.player.shiny, time: formatTime(g.time), outcome, shinies: shinies.length, link: trainer.url }),
     file: `pokemon-survivors-${form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`,
   }
@@ -120,6 +135,7 @@ export const trainerShare = (partner: PlayableId): ShareCard => {
     partner: { dex: first.dex, name: first.name, shiny: partnerShiny },
     medals,
     shinies: shinies.length,
+    ribbons: ribbonCounts(save.ribbons),
     dex: { caught: counts.caught, seen: counts.seen, total: species.length },
     bestTime: save.achievements.lifetime.bestTime,
     showcase,
