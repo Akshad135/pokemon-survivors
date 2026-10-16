@@ -1,6 +1,8 @@
 import type { TitleId } from '../data/achievements'
 import type { EnemyId } from '../data/enemies'
-import { brasiliaDay } from '../game/day'
+import { dailyChallenge, type Attempt } from '../game/challenge'
+import { brasiliaDay, isDayKey } from '../game/day'
+import { isRecord } from '../game/parse'
 import { counterOf } from '../game/mart'
 import { outbreakAt } from '../game/outbreak'
 import { depositEggs, type Egg } from '../game/eggs'
@@ -68,6 +70,34 @@ export const outbreakToday = (): EnemyId => outbreakOverride ?? outbreakAt(today
 
 export const setOutbreak = (id: EnemyId | null) => {
   outbreakOverride = id
+}
+
+/** Today's Desafio do dia (Brasília day, on the missions' clock). */
+export const challengeToday = () => dailyChallenge(brasiliaDay(today()))
+
+const ATTEMPT_KEY = 'ps:challenge'
+
+/**
+ * The last official challenge attempt this device finished (`Attempt`),
+ * kept apart from the save: it's only a hint for the challenge screen, the
+ * API keeps the real one for an account (`nextIsOfficial`).
+ */
+export const loadAttempt = (): Attempt | null => {
+  try {
+    const data: unknown = JSON.parse(localStorage.getItem(ATTEMPT_KEY) ?? 'null')
+    return isRecord(data) && isDayKey(data.day) && typeof data.time === 'number' ? { day: data.day, time: data.time } : null
+  } catch {
+    return null
+  }
+}
+
+export const saveAttempt = (attempt: Attempt | null) => {
+  try {
+    if (attempt) localStorage.setItem(ATTEMPT_KEY, JSON.stringify(attempt))
+    else localStorage.removeItem(ATTEMPT_KEY)
+  } catch {
+    // Storage blocked: the screen just can't tell practice apart this session.
+  }
 }
 
 /** Today's Poké Mart counter (Brasília day, on the missions' clock). */

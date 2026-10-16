@@ -3,8 +3,9 @@ import { context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from 
 import { MEDALS, type Medal } from '../data/achievements'
 import type { BackgroundId, FrameId } from '../data/style'
 import type { Difficulty } from '../game/difficulty'
-import { formatNumber, locale, LOCALES, t } from '../i18n'
-import { medalSprite, outlined, PICKUPS, SPARKLE } from './art'
+import { RIBBON_TIERS, type RibbonTier } from '../game/ribbons'
+import { formatDay, formatNumber, locale, LOCALES, t } from '../i18n'
+import { medalSprite, outlined, PICKUPS, ribbonSprite, SPARKLE } from './art'
 import { CARD_BACKGROUNDS, CARD_FRAMES, DEFAULT_CARD_STYLE, type CardBackground, type CardFrame, type CardStyle } from './cosmetics'
 import { titleLogo } from './logo'
 import { drawPokemon, hasShiny, loadSpecies, portraitUrl, type SpeciesSprites } from './sprites'
@@ -46,6 +47,8 @@ export type RunCardData = {
   moves: ReadonlyArray<{ name: string; icon: string; damage: number; color: string }>
   /** Rift legendaries beaten, by dex number. */
   legends: readonly number[]
+  /** The official Desafio do dia attempt's place, when the API told it ("Desafio de 15/10: #12 de 340"). */
+  challenge: { day: string; rank: number; total: number } | null
   trainer: CardTrainer
 }
 
@@ -57,6 +60,8 @@ export type TrainerCardData = {
   medals: Readonly<Record<Medal, number>>
   /** Every shiny in the Caixa do PC. */
   shinies: number
+  /** Desafio do dia ribbons won, by tier (none: the row stays off). */
+  ribbons: Readonly<Record<RibbonTier, number>>
   dex: { caught: number; seen: number; total: number }
   bestTime: number
   /** Shinies to show off, best first: the grid shows six, or five and "+N" (`showcase`). */
@@ -522,6 +527,9 @@ const runSection = (card: RunCardData): RunSection => {
 
 const HERO_H = 90
 
+/** The Trainer Card's ribbon row, under the medals. */
+const RIBBON_ROW = 18
+
 /** Legendary portraits beside the hero; more show as "+N". */
 const LEGENDS_SHOWN = 2
 
@@ -530,7 +538,9 @@ export const drawRunCard = async (card: RunCardData, style: CardStyle = DEFAULT_
   await fontsReady()
   const m = t().share.card
   const { canvas, ctx } = blank(style)
-  await header(ctx, [cardDate(card.date)])
+  // An official challenge attempt reads in the header: "Desafio de 15/10" over "#12 DE 340", in gold.
+  const place = card.challenge
+  await header(ctx, place ? [m.challenge(formatDay(place.day)), m.challengePlace(place.rank, place.total)] : [cardDate(card.date)])
   const section = runSection(card)
   const sectionH = section.kind === 'none' ? 0 : 12 + (section.kind === 'mons' ? gridHeight(Math.min(section.mons.length, CARD_SLOTS)) : movesHeight(card.moves.length))
   const [heroY, statsY, sectionY] = stack(section.kind === 'none' ? [HERO_H, STRIP_H] : [HERO_H, STRIP_H, sectionH], HEADER_H, CARD.h - 8 - FOOTER_H)
@@ -600,12 +610,14 @@ export const drawTrainerCard = async (card: TrainerCardData, style: CardStyle = 
   const { canvas, ctx } = blank(style)
   await header(ctx, [cardDate(card.date), ...m.trainerCard])
   const gridH = 12 + gridHeight(card.showcase.length > 0 ? Math.min(card.showcase.length, CARD_SLOTS) : 1)
-  const [idY, statsY, gridY] = stack([HERO_H, STRIP_H, gridH], HEADER_H, CARD.h - 8 - FOOTER_H)
+  const ribbons = RIBBON_TIERS.some((tier) => card.ribbons[tier] > 0)
+  const idH = HERO_H + (ribbons ? RIBBON_ROW : 0)
+  const [idY, statsY, gridY] = stack([idH, STRIP_H, gridH], HEADER_H, CARD.h - 8 - FOOTER_H)
 
   // The ID: paper with the trainer's lines on the left and the partner on the right.
   const x = INNER.x
   const y = idY!
-  paperBox(ctx, x, y, INNER.w, HERO_H)
+  paperBox(ctx, x, y, INNER.w, idH)
   const textW = INNER.w - 104
   text(ctx, m.idLabel, x + 9, y + 14, { color: MUTED })
   text(ctx, fit(card.name ?? m.guest, textW, 'title', 8), x + 9, y + 26, { font: 'title', size: 8 })
@@ -619,6 +631,15 @@ export const drawTrainerCard = async (card: TrainerCardData, style: CardStyle = 
     ctx.drawImage(medalSprite(medal, card.medals[medal] === 0), mx, y + 62)
     text(ctx, `×${card.medals[medal]}`, mx + 12, y + 74)
   })
+  // Ribbons in a row under the medals, gold first, once there's one.
+  if (ribbons) {
+    const ribbonsX = x + 9 + text(ctx, m.ribbons, x + 9, y + 92, { color: MUTED }) + 6
+    RIBBON_TIERS.forEach((tier, i) => {
+      const rx = ribbonsX + i * 30
+      ctx.drawImage(ribbonSprite(tier), rx, y + 79)
+      text(ctx, `×${card.ribbons[tier]}`, rx + 13, y + 92)
+    })
+  }
   const partner = await spritesOf(card.partner)
   const px = x + INNER.w - 52
   rounded(ctx, px - 46, y + 6, 92, HERO_H - 12, '#e8ecf6')

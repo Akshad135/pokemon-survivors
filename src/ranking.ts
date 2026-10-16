@@ -3,7 +3,8 @@ import { accountHandle, accountUserId, API_URL, sessionToken, storedRef, storeRe
 import type { PlayableId } from './data/hatchlings'
 import type { Difficulty } from './game/difficulty'
 import { isRecord } from './game/parse'
-import { parseRunResult, type Board, type BoardPeriod, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
+import type { DayKey } from './game/day'
+import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
 import { firstTouch, landingRef, REF_PARAM } from './game/referral'
 import type { Replay } from './game/replay'
 import { SITE_URL } from './site/routes'
@@ -78,10 +79,11 @@ const writeQueue = (queue: Pending[]) => {
 
 /**
  * What became of a ranked run's result: on the boards (`ranked`, with the
- * player's position), waiting for a connection (`queued`), refused by the
- * server (`rejected`), or never ranked because its start got no token (`unranked`).
+ * player's position, and the challenge board's for a Desafio do dia run),
+ * waiting for a connection (`queued`), refused by the server (`rejected`),
+ * or never ranked because its start got no token (`unranked`).
  */
-export type RankOutcome = { kind: 'ranked'; ranks: RunRanks } | { kind: 'queued' | 'rejected' | 'unranked' }
+export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'unranked' }
 
 const parseRanks = (body: unknown): RunRanks | null => {
   const ranks = isRecord(body) && isRecord(body.ranks) ? body.ranks : null
@@ -104,7 +106,7 @@ const flushOnce = async () => {
     const { status, body } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
     if (status === 0 || status === 401 || status === 429 || status >= 500) break
     const ranks = parseRanks(body)
-    done.set(p.token, ranks ? { kind: 'ranked', ranks } : { kind: 'rejected' })
+    done.set(p.token, ranks ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'rejected' })
     // A newer result of the same run (endless mode) may have queued meanwhile: only this one is done.
     writeQueue(readQueue().filter((q) => q.token !== p.token || q.result.time > p.result.time))
   }
@@ -116,11 +118,11 @@ let flushing: Promise<Map<string, RankOutcome>> = Promise.resolve(new Map())
 /** Sends what's queued (boot, end of a run). Calls take turns. Never throws. */
 export const flushRuns = () => (flushing = flushing.then(flushOnce, flushOnce).catch(() => new Map<string, RankOutcome>()))
 
-/** A start token from the API, or null (guest, offline, rate limited). */
-const requestToken = async () => {
+/** A start token from the API, or null (guest, offline, rate limited, a challenge that closed). */
+const requestToken = async (challenge: DayKey | null) => {
   const token = await sessionToken()
   if (!token) return null
-  const { body } = await read('/runs', token, { method: 'POST' })
+  const { body } = await read('/runs', token, { method: 'POST', ...(challenge ? { body: JSON.stringify({ challenge }) } : {}) })
   return isRecord(body) && typeof body.token === 'string' ? body.token : null
 }
 
@@ -132,11 +134,11 @@ const requestToken = async () => {
  */
 export type RankedRun = { submit: (result: RunResult, replay: Replay) => Promise<RankOutcome> }
 
-/** Asks for the start token of a run that begins now. Null for guests. */
-export const startRanked = (): RankedRun | null => {
+/** Asks for the start token of a run that begins now (`challenge`: the day of the Desafio do dia it plays). Null for guests. */
+export const startRanked = (challenge: DayKey | null = null): RankedRun | null => {
   const userId = accountUserId()
   if (!rankingEnabled || !userId) return null
-  const token = requestToken()
+  const token = requestToken(challenge)
   let sent = -1
   let last: Promise<RankOutcome> = Promise.resolve({ kind: 'unranked' })
   return {
@@ -166,6 +168,12 @@ export const fetchBoard = async (f: BoardFilter): Promise<Board | null> => {
   const { body } = await read(`/boards/${f.difficulty}?${params}`, await sessionToken())
   // Our own API: a quick look at the shape is enough, the screens only show text.
   return isRecord(body) && Array.isArray(body.entries) ? (body as Board) : null
+}
+
+/** A day's challenge board (friends only: who the player follows), or null when the API can't be reached. */
+export const fetchChallengeBoard = async (day: DayKey, friends = false): Promise<ChallengeBoard | null> => {
+  const { body } = await read(`/challenge/${day}${friends ? '?friends=1' : ''}`, await sessionToken())
+  return isRecord(body) && Array.isArray(body.entries) && typeof body.total === 'number' ? (body as ChallengeBoard) : null
 }
 
 /** A public profile, `missing` when nobody has that handle, null when the API can't be reached. */

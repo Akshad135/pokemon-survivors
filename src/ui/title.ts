@@ -26,6 +26,8 @@ const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
 export type TitleActions = {
   play: () => void
+  /** Opens the Desafio do dia. */
+  challenge: () => void
   missions: () => void
   /** Opens the egg incubator. */
   incubator: () => void
@@ -117,7 +119,7 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 
 /**
  * Title screen over the live meadow: pixel logo, the day's outbreak, a blinking "press start",
- * then the main menu (Play, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
+ * then the main menu (Play, Daily Challenge, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
  * switch, the account chip (when accounts are on) and footer links. `intro: false` opens straight on the menu (coming
  * back from another screen, or after a language switch).
  */
@@ -127,6 +129,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const { settings, account, ranking } = actions
   const items = [
     { label: m.play, run: actions.play },
+    { label: m.challenge, run: actions.challenge },
     { label: m.incubator, run: actions.incubator },
     { label: m.missions, run: actions.missions },
     { label: m.pokedex, run: () => openOver(actions.pokedex) },

@@ -13,8 +13,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Mystery Gifts and invites. `send` is the way in for anything that rewards a
- * player outside a run (invites here; a daily job can send ribbons the same
- * way): `key` keeps one gift per occasion, so sending again does nothing.
+ * player outside a run (invites here, the challenge's ribbons in
+ * `challenge.ts`): `key` keeps one gift per occasion, so sending again does nothing.
  *
  * Invites: `refer` records who brought a new account (`canRefer`), makes
  * them follow each other and welcomes the newcomer with a Friendship Egg;
@@ -34,6 +34,12 @@ export const giftStore = (sql: Sql) => {
     /** Sends a gift to `userId` (who must have a users row). With a `key`, only the first send of that key lands. */
     send: (userId: string, content: GiftContent, reason: GiftReason | null = null, key: string | null = null) =>
       sql.begin((tx) => send(tx, userId, content, reason, key)),
+
+    /** Sends many gifts in one go (a day's ribbons), each like `send`. */
+    sendAll: (list: ReadonlyArray<{ userId: string; content: GiftContent; key: string }>) =>
+      sql.begin(async (tx) => {
+        for (const g of list) await send(tx, g.userId, g.content, null, g.key)
+      }),
 
     /** The player's unclaimed gifts, oldest first. */
     inbox: async (userId: string): Promise<GiftOut[]> => {

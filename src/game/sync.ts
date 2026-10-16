@@ -7,6 +7,7 @@ import { mergeDex } from './dex'
 import { mergeEggs, mergeHatched } from './eggs'
 import { SAVE_VERSION, totalSpent, UPGRADE_IDS, type Ranks, type Save, type UpgradeId } from './meta'
 import { mergeMissions } from './missions'
+import { mergeRibbons } from './ribbons'
 import { mergeShinyStarters } from './shinyStarters'
 
 /**
@@ -41,6 +42,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  *   bought of each item on the same day. Styles: a union, worn as `incoming`.
  * - Gift titles and the ids of the Mystery Gifts applied: unions, so a gift
  *   applied on either side never lands again.
+ * - Ribbons: a union, one per day (the better one if both sides had that day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -63,6 +65,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     spent,
     titles: mergeGiftTitles(base.titles, incoming.titles),
     gifts: mergeClaimedGifts(base.gifts, incoming.gifts),
+    ribbons: mergeRibbons(base.ribbons, incoming.ribbons),
   }
 }
 

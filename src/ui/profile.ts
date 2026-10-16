@@ -5,7 +5,8 @@ import { formatTime } from '../engine/math'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { handleProblem, normalizeHandle, parseDisplayName, suggestHandle, type ProfileRun, type PublicProfile } from '../game/ranking'
-import { pokeballIcon } from '../render/art'
+import { RIBBON_TIERS, type RibbonTier } from '../game/ribbons'
+import { pokeballIcon, ribbonIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { fetchProfile, profileUrl, setFollow } from '../ranking'
 import { pokedex } from '../site/pokedex'
@@ -54,6 +55,22 @@ const recentRow = (run: ProfileRun) =>
     h('small', {}, `${run.verified === null ? t().ranking.pending : t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
   )
 
+/** The Desafio do dia ribbons won, gold first, or null before the first one (or from an older API). */
+const ribbonRow = (ribbons: Record<RibbonTier, number> | undefined) => {
+  if (!ribbons || RIBBON_TIERS.every((tier) => ribbons[tier] === 0)) return null
+  const names = t().ribbons.names
+  return section(
+    t().ribbons.section,
+    h(
+      'div',
+      { class: 'profile-ribbons' },
+      ...RIBBON_TIERS.map((tier) =>
+        h('div', { class: ribbons[tier] > 0 ? 'profile-ribbon' : 'profile-ribbon empty', title: names[tier] }, h('img', { src: ribbonIcon(tier), alt: names[tier] }), h('b', {}, `×${ribbons[tier]}`)),
+      ),
+    ),
+  )
+}
+
 /** The profile's face: the Pokémon of its longest record, or a Poké Ball before any. */
 const headPortrait = (p: PublicProfile) => {
   const best = Object.values(p.records).sort((a, b) => b.time - a.time)[0]
@@ -74,7 +91,7 @@ const share = async (root: HTMLElement, p: PublicProfile) => {
 
 /**
  * A public profile (`/?u=handle` opens it straight away): name, handle, the
- * equipped title, records per difficulty, Pokédex progress, recent ranked runs
+ * equipped title, records per difficulty, Desafio do dia ribbons, Pokédex progress, recent ranked runs
  * and follower counts. Signed in, it offers Follow, or Edit on one's own.
  * Back, Esc or Backspace close it and call `onClose` after the key dispatch.
  */
@@ -136,6 +153,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
         h('p', { class: 'profile-social' }, [m.followers(p.followers), m.following(p.following), ...(p.brought ? [m.brought(p.brought)] : [])].join(' · ')),
         !p.self && !signedIn ? note(m.followGuest) : null,
         section(m.records, h('div', { class: 'profile-records' }, ...DIFFICULTY_IDS.map((d) => recordCell(d, p.records[d])))),
+        ribbonRow(p.ribbons),
         section(
           m.dex,
           h('div', { class: 'profile-dex' }, h('span', { class: 'progress' }, h('span', { style: `width:${Math.min(100, Math.round((p.dex.caught / Math.max(1, total)) * 100))}%` })), h('span', {}, m.dexLine(p.dex.caught, p.dex.seen, total))),

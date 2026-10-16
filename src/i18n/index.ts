@@ -59,4 +59,10 @@ export const nextLocale = (l: Locale) => LOCALE_IDS[(LOCALE_IDS.indexOf(l) + 1) 
 /** Whole number with the current language's thousands separator (`1.250` / `1,250`). */
 export const formatNumber = (n: number) => Math.round(n).toLocaleString(LOCALES[current].tag)
 
+/** A `YYYY-MM-DD` day as day and month in the current language (`15/10`, `10/15`). */
+export const formatDay = (day: string) => {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString(LOCALES[current].tag, { day: '2-digit', month: '2-digit', timeZone: 'UTC' })
+}
+
 export const formatPokeDollars = (amount: number) => `₽ ${formatNumber(amount)}`

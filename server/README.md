@@ -13,20 +13,30 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Returns `{ save, revision, merged }` |
 | `GET /me` | `{ profile }`: the player's `{ handle, name }`, `null` before they pick them |
 | `PUT /me` | Body `{ handle, name }`. 400 when invalid, 409 `{ suggestion }` when the handle is taken |
-| `POST /runs` | `{ token }` for a run that just started (the id of a new `runs` row). 429 past 30 starts in 10 minutes |
-| `PUT /runs/:token` | Body `RunResult` (`src/game/ranking.ts`). Records how the run ended and returns `{ ranks: { day, week, all } }`. 400 implausible, 404 unknown token, 409 contradicts what the run recorded, 422 more play than the wall clock since the token allows |
+| `POST /runs` | Body `{ challenge? }`. `{ token }` for a run that just started (the id of a new `runs` row). 429 past 30 starts in 10 minutes. With `challenge` (a Brasília day, `YYYY-MM-DD`) it's that day's Desafio do dia; 400 when that challenge isn't open (its day, or 10 minutes past it) |
+| `PUT /runs/:token` | Body `RunResult` (`src/game/ranking.ts`). Records how the run ended and returns `{ ranks: { day, week, all }, challenge }` (`ChallengePlace` for a challenge run, else null). 400 implausible or a challenge run whose replay isn't its day's challenge, 404 unknown token, 409 contradicts what the run recorded, 422 more play than the wall clock since the token allows |
 | `GET /boards/:difficulty` | `?period=day\|week\|all&starter=<id>&friends=1`. `{ entries, me }`: the top 50, each player once with their best run, and the asker's own line |
+| `GET /challenge/:day` | `?friends=1`. `ChallengeBoard`: the day's official attempts (top 50, the asker's line), how many took part and whether the asker made theirs (`attempted`) |
 | `GET /profiles/:handle` | The public profile: name, title, Pokédex counts, records, recent runs, follower counts. 404 if nobody has the handle |
 | `PUT /follows/:handle`, `DELETE /follows/:handle` | Follows or unfollows. `{ followed, followers }` |
 | `GET /gifts` | `{ gifts }`: the player's unclaimed Mystery Gifts (`{ id, content, reason, at }`), oldest first, 20 at most |
 | `POST /gifts/claim` | Body `{ ids }`: marks those gifts claimed once the game applied them. `{ claimed }` |
 | `POST /referral` | Body `{ ref }`: the inviter's handle a new account came with. `{ referred }`, whether it counted |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts` and `/referral` need `Authorization: Bearer <Clerk session token>`. `/boards` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts` and `/referral` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
 The game asks for a start token when a run begins and sends the result when it ends. The server takes it only if the wall clock since the token is at least the time survived, minus a 30 s slack for a token that arrived late (the simulation never runs faster than real time, and pausing only widens the gap). It also checks plausible numbers (`parseRunResult`) and limits run starts per player. A victory that goes on into endless mode sends again with the same token; the run may only grow. Day and week boards start at midnight and on Monday in America/Sao_Paulo, and a run counts for the period it started in.
+
+### Desafio do dia and ribbons
+
+The day's challenge is pure from the Brasília date (`dailyChallenge` in `src/game/challenge.ts`): the seed, the Pokémon and the difficulty, with no upgrades, Lure, Incense or lucky egg, and the day's outbreak on.
+
+- A challenge run says so when it starts (`POST /runs { challenge }`), and the row keeps the day (`runs.challenge`). It can only start on its day (10 minutes of grace past midnight).
+- When it ends, its replay must be that day's challenge (`challengeProblem`: seed, Pokémon, difficulty, outbreak, all ranks at 0, no items), else 400. The first challenge run of the player's day to finish is their official attempt (`runs.official`); later ones are practice and stay off the challenge board (they still count on the regular boards, like any run). Re-simulation then checks the attempt like any run, and a failed one leaves the board.
+- The challenge board ranks each player's official attempt, players with a handle only, like the other boards.
+- Ribbons (`src/challenge.ts`): every 15 minutes the API looks at the last two days, and once a day ended 3 hours ago (`ribbonsDue`), ranks its verified official attempts with ties sharing a place and sends each player a Mystery Gift `ribbon` (`ribbonFor`: gold for the top 10%, silver for the top half, bronze for the rest, the #1 always gold) with `key` `ribbon:<day>`. Running it again sends nothing twice, and a run verified late still gets its ribbon on the next look. Profiles count ribbons from the `gifts` table, so they show before the game claims them.
 
 ### Invites and Mystery Gifts
 
@@ -73,6 +83,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending).
 - `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
 - `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.
+- `runs.challenge`, `runs.official`: the Desafio do dia a run plays (its day) and whether it's the player's official attempt of that day.
 
 ## Local development
 
