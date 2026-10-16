@@ -3661,12 +3661,18 @@ button {
   padding-top: 6px;
 }
 
+/* A scrolling box: with dozens of families the select stays one screen tall. ↑/↓ read the column count from here. */
 .egg-box {
   display: grid;
-  /* Keep the column count in sync with BOX_COLS in ui/starterSelect.ts. */
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
+  max-height: min(44vh, 400px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding: 4px;
+  scrollbar-width: thin;
 }
 
 .egg-cell {
@@ -3879,6 +3885,11 @@ button {
 }
 
 @media (max-width: 520px) {
+  .egg-box {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    max-height: 34vh;
+  }
   .egg-cell-tag {
     width: 12px;
     height: 12px;
@@ -3907,6 +3918,15 @@ button {
   .hatch-canvas {
     width: 224px;
     height: 192px;
+  }
+  .egg-box {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    max-height: calc(100dvh - 210px);
+  }
+  .egg-box-wrap {
+    gap: 6px;
+    padding-top: 0;
   }
 }
 

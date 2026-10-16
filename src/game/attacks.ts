@@ -59,8 +59,19 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
       a.y = p.y - 8
       break
     }
+    case 'drift': {
+      const k = Math.max(0, 1 - m.drag * dt)
+      m.vx *= k
+      m.vy *= k
+      a.x += m.vx * dt
+      a.y += m.vy * dt
+      break
+    }
   }
 }
+
+/** Whether a drifting shard is still flying (it trails frost and points its way only then). */
+export const flying = (m: Motion) => m.kind === 'drift' && dm.sq(m.vx) + dm.sq(m.vy) > 400
 
 /** Blows a mine up: a short blast hits everything around it, then the mine is gone. */
 const detonate = (g: Game, a: Attack, expired: boolean) => {
@@ -149,6 +160,12 @@ const trail = (g: Game, a: Attack) => {
     case 'note': return emit(['#f8d030', '#f08030', '#c03020'], 0.6, { gravity: -30 })
     case 'blade': return emit(['#a8e870', '#58b838'], 0.5, { ttl: 0.25, speed: 6 })
     case 'pyro': return a.age < a.activeFrom ? undefined : emit(['#f8d030', '#f08030', '#c03020'], 0.9, { gravity: -40, speed: 40, ttl: 0.4 })
+    case 'iceShard': return flying(a.motion) ? emit(['#e0f8ff', '#98d8f8', '#ffffff'], 0.6, { ttl: 0.3, speed: 6 }) : undefined
+    case 'blizzard': return emit(['#ffffff', '#e0f8ff', '#98d8f8'], flying(a.motion) ? 0.9 : 0.08, { gravity: 12, ttl: 0.45, speed: 10 })
+    case 'pin': return emit(['#d8f070', '#a8c838', '#ffffff'], 0.35, { ttl: 0.18, speed: 3 })
+    case 'megahorn': return emit(['#ffffff', '#d8dcf0', '#a8b0d0'], 0.9, { ttl: 0.4, speed: 12 })
+    case 'dragonBreath': return emit(['#a070f8', '#7038f8', '#f0e0ff'], 0.5, { gravity: -30, ttl: 0.3, speed: 8 })
+    case 'outrage': return emit(['#a070f8', '#f85030', '#f8d030', '#f0e0ff'], 0.7, { gravity: -40, ttl: 0.35, speed: 16 })
     default: return
   }
 }

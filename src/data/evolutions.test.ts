@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { offerPool, rollOffers } from '../game/leveling'
-import { maxMoveLevel, moveStats, type MoveId } from '../game/moves'
+import { maxMoveLevel, MOVES, moveStats, type MoveId } from '../game/moves'
 import { applyDeltas, BASE_STATS } from '../game/stats'
 import type { OwnedItem, OwnedMove } from '../game/types'
-import { readyEvolutions } from './evolutions'
-import { ITEMS } from './items'
+import { EVOLUTIONS, readyEvolutions } from './evolutions'
+import { ITEMS, type ItemDef } from './items'
 
 const maxed = (id: MoveId): OwnedMove => ({ id, level: maxMoveLevel(id), cooldown: 0 })
 const charcoal: OwnedItem = { id: 'charcoal', level: 1 }
@@ -35,6 +35,15 @@ describe('move evolution eligibility', () => {
     expect(moves).not.toContain('ember')
     expect(moves).not.toContain('flamethrower')
     expect(moves).toContain('fireSpin')
+  })
+})
+
+describe('evolution pairs', () => {
+  it('keep the move type and use that type’s boosting item', () => {
+    for (const evo of EVOLUTIONS) {
+      const item: ItemDef = ITEMS[evo.item]
+      expect([MOVES[evo.to].type, item.boosts]).toEqual([MOVES[evo.from].type, MOVES[evo.from].type])
+    }
   })
 })
 
