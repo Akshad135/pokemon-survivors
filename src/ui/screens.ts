@@ -18,6 +18,7 @@ import { berryIcon, coinIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '.
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
 import { formatNumber, formatPokeDollars, t, type Messages } from '../i18n'
+import { KOFI_URL } from '../site/routes'
 import { h, later } from './dom'
 
 export type Screen = {
@@ -369,6 +370,7 @@ const runNews = ({ eggs, news, medals }: ResultsExtras) => {
  * a run that ends in endless mode shows its overtime, rift legendaries and Arceus.
  * The steps walked and eggs found feed the incubator (`extras.eggs`), and
  * `extras.news` adds a one-line Pokédex summary when the run found something new.
+ * A victory also links the Ko-fi page, under the buttons (only then, so it never nags).
  */
 export const results = (
   root: HTMLElement,
@@ -477,6 +479,7 @@ export const results = (
         }),
       ),
       h('div', { class: 'buttons result-buttons' }, ...buttons),
+      victory && h('a', { class: 'support-link result-support', href: KOFI_URL, target: '_blank', rel: 'noopener' }, `♥ ${m.support}`),
     ),
   )
   root.append(el)

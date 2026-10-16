@@ -2,7 +2,7 @@ import { accountState, onAccountChange, signIn, signOut, syncSave, type AccountS
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { t } from '../i18n'
-import { h, later, rich } from './dom'
+import { h, later, rich, topRight } from './dom'
 import { profileEditor, profileScreen } from './profile'
 import { hint, menu, type Screen } from './screens'
 
@@ -32,7 +32,7 @@ export const accountChip = (root: HTMLElement, input: Input, onOpen: () => void)
   draw(accountState())
   const offState = onAccountChange(draw)
   const offKey = input.onKey((key) => key === 'KeyC' && open())
-  root.append(el)
+  topRight(root).append(el)
   return () => (offState(), offKey(), el.remove())
 }
 
