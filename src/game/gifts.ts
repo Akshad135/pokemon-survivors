@@ -6,6 +6,7 @@ import { markHatch } from './dex'
 import { EGG_TIER_IDS, EGG_TIERS, EGGS, grantEgg, type EggTier, type Hatch } from './eggs'
 import type { Save } from './meta'
 import { isRecord, wholeNumber } from './parse'
+import { mergeRibbons, parseRibbon, type Ribbon } from './ribbons'
 import { equipStyle, grantStyle, type StyleSave } from './style'
 
 /**
@@ -27,6 +28,8 @@ export type GiftContent =
   | { kind: 'style'; style: StyleRef }
   /** The family hatches shiny right away, with its scene (a family already shiny pays its egg's ₽). */
   | { kind: 'shinyHatch'; family: HatchlingId }
+  /** A Desafio do dia's ribbon (`game/ribbons.ts`), with the day and the place. */
+  | { kind: 'ribbon'; ribbon: Ribbon }
 
 export type GiftKind = GiftContent['kind']
 
@@ -70,6 +73,10 @@ export const parseGiftContent = (v: unknown): GiftContent | null => {
     }
     case 'shinyHatch':
       return isOneOf(v.family, HATCHLING_IDS) ? { kind: 'shinyHatch', family: v.family } : null
+    case 'ribbon': {
+      const ribbon = parseRibbon(v.ribbon)
+      return ribbon ? { kind: 'ribbon', ribbon } : null
+    }
     default:
       return null
   }
@@ -121,7 +128,7 @@ const wear = (style: StyleSave, ref: StyleRef): StyleSave => {
   return ref.slot === 'frame' ? put(ref.slot, ref.id) : ref.slot === 'background' ? put(ref.slot, ref.id) : put(ref.slot, ref.id)
 }
 
-/** The content on the save, with the hatch to show if it was one. Titles and styles are worn right away. */
+/** The content on the save, with the hatch to show if it was one. Titles and styles are worn right away; a ribbon joins the day's. */
 const give = (save: Save, content: GiftContent): { save: Save; hatch: Hatch | null } => {
   switch (content.kind) {
     case 'egg':
@@ -134,6 +141,8 @@ const give = (save: Save, content: GiftContent): { save: Save; hatch: Hatch | nu
       return { save: { ...save, style: wear(save.style, content.style) }, hatch: null }
     case 'shinyHatch':
       return shinyHatch(save, content.family)
+    case 'ribbon':
+      return { save: { ...save, ribbons: mergeRibbons(save.ribbons, [content.ribbon]) }, hatch: null }
   }
 }
 

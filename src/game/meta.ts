@@ -10,6 +10,7 @@ import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type M
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
 import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
 import { isRecord, wholeNumber } from './parse'
+import { parseRibbons, type Ribbon } from './ribbons'
 import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import type { StatDelta } from './stats'
@@ -124,6 +125,8 @@ export type Save = {
   titles: readonly GiftTitleId[]
   /** Ids of the Mystery Gifts applied, so none lands twice (`game/gifts.ts`). */
   gifts: readonly string[]
+  /** Desafio do dia ribbons, one per day (`game/ribbons.ts`), from Mystery Gifts. */
+  ribbons: readonly Ribbon[]
 }
 
 export const EMPTY_SAVE: Save = {
@@ -144,6 +147,7 @@ export const EMPTY_SAVE: Save = {
   spent: 0,
   titles: [],
   gifts: [],
+  ribbons: [],
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -198,6 +202,7 @@ export const parseSaveData = (json: unknown): Save => {
     spent: wholeNumber(data.spent),
     titles,
     gifts: parseClaimedGifts(data.gifts),
+    ribbons: parseRibbons(data.ribbons),
   }
 }
 

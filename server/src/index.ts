@@ -3,6 +3,7 @@ import { createApp } from './app'
 import { clerkVerifier } from './auth'
 import { connect, migrate, saveStore } from './db'
 import { createChecks } from './checks'
+import { createRibbons } from './challenge'
 import { giftStore } from './gifts'
 import { rankingStore } from './ranking'
 import { loadEnv } from './env'
@@ -16,6 +17,8 @@ const gifts = giftStore(sql)
 const checks = createChecks(ranking, gifts.credit)
 // Runs that were waiting for a check when the last instance stopped.
 void checks.resume()
+// The Desafio do dia's ribbons, once a day closes (safe on every instance: each gift has a key per day).
+createRibbons(ranking, gifts).start()
 
 const app = createApp({
   store: saveStore(sql),

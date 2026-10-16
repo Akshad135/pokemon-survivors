@@ -1,7 +1,7 @@
 import { createRng, seedFrom } from '../engine/rng'
 import { hasShinySprite } from '../data/bodies'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { brasiliaDay, previousDay, type DayKey } from './day'
+import { brasiliaDay, dayNumber, previousDay, type DayKey } from './day'
 import type { Roster } from './roster'
 
 /**
@@ -28,12 +28,6 @@ export const OUTBREAK_SPECIES: readonly EnemyId[] = (Object.keys(ENEMIES) as Ene
     return def.tier === OUTBREAK.tier && def.trait === undefined && def.boss !== true && hasShinySprite(def.dex)
   })
   .sort((a, b) => ENEMIES[a].dex - ENEMIES[b].dex)
-
-/** Days since 1970-01-01 of a `YYYY-MM-DD` key. */
-const dayNumber = (day: DayKey) => {
-  const [y, m, d] = day.split('-').map(Number)
-  return Math.round(Date.UTC(y!, m! - 1, d!) / 86_400_000)
-}
 
 /** A seeded shuffle of the outbreak species: one cycle of days gives each one its day. */
 const cycleOrder = (cycle: number) => {

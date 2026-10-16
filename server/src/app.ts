@@ -3,6 +3,8 @@ import { bodyLimit } from 'hono/body-limit'
 import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { logger } from 'hono/logger'
+import { challengeOpen } from '../../src/game/challenge'
+import { isDayKey } from '../../src/game/day'
 import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
 import { isRecord } from '../../src/game/parse'
@@ -31,7 +33,7 @@ type Auth = { Variables: { userId: string } }
 type MaybeAuth = { Variables: { userId: string | null } }
 
 /** What a run's end answers when it's refused, by `FinishError`. */
-const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422 } as const
+const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
 
 /**
  * The HTTP API. Routes marked (auth) need a Clerk session token
@@ -45,15 +47,20 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422 } as const
  *   what is stored now, for the device to keep (see `applyPush`).
  * - `GET /me` (auth): `{ profile }`, the player's handle and name, null before they pick them.
  * - `PUT /me` (auth) `{ handle, name }`: sets them. 409 `{ suggestion }` when the handle is taken.
- * - `POST /runs` (auth): `{ token }` for a run that just started. 429 past the start rate limit.
+ * - `POST /runs` (auth) `{ challenge? }`: `{ token }` for a run that just started. 429 past the start rate limit.
+ *   With `challenge` (a `YYYY-MM-DD` Brasília day) it's that day's Desafio do dia, 400 when
+ *   that day's challenge isn't open (`challengeOpen`).
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
- *   returns `{ ranks }`; the replay is re-simulated afterwards (`checks.ts`).
+ *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
+ *   replay is re-simulated afterwards (`checks.ts`). A challenge run's replay must
+ *   be its day's challenge.
  *   400 for an implausible result or a replay of another run, 404 for an
  *   unknown token, 409 when it contradicts what the run already recorded, 422
  *   when the clock can't fit it. A body without a replay (an older game) is
  *   taken and stays unverified.
  * - `GET /boards/:difficulty?period=day|week|all&starter=&friends=1`: `Board`.
  *   `friends` needs a token.
+ * - `GET /challenge/:day?friends=1`: `ChallengeBoard`, the day's official attempts. `friends` needs a token.
  * - `GET /profiles/:handle`: `PublicProfile`, 404 if nobody has that handle.
  * - `PUT|DELETE /follows/:handle` (auth): follows or unfollows. `{ followed, followers }`.
  * - `GET /gifts` (auth): `{ gifts }`, the player's unclaimed Mystery Gifts, oldest first.
@@ -113,8 +120,12 @@ export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin
     return set.ok ? c.json({ profile: { handle, name } }) : c.json({ error: 'taken', suggestion: set.suggestion }, 409)
   })
 
-  app.post('/runs', auth, async (c) => {
-    const token = await ranking.startRun(c.var.userId)
+  app.post('/runs', auth, smallBody, async (c) => {
+    // An older game sends no body: a run like any other.
+    const body = await json(c)
+    const challenge = isRecord(body) && body.challenge !== undefined ? body.challenge : null
+    if (challenge !== null && (!isDayKey(challenge) || !challengeOpen(challenge, new Date()))) return c.json({ error: 'not an open challenge' }, 400)
+    const token = await ranking.startRun(c.var.userId, challenge)
     return token ? c.json({ token }, 201) : c.json({ error: 'too many runs' }, 429)
   })
 
@@ -131,7 +142,11 @@ export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin
     const finished = await ranking.finishRun(c.var.userId, token, result, replay)
     if (!finished.ok) return c.json({ error: finished.error }, FINISH_ERRORS[finished.error])
     if (replay) checks.schedule(token)
-    return c.json({ ranks: await ranking.runRanks(c.var.userId, result.difficulty) })
+    const [ranks, challenge] = await Promise.all([
+      ranking.runRanks(c.var.userId, result.difficulty),
+      finished.challenge ? ranking.challengePlace(c.var.userId, finished.challenge, finished.official === true) : null,
+    ])
+    return c.json({ ranks, challenge })
   })
 
   app.get('/boards/:difficulty', maybeAuth, async (c) => {
@@ -142,6 +157,14 @@ export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin
     if (!isDifficulty(difficulty) || !isBoardPeriod(period) || (starter !== null && !isPlayable(starter))) return c.json({ error: 'unknown board' }, 400)
     if (friends && !c.var.userId) return c.json({ error: 'unauthorized' }, 401)
     return c.json(await ranking.board({ difficulty, period, starter, friends, viewer: c.var.userId }))
+  })
+
+  app.get('/challenge/:day', maybeAuth, async (c) => {
+    const day = c.req.param('day')
+    const friends = c.req.query('friends') === '1'
+    if (!isDayKey(day)) return c.json({ error: 'unknown day' }, 400)
+    if (friends && !c.var.userId) return c.json({ error: 'unauthorized' }, 401)
+    return c.json(await ranking.challengeBoard(day, friends, c.var.userId))
   })
 
   app.get('/profiles/:handle', maybeAuth, async (c) => {

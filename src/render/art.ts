@@ -3,6 +3,7 @@ import type { Medal } from '../data/achievements'
 import type { ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
 import type { EggTier } from '../game/eggs'
+import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 
@@ -507,5 +508,42 @@ export const medalSprite = (medal: Medal, locked = false) => {
   if (!sprite) MEDAL_SPRITES.set(key, (sprite = art(MEDAL, locked ? MEDAL_LOCKED : { ...MEDAL_RIBBON, ...MEDAL_METAL[medal] })))
   return sprite
 }
+
+/* ---------------- Ribbons ---------------- */
+
+/** Desafio do dia ribbon: a pleated rosette with two tails. 1 outline, 2 pleat shade, 3 pleat, 4 pleat light, 5 button, 6 shine. */
+const RIBBON = [
+  '...11111...',
+  '..1343431..',
+  '.134444431.',
+  '.134555431.',
+  '13455655431',
+  '13455555431',
+  '.134555431.',
+  '.134444431.',
+  '..1343431..',
+  '...12121...',
+  '..1221221..',
+  '..122.221..',
+  '.1221.1221.',
+  '.111...111.',
+]
+
+const RIBBON_COLORS = {
+  gold: { 1: '#584010', 2: '#b07010', 3: '#e0a828', 4: '#f8d860', 5: '#fff0a0', 6: '#ffffff' },
+  silver: { 1: '#303848', 2: '#788098', 3: '#a8b0c8', 4: '#d8dce8', 5: '#f0f2f8', 6: '#ffffff' },
+  bronze: { 1: '#402010', 2: '#985028', 3: '#c87840', 4: '#e8a868', 5: '#f8d0a0', 6: '#fff0e0' },
+} as const satisfies Record<RibbonTier, Palette>
+
+const RIBBON_SPRITES = new Map<RibbonTier, PixelSprite>()
+
+/** A ribbon as a sprite (the Trainer Card draws it), cached. */
+export const ribbonSprite = (tier: RibbonTier) => {
+  let sprite = RIBBON_SPRITES.get(tier)
+  if (!sprite) RIBBON_SPRITES.set(tier, (sprite = art(RIBBON, RIBBON_COLORS[tier])))
+  return sprite
+}
+
+export const ribbonIcon = (tier: RibbonTier) => toIconUrl(`ribbon:${tier}`, () => ribbonSprite(tier))
 
 export const medalIcon = (medal: Medal, locked = false) => toIconUrl(`medal:${locked ? 'locked' : medal}`, () => medalSprite(medal, locked))

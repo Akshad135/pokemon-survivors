@@ -9,6 +9,7 @@ import type { ConsumableId } from '../game/consumables'
 import type { Difficulty } from '../game/difficulty'
 import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
 import type { BagItem } from '../game/bag'
+import type { RibbonTier } from '../game/ribbons'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -66,6 +67,7 @@ export const pt = {
     pressKeys: 'Pressione qualquer tecla',
     pressTouch: 'Toque para começar',
     play: 'Jogar',
+    challenge: 'Desafio do dia',
     missions: 'Missões',
     pokedex: 'Pokédex',
     ranking: 'Ranking',
@@ -218,6 +220,19 @@ export const pt = {
     guest: 'Entre com uma conta para aparecer no ranking.',
     noHandle: 'Crie seu perfil na tela da conta para aparecer no ranking.',
     open: 'Ranking',
+    /** The Desafio do dia's board: a tab beside the difficulties, by day. */
+    challengeTab: 'Desafio',
+    days: { today: 'Hoje', yesterday: 'Ontem' },
+    challengeHead: (date: string, name: string, difficulty: string, n: number) => `${date} · ${name} · ${difficulty} · ${n === 1 ? '1 treinador' : `${n} treinadores`}`,
+    challengeEmpty: 'Ninguém fez a tentativa oficial deste dia ainda.',
+    challengeResets: 'Só a primeira partida terminada de cada treinador conta. As fitas saem às 3h (Brasília) do dia seguinte.',
+    challengeHint: '↑ ↓ jogador · ← → dia · Q E quadro · F amigos · ENTER perfil · ESC voltar',
+    /** End of a challenge run. */
+    challengePlace: (date: string, rank: number, total: number) => `Desafio de ${date}: *#${rank}* de ${total}`,
+    challengeSent: 'Tentativa oficial enviada: a posição aparece quando você criar seu perfil.',
+    challengePractice: 'Treino: sua tentativa oficial de hoje já foi.',
+    challengePracticePlace: (rank: number, total: number) => `Treino · sua tentativa oficial: #${rank} de ${total}`,
+    challengeGuest: 'Treino local: entre com uma conta para entrar no ranking do desafio.',
   },
 
   /** Public profiles and the profile editor. */
@@ -330,6 +345,8 @@ export const pt = {
       showcase: 'SHINIES',
       inBox: (n: number) => `${n} na Caixa do PC`,
       noShinies: 'Nenhum shiny ainda',
+      challenge: (date: string, rank: number, total: number) => `Desafio de ${date}: #${rank} de ${total}`,
+      ribbons: 'Fitas',
       play: 'Jogue grátis no navegador',
     },
   },
@@ -414,6 +431,41 @@ export const pt = {
     hint: 'Ele aparece muito mais hoje, e o shiny também.',
   },
 
+  /** Desafio do dia: one run the same for everyone, the first finished one counting. */
+  challenge: {
+    title: 'DESAFIO DO DIA',
+    day: (date: string) => `Desafio de ${date}`,
+    same: 'A mesma partida para todo mundo hoje: semente, Pokémon e dificuldade.',
+    off: 'Sem melhorias da Poké Mart, Isca, Incenso ou Amuleto Brilhante. O surto do dia vale.',
+    outbreak: (name: string) => `Surto: ${name}`,
+    locked: 'Ainda no ovo para você: hoje dá para jogar com ele!',
+    official: 'TENTATIVA OFICIAL',
+    officialHint: 'Só a sua primeira partida terminada hoje entra no ranking do desafio.',
+    practice: 'TREINO',
+    practiceHint: 'Sua tentativa oficial de hoje já foi: as próximas são treino.',
+    attempt: (time: string) => `Sua tentativa: ${time}`,
+    place: (rank: number, total: number) => `#${rank} de ${total}`,
+    next: (time: string) => `Novo desafio em ${time}`,
+    guest: 'Visitantes jogam e treinam, mas só contas entram no ranking do desafio e ganham fitas.',
+    ribbons: 'Fitas: ouro para os 10% melhores, prata para a metade de cima e bronze para quem participou.',
+    play: 'Jogar (oficial)',
+    practicePlay: 'Treinar',
+    board: 'Ranking',
+    back: 'Voltar',
+    hintKeys: '← → escolher · ENTER confirmar · ESC voltar',
+    hintTouch: 'Toque para escolher',
+    /** The run's first toast. */
+    started: (date: string) => `*Desafio de ${date}*`,
+    startedOfficial: 'Tentativa oficial: boa sorte!',
+    startedPractice: 'Treino: não entra no ranking do desafio.',
+  },
+
+  /** Ribbons of the Desafio do dia, on the profile and the Trainer Card. */
+  ribbons: {
+    names: { gold: 'Fita de Ouro', silver: 'Fita de Prata', bronze: 'Fita de Bronze' } satisfies Record<RibbonTier, string>,
+    section: 'Fitas do desafio',
+  },
+
   /** Invites: the banner a guest who came by a friend's link sees on the title screen. */
   invite: {
     banner: (name: string) => `*${name}* te convidou!`,
@@ -428,6 +480,8 @@ export const pt = {
     newTitle: (title: string) => `Novo título: *${title}*! Já está em uso.`,
     style: (name: string) => `Novo estilo: *${name}*! Já está em uso.`,
     shinyHatch: (name: string) => `Um *${name}* _shiny_ veio para você!`,
+    ribbon: (name: string) => `*${name}*! Já está no seu perfil.`,
+    ribbonWhy: (date: string, rank: number, total: number) => `Desafio de ${date}: #${rank} de ${total}`,
     wait: 'Um Presente Misterioso espera espaço na incubadora.',
     welcome: (from: string | null) => (from ? `Por entrar com o convite de @${from}` : 'Por entrar com um convite'),
     friends: (n: number) => (n === 1 ? 'Por trazer seu primeiro amigo' : `Por trazer ${n} amigos`),

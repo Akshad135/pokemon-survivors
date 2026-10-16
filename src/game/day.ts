@@ -21,6 +21,19 @@ const clockAt = (d: Date) => {
 /** The Brasília day holding `d`, `YYYY-MM-DD`. */
 export const brasiliaDay = (d: Date): DayKey => clockAt(d).day
 
+/** Whether `v` is a real calendar day as `YYYY-MM-DD` (from an untrusted body). */
+export const isDayKey = (v: unknown): v is DayKey => {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false
+  const [y, m, d] = v.split('-').map(Number)
+  return new Date(Date.UTC(y!, m! - 1, d!)).toISOString().slice(0, 10) === v
+}
+
+/** Days since 1970-01-01 of a `YYYY-MM-DD` key, for draws that walk through the days. */
+export const dayNumber = (day: DayKey) => {
+  const [y, m, d] = day.split('-').map(Number)
+  return Math.round(Date.UTC(y!, m! - 1, d!) / 86_400_000)
+}
+
 /** The day before `day` (calendar arithmetic, no time zone involved). */
 export const previousDay = (day: DayKey): DayKey => {
   const [y, m, d] = day.split('-').map(Number)
@@ -29,3 +42,6 @@ export const previousDay = (day: DayKey): DayKey => {
 
 /** Milliseconds from `d` to the next midnight in Brasília (when the day's outbreak and counter turn over). */
 export const msToNextDay = (d: Date) => (86_400 - clockAt(d).seconds) * 1000 - d.getMilliseconds()
+
+/** Milliseconds since the last midnight in Brasília. */
+export const msSinceDayStart = (d: Date) => 86_400_000 - msToNextDay(d)
