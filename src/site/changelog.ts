@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-16',
+    pr: 72,
     title: { pt: 'Apoie o projeto no Ko-fi', en: 'Support the project on Ko-fi', es: 'Apoya el proyecto en Ko-fi' },
     notes: [
       {
