@@ -340,6 +340,66 @@ export const SPECIALS = {
     base: { name: 'Night Slash', damage: 56, area: 1.3, count: 6 },
     final: { name: 'Night Slash', damage: 56, area: 1.3, count: 6 },
   },
+  airSlash: {
+    type: 'flying', kind: 'ring', cooldown: 7, charge: 0.2,
+    base: { name: 'Air Slash', damage: 62, area: 1.3, count: 24 },
+    final: { name: 'Air Slash', damage: 62, area: 1.3, count: 24 },
+  },
+  waterfall: {
+    type: 'water', kind: 'wave', cooldown: 7, charge: 0.25,
+    base: { name: 'Waterfall', damage: 72, area: 1.5, count: 9 },
+    final: { name: 'Waterfall', damage: 72, area: 1.5, count: 9 },
+  },
+  zapCannon: {
+    type: 'electric', kind: 'nova', cooldown: 7, charge: 0.3,
+    base: { name: 'Zap Cannon', damage: 66, area: 1.6, count: 3 },
+    final: { name: 'Zap Cannon', damage: 66, area: 1.6, count: 3 },
+    status: { kind: 'paralysis', chance: 0.8, duration: 1.6, power: 0 },
+  },
+  bulletPunch: {
+    type: 'steel', kind: 'chain', cooldown: 6, charge: 0, orbs: 6,
+    base: { name: 'Bullet Punch', damage: 54, area: 1.3, count: 6 },
+    final: { name: 'Bullet Punch', damage: 54, area: 1.3, count: 6 },
+  },
+  fieryWrath: {
+    type: 'dark', kind: 'rain', cooldown: 7, charge: 0.3,
+    base: { name: 'Fiery Wrath', damage: 66, area: 1.4, count: 20 },
+    final: { name: 'Fiery Wrath', damage: 66, area: 1.4, count: 20 },
+    status: { kind: 'burn', chance: 0.5, duration: 2, power: 0.3 },
+  },
+  heavySlam: {
+    type: 'steel', kind: 'bolt', cooldown: 7, charge: 0.35,
+    base: { name: 'Heavy Slam', damage: 78, area: 1.5, count: 8 },
+    final: { name: 'Heavy Slam', damage: 78, area: 1.5, count: 8 },
+  },
+  wildCharge: {
+    type: 'electric', kind: 'trail', cooldown: 9, charge: 0.1,
+    base: { name: 'Wild Charge', damage: 62, area: 1.3, count: 30 },
+    final: { name: 'Wild Charge', damage: 62, area: 1.3, count: 30 },
+    status: { kind: 'paralysis', chance: 0.5, duration: 1.2, power: 0 },
+  },
+  hyperVoice: {
+    type: 'fairy', kind: 'nova', cooldown: 7, charge: 0.25,
+    base: { name: 'Hyper Voice', damage: 64, area: 1.6, count: 3 },
+    final: { name: 'Hyper Voice', damage: 64, area: 1.6, count: 3 },
+    status: { kind: 'sleep', chance: 0.35, duration: 1.5, power: 0 },
+  },
+  phantomForce: {
+    type: 'ghost', kind: 'chain', cooldown: 7, charge: 0, orbs: 6,
+    base: { name: 'Phantom Force', damage: 58, area: 1.3, count: 6 },
+    final: { name: 'Phantom Force', damage: 58, area: 1.3, count: 6 },
+  },
+  sheerCold: {
+    type: 'ice', kind: 'nova', cooldown: 7, charge: 0.3,
+    base: { name: 'Sheer Cold', damage: 64, area: 1.6, count: 3 },
+    final: { name: 'Sheer Cold', damage: 64, area: 1.6, count: 3 },
+    status: { kind: 'slow', chance: 1, duration: 1.5, power: 0.7 },
+  },
+  doubleEdge: {
+    type: 'flying', kind: 'bolt', cooldown: 7, charge: 0.25,
+    base: { name: 'Double-Edge', damage: 72, area: 1.4, count: 12 },
+    final: { name: 'Double-Edge', damage: 72, area: 1.4, count: 12 },
+  },
 } as const satisfies Record<string, SpecialDef>
 
 export type SpecialId = keyof typeof SPECIALS
