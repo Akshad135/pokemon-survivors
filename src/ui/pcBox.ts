@@ -62,8 +62,7 @@ export const pcBoxScreen = (root: HTMLElement, input: Input, actions: PcActions,
   let footerIndex = 0
   /** The Trainer Card's preview, open over the box. */
   let sub: Screen | null = null
-
-  const close = () => (playSfx('select'), later(actions.onClose))
+  let closed = false
 
   const label = h('div', { class: 'pc-box-name' })
   const prev = h('button', { class: 'pc-arrow', 'aria-label': m.prev, onclick: () => (setZone('nav'), switchBox(-1)) }, '◀')
@@ -246,5 +245,20 @@ export const pcBoxScreen = (root: HTMLElement, input: Input, actions: PcActions,
     }
   }
 
-  return { el, tick, dim: 0.5, dispose: () => (sub?.dispose(), off(), el.remove()) }
+  const dispose = () => {
+    sub?.dispose()
+    off()
+    el.remove()
+  }
+
+  /** Closes the box for good (its keys too) before handing back, as the screens it opens over don't dispose it. */
+  function close() {
+    if (closed) return
+    closed = true
+    playSfx('select')
+    dispose()
+    later(actions.onClose)
+  }
+
+  return { el, tick, dim: 0.5, dispose }
 }
