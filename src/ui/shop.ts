@@ -11,7 +11,7 @@ import { equipStyle, ownsStyle } from '../game/style'
 import { bagIcon, coinIcon, eggIcon, upgradeIcon } from '../render/art'
 import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
-import { h, later, setText } from './dom'
+import { h, later, setText, topRight } from './dom'
 import { counterToday, loadSave, today, writeSave } from './save'
 import { menu, type Screen } from './screens'
 
@@ -31,7 +31,7 @@ export const martButton = (root: HTMLElement, input: Input, onOpen: () => void) 
   )
   el.addEventListener('click', () => later(onOpen))
   const off = input.onKey((key) => key === 'KeyL' && later(onOpen))
-  root.append(el)
+  topRight(root).append(el)
   return () => (off(), el.remove())
 }
 

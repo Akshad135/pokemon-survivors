@@ -27,6 +27,7 @@ export const siteEs: SiteMessages = {
     legal: 'Legal y privacidad',
     credits: 'Créditos',
     source: 'Código en GitHub',
+    support: 'Apoya en Ko-fi',
   },
   home: 'Inicio',
   playCta: 'Jugar gratis',

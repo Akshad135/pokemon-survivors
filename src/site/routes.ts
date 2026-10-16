@@ -4,6 +4,9 @@ export const SITE_URL = 'https://www.pokemonsurvivors.com'
 
 export const REPO_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
+/** Donations page, linked from the title, the victory screen and the site footer. Never tied to in-game rewards. */
+export const KOFI_URL = 'https://ko-fi.com/pokemonsurvivors'
+
 /**
  * Every public URL, per language. `play` is the game itself (`index.html`,
  * `en/index.html`); the others are the static pages generated at build time.

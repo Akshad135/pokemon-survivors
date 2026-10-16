@@ -85,6 +85,7 @@ import { runShare, sharePreview, trainerShare } from './ui/share'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleButton, titleScreen } from './ui/title'
+import { supportButton } from './ui/support'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
@@ -273,7 +274,7 @@ const showPlayGate = () =>
     }),
   )
 
-/** Pokémon select, with the Poké Mart (top right) and the way back to the title (top left). */
+/** Pokémon select, with the Poké Mart and the Ko-fi chip (top right) and the way back to the title (top left). */
 const showMenu = (initial: PlayableId = lastStarter) => {
   endRun()
   const select = starterSelect(ui, input, {
@@ -282,7 +283,8 @@ const showMenu = (initial: PlayableId = lastStarter) => {
   }, initial)
   const closeMart = martButton(ui, input, () => showShop())
   const closeBack = titleButton(ui, input, () => showTitle())
-  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), select.dispose()) })
+  const closeSupport = supportButton(ui)
+  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), closeSupport(), select.dispose()) })
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))

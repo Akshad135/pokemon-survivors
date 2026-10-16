@@ -40,3 +40,9 @@ export const rich = (text: string, attrs: Attrs = {}) =>
 
 /** Runs after the current key/click dispatch, so the next screen doesn't receive the same press. */
 export const later = (fn: () => void) => setTimeout(fn, 0)
+
+/**
+ * The top-right corner's row, shared by the account chip or the Poké Mart and
+ * the Ko-fi chip on their left, so they line up instead of overlapping.
+ */
+export const topRight = (root: HTMLElement) => root.querySelector<HTMLElement>(':scope > .top-right') ?? root.appendChild(h('div', { class: 'top-right' }))

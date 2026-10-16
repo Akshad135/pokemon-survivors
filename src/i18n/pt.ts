@@ -76,6 +76,8 @@ export const pt = {
     settings: 'Ajustes',
     legal: 'Legal e créditos',
     fanGame: 'Fan game não oficial',
+    /** Ko-fi chip on the title and the starter select. */
+    support: 'Apoie o projeto',
     back: 'Título',
   },
 
@@ -301,6 +303,8 @@ export const pt = {
     /** End-of-run Pokédex news, e.g. "+3 espécies novas · 1 shiny capturado". */
     dexSpecies: (n: number) => (n === 1 ? '+1 espécie nova' : `+${n} espécies novas`),
     dexShinies: (n: number) => (n === 1 ? '1 shiny capturado' : `${n} shinies capturados`),
+    /** Victory screen link to the Ko-fi page. */
+    support: 'Curtiu? Apoie o projeto no Ko-fi',
   },
 
   /** Share cards (`render/card.ts`): the preview with its buttons, the text that goes along and the card's own labels. */
