@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-16',
+    pr: 68,
     title: { pt: 'Ficha de status na pausa', en: 'Stat sheet on the pause screen', es: 'Ficha de estadísticas en la pausa' },
     notes: [
       {
