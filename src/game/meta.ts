@@ -13,6 +13,8 @@ import { isRecord, wholeNumber } from './parse'
 import { parseRibbons, type Ribbon } from './ribbons'
 import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
+import { parseShinyPicks, type ShinyPick } from './shinyPicks'
+import { parseCompanion, type Companion } from './supporters'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
 import type { Game } from './types'
@@ -127,6 +129,10 @@ export type Save = {
   gifts: readonly string[]
   /** Desafio do dia ribbons, one per day (`game/ribbons.ts`), from Mystery Gifts. */
   ribbons: readonly Ribbon[]
+  /** Shiny-of-your-choice tickets, spent or waiting (`game/shinyPicks.ts`), from Mystery Gifts. */
+  shinyPicks: readonly ShinyPick[]
+  /** The supporter's companion, drawn after the player in runs (`game/supporters.ts`). */
+  companion: Companion | null
 }
 
 export const EMPTY_SAVE: Save = {
@@ -148,6 +154,8 @@ export const EMPTY_SAVE: Save = {
   titles: [],
   gifts: [],
   ribbons: [],
+  shinyPicks: [],
+  companion: null,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -203,6 +211,8 @@ export const parseSaveData = (json: unknown): Save => {
     titles,
     gifts: parseClaimedGifts(data.gifts),
     ribbons: parseRibbons(data.ribbons),
+    shinyPicks: parseShinyPicks(data.shinyPicks),
+    companion: parseCompanion(data.companion),
   }
 }
 

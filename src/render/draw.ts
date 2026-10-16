@@ -22,6 +22,7 @@ import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftPortal, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
@@ -603,9 +604,9 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 /* ---------------- Frame ---------------- */
 
-type Drawable = Enemy | 'player' | Solid
+type Drawable = Enemy | 'player' | 'companion' | Solid
 const drawables: Drawable[] = []
-const isSolid = (d: Drawable): d is Solid => d !== 'player' && 'foot' in d
+const isSolid = (d: Drawable): d is Solid => d !== 'player' && d !== 'companion' && 'foot' in d
 
 /* ---------------- Biome ---------------- */
 
@@ -621,10 +622,10 @@ const biomeFade = (g: Game) => {
   return prev && k < 1 ? { from: prev, k } : null
 }
 
-/** Player preferences from the settings screen. */
 const TEXT_PASSES = [false, true] as const
 
-export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean }
+/** Player preferences from the settings screen, and the supporter's companion walking along (`render/companion.ts`). */
+export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean; companion?: CompanionView | null }
 
 export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const { w, h } = g.view
@@ -665,10 +666,12 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawables.length = 0
   for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
   drawables.push('player')
+  const companion = opts.companion
+  if (companion) drawables.push('companion')
   solidsInView(g, camX, camY, w, h, drawables)
   // Mid-jump leapers sort last so they fly over the horde, and so does a flyer over a rock or a mountain.
   const depth = (d: Drawable) =>
-    d === 'player' ? g.player.y : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
+    d === 'player' ? g.player.y : d === 'companion' ? (companion?.y ?? 0) : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
   drawables.sort((a, b) => depth(a) - depth(b))
 
   for (const d of drawables) {
@@ -676,17 +679,19 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
       shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
       drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
     }
+    else if (d === 'companion') companion && shadow(ctx, companion.x, companion.y, sprites(companion.dex).bodyW)
     else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
   }
   drawAfterimages(ctx, g)
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
+    else if (d === 'companion') companion && drawCompanion(ctx, companion, t)
     else if (isSolid(d)) drawSolid(ctx, g, d, look)
     else drawEnemy(ctx, d, g.time, t)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {
-    if (d !== 'player' && !isSolid(d) && d.boss && d.dying < 0) {
+    if (d !== 'player' && d !== 'companion' && !isSolid(d) && d.boss && d.dying < 0) {
       const def: EnemyDef = ENEMIES[d.kind]
       drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
     }

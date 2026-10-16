@@ -10,6 +10,7 @@ import type { Difficulty } from '../game/difficulty'
 import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
 import type { BagItem } from '../game/bag'
 import type { RibbonTier } from '../game/ribbons'
+import type { SupporterTier } from '../game/supporters'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -76,6 +77,8 @@ export const pt = {
     settings: 'Ajustes',
     legal: 'Legal e créditos',
     fanGame: 'Fan game não oficial',
+    /** Support chip (donations page) on the title and the starter select. */
+    support: 'Apoie o projeto',
     back: 'Título',
   },
 
@@ -145,12 +148,17 @@ export const pt = {
 
   settings: {
     title: 'AJUSTES',
+    audio: 'Áudio',
+    game: 'Jogo',
     music: 'Música',
     sfx: 'Efeitos',
     sound: 'Som',
     damageNumbers: 'Números de dano',
     damageModes: { all: 'Todos', reduced: 'Reduzidos', off: 'OFF' },
     screenShake: 'Tremor de tela',
+    controls: 'Controles',
+    joystick: 'Joystick',
+    joystickModes: { floating: 'Segue o dedo', fixed: 'Fixo' },
     on: 'ON',
     off: 'OFF',
     back: 'Voltar',
@@ -160,7 +168,6 @@ export const pt = {
 
   /** Remapping keys and gamepad buttons (Ajustes → Controles). */
   controls: {
-    section: 'Controles',
     open: 'Teclado e controle',
     title: 'CONTROLES',
     keyboard: 'Teclado',
@@ -332,6 +339,8 @@ export const pt = {
     /** End-of-run Pokédex news, e.g. "+3 espécies novas · 1 shiny capturado". */
     dexSpecies: (n: number) => (n === 1 ? '+1 espécie nova' : `+${n} espécies novas`),
     dexShinies: (n: number) => (n === 1 ? '1 shiny capturado' : `${n} shinies capturados`),
+    /** Victory screen link to the support page. */
+    support: 'Curtiu? Apoie o projeto',
   },
 
   /** Share cards (`render/card.ts`): the preview with its buttons, the text that goes along and the card's own labels. */
@@ -455,9 +464,9 @@ export const pt = {
       wallpaper: 'Papel de parede da Caixa do PC.',
     } satisfies Record<StyleSlot, string>,
     styles: {
-      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)' } satisfies Record<FrameId, string>,
-      background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender' } satisfies Record<BackgroundId, string>,
-      wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas' } satisfies Record<WallpaperId, string>,
+      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)' } satisfies Record<FrameId, string>,
+      background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender', supporter: 'Céu dourado' } satisfies Record<BackgroundId, string>,
+      wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas', supporter: 'Estrelas douradas' } satisfies Record<WallpaperId, string>,
     },
   },
 
@@ -523,6 +532,90 @@ export const pt = {
     wait: 'Um Presente Misterioso espera espaço na incubadora.',
     welcome: (from: string | null) => (from ? `Por entrar com o convite de @${from}` : 'Por entrar com um convite'),
     friends: (n: number) => (n === 1 ? 'Por trazer seu primeiro amigo' : `Por trazer ${n} amigos`),
+    shinyPick: 'Um *shiny à sua escolha*! Toque no ♥ do título para escolher.',
+    support: (tier: SupporterTier): string => (tier === 'gold' ? 'Por chegar a Apoiador(a) Ouro ♥' : 'Por apoiar o projeto ♥'),
+  },
+
+  /**
+   * Apoiadores: the screen behind the title's heart chip. Donating (on the
+   * support page) with an account brings cosmetic thanks as Mystery Gifts.
+   */
+  supporters: {
+    title: 'APOIADORES',
+    lead: 'O jogo é grátis e sem anúncios. Quem doa ajuda a pagar os servidores e ganha um agradecimento, nada que mude uma partida.',
+    perksTitle: 'Quem doa ganha',
+    perks: {
+      title: 'O título e a moldura *Apoiador(a)*',
+      badge: 'Um selo ♥ ao lado do seu @ no ranking e no perfil',
+      shiny: 'Um *shiny à sua escolha*: qualquer inicial ou família dos ovos',
+      companion: 'Um *companheiro* que te segue nas partidas',
+      wall: 'Seu nome no mural e nos agradecimentos da vitória',
+      vote: 'Voto no próximo Pokémon dos ovos',
+      gold: '*Ouro* (R$ 50 ou US$ 10 somados): fundo, papel de parede e selo dourados',
+    },
+    guest: 'As recompensas vão para uma conta: entre antes de doar.',
+    noHandle: 'Escolha seu @ no perfil para a doação ir direto para a sua conta.',
+    none: 'Doe pela página de apoio com seu @: as recompensas chegam como Presente Misterioso.',
+    loading: 'Carregando…',
+    offline: 'Sem conexão com o servidor agora.',
+    since: (tier: SupporterTier, date: string) => (tier === 'gold' ? `Você é *Apoiador(a) Ouro* desde ${date}. Muito obrigado! ♥` : `Você é *Apoiador(a)* desde ${date}. Obrigado! ♥`),
+    donate: 'Doar',
+    signIn: 'Entrar',
+    createProfile: 'Criar perfil',
+    pick: (n: number) => (n > 1 ? `Escolher shiny (${n})` : 'Escolher shiny'),
+    companion: 'Companheiro',
+    vote: 'Votação',
+    wall: 'Mural',
+    code: 'Tenho um código',
+    show: (on: boolean): string => (on ? 'Selo e nome: visíveis' : 'Selo e nome: ocultos'),
+    back: 'Voltar',
+    hintKeys: '↑ ↓ escolher · ENTER confirmar · ESC voltar',
+    hintTouch: 'Toque para escolher',
+    gridHintKeys: 'SETAS escolher · ENTER confirmar · ESC voltar',
+
+    pickTitle: 'SHINY À SUA ESCOLHA',
+    pickIntro: 'Escolha um Pokémon para ser shiny para sempre. Uma família dos ovos que você ainda não chocou vem junto.',
+    starters: 'Iniciais',
+    eggs: 'Famílias dos ovos',
+    pickConfirm: (name: string) => `Escolher ${name}`,
+    pickNone: 'Toque num Pokémon',
+    allShiny: 'Você já tem todos os shinies que dá para escolher!',
+    picked: (name: string) => `*${name}* _shiny_ é seu!`,
+    pickedNote: 'Escolha Shiny na tela de seleção para jogar com ele.',
+    play: (name: string) => `Jogar com ${name}`,
+    ok: 'OK',
+
+    companionTitle: 'COMPANHEIRO',
+    companionIntro: 'Escolha quem te segue nas partidas. É só enfeite: não ataca nem muda nada no jogo.',
+    companionNone: 'Nenhum',
+    companionShiny: (on: boolean): string => (on ? 'Shiny: sim' : 'Shiny: não'),
+    companionSave: 'Levar junto',
+    companionSaved: (name: string) => `${name} vai com você!`,
+    companionOff: 'Sem companheiro.',
+
+    pollTitle: 'PRÓXIMO POKÉMON',
+    pollIntro: 'Apoiadores escolhem a próxima família que vai sair dos ovos. Dá para mudar o voto quando quiser.',
+    votes: (n: number) => (n === 1 ? '1 voto' : `${n} votos`),
+    yourVote: 'SEU VOTO',
+    voteOnly: 'Só Apoiadores votam. Todo mundo vê o resultado.',
+    voted: (name: string) => `Voto em ${name}!`,
+
+    codeTitle: 'RESGATAR CÓDIGO',
+    codeIntro: 'Doou sem dar seu @? O código aparece na página de agradecimento. Ele vale uma vez, para a conta que resgatar (pode ser a de um amigo).',
+    codeField: 'Código',
+    redeem: 'Resgatar',
+    redeeming: 'Resgatando…',
+    redeemed: 'Código resgatado! As recompensas chegam como Presente Misterioso.',
+    codeErrors: { format: 'O código tem o formato PS-XXXX-XXXX.', unknown: 'Esse código não existe.', used: 'Esse código já foi usado.', offline: 'Sem conexão. Tente de novo.' },
+
+    wallTitle: 'MURAL DE APOIADORES',
+    wallIntro: 'Treinadores que mantêm o jogo no ar. Obrigado!',
+    wallEmpty: 'Ainda ninguém por aqui. Seu nome pode ser o primeiro!',
+
+    credits: 'Obrigado aos treinadores que mantêm o jogo no ar',
+    banner: 'Seu shiny te espera!',
+    badge: (tier: SupporterTier): string => (tier === 'gold' ? 'Apoiador(a) Ouro' : 'Apoiador(a)'),
+    profileSince: (date: string) => `Apoiador(a) desde ${date}`,
   },
 
   /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */
@@ -794,7 +887,7 @@ export const pt = {
     titleTag: 'TÍTULO',
     equipped: 'EM USO',
     /** Titles that come as a Mystery Gift, with how they were earned. */
-    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo' } satisfies Record<GiftTitleId, string>,
+    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação' } satisfies Record<GiftTitleId, string>,
     newMedals: 'Novas medalhas',
     names: {
       firstRun: 'Primeiros passos',
@@ -868,6 +961,7 @@ export const pt = {
       regions: 'Mestre das Regiões',
       reaperDown: 'Lenda Viva',
       ambassador: 'Embaixador(a)',
+      supporter: 'Apoiador(a)',
     } satisfies Record<TitleId, string>,
     goals: {
       runs: (n: string) => (n === '1' ? 'Jogue uma partida' : `Jogue ${n} partidas`),

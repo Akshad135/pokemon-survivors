@@ -4,17 +4,23 @@ import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { logger } from 'hono/logger'
 import { challengeOpen } from '../../src/game/challenge'
+import { parseDonation } from '../../src/data/donations'
+import { isPollOption } from '../../src/data/supporters'
 import { isDayKey } from '../../src/game/day'
 import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, parseDisplayName, parseHandle, parseRunResult } from '../../src/game/ranking'
 import { parseReplay } from '../../src/game/replay'
+import { parseCode } from '../../src/game/supporters'
 import type { Verify } from './auth'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
+import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
+import type { SupporterStore } from './supporters'
+import { abacateDonation, ABACATE_REF, stripeDonation, verifyAbacate, verifyStandard, verifyStripe } from './webhooks'
 
 export type AppDeps = {
   store: SaveStore
@@ -23,6 +29,11 @@ export type AppDeps = {
   /** Re-simulates finished runs after the answer went out. */
   checks: Pick<Checks, 'schedule'>
   verify: Verify
+  /** Donation checkouts (AbacatePay), null when the server has no key for them. */
+  donate: Donate | null
+  supporters: SupporterStore
+  /** Webhook secrets: Stripe's signing secret and Payment Link, AbacatePay's URL secret. Unset ones answer 503. */
+  webhooks: { stripeSecret?: string; stripePaymentLink: string | null; abacatePaySecret?: string }
   allowedOrigin: (origin: string) => boolean
   /** Whether the database answers, for `/health`. */
   ping: () => Promise<boolean>
@@ -31,6 +42,15 @@ export type AppDeps = {
 type Auth = { Variables: { userId: string } }
 
 type MaybeAuth = { Variables: { userId: string | null } }
+
+/** Where donors land when the site that sent them isn't one we know. */
+const SITE = 'https://www.pokemonsurvivors.com'
+
+/** A same-site path to come back to (`/apoie/`, `/en/support/`). */
+const SITE_PATH = /^\/[a-z0-9/-]{0,40}$/
+
+/** A donation's `ref`: our uuid (AbacatePay) or a Stripe Checkout Session id. */
+const DONATION_REF = /^(?:[0-9a-f-]{36}|cs_(?:test|live)_[A-Za-z0-9]{10,200})$/
 
 /** What a run's end answers when it's refused, by `FinishError`. */
 const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
@@ -67,8 +87,21 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /gifts/claim` (auth) `{ ids }`: marks those gifts claimed (the game applied them). `{ claimed }`.
  * - `POST /referral` (auth) `{ ref }`: the inviter's handle a new account came with. `{ referred }`:
  *   whether it counted (only a new account, never oneself: `canRefer`).
+ * - `POST /donations` `{ amount, page, handle? }`: `{ url }`, an AbacatePay checkout (Pix or a
+ *   Brazilian card) for `amount` whole reais (`parseDonation`), for the account of `handle`
+ *   (400 when nobody has it). The donor comes back to `page` on the site, with
+ *   `?thanks=<ref>` once paid. 503 without an AbacatePay key.
+ * - `GET /donations/:ref`: `DonationStatus`, for the thank-you page (404 until the payment is known).
+ * - `POST /donations/redeem` (auth) `{ code }`: credits a donation's code to the player. `{ tier }`;
+ *   404 for an unknown code, 409 for one already used.
+ * - `POST /webhooks/stripe`, `POST /webhooks/abacatepay`: the payment providers say a donation is paid
+ *   (signed: `webhooks.ts`; AbacatePay's the Standard Webhooks way, or with `?webhookSecret=` for an
+ *   older webhook). 401 for a bad signature, 503 without the secret.
+ * - `GET /me/supporter` (auth): `SupporterStatus`. `PUT /me/supporter` (auth) `{ public }`: shows or hides the badge and name.
+ * - `GET /supporters`: `{ supporters }`, the wall (`WallEntry[]`).
+ * - `GET /poll`: `Poll`. `PUT /poll` (auth) `{ choice }`: a supporter's vote, 403 for anyone else.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin, ping }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, webhooks, allowedOrigin, ping }: AppDeps) => {
   const app = new Hono()
 
   app.use(logger())
@@ -195,6 +228,88 @@ export const createApp = ({ store, ranking, gifts, checks, verify, allowedOrigin
     const ref = isRecord(body) ? parseHandle(body.ref) : null
     if (!ref) return c.json({ error: 'expected { ref }' }, 400)
     return c.json({ referred: await gifts.refer(c.var.userId, ref) })
+  })
+
+  app.post('/donations', smallBody, async (c) => {
+    if (!donate) return c.json({ error: 'donations are off' }, 503)
+    const body = await json(c)
+    const amount = isRecord(body) ? parseDonation(body.amount) : null
+    if (!amount) return c.json({ error: 'expected { amount } in whole reais' }, 400)
+    const typed = isRecord(body) && typeof body.handle === 'string' ? body.handle.trim() : ''
+    const handle = typed ? parseHandle(typed) : null
+    if (typed && !handle) return c.json({ error: 'no such player' }, 400)
+    const origin = c.req.header('Origin')
+    const base = origin && allowedOrigin(origin) ? origin : SITE
+    const page = isRecord(body) && typeof body.page === 'string' && SITE_PATH.test(body.page) ? body.page : '/'
+    const ref = crypto.randomUUID()
+    if (!(await supporters.open(ref, handle))) return c.json({ error: 'no such player' }, 400)
+    const url = await donate(amount, { completionUrl: `${base}${page}?thanks=${ref}`, returnUrl: `${base}${page}` }, `${ABACATE_REF}${ref}`)
+    return c.json({ url })
+  })
+
+  app.get('/donations/:ref', async (c) => {
+    const ref = c.req.param('ref')
+    const status = DONATION_REF.test(ref) ? await supporters.status(ref) : null
+    return status ? c.json(status) : c.json({ error: 'unknown donation' }, 404)
+  })
+
+  app.post('/donations/redeem', auth, smallBody, async (c) => {
+    const body = await json(c)
+    const code = isRecord(body) ? parseCode(body.code) : null
+    if (!code) return c.json({ error: 'unknown code' }, 404)
+    const redeemed = await supporters.redeem(c.var.userId, code)
+    if (!redeemed.ok) return c.json({ error: redeemed.error }, redeemed.error === 'used' ? 409 : 404)
+    return c.json({ tier: redeemed.tier })
+  })
+
+  const hookBody = bodyLimit({ maxSize: 64 * 1024 })
+
+  app.post('/webhooks/stripe', hookBody, async (c) => {
+    if (!webhooks.stripeSecret) return c.json({ error: 'webhook off' }, 503)
+    const raw = await c.req.text()
+    if (!verifyStripe(raw, c.req.header('Stripe-Signature'), webhooks.stripeSecret, Date.now() / 1000)) return c.json({ error: 'bad signature' }, 401)
+    const paid = stripeDonation(JSON.parse(raw), webhooks.stripePaymentLink)
+    if (paid) await supporters.paid(paid)
+    return c.json({ received: true })
+  })
+
+  // AbacatePay signs the Standard Webhooks way since 01/10/2026; webhooks made before still send the URL secret and the public-key HMAC.
+  app.post('/webhooks/abacatepay', hookBody, async (c) => {
+    const secret = webhooks.abacatePaySecret
+    if (!secret) return c.json({ error: 'webhook off' }, 503)
+    const raw = await c.req.text()
+    const standard = { id: c.req.header('webhook-id'), timestamp: c.req.header('webhook-timestamp'), signature: c.req.header('webhook-signature') }
+    const ok = standard.signature
+      ? verifyStandard(raw, standard, secret, Date.now() / 1000)
+      : c.req.query('webhookSecret') === secret && verifyAbacate(raw, c.req.header('X-Webhook-Signature'))
+    if (!ok) return c.json({ error: 'bad signature' }, 401)
+    const paid = abacateDonation(JSON.parse(raw))
+    if (paid) await supporters.paid(paid)
+    return c.json({ received: true })
+  })
+
+  app.get('/me/supporter', auth, async (c) => c.json(await supporters.mine(c.var.userId)))
+
+  app.put('/me/supporter', auth, smallBody, async (c) => {
+    const body = await json(c)
+    if (!isRecord(body) || typeof body.public !== 'boolean') return c.json({ error: 'expected { public }' }, 400)
+    await supporters.setPublic(c.var.userId, body.public)
+    return c.json(await supporters.mine(c.var.userId))
+  })
+
+  app.get('/supporters', async (c) => {
+    c.header('Cache-Control', 'public, max-age=60')
+    return c.json({ supporters: await supporters.wall() })
+  })
+
+  app.get('/poll', async (c) => c.json(await supporters.poll()))
+
+  app.put('/poll', auth, smallBody, async (c) => {
+    const body = await json(c)
+    const choice = isRecord(body) && isPollOption(body.choice) ? body.choice : null
+    if (!choice) return c.json({ error: 'expected { choice }' }, 400)
+    if (!(await supporters.vote(c.var.userId, choice))) return c.json({ error: 'supporters only' }, 403)
+    return c.json(await supporters.poll())
   })
 
   app.onError((err, c) => {

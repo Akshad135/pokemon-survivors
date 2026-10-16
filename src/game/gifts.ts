@@ -7,6 +7,8 @@ import { EGG_TIER_IDS, EGG_TIERS, EGGS, grantEgg, type EggTier, type Hatch } fro
 import type { Save } from './meta'
 import { isRecord, wholeNumber } from './parse'
 import { mergeRibbons, parseRibbon, type Ribbon } from './ribbons'
+import { isSupporterTier, type SupporterTier } from './supporters'
+import { grantShinyPick } from './shinyPicks'
 import { equipStyle, grantStyle, type StyleSave } from './style'
 
 /**
@@ -30,11 +32,13 @@ export type GiftContent =
   | { kind: 'shinyHatch'; family: HatchlingId }
   /** A Desafio do dia's ribbon (`game/ribbons.ts`), with the day and the place. */
   | { kind: 'ribbon'; ribbon: Ribbon }
+  /** A shiny of the player's choice, picked later (`game/shinyPicks.ts`): the supporters' thank-you. */
+  | { kind: 'shinyPick' }
 
 export type GiftKind = GiftContent['kind']
 
-/** Why it came: an invite's welcome (from the inviter's handle), or friends brought. */
-export type GiftReason = { kind: 'welcome'; from: string | null } | { kind: 'friends'; count: number }
+/** Why it came: an invite's welcome (from the inviter's handle), friends brought, or a donation (`game/supporters.ts`). */
+export type GiftReason = { kind: 'welcome'; from: string | null } | { kind: 'friends'; count: number } | { kind: 'support'; tier: SupporterTier }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
 
@@ -77,6 +81,8 @@ export const parseGiftContent = (v: unknown): GiftContent | null => {
       const ribbon = parseRibbon(v.ribbon)
       return ribbon ? { kind: 'ribbon', ribbon } : null
     }
+    case 'shinyPick':
+      return { kind: 'shinyPick' }
     default:
       return null
   }
@@ -86,6 +92,7 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (!isRecord(v)) return null
   if (v.kind === 'welcome') return { kind: 'welcome', from: parseHandle(v.from) }
   if (v.kind === 'friends') return { kind: 'friends', count: wholeNumber(v.count) }
+  if (v.kind === 'support' && isSupporterTier(v.tier)) return { kind: 'support', tier: v.tier }
   return null
 }
 
@@ -128,8 +135,12 @@ const wear = (style: StyleSave, ref: StyleRef): StyleSave => {
   return ref.slot === 'frame' ? put(ref.slot, ref.id) : ref.slot === 'background' ? put(ref.slot, ref.id) : put(ref.slot, ref.id)
 }
 
-/** The content on the save, with the hatch to show if it was one. Titles and styles are worn right away; a ribbon joins the day's. */
-const give = (save: Save, content: GiftContent): { save: Save; hatch: Hatch | null } => {
+/**
+ * The content on the save, with the hatch to show if it was one. Titles and
+ * styles are worn right away; a ribbon joins the day's; a shiny pick leaves
+ * its ticket (under the gift's `id`) for the player to spend.
+ */
+const give = (save: Save, content: GiftContent, id: string): { save: Save; hatch: Hatch | null } => {
   switch (content.kind) {
     case 'egg':
       return { save: grantEgg(save, content.tier).save, hatch: null }
@@ -143,6 +154,8 @@ const give = (save: Save, content: GiftContent): { save: Save; hatch: Hatch | nu
       return shinyHatch(save, content.family)
     case 'ribbon':
       return { save: { ...save, ribbons: mergeRibbons(save.ribbons, [content.ribbon]) }, hatch: null }
+    case 'shinyPick':
+      return { save: grantShinyPick(save, id), hatch: null }
   }
 }
 
@@ -150,7 +163,7 @@ const give = (save: Save, content: GiftContent): { save: Save; hatch: Hatch | nu
 export const applyGift = (save: Save, gift: Gift): GiftOutcome => {
   if (save.gifts.includes(gift.id)) return { status: 'claimed' }
   if (gift.content.kind === 'egg' && save.eggs.length >= EGGS.slots) return { status: 'wait' }
-  const given = give(save, gift.content)
+  const given = give(save, gift.content, gift.id)
   return { status: 'applied', save: { ...given.save, gifts: [...given.save.gifts, gift.id] }, hatch: given.hatch }
 }
 
