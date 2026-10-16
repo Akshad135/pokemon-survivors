@@ -1817,6 +1817,8 @@ button {
  */
 .toasts {
   position: absolute;
+  /* Above the screens, whichever was built last (the title is rebuilt under news already showing). */
+  z-index: 2;
   left: 50%;
   top: calc(126px + var(--safe-t));
   max-height: calc(50% - 126px - var(--safe-t) - 16 * var(--px));
@@ -2922,6 +2924,7 @@ button {
 
 .banner {
   position: absolute;
+  z-index: 2;
   left: 50%;
   top: 28%;
   transform: translateX(-50%);
@@ -2943,6 +2946,11 @@ button {
 
 .banner.out {
   opacity: 0;
+}
+
+.banner.dismissible {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .banner b {
@@ -2985,6 +2993,17 @@ button {
 .gift-text small {
   font-size: 7px;
   color: #c04890;
+}
+
+/* Gifts that came together share one banner, grouped by why they came. */
+.gift-group + .gift-group {
+  margin-top: 4px;
+}
+
+.gift-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .gift-line {

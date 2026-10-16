@@ -49,7 +49,7 @@ import { rosterSchedule, type Roster } from './game/roster'
 import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
-import { canWalkWith, isSupporter, TIER_GIFTS, type SupporterTier } from './game/supporters'
+import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Phase } from './game/types'
@@ -1026,8 +1026,9 @@ const frame = (now: number) => {
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
     ctx.fillRect(0, 0, view.w, view.h)
-    // Menu news (what a quit run completed) shares the run's queue.
-    tickToasts(ui, dt, false)
+    // Menu news (what a quit run completed) shares the run's queue. Banners (Mystery Gifts) wait
+    // for the bare title: over the starter select or a dialog they'd cover what the player is reading.
+    tickToasts(ui, dt, false, !ui.querySelector(':scope > .title-home:not(.hidden)') || ui.querySelector(':scope > .screen.dim:not(.hidden)') !== null)
   }
   screen?.tick?.(t)
   playTheme(themeFor(run))
@@ -1188,11 +1189,15 @@ const devGifts = {
     return receiveGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
   /**
-   * Lands the thank-you of a supporter tier (`supporter` or `gold`) as Mystery Gifts, as if a donation was credited:
-   * the title, the frame and a shiny ticket, or the gold background and wallpaper.
+   * Lands a supporter's thank-you as Mystery Gifts in one sync, as if a donation was credited: `supporter`
+   * brings the title, the frame and a shiny ticket; `gold` every tier up to gold (a first donation of R$ 50).
    */
   supporter: (tier: SupporterTier = 'supporter') =>
-    receiveGifts(TIER_GIFTS[tier].map((content, i) => ({ id: `dev-support-${tier}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier } }))),
+    receiveGifts(
+      SUPPORTER_TIERS.slice(0, SUPPORTER_TIERS.indexOf(tier) + 1).flatMap((t) =>
+        TIER_GIFTS[t].map((content, i) => ({ id: `dev-support-${t}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier: t } as const })),
+      ),
+    ),
   /** Takes `id` along as the companion (`shiny` if owned so); no argument walks alone. Shows from the next run. */
   companion: (id?: PlayableId, shiny = false) => updateSave((s) => ({ ...s, companion: id ? { id, shiny } : null })),
   /** Lands as a guest invited by `handle` (shown as `name`): the title shows the invite banner. */

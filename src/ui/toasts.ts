@@ -47,9 +47,22 @@ export const toast = (root: HTMLElement, content: HTMLElement | string, ms = 260
   if (old?.shown) old.item.replaceWith(el)
 }
 
-/** Big centered announcement (legendary entrances, a new area). Wraps on small screens. */
-export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600) => {
-  pushToast(stackOf(root).banners, h('div', { class: 'banner box' }, content), ms / 1000)
+/**
+ * Big centered announcement (legendary entrances, a new area). Wraps on
+ * small screens. A `dismissible` one (a Mystery Gift's, which lists several
+ * lines) goes away on a tap instead of letting it through to what's under it.
+ */
+export const banner = (root: HTMLElement, content: HTMLElement | string, ms = 3600, dismissible = false) => {
+  const queue = stackOf(root).banners
+  const el = h('div', { class: dismissible ? 'banner box dismissible' : 'banner box' }, content)
+  if (dismissible) {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const q = queue.find((b) => b.item === el)
+      if (q) q.left = 0
+    })
+  }
+  pushToast(queue, el, ms / 1000)
 }
 
 /** Steps one line of news, fading out what's done and placing what shows in `into`. */
@@ -62,14 +75,18 @@ const advance = (queue: QueuedToast<HTMLElement>[], dt: number, max: number, int
   into.append(...shown)
 }
 
-/** Advances the news by `dt` seconds. `held` (a menu over the run) hides it with its clocks stopped. */
-export const tickToasts = (root: HTMLElement, dt: number, held: boolean) => {
+/**
+ * Advances the news by `dt` seconds. `held` (a menu over the run) hides it
+ * with its clocks stopped; `bannersHeld` does that to the banners alone (a
+ * dialog over the title menus: a banner would cover it), and the toasts go on.
+ */
+export const tickToasts = (root: HTMLElement, dt: number, held: boolean, bannersHeld = held) => {
   const stack = stacks.get(root)
   if (!stack) return
-  for (const b of stack.banners) if (b.shown) b.item.classList.toggle('held', held)
+  for (const b of stack.banners) if (b.shown) b.item.classList.toggle('held', bannersHeld)
   if (held) return stack.host.classList.add('held')
-  advance(stack.banners, dt, 1, root)
-  const bannerUp = stack.banners.some((b) => b.shown)
+  if (!bannersHeld) advance(stack.banners, dt, 1, root)
+  const bannerUp = !bannersHeld && stack.banners.some((b) => b.shown)
   stack.host.classList.toggle('held', bannerUp)
   if (bannerUp) return
   // One newcomer per frame at most, so each one is measured against the room left.
