@@ -76,7 +76,7 @@ export const pt = {
     settings: 'Ajustes',
     legal: 'Legal e créditos',
     fanGame: 'Fan game não oficial',
-    /** Title footer link to the Ko-fi page. */
+    /** Ko-fi chip on the title and the starter select. */
     support: 'Apoie o projeto',
     back: 'Título',
   },
