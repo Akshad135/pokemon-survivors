@@ -19,6 +19,11 @@ describe('parseSettings', () => {
     expect(parseSettings(JSON.stringify({ damageNumbers: 'lots' })).damageNumbers).toBe(DEFAULT_SETTINGS.damageNumbers)
   })
 
+  it('reads the joystick mode, floating unless it says fixed', () => {
+    expect(parseSettings(JSON.stringify({ joystick: 'fixed' })).joystick).toBe('fixed')
+    expect(parseSettings(JSON.stringify({ joystick: 'left' })).joystick).toBe('floating')
+  })
+
   it('clamps volumes to 0..1', () => {
     expect(parseSettings(JSON.stringify({ musicVolume: 4, sfxVolume: -1 }))).toMatchObject({ musicVolume: 1, sfxVolume: 0 })
   })

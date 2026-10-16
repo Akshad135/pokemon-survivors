@@ -1756,6 +1756,43 @@ button {
   color: #8850e0;
 }
 
+/* ---------- Fixed joystick ---------- */
+
+/*
+ * Where the fixed touch joystick sits (Settings → Controls): bottom-left, clear
+ * of the safe area and the screen edge. The canvas draws the stick centered on
+ * `.stick-anchor`, so its size is the base's diameter (2 × STICK_RADIUS in
+ * engine/input.ts). The status box steps aside while the mode is on.
+ */
+:root {
+  --stick-size: 104px;
+  --stick-left: max(28px, calc(var(--safe-l) + 12px));
+  --stick-bottom: max(32px, calc(var(--safe-b) + 16px));
+}
+
+.stick-anchor {
+  position: fixed;
+  left: var(--stick-left);
+  bottom: var(--stick-bottom);
+  width: var(--stick-size);
+  height: var(--stick-size);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Portrait and desktop: the status box goes above the stick. */
+[data-stick='fixed'] .status {
+  bottom: calc(var(--stick-bottom) + var(--stick-size) + 16px);
+}
+
+/* Landscape phones have no height to spare: it goes to the stick's right instead. */
+@media (max-height: 500px) {
+  [data-stick='fixed'] .status {
+    left: calc(var(--stick-left) + var(--stick-size) + 20px);
+    bottom: max(8px, var(--safe-b));
+  }
+}
+
 /* ---------- Text box & toasts ---------- */
 
 .textbox {
@@ -2903,10 +2940,15 @@ button {
   width: min(460px, 94vw);
 }
 
-.settings-list {
+.settings-list,
+.settings-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.settings-list {
+  gap: 12px;
 }
 
 .setting-row {
@@ -2989,6 +3031,14 @@ button {
   color: #e83838;
 }
 
+.settings-section {
+  padding: 0 4px 4px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #6878a8;
+  border-bottom: 2px solid #d8d8e8;
+}
+
 @media (max-width: 600px) {
   .setting-row {
     min-height: 44px;
@@ -2997,10 +3047,21 @@ button {
   }
 }
 
-/* Landscape phones: tighter rows so the whole dialog fits without scrolling. */
+/* Landscape phones: tighter rows, and each section in its own column, so the whole dialog fits without scrolling. */
 @media (max-height: 500px) {
+  .dialog.settings {
+    width: min(820px, 94vw);
+  }
+  /* The browser balances the sections across both columns by height. */
   .settings-list {
+    display: block;
+    columns: 2;
+    column-gap: 12px;
+  }
+  .settings-group {
+    break-inside: avoid;
     gap: 4px;
+    padding-bottom: 6px;
   }
   .setting-row {
     min-height: 36px;
@@ -3008,6 +3069,9 @@ button {
   }
   .settings .hint {
     display: none;
+  }
+  .settings-section {
+    padding-bottom: 2px;
   }
   .slider {
     flex: 1 1 160px;

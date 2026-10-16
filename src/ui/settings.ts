@@ -1,5 +1,5 @@
 import { playSfx, setMix } from '../engine/audio'
-import type { Input } from '../engine/input'
+import { STICK_MODES, type Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALES, nextLocale, setLocale, t } from '../i18n'
 import { h, later } from './dom'
@@ -9,8 +9,14 @@ import { hint, menu, type Screen } from './screens'
 
 /* ---------------- Live settings ---------------- */
 
+/** Pushes settings out to where they act: the audio mix, and `data-stick` for the HUD's CSS (the status box moves off the fixed stick). */
+const apply = (s: Settings) => {
+  setMix(s)
+  document.documentElement.dataset.stick = s.joystick
+}
+
 let current = loadSettings()
-setMix(current)
+apply(current)
 
 /** Redraws the open settings screen when a change comes from elsewhere (the M key). */
 let refresh: (() => void) | null = null
@@ -22,7 +28,7 @@ export const settings = (): Settings => current
 export const updateSettings = (patch: Partial<Settings>) => {
   current = { ...current, ...patch }
   writeSettings(current)
-  setMix(current)
+  apply(current)
   refresh?.()
 }
 
@@ -92,14 +98,15 @@ const toggle = (label: string, read: (s: Settings) => boolean, write: (on: boole
   }
 }
 
-/** `◀ Reduced ▶`: ← → step through the damage numbers modes, Enter or a tap goes to the next one (wrapping). */
-const damageRow = (): Row => {
+/** `◀ Reduced ▶`: ← → step through `options`, Enter or a tap goes to the next one (wrapping). */
+const choiceRow = <K extends keyof Settings>(label: string, key: K, options: readonly Settings[K][], name: (v: Settings[K]) => string): Row => {
   const value = h('b', { class: 'setting-choice' })
-  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().settings.damageNumbers), value)
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, label), value)
   const step = (dir: -1 | 1) => {
-    const i = DAMAGE_NUMBERS.indexOf(current.damageNumbers)
-    const n = DAMAGE_NUMBERS.length
-    updateSettings({ damageNumbers: DAMAGE_NUMBERS[(i + dir + n) % n]! })
+    const n = options.length
+    const patch: Partial<Settings> = {}
+    patch[key] = options[(options.indexOf(current[key]) + dir + n) % n]
+    updateSettings(patch)
     playSfx('select')
   }
   return {
@@ -107,7 +114,7 @@ const damageRow = (): Row => {
     adjust: step,
     activate: () => step(1),
     sync: () => {
-      value.textContent = `◀ ${t().settings.damageModes[current.damageNumbers]} ▶`
+      value.textContent = `◀ ${name(current[key])} ▶`
     },
   }
 }
@@ -128,9 +135,19 @@ const backRow = (label: string, close: () => void): Row => {
   return { el, adjust: () => {}, activate: close, sync: () => {} }
 }
 
+/** A group of rows under a heading. */
+type Section = { title: string; rows: Row[] }
+
+/** The Controls section: how the player moves. */
+const controlRows = (): Row[] => {
+  const m = t().settings
+  return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode])]
+}
+
 /**
- * Settings dialog: music and effects volume, mute, damage numbers, screen
- * shake and language. Changes apply and persist immediately.
+ * Settings dialog in three sections: Audio (music and effects volume, mute),
+ * Game (damage numbers, screen shake, language) and Controls (touch joystick).
+ * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
  * input). The Back button, Esc or Backspace (gamepad B) close it: it removes itself, then calls
@@ -155,25 +172,40 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
   /** `opening` plays the pop-in; rebuilds after a language switch don't. */
   const build = (focus: number, opening: boolean) => {
     const m = t().settings
-    rows = [
-      slider(m.music, 'musicVolume'),
-      slider(m.sfx, 'sfxVolume', () => playSfx('pickup', 90)),
-      toggle(m.sound, (s) => !s.muted, (on) => ({ muted: !on })),
-      damageRow(),
-      toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
-      languageRow(switchLanguage),
-      backRow(m.back, close),
+    const sections: Section[] = [
+      {
+        title: m.audio,
+        rows: [
+          slider(m.music, 'musicVolume'),
+          slider(m.sfx, 'sfxVolume', () => playSfx('pickup', 90)),
+          toggle(m.sound, (s) => !s.muted, (on) => ({ muted: !on })),
+        ],
+      },
+      {
+        title: m.game,
+        rows: [
+          choiceRow(m.damageNumbers, 'damageNumbers', DAMAGE_NUMBERS, (mode) => m.damageModes[mode]),
+          toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
+          languageRow(switchLanguage),
+        ],
+      },
+      { title: m.controls, rows: controlRows() },
     ]
+    const back = backRow(m.back, close)
+    rows = [...sections.flatMap((s) => s.rows), back]
     nav?.off()
     nav = menu(input, rows.map((r) => r.el), (i) => rows[i]?.activate(), { initial: focus })
-    const back = rows.at(-1)!.el
     el.replaceChildren(
       h(
         'div',
         { class: opening ? 'dialog box pop settings' : 'dialog box settings' },
         h('div', { class: 'dialog-title' }, m.title),
-        h('div', { class: 'settings-list' }, ...rows.slice(0, -1).map((r) => r.el)),
-        h('div', { class: 'buttons' }, back),
+        h(
+          'div',
+          { class: 'settings-list' },
+          ...sections.map((s) => h('div', { class: 'settings-group' }, h('div', { class: 'settings-section' }, s.title), ...s.rows.map((r) => r.el))),
+        ),
+        h('div', { class: 'buttons' }, back.el),
         hint(m.hintKeys, m.hintTouch),
       ),
     )

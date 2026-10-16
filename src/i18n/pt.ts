@@ -145,12 +145,17 @@ export const pt = {
 
   settings: {
     title: 'AJUSTES',
+    audio: 'Áudio',
+    game: 'Jogo',
     music: 'Música',
     sfx: 'Efeitos',
     sound: 'Som',
     damageNumbers: 'Números de dano',
     damageModes: { all: 'Todos', reduced: 'Reduzidos', off: 'OFF' },
     screenShake: 'Tremor de tela',
+    controls: 'Controles',
+    joystick: 'Joystick',
+    joystickModes: { floating: 'Segue o dedo', fixed: 'Fixo' },
     on: 'ON',
     off: 'OFF',
     back: 'Voltar',
