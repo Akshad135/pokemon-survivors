@@ -22,6 +22,7 @@ import type { MoveId } from './moves'
 import type { MapEventNotice, MapEventsState } from './mapEvents'
 import type { MegaState } from './mega'
 import type { Prop } from './props'
+import type { TerrainState } from './terrain'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
 import type { SpecialState } from './special'
@@ -132,10 +133,13 @@ export type Motion =
   | { kind: 'static' }
   /** Carries the player along (vx, vy) for `left` more seconds (Quick Attack); the hitbox rides at body height. */
   | { kind: 'lunge'; vx: number; vy: number; left: number }
+  /** Flies along (vx, vy) losing `drag` of its speed per second until it stops and stays put (Ice Shard). */
+  | { kind: 'drift'; vx: number; vy: number; drag: number }
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
   | 'fist' | 'steel' | 'arrow' | 'shuriken' | 'jaws' | 'pyro' | 'psy' | 'quake' | 'drumRoots' | 'heart' | 'note' | 'blade' | 'shell'
+  | 'iceShard' | 'rockTomb' | 'pin' | 'dragonBreath'
   /** Special attacks (`special.ts`), drawn by `render/specialFx.ts`. */
   | 'blitz' | 'fireTrail' | 'blast' | 'beam' | 'roots' | 'nova' | 'bolt' | 'meteor' | 'orb' | 'wave' | 'puddle'
   /** Chain dash: the capsule along the path, the slash at the landing and the player's afterimages (drawn by `render/draw.ts`). */
@@ -152,6 +156,7 @@ export type DamageSource = MoveId | 'special'
 export type EvolvedVisual =
   | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
   | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
+  | 'blizzard' | 'stoneEdge' | 'megahorn' | 'outrage'
 
 /** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
 export type TacticVisual =
@@ -375,7 +380,7 @@ export type Game = {
   evolution: Evolution | null
   /** This run's wild cast, drawn at the start (`game/roster.ts`), with the day's outbreak in every stage. */
   roster: Roster
-  /** The day's outbreak species, or null (`game/outbreak.ts`): its spawns roll `OUTBREAK.shinyOdds`. */
+  /** The day's outbreak species, or null (`game/outbreak.ts`): its kills count toward missions (`countKill`). */
   outbreak: EnemyId | null
   /** Multiplier on wild shiny odds: Shiny Charm ranks and a Lure (`shinyBoost`). */
   shinyBoost: number
@@ -386,6 +391,8 @@ export type Game = {
   props: Prop[]
   /** World cells whose prop was already broken, so it never respawns. */
   brokenProps: Set<number>
+  /** Rocks, trees, mountains, towers and lakes on the map (`game/terrain.ts`). */
+  terrain: TerrainState
   buffs: Buff[]
   /** Points of interest placed by the event director (`mapEvents.ts`). */
   mapEvents: MapEventsState

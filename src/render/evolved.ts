@@ -1,4 +1,5 @@
-import { blitCentered, blitRotated, ellipse, ring } from '../engine/pixelart'
+import { blitCentered, blitRotated, ellipse, ring, type PixelSprite } from '../engine/pixelart'
+import { flying } from '../game/attacks'
 import type { Attack } from '../game/types'
 import { FX } from './art'
 import { bolt, dashedRing } from './strokes'
@@ -12,11 +13,49 @@ type Ctx = CanvasRenderingContext2D
 
 const fadeOut = (a: Attack, window: number) => Math.max(0, Math.min(1, (a.ttl - a.age) / window))
 
+/** Frost patch under a shard that stuck in the ground (Ice Shard, Blizzard). */
+export const drawFrost = (ctx: Ctx, a: Attack, r: number) => {
+  if (flying(a.motion)) return
+  ctx.globalAlpha = fadeOut(a, 0.3)
+  blitCentered(ctx, ellipse(Math.round(r + 3), Math.round((r + 3) * 0.45), 'rgba(200,232,248,0.45)'), a.x, a.y + 3)
+  ctx.globalAlpha = 1
+}
+
+/** A shard: pointing its way while it flies, then a cluster of icicles stuck in the ground. */
+export const drawShard = (ctx: Ctx, a: Attack, shard: PixelSprite, icicles: PixelSprite) => {
+  const m = a.motion
+  if (m.kind === 'drift' && flying(m)) return blitRotated(ctx, shard, a.x, a.y, Math.atan2(m.vy, m.vx))
+  ctx.globalAlpha = fadeOut(a, 0.3)
+  blitCentered(ctx, icicles, a.x, a.y - 1)
+  ctx.globalAlpha = 1
+}
+
+/** A breath puff: a growing ball of fire in `colors` (rim to core), flickering (Dragon Breath, Outrage). */
+export const drawPuff = (ctx: Ctx, a: Attack, t: number, colors: readonly [string, string, string, string]) => {
+  if (a.shape.kind !== 'circle') return
+  const r = a.shape.r
+  const flick = Math.floor((t + a.id) * 20) % 2
+  ctx.globalAlpha = fadeOut(a, 0.2)
+  blitCentered(ctx, ellipse(Math.round(r), Math.round(r), colors[0]), a.x, a.y)
+  blitCentered(ctx, ellipse(Math.round(r * 0.75), Math.round(r * 0.75), colors[1]), a.x, a.y - flick)
+  blitCentered(ctx, ellipse(Math.round(r * 0.48), Math.round(r * 0.48), colors[2]), a.x, a.y - 1)
+  blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.2)), Math.max(1, Math.round(r * 0.2)), colors[3]), a.x, a.y - 1)
+  ctx.globalAlpha = 1
+}
+
 /** Ground layer (under Pokémon): puddles and strike warnings. */
 export const drawEvolvedGround = (ctx: Ctx, a: Attack, t: number) => {
   if (a.shape.kind !== 'circle') return
   const r = a.shape.r
   switch (a.visual) {
+    case 'blizzard':
+      return drawFrost(ctx, a, r)
+    case 'stoneEdge': {
+      ctx.globalAlpha = fadeOut(a, 0.2)
+      blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.round(r * 0.35), 'rgba(40,28,16,0.45)'), a.x, a.y + 1)
+      ctx.globalAlpha = 1
+      return
+    }
     case 'gunk': {
       if (a.age < a.activeFrom) return
       const grow = Math.min(1, (a.age - a.activeFrom) / 0.12)
@@ -145,6 +184,28 @@ export const drawEvolvedAttack = (ctx: Ctx, a: Attack, t: number) => {
       blitCentered(ctx, ellipse(4, 3, '#6a3a78'), x - 1, y - 1)
       return blitCentered(ctx, ellipse(1, 1, '#88a038'), x + 1, y - 1)
     }
+    case 'blizzard':
+      return drawShard(ctx, a, FX.blizzardShard(), FX.blizzardIcicles())
+    case 'stoneEdge': {
+      // The pillar shoots up out of the ground, holds, then sinks back.
+      const sprite = FX.pillar()
+      const rise = Math.max(0, Math.min(1, a.age / 0.06, (a.ttl - a.age) / 0.2))
+      const h = Math.round(sprite.height * rise)
+      if (h <= 0) return
+      const scale = a.shape.kind === 'circle' ? Math.max(1, Math.round(a.shape.r / 10)) : 1
+      const x = Math.round(a.x - (sprite.width * scale) / 2 + (a.flip ? 1 : -1))
+      const y = Math.round(a.y + 2 - h * scale)
+      ctx.drawImage(sprite, 0, sprite.height - h, sprite.width, h, x, y, sprite.width * scale, h * scale)
+      if (a.age < 0.12) dashedRing(ctx, a.x, a.y, 4 + a.age * 60, a.id, ['#d8c080', '#a08048'], 0.6, 0.5)
+      return
+    }
+    case 'megahorn': {
+      const angle = m.kind === 'homing' ? Math.atan2(m.vy, m.vx) : 0
+      const scale = a.shape.kind === 'circle' ? Math.max(1, Math.round(a.shape.r / 7)) : 1
+      return blitRotated(ctx, FX.horn(), a.x, a.y, angle, scale)
+    }
+    case 'outrage':
+      return drawPuff(ctx, a, t, ['rgba(120,40,200,0.5)', 'rgba(224,72,96,0.85)', '#f8a058', '#fff0d0'])
     case 'hurricane': {
       if (a.shape.kind !== 'circle') return
       const r = a.shape.r

@@ -10,21 +10,23 @@ import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
 import { isAsleep } from '../game/status'
+import { inSolid, overTerrain, type Solid } from '../game/terrain'
 import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
-import { drawEvolvedAttack, drawEvolvedGround } from './evolved'
+import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
-import { drawArena, drawRiftArrow, drawRiftPortal } from './rift'
+import { drawArena, drawRiftArrow, drawRiftPortal, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawStatusBadge, statusTint } from './status'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather } from './weather'
+import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
 import { drawGround, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
 
@@ -89,6 +91,22 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
         ctx.fillStyle = '#78c850'
         ctx.fillRect(x - 1, y - 4, 3, 1)
       }
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'iceShard':
+      return drawFrost(ctx, a, r)
+    case 'rockTomb': {
+      // A growing shadow (and a blinking rim) warns where the boulder lands; then the dust ring spreads.
+      if (a.age < a.activeFrom) {
+        const k = 0.4 + 0.6 * (a.age / a.activeFrom)
+        blitCentered(ctx, ellipse(Math.round(r * k), Math.max(1, Math.round(r * 0.5 * k)), 'rgba(24,16,8,0.4)'), a.x, a.y)
+        if (Math.floor(a.age * 24) % 2 === 0) dashedRing(ctx, a.x, a.y, r, 0, ['#d8c080'], 0.9, 0.5)
+        return
+      }
+      const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
+      ctx.globalAlpha = Math.max(0, 1 - e)
+      dashedRing(ctx, a.x, a.y, r * (0.7 + e * 0.6), a.id, ['#685028', '#a08048', '#d8c080'], 0.7, 0.5)
       ctx.globalAlpha = 1
       return
     }
@@ -256,6 +274,21 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = 1
       return
     }
+    case 'iceShard':
+      return drawShard(ctx, a, FX.iceShard(), FX.icicles())
+    case 'rockTomb': {
+      // Falls from above, speeding up, then sits cracked where it landed until it crumbles.
+      const k = Math.min(1, a.age / a.activeFrom)
+      const drop = Math.round(80 * (1 - k * k))
+      ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.25)
+      blitCentered(ctx, FX.boulder(), a.x + (a.flip ? 1 : 0), a.y - 5 - drop)
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'pin':
+      return blitRotated(ctx, FX.pin(), a.x, a.y, m.kind === 'homing' ? Math.atan2(m.vy, m.vx) : 0)
+    case 'dragonBreath':
+      return drawPuff(ctx, a, t, ['rgba(72,32,168,0.55)', 'rgba(112,56,248,0.8)', '#a070f8', '#f0e0ff'])
     case 'whirlpool':
     case 'quake':
     case 'drumRoots':
@@ -281,6 +314,7 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   dragon: ['#a070f8', 'rgba(112,56,248,0.3)'],
   steel: ['#c8e0f8', 'rgba(104,136,200,0.3)'],
   aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
+  grass: ['#78d850', 'rgba(112,208,72,0.28)'],
   judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
 }
 
@@ -318,7 +352,8 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     const y = h.y - 6
     switch (h.visual) {
       case 'ice':
-        return blitRotated(ctx, HAZARD_FX.ice(), h.x, y, Math.atan2(h.vy, h.vx))
+      case 'grass':
+        return blitRotated(ctx, HAZARD_FX[h.visual](), h.x, y, Math.atan2(h.vy, h.vx))
       case 'fire':
         return blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
       case 'rock':
@@ -568,7 +603,9 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 /* ---------------- Frame ---------------- */
 
-const drawables: Array<Enemy | 'player'> = []
+type Drawable = Enemy | 'player' | Solid
+const drawables: Drawable[] = []
+const isSolid = (d: Drawable): d is Solid => d !== 'player' && 'foot' in d
 
 /* ---------------- Biome ---------------- */
 
@@ -602,15 +639,21 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   else drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
   const upcoming = biomeAt(g.time + BIOME_WARMUP)
   if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
+  // One terrain sprite per frame at most: this biome's first, then the next one's.
+  if (g.rift.arena) warmArena(g.rift.arena)
+  else if (!warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
+  // Scenery changes outfit halfway through the dissolve, like the breakables.
+  const look = fade && fade.k < 0.5 ? fade.from : g.biome.id
   ctx.save()
   ctx.translate(-camX, -camY)
 
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
+  drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
-  drawProps(ctx, g, t, fade && fade.k < 0.5 ? fade.from : g.biome.id)
+  drawProps(ctx, g, t, look)
   // Map events wait outside with the rest of the world while the player is in an arena.
   if (!g.rift.arena) drawMapEvents(ctx, g, t)
   if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
@@ -622,22 +665,28 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawables.length = 0
   for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
   drawables.push('player')
-  // Mid-jump leapers sort last so they fly over the horde.
-  const depth = (d: Enemy | 'player') => (d === 'player' ? g.player.y : isAirborne(d) ? d.y + 4096 : d.y)
+  solidsInView(g, camX, camY, w, h, drawables)
+  // Mid-jump leapers sort last so they fly over the horde, and so does a flyer over a rock or a mountain.
+  const depth = (d: Drawable) =>
+    d === 'player' ? g.player.y : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
   drawables.sort((a, b) => depth(a) - depth(b))
 
   for (const d of drawables) {
-    if (d === 'player') shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
-    else if (d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
+    if (d === 'player') {
+      shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
+      drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
+    }
+    else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
   }
   drawAfterimages(ctx, g)
   for (const d of drawables) {
     if (d === 'player') drawPlayer(ctx, g)
+    else if (isSolid(d)) drawSolid(ctx, g, d, look)
     else drawEnemy(ctx, d, g.time, t)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {
-    if (d !== 'player' && d.boss && d.dying < 0) {
+    if (d !== 'player' && !isSolid(d) && d.boss && d.dying < 0) {
       const def: EnemyDef = ENEMIES[d.kind]
       drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
     }

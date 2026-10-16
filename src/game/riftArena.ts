@@ -1,6 +1,8 @@
 import { retain } from '../engine/math'
+import { ARENA_FEET, ARENA_LAYOUTS, type Pt } from '../data/arenas'
 import { RIFT, type RiftLegend } from '../data/rifts'
-import { healPlayer } from './combat'
+import { floorAt, holesAt, keepOn, onFloor, stepsAt } from './arenaFloor'
+import { healPlayer, hurtPlayer } from './combat'
 import { dropItem } from './consumables'
 import { burst, floatText } from './effects'
 import { spawnEnemy } from './enemies'
@@ -8,13 +10,14 @@ import { dropMegaStones } from './mega'
 import { dropCoins, dropPickup } from './pickups'
 import { riftLoot, riftScale, type RiftArena } from './rift'
 import { rollShiny } from './shiny'
+import { groundAt, playerTypes } from './terrain'
 import type { Enemy, Game } from './types'
-import * as dm from '../engine/dmath'
 
 /**
- * The arena behind a rift: a walled floor where the player duels one
- * legendary. Entering sets the world aside (horde, hazards, pickups, props)
- * and leaving puts it back exactly as it was. The run clock keeps going.
+ * The arena behind a rift: a floor with its own shape, scenery and ground
+ * rule (`data/arenas.ts`) where the player duels one legendary. Entering sets
+ * the world aside (horde, hazards, pickups, props) and leaving puts it back
+ * exactly as it was. The run clock keeps going.
  */
 
 /** Seconds of invulnerability when stepping in or out, so nobody lands on a hit. */
@@ -23,11 +26,14 @@ const ARRIVAL_IFRAMES = 1.5
 const EXIT_CLEARANCE = 64
 /** A weather change that came due in the arena waits this long after the way out, so it doesn't land on the loot's news. */
 const EXIT_WEATHER_DELAY = 6
+/** Lava burns this share of max HP per touch (every half second, the player's i-frames). Fire types walk on it. */
+const LAVA_BURN = 0.07
 
 /** Sends the player into `legend`'s arena, centered where the portal was. */
 export const enterArena = (g: Game, legend: RiftLegend, x: number, y: number) => {
   const shiny = rollShiny(g.rng, RIFT.shinyOdds)
-  const r = RIFT.arenaRadius
+  const layout = ARENA_LAYOUTS[legend]
+  const at = ([dx, dy]: Pt) => ({ x: x + dx, y: y + dy })
   const stash = { enemies: g.enemies, hazards: g.hazards, pickups: g.pickups, props: g.props, bossId: g.bossId }
   g.enemies = []
   g.hazards = []
@@ -36,7 +42,8 @@ export const enterArena = (g: Game, legend: RiftLegend, x: number, y: number) =>
   // Homing shots would keep chasing a target that is now set aside.
   for (const a of g.attacks) if (a.motion.kind === 'homing') a.motion.target = null
 
-  const boss = spawnEnemy(g, legend, x, y - r * 0.45)
+  const spawn = at(layout.boss)
+  const boss = spawnEnemy(g, legend, spawn.x, spawn.y)
   const scale = riftScale(g.time)
   boss.hp = boss.maxHp = Math.round(boss.maxHp * scale.hp)
   boss.damage *= scale.damage
@@ -45,12 +52,20 @@ export const enterArena = (g: Game, legend: RiftLegend, x: number, y: number) =>
   g.bossId = boss.id
 
   const p = g.player
-  p.x = x
-  p.y = y + r * 0.3
+  const start = at(layout.player)
+  p.x = start.x
+  p.y = start.y
   p.iframes = Math.max(p.iframes, ARRIVAL_IFRAMES)
   g.flash = 0.9
   g.shake = 9
-  g.rift.arena = { legend, shiny, x, y, r, left: RIFT.arenaTime, age: 0, bossId: boss.id, loot: null, stash }
+  const terrain = {
+    lake: null,
+    solids: layout.solids.map((s, i) => {
+      const foot = ARENA_FEET[s.piece]
+      return { kind: s.piece, x: x + s.x, y: y + s.y, variant: i, foot: [{ ...foot, x: x + s.x + foot.x, y: y + s.y + foot.y }] }
+    }),
+  }
+  g.rift.arena = { legend, shiny, x, y, left: RIFT.arenaTime, age: 0, bossId: boss.id, loot: null, stash, terrain }
   g.events.push({ kind: 'riftEnter', enemy: legend, shiny })
 }
 
@@ -88,14 +103,12 @@ export const exitArena = (g: Game, outcome: 'won' | 'collapse') => {
   g.events.push({ kind: 'riftExit', outcome })
 }
 
-const keepInside = (o: { x: number; y: number }, arena: RiftArena, max: number) => {
-  const dx = o.x - arena.x
-  const dy = o.y - arena.y
-  const d2 = dx * dx + dy * dy
-  if (d2 <= max * max) return
-  const d = Math.sqrt(d2)
-  o.x = arena.x + (dx / d) * max
-  o.y = arena.y + (dy / d) * max
+/** Keeps a circle on the arena's floor (world coordinates in, arena coordinates for the geometry). */
+const keepOnFloor = (o: { x: number; y: number }, arena: RiftArena, floor: Parameters<typeof keepOn>[0], holes: Parameters<typeof keepOn>[1], r: number) => {
+  const local = { x: o.x - arena.x, y: o.y - arena.y }
+  keepOn(floor, holes, local, r)
+  o.x = arena.x + local.x
+  o.y = arena.y + local.y
 }
 
 /** The legendary fell: drop the rift's loot, heal the player and start the short loot window. */
@@ -117,16 +130,30 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
   g.events.push({ kind: 'riftCleared', enemy: arena.legend, shiny: arena.shiny })
 }
 
-/** Keeps everyone inside the wall, runs the collapse timer and closes the arena after the loot window. */
+/**
+ * Runs the arena's ground rule (the tide rises, the edge crumbles), keeps
+ * everyone on the floor, burns whoever walks in lava, runs the collapse timer
+ * and closes the arena after the loot window.
+ */
 export const updateArena = (g: Game, dt: number) => {
   const arena = g.rift.arena
   if (!arena) return
+  const layout = ARENA_LAYOUTS[arena.legend]
+  const before = stepsAt(layout.tide, arena.age) + stepsAt(layout.crumble, arena.age)
   arena.age += dt
-  keepInside(g.player, arena, arena.r - g.player.radius)
-  for (const e of g.enemies) keepInside(e, arena, arena.r - e.radius)
-  // Shots break on the wall.
-  const wall = dm.sq(arena.r + 4)
-  retain(g.hazards, (h) => dm.sq(h.x - arena.x) + dm.sq(h.y - arena.y) < wall)
+  if (stepsAt(layout.tide, arena.age) + stepsAt(layout.crumble, arena.age) > before) {
+    g.shake = Math.max(g.shake, 5)
+    g.events.push({ kind: 'quake' })
+  }
+  const floor = floorAt(layout, stepsAt(layout.crumble, arena.age))
+  const p = g.player
+  // The player keeps to what's left of the floor; the legendary flies or swims over the rest.
+  keepOnFloor(p, arena, floor, holesAt(layout, stepsAt(layout.tide, arena.age)), p.radius)
+  const whole = floorAt(layout, 0)
+  for (const e of g.enemies) keepOnFloor(e, arena, whole, [], e.radius)
+  // Shots break on the edge.
+  retain(g.hazards, (h) => onFloor(whole, h.x - arena.x, h.y - arena.y, 4))
+  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'])
 
   if (arena.loot === null) {
     const boss = g.enemies.find((e) => e.id === arena.bossId)

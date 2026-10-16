@@ -18,6 +18,7 @@ import { awardEgg, dropCoins, dropPickup } from './pickups'
 import { touches } from './props'
 import { isAlive } from './queries'
 import { countNotice } from './tally'
+import { clearSpot } from './terrain'
 import type { Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -334,7 +335,10 @@ const direct = (g: Game) => {
   const kind = weightedPick(g.rng, choices)
   const taken = [...s.list, ...g.props]
   const spot = spawnSpot(g.rng, g.player.x, g.player.y, MAP_EVENTS[kind].spawn.distance, taken)
-  if (spot) spawnMapEvent(g, kind, spot.x, spot.y)
+  if (!spot) return
+  // Events stand on open ground, never in a lake or against a rock.
+  const open = clearSpot(g, spot, 18)
+  spawnMapEvent(g, kind, Math.round(open.x), Math.round(open.y))
 }
 
 /** Runs the director, every live event's interaction, and clears faded or far-away events. */

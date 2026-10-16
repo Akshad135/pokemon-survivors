@@ -35,6 +35,8 @@ import { dropMegaStones, grantStone, heldMega } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
+import { clearSpot, featureAt } from './game/terrain'
+import { TERRAIN, type SolidKind } from './data/terrain'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
@@ -1046,6 +1048,31 @@ const devEggs = {
   save: loadSave,
 }
 
+/**
+ * Dev: walks the player to the nearest piece of terrain of a kind (`rock`,
+ * `tree`, `cliff`, `tower` or `lake`), standing `dy` px south of it, e.g. `ps.terrain('cliff')`.
+ */
+const devTerrain = (g: Game, kind: SolidKind | 'lake' = 'cliff', dy = 70) => {
+  const C = TERRAIN.cell
+  const pcx = Math.floor(g.player.x / C)
+  const pcy = Math.floor(g.player.y / C)
+  for (let r = 0; r < 30; r++) {
+    for (let cy = pcy - r; cy <= pcy + r; cy++) {
+      for (let cx = pcx - r; cx <= pcx + r; cx++) {
+        if (Math.max(Math.abs(cx - pcx), Math.abs(cy - pcy)) !== r) continue
+        const f = featureAt(g.terrain.seed, cx, cy)
+        const spot = kind === 'lake' ? f?.lake : f?.solids.find((s) => s.kind === kind)
+        if (!spot) continue
+        const at = clearSpot(g, { x: spot.x, y: spot.y + dy }, g.player.radius + 2)
+        g.player.x = at.x
+        g.player.y = at.y
+        return f
+      }
+    }
+  }
+  return null
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -1064,6 +1091,7 @@ if (import.meta.env.DEV) {
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
       card: (partner: PlayableId = lastStarter) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
+      terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
