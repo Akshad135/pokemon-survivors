@@ -35,6 +35,23 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   },
   {
     date: '2026-10-16',
+    pr: 62,
+    title: { pt: 'Mais 11 Megas para as famílias da Gen 1 à 3', en: '11 more Megas for the Gen 1–3 families', es: '11 Megas más para las familias de la Gen 1 a la 3' },
+    notes: [
+      {
+        pt: 'Toda família de ovo que tem Mega Evolução agora Mega Evolui: chegam Mega Pidgeot, Gyarados, Ampharos, Scizor, Houndoom, Aggron, Manectric, Altaria, Banette, Glalie e Salamence, cada uma com status, especial, habilidade e grito próprios. São 37 Megas em 33 linhagens.',
+        en: 'Every egg family with a Mega Evolution can now Mega Evolve: Mega Pidgeot, Gyarados, Ampharos, Scizor, Houndoom, Aggron, Manectric, Altaria, Banette, Glalie and Salamence join, each with its own stats, special, ability and cry. That makes 37 Megas across 33 lines.',
+        es: 'Toda familia de huevo que tiene Megaevolución ahora megaevoluciona: llegan Mega Pidgeot, Gyarados, Ampharos, Scizor, Houndoom, Aggron, Manectric, Altaria, Banette, Glalie y Salamence, cada una con sus propias estadísticas, especial, habilidad y grito. Son 37 Megas en 33 líneas evolutivas.',
+      },
+      {
+        pt: 'Destaques: Mega Scizor (Technician) ganha uma investida em cadeia de aço com recarga curta, Mega Manectric (Intimidate) desacelera quem chega perto e corre deixando faíscas, e Mega Altaria, Glalie e Salamence reforçam os golpes Normal junto com os de Fada, Gelo e Voador. Houndoom, Manectric, Altaria, Banette e Glalie já aparecem com o sprite da forma Mega.',
+        en: 'Highlights: Mega Scizor (Technician) gets a steel chain dash on a short cooldown, Mega Manectric (Intimidate) slows whoever comes close and runs leaving sparks behind, and Mega Altaria, Glalie and Salamence power up Normal moves along with Fairy, Ice and Flying ones. Houndoom, Manectric, Altaria, Banette and Glalie already show their Mega sprite.',
+        es: 'Destacados: Mega Scizor (Technician) gana una embestida en cadena de acero con poco tiempo de recarga, Mega Manectric (Intimidate) ralentiza a quien se acerca y corre dejando chispas, y Mega Altaria, Glalie y Salamence potencian los movimientos de tipo Normal junto con los de Hada, Hielo y Volador. Houndoom, Manectric, Altaria, Banette y Glalie ya aparecen con el sprite de su forma Mega.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-16',
     pr: 61,
     title: { pt: 'Competir: Desafio do dia e fitas', en: 'Compete: the Daily Challenge and ribbons', es: 'Competir: Desafío del día y cintas' },
     notes: [

@@ -369,6 +369,8 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 361 | Snorunt (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 362 | Glalie | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain |
 | 362 | Glalie (shiny) | Tacocoa | Tacocoa, JFain |
+| 362 | Glalie (Mega) | baronessfaron | — |
+| 362 | Glalie (Mega, shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
 | 58 | Growlithe | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin), JustAGunk | [CHUNSOFT](https://www.spike-chunsoft.com/), Deltex12, [LT](https://twitter.com/eLTehH) |
 | 58 | Growlithe (shiny) | [Audino](https://github.com/audinowho), [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, [Waffluffe](https://twitter.com/waffluffe), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 59 | Arcanine | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
@@ -403,6 +405,8 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 228 | Houndour (shiny) | Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) | Anonymous, ShyStarryRain |
 | 229 | Houndoom | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Anonymous, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 229 | Houndoom (shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 229 | Houndoom (Mega) | Top_Kec | — |
+| 229 | Houndoom (Mega, shiny) | [Morei](https://bsky.app/profile/murpia57.bsky.social) | — |
 | 216 | Teddiursa | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__), [PhillipsYoung](https://twitter.com/PhilliYoung196) |
 | 216 | Teddiursa (shiny) | El_Pangoro_Parse, [Emmuffin](https://twitter.com/Ernmuffin) | El_Pangoro_Parse, [PhillipsYoung](https://twitter.com/PhilliYoung196) |
 | 217 | Ursaring | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Tainted#3886, [PhillipsYoung](https://twitter.com/PhilliYoung196) |
@@ -423,14 +427,20 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 333 | Swablu (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 334 | Altaria | [CHUNSOFT](https://www.spike-chunsoft.com/), [TawnySoup](https://linktr.ee/tawnysoup) | [CHUNSOFT](https://www.spike-chunsoft.com/), [gromchurch](https://twitter.com/poongis2), [TawnySoup](https://linktr.ee/tawnysoup) |
 | 334 | Altaria (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin), Prismatic, [gromchurch](https://twitter.com/poongis2) |
+| 334 | Altaria (Mega) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
+| 334 | Altaria (Mega, shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
 | 309 | Electrike | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/), baronessfaron |
 | 309 | Electrike (shiny) | Tacocoa, JFain | PixlHoopa, [Caitemis](https://caitemis-art.tumblr.com/), baronessfaron |
 | 310 | Manectric | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Gust](https://twitter.com/Estelaris__) |
 | 310 | Manectric (shiny) | [Hemlock](https://baphomets.neocities.org/) | [Gust](https://twitter.com/Estelaris__) |
+| 310 | Manectric (Mega) | Top_Kec | — |
+| 310 | Manectric (Mega, shiny) | Top_Kec | — |
 | 353 | Shuppet | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 353 | Shuppet (shiny) | Pokejavi. | Anonymous, baronessfaron |
 | 354 | Banette | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 354 | Banette (shiny) | Anonymous | Anonymous, baronessfaron |
+| 354 | Banette (Mega) | baronessfaron | — |
+| 354 | Banette (Mega, shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | — |
 | 371 | Bagon | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), C_Pariah |
 | 371 | Bagon (shiny) | Pokejavi. | [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 372 | Shelgon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
