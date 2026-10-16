@@ -10,6 +10,10 @@ import type { Game, Pickup } from './types'
 import * as dm from '../engine/dmath'
 
 const MAX_XP_PICKUPS = 260
+/** Speed (px/s) a pulled pickup heads for the player at, well above any player's speed. */
+const PULL_SPEED = 420
+/** How fast (1/s) a pulled pickup's velocity turns toward the player. */
+const PULL_STEER = 7
 
 type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone'>
 
@@ -119,21 +123,21 @@ export const updatePickups = (g: Game, dt: number) => {
       k.vy = d.y * 70
     }
     if (k.attracted) {
+      // Steer the velocity toward the player rather than adding a pull to it: a
+      // pull keeps the sideways speed, and a candy could orbit the player forever.
       const d = dirTo(k.x, k.y, p.x, p.y - 6)
-      k.vx += d.x * 900 * dt
-      k.vy += d.y * 900 * dt
-      const speed = dm.hypot(k.vx, k.vy)
-      if (speed > 420) {
-        k.vx *= 420 / speed
-        k.vy *= 420 / speed
-      }
+      const steer = 1 - dm.exp(-PULL_STEER * dt)
+      k.vx += (d.x * PULL_SPEED - k.vx) * steer
+      k.vy += (d.y * PULL_SPEED - k.vy) * steer
     } else {
       k.vx *= dm.exp(-6 * dt)
       k.vy *= dm.exp(-6 * dt)
     }
     k.x += k.vx * dt
     k.y += k.vy * dt
-    if (k.attracted && d2 < dm.sq(p.radius + 5)) {
+    // Checked after the move and with this frame's step as slack, so a fast candy can't hop over the player.
+    const reach = p.radius + 5 + dm.hypot(k.vx, k.vy) * dt
+    if (k.attracted && dm.sq(k.x - p.x) + dm.sq(k.y - (p.y - 6)) < dm.sq(reach)) {
       collect(g, k)
       k.age = -1
     }
