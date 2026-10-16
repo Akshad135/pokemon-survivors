@@ -79,7 +79,7 @@ export const es: Messages = {
     reroll: (n) => `Cambiar (${n})`,
     skip: (n) => `Saltar (${n})`,
     hintKeys: '↑ ↓ elegir · ENTER confirmar · 1-3 atajo',
-    hintTouch: 'Toca para elegir',
+    hintTouch: 'Toca para elegir · mantén para ver el movimiento',
   },
 
   difficulty: {
@@ -98,6 +98,18 @@ export const es: Messages = {
     quit: 'Rendirse',
     settings: 'Ajustes',
     evoLegend: 'Movimiento al nivel máximo + el objeto indicado = ¡evolución en la próxima Poké Ball o subida de nivel!',
+    cardHintKeys: 'Pasa el ratón por un movimiento para ver su ficha',
+    cardHintTouch: 'Mantén pulsado un movimiento para ver su ficha',
+  },
+
+  moveCard: {
+    level: (n, max) => `Nv ${n}/${max}`,
+    evolved: '★ EVOLUCIONADO',
+    pierce: 'Perfora',
+    status: { burn: 'Quemar', poison: 'Envenenar', paralysis: 'Paralizar', slow: 'Ralentizar', sleep: 'Dormir' },
+    seconds: (s) => `${s}s`,
+    evolves: 'Evolución',
+    evolvedFrom: 'Evolucionó de',
   },
 
   settings: {
