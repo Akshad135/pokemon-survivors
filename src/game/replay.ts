@@ -225,13 +225,14 @@ const applyEvent = (g: Game, e: ReplayEvent) => {
   }
 }
 
-/** How a re-simulated run ended. `stuck`: it waited on a pick the replay doesn't make. */
+/** How a re-simulated run ended. `stuck`: its replay ran out on a level-up, waiting on a pick it doesn't make. */
 export type Resimulated = { time: number; kills: number; level: number; phase: Game['phase']; stuck: boolean }
 
 /**
  * Plays a replay again from its seed, step by step, applying each event at its
- * tick, and returns where the run ended. Steps only while the run plays or
- * evolves, like the shell; a level-up waits for the replay's pick. `g` is the
+ * tick, and returns where the run ended. A tick recorded while the run wasn't
+ * playing (older shells kept stepping out the frame a level-up or the
+ * faint landed in) passes without a change, as `step` ignores it. `g` is the
  * run it starts from: the replay's own start, unless a test staged one.
  */
 export const resimulate = (replay: Replay, g: Game = startGame(replay.start)): Resimulated => {
@@ -256,14 +257,11 @@ export const resimulate = (replay: Replay, g: Game = startGame(replay.start)): R
     const move = moveOf(moves[i]!)
     for (let n = 0; n < moves[i + 1]!; n++) {
       const { special, mega, lunge } = applyDue()
-      if (g.phase !== 'playing' && g.phase !== 'evolving') {
-        return { time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: true }
-      }
       step(g, { move, special, mega, lunge }, TICK)
       g.events.length = 0
       tick++
     }
   }
   applyDue()
-  return { time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false }
+  return { time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: g.phase === 'levelup' }
 }

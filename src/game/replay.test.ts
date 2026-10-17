@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { chooseOffer, step } from './game'
-import { recomputeStats } from './leveling'
+import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
@@ -13,9 +13,10 @@ const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal',
 /**
  * Plays `seconds` like the shell would, with a wandering stick, picks and a
  * rotation, recording it. The special is pressed every `every` ticks, the Mega
- * button every 400 ticks and the lunge every 100. `stage` sets the run up first (a test-only shortcut).
+ * button every 400 ticks and the lunge every 100. `stage` sets the run up first (a test-only shortcut);
+ * `idle` steps are recorded at each level-up before its pick, as older shells did.
  */
-const play = (seconds: number, start = START, every = 300, stage: (g: Game) => void = () => {}) => {
+const play = (seconds: number, start = START, every = 300, stage: (g: Game) => void = () => {}, idle = 0) => {
   const view = { ...start.view }
   const g = startGame(start, view)
   stage(g)
@@ -24,6 +25,8 @@ const play = (seconds: number, start = START, every = 300, stage: (g: Game) => v
   let angle = 0
   while (g.time < seconds && g.phase !== 'gameover') {
     if (g.phase === 'levelup') {
+      // Steps an older shell recorded while the level-up was already open.
+      for (let n = 0; n < idle; n++) step(g, { move: recordStep(rec, view, { x: 1, y: 0 }), special: false }, TICK)
       const i = Math.floor(bot() * g.offers.length)
       recordEvent(rec, ['offer', i])
       chooseOffer(g, g.offers[i]!)
@@ -71,6 +74,19 @@ describe('replays', () => {
     const again = resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)
     expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
     expect(replay.events.some((e) => e[1] === 'view')).toBe(true)
+  })
+
+  it('let ticks recorded during a level-up pass, and are stuck only when they end on one', () => {
+    const levelled = (g: Game) => gainXp(g, 300)
+    const { g, replay } = play(40, START, 300, levelled, 3)
+    expect(replay.events.filter((e) => e[1] === 'offer').length).toBeGreaterThan(1)
+    const staged = () => {
+      const s = startGame(START)
+      levelled(s)
+      return s
+    }
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged())).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate({ ...replay, events: replay.events.filter((e) => e[1] !== 'offer') }, staged()).stuck).toBe(true)
   })
 
   it('play the same run whether the starter was picked shiny or not', () => {
