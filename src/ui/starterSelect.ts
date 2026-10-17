@@ -5,12 +5,13 @@ import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, typ
 import { REGIONS, type StarterId } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
 import { megasOf } from '../data/megas'
+import { bodyOf } from '../data/bodies'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
 import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
 import { bagIcon, eggIcon, PICKUPS, sparkleIcon } from '../render/art'
-import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
+import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
 import { loadSave, updateSave } from './save'
@@ -88,6 +89,18 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const tapCell = (id: PlayableId) => (id === current() ? confirm() : select(id))
 
   const cellPortrait = (id: PlayableId) => h('img', { class: 'partner-cell-portrait', src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })
+  /** A family still in its egg: its first stage's silhouette at 2×, centered on the body (`bodyOf`) and cropped by the cell like a portrait. */
+  const cellSilhouette = (id: HatchlingId) => {
+    const dex = PLAYABLE[id].line[0].dex
+    const sheet = walkSheet(dex)
+    if (!sheet) return h('img', { class: 'partner-cell-egg', src: eggIcon(HATCHLINGS[id].egg), alt: '' })
+    const { bodyH, footY } = bodyOf(dex)
+    return h(
+      'span',
+      { class: 'partner-cell-silhouette' },
+      h('i', { style: `width:${sheet.fw}px;height:${sheet.fh}px;background-image:url(${sheet.url});transform:translateY(${bodyH - 2 * footY}px) scale(2)` }),
+    )
+  }
   const shinyTag = () => h('img', { class: 'partner-cell-shiny', src: sparkleIcon(), alt: 'Shiny' })
 
   const cells = new Map<PlayableId, HTMLElement>()
@@ -113,7 +126,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
         style: `--t:${open ? PLAYABLE[id].color : '#8890b0'}`,
         onclick: () => tapCell(id),
       },
-      open ? cellPortrait(id) : h('img', { class: 'partner-cell-egg', src: eggIcon(HATCHLINGS[id].egg), alt: '' }),
+      open ? cellPortrait(id) : cellSilhouette(id),
       shinyOf(id) && shinyTag(),
     )
     cells.set(id, el)
