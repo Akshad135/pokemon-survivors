@@ -89,6 +89,7 @@ import { shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { titleScreen, type LobbyFocus, type Meadow } from './ui/title'
 import { creditsLine, supportersScreen } from './ui/supporters'
+import { suggestionsScreen } from './ui/suggestions'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
@@ -273,6 +274,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       trainer: (focus) =>
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
+      ideas: rankingEnabled ? (focus) => suggestionsScreen(ui, input, () => showTitle({ focus })) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
       meadow,
     }, opts),
@@ -1071,6 +1073,17 @@ const showSharedProfile = (handle: string) => {
   )
 }
 
+/** `?ideias`, the idea board's own link (to share on social media): it opens over the lobby, and closing it lands there. */
+const IDEAS_PARAM = 'ideias'
+
+const showIdeasLink = () =>
+  setScreen(
+    suggestionsScreen(ui, input, () => {
+      history.replaceState(null, '', location.pathname)
+      showTitle({ focus: 'ideas' })
+    }),
+  )
+
 /**
  * Right after the first sign in on a device (no handle yet), the title gives
  * way to the profile editor, so the player picks how they show up on the ranking.
@@ -1090,6 +1103,7 @@ const boot = () => {
   captureRef()
   const shared = rankingEnabled ? parseHandle(new URLSearchParams(location.search).get(PROFILE_PARAM)) : null
   if (shared) showSharedProfile(shared)
+  else if (rankingEnabled && new URLSearchParams(location.search).has(IDEAS_PARAM)) showIdeasLink()
   // Back from signing in, the player already pressed start before leaving: straight to the menu.
   else showTitle({ intro: !backFromSignIn() })
   requestAnimationFrame(frame)

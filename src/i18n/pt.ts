@@ -11,6 +11,7 @@ import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/styl
 import type { BagItem } from '../game/bag'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
+import type { SuggestionSort } from '../game/suggestions'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -89,6 +90,7 @@ export const pt = {
     eggsReady: (n: number) => (n === 1 ? '1 ovo pronto para chocar' : `${n} ovos prontos para chocar`),
     mart: 'Loja',
     ranking: 'Ranking',
+    ideas: 'Ideias',
     /** Support chip (donations page), and the Hall da Fama card before it has names. */
     support: 'Apoie o projeto',
   },
@@ -655,6 +657,51 @@ export const pt = {
     banner: 'Seu shiny te espera!',
     badge: (tier: SupporterTier): string => (tier === 'gold' ? 'Apoiador(a) Ouro' : 'Apoiador(a)'),
     profileSince: (date: string) => `Apoiador(a) desde ${date}`,
+  },
+
+  /** Ideias: the idea board, where players suggest things for the game and vote on them. Titles in the pixel font: unaccented or mixed case. */
+  ideas: {
+    title: 'IDEIAS',
+    lead: 'Peça o que você quer ver no jogo e vote nas ideias de outros treinadores. As mais votadas entram na fila!',
+    tabs: { top: 'Mais votadas', new: 'Novas', done: 'Feitas' } satisfies Record<SuggestionSort, string>,
+    loading: 'Carregando…',
+    offline: 'Sem conexão com o mural de ideias. Tente de novo daqui a pouco.',
+    retry: 'Tentar de novo',
+    empty: { top: 'Nenhuma ideia ainda. Que tal mandar a primeira?', new: 'Nenhuma ideia ainda. Que tal mandar a primeira?', done: 'Nada entregue ainda, mas vem coisa por aí!' } satisfies Record<SuggestionSort, string>,
+    you: 'sua',
+    /** The tag on a shipped idea, and when it shipped. */
+    done: 'Feita',
+    doneOn: (date: string) => `Entrou no jogo em ${date}`,
+    up: 'Votar a favor',
+    down: 'Votar contra',
+    score: (n: number) => (n === 1 || n === -1 ? `${n} voto` : `${n} votos`),
+    more: 'Ver mais',
+    post: 'Sugerir ideia',
+    signIn: 'Entrar para sugerir',
+    createProfile: 'Criar perfil para sugerir',
+    voteGuest: 'Entre com uma conta para votar.',
+    closed: 'Essa ideia não está mais aberta para votos.',
+    posted: 'Ideia enviada! Agora é torcer pelos votos.',
+    form: {
+      title: 'NOVA IDEIA',
+      titleField: 'Sua ideia',
+      titlePlaceholder: 'Ex.: Modo co-op com um amigo',
+      bodyField: 'Detalhes (opcional)',
+      bodyPlaceholder: 'Como funcionaria? Por que seria legal?',
+      note: (n: number) => `Uma ideia por vez, e só ${n} por dia. Antes, veja se alguém já sugeriu e vote nela.`,
+      send: 'Enviar',
+      sending: 'Enviando…',
+      back: 'Voltar',
+      errors: {
+        short: (min: number) => `Escreva a ideia com pelo menos ${min} letras.`,
+        invalid: 'Essa ideia não deu para enviar. Revise o texto e tente de novo.',
+        limit: (n: number) => `Você já mandou ${n} ideias hoje. Volte amanhã!`,
+        profile: 'Crie seu perfil antes de sugerir.',
+        offline: 'Sem conexão. Tente de novo daqui a pouco.',
+      },
+    },
+    hintKeys: '↑ ↓ ← → escolher · ENTER votar · Q E aba · N nova ideia · ESC voltar',
+    hintTouch: 'Toque em ▲ ou ▼ para votar',
   },
 
   /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */

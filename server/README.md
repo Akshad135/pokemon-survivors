@@ -30,12 +30,16 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /me/supporter`, `PUT /me/supporter` | The player's tier, since when, whether they show it and their vote (`SupporterStatus`). `PUT` with `{ public }` shows or hides the badge and name |
 | `GET /supporters` | `{ supporters }`: the wall, supporters who show themselves and have a handle, oldest first (500 at most). Each `WallEntry` has `handle`, `name`, `tier`, `since` (first donation) and, for the Hall da Fama, `title` (equipped, or null) and `pokemon` (`{ id, shiny }` from the synced save, `hallPokemon`: a shiny picked with a ticket, else the companion, else the partner; null before any sync). The game reads both as null from an API without them |
 | `GET /poll`, `PUT /poll` | `{ id, votes }`, the supporters' poll (`POLL` in `src/data/supporters.ts`). `PUT` with `{ choice }` votes (or changes the vote); 403 for anyone who isn't a supporter |
+| `GET /suggestions` | `?sort=top\|new\|done`. `{ suggestions }`: a tab of the idea board (100 at most), open ideas by score or newest first, or the shipped ones; each `Suggestion` (`src/game/suggestions.ts`) has the asker's `vote` and whether it's theirs (`mine`) |
+| `POST /suggestions` | Body `{ title, body }` (`parseSuggestionDraft`). 201 `{ suggestion }`, posted with the author's up vote. 400 invalid, 403 before the player has a handle, 429 past 3 ideas in 24 hours |
+| `PUT /suggestions/:id/vote` | Body `{ vote }`: 1, -1, or 0 to take it back. `{ score, vote }`. 404 unknown or hidden, 409 shipped |
 | `GET /admin` | `{ admin: true }` for an admin (see [Admin gift desk](#admin-gift-desk)), 403 for anyone else, like every `/admin` route |
 | `GET /admin/users` | `?q=` a handle (with or without `@`, in part) or an email (in part, asked of Clerk). `{ users }`: up to 10 `AdminUser` with their email and when they were last seen |
 | `POST /admin/gifts` | Body `{ userId, content, request }`: sends a Mystery Gift (`parseAdminGift`: any `GiftContent` but a ribbon). `request` is a uuid per send, so a retry sends nothing twice: `{ sent }`, false when it already went. 404 for an unknown player |
 | `GET /admin/gifts` | `{ gifts }`: the last 30 gifts sent by hand (`AdminSent`), with when they were claimed |
+| `PUT /admin/suggestions/:id` | Body `{ status }`: `done` (shipped, stamps `done_at`), `open` again, or `hidden` (off the board). `{ status }`, 404 for an unknown idea |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge` and `/profiles` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles` and `GET /suggestions` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
@@ -119,6 +123,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `runs.challenge`, `runs.official`: the Desafio do dia a run plays (its day) and whether it's the player's official attempt of that day.
 - `donations`: one row per donation (`provider`, its `ref`, the account it's for, the amount and points, the `code` of one with no account, `paid_at`, `credited_at`).
 - `users.supporter_points`, `supporter_since`, `supporter_public`: a supporter's total, since when, and whether they show it. `poll_votes`: the supporters' poll.
+- `suggestions`: the idea board (`status` `open`, `done` or `hidden`, `score` recounted from the votes on every vote, `done_at`). `suggestion_votes`: one vote per player per idea (1 or -1; taking it back deletes the row).
 
 ## Local development
 

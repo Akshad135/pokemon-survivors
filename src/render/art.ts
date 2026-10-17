@@ -571,6 +571,25 @@ const GIFT = [
 
 export const giftIcon = () => toIconUrl('gift', () => art(GIFT, { 1: '#301018', 2: '#f8d030', 3: '#e83850', 4: '#a82038', 5: '#c89000' }))
 
+/** Ideias (the idea board): a lit bulb. 1 outline, 2 glass, 3 shine, 4 shade, 5-6 the screw base. */
+const BULB = [
+  '...11111...',
+  '..1322221..',
+  '.132222241.',
+  '13222222241',
+  '13222222241',
+  '12222222241',
+  '.122222441.',
+  '..1224441..',
+  '...12241...',
+  '...15551...',
+  '...16661...',
+  '...15551...',
+  '....111....',
+]
+
+export const bulbIcon = () => toIconUrl('bulb', () => art(BULB, { 1: '#303040', 2: '#f8d030', 3: '#fff8c0', 4: '#c89000', 5: '#c8d0e0', 6: '#7880a0' }))
+
 /* ---------------- Medals ---------------- */
 
 /** Achievement medal: a two-tone ribbon over a disc with a star. 1 outline, 2-3 ribbon, 4 star, 5 rim, 6 face. */
