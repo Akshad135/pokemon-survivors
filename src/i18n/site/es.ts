@@ -526,7 +526,7 @@ export const siteEs: SiteMessages = {
       late: 'El pago aún no se confirmó. Vuelve a esta página en un rato para ver tu código.',
       sent: (handle: string) => `Las recompensas fueron para @${handle}. Llegan como Regalo Misterioso la próxima vez que el juego se sincronice.`,
       code: 'Tu código de canje:',
-      codeHint: 'En el juego, inicia sesión y abre el ♥ del título → Tengo un código. Vale una vez, para la cuenta que lo canjee: puede ser la de un amigo.',
+      codeHint: 'En el juego, inicia sesión y abre el Salón de la Fama del título → Tengo un código. Vale una vez, para la cuenta que lo canjee: puede ser la de un amigo.',
       copy: 'Copiar',
       copied: '¡Copiado!',
       used: 'El código de esta donación ya se canjeó.',

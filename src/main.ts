@@ -86,7 +86,7 @@ import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
 import { martButton, shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
-import { titleButton, titleScreen } from './ui/title'
+import { titleButton, titleScreen, type LobbyFocus } from './ui/title'
 import { creditsLine, supportButton, supportersScreen } from './ui/supporters'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
@@ -232,20 +232,21 @@ let pressedStart = false
 
 /**
  * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch, not back from signing in);
- * coming back from the starter select goes straight to the menu. `focus` is the menu entry to highlight.
+ * coming back from the starter select goes straight to the lobby. `focus` is what the lobby highlights (JOGAR by default).
  */
-const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
+const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
   endRun()
   setScreen(
     titleScreen(ui, input, {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
       challenge: () => showChallenge(),
-      incubator: () => showIncubator(() => showTitle({ focus: 2 })),
+      incubator: () => showIncubator(() => showTitle({ focus: 'eggs' })),
       missions: () => showMissions(),
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
+      mart: (focus) => shop(ui, input, () => showTitle({ focus })),
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
       trainer: (focus) =>
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
@@ -300,7 +301,7 @@ const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 const showPcBox = (back: () => void) =>
   pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(loadSave().partner), close) }, loadSave().style.equipped.wallpaper)
 
-const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 3 })))
+const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 'missions' })))
 
 /** The Desafio do dia's screen (from the title); its board opens over it and comes back to it. */
 const showChallenge = () => {
@@ -309,7 +310,7 @@ const showChallenge = () => {
     challengeScreen(ui, input, {
       play: (c, official) => setTimeout(() => void startRun(c.starter, { challenge: c, official }), 250),
       board: rankingEnabled ? () => setScreen(rankingScreen(ui, input, () => showChallenge(), { challenge: true })) : undefined,
-      onClose: () => showTitle({ focus: 1 }),
+      onClose: () => showTitle({ focus: 'challenge' }),
     }),
   )
 }

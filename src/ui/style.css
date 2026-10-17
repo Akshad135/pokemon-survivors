@@ -2048,8 +2048,9 @@ button {
   }
 }
 
-/* ---------- Title screen ---------- */
+/* ---------- Title screen: the "press start" intro and the lobby (ui/title.ts) ---------- */
 
+/* The intro: logo and "press start", centered. */
 .title-home .shell-body {
   gap: clamp(12px, 3vh, 32px);
 }
@@ -2082,45 +2083,717 @@ button {
   text-shadow: 2px 2px 0 #101020;
 }
 
-.title-menu {
+/*
+ * The lobby. Wide screens are the base: Hoje on the left rail, the Hall da
+ * Fama on the right, the partner in the middle under the logo, and JOGAR in
+ * the middle of the dock. The two media queries further down (narrow screens,
+ * phones in landscape) must match `NARROW` and `LANDSCAPE` in ui/title.ts.
+ */
+.lobby {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 250px) minmax(0, 1fr) minmax(220px, 290px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'today logo side'
+    'today stage side'
+    'bottom bottom bottom';
+  gap: 10px 16px;
+}
+
+.lobby-logo {
+  grid-area: logo;
+  display: flex;
+  justify-content: center;
+}
+
+.lobby-today {
+  grid-area: today;
+  align-self: start;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 240px;
-  padding: 12px 10px;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 24px;
 }
 
-.title-item {
-  position: relative;
-  min-height: 44px;
-  padding: 8px 14px 8px 32px;
+.lobby-rail-label {
+  margin: 0 0 0 2px;
   font-family: var(--title);
-  font-size: 12px;
-  text-align: left;
-  color: var(--ink);
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 400;
+  color: #fff;
+  text-shadow: 2px 2px 0 #283040;
 }
 
-/* A mouse doesn't need 44 px rows: the whole menu fits under the top bar on a 720 px tall screen. */
-@media (hover: hover) and (pointer: fine) {
-  .title-item {
-    min-height: 36px;
-    padding-top: 6px;
-    padding-bottom: 6px;
+.lobby-side {
+  grid-area: side;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 24px;
+}
+
+.lobby-side .invite-banner {
+  max-width: none;
+}
+
+.lobby-stage {
+  grid-area: stage;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.lobby-bottom {
+  grid-area: bottom;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Highlighted by the arrows (or under the mouse). */
+.lobby-card:hover,
+.lobby-card.selected,
+.lobby-tile:hover,
+.lobby-tile.selected,
+.title-home .shell-btn.selected,
+.title-home .trainer-chip.selected,
+.title-home .invite-banner.selected {
+  --frame: #e83838;
+}
+
+/* Hoje: a card per daily thing, a colored label over one line of live state. */
+.lobby-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px 11px;
+  text-align: left;
+  pointer-events: auto;
+}
+
+.lobby-card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+.lobby-card.outbreak .lobby-card-label {
+  color: #c03878;
+}
+
+.lobby-card.challenge .lobby-card-label {
+  color: #3868c0;
+}
+
+.lobby-card.missions .lobby-card-label {
+  color: #389048;
+}
+
+.lobby-card-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+}
+
+.lobby-card-row b {
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The outbreak's walkers: sized in whole device pixels by `outbreakCard`. */
+.lobby-walker {
+  display: block;
+  flex: none;
+  margin: -6px -2px -4px;
+}
+
+.lobby-sparkle {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.lobby-icon {
+  flex: none;
+  width: 22px;
+  height: 28px;
+}
+
+.lobby-progress {
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 12px;
+  overflow: hidden;
+  background: #d8dce8;
+  border: 2px solid #283040;
+  border-radius: 3px;
+}
+
+.lobby-card.missions .lobby-card-row b {
+  flex: none;
+}
+
+.lobby-progress span {
+  display: block;
+  height: 100%;
+  background: #58b858;
+}
+
+.lobby-badge {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1;
+  color: #fff;
+  background: #e83030;
+  border: 2px solid #fff;
+  border-radius: 9px;
+}
+
+.lobby-badge.done {
+  background: #389048;
+}
+
+.lobby-card .key-hint {
+  margin-left: auto;
+  font-size: 6px;
+  padding: 2px 3px;
+}
+
+/* Hall da Fama: gold frame, slowly turning rays, the first supporters' faces and the newest one. */
+.lobby-hall {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  font: inherit;
+  color: #fff;
+  text-align: left;
+  text-decoration: none;
+  background: linear-gradient(160deg, #3a2470, #1c1440 70%);
+  border: 3px solid #f8d030;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 2px #7a5a10,
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(248, 208, 48, 0.45);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.lobby-hall:hover,
+.lobby-hall.selected {
+  box-shadow:
+    inset 0 0 0 2px #7a5a10,
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 3px #fff,
+    0 0 24px rgba(248, 208, 48, 0.7);
+}
+
+/* A shiny ticket waits for its pick. */
+.lobby-hall.waiting {
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+.hall-rays {
+  position: absolute;
+  inset: -60%;
+  background: repeating-conic-gradient(from 0deg, rgba(248, 208, 48, 0.16) 0 10deg, transparent 10deg 20deg);
+  animation: hall-spin 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes hall-spin {
+  to {
+    transform: rotate(1turn);
   }
 }
 
-.title-item.selected {
-  background: #e4e8f4;
+@media (prefers-reduced-motion: reduce) {
+  .hall-rays {
+    animation: none;
+  }
 }
 
-.title-item.selected::before {
-  content: '▶';
+.hall-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 10px;
+  line-height: 1.3;
+  color: #f8d030;
+  text-shadow: 2px 2px 0 #4a3008;
+}
+
+.hall-top b {
+  min-width: 0;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hall-top img {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.lobby-hall.waiting .hall-sparkle {
+  animation: blink 0.7s steps(2, start) infinite;
+}
+
+.hall-stack {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lobby-hall:not(.filled) .hall-stack {
+  display: none;
+}
+
+.hall-face {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: -8px;
+  font-family: var(--title);
+  font-size: 11px;
+  color: #ffd8ec;
+  background: #2c2050;
+  border: 2px solid #f0a0c8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #1c1440;
+}
+
+.hall-face.gold {
+  color: #f8d030;
+  border-color: #f8d030;
+}
+
+.hall-stack em {
+  margin-left: 16px;
+  font-family: var(--title);
+  font-size: 9px;
+  font-style: normal;
+  color: #f8d030;
+}
+
+.hall-ticker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 19px;
+  line-height: 1;
+  color: #ffd8ec;
+}
+
+.hall-ticker img {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.hall-ticker span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lobby-hall .key-hint {
   position: absolute;
-  left: 12px;
-  color: #e83838;
+  top: 8px;
+  right: 8px;
+  font-size: 6px;
+  padding: 2px 3px;
+}
+
+/* The partner on stage, over its name plate (canvas sized by `partnerStage`). */
+.lobby-partner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  pointer-events: auto;
+}
+
+.lobby-partner-sprite {
+  display: block;
+}
+
+.lobby-plate {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #fff;
+  white-space: nowrap;
+  background: rgba(40, 48, 64, 0.85);
+  border-radius: 12px;
+}
+
+.lobby-plate b {
+  font-weight: 400;
+}
+
+.lobby-plate small {
+  font-family: var(--body);
+  font-size: 17px;
+  color: #c8d0ff;
+}
+
+.lobby-partner:hover .lobby-plate {
+  background: rgba(200, 48, 48, 0.9);
+}
+
+/* JOGAR: one chunky red button with a ledge under it. */
+.lobby-play {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 280px;
+  height: 78px;
+  padding: 0 24px 4px;
+  font-family: var(--title);
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 3px 3px 0 #801010;
+  background: linear-gradient(#ff5a4a, #e02a2a);
+  border: 3px solid #283040;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 -6px 0 #a81818,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.lobby-play:hover,
+.lobby-play.selected {
+  background: linear-gradient(#ff6e5e, #ea3434);
+  box-shadow:
+    inset 0 -6px 0 #a81818,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 3px #fff;
+}
+
+.lobby-play:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 -3px 0 #a81818,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.lobby-play .key-hint {
+  font-size: 7px;
+  text-shadow: none;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* The collection dock: Pokédex, Ovos, Loja, Ranking. */
+.lobby-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 88px;
+  height: 68px;
+  padding: 4px;
+  pointer-events: auto;
+}
+
+.lobby-tile img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.lobby-tile > span:not(.key-hint) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--title);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.lobby-tile .lobby-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+}
+
+.lobby-tile .key-hint {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 6px;
+  padding: 2px 3px;
+}
+
+/* Narrow screens (phones in portrait): one column, the Hoje cards in a row, JOGAR right above a tab bar. */
+@media (max-width: 759px) and (min-height: 501px), (max-width: 759px) and (orientation: portrait) {
+  .lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lobby-rail-label {
+    display: none;
+  }
+  .lobby-today {
+    flex-direction: row;
+    gap: 6px;
+    padding: 0;
+  }
+  .lobby-card {
+    flex: 1 1 0;
+    gap: 4px;
+    padding: 7px 7px 6px;
+  }
+  .lobby-card-label {
+    font-size: 6px;
+    letter-spacing: 0;
+  }
+  .lobby-card-row {
+    gap: 4px;
+    min-height: 26px;
+  }
+  .lobby-card-row b {
+    font-size: 16px;
+  }
+  .lobby-card.challenge .lobby-card-row b {
+    white-space: normal;
+  }
+  .lobby-walker.shiny,
+  .lobby-card .key-hint {
+    display: none;
+  }
+  .lobby-icon {
+    width: 16px;
+    height: 20px;
+  }
+  .lobby-today,
+  .lobby-side {
+    align-self: stretch;
+  }
+  .lobby-side {
+    padding: 0;
+  }
+  .lobby-stage {
+    flex: 1 1 0;
+  }
+  .lobby-bottom {
+    display: grid;
+    grid-template-columns: repeat(var(--tiles), minmax(0, 1fr));
+    gap: 8px;
+  }
+  .lobby-play {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    min-width: 0;
+    height: 68px;
+    margin-bottom: 8px;
+  }
+  .lobby-tile {
+    grid-row: 2;
+    width: auto;
+    height: 60px;
+  }
+  /* The tab bar's strip, from edge to edge under the tiles. */
+  .lobby-bottom::before {
+    content: '';
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin: -8px calc(-1 * max(10px, var(--safe-r))) calc(-1 * max(10px, var(--safe-b))) calc(-1 * max(10px, var(--safe-l)));
+    background: rgba(24, 30, 48, 0.82);
+    border-top: 2px solid #283040;
+  }
+}
+
+/* The Hall da Fama as a strip (narrow screens and landscape): title and ticker on the left, the faces on the right. */
+@media (max-width: 759px), (max-height: 500px) and (orientation: landscape) {
+  .lobby-hall {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'top stack'
+      'tick stack';
+    align-items: center;
+    gap: 4px 10px;
+    padding: 8px 12px;
+  }
+  .hall-top {
+    grid-area: top;
+    gap: 6px;
+    font-size: 8px;
+  }
+  /* The sparkle only shows for a waiting shiny ticket: the title needs the room. */
+  .lobby-hall:not(.waiting) .hall-sparkle {
+    display: none;
+  }
+  .hall-stack {
+    grid-area: stack;
+  }
+  .hall-ticker {
+    grid-area: tick;
+    font-size: 16px;
+  }
+  .hall-face {
+    width: 26px;
+    height: 26px;
+    font-size: 9px;
+  }
+  .lobby-tile.pokedex {
+    grid-column: 1;
+  }
+  .lobby-tile.eggs {
+    grid-column: 2;
+  }
+  .lobby-tile.mart {
+    grid-column: 3;
+  }
+  .lobby-tile.ranking {
+    grid-column: 4;
+  }
+}
+
+/* Phones in landscape: two columns. Logo, partner and dock on the left; Hoje, the Hall and JOGAR on the right. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .title-home.screen.shell {
+    gap: 6px;
+  }
+  .title-home .shell-top {
+    min-height: 44px;
+  }
+  .lobby {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 4.4fr);
+    /* The second row is `1fr` (not `minmax(0, 1fr)`) so it grows to fit Hoje, which spans it. */
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-areas:
+      'logo logo logo logo today'
+      'stage stage stage stage today'
+      'stage stage stage stage side'
+      'd1 d2 d3 d4 play';
+    gap: 6px 12px;
+  }
+  .lobby-rail-label,
+  .lobby-card .key-hint {
+    display: none;
+  }
+  .lobby-today,
+  .lobby-side {
+    gap: 6px;
+    padding: 0;
+  }
+  .lobby-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 10px;
+    min-height: 38px;
+  }
+  .lobby-card-row {
+    justify-content: flex-end;
+    min-height: 0;
+  }
+  .lobby-card-row b {
+    font-size: 18px;
+  }
+  .lobby-card .lobby-progress {
+    flex: 0 1 80px;
+  }
+  .lobby-icon {
+    width: 16px;
+    height: 20px;
+  }
+  .lobby-bottom {
+    display: contents;
+  }
+  .lobby-tile {
+    width: auto;
+    height: 54px;
+    align-self: end;
+  }
+  .lobby-tile.pokedex {
+    grid-area: d1;
+  }
+  .lobby-tile.eggs {
+    grid-area: d2;
+  }
+  .lobby-tile.mart {
+    grid-area: d3;
+  }
+  .lobby-tile.ranking {
+    grid-area: d4;
+  }
+  .lobby-play {
+    grid-area: play;
+    align-self: end;
+    min-width: 0;
+    height: 58px;
+    font-size: 20px;
+  }
+  .lobby-side .invite-banner {
+    padding: 5px 10px 5px 8px;
+  }
+  .lobby-side .invite-banner img {
+    width: 20px;
+    height: 23px;
+  }
+  .lobby-side .invite-blurb {
+    display: none;
+  }
 }
 
 /* Support page link under a victory's buttons. */
@@ -2172,21 +2845,6 @@ button {
     left: 6px;
     gap: 6px;
     padding: 6px 8px;
-  }
-}
-
-/* Phones in landscape: logo beside the menu, so neither has to shrink. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .title-home .shell-body {
-    flex-direction: row;
-    align-items: center;
-    align-items: safe center;
-    gap: clamp(16px, 5vw, 48px);
-  }
-  .title-item {
-    min-height: 40px;
-    padding-top: 6px;
-    padding-bottom: 6px;
   }
 }
 
@@ -4186,64 +4844,6 @@ button {
   color: #c89000;
 }
 
-.title-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-}
-
-/* "Surto de hoje": the day's outbreak under the logo. */
-.outbreak-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: min(420px, 92vw);
-  padding: 6px 12px 6px 6px;
-}
-
-.outbreak-sprites {
-  width: 114px;
-  height: 60px;
-  flex-shrink: 0;
-  image-rendering: pixelated;
-}
-
-.outbreak-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  text-align: left;
-}
-
-.outbreak-text small {
-  font-family: var(--title);
-  font-size: 7px;
-  color: #c04890;
-  text-transform: uppercase;
-}
-
-.outbreak-text b {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--title);
-  font-size: 10px;
-  font-weight: normal;
-}
-
-.outbreak-text b img {
-  width: 12px;
-  height: 12px;
-}
-
-.outbreak-text span {
-  font-size: 17px;
-  line-height: 1;
-  color: #505870;
-}
-
 /* A guest who came by a friend's link: who invited them and what signing up brings. */
 .invite-banner {
   display: flex;
@@ -4427,9 +5027,6 @@ button {
 }
 
 @media (max-height: 500px) {
-  .title-head {
-    gap: 6px;
-  }
   .mission-row {
     padding: 4px 8px;
   }

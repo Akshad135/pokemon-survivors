@@ -522,7 +522,7 @@ export const siteEn: SiteMessages = {
       late: "The payment isn't confirmed yet. Come back to this page in a little while to see your code.",
       sent: (handle: string) => `The rewards went to @${handle}. They arrive as a Mystery Gift the next time the game syncs.`,
       code: 'Your redeem code:',
-      codeHint: "In the game, sign in and open the ♥ on the title → I have a code. It works once, for the account that redeems it: it can be a friend's.",
+      codeHint: "In the game, sign in and open the Hall of Fame on the title → I have a code. It works once, for the account that redeems it: it can be a friend's.",
       copy: 'Copy',
       copied: 'Copied!',
       used: "This donation's code was already redeemed.",
