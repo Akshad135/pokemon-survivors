@@ -228,7 +228,7 @@ export const siteEs: SiteMessages = {
       paragraphs: (minutes: number, starters: number) => [
         `Elige uno de los ${starters} iniciales, de Kanto a Paldea. Cada uno tiene sus propias estadísticas, movimiento inicial, movimientos que aprende y ataque especial (mira la Pokédex).`,
         `Muévete por el campo y esquiva: los movimientos se disparan solos al ritmo de su recarga. Sobrevive ${minutes} minutos de hordas cada vez más grandes. Al final aparece Mewtwo, y derrotarlo gana la partida. Después, si quieres, puedes seguir en el modo infinito.`,
-        'Si tu HP llega a cero, la partida termina (a menos que tengas un Revive guardado). Los Poké Dollars que recogiste van a tu billetera.',
+        'Si tu HP llega a cero, la partida termina (a menos que tengas un Revive guardado o estés en la arena de una grieta, que solo te expulsa de vuelta). Los Poké Dollars que recogiste van a tu billetera.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Los enemigos comunes se vuelven más fuertes cada minuto (los jefes no): ${rows.map(([at, hp, dmg]) => `a las ${at}, ${hp}x de HP y ${dmg}x de daño`).join('; ')}.`,
@@ -328,7 +328,7 @@ export const siteEs: SiteMessages = {
     rifts: {
       paragraphs: (r) => [
         `Desde las ${r.first}, más o menos cada ${n(r.every)} minutos, se abre una grieta legendaria fuera de la pantalla, con una flecha morada en el borde que apunta hacia ella. Se queda abierta ${r.portal}s. Si hay un jefe vivo en ese momento, espera a que caiga hasta ${r.bossWait}s, así que toda partida tiene 3 grietas, aunque los jefes tarden.`,
-        `Entrar es opcional: quédate ${n(r.enter)}s dentro de la grieta. Te lleva a la arena de un legendario de otra generación, cada una con su forma y su terreno: islas en aguas poco profundas, pilares para cubrirte, un pozo cuya marea sube, ríos de lava con puentes, un borde que se derrumba, una isla rodeada de oleaje, un meteoro en el espacio. Tienes ${r.arena}s para vencerlo; si se acaba el tiempo, la grieta colapsa y te devuelve sin recompensa.`,
+        `Entrar es opcional: quédate ${n(r.enter)}s dentro de la grieta. Te lleva a la arena de un legendario de otra generación, cada una con su forma y su terreno: islas en aguas poco profundas, pilares para cubrirte, un pozo cuya marea sube, ríos de lava con puentes, un borde que se derrumba, una isla rodeada de oleaje, un meteoro en el espacio. Tienes ${r.arena}s para vencerlo; si se acaba el tiempo, la grieta colapsa y te devuelve sin recompensa. Caer en la arena tampoco termina la partida: la grieta te expulsa al mapa con ${r.fallHp}% de HP, sin recompensa, y tu Revive queda guardado.`,
         'El reloj de la partida sigue corriendo adentro, pero la horda de afuera se congela y no aparece nada nuevo. Cuando vuelves, los enemigos son más fuertes porque pasó el tiempo, y los eventos que quedaron pendientes llegan de golpe.',
         `La recompensa vale el riesgo: mucha EXP, dos bolsas de ₽ además de la lluvia del jefe, Poké Balls extra, un Rare Candy, una Super Potion y la mitad del HP de vuelta. En 1 de cada ${r.shiny} grietas el legendario es shiny y paga el doble de ₽ y una Poké Ball más.`,
       ],

@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    title: { pt: 'Cair numa fenda não acaba a partida', en: 'Falling in a rift no longer ends the run', es: 'Caer en una grieta ya no termina la partida' },
+    notes: [
+      {
+        pt: 'Se o seu HP chegar a zero na arena de uma fenda lendária, você não perde mais a partida: o seu Pokémon desmaia, a fenda o puxa de volta e você reaparece no mapa com 30% do HP, sem a recompensa da fenda. O Revive fica guardado para depois. Ideia do @holyfield no mural de ideias!',
+        en: 'If your HP hits zero in a legendary rift’s arena, the run is no longer over: your Pokémon faints, the rift pulls it back and you land on the map with 30% HP, without the rift’s reward. Your Revive stays in the Bag for later. An idea from @holyfield on the ideas board!',
+        es: 'Si tu HP llega a cero en la arena de una grieta legendaria, ya no pierdes la partida: tu Pokémon se debilita, la grieta lo jala de vuelta y reapareces en el mapa con 30% de HP, sin la recompensa de la grieta. Tu Revive queda guardado para después. ¡Idea de @holyfield en el muro de ideas!',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 91,
     title: { pt: 'Mural de ideias', en: 'Ideas board', es: 'Muro de ideas' },
     notes: [

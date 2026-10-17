@@ -397,3 +397,90 @@ export const drawRiftArrow = (ctx: Ctx, g: Game, camX: number, camY: number, t: 
   const bob = Math.sin(t * 8) * 2
   blitRotated(ctx, ARROW(), cx + dx * (k + bob), cy + dy * (k + bob), angle, 2)
 }
+
+/* ---------------- Falling in the arena ---------------- */
+
+/** The defeat's progress, 0 → 1 (null while the player stands). */
+const fallProgress = (g: Game) => {
+  const fall = g.rift.arena?.fall
+  return fall == null ? null : 1 - fall / RIFT.fallTime
+}
+
+const clamp01 = (k: number) => Math.min(1, Math.max(0, k))
+/** Where the tear opens, over the fainted player's head. */
+const TEAR_RISE = 46
+
+/** How the fainted player looks while the rift throws them out; null while they stand. */
+export type FallLook = { seconds: number; lift: number; alpha: number; flash: number; tint: { color: string; amount: number }; bar: boolean }
+
+/**
+ * The player during the defeat: the Hurt pose blinking white as they faint,
+ * then a violet silhouette pulled up into the tear and swallowed by it.
+ */
+export const riftFallLook = (g: Game): FallLook | null => {
+  const k = fallProgress(g)
+  if (k === null) return null
+  const pull = clamp01((k - 0.55) / 0.35)
+  const ease = pull * pull
+  return {
+    seconds: k * RIFT.fallTime,
+    lift: Math.round(ease * (TEAR_RISE - 12)),
+    alpha: 1 - clamp01((k - 0.82) / 0.1),
+    flash: k < 0.3 && Math.floor(k * 24) % 2 === 0 ? 0.7 : 0,
+    tint: { color: '#a078e8', amount: 0.85 * clamp01((k - 0.3) / 0.3) },
+    bar: pull === 0,
+  }
+}
+
+/** Under the entities: the arena dims while the rift turns on the player, and the tear's beam reaches down to them. */
+export const drawRiftFallGround = (ctx: Ctx, g: Game, camX: number, camY: number) => {
+  const k = fallProgress(g)
+  if (k === null) return
+  ctx.fillStyle = `rgba(16,8,40,${(0.55 * clamp01(k * 3)).toFixed(2)})`
+  ctx.fillRect(camX, camY, g.view.w, g.view.h)
+  // The tear's beam falls behind the player, so their silhouette reads against it.
+  if (k < 0.4 || k > 0.92) return
+  const x = Math.round(g.player.x)
+  const top = Math.round(g.player.y - TEAR_RISE)
+  ctx.fillStyle = 'rgba(200,168,248,0.3)'
+  ctx.fillRect(x - 4, top, 9, TEAR_RISE)
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.fillRect(x - 1, top, 3, TEAR_RISE)
+}
+
+/** Above the entities: the tear opening over the player and violet motes spiralling up into it. */
+export const drawRiftFallAir = (ctx: Ctx, g: Game, t: number) => {
+  const k = fallProgress(g)
+  if (k === null) return
+  const p = g.player
+  const x = Math.round(p.x)
+  const cy = Math.round(p.y - TEAR_RISE)
+  const open = clamp01((k - 0.2) / 0.25) * (1 - clamp01((k - 0.92) / 0.08))
+  if (open <= 0) return
+  const size = (n: number) => Math.max(1, Math.round(n * open))
+  const pulse = Math.round((Math.sin(t * 6) + 1) * 1.5)
+  blitCentered(ctx, ellipse(size(14) + pulse, size(24) + pulse, 'rgba(200,168,248,0.3)'), x, cy)
+  blitCentered(ctx, ellipse(size(11), size(20), '#ffffff'), x, cy)
+  blitCentered(ctx, ellipse(size(10), size(19), '#c8a8f8'), x, cy)
+  blitCentered(ctx, ellipse(size(8), size(16), '#7850c8'), x, cy)
+  blitCentered(ctx, ellipse(size(5), size(12), '#301860'), x, cy)
+  blitCentered(ctx, ellipse(size(3), size(8), '#100820'), x, cy)
+  dashedRing(ctx, x, cy, size(7), -t * 8, VORTEX, 0.4, 2.2)
+  // Motes rise from a ring around the player and spiral into the tear.
+  const motes = 18
+  for (let i = 0; i < motes; i++) {
+    const u = (k * 2.5 + i / motes) % 1
+    const a = (i / motes) * TAU + u * 5
+    const r = (1 - u) * 34 * open
+    ctx.fillStyle = VORTEX[i % VORTEX.length]!
+    ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(p.y - 8 - u * (TEAR_RISE - 8) + Math.sin(a) * r * 0.4), 2, 2)
+  }
+}
+
+/** Over everything: the screen fades to a pale violet as the player is swallowed (the way out's flash picks it up). */
+export const drawRiftFallOut = (ctx: Ctx, g: Game) => {
+  const k = fallProgress(g)
+  if (k === null || k < 0.85) return
+  ctx.fillStyle = `rgba(240,232,255,${(0.6 * clamp01((k - 0.85) / 0.15)).toFixed(2)})`
+  ctx.fillRect(0, 0, g.view.w, g.view.h)
+}

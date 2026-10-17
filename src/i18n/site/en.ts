@@ -224,7 +224,7 @@ export const siteEn: SiteMessages = {
       paragraphs: (minutes: number, starters: number) => [
         `Pick one of ${starters} starters, Kanto to Paldea. Each one has its own stats, starting move, learnset and special attack (see the Pokédex).`,
         `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run. After that you can keep going in endless mode.`,
-        'If your HP hits zero the run is over (unless you are holding a Revive). The Poké Dollars you picked up go to your wallet.',
+        'If your HP hits zero the run is over (unless you are holding a Revive, or are in a rift’s arena, which just casts you back out). The Poké Dollars you picked up go to your wallet.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Regular enemies get tougher every minute (bosses don't): ${rows.map(([at, hp, dmg]) => `at ${at}, ${hp}x HP and ${dmg}x damage`).join('; ')}.`,
@@ -324,7 +324,7 @@ export const siteEn: SiteMessages = {
     rifts: {
       paragraphs: (r) => [
         `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so every run gets 3 rifts, even when bosses take a while.`,
-        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away, an island ringed by surf, a meteor in space. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
+        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away, an island ringed by surf, a meteor in space. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward. Fainting in the arena doesn’t end the run either: the rift casts you back onto the map with ${r.fallHp}% HP, no reward, and your Revive stays in the Bag.`,
         'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
         `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
       ],

@@ -28,7 +28,7 @@ import { withOutbreak } from './outbreak'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
 import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
-import { updateArena } from './riftArena'
+import { updateArena, updateArenaFall } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
@@ -279,6 +279,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   if (g.phase !== 'playing') return
   // The Mega Evolution plays with the world held still.
   if (updateMegaIntro(g, dt)) return
+  // So does the rift throwing a fainted player back out.
+  if (updateArenaFall(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
     return

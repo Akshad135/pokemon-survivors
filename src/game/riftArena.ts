@@ -17,7 +17,8 @@ import type { Enemy, Game } from './types'
  * The arena behind a rift: a floor with its own shape, scenery and ground
  * rule (`data/arenas.ts`) where the player duels one legendary. Entering sets
  * the world aside (horde, hazards, pickups, props) and leaving puts it back
- * exactly as it was. The run clock keeps going.
+ * exactly as it was. The run clock keeps going. Falling here doesn't end the
+ * run: the rift throws the fainted player back out (`fallInArena`).
  */
 
 /** Seconds of invulnerability when stepping in or out, so nobody lands on a hit. */
@@ -65,12 +66,12 @@ export const enterArena = (g: Game, legend: RiftLegend, x: number, y: number) =>
       return { kind: s.piece, x: x + s.x, y: y + s.y, variant: i, foot: [{ ...foot, x: x + s.x + foot.x, y: y + s.y + foot.y }] }
     }),
   }
-  g.rift.arena = { legend, shiny, x, y, left: RIFT.arenaTime, age: 0, bossId: boss.id, loot: null, stash, terrain }
+  g.rift.arena = { legend, shiny, x, y, left: RIFT.arenaTime, age: 0, bossId: boss.id, loot: null, fall: null, stash, terrain }
   g.events.push({ kind: 'riftEnter', enemy: legend, shiny })
 }
 
-/** Brings the player back to the world they left. `won` decides the toast; the loot was already dropped. */
-export const exitArena = (g: Game, outcome: 'won' | 'collapse') => {
+/** Brings the player back to the world they left. `outcome` decides the toast; the loot was already dropped. */
+export const exitArena = (g: Game, outcome: 'won' | 'collapse' | 'fallen') => {
   const arena = g.rift.arena
   if (!arena) return
   const { stash } = arena
@@ -101,6 +102,36 @@ export const exitArena = (g: Game, outcome: 'won' | 'collapse') => {
   g.weather.next = Math.max(g.weather.next, g.time + EXIT_WEATHER_DELAY)
   g.flash = 0.6
   g.events.push({ kind: 'riftExit', outcome })
+}
+
+/**
+ * The player's HP hit 0 in the arena: instead of the game over, they faint and
+ * the rift throws them out (`updateArenaFall` plays it with the world held
+ * still). A held Revive is kept for a real fall.
+ */
+export const fallInArena = (g: Game) => {
+  const arena = g.rift.arena
+  if (!arena || arena.fall !== null) return
+  arena.fall = RIFT.fallTime
+  g.player.hp = 0
+  g.shake = Math.max(g.shake, 8)
+  g.events.push({ kind: 'riftFall', enemy: arena.legend })
+}
+
+/**
+ * Runs the defeat while it plays and lands the player back outside with a bit
+ * of HP when it ends. Returns whether it is playing (the simulation waits).
+ */
+export const updateArenaFall = (g: Game, dt: number) => {
+  const arena = g.rift.arena
+  if (!arena || arena.fall === null) return false
+  arena.fall -= dt
+  if (arena.fall > 0) return true
+  const p = g.player
+  p.hp = Math.max(1, Math.round(p.stats.maxHp * RIFT.fallHp))
+  p.hurt = 0
+  exitArena(g, 'fallen')
+  return true
 }
 
 /** Keeps a circle on the arena's floor (world coordinates in, arena coordinates for the geometry). */
@@ -137,7 +168,8 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
  */
 export const updateArena = (g: Game, dt: number) => {
   const arena = g.rift.arena
-  if (!arena) return
+  // A player who fainted this tick is on the way out: no win, no collapse.
+  if (!arena || arena.fall !== null) return
   const layout = ARENA_LAYOUTS[arena.legend]
   const before = stepsAt(layout.tide, arena.age) + stepsAt(layout.crumble, arena.age)
   arena.age += dt
