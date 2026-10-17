@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    pr: 94,
     title: { pt: 'Cair numa fenda não acaba a partida', en: 'Falling in a rift no longer ends the run', es: 'Caer en una grieta ya no termina la partida' },
     notes: [
       {
