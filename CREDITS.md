@@ -457,6 +457,12 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 349 | Feebas (shiny) | Chi | Chi, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 350 | Milotic | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 350 | Milotic (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | Chi, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 633 | Deino | [Jhony-Rex](https://www.deviantart.com/jhony-rex), Emboarger, [Uni](https://github.com/ArianaCastro01) | [mucrush](https://www.deviantart.com/mucrush), [Caitemis](https://caitemis-art.tumblr.com/) |
+| 633 | Deino (shiny) | [Caitemis](https://caitemis-art.tumblr.com/), [Uni](https://github.com/ArianaCastro01) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 634 | Zweilous | [Pink_no_tori](https://twitter.com/pink_avian_poke), baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 634 | Zweilous (shiny) | [Hemlock](https://baphomets.neocities.org/) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 635 | Hydreigon | Top_Kec | baronessfaron, JustAGunk |
+| 635 | Hydreigon (shiny) | Top_Kec, [Deeshura](https://bsky.app/profile/deeshura.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social), baronessfaron, JustAGunk |
 | 446 | Munchlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 446 | Munchlax (shiny) | El_Pangoro_Parse | Lovi |
 | 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
@@ -989,8 +995,6 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 609 | Chandelure (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 610 | Axew | [FrivolousAqua](https://twitter.com/FrivolousAqua), baronessfaron, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 | 610 | Axew (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
-| 633 | Deino | [Jhony-Rex](https://www.deviantart.com/jhony-rex), Emboarger, [Uni](https://github.com/ArianaCastro01) | [mucrush](https://www.deviantart.com/mucrush), [Caitemis](https://caitemis-art.tumblr.com/) |
-| 633 | Deino (shiny) | [Caitemis](https://caitemis-art.tumblr.com/), [Uni](https://github.com/ArianaCastro01) | [Caitemis](https://caitemis-art.tumblr.com/) |
 | 659 | Bunnelby | [pi3.14](https://twitter.com/Pi_y_ranitas), baronessfaron | baronessfaron |
 | 659 | Bunnelby (shiny) | baronessfaron | ◥θ┴θ◤, baronessfaron |
 | 660 | Diggersby | [pi3.14](https://twitter.com/Pi_y_ranitas), [Soulja](https://twitter.com/OlSoulja) | [Aviivix](https://twitter.com/aviivix/), [Morei](https://bsky.app/profile/murpia57.bsky.social) |

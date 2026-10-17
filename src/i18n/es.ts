@@ -1534,6 +1534,7 @@ export const es: Messages = {
     bagon: 'Sueña con volar. Fuego dracónico desde el huevo.',
     slakoth: 'Pereza. Lento para actuar, pero pega muy fuerte.',
     feebas: 'El más feúcho. Hasta volverse el más bello.',
+    deino: 'Mordedor ciego. Pega fuerte y, con tres cabezas, dispara más.',
     munchlax: 'Tanque glotón. Mucha vida, defensa y regeneración; atrae objetos de lejos.',
   },
 

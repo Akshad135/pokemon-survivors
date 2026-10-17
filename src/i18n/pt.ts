@@ -1623,6 +1623,7 @@ export const pt = {
     bagon: 'Sonha em voar. Fogo dracônico desde o ovo.',
     slakoth: 'Preguiça. Lento para agir, mas bate muito forte.',
     feebas: 'O mais sem graça. Até virar o mais belo.',
+    deino: 'Mordedor cego. Bate forte e, com três cabeças, atira mais.',
     munchlax: 'Tanque guloso. Muita vida, defesa e regeneração; puxa os itens de longe.',
   },
 

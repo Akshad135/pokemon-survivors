@@ -591,6 +591,19 @@ export const HATCHLINGS = {
     learnset: ['whirlpool', 'waterGun', 'dragonBreath', 'iceShard', 'disarmingVoice', 'swift'],
     line: line2(['Feebas', 349, ['water']], ['Milotic', 350, ['water']], { maxHp: 95, might: 0.5, regen: 0.8, area: 0.2, armor: 1 }),
   },
+  deino: {
+    name: 'Deino',
+    color: '#3f5890',
+    egg: 'ultra',
+    // Blind, so it bites whatever is near; Hydreigon's three heads fire one more shot.
+    stats: { might: 0.12, maxHp: 10, speed: -3 },
+    signature: 'crunch',
+    learnset: ['crunch', 'dragonBreath', 'fireSpin', 'flashCannon', 'earthquake', 'gust', 'swift'],
+    line: line3(['Deino', 633, ['dark', 'dragon']], ['Zweilous', 634, ['dark', 'dragon']], ['Hydreigon', 635, ['dark', 'dragon']], [
+      { maxHp: 35, might: 0.1, armor: 1 },
+      { maxHp: 50, might: 0.22, speed: 5, amount: 1 },
+    ]),
+  },
   /* ---------- Friendship Egg (only from an invite's Mystery Gift) ---------- */
   munchlax: {
     name: 'Munchlax',
