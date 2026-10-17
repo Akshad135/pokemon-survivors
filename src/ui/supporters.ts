@@ -12,7 +12,7 @@ import { eggIcon, giftIcon, heartIcon, medalIcon, pokeballIcon, sparkleIcon, sup
 import { cryUrl, drawPokemon, hasShiny, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { ROUTES } from '../site/routes'
 import { fetchPoll, fetchSupporterStatus, fetchWall, redeemCode, setSupporterPublic, vote } from '../supporters'
-import { h, later, rich, topRight } from './dom'
+import { h, later, rich } from './dom'
 import { hatchScene } from './incubator'
 import { profileEditor, profileScreen } from './profile'
 import { loadSave, updateSave } from './save'
@@ -37,31 +37,6 @@ const supportUrl = () => {
   const s = accountState()
   const handle = s.kind === 'signedIn' ? s.handle : null
   return `${ROUTES.support[locale()]}${handle ? `?u=${encodeURIComponent(handle)}` : ''}`
-}
-
-/**
- * "♥ Apoie o projeto" chip for the menus before a run (the title's top bar,
- * the starter select's corner). It opens the Apoiadores screen, and twinkles
- * with a sparkle while a shiny ticket waits for its pick; without accounts
- * (no rewards to give) it opens the support page in a new tab. Phones show
- * just the heart.
- */
-export const supportChip = (open: () => void) => {
-  const m = t()
-  const waiting = accountsEnabled && pendingPicks(loadSave()).length > 0
-  const label = waiting ? `${m.home.support} · ${m.supporters.banner}` : m.home.support
-  const attrs = { class: waiting ? 'support-chip box waiting' : 'support-chip box', title: label, 'aria-label': label }
-  const icon = h('img', { src: heartIcon(), alt: '' })
-  return accountsEnabled
-    ? h('button', { ...attrs, type: 'button', onclick: () => (playSfx('select'), later(open)) }, icon, h('span', {}, m.home.support), waiting && h('img', { class: 'support-sparkle', src: sparkleIcon(), alt: '' }))
-    : h('a', { ...attrs, href: ROUTES.support[locale()], target: '_blank', rel: 'noopener' }, icon, h('span', {}, m.home.support))
-}
-
-/** `supportChip` in the top-right corner (`topRight`), left of the Poké Mart. Returns a disposer. */
-export const supportButton = (root: HTMLElement, open: () => void) => {
-  const el = supportChip(open)
-  topRight(root).append(el)
-  return () => el.remove()
 }
 
 /* ---------------- Spatial navigation ---------------- */
@@ -415,8 +390,8 @@ const codeScreen = (root: HTMLElement, input: Input, redeemed: () => void, back:
 
 /* ---------------- Hall da Fama ---------------- */
 
-/** The final stage of a supporter's Pokémon (like the Trainer chip), or null for an API from before the Hall. */
-const hallFace = (p: Companion | null) => {
+/** The final stage of a supporter's Pokémon (like the Trainer chip), shiny only if it has a shiny sprite; null for an API from before the Hall. */
+export const hallFace = (p: Companion | null) => {
   if (!p) return null
   const dex = PLAYABLE[p.id].line[PLAYABLE[p.id].line.length - 1]!.dex
   return { dex, shiny: p.shiny && hasShiny(dex) }
@@ -503,8 +478,8 @@ export type SupportersActions = {
 }
 
 /**
- * The Hall da Fama (the heart chip on the title and the starter select, the
- * lobby's Hall card, the Trainer Card's supporter row): the Lendas (gold) on
+ * The Hall da Fama (the lobby's Hall card, the Trainer Card's supporter
+ * row): the Lendas (gold) on
  * pedestals, the other supporters as chips (a tap opens their profile), and
  * the call to action with the cosmetic perks and "Apoiar" (the support page
  * in a new tab, with the player's handle). A supporter's perks become their
@@ -512,7 +487,7 @@ export type SupportersActions = {
  * a code, show or hide themselves; anyone else gets the poll, a code and
  * sign in as links. Wide screens put the call to action in a column on the
  * right; phones in a footer. `open: 'pick'` goes straight to the shiny picker
- * while a ticket waits (the heart chip twinkles then).
+ * while a ticket waits (the lobby's Hall card sparkles then).
  */
 export const supportersScreen = (root: HTMLElement, input: Input, actions: SupportersActions, open: 'pick' | null = null): Screen => {
   const el = h('div', { class: 'screen shell hall-screen', style: `--sparkle:url(${sparkleIcon()})` })

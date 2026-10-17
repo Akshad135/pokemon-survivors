@@ -2657,52 +2657,6 @@ button {
   line-height: 1;
 }
 
-/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
-.top-right {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.support-chip {
-  order: -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px 6px 8px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: #a02858;
-  text-decoration: none;
-  pointer-events: auto;
-}
-
-.support-chip img {
-  width: 21px;
-  height: 21px;
-}
-
-.support-chip:hover,
-.support-chip:focus-visible {
-  --frame: #f878a8;
-}
-
-/* Phones and tablets: just the heart, so the corner clears the centered logo. */
-@media (max-width: 960px), (max-height: 500px) {
-  .support-chip {
-    padding: 6px 8px;
-  }
-  .support-chip span {
-    display: none;
-  }
-}
-
 /* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
 .sync-dot {
   width: 8px;
@@ -3122,6 +3076,18 @@ button {
 .hall-face.gold {
   color: #f8d030;
   border-color: #f8d030;
+}
+
+/* A portrait is 40 px: shown 1:1, cropped to the circle. */
+.hall-face.portrait {
+  overflow: hidden;
+  background: #3a2878;
+}
+
+.hall-face img {
+  flex: none;
+  width: 40px;
+  height: 40px;
 }
 
 .hall-stack em {
@@ -3799,12 +3765,6 @@ button {
   }
   .mart-buy {
     width: 100%;
-  }
-  /* Compact corner so it clears the centered logo on phones. */
-  .top-right {
-    top: 6px;
-    right: 6px;
-    gap: 6px;
   }
 }
 
@@ -7319,11 +7279,6 @@ a.btn.dex-site {
 
 /* ---------- Apoiadores (supporters) ---------- */
 
-.support-chip {
-  cursor: pointer;
-  font-family: var(--title);
-}
-
 .dialog.supporters {
   width: min(520px, 94vw);
   gap: 10px;
@@ -7519,17 +7474,6 @@ a.btn.dex-site {
 
 .supporter-credits span {
   flex-basis: 100%;
-}
-
-.support-chip.waiting {
-  --frame: #f8d030;
-  animation: share-glow 1.4s steps(2, start) infinite;
-}
-
-.support-chip .support-sparkle {
-  width: 14px;
-  height: 14px;
-  margin-left: -4px;
 }
 
 /* ---------- Hall da Fama (ui/supporters.ts) ---------- */
