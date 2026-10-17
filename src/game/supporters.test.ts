@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SUPPORTER } from '../data/supporters'
 import { EMPTY_SAVE } from './meta'
-import { canWalkWith, donationPoints, newCode, parseCode, supporterTier, tiersReached } from './supporters'
+import { canWalkWith, donationPoints, hallOf, newCode, parseCode, parseWall, supporterTier, tiersReached } from './supporters'
 
 describe('supporter tiers', () => {
   it('counts reais and dollars on one scale', () => {
@@ -48,5 +48,31 @@ describe('canWalkWith', () => {
     expect(canWalkWith(EMPTY_SAVE, { id: 'gible', shiny: false })).toBe(false)
     const hatched = { ...EMPTY_SAVE, hatched: { gible: { shiny: true } } }
     expect(canWalkWith(hatched, { id: 'gible', shiny: true })).toBe(true)
+  })
+})
+
+describe('the wall', () => {
+  const entry = { handle: 'ash', name: 'Ash', tier: 'gold', since: '2026-10-01T12:00:00.000Z' }
+
+  it('reads an API from before the Hall, with no title or Pokémon', () => {
+    expect(parseWall([entry])).toEqual([{ ...entry, title: null, pokemon: null }])
+  })
+
+  it('keeps a known title and Pokémon, and drops what it does not know', () => {
+    expect(parseWall([{ ...entry, title: 'supporter', pokemon: { id: 'gible', shiny: true } }])[0]).toMatchObject({ title: 'supporter', pokemon: { id: 'gible', shiny: true } })
+    expect(parseWall([{ ...entry, title: 'emperor', pokemon: { id: 'mewtwo' } }])[0]).toMatchObject({ title: null, pokemon: null })
+    expect(parseWall([{ ...entry, tier: 'platinum' }, { ...entry, since: 'soon' }, 'ash'])).toEqual([])
+  })
+
+  it('splits the Hall into Lendas (gold) and supporters, newest first', () => {
+    const wall = parseWall([
+      { ...entry, handle: 'old', tier: 'supporter', since: '2026-09-01T00:00:00.000Z' },
+      { ...entry, handle: 'gold', since: '2026-09-15T00:00:00.000Z' },
+      { ...entry, handle: 'new', tier: 'supporter', since: '2026-10-10T00:00:00.000Z' },
+      { ...entry, handle: 'twin', tier: 'supporter', since: '2026-10-10T00:00:00.000Z' },
+    ])
+    const hall = hallOf(wall)
+    expect(hall.legends.map((e) => e.handle)).toEqual(['gold'])
+    expect(hall.supporters.map((e) => e.handle)).toEqual(['new', 'twin', 'old'])
   })
 })
