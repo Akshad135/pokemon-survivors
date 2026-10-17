@@ -978,7 +978,8 @@ const frame = (now: number) => {
     let steps = 0
     if (g.phase === 'playing' || g.phase === 'evolving') {
       acc += dt
-      while (acc >= STEP) {
+      // A level-up or a faint ends the frame's steps: the ones left over would go into the replay as ticks the run never played.
+      while (acc >= STEP && (g.phase === 'playing' || g.phase === 'evolving')) {
         // The simulation gets the stick as the replay stores it (`moveCode`), so a re-simulation sees the same run.
         if (specialQueued) recordEvent(r.recorder, ['special'])
         if (megaQueued) recordEvent(r.recorder, ['mega'])
