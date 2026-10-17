@@ -192,7 +192,6 @@ type Run = {
 
 let screen: Screen | null = null
 let run: Run | null = null
-let lastStarter: PlayableId = 'charmander'
 /** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
 let specialQueued = false
 /** Mega Evolution press (E, the Mega button, gamepad Y), consumed like the special. */
@@ -243,14 +242,13 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       challenge: () => showChallenge(),
       incubator: () => showIncubator(() => showTitle({ focus: 2 })),
       missions: () => showMissions(),
-      partner: lastStarter,
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
       trainer: (focus) =>
-        trainerCardScreen(ui, input, { partner: lastStarter, supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
+        trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
     }, opts),
@@ -271,7 +269,7 @@ const showPlayGate = () =>
   )
 
 /** Pokémon select, with the Poké Mart and the support chip (top right) and the way back to the title (top left). */
-const showMenu = (initial: PlayableId = lastStarter) => {
+const showMenu = (initial: PlayableId = loadSave().partner) => {
   endRun()
   const select = starterSelect(ui, input, {
     pick: (id) => setTimeout(() => void startRun(id), 250),
@@ -300,7 +298,7 @@ const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
 /** The Caixa do PC (from the Pokédex); its Trainer Card stands the last Pokémon played beside the trainer. */
 const showPcBox = (back: () => void) =>
-  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(lastStarter), close) }, loadSave().style.equipped.wallpaper)
+  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(loadSave().partner), close) }, loadSave().style.equipped.wallpaper)
 
 const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 3 })))
 
@@ -498,7 +496,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   setScreen(null)
   endRun()
   const c = daily?.challenge ?? null
-  if (!c) lastStarter = starter
+  // The Desafio do dia's Pokémon is the day's, not the player's pick.
+  if (!c) updateSave((s) => ({ ...s, partner: starter }))
   const loading = loadingScreen()
   ui.append(loading)
   // The start token's clock starts now, while the sprites load.
@@ -639,7 +638,7 @@ const syncOverlay = (r: Run) => {
         ui,
         input,
         g,
-        () => afterRun(() => void (r.challenge ? replayChallenge() : startRun(lastStarter))),
+        () => afterRun(() => void (r.challenge ? replayChallenge() : startRun(loadSave().partner))),
         () => afterRun(() => showMenu()),
         () => (recordEvent(r.recorder, ['endless']), continueEndless(g)),
         {
@@ -1252,7 +1251,7 @@ if (import.meta.env.DEV) {
       dex: () => loadSave().dex,
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
-      card: (partner: PlayableId = lastStarter) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
+      card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),

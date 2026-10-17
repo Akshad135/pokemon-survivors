@@ -3,7 +3,6 @@ import { isAdmin } from '../admin'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { MEDALS } from '../data/achievements'
-import type { PlayableId } from '../data/hatchlings'
 import { RIBBON_TIERS, ribbonCounts } from '../game/ribbons'
 import { savedSupporterTier, trainerAvatar } from '../game/trainer'
 import { formatNumber, LOCALES, locale, t } from '../i18n'
@@ -24,10 +23,10 @@ import { backButton, gearButton, shellBody, topBar } from './shell'
  * The trainer's avatar: their Pokémon (`trainerAvatar`) once signed in, a
  * Poké Ball for guests; a gold ring for supporters.
  */
-const avatar = (s: AccountState, partner: PlayableId, size: 'small' | 'big') => {
+const avatar = (s: AccountState, size: 'small' | 'big') => {
   const save = loadSave()
   const signedIn = s.kind === 'signedIn'
-  const face = trainerAvatar(save, partner)
+  const face = trainerAvatar(save)
   const ring = signedIn && savedSupporterTier(save) ? ' supporter' : ''
   return h('span', { class: `trainer-avatar ${size}${ring}`, 'aria-hidden': 'true' }, signedIn ? h('img', { src: portraitUrl(face.dex, face.shiny), alt: '' }) : h('img', { class: 'ball', src: pokeballIcon(), alt: '' }))
 }
@@ -46,7 +45,7 @@ const titleLine = (cls: string) => {
  * are on), with the sync dot once signed in. A tap or `C` calls `onOpen`
  * (the Trainer Card). It follows the account state; `dispose` stops that.
  */
-export const trainerChip = (input: Input, opts: { partner: PlayableId; onOpen: () => void }) => {
+export const trainerChip = (input: Input, opts: { onOpen: () => void }) => {
   const open = () => (playSfx('select'), later(opts.onOpen))
   const el = h('button', { class: 'shell-chip trainer-chip box', type: 'button', onclick: open })
   const draw = (s: AccountState) => {
@@ -54,7 +53,7 @@ export const trainerChip = (input: Input, opts: { partner: PlayableId; onOpen: (
     const name = s.kind === 'signedIn' ? s.name || (s.handle ? `@${s.handle}` : m.guest) : s.kind === 'busy' ? '…' : m.guest
     const sub = s.kind === 'guest' && accountsEnabled ? h('span', { class: 'trainer-chip-sub join' }, m.signIn) : titleLine('trainer-chip-sub')
     el.replaceChildren(
-      avatar(s, opts.partner, 'small'),
+      avatar(s, 'small'),
       h('span', { class: 'trainer-chip-who' }, h('b', {}, name), sub),
       ...(s.kind === 'signedIn' ? [h('span', { class: 'sync-dot', 'data-sync': s.sync, 'aria-hidden': 'true' })] : []),
       h('span', { class: 'key-hint' }, 'C'),
@@ -89,7 +88,7 @@ type Row = { label: string; run: () => void; icon?: string; tone?: 'out' }
 export const trainerCardScreen = (
   root: HTMLElement,
   input: Input,
-  opts: { partner: PlayableId; supporters: (back: () => void) => Screen },
+  opts: { supporters: (back: () => void) => Screen },
   onClose: () => void,
 ): Screen => {
   const el = h('div', { class: 'screen shell dim trainer-screen' })
@@ -123,7 +122,7 @@ export const trainerCardScreen = (
 
   const rowsFor = (s: AccountState, tier: ReturnType<typeof savedSupporterTier>): Row[] => {
     const m = t().trainer
-    const share: Row = { label: m.share, run: () => openSub((back) => sharePreview(root, input, trainerShare(opts.partner), back)) }
+    const share: Row = { label: m.share, run: () => openSub((back) => sharePreview(root, input, trainerShare(loadSave().partner), back)) }
     const missions: Row = { label: m.missions, run: () => openSub((back) => missionsScreen(root, input, back)) }
     if (s.kind !== 'signedIn') return [...(s.kind === 'guest' && accountsEnabled ? [{ label: m.join, run: () => void signIn() }] : []), share, missions]
     const handle = s.handle
@@ -170,7 +169,7 @@ export const trainerCardScreen = (
       h(
         'div',
         { class: 'trainer-head' },
-        avatar(s, opts.partner, 'big'),
+        avatar(s, 'big'),
         h('div', { class: 'trainer-id' }, h('h3', {}, name), handle && h('small', {}, handle), titleLine('trainer-title')),
       ),
       h(

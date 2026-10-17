@@ -14,7 +14,9 @@ import { parseRibbons, type Ribbon } from './ribbons'
 import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
+import { isPlayable } from './ranking'
 import { parseCompanion, type Companion } from './supporters'
+import type { PlayableId } from '../data/hatchlings'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
 import type { Game } from './types'
@@ -113,6 +115,8 @@ export type Save = {
   title: TitleId | null
   /** Difficulty picked last on the starter select screen. */
   difficulty: Difficulty
+  /** The Pokémon of the last run started from the starter select (not the Desafio do dia's): the Trainer chip's face and the select's first pick. */
+  partner: PlayableId
   /** Shiny starters unlocked by a lucky roll, and the Normal/Shiny pick of each (`game/shinyStarters.ts`). */
   shinyStarters: ShinyStarters
   /** Lures and Incenses, and the ones armed for the next run (`game/bag.ts`). */
@@ -135,6 +139,9 @@ export type Save = {
   companion: Companion | null
 }
 
+/** The partner of a save that never started a run. */
+export const DEFAULT_PARTNER: PlayableId = 'charmander'
+
 export const EMPTY_SAVE: Save = {
   version: SAVE_VERSION,
   wallet: 0,
@@ -146,6 +153,7 @@ export const EMPTY_SAVE: Save = {
   achievements: NO_ACHIEVEMENTS,
   title: null,
   difficulty: DEFAULT_DIFFICULTY,
+  partner: DEFAULT_PARTNER,
   shinyStarters: NO_SHINY_STARTERS,
   bag: EMPTY_BAG,
   counter: NO_COUNTER,
@@ -203,6 +211,7 @@ export const parseSaveData = (json: unknown): Save => {
     achievements,
     title: parseTitle(data.title, achievements.unlocked, titles),
     difficulty: parseDifficulty(data.difficulty),
+    partner: isPlayable(data.partner) ? data.partner : DEFAULT_PARTNER,
     shinyStarters: parseShinyStarters(data.shinyStarters),
     bag: parseBag(data.bag),
     counter: parseCounter(data.counter),

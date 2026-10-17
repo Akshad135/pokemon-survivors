@@ -9,7 +9,6 @@ import { drawPokemon, loadedSprites, loadSpecies } from '../render/sprites'
 import { accountState, accountsEnabled } from '../account'
 import { eggIcon } from '../render/art'
 import { inviterName } from '../ranking'
-import type { PlayableId } from '../data/hatchlings'
 import { h, later, rich } from './dom'
 import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
@@ -25,8 +24,6 @@ export type TitleActions = {
   missions: () => void
   /** Opens the egg incubator. */
   incubator: () => void
-  /** The last Pokémon played: the Trainer chip's face (see `trainerAvatar`). */
-  partner: PlayableId
   /** The menu is up: after the "press start" gesture, so the browser lets audio play. */
   ready: () => void
   /**
@@ -167,7 +164,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       // After this key dispatch, or the next screen would receive the same Enter.
       later(items[i]!.run)
     }, { initial: focus })
-    const chip = trainerChip(input, { partner: actions.partner, onOpen: () => openOver(actions.trainer) })
+    const chip = trainerChip(input, { onOpen: () => openOver(actions.trainer) })
     closeChip = chip.dispose
     bar.replaceWith(
       topBar({

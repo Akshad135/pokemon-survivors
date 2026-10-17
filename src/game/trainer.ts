@@ -5,12 +5,12 @@ import { canWalkWith, isSupporter, type SupporterTier } from './supporters'
 
 /**
  * The trainer's face on the Trainer chip and card: the supporter's companion
- * when one walks along (their pick), else `partner` (the last Pokémon
- * played), at its line's final stage, shiny when the save plays it shiny.
+ * when one walks along (their pick), else the save's `partner` (the last
+ * Pokémon picked), at its line's final stage, shiny when the save plays it shiny.
  */
-export const trainerAvatar = (save: Save, partner: PlayableId) => {
+export const trainerAvatar = (save: Save) => {
   const companion = save.companion && isSupporter(save) && canWalkWith(save, save.companion) ? save.companion : null
-  const id = companion?.id ?? partner
+  const id: PlayableId = companion?.id ?? save.partner
   const line = PLAYABLE[id].line
   const shiny = companion ? companion.shiny : save.shinyStarters[id] === true || (isHatchling(id) && save.hatched[id]?.shiny === true)
   return { dex: line[line.length - 1]!.dex, shiny }
