@@ -11,7 +11,7 @@ import { moveIcon, sparkleIcon } from '../render/art'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl } from '../render/sprites'
 import { t } from '../i18n'
-import { boundKey } from './controls'
+import { boundLabel, glyphText } from './inputLabels'
 import { h } from './dom'
 import { tabStrip } from './shell'
 import { STAT_BARS, statRatio } from './statBars'
@@ -189,12 +189,12 @@ export const detailsSheet = (opts: SheetOpts) => {
               opts.onStage(i)
               render()
             }),
-            section(m.title.special, boundKey('special')),
+            section(m.title.special, h('span', {}, ...glyphText(boundLabel('special')))),
             specialRow(id),
           ]
         : k === 'moves'
           ? [section(m.title.moves), h('div', { class: 'move-list' }, ...PLAYABLE[id].learnset.map((mv) => moveRow(mv, mv === PLAYABLE[id].signature)))]
-          : [section(megas.length > 1 ? m.mega.sectionTwo : m.mega.section, boundKey('mega')), ...megas.map(megaRow)]),
+          : [section(megas.length > 1 ? m.mega.sectionTwo : m.mega.section, h('span', {}, ...glyphText(boundLabel('mega')))), ...megas.map(megaRow)]),
     )
     body.scrollTop = 0
   }

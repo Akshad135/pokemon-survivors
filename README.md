@@ -141,7 +141,7 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
 | Switch language | Settings → Game (← → on the language) | Settings (gear, top right) → Game |
 | Trainer Card | `C` (title screen) | The Trainer chip, top left of the title screen |
 
-On a gamepad, the D-pad and left stick move your Pokémon and drive every menu; A confirms in menus and fires the special in a run. Every action's key and gamepad button can be remapped in Settings → Controls (`src/engine/bindings.ts`); the arrows, `Esc` and the left stick stay fixed.
+On a gamepad, the D-pad and left stick move your Pokémon and drive every menu; A confirms in menus and fires the special in a run. Every action's key and gamepad button can be remapped in Settings → Controls (`src/engine/bindings.ts`); the arrows, `Esc` and the left stick stay fixed. Once a pad is pressed, the hints and the HUD show its buttons instead of keys, named after its layout (Xbox, PlayStation or Nintendo, from `Gamepad.id`; `src/ui/inputLabels.ts`), and the Controls screen names the pads the browser sees. Presses are edge-detected pad by pad, so a second pad holding a button can't hide it on the one in use.
 
 ## Running locally
 

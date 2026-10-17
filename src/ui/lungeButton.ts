@@ -3,8 +3,8 @@ import { isManual, MOVES, moveStats } from '../game/moves'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { moveIcon } from '../render/art'
-import { boundKey } from './controls'
-import { h, setStyle, setText } from './dom'
+import { boundLabel, setGlyphText } from './inputLabels'
+import { h, setStyle } from './dom'
 
 /**
  * Controls for the manual moves (Quick Attack, Extreme Speed), shown while the
@@ -43,7 +43,7 @@ export const createLungeControls = (onPress: () => void) => {
       }
     }
     if (!owned) return
-    setText(keyLabel, boundKey('lunge'))
+    setGlyphText(keyLabel, boundLabel('lunge'))
     const fill = 1 - owned.cooldown / moveStats(owned.id, owned.level, g.player.stats).cooldown
     for (const el of [badge, button]) {
       setStyle(el, '--fill', fill.toFixed(3))

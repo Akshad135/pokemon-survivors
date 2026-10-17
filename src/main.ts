@@ -64,6 +64,7 @@ import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleS
 import { weatherIcon } from './render/weather'
 import { formatDay, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
+import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { announceGifts } from './ui/gifts'
@@ -986,6 +987,7 @@ const frame = (now: number) => {
   const t = now / 1000
   // Gamepads type the keyboard's codes: menus get confirm/back, a run its special, Mega and lunge.
   input.poll(run?.game.phase === 'playing')
+  setActivePad(input.activePad())
 
   if (run) {
     const r = run

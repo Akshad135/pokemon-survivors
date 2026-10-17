@@ -19,6 +19,28 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    pr: 92,
+    title: { pt: 'O jogo reconhece o seu controle', en: 'The game recognizes your gamepad', es: 'El juego reconoce tu control' },
+    notes: [
+      {
+        pt: 'Com mais de um controle ligado (Joy-Cons, um controle virtual), um botão segurado em um deles escondia o mesmo botão apertado no outro: o controle Xbox parecia não funcionar na tela de Controles. Agora cada controle conta sozinho.',
+        en: 'With more than one gamepad on (Joy-Cons, a virtual controller), a button held on one hid the same button pressed on the other, so an Xbox controller seemed dead in the Controls screen. Now each gamepad counts on its own.',
+        es: 'Con más de un control encendido (Joy-Cons, un control virtual), un botón presionado en uno escondía el mismo botón en el otro, y el control de Xbox parecía no funcionar en la pantalla de Controles. Ahora cada control cuenta por separado.',
+      },
+      {
+        pt: 'A tela de Controles mostra o nome do controle conectado, ou o que fazer quando o navegador ainda não o vê, e os botões aparecem como no seu controle: A B X Y no Xbox, ✕ ○ □ △ no PlayStation e B A Y X no Nintendo. As setas ← → do direcional não aparecem mais como um traço.',
+        en: 'The Controls screen names the gamepad connected, or says what to do while the browser doesn’t see it yet, and the buttons show as printed on your pad: A B X Y on Xbox, ✕ ○ □ △ on PlayStation and B A Y X on Nintendo. The D-pad’s ← → no longer show as a dash.',
+        es: 'La pantalla de Controles muestra el nombre del control conectado, o qué hacer mientras el navegador todavía no lo ve, y los botones aparecen como en tu control: A B X Y en Xbox, ✕ ○ □ △ en PlayStation y B A Y X en Nintendo. Las flechas ← → de la cruceta ya no aparecen como un guion.',
+      },
+      {
+        pt: 'Jogando com o controle, as dicas das telas e os botões do HUD mostram os botões do controle no lugar das teclas, e os atalhos que só existem no teclado saem da frente. Basta apertar uma tecla para voltar às dicas do teclado.',
+        en: 'Playing with a gamepad, the screens’ hints and the HUD show its buttons instead of keys, and keyboard-only shortcuts step aside. Press any key to get the keyboard hints back.',
+        es: 'Jugando con el control, las pistas de las pantallas y los botones del HUD muestran sus botones en lugar de las teclas, y los atajos que solo existen en el teclado se apartan. Presiona una tecla para volver a las pistas del teclado.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 90,
     title: { pt: 'Fim do rastro de imagens no celular', en: 'No more smeared images on phones', es: 'Adiós al rastro de imágenes en el celular' },
     notes: [

@@ -1,5 +1,5 @@
-import { ACTIONS, keyCode, type Action, type Bindings } from './bindings'
-import { padActions, readPads } from './gamepad'
+import { ACTIONS, keyCode, type Bindings } from './bindings'
+import { padActions, padChanges, readPads, type PadState } from './gamepad'
 import type { Vec } from './math'
 
 /**
@@ -19,6 +19,10 @@ export type Input = {
   press: (key: string) => void
   /** Reads the gamepads. Call once per frame; `playing` (a run, not a menu) picks what the buttons mean. */
   poll: (playing: boolean) => void
+  /** The `Gamepad.id` of the pad the player pressed last, or null since a key was pressed (or before any pad was). */
+  activePad: () => string | null
+  /** The ids of the gamepads the browser shows the game. A pad only appears after its first press. */
+  pads: () => readonly string[]
   /**
    * Hands every raw key and pad button press to `take`, bypassing the bindings
    * and `onKey`, until the returned function is called (the remap screen).
@@ -109,8 +113,9 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
   let capturing: ((press: RawPress) => void) | null = null
   let pointerId: number | null = null
   let stick: Stick | null = null
-  let padButtons = new Set<number>()
-  let padStick = new Set<Action>()
+  /** Last frame's pads, for edge detection. */
+  let pads: PadState[] = []
+  let activePad: string | null = null
   /** Codes the pads hold in a run (the directions), read by `readMove` like held keys. */
   let padHeld: string[] = []
   /** The fixed center the current touch grabbed (null: it's floating). */
@@ -119,6 +124,7 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
   window.addEventListener('keydown', (e) => {
     // Typing in a text field (the profile editor) is not playing: the field keeps its keys.
     if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return
+    activePad = null
     if (capturing) {
       e.preventDefault()
       if (!e.repeat && e.code) capturing({ device: 'key', code: e.code })
@@ -182,11 +188,10 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
 
   // Edge-detected per button, not per code: a button held across a run/menu switch doesn't press again.
   const poll = (playing: boolean) => {
-    const { buttons, stick: axes } = readPads()
-    const fresh = new Set([...buttons].filter((b) => !padButtons.has(b)))
-    const freshStick = new Set([...axes].filter((a) => !padStick.has(a)))
-    padButtons = buttons
-    padStick = axes
+    const now = readPads()
+    const { buttons, stick: axes, fresh, freshStick, pressed } = padChanges(pads, now)
+    pads = now
+    if (pressed !== null) activePad = pressed
     const pad = bindings().pad
     padHeld = playing ? padActions(pad, buttons, axes, true).map((a) => ACTIONS[a].code) : []
     if (capturing) return fresh.forEach((button) => capturing?.({ device: 'pad', button }))
@@ -208,5 +213,15 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
 
   const isHeld = (code: string) => padHeld.includes(code) || [...held.values()].includes(code)
 
-  return { readMove, readStick, isHeld, onKey, press: dispatch, poll, capture }
+  return {
+    readMove,
+    readStick,
+    isHeld,
+    onKey,
+    press: dispatch,
+    poll,
+    activePad: () => activePad,
+    pads: () => pads.map((p) => p.id),
+    capture,
+  }
 }

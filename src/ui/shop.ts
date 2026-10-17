@@ -13,7 +13,7 @@ import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
 import { h, later, setText } from './dom'
 import { counterToday, loadSave, today, writeSave } from './save'
-import { menu, type Screen } from './screens'
+import { hint, menu, type Screen } from './screens'
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
 
@@ -373,7 +373,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
       list,
       h('div', { class: 'mart-desc' }, descIconBox, h('div', { class: 'mart-desc-body' }, descTitle, descText), buy),
       buttons,
-      h('p', { class: 'hint' }, m.hint),
+      hint(m.hint, ''),
     ),
   )
   root.append(el)
