@@ -235,8 +235,7 @@ export const pt = {
       confirm: 'Confirmar',
       back: 'Voltar',
     } satisfies Record<Action, string>,
-    pressKey: (action: string) => `*${action}*: pressione uma tecla… (ESC cancela)`,
-    pressButton: (action: string) => `*${action}*: pressione um botão do controle… (ESC cancela)`,
+    press: (action: string) => `*${action}*: pressione uma tecla ou um botão do controle… (ESC cancela)`,
     reserved: 'As setas e o ESC são fixos. Escolha outra tecla.',
     bound: (action: string, key: string) => `*${action}* agora usa ${key}.`,
     /** A key or button taken from another action: it got the old one back (`to`) or none. */

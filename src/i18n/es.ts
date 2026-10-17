@@ -181,8 +181,7 @@ export const es: Messages = {
       confirm: 'Confirmar',
       back: 'Volver',
     },
-    pressKey: (action: string) => `*${action}*: presiona una tecla… (ESC cancela)`,
-    pressButton: (action: string) => `*${action}*: presiona un botón del control… (ESC cancela)`,
+    press: (action: string) => `*${action}*: presiona una tecla o un botón del control… (ESC cancela)`,
     reserved: 'Las flechas y ESC son fijas. Elige otra tecla.',
     bound: (action: string, key: string) => `*${action}* ahora usa ${key}.`,
     moved: (key: string, action: string, to: string | null) =>
