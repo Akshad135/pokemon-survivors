@@ -1938,60 +1938,6 @@ button {
   --frame: #e83838;
 }
 
-/* Language switch: top-left twin of the Poké Mart entry. */
-.lang-switch {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
-  pointer-events: auto;
-}
-
-.lang-option {
-  font-family: var(--title);
-  font-size: 9px;
-  min-width: 36px;
-  min-height: 32px;
-  padding: 4px 6px;
-  color: #8890a8;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 4px;
-}
-
-.lang-option:hover,
-.lang-option:focus-visible {
-  color: var(--ink);
-}
-
-.lang-option.selected {
-  color: #fff;
-  background: #e83838;
-  border-color: #a02028;
-}
-
-/* Account chip: top-right twin of the language switch, on the title screen. */
-.account-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 8px 6px 10px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: var(--ink);
-  pointer-events: auto;
-}
-
-.account-chip:hover,
-.account-chip:focus-visible {
-  --frame: #e83838;
-}
-
 /* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
 .top-right {
   position: absolute;
@@ -2038,17 +1984,6 @@ button {
   }
 }
 
-/* Phones in landscape put the title menu right of the logo: the heart goes under the account chip, clear of it. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .top-right:has(.account-chip) {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .top-right:has(.account-chip) .support-chip {
-    order: 0;
-  }
-}
-
 /* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
 .sync-dot {
   width: 8px;
@@ -2089,12 +2024,6 @@ button {
   color: #e83838;
 }
 
-.account-sync .sync-dot {
-  display: inline-block;
-  margin-right: 10px;
-  vertical-align: 2px;
-}
-
 .account-note {
   font-size: 17px;
   color: #6878a8;
@@ -2121,9 +2050,8 @@ button {
 
 /* ---------- Title screen ---------- */
 
-.title-home {
-  gap: clamp(16px, 5vh, 40px);
-  padding-bottom: max(48px, var(--safe-b));
+.title-home .shell-body {
+  gap: clamp(12px, 3vh, 32px);
 }
 
 /* Sized in whole device pixels per logo pixel by `fitLogo` (ui/title.ts). */
@@ -2175,6 +2103,15 @@ button {
   border-radius: 4px;
 }
 
+/* A mouse doesn't need 44 px rows: the whole menu fits under the top bar on a 720 px tall screen. */
+@media (hover: hover) and (pointer: fine) {
+  .title-item {
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
 .title-item.selected {
   background: #e4e8f4;
 }
@@ -2184,33 +2121,6 @@ button {
   position: absolute;
   left: 12px;
   color: #e83838;
-}
-
-.title-footer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: max(8px, var(--safe-b));
-  padding: 0 12px;
-  font-family: var(--title);
-  font-size: 8px;
-  line-height: 1.6;
-  text-align: center;
-  color: #e8e8f8;
-  text-shadow: 2px 2px 0 #101020;
-  opacity: 0.75;
-}
-
-.title-footer a {
-  display: inline-block;
-  padding: 8px 2px;
-  color: inherit;
-  text-underline-offset: 3px;
-}
-
-.title-footer a:hover,
-.title-footer a:focus-visible {
-  color: #ffcb05;
 }
 
 /* Support page link under a victory's buttons. */
@@ -2267,10 +2177,11 @@ button {
 
 /* Phones in landscape: logo beside the menu, so neither has to shrink. */
 @media (max-height: 500px) and (orientation: landscape) {
-  .title-home {
+  .title-home .shell-body {
     flex-direction: row;
+    align-items: center;
+    align-items: safe center;
     gap: clamp(16px, 5vw, 48px);
-    padding-bottom: max(36px, var(--safe-b));
   }
   .title-item {
     min-height: 40px;
@@ -3021,21 +2932,626 @@ button {
   flex-shrink: 0;
 }
 
-/* ---------- Settings ---------- */
+/* ---------- Shell: top bar, body and action bar of the menus before a run (ui/shell.ts) ---------- */
 
-.dialog.settings {
-  width: min(460px, 94vw);
+/* A column inside the safe areas: the bars are flex children, so nothing ever sits under them; only the body scrolls. */
+.screen.shell {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 10px;
+  overflow: hidden;
+  padding: max(10px, var(--safe-t)) max(10px, var(--safe-r)) max(10px, var(--safe-b)) max(10px, var(--safe-l));
 }
 
-.settings-list,
-.settings-group {
+/* Over a paused run the HUD stays behind: a darker veil keeps it from reading as part of the bar. */
+.screen.shell.dim {
+  background: rgba(8, 8, 24, 0.72);
+}
+
+.shell-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.shell-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shell-slot.right {
+  justify-content: flex-end;
+}
+
+/* No title: the left slot (the Trainer chip) takes what the right one leaves. */
+.shell-top:has(> .shell-spacer) .shell-slot.right {
+  flex: none;
+}
+
+.shell-slot > * {
+  flex: none;
+}
+
+.shell-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--title);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow:
+    2px 2px 0 #283040,
+    -1px -1px 0 #283040,
+    1px -1px 0 #283040,
+    -1px 1px 0 #283040;
+}
+
+.shell-body {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  gap: 16px;
+  /* Room for the boxes' drop shadows and focus rings at the scroll edges. */
+  padding: 4px 2px 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.shell-body > * {
+  flex-shrink: 0;
+}
+
+.shell-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(24, 30, 48, 0.86);
+  border: 2px solid #283040;
+  border-radius: 10px;
+}
+
+.shell-btn,
+.shell-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
+}
+
+.shell-btn {
+  padding: 0 7px;
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.shell-btn:hover,
+.shell-btn:focus-visible,
+.trainer-chip:hover,
+.trainer-chip:focus-visible {
+  --frame: #e83838;
+}
+
+.shell-back .back-arrow {
+  font-size: 12px;
+}
+
+.shell-icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.shell-chip {
+  gap: 8px;
+  padding: 4px 12px 4px 8px;
+}
+
+.shell-wallet img {
+  width: 24px;
+  height: 24px;
+}
+
+.shell-wallet b {
+  font-family: var(--title);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* Narrow phones: the ₽ sign says it's money, so the coin goes; the narrowest keep just the trainer's face. */
+@media (max-width: 400px) {
+  .shell-wallet img {
+    display: none;
+  }
+  .shell-wallet {
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 370px) {
+  .trainer-chip .trainer-chip-who {
+    display: none;
+  }
+  .trainer-chip {
+    min-width: 0;
+  }
+}
+
+/* Pill tabs (Settings). Press Start 2P: keep labels short and unaccented in capitals. */
+.shell-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(24, 30, 48, 0.78);
+  border-radius: 10px;
+  pointer-events: auto;
+}
+
+.shell-tabs.selected {
+  box-shadow: 0 0 0 3px var(--paper);
+}
+
+.shell-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #c8d0ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.shell-tab.on {
+  color: #283040;
+  background: var(--paper);
+}
+
+@media (max-width: 480px) {
+  .shell-tab {
+    font-size: 8px;
+  }
+}
+
+/* Segmented control (PT / EN / ES). */
+.shell-seg {
+  display: flex;
+  overflow: hidden;
+  background: #e3e7f2;
+  border: 2px solid #283040;
+  border-radius: 8px;
+}
+
+.shell-seg-option {
+  flex: 1 1 0;
+  min-height: 44px;
+  font-family: var(--title);
+  font-size: 10px;
+  color: #6878a8;
+  background: transparent;
+  border: 0;
+}
+
+.shell-seg-option.on {
+  color: #fff;
+  background: #283040;
+}
+
+/* ---------- Trainer chip and Trainer Card (ui/trainer.ts) ---------- */
+
+/* On a crowded bar the name gives way first: the chip never gets narrower than the avatar and the sync dot. */
+.trainer-chip {
+  flex: 0 1 auto;
+  min-width: 84px;
+  max-width: 300px;
+  overflow: hidden;
+  justify-content: flex-start;
+  padding: 4px 10px 4px 5px;
+  color: var(--ink);
+  text-align: left;
+}
+
+/* Portraits are 40 px: shown at 1:1 (cropped to the circle) or 2:1, never in between. */
+.trainer-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  background: #dfe6f5;
+  border: 2px solid #283040;
+  border-radius: 50%;
+}
+
+.trainer-avatar img {
+  width: 40px;
+  height: 40px;
+}
+
+/* The guest's Poké Ball (10 px icon). */
+.trainer-avatar img.ball {
+  width: 20px;
+  height: 20px;
+}
+
+.trainer-avatar.big {
+  width: 80px;
+  height: 80px;
+  border-width: 3px;
+}
+
+.trainer-avatar.big img {
+  width: 80px;
+  height: 80px;
+}
+
+.trainer-avatar.big img.ball {
+  width: 40px;
+  height: 40px;
+}
+
+.trainer-avatar.supporter {
+  border-color: #c88a10;
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
+.trainer-chip-who {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1;
+}
+
+.trainer-chip-who b {
+  font-family: var(--title);
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-chip-sub {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font-size: 17px;
+  color: #806010;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-chip-sub > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-chip-sub img {
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+
+.trainer-chip-sub.join {
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1.4;
+  color: #e83838;
+}
+
+.trainer-chip .sync-dot {
+  margin: 0 2px;
+}
+
+.trainer-panel {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trainer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #e8503a, #b02838 55%, #7a1838);
+  border: 3px solid #283040;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 3px #f8d030,
+    0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.trainer-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.trainer-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trainer-id h3 {
+  margin: 0;
+  font-family: var(--title);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-shadow: 2px 2px 0 #581020;
+}
+
+.trainer-id small {
+  font-size: 19px;
+  line-height: 1;
+  color: #ffd8d0;
+  overflow-wrap: anywhere;
+}
+
+.trainer-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 3px;
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1.4;
+  color: #4a3008;
+  background: #f8d030;
+  border-radius: 4px;
+}
+
+.trainer-title img {
+  width: 10px;
+  height: 10px;
+}
+
+.trainer-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
-.settings-list {
-  gap: 12px;
+.trainer-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 4px 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+}
+
+.trainer-stat b {
+  font-family: var(--title);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.trainer-stat small {
+  max-width: 100%;
+  font-size: 17px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-medals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-height: 44px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+}
+
+.trainer-medal {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trainer-medal img {
+  width: 24px;
+  height: 24px;
+}
+
+.trainer-medal b {
+  font-family: var(--title);
+  font-size: 8px;
+}
+
+.trainer-medals small {
+  font-size: 18px;
+  line-height: 1.1;
+  color: #ffe8e0;
+}
+
+.trainer-sync {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px;
+  font-size: 19px;
+  line-height: 1;
+  color: #ffe8e0;
+  text-align: left;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.trainer-sync.selected {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+}
+
+.trainer-sync-now {
+  margin-left: auto;
+  padding-left: 8px;
+  font-family: var(--title);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.trainer-note {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 19px;
+  line-height: 1.15;
+  color: #fff;
+  text-align: center;
+  text-shadow: 2px 2px 0 #101020;
+}
+
+.trainer-note.error {
+  color: #ffb0b0;
+}
+
+.trainer-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trainer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 6px 16px;
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1;
+  text-align: left;
+}
+
+.trainer-row span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.trainer-row img {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.trainer-row i {
+  font-style: normal;
+  font-size: 12px;
+  color: #6878a8;
+}
+
+.trainer-row.selected {
+  --frame: #e83838;
+  background: #fff;
+}
+
+.trainer-row.selected i {
+  color: #e83838;
+}
+
+.trainer-row.out {
+  justify-content: center;
+  color: #a03030;
+}
+
+.trainer-row.out span {
+  flex: none;
+}
+
+/* Wide screens and landscape phones: the card on the left, its rows on the right. */
+@media (min-width: 880px), (max-height: 500px) and (orientation: landscape) {
+  .trainer-panel {
+    width: min(900px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 16px;
+  }
+  .trainer-card {
+    grid-row: span 4;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .trainer-card {
+    gap: 8px;
+    padding: 12px;
+  }
+  .trainer-row {
+    min-height: 44px;
+  }
+  .trainer-panel .hint {
+    display: none;
+  }
+}
+
+/* ---------- Settings (ui/settings.ts) ---------- */
+
+/* Settings and the Trainer Card read from the top, like a phone's settings. */
+.settings-screen .shell-body,
+.trainer-screen .shell-body {
+  justify-content: flex-start;
+}
+
+.settings-panel {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 12px;
 }
 
 .setting-row {
@@ -3044,31 +3560,59 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 6px 12px;
-  min-height: 48px;
-  padding: 8px 12px;
-  font-family: var(--title);
-  font-size: 10px;
-  line-height: 1.4;
+  min-height: 56px;
+  padding: 6px 8px;
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1;
   color: var(--ink);
   text-align: left;
-  background: #e8e8f0;
-  border: 3px solid transparent;
-  border-radius: 6px;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid #e3e7f2;
+  border-radius: 0;
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
 }
 
 .setting-row.selected {
-  background: #fff;
-  border-color: #e83838;
+  background: #e4e8f4;
+  border-radius: 6px;
+  box-shadow: inset 4px 0 0 #e83838;
+}
+
+.setting-row.column {
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.setting-label {
+  flex: 1 1 auto;
+}
+
+.setting-slider .setting-label {
+  flex: 0 0 auto;
+  min-width: 80px;
 }
 
 .setting-value {
+  order: 2;
+  min-width: 44px;
+  font-family: var(--title);
   font-size: 9px;
+  text-align: right;
   color: #6878a8;
 }
 
 /* Volume bar: cells grow taller to the right, like a handheld's volume meter. */
 .slider {
-  flex-basis: 100%;
+  order: 1;
+  flex: 1 1 150px;
   display: flex;
   align-items: flex-end;
   gap: 4px;
@@ -3081,9 +3625,9 @@ button {
 .slider-cell {
   flex: 1;
   height: var(--h);
-  background: #c8c8d8;
+  background: #d8dce8;
   border-radius: 2px;
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .slider-cell.on {
@@ -3096,20 +3640,23 @@ button {
 
 .setting-pill {
   min-width: 52px;
-  padding: 6px 8px 5px;
+  padding: 8px 10px 7px;
+  font-family: var(--title);
   font-size: 9px;
   text-align: center;
   color: #fff;
-  background: #48a048;
-  border-radius: 4px;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  background: #58b858;
+  border-radius: 14px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .setting-pill.off {
-  background: #8890a8;
+  color: #6878a8;
+  background: #d8dce8;
 }
 
 .setting-choice {
+  font-family: var(--title);
   font-size: 9px;
   color: #6878a8;
 }
@@ -3118,62 +3665,32 @@ button {
   color: #e83838;
 }
 
-.settings-section {
-  padding: 0 4px 4px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: #6878a8;
-  border-bottom: 2px solid #d8d8e8;
+.settings-about {
+  margin: 8px 8px 4px;
+  font-size: 19px;
+  line-height: 1.15;
 }
 
-@media (max-width: 600px) {
+.settings-about small {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+  color: #6878a8;
+}
+
+@media (max-height: 500px) {
   .setting-row {
     min-height: 44px;
-    padding: 6px 10px;
-    font-size: 9px;
-  }
-}
-
-/* Landscape phones: tighter rows, and each section in its own column, so the whole dialog fits without scrolling. */
-@media (max-height: 500px) {
-  .dialog.settings {
-    width: min(820px, 94vw);
-  }
-  /* The browser balances the sections across both columns by height. */
-  .settings-list {
-    display: block;
-    columns: 2;
-    column-gap: 12px;
-  }
-  .settings-group {
-    break-inside: avoid;
-    gap: 4px;
-    padding-bottom: 6px;
-  }
-  .setting-row {
-    min-height: 36px;
-    padding: 2px 10px;
-  }
-  .settings .hint {
-    display: none;
-  }
-  .settings-section {
+    padding-top: 2px;
     padding-bottom: 2px;
   }
   .slider {
-    flex: 1 1 160px;
-    height: 26px;
-    padding: 2px 0;
+    height: 28px;
   }
-}
-
-/* Group title inside the settings list (Controles). */
-.settings-section {
-  margin-top: 6px;
-  font-family: var(--title);
-  font-size: 8px;
-  color: #6878a8;
-  text-transform: uppercase;
+  .settings-panel .hint,
+  .dialog.controls .hint {
+    display: none;
+  }
 }
 
 /* ---------- Controls (remap screen) ---------- */
@@ -3771,12 +4288,6 @@ button {
   font-size: 17px;
   line-height: 1;
   color: #505870;
-}
-
-.title-head .player-title {
-  font-size: 10px;
-  color: #ffcb05;
-  text-shadow: 2px 2px 0 #101020;
 }
 
 .mission-report {

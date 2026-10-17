@@ -10,6 +10,7 @@ import { TYPE_COLORS } from '../data/types'
 import { dexCounts, dexNews, type Pokedex } from '../game/dex'
 import type { ChallengePlace } from '../game/ranking'
 import { ribbonCounts } from '../game/ribbons'
+import type { Save } from '../game/meta'
 import type { DamageSource, Game } from '../game/types'
 import { CARD, cardBlob, drawRunCard, drawTrainerCard, type CardMon, type CardTrainer, type RunCardData, type TrainerCardData } from '../render/card'
 import type { CardStyle } from '../render/cosmetics'
@@ -107,6 +108,17 @@ export const runShare = (g: Game, dexBase: Pokedex, place: Promise<ChallengePlac
   }
 }
 
+/** What a Trainer Card counts, from a save: the Pokédex (caught and seen of every species), the shinies caught and the medals per tier. */
+export const trainerTotals = (save: Save) => {
+  const species = pokedex()
+  return {
+    species,
+    counts: dexCounts(save.dex, species.map((e) => e.dex)),
+    shinies: caughtShinies(save.dex, boxSpecies()),
+    medals: Object.fromEntries(MEDALS.map((medal) => [medal, save.achievements.unlocked.filter((id) => ACHIEVEMENTS[id].medal === medal).length])) as Record<Medal, number>,
+  }
+}
+
 /** Shinies worth showing first on a Trainer Card: legendaries, then the newest species. */
 const showcaseOrder = (a: { dex: number; legendary: boolean }, b: { dex: number; legendary: boolean }) => Number(b.legendary) - Number(a.legendary) || b.dex - a.dex
 
@@ -119,10 +131,7 @@ export const trainerShare = (partner: PlayableId): ShareCard => {
   const save = loadSave()
   const s = accountState()
   const trainer = trainerLine(save.title)
-  const species = pokedex()
-  const counts = dexCounts(save.dex, species.map((e) => e.dex))
-  const shinies = caughtShinies(save.dex, boxSpecies())
-  const medals = Object.fromEntries(MEDALS.map((medal) => [medal, save.achievements.unlocked.filter((id) => ACHIEVEMENTS[id].medal === medal).length])) as Record<Medal, number>
+  const { species, counts, shinies, medals } = trainerTotals(save)
   const showcase = shinies
     .map((e) => ({ dex: e.dex, legendary: e.role === 'legendary' }))
     .sort(showcaseOrder)

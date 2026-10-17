@@ -38,21 +38,26 @@ const supportUrl = () => {
 }
 
 /**
- * "♥ Apoie o projeto" chip in the top-right corner of the menus before a run
- * (title and starter select), left of the account chip or the Poké Mart. It
- * opens the Apoiadores screen, and twinkles with a sparkle while a shiny
- * ticket waits for its pick; without accounts (no rewards to give) it opens
- * the support page in a new tab. Phones show just the heart. Returns a disposer.
+ * "♥ Apoie o projeto" chip for the menus before a run (the title's top bar,
+ * the starter select's corner). It opens the Apoiadores screen, and twinkles
+ * with a sparkle while a shiny ticket waits for its pick; without accounts
+ * (no rewards to give) it opens the support page in a new tab. Phones show
+ * just the heart.
  */
-export const supportButton = (root: HTMLElement, open: () => void) => {
+export const supportChip = (open: () => void) => {
   const m = t()
   const waiting = accountsEnabled && pendingPicks(loadSave()).length > 0
   const label = waiting ? `${m.home.support} · ${m.supporters.banner}` : m.home.support
   const attrs = { class: waiting ? 'support-chip box waiting' : 'support-chip box', title: label, 'aria-label': label }
   const icon = h('img', { src: heartIcon(), alt: '' })
-  const el = accountsEnabled
+  return accountsEnabled
     ? h('button', { ...attrs, type: 'button', onclick: () => (playSfx('select'), later(open)) }, icon, h('span', {}, m.home.support), waiting && h('img', { class: 'support-sparkle', src: sparkleIcon(), alt: '' }))
     : h('a', { ...attrs, href: ROUTES.support[locale()], target: '_blank', rel: 'noopener' }, icon, h('span', {}, m.home.support))
+}
+
+/** `supportChip` in the top-right corner (`topRight`), left of the Poké Mart. Returns a disposer. */
+export const supportButton = (root: HTMLElement, open: () => void) => {
+  const el = supportChip(open)
   topRight(root).append(el)
   return () => el.remove()
 }

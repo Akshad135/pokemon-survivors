@@ -23,7 +23,7 @@ Pick one of 27 starters (or hatch eggs for 52 more Pokémon, 79 in all), survive
 > [!NOTE]
 > Pokémon Survivors is an unofficial, non-commercial fan game. It is **not affiliated with, endorsed, sponsored or approved by** Nintendo, The Pokémon Company, GAME FREAK or Creatures. See [Legal](#legal).
 
-The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎, picked from your browser language and switchable from the menus. Pokémon, move and item names use their official English names.
+The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎, picked from your browser language and switchable in Settings. Pokémon, move and item names use their official English names.
 
 ## Screenshots
 
@@ -123,7 +123,8 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
 - **Original chiptune soundtrack**, synthesized live in WebAudio (no audio files): a village theme in the menus, one theme per biome, and a boss theme while a boss is alive.
 - **Ranking and public profiles**: signed-in runs go to a board per difficulty, for today, this week and all time, plus the Daily Challenge's board for today and yesterday (days and weeks turn over in Brasília time), filterable by Pokémon and by friends (one-way follows). Each trainer picks a display name and a unique handle and gets a shareable profile (`/?u=handle`) with their title, records, challenge ribbons, Pokédex progress and recent runs. The server only takes a run that fits the wall clock since its start token.
 - **Optional accounts**: sign in with Google to keep your progress in the cloud and continue on any device. Guest play stays the default; signing in brings the guest progress along (the collection joins, each upgrade and record keeps the higher value) and it syncs at the end of every run, offline-safe.
-- **Settings**: music and effects volume, damage numbers (all, reduced or off), screen shake, language and, under Controls, a touch joystick that follows the thumb or stays fixed in the bottom-left corner and remappable controls (a key and a gamepad button per action), saved in the browser.
+- **Settings** (the gear, top right of the menus), in four tabs: Sound (music and effects volume, mute), Game (language, damage numbers: all, reduced or off, screen shake), Controls (a touch joystick that follows the thumb or stays fixed in the bottom-left corner, and remappable controls: a key and a gamepad button per action) and About (legal, credits and the source). Saved in the browser.
+- **Trainer Card**: the Trainer chip at the top left of the title (your Pokémon, name, title and sync state; a Poké Ball for guests) opens your card: runs, wins, Pokédex, shinies, medals and ribbons, with editing your profile, sharing the card image, missions and signing in or out one tap away.
 - **Pixel-perfect**: the world renders at about 300px tall and is integer-upscaled, so sprites, effects and particles share one pixel grid.
 
 ## Controls
@@ -137,7 +138,8 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
 | Pick an upgrade | `1`–`3` | Tap it |
 | Mute | `M` | Settings, on the title screen or in the pause menu |
 | Menus | Arrows / D-pad, `Enter` / A, `Esc` / B back | Tap |
-| Switch language | `I` (title screen) or Settings | `PT \| EN`, top left of the title screen, or Settings |
+| Switch language | Settings → Game (← → on the language) | Settings (gear, top right) → Game |
+| Trainer Card | `C` (title screen) | The Trainer chip, top left of the title screen |
 
 On a gamepad, the D-pad and left stick move your Pokémon and drive every menu; A confirms in menus and fires the special in a run. Every action's key and gamepad button can be remapped in Settings → Controls (`src/engine/bindings.ts`); the arrows, `Esc` and the left stick stay fixed.
 
@@ -181,7 +183,7 @@ src/
             tally.ts (run counters and summary) · missions.ts · achievements.ts (missions, medals, titles)
             difficulty.ts (Normal, Hard, Nightmare as multipliers)
   render/   PMD sprite loader, code-drawn pixel art, procedural biome ground, weather overlays, map events, title scene and logo, frame renderer
-  ui/       title screen, HUD, Pokémon select (with the egg box), incubator and hatching scene, level-up, pause, settings, results, missions and achievements, toasts, language switch, Pokédex
+  ui/       title screen, HUD, Pokémon select (with the egg box), incubator and hatching scene, level-up, pause, settings, results, missions and achievements, toasts, Pokédex, the menus' shared shell (`ui/shell.ts`: top bar, Trainer chip, wallet, gear, action bar) and the Trainer Card
   i18n/     every player-facing string: pt.ts (reference), en.ts and es.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
   account.ts  optional accounts: Clerk loaded on demand, save sync with the API

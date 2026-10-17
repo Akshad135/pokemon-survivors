@@ -62,12 +62,13 @@ import { bagIcon, eggIcon, ribbonIcon } from './render/art'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
-import { formatDay, locale, LOCALES, setLocale, t, type Locale } from './i18n'
+import { formatDay, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { announceGifts } from './ui/gifts'
-import { accountScreen, playGate } from './ui/account'
+import { playGate } from './ui/account'
+import { trainerCardScreen } from './ui/trainer'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, challengeToday, depositPokeDollars, loadAttempt, loadSave, outbreakToday, recordRunProgress, saveAttempt, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { challengeScreen, challengeShiny } from './ui/challenge'
@@ -227,11 +228,6 @@ const setScreen = (next: Screen | null) => {
   screen = next
 }
 
-const changeLanguage = (next: Locale) => {
-  setLocale(next)
-  playSfx('select')
-}
-
 /** Set by the title's "press start": the music waits for it, even where the browser would autoplay. */
 let pressedStart = false
 
@@ -247,14 +243,14 @@ const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
       challenge: () => showChallenge(),
       incubator: () => showIncubator(() => showTitle({ focus: 2 })),
       missions: () => showMissions(),
-      // Every label is read at render time, so switching language just rebuilds the screen.
-      language: (next) => (changeLanguage(next), showTitle()),
+      partner: lastStarter,
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
-      // Closing rebuilds the title, so a sign in's merged save (title badge) shows up.
-      account: accountsEnabled ? (focus) => accountScreen(ui, input, () => showTitle({ focus })) : undefined,
+      // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
+      trainer: (focus) =>
+        trainerCardScreen(ui, input, { partner: lastStarter, supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
     }, opts),

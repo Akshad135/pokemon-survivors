@@ -1,7 +1,7 @@
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { context2d } from '../engine/pixelart'
-import { locale, t, type Locale } from '../i18n'
+import { locale, t } from '../i18n'
 import { ENEMIES } from '../data/enemies'
 import { sparkleIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
@@ -9,16 +9,14 @@ import { drawPokemon, loadedSprites, loadSpecies } from '../render/sprites'
 import { accountState, accountsEnabled } from '../account'
 import { eggIcon } from '../render/art'
 import { inviterName } from '../ranking'
-import { accountChip } from './account'
+import type { PlayableId } from '../data/hatchlings'
 import { h, later, rich } from './dom'
-import { languageSwitch } from './language'
-import { titleBadge } from './missions'
 import { loadSave, outbreakToday } from './save'
 import { menu, type Screen } from './screens'
-import { supportButton } from './supporters'
+import { gearButton, shellBody, topBar, walletChip } from './shell'
+import { supportChip } from './supporters'
+import { trainerChip } from './trainer'
 import { ROUTES } from '../site/routes'
-
-const GITHUB_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
 export type TitleActions = {
   play: () => void
@@ -27,19 +25,19 @@ export type TitleActions = {
   missions: () => void
   /** Opens the egg incubator. */
   incubator: () => void
-  /** Must rebuild the title in the picked language (without the intro). */
-  language: (next: Locale) => void
+  /** The last Pokémon played: the Trainer chip's face (see `trainerAvatar`). */
+  partner: PlayableId
   /** The menu is up: after the "press start" gesture, so the browser lets audio play. */
   ready: () => void
   /**
-   * Opens Settings over the title. Closing them must rebuild the title (the
-   * language may have changed), highlighting `focus`. No action, no button.
+   * Opens Settings over the title (the gear, and the menu's entry). Closing
+   * them must rebuild the title (the language may have changed), highlighting `focus`.
    */
-  settings?: (focus: number) => Screen
+  settings: (focus: number) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: number) => Screen
-  /** Opens the account dialog over the title, like `settings`. No action (accounts off), no button. */
-  account?: (focus: number) => Screen
+  /** Opens the Trainer Card over the title (the Trainer chip, `C`), like `settings`. */
+  trainer: (focus: number) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no entry. */
   ranking?: (focus: number) => Screen
   /** Opens Apoiadores over the title (the heart chip), like `settings`; `pick` goes straight to the shiny picker. */
@@ -106,7 +104,8 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
   const dpr = window.devicePixelRatio || 1
   // Phones in landscape put the logo beside the menu (see CSS), so it gets half the width instead.
   const phoneLandscape = vh <= 500 && vw > vh
-  const [maxW, maxH] = phoneLandscape ? [vw * 0.46, vh * 0.6] : [Math.min(vw * 0.9, 640), vh * 0.3]
+  // The top bar takes about 60 px off the height.
+  const [maxW, maxH] = phoneLandscape ? [vw * 0.46, (vh - 60) * 0.6] : [Math.min(vw * 0.9, 640), (vh - 60) * 0.26]
   const k = logoScale(canvas.width, canvas.height, maxW, maxH, dpr)
   const width = `${(canvas.width * k) / dpr}px`
   if (canvas.style.width !== width) {
@@ -117,14 +116,14 @@ const fitLogo = (canvas: HTMLCanvasElement) => {
 
 /**
  * Title screen over the live meadow: pixel logo, the day's outbreak, a blinking "press start",
- * then the main menu (Play, Daily Challenge, Incubator, Missions, Pokédex, Ranking, How to play, Settings) with the language
- * switch, the account chip (when accounts are on), the support chip and footer links. `intro: false` opens straight on the menu (coming
- * back from another screen, or after a language switch).
+ * then the main menu (Play, Daily Challenge, Incubator, Missions, Pokédex, Ranking, How to play, Settings)
+ * under the top bar: the Trainer chip on the left, the support chip, the wallet and the gear on the right.
+ * `intro: false` opens straight on the menu (coming back from another screen, or after a language switch).
  */
 export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: number }): Screen => {
   const m = t().home
   const lang = locale()
-  const { settings, account, ranking } = actions
+  const { settings, ranking } = actions
   const items = [
     { label: m.play, run: actions.play },
     { label: m.challenge, run: actions.challenge },
@@ -133,7 +132,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     { label: m.pokedex, run: () => openOver(actions.pokedex) },
     ...(ranking ? [{ label: m.ranking, run: () => openOver(ranking) }] : []),
     { label: m.guide, run: () => location.assign(ROUTES.guide[lang]) },
-    ...(settings ? [{ label: m.settings, run: () => openOver(settings) }] : []),
+    { label: m.settings, run: () => openOver(settings) },
   ]
 
   const logo = h('canvas', { class: 'title-logo', width: 1, height: 1, 'aria-hidden': 'true' })
@@ -147,30 +146,20 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   const prompt = h('p', { class: 'press-start blink' }, h('span', { class: 'keys-only' }, m.pressKeys), h('span', { class: 'touch-only' }, m.pressTouch))
   const menuBox = h('nav', { class: 'title-menu box pop', 'aria-label': 'Menu' })
-  const footer = h(
-    'footer',
-    { class: 'title-footer' },
-    m.fanGame,
-    ' · ',
-    h('a', { href: ROUTES.legal[lang] }, m.legal),
-    ' · ',
-    h('a', { href: GITHUB_URL, target: '_blank', rel: 'noopener' }, 'GitHub'),
-  )
-  const badge = titleBadge(loadSave().title)
   const outbreak = outbreakBanner()
-  const head = h('div', { class: 'title-head' }, logo, badge, outbreak.el)
-  inviteBanner(head, account ? () => openOver(account) : null)
-  const el = h('div', { class: 'screen title-home' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), head, prompt, footer)
+  const head = h('div', { class: 'title-head' }, logo, outbreak.el)
+  inviteBanner(head, () => openOver(actions.trainer))
+  // The top bar waits for the menu: the intro is just the logo and "press start".
+  const bar = h('span', { class: 'hidden' })
+  const el = h('div', { class: 'screen shell title-home' }, bar, shellBody(h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), head, prompt))
 
   let nav: ReturnType<typeof menu> | null = null
-  let closeLanguage: (() => void) | null = null
-  let closeAccount: (() => void) | null = null
-  let closeSupport: (() => void) | null = null
+  let closeChip: (() => void) | null = null
   let offIntro: (() => void) | null = null
-  /** Settings or the Pokédex, open over the meadow. */
+  /** Settings, the Pokédex or the Trainer Card, open over the meadow. */
   let overScreen: Screen | null = null
 
-  /** (Re)builds the menu buttons and their key/pointer handlers, with `focus` highlighted. */
+  /** (Re)builds the menu buttons, the top bar and their key/pointer handlers, with `focus` highlighted. */
   const showMenu = (focus: number) => {
     const buttons = items.map((item) => h('button', { class: 'title-item' }, item.label))
     nav = menu(input, buttons, (i) => {
@@ -178,21 +167,24 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       // After this key dispatch, or the next screen would receive the same Enter.
       later(items[i]!.run)
     }, { initial: focus })
-    closeLanguage = languageSwitch(root, input, actions.language)
-    closeAccount = account ? accountChip(root, input, () => openOver(account)) : null
-    // A shiny ticket waiting for its pick opens straight on the picker.
-    closeSupport = supportButton(root, () => openOver((focus) => actions.supporters(focus, 'pick')))
+    const chip = trainerChip(input, { partner: actions.partner, onOpen: () => openOver(actions.trainer) })
+    closeChip = chip.dispose
+    bar.replaceWith(
+      topBar({
+        left: chip.el,
+        // A shiny ticket waiting for its pick opens straight on the picker.
+        right: [supportChip(() => openOver((focus) => actions.supporters(focus, 'pick'))), walletChip(loadSave().wallet), gearButton(() => (playSfx('select'), later(() => openOver(settings))))],
+      }),
+    )
     menuBox.replaceChildren(...buttons)
   }
 
-  /** Settings and the Pokédex replace the title (only the meadow stays): its keys and language switch stay off until they close and the title is rebuilt. */
+  /** Another screen replaces the title (only the meadow stays): its keys stay off until that one closes and the title is rebuilt. */
   const openOver = (open: (focus: number) => Screen) => {
     const at = nav?.index ?? 0
     nav?.off()
-    closeLanguage?.()
-    closeAccount?.()
-    closeSupport?.()
-    nav = closeLanguage = closeAccount = closeSupport = null
+    closeChip?.()
+    nav = closeChip = null
     el.classList.add('hidden')
     overScreen = open(at)
   }
@@ -225,7 +217,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     el,
     dim: 0.12,
     tick: (time: number) => (overScreen?.tick?.(time), outbreak.tick(time), logo.width > 1 && fitLogo(logo)),
-    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeLanguage?.(), closeAccount?.(), closeSupport?.(), el.remove()),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), nav?.off(), closeChip?.(), el.remove()),
   }
 }
 
