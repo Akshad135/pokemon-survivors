@@ -6,7 +6,7 @@ import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
-import { context2d } from './engine/pixelart'
+import { context2d, resetCanvases } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
@@ -150,6 +150,12 @@ window.addEventListener('resize', scheduleResize)
 window.addEventListener('orientationchange', scheduleResize)
 window.visualViewport?.addEventListener('resize', scheduleResize)
 resize()
+// After a GPU reset every canvas comes back blank, cached art included: redraw it all, settings too.
+canvas.addEventListener('contextrestored', () => {
+  resetCanvases()
+  context2d(canvas)
+  dirty = true
+})
 
 /* ---------------- App state ---------------- */
 

@@ -41,6 +41,18 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   },
   {
     date: '2026-10-17',
+    pr: 90,
+    title: { pt: 'Fim do rastro de imagens no celular', en: 'No more smeared images on phones', es: 'Adiós al rastro de imágenes en el celular' },
+    notes: [
+      {
+        pt: 'Em partidas longas no celular, o navegador às vezes reinicia a placa de vídeo para liberar memória. Quando isso acontecia, o chão sumia e os Pokémon passavam a deixar rastros pela tela, até virar um borrão. Agora o jogo redesenha tudo na hora e a partida segue normal. Obrigado ao @franbarquero pelo vídeo!',
+        en: 'In long runs on phones, the browser sometimes resets the graphics card to free memory. When that happened, the ground vanished and the Pokémon left trails across the screen until it all turned into a smear. Now the game redraws everything right away and the run goes on normally. Thanks to @franbarquero for the video!',
+        es: 'En partidas largas en el celular, el navegador a veces reinicia la tarjeta gráfica para liberar memoria. Cuando pasaba, el suelo desaparecía y los Pokémon dejaban rastros por la pantalla hasta volverse un borrón. Ahora el juego vuelve a dibujar todo al instante y la partida sigue normal. ¡Gracias a @franbarquero por el video!',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 89,
     title: { pt: 'Remapear com o controle', en: 'Remapping with a gamepad', es: 'Reasignar con el control' },
     notes: [
