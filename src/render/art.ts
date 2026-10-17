@@ -58,6 +58,9 @@ const SHURIKEN = ['...1...', '...1...', '..121..', '1112111', '..121..', '...1..
 const JAW = ['.111111111.', '12222222221', '13.3.3.3.31']
 const ORB = ['..111..', '.12221.', '1223221', '1233321', '1223221', '.12221.', '..111..']
 const HEART = ['.11.11.', '1221221', '1232221', '1222221', '.12221.', '..121..', '...1...']
+/** Settings gear and help mark for the menus' top bar (`ui/shell.ts`): one ink color, holes see through to the button. */
+const GEAR = ['....1111....', '.11.1111.11.', '.1111111111.', '..11111111..', '11111..11111', '1111....1111', '1111....1111', '11111..11111', '..11111111..', '.1111111111.', '.11.1111.11.', '....1111....']
+const HELP = ['.111111.', '11111111', '111..111', '....1111', '...1111.', '..1111..', '..111...', '........', '..111...', '..111...']
 const NOTE = ['...11.', '...121', '...1.1', '...1..', '.111..', '1221..', '.11...']
 const BLADE = ['.......11', '.....1121', '...11231.', '.11231...', '1231.....', '11.......']
 
@@ -503,6 +506,8 @@ export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICK
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
 export const heartIcon = () => toIconUrl('heart', FX.heart)
+export const gearIcon = () => toIconUrl('gear', () => art(GEAR, { 1: '#303040' }))
+export const helpIcon = () => toIconUrl('help', () => art(HELP, { 1: '#303040' }))
 
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>

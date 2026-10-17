@@ -36,7 +36,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  *   `worth`) wins, minus what the merged upgrades cost and the larger
  *   spending, so ₽ spent on one side and kept on the other isn't counted twice.
  * - The title: `incoming`'s, if it shows one.
- * - The difficulty picked last: `incoming`'s, a setting rather than progress.
+ * - The difficulty and the partner picked last: `incoming`'s, settings rather than progress.
  * - Shiny starters: a union; each Normal/Shiny pick is `incoming`'s when it has one.
  * - The bag: each item's got and used counters keep the larger side; what's
  *   armed is `incoming`'s. The daily counter: the most recent day, the most
@@ -61,6 +61,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     achievements: mergeAchievements(base.achievements, incoming.achievements),
     title: incoming.title ?? base.title,
     difficulty: incoming.difficulty,
+    partner: incoming.partner,
     shinyStarters: mergeShinyStarters(base.shinyStarters, incoming.shinyStarters),
     bag: mergeBag(base.bag, incoming.bag),
     counter: mergeCounter(base.counter, incoming.counter),

@@ -1,3 +1,4 @@
+import { TITLE_IDS, type TitleId } from '../data/achievements'
 import { isHatchling, type PlayableId } from '../data/hatchlings'
 import { isPollOption, POLL, POLL_OPTION_IDS, SUPPORTER, type PollOptionId } from '../data/supporters'
 import type { GiftContent } from './gifts'
@@ -89,8 +90,12 @@ export type DonationStatus = { paid: boolean; handle: string | null; code: strin
 /** `GET /me/supporter`: the player's tier (null before donating), since when, whether they show it, and their vote. */
 export type SupporterStatus = { tier: SupporterTier | null; since: string | null; public: boolean; vote: PollOptionId | null }
 
-/** One name on the wall (`GET /supporters`). */
-export type WallEntry = { handle: string; name: string; tier: SupporterTier; since: string }
+/**
+ * One name on the wall (`GET /supporters`): since their first donation, with
+ * their equipped title and the Pokémon they stand with on the Hall da Fama
+ * (`hallPokemon`). An API from before the Hall sends neither: both are null then.
+ */
+export type WallEntry = { handle: string; name: string; tier: SupporterTier; since: string; title: TitleId | null; pokemon: Companion | null }
 
 /** `GET /poll`: the current poll and its votes per option. */
 export type Poll = { id: string; votes: Record<PollOptionId, number> }
@@ -107,9 +112,16 @@ export const parseWall = (v: unknown): WallEntry[] =>
     ? v.flatMap((e: unknown) => {
         if (!isRecord(e) || typeof e.handle !== 'string' || typeof e.name !== 'string' || !isSupporterTier(e.tier)) return []
         const since = isoOrNull(e.since)
-        return since ? [{ handle: e.handle, name: e.name, tier: e.tier, since }] : []
+        const title = TITLE_IDS.find((id) => id === e.title) ?? null
+        return since ? [{ handle: e.handle, name: e.name, tier: e.tier, since, title, pokemon: parseCompanion(e.pokemon) }] : []
       })
     : []
+
+/** The Hall da Fama from the wall: the gold tier's Lendas and the other supporters, each newest first (a new name shows up front). */
+export const hallOf = (wall: readonly WallEntry[]) => {
+  const newest = [...wall].sort((a, b) => b.since.localeCompare(a.since) || a.handle.localeCompare(b.handle))
+  return { legends: newest.filter((e) => e.tier === 'gold'), supporters: newest.filter((e) => e.tier !== 'gold') }
+}
 
 /** A poll from the API, or null when it isn't the current one. */
 export const parsePoll = (v: unknown): Poll | null => {

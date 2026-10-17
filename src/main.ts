@@ -62,12 +62,13 @@ import { bagIcon, eggIcon, ribbonIcon } from './render/art'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
-import { formatDay, locale, LOCALES, setLocale, t, type Locale } from './i18n'
+import { formatDay, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { announceGifts } from './ui/gifts'
-import { accountScreen, playGate } from './ui/account'
+import { playGate } from './ui/account'
+import { trainerCardScreen } from './ui/trainer'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, challengeToday, depositPokeDollars, loadAttempt, loadSave, outbreakToday, recordRunProgress, saveAttempt, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { challengeScreen, challengeShiny } from './ui/challenge'
@@ -83,10 +84,10 @@ import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from '
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
-import { martButton, shop } from './ui/shop'
+import { shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
-import { titleButton, titleScreen } from './ui/title'
-import { creditsLine, supportButton, supportersScreen } from './ui/supporters'
+import { titleScreen, type LobbyFocus } from './ui/title'
+import { creditsLine, supportersScreen } from './ui/supporters'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
@@ -191,7 +192,6 @@ type Run = {
 
 let screen: Screen | null = null
 let run: Run | null = null
-let lastStarter: PlayableId = 'charmander'
 /** Special attack press (Space, touch button, gamepad A), consumed by the next simulation step. */
 let specialQueued = false
 /** Mega Evolution press (E, the Mega button, gamepad Y), consumed like the special. */
@@ -227,34 +227,29 @@ const setScreen = (next: Screen | null) => {
   screen = next
 }
 
-const changeLanguage = (next: Locale) => {
-  setLocale(next)
-  playSfx('select')
-}
-
 /** Set by the title's "press start": the music waits for it, even where the browser would autoplay. */
 let pressedStart = false
 
 /**
  * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch, not back from signing in);
- * coming back from the starter select goes straight to the menu. `focus` is the menu entry to highlight.
+ * coming back from the starter select goes straight to the lobby. `focus` is what the lobby highlights (JOGAR by default).
  */
-const showTitle = (opts: { intro?: boolean; focus?: number } = {}) => {
+const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
   endRun()
   setScreen(
     titleScreen(ui, input, {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
       challenge: () => showChallenge(),
-      incubator: () => showIncubator(() => showTitle({ focus: 2 })),
+      incubator: () => showIncubator(() => showTitle({ focus: 'eggs' })),
       missions: () => showMissions(),
-      // Every label is read at render time, so switching language just rebuilds the screen.
-      language: (next) => (changeLanguage(next), showTitle()),
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
-      // Closing rebuilds the title, so a sign in's merged save (title badge) shows up.
-      account: accountsEnabled ? (focus) => accountScreen(ui, input, () => showTitle({ focus })) : undefined,
+      mart: (focus) => shop(ui, input, () => showTitle({ focus })),
+      // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
+      trainer: (focus) =>
+        trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
     }, opts),
@@ -270,25 +265,22 @@ const showPlayGate = () =>
     playGate(ui, input, {
       play: () => showMenu(),
       guest: () => ((playingAsGuest = true), showMenu()),
-      back: () => showTitle(),
+      back: () => showTitle({ focus: 'play' }),
     }),
   )
 
-/** Pokémon select, with the Poké Mart and the support chip (top right) and the way back to the title (top left). */
-const showMenu = (initial: PlayableId = lastStarter) => {
+/** The partner select; its top bar leads back to the title, to the Poké Mart (the wallet) and to Settings, which come back to it on the same Pokémon. */
+const showMenu = (initial: PlayableId = loadSave().partner) => {
   endRun()
   const select = starterSelect(ui, input, {
     pick: (id) => setTimeout(() => void startRun(id), 250),
+    back: () => showTitle({ focus: 'play' }),
+    mart: () => showShop(),
+    settings: () => setScreen(openSettings(ui, input, () => showMenu(select.selected()))),
     incubator: () => showIncubator(() => showMenu(select.selected())),
   }, initial)
-  const closeMart = martButton(ui, input, () => showShop())
-  const closeBack = titleButton(ui, input, () => showTitle())
-  const closeSupport = supportButton(ui, () => showSupporters(() => showMenu(select.selected())))
-  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), closeSupport(), select.dispose()) })
+  setScreen(select)
 }
-
-/** Apoiadores from the starter select's heart chip; closing it comes back with `back`. */
-const showSupporters = (back: () => void) => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, 'pick'))
 
 /** The save's companion for a run starting now, if it's a supporter's and still allowed (its sprites start loading). */
 const runCompanion = (at: Vec): CompanionView | null => {
@@ -304,9 +296,9 @@ const showShop = () => setScreen(shop(ui, input, () => showMenu()))
 
 /** The Caixa do PC (from the Pokédex); its Trainer Card stands the last Pokémon played beside the trainer. */
 const showPcBox = (back: () => void) =>
-  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(lastStarter), close) }, loadSave().style.equipped.wallpaper)
+  pcBoxScreen(ui, input, { onClose: back, trainerCard: (close) => sharePreview(ui, input, trainerShare(loadSave().partner), close) }, loadSave().style.equipped.wallpaper)
 
-const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 3 })))
+const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({ focus: 'missions' })))
 
 /** The Desafio do dia's screen (from the title); its board opens over it and comes back to it. */
 const showChallenge = () => {
@@ -315,7 +307,7 @@ const showChallenge = () => {
     challengeScreen(ui, input, {
       play: (c, official) => setTimeout(() => void startRun(c.starter, { challenge: c, official }), 250),
       board: rankingEnabled ? () => setScreen(rankingScreen(ui, input, () => showChallenge(), { challenge: true })) : undefined,
-      onClose: () => showTitle({ focus: 1 }),
+      onClose: () => showTitle({ focus: 'challenge' }),
     }),
   )
 }
@@ -502,7 +494,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   setScreen(null)
   endRun()
   const c = daily?.challenge ?? null
-  if (!c) lastStarter = starter
+  // The Desafio do dia's Pokémon is the day's, not the player's pick.
+  if (!c) updateSave((s) => ({ ...s, partner: starter }))
   const loading = loadingScreen()
   ui.append(loading)
   // The start token's clock starts now, while the sprites load.
@@ -643,7 +636,7 @@ const syncOverlay = (r: Run) => {
         ui,
         input,
         g,
-        () => afterRun(() => void (r.challenge ? replayChallenge() : startRun(lastStarter))),
+        () => afterRun(() => void (r.challenge ? replayChallenge() : startRun(loadSave().partner))),
         () => afterRun(() => showMenu()),
         () => (recordEvent(r.recorder, ['endless']), continueEndless(g)),
         {
@@ -1256,7 +1249,7 @@ if (import.meta.env.DEV) {
       dex: () => loadSave().dex,
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
-      card: (partner: PlayableId = lastStarter) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
+      card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
@@ -1270,7 +1263,7 @@ if (import.meta.env.DEV) {
         upcoming = planRun()
         if (screen?.el.classList.contains('title-home')) showTitle()
         else if (screen?.el.classList.contains('mart-screen')) showShop()
-        else if (screen?.el.querySelector('.select-layout')) showMenu()
+        else if (screen?.el.classList.contains('partner-screen')) showMenu()
       }),
     },
   })
