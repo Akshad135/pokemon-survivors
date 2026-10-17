@@ -244,6 +244,12 @@ export const sprites = (dex: Dex, shiny = false, form?: FormKey) =>
 export const portraitUrl = (dex: Dex, shiny = false) =>
   `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`
 
+/** A species' Walk sheet and frame size, for DOM art drawn from its first frame (facing down). */
+export const walkSheet = (dex: Dex) => {
+  const walk = MANIFEST[String(dex)]?.anims.Walk
+  return walk && { url: `${base(dex)}/Walk.png`, fw: walk.frameWidth, fh: walk.frameHeight }
+}
+
 /** Sprites if already loaded, without throwing (menus draw progressively). */
 export const loadedSprites = (dex: Dex, shiny = false): SpeciesSprites | undefined => cache.get(cacheKey(dex, shiny))
 
