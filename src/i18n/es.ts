@@ -44,7 +44,6 @@ export const es: Messages = {
     mart: 'Tienda',
     ranking: 'Ranking',
     support: 'Apoya el proyecto',
-    back: 'Título',
   },
 
   shell: {
@@ -584,7 +583,6 @@ export const es: Messages = {
     },
     active: { lure: '¡Shinies 2× más comunes en esta partida!', incense: '¡Probabilidad de huevo 2× mayor en esta partida!' },
     toggle: (name, n) => `${name} ×${n}`,
-    pickHint: 'Usar en la próxima partida',
   },
 
   toast: {

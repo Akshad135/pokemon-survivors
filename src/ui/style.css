@@ -182,42 +182,7 @@ button {
   text-shadow: none;
 }
 
-/* ---------- Title / starter select ---------- */
-
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  font-family: var(--title);
-  line-height: 1;
-}
-
-.logo-top {
-  font-size: clamp(28px, 6vw, 56px);
-  color: #ffcb05;
-  letter-spacing: 2px;
-  text-shadow:
-    -4px 0 0 #2a5aa8, 4px 0 0 #2a5aa8, 0 -4px 0 #2a5aa8, 0 4px 0 #2a5aa8,
-    -4px -4px 0 #2a5aa8, 4px 4px 0 #2a5aa8, -4px 4px 0 #2a5aa8, 4px -4px 0 #2a5aa8,
-    0 10px 0 #101830;
-}
-
-.logo-bottom {
-  margin-top: 18px;
-  font-size: clamp(14px, 3vw, 28px);
-  color: #fff;
-  letter-spacing: 6px;
-  text-shadow: 3px 0 0 #c82828, -3px 0 0 #c82828, 0 3px 0 #c82828, 0 -3px 0 #c82828, 0 7px 0 #101830;
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  font-family: var(--title);
-  font-size: 12px;
-  color: #fff;
-  text-shadow: 2px 2px 0 #101020;
-}
+/* ---------- Region tabs (Pokédex filters, ranking boards) ---------- */
 
 .region-tabs {
   display: flex;
@@ -232,7 +197,7 @@ button {
   display: none;
 }
 
-/* With a mouse there's no swipe and the scrollbar is hidden: wrap so Paldea and Eggs stay in sight. */
+/* With a mouse there's no swipe and the scrollbar is hidden: wrap so every tab stays in sight. */
 @media (hover: hover) and (pointer: fine) {
   .region-tabs {
     flex-wrap: wrap;
@@ -3568,38 +3533,9 @@ button {
   color: #e83838;
 }
 
-/* Starter select's way back to the title: top-left twin of the Poké Mart entry. */
-.back-entry {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px;
-  font-family: var(--title);
-  font-size: 9px;
-  pointer-events: auto;
-}
-
+/* The shell's ◀ (backButton). */
 .back-arrow {
   color: #e83838;
-}
-
-.back-entry:hover,
-.back-entry:focus-visible {
-  --frame: #e83838;
-}
-
-@media (max-width: 480px) {
-  .back-entry {
-    top: 6px;
-    left: 6px;
-    gap: 6px;
-    padding: 6px 8px;
-  }
 }
 
 .mart-screen {
@@ -3870,21 +3806,6 @@ button {
     right: 6px;
     gap: 6px;
   }
-  /* Stays a row: it fits left of the logo, while a column would cover the region tabs. */
-  .lang-switch {
-    top: 6px;
-    left: 6px;
-    gap: 2px;
-    padding: 4px;
-  }
-  .lang-option {
-    min-width: 32px;
-    min-height: 28px;
-  }
-  .account-chip {
-    min-height: 36px;
-    padding: 4px 8px;
-  }
 }
 
 /* ---------- Small screens ---------- */
@@ -3899,13 +3820,6 @@ button {
 @media (max-width: 600px) {
   .screen {
     gap: 12px;
-  }
-  .logo-top {
-    font-size: 30px;
-  }
-  .logo-bottom {
-    margin-top: 14px;
-    font-size: 15px;
   }
   .credits {
     position: static;
@@ -4053,21 +3967,6 @@ button {
 @media (max-height: 500px) {
   .screen {
     gap: 8px;
-  }
-  .logo-top {
-    font-size: 26px;
-    text-shadow:
-      -3px 0 0 #2a5aa8, 3px 0 0 #2a5aa8, 0 -3px 0 #2a5aa8, 0 3px 0 #2a5aa8,
-      -3px -3px 0 #2a5aa8, 3px 3px 0 #2a5aa8, -3px 3px 0 #2a5aa8, 3px -3px 0 #2a5aa8,
-      0 7px 0 #101830;
-  }
-  .logo-bottom {
-    margin-top: 12px;
-    font-size: 13px;
-  }
-  .subtitle {
-    margin: 0;
-    font-size: 10px;
   }
   .credits {
     display: none;

@@ -482,15 +482,3 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), el.remove()),
   }
 }
-
-/**
- * "◀ Title" entry in the starter select's top-left corner (twin of the Poké
- * Mart entry). Esc and Backspace (pad B) do the same. Returns a disposer.
- */
-export const titleButton = (root: HTMLElement, input: Input, onBack: () => void) => {
-  const back = () => (playSfx('move'), later(onBack))
-  const el = h('button', { class: 'back-entry box', onclick: back }, h('span', { class: 'back-arrow' }, '◀'), t().home.back, h('span', { class: 'key-hint' }, 'ESC'))
-  const off = input.onKey((key) => (key === 'Escape' || key === 'Backspace') && back())
-  root.append(el)
-  return () => (off(), el.remove())
-}

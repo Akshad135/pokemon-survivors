@@ -44,7 +44,6 @@ export const en: Messages = {
     mart: 'Shop',
     ranking: 'Ranking',
     support: 'Support the project',
-    back: 'Title',
   },
 
   shell: {
@@ -584,7 +583,6 @@ export const en: Messages = {
     },
     active: { lure: 'Shinies twice as common this run!', incense: 'Eggs twice as likely this run!' },
     toggle: (name, n) => `${name} ×${n}`,
-    pickHint: 'Use in the next run',
   },
 
   toast: {

@@ -86,9 +86,8 @@ export const pt = {
     eggsReady: (n: number) => (n === 1 ? '1 ovo pronto para chocar' : `${n} ovos prontos para chocar`),
     mart: 'Loja',
     ranking: 'Ranking',
-    /** Support chip (donations page) on the starter select, and the Hall da Fama card before it has names. */
+    /** Support chip (donations page), and the Hall da Fama card before it has names. */
     support: 'Apoie o projeto',
-    back: 'Título',
   },
 
   /** The menus' top bar (`ui/shell.ts`). Press Start 2P has no uppercase accented glyphs: titles stay unaccented or mixed case. */
@@ -663,7 +662,6 @@ export const pt = {
     } satisfies Record<BagItem, string>,
     active: { lure: 'Shinies 2× mais comuns nesta partida!', incense: 'Chance de ovo 2× maior nesta partida!' } satisfies Record<BagItem, string>,
     toggle: (name: string, n: number) => `${name} ×${n}`,
-    pickHint: 'Usar na próxima partida',
   },
 
   toast: {
