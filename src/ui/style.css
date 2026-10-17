@@ -219,52 +219,6 @@ button {
   text-shadow: 2px 2px 0 #101020;
 }
 
-.select-screen {
-  justify-content: flex-start;
-  gap: 10px;
-  padding: 14px 12px 10px;
-  overflow-y: auto;
-  touch-action: pan-y;
-}
-
-.select-screen .logo-top {
-  font-size: clamp(22px, 4.2vw, 44px);
-}
-
-.select-screen .logo-bottom {
-  margin-top: 16px;
-  font-size: clamp(11px, 2.2vw, 22px);
-}
-
-.select-screen .subtitle {
-  margin: 0;
-}
-
-.select-screen .credits {
-  position: static;
-}
-
-.select-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 560px) minmax(0, 460px);
-  grid-template-areas: 'main inspect' 'footer inspect';
-  grid-template-rows: auto 1fr;
-  gap: 16px;
-  align-items: start;
-  width: min(1040px, 100%);
-}
-
-.select-main {
-  grid-area: main;
-}
-
-.select-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-
 .region-tabs {
   display: flex;
   gap: 6px;
@@ -316,45 +270,6 @@ button {
   color: #2a5aa8;
 }
 
-.starters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding-top: 10px;
-}
-
-.starter-card {
-  min-width: 0;
-  padding: 10px 6px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  transition: transform 0.12s steps(3);
-}
-
-.starter-card.selected {
-  transform: translateY(-10px);
-  --frame: var(--accent);
-  box-shadow:
-    inset 0 0 0 var(--px) var(--paper),
-    inset 0 0 0 calc(var(--px) * 2) var(--accent),
-    0 0 0 var(--px) #fff,
-    0 calc(var(--px) * 4) 0 rgba(0, 0, 0, 0.35);
-}
-
-.starter-sprite {
-  width: 128px;
-  max-width: 100%;
-  aspect-ratio: 64 / 56;
-  background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--accent) 30%, transparent) 0 35%, transparent 36%);
-}
-
-.starter-name {
-  font-family: var(--title);
-  font-size: 12px;
-}
-
 .types {
   display: flex;
   flex-wrap: wrap;
@@ -362,40 +277,1159 @@ button {
   gap: 4px;
 }
 
-/* ---------- Inspect panel ---------- */
+/* ---------- Partner select (ui/starterSelect.ts, ui/partnerDetails.ts) ---------- */
 
-.inspect {
-  grid-area: inspect;
+/*
+ * Three shapes: wide screens (roster box left, partner panel right), phones held
+ * upright (compact panel on top, the roster transposed to a row per region and
+ * scrolling, the details as a bottom sheet) and short landscape screens (roster
+ * and compact panel side by side). The phone query is PHONE in ui/starterSelect.ts.
+ */
+
+.partner-screen .shell-body {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 4px 2px 6px;
+}
+
+/* A long title needs the room: the slots keep their own width and the title takes the rest. */
+.partner-screen .shell-slot {
+  flex: none;
+}
+
+.partner-screen .shell-title {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.partner-title-short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .partner-title-long {
+    display: none;
+  }
+  .partner-title-short {
+    display: inline;
+  }
+}
+
+.partner-screen .shell-wallet .key-hint {
+  font-size: 7px;
+  padding: 3px 4px 2px;
+}
+
+.partner-layout {
+  flex: 1 1 0;
+  min-height: 430px;
+  align-self: center;
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'roster hero';
+  gap: 14px;
+}
+
+/* Roster: Iniciais / Ovos and the grid. */
+.partner-roster {
+  grid-area: roster;
   min-width: 0;
-  max-height: calc(100dvh - 150px);
-  overflow-y: auto;
-  touch-action: pan-y;
-  padding: 14px 16px 16px;
-  scrollbar-width: thin;
-}
-
-.inspect .dialog-title {
-  font-size: 10px;
-  color: #6878a8;
-  text-align: left;
-  margin-bottom: 4px;
-}
-
-.inspect-body {
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  padding: 14px 16px;
 }
 
-.inspect-head {
+.partner-tabs {
+  flex: none;
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+.partner-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-family: var(--title);
+  font-size: 10px;
+  color: #6878a8;
+  white-space: nowrap;
+  background: #e3e7f2;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.partner-tab small {
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.partner-tab:hover {
+  border-color: #6878a8;
+}
+
+.partner-tab.on {
+  color: #fff;
+  background: #283040;
+  border-color: #283040;
+}
+
+.partner-tabs .key-hint {
+  margin-left: 4px;
+}
+
+.partner-pane,
+.partner-eggs {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.inspect-head .types {
+.partner-roster.eggs .partner-pane,
+.partner-roster:not(.eggs) .partner-eggs {
+  display: none;
+}
+
+/* Wide: regions are columns (a short label on top), Grass / Fire / Water the rows, a type marker on the left. */
+.partner-grid {
+  display: grid;
+  grid-template-columns: 10px repeat(9, minmax(0, 58px));
+  grid-template-rows: auto repeat(3, auto);
+  grid-auto-flow: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 6px 4px;
+}
+
+.partner-types,
+.partner-region {
+  display: contents;
+}
+
+.partner-types i {
+  justify-self: center;
+  width: 8px;
+  height: 70%;
+  background: var(--t);
+  border-radius: 4px;
+}
+
+.partner-reg {
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1;
+  color: #6878a8;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.partner-reg .long {
+  display: none;
+}
+
+/* Portraits stay at their 40 px and get cropped by a smaller cell, never scaled off the pixel grid. */
+.partner-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--t) 22%, #fff);
+  border: 2px solid color-mix(in srgb, var(--t) 55%, #fff);
+  border-radius: 8px;
+}
+
+.partner-cell:hover {
+  border-color: var(--t);
+}
+
+.partner-cell-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  border-radius: 5px;
+}
+
+.partner-cell-name {
+  display: none;
+}
+
+.partner-cell-shiny {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+.partner-cell.selected {
+  z-index: 1;
+  border: 3px solid #e83030;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #e83030;
+}
+
+.partner-cell.selected::after {
+  content: 'P1';
+  position: absolute;
+  top: -9px;
+  left: -7px;
+  padding: 2px 3px;
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1;
+  color: #fff;
+  background: #e83030;
+  border-radius: 3px;
+}
+
+/* Families still in their egg: the egg they hatch from, on grey. */
+.partner-cell.locked {
+  background: #d4d8e4;
+  border-color: #b8bed0;
+}
+
+.partner-cell-egg {
+  width: 28px;
+  height: 32px;
+}
+
+/* Wide screens: the hatched families under the grid, a shortcut into Ovos. */
+.partner-teaser {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: auto;
+  padding-top: 10px;
+  overflow: hidden;
+  border-top: 2px dashed #d0d6e6;
+}
+
+.partner-teaser-label {
+  flex: none;
+  margin-right: 6px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #6878a8;
+}
+
+.partner-teaser-cell {
+  flex: none;
+  padding: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.partner-teaser-cell img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.partner-teaser-cell:hover {
+  border-color: #6878a8;
+}
+
+.partner-teaser-empty {
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #707088;
+}
+
+.partner-teaser-more {
+  flex: none;
+  margin-left: auto;
+  min-height: 40px;
+  padding: 0 8px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #3868c0;
+  background: none;
+  border: 0;
+}
+
+/* Ovos: a scrolling grid of the families and the way into the incubator. ↑ ↓ read the column count from here. */
+.partner-egg-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  align-content: start;
+  gap: 6px;
+  padding: 8px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.partner-eggs .incubator-entry {
+  flex: none;
+  align-self: center;
+  min-height: 44px;
+}
+
+/* The partner: Idle sprite on a pedestal tinted by its type, role, stats and evolution line. */
+.partner-hero {
+  grid-area: hero;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.partner-hero-top {
+  display: flex;
+  gap: 12px;
+}
+
+.partner-pedestal {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 144px;
+  height: 156px;
+  padding-bottom: 6px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 34% 9% at 50% 88%, color-mix(in srgb, var(--accent) 60%, #fff) 0 98%, transparent 100%),
+    linear-gradient(color-mix(in srgb, var(--accent) 12%, #fff), color-mix(in srgb, var(--accent) 34%, #fff));
+  border-radius: 10px;
+}
+
+.partner-sprite {
+  display: block;
+  flex: none;
+  width: 144px;
+  height: 144px;
+}
+
+.partner-id {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.partner-id .types {
   justify-content: flex-start;
 }
+
+.partner-dex {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #8890a8;
+}
+
+.partner-name {
+  margin: 0;
+  font-family: var(--title);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.partner-blurb {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.partner-intro {
+  color: #505068;
+}
+
+.partner-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.partner-stats .stat-bar {
+  grid-template-columns: 92px minmax(0, 1fr) 52px;
+}
+
+.partner-evo .evo-line {
+  justify-content: flex-start;
+}
+
+.partner-more {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 8px 10px;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+  color: #3868c0;
+  background: #eef2fc;
+  border: 2px solid #c8d4f0;
+  border-radius: 6px;
+}
+
+.partner-more:hover {
+  border-color: #3868c0;
+}
+
+.partner-more.compact {
+  display: none;
+  min-height: 40px;
+  margin: 0 0 0 auto;
+  padding: 6px 10px;
+}
+
+/* One action bar: Bag, difficulty, Começar. */
+.shell-actions.partner-bar {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+}
+
+.partner-bag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-bag-label {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #c8d0ff;
+}
+
+.partner-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: #3a4460;
+  border: 2px solid #56607e;
+  border-radius: 8px;
+}
+
+.partner-slot img {
+  width: 30px;
+  height: 30px;
+}
+
+.partner-slot em {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  padding: 3px 4px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  font-style: normal;
+  line-height: 1;
+  color: #fff;
+  background: #283040;
+  border-radius: 6px;
+}
+
+.partner-slot .key-hint {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  padding: 2px 3px;
+  font-size: 7px;
+}
+
+.partner-slot:hover {
+  border-color: #f8d030;
+}
+
+.partner-slot.on {
+  background: var(--paper);
+  border-color: #f8d030;
+  box-shadow: 0 0 0 2px #283040;
+}
+
+.partner-slot.empty img {
+  opacity: 0.4;
+}
+
+.partner-slot.empty:hover {
+  border-color: #56607e;
+}
+
+.partner-diff {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.partner-diff-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.partner-diff .shell-seg {
+  background: #3a4460;
+}
+
+.partner-diff .shell-seg-option {
+  --level: #58b858;
+  min-height: 40px;
+  padding: 0 12px;
+  font-size: 9px;
+  color: #c8d0ff;
+  white-space: nowrap;
+}
+
+.partner-diff .shell-seg-option.hard {
+  --level: #f08030;
+}
+
+.partner-diff .shell-seg-option.nightmare {
+  --level: #a040c8;
+}
+
+.partner-diff .shell-seg-option:hover {
+  color: #fff;
+}
+
+.partner-diff .shell-seg-option.on {
+  color: #fff;
+  background: var(--level);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Two lines at most, held open so the bar keeps its height when the level changes. */
+.partner-blurb-line {
+  display: -webkit-box;
+  max-width: 420px;
+  min-height: 2em;
+  margin: 0;
+  overflow: hidden;
+  font-size: 17px;
+  line-height: 1;
+  color: #e8e8f8;
+  text-align: right;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Começar takes the difficulty's color: green, orange, purple. */
+.partner-go {
+  --go: #48a848;
+  --go-hi: #78d070;
+  --go-lo: #2e7a30;
+  --go-ink: #1e5a20;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 22px;
+  overflow: hidden;
+  font-family: var(--title);
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 2px 2px 0 var(--go-ink);
+  background: linear-gradient(var(--go-hi), var(--go));
+  border: 3px solid #283040;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 -6px 0 var(--go-lo),
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.partner-go.hard {
+  --go: #e07020;
+  --go-hi: #f8a050;
+  --go-lo: #a04810;
+  --go-ink: #703008;
+}
+
+.partner-go.nightmare {
+  --go: #8838b8;
+  --go-hi: #b868e0;
+  --go-lo: #5c2080;
+  --go-ink: #3c1058;
+}
+
+.partner-go.locked {
+  --go: #8890a8;
+  --go-hi: #a8b0c4;
+  --go-lo: #606880;
+  --go-ink: #404860;
+  font-size: 11px;
+}
+
+.partner-go:hover {
+  filter: brightness(1.08);
+}
+
+.partner-go:active {
+  transform: translateY(2px);
+}
+
+.partner-go .key-hint {
+  font-size: 7px;
+  text-shadow: none;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.partner-go-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Details: a dialog on wide screens, a bottom sheet on phones. */
+.partner-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, var(--safe-t)) max(16px, var(--safe-r)) max(16px, var(--safe-b)) max(16px, var(--safe-l));
+  background: rgba(8, 8, 24, 0.55);
+  pointer-events: auto;
+}
+
+.partner-sheet {
+  width: min(620px, 100%);
+  height: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid #283040;
+  border-radius: 14px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: pop 0.18s steps(4) both;
+}
+
+.partner-sheet-grip {
+  display: none;
+}
+
+.partner-sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-sheet-id {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-sheet-id > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.partner-sheet-portrait {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+}
+
+.partner-sheet-name {
+  font-family: var(--title);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.shell-btn.partner-sheet-close {
+  font-size: 14px;
+}
+
+.partner-sheet-tabs.shell-tabs {
+  flex: none;
+  background: #e3e7f2;
+}
+
+.partner-sheet-tabs .shell-tab {
+  color: #6878a8;
+}
+
+.partner-sheet-tabs .shell-tab.on {
+  color: #fff;
+  background: #283040;
+}
+
+.partner-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.partner-sheet-body > * {
+  flex-shrink: 0;
+}
+
+.partner-sheet .partner-go {
+  min-height: 52px;
+  font-size: 11px;
+}
+
+/* Portrait tablets: the roster on top, the panel under it. */
+@media (orientation: portrait) and (min-width: 701px) {
+  .partner-layout {
+    flex: 1 0 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas: 'roster' 'hero';
+  }
+}
+
+/* Phones held upright (PHONE in ui/starterSelect.ts): compact panel, then a row per region. */
+@media (orientation: portrait) and (max-width: 700px) {
+  .partner-screen .shell-body {
+    overflow: hidden;
+    padding: 2px 0 0;
+  }
+  .partner-layout {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .partner-hero {
+    flex: none;
+    padding: 10px;
+    overflow: visible;
+  }
+  .partner-hero-top {
+    gap: 10px;
+  }
+  .partner-pedestal {
+    width: 96px;
+    height: 112px;
+    padding-bottom: 4px;
+  }
+  .partner-sprite {
+    width: 108px;
+    height: 108px;
+  }
+  .partner-id {
+    flex: 1 1 auto;
+    gap: 5px;
+  }
+  .partner-name {
+    font-size: 12px;
+  }
+  .partner-blurb {
+    font-size: 17px;
+  }
+  .partner-stats,
+  .partner-evo,
+  .partner-more {
+    display: none;
+  }
+  .partner-more.compact {
+    display: flex;
+  }
+  .partner-hero-actions {
+    align-self: stretch;
+  }
+  .partner-roster {
+    flex: 1 1 0;
+    padding: 0;
+    gap: 8px;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+  .partner-tabs {
+    padding: 4px;
+    background: rgba(24, 30, 48, 0.78);
+    border-radius: 10px;
+  }
+  .partner-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 6px;
+    color: #c8d0ff;
+    background: transparent;
+    border-color: transparent;
+  }
+  .partner-tab:hover {
+    border-color: transparent;
+  }
+  .partner-tab.on {
+    color: #283040;
+    background: var(--paper);
+    border-color: var(--paper);
+  }
+  .partner-pane {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .partner-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 8px 6px;
+  }
+  .partner-types,
+  .partner-teaser {
+    display: none;
+  }
+  .partner-region {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 6px;
+  }
+  .partner-reg {
+    grid-column: 1 / -1;
+    padding-left: 4px;
+    font-size: 8px;
+    color: #fff;
+    text-align: left;
+    text-shadow:
+      1px 1px 0 #283040,
+      -1px -1px 0 #283040,
+      1px -1px 0 #283040,
+      -1px 1px 0 #283040;
+  }
+  .partner-reg .short {
+    display: none;
+  }
+  .partner-reg .long {
+    display: inline;
+  }
+  .partner-region .partner-cell {
+    justify-content: flex-start;
+    gap: 4px;
+    height: 56px;
+    aspect-ratio: auto;
+    padding: 0 6px 0 4px;
+  }
+  .partner-region .partner-cell-portrait {
+    flex: none;
+    width: 36px;
+    height: 40px;
+  }
+  .partner-cell-name {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .partner-cell.selected::after {
+    top: -8px;
+    left: -6px;
+  }
+  .partner-egg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  }
+  .shell-actions.partner-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'diff diff' 'bag go';
+    gap: 8px 10px;
+    padding: 8px;
+  }
+  .partner-bag {
+    grid-area: bag;
+    gap: 8px;
+  }
+  .partner-bag-label {
+    display: none;
+  }
+  .partner-diff {
+    grid-area: diff;
+    align-items: stretch;
+    margin: 0;
+  }
+  .partner-diff .shell-seg {
+    flex: 1 1 auto;
+  }
+  .partner-diff .shell-seg-option {
+    padding: 0 4px;
+  }
+  .partner-blurb-line {
+    max-width: none;
+    font-size: 16px;
+    text-align: center;
+  }
+  .partner-go {
+    grid-area: go;
+    min-height: 52px;
+    padding: 0 12px;
+  }
+  .partner-sheet-scrim {
+    align-items: flex-end;
+    padding: max(40px, var(--safe-t)) 0 0;
+  }
+  .partner-sheet {
+    width: 100%;
+    height: 100%;
+    padding: 8px 14px max(14px, var(--safe-b));
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    animation: sheet-up 0.2s steps(5) both;
+  }
+  .partner-sheet-grip {
+    display: block;
+    flex: none;
+    align-self: center;
+    width: 44px;
+    height: 5px;
+    background: #c0c6d8;
+    border-radius: 3px;
+  }
+  .partner-sheet .stat-bar {
+    grid-template-columns: 84px minmax(0, 1fr) 48px;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(30%);
+  }
+}
+
+/* Short landscape screens: roster and compact panel side by side, a one-line bar. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .screen.shell.partner-screen {
+    gap: 6px;
+    padding-top: max(6px, var(--safe-t));
+    padding-bottom: max(6px, var(--safe-b));
+  }
+  .partner-screen .shell-top {
+    min-height: 44px;
+  }
+  .partner-screen .shell-body {
+    padding: 2px 2px 4px;
+  }
+  .partner-layout {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 250px);
+    gap: 10px;
+  }
+  .partner-roster {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .partner-tab {
+    min-height: 32px;
+    font-size: 9px;
+  }
+  .partner-tab small {
+    font-size: 16px;
+  }
+  .partner-pane {
+    overflow-y: auto;
+  }
+  .partner-grid {
+    grid-template-columns: 8px repeat(9, minmax(0, 52px));
+    gap: 3px;
+    padding: 8px 6px 2px;
+  }
+  .partner-teaser {
+    display: none;
+  }
+  .partner-egg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 4px;
+  }
+  .partner-eggs {
+    gap: 6px;
+  }
+  .partner-eggs .incubator-entry {
+    min-height: 40px;
+    padding: 2px 10px;
+  }
+  .partner-eggs .incubator-entry img {
+    width: 24px;
+    height: 24px;
+  }
+  .partner-hero {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .partner-hero-top {
+    gap: 8px;
+  }
+  .partner-pedestal {
+    width: 80px;
+    height: 84px;
+    padding-bottom: 2px;
+  }
+  .partner-sprite {
+    width: 72px;
+    height: 72px;
+  }
+  .partner-name {
+    font-size: 11px;
+  }
+  .partner-blurb {
+    font-size: 17px;
+  }
+  .partner-stats,
+  .partner-evo,
+  .partner-more {
+    display: none;
+  }
+  .partner-more.compact {
+    display: flex;
+  }
+  .partner-hero-actions {
+    align-self: stretch;
+  }
+  .partner-intro {
+    font-size: 16px;
+  }
+  .shell-actions.partner-bar {
+    gap: 10px;
+    padding: 5px 10px;
+  }
+  .partner-bag-label,
+  .partner-blurb-line {
+    display: none;
+  }
+  .partner-slot {
+    width: 42px;
+    height: 42px;
+  }
+  .partner-diff .shell-seg-option {
+    min-height: 38px;
+    padding: 0 10px;
+  }
+  .partner-go {
+    min-height: 46px;
+    padding: 0 16px;
+    font-size: 12px;
+  }
+  .partner-sheet-scrim {
+    padding: max(8px, var(--safe-t)) max(16px, var(--safe-r)) max(8px, var(--safe-b)) max(16px, var(--safe-l));
+  }
+  .partner-sheet {
+    height: 100%;
+    gap: 6px;
+    padding: 8px 12px 10px;
+  }
+  .partner-sheet .shell-tab {
+    min-height: 36px;
+  }
+  .partner-sheet .partner-go {
+    min-height: 44px;
+  }
+}
+
+/* The compact panel (phones, short landscape): the shiny pick and Detalhes get a full-width row under the sprite. */
+@media (orientation: portrait) and (max-width: 700px), (max-height: 500px) and (orientation: landscape) {
+  .partner-hero-top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    row-gap: 6px;
+  }
+  .partner-pedestal {
+    grid-row: span 5;
+  }
+  .partner-id {
+    display: contents;
+  }
+  .partner-id > * {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .partner-id > .partner-hero-actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+  .partner-hero-actions .shiny-option {
+    min-height: 36px;
+  }
+}
+
+/* Short phones: a smaller pedestal and a one-line blurb, so the roster keeps a few rows. */
+@media (orientation: portrait) and (max-width: 700px) and (max-height: 700px) {
+  .partner-pedestal {
+    width: 84px;
+    height: 92px;
+  }
+  .partner-sprite {
+    width: 72px;
+    height: 72px;
+  }
+  .partner-blurb-line {
+    min-height: 0;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* ---------- Partner details: stat bars, evolution line, moves (also the Pokédex) ---------- */
 
 .inspect-sprite {
   width: 144px;
@@ -421,11 +1455,6 @@ button {
   font-size: 8px;
   color: #707088;
   margin-bottom: 4px;
-}
-
-.inspect-blurb {
-  font-size: 20px;
-  line-height: 1;
 }
 
 .inspect-section {
@@ -604,136 +1633,7 @@ button {
   padding: 3px 4px 2px;
 }
 
-.select-footer {
-  grid-area: footer;
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-}
-
 /* ---------- Difficulty picker (starter select footer) ---------- */
-
-.difficulty-picker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  max-width: 100%;
-  padding: 4px 8px 6px;
-  background: rgba(16, 24, 48, 0.92);
-  border: 2px solid #6878a8;
-  border-radius: 6px;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.difficulty-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.difficulty-label {
-  font-family: var(--title);
-  font-size: 8px;
-  color: #a8b0d0;
-  text-transform: uppercase;
-}
-
-.difficulty-options {
-  display: flex;
-  gap: 4px;
-}
-
-.difficulty-option {
-  --level: #58b858;
-  font-family: var(--title);
-  font-size: 9px;
-  min-height: 34px;
-  padding: 4px 10px;
-  color: #c8d0e8;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 4px;
-}
-
-.difficulty-option.hard {
-  --level: #f08030;
-}
-
-.difficulty-option.nightmare {
-  --level: #a040c8;
-}
-
-.difficulty-option:hover,
-.difficulty-option:focus-visible {
-  border-color: var(--level);
-}
-
-.difficulty-option.selected {
-  color: #fff;
-  background: var(--level);
-  border-color: #fff;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.difficulty-blurb {
-  margin: 0;
-  max-width: 380px;
-  font-size: 17px;
-  line-height: 1;
-  text-align: center;
-  color: #e8e8f8;
-}
-
-/* Bag items armed for the next run (Lure, Incense), under the difficulty. */
-.bag-options {
-  display: flex;
-  gap: 4px;
-}
-
-.bag-option {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--title);
-  font-size: 8px;
-  min-height: 34px;
-  padding: 3px 8px;
-  color: #c8d0e8;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 4px;
-}
-
-.bag-option img {
-  width: 22px;
-  height: 22px;
-}
-
-.bag-option b {
-  font-weight: normal;
-  color: #a8b0d0;
-}
-
-.bag-option:hover,
-.bag-option:focus-visible {
-  border-color: #f070b0;
-}
-
-.bag-option.selected {
-  color: #fff;
-  background: #c04890;
-  border-color: #fff;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.bag-option.selected b {
-  color: #fff;
-}
 
 /* The level a run is played on: a chip in the pause menu and on the results. */
 .difficulty-tag {
@@ -754,35 +1654,6 @@ button {
   background: #a040c8;
 }
 
-@media (max-width: 520px) {
-  .difficulty-label {
-    display: none;
-  }
-  .difficulty-option {
-    font-size: 8px;
-    padding: 4px 8px;
-  }
-  /* The footer sticks over the inspect panel here: keep it to one line. */
-  .difficulty-blurb {
-    display: none;
-  }
-  .difficulty-picker {
-    padding: 2px 6px;
-  }
-}
-
-/* Phones in landscape: the footer shares the left column with the cards, so it stays one line. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .select-footer {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .difficulty-blurb {
-    display: none;
-  }
-}
-
 .btn.confirm {
   color: var(--ink);
   font-size: 12px;
@@ -790,98 +1661,13 @@ button {
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
 }
 
-@media (max-width: 960px) {
-  .select-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'main' 'inspect' 'footer';
-    grid-template-rows: none;
-    width: min(600px, 100%);
-  }
-  .inspect {
-    max-height: none;
-    overflow: visible;
-  }
-}
-
-/* Phones in landscape: keep cards and inspect side by side, scroll the panel. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .select-screen {
-    gap: 6px;
-    padding: 8px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left));
-  }
-  .select-screen .subtitle {
-    display: none;
-  }
-  .select-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: 'main inspect' 'footer inspect';
-    grid-template-rows: auto 1fr;
-    gap: 12px;
-    width: 100%;
-  }
-  .select-main {
-    gap: 6px;
-  }
-  .starter-card {
-    padding: 6px 4px 8px;
-    gap: 3px;
-  }
-  .starter-sprite {
-    width: 72px;
-  }
-  .starter-name {
-    font-size: 8px;
-  }
-  .starter-card .type-badge {
-    font-size: 6px;
-    padding: 3px 4px 2px;
-  }
-  .inspect {
-    max-height: calc(100dvh - 96px);
-    overflow-y: auto;
-    padding: 10px 12px 12px;
-  }
-  .select-footer {
-    position: static;
-  }
-}
-
-@media (pointer: coarse) {
-  .select-screen .hint {
-    display: none;
-  }
-}
-
 @media (max-width: 520px) {
-  .select-screen {
-    gap: 8px;
-    padding: 10px 8px 6px;
-  }
-  .select-screen .subtitle {
-    display: none;
-  }
-  .starters {
-    gap: 8px;
-  }
-  .starter-name {
-    font-size: 9px;
-  }
-  .starter-card .type-badge {
-    font-size: 6px;
-    padding: 3px 4px 2px;
-  }
-  .inspect {
-    padding: 12px 12px 14px;
-  }
   .inspect-sprite {
     width: 96px;
     height: 96px;
   }
   .inspect-name {
     font-size: 11px;
-  }
-  .inspect-blurb {
-    font-size: 18px;
   }
   .stat-bar {
     grid-template-columns: 76px 1fr 44px;
@@ -1904,38 +2690,6 @@ button {
 .earnings span {
   font-size: 20px;
   line-height: 1;
-}
-
-.mart-entry {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 8px;
-  pointer-events: auto;
-}
-
-.mart-entry img {
-  width: 28px;
-  height: 28px;
-}
-
-.mart-entry-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.mart-entry-text b {
-  font-family: var(--title);
-  font-size: 9px;
-}
-
-.mart-entry:hover,
-.mart-entry:focus-visible {
-  --frame: #e83838;
 }
 
 /* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
@@ -3116,17 +3870,6 @@ button {
     right: 6px;
     gap: 6px;
   }
-  .mart-entry {
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 8px;
-  }
-  .mart-entry-text b {
-    display: none;
-  }
-  .mart-entry-text span {
-    font-size: 16px;
-  }
   /* Stays a row: it fits left of the logo, while a column would cover the region tabs. */
   .lang-switch {
     top: 6px;
@@ -3168,7 +3911,6 @@ button {
     position: static;
     font-size: 6px;
   }
-
   .dialog,
   .dialog.wide {
     width: 100%;
@@ -3236,7 +3978,6 @@ button {
   .damage-row b {
     font-size: 8px;
   }
-
   .xp {
     height: 14px;
   }
@@ -5034,79 +5775,6 @@ button {
 
 /* ---------- Eggs: the box in the Pokémon select, the incubator and hatching ---------- */
 
-/* The egg box sits apart from the regions, after a divider. */
-.egg-tab {
-  position: relative;
-  margin-left: 10px;
-}
-
-.egg-tab::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 6px;
-  bottom: 6px;
-  border-left: 2px dashed #6878a8;
-}
-
-.egg-box-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding-top: 6px;
-}
-
-/* A scrolling box: with dozens of families the select stays one screen tall. ↑/↓ read the column count from here. */
-.egg-box {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-  max-height: min(44vh, 400px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-  padding: 4px;
-  scrollbar-width: thin;
-}
-
-.egg-cell {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  min-width: 0;
-  padding: 4px 2px;
-  background: #f8f8f8;
-  border: 2px solid #283040;
-  border-radius: 6px;
-}
-
-.egg-cell.locked {
-  background: #c8d0e0;
-}
-
-.egg-cell.selected {
-  background: #fff;
-  border-color: #ffcb05;
-  box-shadow: 0 0 0 2px #fff, 0 3px 0 #2a5aa8;
-}
-
-.egg-cell-sprite {
-  width: 72px;
-  max-width: 100%;
-  aspect-ratio: 48 / 40;
-}
-
-.egg-cell-tag {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 16px;
-  height: 16px;
-  image-rendering: pixelated;
-}
-
 .incubator-entry {
   display: flex;
   align-items: center;
@@ -5129,11 +5797,6 @@ button {
 .incubator-entry:hover,
 .incubator-entry:focus-visible {
   --frame: #58b858;
-}
-
-.btn.confirm.locked {
-  color: #707088;
-  background: #d8d8e0;
 }
 
 .locked-blurb {
@@ -5281,15 +5944,6 @@ button {
 }
 
 @media (max-width: 520px) {
-  .egg-box {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 4px;
-    max-height: 34vh;
-  }
-  .egg-cell-tag {
-    width: 12px;
-    height: 12px;
-  }
   .egg-slots {
     gap: 6px;
   }
@@ -5314,15 +5968,6 @@ button {
   .hatch-canvas {
     width: 224px;
     height: 192px;
-  }
-  .egg-box {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 4px;
-    max-height: calc(100dvh - 210px);
-  }
-  .egg-box-wrap {
-    gap: 6px;
-    padding-top: 0;
   }
 }
 
@@ -6120,18 +6765,6 @@ a.btn.dex-site {
 }
 
 /* ---------- Shiny starters: the Normal/Shiny pick ---------- */
-
-.starter-card {
-  position: relative;
-}
-
-.starter-shiny {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 18px;
-  height: 18px;
-}
 
 .shiny-picker {
   display: flex;

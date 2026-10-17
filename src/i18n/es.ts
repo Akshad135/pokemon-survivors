@@ -75,11 +75,6 @@ export const es: Messages = {
   },
 
   title: {
-    subtitle: '¡Elige a tu compañero!',
-    hintKeys: '← → compañero · ↑ ↓ región · ENTER elegir',
-    hintTouch: 'Toca para ver · toca otra vez para elegir',
-    inspect: 'INSPECCIONAR',
-    choose: (name) => `¡Elegir a ${name}!`,
     statsSection: 'Stats',
     legendBase: 'inicio',
     legendFinal: 'evolucionado',
@@ -91,6 +86,20 @@ export const es: Messages = {
     shiny: 'Shiny',
     shinyPick: 'Colores',
     credits: 'Fan game no oficial · Sprites: PMD SpriteCollab · Gritos: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
+  },
+
+  partner: {
+    title: 'Elige tu compañero',
+    titleShort: 'Compañero',
+    starters: 'INICIALES',
+    hatched: 'ECLOSIONADOS',
+    noneHatched: 'Los huevos eclosionados se vuelven compañeros.',
+    details: (mega) => (mega ? 'Movimientos, especial y Mega' : 'Movimientos y especial'),
+    detailsShort: 'Detalles',
+    tabs: { status: 'STATS', moves: 'MOVIMIENTOS', mega: 'MEGA' },
+    start: 'Empezar',
+    startWith: (name) => `Empezar con ${name}`,
+    close: 'Cerrar',
   },
 
   hud: {
@@ -120,8 +129,8 @@ export const es: Messages = {
     names: { normal: 'Normal', hard: 'Difícil', nightmare: 'Pesadilla' },
     blurbs: {
       normal: 'La partida tal como fue pensada.',
-      hard: 'Hordas más rápidas, densas y duras, que pegan más fuerte. Para quien ya llenó la Poké Mart.',
-      nightmare: 'Hordas brutales, rápidas y densas, y la mitad de toda la curación. Buena suerte.',
+      hard: 'Hordas más rápidas, densas y duras. Para quien ya llenó la Poké Mart.',
+      nightmare: 'Hordas brutales y densas, y la mitad de toda la curación. Buena suerte.',
     },
   },
 

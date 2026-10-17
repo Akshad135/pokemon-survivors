@@ -29,7 +29,7 @@ export type ContentTexts = {
   upgrades: Record<UpgradeId, string>
   /** Pickup toast line, shown after the item name. */
   consumables: Record<ConsumableId, string>
-  /** One-liner under the Pokémon's name in the inspect panel. */
+  /** One-liner under the Pokémon's name in the partner panel. */
   blurbs: Record<PlayableId, string>
   /** Special attacks: what each one does, by `SPECIALS` id. */
   specials: Record<SpecialId, string>
@@ -121,11 +121,6 @@ export const pt = {
   },
 
   title: {
-    subtitle: 'Escolha seu parceiro!',
-    hintKeys: '← → parceiro · ↑ ↓ região · ENTER escolher',
-    hintTouch: 'Toque para ver · toque de novo para escolher',
-    inspect: 'INSPECIONAR',
-    choose: (name: string) => `Escolher ${name}!`,
     statsSection: 'Status',
     legendBase: 'início',
     legendFinal: 'evoluído',
@@ -140,13 +135,28 @@ export const pt = {
     credits: 'Fan game não oficial · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
   },
 
-  /** Difficulty picker on the starter select screen; the level shows in the pause menu and the results too. */
+  /** The partner select: roster tabs, the partner panel, its details sheet and the start bar. Press Start 2P labels: unaccented capitals or mixed case. */
+  partner: {
+    title: 'ESCOLHA SEU PARCEIRO',
+    titleShort: 'PARCEIRO',
+    starters: 'INICIAIS',
+    hatched: 'CHOCADOS',
+    noneHatched: 'Ovos chocados viram parceiros.',
+    details: (mega: boolean): string => (mega ? 'Golpes, especial e Mega' : 'Golpes e especial'),
+    detailsShort: 'Detalhes',
+    tabs: { status: 'STATUS', moves: 'GOLPES', mega: 'MEGA' },
+    start: 'Começar',
+    startWith: (name: string) => `Começar com ${name}`,
+    close: 'Fechar',
+  },
+
+  /** Difficulty picker in the partner select's start bar; the level shows in the pause menu and the results too. */
   difficulty: {
     label: 'Dificuldade',
     names: { normal: 'Normal', hard: 'Difícil', nightmare: 'Pesadelo' },
     blurbs: {
       normal: 'A partida como ela foi pensada.',
-      hard: 'Hordas mais rápidas, cheias e duras, que batem mais forte. Para quem já encheu a Poké Mart.',
+      hard: 'Hordas mais rápidas, densas e duras. Para quem já encheu a Poké Mart.',
       nightmare: 'Hordas brutais, rápidas e densas, e metade de toda a cura. Boa sorte.',
     },
   } satisfies { label: string; names: Record<Difficulty, string>; blurbs: Record<Difficulty, string> },
@@ -675,7 +685,7 @@ export const pt = {
     revive: 'O *Revive* te pôs de pé!',
   },
 
-  /** Mega Evolution: the button, its toasts, the inspect panel and what each Mega form does. */
+  /** Mega Evolution: the button, its toasts, the partner details and what each Mega form does. */
   mega: {
     button: 'MEGA',
     title: 'Mega Evolução (E)',

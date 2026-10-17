@@ -42,7 +42,7 @@ export const shellBody = (...children: Slot[]) => h('div', { class: 'shell-body'
  * `right` slot (wallet, help, gear), right-aligned. Empty slots keep their
  * width balanced so the title stays centered.
  */
-export const topBar = (opts: { left?: Slot; title?: string | null; right?: readonly Slot[] }) =>
+export const topBar = (opts: { left?: Slot; title?: string | Node | null; right?: readonly Slot[] }) =>
   h(
     'header',
     { class: 'shell-top' },
@@ -75,14 +75,25 @@ export const gearButton = (onClick: () => void, key?: string) => iconButton(gear
 /** The `?`: opens how to play (or a screen's own help). */
 export const helpButton = (onClick: () => void) => iconButton(helpIcon(), t().shell.help, onClick)
 
-/** The ₽ chip: the save's wallet, display only. */
-export const walletChip = (wallet: number) =>
-  h(
-    'span',
-    { class: 'shell-chip shell-wallet box', role: 'img', 'aria-label': t().shell.wallet(formatPokeDollars(wallet)) },
-    h('img', { src: coinIcon(2), alt: '' }),
-    h('b', {}, formatPokeDollars(wallet)),
-  )
+/**
+ * The ₽ chip: the save's wallet. Display only, unless `open` makes it a
+ * button (the partner select's way into the Poké Mart), with its `key` hint.
+ */
+export const walletChip = (wallet: number, open?: { label: string; onClick: () => void; key?: string }) =>
+  open
+    ? h(
+        'button',
+        { class: 'shell-chip shell-wallet shell-btn box', type: 'button', 'aria-label': open.label, title: open.label, onclick: open.onClick },
+        h('img', { src: coinIcon(2), alt: '' }),
+        h('b', {}, formatPokeDollars(wallet)),
+        open.key ? h('span', { class: 'key-hint' }, open.key) : null,
+      )
+    : h(
+        'span',
+        { class: 'shell-chip shell-wallet box', role: 'img', 'aria-label': t().shell.wallet(formatPokeDollars(wallet)) },
+        h('img', { src: coinIcon(2), alt: '' }),
+        h('b', {}, formatPokeDollars(wallet)),
+      )
 
 /** Bottom action bar: the screen's main buttons, in thumb reach. A flex child of `shellScreen`, so content above it never hides under it. */
 export const actionBar = (...children: Slot[]) => h('footer', { class: 'shell-actions' }, ...children)

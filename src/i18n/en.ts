@@ -75,11 +75,6 @@ export const en: Messages = {
   },
 
   title: {
-    subtitle: 'Choose your partner!',
-    hintKeys: '← → partner · ↑ ↓ region · ENTER choose',
-    hintTouch: 'Tap to view · tap again to choose',
-    inspect: 'INSPECT',
-    choose: (name) => `Choose ${name}!`,
     statsSection: 'Stats',
     legendBase: 'base',
     legendFinal: 'evolved',
@@ -91,6 +86,20 @@ export const en: Messages = {
     shiny: 'Shiny',
     shinyPick: 'Colors',
     credits: 'Unofficial fan game · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
+  },
+
+  partner: {
+    title: 'CHOOSE YOUR PARTNER',
+    titleShort: 'PARTNER',
+    starters: 'STARTERS',
+    hatched: 'HATCHED',
+    noneHatched: 'Hatched eggs become partners.',
+    details: (mega) => (mega ? 'Moves, special and Mega' : 'Moves and special'),
+    detailsShort: 'Details',
+    tabs: { status: 'STATS', moves: 'MOVES', mega: 'MEGA' },
+    start: 'Start',
+    startWith: (name) => `Start with ${name}`,
+    close: 'Close',
   },
 
   hud: {
