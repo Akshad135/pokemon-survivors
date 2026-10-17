@@ -42,7 +42,7 @@ export const siteEs: SiteMessages = {
   pokedex: {
     title: 'Pokédex de Pokémon Survivors: iniciales, enemigos, jefes y legendarios',
     description:
-      'Todos los Pokémon de Pokémon Survivors con sprite animado y shiny: los 27 iniciales y las 52 familias de los huevos con sus evoluciones, enemigos salvajes, jefes y legendarios. Tipos, estadísticas en el juego, movimientos, especiales y cuándo aparece cada uno.',
+      'Todos los Pokémon de Pokémon Survivors con sprite animado y shiny: los 27 iniciales y las 53 familias de los huevos con sus evoluciones, enemigos salvajes, jefes y legendarios. Tipos, estadísticas en el juego, movimientos, especiales y cuándo aparece cada uno.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Los ${count} Pokémon que existen en Pokémon Survivors, con los números del juego: iniciales de todas las regiones, las familias que salen de los huevos y sus evoluciones, la horda salvaje, los jefes y los legendarios. Pasa el mouse (o toca) para ver el sprite caminando y usa ★ para ver el shiny.`,

@@ -1533,6 +1533,7 @@ export const en: Messages = {
     bagon: 'Dreams of flying. Dragon fire from the egg.',
     slakoth: 'Sloth. Slow to act, but hits very hard.',
     feebas: 'The plainest one. Until it becomes the most beautiful.',
+    deino: 'Blind biter. Hits hard, and with three heads it fires more.',
     munchlax: 'Hungry tank. Lots of HP, defense and regen; pulls items from afar.',
   },
 
