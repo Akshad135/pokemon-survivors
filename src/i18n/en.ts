@@ -181,8 +181,7 @@ export const en: Messages = {
       confirm: 'Confirm',
       back: 'Back',
     },
-    pressKey: (action: string) => `*${action}*: press a key… (ESC cancels)`,
-    pressButton: (action: string) => `*${action}*: press a gamepad button… (ESC cancels)`,
+    press: (action: string) => `*${action}*: press a key or a gamepad button… (ESC cancels)`,
     reserved: 'The arrows and ESC are fixed. Pick another key.',
     bound: (action: string, key: string) => `*${action}* now uses ${key}.`,
     moved: (key: string, action: string, to: string | null) =>

@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    title: { pt: 'Remapear com o controle', en: 'Remapping with a gamepad', es: 'Reasignar con el control' },
+    notes: [
+      {
+        pt: 'Na tela de Controles, escolher uma ação com o botão A do controle ficava esperando uma tecla do teclado, e o controle parecia não ser detectado. Agora a troca aceita a tecla ou o botão que você apertar, venha do teclado ou do controle.',
+        en: 'In the Controls screen, picking an action with the gamepad’s A button waited for a keyboard key, so the gamepad seemed undetected. Now it takes the key or button you press next, from the keyboard or the gamepad.',
+        es: 'En la pantalla de Controles, elegir una acción con el botón A del control esperaba una tecla del teclado, y el control parecía no detectarse. Ahora acepta la tecla o el botón que presiones, del teclado o del control.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 87,
     title: { pt: 'Passeie com seu parceiro no menu', en: 'Take your partner for a walk in the menu', es: 'Pasea con tu compañero en el menú' },
     notes: [

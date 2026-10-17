@@ -64,7 +64,7 @@ export const boundKey = (action: Action) => {
 /**
  * Remap screen, opened from Settings: one line per action with its key and
  * gamepad button. ↑ ↓ pick the line, ← → the column, Enter (or a tap) waits
- * for the new key or button; Esc cancels the wait. Taking a key from another
+ * for the new key or button, from either device; Esc cancels the wait. Taking a key from another
  * action swaps them (see `rebind`) and says so. Changes apply and persist at once.
  * Esc or Backspace close it, then `onClose` runs after the key dispatch.
  */
@@ -131,19 +131,24 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
     return moved.map((x) => m.moved(label, m.actions[x.action], x.to === null ? null : padLabel(x.to)))
   }
 
+  /**
+   * Waits for the new key or button of `action`. `device` is the highlighted
+   * column, but the device pressed decides: a player who picked the line with
+   * the pad's A (the keyboard column by default) binds the button they press next.
+   */
   const wait = (action: Action, device: Device) => {
     waiting?.stop()
     const stop = input.capture((press) => {
       if (press.device === 'key' && press.code === 'Escape') return stopWaiting(m.fixed)
-      if (press.device !== device) return
       if (press.device === 'key' && RESERVED_KEYS.includes(press.code)) return say(m.reserved)
+      col = press.device
       const notes = assign(action, press)
       playSfx('select')
       stopWaiting(notes.join(' ') || m.bound(m.actions[action], press.device === 'key' ? keyLabel(press.code) : padLabel(press.button)))
     })
     waiting = { action, device, stop }
     playSfx('move')
-    say(device === 'key' ? m.pressKey(m.actions[action]) : m.pressButton(m.actions[action]))
+    say(m.press(m.actions[action]))
     sync()
   }
 
