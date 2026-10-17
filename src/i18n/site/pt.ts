@@ -542,7 +542,7 @@ export const sitePt = {
       late: 'O pagamento ainda não foi confirmado. Volte a esta página daqui a pouco para ver seu código.',
       sent: (handle: string) => `As recompensas foram para @${handle}. Elas chegam como Presente Misterioso na próxima sincronização do jogo.`,
       code: 'Seu código de resgate:',
-      codeHint: 'No jogo, entre na sua conta e abra o ♥ do título → Tenho um código. Ele vale uma vez, para a conta que resgatar: pode ser a de um amigo.',
+      codeHint: 'No jogo, entre na sua conta e abra o Hall da Fama do título → Tenho um código. Ele vale uma vez, para a conta que resgatar: pode ser a de um amigo.',
       copy: 'Copiar',
       copied: 'Copiado!',
       used: 'O código desta doação já foi resgatado.',

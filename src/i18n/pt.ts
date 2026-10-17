@@ -63,19 +63,30 @@ export const pt = {
     regen: 'Regeneração',
   },
 
-  /** Title screen (the first thing a player sees). */
+  /** The title screen: the "press start" intro, then the lobby (`ui/title.ts`). Press Start 2P has no uppercase accented glyphs: its labels stay unaccented or mixed case. */
   home: {
     pressKeys: 'Pressione qualquer tecla',
     pressTouch: 'Toque para começar',
-    play: 'Jogar',
-    challenge: 'Desafio do dia',
+    play: 'JOGAR',
+    today: 'HOJE',
+    outbreak: 'SURTO DO DIA',
+    challenge: 'DESAFIO DO DIA',
+    /** The Desafio do dia card once today's attempt was made: its time. */
+    challengeDone: (time: string) => `Feito: ${time}`,
+    challengeOpen: 'Ainda não jogado hoje',
     missions: 'Missões',
+    missionsLeft: (n: number) => (n === 1 ? '1 missão de hoje por fazer' : `${n} missões de hoje por fazer`),
+    hall: 'HALL DA FAMA',
+    /** The Hall da Fama card's ticker: the newest supporter. */
+    hallJoined: (handle: string, today: boolean) => (today ? `@${handle} entrou hoje` : `@${handle} entrou no Hall`),
+    /** The name plate under the partner: tapping it opens the Pokémon select. */
+    change: 'Trocar',
     pokedex: 'Pokédex',
+    eggs: 'Ovos',
+    eggsReady: (n: number) => (n === 1 ? '1 ovo pronto para chocar' : `${n} ovos prontos para chocar`),
+    mart: 'Loja',
     ranking: 'Ranking',
-    incubator: 'Incubadora',
-    guide: 'Como jogar',
-    settings: 'Ajustes',
-    /** Support chip (donations page) on the title and the starter select. */
+    /** Support chip (donations page) on the starter select, and the Hall da Fama card before it has names. */
     support: 'Apoie o projeto',
     back: 'Título',
   },
@@ -546,13 +557,13 @@ export const pt = {
     wait: 'Um Presente Misterioso espera espaço na incubadora.',
     welcome: (from: string | null) => (from ? `Por entrar com o convite de @${from}` : 'Por entrar com um convite'),
     friends: (n: number) => (n === 1 ? 'Por trazer seu primeiro amigo' : `Por trazer ${n} amigos`),
-    shinyPick: 'Um *shiny à sua escolha*! Toque no ♥ do título para escolher.',
+    shinyPick: 'Um *shiny à sua escolha*! Toque no Hall da Fama para escolher.',
     support: (tier: SupporterTier): string => (tier === 'gold' ? 'Por chegar a Apoiador(a) Ouro ♥' : 'Por apoiar o projeto ♥'),
     staff: (from: string | null) => (from ? `Um presente de @${from}, que faz o jogo ♥` : 'Um presente de quem faz o jogo ♥'),
   },
 
   /**
-   * Apoiadores: the screen behind the title's heart chip. Donating (on the
+   * Apoiadores: the screen behind the title's Hall da Fama card. Donating (on the
    * support page) with an account brings cosmetic thanks as Mystery Gifts.
    */
   supporters: {
