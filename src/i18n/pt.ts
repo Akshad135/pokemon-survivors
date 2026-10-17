@@ -29,7 +29,7 @@ export type ContentTexts = {
   upgrades: Record<UpgradeId, string>
   /** Pickup toast line, shown after the item name. */
   consumables: Record<ConsumableId, string>
-  /** One-liner under the Pokémon's name in the inspect panel. */
+  /** One-liner under the Pokémon's name in the partner panel. */
   blurbs: Record<PlayableId, string>
   /** Special attacks: what each one does, by `SPECIALS` id. */
   specials: Record<SpecialId, string>
@@ -86,9 +86,8 @@ export const pt = {
     eggsReady: (n: number) => (n === 1 ? '1 ovo pronto para chocar' : `${n} ovos prontos para chocar`),
     mart: 'Loja',
     ranking: 'Ranking',
-    /** Support chip (donations page) on the starter select, and the Hall da Fama card before it has names. */
+    /** Support chip (donations page), and the Hall da Fama card before it has names. */
     support: 'Apoie o projeto',
-    back: 'Título',
   },
 
   /** The menus' top bar (`ui/shell.ts`). Press Start 2P has no uppercase accented glyphs: titles stay unaccented or mixed case. */
@@ -121,11 +120,6 @@ export const pt = {
   },
 
   title: {
-    subtitle: 'Escolha seu parceiro!',
-    hintKeys: '← → parceiro · ↑ ↓ região · ENTER escolher',
-    hintTouch: 'Toque para ver · toque de novo para escolher',
-    inspect: 'INSPECIONAR',
-    choose: (name: string) => `Escolher ${name}!`,
     statsSection: 'Status',
     legendBase: 'início',
     legendFinal: 'evoluído',
@@ -140,13 +134,28 @@ export const pt = {
     credits: 'Fan game não oficial · Sprites: PMD SpriteCollab · Cries: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
   },
 
-  /** Difficulty picker on the starter select screen; the level shows in the pause menu and the results too. */
+  /** The partner select: roster tabs, the partner panel, its details sheet and the start bar. Press Start 2P labels: unaccented capitals or mixed case. */
+  partner: {
+    title: 'ESCOLHA SEU PARCEIRO',
+    titleShort: 'PARCEIRO',
+    starters: 'INICIAIS',
+    hatched: 'CHOCADOS',
+    noneHatched: 'Ovos chocados viram parceiros.',
+    details: (mega: boolean): string => (mega ? 'Golpes, especial e Mega' : 'Golpes e especial'),
+    detailsShort: 'Detalhes',
+    tabs: { status: 'STATUS', moves: 'GOLPES', mega: 'MEGA' },
+    start: 'Começar',
+    startWith: (name: string) => `Começar com ${name}`,
+    close: 'Fechar',
+  },
+
+  /** Difficulty picker in the partner select's start bar; the level shows in the pause menu and the results too. */
   difficulty: {
     label: 'Dificuldade',
     names: { normal: 'Normal', hard: 'Difícil', nightmare: 'Pesadelo' },
     blurbs: {
       normal: 'A partida como ela foi pensada.',
-      hard: 'Hordas mais rápidas, cheias e duras, que batem mais forte. Para quem já encheu a Poké Mart.',
+      hard: 'Hordas mais rápidas, densas e duras. Para quem já encheu a Poké Mart.',
       nightmare: 'Hordas brutais, rápidas e densas, e metade de toda a cura. Boa sorte.',
     },
   } satisfies { label: string; names: Record<Difficulty, string>; blurbs: Record<Difficulty, string> },
@@ -567,33 +576,34 @@ export const pt = {
    * support page) with an account brings cosmetic thanks as Mystery Gifts.
    */
   supporters: {
-    title: 'APOIADORES',
-    lead: 'O jogo é grátis e sem anúncios. Quem doa ajuda a pagar os servidores e ganha um agradecimento, nada que mude uma partida.',
-    perksTitle: 'Quem doa ganha',
-    perks: {
-      title: 'O título e a moldura *Apoiador(a)*',
-      badge: 'Um selo ♥ ao lado do seu @ no ranking e no perfil',
-      shiny: 'Um *shiny à sua escolha*: qualquer inicial ou família dos ovos',
-      companion: 'Um *companheiro* que te segue nas partidas',
-      wall: 'Seu nome no mural e nos agradecimentos da vitória',
-      vote: 'Voto no próximo Pokémon dos ovos',
-      gold: '*Ouro* (R$ 50 ou US$ 10 somados): fundo, papel de parede e selo dourados',
-    },
+    title: 'HALL DA FAMA',
+    lead: 'Quem mantém o jogo vivo. Obrigado! ♥',
+    perks: { title: 'Título', frame: 'Moldura', shiny: 'Shiny', companion: 'Companheiro', vote: 'Voto' },
+    gold: '*Ouro* (R$ 50 ou US$ 10 somados): fundo, papel de parede e selo dourados',
+    legends: 'LENDAS',
+    goldFrom: 'R$ 50+',
+    fans: (n: number) => `APOIADORES · ${n}`,
+    firstLegend: 'Seja a primeira Lenda',
+    you: (tier: SupporterTier): string => (tier === 'gold' ? 'Você é Apoiador(a) Ouro' : 'Você é Apoiador(a)'),
+    join: 'Entre para o Hall',
+    yours: 'Seu apoio',
+    cosmetic: 'Todo apoio é cosmético: nada de pay-to-win.',
     guest: 'As recompensas vão para uma conta: entre antes de doar.',
     noHandle: 'Escolha seu @ no perfil para a doação ir direto para a sua conta.',
     none: 'Doe pela página de apoio com seu @: as recompensas chegam como Presente Misterioso.',
     loading: 'Carregando…',
     offline: 'Sem conexão com o servidor agora.',
     since: (tier: SupporterTier, date: string) => (tier === 'gold' ? `Você é *Apoiador(a) Ouro* desde ${date}. Muito obrigado! ♥` : `Você é *Apoiador(a)* desde ${date}. Obrigado! ♥`),
-    donate: 'Doar',
+    donate: 'APOIAR',
     signIn: 'Entrar',
     createProfile: 'Criar perfil',
     pick: (n: number) => (n > 1 ? `Escolher shiny (${n})` : 'Escolher shiny'),
     companion: 'Companheiro',
     vote: 'Votação',
-    wall: 'Mural',
     code: 'Tenho um código',
+    codeShort: 'Código',
     show: (on: boolean): string => (on ? 'Selo e nome: visíveis' : 'Selo e nome: ocultos'),
+    shown: (on: boolean): string => (on ? 'Visível' : 'Oculto'),
     back: 'Voltar',
     hintKeys: '↑ ↓ escolher · ENTER confirmar · ESC voltar',
     hintTouch: 'Toque para escolher',
@@ -634,8 +644,6 @@ export const pt = {
     redeemed: 'Código resgatado! As recompensas chegam como Presente Misterioso.',
     codeErrors: { format: 'O código tem o formato PS-XXXX-XXXX.', unknown: 'Esse código não existe.', used: 'Esse código já foi usado.', offline: 'Sem conexão. Tente de novo.' },
 
-    wallTitle: 'MURAL DE APOIADORES',
-    wallIntro: 'Treinadores que mantêm o jogo no ar. Obrigado!',
     wallEmpty: 'Ainda ninguém por aqui. Seu nome pode ser o primeiro!',
 
     credits: 'Obrigado aos treinadores que mantêm o jogo no ar',
@@ -653,7 +661,6 @@ export const pt = {
     } satisfies Record<BagItem, string>,
     active: { lure: 'Shinies 2× mais comuns nesta partida!', incense: 'Chance de ovo 2× maior nesta partida!' } satisfies Record<BagItem, string>,
     toggle: (name: string, n: number) => `${name} ×${n}`,
-    pickHint: 'Usar na próxima partida',
   },
 
   toast: {
@@ -675,7 +682,7 @@ export const pt = {
     revive: 'O *Revive* te pôs de pé!',
   },
 
-  /** Mega Evolution: the button, its toasts, the inspect panel and what each Mega form does. */
+  /** Mega Evolution: the button, its toasts, the partner details and what each Mega form does. */
   mega: {
     button: 'MEGA',
     title: 'Mega Evolução (E)',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_SAVE, parseSave, SAVE_VERSION, type Save } from './meta'
-import { savedSupporterTier, trainerAvatar } from './trainer'
+import { hallPokemon, savedSupporterTier, trainerAvatar } from './trainer'
 
 const supporter: Save = { ...EMPTY_SAVE, titles: ['supporter'] }
 
@@ -34,5 +34,23 @@ describe('savedSupporterTier', () => {
     expect(savedSupporterTier(supporter)).toBe('supporter')
     const gold = { ...supporter, style: { ...supporter.style, owned: { ...supporter.style.owned, background: ['supporter'] as const } } }
     expect(savedSupporterTier(gold)).toBe('gold')
+  })
+})
+
+describe('hallPokemon', () => {
+  it('shows a shiny picked with a ticket first, then the companion, then the partner', () => {
+    const picked: Save = { ...supporter, shinyPicks: [{ id: 'a', pick: 'gible' }, { id: 'b', pick: null }], companion: { id: 'squirtle', shiny: false } }
+    expect(hallPokemon(picked)).toEqual({ id: 'gible', shiny: true })
+    expect(hallPokemon({ ...picked, shinyPicks: [{ id: 'b', pick: null }] })).toEqual({ id: 'squirtle', shiny: false })
+    expect(hallPokemon({ ...supporter, partner: 'bulbasaur', shinyStarters: { bulbasaur: true } })).toEqual({ id: 'bulbasaur', shiny: true })
+  })
+
+  it('skips a companion the save can no longer walk with', () => {
+    expect(hallPokemon({ ...supporter, companion: { id: 'squirtle', shiny: true } })).toEqual({ id: 'charmander', shiny: false })
+  })
+
+  it('reads a save the API trimmed to a few fields', () => {
+    const trimmed = parseSave(JSON.stringify({ version: SAVE_VERSION, partner: 'pichu', shinyPicks: [{ id: 'x', pick: 'eevee' }] }))
+    expect(hallPokemon(trimmed)).toEqual({ id: 'eevee', shiny: true })
   })
 })

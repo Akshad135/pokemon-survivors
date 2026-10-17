@@ -84,10 +84,10 @@ import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from '
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
-import { martButton, shop } from './ui/shop'
+import { shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
-import { titleButton, titleScreen, type LobbyFocus } from './ui/title'
-import { creditsLine, supportButton, supportersScreen } from './ui/supporters'
+import { titleScreen, type LobbyFocus } from './ui/title'
+import { creditsLine, supportersScreen } from './ui/supporters'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
@@ -265,25 +265,22 @@ const showPlayGate = () =>
     playGate(ui, input, {
       play: () => showMenu(),
       guest: () => ((playingAsGuest = true), showMenu()),
-      back: () => showTitle(),
+      back: () => showTitle({ focus: 'play' }),
     }),
   )
 
-/** Pokémon select, with the Poké Mart and the support chip (top right) and the way back to the title (top left). */
+/** The partner select; its top bar leads back to the title, to the Poké Mart (the wallet) and to Settings, which come back to it on the same Pokémon. */
 const showMenu = (initial: PlayableId = loadSave().partner) => {
   endRun()
   const select = starterSelect(ui, input, {
     pick: (id) => setTimeout(() => void startRun(id), 250),
+    back: () => showTitle({ focus: 'play' }),
+    mart: () => showShop(),
+    settings: () => setScreen(openSettings(ui, input, () => showMenu(select.selected()))),
     incubator: () => showIncubator(() => showMenu(select.selected())),
   }, initial)
-  const closeMart = martButton(ui, input, () => showShop())
-  const closeBack = titleButton(ui, input, () => showTitle())
-  const closeSupport = supportButton(ui, () => showSupporters(() => showMenu(select.selected())))
-  setScreen({ ...select, dispose: () => (closeMart(), closeBack(), closeSupport(), select.dispose()) })
+  setScreen(select)
 }
-
-/** Apoiadores from the starter select's heart chip; closing it comes back with `back`. */
-const showSupporters = (back: () => void) => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, 'pick'))
 
 /** The save's companion for a run starting now, if it's a supporter's and still allowed (its sprites start loading). */
 const runCompanion = (at: Vec): CompanionView | null => {
@@ -1266,7 +1263,7 @@ if (import.meta.env.DEV) {
         upcoming = planRun()
         if (screen?.el.classList.contains('title-home')) showTitle()
         else if (screen?.el.classList.contains('mart-screen')) showShop()
-        else if (screen?.el.querySelector('.select-layout')) showMenu()
+        else if (screen?.el.classList.contains('partner-screen')) showMenu()
       }),
     },
   })

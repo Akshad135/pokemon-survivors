@@ -44,7 +44,6 @@ export const es: Messages = {
     mart: 'Tienda',
     ranking: 'Ranking',
     support: 'Apoya el proyecto',
-    back: 'Título',
   },
 
   shell: {
@@ -75,11 +74,6 @@ export const es: Messages = {
   },
 
   title: {
-    subtitle: '¡Elige a tu compañero!',
-    hintKeys: '← → compañero · ↑ ↓ región · ENTER elegir',
-    hintTouch: 'Toca para ver · toca otra vez para elegir',
-    inspect: 'INSPECCIONAR',
-    choose: (name) => `¡Elegir a ${name}!`,
     statsSection: 'Stats',
     legendBase: 'inicio',
     legendFinal: 'evolucionado',
@@ -91,6 +85,20 @@ export const es: Messages = {
     shiny: 'Shiny',
     shinyPick: 'Colores',
     credits: 'Fan game no oficial · Sprites: PMD SpriteCollab · Gritos: PokéAPI · Pokémon © Nintendo/Creatures/GAME FREAK',
+  },
+
+  partner: {
+    title: 'Elige tu compañero',
+    titleShort: 'Compañero',
+    starters: 'INICIALES',
+    hatched: 'ECLOSIONADOS',
+    noneHatched: 'Los huevos eclosionados se vuelven compañeros.',
+    details: (mega) => (mega ? 'Movimientos, especial y Mega' : 'Movimientos y especial'),
+    detailsShort: 'Detalles',
+    tabs: { status: 'STATS', moves: 'MOVIMIENTOS', mega: 'MEGA' },
+    start: 'Empezar',
+    startWith: (name) => `Empezar con ${name}`,
+    close: 'Cerrar',
   },
 
   hud: {
@@ -120,8 +128,8 @@ export const es: Messages = {
     names: { normal: 'Normal', hard: 'Difícil', nightmare: 'Pesadilla' },
     blurbs: {
       normal: 'La partida tal como fue pensada.',
-      hard: 'Hordas más rápidas, densas y duras, que pegan más fuerte. Para quien ya llenó la Poké Mart.',
-      nightmare: 'Hordas brutales, rápidas y densas, y la mitad de toda la curación. Buena suerte.',
+      hard: 'Hordas más rápidas, densas y duras. Para quien ya llenó la Poké Mart.',
+      nightmare: 'Hordas brutales y densas, y la mitad de toda la curación. Buena suerte.',
     },
   },
 
@@ -490,33 +498,34 @@ export const es: Messages = {
   },
 
   supporters: {
-    title: 'PATROCINADORES',
-    lead: 'El juego es gratis y sin anuncios. Quien dona ayuda a pagar los servidores y recibe un agradecimiento, nada que cambie una partida.',
-    perksTitle: 'Quien dona recibe',
-    perks: {
-      title: 'El título y el marco *Patrocinador(a)*',
-      badge: 'Un sello ♥ junto a tu @ en el ranking y en tu perfil',
-      shiny: 'Un *shiny a tu elección*: cualquier inicial o familia de huevo',
-      companion: 'Un *compañero* que te sigue en las partidas',
-      wall: 'Tu nombre en el mural y en los agradecimientos de la victoria',
-      vote: 'Voto en el próximo Pokémon de los huevos',
-      gold: '*Oro* (R$ 50 o US$ 10 en total): fondo, fondo de la caja y sello dorados',
-    },
+    title: 'Salón de la Fama',
+    lead: 'Quienes mantienen vivo el juego. ¡Gracias! ♥',
+    perks: { title: 'Título', frame: 'Marco', shiny: 'Shiny', companion: 'Compañero', vote: 'Voto' },
+    gold: '*Oro* (R$ 50 o US$ 10 en total): fondo, fondo de la caja y sello dorados',
+    legends: 'LEYENDAS',
+    goldFrom: 'US$ 10+',
+    fans: (n) => `PATROCINADORES · ${n}`,
+    firstLegend: 'Sé la primera Leyenda',
+    you: (tier) => (tier === 'gold' ? 'Eres Patrocinador(a) Oro' : 'Eres Patrocinador(a)'),
+    join: 'Entra al Salón',
+    yours: 'Tu apoyo',
+    cosmetic: 'Todo apoyo es cosmético: nada de pay-to-win.',
     guest: 'Las recompensas van a una cuenta: inicia sesión antes de donar.',
     noHandle: 'Elige tu @ en tu perfil para que la donación vaya directo a tu cuenta.',
     none: 'Dona en la página de apoyo con tu @: las recompensas llegan como Regalo Misterioso.',
     loading: 'Cargando…',
     offline: 'No hay conexión con el servidor ahora.',
     since: (tier, date) => (tier === 'gold' ? `Eres *Patrocinador(a) Oro* desde el ${date}. ¡Muchas gracias! ♥` : `Eres *Patrocinador(a)* desde el ${date}. ¡Gracias! ♥`),
-    donate: 'Donar',
+    donate: 'APOYAR',
     signIn: 'Entrar',
     createProfile: 'Crear perfil',
     pick: (n) => (n > 1 ? `Elegir shiny (${n})` : 'Elegir shiny'),
     companion: 'Compañero',
     vote: 'Votación',
-    wall: 'Mural',
     code: 'Tengo un código',
+    codeShort: 'Código',
     show: (on) => (on ? 'Sello y nombre: visibles' : 'Sello y nombre: ocultos'),
+    shown: (on) => (on ? 'Visible' : 'Oculto'),
     back: 'Volver',
     hintKeys: '↑ ↓ elegir · ENTER confirmar · ESC volver',
     hintTouch: 'Toca para elegir',
@@ -557,8 +566,6 @@ export const es: Messages = {
     redeemed: '¡Código canjeado! Las recompensas llegan como Regalo Misterioso.',
     codeErrors: { format: 'El código tiene el formato PS-XXXX-XXXX.', unknown: 'Ese código no existe.', used: 'Ese código ya se usó.', offline: 'Sin conexión. Inténtalo de nuevo.' },
 
-    wallTitle: 'MURAL DE PATROCINADORES',
-    wallIntro: 'Entrenadores que mantienen el juego en línea. ¡Gracias!',
     wallEmpty: 'Todavía no hay nadie. ¡Tu nombre puede ser el primero!',
 
     credits: 'Gracias a los entrenadores que mantienen el juego en línea',
@@ -575,7 +582,6 @@ export const es: Messages = {
     },
     active: { lure: '¡Shinies 2× más comunes en esta partida!', incense: '¡Probabilidad de huevo 2× mayor en esta partida!' },
     toggle: (name, n) => `${name} ×${n}`,
-    pickHint: 'Usar en la próxima partida',
   },
 
   toast: {

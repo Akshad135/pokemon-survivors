@@ -12,12 +12,13 @@ import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
 import { coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
-import { drawPokemon, loadedSprites, loadSpecies } from '../render/sprites'
+import { drawPokemon, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { inviterName } from '../ranking'
 import { ROUTES } from '../site/routes'
 import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
 import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
+import { hallFace } from './supporters'
 import type { Screen } from './screens'
 import { gearButton, helpButton, shellBody, topBar, walletChip } from './shell'
 import { nearestInDirection, type Direction } from './spatial'
@@ -182,8 +183,19 @@ const missionsCard = () => {
 /** Who the Hall card shows first: gold before supporters, then who came first. */
 const byStanding = (a: WallEntry, b: WallEntry) => (a.tier === b.tier ? a.since.localeCompare(b.since) : a.tier === 'gold' ? -1 : 1)
 
-/** A supporter's round face: their name's initial, ringed in their tier's color. */
-const wallFace = (e: WallEntry) => h('span', { class: `hall-face ${e.tier}`, title: e.name, 'aria-hidden': 'true' }, [...e.name.trim()][0]?.toUpperCase() ?? '♥')
+/**
+ * A supporter's round face, ringed in their tier's color: the portrait of
+ * the Pokémon they stand with on the Hall (shiny if so), or their name's
+ * initial from an API from before the Hall.
+ */
+const wallFace = (e: WallEntry) => {
+  const face = hallFace(e.pokemon)
+  return h(
+    'span',
+    { class: `hall-face ${e.tier}${face ? ' portrait' : ''}`, title: e.name, 'aria-hidden': 'true' },
+    face ? h('img', { src: portraitUrl(face.dex, face.shiny), alt: '' }) : ([...e.name.trim()][0]?.toUpperCase() ?? '♥'),
+  )
+}
 
 /**
  * The Hall da Fama card: gold, slowly turning rays, the first supporters'
@@ -481,16 +493,4 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     },
     dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), el.remove()),
   }
-}
-
-/**
- * "◀ Title" entry in the starter select's top-left corner (twin of the Poké
- * Mart entry). Esc and Backspace (pad B) do the same. Returns a disposer.
- */
-export const titleButton = (root: HTMLElement, input: Input, onBack: () => void) => {
-  const back = () => (playSfx('move'), later(onBack))
-  const el = h('button', { class: 'back-entry box', onclick: back }, h('span', { class: 'back-arrow' }, '◀'), t().home.back, h('span', { class: 'key-hint' }, 'ESC'))
-  const off = input.onKey((key) => (key === 'Escape' || key === 'Backspace') && back())
-  root.append(el)
-  return () => (off(), el.remove())
 }
