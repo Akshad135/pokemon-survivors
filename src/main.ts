@@ -882,10 +882,18 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'riftCleared':
       playSfx('evolve')
       return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)
+    case 'riftFall':
+      playSfx('riftFall')
+      playCry(playerCry(g))
+      return toast(ui, rich(t().rifts.fall(ENEMIES[e.enemy].name)), 2800)
     case 'riftExit':
       if (e.outcome === 'collapse') {
         playSfx('quake')
         return toast(ui, t().rifts.collapse, 3000)
+      }
+      if (e.outcome === 'fallen') {
+        flashScreen(ui)
+        return toast(ui, rich(t().rifts.fallen), 3200)
       }
       return
     case 'reaper':

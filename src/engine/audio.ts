@@ -133,6 +133,12 @@ const SFX = {
     noise(0.22, 0.14)
     tone(90, 40, 0.22, 'triangle', 0.18)
   },
+  /** Fainting in a rift arena: a falling sigh, then the tear's rising whoosh pulling the player out. */
+  riftFall: () => {
+    ;[330, 262, 196].forEach((f, i) => tone(f, f * 0.94, 0.28, 'triangle', 0.18, i * 0.2))
+    noise(0.9, 0.1, 1.2)
+    tone(110, 880, 0.9, 'sawtooth', 0.07, 1.2)
+  },
   item: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.1, 'square', 0.12, i * 0.06)),
   /** Poké Flute: a short lullaby. */
   flute: () => [523, 659, 784, 659, 523, 392].forEach((f, i) => tone(f, f * 1.01, 0.22, 'triangle', 0.2, i * 0.16)),

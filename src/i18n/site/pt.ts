@@ -244,7 +244,7 @@ export const sitePt = {
       paragraphs: (minutes: number, starters: number) => [
         `Escolha um dos ${starters} iniciais, de Kanto a Paldea. Cada um tem status, golpe inicial, golpes que aprende e um ataque especial próprios (veja a Pokédex).`,
         `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida. Depois, se quiser, dá para continuar no modo sem fim.`,
-        'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado). Os Poké Dollars coletados vão para a carteira.',
+        'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado ou esteja na arena de uma fenda, que só expulsa você de volta). Os Poké Dollars coletados vão para a carteira.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Os inimigos comuns ficam mais fortes a cada minuto (chefes não): ${rows.map(([at, hp, dmg]) => `em ${at}, ${hp}x de HP e ${dmg}x de dano`).join('; ')}.`,
@@ -342,9 +342,9 @@ export const sitePt = {
       specialHead: 'Especial Mega',
     },
     rifts: {
-      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; shiny: number }) => [
+      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; fallHp: number; shiny: number }) => [
         `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então toda partida tem 3 fendas, mesmo que os chefes demorem.`,
-        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa. Cair na arena também não encerra a partida: a fenda expulsa você para o mapa com ${r.fallHp}% do HP, sem recompensa, e o seu Revive fica guardado.`,
         'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
         `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
       ],
