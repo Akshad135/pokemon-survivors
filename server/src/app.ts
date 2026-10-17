@@ -139,6 +139,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
   })
 
   const smallBody = bodyLimit({ maxSize: 4 * 1024 })
+  // A run's result and its replay: an hour of play records up to ~450 KB, so this fits the longest run `RANKED.maxTime` allows.
+  const runBody = bodyLimit({ maxSize: 2 * 1024 * 1024 })
 
   const json = (c: { req: { json: () => Promise<unknown> } }) => c.req.json().catch(() => null)
 
@@ -175,7 +177,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
   })
 
   // A 30-minute replay is ~60 KB of JSON.
-  app.put('/runs/:token', auth, bodyLimit({ maxSize: 512 * 1024 }), async (c) => {
+  app.put('/runs/:token', auth, runBody, async (c) => {
     const body = await json(c)
     const result = parseRunResult(body)
     if (!result) return c.json({ error: 'implausible result' }, 400)

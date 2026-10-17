@@ -49,8 +49,13 @@ export const RANKED = {
   /** Longer than any endless run Arceus allows. */
   maxTime: 4 * 3600,
   maxLevel: 999,
-  /** Faints per second survived, far above anything played. */
+  /**
+   * Faints per second at the start, far above anything played. The horde grows
+   * with the clock, so the cap rises by `killRateGrowth` every minute (`maxKills`):
+   * endless runs average ~47/s by two hours.
+   */
   maxKillRate: 40,
+  killRateGrowth: 1,
   /** Run starts one player may ask for per `window` seconds. */
   startsPerWindow: 30,
   window: 10 * 60,
@@ -64,6 +69,9 @@ const isOutcome = (v: unknown): v is RunOutcome => RUN_OUTCOMES.some((o) => o ==
 
 const isWhole = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max
 
+/** The most faints a run of `time` seconds can report (see `RANKED.maxKillRate`). */
+export const maxKills = (time: number) => Math.ceil(time * (RANKED.maxKillRate + (RANKED.killRateGrowth * time) / 60))
+
 /**
  * A run result from an untrusted body, or null when its shape is wrong or it
  * can't have been played: a victory before Mewtwo shows up, more faints than
@@ -75,7 +83,7 @@ export const parseRunResult = (raw: unknown): RunResult | null => {
   if (!isPlayable(starter) || !isDifficulty(difficulty) || !isOutcome(outcome)) return null
   if (typeof time !== 'number' || !Number.isFinite(time) || time < 0 || time > RANKED.maxTime) return null
   if (!isWhole(stage, 0, PLAYABLE[starter].line.length - 1) || !isWhole(level, 1, RANKED.maxLevel)) return null
-  if (!isWhole(kills, 0, Math.ceil(time * RANKED.maxKillRate))) return null
+  if (!isWhole(kills, 0, maxKills(time))) return null
   if (outcome === 'victory' && time < RUN_LENGTH) return null
   if (typeof version !== 'string' || version.length === 0 || version.length > 40) return null
   return { starter, stage, difficulty, time, outcome, level, kills, version }

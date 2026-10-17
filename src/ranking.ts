@@ -46,7 +46,7 @@ const read = async (path: string, token: string | null, init?: RequestInit) => {
 
 const QUEUE_KEY = 'ps:runs'
 
-/** Results kept for the API at most (a long run's replay is ~60 KB); older ones give way. */
+/** Results kept for the API at most (a replay records up to ~450 KB an hour); older ones give way. */
 const MAX_PENDING = 10
 
 /**
@@ -68,12 +68,20 @@ const readQueue = (): Pending[] => {
   }
 }
 
+/** Keeps the newest results: when storage is full (long endless replays), the oldest give way until the rest fit. */
 const writeQueue = (queue: Pending[]) => {
+  for (let kept = queue.slice(-MAX_PENDING); kept.length > 0; kept = kept.slice(1)) {
+    try {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(kept))
+      return
+    } catch {
+      // Full: try again without the oldest.
+    }
+  }
   try {
-    if (queue.length > 0) localStorage.setItem(QUEUE_KEY, JSON.stringify(queue.slice(-MAX_PENDING)))
-    else localStorage.removeItem(QUEUE_KEY)
+    localStorage.removeItem(QUEUE_KEY)
   } catch {
-    // Storage blocked: the result only gets this one try.
+    // Storage blocked: nothing waits for the API.
   }
 }
 
