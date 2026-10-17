@@ -1,4 +1,4 @@
-import { blitCentered, context2d, createCanvas, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, canvasCache, context2d, createCanvas, type PixelSprite } from '../engine/pixelart'
 import { mainStatus, STATUS_RULES, type EnemyStatus, type StatusKind } from '../game/status'
 
 type Ctx = CanvasRenderingContext2D
@@ -51,7 +51,7 @@ const BADGES = {
   sleep: { text: 'SLP', bg: '#6878a8' },
 } as const
 
-const badgeCache = new Map<StatusKind, PixelSprite>()
+const badgeCache = canvasCache<StatusKind, PixelSprite>()
 
 const buildBadge = ({ text, bg }: { text: string; bg: string }) => {
   const w = text.length * 4 + 3

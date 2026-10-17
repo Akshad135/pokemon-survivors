@@ -1,4 +1,4 @@
-import { context2d, createCanvas, ellipse, type PixelSprite } from '../engine/pixelart'
+import { canvasCache, context2d, createCanvas, ellipse, lazy, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import type { BiomeId } from '../data/biomes'
 import { CLIFF_CRESTS, CLIFFS, LAKES, TERRAIN as RULES, type SolidKind, type Tier } from '../data/terrain'
 import { featuresNear, groundAt, type Solid } from '../game/terrain'
@@ -683,7 +683,7 @@ export const footShadow = (foot: readonly Blob[], grow = 1): Piece => {
 
 /* ---------------- Drawing ---------------- */
 
-const sets = new Map<BiomeId, TerrainSet>()
+const sets = canvasCache<BiomeId, TerrainSet>()
 const setOf = (biome: BiomeId) => {
   let set = sets.get(biome)
   if (!set) sets.set(biome, (set = SKINS[biome]()))
@@ -730,7 +730,7 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
   }
 }
 
-const pieces = new Map<string, Piece>()
+const pieces = canvasCache<string, Piece>()
 
 const pieceOf = (biome: BiomeId, kind: PieceKind | ArenaPiece, variant: number) => {
   const arena = isArenaPiece(kind)
@@ -753,10 +753,7 @@ export const warmTerrain = (biome: BiomeId) => {
   return false
 }
 
-const mountainShadows = CLIFFS.map((tiers) => {
-  let shadow: Piece | null = null
-  return () => (shadow ??= footShadow(tiers[0]!.foot, 1))
-})
+const mountainShadows = CLIFFS.map((tiers) => lazy(() => footShadow(tiers[0]!.foot, 1)))
 
 const blit = (ctx: CanvasRenderingContext2D, p: Piece, x: number, y: number) => ctx.drawImage(p.sprite, Math.round(x - p.ax), Math.round(y - p.ay))
 
@@ -794,6 +791,7 @@ const HOLE = 16
 /** Two checkerboard discs, one per parity, so the dither stays locked to the world grid as the hole moves. */
 const holes = [0, 1].map((parity) => {
   let disc: PixelSprite | null = null
+  onCanvasReset(() => (disc = null))
   return () => {
     if (disc) return disc
     disc = createCanvas(HOLE * 2 + 1, HOLE * 2 + 1)
@@ -805,6 +803,7 @@ const holes = [0, 1].map((parity) => {
 })
 
 let scratch: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null = null
+onCanvasReset(() => (scratch = null))
 
 const TALL: Record<SolidKind, boolean> = { rock: false, tree: true, tower: true, cliff: true }
 
@@ -832,7 +831,7 @@ export const drawSolid = (ctx: CanvasRenderingContext2D, g: Game, s: Solid, biom
   ctx.drawImage(scratch.canvas, 0, 0, piece.sprite.width, piece.sprite.height, x, y, piece.sprite.width, piece.sprite.height)
 }
 
-const ripples = new Map<string, PixelSprite>()
+const ripples = canvasCache<string, PixelSprite>()
 
 /** A 1 px ellipse outline, cached per size. */
 const ripple = (rx: number, ry: number) => {
