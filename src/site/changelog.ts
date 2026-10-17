@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    pr: 89,
     title: { pt: 'Remapear com o controle', en: 'Remapping with a gamepad', es: 'Reasignar con el control' },
     notes: [
       {
