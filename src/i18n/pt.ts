@@ -81,6 +81,9 @@ export const pt = {
     hallJoined: (handle: string, today: boolean) => (today ? `@${handle} entrou hoje` : `@${handle} entrou no Hall`),
     /** The name plate under the partner: tapping it opens the Pokémon select. */
     change: 'Trocar',
+    /** Over the partner until its first walk: after the movement keys, and on touch screens. */
+    stroll: 'passear',
+    strollTouch: 'Toque na grama para passear',
     pokedex: 'Pokédex',
     eggs: 'Ovos',
     eggsReady: (n: number) => (n === 1 ? '1 ovo pronto para chocar' : `${n} ovos prontos para chocar`),

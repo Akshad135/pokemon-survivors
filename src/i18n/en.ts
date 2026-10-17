@@ -38,6 +38,8 @@ export const en: Messages = {
     hall: 'HALL OF FAME',
     hallJoined: (handle, today) => (today ? `@${handle} joined today` : `@${handle} joined the Hall`),
     change: 'Change',
+    stroll: 'take a walk',
+    strollTouch: 'Tap the grass to take a walk',
     pokedex: 'Pokédex',
     eggs: 'Eggs',
     eggsReady: (n) => (n === 1 ? '1 egg ready to hatch' : `${n} eggs ready to hatch`),

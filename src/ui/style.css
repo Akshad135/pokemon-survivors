@@ -3231,6 +3231,87 @@ button {
   display: block;
 }
 
+/* Drags on the lobby's grass walk the partner (ui/title.ts), so they don't scroll it. */
+.title-home.screen {
+  touch-action: none;
+}
+
+/* Out for a walk, the meadow draws the partner (render/titleScene.ts) and its spot waits empty. */
+.lobby-partner.out .lobby-partner-sprite {
+  visibility: hidden;
+}
+
+/* Back from its walk, it hops onto the stage. */
+.lobby-partner.landed .lobby-partner-sprite {
+  animation: land 0.3s steps(3);
+}
+
+@keyframes land {
+  33% {
+    transform: translateY(calc(var(--px) * -3));
+  }
+  66% {
+    transform: translateY(calc(var(--px) * -2));
+  }
+}
+
+/* Over the partner's head until its first walk: the movement keys, or "tap the grass" on touch screens. */
+.lobby-stroll-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin: 0 auto;
+  padding: 5px 8px;
+  font-size: 16px;
+  color: #fff;
+  white-space: nowrap;
+  background: rgba(40, 48, 64, 0.85);
+  border-radius: 10px;
+  pointer-events: none;
+  animation: bob 1.2s steps(1) infinite;
+}
+
+.lobby-stroll-hint .keys-only {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.lobby-stroll-hint b {
+  margin-left: 5px;
+  font-weight: 400;
+}
+
+.lobby-partner {
+  position: relative;
+}
+
+/* Only the partner's body and its plate take taps: the rest of the stage is grass to walk on. */
+.title-home .lobby-partner {
+  pointer-events: none;
+}
+
+.lobby-partner-hit,
+.lobby-plate {
+  pointer-events: auto;
+}
+
+.lobby-partner-hit {
+  position: absolute;
+}
+
+.lobby-partner.out .lobby-partner-hit {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .lobby-stroll-hint .keys-only {
+    display: none;
+  }
+}
+
 .lobby-plate {
   display: flex;
   align-items: baseline;

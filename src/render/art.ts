@@ -253,6 +253,33 @@ const SPARKLES = [
 
 export const SPARKLE = lazy(() => SPARKLES.map((rows) => fromStrings(rows, { 1: '#f8e070', 2: '#ffffff' })))
 
+/* ---------------- Lobby emotes (render/titleScene.ts) ---------------- */
+
+/** A speech bubble with its tail at the bottom; the 7×7 icon goes at (2, 2). */
+const BUBBLE = [
+  '..1111111..', '.122222221.', '12222222221', '12222222221', '12222222221', '12222222221', '12222222221',
+  '12222222221', '12222222221', '.122222221.', '..1112111..', '....121....', '.....1.....',
+]
+const EMOTE_ICONS = {
+  heart: { rows: ['.11.11.', '1211111', '1111111', '1111111', '.11111.', '..111..', '...1...'], palette: { 1: '#e83850', 2: '#ffb8c8' } },
+  note: { rows: ['...11..', '...1.1.', '...1..1', '...1...', '.111...', '1111...', '.11....'], palette: { 1: '#3868d0' } },
+  bang: { rows: ['..111..', '..111..', '..111..', '...1...', '.......', '..111..', '..111..'], palette: { 1: '#e83838' } },
+  sparkle: { rows: SPARKLES[2], palette: { 1: '#e8a800', 2: '#f8e070' } },
+} as const satisfies Record<string, { rows: readonly string[]; palette: Palette }>
+
+export type Emote = keyof typeof EMOTE_ICONS
+
+/** PMD-style emote bubbles the lobby's Pokémon pop over their heads when they meet. */
+export const EMOTES = lazy(() => {
+  const build = (icon: (typeof EMOTE_ICONS)[Emote]) => {
+    const sprite = fromStrings(BUBBLE, { 1: '#283040', 2: '#f8f8f8' })
+    context2d(sprite).drawImage(fromStrings(icon.rows, icon.palette), 2, 2)
+    return sprite
+  }
+  const { heart, note, bang, sparkle } = EMOTE_ICONS
+  return { heart: build(heart), note: build(note), bang: build(bang), sparkle: build(sparkle) } satisfies Record<Emote, PixelSprite>
+})
+
 /* ---------------- Boss hazards ---------------- */
 
 const SHARD = ['....11.', '..1221.', '1123331', '..1221.', '....11.']

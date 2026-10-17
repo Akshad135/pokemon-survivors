@@ -3,7 +3,7 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
-import { createInput } from './engine/input'
+import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { context2d } from './engine/pixelart'
@@ -60,7 +60,7 @@ import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { bagIcon, eggIcon, ribbonIcon } from './render/art'
 import { megaStoneIcon } from './render/megaFx'
-import { createTitleScene, drawTitleScene, stepTitleScene } from './render/titleScene'
+import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
 import { formatDay, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
@@ -86,7 +86,7 @@ import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
 import { shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
-import { titleScreen, type LobbyFocus } from './ui/title'
+import { titleScreen, type LobbyFocus, type Meadow } from './ui/title'
 import { creditsLine, supportersScreen } from './ui/supporters'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
 
@@ -202,6 +202,19 @@ let megaQueued = false
 let lungeQueued = false
 /** The meadow with wandering Pokémon behind every menu. Lives across screens, so it never pops. */
 const scene = createTitleScene(Date.now())
+/** The joystick a drag on the lobby's meadow steers the partner with, drawn over it. */
+let meadowStick: Stick | null = null
+
+/** A CSS px point on screen, in the meadow's world px (the canvas sits at the viewport's corner). */
+const meadowAt = (at: Vec): Vec => ({ x: Math.round(scene.cam.x) + at.x / cssScale, y: Math.round(scene.cam.y) + at.y / cssScale })
+
+/** The lobby's handle on the meadow: its partner walks there. */
+const meadow: Meadow = {
+  meet: (partner) => meetPartner(scene, partner),
+  steer: (move, tap, home) => steerPartner(scene, move, tap && meadowAt(tap), meadowAt(home)),
+  out: () => scene.partner !== null && scene.partner.state !== 'home',
+  stick: (stick) => (meadowStick = stick),
+}
 
 const queueMega = () => {
   unlockAudio()
@@ -254,6 +267,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
+      meadow,
     }, opts),
   )
 }
@@ -1014,6 +1028,9 @@ const frame = (now: number) => {
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
     ctx.fillRect(0, 0, view.w, view.h)
+    if (meadowStick) drawJoystick(ctx, meadowStick, cssScale)
+    // The wild Pokémon the partner greets answer with their cry.
+    for (const dex of scene.cries.splice(0)) playCry(cryUrl(dex), 0.3)
     // Menu news (what a quit run completed) shares the run's queue. Banners (Mystery Gifts) wait
     // for the bare title: over the starter select or a dialog they'd cover what the player is reading.
     tickToasts(ui, dt, false, !ui.querySelector(':scope > .title-home:not(.hidden)') || ui.querySelector(':scope > .screen.dim:not(.hidden)') !== null)
@@ -1249,6 +1266,8 @@ if (import.meta.env.DEV) {
       event: devEvent,
       challenge: devChallenge,
       dex: () => loadSave().dex,
+      /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */
+      meadow: () => scene,
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
       card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),

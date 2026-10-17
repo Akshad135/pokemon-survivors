@@ -1,7 +1,8 @@
 import { accountState, accountsEnabled } from '../account'
 import { playSfx } from '../engine/audio'
-import type { Input } from '../engine/input'
-import { formatTime } from '../engine/math'
+import { ACTIONS } from '../engine/bindings'
+import { joystick, type Input, type Stick } from '../engine/input'
+import { formatTime, type Vec } from '../engine/math'
 import { blitCentered, context2d, ellipse } from '../engine/pixelart'
 import { ENEMIES } from '../data/enemies'
 import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
@@ -12,11 +13,12 @@ import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
 import { coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
-import { drawPokemon, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
+import { drawPokemon, loadedSprites, loadSpecies, portraitUrl, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
 import { ROUTES } from '../site/routes'
 import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
+import { boundKey } from './controls'
 import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
 import { hallFace } from './supporters'
 import type { Screen } from './screens'
@@ -40,6 +42,21 @@ export type LobbyFocus =
   | 'mart'
   | 'ranking'
   | 'play'
+
+/**
+ * The meadow behind the lobby (`render/titleScene.ts`), where the partner
+ * takes its walks. Points are CSS px; the shell maps them into the world.
+ */
+export type Meadow = {
+  /** Puts the partner on its stage (`null` when the lobby goes away). */
+  meet: (partner: { dex: Dex; shiny: boolean } | null) => void
+  /** This frame's keys or stick, a tapped spot, and where the stage holds the partner's feet. */
+  steer: (move: Vec, tap: Vec | null, home: Vec) => void
+  /** Whether the partner is out in the meadow (else the stage draws it). */
+  out: () => boolean
+  /** The drag joystick to draw over the meadow, or null. */
+  stick: (stick: Stick | null) => void
+}
 
 export type TitleActions = {
   /** JOGAR, and a tap on the partner: the Pokémon select, the saved partner picked. */
@@ -66,6 +83,7 @@ export type TitleActions = {
   ranking?: (focus: LobbyFocus) => Screen
   /** Opens Apoiadores over the title (the Hall da Fama card), like `settings`; `pick` goes straight to the shiny picker. */
   supporters: (focus: LobbyFocus, open: 'pick' | null) => Screen
+  meadow: Meadow
 }
 
 /**
@@ -259,10 +277,30 @@ const inviteBanner = (slot: HTMLElement, open: () => void, ready: (el: HTMLEleme
 /** Art px of the stage canvas, and where the partner's feet stand in it. */
 const STAGE = { w: 80, h: 64, feet: 58 } as const
 
+/** Set once the partner first took a walk on this device: the stroll hint stops showing. */
+const STROLLED = 'ps:strolled'
+const hasStrolled = () => {
+  try {
+    return localStorage.getItem(STROLLED) !== null
+  } catch {
+    return true
+  }
+}
+
+/** "WASD passear" (the bound keys) over the partner's head, or "tap the grass" on touch, until its first walk. */
+const strollHint = () => {
+  const m = t().home
+  const keys = (['up', 'left', 'down', 'right'] as const).map((a) => h('span', { class: 'key-hint' }, boundKey(a)))
+  return h('span', { class: 'lobby-stroll-hint', 'aria-hidden': 'true' }, h('span', { class: 'keys-only' }, ...keys, h('b', {}, m.stroll)), h('span', { class: 'touch-only' }, m.strollTouch))
+}
+
 /**
  * The saved partner (`save.partner`, its first stage, shiny if played so)
  * standing on the meadow, as big as the stage allows in whole pixels, over a
- * name plate. A tap does what JOGAR does.
+ * name plate. A tap on it (its body, `hit`, or the plate) does what JOGAR
+ * does; the stage's empty corners are grass to walk on. Once it hops off to
+ * take a walk (`setOut`), the meadow draws it instead and its spot waits
+ * empty; `feet` is where it stands, in CSS px.
  */
 const partnerStage = (onPlay: () => void) => {
   const save = loadSave()
@@ -271,20 +309,49 @@ const partnerStage = (onPlay: () => void) => {
   void loadSpecies(form.dex, shiny).catch(() => {})
   const canvas = h('canvas', { class: 'lobby-partner-sprite', width: STAGE.w, height: STAGE.h, 'aria-hidden': 'true' })
   const plate = h('span', { class: 'lobby-plate' }, h('b', {}, form.name), h('small', {}, `${t().home.change} ▸`))
-  const partner = h('button', { class: 'lobby-partner', type: 'button', 'aria-label': `${form.name} · ${t().home.change}`, onclick: onPlay }, canvas, plate)
+  const hit = h('span', { class: 'lobby-partner-hit' })
+  let out = false
+  const hint = hasStrolled() ? null : strollHint()
+  const partner = h('button', { class: 'lobby-partner', type: 'button', 'aria-label': `${form.name} · ${t().home.change}`, onclick: onPlay }, hint, canvas, hit, plate)
   const el = h('div', { class: 'lobby-stage' }, partner)
   const shadow = ellipse(13, 3, 'rgba(16, 24, 16, 0.3)')
   const tick = (time: number) => {
     const dpr = window.devicePixelRatio || 1
     const room = el.clientHeight - plate.offsetHeight - 8
-    pixelSize(canvas, Math.min(Math.round(4 * dpr), logoScale(STAGE.w, STAGE.h, el.clientWidth, Math.max(room, 1), dpr)))
+    const k = Math.min(Math.round(4 * dpr), logoScale(STAGE.w, STAGE.h, el.clientWidth, Math.max(room, 1), dpr))
+    pixelSize(canvas, k)
     const ctx = context2d(canvas)
     ctx.clearRect(0, 0, STAGE.w, STAGE.h)
     blitCentered(ctx, shadow, STAGE.w / 2, STAGE.feet)
     const s = loadedSprites(form.dex, shiny)
-    if (s) drawPokemon(ctx, s, 'Idle', 0, time, STAGE.w / 2, STAGE.feet)
+    if (!s) return
+    drawPokemon(ctx, s, 'Idle', 0, time, STAGE.w / 2, STAGE.feet)
+    // The tappable body: the sprite's, a few art px wider, over the canvas.
+    const css = k / dpr
+    const w = (s.bodyW + 8) * css
+    const top = canvas.offsetTop + (STAGE.feet - s.bodyH - 4) * css
+    hit.style.cssText = `left:${canvas.offsetLeft + (canvas.offsetWidth - w) / 2}px;top:${top}px;width:${w}px;height:${(s.bodyH + 6) * css}px`
   }
-  return { el, tick }
+  const setOut = (next: boolean) => {
+    if (next === out) return
+    out = next
+    partner.classList.toggle('out', out)
+    // Back from its walk, it hops onto the stage.
+    partner.classList.toggle('landed', !out)
+    if (out && hint) {
+      hint.remove()
+      try {
+        localStorage.setItem(STROLLED, '1')
+      } catch {
+        // Private modes may refuse: the hint just shows again next time.
+      }
+    }
+  }
+  const feet = (): Vec => {
+    const r = canvas.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + (r.height * STAGE.feet) / STAGE.h }
+  }
+  return { el, tick, setOut, feet, partner: { dex: form.dex, shiny } }
 }
 
 /* ---------------- Collection dock ---------------- */
@@ -302,15 +369,22 @@ const dockTile = (key: LobbyFocus, icon: string, label: string, hotkey: string, 
 
 /* ---------------- Keyboard and gamepad ---------------- */
 
-const DIRECTIONS: Readonly<Record<string, Direction>> = {
-  ArrowUp: 'up',
-  KeyW: 'up',
-  ArrowDown: 'down',
-  KeyS: 'down',
-  ArrowLeft: 'left',
-  KeyA: 'left',
-  ArrowRight: 'right',
-  KeyD: 'right',
+/** The arrows (and the pad) move between the lobby's buttons; the movement keys (WASD) walk the partner instead. */
+const DIRECTIONS: Readonly<Record<string, Direction>> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
+
+/** A press that travels less than this (CSS px) is a tap: the partner walks there. Past it, it's a joystick. */
+const TAP_SLOP = 12
+
+/** Whether a press on `target` lands on the meadow rather than on a button, a card or a link. */
+const onMeadow = (target: EventTarget | null) => target instanceof Element && !target.closest('button, a, input, select, .box')
+
+/** The movement keys held (WASD, or as rebound), normalized. */
+const heldMove = (input: Input): Vec => {
+  const held = (a: 'up' | 'down' | 'left' | 'right') => (input.isHeld(ACTIONS[a].key) ? 1 : 0)
+  const x = held('right') - held('left')
+  const y = held('down') - held('up')
+  const len = Math.hypot(x, y)
+  return len > 0 ? { x: x / len, y: y / len } : { x: 0, y: 0 }
 }
 
 /** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls). */
@@ -323,7 +397,9 @@ const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: '
  * Missões), the Hall da Fama card sits beside them, the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
  * Loja, Ranking). Arrows move between all of them by where they are on
- * screen; Enter presses the highlighted one, JOGAR at first.
+ * screen; Enter presses the highlighted one, JOGAR at first. The movement
+ * keys, a tap on the grass or a drag (a joystick) send the partner off its
+ * stage for a walk in the meadow (`Meadow`), where it greets the wild Pokémon.
  * `intro: false` opens straight on the lobby (coming back from another
  * screen, or after a language switch), highlighting `focus`.
  */
@@ -348,6 +424,11 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   let lobby: HTMLElement | null = null
   let tickers: ((time: number) => void)[] = []
+  let stage: ReturnType<typeof partnerStage> | null = null
+  /** A press on the meadow: a tap until it travels `TAP_SLOP`, then a joystick. */
+  let drag: { id: number; origin: Vec; stick: Stick | null } | null = null
+  /** A tap on the meadow, for the next frame to send the partner to. */
+  let tap: Vec | null = null
   let current: LobbyFocus = opts.focus ?? 'play'
   let offKeys: (() => void) | null = null
   let closeChip: (() => void) | null = null
@@ -383,6 +464,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     closeChip?.()
     offKeys = closeChip = null
     el.classList.add('hidden')
+    leaveMeadow()
     overScreen = open(current)
   }
 
@@ -418,7 +500,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     )
 
     const outbreak = outbreakCard()
-    const stage = partnerStage(press('play'))
+    stage = partnerStage(press('play'))
+    actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
     const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
     const side = h('div', { class: 'lobby-side' }, hall)
@@ -459,6 +542,50 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     })
   }
 
+  /** The lobby goes away (another screen over it, or for good): so does the partner, and any press on the meadow. */
+  const leaveMeadow = () => {
+    actions.meadow.meet(null)
+    actions.meadow.stick(null)
+    stage = null
+    drag = null
+    tap = null
+  }
+
+  const onDown = (e: PointerEvent) => {
+    if (!stage || drag || (e.pointerType === 'mouse' && e.button !== 0)) return
+    if (!onMeadow(e.target)) return
+    drag = { id: e.pointerId, origin: { x: e.clientX, y: e.clientY }, stick: null }
+  }
+  const onMove = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return
+    const at = { x: e.clientX, y: e.clientY }
+    if (drag.stick || Math.hypot(at.x - drag.origin.x, at.y - drag.origin.y) >= TAP_SLOP) drag.stick = joystick(drag.stick?.origin ?? drag.origin, at)
+  }
+  const onUp = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return
+    if (!drag.stick && e.type === 'pointerup') tap = drag.origin
+    drag = null
+  }
+  el.addEventListener('pointerdown', onDown)
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+  window.addEventListener('pointercancel', onUp)
+  const offPointers = () => {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+    window.removeEventListener('pointercancel', onUp)
+  }
+
+  /** Every frame on the lobby: the keys, the stick or a tap steer the partner, and the stage shows it while it's home. */
+  const stroll = () => {
+    if (!stage) return
+    const { meadow } = actions
+    meadow.steer(drag?.stick?.vec ?? heldMove(input), tap, stage.feet())
+    meadow.stick(drag?.stick ?? null)
+    tap = null
+    stage.setOut(meadow.out())
+  }
+
   const enterLobby = () => {
     buildLobby()
     actions.ready()
@@ -488,9 +615,10 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     tick: (time: number) => {
       overScreen?.tick?.(time)
       if (el.classList.contains('hidden')) return
+      stroll()
       for (const tick of tickers) tick(time)
       if (logo.width > 1) fitLogo(logo, lobby === null)
     },
-    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), el.remove()),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offPointers(), leaveMeadow(), el.remove()),
   }
 }
