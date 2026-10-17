@@ -20,6 +20,7 @@ import { portraitUrl, sprites } from '../render/sprites'
 import { formatNumber, formatPokeDollars, locale, t, type Messages } from '../i18n'
 import { ROUTES } from '../site/routes'
 import { h, later } from './dom'
+import { boundPadHint, glyphText } from './inputLabels'
 
 export type Screen = {
   el: HTMLElement
@@ -37,9 +38,19 @@ export const difficultyTag = (d: Difficulty) => h('span', { class: `difficulty-t
 /** Taps this soon after a menu opens are ignored: a thumb still steering the joystick shouldn't pick an upgrade. */
 const TAP_GUARD_MS = 350
 
-/** Hint that swaps between keyboard and touch wording (see `.keys-only` / `.touch-only` in CSS). */
+/**
+ * Hint that swaps between keyboard, gamepad and touch wording (see `.keys-only`,
+ * `.pad-only` and `.touch-only` in CSS). The gamepad's is the keyboard's with
+ * the pad's buttons (`boundPadHint`).
+ */
 export const hint = (keys: string, touch: string) =>
-  h('p', { class: 'hint' }, h('span', { class: 'keys-only' }, keys), h('span', { class: 'touch-only' }, touch))
+  h(
+    'p',
+    { class: 'hint' },
+    h('span', { class: 'keys-only' }, ...glyphText(keys)),
+    h('span', { class: 'pad-only' }, ...glyphText(boundPadHint(keys))),
+    h('span', { class: 'touch-only' }, touch),
+  )
 
 /**
  * Shared keyboard/pointer navigation for a list of buttons.

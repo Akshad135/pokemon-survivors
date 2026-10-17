@@ -4,7 +4,7 @@ import { isFinalStage, megaPhase } from '../game/mega'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { megaIcon } from '../render/megaFx'
-import { boundKey } from './controls'
+import { boundLabel, setGlyphText } from './inputLabels'
 import { h, setStyle, setText } from './dom'
 
 /**
@@ -46,7 +46,7 @@ export const createMegaControls = (onPress: () => void) => {
       el.classList.toggle('active', phase === 'active')
       setStyle(el, '--fill', fill.toFixed(3))
     }
-    setText(keyLabel, boundKey('mega'))
+    setGlyphText(keyLabel, boundLabel('mega'))
     for (const el of [badgeTag, buttonTag]) {
       setText(el, tag)
       el.classList.toggle('hidden', tag === '')

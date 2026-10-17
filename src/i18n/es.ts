@@ -190,6 +190,8 @@ export const es: Messages = {
     restored: 'Controles de vuelta a los valores de fábrica.',
     fixed: 'Las flechas y ESC siempre funcionan. El stick izquierdo siempre mueve.',
     touchNote: 'En pantalla táctil, el joystick y los botones en pantalla no cambian. Conecta un teclado o un control para reasignar.',
+    padFound: (names: string) => `Control conectado: *${names}*`,
+    padMissing: 'Ningún control detectado. Presiona un botón del control: el navegador solo lo muestra después de eso. Si no aparece, reconéctalo o prueba otro navegador.',
     unbound: '—',
     back: 'Volver',
     hintKeys: '↑ ↓ elegir · ← → columna · ENTER cambiar · ESC volver',

@@ -541,6 +541,22 @@ export const supporterIcon = (tier: SupporterTier) =>
   tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()
 export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))
 
+/** PlayStation's face buttons in their colors, the size of a Press Start 2P letter: the pixel fonts have no ✕ ○ □ △ (see `ui/inputLabels.ts`). */
+const PAD_GLYPHS = {
+  '✕': [['11....11', '111..111', '.111111.', '..1111..', '..1111..', '.111111.', '111..111', '11....11'], '#4a80e0'],
+  '○': [['..1111..', '.111111.', '111..111', '11....11', '11....11', '111..111', '.111111.', '..1111..'], '#e04850'],
+  '□': [['11111111', '11111111', '11....11', '11....11', '11....11', '11....11', '11111111', '11111111'], '#d058b8'],
+  '△': [['...11...', '..1111..', '..1111..', '.11..11.', '.11..11.', '11....11', '11111111', '11111111'], '#28a888'],
+} as const satisfies Record<string, readonly [readonly string[], string]>
+
+export type PadGlyph = keyof typeof PAD_GLYPHS
+export const isPadGlyph = (text: string): text is PadGlyph => text in PAD_GLYPHS
+export const padGlyphIcon = (glyph: PadGlyph) =>
+  toIconUrl(`pad:${glyph}`, () => {
+    const [rows, color] = PAD_GLYPHS[glyph]
+    return art(rows, { 1: color })
+  })
+
 /** Presente Misterioso: a wrapped box with a bow. 1 outline, 2 ribbon, 3 paper, 4 paper shade, 5 ribbon shade. */
 const GIFT = [
   '..11....11..',
