@@ -31,6 +31,18 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   },
   {
     date: '2026-10-17',
+    pr: 93,
+    title: { pt: 'Hall da Fama sem pedestais vazios', en: 'No more empty pedestals in the Hall of Fame', es: 'Salón de la Fama sin pedestales vacíos' },
+    notes: [
+      {
+        pt: 'Aberto pelo Cartão de Treinador, o Hall da Fama deixava os pedestais das Lendas vazios. Agora os Pokémon sempre aparecem, e enquanto carregam uma Poké Ball balança no lugar deles. Se um não carregar, a Poké Ball fica lá em vez de um espaço em branco.',
+        en: 'Opened from the Trainer Card, the Hall of Fame left the Legends’ pedestals empty. Now the Pokémon always show up, and a Poké Ball wobbles in their place while they load. If one doesn’t load, the Poké Ball stays instead of a blank space.',
+        es: 'Abierto desde la Tarjeta de Entrenador, el Salón de la Fama dejaba vacíos los pedestales de las Leyendas. Ahora los Pokémon siempre aparecen, y mientras cargan una Poké Ball se balancea en su lugar. Si uno no carga, la Poké Ball se queda en vez de un espacio en blanco.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 91,
     title: { pt: 'Mural de ideias', en: 'Ideas board', es: 'Muro de ideas' },
     notes: [

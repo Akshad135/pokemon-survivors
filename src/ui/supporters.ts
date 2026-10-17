@@ -9,7 +9,7 @@ import { savedSupporterTier } from '../game/trainer'
 import { LOCALES, locale, t } from '../i18n'
 import { context2d } from '../engine/pixelart'
 import { eggIcon, giftIcon, heartIcon, medalIcon, pokeballIcon, sparkleIcon, supporterIcon } from '../render/art'
-import { cryUrl, drawPokemon, hasShiny, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
+import { cryUrl, drawPokemon, hasShiny, loadSpecies, portraitUrl, type SpeciesSprites } from '../render/sprites'
 import { ROUTES } from '../site/routes'
 import { fetchPoll, fetchSupporterStatus, fetchWall, redeemCode, setSupporterPublic, vote } from '../supporters'
 import { h, later, rich } from './dom'
@@ -397,33 +397,63 @@ export const hallFace = (p: Companion | null) => {
   return { dex, shiny: p.shiny && hasShiny(dex) }
 }
 
+type Face = NonNullable<ReturnType<typeof hallFace>>
+
+/**
+ * A supporter's portrait for a round avatar: a Poké Ball wobbles in its
+ * place while it downloads, a shiny that won't load wears the normal colors,
+ * and a portrait that never comes leaves the Poké Ball resting.
+ */
+export const hallPortrait = (face: Face) => {
+  const img = h('img', { class: 'ball wobble', src: pokeballIcon(), alt: '' })
+  const urls = [...new Set([portraitUrl(face.dex, face.shiny), portraitUrl(face.dex)])]
+  const next = () => {
+    const url = urls.shift()
+    if (!url) return void img.classList.remove('wobble')
+    const probe = new Image()
+    probe.onload = () => ((img.src = url), img.classList.remove('ball', 'wobble'))
+    probe.onerror = next
+    probe.src = url
+  }
+  next()
+  return img
+}
+
 /**
  * A Lenda (gold tier): their Pokémon idling on a gold pedestal under a
- * spotlight, name, @handle and equipped title. `draw` animates the sprite
- * on the frame's tick, once its sheets are loaded.
+ * spotlight, name, @handle and equipped title. A Poké Ball wobbles on the
+ * pedestal while the sheets download (and rests there if they never come);
+ * then `draw` animates the sprite on the frame's tick.
  */
 const legendCard = (e: WallEntry) => {
   const face = hallFace(e.pokemon)
   const canvas = h('canvas', { class: 'legend-sprite', width: 96, height: 88 })
-  if (face) void loadSpecies(face.dex, face.shiny).catch(() => {})
+  const ball = h('img', { class: `legend-ball${face ? ' wobble' : ''}`, src: pokeballIcon(), alt: '' })
+  let sprites: SpeciesSprites | null = null
+  if (face)
+    void loadSpecies(face.dex, face.shiny)
+      .catch(() => loadSpecies(face.dex))
+      .then(
+        (loaded) => ((sprites = loaded), ball.replaceWith(canvas)),
+        () => ball.classList.remove('wobble'),
+      )
   const el = h(
     'button',
     { class: 'legend-card', type: 'button', 'aria-label': `${e.name} @${e.handle}` },
     h('span', { class: 'legend-beam', 'aria-hidden': 'true' }),
     h('img', { class: 'legend-spark one', src: sparkleIcon(), alt: '' }),
     h('img', { class: 'legend-spark two', src: sparkleIcon(), alt: '' }),
-    h('span', { class: 'legend-stage' }, face ? canvas : h('img', { class: 'legend-ball', src: pokeballIcon(), alt: '' }), h('span', { class: 'legend-pedestal' })),
+    h('span', { class: 'legend-stage' }, ball, h('span', { class: 'legend-pedestal' })),
     h('b', { class: 'legend-name' }, e.name),
     h('small', { class: 'legend-handle' }, `@${e.handle}`),
     e.title && h('em', { class: 'legend-title' }, t().achievements.titles[e.title]),
   )
   const draw = (time: number) => {
-    const loaded = face && loadedSprites(face.dex, face.shiny)
-    if (!loaded) return
+    if (!sprites) return
     const ctx = context2d(canvas)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     // Small Pokémon get doubled (whole pixels), like the Pokédex; big ones stay 1:1.
-    drawPokemon(ctx, loaded, 'Idle', 0, time, canvas.width / 2, canvas.height - 6, { scale: loaded.bodyH * 2 <= canvas.height - 24 ? 2 : 1 })
+    drawPokemon(ctx, sprites, 'Idle', 0, time, canvas.width / 2, canvas.height - 6, { scale: sprites.bodyH * 2 <= canvas.height - 24 ? 2 : 1 })
   }
   return { el, draw }
 }
@@ -434,7 +464,7 @@ const fanChip = (e: WallEntry) => {
   return h(
     'button',
     { class: 'fan-chip', type: 'button', 'aria-label': `${e.name} @${e.handle}` },
-    h('span', { class: 'fan-avatar' }, h('img', { src: face ? portraitUrl(face.dex, face.shiny) : pokeballIcon(), class: face ? '' : 'ball', alt: '' })),
+    h('span', { class: 'fan-avatar' }, face ? hallPortrait(face) : h('img', { src: pokeballIcon(), class: 'ball', alt: '' })),
     h('span', { class: 'fan-who' }, h('b', {}, e.name), h('small', {}, `@${e.handle}`)),
     h('img', { class: 'fan-heart', src: heartIcon(), alt: '' }),
   )

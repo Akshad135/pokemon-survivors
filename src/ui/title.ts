@@ -13,14 +13,14 @@ import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
 import { bulbIcon, coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
-import { drawPokemon, loadedSprites, loadSpecies, portraitUrl, type Dex } from '../render/sprites'
+import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
 import { ROUTES } from '../site/routes'
 import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
 import { boundKey } from './inputLabels'
 import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
-import { hallFace } from './supporters'
+import { hallFace, hallPortrait } from './supporters'
 import type { Screen } from './screens'
 import { gearButton, helpButton, shellBody, topBar, walletChip } from './shell'
 import { nearestInDirection, type Direction } from './spatial'
@@ -214,7 +214,7 @@ const wallFace = (e: WallEntry) => {
   return h(
     'span',
     { class: `hall-face ${e.tier}${face ? ' portrait' : ''}`, title: e.name, 'aria-hidden': 'true' },
-    face ? h('img', { src: portraitUrl(face.dex, face.shiny), alt: '' }) : ([...e.name.trim()][0]?.toUpperCase() ?? '♥'),
+    face ? hallPortrait(face) : ([...e.name.trim()][0]?.toUpperCase() ?? '♥'),
   )
 }
 
