@@ -1,4 +1,4 @@
-import { context2d, createCanvas, type PixelSprite } from '../engine/pixelart'
+import { context2d, createCanvas, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { PICKUPS } from './art'
 
 /**
@@ -98,6 +98,7 @@ const build = () => {
 }
 
 let logo: Promise<HTMLCanvasElement> | null = null
+onCanvasReset(() => (logo = null))
 
 /** The logo sprite, built once the game font has loaded. */
 export const titleLogo = () =>

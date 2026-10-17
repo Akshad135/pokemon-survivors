@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, context2d, createCanvas, ellipse } from '../engine/pixelart'
+import { blitCentered, blitRotated, canvasCache, context2d, createCanvas, ellipse } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { ARENA_LAYOUTS, type ArenaLayout, type FloorPattern } from '../data/arenas'
@@ -266,7 +266,7 @@ const buildFloor = (legend: RiftLegend, look: FloorLook) => {
   return canvas
 }
 
-const floors = new Map<string, HTMLCanvasElement>()
+const floors = canvasCache<string, HTMLCanvasElement>()
 const lookKey = (legend: RiftLegend, l: FloorLook) => `${legend}:${l.crumble}:${l.tide}:${l.warn ? 1 : 0}:${l.collapse ? 1 : 0}`
 
 const floorOf = (legend: RiftLegend, look: FloorLook) => {

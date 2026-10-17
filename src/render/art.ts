@@ -1,4 +1,4 @@
-import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
+import { canvasCache, context2d, createCanvas, fromStrings, lazy, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { Medal } from '../data/achievements'
 import type { ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
@@ -28,10 +28,7 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   return canvas
 }
 
-export const lazy = <T>(build: () => T) => {
-  let value: T | undefined
-  return () => (value ??= build())
-}
+export { lazy }
 
 export const art = (rows: readonly string[], palette: Palette, outline?: string) => {
   const sprite = fromStrings(rows, palette)
@@ -218,7 +215,7 @@ const EGG_PALETTES = {
 const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048' } as const satisfies Record<EggTier, string>
 
 /** Memoized sprite per key (one per tier and crack stage). */
-const eggCache = new Map<string, PixelSprite>()
+const eggCache = canvasCache<string, PixelSprite>()
 const toSprite = (key: string, build: () => PixelSprite) => {
   let s = eggCache.get(key)
   if (!s) eggCache.set(key, (s = build()))
@@ -308,7 +305,7 @@ const ALERT = ['22', '22', '22', '22', '33', '..', '22', '33']
 const BEAM = ['1', '2', '2', '3', '3', '3', '2', '2', '1']
 const BEAM_TELEGRAPH = ['1', '2', '2', '2', '2', '2', '1']
 
-const beams = new Map<string, PixelSprite>()
+const beams = canvasCache<string, PixelSprite>()
 
 export const TRAIT_FX = {
   healCross: lazy(() => art(PLUS, { 1: '#58d858', 2: '#ffffff' }, '#184818')),
@@ -588,7 +585,7 @@ const MEDAL_RIBBON = { 1: '#282830', 2: '#e04848', 3: '#4878e0' } as const
 /** Locked medals are a flat silhouette of the same shape. */
 const MEDAL_LOCKED = { 1: '#383848', 2: '#686878', 3: '#585868', 4: '#9898a8', 5: '#585868', 6: '#787888' } as const
 
-const MEDAL_SPRITES = new Map<string, PixelSprite>()
+const MEDAL_SPRITES = canvasCache<string, PixelSprite>()
 
 /** A medal as a sprite (share cards draw it on a canvas), cached. */
 export const medalSprite = (medal: Medal, locked = false) => {
@@ -624,7 +621,7 @@ const RIBBON_COLORS = {
   bronze: { 1: '#402010', 2: '#985028', 3: '#c87840', 4: '#e8a868', 5: '#f8d0a0', 6: '#fff0e0' },
 } as const satisfies Record<RibbonTier, Palette>
 
-const RIBBON_SPRITES = new Map<RibbonTier, PixelSprite>()
+const RIBBON_SPRITES = canvasCache<RibbonTier, PixelSprite>()
 
 /** A ribbon as a sprite (the Trainer Card draws it), cached. */
 export const ribbonSprite = (tier: RibbonTier) => {

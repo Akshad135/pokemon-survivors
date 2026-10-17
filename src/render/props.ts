@@ -1,4 +1,4 @@
-import { blitCentered, ellipse, fromStrings, ring, type Palette, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, canvasCache, ellipse, fromStrings, ring, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { BiomeId } from '../data/biomes'
 import { REPEL_RADIUS } from '../data/consumables'
 import type { ConsumableId } from '../game/consumables'
@@ -37,7 +37,7 @@ const CONSUMABLE_ART: Record<ConsumableId, readonly [readonly string[], Palette]
   revive: [['...1...', '..121..', '.12321.', '1233321', '.12321.', '..121..', '...1...'], { 1: '#c08800', 2: '#f8d030', 3: '#fff8c8' }],
 }
 
-const consumableSprites = new Map<ConsumableId, PixelSprite>()
+const consumableSprites = canvasCache<ConsumableId, PixelSprite>()
 
 export const consumableSprite = (id: ConsumableId) => {
   let sprite = consumableSprites.get(id)

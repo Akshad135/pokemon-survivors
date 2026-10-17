@@ -1,7 +1,7 @@
 import { bodyOf, type Body } from '../data/bodies'
 import type { MegaForm } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
-import { createCanvas, context2d, fromStrings } from '../engine/pixelart'
+import { createCanvas, context2d, fromStrings, onCanvasReset } from '../engine/pixelart'
 import type { Dir8 } from '../engine/math'
 
 /**
@@ -184,6 +184,15 @@ const PUFF = [
 
 let puff: Sheet | null = null
 const standIns = new Map<Dex, SpeciesSprites>()
+
+// A GPU reset blanks the silhouettes (and their tints, keyed by them) and the puff, all canvases.
+// The sheets are images and survive, so the silhouettes are redrawn from them.
+onCanvasReset(() => {
+  for (const s of cache.values()) for (const sheet of Object.values(s.anims)) sheet.white = silhouette(sheet.img)
+  puff = null
+  standIns.clear()
+})
+
 /** Downloads `sprites` already kicked off: dex numbers (normal forms) and alternate form cache keys. */
 const requested = new Set<Dex | string>()
 

@@ -1,5 +1,5 @@
 import { formatTime } from '../engine/math'
-import { context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from '../engine/pixelart'
+import { canvasCache, context2d, createCanvas, ellipse, fromStrings, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { MEDALS, type Medal } from '../data/achievements'
 import type { BackgroundId, FrameId } from '../data/style'
 import type { Difficulty } from '../game/difficulty'
@@ -106,7 +106,7 @@ const fontsReady = () => Promise.all([document.fonts.load(`8px ${FAMILY.title}`)
 
 type Mask = { canvas: HTMLCanvasElement; width: number; baseline: number }
 
-const masks = new Map<string, Mask>()
+const masks = canvasCache<string, Mask>()
 
 /** Text in white with every pixel fully on or off, so it reads like the rest of the pixel art. */
 const textMask = (text: string, font: Font, size: number): Mask => {
@@ -220,6 +220,7 @@ const sparkles = () => SPARKLE()
 
 /** Sparkles outlined for light backgrounds (cells, chips). */
 let darkSparkles: PixelSprite[] | null = null
+onCanvasReset(() => (darkSparkles = null))
 const outlinedSparkles = () => (darkSparkles ??= SPARKLE().map((s) => outlined(s, '#584010')))
 
 const blit = (ctx: CanvasRenderingContext2D, sprite: PixelSprite, cx: number, cy: number) =>
