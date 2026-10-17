@@ -2657,52 +2657,6 @@ button {
   line-height: 1;
 }
 
-/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
-.top-right {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.support-chip {
-  order: -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px 6px 8px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: #a02858;
-  text-decoration: none;
-  pointer-events: auto;
-}
-
-.support-chip img {
-  width: 21px;
-  height: 21px;
-}
-
-.support-chip:hover,
-.support-chip:focus-visible {
-  --frame: #f878a8;
-}
-
-/* Phones and tablets: just the heart, so the corner clears the centered logo. */
-@media (max-width: 960px), (max-height: 500px) {
-  .support-chip {
-    padding: 6px 8px;
-  }
-  .support-chip span {
-    display: none;
-  }
-}
-
 /* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
 .sync-dot {
   width: 8px;
@@ -3122,6 +3076,18 @@ button {
 .hall-face.gold {
   color: #f8d030;
   border-color: #f8d030;
+}
+
+/* A portrait is 40 px: shown 1:1, cropped to the circle. */
+.hall-face.portrait {
+  overflow: hidden;
+  background: #3a2878;
+}
+
+.hall-face img {
+  flex: none;
+  width: 40px;
+  height: 40px;
 }
 
 .hall-stack em {
@@ -3799,12 +3765,6 @@ button {
   }
   .mart-buy {
     width: 100%;
-  }
-  /* Compact corner so it clears the centered logo on phones. */
-  .top-right {
-    top: 6px;
-    right: 6px;
-    gap: 6px;
   }
 }
 
@@ -7319,34 +7279,9 @@ a.btn.dex-site {
 
 /* ---------- Apoiadores (supporters) ---------- */
 
-.support-chip {
-  cursor: pointer;
-  font-family: var(--title);
-}
-
 .dialog.supporters {
   width: min(520px, 94vw);
   gap: 10px;
-}
-
-.dialog-title .title-heart {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  vertical-align: -2px;
-}
-
-.supporter-since {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.supporter-since img {
-  width: 18px;
-  height: 18px;
-  flex: none;
 }
 
 .pick-label {
@@ -7358,55 +7293,6 @@ a.btn.dex-site {
 
 .pick-label:empty {
   display: none;
-}
-
-.supporter-perks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 4px;
-  font-size: 18px;
-  line-height: 1.1;
-}
-
-.supporter-perks li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.supporter-perks img {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  object-fit: contain;
-}
-
-.supporter-perks b {
-  color: #e83838;
-}
-
-/* Two columns of buttons, so the dialog fits a phone held upright. */
-.supporter-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.supporter-buttons .btn:first-child,
-.supporter-buttons .btn:last-child:nth-child(even) {
-  grid-column: 1 / -1;
-}
-
-.supporter-buttons .btn.glow {
-  background: #fff4c0;
-  border-color: #f0b800;
-  animation: share-glow 1.4s steps(2, start) infinite;
-}
-
-.supporter-buttons .btn.glow.selected {
-  border-color: #e83838;
 }
 
 /* Pickers: a scrolling grid of portraits over the footer's buttons. */
@@ -7480,8 +7366,7 @@ a.btn.dex-site {
 }
 
 /* The poll: one row per option, with its share of the votes. */
-.poll-rows,
-.wall-rows {
+.poll-rows {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -7494,8 +7379,7 @@ a.btn.dex-site {
   border-radius: 6px;
 }
 
-.poll-row,
-.wall-row {
+.poll-row {
   display: grid;
   align-items: center;
   gap: 8px;
@@ -7512,12 +7396,7 @@ a.btn.dex-site {
   grid-template-columns: 32px minmax(0, 1fr) minmax(60px, 1.2fr) auto;
 }
 
-.wall-row {
-  grid-template-columns: 18px auto 1fr;
-}
-
-.poll-row.selected,
-.wall-row.selected {
+.poll-row.selected {
   background: rgba(255, 255, 255, 0.16);
   border-color: #e83838;
 }
@@ -7544,26 +7423,9 @@ a.btn.dex-site {
   font-size: 20px;
 }
 
-.poll-row small,
-.wall-row small {
+.poll-row small {
   font-size: 17px;
   color: #a8b0d0;
-}
-
-.wall-row img {
-  width: 18px;
-  height: 18px;
-}
-
-.wall-row b {
-  font-weight: normal;
-  font-size: 20px;
-}
-
-.wall-row small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* The heart by a supporter's name on the boards and profiles. */
@@ -7614,23 +7476,738 @@ a.btn.dex-site {
   flex-basis: 100%;
 }
 
-.support-chip.waiting {
-  --frame: #f8d030;
+/* ---------- Hall da Fama (ui/supporters.ts) ---------- */
+
+/*
+ * A night sky over the shell: slowly turning gold rays (centered high, like a
+ * stage light) and a field of stars, both behind the content. Phones and
+ * portrait: everything scrolls in the body and the call to action is the
+ * footer. Landscape: the call to action becomes a column on the right; tall
+ * enough, the Lendas span the width and only the supporters scroll.
+ */
+.screen.shell.hall-screen {
+  isolation: isolate;
+  color: #fff;
+  background: radial-gradient(ellipse at 50% -10%, #6a4ab0 0, #2a1a5a 40%, #120c2c 80%);
+}
+
+.hall-screen::before {
+  content: '';
+  position: absolute;
+  top: calc(30% - 120vmax);
+  left: calc(50% - 120vmax);
+  width: 240vmax;
+  height: 240vmax;
+  z-index: -1;
+  background: repeating-conic-gradient(rgba(248, 208, 48, 0.07) 0 6deg, transparent 6deg 14deg);
+  animation: hall-spin 90s linear infinite;
+  pointer-events: none;
+}
+
+.hall-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* Hard 2 px stars: the top-left quadrant of each tile's conic gradient, two offset grids. */
+  background:
+    conic-gradient(from 270deg at 2px 2px, #fff 90deg, transparent 0) 11px 7px / 46px 46px,
+    conic-gradient(from 270deg at 2px 2px, #fff 90deg, transparent 0) 34px 30px / 62px 62px;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+@keyframes hall-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.hall-screen .shell-title {
+  color: #f8d030;
+  text-shadow:
+    2px 2px 0 #6a3a08,
+    -1px -1px 0 #4a2808,
+    1px -1px 0 #4a2808,
+    -1px 1px 0 #4a2808;
+}
+
+/* ✦ HALL DA FAMA ✦ where there's room. */
+@media (min-width: 600px) {
+  .hall-screen .shell-title::before,
+  .hall-screen .shell-title::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin: 0 10px;
+    vertical-align: -5px;
+    background: var(--sparkle) center / 20px 20px no-repeat;
+    image-rendering: pixelated;
+  }
+}
+
+/* "Você é Apoiador(a)": phones keep the heart. */
+.hall-you {
+  max-width: 100%;
+  padding: 4px 14px 4px 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a02860;
+  background: #ffe0ef;
+  border: 2px solid #f0a0c8;
+  border-radius: 22px;
+}
+
+.hall-you.gold {
+  color: #6a4008;
+  background: #fff4c0;
+  border-color: #f8d030;
+}
+
+.hall-you img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.hall-you span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 760px) {
+  .hall-you span {
+    display: none;
+  }
+  .hall-you {
+    padding: 4px 10px;
+  }
+}
+
+.hall-screen .shell-body {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.hall-lead {
+  margin: 0;
+  text-align: center;
+  font-size: 19px;
+  line-height: 1.1;
+  color: #e8dcff;
+}
+
+.hall-note {
+  margin: 12px 0;
+  text-align: center;
+  font-size: 19px;
+  color: #c8b8ff;
+}
+
+.hall-legends,
+.hall-fans {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hall-label {
+  flex: none;
+  margin: 0 0 6px;
+  font-family: var(--title);
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hall-label.gold {
+  color: #f8d030;
+}
+
+.hall-label.pink {
+  color: #ffb0d8;
+}
+
+/* The Lendas: a row that scrolls sideways, snapping a card to the middle. */
+.legend-strip {
+  display: flex;
+  gap: 14px;
+  padding: 4px 6px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.legend-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.legend-card {
+  position: relative;
+  flex: none;
+  width: 208px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 10px 12px;
+  scroll-snap-align: center;
+  font: inherit;
+  color: #fff;
+  background: linear-gradient(#3a2878, #1e1448);
+  border: 3px solid #f8d030;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 2px #8a6010,
+    0 0 22px rgba(248, 208, 48, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+/* Centered while they fit; scrolled from the start once they don't. */
+.legend-card:first-child {
+  margin-left: auto;
+}
+
+.legend-card:last-child {
+  margin-right: auto;
+}
+
+.legend-card.selected,
+.legend-card:hover {
+  border-color: #fff;
+  box-shadow:
+    inset 0 0 0 2px #e83838,
+    0 0 26px rgba(255, 255, 255, 0.4),
+    0 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.legend-card.empty {
+  cursor: default;
+  border-style: dashed;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+.legend-beam {
+  position: absolute;
+  top: -10px;
+  left: calc(50% - 70px);
+  width: 140px;
+  height: 190px;
+  background: linear-gradient(rgba(255, 240, 170, 0.5), rgba(255, 240, 170, 0));
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  animation: hall-beam 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes hall-beam {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.legend-spark {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 20px;
+  height: 20px;
+  animation: hall-twinkle 1.6s steps(2) infinite;
+}
+
+.legend-spark.two {
+  top: 52px;
+  left: auto;
+  right: 20px;
+  width: 10px;
+  height: 10px;
+  animation-delay: 0.8s;
+}
+
+@keyframes hall-twinkle {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* The Pokémon on its pedestal: an 88 × 80 canvas at 2× (1× on short screens). */
+.legend-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 166px;
+}
+
+.legend-sprite {
+  width: 176px;
+  height: 160px;
+}
+
+.legend-ball {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 40px;
+}
+
+.legend-pedestal {
+  width: 120px;
+  height: 18px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: linear-gradient(#f8d030, #a86e10);
+  border: 2px solid #4a3008;
+}
+
+.legend-name,
+.legend-handle,
+.legend-title {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-name {
+  margin-top: 6px;
+  font-family: var(--title);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.legend-card.empty .legend-name {
+  white-space: normal;
+  text-align: center;
+  color: #f8d030;
+}
+
+.legend-handle {
+  font-size: 17px;
+  line-height: 1;
+  color: #c8b8ff;
+}
+
+.legend-title {
+  margin-top: 4px;
+  padding: 3px 6px;
+  font-family: var(--title);
+  font-size: 7px;
+  font-style: normal;
+  line-height: 1.4;
+  color: #4a3008;
+  background: #f8d030;
+  border-radius: 4px;
+}
+
+.hall-dots {
+  display: none;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hall-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #5a4a90;
+}
+
+.hall-dots i.on {
+  background: #f8d030;
+}
+
+/* Supporters: three columns of chips. */
+.fan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding: 2px;
+}
+
+.fan-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 6px 8px;
+  text-align: left;
+  font: inherit;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 176, 216, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fan-chip.selected,
+.fan-chip:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #f8d030;
+}
+
+.fan-avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #3a2878;
+  border: 2px solid #ffb0d8;
+}
+
+.fan-avatar img {
+  width: 40px;
+  height: 40px;
+}
+
+.fan-avatar img.ball {
+  width: 20px;
+  height: 20px;
+}
+
+.fan-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fan-who b,
+.fan-who small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fan-who b {
+  font-family: var(--title);
+  font-size: 8px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.fan-who small {
+  font-size: 16px;
+  line-height: 1;
+  color: #c8b8ff;
+}
+
+.fan-heart {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+/* The call to action: a pink panel (the footer on phones). */
+.shell-actions.hall-cta {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  color: #4a1030;
+  background: linear-gradient(#ffe8f3, #ffd0e6);
+  border: 3px solid #283040;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.hall-cta-title,
+.hall-cta-note,
+.hall-cta-line,
+.hall-cta-gold {
+  display: none;
+  margin: 0;
+}
+
+.hall-cta-title {
+  font-family: var(--title);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.hall-cta-note,
+.hall-cta-line,
+.hall-cta-gold {
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.hall-cta-note.since {
+  align-items: center;
+  gap: 8px;
+}
+
+.hall-cta-note.since img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.hall-cta b {
+  color: #c02870;
+}
+
+.hall-tiles {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.hall-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px;
+  font: inherit;
+  color: inherit;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+button.hall-tile {
+  min-height: 52px;
+  background: rgba(255, 255, 255, 0.6);
+  border-color: #f0a0c8;
+  cursor: pointer;
+}
+
+button.hall-tile.selected,
+button.hall-tile:hover {
+  border-color: #e83838;
+}
+
+.hall-tile.glow {
+  background: #fff4c0;
+  border-color: #f0b800;
   animation: share-glow 1.4s steps(2, start) infinite;
 }
 
-.support-chip .support-sparkle {
-  width: 14px;
-  height: 14px;
-  margin-left: -4px;
+.hall-tile img {
+  width: 24px;
+  height: 24px;
 }
 
-@media (max-width: 420px) {
-  .supporter-buttons .btn {
-    padding: 8px 6px;
+.hall-tile small {
+  max-width: 100%;
+  font-size: 15px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hall-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+}
+
+.hall-link {
+  min-height: 32px;
+  padding: 2px 12px;
+  font-family: var(--body);
+  font-size: 17px;
+  color: #a02860;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid #f0a0c8;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.hall-link.selected,
+.hall-link:hover {
+  border-color: #e83838;
+}
+
+.hall-support {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 16px 4px;
+  font-family: var(--title);
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #801040;
+  background: linear-gradient(#ff7ab8, #e8408c);
+  border: 3px solid #283040;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 -6px 0 #a81c5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.hall-support img {
+  width: 20px;
+  height: 20px;
+}
+
+.hall-support.selected,
+.hall-support:hover {
+  outline: 3px solid #e83838;
+  outline-offset: 2px;
+}
+
+/* Narrow: supporters become small tiles, avatar over name. */
+@media (orientation: portrait), (max-width: 760px) {
+  .fan-chip {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    text-align: center;
   }
-  .supporter-perks {
-    font-size: 16px;
+  .fan-who {
+    width: 100%;
+    align-items: center;
+  }
+  .fan-who small,
+  .fan-heart {
+    display: none;
+  }
+}
+
+/* Phones held upright: the Lendas become a carousel (the side ones dim). */
+@media (orientation: portrait), (max-width: 639px) {
+  .legend-strip {
+    padding-inline: calc(50% - 104px);
+  }
+  .legend-card:not(.centered):not(.empty) {
+    opacity: 0.55;
+  }
+  .hall-dots {
+    display: flex;
+  }
+}
+
+/* Landscape: the call to action moves to a column on the right, and says more. */
+@media (orientation: landscape) and (min-width: 640px) {
+  .screen.shell.hall-screen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(230px, 30vw, 330px);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 8px;
+  }
+  .hall-screen .shell-top {
+    grid-column: 1 / -1;
+  }
+  .shell-actions.hall-cta {
+    align-self: end;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px;
+  }
+  .hall-cta-title,
+  .hall-cta-line,
+  .hall-cta-gold {
+    display: block;
+  }
+  .hall-cta-note {
+    display: flex;
+  }
+  /* A narrow column: the five perks (or actions) in rows of three. */
+  .hall-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Tall enough: the Lendas stand in a row under the title, and only the supporters scroll; the call to action keeps its column. */
+@media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) {
+  .screen.shell.hall-screen {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: 'top top' 'lead lead' 'legends cta' 'fans cta';
+  }
+  .hall-screen .shell-body {
+    display: contents;
+  }
+  .hall-screen .shell-top {
+    grid-area: top;
+  }
+  .hall-lead {
+    grid-area: lead;
+  }
+  .hall-legends,
+  .hall-screen .shell-body > .hall-note {
+    grid-area: legends;
+  }
+  .hall-fans {
+    grid-area: fans;
+    min-height: 0;
+  }
+  .hall-fans .fan-grid {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .shell-actions.hall-cta {
+    grid-area: cta;
+  }
+}
+
+/* Short screens (phones in landscape, small phones upright): the Pokémon at 1×, less copy. */
+@media (max-height: 500px), (orientation: portrait) and (max-height: 700px) {
+  .hall-lead,
+  .hall-cta-gold,
+  .hall-cta-note,
+  .hall-cta-line {
+    display: none;
+  }
+  .legend-card {
+    width: 168px;
+  }
+  .legend-stage {
+    min-height: 86px;
+  }
+  .legend-sprite {
+    width: 88px;
+    height: 80px;
+  }
+  .legend-ball {
+    margin-bottom: 20px;
+  }
+  .legend-beam {
+    height: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-screen::before,
+  .legend-beam,
+  .legend-spark,
+  .hall-tile.glow {
+    animation: none;
   }
 }
 
