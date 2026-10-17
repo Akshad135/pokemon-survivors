@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RUN_LENGTH } from '../data/waves'
-import { clockAllows, freeHandle, handleProblem, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, suggestHandle, type RunResult } from './ranking'
+import { clockAllows, freeHandle, handleProblem, maxKills, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, suggestHandle, type RunResult } from './ranking'
 
 const run = (o: Partial<Record<keyof RunResult, unknown>> = {}) => ({ starter: 'charmander', stage: 1, difficulty: 'hard', time: 300, outcome: 'death', level: 20, kills: 800, version: 'abc1234', ...o })
 
@@ -19,8 +19,13 @@ describe('parseRunResult', () => {
   })
 
   it('refuses more faints than the clock allows, and impossible times', () => {
-    expect(parseRunResult(run({ kills: 300 * RANKED.maxKillRate + 1 }))).toBeNull()
+    expect(parseRunResult(run({ kills: maxKills(300) + 1 }))).toBeNull()
     for (const time of [-1, Number.NaN, RANKED.maxTime + 1, '300']) expect(parseRunResult(run({ time }))).toBeNull()
+  })
+
+  it('lets long endless runs faint far more per second', () => {
+    // A real 2-hour endless run: 342,655 faints in 7,335 s (~47/s).
+    expect(parseRunResult(run({ outcome: 'victory', time: 7335, level: 430, kills: 342_655 }))).not.toBeNull()
   })
 })
 
