@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    title: { pt: 'Mural de ideias', en: 'Ideas board', es: 'Muro de ideas' },
+    notes: [
+      {
+        pt: 'Agora você pode pedir o que quer ver no jogo! Toque em Ideias no menu principal (ou abra pokemonsurvivors.com/?ideias): dá para ler as ideias de todo mundo, votar a favor ou contra com uma conta e mandar as suas (até 3 por dia). As mais votadas entram na fila, e as que chegam ao jogo aparecem na aba Feitas.',
+        en: 'Now you can ask for what you want to see in the game! Tap Ideas in the main menu (or open pokemonsurvivors.com/?ideias): read everyone’s ideas, vote them up or down with an account and send your own (up to 3 a day). The most voted go in the queue, and the ones that make it into the game show up in the Shipped tab.',
+        es: '¡Ahora puedes pedir lo que quieres ver en el juego! Toca Ideas en el menú principal (o abre pokemonsurvivors.com/?ideias): lee las ideas de todos, vota a favor o en contra con una cuenta y envía las tuyas (hasta 3 por día). Las más votadas entran en la fila, y las que llegan al juego aparecen en la pestaña Hechas.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 89,
     title: { pt: 'Remapear com o controle', en: 'Remapping with a gamepad', es: 'Reasignar con el control' },
     notes: [

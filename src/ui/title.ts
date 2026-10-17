@@ -11,7 +11,7 @@ import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, portraitUrl, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
@@ -41,6 +41,7 @@ export type LobbyFocus =
   | 'eggs'
   | 'mart'
   | 'ranking'
+  | 'ideas'
   | 'play'
 
 /**
@@ -81,6 +82,8 @@ export type TitleActions = {
   trainer: (focus: LobbyFocus) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no tile. */
   ranking?: (focus: LobbyFocus) => Screen
+  /** Opens Ideias (the idea board) over the title, like `settings`. No action (no API), no tile. */
+  ideas?: (focus: LobbyFocus) => Screen
   /** Opens Apoiadores over the title (the Hall da Fama card), like `settings`; `pick` goes straight to the shiny picker. */
   supporters: (focus: LobbyFocus, open: 'pick' | null) => Screen
   meadow: Meadow
@@ -388,7 +391,7 @@ const heldMove = (input: Input): Vec => {
 }
 
 /** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls). */
-const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyM: 'missions', KeyH: 'hall' }
+const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
 
 /**
  * Title screen over the live meadow: the pixel logo and a blinking "press
@@ -396,7 +399,7 @@ const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: '
  * (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
  * Missões), the Hall da Fama card sits beside them, the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
- * Loja, Ranking). Arrows move between all of them by where they are on
+ * Loja, Ranking, Ideias). Arrows move between all of them by where they are on
  * screen; Enter presses the highlighted one, JOGAR at first. The movement
  * keys, a tap on the grass or a drag (a joystick) send the partner off its
  * stage for a walk in the meadow (`Meadow`), where it greets the wild Pokémon.
@@ -468,7 +471,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     overScreen = open(current)
   }
 
-  const { ranking } = actions
+  const { ranking, ideas } = actions
   const runs: Record<Exclude<LobbyFocus, 'trainer' | 'hall'>, () => void> = {
     help: () => location.assign(ROUTES.guide[lang]),
     settings: () => openOver(actions.settings),
@@ -480,6 +483,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     eggs: actions.incubator,
     mart: () => openOver(actions.mart),
     ranking: () => ranking && openOver(ranking),
+    ideas: () => ideas && openOver(ideas),
     play: actions.play,
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
@@ -513,11 +517,18 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       pressable(dockTile('eggs', eggIcon('rare'), m.eggs, 'O', ready, ready > 0 ? `${m.eggs}: ${m.eggsReady(ready)}` : m.eggs), 'eggs'),
       pressable(dockTile('mart', coinIcon(2), m.mart, 'L'), 'mart'),
       ...(ranking ? [pressable(dockTile('ranking', medalIcon('gold'), m.ranking, 'R'), 'ranking')] : []),
+      ...(ideas ? [pressable(dockTile('ideas', bulbIcon(), m.ideas, 'I'), 'ideas')] : []),
     ]
     const play = pressable(h('button', { class: 'lobby-play', type: 'button' }, h('span', {}, m.play), h('span', { class: 'key-hint' }, 'ENTER')), 'play')
-    // JOGAR sits in the middle of the dock on wide screens; the CSS moves it above the tab bar on phones.
+    // JOGAR sits in the middle of the dock on wide screens, between the two halves (centered however many tiles each has); the CSS moves it above the tab bar on phones.
     const half = Math.ceil(tiles.length / 2)
-    const bottom = h('div', { class: 'lobby-bottom', style: `--tiles:${tiles.length}` }, ...tiles.slice(0, half), play, ...tiles.slice(half))
+    const bottom = h(
+      'div',
+      { class: 'lobby-bottom', style: `--tiles:${tiles.length}` },
+      h('div', { class: 'lobby-dock left' }, ...tiles.slice(0, half)),
+      play,
+      h('div', { class: 'lobby-dock right' }, ...tiles.slice(half)),
+    )
 
     const todayEl = h(
       'section',
