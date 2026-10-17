@@ -31,6 +31,8 @@ export const openPortal = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rif
 
 /** Opens portals on schedule, ticks the open one and steps the player in. */
 export const updateRiftPortal = (g: Game, dt: number) => {
+  // An open portal waits on the map, like the rest of the world, while the player is inside a place.
+  if (g.place.inside) return
   const rift = g.rift
   const portal = rift.portal
   if (!portal) {

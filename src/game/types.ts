@@ -25,6 +25,8 @@ import type { Prop } from './props'
 import type { TerrainState } from './terrain'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
+import type { PlaceNotice, PlaceState } from './place'
+import type { PlaceId } from '../data/places'
 import type { SpecialState } from './special'
 import type { Stance } from './stance'
 import type { RunTally } from './tally'
@@ -335,6 +337,8 @@ export type GameEvent =
   | { kind: 'reaperDown'; defeats: number }
   /** A boss, chest or rift left an egg; it goes to the incubator when the run is banked. */
   | { kind: 'egg'; tier: EggTier }
+  /** Something happened at a place: its entrance, the way in and out, what goes on inside (`place.ts`). */
+  | { kind: 'place'; place: PlaceId; notice: PlaceNotice }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -408,6 +412,8 @@ export type Game = {
   traits: { seen: Set<TraitId>; nextIntro: number }
   /** Legendary rifts: the portal on the map, the arena and what was met this run. */
   rift: RiftState
+  /** Places (`place.ts`): the entrance on the map, the inside the player is in and the wings picked up. */
+  place: PlaceState
   /** Set once the player goes on past Mewtwo (endless mode). */
   endless: EndlessState | null
   /** Species seen, defeated and caught this run, for the Pokédex (`game/dex.ts`). */

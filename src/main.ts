@@ -37,6 +37,10 @@ import { dropMegaStones, grantStone, heldMega } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
+import { placeDevTools } from './game/placeDev'
+import { placeFeedback } from './ui/places'
+import { PLACES } from './data/places'
+import { placeSchedule } from './game/place'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
@@ -496,7 +500,8 @@ let upcoming = planRun()
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the rift legendaries and the endless mode's reaper.
+ * up: the fleeing Meowth, the rift legendaries and the endless mode's reaper
+ * (the places' dwellers come from `placeSchedule`).
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
@@ -582,7 +587,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   }
   track('run_start', { starter, difficulty: game.difficulty, ...(daily ? { challenge: daily.official ? 'official' : 'practice' } : {}) })
   announceRun(start, run.challenge)
-  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
+  const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
+  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
@@ -831,6 +837,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return playSfx('break', 60)
     case 'mapEvent':
       return mapEventFeedback(ui, e.notice)
+    case 'place':
+      return placeFeedback(ui, e.place, e.notice)
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
@@ -927,8 +935,9 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
-  // A rift arena keeps the boss theme until the player is back, loot window included.
-  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : BIOMES[r.game.biome.id].theme
+  // A rift arena keeps the boss theme until the player is back, loot window included; a place plays its own.
+  const inside = r.game.place.inside
+  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : inside ? PLACES[inside.id].theme : BIOMES[r.game.biome.id].theme
 }
 
 /* ---------------- Global keys ---------------- */
@@ -1297,6 +1306,7 @@ if (import.meta.env.DEV) {
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
+      ...placeDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

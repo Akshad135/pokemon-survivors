@@ -6,6 +6,7 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { MEGAS } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { buffDeltas } from './buffs'
+import { wingDeltas } from './place'
 import { healPlayer } from './combat'
 import { burst } from './effects'
 import { rankDeltas } from './meta'
@@ -99,6 +100,7 @@ export const recomputeStats = (g: Game) => {
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
+    ...wingDeltas(g.place.wings),
     ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),
   ])
   p.stats = stanceStats(deltas, g.special.stance)

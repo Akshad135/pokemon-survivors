@@ -1,5 +1,6 @@
 import type { AchievementId, AchievementStat, GiftTitleId, TitleId } from '../data/achievements'
 import type { BiomeId } from '../data/biomes'
+import type { PlaceId, WingId } from '../data/places'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
@@ -894,6 +895,57 @@ export const pt = {
     overtime: 'Tempo extra',
     legends: 'Lendários',
     reaperDefeated: (n: number) => (n === 1 ? 'Arceus derrotado!' : `Arceus derrotado ${n}x!`),
+  },
+
+  /** Places: the cave, the graveyard and the sky (`data/places.ts`), their entrances on the map and what goes on inside. */
+  places: {
+    names: { cave: 'Caverna Escura', graveyard: 'Cemitério Assombrado', sky: 'Acima das Nuvens' } satisfies Record<PlaceId, string>,
+    /** Short names for the HUD's pill while an entrance is open. */
+    hudNames: { cave: 'Caverna', graveyard: 'Cemitério', sky: 'Corrente' } satisfies Record<PlaceId, string>,
+    open: {
+      cave: 'A entrada de uma *caverna* apareceu! Siga a seta.',
+      graveyard: 'Um *cemitério* surgiu na névoa! Siga a seta.',
+      sky: 'Uma *corrente de ar* sobe para o céu! Siga a seta e voe.',
+    } satisfies Record<PlaceId, string>,
+    sealed: {
+      cave: 'Pedras desabaram na entrada da caverna.',
+      graveyard: 'O portão do cemitério se fechou.',
+      sky: 'A corrente de ar se desfez.',
+    } satisfies Record<PlaceId, string>,
+    blocked: 'Só um Pokémon do tipo *Voador* consegue subir nessa corrente de ar.',
+    /** What to do, shown on the way in. */
+    goal: {
+      cave: 'Ache as escadas no escuro e desça até o *tesouro*!',
+      graveyard: 'Cada fantasma derrotado desperta a *Pedra Peculiar*…',
+      sky: 'Pegue as *asas* que o vento traz antes que ele acalme!',
+    } satisfies Record<PlaceId, string>,
+    /** A dungeon floor, as Mystery Dungeon names them (B1F). */
+    floor: (n: number) => `B${n}F`,
+    /** The wind's three warnings, then the gust. */
+    wind: ['Algo está se agitando…', 'Está chegando mais perto!', 'Está bem aqui! O vento está fortíssimo!'],
+    blownOut: 'Uma rajada de vento soprou você para fora da caverna!',
+    monsterHouse: 'É uma *Casa de Monstros*!',
+    treasure: (coins: string) => `Tesouro aberto: *${coins}*, itens e uma Poké Ball!`,
+    keystone: 'A *Pedra Peculiar* rachou e *Spiritomb* despertou!',
+    keystoneShiny: 'A *Pedra Peculiar* rachou e um *Spiritomb* _shiny_ despertou!',
+    spiritomb: '*Spiritomb* derrotado! Os espíritos descansam em paz.',
+    dawnSoon: 'O dia está nascendo…',
+    dawn: 'O sol nasceu e os fantasmas sumiram.',
+    calmSoon: 'O vento está acalmando…',
+    landed: (n: number) => (n === 0 ? 'O vento acalmou e você planou de volta.' : `O vento acalmou. Você voltou com ${n === 1 ? '1 asa' : `${n} asas`}!`),
+    /** What each wing gives, `n` from `WINGS`. */
+    wings: {
+      healthWing: (n: number) => `+${n} de HP máximo`,
+      muscleWing: (n: number) => `+${n}% de dano`,
+      resistWing: (n: number) => `+${n} de defesa`,
+      swiftWing: (n: number) => `+${n} de velocidade`,
+      prettyWing: (n: number) => `vale ₽${n}`,
+    } satisfies Record<WingId, (n: number) => string>,
+    hudOpen: (name: string, time: string) => `${name} ${time}`,
+    hudCave: (floor: string, time: string) => `${floor} · vento ${time}`,
+    hudSpirits: (n: number, of: number, time: string) => `Espíritos ${n}/${of} · ${time}`,
+    hudDawn: (time: string) => `Amanhecer ${time}`,
+    hudSky: (n: number, time: string) => `Asas ${n} · ${time}`,
   },
 
   types: {

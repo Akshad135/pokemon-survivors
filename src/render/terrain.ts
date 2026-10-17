@@ -2,8 +2,11 @@ import { canvasCache, context2d, createCanvas, ellipse, lazy, onCanvasReset, typ
 import type { BiomeId } from '../data/biomes'
 import { CLIFF_CRESTS, CLIFFS, LAKES, TERRAIN as RULES, type SolidKind, type Tier } from '../data/terrain'
 import { featuresNear, groundAt, type Solid } from '../game/terrain'
+import { roomOf } from '../game/room'
 import type { ArenaPiece } from '../data/arenas'
 import { ARENA_PIECES, ARENA_SHADOW, ARENA_TALL } from './arenaPieces'
+import { PLACE_PIECES, PLACE_SHADOW, PLACE_TALL } from './placePieces'
+import type { PlacePiece } from '../data/places'
 import type { Game } from '../game/types'
 import {
   cone,
@@ -99,7 +102,7 @@ export const brokenPillar = (skin: RockSkin, seed: number): Piece => {
 
 /* ---------------- Trees ---------------- */
 
-type TreeSkin = { leaves: Ramp; trunk: Ramp; outline: string; fruit?: string; snow?: Ramp }
+export type TreeSkin = { leaves: Ramp; trunk: Ramp; outline: string; fruit?: string; snow?: Ramp }
 
 const bark = (ramp: Ramp) => (x: number, y: number, _nx: number, elev: number, light: number) =>
   shade(ramp, light - (noise(x, Math.floor(elev / 3), 5) < 0.25 ? 0.3 : 0), x, y)
@@ -179,8 +182,8 @@ const pine = (skin: TreeSkin, height: number, width: number, seed: number): Piec
   return piece(g, cx, ground)
 }
 
-/** A bare, twisted tree for the graveyard. */
-const deadTree = (skin: TreeSkin): Piece => {
+/** A bare, twisted tree with a hollow knot (the tower biome's trees, the graveyard's). */
+export const deadTree = (skin: TreeSkin): Piece => {
   const g = grid(40, 46)
   const cx = 20
   const ground = 43
@@ -604,7 +607,7 @@ const SNOW_PINE: TreeSkin = {
 }
 
 const TOWER_STONE: RockSkin = { stone: ['#2c2638', '#4a4258', '#6a6280', '#8e86a4', '#b0a8c4'], outline: '#120c18' }
-const TOWER_TREE: TreeSkin = { leaves: [], trunk: ['#1c1424', '#342840', '#4c3c5c', '#6a5878'], outline: '#0c0814', fruit: '#b070c8' }
+export const TOWER_TREE: TreeSkin = { leaves: [], trunk: ['#1c1424', '#342840', '#4c3c5c', '#6a5878'], outline: '#0c0814', fruit: '#b070c8' }
 
 const SKINS: Record<BiomeId, () => TerrainSet> = {
   meadow: () => ({
@@ -710,7 +713,8 @@ const mountain = (set: TerrainSet, variant: number): Piece => {
 
 type PieceKind = SolidKind | 'lake'
 
-const isArenaPiece = (kind: PieceKind | ArenaPiece): kind is ArenaPiece => kind in ARENA_PIECES
+const isArenaPiece = (kind: PieceKind | ArenaPiece | PlacePiece): kind is ArenaPiece => kind in ARENA_PIECES
+const isPlacePiece = (kind: PieceKind | ArenaPiece | PlacePiece): kind is PlacePiece => kind in PLACE_PIECES
 
 const VARIANTS: Record<PieceKind, number> = { rock: RULES.rockVariants, tree: RULES.treeVariants, tower: 1, cliff: CLIFFS.length, lake: LAKES.length }
 
@@ -732,12 +736,12 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
 
 const pieces = canvasCache<string, Piece>()
 
-const pieceOf = (biome: BiomeId, kind: PieceKind | ArenaPiece, variant: number) => {
-  const arena = isArenaPiece(kind)
-  // The arenas' scenery looks the same whatever the biome outside.
-  const key = arena ? `arena:${kind}:${variant}` : `${biome}:${kind}:${variant}`
+const pieceOf = (biome: BiomeId, kind: PieceKind | ArenaPiece | PlacePiece, variant: number) => {
+  // The arenas' and places' scenery looks the same whatever the biome outside.
+  const fixed = isArenaPiece(kind) || isPlacePiece(kind)
+  const key = fixed ? `fixed:${kind}:${variant}` : `${biome}:${kind}:${variant}`
   let piece = pieces.get(key)
-  if (!piece) pieces.set(key, (piece = arena ? ARENA_PIECES[kind](variant) : build(biome, kind, variant)))
+  if (!piece) pieces.set(key, (piece = isArenaPiece(kind) ? ARENA_PIECES[kind](variant) : isPlacePiece(kind) ? PLACE_PIECES[kind](variant) : build(biome, kind, variant)))
   return piece
 }
 
@@ -777,8 +781,8 @@ export const drawTerrainGround = (ctx: CanvasRenderingContext2D, g: Game, biome:
         blit(ctx, mountainShadows[s.variant]!(), s.x + 5, s.y + 3)
         ctx.globalAlpha = 1
       } else {
-        const rx = isArenaPiece(s.kind) ? ARENA_SHADOW[s.kind] : SHADOW_RX[s.kind]
-        ctx.drawImage(ellipse(rx, Math.round(rx * 0.4), SHADOW), Math.round(s.x + 2 - rx), Math.round(s.y - rx * 0.4))
+        const rx = isArenaPiece(s.kind) ? ARENA_SHADOW[s.kind] : isPlacePiece(s.kind) ? PLACE_SHADOW[s.kind] : SHADOW_RX[s.kind]
+        if (rx > 0) ctx.drawImage(ellipse(rx, Math.round(rx * 0.4), SHADOW), Math.round(s.x + 2 - rx), Math.round(s.y - rx * 0.4))
       }
     }
   }
@@ -816,7 +820,7 @@ export const drawSolid = (ctx: CanvasRenderingContext2D, g: Game, s: Solid, biom
   const hx = Math.round(p.x) - HOLE - x
   const hy = Math.round(p.y) - 12 - HOLE - y
   const behind =
-    (isArenaPiece(s.kind) ? ARENA_TALL[s.kind] : TALL[s.kind]) && p.y < s.y && hx > -HOLE * 2 && hy > -HOLE * 2 && hx < piece.sprite.width && hy < piece.sprite.height
+    (isArenaPiece(s.kind) ? ARENA_TALL[s.kind] : isPlacePiece(s.kind) ? PLACE_TALL[s.kind] : TALL[s.kind]) && p.y < s.y && hx > -HOLE * 2 && hy > -HOLE * 2 && hx < piece.sprite.width && hy < piece.sprite.height
   if (!behind) return ctx.drawImage(piece.sprite, x, y)
   if (!scratch || scratch.canvas.width < piece.sprite.width || scratch.canvas.height < piece.sprite.height) {
     const canvas = createCanvas(Math.max(piece.sprite.width, scratch?.canvas.width ?? 0), Math.max(piece.sprite.height, scratch?.canvas.height ?? 0))
@@ -849,7 +853,7 @@ const ripple = (rx: number, ry: number) => {
 /** Rings spreading from the player's feet while they wade. */
 export const drawWading = (ctx: CanvasRenderingContext2D, g: Game, width: number, t: number) => {
   const p = g.player
-  if (g.rift.arena || groundAt(g, p.x, p.y) !== 'water') return
+  if (roomOf(g) || groundAt(g, p.x, p.y) !== 'water') return
   for (const k of [0, 0.5]) {
     const ph = (t * 1.2 + k) % 1
     const rx = Math.round(width * (0.3 + ph * 0.35))

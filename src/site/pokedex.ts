@@ -4,6 +4,7 @@ import { HATCHLING_IDS, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { REGIONS, STARTER_IDS, type Region } from '../data/starters'
 import type { PokeType } from '../data/types'
 import { RIFT, RIFT_LEGENDS } from '../data/rifts'
+import { GRAVEYARD, PLACE, PLACE_IDS, PLACES, type PlaceId } from '../data/places'
 import { SUMMONS } from '../data/traits'
 import { bossCandidates, EVENTS, RUN_LENGTH, STAGES, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
 import { ENDLESS, REAPER } from '../game/endless'
@@ -128,6 +129,8 @@ export type Appearance =
   | { kind: 'rift'; from: number }
   /** Hunts the player in endless mode from `at`. */
   | { kind: 'reaper'; at: number }
+  /** Lives in a place (`data/places.ts`), coming out from `from`; `boss` for the place's own boss. */
+  | { kind: 'place'; place: PlaceId; from: number; boss: boolean }
   /** Called in by a summoner (Nidoqueen's Nidoran). */
   | { kind: 'summoned'; by: EnemyId }
 
@@ -136,7 +139,7 @@ const isRiftLegend = (id: EnemyId): boolean => RIFT_LEGENDS.some((l) => l === id
 /**
  * When an enemy can show up: the spawn-pool windows of the stages with a slot
  * of its tier (contiguous stages merged), the swarms (flyers only) and rings of
- * its tier or naming it, its boss events, rifts, the reaper and summons.
+ * its tier or naming it, its boss events, rifts, the reaper, places and summons.
  */
 export const appearances = (id: EnemyId): Appearance[] => {
   const def: EnemyDef = ENEMIES[id]
@@ -162,10 +165,18 @@ export const appearances = (id: EnemyId): Appearance[] => {
   })
   const rift: Appearance[] = isRiftLegend(id) ? [{ kind: 'rift', from: RIFT.firstAt }] : []
   const reaper: Appearance[] = id === REAPER ? [{ kind: 'reaper', at: ENDLESS.reaperAt }] : []
+  // A place's dwellers come out once the run's stage has their tier (never before the first entrance).
+  const placed = PLACE_IDS.flatMap((place): Appearance[] => {
+    if (place === 'graveyard' && id === GRAVEYARD.boss) return [{ kind: 'place', place, from: PLACE.firstAt, boss: true }]
+    const species: readonly EnemyId[] = PLACES[place].species
+    if (!species.includes(id)) return []
+    const stage = STAGES.findIndex((s) => s.cast.includes(def.tier ?? 1))
+    return [{ kind: 'place', place, from: Math.max(PLACE.firstAt, STAGES[stage - 1]?.until ?? 0), boss: false }]
+  })
   const summoned = (Object.keys(SUMMONS) as Array<keyof typeof SUMMONS>)
     .filter((by) => SUMMONS[by].includes(id))
     .map((by): Appearance => ({ kind: 'summoned', by }))
-  return [...windows, ...events, ...rift, ...reaper, ...summoned]
+  return [...windows, ...events, ...rift, ...reaper, ...placed, ...summoned]
 }
 
 /** `m:ss` run clock, as shown on the HUD. */

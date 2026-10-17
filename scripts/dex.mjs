@@ -39,9 +39,11 @@ export const CRITTERS = [52]
 export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483, 380, 381, 386]
 /** Arceus, the endless mode's reaper. */
 export const REAPER = [493]
-export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER])]
-/** Species that can roll shiny: the player lines, regular enemies and rift legendaries. */
-export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS])
+/** Places' bosses (src/data/places.ts): Spiritomb, out of the graveyard's Odd Keystone. It can roll shiny. */
+export const PLACE_BOSSES = [442]
+export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES])]
+/** Species that can roll shiny: the player lines, regular enemies, rift legendaries and places' bosses. */
+export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS, ...PLACE_BOSSES])
 
 /**
  * Alternate formes the game draws, by key, mapped to their SpriteCollab form id

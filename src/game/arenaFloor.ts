@@ -1,11 +1,12 @@
-import type { ArenaLayout, ArenaShape, ArenaStepRule, Circle, Pt } from '../data/arenas'
+import type { ArenaShape, ArenaStepRule, Circle, FloorPlan, Pt } from '../data/arenas'
 
 /**
- * Pure geometry of a rift arena's floor (`data/arenas.ts`): which shapes are
- * floor at a given age (the tide grows the holes, the crumbling edge shrinks
- * the floor), where water and lava are, and how to put someone who stepped
- * off back on the nearest bit of floor. Coordinates are relative to the arena
- * center. Only arithmetic and `Math.sqrt`, so every engine agrees.
+ * Pure geometry of a closed space's floor (a rift arena, `data/arenas.ts`, or
+ * a place's interior): which shapes are floor at a given age (the tide grows
+ * the holes, the crumbling edge shrinks the floor), where water and lava are,
+ * and how to put someone who stepped off back on the nearest bit of floor.
+ * Coordinates are relative to the space's center. Only arithmetic and
+ * `Math.sqrt`, so every engine agrees.
  */
 
 type Pos = { x: number; y: number }
@@ -32,10 +33,10 @@ const shrink = (s: ArenaShape, by: number): ArenaShape => {
 }
 
 /** The floor shapes at `steps` crumbles. */
-export const floorAt = (layout: ArenaLayout, steps: number) => layout.floor.map((s) => shrink(s, steps * (layout.crumble?.px ?? 0)))
+export const floorAt = (layout: FloorPlan, steps: number) => layout.floor.map((s) => shrink(s, steps * (layout.crumble?.px ?? 0)))
 
 /** The holes after `steps` rises of the tide. */
-export const holesAt = (layout: ArenaLayout, steps: number): readonly Circle[] =>
+export const holesAt = (layout: FloorPlan, steps: number): readonly Circle[] =>
   (layout.holes ?? []).map((h) => ({ ...h, r: h.r + steps * (layout.tide?.px ?? 0) }))
 
 /** Signed area sign of a polygon: which side of its edges is inside. */
@@ -139,7 +140,7 @@ const segDist = (x: number, y: number, [ax, ay]: Pt, [bx, by]: Pt) => {
 }
 
 /** How far (x, y) is inside the nearest lava river (positive = in it). */
-export const lavaDepth = (layout: ArenaLayout, x: number, y: number) => {
+export const lavaDepth = (layout: FloorPlan, x: number, y: number) => {
   let depth = -Infinity
   for (const lane of layout.lava ?? []) {
     for (let i = 1; i < lane.pts.length; i++) depth = Math.max(depth, lane.w / 2 - segDist(x, y, lane.pts[i - 1]!, lane.pts[i]!))
@@ -148,13 +149,13 @@ export const lavaDepth = (layout: ArenaLayout, x: number, y: number) => {
 }
 
 /** Whether (x, y) stands on a bridge. */
-export const onBridge = (layout: ArenaLayout, x: number, y: number) =>
+export const onBridge = (layout: FloorPlan, x: number, y: number) =>
   !!layout.bridges?.some((b) => Math.abs(x - b.x) <= b.w / 2 && Math.abs(y - b.y) <= b.h / 2)
 
 export type ArenaGround = 'land' | 'water' | 'lava'
 
 /** What the arena's ground is at (x, y). */
-export const arenaGround = (layout: ArenaLayout, x: number, y: number): ArenaGround => {
+export const arenaGround = (layout: FloorPlan, x: number, y: number): ArenaGround => {
   if (lavaDepth(layout, x, y) > 0 && !onBridge(layout, x, y)) return 'lava'
   const wet = layout.shallow?.some((s) => fits(s, x, y, 0)) && !layout.islands?.some((s) => fits(s, x, y, 0))
   return wet ? 'water' : 'land'

@@ -21,6 +21,8 @@ import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftPortal, warmArena } from './rift'
+import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings } from './places'
+import { roomOf } from '../game/room'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
@@ -316,6 +318,7 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   steel: ['#c8e0f8', 'rgba(104,136,200,0.3)'],
   aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
   grass: ['#78d850', 'rgba(112,208,72,0.28)'],
+  shadow: ['#a890e8', 'rgba(56,32,88,0.42)'],
   judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
 }
 
@@ -363,6 +366,7 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
       case 'dragon':
       case 'steel':
       case 'aero':
+      case 'shadow':
       case 'judgment':
         return blitCentered(ctx, HAZARD_FX[h.visual](), h.x, y + (Math.floor(h.age * 10) % 2))
       default:
@@ -636,13 +640,16 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const camY = Math.round(g.camera.y) + shakeY
 
   const fade = biomeFade(g)
+  const inside = g.place.inside
+  const indoors = roomOf(g) !== null
   if (g.rift.arena) drawArena(ctx, g.rift.arena, camX, camY, w, h, t)
+  else if (inside) drawPlaceFloor(ctx, inside, camX, camY, w, h, t)
   else drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
   const upcoming = biomeAt(g.time + BIOME_WARMUP)
   if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
   // One terrain sprite per frame at most: this biome's first, then the next one's.
   if (g.rift.arena) warmArena(g.rift.arena)
-  else if (!warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
+  else if (!inside && !warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
   // Scenery changes outfit halfway through the dissolve, like the breakables.
   const look = fade && fade.k < 0.5 ? fade.from : g.biome.id
   ctx.save()
@@ -655,9 +662,11 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
-  // Map events wait outside with the rest of the world while the player is in an arena.
-  if (!g.rift.arena) drawMapEvents(ctx, g, t)
-  if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
+  // Map events wait outside with the rest of the world while the player is in a room.
+  if (!indoors) drawMapEvents(ctx, g, t)
+  if (g.rift.portal && !indoors) drawRiftPortal(ctx, g.rift.portal, t)
+  drawEntranceGround(ctx, g, t)
+  drawPlaceGround(ctx, g, t)
   drawSpecialAura(ctx, g, t)
   drawMegaGround(ctx, g, camX, camY, t)
   drawTraitGround(ctx, g, visible)
@@ -674,7 +683,10 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     d === 'player' ? g.player.y : d === 'companion' ? (companion?.y ?? 0) : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
   drawables.sort((a, b) => depth(a) - depth(b))
 
+  // Nothing casts a shadow up in the sky.
+  const aloft = inside?.id === 'sky'
   for (const d of drawables) {
+    if (aloft) break
     if (d === 'player') {
       shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
       drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
@@ -696,6 +708,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
       drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
     }
   }
+  drawEntranceAir(ctx, g, t)
+  drawWings(ctx, g, t)
+  drawPlaceOver(ctx, g, camX, camY)
   drawSleep(ctx, g, t)
   drawTraitAir(ctx, g, visible)
 
@@ -710,7 +725,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
-  // Weather goes over the world but under damage numbers, so they stay readable in fog and glare.
+  // The cave's dark and the graveyard's night, then the weather, over the world but under damage numbers.
+  drawPlaceDark(ctx, g, camX, camY, t)
   drawWeather(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)
@@ -727,8 +743,14 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
-  drawRiftArrow(ctx, g, camX, camY, t)
-  if (!g.rift.arena) drawMapEventMarkers(ctx, g, t)
+  if (!inside) drawRiftArrow(ctx, g, camX, camY, t)
+  drawPlaceArrow(ctx, g, camX, camY, t)
+  if (!indoors) drawMapEventMarkers(ctx, g, t)
   drawFlash(ctx, g)
+  // A dungeon floor's title card holds the screen black (the shell writes the floor over it).
+  if (inside && inside.intro > 0) {
+    ctx.fillStyle = '#000000'
+    ctx.fillRect(0, 0, w, h)
+  }
   if (g.phase === 'evolving') drawEvolution(ctx, g, t)
 }

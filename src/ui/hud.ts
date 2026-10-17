@@ -14,6 +14,7 @@ import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
+import { createPlaceCard } from './placeCard'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
 import { createMovePad } from './movePad'
@@ -34,6 +35,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const mega = createMegaControls(onMega)
   const lunge = createLungeControls(onLunge)
   const rift = createRiftHud()
+  const card = createPlaceCard()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
   const clock = h('span')
@@ -83,6 +85,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     ),
     boss,
     rift.el,
+    card.el,
     h(
       'div',
       { class: 'status box' },
@@ -165,6 +168,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     mega.update(g)
     lunge.update(g)
     rift.update(g)
+    card.update(g)
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
     if (key !== loadoutKey) {

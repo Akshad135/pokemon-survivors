@@ -11,6 +11,7 @@ import { leadTime } from './horde'
 import { createStatus, statusAttack, statusPace } from './status'
 import { enemyGroundPace } from './terrain'
 import { createTraitState, isAirborne, traitPace } from './traits'
+import { dungeonNav } from './dungeon'
 import type { Enemy, EnemyBehavior, Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -94,9 +95,16 @@ export const despawnEnemy = (e: Enemy) => {
   e.dying = FAINT_TIME
 }
 
+/** Where a walker heads instead of the player (a dungeon's corridor), reused every tick. */
+const waypoint = { x: 0, y: 0 }
+
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
   const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
+  // In the cave's dungeon, walkers follow the corridors toward the player instead of the wall between them.
+  const inside = g.place.inside
+  const cave = inside?.id === 'cave' && inside.state.plan ? inside : null
+  const nav = cave?.state.plan ? dungeonNav(cave.state.plan, p.x - cave.x, p.y - cave.y) : null
 
   for (const e of g.enemies) {
     if (e.dying >= 0) {
@@ -126,6 +134,10 @@ export const updateEnemies = (g: Game, dt: number) => {
       } else if (e.fight) {
         const hold = STANCES[e.fight.stance].hold
         speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+      }
+      if (nav && cave && nav(e.x - cave.x, e.y - cave.y, waypoint)) {
+        tx = cave.x + waypoint.x
+        ty = cave.y + waypoint.y
       }
       const d = dirTo(e.x, e.y, tx, ty)
       vx = d.x * speed

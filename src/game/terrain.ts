@@ -1,9 +1,11 @@
 import { hash2, weightedPick } from '../engine/rng'
 import { PLAYABLE } from '../data/hatchlings'
-import { ARENA_LAYOUTS, type ArenaPiece } from '../data/arenas'
+import type { ArenaPiece } from '../data/arenas'
 import { CLIFFS, CLUSTER_SLOTS, LAKES, SOLID_FOOT, TERRAIN, type Ellipse, type FeatureKind, type SolidKind } from '../data/terrain'
+import type { PlacePiece } from '../data/places'
 import { arenaGround } from './arenaFloor'
 import { burst } from './effects'
+import { roomOf } from './room'
 import { isAirborne } from './traits'
 import type { Enemy, Game } from './types'
 
@@ -13,11 +15,13 @@ import type { Enemy, Game } from './types'
  * the run's seed, so the replay rebuilds the same map. Solids push walkers
  * out and break enemy shots; lakes slow walkers (ice makes the player slide).
  * Flyers, ghosts and bosses ignore all of it, and so do the player's attacks.
- * Inside a rift arena the arena's own scenery and ground take the map's place.
+ * A place's entrance (`placeEntrance.ts`) stands on the map like any feature.
+ * Inside a room (a rift arena, a place's interior) its own scenery and ground
+ * take the map's place.
  */
 
 /** Something that blocks, with its footprint in world px. */
-export type Solid = { kind: SolidKind | ArenaPiece; x: number; y: number; variant: number; foot: readonly Ellipse[] }
+export type Solid = { kind: SolidKind | ArenaPiece | PlacePiece; x: number; y: number; variant: number; foot: readonly Ellipse[] }
 export type Lake = { x: number; y: number; variant: number; foot: readonly Ellipse[] }
 export type Feature = { solids: readonly Solid[]; lake: Lake | null }
 
@@ -102,13 +106,19 @@ const cell = (g: Game, cx: number, cy: number) => {
 
 const NEAR: Feature[] = []
 
+/** How far a place's entrance reaches from its door, for gathering the features near a spot. */
+const ENTRANCE_REACH = 96
+
 /** Features whose cells overlap the box around (x, y). Reuses one array: copy it if you keep it. */
 export const featuresNear = (g: Game, x: number, y: number, rx: number, ry = rx): readonly Feature[] => {
   NEAR.length = 0
-  if (g.rift.arena) {
-    NEAR.push(g.rift.arena.terrain)
+  const room = roomOf(g)
+  if (room) {
+    NEAR.push(room.terrain)
     return NEAR
   }
+  const door = g.place.entrance
+  if (door && Math.abs(door.x - x) < rx + ENTRANCE_REACH && Math.abs(door.y - y) < ry + ENTRANCE_REACH) NEAR.push(door.terrain)
   const C = TERRAIN.cell
   for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
     for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
@@ -159,7 +169,7 @@ export const inSolid = (g: Game, x: number, y: number, r: number) => featuresNea
 
 /** Moves a spot (map event, portal) out of solids and lakes, so it lands on open ground. */
 export const clearSpot = (g: Game, o: Pos, r: number) => {
-  if (g.rift.arena) return o
+  if (roomOf(g)) return o
   for (let pass = 0; pass < 3; pass++) {
     for (const f of featuresNear(g, o.x, o.y, r)) {
       for (const s of f.solids) for (const e of s.foot) pushOut(o, r, e)
@@ -175,10 +185,10 @@ export const isOpen = (g: Game, x: number, y: number, r: number) =>
 
 export type Ground = 'land' | 'water' | 'ice' | 'lava'
 
-/** What the ground is at (x, y): lakes are water, or ice in the snow; an arena has its own (`arenaGround`). */
+/** What the ground is at (x, y): lakes are water, or ice in the snow; a room has its own (`arenaGround`). */
 export const groundAt = (g: Game, x: number, y: number): Ground => {
-  const arena = g.rift.arena
-  if (arena) return arenaGround(ARENA_LAYOUTS[arena.legend], x - arena.x, y - arena.y)
+  const room = roomOf(g)
+  if (room) return arenaGround(room.layout, x - room.x, y - room.y)
   for (const f of featuresNear(g, x, y, 0)) if (f.lake && inside(f.lake.foot, x, y, 0)) return g.biome.id === 'snow' ? 'ice' : 'water'
   return 'land'
 }
@@ -222,7 +232,7 @@ const SHOT_SPARKS = ['#ffffff', '#d8d0c0', '#a89c90'] as const
 /** Keeps walkers out of solids, breaks enemy shots on them and drops cells far behind the player. */
 export const updateTerrain = (g: Game, dt: number) => {
   const p = g.player
-  if (!g.rift.arena && Math.floor(g.time) !== Math.floor(g.time - dt)) {
+  if (!roomOf(g) && Math.floor(g.time) !== Math.floor(g.time - dt)) {
     const C = TERRAIN.cell
     const pcx = Math.floor(p.x / C)
     const pcy = Math.floor(p.y / C)

@@ -1,4 +1,5 @@
 import type { BossStance } from '../../data/bosses'
+import type { PlaceId } from '../../data/places'
 import type { Drop } from '../../data/consumables'
 import type { TraitId } from '../../data/traits'
 import type { TrioId } from '../../data/waves'
@@ -103,6 +104,10 @@ export const sitePt = {
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
     trio: (at: string, trio: string) => `Chefe em ${at} nas partidas que sorteiam o trio ${trio} (1 em 3)`,
     rift: (from: string) => `Atrás de uma fenda lendária, a partir de ${from} (arena opcional)`,
+    /** `name` comes with its preposition (`places`). */
+    place: (name: string, from: string) => `Vive ${name}, a partir de ${from} (lugar opcional)`,
+    placeBoss: (name: string, from: string) => `Desperta da Pedra Peculiar ${name}, a partir de ${from}`,
+    places: { cave: 'na Caverna Escura', graveyard: 'no Cemitério Assombrado', sky: 'no céu, acima das nuvens (só para quem voa)' } satisfies Record<PlaceId, string>,
     reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
@@ -414,6 +419,7 @@ export const sitePt = {
         boss: 'Onix, Snorlax e o trio lendário',
         chest: 'Baú trancado',
         rift: 'Lendário de uma fenda',
+        place: 'Baú da caverna e Spiritomb, no cemitério',
         final: 'Mewtwo e o mítico raro (Mew, Celebi ou Jirachi)',
         reaper: 'Arceus, no modo sem fim',
       } satisfies Record<EggSource, string>,

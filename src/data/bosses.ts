@@ -1,7 +1,7 @@
 import type { EnemyId } from './enemies'
 
 /** How an enemy hazard looks (and sounds when it lands). */
-export type HazardVisual = 'rock' | 'slam' | 'thunder' | 'ice' | 'fire' | 'psychic' | 'water' | 'dragon' | 'steel' | 'aero' | 'grass' | 'judgment'
+export type HazardVisual = 'rock' | 'slam' | 'thunder' | 'ice' | 'fire' | 'psychic' | 'water' | 'dragon' | 'steel' | 'aero' | 'grass' | 'shadow' | 'judgment'
 
 /**
  * A wave boss fights in two stances it swaps every few seconds (`BOSS_RAGE.stance`):
@@ -190,6 +190,12 @@ export const BOSS_PATTERNS: Partial<Record<EnemyId, readonly BossPattern[]>> = {
     { kind: 'ring', every: 3.2, count: 20, speed: 100, radius: 5, damage: 22, visual: 'psychic' },
     { kind: 'strikes', every: 3.6, target: 'player', count: 6, spread: 90, radius: 13, delay: 1.2, damage: 22, visual: 'rock' },
     { kind: 'strikes', every: 6, target: 'self', count: 1, spread: 0, radius: 56, delay: 1.3, damage: 26, visual: 'psychic' },
+  ],
+  /** Spiritomb, the graveyard's boss (`data/places.ts`): Shadow Ball rings, Hex on the player and Dark Pulse around itself. */
+  spiritomb: [
+    { kind: 'ring', every: 3.4, count: 10, speed: 68, radius: 5, damage: 16, visual: 'shadow' },
+    { kind: 'strikes', every: 4, target: 'player', count: 3, spread: 46, radius: 14, delay: 1.1, damage: 18, visual: 'shadow' },
+    { kind: 'strikes', every: 6, target: 'self', count: 1, spread: 0, radius: 46, delay: 1.3, damage: 20, visual: 'shadow' },
   ],
   /** The reaper's Judgment: a storm of light on the player and wide rings. */
   arceus: [

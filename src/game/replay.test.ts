@@ -5,6 +5,8 @@ import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
+import { enterPlace } from './placeInterior'
+import { GRAVEYARD, PLACE_IDS } from '../data/places'
 import type { Game } from './types'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
@@ -135,6 +137,32 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it.each(PLACE_IDS)('re-simulate a run through the %s, its own spawns and rules included', (id) => {
+    // The graveyard one spirit short, so Spiritomb wakes and fights inside the replay.
+    const inside = (g: Game) => {
+      g.time = 200
+      enterPlace(g, id, 0, 0)
+      if (g.place.inside?.id === 'graveyard') g.place.inside.state.spirits = GRAVEYARD.spirits - 1
+    }
+    const start: ReplayStart = { ...START, starter: 'pidgey' }
+    const { g, replay } = play(250, start, 300, inside)
+    expect(g.place.visited).toEqual([id])
+    const staged = startGame(start)
+    inside(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate an entrance the director opens on its own', () => {
+    const early = (g: Game) => {
+      g.place.nextAt = 3
+    }
+    const { g, replay } = play(20, START, 300, early)
+    expect(g.place.offered.length).toBe(1)
+    const staged = startGame(START)
+    early(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
   })
 
   it('give a run played on another seed away', () => {

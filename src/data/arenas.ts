@@ -37,7 +37,11 @@ export type ArenaStepRule = { every: number; warn: number; max: number; px: numb
 
 export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs' | 'sand' | 'craters'
 
-export type ArenaLayout = {
+/**
+ * The ground of a closed space (a rift's arena, a place's interior): the floor
+ * everyone keeps to and where water and lava are. `game/arenaFloor.ts` reads it.
+ */
+export type FloorPlan = {
   floor: readonly ArenaShape[]
   /** Cut out of the floor (deep water): only flyers and swimmers cross it. */
   holes?: readonly Circle[]
@@ -47,11 +51,14 @@ export type ArenaLayout = {
   /** Lava rivers that burn walkers (Fire types are fine), crossed on the bridges. */
   lava?: readonly { pts: readonly Pt[]; w: number }[]
   bridges?: readonly { x: number; y: number; w: number; h: number }[]
-  solids: readonly { piece: ArenaPiece; x: number; y: number }[]
   /** The holes grow by `px` each step (Kyogre's tide). */
   tide?: ArenaStepRule
   /** The floor shrinks toward the center by `px` each step (Sky Pillar crumbling). */
   crumble?: ArenaStepRule
+}
+
+export type ArenaLayout = FloorPlan & {
+  solids: readonly { piece: ArenaPiece; x: number; y: number }[]
   pattern: FloorPattern
   /** Where the legendary and the player appear. */
   boss: Pt

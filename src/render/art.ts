@@ -293,6 +293,8 @@ export const HAZARD_FX = {
   dragon: lazy(() => art(SMALL_ORB, { 1: '#4820a8', 2: '#a070f8', 3: '#f0e0ff' }, '#180840')),
   steel: lazy(() => art(SMALL_ORB, { 1: '#4868a8', 2: '#a8c8f0', 3: '#ffffff' }, '#182040')),
   aero: lazy(() => art(SMALL_ORB, { 1: '#7890c0', 2: '#d8e8f8', 3: '#ffffff' }, '#283858')),
+  /** Shadow Ball: a dark orb with a violet glint. */
+  shadow: lazy(() => art(SMALL_ORB, { 1: '#201030', 2: '#5c3c88', 3: '#c8b0f8' }, '#08040c')),
   judgment: lazy(() => art(SMALL_ORB, { 1: '#c09020', 2: '#f8e070', 3: '#ffffff' }, '#483008')),
 }
 
