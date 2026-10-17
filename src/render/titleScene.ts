@@ -48,8 +48,8 @@ type Wanderer = {
   id: number
   /** Its answer to the partner's hello, while it plays (`t` seconds in). */
   greet: { kind: Reaction; t: number; from: Dir8 } | null
-  /** Seconds left trailing behind the partner (after a `love` greeting). */
-  follow: number
+  /** Scene time until which it trails behind the partner (after a `love` greeting). */
+  followUntil: number
   /** Scene time from which the partner can greet it again. */
   calmAt: number
 }
@@ -159,7 +159,7 @@ export const createTitleScene = (seed: number): TitleScene => {
 
 /** The lobby's partner takes its place on the stage (`null`: the lobby closed, it's gone). */
 export const meetPartner = (s: TitleScene, partner: { dex: Dex; shiny: boolean } | null) => {
-  for (const wd of s.wanderers) wd.follow = 0
+  for (const wd of s.wanderers) wd.followUntil = 0
   s.partner = partner && {
     ...partner,
     state: 'home',
@@ -238,7 +238,7 @@ const spawn = (s: TitleScene, w: number, h: number) => {
     bornAt: s.time,
     id: s.spawned++,
     greet: null,
-    follow: 0,
+    followUntil: 0,
     calmAt: 0,
   }
   if (s.time < FILL_TIME) {
@@ -325,9 +325,11 @@ const stepPartner = (s: TitleScene, p: Partner, dt: number, w: number, h: number
   }
 }
 
+const following = (s: TitleScene, wd: Wanderer) => s.time < wd.followUntil
+
 /** The partner says hello to `wd`: it stops, turns to face it and answers (a cry, an emote and what its reaction does). */
 const greet = (s: TitleScene, p: Partner, wd: Wanderer) => {
-  const followers = s.wanderers.reduce((n, o) => n + (o.follow > 0 ? 1 : 0), 0)
+  const followers = s.wanderers.reduce((n, o) => n + (following(s, o) ? 1 : 0), 0)
   // Its own species always loves the partner.
   let kind: Reaction = wd.dex === p.dex ? 'love' : weightedPick(s.rng, REACTION_WEIGHTS)
   if (kind === 'love' && followers >= MAX_FOLLOWERS) kind = 'hop'
@@ -359,17 +361,27 @@ const react = (s: TitleScene, wd: Wanderer, dt: number) => {
   }
   if (g.t < REACTIONS[g.kind].time) return
   if (g.kind === 'spin') wd.dir = g.from
-  if (g.kind === 'love' && p) wd.follow = FOLLOW_TIME
+  if (g.kind === 'love' && p) wd.followUntil = s.time + FOLLOW_TIME
   wd.greet = null
   wd.vx = 0
   wd.vy = 0
-  wd.timer = g.kind === 'shy' ? 0 : range(s.rng, 0.6, 1.4)
+  wd.timer = g.kind === 'shy' || g.kind === 'love' ? 0 : range(s.rng, 0.6, 1.4)
 }
 
-/** Steps `wd` onto its spot in the partner's trail, `rank` places behind it. */
-const tagAlong = (wd: Wanderer, p: Partner, rank: number, dt: number) => {
-  wd.follow -= dt
-  const spot = p.trail[p.trail.length - 1 - (rank + 1) * TRAIL_GAP] ?? p.trail[0]
+/**
+ * `wd`'s place in the partner's line: followers queue in the order they joined,
+ * never by where they stand (the draw sorts `wanderers` by y every frame), so
+ * two of them can't keep trading spots and walking into each other.
+ */
+const lineRank = (s: TitleScene, wd: Wanderer) =>
+  s.wanderers.reduce(
+    (n, o) => n + (following(s, o) && (o.followUntil < wd.followUntil || (o.followUntil === wd.followUntil && o.id < wd.id)) ? 1 : 0),
+    0,
+  )
+
+/** Steps `wd` onto its spot in the partner's trail, `rank` places behind it; it waits where it is until the trail reaches that far. */
+const tagAlong = (wd: Wanderer, p: Partner, rank: number) => {
+  const spot = p.trail[p.trail.length - 1 - (rank + 1) * TRAIL_GAP]
   const dx = spot ? spot.x - wd.x : 0
   const dy = spot ? spot.y - wd.y : 0
   const d = Math.hypot(dx, dy)
@@ -382,7 +394,6 @@ const tagAlong = (wd: Wanderer, p: Partner, rank: number, dt: number) => {
     wd.vy = (dy / d) * speed
     wd.dir = dir8(dx, dy)
   }
-  if (wd.follow <= 0) wd.timer = 0
 }
 
 /** Advances the camera, the partner and every wanderer by `dt` seconds for a `w`×`h` view. */
@@ -397,17 +408,16 @@ export const stepTitleScene = (s: TitleScene, dt: number, w: number, h: number) 
   if (p) stepPartner(s, p, dt, w, h)
   const { cam, rng } = s
   const roaming = p && p.state !== 'home' ? p : null
-  let rank = 0
   for (const wd of s.wanderers) {
     if (wd.greet) react(s, wd, dt)
-    else if (wd.follow > 0 && p) tagAlong(wd, p, rank++, dt)
+    else if (following(s, wd) && p) tagAlong(wd, p, lineRank(s, wd))
     else if ((wd.timer -= dt) <= 0) {
       const curious = roaming && Math.hypot(roaming.x - wd.x, roaming.y - wd.y) < CURIOUS_RANGE && s.time >= wd.calmAt && chance(rng, 0.4)
       nextLeg(rng, wd, curious ? roaming : undefined)
     }
     wd.x += wd.vx * dt
     wd.y += wd.vy * dt
-    if (roaming && !wd.greet && wd.follow <= 0 && s.time >= wd.calmAt && s.time - wd.bornAt > FADE_IN && Math.hypot(wd.x - roaming.x, wd.y - roaming.y) < GREET_RANGE) {
+    if (roaming && !wd.greet && !following(s, wd) && s.time >= wd.calmAt && s.time - wd.bornAt > FADE_IN && Math.hypot(wd.x - roaming.x, wd.y - roaming.y) < GREET_RANGE) {
       greet(s, roaming, wd)
     }
   }
