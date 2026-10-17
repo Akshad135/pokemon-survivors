@@ -247,6 +247,9 @@ export const pt = {
     restored: 'Controles de volta ao padrão.',
     fixed: 'As setas e o ESC sempre funcionam. O analógico esquerdo sempre move.',
     touchNote: 'No toque, o joystick e os botões da tela não mudam. Conecte um teclado ou controle para remapear.',
+    /** The gamepads the browser shows the game, by name. */
+    padFound: (names: string) => `Controle conectado: *${names}*`,
+    padMissing: 'Nenhum controle detectado. Aperte um botão do controle: o navegador só mostra o controle depois disso. Se ele não aparecer, reconecte-o ou teste outro navegador.',
     unbound: '—',
     back: 'Voltar',
     hintKeys: '↑ ↓ escolher · ← → coluna · ENTER trocar · ESC voltar',

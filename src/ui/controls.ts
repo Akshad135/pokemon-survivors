@@ -1,63 +1,12 @@
 import { playSfx } from '../engine/audio'
 import { ACTION_IDS, DEFAULT_BINDINGS, rebind, RESERVED_KEYS, type Action, type Device } from '../engine/bindings'
+import { padFamily, padName } from '../engine/gamepad'
 import type { Input, RawPress } from '../engine/input'
 import { t } from '../i18n'
 import { h, later, rich, setText } from './dom'
+import { keyLabel, padLabel, setGlyphText } from './inputLabels'
 import { hint, menu, type Screen } from './screens'
 import { settings, updateSettings } from './settings'
-
-/* ---------------- Labels ---------------- */
-
-const KEY_NAMES: Partial<Record<string, string>> = {
-  Enter: 'ENTER',
-  Backspace: 'BKSP',
-  Tab: 'TAB',
-  CapsLock: 'CAPS',
-  ShiftLeft: 'SHIFT',
-  ShiftRight: 'SHIFT',
-  ControlLeft: 'CTRL',
-  ControlRight: 'CTRL',
-  AltLeft: 'ALT',
-  AltRight: 'ALT',
-  MetaLeft: 'META',
-  MetaRight: 'META',
-  ArrowUp: '↑',
-  ArrowDown: '↓',
-  ArrowLeft: '←',
-  ArrowRight: '→',
-  Minus: '-',
-  Equal: '=',
-  BracketLeft: '[',
-  BracketRight: ']',
-  Backslash: '\\',
-  IntlBackslash: '\\',
-  Semicolon: ';',
-  Quote: "'",
-  Backquote: '`',
-  Comma: ',',
-  Period: '.',
-  Slash: '/',
-}
-
-/** A `KeyboardEvent.code` as printed on the key (`KeyW` → W, `Numpad8` → NUM 8). */
-export const keyLabel = (code: string) => {
-  if (code === 'Space') return t().spaceKey
-  const letter = /^(?:Key|Digit)(.)$/.exec(code)?.[1]
-  if (letter) return letter
-  if (code.startsWith('Numpad')) return `NUM ${code.slice(6).toUpperCase()}`
-  return KEY_NAMES[code] ?? code.toUpperCase()
-}
-
-/** Standard-mapping button names, Xbox style (the most common layout on PC). */
-const PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'SELECT', 'START', 'L3', 'R3', '↑', '↓', '←', '→', 'HOME']
-
-export const padLabel = (button: number) => PAD_NAMES[button] ?? `#${button}`
-
-/** The key bound to an action, for the HUD badges (Space, E, Shift by default). */
-export const boundKey = (action: Action) => {
-  const code = settings().controls.key[action]
-  return code === null ? t().controls.unbound : keyLabel(code)
-}
 
 /* ---------------- Screen ---------------- */
 
@@ -67,15 +16,39 @@ export const boundKey = (action: Action) => {
  * for the new key or button, from either device; Esc cancels the wait. Taking a key from another
  * action swaps them (see `rebind`) and says so. Changes apply and persist at once.
  * Esc or Backspace close it, then `onClose` runs after the key dispatch.
+ * A line on top names the gamepads the browser shows the game (or says how to
+ * make one appear), and the gamepad column names the buttons of that pad's layout.
  */
 export const openControls = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
   const m = t().controls
-  let col: Device = 'key'
+  // Opened with the pad: its column first.
+  let col: Device = input.activePad() === null ? 'key' : 'pad'
   let waiting: { action: Action; device: Device; stop: () => void } | null = null
   let nav: ReturnType<typeof menu> | null = null
 
   const status = h('p', { class: 'controls-status', 'aria-live': 'polite' })
   const say = (text: string) => status.replaceChildren(rich(text))
+
+  /** The layout the gamepad column names: the pad in use, else the first one connected, else Xbox. */
+  const family = () => {
+    const id = input.activePad() ?? input.pads()[0]
+    return id === undefined ? 'xbox' : padFamily(id)
+  }
+  const label = (button: number) => padLabel(button, family())
+
+  // A pad shows up on its first press, so the line follows the pads while the screen is open.
+  const padLine = h('p', { class: 'controls-pad', 'aria-live': 'polite' })
+  let shown = ''
+  const watchPads = () => {
+    const ids = input.pads()
+    const seen = `${ids.join('|')}>${family()}`
+    if (seen === shown) return
+    shown = seen
+    padLine.classList.toggle('missing', ids.length === 0)
+    padLine.replaceChildren(rich(ids.length === 0 ? m.padMissing : m.padFound([...new Set(ids.map(padName))].join(' · '))))
+    sync()
+  }
+  const padTimer = setInterval(watchPads, 250)
 
   const lines = ACTION_IDS.map((action) => {
     const cells = {
@@ -101,7 +74,7 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
       const k = key[line.action]
       const p = pad[line.action]
       setText(line.cells.key, k === null ? m.unbound : keyLabel(k))
-      setText(line.cells.pad, p === null ? m.unbound : padLabel(p))
+      setGlyphText(line.cells.pad, p === null ? m.unbound : label(p))
       for (const device of ['key', 'pad'] as const) {
         const cell = line.cells[device]
         cell.classList.toggle('focus', nav?.index === lines.indexOf(line) && col === device)
@@ -120,15 +93,15 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
   /** Applies a captured key or button and reports the actions it was taken from. */
   const assign = (action: Action, press: RawPress) => {
     const controls = settings().controls
-    const label = press.device === 'key' ? keyLabel(press.code) : padLabel(press.button)
+    const name = press.device === 'key' ? keyLabel(press.code) : label(press.button)
     if (press.device === 'key') {
       const { table, moved } = rebind(controls.key, 'key', action, press.code)
       updateSettings({ controls: { ...controls, key: table } })
-      return moved.map((x) => m.moved(label, m.actions[x.action], x.to === null ? null : keyLabel(x.to)))
+      return moved.map((x) => m.moved(name, m.actions[x.action], x.to === null ? null : keyLabel(x.to)))
     }
     const { table, moved } = rebind(controls.pad, 'pad', action, press.button)
     updateSettings({ controls: { ...controls, pad: table } })
-    return moved.map((x) => m.moved(label, m.actions[x.action], x.to === null ? null : padLabel(x.to)))
+    return moved.map((x) => m.moved(name, m.actions[x.action], x.to === null ? null : label(x.to)))
   }
 
   /**
@@ -144,7 +117,7 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
       col = press.device
       const notes = assign(action, press)
       playSfx('select')
-      stopWaiting(notes.join(' ') || m.bound(m.actions[action], press.device === 'key' ? keyLabel(press.code) : padLabel(press.button)))
+      stopWaiting(notes.join(' ') || m.bound(m.actions[action], press.device === 'key' ? keyLabel(press.code) : label(press.button)))
     })
     waiting = { action, device, stop }
     playSfx('move')
@@ -195,6 +168,7 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
       { class: 'dialog box pop settings controls' },
       h('div', { class: 'dialog-title' }, m.title),
       h('p', { class: 'controls-note touch-only' }, m.touchNote),
+      padLine,
       h('div', { class: 'control-row control-head', 'aria-hidden': 'true' }, h('span'), h('span', {}, m.keyboard), h('span', {}, m.gamepad)),
       h('div', { class: 'controls-list' }, ...lines.map((l) => l.el)),
       status,
@@ -204,6 +178,7 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
   )
 
   const dispose = () => {
+    clearInterval(padTimer)
     waiting?.stop()
     nav?.off()
     offKeys()
@@ -211,6 +186,7 @@ export const openControls = (root: HTMLElement, input: Input, onClose: () => voi
   }
 
   say(m.fixed)
+  watchPads()
   sync()
   root.append(el)
   return { el, dispose }

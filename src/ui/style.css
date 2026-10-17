@@ -177,6 +177,38 @@ button {
   }
 }
 
+/* A gamepad in use (`data-input="pad"`, see ui/inputLabels.ts): its hints replace the
+   keyboard and touch ones, and keyboard-only chips (shortcuts, 1-3, the WASD keycaps) step aside. */
+.pad-only {
+  display: none;
+}
+
+:root[data-input='pad'] .pad-only {
+  display: inline;
+}
+
+:root[data-input='pad'] :is(.keys-only, .touch-only, .key-hint, .offer-key, .move-pad) {
+  display: none;
+}
+
+/* ← and → as Press Start 2P's ↑ turned: the font has no sideways arrows (see `glyphText`). */
+.side-arrow {
+  display: inline-block;
+  line-height: 1;
+  transform: rotate(90deg);
+}
+
+.side-arrow.left {
+  transform: rotate(-90deg);
+}
+
+/* PlayStation's ✕ ○ □ △: a 10 px icon around an 8 px glyph, so the glyph is one letter tall. */
+.pad-glyph {
+  height: 1.25em;
+  vertical-align: -0.2em;
+  image-rendering: pixelated;
+}
+
 .dialog .hint {
   color: #707088;
   text-shadow: none;
@@ -5228,9 +5260,25 @@ button {
   color: #4a5478;
 }
 
+/* The gamepads the browser shows the game, or how to make one appear. */
+.controls-pad {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #2f8a4a;
+}
+
+.controls-pad.missing {
+  color: #b8562a;
+}
+
 @media (hover: none) and (pointer: coarse) {
   .controls-note {
     display: block;
+  }
+  /* Touch players without a pad already have the note. */
+  .controls-pad.missing {
+    display: none;
   }
 }
 
@@ -5252,6 +5300,7 @@ button {
     padding: 10px 16px;
   }
   .controls-note,
+  .controls-pad,
   .controls-status {
     min-height: 0;
     margin: 0;

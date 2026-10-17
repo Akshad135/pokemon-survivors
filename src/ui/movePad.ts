@@ -1,5 +1,5 @@
 import { ACTIONS } from '../engine/bindings'
-import { boundKey } from './controls'
+import { boundKey } from './inputLabels'
 import { h, setText } from './dom'
 
 /** The keycaps in inverted-T order, with the arrow that moves the same way (it always does, see `RESERVED_KEYS`). */

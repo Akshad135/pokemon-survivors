@@ -191,6 +191,8 @@ export const en: Messages = {
     restored: 'Controls back to the defaults.',
     fixed: 'The arrows and ESC always work. The left stick always moves.',
     touchNote: 'On touch, the joystick and the on-screen buttons stay the same. Connect a keyboard or gamepad to remap.',
+    padFound: (names: string) => `Gamepad connected: *${names}*`,
+    padMissing: "No gamepad detected. Press a button on it: the browser only shows a gamepad after that. If it still doesn't show up, reconnect it or try another browser.",
     unbound: '—',
     back: 'Back',
     hintKeys: '↑ ↓ choose · ← → column · ENTER change · ESC back',

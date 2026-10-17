@@ -4,7 +4,7 @@ import { STANCES } from '../game/stance'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { specialIcon, stanceIcon } from '../render/specialFx'
-import { boundKey } from './controls'
+import { boundLabel, setGlyphText } from './inputLabels'
 import { h, setStyle, setText } from './dom'
 
 /**
@@ -36,7 +36,7 @@ export const createSpecialControls = (onPress: () => void) => {
   const update = (g: Game) => {
     const r = gameSpecial(g)
     const s = g.special
-    setText(keyLabel, boundKey('special'))
+    setGlyphText(keyLabel, boundLabel('special'))
     const look = `${r.tier.name}|${s.stance}`
     if (key !== look) {
       key = look
