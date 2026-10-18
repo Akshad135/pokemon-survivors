@@ -183,6 +183,115 @@ export const FX = {
   snowflake: lazy(() => art(SNOWFLAKE, { 1: '#98d8f8', 2: '#ffffff' }, '#183048')),
 }
 
+/* ---------------- Verb moves (`render/verbFx.ts`) ---------------- */
+
+/** A small flame licking up from the ground: 1 rim, 2 flame, 3 light, 4 core. */
+const FLAME_LICK = ['...1...', '..12...', '..121..', '.1221..', '.12321.', '1233321', '1234321', '1233321', '.11111.']
+/** A ring of fire (Flame Wheel's icon). */
+const FIRE_RING = [
+  '....1111....', '..11222211..', '.1233333321.', '.123....421.', '123......321', '12........21',
+  '12........21', '123......321', '.124....321.', '.1233333321.', '..11222211..', '....1111....',
+]
+/** The sun gathering into a beam (Solar Beam's icon): 1 rays, 2 leaf green, 3 light, 4 white. */
+const SUN_BEAM = [
+  '.1..1........', '..1222.......', '1.233321.....', '.23444322222.', '1234444333333',
+  '.23444322222.', '1.233321.....', '..1222.......', '.1..1........',
+]
+/** A ball of brine: 1 rim, 2 sea, 3 light, 4 salt shine. */
+const BRINE_BALL = ['..111..', '.12321.', '1234321', '1233421', '1223321', '.12221.', '..111..']
+/** Brine's icon: the ball with salt crystals flying off. */
+const BRINE_ICON = ['.......5..', '..111.555.', '.12321.5..', '1234321...', '1233421.5.', '1223321...', '.12221..5.', '..111.....']
+/** Electro Ball: 1 rim, 2 yellow, 3 light, 4 white, 5 the bolt across it. */
+const ELECTRO = ['..11111..', '.1222221.', '122235221', '122355321', '123553321', '123533221', '122532221', '.1222221.', '..11111..']
+/** Venoshock's glob, dripping: 1 rim, 2 poison, 3 light, 4 toxic glint. */
+const GLOB = ['..111..', '.12221.', '1233221', '1234221', '1222221', '.12221.', '..1.1..']
+/** Self-Destruct's icon: a blast star. 1 red, 2 orange, 3 yellow, 4 white. */
+const BLAST = [
+  '.....1.....', '.1...1...1.', '..1.121.1..', '...12321...', '.112343211.', '11234443211',
+  '.112343211.', '...12321...', '..1.121.1..', '.1...1...1.', '.....1.....',
+]
+/** A feather: 1 rim, 2 vane, 3 shine, 4 quill. */
+const FEATHER = ['..1..', '.121.', '12321', '12321', '12321', '.121.', '.141.', '..4..', '..4..']
+/** Big fist pointing right (Focus Punch): 1 rim, 2 glove, 3 light, 4 knuckle line. */
+const BIG_FIST = [
+  '..11111111..', '.1222222221.', '123333333211', '123343434321', '123333333321',
+  '123333333321', '122333333221', '.1222222221.', '..11111111..',
+]
+/** Sucker Punch's shadow fist pointing right. */
+const SHADOW_FIST = ['..1111..', '.122221.', '12333311', '12333331', '12333321', '.1222221', '..11111.']
+/** Future Sight's eye: 1 rim, 2 iris ring, 3 glow, 4 pupil. */
+const EYE = ['...11111...', '.112222211.', '12223332221', '12233433221', '12223332221', '.112222211.', '...11111...']
+/** A bone: 1 rim, 2 bone, 3 shine. */
+const BONE = ['.11.......11.', '1321111111231', '.12222222221.', '1221111111221', '.11.......11.']
+/** A floating pointed stone (Stealth Rock): 1 rim, 2 stone, 3 light, 4 shade. */
+const POINTED_STONE = ['...1...', '..131..', '..1321.', '.13321.', '.132221', '1322241', '.12244.', '..1441.', '...11..']
+/** U-turn's icon: down, around and back up. */
+const U_ARROW = ['.1.....1..', '121...121.', '121..12221', '121....2..', '121....2..', '.121..21..', '..1222...'.padEnd(10, '.'), '...111....']
+/** Dragon Tail's icon: a scaled tail curling into a spade tip. */
+const TAIL_ICON = [
+  '.........11', '........121', '.......1231', '..111..1221', '.12221.121.', '1233221221.',
+  '1231.12221.', '121...111..', '.1.........',
+]
+/** Sheer Cold's icon: a crystal in a ring of frost. */
+const CRYSTAL = ['....1....', '...121...', '..12321..', '.1234321.', '123444321', '.1234321.', '..12321..', '...121...', '....1....']
+const FROST_RING = [
+  '...1.1.1...', '.1.......1.', '...........', '1.........1', '...........', '1.........1',
+  '...........', '1.........1', '...........', '.1.......1.', '...1.1.1...',
+]
+
+const FIRE = { 1: '#a82010', 2: '#e85818', 3: '#f8b030', 4: '#fff4b0' }
+const GRASS_SUN = { 1: '#f8e070', 2: '#58b838', 3: '#c8f088', 4: '#ffffff' }
+const BRINE_SEA = { 1: '#183878', 2: '#3868c8', 3: '#88b8f0', 4: '#ffffff', 5: '#ffffff' }
+const ELECTRIC = { 1: '#906800', 2: '#f8d030', 3: '#fff8a0', 4: '#ffffff', 5: '#ffffff' }
+const POISON = { 1: '#381040', 2: '#9038a0', 3: '#d080e0', 4: '#b8f060' }
+const FIGHT = { 1: '#481010', 2: '#c03028', 3: '#f88060', 4: '#902018' }
+const SHADOW = { 1: '#100810', 2: '#382838', 3: '#6a5068' }
+const PSYCHIC = { 1: '#801850', 2: '#f85888', 3: '#ffd0e8', 4: '#300818' }
+const BONE_WHITE = { 1: '#584830', 2: '#e8e0c8', 3: '#ffffff' }
+const STONE_GREY = { 1: '#30281c', 2: '#a89058', 3: '#e8d8a0', 4: '#685838' }
+const BUG = { 1: '#506010', 2: '#a8b820', 3: '#e0f080' }
+const DRAGON = { 1: '#200868', 2: '#7038f8', 3: '#b898ff' }
+
+/**
+ * A steel gear, `teeth` teeth around a hub with a hole, rotated by `turn`
+ * (radians): authored as pixel rows from its shape, so every frame stays crisp.
+ * 1 rim, 2 steel, 3 light (top half), 4 hole.
+ */
+const gearRows = (size: number, teeth: number, turn: number) => {
+  const c = (size - 1) / 2
+  const inside = (x: number, y: number) => {
+    const d = Math.hypot(x - c, y - c)
+    const a = Math.atan2(y - c, x - c) + turn
+    return d <= c * 0.72 || (d <= c + 0.3 && Math.cos(a * teeth) > 0.25)
+  }
+  return Array.from({ length: size }, (_, y) =>
+    Array.from({ length: size }, (_, x) => {
+      if (!inside(x, y)) return '.'
+      const d = Math.hypot(x - c, y - c)
+      if (d < c * 0.22) return '4'
+      const edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)
+      if (edge || Math.abs(d - c * 0.42) < 0.5) return '1'
+      return y < c ? '3' : '2'
+    }).join(''),
+  )
+}
+
+export const VERB_FX = {
+  flameLick: lazy(() => [art(FLAME_LICK, FIRE), fromStrings(FLAME_LICK, FIRE, { mirror: true })]),
+  brine: lazy(() => art(BRINE_BALL, BRINE_SEA, '#0c1c40')),
+  electro: lazy(() => art(ELECTRO, ELECTRIC, '#403000')),
+  glob: lazy(() => art(GLOB, POISON, '#200818')),
+  feather: lazy(() => art(FEATHER, { 1: '#6858b0', 2: '#e8e0f8', 3: '#ffffff', 4: '#a890f0' })),
+  bigFist: lazy(() => art(BIG_FIST, FIGHT, '#200808')),
+  shadowFist: lazy(() => art(SHADOW_FIST, SHADOW, '#e8e0f0')),
+  eye: lazy(() => art(EYE, PSYCHIC, '#200818')),
+  bone: lazy(() => art(BONE, BONE_WHITE, '#201810')),
+  stones: lazy(() => [art(POINTED_STONE, STONE_GREY, '#181008'), outlined(fromStrings(POINTED_STONE, STONE_GREY, { mirror: true }), '#181008')]),
+  /** Four turns of the gear (an eighth of a tooth apart each). */
+  gear: lazy(() => [0, 1, 2, 3].map((k) => art(gearRows(13, 8, (k * Math.PI) / 16), { 1: '#383848', 2: '#9898b0', 3: '#d8d8e8', 4: '#202028' }, '#101018'))),
+  crystal: lazy(() => art(CRYSTAL, ICE, '#183048')),
+}
+
 /* ---------------- Eggs ---------------- */
 
 /** 1 shade, 2 shell, 3 shine, 4 spots. */
@@ -429,6 +538,22 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   pinMissile: () => compose(10, 11, [[FX.pin(), 0, 0], [FX.pin(), 2, 3], [FX.pin(), 0, 6]]),
   megahorn: () => FX.horn(),
   dragonBreath: () => art(CONE, DRAGON_CONE, '#180840'),
+  flameWheel: () => art(FIRE_RING, FIRE, '#401008'),
+  solarBeam: () => art(SUN_BEAM, GRASS_SUN, '#183810'),
+  brine: () => art(BRINE_ICON, BRINE_SEA, '#0c1c40'),
+  electroBall: () => VERB_FX.electro(),
+  venoshock: () => VERB_FX.glob(),
+  selfDestruct: () => art(BLAST, FIRE, '#401008'),
+  roost: () => compose(9, 12, [[VERB_FX.feather(), 0, 0], [VERB_FX.feather(), 3, 1]]),
+  focusPunch: () => VERB_FX.bigFist(),
+  gyroBall: () => VERB_FX.gear()[0]!,
+  suckerPunch: () => VERB_FX.shadowFist(),
+  futureSight: () => VERB_FX.eye(),
+  bonemerang: () => VERB_FX.bone(),
+  stealthRock: () => compose(14, 12, [[VERB_FX.stones()[0]!, 0, 1], [VERB_FX.stones()[1]!, 5, 0]]),
+  uTurn: () => art(U_ARROW, BUG, '#283008'),
+  dragonTail: () => art(TAIL_ICON, DRAGON, '#100430'),
+  sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
 }
 

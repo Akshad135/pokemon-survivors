@@ -34,6 +34,7 @@ import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
 import type { BossFight } from './bossFight'
 import type { DamageBonus } from './kitRules'
+import type { MoveSound } from './moveVerbs'
 
 export type OwnedMove = {
   id: MoveId
@@ -182,6 +183,7 @@ export type Visual =
   | 'telegraph'
   | EvolvedVisual
   | TacticVisual
+  | VerbVisual
 
 /** What dealt the damage, for the results screen. */
 export type DamageSource = MoveId | 'special'
@@ -197,6 +199,12 @@ export type TacticVisual =
   | 'quick' | 'extremeSpeed' | 'shock' | 'thunderbolt' | 'hex'
   | 'spikes' | 'barbs' | 'spikesBlast' | 'barbsBlast'
   | 'wisp' | 'wispShot' | 'inferno' | 'infernoShot'
+
+/** The verb moves (`moveVerbs.ts`), drawn by `render/verbFx.ts`. */
+export type VerbVisual =
+  | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'
+  | 'roostGust' | 'focusPunch' | 'focusShock' | 'gyroBall' | 'suckerPunch' | 'futureSight' | 'bone' | 'stealthRock'
+  | 'uTurn' | 'dragonTail' | 'sheerCold'
 
 /** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
 export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
@@ -389,6 +397,8 @@ export type GameEvent =
   | { kind: 'shatter'; cause: 'execute' | 'freeze' }
   /** A guard window negated a hit. */
   | { kind: 'guard' }
+  /** A verb move asks for its sound (`moveVerbs.ts`). */
+  | { kind: 'moveSound'; sound: MoveSound }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }

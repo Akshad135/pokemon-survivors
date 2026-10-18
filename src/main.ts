@@ -38,6 +38,7 @@ import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
+import { learnDevTools } from './game/learnDev'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
@@ -718,6 +719,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
     case 'quake': return playSfx('quake', 150)
+    case 'moveSound': return playSfx(e.sound, 90)
     case 'special': {
       // A chain dash "releases" on every landing: a cut, not an explosion.
       if (e.phase === 'release') return playSfx(gameSpecial(g).def.kind === 'chain' ? 'slash' : 'specialBlast', 0)
@@ -1309,6 +1311,7 @@ if (import.meta.env.DEV) {
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),
+      ...learnDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

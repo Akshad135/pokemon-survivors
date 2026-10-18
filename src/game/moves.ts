@@ -13,6 +13,10 @@ import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
 import { scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
+import {
+  bonemerang, brine, dragonTail, electroBall, flameWheel, FOCUS, focusPunch, futureSight, gyroBall, roost, selfDestruct, sheerCold,
+  solarBeam, stealthRock, suckerPunch, uTurn, venoshock,
+} from './moveVerbs'
 
 /**
  * Moves are the weapons. Each level-up upgrade adds a delta to the move's
@@ -1077,6 +1081,275 @@ export const MOVES = {
       { amount: 2 },
     ],
     fire: (g, s) => breath(g, s, { move: 'dragonBreath', type: 'dragon', visual: 'dragonBreath' }, aimAngle(g, 200), s.amount),
+  },
+
+  /* ---------- Verb moves: each one adds a way to play (`moveVerbs.ts`) ---------- */
+
+  flameWheel: {
+    name: 'Flame Wheel',
+    type: 'fire',
+    base: stats({ damage: 8, cooldown: 0.5, duration: 1.6 }),
+    status: { kind: 'burn', chance: 0.25, duration: 2, power: 0.3 },
+    upgrades: [
+      { damage: 3 },
+      { duration: 0.6 },
+      { area: 0.2 },
+      { damage: 3, statusChance: 0.1 },
+      { duration: 0.6 },
+      { damage: 4 },
+      { area: 0.25, damage: 3 },
+    ],
+    fire: (g, s, owned) => flameWheel(g, s, owned),
+  },
+
+  solarBeam: {
+    name: 'Solar Beam',
+    type: 'grass',
+    base: stats({ damage: 30, cooldown: 4.2, amount: 1, duration: 0.6, knockback: 40 }),
+    upgrades: [
+      { damage: 8 },
+      { area: 0.15 },
+      { cooldown: -0.5 },
+      { damage: 10 },
+      { amount: 1 },
+      { area: 0.2 },
+      { damage: 12, cooldown: -0.4 },
+    ],
+    fire: (g, s, owned) => solarBeam(g, s, owned),
+  },
+
+  brine: {
+    name: 'Brine',
+    type: 'water',
+    base: stats({ damage: 16, cooldown: 1.5, amount: 1, knockback: 40 }),
+    upgrades: [
+      { amount: 1 },
+      { damage: 5 },
+      { cooldown: -0.2 },
+      { area: 0.25 },
+      { amount: 1 },
+      { damage: 7 },
+      { amount: 1, damage: 5 },
+    ],
+    fire: (g, s, owned) => brine(g, s, owned),
+  },
+
+  electroBall: {
+    name: 'Electro Ball',
+    type: 'electric',
+    base: stats({ damage: 18, cooldown: 1.6, amount: 1, speed: 180, pierce: 2, knockback: 50 }),
+    status: { kind: 'paralysis', chance: 0.2, duration: 1.2, power: 0 },
+    upgrades: [
+      { damage: 5 },
+      { pierce: 1 },
+      { cooldown: -0.2 },
+      { amount: 1 },
+      { damage: 6, statusChance: 0.1 },
+      { area: 0.25 },
+      { amount: 1, damage: 5 },
+    ],
+    fire: (g, s, owned) => electroBall(g, s, owned),
+  },
+
+  venoshock: {
+    name: 'Venoshock',
+    type: 'poison',
+    base: stats({ damage: 12, cooldown: 1.2, amount: 1, speed: 170, pierce: 1, knockback: 20 }),
+    status: { kind: 'poison', chance: 0.2, duration: 3, power: 0.25 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 4 },
+      { cooldown: -0.15 },
+      { amount: 1 },
+      { damage: 5, statusChance: 0.1 },
+      { pierce: 1 },
+      { amount: 1, damage: 4 },
+    ],
+    fire: (g, s, owned) => venoshock(g, s, owned),
+  },
+
+  selfDestruct: {
+    name: 'Self-Destruct',
+    type: 'normal',
+    base: stats({ damage: 70, cooldown: 9, knockback: 260 }),
+    minCooldown: LUNGE_MIN_COOLDOWN,
+    manual: true,
+    upgrades: [
+      { damage: 20 },
+      { area: 0.15 },
+      { cooldown: -1 },
+      { damage: 25 },
+      { area: 0.15 },
+      { cooldown: -1 },
+      { damage: 30, area: 0.2 },
+    ],
+    fire: (g, s, owned) => selfDestruct(g, s, owned),
+  },
+
+  roost: {
+    name: 'Roost',
+    type: 'flying',
+    base: stats({ damage: 10, cooldown: 0.25, knockback: 140 }),
+    // Settle time and healing grow by level (`ROOST`): the empty steps are those.
+    upgrades: [
+      { damage: 6 },
+      {},
+      {},
+      { area: 0.3 },
+      {},
+      {},
+      { damage: 10 },
+    ],
+    fire: (g, s, owned) => roost(g, s, owned),
+  },
+
+  focusPunch: {
+    name: 'Focus Punch',
+    type: 'fighting',
+    base: stats({ damage: 80, cooldown: 0.25, knockback: 220 }),
+    stacks: { grow: 'cast', max: FOCUS.charge, reset: 'hurt' },
+    upgrades: [
+      { damage: 20 },
+      { cooldown: -0.02 },
+      { area: 0.2 },
+      { damage: 25 },
+      { cooldown: -0.02 },
+      { damage: 30 },
+      { area: 0.2, damage: 25 },
+    ],
+    fire: (g, s, owned) => focusPunch(g, s, owned),
+  },
+
+  gyroBall: {
+    name: 'Gyro Ball',
+    type: 'steel',
+    base: stats({ damage: 10, cooldown: 0.25, amount: 1, speed: 3.2, knockback: 70 }),
+    upgrades: [
+      { amount: 1 },
+      { damage: 3 },
+      { area: 0.2 },
+      { speed: 0.8 },
+      { amount: 1 },
+      { damage: 4 },
+      { damage: 5, area: 0.2 },
+    ],
+    fire: (g, s, owned) => gyroBall(g, s, owned),
+  },
+
+  suckerPunch: {
+    name: 'Sucker Punch',
+    type: 'dark',
+    base: stats({ damage: 14, cooldown: 0.6, amount: 1, knockback: 120 }),
+    upgrades: [
+      { damage: 4 },
+      { amount: 1 },
+      { cooldown: -0.08 },
+      { area: 0.2 },
+      { damage: 6 },
+      { amount: 1 },
+      { damage: 6, cooldown: -0.08 },
+    ],
+    fire: (g, s, owned) => suckerPunch(g, s, owned),
+  },
+
+  futureSight: {
+    name: 'Future Sight',
+    type: 'psychic',
+    base: stats({ damage: 42, cooldown: 5, amount: 3, knockback: 50 }),
+    upgrades: [
+      { damage: 10 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.6 },
+      { damage: 14 },
+      { amount: 1 },
+      { damage: 14, area: 0.2 },
+    ],
+    fire: (g, s, owned) => futureSight(g, s, owned),
+  },
+
+  bonemerang: {
+    name: 'Bonemerang',
+    type: 'ground',
+    base: stats({ damage: 15, cooldown: 1.6, amount: 1, speed: 230, knockback: 50 }),
+    upgrades: [
+      { damage: 5 },
+      { amount: 1 },
+      { area: 0.25 },
+      { cooldown: -0.2 },
+      { damage: 6 },
+      { amount: 1 },
+      { speed: 60, damage: 6 },
+    ],
+    fire: (g, s, owned) => bonemerang(g, s, owned),
+  },
+
+  stealthRock: {
+    name: 'Stealth Rock',
+    type: 'rock',
+    base: stats({ damage: 12, cooldown: 8, amount: 5, duration: 20, knockback: 30 }),
+    upgrades: [
+      { amount: 1 },
+      { damage: 4 },
+      { duration: 5 },
+      { area: 0.2 },
+      { amount: 2 },
+      { damage: 6 },
+      { damage: 6, duration: 5 },
+    ],
+    fire: (g, s, owned) => stealthRock(g, s, owned),
+  },
+
+  uTurn: {
+    name: 'U-turn',
+    type: 'bug',
+    base: stats({ damage: 22, cooldown: 2.6, speed: 340, knockback: 110 }),
+    minCooldown: LUNGE_MIN_COOLDOWN,
+    manual: true,
+    upgrades: [
+      { damage: 6 },
+      { area: 0.2 },
+      { cooldown: -0.3 },
+      { damage: 8 },
+      { speed: 60 },
+      { cooldown: -0.3 },
+      { damage: 10, area: 0.2 },
+    ],
+    fire: (g, s, owned) => uTurn(g, s, owned),
+  },
+
+  dragonTail: {
+    name: 'Dragon Tail',
+    type: 'dragon',
+    base: stats({ damage: 20, cooldown: 1.8 }),
+    upgrades: [
+      { damage: 6 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { damage: 7 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { damage: 9 },
+    ],
+    fire: (g, s, owned) => dragonTail(g, s, owned),
+  },
+
+  sheerCold: {
+    name: 'Sheer Cold',
+    type: 'ice',
+    base: stats({ damage: 6, cooldown: 3.5, duration: 0.5, knockback: 20 }),
+    status: { kind: 'slow', chance: 1, duration: 1.2, power: 0.4 },
+    // The execute share grows by level too (`SHEER_COLD_EXECUTE`).
+    upgrades: [
+      { damage: 2 },
+      { area: 0.15 },
+      {},
+      { cooldown: -0.4 },
+      { damage: 2 },
+      { area: 0.2 },
+      { cooldown: -0.4 },
+    ],
+    fire: (g, s, owned) => sheerCold(g, s, owned),
   },
 
   /* ---------- Evolved moves (max level move + paired held item, see data/evolutions.ts) ---------- */
