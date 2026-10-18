@@ -2249,12 +2249,12 @@ export const en: Messages = {
       description: 'Rocks tumble down one after another along a line to the nearest foe.',
       upgrades: [
         '+1 rock',
-        '+4 damage',
-        { fork: [{ name: 'Cave-in', desc: 'Defeated foes burst into rocks; +3 damage' }, { name: 'Avalanche', desc: '+2 rocks and falls again (50%); -3 damage' }] },
-        'Cooldown 0.25s faster',
         '+5 damage',
+        { fork: [{ name: 'Cave-in', desc: 'Defeated foes burst into rocks; +3 damage' }, { name: 'Avalanche', desc: '+2 rocks and falls again (50%); -3 damage' }] },
+        'Cooldown 0.3s faster',
+        '+6 damage',
         { fork: [{ name: 'Rubble', desc: 'Leaves hurting rubble behind; +25% area' }, { name: 'Splinters', desc: 'Hits jump to 2 neighbors; +4 damage' }] },
-        '+2 rocks and +4 damage',
+        '+2 rocks and +5 damage',
       ],
     },
     yawn: {
@@ -2284,13 +2284,13 @@ export const en: Messages = {
     discharge: {
       description: 'You charge up by walking: the burst around you grows with how far you walked since the last one (up to ×1.5 damage and twice the size). May paralyze.',
       upgrades: [
-        '+5 damage',
+        '+6 damage',
         '+15% area',
         { fork: [{ name: 'Voltaic arc', desc: 'Hits jump to 2 neighbors; +15% paralysis' }, { name: 'Overload', desc: 'Defeated foes burst; +4 damage' }] },
         'Cooldown 0.15s faster',
-        '+6 damage',
+        '+7 damage',
         { fork: [{ name: 'Electric echo', desc: 'Discharges again right after (50%); +15% area' }, { name: 'High voltage', desc: '+5 damage and +10% paralysis chance' }] },
-        '+6 damage and +15% area',
+        '+8 damage and +15% area',
       ],
     },
     heatWave: {
@@ -2386,7 +2386,7 @@ export const en: Messages = {
         'Cooldown 0.2s faster',
         '+6 damage',
         { fork: [{ name: 'Double wave', desc: '+1 orb; also fires backward' }, { name: 'Split', desc: 'Split in 2 on hit; +5 damage' }] },
-        '+2 orbs and +4 damage',
+        '+1 orb and +5 damage',
       ],
     },
   },

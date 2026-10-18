@@ -50,19 +50,52 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 
 /* ---------------- Rocks ---------------- */
 
-/** Rock Slide's rocks, big to small: 1 rim, 2 stone, 3 light (top right), 4 shade. */
-const ROCK_BIG = ['...1111..', '..122331.', '.12223331', '122222231', '142222221', '144222221', '.1442221.', '..11111..']
-const ROCK_MID = ['..1111..', '.122231.', '12223331', '12222231', '14222221', '.144221.', '..1111..']
-const ROCK_SMALL = ['.111.', '12331', '12231', '14421', '.111.']
-const STONE: Palette = { 1: '#2a2218', 2: '#a08868', 3: '#dccca4', 4: '#665040' }
-/** Ancient Power's rock: the stone with a glowing rune (5). */
-const ANCIENT_ROCK = ['..1111..', '.123331.', '12253331', '12555231', '14252221', '.144221.', '..1111..']
-const ANCIENT: Palette = { 1: '#2a2018', 2: '#9a8a70', 3: '#e4d8b4', 4: '#5a4a38', 5: '#f8d870' }
+const STONE = { rim: '#2a2218', base: '#a08868', light: '#dccca4', shade: '#665040', crack: '#463626' } as const
+const ANCIENT = { rim: '#2a2018', base: '#9a8a70', light: '#e4d8b4', shade: '#5a4a38', crack: '#463626' } as const
+
+/**
+ * A boulder `w`×`h` px: a lumpy outline (`bumps` push the edge in, around the
+ * circle), lit from the top right, with a crack. Painted in code so every
+ * size stays on the pixel grid.
+ */
+const boulder = (w: number, h: number, bumps: readonly number[], pal: typeof STONE | typeof ANCIENT, rune = false) =>
+  outlined(
+    paint(w, h, (px) => {
+      const cx = (w - 1) / 2
+      const cy = (h - 1) / 2
+      const inside = (x: number, y: number) => {
+        const nx = (x - cx) / (cx + 0.5)
+        const ny = (y - cy) / (cy + 0.5)
+        const angle = Math.atan2(ny, nx)
+        const bump = bumps[Math.floor(((angle + Math.PI) / (Math.PI * 2)) * bumps.length) % bumps.length]!
+        return Math.hypot(nx, ny) <= 1 - bump * 0.14
+      }
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!inside(x, y)) continue
+          const nx = (x - cx) / cx
+          const ny = (y - cy) / cy
+          const lit = nx * 0.6 - ny * 0.8
+          const edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)
+          px(x, y, edge && lit < 0.2 ? pal.rim : lit > 0.55 ? pal.light : lit < -0.45 ? pal.shade : pal.base)
+        }
+      }
+      // A crack across the face.
+      const k = Math.round(cx)
+      for (let i = 0; i < Math.round(h * 0.35); i++) px(k - 1 + (i % 2), Math.round(cy - 1) + i, pal.crack)
+      if (rune) {
+        const ry = Math.round(cy)
+        for (const [dx, dy] of [[0, -2], [-1, -1], [1, -1], [0, 0], [-2, 0], [2, 0], [0, 1], [-1, 2], [1, 2]] as const) px(k + dx, ry + dy, '#f8d870')
+        px(k, ry, '#fff8d0')
+      }
+    }),
+    '#181008',
+  )
 
 /* ---------------- Fangs, shards, letters ---------------- */
 
 /** Thunder Fang's upper jaw (fangs pointing down); the lower one is the rows reversed. 1 rim, 2 fang, 3 light. */
-const JAW = ['11111111111', '12333333321', '12222222221', '.121.1.121.', '.121...121.', '..1.....1..']
+const JAW = ['111111111111111', '123333333333321', '122222222222221', '.12221.1.12221.', '.1221.....1221.', '..121.....121..', '...1.......1...']
 const FANG: Palette = { 1: '#3a2c00', 2: '#f8d030', 3: '#fff8c8' }
 /** A steel shard pointing right: 1 rim, 2 steel, 3 shine. */
 const SHARD = ['11....', '1331..', '123311', '122221', '1111..']
@@ -116,48 +149,63 @@ export const tmDisc = (color: string, gold = false) => {
 
 /** The tutor: a hat, a white beard, a blue robe and a TM in hand. */
 const TUTOR = [
-  '..111..', '.12221.', '1222221', '.13431.', '.13331.', '.15551.', '1666661', '1676761', '1666661', '.16.61.', '.11.11.',
+  '...111...', '..12221..', '.1222221.', '111111111', '.1333331.', '.1343431.', '.1355531.', '..15551..', '.1665661.',
+  '166666661', '167666661', '166666661', '.16...61.', '.11...11.',
 ]
 const TUTOR_PAL: Palette = { 1: '#201810', 2: '#7a4a28', 3: '#f0c8a0', 4: '#201810', 5: '#f8f8f8', 6: '#3858b8', 7: '#f8d030' }
 
-/** The tutor's striped tent with its flag (24×22): stripes, flap and a shadowed door. */
+/** The tutor's striped tent with its flag (32×28): a striped roof, walls, the open flap and a TM sign over the door. */
 const tent = () =>
   outlined(
-    paint(24, 22, (px) => {
+    paint(32, 28, (px) => {
       // Flag on a pole.
-      px(12, 0, '#583818', 1, 5)
-      px(13, 0, '#e84040', 4, 1)
-      px(13, 1, '#e84040', 3, 1)
-      px(13, 2, '#f87878', 2, 1)
-      // Roof: a triangle in red and cream stripes.
-      for (let y = 4; y < 12; y++) {
-        const half = Math.round(((y - 4) / 7) * 11.5)
-        for (let x = 12 - half; x <= 11 + half; x++) {
-          const stripe = Math.floor((x - 12 + 24) / 3) % 2 === 0
-          px(x, y, stripe ? '#d83838' : '#f8ecd0')
+      px(16, 0, '#583818', 1, 7)
+      px(17, 0, '#e84040', 5, 1)
+      px(17, 1, '#e84040', 4, 1)
+      px(17, 2, '#f87878', 3, 1)
+      px(17, 3, '#e84040', 1, 1)
+      // Roof: a triangle in red and cream stripes, darker on the right.
+      for (let y = 6; y < 16; y++) {
+        const half = Math.round(((y - 6) / 9) * 15.5)
+        for (let x = 16 - half; x <= 15 + half; x++) {
+          const stripe = Math.floor((x - 16 + 32) / 4) % 2 === 0
+          const shade = x > 16 + half * 0.4
+          px(x, y, stripe ? (shade ? '#b82828' : '#e04040') : shade ? '#d8c8a8' : '#f8ecd0')
         }
       }
-      for (let x = 0; x < 24; x++) px(x, 11, Math.floor(x / 3) % 2 === 0 ? '#a82828' : '#d8c8a8')
-      // Walls, with the open flap in the middle.
-      for (let y = 12; y < 22; y++) {
-        for (let x = 1; x < 23; x++) {
-          const stripe = Math.floor((x + 24) / 3) % 2 === 0
-          px(x, y, stripe ? '#c83030' : '#e8dcc0')
+      // A scalloped hem along the roof's edge.
+      for (let x = 0; x < 32; x++) px(x, 16, Math.floor(x / 4) % 2 === 0 ? '#a82828' : '#c8b898')
+      for (let x = 1; x < 32; x += 4) px(x, 17, Math.floor(x / 4) % 2 === 0 ? '#a82828' : '#c8b898', 2, 1)
+      // Walls, shaded on the right.
+      for (let y = 17; y < 28; y++) {
+        for (let x = 1; x < 31; x++) {
+          if (y === 17 && (x - 1) % 4 < 2) continue
+          const stripe = Math.floor((x + 32) / 4) % 2 === 0
+          px(x, y, stripe ? (x > 22 ? '#a82828' : '#c83030') : x > 22 ? '#c8bca0' : '#e8dcc0')
         }
       }
-      for (let y = 13; y < 22; y++) {
-        const half = Math.round(((y - 13) / 8) * 4)
-        px(12 - half, y, '#281810', half * 2 + 1, 1)
+      // The open flap: a dark doorway with the curtain tied back.
+      for (let y = 18; y < 28; y++) {
+        const half = Math.round(((y - 18) / 9) * 5)
+        px(16 - half, y, '#281810', half * 2 + 1, 1)
+        if (half > 0) {
+          px(15 - half, y, '#f8ecd0')
+          px(17 + half, y, '#f8ecd0')
+        }
       }
-      px(7, 13, '#f8d878', 1, 1)
-      px(16, 13, '#f8d878', 1, 1)
+      // The sign: a little TM disc over the door.
+      for (let y = 10; y < 15; y++) for (let x = 13; x < 20; x++) {
+        const d = Math.hypot(x - 16, y - 12)
+        if (d <= 2.6) px(x, y, d > 1.8 ? '#e8e8f0' : d > 0.8 ? '#58a0f8' : '#181820')
+      }
+      px(15, 11, '#ffffff')
     }),
     '#201010',
   )
 
 export const TM_FX = {
-  rocks: lazy(() => [sprite(ROCK_BIG, STONE, '#181008'), sprite(ROCK_MID, STONE, '#181008'), sprite(ROCK_SMALL, STONE, '#181008')]),
-  ancientRock: lazy(() => sprite(ANCIENT_ROCK, ANCIENT, '#181008')),
+  rocks: lazy(() => [boulder(15, 12, [0, 1, 0, 2, 0, 0, 1, 0, 2, 1], STONE), boulder(12, 10, [1, 0, 0, 2, 1, 0, 0, 1], STONE), boulder(9, 8, [0, 2, 0, 1, 0, 1], STONE)]),
+  ancientRock: lazy(() => boulder(12, 11, [0, 1, 0, 0, 2, 0, 1, 0], ANCIENT, true)),
   jawTop: lazy(() => sprite(JAW, FANG)),
   jawBottom: lazy(() => sprite([...JAW].reverse(), FANG)),
   shard: lazy(() => sprite(SHARD, STEEL, '#101418')),
@@ -169,7 +217,7 @@ export const TM_FX = {
 /* ---------------- Icons ---------------- */
 
 export const TM_ICONS: Record<TmMoveId, () => PixelSprite> = {
-  rockSlide: () => compose(15, 14, [[TM_FX.rocks()[2]!, 0, 0], [TM_FX.rocks()[1]!, 3, 2], [TM_FX.rocks()[0]!, 4, 4]]),
+  rockSlide: () => compose(16, 16, [[TM_FX.rocks()[2]!, 0, 0], [TM_FX.rocks()[1]!, 4, 5]]),
   yawn: () =>
     outlined(
       paint(13, 12, (px) => {
@@ -231,7 +279,7 @@ export const TM_ICONS: Record<TmMoveId, () => PixelSprite> = {
       }),
       '#401008',
     ),
-  thunderFang: () => compose(13, 15, [[outlined(TM_FX.jawTop(), '#f8f8c0'), 0, 0], [outlined(TM_FX.jawBottom(), '#f8f8c0'), 0, 7]]),
+  thunderFang: () => compose(17, 17, [[outlined(TM_FX.jawTop(), '#403000'), 0, 0], [outlined(TM_FX.jawBottom(), '#403000'), 0, 8]]),
   lavaPlume: () =>
     outlined(
       paint(13, 13, (px) => {
@@ -259,18 +307,18 @@ export const TM_ICONS: Record<TmMoveId, () => PixelSprite> = {
       '#202040',
     ),
   ancientPower: () =>
-    compose(13, 13, [
+    compose(16, 15, [
       [
-        paint(13, 13, (px) => {
-          for (let i = 0; i < 16; i++) {
-            const a = (i / 16) * Math.PI * 2
-            if (i % 2) px(Math.round(6 + Math.cos(a) * 6), Math.round(6 + Math.sin(a) * 6), '#f8d870')
+        paint(16, 15, (px) => {
+          for (let i = 0; i < 20; i++) {
+            const ang = (i / 20) * Math.PI * 2
+            if (i % 2) px(Math.round(7.5 + Math.cos(ang) * 7.5), Math.round(7 + Math.sin(ang) * 7), '#f8d870')
           }
         }),
         0,
         0,
       ],
-      [TM_FX.ancientRock(), 1, 2],
+      [TM_FX.ancientRock(), 1, 1],
     ]),
   icyWind: () =>
     outlined(

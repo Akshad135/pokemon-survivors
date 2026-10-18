@@ -2250,12 +2250,12 @@ export const es: Messages = {
       description: 'Rocas caen una tras otra en línea hasta el enemigo más cercano.',
       upgrades: [
         '+1 roca',
-        '+4 de daño',
-        { fork: [{ name: 'Derrumbe', desc: 'Quien cae estalla en rocas; +3 de daño' }, { name: 'Avalancha', desc: '+2 rocas y cae otra vez (50%); -3 de daño' }] },
-        'Recarga 0.25s más rápida',
         '+5 de daño',
+        { fork: [{ name: 'Derrumbe', desc: 'Quien cae estalla en rocas; +3 de daño' }, { name: 'Avalancha', desc: '+2 rocas y cae otra vez (50%); -3 de daño' }] },
+        'Recarga 0.3s más rápida',
+        '+6 de daño',
         { fork: [{ name: 'Escombros', desc: 'Deja escombros que lastiman; +25% de área' }, { name: 'Astillas', desc: 'Los golpes saltan a 2 vecinos; +4 de daño' }] },
-        '+2 rocas y +4 de daño',
+        '+2 rocas y +5 de daño',
       ],
     },
     yawn: {
@@ -2285,13 +2285,13 @@ export const es: Messages = {
     discharge: {
       description: 'Te cargas al caminar: la descarga a tu alrededor crece con lo que caminaste desde la última (hasta ×1.5 de daño y el doble de tamaño). Puede paralizar.',
       upgrades: [
-        '+5 de daño',
+        '+6 de daño',
         '+15% de área',
         { fork: [{ name: 'Arco voltaico', desc: 'Los golpes saltan a 2 vecinos; +15% de parálisis' }, { name: 'Sobrecarga', desc: 'Quien cae estalla; +4 de daño' }] },
         'Recarga 0.15s más rápida',
-        '+6 de daño',
+        '+7 de daño',
         { fork: [{ name: 'Eco eléctrico', desc: 'Descarga otra vez enseguida (50%); +15% de área' }, { name: 'Alto voltaje', desc: '+5 de daño y +10% de probabilidad de paralizar' }] },
-        '+6 de daño y +15% de área',
+        '+8 de daño y +15% de área',
       ],
     },
     heatWave: {
@@ -2387,7 +2387,7 @@ export const es: Messages = {
         'Recarga 0.2s más rápida',
         '+6 de daño',
         { fork: [{ name: 'Onda doble', desc: '+1 esfera; también dispara hacia atrás' }, { name: 'División', desc: 'Se parten en 2 al golpear; +5 de daño' }] },
-        '+2 esferas y +4 de daño',
+        '+1 esfera y +5 de daño',
       ],
     },
   },

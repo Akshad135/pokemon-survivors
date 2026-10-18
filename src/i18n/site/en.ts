@@ -464,6 +464,11 @@ export const siteEn: SiteMessages = {
         how: (ttl: number) => `Runs from you and escapes after ${ttl}s. Your moves can hit it.`,
         reward: (jackpot: string) => `A coin with every hit, and the Pay Day (${jackpot}) if it faints.`,
       },
+      tutor: {
+        name: 'Move Tutor',
+        how: (from: number, until: number) => `Pitches a tent once between minutes ${from} and ${until} (sometimes once more). Stand in its ring.`,
+        reward: (price: string) => `Teaches 1 of 2 moves of types you lack. The first lesson is free; the next costs ${price} of the run's money.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [

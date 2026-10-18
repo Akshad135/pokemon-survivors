@@ -4,7 +4,7 @@ import { hash2 } from '../engine/rng'
 import { TYPE_COLORS } from '../data/types'
 import { walkedSince } from '../game/kitRules'
 import { MOVES } from '../game/moves'
-import { AURORA, dischargeCharge, ICE_BEAM, ROCK_SLIDE } from '../game/tmMoves'
+import { AURORA, dischargeCharge, ICE_BEAM } from '../game/tmMoves'
 import type { Attack, Game, Pickup } from '../game/types'
 import { tmDisc, TM_FX } from './tmArt'
 import { dashedRing } from './strokes'
@@ -40,7 +40,7 @@ const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: 
 }
 
 /** A jagged bolt from (x0, y0) to (x1, y1): `kinks` zigzags, seeded by `seed` so it holds for a frame or two. */
-const zigzag = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, kinks: number, seed: number, colors: readonly [string, string]) => {
+const zigzag = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, kinks: number, seed: number, colors: readonly [string, string], width = 2) => {
   const dx = x1 - x0
   const dy = y1 - y0
   const len = Math.hypot(dx, dy) || 1
@@ -53,8 +53,8 @@ const zigzag = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, kinks:
     const off = i === kinks ? 0 : (hash2(seed, i) - 0.5) * 7
     const bx = x0 + dx * k + nx * off
     const by = y0 + dy * k + ny * off
-    thickLine(ctx, ax, ay, bx, by, 2, colors[0])
-    thickLine(ctx, ax, ay, bx, by, 1, colors[1])
+    thickLine(ctx, ax, ay, bx, by, width, colors[0])
+    thickLine(ctx, ax, ay, bx, by, Math.max(1, width - 2), colors[1])
     ax = bx
     ay = by
   }
@@ -170,23 +170,35 @@ export const drawTmGround = (ctx: Ctx, g: Game, t: number) => {
 const drawRock = (ctx: Ctx, a: Attack) => {
   const rocks = TM_FX.rocks()
   const rock = rocks[Math.min(rocks.length - 1, a.memo)]!
-  const scale = radiusOf(a) / ROCK_SLIDE.r > 1.3 ? 2 : 1
   if (a.age < a.activeFrom) {
+    // Tumbles down from above the screen, speeding up, with a few pebbles around it.
     const k = a.age / a.activeFrom
-    const drop = Math.round(78 * (1 - k * k))
-    blitRotated(ctx, rock, a.x + Math.round((1 - k) * 6), a.y - 6 - drop, a.age * 9 + a.id, scale)
+    const drop = Math.round(86 * (1 - k * k))
+    const x = a.x + Math.round((1 - k) * 8)
+    blitRotated(ctx, rock, x, a.y - 6 - drop, a.age * 9 + a.id)
+    for (let i = 0; i < 2; i++) px(ctx, x - 6 + i * 11, a.y - 14 - drop - i * 5, i ? '#a08868' : '#665040', 2, 2)
     return
   }
-  // Lands with a little hop, then crumbles.
+  // Lands with a hop and a puff of dust, then crumbles away.
   const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
   const hop = Math.round(Math.sin(Math.min(1, e * 2.5) * Math.PI) * 4)
+  if (e < 0.55) {
+    const puff = e / 0.55
+    for (let i = 0; i < 5; i++) {
+      const side = i - 2
+      const r = Math.max(1, Math.round(2 + puff * 4 - Math.abs(side) * 0.5))
+      ctx.globalAlpha = 1 - puff
+      blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.7)), i % 2 ? '#d8c8a0' : '#b8a480'), a.x + side * (5 + puff * 9), a.y - 1 - puff * 5 + Math.abs(side) * 2)
+    }
+    ctx.globalAlpha = 1
+  }
   ctx.globalAlpha = Math.min(1, (1 - e) * 3)
-  blitRotated(ctx, rock, a.x, a.y - 6 - hop, a.id, scale)
+  blitRotated(ctx, rock, a.x, a.y - 6 - hop, a.id)
   ctx.globalAlpha = 1
   if (e < 0.5) {
     for (let i = 0; i < 6; i++) {
       const ang = Math.PI + (i / 5) * Math.PI
-      const d = 4 + e * 22
+      const d = 5 + e * 24
       px(ctx, a.x + Math.cos(ang) * d, a.y - 2 + Math.sin(ang) * d * 0.5 + e * e * 30, i % 2 ? '#a08868' : '#dccca4', 2, 2)
     }
   }
@@ -248,16 +260,38 @@ const drawBeams = (ctx: Ctx, g: Game, t: number) => {
       const half = Math.max(5, (length - 12) / (segments - 1) / 2 + 1)
       const cx = Math.cos(m.angle)
       const cy = Math.sin(m.angle)
-      const band = Math.floor(m.radius / 9 + t * 14) % RAINBOW.length
-      const color =
-        layer === 0 ? (ice ? 'rgba(88,168,232,0.55)' : RAINBOW[band]!)
-        : layer === 1 ? (ice ? '#c8ecff' : RAINBOW[(band + 2) % RAINBOW.length]!)
-        : '#ffffff'
-      const thick = layer === 0 ? w * 1.5 + (Math.floor(t * 30 + m.radius) % 2) : layer === 1 ? w * 0.9 : w * 0.35
-      thickLine(ctx, p.x + cx * (m.radius - half), p.y - 8 + cy * (m.radius - half), p.x + cx * (m.radius + half), p.y - 8 + cy * (m.radius + half), Math.max(1, Math.round(thick)), color)
-      if (layer === 2 && a.flip) spokes(ctx, a.x, a.y, Math.round(w * 1.3) + 4, ice ? ['#ffffff', '#c8ecff', '#78c8f0'] : ['#ffffff', RAINBOW[band]!, RAINBOW[(band + 3) % RAINBOW.length]!], t * 5)
-      // Frost glitters along the ice beam.
-      if (layer === 2 && ice && hash2(a.id, Math.floor(t * 20)) > 0.6) px(ctx, a.x + (hash2(a.id, 1, Math.floor(t * 20)) - 0.5) * 8, a.y + (hash2(a.id, 2, Math.floor(t * 20)) - 0.5) * 8, '#ffffff')
+      const x0 = p.x + cx * (m.radius - half)
+      const y0 = p.y - 8 + cy * (m.radius - half)
+      const x1 = p.x + cx * (m.radius + half)
+      const y1 = p.y - 8 + cy * (m.radius + half)
+      if (!ice) {
+        // Aurora: six bands running along the beam, a white core over them.
+        if (layer === 0) {
+          const band = Math.max(1, Math.round(w / 2.4))
+          RAINBOW.forEach((c, i) => {
+            const off = (i - 2.5) * band
+            thickLine(ctx, x0 - cy * off, y0 + cx * off, x1 - cy * off, y1 + cx * off, band + 1, c)
+          })
+        } else if (layer === 2) {
+          thickLine(ctx, x0, y0, x1, y1, Math.max(1, Math.round(w * 0.4)), '#ffffff')
+          if (a.flip) spokes(ctx, a.x, a.y, Math.round(w * 1.4) + 4, ['#ffffff', RAINBOW[Math.floor(t * 12) % 6]!, RAINBOW[(Math.floor(t * 12) + 3) % 6]!], t * 5)
+        }
+        continue
+      }
+      const color = layer === 0 ? 'rgba(88,168,232,0.6)' : layer === 1 ? '#c8ecff' : '#ffffff'
+      const thick = layer === 0 ? w * 1.7 + (Math.floor(t * 30 + m.radius) % 2) : layer === 1 ? w : w * 0.4
+      thickLine(ctx, x0, y0, x1, y1, Math.max(1, Math.round(thick)), color)
+      if (layer !== 2) continue
+      // Ice crystals grow off the beam, alternating sides.
+      const side = Math.round(m.radius / 10) % 2 === 0 ? 1 : -1
+      const grow = Math.min(1, a.age / 0.15)
+      const bx = a.x - cy * side * (w + 1)
+      const by = a.y + cx * side * (w + 1)
+      for (let d = 0; d < Math.round(3 * grow); d++) px(ctx, bx - cy * side * d - cx * d * 0.5, by + cx * side * d - cy * d * 0.5, d === 0 ? '#ffffff' : '#c8ecff', 2, 2)
+      if (a.flip) {
+        spokes(ctx, a.x, a.y, Math.round(w * 1.4) + 5, ['#ffffff', '#c8ecff', '#78c8f0'], t * 4)
+        blitCentered(ctx, ellipse(Math.round(w) + 2, Math.round(w) + 2, '#e8f8ff'), a.x, a.y)
+      }
     }
   }
 }
@@ -265,17 +299,44 @@ const drawBeams = (ctx: Ctx, g: Game, t: number) => {
 const drawDischarge = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const fade = fadeOut(a, 0.18)
-  ctx.globalAlpha = fade
-  const bolts = 5 + Math.round(a.memo * 5)
   const seed = a.id * 7 + Math.floor(t * 24)
-  for (let i = 0; i < bolts; i++) {
-    const ang = (i / bolts) * TAU + hash2(a.id, i) * 0.6
-    zigzag(ctx, a.x, a.y, a.x + Math.cos(ang) * r, a.y + Math.sin(ang) * r * 0.8, 3, seed + i, ['#f8d030', '#ffffff'])
+  // The flash at the core, then bolts lashing out to the ring.
+  if (a.age < 0.1) {
+    blitCentered(ctx, ellipse(12, 12, 'rgba(255,248,160,0.55)'), a.x, a.y)
+    blitCentered(ctx, ellipse(7, 7, '#ffffff'), a.x, a.y)
   }
-  dashedRing(ctx, a.x, a.y, r, t * 6, ['#ffffff', '#fff8a0', '#f8d030'], 0.8, 0.8)
+  ctx.globalAlpha = fade
+  const bolts = 6 + Math.round(a.memo * 6)
+  for (let i = 0; i < bolts; i++) {
+    const ang = (i / bolts) * TAU + hash2(a.id, i) * 0.5
+    const ex = a.x + Math.cos(ang) * r
+    const ey = a.y + Math.sin(ang) * r * 0.85
+    zigzag(ctx, a.x, a.y, ex, ey, 4, seed + i, ['#f8c020', '#ffffff'], 3)
+    // A fork off the middle of every other bolt.
+    if (i % 2 === 0) {
+      const mx = a.x + Math.cos(ang) * r * 0.55
+      const my = a.y + Math.sin(ang) * r * 0.47
+      const side = ang + (hash2(seed, i, 3) > 0.5 ? 0.7 : -0.7)
+      zigzag(ctx, mx, my, mx + Math.cos(side) * r * 0.35, my + Math.sin(side) * r * 0.3, 2, seed + i + 50, ['#f8d030', '#fff8c0'])
+    }
+  }
+  ringPx(ctx, a.x, a.y, r, r * 0.85, ['#f8d030', '#ffffff'], t * 6)
   blitCentered(ctx, ellipse(4 + Math.round(a.memo * 3), 4 + Math.round(a.memo * 3), '#fff8c0'), a.x, a.y)
   ctx.globalAlpha = 1
 }
+
+/** A solid 2-px ring (outer color, inner color), squashed to `ry`, with gaps turning by `rot`. */
+const ringPx = (ctx: Ctx, x: number, y: number, rx: number, ry: number, colors: readonly [string, string], rot: number) => {
+  const steps = Math.ceil(rx * TAU * 1.4)
+  for (let i = 0; i < steps; i++) {
+    const ang = (i / steps) * TAU
+    if (Math.floor((ang + rot) * 3) % 5 === 0) continue
+    px(ctx, x + Math.cos(ang) * rx, y + Math.sin(ang) * ry, colors[0])
+    px(ctx, x + Math.cos(ang) * (rx - 1), y + Math.sin(ang) * (ry - 1), colors[1])
+  }
+}
+
+const HEAT = ['#801008', '#c02010', '#f06018', '#f8a030', '#f8d860', '#fff8d0'] as const
 
 const drawHeatWave = (ctx: Ctx, a: Attack, t: number) => {
   const m = a.motion
@@ -288,17 +349,16 @@ const drawHeatWave = (ctx: Ctx, a: Attack, t: number) => {
   const fy = Math.sin(dir)
   ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.35)
   const span = Math.round(r * 1.25)
-  // Each slice is a curved band: hotter at the front edge, shimmering behind.
+  // Each slice is a curved band: white-hot at the front edge, darker behind, with heat shimmering off it.
   for (let s = -span; s <= span; s++) {
     const bow = -((s / span) ** 2) * 2
     const wav = Math.sin(t * 18 + s * 0.6 + a.id) * 1
     const x = a.x + nx * s + fx * (bow + wav)
     const y = a.y + ny * s + fy * (bow + wav)
-    px(ctx, x - fx * 3, y - fy * 3, '#c02010')
-    px(ctx, x - fx * 2, y - fy * 2, '#f06018')
-    px(ctx, x - fx, y - fy, '#f8b030')
-    px(ctx, x, y, Math.abs(s) < span * 0.6 ? '#fff4c0' : '#f8d030')
-    if ((s + Math.floor(t * 20)) % 4 === 0) px(ctx, x - fx * (6 + (s & 3)), y - fy * (6 + (s & 3)), 'rgba(248,176,48,0.6)')
+    const core = Math.abs(s) < span * 0.7
+    for (let d = 0; d < HEAT.length; d++) px(ctx, x - fx * (HEAT.length - 1 - d), y - fy * (HEAT.length - 1 - d), d === HEAT.length - 1 && !core ? HEAT[3] : HEAT[d]!)
+    if ((s + Math.floor(t * 20)) % 3 === 0) px(ctx, x - fx * (8 + (s & 3) * 2), y - fy * (8 + (s & 3) * 2), 'rgba(248,176,48,0.55)')
+    if ((s * 7 + Math.floor(t * 12)) % 11 === 0) px(ctx, x - fx * (12 + (s & 7)), y - fy * (12 + (s & 7)) - 2, '#f8d860')
   }
   ctx.globalAlpha = 1
 }
@@ -325,27 +385,43 @@ const drawFang = (ctx: Ctx, a: Attack, t: number) => {
   ctx.globalAlpha = 1
 }
 
-const drawGeyser = (ctx: Ctx, a: Attack) => {
+const drawGeyser = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const k = a.age / a.ttl
-  const height = Math.round(r * 2.4 * Math.sin(Math.min(1, k * 1.6) * Math.PI))
-  if (height > 0) {
-    const w = Math.max(3, Math.round(r * 0.55))
-    px(ctx, a.x - w, a.y - height, LAVA[1], w * 2 + 1, height)
-    px(ctx, a.x - w + 1, a.y - height, LAVA[2], w * 2 - 1, height)
-    px(ctx, a.x - 1, a.y - height, LAVA[3], 3, height)
-    px(ctx, a.x, a.y - height + 1, LAVA[4], 1, Math.max(1, height - 2))
-    blitCentered(ctx, ellipse(w + 1, 2, LAVA[3]), a.x, a.y - height)
+  const height = Math.round(r * 2.6 * Math.sin(Math.min(1, k * 1.5) * Math.PI))
+  const w = Math.max(3, Math.round(r * 0.5))
+  // The column, row by row: it bulges and ripples, hotter in the middle.
+  for (let row = 0; row < height; row++) {
+    const up = row / Math.max(1, height)
+    const ww = Math.max(1, Math.round(w * (1.15 - up * 0.55) + Math.sin(row * 0.7 - t * 24 + a.id)))
+    const sway = Math.round(Math.sin(row * 0.35 + t * 14 + a.id) * up * 2)
+    const x = a.x + sway
+    const y = a.y - row
+    px(ctx, x - ww - 1, y, LAVA[0], ww * 2 + 3, 1)
+    px(ctx, x - ww, y, LAVA[1], ww * 2 + 1, 1)
+    px(ctx, x - ww + 1, y, LAVA[2], Math.max(1, ww * 2 - 1), 1)
+    px(ctx, x - 1, y, LAVA[3], 3, 1)
+    if ((row + Math.floor(t * 30)) % 3 !== 0) px(ctx, x, y, LAVA[4])
   }
+  if (height > 2) {
+    // A splash crowning it.
+    const top = a.y - height
+    blitCentered(ctx, ellipse(w + 3, 3, LAVA[1]), a.x, top)
+    blitCentered(ctx, ellipse(w + 2, 2, LAVA[3]), a.x, top - 1)
+    blitCentered(ctx, ellipse(Math.max(1, w - 1), 1, LAVA[4]), a.x, top - 1)
+  }
+  // A ring of molten rock at its foot.
+  blitCentered(ctx, ellipse(w + 4, 3, LAVA[1]), a.x, a.y + 1)
+  blitCentered(ctx, ellipse(w + 2, 2, LAVA[2]), a.x, a.y)
   // Molten drops thrown out of it.
-  for (let i = 0; i < 6; i++) {
-    const ang = -Math.PI / 2 + (hash2(a.id, i) - 0.5) * 2.2
-    const v = 50 + hash2(a.id, i, 1) * 50
+  for (let i = 0; i < 8; i++) {
+    const ang = -Math.PI / 2 + (hash2(a.id, i) - 0.5) * 2.4
+    const v = 50 + hash2(a.id, i, 1) * 60
     const tt = a.age
     const x = a.x + Math.cos(ang) * v * tt
-    const y = a.y - r * 1.2 + Math.sin(ang) * v * tt + 160 * tt * tt
+    const y = a.y - r * 1.4 + Math.sin(ang) * v * tt + 170 * tt * tt
     if (y > a.y + 4) continue
-    px(ctx, x, y, i % 2 ? LAVA[3] : LAVA[4], 2, 2)
+    px(ctx, x, y, i % 3 === 0 ? LAVA[4] : i % 3 === 1 ? LAVA[3] : LAVA[2], 2, 2)
   }
 }
 
@@ -361,37 +437,52 @@ const drawAncientRise = (ctx: Ctx, a: Attack) => {
 
 const drawAncientRock = (ctx: Ctx, a: Attack, t: number) => {
   const m = a.motion
-  const scale = radiusOf(a) > 7 ? 2 : 1
   if (m.kind === 'homing') {
     const len = Math.hypot(m.vx, m.vy) || 1
-    for (let i = 1; i <= 3; i++) px(ctx, a.x - (m.vx / len) * i * 4, a.y - (m.vy / len) * i * 4, i === 1 ? '#f8f0c0' : '#f8d870', 2 - Math.floor(i / 3), 2 - Math.floor(i / 3))
+    for (let i = 1; i <= 4; i++) px(ctx, a.x - (m.vx / len) * i * 4, a.y - (m.vy / len) * i * 4, i === 1 ? '#fff8d0' : '#f8d870', i < 3 ? 2 : 1, i < 3 ? 2 : 1)
   }
-  const glow = 5 + (Math.floor(t * 10 + a.id) % 2)
-  blitCentered(ctx, ellipse(glow, glow, 'rgba(248,216,112,0.4)'), a.x, a.y)
-  blitRotated(ctx, TM_FX.ancientRock(), a.x, a.y, a.age * 7, scale)
+  const glow = 7 + (Math.floor(t * 10 + a.id) % 2)
+  blitCentered(ctx, ellipse(glow, glow, 'rgba(248,216,112,0.35)'), a.x, a.y)
+  blitRotated(ctx, TM_FX.ancientRock(), a.x, a.y, a.age * 7)
 }
 
 const drawIcyWind = (ctx: Ctx, a: Attack, t: number) => {
+  const m = a.motion
   const r = radiusOf(a)
   const k = a.age / a.ttl
+  const dir = m.kind === 'drift' ? Math.atan2(m.vy, m.vx) : 0
+  const fx = Math.cos(dir)
+  const fy = Math.sin(dir)
+  const nx = -fy
+  const ny = fx
   ctx.globalAlpha = Math.max(0, 1 - k * k)
-  const spin = a.age * 9 + a.memo
-  for (let s = 0; s < 3; s++) {
-    for (let i = 0; i < 8; i++) {
-      const ang = spin + s * (TAU / 3) + i * 0.22
-      const d = r * (0.35 + i * 0.08)
-      px(ctx, a.x + Math.cos(ang) * d, a.y + Math.sin(ang) * d * 0.7, i > 5 ? '#ffffff' : '#c8ecff')
+  blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.6)), 'rgba(200,236,255,0.28)'), a.x, a.y)
+  // Two wind strokes curling at their tips, like the "gust" glyph.
+  for (let s = 0; s < 2; s++) {
+    const off = (s - 0.5) * r * 0.9
+    const len = Math.round(r * (1.6 - s * 0.4))
+    for (let i = 0; i < len; i++) {
+      const d = i - len / 2
+      const wave = Math.sin(i * 0.5 + t * 14 + a.memo) * 1.2
+      px(ctx, a.x + fx * d + nx * (off + wave), a.y + fy * d + ny * (off + wave), i > len - 4 ? '#ffffff' : '#d8f4ff')
+    }
+    const tipX = a.x + fx * (len / 2) + nx * off
+    const tipY = a.y + fy * (len / 2) + ny * off
+    for (let i = 0; i < 4; i++) {
+      const ang = dir - Math.PI / 2 + (s ? -1 : 1) * i * 0.7
+      px(ctx, tipX + Math.cos(ang) * 2, tipY + Math.sin(ang) * 2, '#ffffff')
     }
   }
+  // Snowflakes riding it.
   for (let i = 0; i < 3; i++) {
     const ph = (t * 2 + hash2(a.id, i)) % 1
-    const fx = a.x + (hash2(a.id, i, 1) - 0.5) * r * 2
-    const fy = a.y + (hash2(a.id, i, 2) - 0.5) * r * 1.4 + ph * 4
-    px(ctx, fx, fy, '#ffffff')
-    px(ctx, fx - 1, fy, '#98d8f8')
-    px(ctx, fx + 1, fy, '#98d8f8')
-    px(ctx, fx, fy - 1, '#98d8f8')
-    px(ctx, fx, fy + 1, '#98d8f8')
+    const sx = a.x + (hash2(a.id, i, 1) - 0.5) * r * 2
+    const sy = a.y + (hash2(a.id, i, 2) - 0.5) * r * 1.4 + ph * 4
+    px(ctx, sx, sy, '#ffffff')
+    px(ctx, sx - 1, sy, '#98d8f8')
+    px(ctx, sx + 1, sy, '#98d8f8')
+    px(ctx, sx, sy - 1, '#98d8f8')
+    px(ctx, sx, sy + 1, '#98d8f8')
   }
   ctx.globalAlpha = 1
 }
@@ -456,7 +547,7 @@ export const drawTmAir = (ctx: Ctx, g: Game, t: number, visible: (x: number, y: 
         drawFang(ctx, a, t)
         break
       case 'lavaPlume':
-        drawGeyser(ctx, a)
+        drawGeyser(ctx, a, t)
         break
       case 'ancientRise':
         drawAncientRise(ctx, a)
@@ -482,17 +573,29 @@ export const drawTmAir = (ctx: Ctx, g: Game, t: number, visible: (x: number, y: 
 
 /* ---------------- On the player ---------------- */
 
-/** Iron Head's iron body: a steel shell with a glint sweeping across, brighter while the block is up. */
+/** Iron Head's iron body: a plated steel shell with rivets and a glint sweeping across, brighter while the block is up. */
 const drawIronBody = (ctx: Ctx, g: Game, a: Attack, t: number) => {
   const p = g.player
   const r = radiusOf(a)
   const guarding = p.guard?.move === 'ironHead'
-  ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.3) * (guarding ? 1 : 0.7)
-  dashedRing(ctx, p.x, p.y - 10, r, t * 2.5, guarding ? ['#ffffff', '#c8d0e0', '#8890a8'] : ['#c8d0e0', '#8890a8'], 0.75, 0.9)
+  const cy = p.y - 10
+  const ry = r * 0.95
+  ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.3)
+  // The clang when it hardens: a ring flies out.
+  if (a.age < 0.25) {
+    const e = a.age / 0.25
+    ringPx(ctx, p.x, cy, r + 4 + e * 14, (r + 4 + e * 14) * 0.9, ['#8890a8', '#ffffff'], 0)
+  }
+  blitCentered(ctx, ellipse(Math.round(r), Math.round(ry), guarding ? 'rgba(200,210,232,0.28)' : 'rgba(160,170,196,0.18)'), p.x, cy)
+  ringPx(ctx, p.x, cy, r, ry, guarding ? ['#485068', '#e8eef8'] : ['#485068', '#a8b0c8'], -t * 1.5)
+  for (let i = 0; i < 6; i++) {
+    const ang = (i / 6) * TAU + t * 0.8
+    px(ctx, p.x + Math.cos(ang) * (r - 1) - 1, cy + Math.sin(ang) * (ry - 1) - 1, '#f8f8ff', 2, 2)
+  }
   const sweep = ((t * 0.9 + a.id * 0.1) % 1) * TAU
-  for (let i = -2; i <= 2; i++) {
-    const ang = sweep + i * 0.08
-    px(ctx, p.x + Math.cos(ang) * r, p.y - 10 + Math.sin(ang) * r * 0.9, '#ffffff', 2, 2)
+  for (let i = -3; i <= 3; i++) {
+    const ang = sweep + i * 0.07
+    px(ctx, p.x + Math.cos(ang) * (r + 1), cy + Math.sin(ang) * (ry + 1), '#ffffff', 2, 2)
   }
   ctx.globalAlpha = 1
 }

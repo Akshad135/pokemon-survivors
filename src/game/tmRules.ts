@@ -35,7 +35,7 @@ export const TUTOR = {
   first: { from: 170, until: 480 },
   second: { from: 330, until: 540 },
   weight: { first: 12, second: 4 },
-  radius: 22,
+  radius: 26,
   stand: 0.6,
   offers: 2,
   price: 300,

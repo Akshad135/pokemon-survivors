@@ -61,7 +61,7 @@ const tmCard = (g: Game, offer: Extract<Offer, { kind: 'tm' }>, i: number) => {
     h(
       'div',
       { class: 'offer-body' },
-      h('div', { class: 'offer-name' }, def.name, h('span', { class: isNew ? 'tag tag-new' : 'tag' }, tag), h('span', { class: 'tag tag-tm' }, m.tm.tag)),
+      h('div', { class: 'offer-name' }, def.name, h('span', { class: isNew ? 'tag tag-new' : 'tag' }, tag), offer.source !== 'tutor' && h('span', { class: 'tag tag-tm' }, m.tm.tag)),
       h('div', { class: 'offer-desc' }, isNew ? m.moves[offer.id].description : tmLine(offer.id, offer.level)),
     ),
     typeBadge(def.type),
@@ -134,7 +134,7 @@ export const tmPick = (root: HTMLElement, input: Input, g: Game, onChoose: (offe
   })
   const cards = buttons.filter((_, i) => g.offers[i]?.kind !== 'pass')
   const pass = buttons.find((_, i) => g.offers[i]?.kind === 'pass')
-  const color = tm ? TYPE_COLORS[MOVES[tm.id].type] : '#78c0f8'
+  const color = source === 'tutor' ? '#3868b8' : tm ? TYPE_COLORS[MOVES[tm.id].type] : '#78c0f8'
   const sub =
     forgetting && tm ? (isManual(tm.id) && g.player.moves.some((mv) => isManual(mv.id)) ? m.forgetManual : m.forgetFull(who))
     : source === 'tutor' ? m.subTutor(tm?.price === 0)

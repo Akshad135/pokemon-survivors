@@ -20,6 +20,7 @@ import { CONSUMABLES } from '../../game/consumables'
 import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
+import { TUTOR } from '../../game/tmRules'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
@@ -401,6 +402,7 @@ const mapEvents = (m: SiteMessages) => {
     [e.spikes.name, e.spikes.how, e.spikes.reward],
     [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
     [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
+    [e.tutor.name, e.tutor.how(Math.round(TUTOR.first.from / 60), Math.round(TUTOR.first.until / 60)), e.tutor.reward(money([TUTOR.price]))],
   ]
   const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
   return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>

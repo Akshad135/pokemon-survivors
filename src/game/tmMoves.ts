@@ -76,7 +76,7 @@ export const HEAT_WAVE = { span: 1.25, slices: 9, start: 14, r: 6, grow: 12, ttl
 export const THUNDER_FANG = { reach: 120, r: 12, close: 0.1 } as const
 const FANG_BONUS: readonly DamageBonus[] = [{ when: 'paralyzed', mult: 1.6 }]
 /** Lava Plume: the ring the geysers burst on, the pools' share of the damage. */
-export const LAVA_PLUME = { near: 40, far: 64, r: 13, pool: 11, share: 0.3, erupt: 0.12 } as const
+export const LAVA_PLUME = { near: 40, far: 64, r: 13, pool: 11, share: 0.35, erupt: 0.12 } as const
 /** Aurora Beam's sweep: arc, reach and build. */
 export const AURORA = { arc: 1.5, length: 118, segments: 11, r: 6 } as const
 /** Ancient Power: the rocks' rise (s) and the boost: odds at Lv 1 (+ per level), seconds and stats. */
@@ -84,7 +84,7 @@ export const ANCIENT = { rise: 0.3, odds: 0.1, perLevel: 0.015, seconds: 8, boos
 /** Icy Wind's gusts: spread, drag and size (× area). */
 export const ICY_WIND = { spread: 0.2, drag: 1.6, r: 9, ttl: 0.9 } as const
 /** Iron Head: the iron body's radius (× area), its share of the damage, and the armor it adds while it lasts. */
-export const IRON_HEAD = { r: 15, share: 0.6, armor: 2 } as const
+export const IRON_HEAD = { r: 17, share: 0.4, armor: 2 } as const
 /** Psystrike: seconds the orbs hover before they strike, and their hover ring. */
 export const PSYSTRIKE = { hover: 0.3, ring: 16, reach: 260 } as const
 
@@ -152,7 +152,7 @@ const discharge = (g: Game, s: CastStats, owned: OwnedMove) => {
     ...look('discharge', 'electric', 'discharge'), x: p.x, y: p.y - 6,
     shape: { kind: 'circle', r: 6 }, motion: { kind: 'follow', ox: 0, oy: -6 },
     damage: s.damage * (0.7 + 0.8 * charge), knockback: s.knockback, status: s.status,
-    grow: (r - 6) / DISCHARGE.open, activeUntil: DISCHARGE.open, ttl: DISCHARGE.open + 0.2, memo: charge,
+    grow: (r - 6) / DISCHARGE.open, activeUntil: DISCHARGE.open, ttl: DISCHARGE.open + 0.3, memo: charge,
   })
   if (charge >= 1) g.shake = Math.max(g.shake, 2)
   cast(g, 'discharge')
@@ -337,15 +337,15 @@ export const TM_MOVES = {
   rockSlide: {
     name: 'Rock Slide',
     type: 'rock',
-    base: stats({ damage: 14, cooldown: 1.9, amount: 4, knockback: 50 }),
+    base: stats({ damage: 16, cooldown: 1.7, amount: 4, knockback: 50 }),
     upgrades: [
       { amount: 1 },
-      { damage: 4 },
-      { fork: [{ stats: { damage: 3 }, mods: ['burstOnKill'] }, { stats: { amount: 2, damage: -3 }, mods: ['echo'] }] },
-      { cooldown: -0.25 },
       { damage: 5 },
+      { fork: [{ stats: { damage: 3 }, mods: ['burstOnKill'] }, { stats: { amount: 2, damage: -3 }, mods: ['echo'] }] },
+      { cooldown: -0.3 },
+      { damage: 6 },
       { fork: [{ stats: { area: 0.25 }, mods: ['trail'] }, { stats: { damage: 4 }, mods: ['arc'] }] },
-      { amount: 2, damage: 4 },
+      { amount: 2, damage: 5 },
     ],
     fire: (g, s) => rockSlide(g, s),
   },
@@ -353,7 +353,7 @@ export const TM_MOVES = {
   yawn: {
     name: 'Yawn',
     type: 'normal',
-    base: stats({ damage: 10, cooldown: 3.4, amount: 1, knockback: 10 }),
+    base: stats({ damage: 12, cooldown: 3.4, amount: 1, knockback: 10 }),
     status: { kind: 'sleep', chance: 1, duration: 2.4, power: 0 },
     upgrades: [
       { area: 0.15 },
@@ -370,7 +370,7 @@ export const TM_MOVES = {
   iceBeam: {
     name: 'Ice Beam',
     type: 'ice',
-    base: stats({ damage: 16, cooldown: 1.8, amount: 1, duration: 0.35, knockback: 30 }),
+    base: stats({ damage: 16, cooldown: 1.8, amount: 1, duration: 0.45, knockback: 30 }),
     status: { kind: 'freeze', chance: 0.2, duration: 1.2, power: 0 },
     upgrades: [
       { damage: 5 },
@@ -387,16 +387,16 @@ export const TM_MOVES = {
   discharge: {
     name: 'Discharge',
     type: 'electric',
-    base: stats({ damage: 18, cooldown: 1.5, knockback: 70 }),
+    base: stats({ damage: 18, cooldown: 1.35, knockback: 70 }),
     status: { kind: 'paralysis', chance: 0.2, duration: 1, power: 0 },
     upgrades: [
-      { damage: 5 },
+      { damage: 6 },
       { area: 0.15 },
       { fork: [{ stats: { statusChance: 0.15 }, mods: ['arc'] }, { stats: { damage: 4 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.15 },
-      { damage: 6 },
+      { damage: 7 },
       { fork: [{ stats: { area: 0.15 }, mods: ['echo'] }, { stats: { damage: 5, statusChance: 0.1 } }] },
-      { damage: 6, area: 0.15 },
+      { damage: 8, area: 0.15 },
     ],
     fire: (g, s, owned) => discharge(g, s, owned),
   },
@@ -404,7 +404,7 @@ export const TM_MOVES = {
   heatWave: {
     name: 'Heat Wave',
     type: 'fire',
-    base: stats({ damage: 15, cooldown: 2.2, amount: 1, speed: 130, knockback: 60 }),
+    base: stats({ damage: 13, cooldown: 2.2, amount: 1, speed: 130, knockback: 60 }),
     status: { kind: 'burn', chance: 0.4, duration: 2.5, power: 0.35 },
     upgrades: [
       { damage: 4 },
@@ -526,7 +526,7 @@ export const TM_MOVES = {
   psystrike: {
     name: 'Psystrike',
     type: 'psychic',
-    base: stats({ damage: 20, cooldown: 1.5, amount: 2, speed: 280, knockback: 70 }),
+    base: stats({ damage: 18, cooldown: 1.5, amount: 2, speed: 280, knockback: 70 }),
     upgrades: [
       { amount: 1 },
       { damage: 5 },
@@ -534,7 +534,7 @@ export const TM_MOVES = {
       { cooldown: -0.2 },
       { damage: 6 },
       { fork: [{ stats: { amount: 1 }, mods: ['rear'] }, { stats: { damage: 5 }, mods: ['split'] }] },
-      { amount: 2, damage: 4 },
+      { amount: 1, damage: 5 },
     ],
     fire: (g, s) => psystrike(g, s),
   },

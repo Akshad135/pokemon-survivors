@@ -468,6 +468,11 @@ export const siteEs: SiteMessages = {
         how: (ttl: number) => `Huye de ti y escapa en ${ttl}s. Tus movimientos lo alcanzan.`,
         reward: (jackpot: string) => `Una moneda con cada golpe y el Pay Day (${jackpot}) si se debilita.`,
       },
+      tutor: {
+        name: 'Tutor de Movimientos',
+        how: (from: number, until: number) => `Arma su carpa una vez entre los minutos ${from} y ${until} (a veces una más). Quédate en su círculo.`,
+        reward: (price: string) => `Enseña 1 de 2 movimientos de tipos que no tienes. La primera clase es gratis; la siguiente cuesta ${price} de la partida.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [

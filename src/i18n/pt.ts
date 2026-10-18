@@ -2359,12 +2359,12 @@ export const pt = {
       description: 'Pedras despencam uma atrás da outra numa linha até o inimigo mais próximo.',
       upgrades: [
         '+1 pedra',
-        '+4 de dano',
-        { fork: [{ name: 'Desmoronamento', desc: 'Quem cai explode em pedras; +3 de dano' }, { name: 'Avalanche', desc: '+2 pedras e cai de novo (50%); -3 de dano' }] },
-        'Recarga 0.25s mais rápida',
         '+5 de dano',
+        { fork: [{ name: 'Desmoronamento', desc: 'Quem cai explode em pedras; +3 de dano' }, { name: 'Avalanche', desc: '+2 pedras e cai de novo (50%); -3 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+6 de dano',
         { fork: [{ name: 'Entulho', desc: 'Deixa o chão em cacos que machucam; +25% de área' }, { name: 'Lascas', desc: 'Os acertos saltam para 2 vizinhos; +4 de dano' }] },
-        '+2 pedras e +4 de dano',
+        '+2 pedras e +5 de dano',
       ],
     },
     yawn: {
@@ -2394,13 +2394,13 @@ export const pt = {
     discharge: {
       description: 'Você se carrega andando: a descarga ao seu redor cresce com o quanto andou desde a última (até ×1.5 de dano e o dobro do tamanho). Pode paralisar.',
       upgrades: [
-        '+5 de dano',
+        '+6 de dano',
         '+15% de área',
         { fork: [{ name: 'Arco voltaico', desc: 'Os acertos saltam para 2 vizinhos; +15% de paralisia' }, { name: 'Sobrecarga', desc: 'Quem cai explode; +4 de dano' }] },
         'Recarga 0.15s mais rápida',
-        '+6 de dano',
+        '+7 de dano',
         { fork: [{ name: 'Eco elétrico', desc: 'Descarrega de novo logo após (50%); +15% de área' }, { name: 'Alta tensão', desc: '+5 de dano e +10% de chance de paralisar' }] },
-        '+6 de dano e +15% de área',
+        '+8 de dano e +15% de área',
       ],
     },
     heatWave: {
@@ -2496,7 +2496,7 @@ export const pt = {
         'Recarga 0.2s mais rápida',
         '+6 de dano',
         { fork: [{ name: 'Onda dupla', desc: '+1 esfera; também atira para trás' }, { name: 'Divisão', desc: 'Racham em 2 ao acertar; +5 de dano' }] },
-        '+2 esferas e +4 de dano',
+        '+1 esfera e +5 de dano',
       ],
     },
   },

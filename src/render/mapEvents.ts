@@ -205,13 +205,13 @@ const drawTutor = (ctx: Ctx, ev: MapEventOf<'tutor'>, t: number) => {
   const k = ev.state.stand / TUTOR.stand
   dashedRing(ctx, ev.x, ev.y - 2, TUTOR.radius, t * 1.5, ['#78c0f8', '#3868b0'], 0.35)
   if (k > 0) progressArc(ctx, ev.x, ev.y - 2, TUTOR.radius, k, '#d8f0ff')
-  groundShadow(ctx, ev.x, ev.y + 1, 13)
+  groundShadow(ctx, ev.x, ev.y + 1, 17)
   const tent = TM_FX.tent()
   ctx.drawImage(tent, Math.round(ev.x - tent.width / 2), Math.round(ev.y - tent.height + 1))
   const tutor = TM_FX.tutor()
   const hop = Math.floor(t * 2 + ev.id) % 4 === 0 ? 1 : 0
-  groundShadow(ctx, ev.x - 16, ev.y + 2, 4)
-  ctx.drawImage(tutor, Math.round(ev.x - 16 - tutor.width / 2), Math.round(ev.y - tutor.height + 2 - hop))
+  groundShadow(ctx, ev.x - 21, ev.y + 2, 4)
+  ctx.drawImage(tutor, Math.round(ev.x - 21 - tutor.width / 2), Math.round(ev.y - tutor.height + 2 - hop))
   // A TM disc bobbing over the tent, in a color that cycles through the types it can teach.
   const colors = ['#f08030', '#6890f0', '#f8d030', '#98d8d8', '#b8a038', '#f85888', '#705898', '#a8a878']
   const color = colors[Math.floor(t * 1.2 + ev.id) % colors.length]!
