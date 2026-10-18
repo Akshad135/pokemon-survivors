@@ -741,6 +741,7 @@ export const es: Messages = {
     note: (shown, total) => `En la evolución aparecen ${shown} de las ${total}; el clima y el lugar atraen a una de ellas.`,
     noteAll: 'En la evolución eliges el camino.',
     choose: (n) => `${n} opciones`,
+    specialNote: 'En la evolución, el especial pasa a ser el de la forma elegida.',
   },
 
   abilities: {
@@ -1663,7 +1664,7 @@ export const es: Messages = {
     quaxly: 'Bailarín. Gira en el agua y golpea.',
     pichu: 'Eléctrico. Rayos rápidos, pero frágil.',
     machop: 'Luchador. Puñetazos fuertes y mucha vida.',
-    eevee: 'Adaptable. Crece rápido y se vuelve Umbreon.',
+    eevee: 'Adaptable. Crece rápido y evoluciona de 8 formas.',
     togepi: 'Afortunado. Regenera vida y gana más EXP.',
     spheal: 'Rodante. Gordito, resistente y helado.',
     starly: 'Veloz. Vuela rápido y atrae objetos de lejos.',

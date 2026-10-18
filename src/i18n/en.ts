@@ -740,6 +740,7 @@ export const en: Messages = {
     note: (shown, total) => `${shown} of the ${total} show up at the evolution; the weather and the place pull one of them in.`,
     noteAll: 'You pick the path at the evolution.',
     choose: (n) => `${n} options`,
+    specialNote: 'At the evolution, the special becomes the chosen form’s.',
   },
 
   abilities: {
@@ -1662,7 +1663,7 @@ export const en: Messages = {
     quaxly: 'Dancer. Spins in the water and strikes.',
     pichu: 'Electric. Quick bolts, but frail.',
     machop: 'Fighter. Strong punches and plenty of HP.',
-    eevee: 'Adaptable. Grows fast and becomes Umbreon.',
+    eevee: 'Adaptable. Grows fast and evolves 8 ways.',
     togepi: 'Lucky. Regenerates HP and earns more EXP.',
     spheal: 'Roller. Chubby, sturdy and icy.',
     starly: 'Swift. Flies fast and pulls items from afar.',

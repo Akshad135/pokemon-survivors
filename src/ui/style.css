@@ -8988,7 +8988,7 @@ button.hall-tile:hover {
   animation: rays 6s steps(48) infinite;
 }
 
-/* The portrait comes out of its silhouette, like "Who's that Pokémon?". */
+/* The portrait opens out of a flash of light. */
 .evo-card-portrait {
   width: 80px;
   height: 80px;
@@ -9006,14 +9006,16 @@ button.hall-tile:hover {
 }
 
 @keyframes silhouette {
-  0%,
-  45% {
-    filter: brightness(0);
+  0% {
+    clip-path: inset(50% round 50%);
+    filter: brightness(3);
   }
-  70% {
+  55% {
+    clip-path: inset(0 round 6px);
     filter: brightness(2.2);
   }
   to {
+    clip-path: inset(0 round 6px);
     filter: none;
   }
 }

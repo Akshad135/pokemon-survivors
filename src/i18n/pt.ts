@@ -831,6 +831,7 @@ export const pt = {
     note: (shown: number, total: number) => `Na evolução aparecem ${shown} das ${total}; o clima e o lugar puxam uma delas.`,
     noteAll: 'Na evolução você escolhe o caminho.',
     choose: (n: number) => `${n} opções`,
+    specialNote: 'Na evolução, o especial passa a ser o da forma escolhida.',
   },
 
   /** What each ability does (`ABILITIES`). */
@@ -1764,7 +1765,7 @@ export const pt = {
     quaxly: 'Dançarino. Gira na água e golpeia.',
     pichu: 'Elétrico. Raios rápidos, mas frágil.',
     machop: 'Lutador. Socos fortes e muita vida.',
-    eevee: 'Adaptável. Cresce rápido e vira Umbreon.',
+    eevee: 'Adaptável. Cresce rápido e evolui de 8 jeitos.',
     togepi: 'Sortudo. Regenera vida e ganha mais EXP.',
     spheal: 'Rolante. Gordinho, resistente e gelado.',
     starly: 'Veloz. Voa rápido e puxa itens de longe.',
