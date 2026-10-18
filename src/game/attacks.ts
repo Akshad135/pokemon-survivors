@@ -1,4 +1,4 @@
-import { dir8, dirTo, fromAngle, retain } from '../engine/math'
+import { dir8, dirTo, fromAngle, retain, TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { damageEnemy } from './combat'
@@ -6,7 +6,7 @@ import { modHit, modTick } from './mods'
 import { mineArmed, mineBlast, TURRET_RANGE } from './moveRules'
 import { nearestEnemy } from './queries'
 import { spawnAttack } from './spawn'
-import type { Attack, Enemy, Game, Motion, Turret } from './types'
+import type { Attack, Enemy, Game, Motion, Trailer, Turret } from './types'
 import * as dm from '../engine/dmath'
 
 const neighbors: number[] = []
@@ -68,6 +68,84 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
       a.y += m.vy * dt
       break
     }
+    case 'return': {
+      if (m.out > 0) {
+        m.out -= dt
+        a.x += m.vx * dt
+        a.y += m.vy * dt
+        // The way back is a fresh pass: everything can be hit again.
+        if (m.out <= 0) a.hits.clear()
+        break
+      }
+      const dx = p.x - a.x
+      const dy = p.y - 8 - a.y
+      const d = dm.hypot(dx, dy)
+      const step = m.speed * dt
+      if (d <= step + RETURN_CATCH) {
+        a.x = p.x
+        a.y = p.y - 8
+        a.ttl = a.age
+        break
+      }
+      m.vx = (dx / d) * m.speed
+      m.vy = (dy / d) * m.speed
+      a.x += m.vx * dt
+      a.y += m.vy * dt
+      break
+    }
+    case 'wander': {
+      m.heading += range(g.rng, -m.turn, m.turn) * dt
+      const dx = p.x - a.x
+      const dy = p.y - a.y
+      if (dm.sq(dx) + dm.sq(dy) > m.leash * m.leash) m.heading += turnToward(m.heading, dm.atan2(dy, dx)) * Math.min(1, 4 * dt)
+      a.x += dm.cos(m.heading) * m.speed * dt
+      a.y += dm.sin(m.heading) * m.speed * dt
+      break
+    }
+  }
+}
+
+/** A returning hitbox is caught this close to the player. */
+const RETURN_CATCH = 6
+
+/** Signed angle (−π..π) to turn from `from` to face `to`. */
+const turnToward = (from: number, to: number) => {
+  let d = (to - from) % TAU
+  if (d > Math.PI) d -= TAU
+  if (d < -Math.PI) d += TAU
+  return d
+}
+
+/** Bosses feel this share of a pull, on top of their mass. */
+const PULL_BOSS = 0.25
+
+/** Draws the foes the attack touches toward its center by `pull / mass` px/s, never past it. */
+const pullFoes = (g: Game, a: Attack, dt: number) => {
+  for (const i of query(g.grid, a.x, a.y, reach(a) + 40, neighbors)) {
+    const e = g.enemies[i]
+    if (!e || e.dying >= 0 || !overlaps(a, e)) continue
+    const dx = a.x - e.x
+    const dy = a.y - (e.y - e.radius)
+    const d = dm.hypot(dx, dy)
+    if (d < 1) continue
+    const step = Math.min(d, (a.pull / e.mass) * (e.boss ? PULL_BOSS : 1) * dt)
+    e.x += (dx / d) * step
+    e.y += (dy / d) * step
+  }
+}
+
+/** Drops a patch at the player's feet for every `every` px walked since the last one. */
+const dropTrail = (g: Game, a: Attack, t: Trailer) => {
+  const p = g.player
+  t.acc += p.walked - t.walked
+  t.walked = p.walked
+  for (; t.acc >= t.every; t.acc -= t.every) {
+    spawnAttack(g, {
+      move: a.move, type: a.type, visual: t.visual, x: p.x + range(g.rng, -2, 2), y: p.y + range(g.rng, -2, 2),
+      shape: { kind: 'circle', r: t.r }, motion: { kind: 'static' },
+      damage: a.damage * t.share, knockback: 0, hitInterval: t.hitInterval, ttl: t.ttl, status: a.status,
+      bonus: a.bonus, drain: a.drain, flip: chance(g.rng, 0.5),
+    })
   }
 }
 
@@ -181,7 +259,10 @@ export const updateAttacks = (g: Game, dt: number) => {
     trail(g, a)
     if (a.mod) modTick(g, a)
     if (a.turret) shoot(g, a, a.turret, dt)
-    if (a.age >= a.activeFrom && a.age <= a.activeUntil && (a.blast === 0 || mineArmed(a.age))) collide(g, a)
+    if (a.trailer) dropTrail(g, a, a.trailer)
+    const active = a.age >= a.activeFrom && a.age <= a.activeUntil
+    if (a.pull > 0 && active) pullFoes(g, a, dt)
+    if (active && (a.blast === 0 || mineArmed(a.age))) collide(g, a)
     if (a.blast > 0 && a.pierce > 0 && a.age >= a.ttl) detonate(g, a, true)
   }
   retain(g.attacks, (a) => a.age < a.ttl && a.pierce > 0)

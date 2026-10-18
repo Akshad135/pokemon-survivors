@@ -1,3 +1,4 @@
+import { NO_BONUS } from './kitRules'
 import { createModState } from './mods'
 import type { Attack, Game } from './types'
 
@@ -26,6 +27,11 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     blastVisual: init.visual,
     turret: null,
     mod: createModState(g.castMods),
+    bonus: NO_BONUS,
+    execute: 0,
+    drain: 0,
+    pull: 0,
+    trailer: null,
     ...init,
   }
   g.attacks.push(attack)

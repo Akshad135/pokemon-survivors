@@ -6,7 +6,7 @@ import { hurtPlayer, killEnemy } from './combat'
 import { spawnEnemy } from './enemies'
 import { burst, damageText } from './effects'
 import { inView } from './queries'
-import { isAsleep } from './status'
+import { isHeld } from './status'
 import {
   absorb,
   blastDamage,
@@ -242,8 +242,8 @@ export const updateTraits = (g: Game, dt: number) => {
     const act = st.act
     if (!act || e.dying >= 0) continue
     introduce(g, e, act)
-    // Stunned or asleep enemies hold their trait, fuses included (paralysis and the Poké Flute pay off).
-    if (e.status.stun > 0 || isAsleep(e.status)) continue
+    // Stunned, asleep or frozen enemies hold their trait, fuses included (paralysis and the Poké Flute pay off).
+    if (e.status.stun > 0 || isHeld(e.status)) continue
     switch (act.kind) {
       case 'healer':
       case 'shield':

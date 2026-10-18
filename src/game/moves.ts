@@ -4,14 +4,15 @@ import type { PokeType } from '../data/types'
 import { spawnAttack } from './spawn'
 import { damageEnemy } from './combat'
 import { enemiesInView, nearestEnemy } from './queries'
+import { NO_BONUS, type DamageBonus, type StackRule } from './kitRules'
 import {
   CHAIN_JUMP, CHAIN_RANGE, chainDamage, chainTargets, HEX_BONUS, LUNGE_IFRAMES, LUNGE_MIN_COOLDOWN, LUNGE_OVERSHOOT,
   LUNGE_SEEK, LUNGE_TIME, lungeLength, lungeTarget, mineCap,
 } from './moveRules'
-import type { Attack, Game, Visual } from './types'
+import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
 import { modBits, modHit, type ModId } from './mods'
-import { isAfflicted, scaleStatus, type StatusSpec } from './status'
+import { scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
 
 /**
@@ -66,11 +67,18 @@ export type MoveDef = {
   minCooldown?: number
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
-  fire: (g: Game, s: CastStats) => void
+  /** Per-move counter rule (`OwnedMove.stacks`, see `kitRules.ts`); `fire` reads `owned.stacks`. */
+  stacks?: StackRule
+  /** Casts the move. `owned` is its slot: level, `stacks`, `walkedAt` (`moveKit.ts`). */
+  fire: (g: Game, s: CastStats, owned: OwnedMove) => void
+  /** A guard window it opened (`guard` in `moveKit.ts`) negated a hit from `from` (none for hazards): counter it. */
+  onGuard?: (g: Game, s: CastStats, owned: OwnedMove, from?: Enemy) => void
+  /** A burrow it started (`burrow` in `moveKit.ts`) ended: come back out, usually with a hit. */
+  emerge?: (g: Game, s: CastStats, owned: OwnedMove) => void
 }
 
 /** What a cast helper needs to name and paint its hitboxes. */
-type Look = { move: MoveId; type: PokeType; visual: Visual }
+export type Look = { move: MoveId; type: PokeType; visual: Visual }
 
 const stats = (s: Partial<MoveStats>): MoveStats => ({
   damage: 0, cooldown: 1, area: 1, amount: 1, speed: 0, duration: 1, pierce: Infinity, knockback: 0, statusChance: 0, statusDamage: 0, ...s,
@@ -128,11 +136,11 @@ const lunge = (g: Game, s: CastStats, look: Look, burst = 0) => {
 
 /**
  * Chain: strikes the nearest foe, then jumps to the next nearest ones (`amount`
- * hits in all), ×0.85 damage per jump and ×`hexBonus` on foes with a status
- * condition. The hits land at once, without knockback; each jump leaves a
- * visual-only arc from the previous foe, a few ms apart.
+ * hits in all), ×0.85 damage per jump and `bonus` on the foes it applies to
+ * (Hex: ×1.7 on foes with a status condition). The hits land at once, without
+ * knockback; each jump leaves a visual-only arc from the previous foe, a few ms apart.
  */
-const chain = (g: Game, s: CastStats, look: Look, hexBonus = 1) => {
+const chain = (g: Game, s: CastStats, look: Look, bonus: readonly DamageBonus[] = NO_BONUS) => {
   const p = g.player
   const targets = chainTargets(g.enemies, p, s.amount, CHAIN_RANGE, CHAIN_JUMP * s.area)
   let from = { x: p.x, y: p.y - 10 }
@@ -141,7 +149,7 @@ const chain = (g: Game, s: CastStats, look: Look, hexBonus = 1) => {
     const arc = spawnAttack(g, {
       ...look, ...to, from,
       shape: { kind: 'circle', r: 4 * s.area }, motion: { kind: 'static' },
-      damage: chainDamage(s.damage, hop, isAfflicted(e.status), hexBonus), status: s.status,
+      damage: chainDamage(s.damage, hop), bonus, status: s.status,
       ttl: 0.28, activeFrom: Infinity, age: -hop * 0.035,
     })
     damageEnemy(g, e, arc)
@@ -223,6 +231,9 @@ const breath = (g: Game, s: CastStats, look: Look, angle: number, puffs: number)
     })
   })
 }
+
+/** Hex hits foes with a status condition ×1.7. */
+const HEX: readonly DamageBonus[] = [{ when: 'afflicted', mult: HEX_BONUS }]
 
 /** Seconds a Rock Tomb boulder takes to fall: its shadow is the warning. */
 const ROCK_FALL = 0.32
@@ -940,7 +951,7 @@ export const MOVES = {
       { area: 0.25 },
       { amount: 2 },
     ],
-    fire: (g, s) => chain(g, s, { move: 'hex', type: 'ghost', visual: 'hex' }, HEX_BONUS),
+    fire: (g, s) => chain(g, s, { move: 'hex', type: 'ghost', visual: 'hex' }, HEX),
   },
 
   toxicSpikes: {

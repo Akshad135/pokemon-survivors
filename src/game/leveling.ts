@@ -9,7 +9,8 @@ import { buffDeltas } from './buffs'
 import { healPlayer } from './combat'
 import { burst } from './effects'
 import { rankDeltas } from './meta'
-import { forkAt, maxMoveLevel, MOVES, withBranch, type MoveId } from './moves'
+import { learnable } from './kitRules'
+import { forkAt, isManual, maxMoveLevel, MOVES, withBranch, type MoveId } from './moves'
 import { stanceStats } from './stance'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove, Rarity } from './types'
@@ -50,11 +51,12 @@ export const offerPool = ({ starter, moves, items, banished }: Loadout): Array<r
   const learnsetTypes = new Set<PokeType>(learnset.map((id) => MOVES[id].type))
   // A base move whose evolution is already owned must not come back as a new move.
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
+  const ownedIds = moves.map((m) => m.id)
 
   const moveOffers = learnset.flatMap((id): Array<readonly [Offer, number]> => {
     if (banished?.has(id)) return []
     const level = ownedMoves.get(id)
-    if (level === undefined) return moves.length < MAX_MOVES && !evolvedBases.has(id) ? [[{ kind: 'move', id, level: 1 }, 1]] : []
+    if (level === undefined) return moves.length < MAX_MOVES && !evolvedBases.has(id) && learnable(ownedIds, id, isManual) ? [[{ kind: 'move', id, level: 1 }, 1]] : []
     return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, 1.3]] : []
   })
 
