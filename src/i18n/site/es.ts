@@ -74,6 +74,7 @@ export const siteEs: SiteMessages = {
     special: 'Ataque especial',
     specialFinal: 'En la evolución final',
     learnset: 'Movimientos que aprende',
+    learnStart: 'desde el inicio',
     wildStats: { hp: 'HP', damage: 'Daño por contacto', speed: 'Velocidad', xp: 'EXP' },
     eventNote: 'Aparece en los eventos del mapa: huye de ti y suelta monedas con cada golpe. Derríbalo antes de que escape para ganarte el Pay Day.',
     wildNote: 'Valores base. Los enemigos comunes se vuelven más fuertes cada minuto; los jefes, no.',
@@ -268,6 +269,15 @@ export const siteEs: SiteMessages = {
         'Los objetos de tipo (Charcoal, Mystic Water…) solo aparecen si tu Pokémon aprende movimientos de ese tipo. Cuando no queda nada que ofrecer, llega una Oran Berry (+40 HP).',
         'Cambiar (sortear otras ofertas) y Saltar (renunciar a la subida de nivel sin elegir nada, útil cuando ninguna oferta sirve) son cargas que se compran en el Poké Mart.',
       ],
+      choices: (rarePercent: number, shinyOneIn: number) => [
+        'La partida empieza con un draft: con el reloj detenido, eliges tu 2.º movimiento entre 3 de la lista de tu Pokémon.',
+        'Todo movimiento base se divide en dos caminos en el Nv. 4 y en el Nv. 7: la carta dice "2 caminos" y, al elegirla, se abre en los dos. Cada camino cambia cómo juega el movimiento (rebotar, explotar, dejar un rastro, hacer eco…), no solo los números.',
+        `Cada carta sortea su rareza: la rara (${n(rarePercent)}% de probabilidad, marco azul) sube 2 niveles de una vez, y la shiny (1 de ${shinyOneIn}, el doble con el Shiny Charm) es una elección gratis, seguida de otra.`,
+        'Olvidar saca una oferta de la partida: la carta sale volando, el espacio se sortea de nuevo y ese movimiento u objeto no vuelve más. Las cargas vienen de la Escape Rope del Poké Mart, de cada jefe derrotado y de cada evolución.',
+        'La lista de movimientos crece con tu Pokémon: cada evolución desbloquea movimientos nuevos (un aviso muestra cuáles), que salen más seguido en las 3 subidas de nivel siguientes. Hay más movimientos que espacios, así que cada partida deja algunos fuera.',
+        'Los jefes derrotados dejan una MT con un movimiento de fuera de su lista, el Tutor de Movimientos enseña tipos que no tienes y ganar una grieta ofrece el movimiento legendario del propio legendario (uno por partida). Con los espacios llenos, aprender pide olvidar un movimiento.',
+      ],
+      abilities: 'En su primera evolución, tu Pokémon despierta una Habilidad: elige 1 de 3 (la tercera es la Habilidad Oculta), y dura toda la partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia y Poliwhirl además preguntan en qué evolucionar, y cada forma tiene su propio tipo, especial, movimientos y Habilidades.',
       evolution: (first: number, second: number) =>
         `Tu Pokémon evoluciona en el Nv. ${first} y en el Nv. ${second}, como en los juegos. Cada evolución da más HP y estadísticas, y la evolución final potencia el ataque especial.`,
       itemsTitle: 'Held items',
@@ -284,6 +294,20 @@ export const siteEs: SiteMessages = {
       itemHead: 'Objeto',
       resultHead: 'Evolución',
       noEvolution: (moves: string) => `Todavía sin evolución: ${moves}.`,
+      neverEvolves: 'Los movimientos firma, de MT, legendarios y en dúo no evolucionan: ya son un movimiento final y crecen por sus propios caminos.',
+      duoTitle: 'Ataques en dúo',
+      duoParagraphs: [
+        'Lleva dos ataques al nivel máximo (o evoluciónalos) y, si sus tipos forman una de las recetas de abajo, una carta dorada ofrece unirlos en un ataque en dúo: toma el espacio del primero, libera el del segundo y sube hasta el Nv 5. Los dos ataques usados no vuelven.',
+        'Las recetas van por tipo, así que funcionan con cualquier Pokémon. Solo cabe 1 ataque en dúo por partida, y la Poké Ball nunca une ataques por su cuenta.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Ataque en dúo',
+      cursedTitle: 'Objetos malditos',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `Desde el minuto ${minutes.toLocaleString('es')}, un cofre cerrado tiene ${Math.round(chance * 100)}% de probabilidad de esconder un objeto maldito: muy fuerte, pero con un precio. Tú eliges tomarlo o dejarlo. No ocupa espacio de objeto, dura hasta el final de la partida y puedes tener hasta ${max}.`,
+      ],
+      cursedUpHead: 'Ventaja',
+      cursedDownHead: 'Precio',
     },
     special: {
       paragraphs: (min: number) => [
@@ -304,7 +328,7 @@ export const siteEs: SiteMessages = {
       statusHead: 'Estado',
       movesHead: 'Lo causa',
       effectHead: 'Efecto',
-      names: { burn: 'Quemadura', poison: 'Veneno', paralysis: 'Parálisis', slow: 'Lentitud', sleep: 'Sueño', freeze: 'Congelación', mark: 'Marca', confuse: 'Confusión', seed: 'Semilla' },
+      names: { burn: 'Quemadura', poison: 'Veneno', paralysis: 'Parálisis', slow: 'Lentitud', sleep: 'Sueño', freeze: 'Congelación', mark: 'Marca', confuse: 'Confusión', seed: 'Semilla', weaken: 'Debilitado' },
       effects: {
         burn: (attack: number) => `Daño por segundo. El enemigo quemado solo causa el ${n(attack * 100)}% del daño por contacto.`,
         poison: (stacks: number) => `Daño por segundo que se acumula hasta ${stacks}x.`,
@@ -315,6 +339,7 @@ export const siteEs: SiteMessages = {
         mark: (stacks: number) => `El enemigo marcado recibe más daño de cada golpe, acumulando hasta ${stacks}x.`,
         confuse: () => 'El enemigo deambula sin rumbo y lastima a los enemigos con los que choca. Los jefes son inmunes.',
         seed: (heal: number, jumps: number) => `Daño por segundo que te cura un ${n(heal * 100)}% del daño. Cuando el enemigo cae, la semilla salta a ${jumps} vecinos.`,
+        weaken: (boss: number) => `Barro en los ojos: el enemigo hace menos daño de contacto. En jefes dura un ${n(boss * 100)}% del tiempo.`,
       },
       flute: 'Poké Flute (objeto del mapa)',
       itemsNote: 'King\'s Rock aumenta la probabilidad de estado, Toxic Orb aumenta el daño de quemadura y veneno, y Light Clay hace que los estados duren más.',
@@ -466,6 +491,11 @@ export const siteEs: SiteMessages = {
         name: 'Meowth fugitivo',
         how: (ttl: number) => `Huye de ti y escapa en ${ttl}s. Tus movimientos lo alcanzan.`,
         reward: (jackpot: string) => `Una moneda con cada golpe y el Pay Day (${jackpot}) si se debilita.`,
+      },
+      tutor: {
+        name: 'Tutor de Movimientos',
+        how: (from: number, until: number) => `Arma su carpa una vez entre los minutos ${from} y ${until} (a veces una más). Quédate en su círculo.`,
+        reward: (price: string) => `Enseña 1 de 2 movimientos de tipos que no tienes. La primera clase es gratis; la siguiente cuesta ${price} de la partida.`,
       },
     },
     mart: {

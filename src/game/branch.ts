@@ -3,7 +3,6 @@ import type { BiomeId, WeatherId } from '../data/biomes'
 import { BRANCH_OFFERS, BRANCHES, branchStage, type BranchDef, type BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import type { EvolutionStage } from '../data/starters'
-import type { MoveId } from './moves'
 import type { Game } from './types'
 import { weatherHere } from './weather'
 
@@ -68,11 +67,4 @@ export const drawBranches = (rng: Rng, options: readonly BranchId[], ctx: Branch
   const offers: BranchOffer[] = others.map((id) => ({ id, favor: null }))
   offers.splice(Math.floor(rng() * count), 0, { id: lead, favor: favorOf(lead, ctx) })
   return offers
-}
-
-/** The moves a run can learn: the family's, plus the branch's once it took one. */
-export const runLearnset = (starter: PlayableId, branch: BranchId | null): readonly MoveId[] => {
-  const own: readonly MoveId[] = PLAYABLE[starter].learnset
-  const b = branch ? BRANCHES[branch] : null
-  return b && b.line === starter ? [...own, ...b.moves.filter((m) => !own.includes(m))] : own
 }

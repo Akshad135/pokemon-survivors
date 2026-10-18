@@ -30,7 +30,7 @@ export const TICK = 1 / 60
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
  * Replays from before the field existed are rules 1.
  */
-export const RULES_VERSION = 17
+export const RULES_VERSION = 18
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -229,8 +229,12 @@ const applyEvent = (g: Game, e: ReplayEvent) => {
   }
 }
 
-/** How a re-simulated run ended. `stuck`: its replay ran out on a level-up, waiting on a pick it doesn't make. */
-export type Resimulated = { time: number; kills: number; level: number; phase: Game['phase']; stuck: boolean }
+/**
+ * How a re-simulated run ended. `stuck`: its replay ran out on a level-up,
+ * waiting on a pick it doesn't make. `branch`: the branching evolution it
+ * took, which the boards trust over the one the game reported.
+ */
+export type Resimulated = { time: number; kills: number; level: number; branch: Game['branch']; phase: Game['phase']; stuck: boolean }
 
 /**
  * Plays a replay again from its seed, step by step, applying each event at its
@@ -267,5 +271,5 @@ export const resimulate = (replay: Replay, g: Game = startGame(replay.start)): R
     }
   }
   applyDue()
-  return { time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: g.phase === 'levelup' }
+  return { time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: g.phase === 'levelup' }
 }
