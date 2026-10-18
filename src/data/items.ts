@@ -47,6 +47,13 @@ export const ITEMS = {
   hardStone: typeItem('rock', 'Hard Stone'),
   silverPowder: typeItem('bug', 'Silver Powder'),
   dragonFang: typeItem('dragon', 'Dragon Fang'),
+  blackBelt: typeItem('fighting', 'Black Belt'),
+  metalCoat: typeItem('steel', 'Metal Coat'),
+  spellTag: typeItem('ghost', 'Spell Tag'),
+  blackGlasses: typeItem('dark', 'Black Glasses'),
+  twistedSpoon: typeItem('psychic', 'Twisted Spoon'),
+  softSand: typeItem('ground', 'Soft Sand'),
+  fairyFeather: typeItem('fairy', 'Fairy Feather'),
 } as const satisfies Record<string, ItemDef>
 
 export type ItemId = keyof typeof ITEMS

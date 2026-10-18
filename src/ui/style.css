@@ -1476,8 +1476,11 @@ button {
   align-items: center;
   margin-top: 4px;
   padding-bottom: 4px;
+  gap: 8px;
   font-family: var(--title);
   font-size: 9px;
+  /* Long headers ("Habilidades (vienen de la evolución elegida)") wrap on a phone. */
+  line-height: 1.4;
   color: #6878a8;
   border-bottom: 2px solid #d8d8e8;
 }
@@ -1788,8 +1791,14 @@ button {
   font-family: var(--title);
   font-size: 11px;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   align-items: center;
+}
+
+/* A name with several tags (Nv 2, ✦ Ivysaur, RARO! +2 Nv) wraps whole tags onto the next line instead of squeezing each one. */
+.offer-name .tag {
+  white-space: nowrap;
 }
 
 .offer-desc {
@@ -2192,6 +2201,16 @@ button {
   border-color: #e83838;
 }
 
+/* A level-up for an evolved move: gold like an evolution, without the blinking. */
+.offer-star {
+  background: linear-gradient(180deg, #fffbe8, #f8ecc0);
+  border-color: #e0a020;
+}
+
+.offer-star .offer-icon {
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
 .offer-evo .offer-icon {
   background: #503010;
   box-shadow: 0 0 0 2px #f8d030;
@@ -2272,6 +2291,22 @@ button {
   line-height: 1;
   text-align: center;
   color: #6878a8;
+}
+
+/* A phone on its side with a full loadout: the pause scrolls, its buttons stay pinned at the bottom. */
+@media (max-height: 500px) {
+  .pause-box .evo-legend {
+    display: none;
+  }
+  .pause-box > .buttons {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 0 -16px -12px;
+    padding: 8px 16px 12px;
+    background: var(--paper);
+    border-radius: 0 0 8px 8px;
+  }
 }
 
 .slot.evo-ready {
@@ -4271,6 +4306,12 @@ button {
 .item-toast img {
   width: 28px;
   height: 28px;
+}
+
+/* The toast's second line ("Surto de Gastly!" / "Ele aparece muito mais hoje…"), not glued to the first. */
+.item-toast small {
+  display: block;
+  margin-top: 2px;
 }
 
 @media (max-width: 720px) and (min-height: 501px) {
@@ -8824,6 +8865,779 @@ button.hall-tile:hover {
   color: #6878a8;
 }
 
+/* ---------- Evolution picks: branching evolutions and abilities (ui/abilityPick.ts) ---------- */
+
+.evo-pick,
+.ability-pick {
+  gap: 14px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 52%, rgba(120, 140, 255, 0.22), transparent 70%),
+    rgba(8, 8, 24, 0.72);
+}
+
+.evo-pick-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: min(640px, 94vw);
+  color: #f8f8f8;
+  text-align: center;
+  text-shadow: 2px 2px 0 #101020;
+  animation: pop 0.2s steps(4) both;
+}
+
+.ability-pick .evo-pick-head {
+  flex-direction: row;
+  text-align: left;
+}
+
+.evo-pick-title {
+  font-family: var(--title);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.evo-pick-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+  color: #d0d4f0;
+}
+
+.ability-pick-portrait {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 3px solid #f8f8f8;
+  border-radius: 6px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #283040, 0 0 18px rgba(248, 216, 96, 0.6);
+}
+
+.evo-cards,
+.ability-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--count, 3), minmax(0, 210px));
+  justify-content: center;
+  gap: 14px;
+  width: min(700px, 96vw);
+  padding-top: 12px;
+}
+
+.evo-card,
+.ability-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 10px 12px;
+  color: var(--ink);
+  text-align: center;
+  border: 3px solid #283040;
+  border-radius: 8px;
+  transition: transform 0.12s steps(3), opacity 0.2s steps(3);
+}
+
+.evo-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--type) 34%, #fff), #fff 58%);
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px color-mix(in srgb, var(--type) 75%, #283040),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: card-land 0.36s steps(6) both;
+  animation-delay: calc(var(--i, 0) * 0.12s + 0.1s);
+}
+
+.evo-card .offer-key,
+.ability-card .offer-key {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+.evo-card.selected,
+.ability-card.selected {
+  transform: translateY(-6px);
+  border-color: #e83838;
+}
+
+.evo-card.selected {
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px var(--type),
+    0 10px 0 rgba(0, 0, 0, 0.3),
+    0 0 22px color-mix(in srgb, var(--type) 80%, transparent);
+}
+
+.evo-card.selected .offer-key,
+.ability-card.selected .offer-key {
+  background: #e83838;
+}
+
+/* The pick: the card flashes and grows, the others step back. */
+.evo-card.picked,
+.ability-card.picked {
+  animation: card-pick 0.38s steps(5) both;
+}
+
+.evo-card.passed,
+.ability-card.passed {
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+@keyframes card-land {
+  from {
+    transform: translateY(26px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes card-pick {
+  40% {
+    transform: translateY(-10px) scale(1.08);
+    filter: brightness(1.8);
+  }
+  to {
+    transform: translateY(-8px) scale(1.05);
+    filter: brightness(1.15);
+  }
+}
+
+.evo-card-art {
+  display: grid;
+  place-items: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  position: relative;
+  isolation: isolate;
+  background: radial-gradient(circle, color-mix(in srgb, var(--type) 45%, #fff) 0 44%, color-mix(in srgb, var(--type2) 70%, #283040) 45% 50%, transparent 51%);
+}
+
+/* Slow light rays turning behind the portrait. */
+.evo-card-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 8%, color-mix(in srgb, var(--type) 45%, transparent) 8% 12%, transparent 12% 33%, color-mix(in srgb, var(--type2) 45%, transparent) 33% 37%, transparent 37% 58%, color-mix(in srgb, var(--type) 45%, transparent) 58% 62%, transparent 62% 83%, color-mix(in srgb, var(--type2) 45%, transparent) 83% 87%, transparent 87%);
+  animation: rays 6s steps(48) infinite;
+}
+
+/* The portrait opens out of a flash of light. */
+.evo-card-portrait {
+  width: 80px;
+  height: 80px;
+  border: 3px solid #283040;
+  border-radius: 6px;
+  background: #f8f8f8;
+  animation: silhouette 1s steps(5) both;
+  animation-delay: calc(var(--i, 0) * 0.15s + 0.45s);
+}
+
+@keyframes rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes silhouette {
+  0% {
+    clip-path: inset(50% round 50%);
+    filter: brightness(3);
+  }
+  55% {
+    clip-path: inset(0 round 6px);
+    filter: brightness(2.2);
+  }
+  to {
+    clip-path: inset(0 round 6px);
+    filter: none;
+  }
+}
+
+.evo-card-name {
+  font-family: var(--title);
+  font-size: 12px;
+}
+
+.evo-card-favor {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 96%;
+  padding: 4px 7px 3px;
+  font-family: var(--title);
+  font-size: 7px;
+  white-space: nowrap;
+  color: #503800;
+  background: linear-gradient(#fff0a0, #f8c838);
+  border: 2px solid #283040;
+  border-radius: 4px;
+  transform: translateX(-50%);
+  animation: favor-bob 1.2s steps(2) infinite;
+}
+
+.evo-card-favor img {
+  width: 10px;
+  height: 10px;
+}
+
+@keyframes favor-bob {
+  50% {
+    transform: translate(-50%, -2px);
+  }
+}
+
+.evo-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 8px;
+  font-size: 18px;
+  line-height: 1;
+  color: #405070;
+}
+
+.evo-card-facts {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  margin: 2px 0 0;
+  text-align: left;
+}
+
+.evo-card-facts dt {
+  font-family: var(--title);
+  font-size: 6px;
+  color: #6878a8;
+  text-transform: uppercase;
+}
+
+.evo-card-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.evo-card-facts dd img {
+  width: 20px;
+  height: 20px;
+}
+
+.ability-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.ability-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px 1px 2px;
+  font-size: 15px;
+  line-height: 1;
+  background: #e8e8f0;
+  border-radius: 3px;
+}
+
+.ability-chip img {
+  width: 14px;
+  height: 14px;
+}
+
+.ability-chip.hidden-ability {
+  color: #503800;
+  background: linear-gradient(#fff0b0, #f8d870);
+  box-shadow: inset 0 0 0 1px #c89020;
+}
+
+/* Ability cards flip over one after the other. */
+.ability-card {
+  gap: 8px;
+  padding: 24px 12px 14px;
+  background: linear-gradient(180deg, #ffffff, #e8ecf8);
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px var(--frame),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: card-flip 0.5s steps(8) both;
+  animation-delay: calc(var(--i, 0) * 0.16s + 0.15s);
+}
+
+@keyframes card-flip {
+  from {
+    transform: perspective(600px) rotateY(90deg);
+    filter: brightness(2.4);
+  }
+  60% {
+    filter: brightness(1.4);
+  }
+  to {
+    transform: perspective(600px) rotateY(0deg);
+    filter: none;
+  }
+}
+
+.ability-card-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  background: linear-gradient(#384060, #283048);
+  border-radius: 8px;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ability-card-icon img {
+  width: 48px;
+  height: 48px;
+}
+
+.ability-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ability-card-name {
+  font-family: var(--title);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ability-card-desc {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* The Hidden Ability: a golden frame, a ribbon and a shine running across it. */
+.ability-card.hidden-ability {
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff8d8, #f8e0a0);
+  box-shadow:
+    inset 0 0 0 3px #fff8e0,
+    inset 0 0 0 5px #c89020,
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(248, 208, 48, 0.55);
+}
+
+.ability-card.hidden-ability::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.6) 48%, transparent 58%);
+  background-size: 260% 100%;
+  animation: shine 2.6s steps(16) infinite;
+}
+
+@keyframes shine {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -130% 0;
+  }
+}
+
+.ability-card.hidden-ability .ability-card-icon {
+  background: linear-gradient(#684098, #382058);
+  box-shadow: 0 0 0 2px #f8d030, inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ability-card-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px 3px;
+  font-family: var(--title);
+  font-size: 6px;
+  color: #fff;
+  background: linear-gradient(#a070f0, #6040b0);
+  border-bottom-left-radius: 6px;
+  text-shadow: 1px 1px 0 #301860;
+}
+
+.ability-card-ribbon img {
+  width: 9px;
+  height: 9px;
+}
+
+.tag-hidden {
+  color: #a07000;
+}
+
+/* A legendary's move in the pause loadout. */
+.tag-legendary {
+  color: #c88a10;
+}
+
+/* In-run toasts and the HUD chip. */
+.ability-toast img {
+  width: 20px;
+  height: 20px;
+}
+
+.status-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ability-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 120px;
+  padding: 1px 4px 1px 2px;
+  font-family: var(--title);
+  font-size: 6px;
+  white-space: nowrap;
+  color: #404858;
+  background: #e0e4f0;
+  border-radius: 3px;
+}
+
+.ability-tag img {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.ability-tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ability-tag-count {
+  color: #c83838;
+}
+
+.ability-tag.lit {
+  color: #503800;
+  background: linear-gradient(#fff0a0, #f8c838);
+  animation: tag-glow 0.9s steps(2) infinite;
+}
+
+.ability-tag.mega {
+  color: #fff;
+  background: linear-gradient(90deg, #f85858, #f8a838, #68d868, #58a8f8, #a878f8);
+  text-shadow: 1px 1px 0 #303040;
+}
+
+@keyframes tag-glow {
+  50% {
+    box-shadow: 0 0 0 1px #f8d030, 0 0 6px #f8d030;
+  }
+}
+
+/* The pause menu's ability. */
+.pause-ability {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #eeeef4;
+  border-radius: 6px;
+}
+
+.pause-ability > img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 3px;
+  background: #283048;
+  border-radius: 5px;
+}
+
+.pause-ability b {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: var(--title);
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.pause-ability b small {
+  font-size: 7px;
+  color: #6878a8;
+}
+
+.pause-ability > div > span {
+  display: block;
+  margin-top: 3px;
+  font-size: 18px;
+  line-height: 1;
+  color: #505068;
+}
+
+.pause-ability.hidden-ability {
+  background: linear-gradient(90deg, #fff4c8, #f8f0e0);
+  box-shadow: inset 0 0 0 2px #c89020;
+}
+
+.pause-ability.mega > img {
+  background: #f8f8f8;
+}
+
+/* The partner details: the abilities, and a branching evolution in the line. */
+.ability-row {
+  grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.ability-row.hidden-ability {
+  background: linear-gradient(90deg, #fff4c8, #fff);
+  box-shadow: inset 0 0 0 2px #e0b040;
+}
+
+.branch-abilities {
+  display: grid;
+  grid-template-columns: 24px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  grid-column: 1 / -1;
+  padding: 3px 6px;
+  background: #eeeef4;
+  border-radius: 4px;
+  font-size: 18px;
+}
+
+.branch-abilities > img {
+  width: 24px;
+  height: 24px;
+}
+
+.branch-abilities b {
+  font-family: var(--title);
+  font-size: 7px;
+  font-weight: normal;
+}
+
+.ability-note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.evo-branch-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), 24px);
+  gap: 2px;
+}
+
+.evo-stage .evo-branch-grid img {
+  width: 24px;
+  height: 24px;
+  border-width: 1px;
+  border-radius: 3px;
+}
+
+/* Phones held upright: one card per row, the art beside the words. */
+@media (max-width: 600px) {
+  .evo-pick,
+  .ability-pick {
+    gap: 10px;
+  }
+  .evo-pick-title {
+    font-size: 11px;
+  }
+  .evo-pick-sub {
+    font-size: 17px;
+  }
+  .evo-cards,
+  .ability-cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .evo-card {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas: 'art name' 'art types' 'art stats' 'facts facts';
+    align-items: center;
+    justify-items: start;
+    gap: 4px 10px;
+    padding: 10px 10px 8px;
+    text-align: left;
+  }
+  .evo-card-art {
+    grid-area: art;
+    width: 76px;
+    height: 76px;
+  }
+  .evo-card-portrait {
+    width: 58px;
+    height: 58px;
+  }
+  .evo-card-name {
+    grid-area: name;
+    font-size: 11px;
+  }
+  .evo-card .types {
+    grid-area: types;
+  }
+  .evo-card-stats {
+    grid-area: stats;
+    justify-content: flex-start;
+    font-size: 16px;
+  }
+  .evo-card-facts {
+    grid-area: facts;
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+  }
+  .evo-card-facts > div:last-child:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+  .evo-card-facts dd {
+    font-size: 16px;
+  }
+  .ability-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px 10px;
+    text-align: left;
+  }
+  .ability-card-icon {
+    width: 48px;
+    height: 48px;
+  }
+  .ability-card-icon img {
+    width: 36px;
+    height: 36px;
+  }
+  .ability-card-name {
+    font-size: 9px;
+  }
+  .ability-card-desc {
+    font-size: 18px;
+  }
+  .ability-card .offer-key {
+    display: none;
+  }
+}
+
+/* Phones on their side: three short cards in a row. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .evo-pick,
+  .ability-pick {
+    gap: 8px;
+    padding-top: max(8px, var(--safe-t));
+    padding-bottom: max(8px, var(--safe-b));
+    /* The title sits over the HUD's clock and coins here: a darker veil keeps it readable. */
+    background: rgba(8, 8, 24, 0.86);
+  }
+  .evo-pick-title {
+    font-size: 10px;
+  }
+  .evo-pick-sub {
+    font-size: 16px;
+  }
+  .ability-pick-portrait {
+    width: 40px;
+    height: 40px;
+  }
+  .evo-cards,
+  .ability-cards {
+    gap: 10px;
+    padding-top: 10px;
+  }
+  .evo-card {
+    gap: 3px;
+    padding: 8px 8px 6px;
+  }
+  .evo-card-art {
+    width: 64px;
+    height: 64px;
+  }
+  .evo-card-portrait {
+    width: 48px;
+    height: 48px;
+  }
+  .evo-card-name {
+    font-size: 10px;
+  }
+  /* "Tormenta de arena la favorece" must fit a third of a phone on its side. */
+  .evo-card-favor {
+    max-width: none;
+    padding: 3px 5px 2px;
+    font-size: 6px;
+  }
+  .evo-card-stats,
+  .evo-card-facts dd {
+    font-size: 15px;
+  }
+  .ability-card {
+    gap: 4px;
+    padding: 20px 8px 8px;
+  }
+  .ability-card-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .ability-card-icon img {
+    width: 32px;
+    height: 32px;
+  }
+  .ability-card-desc {
+    font-size: 16px;
+  }
+  .evo-pick .hint,
+  .ability-pick .hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evo-card,
+  .ability-card,
+  .evo-card-art::before,
+  .evo-card-portrait,
+  .evo-card-favor,
+  .ability-card.hidden-ability::before,
+  .ability-tag.lit {
+    animation: none;
+  }
+}
+
+.pause-ability b > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* The shine passes under the card's words. */
+.ability-card.hidden-ability > :not(.offer-key, .ability-card-ribbon) {
+  position: relative;
+  z-index: 1;
+}
+
 /* ---------- Level-up cards: entrance, forks, rarity, Esquecer (ui/screens.ts) ---------- */
 
 .levelup .offers {
@@ -9331,5 +10145,857 @@ button.hall-tile:hover {
   }
   .offer-shine {
     display: none;
+  }
+}
+
+/* ---------- Duo moves (game/duoRules.ts) ---------- */
+
+/* The duo card: gold like an evolution, with both ingredients' type colors running across its top. */
+.levelup .offer.offer-duo {
+  background:
+    linear-gradient(90deg, var(--duo-a, #f8d030) 0 50%, var(--duo-b, #f8d030) 50%) top / 100% 4px no-repeat,
+    linear-gradient(180deg, #fffbe0, #f8e0a0);
+  border-color: #e0a020;
+  animation:
+    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    duo-frame 1.1s steps(2) infinite;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
+}
+
+.levelup .offer.offer-duo.selected {
+  background:
+    linear-gradient(90deg, var(--duo-a, #f8d030) 0 50%, var(--duo-b, #f8d030) 50%) top / 100% 4px no-repeat,
+    linear-gradient(180deg, #fffdf0, #fbecc0);
+  border-color: #e83838;
+}
+
+@keyframes duo-frame {
+  50% {
+    box-shadow: 0 0 0 2px #fff8c0, -4px 0 12px 1px var(--duo-a, #f8d030), 4px 0 12px 1px var(--duo-b, #f8d030);
+  }
+}
+
+.offer-duo .offer-icon {
+  background: linear-gradient(135deg, var(--duo-a, #503010) 0 50%, var(--duo-b, #503010) 50%);
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
+.offer-duo .offer-shine {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
+  animation-duration: 2.2s;
+}
+
+.offer-duo .tag {
+  color: #fff;
+  background: linear-gradient(90deg, var(--duo-a, #e0a020), var(--duo-b, #e0a020));
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  /* A drop shadow, not a 4-way outline: the outline filled in the 8 px letters ("DÚO!" read as a blot). */
+  text-shadow: 1px 1px 0 #301000;
+}
+
+.duo-note {
+  color: #a05800;
+}
+
+.evo-recipe.duo-recipe.ready {
+  color: #a05800;
+  background: linear-gradient(90deg, #f8e090, #fff4c0, #f8e090);
+}
+
+.tag.tag-duo {
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: linear-gradient(90deg, #e05818, #8048d0);
+}
+
+.slot.duo {
+  border-color: #f8d030;
+  box-shadow: 0 0 0 1px #a06800, 0 0 6px rgba(248, 208, 48, 0.6);
+}
+
+.slot.duo-ready {
+  animation: duo-slot 0.5s steps(2) infinite;
+}
+
+@keyframes duo-slot {
+  50% {
+    border-color: #fff;
+    box-shadow: 0 0 6px #f8d030, 0 0 0 2px #e05818;
+  }
+}
+
+/* The pause screen's duo recipes, by type. */
+.duo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.duo-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a05800;
+}
+
+.duo-panel-title img {
+  width: 12px;
+  height: 12px;
+  image-rendering: pixelated;
+}
+
+.duo-recipes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.duo-type-recipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 2px 3px;
+  font-size: 16px;
+  line-height: 1;
+  color: #6878a8;
+  background: rgba(104, 120, 168, 0.12);
+  border-radius: 4px;
+  opacity: 0.75;
+}
+
+.duo-type-recipe .type-badge {
+  font-size: 6px;
+  padding: 3px 3px 2px;
+}
+
+.duo-type-recipe img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+.duo-type-name {
+  font-size: 16px;
+}
+
+.duo-type-recipe b {
+  font-family: var(--title);
+  font-size: 7px;
+  color: #e83838;
+  margin-left: 2px;
+}
+
+.duo-type-recipe.ready,
+.duo-type-recipe.done {
+  opacity: 1;
+  color: #a05800;
+  background: #f8e090;
+  box-shadow: 0 0 0 2px #e0a020;
+}
+
+.duo-type-recipe.ready {
+  animation: evo-glow 0.8s steps(2) infinite;
+}
+
+.duo-legend {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+  color: #8890b0;
+}
+
+.duo-legend.near {
+  color: #a05800;
+}
+
+.toast-duo b {
+  color: #e07000;
+}
+
+/* ---------- Cursed items (data/curses.ts) ---------- */
+
+.buff.cursed {
+  border-color: #a050e0;
+  background: rgba(42, 8, 64, 0.7);
+  box-shadow: 0 0 4px rgba(160, 80, 224, 0.7);
+}
+
+.buff.cursed img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.loadout-row.cursed {
+  color: #7030a0;
+}
+
+.tag.tag-curse {
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: #7030b0;
+  margin-left: auto;
+}
+
+.toast-curse b {
+  color: #b060f0;
+}
+
+.toast-curse em,
+.toast-curse i {
+  color: #e0b0ff;
+}
+
+/* The chest's choice: the item floats in a purple aura over a dark violet box. */
+.curse-pick .curse-box {
+  max-width: min(360px, 92vw);
+  text-align: center;
+  background: linear-gradient(180deg, #f4ecfa, #e4d4f2);
+  border-color: #7030b0;
+  box-shadow: 0 0 0 2px #2a0840, 0 0 24px rgba(160, 80, 224, 0.55);
+}
+
+.curse-label {
+  align-self: center;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: #7030b0;
+  padding: 3px 6px 2px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.curse-box .dialog-title {
+  color: #501880;
+}
+
+.curse-sub {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.05;
+  color: #604878;
+}
+
+.curse-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 96px;
+}
+
+.curse-art img {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  animation: curse-float 1.6s ease-in-out infinite;
+}
+
+.curse-aura {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192, 112, 248, 0.55), rgba(112, 48, 176, 0.25) 55%, transparent 70%);
+  animation: curse-aura 1.2s steps(3) infinite;
+}
+
+@keyframes curse-float {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes curse-aura {
+  50% {
+    transform: scale(1.12);
+    opacity: 0.7;
+  }
+}
+
+.curse-name {
+  font-family: var(--title);
+  font-size: 12px;
+  color: #2a0840;
+}
+
+.curse-line {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: center;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.curse-line b {
+  font-family: var(--title);
+  font-size: 8px;
+}
+
+.curse-line.up {
+  color: #207830;
+}
+
+.curse-line.down {
+  color: #b02838;
+}
+
+.curse-note {
+  margin: 0;
+  font-size: 16px;
+  color: #806898;
+}
+
+.curse-pick .btn.curse-take {
+  background: #7030b0;
+  color: #fff;
+  border-color: #2a0840;
+}
+
+.curse-pick .btn.curse-take.selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 12px #c070f8;
+}
+
+.curse-pick .btn.picked {
+  transform: scale(1.08);
+}
+
+.curse-pick.taking .curse-art img {
+  animation: curse-grab 0.32s ease-in forwards;
+}
+
+.curse-pick.leaving .curse-art img {
+  animation: curse-drop 0.32s ease-in forwards;
+}
+
+@keyframes curse-grab {
+  to {
+    transform: translateY(40px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes curse-drop {
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+    filter: grayscale(1);
+  }
+}
+
+@media (max-height: 480px) {
+  .curse-art {
+    height: 60px;
+  }
+
+  .curse-art img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .curse-aura {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* A phone on its side: the item on the left, what it does on the right, so the buttons stay on screen. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .curse-pick .curse-box {
+    max-width: min(600px, 94vw);
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    grid-template-areas: 'label label' 'title title' 'art up' 'art down' 'name note' 'buttons buttons';
+    gap: 6px 16px;
+    align-items: center;
+    padding: 12px 18px;
+  }
+  .curse-label {
+    grid-area: label;
+    justify-self: center;
+  }
+  .curse-box .dialog-title {
+    grid-area: title;
+  }
+  .curse-sub,
+  .curse-box .hint {
+    display: none;
+  }
+  .curse-art {
+    grid-area: art;
+  }
+  .curse-name {
+    grid-area: name;
+  }
+  .curse-line {
+    justify-content: flex-start;
+    font-size: 18px;
+  }
+  .curse-line.up {
+    grid-area: up;
+  }
+  .curse-line.down {
+    grid-area: down;
+  }
+  .curse-note {
+    grid-area: note;
+    text-align: left;
+    font-size: 14px;
+  }
+  .curse-box .buttons {
+    grid-area: buttons;
+  }
+}
+
+/* ---------- Learnsets by stage ---------- */
+
+/* The details sheet's moves tab: a header per stage (portrait, name, the level it comes at) over its moves. */
+.learn-note {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.learn-stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 2px 4px 2px 2px;
+  background: #e2e2ee;
+  border-radius: 4px;
+  box-shadow: inset 4px 0 0 var(--accent, #6878a8);
+}
+
+.learn-stage b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #404058;
+}
+
+.learn-when {
+  margin-left: auto;
+  padding: 3px 4px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: var(--accent, #6878a8);
+  border-radius: 3px;
+}
+
+.learn-portraits {
+  display: flex;
+  padding-left: 4px;
+}
+
+.learn-portraits img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.learn-portraits img + img {
+  margin-left: -10px;
+}
+
+/* A branch's own moves, under the stage that branches. */
+.learn-stage.learn-branch {
+  margin: 4px 0 0 12px;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--accent, #6878a8);
+}
+
+.learn-branch .learn-when {
+  display: none;
+}
+
+/* A level-up card for a move the evolution just unlocked: a green frame and the form's tag. */
+.levelup .offer-fresh:not(.selected) {
+  border-color: #38b070;
+  box-shadow: 0 0 0 2px #b8ecc8;
+}
+
+.tag-fresh {
+  color: #fff;
+  background: #30a060;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  animation: fresh-tag 1.2s steps(2) infinite;
+}
+
+@keyframes fresh-tag {
+  50% {
+    background: #48c078;
+  }
+}
+
+/* After an evolution: "Charmeleon can now learn:" over a chip per move. */
+.learn-toast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.learn-moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.learn-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 2px;
+  font-size: 20px;
+  background: #eeeef4;
+  border-left: 4px solid var(--type);
+  border-radius: 2px;
+  animation: learn-pop 0.3s steps(3) both;
+}
+
+.learn-move:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.learn-move:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.learn-move:nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+.learn-move img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+@keyframes learn-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* ---------- TMs and the Move Tutor (`ui/tmPick.ts`) ---------- */
+
+.tm-pick {
+  border-color: var(--type);
+  box-shadow: 0 0 0 3px #181828, 0 0 0 6px var(--type), 0 10px 0 rgba(0, 0, 0, 0.3);
+}
+
+.tm-pick.tm-legendary {
+  --type: #f8d030;
+  background: linear-gradient(180deg, #fffbe8, #f8f0d0);
+  box-shadow: 0 0 0 3px #3a2600, 0 0 0 6px #f8d030, 0 0 24px 6px rgba(248, 208, 48, 0.45);
+}
+
+.tm-pick.tm-tutor {
+  --type: #3868b8;
+}
+
+.tm-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tm-head .dialog-title {
+  text-align: left;
+}
+
+.tm-head-disc {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  animation: tm-spin 1.4s steps(1) infinite;
+}
+
+/* The disc turning over, coin-like, in whole steps. */
+@keyframes tm-spin {
+  0% { transform: scaleX(1); }
+  20% { transform: scaleX(0.66); }
+  30% { transform: scaleX(0.33); }
+  40% { transform: scaleX(-0.33); }
+  50% { transform: scaleX(-0.66); }
+  60% { transform: scaleX(-1); }
+  75% { transform: scaleX(-0.33); }
+  85% { transform: scaleX(0.33); }
+  92% { transform: scaleX(0.66); }
+}
+
+.tm-forgetting .tm-head-disc {
+  animation: none;
+}
+
+.tm-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tm-wallet {
+  margin: -4px 0 0;
+  font-size: 20px;
+  text-align: right;
+  color: #806010;
+}
+
+.tm-card {
+  position: relative;
+  border-left: 6px solid var(--type);
+  animation: pop 0.25s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+.tm-card .tm-icon {
+  box-shadow: 0 0 0 2px var(--type);
+}
+
+.tm-card.tm-gold {
+  background: linear-gradient(180deg, #fff8d0, #f8e090);
+  border-color: #e0a020;
+  border-left-color: #f8d030;
+}
+
+.tm-card.tm-broke {
+  opacity: 0.6;
+}
+
+.tag-tm {
+  color: #fff;
+  background: var(--type);
+  border-radius: 3px;
+  padding: 2px 3px 1px;
+}
+
+.tm-price {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  padding: 4px 6px 3px;
+  color: #382800;
+  background: #f8d030;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tm-price.broke {
+  color: #fff;
+  background: #c83030;
+}
+
+.tm-forget {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tm-forget-move {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 8px;
+  text-align: left;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-left: 5px solid var(--type);
+  border-radius: 6px;
+  animation: pop 0.2s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.05s);
+}
+
+.tm-forget-move.selected {
+  background: #fff;
+  border-color: #e83838;
+  box-shadow: 0 0 0 2px #fff, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tm-forget-move.selected .offer-key {
+  background: #e83838;
+}
+
+.tm-forget-move img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.tm-forget-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.tm-forget-name small {
+  display: block;
+  font-family: var(--body);
+  font-size: 18px;
+  color: #6878a8;
+}
+
+.tm-pass {
+  min-width: 60%;
+}
+
+/* "1, 2 and… Poof!": the move's chip shrinks into a puff of pixel smoke, then the new one pops in. */
+.tm-poof {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  min-height: 200px;
+  padding: 16px 0;
+}
+
+.tm-poof-line {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+}
+
+.tm-poof-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-family: var(--title);
+  font-size: 11px;
+  background: #e8e8f0;
+  border: 3px solid #303040;
+  border-radius: 6px;
+}
+
+.tm-poof-chip img {
+  width: 40px;
+  height: 40px;
+}
+
+.tm-poof-chip.gone {
+  animation: tm-gone 0.3s steps(3) forwards;
+}
+
+.tm-poof-chip.learned {
+  background: #fff8d0;
+  border-color: #e0a020;
+  animation: tm-learned 0.4s steps(4);
+}
+
+@keyframes tm-gone {
+  to {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes tm-learned {
+  0% { transform: scale(0.3); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.tm-poof-smoke {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.tm-poof-smoke i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #a8a8c0;
+  opacity: 0;
+}
+
+.tm-poof-smoke.on i {
+  animation: tm-smoke 0.55s steps(5) forwards;
+}
+
+@keyframes tm-smoke {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(4px) scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(var(--d)) scale(0.4);
+  }
+}
+
+@media (max-width: 520px) {
+  .tm-forget {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .tm-forget-move {
+    min-height: 42px;
+    padding: 4px 8px;
+  }
+  .tm-head-disc {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .tm-pick {
+    padding: 12px 16px;
+  }
+  .tm-stage {
+    gap: 8px;
+  }
+  .tm-forget-move {
+    min-height: 38px;
+    padding: 3px 8px;
+  }
+  .tm-forget-move .type-badge,
+  .tm-pick .hint {
+    display: none;
+  }
+  .tm-poof {
+    min-height: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-head-disc,
+  .tm-card,
+  .tm-forget-move {
+    animation: none;
   }
 }

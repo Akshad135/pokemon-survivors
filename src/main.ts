@@ -3,6 +3,7 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
+import { castSound } from './ui/castSounds'
 import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
@@ -19,7 +20,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
@@ -31,14 +32,27 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
-import { banishOffer, chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
-import { recomputeStats } from './game/leveling'
-import { dropMegaStones, grantStone, heldMega } from './game/mega'
+import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { formAt, playerForm } from './game/branch'
+import { unlockedAt } from './game/learnsets'
+import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
+import { familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
+import { abilityStacks, grantAbility } from './game/abilities'
+import { abilityIcon } from './render/abilityArt'
+import { recomputeStats, xpFor } from './game/leveling'
+import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
+import { eggMoveDevTools } from './game/eggMovesDev'
+import { learnDevTools } from './game/learnDev'
+import { tmDevTools } from './game/tmDev'
+import { duoDevTools } from './game/duoDev'
+import { cursePick } from './ui/cursePick'
+import { CURSES } from './data/curses'
+import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
@@ -53,18 +67,19 @@ import { unlockShinyStarter } from './game/shinyStarters'
 import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
-import type { Game, GameEvent, Phase } from './game/types'
+import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, eggIcon, ribbonIcon } from './render/art'
+import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon } from './render/art'
+import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
-import { formatDay, locale, LOCALES, t } from './i18n'
+import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
@@ -84,6 +99,8 @@ import { pokedexScreen } from './ui/pokedex'
 import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
+import { abilityPick, branchPick } from './ui/abilityPick'
+import { tmPick } from './ui/tmPick'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
@@ -232,7 +249,7 @@ const queueMega = () => {
 }
 
 /** The player's name right now: its stage's, or its Mega form's while that lasts. */
-const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || PLAYABLE[g.starter].line[g.player.stage]!.name
+const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || playerForm(g).name
 
 /** The player's cry right now: its Mega form's own while that lasts. */
 const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? heldMega(g)?.form : undefined)
@@ -530,7 +547,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
   const plan = c ? { seed: c.seed, outbreak: c.outbreak, roster: runRoster(c.seed, c.outbreak) } : upcoming.outbreak === outbreakToday() ? upcoming : planRun()
   if (!c) upcoming = planRun()
-  await loadAll([...playableDex(starter), ...openingDex(plan)])
+  // The whole family, branches included: the evolution scene can land on any of them.
+  await loadAll([...familyDex(starter), ...openingDex(plan)])
   // The outbreak's shiny can show up in the first minute.
   void preloadShinies([ENEMIES[plan.outbreak].dex])
   // Armed bag items are used up as the run starts (the challenge leaves them in the Bag).
@@ -555,9 +573,9 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   // The 1/64 roll unlocks this Pokémon's shiny for good (Normal/Shiny on the select screen).
   if (game.player.luckyShiny) updateSave((s) => ({ ...s, shinyStarters: unlockShinyStarter(s.shinyStarters, starter) }))
   // A shiny run must not start in normal colors.
-  if (game.player.shiny) await preloadShinies(playableDex(starter))
+  if (game.player.shiny) await preloadShinies(familyDex(starter))
   // Alternate forms (Aegislash's Blade Forme) stream in behind; until then the normal form stands in.
-  void preloadForms(playableDex(starter), game.player.shiny)
+  void preloadForms(familyDex(starter), game.player.shiny)
   loading.remove()
   run = {
     game,
@@ -655,6 +673,21 @@ const syncOverlay = (r: Run) => {
         banish: (i) => (recordEvent(r.recorder, ['banish', i]), banishOffer(g, i)),
       })
       break
+    case 'branch':
+      r.overlay = branchPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
+    case 'ability':
+      r.overlay = abilityPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
+    case 'tm': {
+      const choose = (offer: Offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer))
+      // A TM raising an owned move to a fork shows the fork's two branches, as a level-up would.
+      r.overlay = g.offers.some((o) => o.kind === 'branch') ? levelUp(ui, input, g, choose) : tmPick(ui, input, g, choose)
+      break
+    }
+    case 'curse':
+      r.overlay = cursePick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
       break
@@ -687,6 +720,43 @@ const syncOverlay = (r: Run) => {
   }
 }
 
+/** After an evolution: what the new form can learn now (`unlockedAt`), each move with its icon. */
+const learnsToast = (g: Game) => {
+  const moves = unlockedAt(g.starter, g.branch, g.player.stage)
+  if (moves.length === 0) return
+  const chips = moves.map((id) => h('span', { class: 'learn-move', style: `--type:${TYPE_COLORS[MOVES[id].type]}` }, h('img', { src: moveIcon(id), alt: '' }), MOVES[id].name))
+  toast(ui, h('span', { class: 'learn-toast' }, h('span', {}, t().toast.learns(playerForm(g).name)), h('span', { class: 'learn-moves' }, ...chips)), 5000, 'learns')
+}
+
+/** The ability's word: the pick, and the moments worth a toast (Sturdy holding, a weather called, a milestone, Moody's draw). */
+const abilityFeedback = (g: Game, id: AbilityId, moment: 'picked' | 'proc') => {
+  const m = t().ability
+  const name = ABILITIES[id].name
+  const icon = (text: string) => h('span', { class: 'item-toast ability-toast' }, h('img', { src: abilityIcon(id), alt: '' }), rich(text))
+  if (moment === 'picked') {
+    playSfx('unlock')
+    return toast(ui, icon(m.picked(playerForm(g).name, name)), 3200, 'ability')
+  }
+  const effects: readonly AbilityEffect[] = ABILITIES[id].effects
+  const kind = effects.find((e) => e.kind !== 'immune' && e.kind !== 'stats')?.kind
+  if (kind === 'sturdy') {
+    playSfx('stance', 0)
+    flashScreen(ui)
+    return toast(ui, icon(m.sturdy(name)), 2600, 'ability')
+  }
+  if (kind === 'guard') return playSfx('stance', 0)
+  if (kind === 'summon') return toast(ui, icon(m.summon(name)), 2200, 'ability')
+  if (kind === 'onKill') {
+    playSfx('shiny')
+    return toast(ui, icon(m.stack(name, abilityStacks(g))), 2200, 'ability')
+  }
+  if (kind === 'moody') {
+    const mood = m.moods[g.ability.mood]
+    return mood && toast(ui, icon(m.mood(name, mood)), 1800, 'ability')
+  }
+  if (kind === 'timer') playSfx('item')
+}
+
 const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) => {
   const m = t().toast
   if (!offer) return m.pokeballEmpty
@@ -717,9 +787,14 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'shatter': return playSfx('break', 60)
     case 'guard': return playSfx('stance', 0)
+    case 'cast': {
+      const sound = castSound(e.move) ?? CAST_SFX[e.move]
+      return sound && playSfx(sound[0], sound[1])
+    }
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
     case 'quake': return playSfx('quake', 150)
+    case 'moveSound': return playSfx(e.sound, 90)
     case 'special': {
       // A chain dash "releases" on every landing: a cut, not an explosion.
       if (e.phase === 'release') return playSfx(gameSpecial(g).def.kind === 'chain' ? 'slash' : 'specialBlast', 0)
@@ -740,7 +815,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('unlock')
       return toast(
         ui,
-        h('span', { class: 'item-toast mega-toast' }, h('img', { src: megaStoneIcon(def), alt: '' }), h('span', {}, rich(t().mega.stone(def.stone)), h('small', {}, rich(final ? t().mega.stoneReady : t().mega.stoneLocked(line.at(-1)!.name))))),
+        h('span', { class: 'item-toast mega-toast' }, h('img', { src: megaStoneIcon(def), alt: '' }), h('span', {}, rich(t().mega.stone(def.stone)), h('small', {}, rich(final ? t().mega.stoneReady : t().mega.stoneLocked(megaBaseName(g)))))),
         4200,
         'mega',
       )
@@ -754,7 +829,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'mega': {
       playSfx('megaBurst', 0)
       playCry(playerCry(g), 0.9)
-      return banner(ui, rich(t().mega.evolved(PLAYABLE[g.starter].line[g.player.stage]!.name, e.name)), 2400)
+      return banner(ui, rich(t().mega.evolved(playerForm(g).name, e.name)), 2400)
     }
     case 'megaEnd':
       playSfx('stance', 0)
@@ -764,7 +839,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, rich(t().mega.ready), 2400, 'mega')
     case 'stance': {
       playSfx('stance', 0)
-      const who = PLAYABLE[g.starter].line[g.player.stage]!.name
+      const who = playerForm(g).name
       return toast(ui, rich(t().toast.stance(who, t().hud.stances[e.stance])), 1200, 'special')
     }
     case 'boss': {
@@ -806,30 +881,65 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('shiny')
       return toast(ui, rich(t().toast.shinyPlayer(PLAYABLE[g.starter].name)), 3600)
     }
+    case 'branchChoice':
+      playCry(playerCry(g), 0.6)
+      return
+    case 'ability':
+      return abilityFeedback(g, e.id, e.moment)
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
-      r.closeText = textBox(ui, t().toast.evolving(PLAYABLE[g.starter].line[g.player.stage]!.name))
+      r.closeText = textBox(ui, t().toast.evolving(playerForm(g).name))
       return
     }
     case 'evolved': {
-      const line = PLAYABLE[g.starter].line
       playSfx('evolve')
       playCry(sprites(e.to).cry)
       r.closeText?.()
       r.closeText = null
-      return toast(ui, t().toast.evolved(line[g.player.stage - 1]!.name, line[g.player.stage]!.name), 3500)
+      // The Trainer Card wears the branch this family took last.
+      const branch = g.branch
+      if (branch) updateSave((s) => ({ ...s, branches: { ...s.branches, [g.starter]: branch } }))
+      toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
+      return learnsToast(g)
     }
     case 'moveEvolved':
       playSfx('evolve')
       playCry(playerCry(g), 0.3)
       return toast(ui, rich(t().toast.moveEvolved(MOVES[e.from].name, MOVES[e.to].name), { class: 'toast-evo' }), 3500)
+    case 'duoFused':
+      playSfx('duoFuse')
+      playCry(playerCry(g), 0.3)
+      return toast(
+        ui,
+        h('span', { class: 'item-toast toast-duo' }, h('img', { src: moveIcon(e.to), alt: '' }), rich(t().duo.fused(MOVES[e.from[0]].name, MOVES[e.from[1]].name, MOVES[e.to].name))),
+        3800,
+      )
+    case 'curse': {
+      // The chest's choice has its own screen; Life Orb and Flame Orb bite quietly (the purple number says it).
+      if (e.moment === 'found' || e.moment === 'recoil') return
+      const line = e.moment === 'taken' ? t().curse.taken(CURSES[e.id].name) : t().curse.left(CURSES[e.id].name)
+      return toast(ui, h('span', { class: 'item-toast toast-curse' }, h('img', { src: curseIcon(e.id), alt: '' }), rich(line)), 3000)
+    }
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
     case 'shinyOffer':
       // The fresh cards on screen say the rest.
       return playSfx('shiny')
+    case 'tm':
+      return
+    case 'tmLearned': {
+      const m = t().tm
+      const name = MOVES[e.move].name
+      playSfx('levelUp')
+      playCry(playerCry(g), 0.35)
+      const text = e.forgot ? m.learnedInstead(MOVES[e.forgot].name, name) : e.level > 1 ? m.raised(name, e.level) : m.learned(name)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(e.move), alt: '' }), rich(text)), 3200, 'tm')
+    }
+    case 'tmMastered':
+      playSfx('coin')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(e.move), alt: '' }), rich(t().tm.mastered(MOVES[e.move].name, formatPokeDollars(e.coins)))), 3000)
     case 'banish':
       // The level-up screen plays the toss itself.
       return
@@ -1172,13 +1282,42 @@ const devMega = (mode: 'now' | 'ready' | 'stone' = 'now', mega?: MegaId) => {
   const p = g.player
   if (mode === 'stone') return dropMegaStones(g, p.x + 40, p.y)
   if (mega && !ids.includes(mega)) return `${PLAYABLE[g.starter].name}'s Megas: ${ids.join(', ')}`
+  const pick = mega ?? ids[0]
+  // A branch's Mega (Gallade's) needs its branch.
+  g.branch = MEGA_BRANCH[pick] ?? g.branch
   p.stage = PLAYABLE[g.starter].line.length - 1
   p.radius = Math.max(6, Math.round(bodyOf(playerDex(g)).bodyW * 0.3))
   recomputeStats(g)
   g.mega.stone = null
-  grantStone(g, mega ?? ids[0])
+  grantStone(g, pick)
   g.mega.charge = 0
   if (mode === 'now') queueMega()
+}
+
+/**
+ * Dev: the evolution picks. `ps.evolve()` levels up to the next evolution, asking
+ * where a branching one goes; `ps.evolve('vaporeon')` takes that branch straight away.
+ */
+const devEvolve = (branch?: BranchId) => {
+  const g = run?.game
+  if (!g || g.phase !== 'playing') return 'Start a run (and close menus) first'
+  const stage = formAt(g.starter, g.branch, g.player.stage)
+  if (stage.evolveAt === undefined) return 'Already at the final stage'
+  if (branch) g.branch = branch
+  g.player.level = Math.max(g.player.level, stage.evolveAt)
+  g.player.xp = 0
+  g.player.xpNext = xpFor(g.player.level)
+  advancePhase(g)
+}
+
+/** Dev: `ps.ability()` opens the ability pick now; `ps.ability('blaze')` takes that one. */
+const devAbility = (id?: AbilityId) => {
+  const g = run?.game
+  if (!g) return
+  if (!id) return offerAbilities(g)
+  grantAbility(g, id)
+  recomputeStats(g)
+  return g.ability
 }
 
 /** Dev: eggs and hatching, to stage the incubator and the hatching scene. */
@@ -1304,6 +1443,8 @@ if (import.meta.env.DEV) {
       theme: currentTheme,
       spawn: devSpawn,
       mega: devMega,
+      evolve: devEvolve,
+      ability: devAbility,
       event: devEvent,
       challenge: devChallenge,
       dex: () => loadSave().dex,
@@ -1318,6 +1459,10 @@ if (import.meta.env.DEV) {
       ...riftDevTools(() => run?.game),
       ...levelUpDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),
+      ...eggMoveDevTools(() => run?.game),
+      ...learnDevTools(() => run?.game),
+      ...tmDevTools(() => run?.game),
+      ...duoDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

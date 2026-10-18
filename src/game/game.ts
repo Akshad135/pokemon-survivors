@@ -3,12 +3,17 @@ import { createRng } from '../engine/rng'
 import { createGrid } from '../engine/spatial'
 import { bodyOf } from '../data/bodies'
 import type { EnemyId } from '../data/enemies'
+import { isHidden } from '../data/abilities'
+import { branchesAt } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { abilityImmune, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS } from './bag'
+import { branchContext, drawBranches, playerForm } from './branch'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
 import { createDexLog } from './dex'
+import { FRESH_LEVELUPS } from './learnsets'
 import { DEFAULT_DIFFICULTY, type Difficulty } from './difficulty'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
@@ -20,11 +25,18 @@ import {
   type RollOptions,
 } from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
+import { createCurseState } from './curses'
+import { curseCast, decideCurse, updateCurses } from './curseSystem'
+import { updateDuos } from './duoMoves'
 import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
 import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
+import { updateSignatures } from './signatures'
+import { createTmState, pickTm } from './tms'
+import { updateVerbEvolved } from './verbEvolutions'
+import { updateLegendary } from './legendary'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -48,7 +60,7 @@ import * as dm from '../engine/dmath'
 
 export const EVOLUTION_TIME = 4.6
 
-export const playerDex = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.dex
+export const playerDex = (g: Game) => playerForm(g).dex
 
 /** What the save brings into a run besides the Poké Mart ranks. */
 export type RunOptions = {
@@ -115,6 +127,8 @@ export const createGame = (
       guard: null,
       hidden: null,
       drain: { left: 0, at: 0 },
+      rooted: 0,
+      moveBuffs: [],
     },
     enemies: [],
     attacks: [],
@@ -137,8 +151,11 @@ export const createGame = (
     castMods: 0,
     damageByMove: {},
     pendingLevelUps: 0,
+    freshMoves: 0,
     offers: [],
     evolution: null,
+    branch: null,
+    ability: createAbilityState(),
     roster: withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null),
     spawnBudget: 0,
     nextEvent: 0,
@@ -148,12 +165,14 @@ export const createGame = (
     terrain: createTerrain(seed),
     buffs: [],
     mapEvents: createMapEvents(),
+    curses: createCurseState(),
     revives: 0,
     flash: 0,
     biome: createBiome(),
     weather: createWeather(),
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
+    tm: createTmState(),
     endless: null,
     tally: createTally(),
     eggs: { found: [], lucky: options.luckyEgg === true, boost: options.incense ? BAG_ITEMS.incense.boost : 1 },
@@ -188,7 +207,9 @@ export type StepInput = { move: Vec; special: boolean; mega?: boolean; lunge?: b
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
   const slow = specialSpeedFactor(g)
-  const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
+  // Rooted (Giga Impact's recharge): the stick does nothing until it wears off.
+  p.rooted = Math.max(0, p.rooted - dt)
+  const moving = slow > 0 && p.rooted <= 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
   const ground = groundAt(g, p.x, p.y)
@@ -196,7 +217,7 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const vx = moving ? input.x * pace : 0
   const vy = moving ? input.y * pace : 0
   // On ice the player's speed only slowly follows the stick, so they slide.
-  const ice = ground === 'ice' && slow > 0
+  const ice = ground === 'ice' && slow > 0 && !abilityImmune(g, 'terrain')
   if (ice) {
     const grip = 1 - dm.exp(-TERRAIN.iceGrip * dt)
     p.vx += (vx - p.vx) * grip
@@ -256,37 +277,86 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
     castMove(g, owned, s)
     owned.cooldown += s.cooldown
     afterCast(g, owned)
+    curseCast(g)
   }
 }
 
-/** After level-ups resolve: open the next level-up, start an evolution, or resume. */
-const advancePhase = (g: Game) => {
+/**
+ * After level-ups resolve: open the next level-up, ask where a branching
+ * evolution goes, start an evolution, or resume. Exported for the dev console.
+ */
+export const advancePhase = (g: Game) => {
   if (g.pendingLevelUps > 0) {
     g.phase = 'levelup'
     g.offers = rollOffers(loadout(g), g.rng, 3, rolling(g))
     g.events.push({ kind: 'levelup' })
     return
   }
-  const evo = pendingEvolution(g)
-  if (evo) {
-    g.phase = 'evolving'
-    g.evolution = { ...evo, t: 0 }
-    g.events.push({ kind: 'evolve', ...evo })
+  if (!pendingEvolution(g)) {
+    g.phase = 'playing'
     return
   }
-  g.phase = 'playing'
+  const branches = g.branch === null ? branchesAt(g.starter, g.player.stage + 1) : []
+  if (branches.length > 0) {
+    g.phase = 'branch'
+    g.offers = drawBranches(g.rng, branches, branchContext(g)).map(({ id, favor }) => ({ kind: 'form', id, favor }))
+    g.events.push({ kind: 'branchChoice' })
+    return
+  }
+  startEvolution(g)
+}
+
+const startEvolution = (g: Game) => {
+  const evo = pendingEvolution(g)
+  if (!evo) return advancePhase(g)
+  g.phase = 'evolving'
+  g.evolution = { ...evo, t: 0 }
+  g.events.push({ kind: 'evolve', ...evo })
+}
+
+/** After the first evolution: the abilities to pick from (Honedge's lone Stance Change is just granted). Exported for the dev console. */
+export const offerAbilities = (g: Game) => {
+  const set = abilitySet(g.starter, g.branch)
+  if (set.length === 1) {
+    grantAbility(g, set[0])
+    recomputeStats(g)
+    return advancePhase(g)
+  }
+  g.phase = 'ability'
+  g.offers = set.map((id, i) => ({ kind: 'ability', id, hidden: isHidden(set, i) }))
 }
 
 /** Whether the cards on screen are a fork's two branches (picked from a move card that reached one). */
 export const choosingBranch = (g: Game) => g.offers.some((o) => o.kind === 'branch')
 
 /**
- * Picks a level-up card. A move card that reaches a fork opens its two
- * branches instead (picked the same way); a shiny card is a free pick, so a
- * fresh set of cards follows without using the level-up up.
+ * The player's pick from `offers`: a level-up upgrade, where a branching
+ * evolution goes, the ability, whether to take a chest's cursed item, or a TM's choice.
+ * Replays reach it through the `offer` event.
+ * A move card that reaches a fork opens its two branches instead (picked the
+ * same way); a shiny card is a free pick, so a fresh set of cards follows
+ * without using the level-up up.
  */
 export const chooseOffer = (g: Game, offer: Offer) => {
-  if (g.phase !== 'levelup') return
+  if (g.phase === 'branch' && offer.kind === 'form') {
+    g.branch = offer.id
+    return startEvolution(g)
+  }
+  if (g.phase === 'ability' && offer.kind === 'ability') {
+    grantAbility(g, offer.id)
+    recomputeStats(g)
+    return advancePhase(g)
+  }
+  // A TM's screen: learn, forget a move for it, or pass (`tms.ts`).
+  if (g.phase === 'tm') {
+    if (pickTm(g, offer)) advancePhase(g)
+    return
+  }
+  if (g.phase === 'curse' && offer.kind === 'curse') {
+    decideCurse(g, offer.id, offer.take)
+    return advancePhase(g)
+  }
+  if (g.phase !== 'levelup' || offer.kind === 'form' || offer.kind === 'ability' || offer.kind === 'curse' || offer.kind === 'tm' || offer.kind === 'forget' || offer.kind === 'pass') return
   if (offer.kind === 'move' && forkAt(offer.id, offer.level)) {
     g.offers = branchOffers(offer)
     return
@@ -298,6 +368,7 @@ export const chooseOffer = (g: Game, offer: Offer) => {
     return
   }
   g.pendingLevelUps--
+  g.freshMoves = Math.max(0, g.freshMoves - 1)
   advancePhase(g)
 }
 
@@ -339,6 +410,7 @@ export const skipLevelUp = (g: Game) => {
   if (g.phase !== 'levelup' || g.skips <= 0 || choosingBranch(g)) return
   g.skips--
   g.pendingLevelUps--
+  g.freshMoves = Math.max(0, g.freshMoves - 1)
   advancePhase(g)
 }
 
@@ -352,11 +424,13 @@ const updateEvolution = (g: Game, dt: number) => {
   p.radius = Math.max(6, Math.round(bodyOf(evo.to).bodyW * 0.3))
   recomputeStats(g)
   healPlayer(g, p.stats.maxHp * 0.5)
-  // Every evolution earns an Esquecer charge (`banishOffer`).
+  // Every evolution earns an Esquecer charge (`banishOffer`), and the moves it unlocks come up more for a while.
   g.banishes++
+  g.freshMoves = FRESH_LEVELUPS
   g.evolution = null
   g.events.push({ kind: 'evolved', to: evo.to })
-  advancePhase(g)
+  if (g.ability.id === null) offerAbilities(g)
+  else advancePhase(g)
 }
 
 /** One fixed-timestep simulation tick. */
@@ -382,7 +456,9 @@ export const step = (g: Game, input: StepInput, dt: number) => {
     updateWeather(g, dt)
   }
   updatePlayer(g, input.move, dt)
+  updateCurses(g)
   updateMega(g, input.mega === true, dt)
+  if (updateAbility(g, dt)) recomputeStats(g)
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)
@@ -396,8 +472,12 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   rebuildGrid(g)
   updateTraits(g, dt)
   updateMoveKit(g, dt)
+  updateSignatures(g, dt)
+  updateLegendary(g)
   updateMoves(g, input.lunge === true, dt)
+  updateDuos(g, dt)
   updateAttacks(g, dt)
+  updateVerbEvolved(g, dt)
   updateTerrain(g, dt)
   if (!inArena) {
     updateProps(g, dt)

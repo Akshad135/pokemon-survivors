@@ -17,13 +17,15 @@ import type { DamageSource } from './types'
  * - confuse: wanders at random and its body hurts the foes it bumps into.
  * - seed: DoT that heals the player (`SEED_HEAL`, through the drain budget);
  *   when the foe faints it jumps to `SEED_JUMPS` neighbors (`kitRules.ts`).
+ * - weaken: deals `power` less contact damage (0.25 = −25%), like burn's cut (Mud Shot).
  */
-export type StatusKind = 'burn' | 'poison' | 'paralysis' | 'slow' | 'sleep' | 'freeze' | 'mark' | 'confuse' | 'seed'
+export type StatusKind = 'burn' | 'poison' | 'paralysis' | 'slow' | 'sleep' | 'freeze' | 'mark' | 'confuse' | 'seed' | 'weaken'
 
 /**
  * What a hit can inflict. `power` is DoT damage per second as a fraction of the
  * hit's damage (burn, poison: per stack; seed), the speed lost (slow) or the
- * damage taken per stack (mark, 0.15 = +15%). Paralysis, sleep, freeze and confuse ignore it.
+ * damage taken per stack (mark, 0.15 = +15%) or the contact damage lost (weaken).
+ * Paralysis, sleep, freeze and confuse ignore it.
  */
 export type StatusSpec = { kind: StatusKind; chance: number; duration: number; power: number }
 
@@ -47,6 +49,7 @@ export const STATUS_RULES = {
   // Bosses can't be confused: their fights need them to keep coming.
   confuse: { maxStacks: 1, boss: 0, dot: false, color: '#f8a0d0' },
   seed: { maxStacks: 1, boss: 1, dot: true, color: '#78c850' },
+  weaken: { maxStacks: 1, boss: 0.5, dot: false, color: '#a07840' },
 } as const satisfies Record<StatusKind, StatusRule>
 
 export const STATUS_KINDS = Object.keys(STATUS_RULES) as StatusKind[]
@@ -89,13 +92,13 @@ const none = (): Affliction => ({ time: 0, power: 0, stacks: 0, move: null })
 
 export const createStatus = (): EnemyStatus => ({
   burn: none(), poison: none(), paralysis: none(), slow: none(), sleep: none(),
-  freeze: none(), mark: none(), confuse: none(), seed: none(),
+  freeze: none(), mark: none(), confuse: none(), seed: none(), weaken: none(),
   stun: 0, tick: 0, heading: 0, bump: 0,
 })
 
 export const isAfflicted = (st: EnemyStatus) =>
   st.burn.time > 0 || st.poison.time > 0 || st.paralysis.time > 0 || st.slow.time > 0 || st.sleep.time > 0 || st.stun > 0 ||
-  st.freeze.time > 0 || st.mark.time > 0 || st.confuse.time > 0 || st.seed.time > 0
+  st.freeze.time > 0 || st.mark.time > 0 || st.confuse.time > 0 || st.seed.time > 0 || st.weaken.time > 0
 
 const hasDot = (st: EnemyStatus) => st.burn.time > 0 || st.poison.time > 0 || st.seed.time > 0
 
@@ -178,8 +181,9 @@ export const isHeld = (st: EnemyStatus) => isAsleep(st) || isFrozen(st)
 export const statusPace = (st: EnemyStatus) =>
   st.stun > 0 || isHeld(st) ? 0 : (st.slow.time > 0 ? 1 - st.slow.power : 1) * (st.paralysis.time > 0 ? PARALYSIS_PACE : 1)
 
-/** Contact damage multiplier: burn weakens attacks, like in the games; sleepers and frozen foes don't attack. */
-export const statusAttack = (st: EnemyStatus) => (isHeld(st) ? 0 : st.burn.time > 0 ? BURN_ATTACK : 1)
+/** Contact damage multiplier: burn weakens attacks, like in the games, and so does weaken; sleepers and frozen foes don't attack. */
+export const statusAttack = (st: EnemyStatus) =>
+  isHeld(st) ? 0 : (st.burn.time > 0 ? BURN_ATTACK : 1) * (st.weaken.time > 0 ? 1 - st.weaken.power : 1)
 
 /** Damage multiplier a hit gets from the target's conditions: ×(1 + power × stacks) when marked, ×`FREEZE_SHATTER` when frozen. */
 export const hitTakenMult = (st: EnemyStatus) =>
@@ -217,5 +221,6 @@ export const mainStatus = (st: EnemyStatus): StatusKind | null =>
   : st.poison.time > 0 ? 'poison'
   : st.seed.time > 0 ? 'seed'
   : st.mark.time > 0 ? 'mark'
+  : st.weaken.time > 0 ? 'weaken'
   : st.slow.time > 0 ? 'slow'
   : null
