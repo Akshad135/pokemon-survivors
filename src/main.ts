@@ -3,6 +3,7 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
+import { castSound } from './ui/castSounds'
 import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
@@ -33,6 +34,7 @@ import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from '.
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { formAt, playerForm } from './game/branch'
+import { unlockedAt } from './game/learnsets'
 import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
 import { familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
 import { abilityStacks, grantAbility } from './game/abilities'
@@ -44,7 +46,12 @@ import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
+import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
+import { tmDevTools } from './game/tmDev'
+import { duoDevTools } from './game/duoDev'
+import { cursePick } from './ui/cursePick'
+import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
@@ -60,18 +67,19 @@ import { unlockShinyStarter } from './game/shinyStarters'
 import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
-import type { Game, GameEvent, Phase } from './game/types'
+import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, eggIcon, ribbonIcon } from './render/art'
+import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon } from './render/art'
+import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
-import { formatDay, locale, LOCALES, t } from './i18n'
+import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
@@ -92,6 +100,7 @@ import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { abilityPick, branchPick } from './ui/abilityPick'
+import { tmPick } from './ui/tmPick'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
@@ -670,6 +679,15 @@ const syncOverlay = (r: Run) => {
     case 'ability':
       r.overlay = abilityPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
       break
+    case 'tm': {
+      const choose = (offer: Offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer))
+      // A TM raising an owned move to a fork shows the fork's two branches, as a level-up would.
+      r.overlay = g.offers.some((o) => o.kind === 'branch') ? levelUp(ui, input, g, choose) : tmPick(ui, input, g, choose)
+      break
+    }
+    case 'curse':
+      r.overlay = cursePick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
       break
@@ -700,6 +718,14 @@ const syncOverlay = (r: Run) => {
       )
       break
   }
+}
+
+/** After an evolution: what the new form can learn now (`unlockedAt`), each move with its icon. */
+const learnsToast = (g: Game) => {
+  const moves = unlockedAt(g.starter, g.branch, g.player.stage)
+  if (moves.length === 0) return
+  const chips = moves.map((id) => h('span', { class: 'learn-move', style: `--type:${TYPE_COLORS[MOVES[id].type]}` }, h('img', { src: moveIcon(id), alt: '' }), MOVES[id].name))
+  toast(ui, h('span', { class: 'learn-toast' }, h('span', {}, t().toast.learns(playerForm(g).name)), h('span', { class: 'learn-moves' }, ...chips)), 5000, 'learns')
 }
 
 /** The ability's word: the pick, and the moments worth a toast (Sturdy holding, a weather called, a milestone, Moody's draw). */
@@ -762,8 +788,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'shatter': return playSfx('break', 60)
     case 'guard': return playSfx('stance', 0)
     case 'cast': {
-      const sfx = CAST_SFX[e.move]
-      return sfx && playSfx(sfx[0], sfx[1])
+      const sound = castSound(e.move) ?? CAST_SFX[e.move]
+      return sound && playSfx(sound[0], sound[1])
     }
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
@@ -874,18 +900,46 @@ const handleEvent = (r: Run, e: GameEvent) => {
       // The Trainer Card wears the branch this family took last.
       const branch = g.branch
       if (branch) updateSave((s) => ({ ...s, branches: { ...s.branches, [g.starter]: branch } }))
-      return toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
+      toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
+      return learnsToast(g)
     }
     case 'moveEvolved':
       playSfx('evolve')
       playCry(playerCry(g), 0.3)
       return toast(ui, rich(t().toast.moveEvolved(MOVES[e.from].name, MOVES[e.to].name), { class: 'toast-evo' }), 3500)
+    case 'duoFused':
+      playSfx('duoFuse')
+      playCry(playerCry(g), 0.3)
+      return toast(
+        ui,
+        h('span', { class: 'item-toast toast-duo' }, h('img', { src: moveIcon(e.to), alt: '' }), rich(t().duo.fused(MOVES[e.from[0]].name, MOVES[e.from[1]].name, MOVES[e.to].name))),
+        3800,
+      )
+    case 'curse': {
+      // The chest's choice has its own screen; Life Orb and Flame Orb bite quietly (the purple number says it).
+      if (e.moment === 'found' || e.moment === 'recoil') return
+      const line = e.moment === 'taken' ? t().curse.taken(CURSES[e.id].name) : t().curse.left(CURSES[e.id].name)
+      return toast(ui, h('span', { class: 'item-toast toast-curse' }, h('img', { src: curseIcon(e.id), alt: '' }), rich(line)), 3000)
+    }
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
     case 'shinyOffer':
       // The fresh cards on screen say the rest.
       return playSfx('shiny')
+    case 'tm':
+      return
+    case 'tmLearned': {
+      const m = t().tm
+      const name = MOVES[e.move].name
+      playSfx('levelUp')
+      playCry(playerCry(g), 0.35)
+      const text = e.forgot ? m.learnedInstead(MOVES[e.forgot].name, name) : e.level > 1 ? m.raised(name, e.level) : m.learned(name)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(e.move), alt: '' }), rich(text)), 3200, 'tm')
+    }
+    case 'tmMastered':
+      playSfx('coin')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(e.move), alt: '' }), rich(t().tm.mastered(MOVES[e.move].name, formatPokeDollars(e.coins)))), 3000)
     case 'banish':
       // The level-up screen plays the toss itself.
       return
@@ -1405,7 +1459,10 @@ if (import.meta.env.DEV) {
       ...riftDevTools(() => run?.game),
       ...levelUpDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),
+      ...eggMoveDevTools(() => run?.game),
       ...learnDevTools(() => run?.game),
+      ...tmDevTools(() => run?.game),
+      ...duoDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

@@ -7,7 +7,15 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import { EGG_MOVE_ICONS } from './eggMoveArt'
+import { EGG_MOVE_3_ICONS } from './eggMove3Art'
+import { EGG_MOVE_2_ICONS } from './eggMove2Art'
 import { SIGNATURE_ICONS } from './signatureArt'
+import { TM_ICONS } from './tmArt'
+import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
+import { cursedIcon, DUO_ICONS } from './duoArt'
+import type { CurseId } from '../data/curses'
+import { LEGENDARY_ICONS } from './legendaryArt'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -497,6 +505,9 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...SIGNATURE_ICONS,
+  ...TM_ICONS,
+  ...VERB_EVOLVED_ICONS,
+  ...LEGENDARY_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),
@@ -566,6 +577,8 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   dragonTail: () => art(TAIL_ICON, DRAGON, '#100430'),
   sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
+  ...EGG_MOVE_ICONS,
+  ...EGG_MOVE_3_ICONS,
   jawLock: () => art([...TE.MAW_TOP, ...TE.MAW_BOTTOM], TE.MAW, '#d8c0e8'),
   superpower: () => art(TE.BIG_FIST, TE.FIST_PAL, '#281010'),
   fissure: () => art(...TE.FISSURE_ICON, '#181818'),
@@ -586,6 +599,8 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
   liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
   alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
+  ...EGG_MOVE_2_ICONS,
+  ...DUO_ICONS,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -664,11 +679,23 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
 
 export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id])
 
+const iconSprites = canvasCache<MoveId, PixelSprite>()
+
+/** A move's icon as a sprite for the world (Metronome's bubble shows the move it called). */
+export const moveIconSprite = (id: MoveId) => {
+  let sprite = iconSprites.get(id)
+  if (!sprite) iconSprites.set(id, (sprite = MOVE_ICON_ART[id]()))
+  return sprite
+}
+
 export const itemIcon = (id: ItemId) =>
   toIconUrl(`item:${id}`, () => {
     const [rows, pal] = ITEM_ART[id]
     return art(rows, pal, '#181818')
   })
+
+/** A cursed item in its purple frame (`render/duoArt.ts`). */
+export const curseIcon = (id: CurseId) => toIconUrl(`curse:${id}`, () => cursedIcon(id))
 
 export const bagIcon = (id: BagItem) =>
   toIconUrl(`bag:${id}`, () => {
