@@ -4302,6 +4302,12 @@ button {
   height: 28px;
 }
 
+/* The toast's second line ("Surto de Gastly!" / "Ele aparece muito mais hoje…"), not glued to the first. */
+.item-toast small {
+  display: block;
+  margin-top: 2px;
+}
+
 @media (max-width: 720px) and (min-height: 501px) {
   .toasts {
     max-width: 90vw;
