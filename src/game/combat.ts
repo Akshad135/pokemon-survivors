@@ -9,6 +9,7 @@ import { DIFFICULTIES } from './difficulty'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
+import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
 import { fallInArena } from './riftArena'
@@ -47,7 +48,10 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   burst(g, e.x, e.y - e.radius, { colors: [TYPE_COLORS[attack.type], '#ffffff'], count: eff > 1 ? 6 : 3, speed: 70, ttl: 0.25 })
   g.events.push({ kind: 'hit', effective: eff })
 
-  if (e.hp <= 0) killEnemy(g, e, attack.move)
+  if (e.hp <= 0) {
+    killEnemy(g, e, attack.move)
+    if (attack.mod) modKill(g, e, attack)
+  }
 }
 
 /** Damage-over-time tick: no knockback or hit sound, number in the status color. */
@@ -80,6 +84,8 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.boss) {
+    // Every boss defeated earns an Esquecer charge (`banishOffer`).
+    g.banishes++
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     if (g.bossId === e.id) g.bossId = null

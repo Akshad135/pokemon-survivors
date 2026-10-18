@@ -2,6 +2,7 @@ import { dir8, dirTo, fromAngle, retain } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { damageEnemy } from './combat'
+import { modHit, modTick } from './mods'
 import { mineArmed, mineBlast, TURRET_RANGE } from './moveRules'
 import { nearestEnemy } from './queries'
 import { spawnAttack } from './spawn'
@@ -125,6 +126,7 @@ const collide = (g: Game, a: Attack) => {
     if (a.blast > 0) return detonate(g, a, false)
     a.hits.set(e.id, g.time + a.hitInterval)
     damageEnemy(g, e, a)
+    if (a.mod) modHit(g, a, e)
     if (--a.pierce <= 0) return
   }
 }
@@ -177,6 +179,7 @@ export const updateAttacks = (g: Game, dt: number) => {
     move(g, a, a.motion, dt)
     if (a.grow > 0 && a.shape.kind === 'circle') a.shape = { kind: 'circle', r: a.shape.r + a.grow * dt }
     trail(g, a)
+    if (a.mod) modTick(g, a)
     if (a.turret) shoot(g, a, a.turret, dt)
     if (a.age >= a.activeFrom && a.age <= a.activeUntil && (a.blast === 0 || mineArmed(a.age))) collide(g, a)
     if (a.blast > 0 && a.pierce > 0 && a.age >= a.ttl) detonate(g, a, true)

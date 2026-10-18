@@ -33,8 +33,14 @@ import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
 import type { BossFight } from './bossFight'
+import type { ModState } from './mods'
 
-export type OwnedMove = { id: MoveId; level: number; cooldown: number }
+/**
+ * A move the player has. `path` holds the branch picked at each fork of its
+ * upgrades (bit `i` set: the second branch of step `i`; absent means 0, see
+ * `moveStats`). `echo` counts down to an Echo re-cast (`mods.ts`; absent or ≤ 0: none due).
+ */
+export type OwnedMove = { id: MoveId; level: number; cooldown: number; path?: number; echo?: number }
 export type OwnedItem = { id: ItemId; level: number }
 
 export type Player = {
@@ -146,6 +152,8 @@ export type Visual =
   | 'streak' | 'slash' | 'afterimage'
   /** The rainbow burst that ends a Mega Evolution (`mega.ts`), drawn by `render/megaFx.ts`. */
   | 'megaWave'
+  /** Lingering ground of a Trail mod, the blast of a Burst mod and the sparks of an Arc mod (`mods.ts`), drawn by `render/modFx.ts`. */
+  | 'modTrail' | 'modBurst' | 'modArc'
   | EvolvedVisual
   | TacticVisual
 
@@ -201,6 +209,8 @@ export type Attack = {
   /** Blast visual of a mine. */
   blastVisual: Visual
   turret: Turret | null
+  /** Behavior mods of the fork branch it was cast with (`mods.ts`), or null. */
+  mod: ModState | null
 }
 
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
@@ -266,12 +276,20 @@ export type FloatText = {
   slot: number
 }
 
+/**
+ * How lucky a level-up card came out (`rollOffers`): a rare one gives two
+ * levels at once, a shiny one doesn't use the level-up up (the player picks again).
+ */
+export type Rarity = 'rare' | 'shiny'
+
 export type Offer =
-  | { kind: 'move'; id: MoveId; level: number }
-  | { kind: 'item'; id: ItemId; level: number }
+  | { kind: 'move'; id: MoveId; level: number; rarity?: Rarity }
+  | { kind: 'item'; id: ItemId; level: number; rarity?: Rarity }
   | { kind: 'berry' }
   /** Max level move + its paired held item: the move evolves in place. */
   | { kind: 'evolution'; from: MoveId; to: MoveId }
+  /** One way of a fork (`moveStats`): raises the move to `level` taking `branch` (0 or 1). */
+  | { kind: 'branch'; id: MoveId; level: number; branch: 0 | 1; rarity?: Rarity }
 
 export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
 
@@ -309,6 +327,10 @@ export type GameEvent =
   | { kind: 'evolve'; from: number; to: number }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
+  /** A shiny level-up card was picked: the player picks again. */
+  | { kind: 'shinyOffer' }
+  /** A level-up card was forgotten (Esquecer) and its slot drawn again. */
+  | { kind: 'banish' }
   | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
   | { kind: 'gameover' }
   | { kind: 'consumable'; item: ConsumableId }
@@ -375,6 +397,12 @@ export type Game = {
   /** Level-up rerolls/skips left this run. */
   rerolls: number
   skips: number
+  /** Esquecer charges left (`banishOffer`): from the Poké Mart, plus one per boss defeated and per evolution. */
+  banishes: number
+  /** Moves and items forgotten this run: they never come back as offers. */
+  banished: Set<MoveId | ItemId>
+  /** Mods of the move being cast right now (`updateMoves`), stamped on every hitbox it spawns; 0 otherwise. */
+  castMods: number
   damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
   offers: Offer[]

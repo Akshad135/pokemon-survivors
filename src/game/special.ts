@@ -899,7 +899,7 @@ const arrivalCombo = (g: Game, casts = g.player.stats.comboMoves) => {
   const pool = [...p.moves]
   for (let i = 0; i < n; i++) {
     const [owned] = pool.splice(Math.floor(g.rng() * pool.length), 1)
-    if (owned) MOVES[owned.id].fire(g, moveStats(owned.id, owned.level, p.stats))
+    if (owned) MOVES[owned.id].fire(g, moveStats(owned.id, owned.level, p.stats, owned.path))
   }
   burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#f8d030', '#f878a8'], count: 10, speed: 90, ttl: 0.3 })
 }

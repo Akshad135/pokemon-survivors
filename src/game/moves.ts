@@ -10,6 +10,7 @@ import {
 } from './moveRules'
 import type { Attack, Game, Visual } from './types'
 import type { PlayerStats } from './stats'
+import { modBits, modHit, type ModId } from './mods'
 import { isAfflicted, scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
 
@@ -37,18 +38,28 @@ export type MoveStats = {
   statusDamage: number
 }
 
-/** What `fire` receives: final stats plus the scaled status the move inflicts. */
-export type CastStats = MoveStats & { status: StatusSpec | null }
+/** What `fire` receives: final stats, the scaled status the move inflicts and the mods of the branches taken (`mods.ts`). */
+export type CastStats = MoveStats & { status: StatusSpec | null; mods: number }
 
 /** Stat delta added by one level-up (texts live in `i18n`). */
 type Upgrade = Partial<MoveStats>
+
+/** One way of a fork: a stat trade-off plus the behavior mods it adds (`mods.ts`). */
+export type Branch = { stats: Upgrade; mods?: readonly ModId[] }
+
+/**
+ * A level-up step: a stat delta, or a fork where the player picks one of two
+ * branches (`OwnedMove.path` remembers which). Texts: one line per plain step,
+ * a name and a line per branch for a fork (`Lines` in `i18n/pt.ts`).
+ */
+export type UpgradeStep = Upgrade | { fork: readonly [Branch, Branch] }
 
 export type MoveDef = {
   /** Official English name; descriptions live in `i18n`. */
   name: string
   type: PokeType
   base: MoveStats
-  upgrades: readonly Upgrade[]
+  upgrades: readonly UpgradeStep[]
   /** Condition its hits may inflict (chance and power scale with upgrades and items). */
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
@@ -134,6 +145,8 @@ const chain = (g: Game, s: CastStats, look: Look, hexBonus = 1) => {
       ttl: 0.28, activeFrom: Infinity, age: -hop * 0.035,
     })
     damageEnemy(g, e, arc)
+    // The hit lands here, not in `collide`, so its mods hear of it here.
+    if (arc.mod) modHit(g, arc, e)
     from = to
   })
 }
@@ -226,10 +239,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4, statusChance: 0.1 },
-      { cooldown: -0.15 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['seek'] }, { stats: { speed: -40 }, mods: ['trail'] }] },
       { amount: 1 },
       { pierce: 1 },
-      { damage: 6 },
+      { fork: [{ stats: { damage: 4 }, mods: ['split'] }, { stats: { cooldown: 0.1 }, mods: ['rear'] }] },
       { amount: 1, area: 0.25 },
     ],
     fire: (g, s) => {
@@ -254,10 +267,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { area: 0.2 },
-      { damage: 4 },
+      { fork: [{ stats: { damage: -3 }, mods: ['twin'] }, { stats: { damage: 4, speed: -0.6 }, mods: ['trail'] }] },
       { duration: 0.6 },
       { amount: 1 },
-      { damage: 5, statusDamage: 0.25 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: { statusDamage: 0.4 }, mods: ['echo'] }] },
       { amount: 1, speed: 1 },
     ],
     fire: (g, s) => {
@@ -280,10 +293,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { pierce: 1 },
+      { fork: [{ stats: { damage: -1 }, mods: ['rear'] }, { stats: { pierce: 1, speed: -60 }, mods: ['seek'] }] },
       { cooldown: -0.1 },
       { amount: 1 },
-      { damage: 5 },
+      { fork: [{ stats: { damage: 4 }, mods: ['bounce'] }, { stats: { cooldown: 0.1 }, mods: ['boomerang'] }] },
       { amount: 1, pierce: 2 },
     ],
     fire: (g, s) => {
@@ -345,10 +358,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: -2 }, mods: ['rear'] }, { stats: { area: 0.2, cooldown: 0.15 }, mods: ['echo'] }] },
       { amount: 1 },
       { speed: 52 },
-      { damage: 5 },
+      { fork: [{ stats: { statusChance: 0.25 }, mods: ['trail'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
       { amount: 1 },
     ],
     fire: (g, s) => {
@@ -404,10 +417,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { cooldown: -0.18 },
+      { fork: [{ stats: { damage: 6 }, mods: ['bounce'] }, { stats: { amount: 1, damage: 2 }, mods: ['halo'] }] },
       { amount: 1 },
       { pierce: 1 },
-      { damage: 4 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: { cooldown: -0.15 }, mods: ['echo'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => {
@@ -435,10 +448,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 8 },
-      { area: 0.25, statusChance: 0.15 },
+      { fork: [{ stats: { amount: 2, area: -0.25, damage: -6 }, mods: ['echo'] }, { stats: { amount: -2, damage: 40, area: 0.8 }, mods: ['arc'] }] },
       { amount: 1 },
       { cooldown: -0.3 },
-      { damage: 10 },
+      { fork: [{ stats: { damage: 10 }, mods: ['burstOnKill'] }, { stats: { statusChance: 0.15 }, mods: ['trail'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => {
@@ -634,10 +647,10 @@ export const MOVES = {
     upgrades: [
       { damage: 6 },
       { amount: 1 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: -3 }, mods: ['arc'] }, { stats: { area: 0.15 }, mods: ['echo'] }] },
       { cooldown: -0.2 },
       { amount: 1 },
-      { damage: 8 },
+      { fork: [{ stats: { damage: 8 }, mods: ['burstOnKill'] }, { stats: { area: 0.2 }, mods: ['trail'] }] },
       { amount: 1, area: 0.2 },
     ],
     fire: (g, s) => {
@@ -905,10 +918,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { cooldown: -0.2 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['burstOnKill'] }, { stats: { amount: -1 }, mods: ['echo'] }] },
       { amount: 1 },
       { damage: 5, statusChance: 0.1 },
-      { area: 0.25 },
+      { fork: [{ stats: { statusChance: 0.1 }, mods: ['trail'] }, { stats: { damage: -2 }, mods: ['arc'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => chain(g, s, { move: 'shockWave', type: 'electric', visual: 'shock' }),
@@ -1403,20 +1416,41 @@ export const isManual = (id: MoveId) => {
   return def.manual === true
 }
 
-/** Final stats of a move at `level`, after upgrades and player modifiers (incl. type boosts). */
-export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastStats => {
+/** The fork a move's step to `level` is, or null for a plain step (and level 1). */
+export const forkAt = (id: MoveId, level: number) => {
   const def: MoveDef = MOVES[id]
-  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, delta) => {
+  const step = level >= 2 ? def.upgrades[level - 2] : undefined
+  return step && 'fork' in step ? step.fork : null
+}
+
+/** The branch a path takes at step `index` (`OwnedMove.path`). */
+export const branchAt = (path: number, index: number): 0 | 1 => ((path >> index) & 1 ? 1 : 0)
+
+/** A path with the branch picked at the step to `level`. */
+export const withBranch = (path: number, level: number, branch: 0 | 1) => (branch ? path | (1 << (level - 2)) : path & ~(1 << (level - 2)))
+
+/**
+ * Final stats of a move at `level`, after upgrades and player modifiers (incl.
+ * type boosts). Forks follow `path` (`OwnedMove.path`); their branches' mods
+ * come back in `mods`. Trade-offs never take a move below one shot, 0.35 of its size or negative damage.
+ */
+export const moveStats = (id: MoveId, level: number, player: PlayerStats, path = 0): CastStats => {
+  const def: MoveDef = MOVES[id]
+  let mods = 0
+  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, step, i) => {
+    const { stats: delta, mods: added }: Branch = 'fork' in step ? step.fork[branchAt(path, i)] : { stats: step }
+    mods |= modBits(added)
     const next = { ...acc }
     for (const k of Object.keys(delta) as (keyof MoveStats)[]) next[k] += delta[k] ?? 0
     return next
   }, def.base)
   return {
     ...s,
-    damage: s.damage * player.might * (1 + (player.typeDamage[def.type] ?? 0)),
+    mods,
+    damage: Math.max(0, s.damage) * player.might * (1 + (player.typeDamage[def.type] ?? 0)),
     cooldown: Math.max(def.minCooldown ?? 0.1, s.cooldown * player.cooldown),
-    area: s.area * player.area,
-    amount: s.amount + player.amount,
+    area: Math.max(0.35, s.area) * player.area,
+    amount: Math.max(1, s.amount) + player.amount,
     speed: s.speed * player.projectileSpeed,
     duration: s.duration * player.duration,
     status: def.status
