@@ -90,6 +90,8 @@ export const sitePt = {
     special: 'Ataque especial',
     specialFinal: 'Na evolução final',
     learnset: 'Golpes que aprende',
+    /** The learnset's first row: what the family starts with (later rows say the level each evolution unlocks its moves at). */
+    learnStart: 'desde o início',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
     eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
@@ -300,6 +302,19 @@ export const sitePt = {
       itemHead: 'Item',
       resultHead: 'Evolução',
       noEvolution: (moves: string) => `Ainda sem evolução: ${moves}.`,
+      duoTitle: 'Golpes em dupla',
+      duoParagraphs: [
+        'Leve dois golpes ao nível máximo (ou evolua-os) e, se os tipos deles formarem uma das receitas abaixo, um card dourado oferece uni-los num golpe em dupla: ele toma o espaço do primeiro, libera o do segundo e sobe até o Nv 5. Os dois golpes usados não voltam mais.',
+        'As receitas vão por tipo, então funcionam com qualquer Pokémon. Só cabe 1 golpe em dupla por partida, e a Poké Ball nunca une golpes sozinha.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Golpe em dupla',
+      cursedTitle: 'Itens amaldiçoados',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `A partir de ${minutes.toLocaleString('pt-BR')} min, um baú trancado tem ${Math.round(chance * 100)}% de chance de esconder um item amaldiçoado: muito forte, mas com um preço. Você escolhe pegar ou deixar. Ele não ocupa espaço de item, fica até o fim da partida, e cabem até ${max}.`,
+      ],
+      cursedUpHead: 'Vantagem',
+      cursedDownHead: 'Preço',
     },
     special: {
       paragraphs: (min: number) => [
@@ -483,6 +498,11 @@ export const sitePt = {
         name: 'Meowth fugindo',
         how: (ttl: number) => `Corre de você e escapa em ${ttl}s. Seus golpes acertam ele.`,
         reward: (jackpot: string) => `Uma moeda a cada golpe e o Pay Day (${jackpot}) se ele desmaiar.`,
+      },
+      tutor: {
+        name: 'Tutor de Golpes',
+        how: (from: number, until: number) => `Arma a tenda uma vez entre ${from} e ${until} min (às vezes mais uma). Fique no círculo dela.`,
+        reward: (price: string) => `Ensina 1 de 2 golpes de tipos que você não tem. A primeira aula é grátis; a próxima custa ${price} da partida.`,
       },
     },
     mart: {

@@ -9,6 +9,7 @@ import { consumableIcon } from '../render/props'
 import { cryUrl, portraitUrl } from '../render/sprites'
 import { h, rich } from './dom'
 import { toast } from './toasts'
+import { tmDiscIcon } from './tmPick'
 
 /** Toast with a small icon on the left, like the item pickups. */
 const iconToast = (root: HTMLElement, icon: string, text: string, ms = 2600) =>
@@ -52,5 +53,12 @@ export const mapEventFeedback = (root: HTMLElement, notice: MapEventNotice) => {
     case 'meowthEscaped':
       playSfx('escaped')
       return iconToast(root, portraitUrl(MEOWTH_DEX), m.meowthEscaped, 2000)
+    case 'tutor':
+      playSfx('altar')
+      return iconToast(root, tmDiscIcon('#78c0f8'), m.tutor, 3600)
+    case 'tutorEmpty':
+      return iconToast(root, tmDiscIcon('#78c0f8'), m.tutorEmpty, 2600)
+    case 'tutorLeft':
+      return iconToast(root, tmDiscIcon('#78c0f8'), m.tutorLeft, 2200)
   }
 }

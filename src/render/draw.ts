@@ -29,7 +29,11 @@ import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawEggAttack, drawEggGround, drawEggPlayer, eggPlayerLook } from './eggMoveFx'
 import { drawEgg3Attack, drawEgg3Ground, drawEgg3Player, egg3PlayerLook } from './eggMove3Fx'
+import { drawEgg2Attack, drawEgg2Ground } from './eggMove2Fx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
+import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
+import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
+import { drawDuoAir, drawDuoGround } from './duoFx'
 import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
@@ -128,6 +132,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawMoveFxGround(ctx, a)
       drawEggGround(ctx, a, t)
       drawEgg3Ground(ctx, a, t)
+      drawEgg2Ground(ctx, a, t)
       drawSignatureGround(ctx, a, t)
       drawTypeEvolvedGround(ctx, a, t)
       drawModGround(ctx, a, t)
@@ -324,6 +329,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawMoveFxAttack(ctx, a, t)
       drawEggAttack(ctx, a, t)
       drawEgg3Attack(ctx, a, t)
+      drawEgg2Attack(ctx, a, t)
       drawSignatureAttack(ctx, a, t)
       drawTypeEvolvedAttack(ctx, a, t)
       drawModAttack(ctx, a, t)
@@ -594,6 +600,10 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
       drawMegaStone(ctx, k.mega, k.x, k.y + bob, t)
       continue
     }
+    if (k.kind === 'tm') {
+      drawTmDisc(ctx, k, k.x, k.y + bob, t)
+      continue
+    }
     const sprite =
       k.kind === 'xp' ? candies[xpTier(k.value)]!
       : k.kind === 'coin' ? coins[coinTier(k.value)]!
@@ -698,6 +708,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   drawVerbGround(ctx, g, t)
+  drawTmGround(ctx, g, t)
+  drawVerbEvolvedGround(ctx, g, t)
+  drawDuoGround(ctx, g, t)
   drawLegendaryGround(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
@@ -750,11 +763,15 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawEggPlayer(ctx, g, t)
   drawEgg3Player(ctx, g, t)
   drawSignaturePlayer(ctx, g, t)
+  drawTmPlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
   drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)
+  drawTmAir(ctx, g, t, visible)
+  drawVerbEvolvedAir(ctx, g, t, visible)
+  drawDuoAir(ctx, g, t, visible)
   drawLegendaryAir(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)

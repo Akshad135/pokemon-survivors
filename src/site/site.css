@@ -724,6 +724,27 @@ h3 {
   font-size: 19px;
 }
 
+/* The learnset by stage: the stage's name and level over its move chips. */
+.learn {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.learn dt {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.learn dt small {
+  font-size: inherit;
+  opacity: 0.8;
+}
+
+.learn dd {
+  margin: 0 0 4px;
+}
+
 .list {
   margin: 0;
   padding-left: 18px;

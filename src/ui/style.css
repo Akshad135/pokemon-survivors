@@ -10108,3 +10108,806 @@ button.hall-tile:hover {
     display: none;
   }
 }
+
+/* ---------- Duo moves (game/duoRules.ts) ---------- */
+
+/* The duo card: gold like an evolution, with both ingredients' type colors running across its top. */
+.levelup .offer.offer-duo {
+  background:
+    linear-gradient(90deg, var(--duo-a, #f8d030) 0 50%, var(--duo-b, #f8d030) 50%) top / 100% 4px no-repeat,
+    linear-gradient(180deg, #fffbe0, #f8e0a0);
+  border-color: #e0a020;
+  animation:
+    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    duo-frame 1.1s steps(2) infinite;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
+}
+
+.levelup .offer.offer-duo.selected {
+  background:
+    linear-gradient(90deg, var(--duo-a, #f8d030) 0 50%, var(--duo-b, #f8d030) 50%) top / 100% 4px no-repeat,
+    linear-gradient(180deg, #fffdf0, #fbecc0);
+  border-color: #e83838;
+}
+
+@keyframes duo-frame {
+  50% {
+    box-shadow: 0 0 0 2px #fff8c0, -4px 0 12px 1px var(--duo-a, #f8d030), 4px 0 12px 1px var(--duo-b, #f8d030);
+  }
+}
+
+.offer-duo .offer-icon {
+  background: linear-gradient(135deg, var(--duo-a, #503010) 0 50%, var(--duo-b, #503010) 50%);
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
+.offer-duo .offer-shine {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
+  animation-duration: 2.2s;
+}
+
+.offer-duo .tag {
+  color: #fff;
+  background: linear-gradient(90deg, var(--duo-a, #e0a020), var(--duo-b, #e0a020));
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  text-shadow: 1px 0 #301000, -1px 0 #301000, 0 1px #301000, 0 -1px #301000;
+}
+
+.duo-note {
+  color: #a05800;
+}
+
+.evo-recipe.duo-recipe.ready {
+  color: #a05800;
+  background: linear-gradient(90deg, #f8e090, #fff4c0, #f8e090);
+}
+
+.tag.tag-duo {
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: linear-gradient(90deg, #e05818, #8048d0);
+}
+
+.slot.duo {
+  border-color: #f8d030;
+  box-shadow: 0 0 0 1px #a06800, 0 0 6px rgba(248, 208, 48, 0.6);
+}
+
+.slot.duo-ready {
+  animation: duo-slot 0.5s steps(2) infinite;
+}
+
+@keyframes duo-slot {
+  50% {
+    border-color: #fff;
+    box-shadow: 0 0 6px #f8d030, 0 0 0 2px #e05818;
+  }
+}
+
+/* The pause screen's duo recipes, by type. */
+.duo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.duo-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a05800;
+}
+
+.duo-panel-title img {
+  width: 12px;
+  height: 12px;
+  image-rendering: pixelated;
+}
+
+.duo-recipes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.duo-type-recipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 2px 3px;
+  font-size: 16px;
+  line-height: 1;
+  color: #6878a8;
+  background: rgba(104, 120, 168, 0.12);
+  border-radius: 4px;
+  opacity: 0.75;
+}
+
+.duo-type-recipe .type-badge {
+  font-size: 6px;
+  padding: 3px 3px 2px;
+}
+
+.duo-type-recipe img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+.duo-type-name {
+  font-size: 16px;
+}
+
+.duo-type-recipe b {
+  font-family: var(--title);
+  font-size: 7px;
+  color: #e83838;
+  margin-left: 2px;
+}
+
+.duo-type-recipe.ready,
+.duo-type-recipe.done {
+  opacity: 1;
+  color: #a05800;
+  background: #f8e090;
+  box-shadow: 0 0 0 2px #e0a020;
+}
+
+.duo-type-recipe.ready {
+  animation: evo-glow 0.8s steps(2) infinite;
+}
+
+.duo-legend {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+  color: #8890b0;
+}
+
+.duo-legend.near {
+  color: #a05800;
+}
+
+.toast-duo b {
+  color: #e07000;
+}
+
+/* ---------- Cursed items (data/curses.ts) ---------- */
+
+.buff.cursed {
+  border-color: #a050e0;
+  background: rgba(42, 8, 64, 0.7);
+  box-shadow: 0 0 4px rgba(160, 80, 224, 0.7);
+}
+
+.buff.cursed img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.loadout-row.cursed {
+  color: #7030a0;
+}
+
+.tag.tag-curse {
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: #7030b0;
+  margin-left: auto;
+}
+
+.toast-curse b {
+  color: #b060f0;
+}
+
+.toast-curse em,
+.toast-curse i {
+  color: #e0b0ff;
+}
+
+/* The chest's choice: the item floats in a purple aura over a dark violet box. */
+.curse-pick .curse-box {
+  max-width: min(360px, 92vw);
+  text-align: center;
+  background: linear-gradient(180deg, #f4ecfa, #e4d4f2);
+  border-color: #7030b0;
+  box-shadow: 0 0 0 2px #2a0840, 0 0 24px rgba(160, 80, 224, 0.55);
+}
+
+.curse-label {
+  align-self: center;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: #7030b0;
+  padding: 3px 6px 2px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.curse-box .dialog-title {
+  color: #501880;
+}
+
+.curse-sub {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.05;
+  color: #604878;
+}
+
+.curse-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 96px;
+}
+
+.curse-art img {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  animation: curse-float 1.6s ease-in-out infinite;
+}
+
+.curse-aura {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192, 112, 248, 0.55), rgba(112, 48, 176, 0.25) 55%, transparent 70%);
+  animation: curse-aura 1.2s steps(3) infinite;
+}
+
+@keyframes curse-float {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes curse-aura {
+  50% {
+    transform: scale(1.12);
+    opacity: 0.7;
+  }
+}
+
+.curse-name {
+  font-family: var(--title);
+  font-size: 12px;
+  color: #2a0840;
+}
+
+.curse-line {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: center;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.curse-line b {
+  font-family: var(--title);
+  font-size: 8px;
+}
+
+.curse-line.up {
+  color: #207830;
+}
+
+.curse-line.down {
+  color: #b02838;
+}
+
+.curse-note {
+  margin: 0;
+  font-size: 16px;
+  color: #806898;
+}
+
+.curse-pick .btn.curse-take {
+  background: #7030b0;
+  color: #fff;
+  border-color: #2a0840;
+}
+
+.curse-pick .btn.curse-take.selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 12px #c070f8;
+}
+
+.curse-pick .btn.picked {
+  transform: scale(1.08);
+}
+
+.curse-pick.taking .curse-art img {
+  animation: curse-grab 0.32s ease-in forwards;
+}
+
+.curse-pick.leaving .curse-art img {
+  animation: curse-drop 0.32s ease-in forwards;
+}
+
+@keyframes curse-grab {
+  to {
+    transform: translateY(40px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes curse-drop {
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+    filter: grayscale(1);
+  }
+}
+
+@media (max-height: 480px) {
+  .curse-art {
+    height: 60px;
+  }
+
+  .curse-art img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .curse-aura {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ---------- Learnsets by stage ---------- */
+
+/* The details sheet's moves tab: a header per stage (portrait, name, the level it comes at) over its moves. */
+.learn-note {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.learn-stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 2px 4px 2px 2px;
+  background: #e2e2ee;
+  border-radius: 4px;
+  box-shadow: inset 4px 0 0 var(--accent, #6878a8);
+}
+
+.learn-stage b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #404058;
+}
+
+.learn-when {
+  margin-left: auto;
+  padding: 3px 4px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: var(--accent, #6878a8);
+  border-radius: 3px;
+}
+
+.learn-portraits {
+  display: flex;
+  padding-left: 4px;
+}
+
+.learn-portraits img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.learn-portraits img + img {
+  margin-left: -10px;
+}
+
+/* A branch's own moves, under the stage that branches. */
+.learn-stage.learn-branch {
+  margin: 4px 0 0 12px;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--accent, #6878a8);
+}
+
+.learn-branch .learn-when {
+  display: none;
+}
+
+/* A level-up card for a move the evolution just unlocked: a green frame and the form's tag. */
+.levelup .offer-fresh:not(.selected) {
+  border-color: #38b070;
+  box-shadow: 0 0 0 2px #b8ecc8;
+}
+
+.tag-fresh {
+  color: #fff;
+  background: #30a060;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  animation: fresh-tag 1.2s steps(2) infinite;
+}
+
+@keyframes fresh-tag {
+  50% {
+    background: #48c078;
+  }
+}
+
+/* After an evolution: "Charmeleon can now learn:" over a chip per move. */
+.learn-toast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.learn-moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.learn-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 2px;
+  font-size: 20px;
+  background: #eeeef4;
+  border-left: 4px solid var(--type);
+  border-radius: 2px;
+  animation: learn-pop 0.3s steps(3) both;
+}
+
+.learn-move:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.learn-move:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.learn-move:nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+.learn-move img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+@keyframes learn-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* ---------- TMs and the Move Tutor (`ui/tmPick.ts`) ---------- */
+
+.tm-pick {
+  border-color: var(--type);
+  box-shadow: 0 0 0 3px #181828, 0 0 0 6px var(--type), 0 10px 0 rgba(0, 0, 0, 0.3);
+}
+
+.tm-pick.tm-legendary {
+  --type: #f8d030;
+  background: linear-gradient(180deg, #fffbe8, #f8f0d0);
+  box-shadow: 0 0 0 3px #3a2600, 0 0 0 6px #f8d030, 0 0 24px 6px rgba(248, 208, 48, 0.45);
+}
+
+.tm-pick.tm-tutor {
+  --type: #3868b8;
+}
+
+.tm-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tm-head .dialog-title {
+  text-align: left;
+}
+
+.tm-head-disc {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  animation: tm-spin 1.4s steps(1) infinite;
+}
+
+/* The disc turning over, coin-like, in whole steps. */
+@keyframes tm-spin {
+  0% { transform: scaleX(1); }
+  20% { transform: scaleX(0.66); }
+  30% { transform: scaleX(0.33); }
+  40% { transform: scaleX(-0.33); }
+  50% { transform: scaleX(-0.66); }
+  60% { transform: scaleX(-1); }
+  75% { transform: scaleX(-0.33); }
+  85% { transform: scaleX(0.33); }
+  92% { transform: scaleX(0.66); }
+}
+
+.tm-forgetting .tm-head-disc {
+  animation: none;
+}
+
+.tm-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tm-wallet {
+  margin: -4px 0 0;
+  font-size: 20px;
+  text-align: right;
+  color: #806010;
+}
+
+.tm-card {
+  position: relative;
+  border-left: 6px solid var(--type);
+  animation: pop 0.25s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+.tm-card .tm-icon {
+  box-shadow: 0 0 0 2px var(--type);
+}
+
+.tm-card.tm-gold {
+  background: linear-gradient(180deg, #fff8d0, #f8e090);
+  border-color: #e0a020;
+  border-left-color: #f8d030;
+}
+
+.tm-card.tm-broke {
+  opacity: 0.6;
+}
+
+.tag-tm {
+  color: #fff;
+  background: var(--type);
+  border-radius: 3px;
+  padding: 2px 3px 1px;
+}
+
+.tm-price {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  padding: 4px 6px 3px;
+  color: #382800;
+  background: #f8d030;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tm-price.broke {
+  color: #fff;
+  background: #c83030;
+}
+
+.tm-forget {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tm-forget-move {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 8px;
+  text-align: left;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-left: 5px solid var(--type);
+  border-radius: 6px;
+  animation: pop 0.2s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.05s);
+}
+
+.tm-forget-move.selected {
+  background: #fff;
+  border-color: #e83838;
+  box-shadow: 0 0 0 2px #fff, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tm-forget-move.selected .offer-key {
+  background: #e83838;
+}
+
+.tm-forget-move img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.tm-forget-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.tm-forget-name small {
+  display: block;
+  font-family: var(--body);
+  font-size: 18px;
+  color: #6878a8;
+}
+
+.tm-pass {
+  min-width: 60%;
+}
+
+/* "1, 2 and… Poof!": the move's chip shrinks into a puff of pixel smoke, then the new one pops in. */
+.tm-poof {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  min-height: 200px;
+  padding: 16px 0;
+}
+
+.tm-poof-line {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+}
+
+.tm-poof-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-family: var(--title);
+  font-size: 11px;
+  background: #e8e8f0;
+  border: 3px solid #303040;
+  border-radius: 6px;
+}
+
+.tm-poof-chip img {
+  width: 40px;
+  height: 40px;
+}
+
+.tm-poof-chip.gone {
+  animation: tm-gone 0.3s steps(3) forwards;
+}
+
+.tm-poof-chip.learned {
+  background: #fff8d0;
+  border-color: #e0a020;
+  animation: tm-learned 0.4s steps(4);
+}
+
+@keyframes tm-gone {
+  to {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes tm-learned {
+  0% { transform: scale(0.3); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.tm-poof-smoke {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.tm-poof-smoke i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #a8a8c0;
+  opacity: 0;
+}
+
+.tm-poof-smoke.on i {
+  animation: tm-smoke 0.55s steps(5) forwards;
+}
+
+@keyframes tm-smoke {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(4px) scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(var(--d)) scale(0.4);
+  }
+}
+
+@media (max-width: 520px) {
+  .tm-forget {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .tm-forget-move {
+    min-height: 42px;
+    padding: 4px 8px;
+  }
+  .tm-head-disc {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .tm-pick {
+    padding: 12px 16px;
+  }
+  .tm-stage {
+    gap: 8px;
+  }
+  .tm-forget-move {
+    min-height: 38px;
+    padding: 3px 8px;
+  }
+  .tm-forget-move .type-badge,
+  .tm-pick .hint {
+    display: none;
+  }
+  .tm-poof {
+    min-height: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-head-disc,
+  .tm-card,
+  .tm-forget-move {
+    animation: none;
+  }
+}

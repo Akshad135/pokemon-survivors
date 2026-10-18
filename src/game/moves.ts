@@ -15,6 +15,10 @@ import { modBits, modHit, refreshMods, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
 import { EGG_MOVES_3 } from './eggMoves3'
+import { TM_MOVES } from './tmMoves'
+import { VERB_EVOLVED_MOVES } from './verbEvolutions'
+import { EGG_MOVES_2 } from './eggMoves2'
+import { DUO_MOVES } from './duoMoves'
 import { LEGENDARY_MOVES } from './legendaryMoves'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
@@ -79,6 +83,8 @@ export type MoveDef = {
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
   minCooldown?: number
+  /** A duo move (`duoRules.ts`): fused from two maxed moves, it never evolves (and needs no evolution). */
+  duo?: true
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
   /** A legendary's capstone move (`legendaryMoves.ts`): evolved-tier, it never evolves and comes from the legendaries, not a learnset. */
@@ -2251,6 +2257,15 @@ export const MOVES = {
 
   /* ---------- Egg signatures, third batch (`eggMoves3.ts`) ---------- */
   ...EGG_MOVES_3,
+  /* ---------- TM moves: boss discs and the Move Tutor (`tmMoves.ts`) ---------- */
+  ...TM_MOVES,
+  /* ---------- Evolutions of the verb moves (`verbEvolutions.ts`) ---------- */
+  ...VERB_EVOLVED_MOVES,
+  /* ---------- Egg families' signature moves, second batch (`eggMoves2.ts`) ---------- */
+  ...EGG_MOVES_2,
+  /* ---------- Duo moves: two maxed moves fused into one (duoMoves.ts, recipes in duoRules.ts) ---------- */
+
+  ...DUO_MOVES,
   /* ---------- Legendary moves (`legendaryMoves.ts`) ---------- */
   ...LEGENDARY_MOVES,
 } as const satisfies Record<string, MoveDef>
