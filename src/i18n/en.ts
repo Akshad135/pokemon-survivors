@@ -102,6 +102,8 @@ export const en: Messages = {
     start: 'Start',
     startWith: (name) => `Start with ${name}`,
     close: 'Close',
+    learnStart: 'From the start',
+    learnNote: 'Each evolution unlocks new moves. There are only 6 slots: every run leaves some out.',
   },
 
   hud: {
@@ -129,6 +131,7 @@ export const en: Messages = {
     forkTag: '2 PATHS',
     forkHint: (a, b) => `Path: ${a} or ${b}`,
     branchOf: (move) => `${move} path`,
+    freshTag: (form) => `✦ ${form}`,
     rare: 'RARE! +2 Lv',
     shiny: 'SHINY!',
     shinyNote: 'Free pick: another one follows!',
@@ -654,6 +657,7 @@ export const en: Messages = {
     evolving: (name) => `What? ${name} is evolving!`,
     evolved: (from, to) => `Congratulations! ${from} evolved into ${to}!`,
     moveEvolved: (from, to) => `*${from}* evolved into *${to}*!`,
+    learns: (form) => `${form} can now learn:`,
     pokeball: (prize) => `Poké Ball: ${prize}`,
     pokeballEmpty: 'nothing… it was empty!',
     pokeballLevel: (name, level) => `${name} Lv ${level}!`,

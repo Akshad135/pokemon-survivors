@@ -102,6 +102,8 @@ export const es: Messages = {
     start: 'Empezar',
     startWith: (name) => `Empezar con ${name}`,
     close: 'Cerrar',
+    learnStart: 'Desde el inicio',
+    learnNote: 'Cada evolución desbloquea movimientos nuevos. Solo hay 6 espacios: cada partida deja algunos fuera.',
   },
 
   hud: {
@@ -129,6 +131,7 @@ export const es: Messages = {
     forkTag: '2 CAMINOS',
     forkHint: (a, b) => `Camino: ${a} o ${b}`,
     branchOf: (move) => `Camino de ${move}`,
+    freshTag: (form) => `✦ ${form}`,
     rare: '¡RARO! +2 Nv',
     shiny: '¡SHINY!',
     shinyNote: 'Elección gratis: ¡viene otra!',
@@ -655,6 +658,7 @@ export const es: Messages = {
     evolving: (name) => `¿Eh? ¡${name} está evolucionando!`,
     evolved: (from, to) => `¡Felicidades! ¡${from} evolucionó a ${to}!`,
     moveEvolved: (from, to) => `¡*${from}* evolucionó a *${to}*!`,
+    learns: (form) => `${form} ahora puede aprender:`,
     pokeball: (prize) => `Poké Ball: ${prize}`,
     pokeballEmpty: 'nada… ¡estaba vacía!',
     pokeballLevel: (name, level) => `¡${name} Nv ${level}!`,

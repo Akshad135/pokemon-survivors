@@ -10103,3 +10103,138 @@ button.hall-tile:hover {
     display: none;
   }
 }
+
+/* ---------- Learnsets by stage ---------- */
+
+/* The details sheet's moves tab: a header per stage (portrait, name, the level it comes at) over its moves. */
+.learn-note {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.learn-stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 2px 4px 2px 2px;
+  background: #e2e2ee;
+  border-radius: 4px;
+  box-shadow: inset 4px 0 0 var(--accent, #6878a8);
+}
+
+.learn-stage b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #404058;
+}
+
+.learn-when {
+  margin-left: auto;
+  padding: 3px 4px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: var(--accent, #6878a8);
+  border-radius: 3px;
+}
+
+.learn-portraits {
+  display: flex;
+  padding-left: 4px;
+}
+
+.learn-portraits img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.learn-portraits img + img {
+  margin-left: -10px;
+}
+
+/* A branch's own moves, under the stage that branches. */
+.learn-stage.learn-branch {
+  margin: 4px 0 0 12px;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--accent, #6878a8);
+}
+
+.learn-branch .learn-when {
+  display: none;
+}
+
+/* A level-up card for a move the evolution just unlocked: a green frame and the form's tag. */
+.levelup .offer-fresh:not(.selected) {
+  border-color: #38b070;
+  box-shadow: 0 0 0 2px #b8ecc8;
+}
+
+.tag-fresh {
+  color: #fff;
+  background: #30a060;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  animation: fresh-tag 1.2s steps(2) infinite;
+}
+
+@keyframes fresh-tag {
+  50% {
+    background: #48c078;
+  }
+}
+
+/* After an evolution: "Charmeleon can now learn:" over a chip per move. */
+.learn-toast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.learn-moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.learn-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 2px;
+  font-size: 20px;
+  background: #eeeef4;
+  border-left: 4px solid var(--type);
+  border-radius: 2px;
+  animation: learn-pop 0.3s steps(3) both;
+}
+
+.learn-move:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.learn-move:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.learn-move:nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+.learn-move img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+@keyframes learn-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
