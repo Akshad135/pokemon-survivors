@@ -15,11 +15,15 @@ import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
 import { rebuildGrid, updateEnemies } from './enemies'
-import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFor } from './leveling'
+import {
+  applyOffer, branchOffers, draftOffers, loadout, offerSubject, pendingEvolution, recomputeStats, rollOffers, shinyOfferOdds, xpFor,
+  type RollOptions,
+} from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
 import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
-import { isManual, MOVES, moveStats } from './moves'
+import { afterCast, echoStats, hasMod, MOD } from './mods'
+import { forkAt, isManual, MOVES, moveStats, type CastStats } from './moves'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -38,7 +42,7 @@ import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
 import { TERRAIN } from '../data/terrain'
-import type { Game, Offer } from './types'
+import type { Game, Offer, OwnedMove } from './types'
 import * as dm from '../engine/dmath'
 
 export const EVOLUTION_TIME = 4.6
@@ -58,6 +62,8 @@ export type RunOptions = {
   /** Bag items the run uses (`game/bag.ts`): a Lure doubles wild shinies, an Incense egg drops. */
   lure?: boolean
   incense?: boolean
+  /** Opens the run on the opening draft (`draftOffers`): three moves of the learnset to pick the second move from. */
+  draft?: boolean
 }
 
 /**
@@ -96,7 +102,7 @@ export const createGame = (
       iframes: 0,
       hurt: 0,
       stage: 0,
-      moves: [{ id: def.signature, level: 1, cooldown: 0.4 }],
+      moves: [{ id: def.signature, level: 1, cooldown: 0.4, path: 0 }],
       items: [],
       stats: BASE_STATS,
       radius: Math.max(6, Math.round(bodyOf(def.line[0].dex).bodyW * 0.3)),
@@ -122,6 +128,8 @@ export const createGame = (
     ranks,
     coins: 0,
     ...runCharges(ranks),
+    banished: new Set(),
+    castMods: 0,
     damageByMove: {},
     pendingLevelUps: 0,
     offers: [],
@@ -152,8 +160,19 @@ export const createGame = (
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
+  if (options.draft) {
+    g.phase = 'levelup'
+    g.pendingLevelUps = 1
+    g.offers = draftOffers(loadout(g), g.rng)
+  }
   return g
 }
+
+/** Whether the level-up on screen is the opening draft: the run's clock only starts once it's picked. */
+export const drafting = (g: Game) => g.phase === 'levelup' && g.time === 0
+
+/** How a run rolls its level-up cards: rarity on, with its Shiny Charm's odds. */
+const rolling = (g: Game): RollOptions => ({ shiny: shinyOfferOdds(g.ranks.shinyCharm) })
 
 /**
  * Per-tick player input, as plain data so the simulation stays DOM-free. `mega`
@@ -199,12 +218,26 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   healPlayer(g, p.stats.regen * dt)
 }
 
+/** Fires a move with its fork mods stamped on what it spawns (`mods.ts`); an Echo schedules its re-cast. */
+const castMove = (g: Game, owned: OwnedMove, s: CastStats) => {
+  const from = g.attacks.length
+  g.castMods = s.mods
+  MOVES[owned.id].fire(g, s)
+  g.castMods = 0
+  afterCast(g, from, s)
+  if (hasMod(s.mods, 'echo')) owned.echo = MOD.echo.delay
+}
+
 /**
  * Casts every move whose cooldown ran out. A manual move instead waits,
  * recharged, for a `press`, and holds it while the special moves the player.
  */
 const updateMoves = (g: Game, press: boolean, dt: number) => {
   for (const owned of g.player.moves) {
+    if (owned.echo !== undefined && owned.echo > 0) {
+      owned.echo -= dt
+      if (owned.echo <= 0) castMove(g, owned, echoStats(moveStats(owned.id, owned.level, g.player.stats, owned.path)))
+    }
     if (isManual(owned.id)) {
       owned.cooldown = Math.max(0, owned.cooldown - dt)
       if (!press || owned.cooldown > 0 || specialBusy(g.special)) continue
@@ -212,8 +245,8 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
       owned.cooldown -= dt
       if (owned.cooldown > 0) continue
     }
-    const s = moveStats(owned.id, owned.level, g.player.stats)
-    MOVES[owned.id].fire(g, s)
+    const s = moveStats(owned.id, owned.level, g.player.stats, owned.path)
+    castMove(g, owned, s)
     owned.cooldown += s.cooldown
   }
 }
@@ -222,7 +255,7 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
 const advancePhase = (g: Game) => {
   if (g.pendingLevelUps > 0) {
     g.phase = 'levelup'
-    g.offers = rollOffers(loadout(g), g.rng, 3)
+    g.offers = rollOffers(loadout(g), g.rng, 3, rolling(g))
     g.events.push({ kind: 'levelup' })
     return
   }
@@ -236,23 +269,66 @@ const advancePhase = (g: Game) => {
   g.phase = 'playing'
 }
 
+/** Whether the cards on screen are a fork's two branches (picked from a move card that reached one). */
+export const choosingBranch = (g: Game) => g.offers.some((o) => o.kind === 'branch')
+
+/**
+ * Picks a level-up card. A move card that reaches a fork opens its two
+ * branches instead (picked the same way); a shiny card is a free pick, so a
+ * fresh set of cards follows without using the level-up up.
+ */
 export const chooseOffer = (g: Game, offer: Offer) => {
   if (g.phase !== 'levelup') return
+  if (offer.kind === 'move' && forkAt(offer.id, offer.level)) {
+    g.offers = branchOffers(offer)
+    return
+  }
   applyOffer(g, offer)
+  if ('rarity' in offer && offer.rarity === 'shiny') {
+    g.offers = rollOffers(loadout(g), g.rng, 3, rolling(g))
+    g.events.push({ kind: 'shinyOffer' })
+    return
+  }
   g.pendingLevelUps--
   advancePhase(g)
 }
 
-/** Spends a Poké Mart reroll: draws a fresh set of level-up offers. */
+/** Spends a Poké Mart reroll: draws a fresh set of level-up offers (a fresh draft at the start). */
 export const rerollOffers = (g: Game) => {
-  if (g.phase !== 'levelup' || g.rerolls <= 0) return
+  if (g.phase !== 'levelup' || g.rerolls <= 0 || choosingBranch(g)) return
   g.rerolls--
-  g.offers = rollOffers(loadout(g), g.rng, 3)
+  g.offers = drafting(g) ? draftOffers(loadout(g), g.rng) : rollOffers(loadout(g), g.rng, 3, rolling(g))
+}
+
+/** Whether a card can be forgotten: moves and items can, berries, evolutions and fork branches can't. */
+export const canBanish = (offer: Offer) => offer.kind === 'move' || offer.kind === 'item'
+
+/**
+ * Spends an Esquecer charge on the card at `index`: its move or item never
+ * comes back this run, and that slot alone is drawn again (from the
+ * learnset's new moves during the opening draft). The slot changes in place,
+ * so the shell keeps the screen and redraws just that card.
+ */
+export const banishOffer = (g: Game, index: number) => {
+  const offer = g.offers[index]
+  if (g.phase !== 'levelup' || g.banishes <= 0 || !offer || !canBanish(offer)) return
+  const id = offerSubject(offer)
+  if (id === null) return
+  g.banishes--
+  g.banished.add(id)
+  const shown = g.offers.filter((_, i) => i !== index)
+  const ids = new Set(shown.map(offerSubject))
+  const fresh = drafting(g)
+    ? draftOffers({ ...loadout(g), banished: new Set([...g.banished, ...shown.flatMap((o) => (o.kind === 'move' ? [o.id] : []))]) }, g.rng, 1)
+    : rollOffers(loadout(g), g.rng, 1, { ...rolling(g), shown })
+  const next = fresh.find((o) => !ids.has(offerSubject(o))) ?? { kind: 'berry' }
+  g.offers[index] = next
+  g.events.push({ kind: 'banish' })
 }
 
 /** Spends a Poké Mart skip: discards this level-up without picking anything. */
 export const skipLevelUp = (g: Game) => {
-  if (g.phase !== 'levelup' || g.skips <= 0) return
+  if (g.phase !== 'levelup' || g.skips <= 0 || choosingBranch(g)) return
   g.skips--
   g.pendingLevelUps--
   advancePhase(g)
@@ -268,6 +344,8 @@ const updateEvolution = (g: Game, dt: number) => {
   p.radius = Math.max(6, Math.round(bodyOf(evo.to).bodyW * 0.3))
   recomputeStats(g)
   healPlayer(g, p.stats.maxHp * 0.5)
+  // Every evolution earns an Esquecer charge (`banishOffer`).
+  g.banishes++
   g.evolution = null
   g.events.push({ kind: 'evolved', to: evo.to })
   advancePhase(g)

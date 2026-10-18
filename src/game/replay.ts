@@ -5,7 +5,7 @@ import * as dm from '../engine/dmath'
 import type { Vec } from '../engine/math'
 import { isDifficulty, type Difficulty } from './difficulty'
 import { continueEndless } from './endlessSystem'
-import { chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
+import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
 import { UPGRADE_IDS, UPGRADES, type Ranks } from './meta'
 import { isRecord, wholeNumber } from './parse'
 import { OUTBREAK_SPECIES, withOutbreak } from './outbreak'
@@ -63,15 +63,16 @@ export type ReplayStart = {
 
 /**
  * What the shell did to the run at a tick (before that tick's step): the
- * special attack, the Mega button, a manual lunge (Quick Attack), a level-up pick (index into the offers), a
- * reroll or skip, going on into endless mode, and a new screen size (rotation, resize).
+ * special attack, the Mega button, a manual lunge (Quick Attack), a level-up pick (index into the offers;
+ * a fork's branch is a second pick), a reroll or skip, forgetting a card (Esquecer, index into the offers),
+ * going on into endless mode, and a new screen size (rotation, resize).
  */
 /** The buttons a run steps with (`StepInput`). */
 type Press = 'special' | 'mega' | 'lunge'
 
 export type ReplayEvent =
   | readonly [tick: number, kind: Press | 'reroll' | 'skip' | 'endless']
-  | readonly [tick: number, kind: 'offer', index: number]
+  | readonly [tick: number, kind: 'offer' | 'banish', index: number]
   | readonly [tick: number, kind: 'view', w: number, h: number]
 
 /**
@@ -147,7 +148,7 @@ const isOutbreakSpecies = (v: unknown): v is EnemyId => OUTBREAK_SPECIES.some((i
 const parseEvent = (raw: unknown): ReplayEvent | null => {
   if (!Array.isArray(raw) || !isWhole(raw[0])) return null
   const [tick, kind, a, b] = raw
-  if (kind === 'offer') return isWhole(a) && a < 8 ? [tick, kind, a] : null
+  if (kind === 'offer' || kind === 'banish') return isWhole(a) && a < 8 ? [tick, kind, a] : null
   if (kind === 'view') return isWhole(a) && isWhole(b) && a > 0 && b > 0 && a <= 4096 && b <= 4096 ? [tick, kind, a, b] : null
   return kind === 'special' || kind === 'mega' || kind === 'lunge' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
 }
@@ -190,9 +191,10 @@ export const parseReplay = (raw: unknown): Replay | null => {
 /** The wild cast a run draws from its seed, with the day's outbreak (the shell draws it ahead to preload its sprites). */
 export const runRoster = (seed: number, outbreak: EnemyId | null) => withOutbreak(drawRoster(createRng(seed), { weight: biomeWeight }), outbreak)
 
-/** A fresh run from a replay's start, exactly as the shell creates it. */
+/** A fresh run from a replay's start, exactly as the shell creates it: it opens on the opening draft. */
 export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.view }) =>
   createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed, start.outbreak), {
+    draft: true,
     shiny: start.shiny,
     luckyEgg: start.luckyEgg,
     difficulty: start.difficulty,
@@ -213,6 +215,8 @@ const applyEvent = (g: Game, e: ReplayEvent) => {
       if (offer) chooseOffer(g, offer)
       return
     }
+    case 'banish':
+      return banishOffer(g, e[2])
     case 'reroll':
       return rerollOffers(g)
     case 'skip':
