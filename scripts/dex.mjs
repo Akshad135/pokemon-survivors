@@ -27,6 +27,7 @@ export const HATCHLINGS = [
   371, 372, 373, 287, 288, 289, 349, 350, // ultra rare
   633, 634, 635, // Deino's line (ultra rare)
   524, 525, 526, // Roggenrola's line (common)
+  403, 404, 405, // Shinx's line (common)
   446, 143, // Friendship Egg (invites)
 ]
 export const HORDE = Object.values(roster).map((s) => s.dex)

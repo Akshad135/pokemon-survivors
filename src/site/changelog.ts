@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    title: { pt: 'Shinx chegou aos ovos', en: 'Shinx hatches from eggs', es: 'Shinx sale de los huevos' },
+    notes: [
+      {
+        pt: 'Shinx › Luxio › Luxray é a nova família do Ovo comum: um lince elétrico rápido que acerta em cadeia com Shock Wave, e o olhar do Luxray faz os choques paralisarem com mais frequência. São 55 famílias nos ovos e 82 Pokémon jogáveis.',
+        en: 'Shinx › Luxio › Luxray is the new Common Egg family: a quick electric lynx that chains Shock Wave from foe to foe, and Luxray’s glare makes its shocks paralyze more often. That makes 55 egg families and 82 playable Pokémon.',
+        es: 'Shinx › Luxio › Luxray es la nueva familia del Huevo común: un lince eléctrico rápido que encadena Shock Wave de enemigo en enemigo, y la mirada de Luxray hace que sus descargas paralicen más seguido. Son 55 familias en los huevos y 82 Pokémon jugables.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 96,
     title: { pt: 'Roggenrola chegou aos ovos', en: 'Roggenrola hatches from eggs', es: 'Roggenrola sale de los huevos' },
     notes: [

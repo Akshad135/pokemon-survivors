@@ -1657,6 +1657,7 @@ export const pt = {
     geodude: 'Rocha. Lento, duro e com pedradas pesadas.',
     roggenrola: 'Cristal. Couraça grossa, e o Gigalith esmaga em área.',
     mareep: 'Lã elétrica. Choques que paralisam.',
+    shinx: 'Lince elétrico. Presas e choques, e o olhar do Luxray paralisa.',
     azurill: 'Bolinha. Fraquinho no início, Huge Power no fim.',
     shroomish: 'Cogumelo. Esporos, e depois os socos do Breloom.',
     swinub: 'Porquinho. Gelo no chão e muita resistência.',

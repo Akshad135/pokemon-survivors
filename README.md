@@ -8,7 +8,7 @@
 
 **A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
 
-Pick one of 27 starters (or hatch eggs for 54 more Pokémon, 81 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+Pick one of 27 starters (or hatch eggs for 55 more Pokémon, 82 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
 
 [**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
 
@@ -92,7 +92,7 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
     </tr>
   </table>
 
-- **Eggs and 53 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 53 families from every type and generation (Pichu, Eevee, Pidgey, Geodude, Gastly, Abra, Magikarp, Riolu, Zorua… and the rarest Dratini, Larvitar, Beldum, Bagon, Gible, Deino, Dreepy, Slakoth and Feebas), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars. A 54th family, Munchlax → Snorlax, only hatches from the Friendship Egg, which comes from inviting friends.
+- **Eggs and 54 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 54 families from every type and generation (Pichu, Eevee, Pidgey, Geodude, Gastly, Abra, Magikarp, Riolu, Zorua… and the rarest Dratini, Larvitar, Beldum, Bagon, Gible, Deino, Dreepy, Slakoth and Feebas), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars. A 55th family, Munchlax → Snorlax, only hatches from the Friendship Egg, which comes from inviting friends.
 - **Invites and Mystery Gifts.** Every link the game shares carries your handle. A friend who signs up through it gets a Friendship Egg, you follow each other, and once they've played 3 verified runs you get a Mystery Gift: a Friendship Egg for the first friend, the Ambassador title and an exclusive card frame at 3, a shiny Munchlax at 10. Profiles show how many friends you brought.
 - **Supporters.** The game is free with nothing for sale; donating (Pix, cards, Apple Pay or Google Pay, on the support page) with an account brings a cosmetic thank-you as Mystery Gifts: the Supporter title and card frame, a ♥ badge by your @ on the boards and profile, a shiny of your choice (any starter, or an egg family, which unlocks it), a companion that follows you in runs, your name in the Hall of Fame and the victory's credits, and a vote on the next egg family. R$ 50 or US$ 10 in all makes it Gold: a golden card background, PC Box wallpaper and badge. A donation made without an account comes with a code to redeem in the game. Nothing changes a run or the ranking.
 

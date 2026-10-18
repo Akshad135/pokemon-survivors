@@ -206,6 +206,19 @@ export const HATCHLINGS = {
       { maxHp: 40, might: 0.18, area: 0.12 },
     ]),
   },
+  shinx: {
+    name: 'Shinx',
+    color: '#4888d0',
+    egg: 'common',
+    // A lynx that hunts with its fangs; Luxray's glare makes the shocks paralyze more often.
+    stats: { might: 0.06, speed: 3, statusChance: 0.02, maxHp: -5 },
+    signature: 'shockWave',
+    learnset: ['shockWave', 'crunch', 'thunder', 'quickAttack', 'swift', 'machPunch'],
+    line: line3(['Shinx', 403, ['electric']], ['Luxio', 404, ['electric']], ['Luxray', 405, ['electric']], [
+      { maxHp: 25, might: 0.1, speed: 2 },
+      { maxHp: 40, might: 0.22, statusChance: 0.04 },
+    ]),
+  },
   azurill: {
     name: 'Azurill',
     color: '#68a8e8',
