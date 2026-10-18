@@ -11,22 +11,15 @@ import { isLegendary, MOVE_IDS, MOVES, type MoveId } from './moves'
 import { isDuo } from './duoRules'
 import { isTmMove } from './tmMoves'
 import { SIGNATURE_MOVES } from './signatureMoves'
+import { EGG_MOVE_2_IDS } from './eggMoves2'
+import { EGG_MOVE_3_IDS } from './eggMoves3'
 
 /** The egg families' signature moves (the starters' are `SIGNATURE_MOVES`). */
 const EGG_SIGNATURES: readonly MoveId[] = [
   'dreamEater', 'forcePalm', 'dig', 'twister', 'sandTomb', 'meteorMash', 'zenHeadbutt', 'foulPlay', 'bodySlam', 'dynamicPunch', 'rollout',
   'iceBall', 'furyCutter', 'sacredSword', 'dragonDarts', 'snarl', 'gigaImpact', 'flail', 'boneRush', 'metronome', 'echoedVoice', 'curse',
 ]
-const SIGNATURES = new Set<MoveId>([...(Object.keys(SIGNATURE_MOVES) as MoveId[]), ...EGG_SIGNATURES])
-
-/**
- * Families whose own signature move is still on its way (`TODO signature` in
- * the data): it will join their first stage, so it counts as one more move of
- * that type. Drop an entry when its move lands.
- */
-const PENDING: Partial<Record<PlayableId, PokeType>> = {
-  swinub: 'ice', snorunt: 'ice', ralts: 'fairy', larvesta: 'fire', toxel: 'electric', tinkatink: 'steel', charcadet: 'fire', kabuto: 'bug', houndour: 'fire', teddiursa: 'normal', aron: 'steel', trapinch: 'ground', swablu: 'normal', electrike: 'electric',
-}
+const SIGNATURES = new Set<MoveId>([...(Object.keys(SIGNATURE_MOVES) as MoveId[]), ...EGG_SIGNATURES, ...EGG_MOVE_2_IDS, ...EGG_MOVE_3_IDS])
 
 type Role = 'shot' | 'homing' | 'boomerang' | 'aura' | 'wave' | 'strike' | 'arc' | 'counter' | 'charge' | 'sky' | 'chain' | 'cone' | 'beam' | 'field' | 'dash' | 'roll' | 'support' | 'random'
 
@@ -47,6 +40,7 @@ const ROLE: Record<string, Role> = {
   focusPunch: 'charge', gyroBall: 'aura', suckerPunch: 'counter', futureSight: 'sky', bonemerang: 'boomerang', stealthRock: 'field',
   uTurn: 'dash', dragonTail: 'arc', sheerCold: 'aura',
   braveBird: 'dash', weatherBall: 'shot', accelerock: 'dash', zapCannon: 'shot', aerialAce: 'strike', crossPoison: 'arc', bubbleBeam: 'beam', rockBlast: 'shot', cottonSpore: 'field', wildCharge: 'dash', playRough: 'aura', spore: 'support', waterfall: 'beam', lastResort: 'strike',
+  fieryDance: 'aura', overdrive: 'wave', gigatonHammer: 'strike', bitterBlade: 'arc', leechLife: 'strike', fireFang: 'strike', furySwipes: 'strike', heavySlam: 'dash', bulldoze: 'wave', perishSong: 'support', chargeBeam: 'beam', moonblast: 'shot', frostBreath: 'cone', avalanche: 'field',
 }
 /** The roles that count as a family's utility move: around it, on the ground, a dash or a heal/guard. */
 const UTILITY = new Set<Role>(['aura', 'field', 'dash', 'support'])
@@ -101,7 +95,7 @@ describe('learnsets by stage', () => {
     for (const id of PLAYABLE_IDS) {
       const need = PLAYABLE[id].line.length === 3 ? 10 : 9
       for (const b of endings(id)) {
-        const size = runLearnset(id, b).length + (PENDING[id] ? 1 : 0)
+        const size = runLearnset(id, b).length
         expect([id, b, size >= need]).toEqual([id, b, true])
       }
     }
@@ -113,9 +107,7 @@ describe('learnsets by stage', () => {
         const pool = runLearnset(id, b)
         const types = typesOf(id, b)
         const own = pool.filter((m) => types.has(MOVES[m].type))
-        const pending = PENDING[id]
-        const ownCount = own.length + (pending && types.has(pending) ? 1 : 0)
-        expect([id, b, ownCount >= 3, new Set(own.map((m) => ROLE[m])).size >= 2]).toEqual([id, b, true, true])
+        expect([id, b, own.length >= 3, new Set(own.map((m) => ROLE[m])).size >= 2]).toEqual([id, b, true, true])
         expect([id, b, pool.filter((m) => !types.has(MOVES[m].type)).length >= 2]).toEqual([id, b, true])
         expect([id, b, pool.some((m) => UTILITY.has(ROLE[m]!))]).toEqual([id, b, true])
       }
