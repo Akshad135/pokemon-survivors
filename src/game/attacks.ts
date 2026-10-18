@@ -101,6 +101,25 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
       a.y += dm.sin(m.heading) * m.speed * dt
       break
     }
+    case 'roll':
+      p.x += p.facing.x * m.speed * dt
+      p.y += p.facing.y * m.speed * dt
+      a.x = p.x
+      a.y = p.y - 8
+      break
+    case 'tether': {
+      const e = m.target
+      if (e.dying >= 0) {
+        a.ttl = a.age
+        break
+      }
+      a.x = e.x
+      a.y = e.y - e.radius
+      if (a.age < m.next) break
+      m.next += m.every
+      damageEnemy(g, e, a)
+      break
+    }
   }
 }
 

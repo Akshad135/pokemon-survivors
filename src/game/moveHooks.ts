@@ -2,7 +2,7 @@ import { TYPE_COLORS } from '../data/types'
 import { burst } from './effects'
 import { nextStacks, type StackEvent } from './kitRules'
 import { MOVES, moveStats, type MoveDef, type MoveId } from './moves'
-import type { Enemy, Game, MoveWindow, OwnedMove } from './types'
+import type { Attack, Enemy, Game, MoveWindow, OwnedMove } from './types'
 
 /**
  * Engine side of the move kit: feeds `MoveDef.stacks` its events, runs the
@@ -21,6 +21,13 @@ export const moveEvent = (g: Game, move: MoveId | null, event: StackEvent) => {
     const def: MoveDef = MOVES[owned.id]
     if (def.stacks) owned.stacks = nextStacks(def.stacks, owned.stacks ?? 0, event)
   }
+}
+
+/** A hit by `attack` landed on `e`: the move's `onHit` reacts (Rollout's ramp, Ice Ball's growth). */
+export const moveHit = (g: Game, attack: Attack, e: Enemy) => {
+  if (attack.move === 'special') return
+  const def: MoveDef = MOVES[attack.move]
+  def.onHit?.(g, attack, e)
 }
 
 /** After `owned` fired: spends or grows its stacks on the cast and stamps where it fired from. */
