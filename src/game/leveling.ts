@@ -7,8 +7,12 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { MEGAS } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { abilityDeltas } from './abilities'
-import { formAt, runLearnset } from './branch'
+import { formAt } from './branch'
+import { FRESH_WEIGHT, runLearnset, unlockedAt } from './learnsets'
 import { buffDeltas } from './buffs'
+import { CURSES, type CurseId } from '../data/curses'
+import { blocksNewMoves } from './curses'
+import { readyDuos } from './duoRules'
 import { healPlayer } from './combat'
 import { burst } from './effects'
 import { rankDeltas } from './meta'
@@ -20,6 +24,8 @@ import type { Game, Offer, OwnedItem, OwnedMove, Rarity } from './types'
 
 export const MAX_MOVES = 6
 export const MAX_ITEMS = 6
+/** Selection weight of a level-up for a move already owned (new moves weigh 1, new items 0.8). */
+const UPGRADE_WEIGHT = 1.3
 
 /** EXP needed to go from `level` to `level + 1`. */
 export const xpFor = (level: number) =>
@@ -37,26 +43,44 @@ export const gainXp = (g: Game, amount: number) => {
 }
 
 /**
- * What the level-up offers depend on. `branch`: where a branching evolution
- * went, which adds its moves to the learnset. `banished`: moves and items
- * forgotten this run (Esquecer), never offered again.
+ * What the level-up offers depend on. `stage`: how far the line evolved,
+ * which unlocks its stages' moves (every stage when left out). `branch`: where
+ * a branching evolution went, which adds its moves to the learnset. `fresh`:
+ * whether the moves the last evolution unlocked still weigh double.
+ * `banished`: moves and items forgotten this run (Esquecer) or fused into a
+ * duo move, never offered again. `curses`: the cursed items held (Choice Band
+ * stops new moves).
  */
 export type Loadout = {
   starter: PlayableId
   moves: readonly OwnedMove[]
   items: readonly OwnedItem[]
+  stage?: number
   branch?: BranchId | null
+  fresh?: boolean
   banished?: ReadonlySet<MoveId | ItemId>
+  curses?: readonly CurseId[]
 }
 
-export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.player.moves, items: g.player.items, branch: g.branch, banished: g.banished })
+export const loadout = (g: Game): Loadout => ({
+  starter: g.starter,
+  moves: g.player.moves,
+  items: g.player.items,
+  stage: g.player.stage,
+  branch: g.branch,
+  fresh: g.freshMoves > 0,
+  banished: g.banished,
+  curses: g.curses.held,
+})
 
 /** Every upgrade the player could pick right now, with selection weights. */
-export const offerPool = ({ starter, moves, items, branch = null, banished }: Loadout): Array<readonly [Offer, number]> => {
+export const offerPool = ({ starter, moves, items, stage, branch = null, fresh, banished, curses }: Loadout): Array<readonly [Offer, number]> => {
   const ownedMoves = new Map(moves.map((m) => [m.id, m.level]))
   const ownedItems = new Map(items.map((i) => [i.id, i.level]))
-  const learnset = runLearnset(starter, branch)
-  const learnsetTypes = new Set<PokeType>(learnset.map((id) => MOVES[id].type))
+  const learnset = runLearnset(starter, branch, stage)
+  // Type items follow the whole line, so a Charcoal can wait for the fire moves an evolution brings.
+  const learnsetTypes = new Set<PokeType>(runLearnset(starter, branch).map((id) => MOVES[id].type))
+  const unlocked = fresh && stage !== undefined ? unlockedAt(starter, branch, stage) : []
   // A base move whose evolution is already owned must not come back as a new move.
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
   const ownedIds = moves.map((m) => m.id)
@@ -64,9 +88,16 @@ export const offerPool = ({ starter, moves, items, branch = null, banished }: Lo
   const moveOffers = learnset.flatMap((id): Array<readonly [Offer, number]> => {
     if (banished?.has(id)) return []
     const level = ownedMoves.get(id)
-    if (level === undefined) return moves.length < MAX_MOVES && !evolvedBases.has(id) && learnable(ownedIds, id, isManual) ? [[{ kind: 'move', id, level: 1 }, 1]] : []
-    return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, 1.3]] : []
+    if (level === undefined)
+      return moves.length < MAX_MOVES && !blocksNewMoves(curses) && !evolvedBases.has(id) && learnable(ownedIds, id, isManual)
+        ? [[{ kind: 'move', id, level: 1 }, unlocked.includes(id) ? FRESH_WEIGHT : 1]]
+        : []
+    return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, UPGRADE_WEIGHT]] : []
   })
+  // Owned moves from outside the learnset (evolved ones) keep growing in the slot they took.
+  const grownOffers = moves.flatMap((m): Array<readonly [Offer, number]> =>
+    !learnset.includes(m.id) && !banished?.has(m.id) && m.level < maxMoveLevel(m.id) ? [[{ kind: 'move', id: m.id, level: m.level + 1 }, UPGRADE_WEIGHT]] : [],
+  )
 
   const itemOffers = ITEM_IDS.flatMap((id: ItemId): Array<readonly [Offer, number]> => {
     if (banished?.has(id)) return []
@@ -77,7 +108,7 @@ export const offerPool = ({ starter, moves, items, branch = null, banished }: Lo
     return level < ITEMS[id].levels.length ? [[{ kind: 'item', id, level: level + 1 }, 1]] : []
   })
 
-  return [...moveOffers, ...itemOffers]
+  return [...moveOffers, ...grownOffers, ...itemOffers]
 }
 
 /** Odds of a level-up card coming out rare (two levels at once) or shiny (a free pick); the Shiny Charm doubles the shiny ones. */
@@ -91,12 +122,15 @@ export type RollOptions = {
   shiny?: number
   /** Leave out upgrades that land on a fork: the Poké Ball picks on its own, and a fork is the player's call. */
   forks?: boolean
+  /** Leave out duo fusions (`duoRules.ts`): the Poké Ball picks on its own, and fusing two moves is the player's call. */
+  duos?: boolean
   /** Cards already on the table (a slot drawn again): their moves, items and evolutions aren't drawn twice. */
   shown?: readonly Offer[]
 }
 
 /** The move or item a card is about, if any (berries and evolutions have none to forget). */
 export const offerSubject = (offer: Offer): MoveId | ItemId | null =>
+  offer.kind === 'duo' ? offer.to :
   offer.kind === 'move' || offer.kind === 'item' || offer.kind === 'branch' ? offer.id : null
 
 /** The level a card would take its move or item to if it came out rare, or null when it can't. */
@@ -117,18 +151,19 @@ export const withRarity = (offer: Offer, roll: number, shinyOdds: number): Offer
 }
 
 /**
- * Ready move evolutions come first, then weighted sampling without replacement,
+ * Ready move evolutions come first, then ready duo fusions, then weighted sampling without replacement,
  * then each card's rarity (one roll per card, in order, so replays agree).
  * Falls back to a healing berry when maxed out.
  */
 export const rollOffers = (loadout: Loadout, rng: Rng, count = 3, opts: RollOptions = {}): Offer[] => {
   const shown = opts.shown ?? []
   const taken = new Set(shown.map((o) => (o.kind === 'evolution' ? o.to : offerSubject(o))))
+  const duos: Offer[] = opts.duos === false ? [] : readyDuos(loadout.moves).filter(({ to }) => !taken.has(to)).map(({ from, to }) => ({ kind: 'duo', from, to }))
   const pool = offerPool(loadout).filter(([o]) => !taken.has(offerSubject(o)) && (opts.forks !== false || o.kind !== 'move' || !forkAt(o.id, o.level)))
-  const picked: Offer[] = readyEvolutions(loadout)
+  const evolutions: Offer[] = readyEvolutions(loadout)
     .filter(({ to }) => !taken.has(to))
-    .slice(0, count)
     .map(({ from, to }) => ({ kind: 'evolution', from, to }))
+  const picked: Offer[] = [...evolutions, ...duos].slice(0, count)
   while (picked.length < count && pool.length > 0) {
     const total = pool.reduce((s, [, w]) => s + w, 0)
     let roll = rng() * total
@@ -142,12 +177,12 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3, opts: RollOpti
 }
 
 /**
- * The opening draft: up to `count` moves of the learnset the player doesn't
- * have yet (and hasn't forgotten), drawn evenly, to pick the second move.
+ * The opening draft: up to `count` moves of the first stage's list the player
+ * doesn't have yet (and hasn't forgotten), drawn evenly, to pick the second move.
  */
 export const draftOffers = ({ starter, moves, banished }: Loadout, rng: Rng, count = 3): Offer[] => {
   const owned = new Set(moves.map((m) => m.id))
-  const pool = PLAYABLE[starter].learnset.filter((id) => !owned.has(id) && !banished?.has(id))
+  const pool = PLAYABLE[starter].learnset[0].filter((id) => !owned.has(id) && !banished?.has(id))
   const picked: Offer[] = []
   while (picked.length < count && pool.length > 0) {
     const [id] = pool.splice(Math.floor(rng() * pool.length), 1)
@@ -174,7 +209,7 @@ export const starterStats = (id: PlayableId, stage: number, branch: BranchId | n
 
 /**
  * Rebuilds player stats from starter (and branch), Poké Mart ranks, evolution stage, held items, buffs,
- * the ability, the Mega form and Aegislash's stance.
+ * the ability, the Mega form, cursed items and Aegislash's stance.
  */
 export const recomputeStats = (g: Game) => {
   const p = g.player
@@ -184,8 +219,10 @@ export const recomputeStats = (g: Game) => {
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
+    ...g.player.moveBuffs.map((b) => b.stats),
     ...abilityDeltas(g, MAX_ITEMS - p.items.length),
     ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),
+    ...g.curses.held.map((id) => CURSES[id].stats),
   ])
   p.stats = stanceStats(deltas, g.special.stance)
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before
@@ -222,6 +259,9 @@ export const applyOffer = (g: Game, offer: Offer) => {
     case 'evolution':
       evolveMove(g, offer.from, offer.to)
       break
+    case 'duo':
+      fuseMoves(g, offer.from, offer.to)
+      break
   }
 }
 
@@ -243,6 +283,36 @@ const evolveMove = (g: Game, from: MoveId, to: MoveId) => {
   burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#fff8c0'], count: 30, speed: 60, ttl: 1.2, gravity: -50 })
   g.shake = Math.max(g.shake, 5)
   g.events.push({ kind: 'moveEvolved', from, to })
+}
+
+/**
+ * Fuses two moves into a duo move: the first one's slot takes it at Lv1, the
+ * second's frees up. Both (and the base moves of evolved ones) never come back
+ * as offers. A two-colored burst and a white flash mark it.
+ */
+const fuseMoves = (g: Game, from: readonly [MoveId, MoveId], to: MoveId) => {
+  const p = g.player
+  const slot = p.moves.find((m) => m.id === from[0])
+  if (!slot || !p.moves.some((m) => m.id === from[1])) return
+  Object.assign(slot, { id: to, level: 1, cooldown: 0.4, path: 0, echo: 0, stacks: 0 })
+  retain(p.moves, (m) => m.id !== from[1])
+  for (const id of from) {
+    g.banished.add(id)
+    const base = evolvedFrom(id)?.from
+    if (base) g.banished.add(base)
+  }
+  // Their lingering hitboxes, timed effects and windows go with them.
+  retain(g.attacks, (a) => a.move !== from[0] && a.move !== from[1])
+  retain(p.moveBuffs, (b) => b.move !== from[0] && b.move !== from[1])
+  if (p.guard && from.includes(p.guard.move)) p.guard = null
+  recomputeStats(g)
+  const [a, b] = from.map((id) => TYPE_COLORS[MOVES[id].type])
+  burst(g, p.x - 6, p.y - 10, { colors: [a!, '#ffffff'], count: 50, speed: 160, ttl: 0.9, size: 2, drag: 3 })
+  burst(g, p.x + 6, p.y - 10, { colors: [b!, '#ffffff'], count: 50, speed: 160, ttl: 0.9, size: 2, drag: 3 })
+  burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#fff8c0', '#ffd830'], count: 40, speed: 70, ttl: 1.3, gravity: -50 })
+  g.shake = Math.max(g.shake, 6)
+  g.flash = Math.max(g.flash, 0.5)
+  g.events.push({ kind: 'duoFused', from, to })
 }
 
 /** The next evolution, if the player's level has reached it (into the branch picked, for a branching one). */

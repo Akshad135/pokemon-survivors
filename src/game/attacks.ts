@@ -2,10 +2,12 @@ import { dir8, dirTo, fromAngle, retain, TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { damageEnemy } from './combat'
-import { modHit, modTick } from './mods'
+import { evolvedImpact, evolvedTick } from './evolvedMoves'
+import { inheritMods, modHit, modTick } from './mods'
 import { mineArmed, mineBlast, TURRET_RANGE } from './moveRules'
 import { nearestEnemy } from './queries'
 import { spawnAttack } from './spawn'
+import { typeEvolvedTrail } from './typeEvolutions'
 import type { Attack, Enemy, Game, Motion, Trailer, Turret } from './types'
 import * as dm from '../engine/dmath'
 
@@ -102,6 +104,25 @@ const move = (g: Game, a: Attack, m: Motion, dt: number) => {
       a.y += dm.sin(m.heading) * m.speed * dt
       break
     }
+    case 'roll':
+      p.x += p.facing.x * m.speed * dt
+      p.y += p.facing.y * m.speed * dt
+      a.x = p.x
+      a.y = p.y - 8
+      break
+    case 'tether': {
+      const e = m.target
+      if (e.dying >= 0) {
+        a.ttl = a.age
+        break
+      }
+      a.x = e.x
+      a.y = e.y - e.radius
+      if (a.age < m.next) break
+      m.next += m.every
+      damageEnemy(g, e, a)
+      break
+    }
   }
 }
 
@@ -144,7 +165,7 @@ const dropTrail = (g: Game, a: Attack, t: Trailer) => {
       move: a.move, type: a.type, visual: t.visual, x: p.x + range(g.rng, -2, 2), y: p.y + range(g.rng, -2, 2),
       shape: { kind: 'circle', r: t.r }, motion: { kind: 'static' },
       damage: a.damage * t.share, knockback: 0, hitInterval: t.hitInterval, ttl: t.ttl, status: a.status,
-      bonus: a.bonus, drain: a.drain, flip: chance(g.rng, 0.5),
+      bonus: a.bonus, drain: a.drain, flip: chance(g.rng, 0.5), ...inheritMods(a, ['trail']),
     })
   }
 }
@@ -158,7 +179,7 @@ const detonate = (g: Game, a: Attack, expired: boolean) => {
     move: a.move, type: a.type, visual: a.blastVisual, x: a.x, y: a.y - 4,
     shape: { kind: 'circle', r: a.blast }, motion: { kind: 'static' },
     damage: mineBlast(a.damage, expired), knockback: a.knockback, status: a.status,
-    ttl: 0.32, activeUntil: 0.05,
+    ttl: 0.32, activeUntil: 0.05, ...inheritMods(a, ['trail']),
   })
   a.pierce = 0
 }
@@ -181,7 +202,7 @@ const shoot = (g: Game, a: Attack, t: Turret, dt: number) => {
     spawnAttack(g, {
       move: a.move, type: a.type, visual: t.shot, x: a.x, y,
       shape: { kind: 'circle', r: 4 }, motion: { kind: 'linear', vx: v.x, vy: v.y },
-      damage: a.damage, knockback: a.knockback, pierce: 1, status: a.status, ttl: 1.2,
+      damage: a.damage, knockback: a.knockback, pierce: 1, status: a.status, ttl: 1.2, ...inheritMods(a),
     })
   }
 }
@@ -226,10 +247,6 @@ const trail = (g: Game, a: Attack) => {
     case 'star': return emit(['#fff8a0', '#ffffff'], 0.5, { ttl: 0.25 })
     case 'sludge': return a.age > a.activeFrom ? emit(['#c070d0', '#a040a0'], 0.25, { gravity: -25, ttl: 0.5, speed: 6 }) : undefined
     case 'flamethrower': return emit(['#f8d030', '#f08030', '#c03020'], 0.8, { gravity: -40, speed: 18 })
-    case 'fireBlast': return emit(['#fff8c0', '#f8d030', '#f08030'], 0.7, { gravity: -60, ttl: 0.4 })
-    case 'hydroPump': return emit(['#a8d8f8', '#4878e8', '#ffffff'], 1, { gravity: 80, speed: 24 })
-    case 'leafStorm': return emit(['#70d048', '#e0f8a0'], 0.3, { ttl: 0.35 })
-    case 'triAttack': return emit([['#f06020', '#ffd080'], ['#60c0f0', '#e0f8ff'], ['#f8d830', '#fff8c0']][a.id % 3]!, 0.6, { ttl: 0.25 })
     case 'gunk': return a.age > a.activeFrom ? emit(['#b878c8', '#6a3a78', '#88a038'], 0.35, { gravity: -25, ttl: 0.6, speed: 8 }) : undefined
     case 'hurricane': return emit(['#ffffff', '#c8d0e8'], 0.8, { gravity: -70, speed: 40, ttl: 0.4 })
     case 'arrow': return emit(['#a070d8', '#705898', '#c8a8f0'], 0.7, { ttl: 0.35, speed: 4 })
@@ -246,9 +263,12 @@ const trail = (g: Game, a: Attack) => {
     case 'megahorn': return emit(['#ffffff', '#d8dcf0', '#a8b0d0'], 0.9, { ttl: 0.4, speed: 12 })
     case 'dragonBreath': return emit(['#a070f8', '#7038f8', '#f0e0ff'], 0.5, { gravity: -30, ttl: 0.3, speed: 8 })
     case 'outrage': return emit(['#a070f8', '#f85030', '#f8d030', '#f0e0ff'], 0.7, { gravity: -40, ttl: 0.35, speed: 16 })
-    default: return
+    default: return typeEvolvedTrail(a, emit)
   }
 }
+
+/** When a hitbox lands: its damage window opens, or it shows up (visual-only ones never open it). */
+const landsAt = (a: Attack) => (a.activeFrom === Infinity ? 0 : a.activeFrom)
 
 export const updateAttacks = (g: Game, dt: number) => {
   for (const a of g.attacks) {
@@ -257,9 +277,11 @@ export const updateAttacks = (g: Game, dt: number) => {
     move(g, a, a.motion, dt)
     if (a.grow > 0 && a.shape.kind === 'circle') a.shape = { kind: 'circle', r: a.shape.r + a.grow * dt }
     trail(g, a)
+    evolvedTick(g, a, dt)
     if (a.mod) modTick(g, a)
     if (a.turret) shoot(g, a, a.turret, dt)
     if (a.trailer) dropTrail(g, a, a.trailer)
+    if (a.age > landsAt(a) && a.age - dt <= landsAt(a) + 1e-9) evolvedImpact(g, a)
     const active = a.age >= a.activeFrom && a.age <= a.activeUntil
     if (a.pull > 0 && active) pullFoes(g, a, dt)
     if (active && (a.blast === 0 || mineArmed(a.age))) collide(g, a)

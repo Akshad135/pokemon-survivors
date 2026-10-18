@@ -88,7 +88,8 @@ export const drawKitStatus = (ctx: Ctx, g: Game, t: number, visible: (x: number,
     if (st.freeze.time <= 0 && st.mark.time <= 0 && st.confuse.time <= 0 && st.seed.time <= 0) continue
     const cy = e.y - e.radius
     const head = e.y - e.radius * 2.4
-    if (st.freeze.time > 0) drawIce(ctx, e, cy)
+    // Roar of Time stops time instead of icing over (`render/legendaryFx.ts` draws its clock).
+    if (st.freeze.time > 0 && st.freeze.move !== 'roarOfTime') drawIce(ctx, e, cy)
     if (st.seed.time > 0) blitCentered(ctx, SPROUT(), e.x, head - 2 + (Math.floor(t * 3 + e.id) % 2))
     if (st.confuse.time > 0) {
       for (let k = 0; k < 3; k++) {

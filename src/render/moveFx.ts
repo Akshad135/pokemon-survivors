@@ -24,7 +24,7 @@ const BLAST_COLORS = {
 } as const
 
 /** Jagged arc between two points, re-rolled a few times a second so it crackles. */
-const arc = (ctx: Ctx, a: Attack, t: number, style: { edge: string; core: string; width: number }, strand = 0) => {
+export const arc = (ctx: Ctx, a: Attack, t: number, style: { edge: string; core: string; width: number }, strand = 0) => {
   const dx = a.x - a.from.x
   const dy = a.y - a.from.y
   const len = Math.hypot(dx, dy)
