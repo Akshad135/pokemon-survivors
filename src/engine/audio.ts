@@ -220,6 +220,52 @@ const SFX = {
   leap: () => tone(180, 520, 0.3, 'triangle', 0.1),
   /** Soft chime for heal, ward and summon pulses. */
   enemyPulse: () => tone(660, 990, 0.16, 'triangle', 0.06),
+  /* Signature moves (`ui/castSounds.ts`) */
+  /** Hypnosis: a woozy wobble down and up. */
+  hypnosis: () => [523, 392, 523, 392].forEach((f, i) => tone(f, f * 0.94, 0.12, 'triangle', 0.08, i * 0.09)),
+  /** Digging in: a scrape of dirt and a low thud. */
+  dig: () => {
+    noise(0.18, 0.12)
+    tone(140, 60, 0.2, 'triangle', 0.14)
+  },
+  /** A rush of wind spinning up (Twister). */
+  whoosh: () => {
+    noise(0.3, 0.07)
+    tone(200, 620, 0.3, 'triangle', 0.05)
+  },
+  /** Sand hissing round. */
+  sand: () => noise(0.45, 0.06),
+  /** A fist pulling back, winding up. */
+  windup: () => tone(180, 520, 0.18, 'square', 0.07),
+  /** A boulder starting to roll: a low rumble. */
+  roll: () => {
+    tone(70, 110, 0.35, 'sawtooth', 0.09)
+    noise(0.3, 0.05)
+  },
+  /** A blade drawn: a bright ring. */
+  shing: () => [1568, 2349].forEach((f, i) => tone(f, f * 1.1, 0.12, 'square', 0.06, i * 0.04)),
+  /** Two darts zipping off. */
+  zip: () => [0, 0.07].forEach((d) => tone(900, 1800, 0.07, 'square', 0.05, d)),
+  /** A three-headed growl. */
+  growl: () => [110, 98, 123].forEach((f, i) => tone(f, f * 0.8, 0.14, 'sawtooth', 0.08, i * 0.11)),
+  /** Giga Impact's charge: a rising roar. */
+  charge: () => {
+    tone(90, 300, 0.22, 'sawtooth', 0.14)
+    noise(0.2, 0.1)
+  },
+  /** Metronome: tick, tock, and a chime for the pick. */
+  metronome: () => {
+    tone(1200, 1200, 0.03, 'square', 0.07)
+    tone(900, 900, 0.03, 'square', 0.07, 0.14)
+    tone(1047, 1568, 0.12, 'triangle', 0.1, 0.3)
+  },
+  /** A short chirp that echoes. */
+  echo: () => [880, 880, 880].forEach((f, i) => tone(f, f * 1.2, 0.07, 'triangle', 0.09 - i * 0.025, i * 0.09)),
+  /** A curse: an eerie fall. */
+  curse: () => {
+    tone(392, 196, 0.5, 'sawtooth', 0.06)
+    tone(370, 185, 0.5, 'triangle', 0.08, 0.05)
+  },
   /* Verb moves (`game/moveVerbs.ts`); a delayed hit is scheduled inside its sound. */
   /** Solar Beam: light gathering for a second, then the beam. */
   solarCharge: () => {
@@ -276,7 +322,7 @@ const SFX = {
     noise(0.45, 0.16)
     tone(110, 35, 0.45, 'sawtooth', 0.14)
   },
-  growl: () => {
+  thrashGrowl: () => {
     tone(150, 90, 0.22, 'sawtooth', 0.1)
     tone(156, 95, 0.22, 'square', 0.05)
   },
@@ -297,7 +343,7 @@ const SFX = {
     noise(0.5, 0.05)
     tone(300, 520, 0.5, 'triangle', 0.06)
   },
-  charge: () => {
+  flameRush: () => {
     noise(0.2, 0.1)
     tone(160, 640, 0.3, 'sawtooth', 0.08)
   },
@@ -369,6 +415,62 @@ const SFX = {
     tone(160, 80, 0.4, 'sawtooth', 0.1)
     ;[659, 622, 523].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, 0.1 + i * 0.09))
   },
+  /* Legendary moves (`game/legendaryMoves.ts`); delayed impacts are scheduled inside their sound. */
+  /** Whirlwind: a long rising howl of wind. */
+  cyclone: () => {
+    noise(0.9, 0.08)
+    tone(140, 420, 0.8, 'sawtooth', 0.04)
+    tone(420, 260, 0.6, 'triangle', 0.04, 0.3)
+  },
+  /** Sacred Fire: the phoenix's cry over crackling flame. */
+  phoenix: () => {
+    tone(880, 1760, 0.16, 'triangle', 0.08)
+    tone(1760, 1320, 0.22, 'triangle', 0.07, 0.15)
+    noise(0.4, 0.07, 0.05)
+  },
+  /** Origin Pulse: a deep boom swelling into a bright sweep. */
+  originPulse: () => {
+    tone(130, 40, 0.5, 'sine', 0.2)
+    noise(0.35, 0.1)
+    tone(400, 1400, 0.4, 'sine', 0.06, 0.18)
+  },
+  sands: () => {
+    noise(0.5, 0.12)
+    tone(220, 70, 0.45, 'sawtooth', 0.07)
+  },
+  /** Dragon Ascent: the climb, then the first dive crashing down. */
+  ascent: () => {
+    tone(300, 1800, 0.4, 'square', 0.05)
+    noise(0.3, 0.2, 0.55)
+    tone(160, 40, 0.35, 'square', 0.14, 0.55)
+  },
+  /** Roar of Time: the roar and the ticking clock, then time snapping back. */
+  roarOfTime: () => {
+    tone(200, 90, 0.6, 'sawtooth', 0.1)
+    ;[0.15, 0.45, 0.75, 1.05, 1.35].forEach((d, i) => tone(i % 2 ? 1200 : 1600, i % 2 ? 1200 : 1600, 0.04, 'square', 0.05, d))
+    tone(1800, 300, 0.25, 'square', 0.08, 1.7)
+    noise(0.2, 0.1, 1.7)
+  },
+  mist: () => {
+    tone(600, 900, 0.25, 'triangle', 0.06)
+    tone(900, 640, 0.3, 'sine', 0.05, 0.12)
+  },
+  lusterPurge: () => {
+    tone(1400, 700, 0.5, 'sawtooth', 0.06)
+    tone(2400, 2200, 0.45, 'sine', 0.04)
+  },
+  /** Psycho Boost: the core charging, then the comets let loose. */
+  psychoBoost: () => {
+    tone(200, 1300, 0.45, 'square', 0.05)
+    ;[0.5, 0.56, 0.62, 0.68].forEach((d) => tone(1500, 500, 0.08, 'square', 0.05, d))
+  },
+  wish: () => [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, f, 0.18, 'triangle', 0.06, i * 0.07)),
+  /** Ancient Power raised every stat. */
+  ancientBoost: () => {
+    noise(0.25, 0.08)
+    ;[523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, 0.1 + i * 0.06))
+  },
+  leaves: () => [1568, 1976, 2349, 1976, 2637].forEach((f, i) => tone(f, f * 1.05, 0.05, 'triangle', 0.05, i * 0.04)),
 } as const
 
 export type Sfx = keyof typeof SFX

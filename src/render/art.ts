@@ -7,9 +7,11 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import { EGG_MOVE_ICONS } from './eggMoveArt'
 import { SIGNATURE_ICONS } from './signatureArt'
 import { cursedIcon, DUO_ICONS } from './duoArt'
 import type { CurseId } from '../data/curses'
+import { LEGENDARY_ICONS } from './legendaryArt'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -499,6 +501,7 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...SIGNATURE_ICONS,
+  ...LEGENDARY_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),
@@ -568,6 +571,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   dragonTail: () => art(TAIL_ICON, DRAGON, '#100430'),
   sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
+  ...EGG_MOVE_ICONS,
   jawLock: () => art([...TE.MAW_TOP, ...TE.MAW_BOTTOM], TE.MAW, '#d8c0e8'),
   superpower: () => art(TE.BIG_FIST, TE.FIST_PAL, '#281010'),
   fissure: () => art(...TE.FISSURE_ICON, '#181818'),
@@ -666,6 +670,15 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
 }
 
 export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id])
+
+const iconSprites = canvasCache<MoveId, PixelSprite>()
+
+/** A move's icon as a sprite for the world (Metronome's bubble shows the move it called). */
+export const moveIconSprite = (id: MoveId) => {
+  let sprite = iconSprites.get(id)
+  if (!sprite) iconSprites.set(id, (sprite = MOVE_ICON_ART[id]()))
+  return sprite
+}
 
 export const itemIcon = (id: ItemId) =>
   toIconUrl(`item:${id}`, () => {

@@ -33,6 +33,7 @@ import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
 import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
 import { updateSignatures } from './signatures'
+import { updateLegendary } from './legendary'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -123,6 +124,7 @@ export const createGame = (
       guard: null,
       hidden: null,
       drain: { left: 0, at: 0 },
+      rooted: 0,
       moveBuffs: [],
     },
     enemies: [],
@@ -200,7 +202,9 @@ export type StepInput = { move: Vec; special: boolean; mega?: boolean; lunge?: b
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
   const slow = specialSpeedFactor(g)
-  const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
+  // Rooted (Giga Impact's recharge): the stick does nothing until it wears off.
+  p.rooted = Math.max(0, p.rooted - dt)
+  const moving = slow > 0 && p.rooted <= 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
   const ground = groundAt(g, p.x, p.y)
@@ -455,6 +459,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateTraits(g, dt)
   updateMoveKit(g, dt)
   updateSignatures(g, dt)
+  updateLegendary(g)
   updateMoves(g, input.lunge === true, dt)
   updateDuos(g, dt)
   updateAttacks(g, dt)

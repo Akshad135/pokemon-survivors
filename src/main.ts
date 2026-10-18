@@ -3,6 +3,7 @@ import '@fontsource/vt323'
 import './ui/style.css'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
+import { castSound } from './ui/castSounds'
 import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
@@ -44,6 +45,7 @@ import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
+import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
 import { duoDevTools } from './game/duoDev'
 import { cursePick } from './ui/cursePick'
@@ -768,8 +770,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'shatter': return playSfx('break', 60)
     case 'guard': return playSfx('stance', 0)
     case 'cast': {
-      const sfx = CAST_SFX[e.move]
-      return sfx && playSfx(sfx[0], sfx[1])
+      const sound = castSound(e.move) ?? CAST_SFX[e.move]
+      return sound && playSfx(sound[0], sound[1])
     }
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
@@ -1425,6 +1427,7 @@ if (import.meta.env.DEV) {
       ...riftDevTools(() => run?.game),
       ...levelUpDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),
+      ...eggMoveDevTools(() => run?.game),
       ...learnDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.

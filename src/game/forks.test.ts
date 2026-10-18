@@ -3,8 +3,10 @@ import { createRng } from '../engine/rng'
 import { banishOffer, canBanish, chooseOffer, createGame, step } from './game'
 import { gainXp, offerSubject, OFFER_RARITY, rollOffers, withRarity, type Loadout } from './leveling'
 import { NO_RANKS } from './meta'
-import { hasMod, MOD } from './mods'
-import { forkAt, moveStats, withBranch } from './moves'
+import { createModState, hasMod, inheritMods, MOD, modBits, refreshMods, stampMods } from './mods'
+import { took } from './kitRules'
+import { spawnAttack } from './spawn'
+import { forkAt, isLegendary, maxMoveLevel, MOVE_IDS, moveStats, withBranch } from './moves'
 import { parseReplay, recordEvent, recordStep, resimulate, startGame, startRecording, TICK, type ReplayStart } from './replay'
 import { BASE_STATS } from './stats'
 
@@ -34,9 +36,19 @@ describe('moveStats with forks', () => {
     expect(moveStats('thunder', 4, BASE_STATS, path(1, 0)).amount).toBe(1)
   })
 
-  it('puts the forks at Lv 4 and 7 of the reworked moves', () => {
-    for (const id of ['swift', 'crunch', 'thunder', 'fireSpin', 'ember', 'waterGun', 'razorLeaf', 'shockWave'] as const) {
-      expect([2, 3, 4, 5, 6, 7, 8].filter((l) => forkAt(id, l))).toEqual([4, 7])
+  it('puts the forks at Lv 4 and 7 of every base move', () => {
+    const base = MOVE_IDS.filter((id) => maxMoveLevel(id) === 8)
+    expect(base.length).toBeGreaterThan(70)
+    for (const id of base) expect([id, [2, 3, 4, 5, 6, 7, 8].filter((l) => forkAt(id, l))]).toEqual([id, [4, 7]])
+  })
+
+  it('makes every branch change how the move plays: a mod, or a branch the move reads itself', () => {
+    const own = new Set(['roost 4 0', 'roost 7 1', 'focusPunch 7 1'])
+    // Legendary capstones (Lv4 only) may trade numbers on one side of their fork.
+    for (const id of MOVE_IDS.filter((m) => !isLegendary(m))) {
+      for (const level of [4, 7]) {
+        forkAt(id, level)?.forEach((b, i) => expect([id, level, i, (b.mods?.length ?? 0) > 0 || own.has(`${id} ${level} ${i}`)]).toEqual([id, level, i, true]))
+      }
     }
   })
 })
@@ -157,7 +169,7 @@ describe('Esquecer', () => {
     const staged = startGame(START)
     gainXp(staged, 400)
     const again = resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)
-    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 })
 
@@ -172,5 +184,43 @@ describe('mods', () => {
     expect(count('waterGun', path(0, 0)).length).toBe(2 * count('waterGun', path(1, 0)).length)
     const rings = count('fireSpin', path(0, 0)).map((a) => (a.motion.kind === 'orbit' ? a.motion.radius : 0))
     expect(Math.max(...rings) / Math.min(...rings)).toBeCloseTo(MOD.twin.radius)
+  })
+})
+
+describe('hit-time mods', () => {
+  const g = createGame('charmander', { w: 480, h: 270 }, 3)
+  const hitbox = (bits: number, init: { drain?: number; execute?: number } = {}) => {
+    g.castMods = bits
+    const a = spawnAttack(g, { move: 'ember', type: 'fire', visual: 'ember', x: 0, y: 0, shape: { kind: 'circle', r: 4 }, motion: { kind: 'static' }, damage: 10, ttl: 1, ...init })
+    g.castMods = 0
+    return a
+  }
+
+  it('stamps Drain, Execute, Vortex, Hunter and Cruel on the hitbox, never under what the move set', () => {
+    const a = hitbox(modBits(['drain', 'execute', 'vortex', 'hunter', 'cruel']), { execute: 0.3 })
+    expect([a.drain, a.execute, a.pull]).toEqual([MOD.drain.share, 0.3, MOD.vortex.pull])
+    expect(a.bonus.map((b) => b.when)).toEqual(['elite', 'boss', 'afflicted'])
+    stampMods(a)
+    expect(a.bonus.length).toBe(3)
+    expect(hitbox(0).bonus.length).toBe(0)
+  })
+
+  it('refreshes a long-lived hitbox with the mods of the cast, and children inherit all but the dropped ones', () => {
+    const aura = hitbox(0)
+    g.castMods = modBits(['drain', 'trail'])
+    refreshMods(g, aura)
+    g.castMods = 0
+    expect(aura.drain).toBe(MOD.drain.share)
+    expect(hasMod(inheritMods(aura, ['trail']).mod!.bits, 'trail')).toBe(false)
+    expect(hasMod(inheritMods(aura).mod!.bits, 'drain')).toBe(true)
+    expect(inheritMods({ ...aura, mod: null }).mod).toBeNull()
+    expect(createModState(0)).toBeNull()
+  })
+})
+
+describe('took', () => {
+  it('reads a branch only once the move reached its fork', () => {
+    const owned = { id: 'roost', level: 7, cooldown: 0, path: path(0, 1) } as const
+    expect([took(owned, 4, 0), took(owned, 4, 1), took(owned, 7, 1), took({ ...owned, level: 6 }, 7, 1), took({ ...owned, level: 6 }, 7, 0)]).toEqual([true, false, true, false, false])
   })
 })

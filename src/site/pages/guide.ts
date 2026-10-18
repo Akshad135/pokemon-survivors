@@ -26,7 +26,7 @@ import { MAP_EVENTS } from '../../game/mapEvents'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
-import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
+import { isLegendary, maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
@@ -187,8 +187,8 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
     html`<b>${MOVES[evo.to].name}</b> ${typeBadge(MOVES[evo.to].type, m)}<br /><small>${game.moves[evo.to].description}</small>`,
   ])
   const evolving = new Set<MoveId>(EVOLUTIONS.flatMap((evo) => [evo.from, evo.to]))
-  // Duo moves never evolve: they are the other capstone, listed below.
-  const without = MOVE_IDS.filter((id) => !evolving.has(id) && !isDuo(id)).map((id) => MOVES[id].name)
+  // Duo and legendary moves never evolve by design: they are the capstones (duos listed below).
+  const without = MOVE_IDS.filter((id) => !evolving.has(id) && !isDuo(id) && !isLegendary(id)).map((id) => MOVES[id].name)
   const duos = DUO_RECIPES.map((r) => {
     const made = 'alt' in r ? [r.to, r.alt] : [r.to]
     return [
