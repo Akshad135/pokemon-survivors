@@ -1791,8 +1791,14 @@ button {
   font-family: var(--title);
   font-size: 11px;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   align-items: center;
+}
+
+/* A name with several tags (Nv 2, ✦ Ivysaur, RARO! +2 Nv) wraps whole tags onto the next line instead of squeezing each one. */
+.offer-name .tag {
+  white-space: nowrap;
 }
 
 .offer-desc {
