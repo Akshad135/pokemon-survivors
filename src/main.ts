@@ -859,6 +859,9 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(e.to).cry)
       r.closeText?.()
       r.closeText = null
+      // The Trainer Card wears the branch this family took last.
+      const branch = g.branch
+      if (branch) updateSave((s) => ({ ...s, branches: { ...s.branches, [g.starter]: branch } }))
       return toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
     }
     case 'moveEvolved':

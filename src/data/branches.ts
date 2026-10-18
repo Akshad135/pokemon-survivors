@@ -166,3 +166,5 @@ export const branchStage = (id: BranchId): EvolutionStage => {
 
 /** Every dex number a family can show: its line and its branches (preloads). */
 export const familyDex = (line: PlayableId) => [...new Set([...playableDex(line), ...branchesOf(line).map((id) => BRANCHES[id].dex)])]
+
+export const isBranch = (v: unknown): v is BranchId => typeof v === 'string' && Object.hasOwn(BRANCHES, v)

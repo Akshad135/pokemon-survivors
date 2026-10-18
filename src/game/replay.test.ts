@@ -24,7 +24,7 @@ const play = (seconds: number, start = START, every = 300, stage: (g: Game) => v
   const bot = createRng(3)
   let angle = 0
   while (g.time < seconds && g.phase !== 'gameover') {
-    if (g.phase === 'levelup') {
+    if (g.phase === 'levelup' || g.phase === 'branch' || g.phase === 'ability') {
       // Steps an older shell recorded while the level-up was already open.
       for (let n = 0; n < idle; n++) step(g, { move: recordStep(rec, view, { x: 1, y: 0 }), special: false }, TICK)
       const i = Math.floor(bot() * g.offers.length)

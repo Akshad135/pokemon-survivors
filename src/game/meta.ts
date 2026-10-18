@@ -16,6 +16,7 @@ import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shi
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
 import { parseCompanion, type Companion } from './supporters'
+import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
@@ -137,7 +138,20 @@ export type Save = {
   shinyPicks: readonly ShinyPick[]
   /** The supporter's companion, drawn after the player in runs (`game/supporters.ts`). */
   companion: Companion | null
+  /** Where each branching family evolved last (`data/branches.ts`): the Trainer Card shows that form. */
+  branches: Branches
 }
+
+/** The branch each branching family took in its latest run that got there. */
+export type Branches = Partial<Record<PlayableId, BranchId>>
+
+/** Saved branches, keeping only branches of the family they're saved under. */
+export const parseBranches = (raw: unknown): Branches =>
+  isRecord(raw)
+    ? Object.fromEntries(
+        Object.entries(raw).filter(([id, branch]) => isPlayable(id) && isBranch(branch) && BRANCHES[branch].line === id),
+      )
+    : {}
 
 /** The partner of a save that never started a run. */
 export const DEFAULT_PARTNER: PlayableId = 'charmander'
@@ -164,6 +178,7 @@ export const EMPTY_SAVE: Save = {
   ribbons: [],
   shinyPicks: [],
   companion: null,
+  branches: {},
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -222,6 +237,7 @@ export const parseSaveData = (json: unknown): Save => {
     ribbons: parseRibbons(data.ribbons),
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
+    branches: parseBranches(data.branches),
   }
 }
 
