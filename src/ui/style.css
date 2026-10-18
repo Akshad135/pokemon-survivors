@@ -8922,225 +8922,6 @@ button.hall-tile:hover {
 
 .evo-card .offer-key,
 .ability-card .offer-key {
-
-/* ---------- Level-up cards: entrance, forks, rarity, Esquecer (ui/screens.ts) ---------- */
-
-.levelup .offers {
-  position: relative;
-}
-
-.levelup .offer {
-  position: relative;
-  overflow: hidden;
-  animation: offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
-  animation-delay: calc(var(--i, 0) * 70ms + 60ms);
-}
-
-@keyframes offer-in {
-  from {
-    transform: translateY(18px) scale(0.94);
-    opacity: 0;
-  }
-}
-
-/* A move card that reaches a fork: a dashed purple frame and its "2 paths" tag. */
-.tag-fork {
-  color: #fff;
-  background: #8048d0;
-  padding: 3px 4px 2px;
-  border-radius: 3px;
-}
-
-.offer-fork:not(.selected) {
-  border-color: #a078e8;
-  border-style: dashed;
-}
-
-/* Rare cards: a blue frame and a shine that sweeps across now and then. */
-.offer-rare {
-  background: linear-gradient(180deg, #e8f0ff, #c8d8f8);
-  border-color: #4878e0;
-  box-shadow: 0 0 0 2px #a8c8f8;
-}
-
-.offer-rare.selected {
-  background: linear-gradient(180deg, #f4f8ff, #dce8ff);
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4878e0, 0 4px 0 rgba(0, 0, 0, 0.15);
-}
-
-.tag-rare {
-  color: #fff;
-  background: #3060d0;
-  padding: 3px 4px 2px;
-  border-radius: 3px;
-}
-
-/* Shiny cards: a gold frame that pulses, twinkles all over and the same shine, warmer. */
-.levelup .offer-shiny {
-  background: linear-gradient(180deg, #fffbe0, #f8e8a0);
-  border-color: #e0a020;
-  animation:
-    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
-    shiny-frame 0.9s steps(2) infinite;
-  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
-}
-
-.levelup .offer-shiny.selected {
-  background: linear-gradient(180deg, #fffdf0, #fbefc0);
-}
-
-@keyframes shiny-frame {
-  50% {
-    box-shadow: 0 0 0 2px #fff8c0, 0 0 12px 3px #f8d030;
-  }
-}
-
-.tag-shiny {
-  color: #604000;
-  background: linear-gradient(90deg, #f8d030, #fff4a8, #f8d030);
-  padding: 3px 4px 2px;
-  border-radius: 3px;
-}
-
-.offer-note {
-  font-family: var(--title);
-  font-size: 7px;
-  line-height: 1.4;
-  color: #a06800;
-  margin-top: 4px;
-}
-
-.offer-shine {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.85) 46%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
-  transform: translateX(-110%);
-  animation: offer-shine 2.6s ease-in-out 0.5s infinite;
-}
-
-.offer-shiny .offer-shine {
-  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
-  animation-duration: 1.9s;
-}
-
-@keyframes offer-shine {
-  55%,
-  100% {
-    transform: translateX(110%);
-  }
-}
-
-.offer-sparkles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.offer-sparkles img {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  image-rendering: pixelated;
-  transform: translate(-50%, -50%) scale(0);
-  animation: offer-twinkle 2s steps(4) infinite;
-}
-
-@keyframes offer-twinkle {
-  20% {
-    transform: translate(-50%, -50%) scale(1);
-  }
-  40%,
-  100% {
-    transform: translate(-50%, -50%) scale(0);
-  }
-}
-
-/* A fork's branch card: the mods it adds sit as badges on the move's icon. */
-.levelup .offer-icon {
-  position: relative;
-  overflow: visible;
-}
-
-.offer-mods {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-  display: flex;
-  gap: 1px;
-}
-
-.offer-mods img {
-  width: 22px;
-  height: 22px;
-  image-rendering: pixelated;
-  background: #8048d0;
-  border: 2px solid #fff;
-  border-radius: 4px;
-  padding: 1px;
-}
-
-/* The fork screen: the two branches split apart from where the move card was. */
-.levelup.fork .dialog-title {
-  color: #6038b0;
-}
-
-.offers.branches {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.offers.branches::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 4px;
-  margin-left: -2px;
-  background: #fff;
-  box-shadow: 0 0 8px 2px #d0b8ff;
-  pointer-events: none;
-  animation: fork-seam 0.5s ease-out both;
-}
-
-@keyframes fork-seam {
-  from {
-    transform: scaleY(0.2);
-    opacity: 1;
-  }
-  40% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-  to {
-    transform: scaleY(1);
-    opacity: 0;
-  }
-}
-
-.levelup .offer-branch {
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-  padding: 14px 12px 12px;
-  border-color: #b8a0e8;
-  background: linear-gradient(180deg, #f4f0ff, #e4dcf8);
-  animation: branch-in-a 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
-}
-
-.levelup .offer-branch.branch-b {
-  animation-name: branch-in-b;
-}
-
-.levelup .offer-branch.selected {
-  background: linear-gradient(180deg, #fff, #f0eaff);
-  border-color: #e83838;
-}
-
-.offer-branch .offer-key {
   position: absolute;
   top: 6px;
   left: 6px;
@@ -9427,70 +9208,6 @@ button.hall-tile:hover {
 }
 
 .ability-card.hidden-ability::before {
-
-.offer-branch .offer-name {
-  justify-content: center;
-  color: #4a2890;
-}
-
-.offer-branch .type-badge {
-  display: none;
-}
-
-.offer-branch .offer-icon {
-  width: 52px;
-  height: 52px;
-  background: #3a2868;
-  box-shadow: 0 0 0 2px #a078e8;
-}
-
-.offer-branch .offer-icon > img {
-  width: 40px;
-  height: 40px;
-}
-
-@keyframes branch-in-a {
-  from {
-    transform: translateX(52%) scaleX(0.6);
-    opacity: 0;
-  }
-  35% {
-    opacity: 1;
-  }
-}
-
-@keyframes branch-in-b {
-  from {
-    transform: translateX(-52%) scaleX(0.6);
-    opacity: 0;
-  }
-  35% {
-    opacity: 1;
-  }
-}
-
-/* Esquecer: the cards turn red and the next pick forgets one, which flies off. */
-.btn-banish {
-  color: #b02020;
-}
-
-.btn-banish.active {
-  color: #fff;
-  background: #d83030;
-}
-
-.levelup .offers.banishing .offer {
-  background: linear-gradient(180deg, #ffe8e4, #f8c8c0);
-  border-color: #e05040;
-}
-
-.levelup .offers.banishing .offer.selected {
-  background: linear-gradient(180deg, #fff0ee, #ffd8d0);
-  border-color: #b01818;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e83838;
-}
-
-.offers.banishing .offer::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -9875,7 +9592,298 @@ button.hall-tile:hover {
 .ability-card.hidden-ability > :not(.offer-key, .ability-card-ribbon) {
   position: relative;
   z-index: 1;
+}
 
+/* ---------- Level-up cards: entrance, forks, rarity, Esquecer (ui/screens.ts) ---------- */
+
+.levelup .offers {
+  position: relative;
+}
+
+.levelup .offer {
+  position: relative;
+  overflow: hidden;
+  animation: offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms);
+}
+
+@keyframes offer-in {
+  from {
+    transform: translateY(18px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+/* A move card that reaches a fork: a dashed purple frame and its "2 paths" tag. */
+.tag-fork {
+  color: #fff;
+  background: #8048d0;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+.offer-fork:not(.selected) {
+  border-color: #a078e8;
+  border-style: dashed;
+}
+
+/* Rare cards: a blue frame and a shine that sweeps across now and then. */
+.offer-rare {
+  background: linear-gradient(180deg, #e8f0ff, #c8d8f8);
+  border-color: #4878e0;
+  box-shadow: 0 0 0 2px #a8c8f8;
+}
+
+.offer-rare.selected {
+  background: linear-gradient(180deg, #f4f8ff, #dce8ff);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4878e0, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tag-rare {
+  color: #fff;
+  background: #3060d0;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+/* Shiny cards: a gold frame that pulses, twinkles all over and the same shine, warmer. */
+.levelup .offer-shiny {
+  background: linear-gradient(180deg, #fffbe0, #f8e8a0);
+  border-color: #e0a020;
+  animation:
+    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    shiny-frame 0.9s steps(2) infinite;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
+}
+
+.levelup .offer-shiny.selected {
+  background: linear-gradient(180deg, #fffdf0, #fbefc0);
+}
+
+@keyframes shiny-frame {
+  50% {
+    box-shadow: 0 0 0 2px #fff8c0, 0 0 12px 3px #f8d030;
+  }
+}
+
+.tag-shiny {
+  color: #604000;
+  background: linear-gradient(90deg, #f8d030, #fff4a8, #f8d030);
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+.offer-note {
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1.4;
+  color: #a06800;
+  margin-top: 4px;
+}
+
+.offer-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.85) 46%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
+  transform: translateX(-110%);
+  animation: offer-shine 2.6s ease-in-out 0.5s infinite;
+}
+
+.offer-shiny .offer-shine {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
+  animation-duration: 1.9s;
+}
+
+@keyframes offer-shine {
+  55%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+.offer-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.offer-sparkles img {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) scale(0);
+  animation: offer-twinkle 2s steps(4) infinite;
+}
+
+@keyframes offer-twinkle {
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  40%,
+  100% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+/* A fork's branch card: the mods it adds sit as badges on the move's icon. */
+.levelup .offer-icon {
+  position: relative;
+  overflow: visible;
+}
+
+.offer-mods {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  gap: 1px;
+}
+
+.offer-mods img {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+  background: #8048d0;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  padding: 1px;
+}
+
+/* The fork screen: the two branches split apart from where the move card was. */
+.levelup.fork .dialog-title {
+  color: #6038b0;
+}
+
+.offers.branches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.offers.branches::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  margin-left: -2px;
+  background: #fff;
+  box-shadow: 0 0 8px 2px #d0b8ff;
+  pointer-events: none;
+  animation: fork-seam 0.5s ease-out both;
+}
+
+@keyframes fork-seam {
+  from {
+    transform: scaleY(0.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+.levelup .offer-branch {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 14px 12px 12px;
+  border-color: #b8a0e8;
+  background: linear-gradient(180deg, #f4f0ff, #e4dcf8);
+  animation: branch-in-a 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+.levelup .offer-branch.branch-b {
+  animation-name: branch-in-b;
+}
+
+.levelup .offer-branch.selected {
+  background: linear-gradient(180deg, #fff, #f0eaff);
+  border-color: #e83838;
+}
+
+.offer-branch .offer-key {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+.offer-branch .offer-name {
+  justify-content: center;
+  color: #4a2890;
+}
+
+.offer-branch .type-badge {
+  display: none;
+}
+
+.offer-branch .offer-icon {
+  width: 52px;
+  height: 52px;
+  background: #3a2868;
+  box-shadow: 0 0 0 2px #a078e8;
+}
+
+.offer-branch .offer-icon > img {
+  width: 40px;
+  height: 40px;
+}
+
+@keyframes branch-in-a {
+  from {
+    transform: translateX(52%) scaleX(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes branch-in-b {
+  from {
+    transform: translateX(-52%) scaleX(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+/* Esquecer: the cards turn red and the next pick forgets one, which flies off. */
+.btn-banish {
+  color: #b02020;
+}
+
+.btn-banish.active {
+  color: #fff;
+  background: #d83030;
+}
+
+.levelup .offers.banishing .offer {
+  background: linear-gradient(180deg, #ffe8e4, #f8c8c0);
+  border-color: #e05040;
+}
+
+.levelup .offers.banishing .offer.selected {
+  background: linear-gradient(180deg, #fff0ee, #ffd8d0);
+  border-color: #b01818;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e83838;
+}
+
+.offers.banishing .offer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   background: repeating-linear-gradient(-45deg, rgba(216, 48, 48, 0.12) 0 6px, transparent 6px 12px);
   background-size: 17px 17px;
   animation: banish-stripes 0.6s steps(6) infinite;
