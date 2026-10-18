@@ -101,7 +101,7 @@ const AQUA_STEP_TIME = 6
 /** Flower Trick never misses and hits elites and bosses harder. */
 const FLOWER_BONUS: readonly DamageBonus[] = [{ when: 'elite', mult: 1.5 }, { when: 'boss', mult: 1.5 }]
 
-const look = <M extends MoveId>(move: M, type: Look['type'], visual: Look['visual']): Look => ({ move, type, visual })
+const look = (move: MoveId, type: Look['type'], visual: Look['visual']): Look => ({ move, type, visual })
 
 export const SIGNATURE_MOVES = {
   leechSeed: {
