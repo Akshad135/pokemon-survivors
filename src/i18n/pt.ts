@@ -200,6 +200,9 @@ export const pt = {
     reroll: (n: number) => `Trocar (${n})`,
     skip: (n: number) => `Pular (${n})`,
     hintKeys: '↑ ↓ escolher · ENTER confirmar · 1-3 atalho',
+    /** Cards side by side: a branching evolution's forms or the abilities (1-3), a fork's two paths or a cursed item's take or leave (1-2). */
+    sideHintKeys: '← → escolher · ENTER confirmar · 1-3 atalho',
+    pairHintKeys: '← → escolher · ENTER confirmar · 1-2 atalho',
     hintTouch: 'Toque para escolher',
     /** The opening draft, before the run's clock starts. */
     draftTitle: (name: string) => `${name}: escolha o 2º golpe!`,

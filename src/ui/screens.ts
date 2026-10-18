@@ -349,7 +349,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const actions = [reroll, skip, banish].filter((b) => b !== null)
 
   const offersEl = h('div', { class: fork ? 'offers branches' : 'offers' }, ...buttons)
-  const hintEl = h('div', { class: 'hint-slot' }, hint(m.hintKeys, m.hintTouch))
+  const hintEl = h('div', { class: 'hint-slot' }, hint(fork ? m.pairHintKeys : m.hintKeys, m.hintTouch))
   let banishing = false
   const setBanishing = (on: boolean) => {
     banishing = on
@@ -396,6 +396,9 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   })
   const offEscape = input.onKey((key) => {
     if (key === 'Escape' && banishing) setBanishing(false)
+    // A fork's two paths sit side by side (stacked only on a phone held upright): left and right move too.
+    else if (fork && (key === 'ArrowLeft' || key === 'KeyA')) nav.focus(nav.index - 1)
+    else if (fork && (key === 'ArrowRight' || key === 'KeyD')) nav.focus(nav.index + 1)
   })
 
   const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : m.title(name, g.player.level - g.pendingLevelUps + 1)
@@ -550,7 +553,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
     el.replaceChildren(
       h(
         'div',
-        { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
+        { class: opening ? 'dialog box pop wide pause-box' : 'dialog box wide pause-box' },
         h('div', { class: 'dialog-title' }, m.title),
         difficultyTag(g.difficulty),
         abilityPanel(g),

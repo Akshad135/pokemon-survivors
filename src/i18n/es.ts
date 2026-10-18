@@ -125,6 +125,8 @@ export const es: Messages = {
     reroll: (n) => `Cambiar (${n})`,
     skip: (n) => `Saltar (${n})`,
     hintKeys: '↑ ↓ elegir · ENTER confirmar · 1-3 atajo',
+    sideHintKeys: '← → elegir · ENTER confirmar · 1-3 atajo',
+    pairHintKeys: '← → elegir · ENTER confirmar · 1-2 atajo',
     hintTouch: 'Toca para elegir',
     draftTitle: (name) => `${name}: ¡elige el 2.º movimiento!`,
     forkTitle: (move, level) => `${move} Nv ${level} · elige un camino`,
