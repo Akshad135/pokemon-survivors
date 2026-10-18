@@ -1,4 +1,4 @@
-import { PLAYABLE } from '../data/hatchlings'
+import { runLearnset } from './learnsets'
 import { loadout, rollOffers, withRarity } from './leveling'
 import { forkAt, MOVE_IDS, MOVES, withBranch, type MoveId } from './moves'
 import type { Game, Offer, Rarity } from './types'
@@ -59,7 +59,7 @@ export const levelUpDevTools = (game: () => Game | undefined) => {
       const g = game()
       if (!g) return 'ps: start a run first'
       // Owning a few of the learnset gives the rare cards levels to jump.
-      for (const id of PLAYABLE[g.starter].learnset.slice(0, 3)) {
+      for (const id of runLearnset(g.starter, g.branch, g.player.stage).slice(0, 3)) {
         const owned = own(g, id)
         owned.level = Math.max(owned.level, 2)
       }

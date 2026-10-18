@@ -11,11 +11,12 @@ const PARTICLES = {
   paralysis: { rate: 6, colors: ['#ffffff', '#f8e030', '#f8b800'], speed: 70, gravity: 0, ttl: 0.16 },
   freeze: { rate: 3, colors: ['#ffffff', '#c8f0f8'], speed: 3, gravity: 12, ttl: 0.5 },
   seed: { rate: 4, colors: ['#a8e070', '#78c850', '#e0f8a0'], speed: 6, gravity: -24, ttl: 0.6 },
+  weaken: { rate: 4, colors: ['#886030', '#a07840', '#584020'], speed: 3, gravity: 50, ttl: 0.45 },
 } as const
 
 const emitParticles = (g: Game, e: Enemy, dt: number) => {
   const st = e.status
-  for (const kind of ['burn', 'poison', 'paralysis', 'freeze', 'seed'] as const) {
+  for (const kind of ['burn', 'poison', 'paralysis', 'freeze', 'seed', 'weaken'] as const) {
     if (st[kind].time <= 0) continue
     const p = PARTICLES[kind]
     if (!chance(g.rng, p.rate * dt)) continue
