@@ -99,6 +99,8 @@ export type Player = {
   hidden: MoveWindow | null
   /** Drain heal budget (`drainRefill`) and the game time it was last spent. */
   drain: { left: number; at: number }
+  /** Seconds the player can't walk (Giga Impact's recharge); moves still carry them. */
+  rooted: number
   /** Moves' timed stat effects on the player (`signatures.ts`). */
   moveBuffs: MoveBuff[]
 }
@@ -181,6 +183,14 @@ export type Motion =
   | { kind: 'return'; vx: number; vy: number; out: number; speed: number }
   /** Seeded random walk at `speed`, turning up to `turn` rad/s, steered back when farther than `leash` px from the player. */
   | { kind: 'wander'; heading: number; speed: number; turn: number; leash: number }
+  /** Rolls the player along their facing at `speed` px/s on top of their walk (the stick steers), the hitbox on their body (Rollout). */
+  | { kind: 'roll'; speed: number }
+  /**
+   * Rides on `target`'s body and hits only it, every `every` s from `next`
+   * seconds of age on (Curse, Foul Play); gone when the target faints.
+   * Its attack stays out of the regular collision (`activeFrom: Infinity`).
+   */
+  | { kind: 'tether'; target: Enemy; every: number; next: number }
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
@@ -198,6 +208,7 @@ export type Visual =
   | 'telegraph'
   | EvolvedVisual
   | TacticVisual
+  | EggMoveVisual
   | VerbVisual
   | SignatureVisual
   | TypeEvolvedVisual
@@ -226,6 +237,12 @@ export type TacticVisual =
   | 'spikes' | 'barbs' | 'spikesBlast' | 'barbsBlast'
   | 'wisp' | 'wispShot' | 'inferno' | 'infernoShot'
 
+/** The egg families' signature moves (`eggMoves.ts`), drawn by `render/eggMoveFx.ts`. */
+export type EggMoveVisual =
+  | 'hypnosis' | 'dreamBite' | 'forcePalm' | 'auraWave' | 'digMound' | 'digBurst' | 'twister' | 'sandTomb'
+  | 'meteorMash' | 'zenHeadbutt' | 'foulPlay' | 'bodySlam' | 'slamWave' | 'dynamicPunch' | 'rollout' | 'iceBall'
+  | 'furyCutter' | 'sacredSword' | 'sacredEdge' | 'dragonDart' | 'snarl' | 'gigaImpact' | 'gigaWave' | 'flail'
+  | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse'
 /** The verb moves (`moveVerbs.ts`), drawn by `render/verbFx.ts`. */
 export type VerbVisual =
   | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'
@@ -292,6 +309,12 @@ export type Attack = {
   /** Px/s it pulls the foes it touches toward its center, divided by their mass (bosses resist more). */
   pull: number
   trailer: Trailer | null
+  /** Ignores Bronzong wards and resisted matchups (a resisted hit lands as neutral): Sacred Sword, Curse. */
+  sure: boolean
+  /** Chance that a foe touching it misses its contact hit on the player (Sand Tomb's sand in their eyes). */
+  blind: number
+  /** A free intensity counter for the move's rules and look (Rollout's streak, Echoed Voice's echo); 0 by default. */
+  tier: number
   /** Goes through a Bronzong ward instead of being soaked by it (Darkest Lariat, Snipe Shot). */
   ignoreWards: boolean
   /** A number the move keeps on its hitbox (Thrash's bite timer, Snipe Shot's base damage…), read by `signatures.ts` and the renderer. */
@@ -458,7 +481,7 @@ export type GameEvent =
   | { kind: 'guard' }
   /** A verb move asks for its sound (`moveVerbs.ts`). */
   | { kind: 'moveSound'; sound: MoveSound }
-  /** A move with its own cast sound fired (the shell maps it, `ui/castSfx.ts`). */
+  /** A move with a cast sound fired, or its big moment landed (`ui/castSounds.ts`, then `ui/castSfx.ts`, pick the sound). */
   | { kind: 'cast'; move: MoveId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */

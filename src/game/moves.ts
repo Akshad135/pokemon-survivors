@@ -17,6 +17,8 @@ import { SIGNATURE_MOVES } from './signatureMoves'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
+import * as egg from './eggMoves'
+import { ECHO_MAX, MASH_MAX, METRONOME_REF } from './eggMoveRules'
 import {
   bonemerang, brine, dragonTail, electroBall, flameWheel, FOCUS, focusPunch, futureSight, gyroBall, roost, selfDestruct, sheerCold,
   solarBeam, stealthRock, suckerPunch, uTurn, venoshock,
@@ -87,6 +89,8 @@ export type MoveDef = {
   onGuard?: (g: Game, s: CastStats, owned: OwnedMove, from?: Enemy) => void
   /** A burrow it started (`burrow` in `moveKit.ts`) ended: come back out, usually with a hit. */
   emerge?: (g: Game, s: CastStats, owned: OwnedMove) => void
+  /** One of its hitboxes `a` landed a hit on `e` (after the damage): ramp it up, grow it, shake the screen. */
+  onHit?: (g: Game, a: Attack, e: Enemy) => void
 }
 
 /**
@@ -559,6 +563,382 @@ export const MOVES = {
         })
       }
     },
+  },
+
+  /* ---------- Egg families' signature moves (cast in eggMoves.ts) ---------- */
+
+  dreamEater: {
+    name: 'Dream Eater',
+    type: 'psychic',
+    base: stats({ damage: 11, cooldown: 2.6, amount: 2, knockback: 20 }),
+    status: { kind: 'sleep', chance: 0.5, duration: 2.5, power: 0 },
+    upgrades: [
+      { amount: 1 },
+      { damage: 4 },
+      { area: 0.2 },
+      { statusChance: 0.15 },
+      { cooldown: -0.3 },
+      { damage: 6 },
+      { amount: 2 },
+    ],
+    fire: (g, s) => egg.dreamEater(g, s),
+  },
+
+  forcePalm: {
+    name: 'Force Palm',
+    type: 'fighting',
+    base: stats({ damage: 17, cooldown: 1.4, amount: 1, knockback: 60 }),
+    status: { kind: 'paralysis', chance: 0.3, duration: 1.6, power: 0 },
+    upgrades: [
+      { damage: 5 },
+      { statusChance: 0.15 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { amount: 1 },
+      { damage: 6 },
+      { area: 0.25, statusChance: 0.1 },
+    ],
+    fire: (g, s) => egg.forcePalm(g, s),
+  },
+
+  dig: {
+    name: 'Dig',
+    type: 'ground',
+    base: stats({ damage: 30, cooldown: 4.5, duration: 0.9, knockback: 120 }),
+    minCooldown: 2,
+    manual: true,
+    upgrades: [
+      { damage: 10 },
+      { area: 0.2 },
+      { cooldown: -0.5 },
+      { damage: 12 },
+      { duration: 0.3 },
+      { cooldown: -0.5 },
+      { damage: 14, area: 0.25 },
+    ],
+    fire: (g, s) => egg.dig(g, s),
+    emerge: (g, s) => egg.digEmerge(g, s),
+  },
+
+  twister: {
+    name: 'Twister',
+    type: 'dragon',
+    base: stats({ damage: 8, cooldown: 3.8, amount: 1, speed: 55, duration: 3.5, knockback: 10 }),
+    upgrades: [
+      { damage: 2 },
+      { duration: 1 },
+      { amount: 1 },
+      { area: 0.2 },
+      { damage: 3 },
+      { cooldown: -0.5 },
+      { amount: 1, area: 0.15 },
+    ],
+    fire: (g, s) => egg.twister(g, s),
+  },
+
+  sandTomb: {
+    name: 'Sand Tomb',
+    type: 'ground',
+    base: stats({ damage: 6, cooldown: 6, duration: 4 }),
+    status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.3 },
+    upgrades: [
+      { damage: 2 },
+      { area: 0.2 },
+      { duration: 1 },
+      { cooldown: -0.8 },
+      { damage: 3 },
+      { area: 0.2 },
+      { duration: 1.5, damage: 2 },
+    ],
+    fire: (g, s) => egg.sandTomb(g, s),
+  },
+
+  meteorMash: {
+    name: 'Meteor Mash',
+    type: 'steel',
+    base: stats({ damage: 16, cooldown: 1.8, amount: 1, knockback: 70 }),
+    stacks: { grow: 'hit', max: MASH_MAX, reset: 'hurt' },
+    upgrades: [
+      { amount: 1 },
+      { damage: 5 },
+      { area: 0.2 },
+      { cooldown: -0.25 },
+      { damage: 6 },
+      { amount: 1 },
+      { damage: 6, area: 0.2 },
+    ],
+    fire: (g, s, owned) => egg.meteorMash(g, s, owned),
+  },
+
+  zenHeadbutt: {
+    name: 'Zen Headbutt',
+    type: 'psychic',
+    base: stats({ damage: 20, cooldown: 1.3, knockback: 110 }),
+    status: { kind: 'sleep', chance: 1, duration: 0.5, power: 0 },
+    upgrades: [
+      { damage: 5 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { damage: 6 },
+      { knockback: 40, area: 0.15 },
+      { cooldown: -0.2 },
+      { damage: 8 },
+    ],
+    fire: (g, s) => egg.zenHeadbutt(g, s),
+  },
+
+  foulPlay: {
+    name: 'Foul Play',
+    type: 'dark',
+    base: stats({ damage: 13, cooldown: 1.8, amount: 1, knockback: 30 }),
+    upgrades: [
+      { damage: 4 },
+      { amount: 1 },
+      { cooldown: -0.25 },
+      { damage: 5 },
+      { area: 0.25 },
+      { amount: 1 },
+      { damage: 6 },
+    ],
+    fire: (g, s) => egg.foulPlay(g, s),
+  },
+
+  bodySlam: {
+    name: 'Body Slam',
+    type: 'normal',
+    base: stats({ damage: 22, cooldown: 3.5, knockback: 140 }),
+    status: { kind: 'paralysis', chance: 0.4, duration: 1.6, power: 0 },
+    minCooldown: LUNGE_MIN_COOLDOWN,
+    manual: true,
+    upgrades: [
+      { damage: 6 },
+      { area: 0.2 },
+      { cooldown: -0.4 },
+      { statusChance: 0.15 },
+      { damage: 8 },
+      { cooldown: -0.4 },
+      { damage: 10, area: 0.25 },
+    ],
+    fire: (g, s) => egg.bodySlam(g, s),
+    onHit: (g, a) => egg.bodySlamHit(g, a),
+  },
+
+  dynamicPunch: {
+    name: 'Dynamic Punch',
+    type: 'fighting',
+    base: stats({ damage: 34, cooldown: 3.2, knockback: 180 }),
+    status: { kind: 'confuse', chance: 1, duration: 2, power: 0 },
+    upgrades: [
+      { damage: 10 },
+      { area: 0.2 },
+      { cooldown: -0.4 },
+      { damage: 12 },
+      { area: 0.2 },
+      { cooldown: -0.4 },
+      { damage: 16 },
+    ],
+    fire: (g, s) => egg.dynamicPunch(g, s),
+    onHit: (g, a) => egg.dynamicPunchHit(g, a),
+  },
+
+  rollout: {
+    name: 'Rollout',
+    type: 'rock',
+    base: stats({ damage: 5, cooldown: 5, speed: 70, duration: 2, knockback: 40 }),
+    upgrades: [
+      { damage: 2 },
+      { duration: 0.5 },
+      { cooldown: -0.6 },
+      { damage: 2 },
+      { area: 0.2 },
+      { duration: 0.5 },
+      { damage: 3, cooldown: -0.5 },
+    ],
+    fire: (g, s) => egg.rollout(g, s),
+    onHit: (g, a) => egg.rolloutHit(g, a),
+  },
+
+  iceBall: {
+    name: 'Ice Ball',
+    type: 'ice',
+    base: stats({ damage: 7, cooldown: 1.6, amount: 1, speed: 150, knockback: 30 }),
+    status: { kind: 'slow', chance: 1, duration: 1, power: 0.35 },
+    upgrades: [
+      { damage: 3 },
+      { amount: 1 },
+      { speed: 30 },
+      { cooldown: -0.2 },
+      { damage: 4 },
+      { area: 0.2 },
+      { amount: 1 },
+    ],
+    fire: (g, s) => egg.iceBall(g, s),
+    onHit: (g, a, e) => egg.iceBallHit(g, a, e),
+  },
+
+  furyCutter: {
+    name: 'Fury Cutter',
+    type: 'bug',
+    base: stats({ damage: 7, cooldown: 0.8, knockback: 25 }),
+    upgrades: [
+      { damage: 2 },
+      { area: 0.2 },
+      { cooldown: -0.1 },
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.1 },
+      { damage: 4 },
+    ],
+    fire: (g, s, owned) => egg.furyCutter(g, s, owned),
+  },
+
+  sacredSword: {
+    name: 'Sacred Sword',
+    type: 'fighting',
+    base: stats({ damage: 16, cooldown: 1.9, amount: 1, knockback: 70 }),
+    upgrades: [
+      { damage: 5 },
+      { area: 0.2 },
+      { cooldown: -0.25 },
+      { damage: 6 },
+      { area: 0.2 },
+      { amount: 1 },
+      { damage: 7 },
+    ],
+    fire: (g, s) => egg.sacredSword(g, s),
+  },
+
+  dragonDarts: {
+    name: 'Dragon Darts',
+    type: 'dragon',
+    base: stats({ damage: 11, cooldown: 1.3, amount: 2, speed: 240, pierce: 1, knockback: 25 }),
+    upgrades: [
+      { damage: 3 },
+      { speed: 40 },
+      { cooldown: -0.15 },
+      { damage: 4 },
+      { amount: 2 },
+      { damage: 5 },
+      { cooldown: -0.2, damage: 3 },
+    ],
+    fire: (g, s) => egg.dragonDarts(g, s),
+  },
+
+  snarl: {
+    name: 'Snarl',
+    type: 'dark',
+    base: stats({ damage: 10, cooldown: 2, amount: 3, knockback: 40 }),
+    upgrades: [
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.25 },
+      { damage: 4 },
+      { amount: 1 },
+      { area: 0.2 },
+      { damage: 5, amount: 1 },
+    ],
+    fire: (g, s) => egg.snarl(g, s),
+  },
+
+  gigaImpact: {
+    name: 'Giga Impact',
+    type: 'normal',
+    base: stats({ damage: 42, cooldown: 8, duration: 1, knockback: 260 }),
+    minCooldown: 3,
+    manual: true,
+    upgrades: [
+      { damage: 10 },
+      { area: 0.2 },
+      { cooldown: -0.8 },
+      { damage: 14 },
+      { duration: -0.25 },
+      { cooldown: -0.8 },
+      { damage: 18, area: 0.25 },
+    ],
+    fire: (g, s) => egg.gigaImpact(g, s),
+    onHit: (g, a) => egg.gigaImpactHit(g, a),
+  },
+
+  flail: {
+    name: 'Flail',
+    type: 'normal',
+    base: stats({ damage: 9, cooldown: 1.2, amount: 3, knockback: 50 }),
+    upgrades: [
+      { damage: 3 },
+      { amount: 1 },
+      { area: 0.2 },
+      { cooldown: -0.15 },
+      { damage: 4 },
+      { amount: 1 },
+      { damage: 5, area: 0.15 },
+    ],
+    fire: (g, s) => egg.flail(g, s),
+  },
+
+  boneRush: {
+    name: 'Bone Rush',
+    type: 'ground',
+    base: stats({ damage: 10, cooldown: 1.6, amount: 0, knockback: 35 }),
+    upgrades: [
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { amount: 1 },
+      { damage: 4 },
+      { area: 0.2 },
+      { amount: 1, damage: 4 },
+    ],
+    fire: (g, s) => egg.boneRush(g, s),
+  },
+
+  metronome: {
+    name: 'Metronome',
+    type: 'normal',
+    base: stats({ damage: METRONOME_REF * 0.8, cooldown: 2.4 }),
+    upgrades: [
+      { damage: 1 },
+      { cooldown: -0.2 },
+      { damage: 1 },
+      { cooldown: -0.2 },
+      { damage: 1.5 },
+      { cooldown: -0.2 },
+      { damage: 1.5 },
+    ],
+    fire: (g, s, owned) => egg.metronome(g, s, owned),
+  },
+
+  echoedVoice: {
+    name: 'Echoed Voice',
+    type: 'normal',
+    base: stats({ damage: 7, cooldown: 1.5, knockback: 40 }),
+    stacks: { grow: 'cast', max: ECHO_MAX, reset: 'hurt' },
+    upgrades: [
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { damage: 3 },
+      { area: 0.2 },
+      { cooldown: -0.2 },
+      { damage: 4 },
+    ],
+    fire: (g, s, owned) => egg.echoedVoice(g, s, owned),
+  },
+
+  curse: {
+    name: 'Curse',
+    type: 'ghost',
+    // damage: % of the target's max HP lost per second.
+    base: stats({ damage: 1.2, cooldown: 9, amount: 1, duration: 6 }),
+    upgrades: [
+      { damage: 0.3 },
+      { duration: 2 },
+      { cooldown: -1 },
+      { damage: 0.3 },
+      { amount: 1 },
+      { cooldown: -1 },
+      { damage: 0.4 },
+    ],
+    fire: (g, s) => egg.curse(g, s),
   },
 
   gust: {
