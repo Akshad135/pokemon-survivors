@@ -7,6 +7,7 @@ import { ABILITIES, BRANCH_ABILITIES, FAMILY_ABILITIES, isHidden, type AbilityId
 import { BRANCHES, branchesAt, branchesOf, type BranchId } from '../data/branches'
 import { abilityIcon } from '../render/abilityArt'
 import { abilityChips } from './abilityPick'
+import { unlockedAt } from '../game/learnsets'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
@@ -63,6 +64,42 @@ const specialRow = (id: PlayableId) => {
     h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${first.tier.name} → ${last.tier.name}`), h('div', { class: 'move-desc' }, desc)),
     typeBadge(first.def.type),
   )
+}
+
+/** A learnset stage's header: its portraits, its name and when it comes (from the start, or the level it evolves at). */
+const stageHead = (dex: readonly number[], name: string, when: string, cls = 'learn-stage') =>
+  h(
+    'div',
+    { class: cls },
+    h('span', { class: 'learn-portraits' }, ...dex.map((n) => h('img', { src: portraitUrl(n), alt: '' }))),
+    h('b', {}, name),
+    h('span', { class: 'learn-when' }, when),
+  )
+
+/**
+ * The moves tab: the learnset stage by stage, what the family starts with and
+ * then what each evolution unlocks. A branching evolution shows the moves
+ * every branch learns, then each branch's own.
+ */
+const learnStages = (id: PlayableId) => {
+  const s: PlayableDef = PLAYABLE[id]
+  const rows = (moves: readonly MoveId[]) => h('div', { class: 'move-list' }, ...moves.map((mv) => moveRow(mv, mv === s.signature)))
+  return s.line.flatMap((st, i) => {
+    const when = i === 0 ? t().partner.learnStart : t().level(s.line[i - 1]!.evolveAt!)
+    const branches = branchesAt(id, i)
+    if (branches.length === 0) return [stageHead([st.dex], st.name, when), rows(unlockedAt(id, null, i))]
+    const names = branches.map((b) => BRANCHES[b].name)
+    const shared = unlockedAt(id, null, i)
+    return [
+      stageHead(
+        branches.slice(0, 4).map((b) => BRANCHES[b].dex),
+        branches.length > 2 ? t().branch.choose(branches.length) : names.join(' / '),
+        when,
+      ),
+      ...(shared.length > 0 ? [rows(shared)] : []),
+      ...branches.flatMap((b) => [stageHead([BRANCHES[b].dex], BRANCHES[b].name, '', 'learn-stage learn-branch'), rows(unlockedAt(id, b, i).filter((mv) => !shared.includes(mv)))]),
+    ]
+  })
 }
 
 /** How a branching family evolves, before the abilities' note (empty for the others). */
@@ -261,7 +298,7 @@ export const detailsSheet = (opts: SheetOpts) => {
             h('p', { class: 'ability-note' }, `${branchNote(id)}${m.ability.note}`),
           ]
         : k === 'moves'
-          ? [section(m.title.moves), h('div', { class: 'move-list' }, ...PLAYABLE[id].learnset.map((mv) => moveRow(mv, mv === PLAYABLE[id].signature)))]
+          ? [section(m.title.moves), h('p', { class: 'learn-note' }, m.partner.learnNote), ...learnStages(id)]
           : [section(megas.length > 1 ? m.mega.sectionTwo : m.mega.section, h('span', {}, ...glyphText(boundLabel('mega')))), ...megas.map(megaRow)]),
     )
     body.scrollTop = 0

@@ -5,6 +5,7 @@ import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
 import type { AbilityId } from '../data/abilities'
 import type { ItemId } from '../data/items'
+import type { CurseId } from '../data/curses'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
 import type { Difficulty } from '../game/difficulty'
@@ -161,6 +162,9 @@ export const pt = {
     start: 'Começar',
     startWith: (name: string) => `Começar com ${name}`,
     close: 'Fechar',
+    /** The details sheet's moves tab, stage by stage: what it starts with, then what each evolution unlocks. */
+    learnStart: 'No início',
+    learnNote: 'Cada evolução libera golpes novos. São só 6 espaços: cada run deixa alguns de fora.',
   },
 
   /** Difficulty picker in the partner select's start bar; the level shows in the pause menu and the results too. */
@@ -196,6 +200,9 @@ export const pt = {
     reroll: (n: number) => `Trocar (${n})`,
     skip: (n: number) => `Pular (${n})`,
     hintKeys: '↑ ↓ escolher · ENTER confirmar · 1-3 atalho',
+    /** Cards side by side: a branching evolution's forms or the abilities (1-3), a fork's two paths or a cursed item's take or leave (1-2). */
+    sideHintKeys: '← → escolher · ENTER confirmar · 1-3 atalho',
+    pairHintKeys: '← → escolher · ENTER confirmar · 1-2 atalho',
     hintTouch: 'Toque para escolher',
     /** The opening draft, before the run's clock starts. */
     draftTitle: (name: string) => `${name}: escolha o 2º golpe!`,
@@ -204,6 +211,8 @@ export const pt = {
     forkTag: '2 CAMINHOS',
     forkHint: (a: string, b: string) => `Caminho: ${a} ou ${b}`,
     branchOf: (move: string) => `Caminho de ${move}`,
+    /** A move the last evolution unlocked, while it still comes up more often. */
+    freshTag: (form: string) => `✦ ${form}`,
     rare: 'RARO! +2 Nv',
     shiny: 'SHINY!',
     shinyNote: 'Escolha grátis: depois tem outra!',
@@ -749,6 +758,8 @@ export const pt = {
     evolving: (name: string) => `Hã? ${name} está evoluindo!`,
     evolved: (from: string, to: string) => `Parabéns! ${from} evoluiu para ${to}!`,
     moveEvolved: (from: string, to: string) => `*${from}* evoluiu para *${to}*!`,
+    /** After an evolution: the moves it unlocked follow, each with its icon. */
+    learns: (form: string) => `${form} pode aprender:`,
     pokeball: (prize: string) => `Poké Ball: ${prize}`,
     pokeballEmpty: 'nada… estava vazia!',
     pokeballLevel: (name: string, level: number) => `${name} Nv ${level}!`,
@@ -852,6 +863,36 @@ export const pt = {
     noteAll: 'Na evolução você escolhe o caminho.',
     choose: (n: number) => `${n} opções`,
     specialNote: 'Na evolução, o especial passa a ser o da forma escolhida.',
+  },
+
+  /** TMs and the Move Tutor (`ui/tmPick.ts`, `game/tms.ts`). */
+  tm: {
+    titleBoss: (boss: string) => `${boss} deixou um TM!`,
+    titleFound: 'Você achou um TM!',
+    titleLegendary: (legend: string) => `TM lendário de ${legend}!`,
+    titleTutor: 'Tutor de Golpes',
+    subBoss: 'Um golpe de fora do seu repertório. Aprender?',
+    subLegendary: 'Só dá para aprender um TM lendário por partida.',
+    subTutor: (free: boolean): string => (free ? 'Ensino um golpe de um tipo que você não tem. A primeira aula é grátis!' : 'Ensino um golpe de um tipo que você não tem. Cobro em ₽ da partida.'),
+    tag: 'TM',
+    free: 'GRÁTIS',
+    wallet: (coins: string) => `Você tem ${coins}`,
+    broke: 'Faltam ₽',
+    pass: 'Deixar pra lá',
+    passTutor: 'Agora não',
+    forgetTitle: (who: string, move: string) => `${who} quer aprender ${move}…`,
+    forgetFull: (who: string) => `…mas ${who} já sabe 6 golpes. Esquecer qual?`,
+    forgetManual: '…mas só dá para ter um golpe manual. Esquecer qual?',
+    keep: (move: string) => `Não aprender ${move}`,
+    poof: ['1, 2 e…', '… … …', 'Puf!'],
+    forgot: (who: string, move: string) => `${who} esqueceu ${move}.`,
+    andLearned: (who: string, move: string) => `E… ${who} aprendeu ${move}!`,
+    learned: (move: string) => `Aprendeu *${move}*!`,
+    learnedInstead: (old: string, move: string) => `Esqueceu _${old}_ e aprendeu *${move}*!`,
+    raised: (move: string, level: number) => `*${move}* subiu para o Nv ${level}!`,
+    mastered: (move: string, coins: string) => `${move} já está no máximo: o TM virou *${coins}*.`,
+    hintKeys: '↑ ↓ escolher · ENTER confirmar',
+    hintTouch: 'Toque para escolher',
   },
 
   /** What each ability does (`ABILITIES`). */
@@ -1028,6 +1069,9 @@ export const pt = {
     meowth: 'Um *Meowth* passou correndo com moedas! Acerte ele!',
     payDay: (coins: string) => `*Pay Day!* Meowth largou ${coins}!`,
     meowthEscaped: 'O *Meowth* fugiu…',
+    tutor: 'Um *Tutor de Golpes* armou a tenda por perto! Fique nela para uma aula.',
+    tutorEmpty: 'O Tutor de Golpes não tem mais nada para te ensinar.',
+    tutorLeft: 'O Tutor de Golpes seguiu viagem…',
   },
   /** Legendary rifts and the endless mode after Mewtwo. */
   rifts: {
@@ -2585,6 +2629,702 @@ export const pt = {
         '+1 onda e recarga 0.3s mais rápida',
       ],
     },
+    fieryDance: {
+      description: 'Chamas dançam para fora em um anel e voltam girando até você. Podem queimar, e cada dança tem 50% de chance de deixar seus golpes 15% mais fortes por 4s.',
+      upgrades: [
+        '+2 chamas',
+        '+3 de dano',
+        { fork: [{ name: 'Labareda', desc: 'Inimigos derrotados explodem; +25% de área' }, { name: 'Faísca', desc: 'O acerto salta para 2 inimigos; +2 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+2 chamas',
+        { fork: [{ name: 'Brasa viva', desc: '×1.35 em alvos com status; +25% de queimar, queima 30% mais' }, { name: 'Bis', desc: 'Dança de novo logo após (50%); +3 de dano' }] },
+        '+4 de dano e +20% de área',
+      ],
+    },
+    overdrive: {
+      description: 'Um riff de guitarra em batidas: anéis elétricos saem de você um após o outro, e a última batida de cada compasso é maior, mais forte e pode paralisar.',
+      upgrades: [
+        '+2 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Solo longo', desc: '×1.35 em alvos com status; +2 batidas' }, { name: 'Distorção', desc: 'O acerto salta para 2 inimigos; +2 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Amplificador', desc: '×1.5 em elites e chefes; +25% de área' }, { name: 'Bis', desc: 'Toca de novo logo após (50%); +25% de paralisia' }] },
+        '+2 batidas e +2 de dano',
+      ],
+    },
+    gigatonHammer: {
+      description: 'Uma martelada gigante no inimigo mais próximo, que treme o chão. O martelo é pesado demais para dois golpes seguidos: depois de cada martelada vem um toque leve.',
+      upgrades: [
+        '+8 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Estilhaços', desc: 'Inimigos derrotados explodem; +6 de dano' }, { name: 'Mão leve', desc: 'Finaliza com ≤12% HP; recarga -0.3s' }] },
+        '+8 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Gigatonelada', desc: '×1.5 em elites e chefes; +10 de dano' }, { name: 'Onda de choque', desc: 'O acerto salta para 2 inimigos; +30% de área' }] },
+        '+10 de dano e recarga 0.2s mais rápida',
+      ],
+    },
+    bitterBlade: {
+      description: 'Um corte de fogo espectral à sua frente que cura você em metade do dano causado. Pode queimar.',
+      upgrades: [
+        '+4 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Lâmina dupla', desc: 'Finaliza com ≤12% HP; um 2º corte volta' }, { name: 'Brasa amarga', desc: 'Inimigos derrotados explodem; +4 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Fogo da alma', desc: '×1.35 em alvos com status; +30% de queimar' }, { name: 'Chama errante', desc: 'O acerto salta para 2 inimigos; +20% de área' }] },
+        '+6 de dano e +15% de área',
+      ],
+    },
+    leechLife: {
+      description: 'Mordidas rápidas e curtinhas no inimigo colado em você, que drenam metade do dano em HP. Só alcança quem está bem perto.',
+      upgrades: [
+        '+2 de dano',
+        'Morde +1 inimigo',
+        { fork: [{ name: 'Sede', desc: 'Finaliza com ≤12% HP; recarga -0.08s' }, { name: 'Contágio', desc: 'A mordida salta para 2 inimigos; +1 de dano' }] },
+        '+2 de dano',
+        '+30% de alcance',
+        { fork: [{ name: 'Enxame', desc: '×1.5 em elites e chefes; morde +1 inimigo' }, { name: 'Sanguessuga', desc: 'Inimigos derrotados explodem; +3 de dano' }] },
+        '+3 de dano',
+      ],
+    },
+    fireFang: {
+      description: 'Uma mordida em chamas no inimigo mais próximo que pode queimar. Quem já está queimando recua por um instante em vez disso.',
+      upgrades: [
+        '+5 de dano',
+        '+15% de chance de queimar',
+        { fork: [{ name: 'Presas gêmeas', desc: '×1.35 em alvos com status; morde +1 inimigo' }, { name: 'Brasa', desc: 'Inimigos derrotados explodem; +4 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+6 de dano',
+        { fork: [{ name: 'Queimadura funda', desc: 'Deixa fogo no chão; queima 40% mais' }, { name: 'Fogo que salta', desc: 'A mordida salta para 2 inimigos; +20% de área' }] },
+        'Morde +1 inimigo e +4 de dano',
+      ],
+    },
+    furySwipes: {
+      description: 'De 2 a 5 arranhões no inimigo colado em você: um a mais a cada ataque seguido perto dos inimigos. Longe da briga, o frenesi esfria.',
+      upgrades: [
+        '+2 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Frenesi', desc: '×1.35 em alvos com status; recarga -0.15s' }, { name: 'Garras longas', desc: 'O arranhão salta para 2 inimigos; +1 de dano' }] },
+        '+2 de dano',
+        '+1 arranhão',
+        { fork: [{ name: 'Fúria', desc: 'Inimigos derrotados explodem; +2 de dano' }, { name: 'Patada', desc: '×1.5 em elites e chefes; +25% de área' }] },
+        '+3 de dano',
+      ],
+    },
+    heavySlam: {
+      description: 'Um pulinho e um baque de aço ao seu redor. Quanto mais defesa e HP máximo você tem, mais forte ele bate (até 3x).',
+      upgrades: [
+        '+6 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Passo pesado', desc: 'Puxa os inimigos; recarga -0.4s' }, { name: 'Estrondo', desc: 'Inimigos derrotados explodem; +4 de dano' }] },
+        '+8 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Ressonância', desc: 'O baque salta para 2 inimigos; +4 de dano' }, { name: 'Peso-pesado', desc: '×1.5 em elites e chefes; +20% de área' }] },
+        '+9 de dano',
+      ],
+    },
+    bulldoze: {
+      description: 'Uma onda de terra rola à sua frente e deixa lento todo inimigo por onde passa.',
+      upgrades: [
+        '+4 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Duas frentes', desc: '×1.35 em alvos com status; +1 onda em leque' }, { name: 'Desmoronamento', desc: 'Inimigos derrotados explodem; +3 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Muralha', desc: 'Puxa os inimigos; +30% de área' }, { name: 'Tremor', desc: 'O acerto salta para 2 inimigos; +3 de dano e mais rápida' }] },
+        '+1 onda e +4 de dano',
+      ],
+    },
+    perishSong: {
+      description: 'Um canto marca todos os inimigos na tela. 3s depois, os marcados recebem 24 de dano (chefes perdem 6% do HP máximo), sem barreira nem resistência.',
+      upgrades: [
+        '+8 de dano',
+        'Recarga 1s mais rápida',
+        { fork: [{ name: 'Réquiem', desc: '×1.5 em elites e chefes; +12 de dano' }, { name: 'Refrão', desc: 'Finaliza com ≤12% HP; recarga -1.5s' }] },
+        '+10 de dano',
+        'Recarga 1s mais rápida',
+        { fork: [{ name: 'Último verso', desc: 'Inimigos derrotados explodem; +8 de dano' }, { name: 'Coro ligeiro', desc: '×1.35 em alvos com status; recarga -2s, -6 de dano' }] },
+        '+12 de dano',
+      ],
+    },
+    chargeBeam: {
+      description: 'Um raio elétrico em linha reta até o inimigo mais próximo. Tem 70% de chance de deixar seus golpes 10% mais fortes por 5s.',
+      upgrades: [
+        '+4 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Feixe duplo', desc: '×1.5 em elites e chefes; +1 raio em leque' }, { name: 'Faíscas', desc: 'O acerto salta para 2 inimigos; +3 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Longo alcance', desc: 'Finaliza com ≤12% HP; +30% de alcance' }, { name: 'Sobrecarga', desc: 'Inimigos derrotados explodem; +5 de dano' }] },
+        '+1 raio e +3 de dano',
+      ],
+    },
+    moonblast: {
+      description: 'Uma lua lenta atravessa 2 inimigos e explode em luar a cada acerto. Pode enfraquecer: o inimigo causa 30% menos dano por 3s.',
+      upgrades: [
+        '+5 de dano',
+        '+20% de chance de enfraquecer',
+        { fork: [{ name: 'Lua cheia', desc: '×1.35 em alvos com status; atravessa +2' }, { name: 'Lua guia', desc: 'Persegue o alvo; +3 de dano' }] },
+        'Recarga 0.25s mais rápida',
+        '+6 de dano',
+        { fork: [{ name: 'Lua dupla', desc: 'Racha em 2 ao acertar; +1 lua' }, { name: 'Superlua', desc: '×1.5 em elites e chefes; +30% de área' }] },
+        '+6 de dano e +15% de área',
+      ],
+    },
+    frostBreath: {
+      description: 'Um sopro gelado em cone que pode deixar lento. Contra inimigos lentos ou congelados, todo acerto é crítico (2.2x).',
+      upgrades: [
+        '+2 de dano',
+        '+2 sopros',
+        { fork: [{ name: 'Ar gélido', desc: 'Finaliza com ≤12% HP; +30% de lentidão' }, { name: 'Cristais', desc: 'O acerto salta para 2 inimigos; +2 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Nevasca', desc: 'Puxa os inimigos; +30% de área' }, { name: 'Rajada', desc: '×1.5 em elites e chefes; +2 sopros' }] },
+        '+3 de dano e +10% de chance de deixar lento',
+      ],
+    },
+    avalanche: {
+      description: 'Uma avalanche de neve despenca sobre o inimigo mais próximo e pode deixar lento. Se você levou dano desde a última, ela bate 2x mais forte.',
+      upgrades: [
+        '+4 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Duas encostas', desc: '×1.5 em elites e chefes; +1 avalanche' }, { name: 'Bola de neve', desc: 'Inimigos derrotados explodem; +4 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Deslizamento', desc: 'Finaliza com ≤12% HP; +25% de área' }, { name: 'Estilhaços de gelo', desc: 'O acerto salta para 2 inimigos; +3 de dano' }] },
+        '+5 de dano e +1 avalanche',
+      ],
+    },
+    rockSlide: {
+      description: 'Pedras despencam uma atrás da outra numa linha até o inimigo mais próximo.',
+      upgrades: [
+        '+1 pedra',
+        '+5 de dano',
+        { fork: [{ name: 'Desmoronamento', desc: 'Quem cai explode em pedras; +3 de dano' }, { name: 'Avalanche', desc: '+2 pedras e cai de novo (50%); -3 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+6 de dano',
+        { fork: [{ name: 'Entulho', desc: 'Deixa o chão em cacos que machucam; +25% de área' }, { name: 'Lascas', desc: 'Os acertos saltam para 2 vizinhos; +4 de dano' }] },
+        '+2 pedras e +5 de dano',
+      ],
+    },
+    yawn: {
+      description: 'Uma bolha de bocejo flutua até o maior grupo e estoura: quem estiver nela cai no sono. Quem já dorme leva dano em dobro.',
+      upgrades: [
+        '+15% de área',
+        '+4 de dano',
+        { fork: [{ name: 'Bocejo duplo', desc: 'Boceja de novo logo após (50%); +1 de dano' }, { name: 'Bolha pesada', desc: 'Quem cai explode; +20% de área e +2 de dano' }] },
+        'Recarga 0.4s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Ronco', desc: 'Os estouros saltam para 2 vizinhos; +4 de dano' }, { name: 'Soneca coletiva', desc: '+1 bolha; deixam o chão sonolento' }] },
+        '+1 bolha e +4 de dano',
+      ],
+    },
+    iceBeam: {
+      description: 'Um raio de gelo reto no inimigo mais próximo. Pode congelar: o próximo golpe no congelado causa ×2 e o estilhaça.',
+      upgrades: [
+        '+5 de dano',
+        '+10% de chance de congelar',
+        { fork: [{ name: 'Raio duplo', desc: '+1 raio; deixam gelo no chão; -3 de dano' }, { name: 'Eco gélido', desc: 'Dispara de novo logo após (50%); +20% de área' }] },
+        'Recarga 0.2s mais rápida',
+        '+6 de dano',
+        { fork: [{ name: 'Prisma', desc: 'Os acertos saltam para 2 vizinhos; +4 de dano' }, { name: 'Estilhaço', desc: 'Quem cai explode; +15% de chance de congelar' }] },
+        '+1 raio e +4 de dano',
+      ],
+    },
+    discharge: {
+      description: 'Você se carrega andando: a descarga ao seu redor cresce com o quanto andou desde a última (até ×1.5 de dano e o dobro do tamanho). Pode paralisar.',
+      upgrades: [
+        '+6 de dano',
+        '+15% de área',
+        { fork: [{ name: 'Arco voltaico', desc: 'Os acertos saltam para 2 vizinhos; +15% de paralisia' }, { name: 'Sobrecarga', desc: 'Quem cai explode; +4 de dano' }] },
+        'Recarga 0.15s mais rápida',
+        '+7 de dano',
+        { fork: [{ name: 'Eco elétrico', desc: 'Descarrega de novo logo após (50%); +15% de área' }, { name: 'Alta tensão', desc: '+5 de dano; deixa o chão eletrificado' }] },
+        '+8 de dano e +15% de área',
+      ],
+    },
+    heatWave: {
+      description: 'Uma meia-lua de ar escaldante avança até os inimigos, alargando no caminho e queimando tudo o que cruza.',
+      upgrades: [
+        '+4 de dano',
+        '+10% de chance de queimar',
+        { fork: [{ name: 'Labareda', desc: 'A onda racha em 2 ao acertar; -2 de dano' }, { name: 'Calor dos dois lados', desc: 'Também sopra para trás; +2 de dano' }] },
+        'Recarga 0.25s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Combustão', desc: 'Quem cai explode; queimadura +30%' }, { name: 'Mormaço', desc: 'Sopra de novo logo após (50%); +3 de dano' }] },
+        '+1 onda e +5 de dano',
+      ],
+    },
+    thunderFang: {
+      description: 'Presas elétricas mordem os inimigos mais próximos. Pode paralisar; causa ×1.6 em paralisados. Conta como mordida.',
+      upgrades: [
+        '+4 de dano',
+        '+1 mordida',
+        { fork: [{ name: 'Faísca', desc: 'As mordidas saltam para 2 vizinhos; +15% de paralisia' }, { name: 'Curto-circuito', desc: 'Quem cai explode; +5 de dano' }] },
+        'Recarga 0.1s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Mordida dupla', desc: '+1 mordida e morde de novo logo após (50%)' }, { name: 'Mandíbula', desc: '+6 de dano; deixa o chão eletrificado' }] },
+        '+1 mordida e +4 de dano',
+      ],
+    },
+    lavaPlume: {
+      description: 'A lava explode do chão num anel ao seu redor e forma poças que queimam quem pisa nelas.',
+      upgrades: [
+        '+1 jato',
+        '+4 de dano',
+        { fork: [{ name: 'Magma', desc: 'Poças +1.2s e espalham mais lava' }, { name: 'Erupção', desc: 'Quem cai explode; +3 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Tremor', desc: 'Explode de novo logo após (50%); +25% de área' }, { name: 'Brasa viva', desc: 'Jatos saltam para 2 vizinhos; poças +0.8s' }] },
+        '+2 jatos e +4 de dano',
+      ],
+    },
+    auroraBeam: {
+      description: 'Um raio de arco-íris varre o arco à sua frente e pode enfraquecer os inimigos (causam 30% menos dano de contato).',
+      upgrades: [
+        '+4 de dano',
+        '+15% de chance de enfraquecer',
+        { fork: [{ name: 'Aurora dupla', desc: '+1 raio atrás de você; quem cai explode' }, { name: 'Reflexo', desc: 'Varre de novo logo após (50%); +20% de área' }] },
+        'Recarga 0.25s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Refração', desc: 'Os acertos saltam para 2 vizinhos; +4 de dano' }, { name: 'Aurora boreal', desc: 'Uma 2ª aurora maior varre ao contrário' }] },
+        '+6 de dano e +15% de área',
+      ],
+    },
+    meteorBeam: {
+      description: 'Meteoros se juntam ao seu redor enquanto você carrega, e a carga aumenta o seu poder: +6% de dano (mais a cada nível) e um pouco de velocidade por 4s. Depois eles voam nos inimigos.',
+      upgrades: [
+        '+1 meteoro',
+        '+4 de dano',
+        { fork: [{ name: 'Fragmentos', desc: 'Racham em 2 ao acertar; +3 de dano' }, { name: 'Ricochete', desc: '+1 meteoro; ricocheteiam em mais 2 inimigos' }] },
+        'Recarga 0.2s mais rápida',
+        '+5 de dano',
+        { fork: [{ name: 'Cratera', desc: '+1 meteoro; quem cai explode' }, { name: 'Rastro cadente', desc: 'Deixam cacos no chão que machucam; +4 de dano' }] },
+        '+2 meteoros',
+      ],
+    },
+    icyWind: {
+      description: 'Um vento gelado sopra na direção em que você anda: desacelera e empurra tudo o que toca.',
+      upgrades: [
+        '+1 rajada',
+        '+3 de dano',
+        { fork: [{ name: 'Redemoinho', desc: 'Também sopra para trás; +2 de dano' }, { name: 'Nevasca', desc: '+30% de área; racham em 2 ao acertar' }] },
+        'Recarga 0.25s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Geada', desc: 'Quem cai explode; +2 de dano' }, { name: 'Vendaval', desc: '+2 rajadas e sopra de novo logo após (50%)' }] },
+        '+2 rajadas e +3 de dano',
+      ],
+    },
+    ironHead: {
+      description: 'Seu corpo vira ferro por 2.5s: +2 de defesa, quem encosta leva dano e pode ficar atordoado, e o primeiro golpe que você levar é bloqueado e volta como estilhaços de aço.',
+      upgrades: [
+        '+6 de dano',
+        'Dura +0.5s',
+        { fork: [{ name: 'Estilhaços', desc: '+4 estilhaços; quem cai no ferro explode' }, { name: 'Reflexo de aço', desc: 'Recarga −0.8s e endurece de novo; -4 de dano' }] },
+        '+8 de dano',
+        'Dura +0.5s',
+        { fork: [{ name: 'Cabeça dura', desc: '+8 de dano; o impacto salta para 2 vizinhos' }, { name: 'Intimidar', desc: '+25% de atordoar; deixa um rastro de aço' }] },
+        '+10 de dano e recarga 0.5s mais rápida',
+      ],
+    },
+    psystrike: {
+      description: 'Esferas psíquicas se juntam ao seu redor e cada uma atinge um inimigo diferente, atravessando tudo, até escudos.',
+      upgrades: [
+        '+1 esfera',
+        '+5 de dano',
+        { fork: [{ name: 'Retorno', desc: 'As esferas voltam e acertam de novo; +3 de dano' }, { name: 'Mira mental', desc: '+1 esfera e elas perseguem; -3 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+6 de dano',
+        { fork: [{ name: 'Onda dupla', desc: '+1 esfera; também atira para trás' }, { name: 'Divisão', desc: 'Racham em 2 ao acertar; +5 de dano' }] },
+        '+1 esfera e +5 de dano',
+      ],
+    },
+    ragingFury: {
+      description: 'Você avança em fúria, envolto em chamas: o manto queima quem encosta enquanto você anda, o rastro vira uma estrada em brasa e, a cada poucos passos, a fúria explode numa nova de fogo. Parado, só fumega. Pode queimar.',
+      upgrades: [
+        '+4 de dano',
+        'Chamas duram +0.6s e +15% de área',
+        '+5 de dano e +15% de chance de queimar',
+        '+5 de dano e +20% de área',
+      ],
+    },
+    seedFlare: {
+      description: 'Um pequeno sol cresce sobre você e explode em raios que varrem o círculo inteiro; onde eles terminam, sementes de luz desabrocham em explosões. Sob sol forte, os raios dão duas voltas.',
+      upgrades: [
+        '+10 de dano',
+        '+1 raio',
+        '+20% de área',
+        '+12 de dano e recarga 0.4s mais rápida',
+      ],
+    },
+    waterSpout: {
+      description: 'Um gêiser jorra de você e chove gotas pesadas sobre os inimigos mais feridos à vista. Quanto mais HP você tem, mais forte a chuva; quem está abaixo de 50% do HP leva o dobro.',
+      upgrades: [
+        '+2 gotas',
+        '+8 de dano',
+        '+25% de área',
+        '+2 gotas e recarga 0.2s mais rápida',
+      ],
+    },
+    electroDrift: {
+      description: 'Orbes elétricos saem de você numa espiral cada vez mais larga, ligados por raios que ferem quem fica entre eles. Quanto mais veloz você é, maiores e mais fortes. Pode paralisar.',
+      upgrades: [
+        '+1 orbe',
+        '+7 de dano',
+        'Duram +0.4s e +20% de área',
+        '+1 orbe e +15% de chance de paralisar',
+      ],
+    },
+    sludgeWave: {
+      description: 'Ondas de lodo rolam de você, uma após a outra, e podem envenenar. Inimigos já envenenados levam o dobro e explodem num gêiser tóxico que envenena quem está perto.',
+      upgrades: [
+        '+3 de dano',
+        '+1 onda',
+        '+20% de área e +15% de chance de envenenar',
+        '+3 de dano e recarga 0.3s mais rápida',
+      ],
+    },
+    explosion: {
+      description: 'Manual: custa um quinto do seu HP atual por uma explosão colossal, e você fica a salvo dentro dela. Cada inimigo que ela derruba explode também, e essas explosões podem derrubar mais.',
+      upgrades: [
+        '+25 de dano',
+        '+15% de área',
+        'Recarga 1.2s mais rápida',
+        '+30 de dano e +15% de área',
+      ],
+    },
+    oblivionWing: {
+      description: 'Asas carmesim se abrem atrás de você e disparam raios nos inimigos mais próximos, drenando metade do dano em HP. Parado por um instante, o dobro de raios.',
+      upgrades: [
+        '+9 de dano',
+        '+1 raio',
+        'Recarga 0.2s mais rápida',
+        '+1 raio e +9 de dano',
+      ],
+    },
+    skyUppercut: {
+      description: 'Carrega como Focus Punch (levar dano zera a carga), mas o soco vem de baixo: um punho colossal irrompe do chão sob os inimigos mais fortes à vista, chefes primeiro, com uma onda de choque ao redor.',
+      upgrades: [
+        '+20 de dano',
+        '+1 punho',
+        '+20% de área',
+        '+24 de dano e +1 punho',
+      ],
+    },
+    gearGrind: {
+      description: 'Engrenagens gigantes rolam até os inimigos mais próximos, moendo tudo no caminho, e voltam até você. Como Gyro Ball, saem com mais força quanto mais devagar você anda.',
+      upgrades: [
+        '+6 de dano',
+        '+20% de área',
+        '+1 engrenagem',
+        '+7 de dano e recarga 0.25s mais rápida',
+      ],
+    },
+    kowtowCleave: {
+      description: 'Como Sucker Punch, vigia o chão ao seu redor: quem entra leva um golpe de lâmina que varre todo o arco na direção dele. Nunca erra: atravessa escudos.',
+      upgrades: [
+        '+10 de dano',
+        '+1 corte',
+        '+20% de área',
+        '+11 de dano e recarga 0.12s mais rápida',
+      ],
+    },
+    hyperspaceHole: {
+      description: 'Anéis se abrem no espaço sobre os grupos mais densos à vista e puxam os inimigos ao redor para dentro; depois cada um desaba numa explosão.',
+      upgrades: [
+        '+14 de dano',
+        '+1 anel',
+        '+20% de área e puxam por +0.3s',
+        '+16 de dano e recarga 0.5s mais rápida',
+      ],
+    },
+    thousandArrows: {
+      description: 'Uma saraivada de flechas sobe do chão ao seu redor e chove sobre os inimigos mais distantes ao alcance. Derruba quem voa: inimigos voadores levam o dobro.',
+      upgrades: [
+        '+3 flechas',
+        '+9 de dano',
+        '+25% de área',
+        '+3 flechas e recarga 0.2s mais rápida',
+      ],
+    },
+    stoneAxe: {
+      description: 'Um grande machado de pedra desce sobre o inimigo mais próximo e o impacto espalha lascas flutuantes ao redor, como Stealth Rock: elas ferem quem passa por elas.',
+      upgrades: [
+        '+10 de dano',
+        '+1 lasca',
+        'Lascas duram +4s e +15% de área',
+        '+12 de dano e +1 lasca',
+      ],
+    },
+    firstImpression: {
+      description: 'Manual: um zigue-zague de investidas, cada uma atravessando o próximo inimigo mais próximo, intocável o tempo todo, terminando numa explosão onde você para.',
+      upgrades: [
+        '+9 de dano',
+        '+1 investida',
+        'Recarga 0.3s mais rápida',
+        '+10 de dano e +1 investida',
+      ],
+    },
+    breakingSwipe: {
+      description: 'A cauda dá mais de uma volta inteira ao seu redor: todo inimigo ao alcance é atingido, enfraquecido (machuca menos ao encostar) e arremessado, ferindo quem ele atingir.',
+      upgrades: [
+        '+8 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+10 de dano e +15% de área',
+      ],
+    },
+    glacialLance: {
+      description: 'Lanças colossais de gelo atravessam a horda em linha reta: estilhaçam na hora inimigos comuns abaixo de 25% do HP e podem congelar os outros; no fim do voo, explodem em geada.',
+      upgrades: [
+        '+1 lança',
+        '+10 de dano',
+        '+20% de área e +15% de chance de congelar',
+        '+1 lança e recarga 0.3s mais rápida',
+      ],
+    },
+    braveBird: {
+      description: 'Mergulha em linha reta pela fileira com mais inimigos, envolto em asas de fogo azul. Cada inimigo atingido custa 2% do seu HP máximo (no máximo 6% por mergulho, nunca o último ponto).',
+      upgrades: [
+        '+6 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Pouso explosivo', desc: 'Inimigos derrotados explodem; +6 de dano' }, { name: 'Rastro de penas', desc: 'Deixa o chão cortante pelo caminho; recarga 0.3s mais rápida' }] },
+        '+6 de dano',
+        'Recarga 0.3s mais rápida',
+        { fork: [{ name: 'Asa elétrica', desc: 'Faíscas saltam para inimigos próximos; +4 de dano' }, { name: 'Segundo voo', desc: 'Mergulha de novo logo após (50%); -4 de dano' }] },
+        '+8 de dano e +20% de área',
+      ],
+    },
+    weatherBall: {
+      description: 'Arremessa uma bola no inimigo mais próximo que muda com o clima: Normal no céu limpo, Fogo que queima no sol, Água que deixa lento na chuva, Pedra que enfraquece na areia e Gelo que pode congelar na neve. Com clima, causa ×1.5.',
+      upgrades: [
+        '+4 de dano',
+        '+1 bola',
+        { fork: [{ name: 'Frente fria', desc: 'Inimigos derrotados explodem; +4 de dano' }, { name: 'Clima local', desc: 'Deixa o chão do clima onde cai; +25% de área' }] },
+        'Recarga 0.25s mais rápida',
+        '+4 de dano e +15% de área',
+        { fork: [{ name: 'Chuva de bolas', desc: '+1 bola; ×1.5 em elites e chefes' }, { name: 'Frente dupla', desc: 'Arremessa de novo logo após (50%); -3 de dano' }] },
+        '+5 de dano e +15% de chance de efeito',
+      ],
+    },
+    accelerock: {
+      description: 'Um borrão de pedra sai de você e acerta na hora o inimigo mais próximo, atingindo também quem estiver no caminho. Recarga muito curta.',
+      upgrades: [
+        '+2 de dano',
+        'Recarga 0.08s mais rápida',
+        { fork: [{ name: 'Estilhaço', desc: 'Lascas saltam para inimigos próximos; +1 de dano' }, { name: 'Impacto', desc: 'Inimigos derrotados explodem; +3 de dano' }] },
+        '+3 de dano',
+        '+1 investida',
+        { fork: [{ name: 'Matilha', desc: '+1 investida e ×1.35 em alvos com status; -1 de dano' }, { name: 'Eco de pedra', desc: 'Investe de novo logo após (50%); recarga mais rápida' }] },
+        '+4 de dano e recarga 0.06s mais rápida',
+      ],
+    },
+    zapCannon: {
+      description: 'Uma esfera elétrica enorme e lenta atravessa a horda, eletrocutando e sempre paralisando quem ela toca.',
+      upgrades: [
+        '+3 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Teleguiado', desc: 'A esfera persegue o inimigo mais próximo; +2 de dano' }, { name: 'Campo elétrico', desc: 'Deixa o chão eletrificado pelo caminho; +15% de área' }] },
+        'Recarga 0.4s mais rápida',
+        '+4 de dano',
+        { fork: [{ name: 'Arco voltaico', desc: 'Faíscas saltam para inimigos próximos; +2 de dano' }, { name: 'Canhão duplo', desc: '+1 esfera e acertos curam você; -3 de dano' }] },
+        '+5 de dano e +20% de área',
+      ],
+    },
+    aerialAce: {
+      description: 'Cortes de vento rápidos nos inimigos mais próximos que nunca erram: atravessam escudos e acertam tipos resistentes como neutros.',
+      upgrades: [
+        '+3 de dano',
+        '+1 corte',
+        { fork: [{ name: 'Revoada', desc: '+1 corte; ×1.5 em elites e chefes' }, { name: 'Golpe de misericórdia', desc: 'Inimigos derrotados explodem; +5 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+4 de dano',
+        { fork: [{ name: 'Duplo corte', desc: 'Corta de novo logo após (50%); -3 de dano' }, { name: 'Vento cortante', desc: 'Faíscas de vento saltam para inimigos próximos; +2 de dano' }] },
+        '+1 corte e +4 de dano',
+      ],
+    },
+    crossPoison: {
+      description: 'Duas lâminas de veneno se cruzam em X no inimigo mais próximo. Pode envenenar. Um em cada quatro é crítico: ×2 de dano.',
+      upgrades: [
+        '+4 de dano',
+        '+15% de chance de envenenar',
+        { fork: [{ name: 'Veneno no chão', desc: 'Deixa uma poça venenosa; +20% de chance de envenenar' }, { name: 'Golpe letal', desc: 'Inimigos derrotados explodem; +6 de dano' }] },
+        '+20% de área',
+        '+1 X',
+        { fork: [{ name: 'Cruz dupla', desc: 'Corta de novo logo após (50%); -3 de dano' }, { name: 'Toxina saltitante', desc: 'Faíscas de veneno saltam para inimigos próximos; +20% de área' }] },
+        '+6 de dano e veneno 30% mais forte',
+      ],
+    },
+    bubbleBeam: {
+      description: 'Um jato de bolhas no inimigo mais próximo; cada bolha que estoura deixa o alvo lento.',
+      upgrades: [
+        '+2 bolhas',
+        '+2 de dano',
+        { fork: [{ name: 'Espuma', desc: 'As bolhas racham em 2 ao acertar; -1 de dano' }, { name: 'Bolhas guiadas', desc: 'As bolhas perseguem os inimigos; voam mais devagar' }] },
+        '+2 bolhas',
+        '+2 de dano e +20% de área',
+        { fork: [{ name: 'Ricochete', desc: 'As bolhas ricocheteiam para outro inimigo; +1 de dano' }, { name: 'Jato duplo', desc: 'Também atira para trás; recarga +0.1s' }] },
+        '+3 bolhas e +1 de dano',
+      ],
+    },
+    rockBlast: {
+      description: 'Dispara de 2 a 5 pedras seguidas no inimigo mais próximo (sorteado a cada vez; as melhorias somam mais).',
+      upgrades: [
+        '+3 de dano',
+        'Recarga 0.15s mais rápida',
+        { fork: [{ name: 'Cascalho', desc: 'As pedras racham em 2 ao acertar; -2 de dano' }, { name: 'Quicar', desc: 'As pedras ricocheteiam para outro inimigo; +3 de dano' }] },
+        '+1 pedra',
+        '+4 de dano e +15% de área',
+        { fork: [{ name: 'Pedra explosiva', desc: 'Inimigos derrotados explodem; +2 de dano' }, { name: 'Pedras guiadas', desc: 'As pedras perseguem os inimigos; voam mais devagar' }] },
+        '+1 pedra e +4 de dano',
+      ],
+    },
+    cottonSpore: {
+      description: 'Uma nuvem fofa de algodão pousa no maior grupo de inimigos e fica ali: quem estiver dentro anda devagar demais.',
+      upgrades: [
+        '+20% de área',
+        'Dura +1s',
+        { fork: [{ name: 'Flocos de novo', desc: 'Solta outra nuvem logo após (50%); +2 de dano' }, { name: 'Algodão estático', desc: 'Faíscas saltam para inimigos próximos; +3 de dano' }] },
+        'Recarga 0.6s mais rápida',
+        '+20% de área e +2 de dano',
+        { fork: [{ name: 'Duas nuvens', desc: '+1 nuvem em outro grupo; puxam os inimigos para dentro' }, { name: 'Algodão explosivo', desc: 'Inimigos derrotados explodem; +30% de área' }] },
+        'Dura +1.5s e +2 de dano',
+      ],
+    },
+    wildCharge: {
+      description: 'Envolto em eletricidade, você corre mais rápido e seu corpo dá choque em todo inimigo que tocar. Cada choque custa 1% do seu HP máximo (no máximo 5% por investida).',
+      upgrades: [
+        '+4 de dano',
+        'Dura +0.4s',
+        { fork: [{ name: 'Rastro de faíscas', desc: 'Deixa o chão eletrificado por onde passa; +1 de dano' }, { name: 'Curto-circuito', desc: 'Inimigos derrotados explodem; +4 de dano' }] },
+        'Recarga 0.5s mais rápida',
+        '+5 de dano e +10% de chance de paralisar',
+        { fork: [{ name: 'Fôlego', desc: 'Dura +0.6s e os choques curam você' }, { name: 'Raio em cadeia', desc: 'Faíscas saltam para inimigos próximos; +2 de dano' }] },
+        '+6 de dano e +20% de área',
+      ],
+    },
+    playRough: {
+      description: 'Uma nuvem de briga de desenho animado explode no inimigo mais próximo (estrelas, socos, um coração): golpes rápidos que podem enfraquecer o alvo (causa menos dano ao encostar).',
+      upgrades: [
+        '+2 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Bagunça', desc: '+1 nuvem em outro inimigo; ×1.35 em alvos com status' }, { name: 'Briga feia', desc: 'Inimigos derrotados explodem; +2 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Revanche', desc: 'Briga de novo logo após (50%); -1 de dano' }, { name: 'Provocação', desc: '+25% de chance de enfraquecer, +20% de área; puxa os inimigos' }] },
+        '+1 nuvem e +2 de dano',
+      ],
+    },
+    spore: {
+      description: 'Uma nuvem de esporos ao seu redor faz os inimigos dormirem. Não causa dano, então eles só acordam quando outro golpe acertar.',
+      upgrades: [
+        '+20% de área',
+        '+10% de chance de sono',
+        { fork: [{ name: 'Esporo tóxico', desc: 'Quem dorme também fica envenenado' }, { name: 'Esporo pesado', desc: '+30% de área; quem dorme acorda lento' }] },
+        'O sono dura +0.5s',
+        'Recarga 0.8s mais rápida',
+        { fork: [{ name: 'Esporo duplo', desc: 'Solta outra nuvem logo após; recarga 0.4s mais rápida' }, { name: 'Pó dos sonhos', desc: 'Quem dorme fica marcado e recebe mais dano' }] },
+        '+20% de área e o sono dura +0.5s',
+      ],
+    },
+    waterfall: {
+      description: 'Colunas de água sobem uma após a outra em linha até o inimigo mais próximo, fazendo quem é atingido recuar. Fraco como Magikarp; depois de evoluir, uma torrente.',
+      upgrades: [
+        '+4 de dano',
+        '+1 coluna',
+        { fork: [{ name: 'Cachoeira longa', desc: '+2 colunas; ×1.5 em elites e chefes' }, { name: 'Correnteza', desc: 'Inimigos derrotados explodem; +5 de dano' }] },
+        'Recarga 0.3s mais rápida',
+        '+5 de dano e +15% de área',
+        { fork: [{ name: 'Dupla queda', desc: 'Sobe de novo logo após (50%); -3 de dano' }, { name: 'Respingos', desc: 'Gotas saltam para inimigos próximos; +20% de área' }] },
+        '+7 de dano e +1 coluna',
+      ],
+    },
+    lastResort: {
+      description: 'Uma pancada estelar colossal no inimigo mais próximo. Só tem força total com 4 outros golpes aprendidos (antes disso, é só um tapinha).',
+      upgrades: [
+        '+8 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Tudo ou nada', desc: '+10 de dano; ×1.5 em elites e chefes' }, { name: 'Supernova', desc: 'Inimigos derrotados explodem; +30% de área' }] },
+        'Recarga 0.4s mais rápida',
+        '+10 de dano',
+        { fork: [{ name: 'Sem descanso', desc: 'Recarga 0.3s mais rápida; derrota na hora quem fica com pouco HP' }, { name: 'Bis', desc: 'Golpeia de novo logo após (50%); -8 de dano' }] },
+        '+12 de dano e +20% de área',
+      ],
+    },
+    firePledge: {
+      description: 'Pilares de fogo irrompem num anel ao seu redor e o chão de dentro vira um mar de fogo que queima quem fica nele.',
+      upgrades: [
+        '+2 pilares e +10 de dano',
+        'O mar de fogo dura +1s e +15% de área',
+        '+16 de dano e queimaduras +25% mais fortes',
+        '+2 pilares e recarga 0.4s mais rápida',
+      ],
+    },
+    waterPledge: {
+      description: 'Gêiseres explodem sob as multidões e um arco-íris surge: enquanto brilha, seus golpes têm +25% de chance de status.',
+      upgrades: [
+        '+1 gêiser e +10 de dano',
+        'O arco-íris dura +1.2s',
+        '+25% de área e +12 de dano',
+        '+2 gêiseres e recarga 0.35s mais rápida',
+      ],
+    },
+    grassPledge: {
+      description: 'Um pântano se espalha ao seu redor e anda com você, atolando todo inimigo nele, e pilares de cipó irrompem sob os que ele prende.',
+      upgrades: [
+        '+1 pilar e +7 de dano',
+        '+20% de área do pântano',
+        '+10 de dano',
+        '+2 pilares e recarga 0.3s mais rápida',
+      ],
+    },
+    fusionFlare: {
+      description: 'Um cometa de fogo branco cai na maior multidão, explode e deixa o chão em brasa. Queima.',
+      upgrades: [
+        '+1 cometa',
+        '+18 de dano e +15% de área',
+        'Brasas duram +1s e +15% de chance de queimar',
+        '+1 cometa e recarga 0.4s mais rápida',
+      ],
+    },
+    fusionBolt: {
+      description: 'Um cometa de raios cai na maior multidão, explode e deixa o chão eletrizado. Paralisa.',
+      upgrades: [
+        '+1 cometa',
+        '+36 de dano e +15% de área',
+        'Faíscas duram +1s e +15% de chance de paralisar',
+        '+1 cometa e recarga 0.4s mais rápida',
+      ],
+    },
+    ionDeluge: {
+      description: 'Poças caem sob os inimigos e conduzem: todas eletrocutam juntas quem estiver nelas, com arcos entre si. Na chuva, +1 poça.',
+      upgrades: [
+        '+1 poça',
+        '+9 de dano e poças duram +1s',
+        '+25% de área e +10% de chance de paralisar',
+        '+1 poça e recarga 0.3s mais rápida',
+      ],
+    },
+    freezeDry: {
+      description: 'Uma névoa gelada se espalha ao seu redor e congela os inimigos (o próximo golpe causa o dobro e quebra o gelo). ×1.4 em congelados.',
+      upgrades: [
+        '+1 onda de névoa',
+        '+6 de dano e +15% de chance de congelar',
+        '+25% de área',
+        '+15% de área e recarga 0.3s mais rápida',
+      ],
+    },
+    nightmare: {
+      description: 'Um Hex em cadeia que envenena, e uma caveira que morde cada alvo de novo logo depois: ×2 em quem tem status e ×1.5 a mais se envenenado.',
+      upgrades: [
+        '+2 alvos',
+        '+14 de dano e +15% de chance de envenenar',
+        '+25% de alcance e veneno +25% mais forte',
+        '+2 alvos e recarga 0.3s mais rápida',
+      ],
+    },
     /* Legendary moves (`legendaryMoves.ts`) */
     whirlwind: {
       description: 'Um ciclone prateado de Lugia se ergue sobre a maior multidão e vaga pelo campo, puxando os inimigos para o olho da tempestade. No fim, explode numa rajada que arremessa todos para longe.',
@@ -2908,6 +3648,34 @@ export const pt = {
     doubleEdge: 'Doze mergulhos aéreos caem nos inimigos mais próximos.',
   },
 
+
+  /** Duo moves (`game/duoRules.ts`): the level-up card, the pause screen's recipes and the toast. */
+  duo: {
+    tag: 'DUO!',
+    frees: 'Libera 1 espaço de golpe · só 1 por partida',
+    title: 'Golpes em dupla',
+    legend: 'Dois golpes no nível máximo (ou evoluídos) dos tipos indicados se unem num golpe em dupla. Só 1 por partida.',
+    done: 'FEITO',
+    fused: (a: string, b: string, to: string) => `*${a}* e *${b}* se uniram: *${to}*!`,
+  },
+
+  /** Cursed items (`data/curses.ts`): what each gives and costs, the chest's choice and the toasts. */
+  curses: {
+    lifeOrb: { upside: '+30% de dano.', downside: 'Cada golpe lançado custa 1% do HP (no máx. 1 vez por segundo; para em 1 HP).' },
+    choiceBand: { upside: '+40% de dano.', downside: 'Você não aprende golpes novos: só melhora os que já tem.' },
+    flameOrb: { upside: '+25% de dano e +10% de chance de status.', downside: 'Você fica queimado: perde 0,7% do HP por segundo (para em 1 HP).' },
+    ironBall: { upside: '+30% de dano e +1 de defesa.', downside: 'Pesada: −13 de velocidade.' },
+  } satisfies Record<CurseId, { upside: string; downside: string }>,
+  curse: {
+    title: 'Item amaldiçoado!',
+    subtitle: 'No fundo do baú há algo poderoso… com um preço.',
+    take: 'Pegar',
+    leave: 'Deixar',
+    note: 'Não ocupa espaço de item e fica até o fim da partida.',
+    label: 'AMALDIÇOADO',
+    taken: (name: string) => `Você pegou *${name}*… _o poder tem um preço_.`,
+    left: (name: string) => `Você deixou *${name}* no baú.`,
+  },
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {
     healer: (name: string) => `*${name}* cura os aliados por perto. Derrube primeiro!`,
