@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    pr: 95,
     title: { pt: 'Lugares para explorar: caverna, cemitério e céu', en: 'Places to explore: a cave, a graveyard and the sky', es: 'Lugares para explorar: cueva, cementerio y cielo' },
     notes: [
       {
