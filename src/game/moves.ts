@@ -737,7 +737,7 @@ export const MOVES = {
           move: 'earthquake', type: 'ground', visual: 'quake', x: p.x, y: p.y,
           shape: { kind: 'circle', r: 8 },
           motion: { kind: 'static' },
-          damage: s.damage, knockback: s.knockback, ttl: s.duration, grow: (84 * s.area) / s.duration,
+          damage: s.damage, knockback: s.knockback, ttl: s.duration, grow: (72 * s.area) / s.duration,
           age: -i * 0.35,
         })
       }
