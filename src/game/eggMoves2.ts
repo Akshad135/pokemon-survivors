@@ -103,6 +103,8 @@ const withChance = (spec: StatusSpec, s: CastStats): StatusSpec => ({ ...spec, c
 const took = (path: number, index: number) => (path >> index) & 1
 
 const EFFECT_POISON = { kind: 'poison', chance: 1, duration: 4, power: 0.35 } as const satisfies StatusSpec
+/** Heavy Spore's slow: lasts past the sleep, so the sleepers wake up sluggish. */
+const HEAVY_SPORE = { kind: 'slow', chance: 1, duration: 5, power: 0.4 } as const satisfies StatusSpec
 const DREAM_MARK = { kind: 'mark', chance: 1, duration: 4, power: 0.15 } as const satisfies StatusSpec
 
 export const EGG_MOVES_2 = {
@@ -153,7 +155,7 @@ export const EGG_MOVES_2 = {
       { fork: [{ stats: { damage: 4 }, mods: ['burstOnKill'] }, { stats: { area: 0.25 }, mods: ['trail'] }] },
       { cooldown: -0.25 },
       { damage: 4, area: 0.15 },
-      { fork: [{ stats: { amount: 1 } }, { stats: { damage: -3 }, mods: ['echo'] }] },
+      { fork: [{ stats: { amount: 1 }, mods: ['hunter'] }, { stats: { damage: -3 }, mods: ['echo'] }] },
       { damage: 5, statusChance: 0.15 },
     ],
     // A ball lobbed at the nearest foes. Clear skies: Normal. Sun: Fire that burns. Rain: Water that slows.
@@ -191,7 +193,7 @@ export const EGG_MOVES_2 = {
       { fork: [{ stats: { damage: 1 }, mods: ['arc'] }, { stats: { damage: 3 }, mods: ['burstOnKill'] }] },
       { damage: 3 },
       { amount: 1 },
-      { fork: [{ stats: { amount: 1, damage: -1 } }, { stats: { cooldown: -0.06 }, mods: ['echo'] }] },
+      { fork: [{ stats: { amount: 1, damage: -1 }, mods: ['cruel'] }, { stats: { cooldown: -0.06 }, mods: ['echo'] }] },
       { damage: 4, cooldown: -0.06 },
     ],
     // A blur of rock from the player to the nearest foe, at once, clipping whoever stands in the way.
@@ -231,7 +233,7 @@ export const EGG_MOVES_2 = {
       { fork: [{ stats: { damage: 2 }, mods: ['seek'] }, { stats: { area: 0.15 }, mods: ['trail'] }] },
       { cooldown: -0.4 },
       { damage: 4 },
-      { fork: [{ stats: { damage: 2 }, mods: ['arc'] }, { stats: { amount: 1, damage: -3 } }] },
+      { fork: [{ stats: { damage: 2 }, mods: ['arc'] }, { stats: { amount: 1, damage: -3 }, mods: ['drain'] }] },
       { damage: 5, area: 0.2 },
     ],
     // A big, slow electric orb that drifts through the horde, zapping and always paralyzing what it crosses.
@@ -259,7 +261,7 @@ export const EGG_MOVES_2 = {
     upgrades: [
       { damage: 3 },
       { amount: 1 },
-      { fork: [{ stats: { amount: 1 } }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { amount: 1 }, mods: ['hunter'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.2 },
       { damage: 4 },
       { fork: [{ stats: { damage: -3 }, mods: ['echo'] }, { stats: { damage: 2 }, mods: ['arc'] }] },
@@ -401,7 +403,7 @@ export const EGG_MOVES_2 = {
       { fork: [{ stats: { damage: 2 }, mods: ['echo'] }, { stats: { damage: 3 }, mods: ['arc'] }] },
       { cooldown: -0.6 },
       { area: 0.2, damage: 2 },
-      { fork: [{ stats: { amount: 1 } }, { stats: { area: 0.3, damage: 2 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { amount: 1 }, mods: ['vortex'] }, { stats: { area: 0.3, damage: 2 }, mods: ['burstOnKill'] }] },
       { duration: 1.5, damage: 2 },
     ],
     // A fluffy cotton cloud drifts onto the thickest crowd and sits there: the foes inside slow to a crawl.
@@ -437,7 +439,7 @@ export const EGG_MOVES_2 = {
       { fork: [{ stats: { damage: 1 }, mods: ['trail'] }, { stats: { damage: 4 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.5 },
       { damage: 5, statusChance: 0.1 },
-      { fork: [{ stats: { duration: 0.6 } }, { stats: { damage: 2 }, mods: ['arc'] }] },
+      { fork: [{ stats: { duration: 0.6 }, mods: ['drain'] }, { stats: { damage: 2 }, mods: ['arc'] }] },
       { damage: 6, area: 0.2 },
     ],
     // Crackling with electricity, the player runs faster and their body shocks every foe they touch; each shock costs a little HP.
@@ -474,10 +476,10 @@ export const EGG_MOVES_2 = {
     upgrades: [
       { damage: 2 },
       { area: 0.2 },
-      { fork: [{ stats: { amount: 1 } }, { stats: { damage: 2 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { amount: 1 }, mods: ['cruel'] }, { stats: { damage: 2 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.3 },
       { damage: 3 },
-      { fork: [{ stats: { damage: -1 }, mods: ['echo'] }, { stats: { statusChance: 0.25, area: 0.2 } }] },
+      { fork: [{ stats: { damage: -1 }, mods: ['echo'] }, { stats: { statusChance: 0.25, area: 0.2 }, mods: ['vortex'] }] },
       { amount: 1, damage: 2 },
     ],
     // A cartoon brawl cloud bursts on the nearest foe (stars, fists, a heart): rapid hits that leave foes weakened.
@@ -511,11 +513,11 @@ export const EGG_MOVES_2 = {
       { fork: [{ stats: {} }, { stats: { area: 0.3 } }] },
       { duration: 0.5 },
       { cooldown: -0.8 },
-      { fork: [{ stats: { cooldown: -1 } }, { stats: {} }] },
+      { fork: [{ stats: { cooldown: -0.4 }, mods: ['echo'] }, { stats: {} }] },
       { area: 0.2, duration: 0.5 },
     ],
     // A puff of spores around the player puts the foes in it to sleep (no damage, so they stay asleep until another move hits).
-    // Effect Spore also poisons them; Dream Dust marks them to take more from that hit.
+    // Effect Spore also poisons them, Heavy Spore leaves them slow after waking; Dream Dust marks them to take more from that hit.
     fire: (g, s, owned) => {
       const p = g.player
       const r = SPORE_R * s.area
@@ -526,11 +528,13 @@ export const EGG_MOVES_2 = {
       const path = owned.path ?? 0
       const sleep = s.status && { ...s.status, duration: s.duration }
       const poison = took(path, 2) === 0 && owned.level >= 4
+      const numb = took(path, 2) === 1 && owned.level >= 4
       const mark = took(path, 5) === 1 && owned.level >= 7
       for (const e of foesWithin(g, p.x, p.y, r + 6)) {
         if (!sleep || !chance(g.rng, sleep.chance)) continue
         applyStatus(e.status, sleep, s.damage, e.boss, 'spore')
         if (poison) applyStatus(e.status, EFFECT_POISON, s.damage, e.boss, 'spore')
+        if (numb) applyStatus(e.status, HEAVY_SPORE, s.damage, e.boss, 'spore')
         if (mark) applyStatus(e.status, DREAM_MARK, s.damage, e.boss, 'spore')
       }
       cast(g, 'spore')
@@ -547,7 +551,7 @@ export const EGG_MOVES_2 = {
     upgrades: [
       { damage: 4 },
       { amount: 1 },
-      { fork: [{ stats: { amount: 2 } }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { amount: 2 }, mods: ['hunter'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.3 },
       { damage: 5, area: 0.15 },
       { fork: [{ stats: { damage: -3 }, mods: ['echo'] }, { stats: { area: 0.2 }, mods: ['arc'] }] },
@@ -582,10 +586,10 @@ export const EGG_MOVES_2 = {
     upgrades: [
       { damage: 8 },
       { area: 0.2 },
-      { fork: [{ stats: { damage: 10 } }, { stats: { area: 0.3 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { damage: 10 }, mods: ['hunter'] }, { stats: { area: 0.3 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.4 },
       { damage: 10 },
-      { fork: [{ stats: { cooldown: -0.5 } }, { stats: { damage: -8 }, mods: ['echo'] }] },
+      { fork: [{ stats: { cooldown: -0.3 }, mods: ['execute'] }, { stats: { damage: -8 }, mods: ['echo'] }] },
       { damage: 12, area: 0.2 },
     ],
     // A colossal star slam on the nearest foe, at full power only with 4 other moves learned (a tap before that).
