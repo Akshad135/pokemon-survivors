@@ -187,7 +187,7 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
   const without = MOVE_IDS.filter((id) => !evolving.has(id)).map((id) => MOVES[id].name)
   return html`${paragraphs(e.paragraphs)}
     ${table([e.moveHead, e.itemHead, e.resultHead], rows)}
-    <p class="note">${e.noEvolution(without.join(', '))}</p>`
+    ${without.length > 0 ? html`<p class="note">${e.noEvolution(without.join(', '))}</p>` : ''}`
 }
 
 const special = (locale: Locale, m: SiteMessages) => {
@@ -248,6 +248,8 @@ const types = (m: SiteMessages) => {
         return t.effects.confuse()
       case 'seed':
         return t.effects.seed(SEED_HEAL, SEED_JUMPS)
+      case 'weaken':
+        return t.effects.weaken(STATUS_RULES.weaken.boss)
     }
   }
   // Only conditions something inflicts: a move, or the Poké Flute for sleep.

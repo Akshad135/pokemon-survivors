@@ -2,7 +2,7 @@ import { blitCentered, blitRotated, ellipse } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { stacksOf } from '../game/kitRules'
-import { MOVES, type MoveDef } from '../game/moves'
+import { moveStats } from '../game/moves'
 import { FOCUS, SOLAR, SUCKER, TAIL } from '../game/moveVerbs'
 import { atLevel, gyroMult, ROOST } from '../game/moveVerbRules'
 import type { Attack, Game } from '../game/types'
@@ -164,8 +164,7 @@ const drawSuckerZone = (ctx: Ctx, g: Game, t: number) => {
   const owned = ownedOf(g, 'suckerPunch')
   if (!owned) return
   const p = g.player
-  const def: MoveDef = MOVES.suckerPunch
-  const area = def.upgrades.slice(0, owned.level - 1).reduce((s, u) => s + (u.area ?? 0), def.base.area) * p.stats.area
+  const area = moveStats('suckerPunch', owned.level, p.stats, owned.path).area
   ctx.globalAlpha = 0.45
   dashedRing(ctx, p.x, p.y - 2, (SUCKER.reach + p.radius) * area, t * 1.5, ['#382838', '#6a5068'], 0.3, 0.45)
   ctx.globalAlpha = 1

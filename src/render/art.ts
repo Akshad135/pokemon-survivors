@@ -7,6 +7,8 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import { SIGNATURE_ICONS } from './signatureArt'
+import * as TE from './typeEvolvedArt'
 
 /**
  * All hand-authored pixel art (projectiles, pickups, icons). Sprites are built
@@ -108,6 +110,13 @@ const PILLAR = [
 const NEEDLE = ['11......', '.1222223', '11......']
 /** Horn pointing right. */
 const HORN = ['111..........', '1221111......', '.1222221111..', '.123333333441', '.1222221111..', '1221111......', '111..........']
+/** Gunk Shot's heap of garbage: 1 rim, 2 sludge, 3 shine, 4 slime, 5 junk. */
+const TRASH = [
+  '.....1111.....', '...11222211...', '..1223322221..', '.122332225221.', '.123222225521.', '12222442222221',
+  '12224444222321', '12222442222221', '.122222224421.', '.112222244211.', '...11111111...',
+]
+/** Blizzard's falling icicle, point down: 1 edge, 2 ice, 3 light, 4 shine. */
+const ICICLE = ['.11111.', '1233321', '1234321', '1234321', '.12421.', '.12421.', '.12321.', '..121..', '..121..', '..121..', '...1...', '...1...']
 const SNOWFLAKE = ['....1....', '.1..1..1.', '..1.1.1..', '...121...', '111222111', '...121...', '..1.1.1..', '.1..1..1.', '....1....']
 
 const ICE = { 1: '#3878a8', 2: '#98d8f8', 3: '#d8f0ff', 4: '#ffffff' }
@@ -160,6 +169,8 @@ export const FX = {
   heart: lazy(() => art(HEART, { 1: '#a02858', 2: '#f878a8', 3: '#ffffff' }, '#401020')),
   note: lazy(() => art(NOTE, { 1: '#c03018', 2: '#f8b030' }, '#401008')),
   blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
+  /** Leaf Blade's critical swing. */
+  critBlade: lazy(() => art(BLADE, { 1: '#806010', 2: '#f8d030', 3: '#ffffff' }, '#302008')),
   spikes: lazy(() => art(SPIKE, { 1: '#e0b8f0', 2: '#a040c0', 3: '#502060' }, '#201028')),
   barbs: lazy(() => art(BARBS, { 1: '#f0d8f8', 2: '#b058d0', 3: '#6a2a88', 4: '#88c040' }, '#201028')),
   wisp: lazy(() => {
@@ -181,6 +192,10 @@ export const FX = {
   pin: lazy(() => art(NEEDLE, { 1: '#587018', 2: '#d8f070', 3: '#ffffff' }, '#203008')),
   horn: lazy(() => art(HORN, { 1: '#585870', 2: '#c8c8d8', 3: '#e8e8f0', 4: '#ffffff' }, '#202030')),
   snowflake: lazy(() => art(SNOWFLAKE, { 1: '#98d8f8', 2: '#ffffff' }, '#183048')),
+  gunkBomb: lazy(() => art(TRASH, { 1: '#281830', 2: '#6a3a78', 3: '#b878c8', 4: '#88a038', 5: '#e0e0c8' }, '#100810')),
+  icicle: lazy(() => art(ICICLE, { 1: '#5898c8', 2: '#c8e8ff', 3: '#ffffff', 4: '#ffffff' }, '#183048')),
+  /** Leaf Storm's second leaf color, so the storm reads as many leaves. */
+  leafStormGold: lazy(() => art(LEAF, { 1: '#506010', 2: '#b8d038', 3: '#f8f8b0' }, '#203008')),
 }
 
 /* ---------------- Verb moves (`render/verbFx.ts`) ---------------- */
@@ -481,6 +496,7 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 }
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
+  ...SIGNATURE_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),
@@ -550,6 +566,26 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   dragonTail: () => art(TAIL_ICON, DRAGON, '#100430'),
   sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
+  jawLock: () => art([...TE.MAW_TOP, ...TE.MAW_BOTTOM], TE.MAW, '#d8c0e8'),
+  superpower: () => art(TE.BIG_FIST, TE.FIST_PAL, '#281010'),
+  fissure: () => art(...TE.FISSURE_ICON, '#181818'),
+  extrasensory: () => art(TE.EYE, TE.EYE_PAL, '#401030'),
+  steelBeam: () => art(...TE.BEAM_ICON, '#202838'),
+  infernalParade: () => {
+    const flame = art(TE.PARADE_FLAME, TE.PARADE_PAL, '#181030')
+    return compose(16, 15, [[flame, 0, 1], [flame, 5, 0]])
+  },
+  phantomForce: () => {
+    const arrow = art(TE.SPECTRAL_ARROW, TE.SPECTRAL_PAL, '#181028')
+    return compose(13, 16, [[arrow, 0, 1], [arrow, 6, 0]])
+  },
+  aquaCutter: () => art(TE.PINWHEEL, TE.AQUA, '#102060'),
+  searingShot: () => compose(15, 15, [[art(TE.SEARING_BALL, TE.SEARING_PAL, '#401008'), 0, 0], [art(TE.SEARING_EMBER, TE.SEARING_PAL, '#401008'), 8, 8]]),
+  gigaDrain: () => art(TE.DRAIN_ORB, TE.DRAIN_PAL, '#103010'),
+  burningJealousy: () => art(TE.ENVY_FLAME, TE.ENVY_PAL, '#300818'),
+  trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
+  liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
+  alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -578,6 +614,7 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
   metronome: [['...11...', '...14...', '..1241..', '..1421..', '.122421.', '.124221.', '12422221', '11111111'], { 1: '#583010', 2: '#d89040', 4: '#f8f0d0' }],
   powerHerb: [['.2...2..', '232.232.', '.2...2..', '..1.1...', '...1....', '..11....', '.1......'], { 1: '#386820', 2: '#f8f8f8', 3: '#e83838' }],
+  ...TE.TYPE_ITEM_ART,
 }
 
 /* ---------------- Poké Mart icons ---------------- */

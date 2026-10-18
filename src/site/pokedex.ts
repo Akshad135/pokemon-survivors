@@ -1,5 +1,6 @@
 import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
+import { BRANCHES, branchesOf, branchStage, type BranchId } from '../data/branches'
 import { HATCHLING_IDS, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { REGIONS, STARTER_IDS, type Region } from '../data/starters'
 import type { PokeType } from '../data/types'
@@ -40,10 +41,11 @@ export type DexEntry = {
   region: Region
   sprites: Sprites
   /**
-   * `starter`: playable, a starter or an egg family (`role: 'egg'`); `wild` set when the species also roams the horde.
+   * `starter`: playable, a starter or an egg family (`role: 'egg'`); `wild` set when the species also roams the horde,
+   * `branch` when it's a stage a branching evolution can go to (`data/branches.ts`).
    * `event`: met at a map event (the fleeing Meowth), not in the horde.
    */
-  source: { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
+  source: { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId; branch?: BranchId } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -89,12 +91,20 @@ const base = (dex: number, name: string, types: readonly PokeType[]) => ({
 
 const wildByDex = new Map((Object.keys(ENEMIES) as EnemyId[]).map((id) => [ENEMIES[id].dex, id]))
 
-const playableEntries = (id: PlayableId, role: Role): DexEntry[] =>
-  PLAYABLE[id].line.map((stage, i) => ({
-    ...base(stage.dex, stage.name, stage.types),
-    role,
-    source: { kind: 'starter', id, stage: i, wild: wildByDex.get(stage.dex) },
-  }))
+/** A playable line's stages, then the branches its evolution can take (Eevee's eight, Gallade…), each at the stage it replaces. */
+const playableEntries = (id: PlayableId, role: Role): DexEntry[] => {
+  const branchOf = new Map<number, BranchId>(branchesOf(id).map((b) => [BRANCHES[b].dex, b]))
+  const stages = PLAYABLE[id].line.map((stage, i) => ({ stage, i }))
+  const branches = [...branchOf.values()].map((b) => ({ stage: branchStage(b), i: BRANCHES[b].stage }))
+  const seen = new Set<number>()
+  return [...stages, ...branches].flatMap(({ stage, i }) => {
+    if (seen.has(stage.dex)) return []
+    seen.add(stage.dex)
+    const branch = branchOf.get(stage.dex)
+    const source = { kind: 'starter', id, stage: i, wild: wildByDex.get(stage.dex), ...(branch ? { branch } : {}) } as const
+    return [{ ...base(stage.dex, stage.name, stage.types), role, source } satisfies DexEntry]
+  })
+}
 
 const wildEntry = (id: EnemyId): DexEntry => {
   const e = ENEMIES[id]

@@ -106,7 +106,7 @@ const explode = (g: Game, e: Enemy) => {
   const r = blastRadius(e.radius)
   const dmg = e.damage * k.damage
   const p = g.player
-  if (inBlast(e.x, e.y, r, p.x, p.y, p.radius * 0.7)) hurtPlayer(g, dmg)
+  if (inBlast(e.x, e.y, r, p.x, p.y, p.radius * 0.7)) hurtPlayer(g, dmg, undefined, [], 'blast')
   // Self-destruct: it faints without EXP, but whatever the blast takes down drops as usual.
   e.dying = 0
   e.hp = 0
@@ -159,7 +159,7 @@ const beam = (g: Game, e: Enemy, act: Act<'beam'>, dt: number) => {
     act.t = 0
     g.events.push({ kind: 'trait', trait: 'beam', phase: 'fire' })
   }
-  if (onBeam(act.ox, act.oy, act.dx, act.dy, b.length, b.width / 2, p.x, p.y - p.radius, p.radius * 0.7)) hurtPlayer(g, e.damage * b.damage)
+  if (onBeam(act.ox, act.oy, act.dx, act.dy, b.length, b.width / 2, p.x, p.y - p.radius, p.radius * 0.7)) hurtPlayer(g, e.damage * b.damage, undefined, [], 'beam')
   if (act.t >= b.fire) {
     act.phase = 'idle'
     act.cooldown = b.every

@@ -304,7 +304,7 @@ export const siteEs: SiteMessages = {
       statusHead: 'Estado',
       movesHead: 'Lo causa',
       effectHead: 'Efecto',
-      names: { burn: 'Quemadura', poison: 'Veneno', paralysis: 'Parálisis', slow: 'Lentitud', sleep: 'Sueño', freeze: 'Congelación', mark: 'Marca', confuse: 'Confusión', seed: 'Semilla' },
+      names: { burn: 'Quemadura', poison: 'Veneno', paralysis: 'Parálisis', slow: 'Lentitud', sleep: 'Sueño', freeze: 'Congelación', mark: 'Marca', confuse: 'Confusión', seed: 'Semilla', weaken: 'Debilitado' },
       effects: {
         burn: (attack: number) => `Daño por segundo. El enemigo quemado solo causa el ${n(attack * 100)}% del daño por contacto.`,
         poison: (stacks: number) => `Daño por segundo que se acumula hasta ${stacks}x.`,
@@ -315,6 +315,7 @@ export const siteEs: SiteMessages = {
         mark: (stacks: number) => `El enemigo marcado recibe más daño de cada golpe, acumulando hasta ${stacks}x.`,
         confuse: () => 'El enemigo deambula sin rumbo y lastima a los enemigos con los que choca. Los jefes son inmunes.',
         seed: (heal: number, jumps: number) => `Daño por segundo que te cura un ${n(heal * 100)}% del daño. Cuando el enemigo cae, la semilla salta a ${jumps} vecinos.`,
+        weaken: (boss: number) => `Barro en los ojos: el enemigo hace menos daño de contacto. En jefes dura un ${n(boss * 100)}% del tiempo.`,
       },
       flute: 'Poké Flute (objeto del mapa)',
       itemsNote: 'King\'s Rock aumenta la probabilidad de estado, Toxic Orb aumenta el daño de quemadura y veneno, y Light Clay hace que los estados duren más.',

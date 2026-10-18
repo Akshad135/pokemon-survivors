@@ -27,6 +27,21 @@ export const EVOLUTIONS = [
   { from: 'rockTomb', item: 'hardStone', to: 'stoneEdge' },
   { from: 'pinMissile', item: 'silverPowder', to: 'megahorn' },
   { from: 'dragonBreath', item: 'dragonFang', to: 'outrage' },
+  { from: 'crunch', item: 'blackGlasses', to: 'jawLock' },
+  { from: 'machPunch', item: 'blackBelt', to: 'superpower' },
+  { from: 'earthquake', item: 'softSand', to: 'fissure' },
+  { from: 'psyshock', item: 'twistedSpoon', to: 'extrasensory' },
+  { from: 'flashCannon', item: 'metalCoat', to: 'steelBeam' },
+  { from: 'hex', item: 'spellTag', to: 'infernalParade' },
+  { from: 'spiritShackle', item: 'spellTag', to: 'phantomForce' },
+  { from: 'disarmingVoice', item: 'fairyFeather', to: 'alluringVoice' },
+  // Cross-type pairs with generic items, so no type item evolves more than two moves.
+  { from: 'waterShuriken', item: 'quickClaw', to: 'aquaCutter' },
+  { from: 'razorShell', item: 'kingsRock', to: 'liquidation' },
+  { from: 'pyroBall', item: 'muscleBand', to: 'searingShot' },
+  { from: 'torchSong', item: 'metronome', to: 'burningJealousy' },
+  { from: 'drumBeating', item: 'leftovers', to: 'gigaDrain' },
+  { from: 'leafBlade', item: 'wideLens', to: 'trailblaze' },
 ] as const satisfies readonly MoveEvolution[]
 
 /** The evolution a base move can go through, if any. */

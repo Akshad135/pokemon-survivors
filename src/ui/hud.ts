@@ -1,8 +1,10 @@
 import { formatTime } from '../engine/math'
 import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
-import { PLAYABLE } from '../data/hatchlings'
+import { ABILITIES } from '../data/abilities'
+import { abilityLit, abilityStacks } from '../game/abilities'
 import { playerDex } from '../game/game'
+import { playerForm } from '../game/branch'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import { heldMega } from '../game/mega'
 import type { Game } from '../game/types'
@@ -12,6 +14,8 @@ import { coinIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../rend
 import { consumableIcon } from '../render/props'
 import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
+import { abilityIcon } from '../render/abilityArt'
+import { megaIcon } from '../render/megaFx'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
 import { createLungeControls } from './lungeButton'
@@ -53,6 +57,11 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const level = h('div', { class: 'status-level' })
   const hpFill = h('div', { class: 'hp-fill' })
   const hpText = h('div', { class: 'status-hp-text' })
+  // The ability picked at the first evolution (the Mega's while it lasts), lit while it's doing something.
+  const abilityImg = h('img', { alt: '' })
+  const abilityName = h('span', { class: 'ability-tag-name' })
+  const abilityCount = h('span', { class: 'ability-tag-count' })
+  const ability = h('span', { class: 'ability-tag hidden' }, abilityImg, abilityName, abilityCount)
   // pointerdown (not click) feels instant on touch and never steals keyboard focus.
   const pause = h('button', { class: 'pause-btn box', 'aria-label': t().hud.pause }, h('span'), h('span'))
   pause.addEventListener('pointerdown', (e) => {
@@ -92,7 +101,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
         { class: 'status-body' },
         h('div', { class: 'status-head' }, name, level),
         h('div', { class: 'status-hp' }, h('span', { class: 'hp-tag' }, 'HP'), h('div', { class: 'hp-bar' }, hpFill)),
-        hpText,
+        h('div', { class: 'status-foot' }, ability, hpText),
       ),
     ),
     movePad.el,
@@ -108,6 +117,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   let buffKey = ''
   let buffFills: HTMLElement[] = []
   let weatherKey = ''
+  let abilityKey = ''
 
   /** Timed buffs (icon + draining bar) and a held Revive. Rebuilt only when the set changes. */
   const renderBuffs = (g: Game) => {
@@ -133,7 +143,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
           'div',
           { class: ready ? 'slot evo-ready' : 'slot' },
           m && h('img', { src: moveIcon(m.id), alt: '' }),
-          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? '★' : m.level),
+          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? `★${m.level}` : m.level),
         )
       }),
     )
@@ -192,7 +202,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
       name.classList.toggle('mega-name', megaName !== undefined)
-      setText(name, megaName ?? PLAYABLE[g.starter].line[p.stage]!.name)
+      setText(name, megaName ?? playerForm(g).name)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
@@ -200,6 +210,23 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     const fillClass = `hp-fill ${hpClass(ratio)}`
     if (hpFill.className !== fillClass) hpFill.className = fillClass
     setText(hpText, `${Math.ceil(p.hp)}/${Math.round(p.stats.maxHp)}`)
+
+    const megaDef = g.mega.active > 0 ? heldMega(g) : null
+    const id = g.ability.id
+    const stacks = megaDef || !id ? 0 : abilityStacks(g)
+    const lit = !megaDef && id !== null && abilityLit(g)
+    const akey = `${id}|${megaDef?.ability}|${lit}|${stacks}`
+    if (akey !== abilityKey) {
+      abilityKey = akey
+      ability.classList.toggle('hidden', !id && !megaDef)
+      ability.classList.toggle('lit', lit)
+      ability.classList.toggle('mega', megaDef !== null)
+      if (megaDef) abilityImg.setAttribute('src', megaIcon())
+      else if (id) abilityImg.setAttribute('src', abilityIcon(id))
+      setText(abilityName, megaDef ? megaDef.ability : id ? ABILITIES[id].name : '')
+      setText(abilityCount, stacks > 0 ? t().hud.jumps(stacks) : '')
+      ability.setAttribute('title', megaDef ? t().ability.megaNote : id ? t().abilities[id] : '')
+    }
 
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
     boss.classList.toggle('hidden', !b)
