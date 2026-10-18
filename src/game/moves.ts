@@ -11,7 +11,7 @@ import {
 } from './moveRules'
 import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
-import { modBits, modHit, type ModId } from './mods'
+import { modBits, modHit, refreshMods, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
 import { beatOf } from './signatureRules'
@@ -401,6 +401,7 @@ export const MOVES = {
         aura.hitInterval = s.cooldown
         aura.knockback = s.knockback
         aura.status = s.status
+        refreshMods(g, aura)
         return
       }
       spawnAttack(g, {
