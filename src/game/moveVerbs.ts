@@ -4,14 +4,15 @@ import * as dm from '../engine/dmath'
 import { damageEnemy, healPlayer } from './combat'
 import { burst, floatText } from './effects'
 import type { DamageBonus } from './kitRules'
-import { returnShot, stacksOf, strike, sweep, throwFoe, trailer } from './moveKit'
+import { returnShot, stacksOf, strike, sweep, throwFoe, took, trailer } from './moveKit'
 import { LUNGE_OVERSHOOT, LUNGE_SEEK, lungeLength } from './moveRules'
 import type { CastStats } from './moves'
 import {
-  atLevel, clusterSpots, electroMult, farthest, gyroMult, inArc, mostHurt, nearestPreferring, ringPoints, ROOST, roostLands,
+  atLevel, clusterSpots, electroMult, farthest, gyroMult, inArc, mostHurt, nearestPreferring, ringPoints, roostHeal, roostLands, roostSettle,
   selfDestructCost, SHEER_COLD_EXECUTE, STEALTH_RINGS,
 } from './moveVerbRules'
 import { enemiesInView, nearestEnemy } from './queries'
+import { refreshMods } from './mods'
 import { spawnAttack } from './spawn'
 import type { Game, OwnedMove } from './types'
 import { weatherHere } from './weather'
@@ -59,6 +60,7 @@ export const flameWheel: Cast = (g, s) => {
     carrier.status = s.status
     carrier.trailer.r = FLAME_WHEEL.r * s.area
     carrier.trailer.ttl = s.duration
+    refreshMods(g, carrier)
     return
   }
   const look = { move: 'flameWheel', type: 'fire', visual: 'flameTrail' } as const
@@ -195,13 +197,13 @@ export const selfDestruct: Cast = (g, s) => {
 export const ROOST_GUST = { r: 40, open: 0.25 } as const
 
 /**
- * Stand still long enough (`ROOST.settle`) and the player roosts: a gust of
+ * Stand still long enough (`roostSettle`) and the player roosts: a gust of
  * feathers shoves the nearest foes away, then a share of max HP heals every
  * second while they stay put. Walking ends it.
  */
 export const roost: Cast = (g, s, owned) => {
   const p = g.player
-  const settle = atLevel(ROOST.settle, owned.level)
+  const settle = roostSettle(owned)
   if (p.still < settle || p.hidden) return
   if (roostLands(p.still, s.cooldown, settle)) {
     spawnAttack(g, {
@@ -213,7 +215,7 @@ export const roost: Cast = (g, s, owned) => {
     burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#e8e0f8', '#a890f0'], count: 14, speed: 120, ttl: 0.5, gravity: 60, size: 2 })
     sound(g, 'roost')
   }
-  const perSecond = p.stats.maxHp * atLevel(ROOST.heal, owned.level)
+  const perSecond = p.stats.maxHp * roostHeal(owned)
   const healed = healPlayer(g, perSecond * s.cooldown)
   if (healed <= 0) return
   if (chance(g.rng, 0.6)) {
@@ -227,6 +229,11 @@ export const roost: Cast = (g, s, owned) => {
 
 /** Casts (`cooldown` apart) to charge Focus Punch, how near a foe must be for the punch, its shockwave and the i-frames after it. */
 export const FOCUS = { charge: 8, reach: 46, shock: 34, shockShare: 0.5, iframes: 0.4 } as const
+/** Short Focus (its Lv 7 fork's second branch): charged in this many casts. */
+const FOCUS_SHORT = 5
+
+/** Casts Focus Punch needs to charge, after its branches. */
+export const focusCharge = (owned: OwnedMove) => (took(owned, 7, 1) ? FOCUS_SHORT : FOCUS.charge)
 
 /**
  * Charges one stack per cast while the player isn't hurt (a hit resets it,
@@ -235,9 +242,10 @@ export const FOCUS = { charge: 8, reach: 46, shock: 34, shockShare: 0.5, iframes
  */
 export const focusPunch: Cast = (g, s, owned) => {
   const stacks = stacksOf(owned)
-  if (stacks < FOCUS.charge) {
+  const charge = focusCharge(owned)
+  if (stacks < charge) {
     // This cast's stack fills it.
-    if (stacks === FOCUS.charge - 1) sound(g, 'focusReady')
+    if (stacks === charge - 1) sound(g, 'focusReady')
     return
   }
   const p = g.player
@@ -284,6 +292,7 @@ export const gyroBall: Cast = (g, s) => {
       a.damage = damage
       a.knockback = s.knockback
       a.shape = { kind: 'circle', r: GYRO.r * s.area }
+      refreshMods(g, a)
       if (a.motion.kind === 'orbit') {
         a.motion.spin = s.speed
         a.motion.radius = GYRO.radius * s.area

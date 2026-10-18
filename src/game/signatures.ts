@@ -6,6 +6,7 @@ import { burst, floatText } from './effects'
 import { recomputeStats } from './leveling'
 import { addMoveBuff, TIRED_SLOW, TIRED_TIME } from './signatureMoves'
 import { recoilFor, snipeScale } from './signatureRules'
+import { inheritMods } from './mods'
 import { spawnAttack } from './spawn'
 import type { Attack, Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
@@ -35,7 +36,7 @@ const bite = (g: Game, a: Attack) => {
   spawnAttack(g, {
     move: a.move, type: a.type, visual: 'thrashBite', x: e ? at.x : p.x + at.x, y: e ? at.y : p.y - 10 + at.y * 0.7,
     shape: { kind: 'circle', r: 11 }, motion: { kind: 'static' },
-    damage: a.damage, knockback: a.knockback, ttl: 0.26, activeFrom: 0.1, activeUntil: 0.15, flip: chance(g.rng, 0.5),
+    damage: a.damage, knockback: a.knockback, ttl: 0.26, activeFrom: 0.1, activeUntil: 0.15, flip: chance(g.rng, 0.5), ...inheritMods(a, ['trail']),
   })
 }
 
@@ -47,7 +48,7 @@ const leafBurst = (g: Game, a: Attack) => {
     spawnAttack(g, {
       move: a.move, type: a.type, visual: 'tornadoLeaf', x: a.x, y: a.y,
       shape: { kind: 'circle', r: 5 * (r / 16) }, motion: { kind: 'linear', vx: v.x, vy: v.y },
-      damage: a.damage * 1.5, knockback: 60, pierce: 2, ttl: 0.4,
+      damage: a.damage * 1.5, knockback: 60, pierce: 2, ttl: 0.4, ...inheritMods(a, ['trail']),
     })
   }
 }
@@ -59,7 +60,7 @@ const pop = (g: Game, a: Attack) => {
   spawnAttack(g, {
     move: a.move, type: a.type, visual: 'bubblePop', x: a.x, y: a.y,
     shape: { kind: 'circle', r: r * 2.6 }, motion: { kind: 'static' },
-    damage: a.damage, knockback: a.knockback, ttl: 0.3, activeUntil: 0.06,
+    damage: a.damage, knockback: a.knockback, ttl: 0.3, activeUntil: 0.06, ...inheritMods(a, ['trail']),
   })
   if (dm.sq(a.x - p.x) + dm.sq(a.y - (p.y - 10)) < dm.sq(ARIA_HEAL_REACH)) {
     const healed = drainHeal(g, p.stats.maxHp * ARIA_HEAL, 1)

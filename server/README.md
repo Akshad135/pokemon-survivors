@@ -83,7 +83,7 @@ For gifting players by hand (someone who talked about the game on social media, 
 
 ### Verification by re-simulation
 
-The result comes with the run's replay (`src/game/replay.ts`). After answering, the API re-simulates it from the seed (`src/checks.ts`), one run at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported; otherwise it's marked failed and counts nowhere. Boards and profiles show pending runs marked (`verified: null`). A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
+The result comes with the run's replay (`src/game/replay.ts`). After answering, the API re-simulates it from the seed (`src/checks.ts`), one run at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported; otherwise it's marked failed and counts nowhere. The branch isn't judged: a verified run takes the one its replay took over the one the game reported (which `parseRunResult` already keeps only when it's of the run's family, at a stage it reached). Boards and profiles show pending runs marked (`verified: null`). A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
 
 Cost, measured on an Apple M4 Pro with Node 24 (bot runs with a full Poké Mart, `dist/verify.js`):
 
@@ -118,6 +118,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `runs`: one row per ranked run, created at its start (the id is the start token) and filled when it ends. Unfinished rows never show, and are dropped after 7 days.
 - `follows`: who follows whom, one way.
 - `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending).
+- `runs.branch`: the branching evolution the run took (`BranchId`, Espeon, Gallade…), so the boards show the form it ended in. Null when it took none, and on every run before it was stored (those keep showing the line's own form).
 - `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
 - `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.
 - `runs.challenge`, `runs.official`: the Desafio do dia a run plays (its day) and whether it's the player's official attempt of that day.

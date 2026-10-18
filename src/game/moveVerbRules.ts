@@ -1,4 +1,6 @@
 import * as dm from '../engine/dmath'
+import { took } from './kitRules'
+import type { OwnedMove } from './types'
 
 /**
  * Pure rules behind the "verb" moves (`moveVerbs.ts` casts them): who Brine,
@@ -147,6 +149,17 @@ export const ROOST = {
   settle: [1, 1, 1, 0.8, 0.8, 0.8, 0.6, 0.6],
   heal: [0.02, 0.02, 0.025, 0.025, 0.025, 0.03, 0.03, 0.035],
 } as const
+
+/** Roost's fork branches that change the rest itself: Quick Perch (Lv 4) settles sooner but heals less, Deep Rest (Lv 7) the other way. */
+export const ROOST_FORKS = { quick: { settle: 0.5, heal: 0.7 }, deep: { settle: 1.4, heal: 1.6 } } as const
+
+/** Seconds standing still before Roost settles, after its branches. */
+export const roostSettle = (owned: OwnedMove) =>
+  atLevel(ROOST.settle, owned.level) * (took(owned, 4, 0) ? ROOST_FORKS.quick.settle : 1) * (took(owned, 7, 1) ? ROOST_FORKS.deep.settle : 1)
+
+/** Max HP Roost heals per second once settled, after its branches. */
+export const roostHeal = (owned: OwnedMove) =>
+  atLevel(ROOST.heal, owned.level) * (took(owned, 4, 0) ? ROOST_FORKS.quick.heal : 1) * (took(owned, 7, 1) ? ROOST_FORKS.deep.heal : 1)
 
 /** Whether Roost settles during a cast covering (`still` − `tick`, `still`]: the moment its landing gust blows. */
 export const roostLands = (still: number, tick: number, settle: number) => still >= settle && still - tick < settle
