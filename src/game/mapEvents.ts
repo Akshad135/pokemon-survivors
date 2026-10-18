@@ -136,7 +136,7 @@ const trapHit = (g: Game, x: number, y: number, r: number, damage: number, bossS
     damageText(g, e, dmg, '#f8a040')
     if (e.hp <= 0) killEnemy(g, e)
   }
-  if (within(g, x, y, r + g.player.radius)) hurtPlayer(g, player)
+  if (within(g, x, y, r + g.player.radius)) hurtPlayer(g, player, undefined, [], 'trap')
 }
 
 /** A ring of wild Pokémon from the current wave closing in on the chest. */

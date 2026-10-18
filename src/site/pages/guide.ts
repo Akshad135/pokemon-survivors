@@ -187,7 +187,7 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
   const without = MOVE_IDS.filter((id) => !evolving.has(id)).map((id) => MOVES[id].name)
   return html`${paragraphs(e.paragraphs)}
     ${table([e.moveHead, e.itemHead, e.resultHead], rows)}
-    <p class="note">${e.noEvolution(without.join(', '))}</p>`
+    ${without.length > 0 ? html`<p class="note">${e.noEvolution(without.join(', '))}</p>` : ''}`
 }
 
 const special = (locale: Locale, m: SiteMessages) => {

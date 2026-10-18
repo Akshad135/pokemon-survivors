@@ -1,4 +1,5 @@
 import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { formAt } from './branch'
 import type { Save } from './meta'
 import { ownsStyle } from './style'
 import { canWalkWith, isSupporter, type Companion, type SupporterTier } from './supporters'
@@ -14,9 +15,9 @@ const playsShiny = (save: Save, id: PlayableId) => save.shinyStarters[id] === tr
 export const trainerAvatar = (save: Save) => {
   const companion = save.companion && isSupporter(save) && canWalkWith(save, save.companion) ? save.companion : null
   const id: PlayableId = companion?.id ?? save.partner
-  const line = PLAYABLE[id].line
   const shiny = companion ? companion.shiny : playsShiny(save, id)
-  return { dex: line[line.length - 1]!.dex, shiny }
+  // A branching family wears the branch it took last (an Espeon trainer stays an Espeon).
+  return { dex: formAt(id, save.branches[id] ?? null, PLAYABLE[id].line.length - 1).dex, shiny }
 }
 
 /**

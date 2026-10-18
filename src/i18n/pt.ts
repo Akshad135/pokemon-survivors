@@ -3,6 +3,7 @@ import type { BiomeId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { AbilityId } from '../data/abilities'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
@@ -19,8 +20,14 @@ import type { SpecialId } from '../game/special'
 import type { Stance } from '../game/stance'
 import type { Action } from '../engine/bindings'
 
-/** One string per entry of a tuple, so every move upgrade gets exactly one line. */
-type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: string }
+/** A fork branch's texts: its name and a one-line description (~45 characters). */
+type BranchText = { readonly name: string; readonly desc: string }
+
+/** A plain upgrade step gets one line; a fork step gets its two branches' texts. */
+type StepText<S> = S extends { fork: readonly unknown[] } ? { readonly fork: readonly [BranchText, BranchText] } : string
+
+/** One text per entry of a tuple, so every move upgrade gets exactly one line (or two branches for a fork). */
+type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: StepText<T[I]> }
 
 /** Translated game content, keyed by the ids in `data/*` and `MOVES`. Names stay official English. */
 export type ContentTexts = {
@@ -34,6 +41,8 @@ export type ContentTexts = {
   blurbs: Record<PlayableId, string>
   /** Special attacks: what each one does, by `SPECIALS` id. */
   specials: Record<SpecialId, string>
+  /** Abilities: what each one does, by `ABILITIES` id. */
+  abilities: Record<AbilityId, string>
 }
 
 const typeBoost = (type: string) => `+10% de dano em golpes do tipo ${type}.`
@@ -188,6 +197,20 @@ export const pt = {
     skip: (n: number) => `Pular (${n})`,
     hintKeys: '↑ ↓ escolher · ENTER confirmar · 1-3 atalho',
     hintTouch: 'Toque para escolher',
+    /** The opening draft, before the run's clock starts. */
+    draftTitle: (name: string) => `${name}: escolha o 2º golpe!`,
+    /** A fork: the move card splits into its two branches. */
+    forkTitle: (move: string, level: number) => `${move} Nv ${level} · escolha um caminho`,
+    forkTag: '2 CAMINHOS',
+    forkHint: (a: string, b: string) => `Caminho: ${a} ou ${b}`,
+    branchOf: (move: string) => `Caminho de ${move}`,
+    rare: 'RARO! +2 Nv',
+    shiny: 'SHINY!',
+    shinyNote: 'Escolha grátis: depois tem outra!',
+    banish: (n: number) => `Esquecer (${n})`,
+    banishCancel: 'Cancelar',
+    banishHintKeys: 'Escolha o card a esquecer · ESC cancela',
+    banishHintTouch: 'Toque no card a esquecer',
   },
 
   pause: {
@@ -768,6 +791,7 @@ export const pt = {
       blaziken: 'velocidade +16, golpes +25% e recargas −10%. O especial vira Blaze Kick, uma investida em cadeia que pode queimar.',
       swampert: 'faz chover (fora das fendas), o que deixa golpes de Água ×1,5; HP +50, golpes +25% e velocidade +8. O especial vira Muddy Water.',
       gardevoir: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
+      gallade: 'golpes +30%, golpes Lutador +25% e velocidade +8. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
       metagross: 'golpes +30%, defesa +2 e velocidade +6. O especial vira Meteor Mash.',
       staraptor: 'golpes +30% e velocidade +10. A investida em cadeia vira Sky Attack e cada pouso solta um anel de lâminas de vento.',
       garchomp: 'golpes +30%, golpes Terra, Pedra e Aço +30% e defesa +1. O especial vira Earth Power.',
@@ -791,6 +815,139 @@ export const pt = {
       salamence: 'golpes Normal e Voador +30%, velocidade +12 e golpes +25%. O especial vira Double-Edge.',
     } satisfies Record<MegaId, string>,
   },
+
+  /** Abilities: the pick at the first evolution, the HUD chip, the pause menu and the partner details (`ui/abilityPick.ts`). Names stay official English (`ABILITIES`). */
+  ability: {
+    title: (name: string) => `${name} despertou uma Habilidade!`,
+    subtitle: 'Escolha uma: ela fica até o fim da partida.',
+    hidden: 'OCULTA',
+    hiddenLong: 'Habilidade Oculta',
+    label: 'Habilidade',
+    pending: 'Escolhida na 1ª evolução',
+    section: 'Habilidades',
+    sectionBranch: 'Habilidades (vêm da evolução escolhida)',
+    note: 'Você escolhe uma na primeira evolução. A Oculta é a mais rara dos jogos.',
+    megaNote: 'Na forma Mega, vale a Habilidade da Mega.',
+    picked: (who: string, ability: string) => `${who} agora tem *${ability}*!`,
+    sturdy: (ability: string) => `*${ability}*: aguentou com 1 HP!`,
+    guard: (ability: string) => `*${ability}* bloqueou o golpe!`,
+    summon: (ability: string) => `*${ability}* mudou o clima!`,
+    stack: (ability: string, n: number) => `*${ability}* ×${n}!`,
+    mood: (ability: string, boost: string) => `*${ability}*: ${boost}!`,
+    /** Moody's boosts, in the order of its options (`data/abilities.ts`). */
+    moods: ['dano alto', 'mais rápido', 'mais área', 'recarga curta', 'mais defesa'],
+    results: 'Habilidade',
+  },
+
+  /** Branching evolutions: the pick and the partner details (`ui/abilityPick.ts`, `data/branches.ts`). */
+  branch: {
+    title: (name: string) => `${name} vai evoluir… mas em quê?`,
+    subtitle: 'A evolução muda o tipo, os status, o especial, os golpes e as Habilidades.',
+    favored: (what: string) => `${what} favorece`,
+    moves: 'Golpes novos',
+    abilities: 'Habilidades',
+    special: 'Especial',
+    section: 'Evoluções possíveis',
+    note: (shown: number, total: number) => `Na evolução aparecem ${shown} das ${total}; o clima e o lugar puxam uma delas.`,
+    noteAll: 'Na evolução você escolhe o caminho.',
+    choose: (n: number) => `${n} opções`,
+    specialNote: 'Na evolução, o especial passa a ser o da forma escolhida.',
+  },
+
+  /** What each ability does (`ABILITIES`). */
+  abilities: {
+    overgrow: 'Com menos de 1/3 do HP, golpes de Planta causam +50%.',
+    blaze: 'Com menos de 1/3 do HP, golpes de Fogo causam +50%.',
+    torrent: 'Com menos de 1/3 do HP, golpes de Água causam +50%.',
+    swarm: 'Com menos de 1/3 do HP, golpes de Inseto causam +50%.',
+    swiftSwim: 'Na chuva: velocidade +18 e recargas −8%.',
+    chlorophyll: 'No sol forte: velocidade +18 e recargas −8%.',
+    sandRush: 'Na tempestade de areia: velocidade +18 e recargas −8%, e a areia não te desgasta.',
+    slushRush: 'Na neve: velocidade +18 e recargas −8%, e a neve não te desgasta.',
+    solarPower: 'No sol forte: golpes +30%, mas recebe 10% mais dano.',
+    rainDish: 'Na chuva: regenera 1,5 HP/s.',
+    hydration: 'Na chuva: regenera 0,6 HP/s e recebe 15% menos dano.',
+    iceBody: 'Na neve: regenera 1,5 HP/s, e a neve não te desgasta.',
+    sandVeil: 'Na tempestade de areia: recebe 25% menos dano, e a areia não te desgasta.',
+    snowCloak: 'Na neve: recebe 25% menos dano, e a neve não te desgasta.',
+    leafGuard: 'No sol forte: recebe 30% menos dano e regenera 0,5 HP/s.',
+    drought: 'Chama o sol forte ao ser escolhida e a cada bioma novo (fora das fendas): Fogo ×1,5.',
+    sandStream: 'Levanta uma tempestade de areia ao ser escolhida e a cada bioma novo: desgasta a horda, não você.',
+    static: 'Inimigos encostados em você podem ficar paralisados.',
+    flameBody: 'Inimigos encostados em você podem se queimar.',
+    poisonPoint: 'Inimigos encostados em você podem ser envenenados.',
+    effectSpore: 'Inimigos encostados em você podem ser envenenados, paralisados ou dormir.',
+    cursedBody: 'Inimigos encostados em você podem ficar bem mais lentos.',
+    cuteCharm: 'Inimigos encostados em você podem cair no sono.',
+    roughSkin: 'Inimigos encostados em você levam dano a cada meio segundo.',
+    intimidate: 'Inimigos que encostam em você causam 25% menos dano.',
+    unnerve: 'Inimigos a até 70 px perdem 25% da velocidade.',
+    unaware: 'Chefes e elites causam 30% menos dano em você.',
+    thickFat: 'Recebe metade do dano de ataques de Fogo e Gelo.',
+    flashFire: 'Recebe 60% menos dano de Fogo, e golpes de Fogo +15%.',
+    waterAbsorb: 'Ataques de Água te curam em vez de ferir.',
+    voltAbsorb: 'Ataques Elétricos te curam em vez de ferir.',
+    lightningRod: 'Ataques Elétricos te curam em vez de ferir, e golpes Elétricos +15%.',
+    bulletproof: 'Projéteis de chefes e explosões causam 60% menos dano.',
+    levitate: 'Você flutua: lava, armadilhas, água e gelo não te afetam.',
+    magicGuard: 'Só golpes diretos te ferem: nada de lava, armadilhas, explosões ou desgaste do clima.',
+    magicBounce: 'A cada 12 s bloqueia um golpe e o devolve em dobro a quem encostou.',
+    illusion: 'A cada 10 s bloqueia um golpe por completo.',
+    damp: 'Explosões não te ferem, e golpes de Água +10%.',
+    clearBody: 'Água e gelo não te atrasam, e recebe 10% menos dano.',
+    shellArmor: 'Defesa +2.',
+    rockHead: 'Defesa +1 e golpes +10%.',
+    heavyMetal: 'Defesa +3 e HP +20, mas velocidade −6.',
+    lightMetal: 'Velocidade +10 e recargas −5%, mas defesa −1.',
+    sturdy: 'Uma vez por partida, o golpe que te derrubaria deixa você com 1 HP.',
+    multiscale: 'Com o HP cheio, recebe metade do dano.',
+    marvelScale: 'Com menos da metade do HP, recebe 30% menos dano.',
+    shedSkin: 'A cada 10 s, cura 6% do HP máximo.',
+    naturalCure: 'Regenera 0,6 HP/s.',
+    gluttony: 'HP +20 e regenera 0,8 HP/s.',
+    guts: 'Com menos da metade do HP, golpes +35%.',
+    quickFeet: 'Com menos da metade do HP, velocidade +16 e recargas −10%.',
+    hugePower: 'Golpes +30%, mas HP −10.',
+    hustle: 'Golpes +30%, mas área −10%.',
+    truant: 'Golpes +40%, mas recargas +15%.',
+    noGuard: 'Área +20%, mas recebe 10% mais dano.',
+    reckless: 'Golpes +25%, mas recebe 10% mais dano.',
+    technician: 'Golpes fracos (dano base até 10) causam +40%.',
+    ironFist: 'Socos causam +35% (Mach Punch…).',
+    strongJaw: 'Mordidas causam +40% (Crunch…).',
+    sharpness: 'Golpes cortantes causam +35% (Razor Leaf, Leaf Blade, Razor Shell, Water Shuriken…).',
+    sheerForce: 'Golpes que causam condições (queimadura, veneno…) causam +25%.',
+    liquidVoice: 'Golpes de som causam +30% (Disarming Voice, Torch Song…), e golpes de Água +10%.',
+    punkRock: 'Golpes de som causam +35% (Disarming Voice…), e recebe 5% menos dano.',
+    adaptability: 'Golpes do mesmo tipo que você causam +25%.',
+    protean: 'Golpes de tipos diferentes do seu causam +20%.',
+    libero: 'Golpes de tipos diferentes do seu causam +20%.',
+    pixilate: 'Golpes Normal +30% e golpes Fada +15%.',
+    grassySurge: 'Regenera 0,8 HP/s e golpes de Planta +10%.',
+    sniper: 'Golpes em chefes e elites causam +25%.',
+    moldBreaker: 'Atravessa escudos de aliados (Bronzong) e causa +15% em chefes e elites.',
+    infiltrator: 'Atravessa escudos de aliados (Bronzong), e golpes +10%.',
+    moxie: 'Cada nocaute dá +1% de dano, até +30%; sem nocautes o bônus vai sumindo.',
+    battleBond: 'A cada 200 nocautes, golpes +8% e velocidade +3, até 3 vezes.',
+    speedBoost: 'A cada 20 s, velocidade +3, até +30.',
+    competitive: 'Ao levar um golpe, golpes +25% por 4 s.',
+    steadfast: 'Ao levar um golpe, velocidade +14 por 3 s.',
+    weakArmor: 'Ao levar um golpe, velocidade +12 e recargas −10% por 3 s, mas recebe 5% mais dano nesse tempo.',
+    contrary: 'Cada golpe que você leva dá +2% de dano até o fim da partida, até +30%.',
+    moody: 'A cada 15 s, um bônus forte e aleatório: dano, velocidade, área, recarga ou defesa.',
+    unburden: 'Cada espaço de item vazio dá velocidade +4 e recargas −2%.',
+    pickup: 'Nocautes às vezes deixam uma Oran Berry.',
+    magician: 'Nocautes às vezes deixam um doce de EXP a mais.',
+    frisk: 'Nocautes às vezes deixam Poké Dólares.',
+    synchronize: '+6% de chance de condição, e condições 20% mais fortes.',
+    sereneGrace: '+10% de chance de condição em todo golpe.',
+    keenEye: 'Alcance de coleta +25 e projéteis 15% mais rápidos.',
+    longReach: 'Área +10% e projéteis 20% mais rápidos.',
+    vitalSpirit: 'Velocidade +8 e recargas −5%.',
+    insomnia: 'Velocidade +5 e regenera 0,3 HP/s.',
+    innerFocus: 'Cada nocaute do especial adianta a recarga dele em 0,25\u00a0s.',
+    stanceChange: 'O especial troca entre a Forma Escudo e a Forma Lâmina.',
+  } satisfies Record<AbilityId, string>,
 
   /** Biomes and weather: banners, toasts and the HUD weather icon. */
   world: {
@@ -1305,10 +1462,10 @@ export const pt = {
       upgrades: [
         '+1 brasa',
         '+4 de dano e +10% de chance de queimar',
-        'Recarga 15% mais rápida',
+        { fork: [{ name: 'Chama guiada', desc: 'As brasas perseguem o alvo; recarga -10%' }, { name: 'Rastro de brasas', desc: 'Deixam o chão em chamas, mas voam devagar' }] },
         '+1 brasa',
         'Atravessa +1 inimigo',
-        '+6 de dano',
+        { fork: [{ name: 'Estilhaço', desc: 'Racham em 2 brasas ao acertar; +4 de dano' }, { name: 'Fogo cruzado', desc: 'Também atira para trás; recarga +10%' }] },
         '+1 brasa e +25% de área',
       ],
     },
@@ -1317,10 +1474,10 @@ export const pt = {
       upgrades: [
         '+1 chama',
         '+20% de área',
-        '+4 de dano',
+        { fork: [{ name: 'Anel duplo', desc: '2º anel maior gira ao contrário; -3 de dano' }, { name: 'Roda de fogo', desc: 'Fogo no chão e +4 de dano; gira mais lento' }] },
         'Dura +0.6s',
         '+1 chama',
-        '+5 de dano e queimaduras +25% mais fortes',
+        { fork: [{ name: 'Combustão', desc: 'Inimigos derrotados explodem; +5 de dano' }, { name: 'Redemoinho', desc: 'Gira de novo logo após (50%); queima mais' }] },
         '+1 chama e gira mais rápido',
       ],
     },
@@ -1329,10 +1486,10 @@ export const pt = {
       upgrades: [
         '+1 jato',
         '+3 de dano',
-        'Atravessa +1 inimigo',
+        { fork: [{ name: 'Jato duplo', desc: 'Também jorra para trás; -1 de dano' }, { name: 'Jato guiado', desc: 'Persegue e atravessa +1 inimigo; mais lento' }] },
         'Recarga 0.1s mais rápida',
         '+1 jato',
-        '+5 de dano',
+        { fork: [{ name: 'Ricochete', desc: 'Ricocheteia em mais 2 inimigos; +4 de dano' }, { name: 'Maré', desc: 'Os jatos voltam e acertam de novo; recarga +15%' }] },
         '+1 jato e atravessa +2',
       ],
     },
@@ -1353,10 +1510,10 @@ export const pt = {
       upgrades: [
         '+1 folha',
         '+4 de dano',
-        '+20% de área',
+        { fork: [{ name: 'Folhas gêmeas', desc: 'Também lança para trás; -2 de dano' }, { name: 'Vendaval', desc: 'Lança de novo logo após (50%); +20% de área' }] },
         '+1 folha',
         'Folhas 25% mais rápidas',
-        '+5 de dano',
+        { fork: [{ name: 'Espinheiro', desc: 'Espinhos venenosos no chão; +25% de veneno' }, { name: 'Folha explosiva', desc: 'Inimigos derrotados explodem; +5 de dano' }] },
         '+1 folha',
       ],
     },
@@ -1377,10 +1534,10 @@ export const pt = {
       upgrades: [
         '+1 estrela',
         '+3 de dano',
-        'Recarga 15% mais rápida',
+        { fork: [{ name: 'Estrelas cadentes', desc: 'Ricocheteiam em mais 2 inimigos; +6 de dano' }, { name: 'Constelação', desc: '+1 estrela e +2 de dano; giram ao seu redor' }] },
         '+1 estrela',
         'Atravessa +1 inimigo',
-        '+4 de dano',
+        { fork: [{ name: 'Cometa', desc: 'Quem cai explode em estrelas; +5 de dano' }, { name: 'Chuva de estrelas', desc: 'Lança de novo logo após (50%); recarga -12%' }] },
         '+2 estrelas',
       ],
     },
@@ -1389,10 +1546,10 @@ export const pt = {
       upgrades: [
         '+1 raio',
         '+8 de dano',
-        '+25% de área e +15% de chance de paralisar',
+        { fork: [{ name: 'Tempestade', desc: '+2 raios menores e um eco (50%); -6 de dano' }, { name: 'Raio concentrado', desc: '1 raio enorme, +34 de dano, salta para 2' }] },
         '+1 raio',
         'Recarga 0.3s mais rápida',
-        '+10 de dano',
+        { fork: [{ name: 'Para-raios', desc: 'Quem cai solta uma descarga; +10 de dano' }, { name: 'Chão eletrificado', desc: 'Deixa o chão eletrificado; +15% de paralisia' }] },
         '+2 raios',
       ],
     },
@@ -1473,10 +1630,10 @@ export const pt = {
       upgrades: [
         '+6 de dano',
         '+1 mordida',
-        '+20% de área',
+        { fork: [{ name: 'Mordida em cadeia', desc: 'A mordida salta para 2 inimigos; -3 de dano' }, { name: 'Mordida dupla', desc: 'Morde de novo logo após (50%); +15% de área' }] },
         'Recarga 0.2s mais rápida',
         '+1 mordida',
-        '+8 de dano',
+        { fork: [{ name: 'Presas famintas', desc: 'Quem cai explode em sombras; +8 de dano' }, { name: 'Mordida sombria', desc: 'Deixa sombras que ferem no chão; +20% área' }] },
         '+1 mordida e +20% de área',
       ],
     },
@@ -1593,10 +1750,10 @@ export const pt = {
       upgrades: [
         '+1 salto',
         '+4 de dano',
-        'Recarga 0.2s mais rápida',
+        { fork: [{ name: 'Sobrecarga', desc: 'Inimigos derrotados explodem; recarga -6%' }, { name: 'Eco elétrico', desc: 'A corrente volta logo após (50%); -1 salto' }] },
         '+1 salto',
         '+5 de dano e +10% de chance de paralisar',
-        'Salta 25% mais longe',
+        { fork: [{ name: 'Campo estático', desc: 'Cada salto deixa faíscas; +10% de paralisia' }, { name: 'Ramificação', desc: 'Cada salto se divide em mais 2; -2 de dano' }] },
         '+2 saltos',
       ],
     },
@@ -1685,76 +1842,292 @@ export const pt = {
       ],
     },
     flamethrower: {
-      description: 'Jorro de fogo contínuo que atravessa tudo pela frente.',
-      upgrades: [],
+      description: 'Jorro de fogo contínuo no inimigo mais próximo; onde ele termina, o chão pega fogo. Pode queimar.',
+      upgrades: [
+        '+5 de dano e jato mais largo',
+        '+2 labaredas e alcance maior',
+        'Chão em chamas dura +0.8s e queimaduras +30% mais fortes',
+        'Recarga 0.15s mais rápida e +2 labaredas',
+      ],
     },
     fireBlast: {
-      description: 'Grandes chamas em forma de ★ orbitam ao seu redor.',
-      upgrades: [],
+      description: 'Arremessa bolas de fogo que explodem numa estrela de cinco pontas, que segue queimando o chão.',
+      upgrades: [
+        '+1 bola de fogo',
+        '+8 de dano e estrela maior',
+        'A estrela queima por +0.4s e +15% de chance de queimar',
+        'Recarga 0.4s mais rápida e +8 de dano',
+      ],
     },
     hydroPump: {
-      description: 'Jatos d’água de alta pressão que atravessam e arremessam inimigos.',
-      upgrades: [],
+      description: 'Dois jatos d’água de alta pressão na direção em que você anda: atravessam tudo e terminam num estouro que arremessa os inimigos.',
+      upgrades: [
+        '+8 de dano',
+        'Jatos mais grossos e mais longos',
+        '+1 jato',
+        'Recarga 0.2s mais rápida e arremessa mais longe',
+      ],
     },
     surf: {
-      description: 'Ondas gigantes se espalham ao seu redor, empurrando e desacelerando.',
-      upgrades: [],
+      description: 'Ondas gigantes saem de você, a primeira para onde você anda, varrendo, empurrando e desacelerando tudo pelo caminho.',
+      upgrades: [
+        '+6 de dano',
+        'Ondas mais largas',
+        '+1 onda',
+        'Recarga 0.25s mais rápida e +4 de dano',
+      ],
     },
     leafStorm: {
-      description: 'Tempestade de folhas em todas as direções, que voltam como bumerangue.',
-      upgrades: [],
+      description: 'Dois braços de folhas giram ao seu redor e se abrem num redemoinho que corta tudo o que cruzam.',
+      upgrades: [
+        '+4 folhas',
+        '+6 de dano',
+        'Folhas maiores e redemoinho mais duradouro',
+        'Recarga 0.25s mais rápida e giro mais rápido',
+      ],
     },
     powerWhip: {
-      description: 'Cipós espinhosos e enormes chicoteiam dos dois lados.',
-      upgrades: [],
+      description: 'Cipós espinhosos e enormes giram ao seu redor, cada um varrendo meia volta e arremessando os inimigos.',
+      upgrades: [
+        '+10 de dano',
+        'Cipós mais longos',
+        '+1 cipó',
+        'Recarga 0.25s mais rápida e arremessa mais longe',
+      ],
     },
     triAttack: {
-      description: 'Triângulos de fogo, gelo e raio perseguem vários alvos.',
-      upgrades: [],
+      description: 'Um prisma gira sobre você e dispara raios de fogo, gelo e eletricidade nos inimigos mais próximos: queima, congela e paralisa.',
+      upgrades: [
+        '+6 de dano',
+        '+20% de chance de status e raios mais grossos',
+        '+3 raios: um segundo triângulo',
+        'Recarga 0.25s mais rápida e +6 de dano',
+      ],
     },
     wildboltStorm: {
-      description: 'Uma tempestade de raios castiga a tela inteira.',
-      upgrades: [],
+      description: 'Uma nuvem de tempestade despeja raios pela tela inteira, e cada raio se ramifica para dois inimigos próximos. Pode paralisar.',
+      upgrades: [
+        '+2 raios',
+        '+10 de dano',
+        'Ramificações vão mais longe e +15% de chance de paralisar',
+        'Recarga 0.3s mais rápida e +2 raios',
+      ],
     },
     gunkShot: {
-      description: 'Arremessa montanhas de lixo tóxico que deixam poças enormes.',
-      upgrades: [],
+      description: 'Arremessa montanhas de lixo que caem com um baque e se espalham em poças tóxicas. Envenena com frequência.',
+      upgrades: [
+        '+1 montanha de lixo',
+        '+4 de dano e veneno +25% mais forte',
+        'Poças maiores que duram +0.6s',
+        'Recarga 0.4s mais rápida e +5 de dano',
+      ],
     },
     hurricane: {
-      description: 'Tornados giram ao seu redor, sugando e jogando inimigos longe.',
-      upgrades: [],
+      description: 'Tornados giram ao seu redor, sugando os inimigos próximos e jogando-os longe.',
+      upgrades: [
+        '+5 de dano',
+        '+1 tornado',
+        'Tornados maiores que duram +1s',
+        'Recarga 0.6s mais rápida e giram mais rápido',
+      ],
     },
     extremeSpeed: {
       description: 'Aperte Shift ou o botão de bote: um bote relâmpago que atravessa a horda e termina numa onda de choque.',
-      upgrades: [],
+      upgrades: [
+        '+10 de dano',
+        'Bote e onda de choque maiores',
+        'Bote mais longo e +6 de dano',
+        '+12 de dano e arremessa mais longe',
+      ],
     },
     thunderbolt: {
-      description: 'Um raio salta por até 9 inimigos, paralisando muitos deles.',
-      upgrades: [],
+      description: 'Um raio cai do céu no inimigo mais próximo e a corrente se divide de inimigo em inimigo. Pode paralisar.',
+      upgrades: [
+        '+3 alvos',
+        '+8 de dano',
+        'A corrente salta mais longe e +15% de chance de paralisar',
+        'Recarga 0.2s mais rápida e +3 alvos',
+      ],
     },
     barbBarrage: {
-      description: 'Espalha punhados de farpas venenosas que explodem em grandes nuvens tóxicas.',
-      upgrades: [],
+      description: 'Lança farpas venenosas para todos os lados; elas viram minas que explodem e deixam uma nuvem tóxica.',
+      upgrades: [
+        '+2 farpas',
+        '+10 de dano',
+        'Explosões maiores e veneno +30% mais forte',
+        'Recarga 0.2s mais rápida e +2 farpas',
+      ],
     },
     inferno: {
-      description: 'Deixa uma fogueira que dispara rajadas de fogo por muito tempo. Queima com frequência.',
-      upgrades: [],
+      description: 'Acende uma fogueira aos seus pés, cercada por um anel de fogo, que dispara rajadas nos inimigos. Queima com frequência.',
+      upgrades: [
+        '+6 de dano',
+        '+1 rajada por disparo',
+        'Anel de fogo maior e fogueira dura +2s',
+        'Recarga 1s mais rápida e +15% de chance de queimar',
+      ],
     },
     blizzard: {
-      description: 'Uma nevasca crava um anel de gelo à sua volta que fere e desacelera quem tenta atravessar.',
-      upgrades: [],
+      description: 'Uma nevasca gira ao seu redor e pingentes de gelo despencam sobre os inimigos, ficando cravados no chão e desacelerando quem passa.',
+      upgrades: [
+        '+3 pingentes',
+        '+6 de dano',
+        'Impactos maiores e gelo dura +1s',
+        'Recarga 0.3s mais rápida e +2 pingentes',
+      ],
     },
     stoneEdge: {
       description: 'Fileiras de pilares de pedra irrompem do chão até os inimigos mais próximos.',
-      upgrades: [],
+      upgrades: [
+        '+10 de dano',
+        '+1 fileira de pilares',
+        'Pilares maiores e fileiras mais longas',
+        'Recarga 0.3s mais rápida e +6 de dano',
+      ],
     },
     megahorn: {
-      description: 'Chifres enormes atravessam a horda inteira, empurrando longe e envenenando.',
-      upgrades: [],
+      description: 'Chifres enormes perfuram a horda e voltam como bumerangue, acertando na ida e na volta. Pode envenenar.',
+      upgrades: [
+        '+10 de dano',
+        '+1 chifre',
+        'Chifres maiores que vão mais longe',
+        'Recarga 0.25s mais rápida e +20% de chance de envenenar',
+      ],
     },
     outrage: {
-      description: 'Fúria dracônica: sopra cones de fogo em várias direções ao mesmo tempo, girando a cada vez.',
-      upgrades: [],
+      description: 'Fúria dracônica: sopros de fogo cada vez mais largos no inimigo mais próximo, terminando num rugido que arremessa todos ao redor.',
+      upgrades: [
+        '+5 de dano',
+        '+1 sopro na fúria',
+        'Sopros e rugido maiores',
+        'Recarga 0.25s mais rápida e +15% de chance de queimar',
+      ],
+    },
+    jawLock: {
+      description: 'Uma bocarra de sombra surge sob os inimigos mais próximos e morde três vezes, prendendo-os no lugar. Acerta ×1.6 em quem está com menos da metade do HP.',
+      upgrades: [
+        '+1 bocarra',
+        '+8 de dano',
+        '+25% de área e recarga 0.15s mais rápida',
+        '+1 bocarra e +6 de dano',
+      ],
+    },
+    superpower: {
+      description: 'Um golpe colossal arremessa os inimigos da frente contra a horda (quem é arremessado fere quem atinge), seguido de uma saraivada de socos.',
+      upgrades: [
+        '+10 de dano',
+        '+3 socos',
+        '+20% de área',
+        'Recarga 0.25s mais rápida e +8 de dano',
+      ],
+    },
+    fissure: {
+      description: 'O chão se abre em fendas a partir de você que puxam os inimigos para o abismo. Quem fica com menos de 20% do HP cai de vez.',
+      upgrades: [
+        '+1 fenda',
+        '+12 de dano',
+        '+20% de área',
+        '+1 fenda e recarga 0.3s mais rápida',
+      ],
+    },
+    extrasensory: {
+      description: 'Olhos psíquicos se abrem sobre os inimigos e puxam a multidão para o centro antes de explodir. Pode confundir: confusos esbarram e ferem uns aos outros.',
+      upgrades: [
+        '+1 olho',
+        '+10 de dano e +20% de chance de confundir',
+        '+20% de área',
+        '+1 olho e puxa por +0.3s',
+      ],
+    },
+    steelBeam: {
+      description: 'Um raio de aço grosso dispara no inimigo mais próximo e varre a linha devagar, acertando tudo nela várias vezes.',
+      upgrades: [
+        '+6 de dano',
+        '+1 raio',
+        'Dura +0.3s e +15% de área',
+        '+1 raio e +6 de dano',
+      ],
+    },
+    infernalParade: {
+      description: 'Um desfile de chamas fantasmas vaga ao seu redor queimando. Causa ×1.7 de dano em quem está com status.',
+      upgrades: [
+        '+2 chamas',
+        '+5 de dano e +15% de chance de queimar',
+        'Dura +1s e as chamas andam mais rápido',
+        '+2 chamas e +4 de dano',
+      ],
+    },
+    phantomForce: {
+      description: 'Uma salva de flechas some no céu e despenca sobre os inimigos mais próximos, acorrentando-os no lugar.',
+      upgrades: [
+        '+2 flechas',
+        '+10 de dano',
+        '+25% de área',
+        '+2 flechas e recarga 0.2s mais rápida',
+      ],
+    },
+    aquaCutter: {
+      description: 'Shurikens d’água gigantes voam até os inimigos e voltam girando para você, cortando na ida e na volta.',
+      upgrades: [
+        '+1 shuriken',
+        '+7 de dano',
+        '+25% de área',
+        '+1 shuriken e mais velocidade',
+      ],
+    },
+    searingShot: {
+      description: 'Lança bolas de fogo incandescentes que explodem nos inimigos e espalham um anel de brasas. Queima com frequência.',
+      upgrades: [
+        '+1 bola de fogo',
+        '+10 de dano',
+        '+25% de área e queimaduras +25% mais fortes',
+        '+1 bola de fogo e recarga 0.3s mais rápida',
+      ],
+    },
+    gigaDrain: {
+      description: 'Cipós se prendem aos inimigos mais próximos e sugam sua energia, curando você. Se o alvo cai, o cipó pula para o próximo.',
+      upgrades: [
+        '+1 cipó',
+        '+4 de dano',
+        'Sugam por +0.5s',
+        '+2 cipós e +3 de dano',
+      ],
+    },
+    burningJealousy: {
+      description: 'Um canto de inveja ecoa e pilares de fogo irrompem sob os inimigos mais fortes da tela. Causa ×1.5 em elites e chefes, e queima.',
+      upgrades: [
+        '+2 pilares',
+        '+12 de dano',
+        '+25% de área e queimaduras +25% mais fortes',
+        '+2 pilares e recarga 0.3s mais rápida',
+      ],
+    },
+    trailblaze: {
+      description: 'Lâminas de folha gigantes varrem quase um círculo inteiro ao seu redor, de longe.',
+      upgrades: [
+        '+8 de dano',
+        '+20% de área',
+        '+1 lâmina',
+        'Recarga 0.25s mais rápida e +8 de dano',
+      ],
+    },
+    liquidation: {
+      description: 'Ondas que quebram avançam para a frente e para trás, derrubando os inimigos e baixando a defesa deles (marca: levam mais dano).',
+      upgrades: [
+        '+1 onda',
+        '+10 de dano',
+        '+20% de área e +20% de chance de marcar',
+        '+1 onda e recarga 0.2s mais rápida',
+      ],
+    },
+    alluringVoice: {
+      description: 'Ondas de canto em forma de coração se espalham de você, uma após a outra, e podem confundir quem alcançam.',
+      upgrades: [
+        '+1 onda',
+        '+8 de dano e +15% de chance de confundir',
+        '+20% de área',
+        '+1 onda e recarga 0.3s mais rápida',
+      ],
     },
   },
 
@@ -1784,6 +2157,13 @@ export const pt = {
     hardStone: typeBoost('Pedra'),
     silverPowder: typeBoost('Inseto'),
     dragonFang: typeBoost('Dragão'),
+    blackBelt: typeBoost('Lutador'),
+    metalCoat: typeBoost('Aço'),
+    spellTag: typeBoost('Fantasma'),
+    blackGlasses: typeBoost('Sombrio'),
+    twistedSpoon: typeBoost('Psíquico'),
+    softSand: typeBoost('Terra'),
+    fairyFeather: typeBoost('Fada'),
   },
 
   upgrades: {
@@ -1797,7 +2177,7 @@ export const pt = {
     expCharm: '+3% de EXP recebida por nível.',
     amuletCoin: '+10% de ₽ ganhos por nível.',
     abilityCapsule: '+1 troca de opções por partida ao subir de nível.',
-    escapeRope: '+1 pulo de subida de nível por partida.',
+    escapeRope: '+1 pulo e +1 Esquecer de subida de nível por partida.',
     shinyCharm: 'Shinies selvagens mais comuns: +1/3 da chance por nível (1/450 → 1/225 no máximo).',
   },
 
@@ -1844,7 +2224,7 @@ export const pt = {
     quaxly: 'Dançarino. Gira na água e golpeia.',
     pichu: 'Elétrico. Raios rápidos, mas frágil.',
     machop: 'Lutador. Socos fortes e muita vida.',
-    eevee: 'Adaptável. Cresce rápido e vira Umbreon.',
+    eevee: 'Adaptável. Cresce rápido e evolui de 8 jeitos.',
     togepi: 'Sortudo. Regenera vida e ganha mais EXP.',
     spheal: 'Rolante. Gordinho, resistente e gelado.',
     starly: 'Veloz. Voa rápido e puxa itens de longe.',

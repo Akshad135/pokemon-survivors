@@ -17,11 +17,13 @@ import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
+import { drawModAttack, drawModGround } from './modFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawDrainVines, drawTypeEvolvedAttack, drawTypeEvolvedGround } from './typeEvolved'
 import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
@@ -121,6 +123,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedGround(ctx, a, t)
       drawMoveFxGround(ctx, a)
       drawSignatureGround(ctx, a, t)
+      drawTypeEvolvedGround(ctx, a, t)
+      drawModGround(ctx, a, t)
       return drawSpecialGround(ctx, a)
   }
 }
@@ -159,7 +163,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'flame':
       return blitCentered(ctx, FX.flame()[Math.floor((t + a.id) * 10) % 2]!, a.x, a.y - 2)
     case 'water': {
-      const angle = m.kind === 'linear' ? Math.atan2(m.vy, m.vx) : 0
+      // Seeking and returning jets (fork mods) point their way too.
+      const angle = m.kind === 'linear' || m.kind === 'homing' || m.kind === 'boomerang' ? Math.atan2(m.vy, m.vx) : 0
       return blitRotated(ctx, FX.water(), a.x, a.y, angle)
     }
     case 'leaf': {
@@ -312,6 +317,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
       drawSignatureAttack(ctx, a, t)
+      drawTypeEvolvedAttack(ctx, a, t)
+      drawModAttack(ctx, a, t)
       drawMegaAttack(ctx, a)
       return drawSpecialAttack(ctx, a, t)
   }
@@ -733,6 +740,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
+  drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {
