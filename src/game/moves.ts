@@ -14,6 +14,7 @@ import type { PlayerStats } from './stats'
 import { modBits, modHit, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
+import { EGG_MOVES_2 } from './eggMoves2'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
@@ -2243,6 +2244,9 @@ export const MOVES = {
     upgrades: [{ amount: 1 }, { damage: 8, statusChance: 0.15 }, { area: 0.2 }, { amount: 1, cooldown: -0.3 }],
     fire: (g, s) => evo.alluringVoice(g, s, { move: 'alluringVoice', type: 'fairy', visual: 'alluring' }),
   },
+
+  /* ---------- Egg families' signature moves, second batch (`eggMoves2.ts`) ---------- */
+  ...EGG_MOVES_2,
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES

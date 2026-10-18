@@ -1,11 +1,13 @@
 import { retain } from '../engine/math'
 import { MOVES, maxMoveLevel, type MoveId } from './moves'
+import { EGG_MOVE_2_IDS } from './eggMoves2'
 import type { Game } from './types'
 
 /** The egg families' signature moves, in `MOVES` order (`ps.sig()` lists them). */
 const SIGNATURES = [
   'dreamEater', 'forcePalm', 'dig', 'twister', 'sandTomb', 'meteorMash', 'zenHeadbutt', 'foulPlay', 'bodySlam', 'dynamicPunch', 'rollout',
   'iceBall', 'furyCutter', 'sacredSword', 'dragonDarts', 'snarl', 'gigaImpact', 'flail', 'boneRush', 'metronome', 'echoedVoice', 'curse',
+  ...EGG_MOVE_2_IDS,
 ] as const satisfies readonly MoveId[]
 
 /**

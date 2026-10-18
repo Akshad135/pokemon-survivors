@@ -212,6 +212,7 @@ export type Visual =
   | VerbVisual
   | SignatureVisual
   | TypeEvolvedVisual
+  | EggMove2Visual
 
 /** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
 export type DamageSource = MoveId | 'special' | 'ability'
@@ -243,6 +244,10 @@ export type EggMoveVisual =
   | 'meteorMash' | 'zenHeadbutt' | 'foulPlay' | 'bodySlam' | 'slamWave' | 'dynamicPunch' | 'rollout' | 'iceBall'
   | 'furyCutter' | 'sacredSword' | 'sacredEdge' | 'dragonDart' | 'snarl' | 'gigaImpact' | 'gigaWave' | 'flail'
   | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse'
+/** The second batch of egg-family signature moves (`eggMoves2.ts`), drawn by `render/eggMove2Fx.ts`. */
+export type EggMove2Visual =
+  | 'braveBird' | 'weatherBall' | 'accelerock' | 'zapCannon' | 'aerialAce' | 'crossPoison' | 'bubbleBeam' | 'rockBlast'
+  | 'cottonSpore' | 'wildCharge' | 'playRough' | 'spore' | 'waterfall' | 'lastResort'
 /** The verb moves (`moveVerbs.ts`), drawn by `render/verbFx.ts`. */
 export type VerbVisual =
   | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'
