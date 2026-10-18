@@ -9,6 +9,7 @@ import { FRESH_WEIGHT, runLearnset, unlockedAt } from './learnsets'
 import { draftOffers, offerPool } from './leveling'
 import { isLegendary, MOVE_IDS, MOVES, type MoveId } from './moves'
 import { isDuo } from './duoRules'
+import { isTmMove } from './tmMoves'
 import { SIGNATURE_MOVES } from './signatureMoves'
 
 /** The egg families' signature moves (the starters' are `SIGNATURE_MOVES`). */
@@ -55,7 +56,7 @@ const MAX_FAMILIES = 18
 
 const EVOLVED = new Set<MoveId>(EVOLUTIONS.map((e) => e.to))
 /** Every move a family may learn: all but the evolved ones and the capstones (legendary and duo moves). */
-const LEARNABLE = MOVE_IDS.filter((id) => !EVOLVED.has(id) && !isLegendary(id) && !isDuo(id))
+const LEARNABLE = MOVE_IDS.filter((id) => !EVOLVED.has(id) && !isLegendary(id) && !isDuo(id) && !isTmMove(id))
 
 /** Each way a family's run can end: the plain line, or one per branch. */
 const endings = (id: PlayableId): ReadonlyArray<BranchId | null> => {

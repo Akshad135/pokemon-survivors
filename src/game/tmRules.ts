@@ -3,7 +3,7 @@ import { evolvedFrom, neverEvolves } from '../data/evolutions'
 import type { BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
-import { runLearnset } from './branch'
+import { runLearnset } from './learnsets'
 import { learnable } from './kitRules'
 import { MAX_MOVES } from './leveling'
 import { isManual, maxMoveLevel, MOVE_IDS, MOVES, type MoveId } from './moves'
@@ -100,16 +100,19 @@ export type TutorLoadout = {
 }
 
 /**
- * The moves a tutor can teach this player: of a type outside the learnset's
- * and the owned moves' types, not owned (nor evolved from), not forgotten
+ * The moves a tutor can teach this player: of a type outside the types of the
+ * family's whole learnset (every stage) and of the moves held, so never a
+ * move the family learns anyway; not owned (nor evolved from), not forgotten
  * with Esquecer, and learnable next to the moves held (one manual move).
  */
 export const tutorPool = ({ starter, branch, moves, banished }: TutorLoadout): MoveId[] => {
-  const types = new Set<PokeType>([...runLearnset(starter, branch), ...moves.map((m) => m.id)].map((id) => MOVES[id].type))
+  const learnset = runLearnset(starter, branch)
   const owned = moves.map((m) => m.id)
+  const types = new Set<PokeType>([...learnset, ...owned].map((id) => MOVES[id].type))
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
   return tutorMoves().filter(
-    (id) => !types.has(MOVES[id].type) && !owned.includes(id) && !evolvedBases.has(id) && !banished?.has(id) && learnable(owned, id, isManual),
+    (id) =>
+      !types.has(MOVES[id].type) && !learnset.includes(id) && !owned.includes(id) && !evolvedBases.has(id) && !banished?.has(id) && learnable(owned, id, isManual),
   )
 }
 

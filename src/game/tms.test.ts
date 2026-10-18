@@ -9,6 +9,7 @@ import { NO_RANKS } from './meta'
 import { MOVES, maxMoveLevel, type MoveId } from './moves'
 import { recordEvent, recordStep, resimulate, startGame, startRecording, TICK, type ReplayStart } from './replay'
 import { isTmMove } from './tmMoves'
+import { runLearnset } from './learnsets'
 import { forgetChoice, needsForget, tmCard, tmChoice, tutorPicks, tutorPool, tutorPrice, tutorWeight, TUTOR } from './tmRules'
 import { collectTm, dropLegendaryTm, dropTm, openTutor } from './tms'
 import type { Game, OwnedMove, TmOffer } from './types'
@@ -70,9 +71,10 @@ describe('the Move Tutor', () => {
 
   it('only teaches types outside the learnset and the moves held', () => {
     const pool = tutorPool(loadout)
-    const banned = new Set([...['waterGun', 'whirlpool', 'flashCannon', 'swift', 'thunder', 'sludgeBomb', 'gust'], 'iceBeam'].map((id) => MOVES[id as MoveId].type))
-    expect(pool.length).toBeGreaterThan(5)
-    for (const id of pool) expect(banned.has(MOVES[id].type)).toBe(false)
+    const learnset = runLearnset('squirtle', null)
+    const banned = new Set([...learnset, 'iceBeam' as const].map((id) => MOVES[id].type))
+    expect(pool.length).toBeGreaterThan(3)
+    for (const id of pool) expect([id, banned.has(MOVES[id].type) || learnset.includes(id)]).toEqual([id, false])
     expect(pool).toContain('rockSlide')
     for (const id of ['whirlwind', 'firePledge', 'dreamEater'] as const) expect(pool).not.toContain(id)
     // No evolved move, no signature only its Pokémon learns.
