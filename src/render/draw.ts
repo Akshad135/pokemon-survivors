@@ -23,7 +23,7 @@ import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } f
 import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
 import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, placeFallLook } from './places'
 import { roomOf } from '../game/room'
-import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawPokemon, sprites, type AnimName, type SpeciesSprites } from './sprites'
 import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
@@ -423,17 +423,24 @@ export const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, sinc
 
 /* ---------------- Entities ---------------- */
 
-const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
+/** True while the player is up in the sky, where Pokémon with a Fly sheet fly instead of walking. */
+const inSky = (g: Game) => g.place.inside?.id === 'sky'
+
+/** Up in the sky (`aloft`) a species with a Fly sheet is on the wing, standing still or not; `walk` otherwise. */
+const airborne = (s: SpeciesSprites, aloft: boolean, walk: AnimName): AnimName => (aloft && s.anims.Fly ? 'Fly' : walk)
+
+const enemyAnim = (e: Enemy, s: SpeciesSprites, aloft: boolean): AnimName =>
+  e.dying >= 0 || e.flash > 0 ? 'Hurt' : airborne(s, aloft, isAsleep(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
 
 /** `time` is game time (shiny entrance), `t` wall time (status tint). */
-const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
+const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, aloft: boolean) => {
   const def: EnemyDef = ENEMIES[e.kind]
   const s = sprites(def.dex, e.shiny)
   const scale = def.scale ?? 1
   if (e.fled) {
     // Running off: it keeps walking away, rising a little, and fades out at the end.
     const k = e.dying / FLEE_TIME
-    drawPokemon(ctx, s, 'Walk', e.dir, e.animTime + e.dying * 2, e.x, e.y - Math.round(k * 18), { alpha: 1 - k * k, scale })
+    drawPokemon(ctx, s, airborne(s, aloft, 'Walk'), e.dir, e.animTime + e.dying * 2, e.x, e.y - Math.round(k * 18), { alpha: 1 - k * k, scale })
     return
   }
   if (e.dying >= 0) {
@@ -445,8 +452,8 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
   const y = e.y - traitLift(e)
   const size = Math.max(s.bodyW, s.bodyH) * scale
   const rage = e.fight?.enraged === true
-  const anim = enemyAnim(e)
-  if (e.runner && anim === 'Walk' && e.status.stun <= 0) drawSpeedLines(ctx, e, y - Math.round((s.bodyH * scale) / 2), s.bodyW * scale, t)
+  const anim = enemyAnim(e, s, aloft)
+  if (e.runner && (anim === 'Walk' || anim === 'Fly') && e.status.stun <= 0) drawSpeedLines(ctx, e, y - Math.round((s.bodyH * scale) / 2), s.bodyW * scale, t)
   if (rage) RAGE_TINT.amount = 0.15 + 0.15 * pulse(t, 3)
   const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (rage ? RAGE_TINT : undefined)
   drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: e.flash > 0.08 ? 0.85 : 0, tint, scale, outline: outlineOf(e, t) })
@@ -506,7 +513,7 @@ const drawAfterimages = (ctx: Ctx, g: Game) => {
   for (const a of g.attacks) {
     if (a.visual !== 'afterimage' || a.age < 0) continue
     const k = a.age / a.ttl
-    drawPokemon(ctx, s, 'Walk', p.dir, p.animTime, a.x, a.y, { alpha: 0.7 * (1 - k), tint: { color: TYPE_COLORS[a.type], amount: 1 } })
+    drawPokemon(ctx, s, airborne(s, inSky(g), 'Walk'), p.dir, p.animTime, a.x, a.y, { alpha: 0.7 * (1 - k), tint: { color: TYPE_COLORS[a.type], amount: 1 } })
   }
 }
 
@@ -522,7 +529,7 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
     if (fall.bar) drawHpBar(ctx, g)
     return
   }
-  const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
+  const anim: AnimName = p.hurt > 0 ? 'Hurt' : airborne(s, inSky(g), p.moving ? 'Walk' : 'Idle')
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
   // Aegislash flashes white for a moment as it swaps stance.
@@ -696,7 +703,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawables.sort((a, b) => depth(a) - depth(b))
 
   // Nothing casts a shadow up in the sky.
-  const aloft = inside?.id === 'sky'
+  const aloft = inSky(g)
   for (const d of drawables) {
     if (aloft) break
     if (d === 'player') {
@@ -711,7 +718,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     if (d === 'player') drawPlayer(ctx, g)
     else if (d === 'companion') companion && drawCompanion(ctx, companion, t)
     else if (isSolid(d)) drawSolid(ctx, g, d, look)
-    else drawEnemy(ctx, d, g.time, t)
+    else drawEnemy(ctx, d, g.time, t, aloft)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of drawables) {

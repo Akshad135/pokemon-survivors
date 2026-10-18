@@ -35,4 +35,4 @@ In dev builds, the browser console exposes `ps.run()` (current run state), `ps.s
 
 ## Assets
 
-Pokémon sprites come from PMD SpriteCollab (`sprite/<dex>/` has Walk/Idle/Hurt; shiny forms live under `sprite/<dex>/0000/0001/`). Portraits also come from SpriteCollab and cries from PokeAPI. They are downloaded by `scripts/fetch-assets.mjs` into `public/assets/pokemon/<dex>/` and indexed in `src/data/sprites.generated.json`. SpriteCollab is CC BY-NC 4.0 with per-artist credit, so keep `CREDITS.md` in sync (`npm run credits`).
+Pokémon sprites come from PMD SpriteCollab (`sprite/<dex>/` has Walk/Idle/Hurt, plus a `Fly` sheet cut from Hover or FlapAround for the flyers in `FLYERS`, used up in the sky; shiny forms live under `sprite/<dex>/0000/0001/`). Portraits also come from SpriteCollab and cries from PokeAPI. They are downloaded by `scripts/fetch-assets.mjs` into `public/assets/pokemon/<dex>/` and indexed in `src/data/sprites.generated.json`. SpriteCollab is CC BY-NC 4.0 with per-artist credit, so keep `CREDITS.md` in sync (`npm run credits`).

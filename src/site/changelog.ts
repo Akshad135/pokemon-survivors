@@ -38,9 +38,9 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         es: 'Cementerio Embrujado: solo fantasmas, saliendo de las tumbas. Sus espíritus despiertan a la Piedra Espíritu y, de ella, a Spiritomb, un jefe nuevo (que puede ser shiny). Véncelo antes del amanecer.',
       },
       {
-        pt: 'Acima das Nuvens, só para quem voa: com um Pokémon do tipo Voador, uma corrente de ar leva você ao céu, onde só aparecem voadores e asas chegam com o vento. Cada asa melhora um atributo até o fim da partida.',
-        en: 'Above the Clouds, for flyers only: with a Flying-type Pokémon, an updraft takes you up to the sky, where only flying Pokémon come and wings drift in on the wind. Each wing raises a stat for the rest of the run.',
-        es: 'Sobre las Nubes, solo para quien vuela: con un Pokémon de tipo Volador, una corriente de aire te lleva al cielo, donde solo aparecen voladores y el viento trae plumas. Cada pluma mejora una estadística hasta el final de la partida.',
+        pt: 'Acima das Nuvens, só para quem voa: com um Pokémon do tipo Voador, uma corrente de ar leva você ao céu, onde só aparecem voadores, todos batendo as asas, e asas chegam com o vento. Cada asa melhora um atributo até o fim da partida.',
+        en: 'Above the Clouds, for flyers only: with a Flying-type Pokémon, an updraft takes you up to the sky, where only flying Pokémon come, all flapping their wings, and wings drift in on the wind. Each wing raises a stat for the rest of the run.',
+        es: 'Sobre las Nubes, solo para quien vuela: con un Pokémon de tipo Volador, una corriente de aire te lleva al cielo, donde solo aparecen voladores, todos batiendo las alas, y el viento trae plumas. Cada pluma mejora una estadística hasta el final de la partida.',
       },
       {
         pt: 'Três conquistas novas, uma delas com o título Explorador(a), para quem concluir os três lugares.',

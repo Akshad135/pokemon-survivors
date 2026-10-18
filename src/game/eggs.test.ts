@@ -168,7 +168,7 @@ describe('egg families', () => {
     const sheets: Record<string, { anims: Record<string, unknown>; shiny?: unknown }> = manifest
     for (const id of HATCHLING_IDS)
       for (const stage of PLAYABLE[id].line) {
-        expect(Object.keys(sheets[stage.dex]?.anims ?? {}).sort()).toEqual(['Hurt', 'Idle', 'Walk'])
+        expect(Object.keys(sheets[stage.dex]?.anims ?? {})).toEqual(expect.arrayContaining(['Hurt', 'Idle', 'Walk']))
         expect(sheets[stage.dex]?.shiny).toBeDefined()
       }
   })

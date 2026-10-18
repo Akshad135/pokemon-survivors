@@ -42,6 +42,14 @@ export const REAPER = [493]
 /** Places' bosses (src/data/places.ts): Spiritomb, out of the graveyard's Odd Keystone. It can roll shiny. */
 export const PLACE_BOSSES = [442]
 export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES])]
+/**
+ * Flying types that take to the sky (the sky's flock in src/data/places.ts and the
+ * Flying-type player forms): they get a `Fly` sheet when SpriteCollab has one.
+ */
+export const FLYERS = new Set([
+  16, 17, 18, 21, 22, 227, 276, 277, 333, 334, 396, 397, 398, // the sky's flock
+  6, 41, 42, 123, 130, 149, 169, 176, 373, 468, 714, 715, 722, 723, // player forms
+])
 /** Species that can roll shiny: the player lines, regular enemies, rift legendaries and places' bosses. */
 export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS, ...PLACE_BOSSES])
 
