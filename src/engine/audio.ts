@@ -318,6 +318,62 @@ const SFX = {
     tone(400, 900, 0.1, 'sine', 0.1)
   },
   crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
+  /* Legendary moves (`game/legendaryMoves.ts`); delayed impacts are scheduled inside their sound. */
+  /** Whirlwind: a long rising howl of wind. */
+  cyclone: () => {
+    noise(0.9, 0.08)
+    tone(140, 420, 0.8, 'sawtooth', 0.04)
+    tone(420, 260, 0.6, 'triangle', 0.04, 0.3)
+  },
+  /** Sacred Fire: the phoenix's cry over crackling flame. */
+  phoenix: () => {
+    tone(880, 1760, 0.16, 'triangle', 0.08)
+    tone(1760, 1320, 0.22, 'triangle', 0.07, 0.15)
+    noise(0.4, 0.07, 0.05)
+  },
+  /** Origin Pulse: a deep boom swelling into a bright sweep. */
+  originPulse: () => {
+    tone(130, 40, 0.5, 'sine', 0.2)
+    noise(0.35, 0.1)
+    tone(400, 1400, 0.4, 'sine', 0.06, 0.18)
+  },
+  sands: () => {
+    noise(0.5, 0.12)
+    tone(220, 70, 0.45, 'sawtooth', 0.07)
+  },
+  /** Dragon Ascent: the climb, then the first dive crashing down. */
+  ascent: () => {
+    tone(300, 1800, 0.4, 'square', 0.05)
+    noise(0.3, 0.2, 0.55)
+    tone(160, 40, 0.35, 'square', 0.14, 0.55)
+  },
+  /** Roar of Time: the roar and the ticking clock, then time snapping back. */
+  roarOfTime: () => {
+    tone(200, 90, 0.6, 'sawtooth', 0.1)
+    ;[0.15, 0.45, 0.75, 1.05, 1.35].forEach((d, i) => tone(i % 2 ? 1200 : 1600, i % 2 ? 1200 : 1600, 0.04, 'square', 0.05, d))
+    tone(1800, 300, 0.25, 'square', 0.08, 1.7)
+    noise(0.2, 0.1, 1.7)
+  },
+  mist: () => {
+    tone(600, 900, 0.25, 'triangle', 0.06)
+    tone(900, 640, 0.3, 'sine', 0.05, 0.12)
+  },
+  lusterPurge: () => {
+    tone(1400, 700, 0.5, 'sawtooth', 0.06)
+    tone(2400, 2200, 0.45, 'sine', 0.04)
+  },
+  /** Psycho Boost: the core charging, then the comets let loose. */
+  psychoBoost: () => {
+    tone(200, 1300, 0.45, 'square', 0.05)
+    ;[0.5, 0.56, 0.62, 0.68].forEach((d) => tone(1500, 500, 0.08, 'square', 0.05, d))
+  },
+  wish: () => [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, f, 0.18, 'triangle', 0.06, i * 0.07)),
+  /** Ancient Power raised every stat. */
+  ancientBoost: () => {
+    noise(0.25, 0.08)
+    ;[523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, 0.1 + i * 0.06))
+  },
+  leaves: () => [1568, 1976, 2349, 1976, 2637].forEach((f, i) => tone(f, f * 1.05, 0.05, 'triangle', 0.05, i * 0.04)),
 } as const
 
 export type Sfx = keyof typeof SFX
