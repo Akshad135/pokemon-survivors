@@ -108,6 +108,8 @@ const wake = (g: Game, inside: GraveInside) => {
   s.bossId = boss.id
   s.shiny = boss.shiny
   g.bossId = boss.id
+  // The keystone's art shows it split open.
+  for (const solid of inside.terrain.solids) if (solid.kind === 'keystone') solid.variant = 1
   for (const e of g.enemies) {
     if (e.boss || e.dying >= 0) continue
     spiritFlight(g, e.x, e.y - e.radius, x, y - 10)

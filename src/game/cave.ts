@@ -173,6 +173,8 @@ const springHouse = (g: Game, inside: CaveInside) => {
 /** The chest opens: ₽, a Poké Ball, items and maybe an egg, then the way out. */
 const openChest = (g: Game, inside: CaveInside, chest: NonNullable<CaveState['chest']>) => {
   chest.open = true
+  // The chest's art shows it open.
+  for (const s of inside.terrain.solids) if (s.kind === 'chest') s.variant = 1
   const x = inside.x + chest.x
   const y = inside.y + chest.y
   const coins = [...chestCoins(g.time), COIN_VALUES[2]]

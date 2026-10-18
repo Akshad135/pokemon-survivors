@@ -120,7 +120,7 @@ const bakeCave = (floor: readonly ArenaShape[]): Baked => {
   return { canvas, x: r.x0, y: r.y0 }
 }
 
-/** The graveyard: dark grass, a dirt path from the gate to the keystone's plaza, a mound before each grave, an iron fence and fog past it. */
+/** The graveyard: dark grass, a gravel path from the gate to the keystone's plaza, a mound before each grave, an iron fence and fog past it. */
 const bakeGraveyard = (floor: readonly ArenaShape[], graves: readonly Pt[], keystone: Pt): { floor: Baked; fence: Baked } => {
   const r = rasterize(floor, 24)
   const R = floor[0]?.kind === 'circle' ? floor[0].r : 160
@@ -136,8 +136,9 @@ const bakeGraveyard = (floor: readonly ArenaShape[], graves: readonly Pt[], keys
     const path = (Math.abs(x) < 11 + Math.sin(y / 13) * 2 && y > keystone[1] + 30) || (kd > 26 && kd < 40)
     if (mound(x, y)) return hash2(x, y, 3) < 0.15 ? '#2c2420' : '#3a3028'
     if (path) {
+      // Grey gravel.
       const h = hash2(x, y, 5)
-      return h < 0.05 ? '#5a5048' : h > 0.97 ? '#7a6e62' : hash2(Math.floor(x / 3), Math.floor(y / 2), 4) < 0.5 ? '#4a4038' : '#443a33'
+      return h < 0.05 ? '#5e5c68' : h > 0.97 ? '#74727e' : hash2(Math.floor(x / 3), Math.floor(y / 2), 4) < 0.5 ? '#4a4854' : '#44424e'
     }
     const blade = hash2(x, Math.floor(y / 2), 2)
     if (blade < 0.06) return '#455a44'
@@ -286,11 +287,26 @@ export const drawPlaceFloor = (ctx: Ctx, inside: PlaceInterior, camX: number, ca
   ctx.drawImage(b.canvas, Math.round(inside.x + b.x - camX), Math.round(inside.y + b.y - camY))
 }
 
-/** PMD's stairs: a square hole with steps going down to the right. */
+/** PMD's stairs: a stone frame around steps going down to the right, each with a lit tread and a dark riser. */
 const STAIRS = lazy(() =>
   art(
-    ['1111111111111', '1222222222221', '1233333333321', '1244443333321', '1255554444321', '1266665555421', '1277776666521', '1288887777621', '1288888888721', '1222222222221', '1111111111111'],
-    { 1: '#1c1410', 2: '#a89070', 3: '#685444', 4: '#5a4838', 5: '#4c3c2e', 6: '#3e3024', 7: '#30241a', 8: '#221810' },
+    [
+      '1111111111111111',
+      '1222222222222221',
+      '1233333333333321',
+      '1244333333333321',
+      '1255443333333321',
+      '1266554433333321',
+      '1277665544333321',
+      '1288776655443321',
+      '1288887766554421',
+      '1288888877665521',
+      '1288888888776621',
+      '1288888888887721',
+      '1222222222222221',
+      '1111111111111111',
+    ],
+    { 1: '#1c1410', 2: '#b8a080', 3: '#8a7460', 4: '#d8c8a8', 5: '#5a4838', 6: '#b8a488', 7: '#3c3024', 8: '#1a120c' },
   ),
 )
 
@@ -303,11 +319,14 @@ export const drawPlaceGround = (ctx: Ctx, g: Game, t: number) => {
     if (s.stairs) {
       const x = inside.x + s.stairs[0]
       const y = inside.y + s.stairs[1]
+      // A soft glow under the stairs, then the stairs, with a glint running down the steps so they catch the eye in the dark.
+      ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.12
+      blitCentered(ctx, ellipse(14, 10, '#f8e8b0'), x, y)
+      ctx.globalAlpha = 1
       blitCentered(ctx, STAIRS(), x, y)
-      // A glint runs along the steps so they catch the eye in the dark.
-      const k = Math.floor(t * 8) % 14
-      ctx.fillStyle = '#f8e8b0'
-      if (k < 9) ctx.fillRect(Math.round(x - 5 + k), Math.round(y - 3 + Math.floor(k / 2)), 1, 1)
+      const k = Math.floor(t * 10) % 16
+      ctx.fillStyle = '#ffffff'
+      if (k < 10) ctx.fillRect(Math.round(x - 5 + k), Math.round(y - 4 + k * 0.9), 2, 1)
     }
     const c = s.chest
     if (c && !c.open && c.progress > 0) chargeArc(ctx, inside.x + c.x, inside.y + c.y, 24, c.progress)
