@@ -33,8 +33,23 @@ describe('move evolution eligibility', () => {
     const pool = offerPool({ starter: 'charmander', moves: [{ id: 'flamethrower', level: 1, cooldown: 0 }], items: [] })
     const moves = pool.flatMap(([o]) => (o.kind === 'move' ? [o.id] : []))
     expect(moves).not.toContain('ember')
-    expect(moves).not.toContain('flamethrower')
     expect(moves).toContain('fireSpin')
+  })
+})
+
+describe('evolved moves keep growing', () => {
+  const offersFor = (id: MoveId, level: number) =>
+    offerPool({ starter: 'charmander', moves: [{ id, level, cooldown: 0 }], items: [] }).flatMap(([o, w]) => (o.kind === 'move' && o.id === id ? [[o.level, w]] : []))
+
+  it('go from Lv1 to Lv5, like every evolved move', () => {
+    for (const evo of EVOLUTIONS) expect(maxMoveLevel(evo.to)).toBe(5)
+  })
+
+  it('offers the next level up to the max, weighed like any owned move’s', () => {
+    const upgrade = offerPool({ starter: 'charmander', moves: [{ id: 'fireSpin', level: 2, cooldown: 0 }], items: [] }).find(([o]) => o.kind === 'move' && o.id === 'fireSpin')
+    expect(offersFor('flamethrower', 1)).toEqual([[2, upgrade?.[1]]])
+    expect(offersFor('flamethrower', 4)).toEqual([[5, upgrade?.[1]]])
+    expect(offersFor('flamethrower', 5)).toEqual([])
   })
 })
 

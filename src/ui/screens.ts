@@ -127,7 +127,7 @@ const offerView = (g: Game, offer: Offer) => {
       return {
         icon: moveIcon(offer.id),
         name: def.name,
-        tag: isNew ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level),
+        tag: `${evolvedFrom(offer.id) ? '★ ' : ''}${isNew ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level)}`,
         isNew,
         desc: isNew ? text.description : text.upgrades[offer.level - 2]!,
         type: def.type,
@@ -158,7 +158,8 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
     const recipes = offerRecipes(g, offer)
     return h(
       'button',
-      { class: offer.kind === 'evolution' ? 'offer offer-evo' : 'offer' },
+      // An evolved move's level-up shows in gold, a notch under an evolution.
+      { class: offer.kind === 'evolution' ? 'offer offer-evo' : offer.kind === 'move' && evolvedFrom(offer.id) ? 'offer offer-star' : 'offer' },
       h('span', { class: 'offer-key' }, i + 1),
       h('div', { class: 'offer-icon' }, h('img', { src: v.icon, alt: '' })),
       h(
@@ -245,7 +246,7 @@ const loadoutList = (g: Game) =>
         h('img', { src: moveIcon(m.id), alt: '' }),
         MOVES[m.id].name,
         loadoutHint(g, m.id),
-        !evolvedFrom(m.id) && h('span', { class: 'tag' }, t().level(m.level)),
+        h('span', { class: 'tag' }, t().level(m.level)),
       ),
     ),
     ...g.player.items.map((i) =>

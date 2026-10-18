@@ -16,6 +16,8 @@ import type { Game, Offer, OwnedItem, OwnedMove } from './types'
 
 export const MAX_MOVES = 6
 export const MAX_ITEMS = 6
+/** Selection weight of a level-up for a move already owned (new moves weigh 1, new items 0.8). */
+const UPGRADE_WEIGHT = 1.3
 
 /** EXP needed to go from `level` to `level + 1`. */
 export const xpFor = (level: number) =>
@@ -48,8 +50,12 @@ export const offerPool = ({ starter, moves, items }: Loadout): Array<readonly [O
   const moveOffers = learnset.flatMap((id): Array<readonly [Offer, number]> => {
     const level = ownedMoves.get(id)
     if (level === undefined) return moves.length < MAX_MOVES && !evolvedBases.has(id) ? [[{ kind: 'move', id, level: 1 }, 1]] : []
-    return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, 1.3]] : []
+    return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, UPGRADE_WEIGHT]] : []
   })
+  // Owned moves from outside the learnset (evolved ones) keep growing in the slot they took.
+  const grownOffers = moves.flatMap((m): Array<readonly [Offer, number]> =>
+    !learnset.includes(m.id) && m.level < maxMoveLevel(m.id) ? [[{ kind: 'move', id: m.id, level: m.level + 1 }, UPGRADE_WEIGHT]] : [],
+  )
 
   const itemOffers = ITEM_IDS.flatMap((id: ItemId): Array<readonly [Offer, number]> => {
     const level = ownedItems.get(id)
@@ -59,7 +65,7 @@ export const offerPool = ({ starter, moves, items }: Loadout): Array<readonly [O
     return level < ITEMS[id].levels.length ? [[{ kind: 'item', id, level: level + 1 }, 1]] : []
   })
 
-  return [...moveOffers, ...itemOffers]
+  return [...moveOffers, ...grownOffers, ...itemOffers]
 }
 
 /**

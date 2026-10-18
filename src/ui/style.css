@@ -2192,6 +2192,16 @@ button {
   border-color: #e83838;
 }
 
+/* A level-up for an evolved move: gold like an evolution, without the blinking. */
+.offer-star {
+  background: linear-gradient(180deg, #fffbe8, #f8ecc0);
+  border-color: #e0a020;
+}
+
+.offer-star .offer-icon {
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
 .offer-evo .offer-icon {
   background: #503010;
   box-shadow: 0 0 0 2px #f8d030;

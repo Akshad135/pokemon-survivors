@@ -133,7 +133,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
           'div',
           { class: ready ? 'slot evo-ready' : 'slot' },
           m && h('img', { src: moveIcon(m.id), alt: '' }),
-          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? '★' : m.level),
+          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? `★${m.level}` : m.level),
         )
       }),
     )
