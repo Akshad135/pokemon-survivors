@@ -21,6 +21,7 @@ import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { isManual, MOVES, moveStats, type MoveDef } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
+import { updateSignatures } from './signatures'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -109,6 +110,7 @@ export const createGame = (
       guard: null,
       hidden: null,
       drain: { left: 0, at: 0 },
+      moveBuffs: [],
     },
     enemies: [],
     attacks: [],
@@ -318,6 +320,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   rebuildGrid(g)
   updateTraits(g, dt)
   updateMoveKit(g, dt)
+  updateSignatures(g, dt)
   updateMoves(g, input.lunge === true, dt)
   updateAttacks(g, dt)
   updateTerrain(g, dt)

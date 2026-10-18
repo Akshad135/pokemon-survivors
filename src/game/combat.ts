@@ -26,8 +26,8 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   // Conditional bonuses (Hex), a mark and a freeze multiply the hit; without them it's exactly ×1.
   const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status))
   const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * range(g.rng, 0.9, 1.1)))
-  // A Bronzong ward soaks the hit first.
-  const dmg = absorb(e.trait, raw)
+  // A Bronzong ward soaks the hit first, unless the move goes through wards.
+  const dmg = attack.ignoreWards ? raw : absorb(e.trait, raw)
   e.hp -= dmg
   e.flash = 0.16
   g.damageByMove[attack.move] = (g.damageByMove[attack.move] ?? 0) + dmg

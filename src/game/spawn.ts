@@ -29,6 +29,8 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     drain: 0,
     pull: 0,
     trailer: null,
+    ignoreWards: false,
+    memo: 0,
     ...init,
   }
   g.attacks.push(attack)

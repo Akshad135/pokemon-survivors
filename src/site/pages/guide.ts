@@ -248,6 +248,8 @@ const types = (m: SiteMessages) => {
         return t.effects.confuse()
       case 'seed':
         return t.effects.seed(SEED_HEAL, SEED_JUMPS)
+      case 'weaken':
+        return t.effects.weaken(STATUS_RULES.weaken.boss)
     }
   }
   // Only conditions something inflicts: a move, or the Poké Flute for sleep.

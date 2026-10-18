@@ -28,7 +28,7 @@ import type { RiftState } from './rift'
 import type { SpecialState } from './special'
 import type { Stance } from './stance'
 import type { RunTally } from './tally'
-import type { PlayerStats } from './stats'
+import type { PlayerStats, StatDelta } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
@@ -47,6 +47,8 @@ export type OwnedMove = {
 
 /** A move's window on the player (guard, burrow): `left` seconds, and the move whose hook it calls. */
 export type MoveWindow = { left: number; move: MoveId }
+/** A move's timed effect on the player's stats (Rapid Spin's guard, Petal Dance's dizziness): `recomputeStats` adds `stats` while `left` lasts. */
+export type MoveBuff = { move: MoveId; left: number; stats: StatDelta; applied: boolean }
 export type OwnedItem = { id: ItemId; level: number }
 
 export type Player = {
@@ -87,6 +89,8 @@ export type Player = {
   hidden: MoveWindow | null
   /** Drain heal budget (`drainRefill`) and the game time it was last spent. */
   drain: { left: number; at: number }
+  /** Moves' timed stat effects on the player (`signatures.ts`). */
+  moveBuffs: MoveBuff[]
 }
 
 export type EnemyBehavior =
@@ -182,6 +186,7 @@ export type Visual =
   | 'telegraph'
   | EvolvedVisual
   | TacticVisual
+  | SignatureVisual
 
 /** What dealt the damage, for the results screen. */
 export type DamageSource = MoveId | 'special'
@@ -197,6 +202,13 @@ export type TacticVisual =
   | 'quick' | 'extremeSpeed' | 'shock' | 'thunderbolt' | 'hex'
   | 'spikes' | 'barbs' | 'spikesBlast' | 'barbsBlast'
   | 'wisp' | 'wispShot' | 'inferno' | 'infernoShot'
+
+/** Starter signature moves (`signatureMoves.ts`), drawn by `render/signatureFx.ts`. */
+export type SignatureVisual =
+  | 'leechSeed' | 'rapidSpin' | 'petal' | 'eruptionFall' | 'eruption' | 'thrash' | 'thrashBite' | 'kick'
+  | 'mudWave' | 'hammer' | 'drill' | 'leafTornado' | 'tornadoLeaf' | 'flameCharge' | 'flameLanding'
+  | 'needleArm' | 'needle' | 'psybeam' | 'lariat' | 'bubble' | 'bubblePop' | 'snipeSight' | 'snipeShot'
+  | 'flowerTrick' | 'aquaStep' | 'pinShadow' | 'pyroBounce' | 'sonicJab'
 
 /** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
 export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
@@ -250,6 +262,10 @@ export type Attack = {
   /** Px/s it pulls the foes it touches toward its center, divided by their mass (bosses resist more). */
   pull: number
   trailer: Trailer | null
+  /** Goes through a Bronzong ward instead of being soaked by it (Darkest Lariat, Snipe Shot). */
+  ignoreWards: boolean
+  /** A number the move keeps on its hitbox (Thrash's bite timer, Snipe Shot's base damage…), read by `signatures.ts` and the renderer. */
+  memo: number
 }
 
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
@@ -389,6 +405,8 @@ export type GameEvent =
   | { kind: 'shatter'; cause: 'execute' | 'freeze' }
   /** A guard window negated a hit. */
   | { kind: 'guard' }
+  /** A move with its own cast sound fired (the shell maps it, `ui/castSfx.ts`). */
+  | { kind: 'cast'; move: MoveId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
