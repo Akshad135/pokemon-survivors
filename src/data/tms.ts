@@ -1,4 +1,5 @@
 import type { EnemyId } from './enemies'
+import { LEGENDARY_MOVE_OF } from './legendaryMoves'
 import type { RiftLegend } from './rifts'
 import type { MoveId } from '../game/moves'
 import type { TmMoveId } from '../game/tmMoves'
@@ -17,25 +18,15 @@ export const BOSS_TMS = {
   raikou: 'thunderFang',
   entei: 'lavaPlume',
   suicune: 'auroraBeam',
-  regirock: 'ancientPower',
+  regirock: 'meteorBeam',
   regice: 'icyWind',
   registeel: 'ironHead',
   mewtwo: 'psystrike',
 } as const satisfies Partial<Record<EnemyId, TmMoveId>>
 
 /**
- * The "legendary TM" a beaten rift legendary offers (at most one learned per
- * run). For now each points at the TM move closest to its type; the legendary
- * moves of their own replace these entries.
+ * The "legendary TM" a beaten legendary offers (at most one learned per run):
+ * its own legendary move. Rift legendaries drop it when their arena is won,
+ * the finale's mythicals (endless mode) when they fall.
  */
-export const LEGENDARY_TMS: Partial<Record<RiftLegend, MoveId>> = {
-  lugia: 'psystrike',
-  hoOh: 'heatWave',
-  kyogre: 'auroraBeam',
-  groudon: 'ancientPower',
-  rayquaza: 'ancientPower',
-  dialga: 'ironHead',
-  latias: 'psystrike',
-  latios: 'psystrike',
-  deoxys: 'psystrike',
-}
+export const LEGENDARY_TMS: Partial<Record<RiftLegend | EnemyId, MoveId>> = LEGENDARY_MOVE_OF

@@ -1,5 +1,5 @@
 import { dirTo, fromAngle, TAU } from '../engine/math'
-import { chance, range } from '../engine/rng'
+import { range } from '../engine/rng'
 import * as dm from '../engine/dmath'
 import { burst } from './effects'
 import type { DamageBonus } from './kitRules'
@@ -16,7 +16,7 @@ import type { Enemy, Game, OwnedMove } from './types'
  * Move Tutor can teach too. Each one plays its own way: a landslide along a
  * line, a yawn that puts a crowd to sleep, a freezing beam, a discharge you
  * charge by walking, a crescent of heat, electric fangs, lava pools, an
- * aurora sweep, ancient rocks that sometimes raise every stat, a wind that
+ * aurora sweep, meteors whose charge raises your power, a wind that
  * slows, a head of iron that blocks a hit, and Mewtwo's Psystrike. Like the
  * signatures they're exempt from the evolution rule and grow through forks.
  * Spread at the end of `MOVES`; art in `render/tmFx.ts`.
@@ -79,8 +79,8 @@ const FANG_BONUS: readonly DamageBonus[] = [{ when: 'paralyzed', mult: 1.6 }]
 export const LAVA_PLUME = { near: 40, far: 64, r: 13, pool: 11, share: 0.35, erupt: 0.12 } as const
 /** Aurora Beam's sweep: arc, reach and build. */
 export const AURORA = { arc: 1.5, length: 118, segments: 11, r: 6 } as const
-/** Ancient Power: the rocks' rise (s) and the boost: odds at Lv 1 (+ per level), seconds and stats. */
-export const ANCIENT = { rise: 0.3, odds: 0.1, perLevel: 0.015, seconds: 8, boost: { might: 0.1, speed: 6, armor: 1, cooldown: -0.05 } } as const
+/** Meteor Beam: seconds the meteors charge before they fly, and how long the charge's boost lasts. */
+export const METEOR = { charge: 0.3, seconds: 4 } as const
 /** Icy Wind's gusts: spread, drag and size (× area). */
 export const ICY_WIND = { spread: 0.2, drag: 1.6, r: 9, ttl: 0.9 } as const
 /** Iron Head: the iron body's radius (× area), its share of the damage, and the armor it adds while it lasts. */
@@ -88,8 +88,8 @@ export const IRON_HEAD = { r: 17, share: 0.4, armor: 2 } as const
 /** Psystrike: seconds the orbs hover before they strike, and their hover ring. */
 export const PSYSTRIKE = { hover: 0.3, ring: 16, reach: 260 } as const
 
-/** Ancient Power's boost odds at `level`. */
-export const ancientOdds = (level: number) => ANCIENT.odds + ANCIENT.perLevel * (level - 1)
+/** What Meteor Beam's charge adds to the player at `level`: damage (like the games' Sp. Atk) and a little speed. */
+export const meteorBoost = (level: number) => ({ might: 0.06 + 0.01 * (level - 1), speed: 4 })
 
 /** Discharge's charge (0..1) after walking `walked` px. */
 export const dischargeCharge = (walked: number) => Math.max(0, Math.min(1, walked / DISCHARGE.full))
@@ -230,8 +230,11 @@ const auroraBeam = (g: Game, s: CastStats) => {
   cast(g, 'auroraBeam')
 }
 
-/** Ancient rocks rise around you and fly at the foes; now and then their power rises in you: every stat up for a while. */
-const ancientPower = (g: Game, s: CastStats, owned: OwnedMove) => {
+/**
+ * Meteors gather around you while it charges, and the charge raises your
+ * power (`meteorBoost`, refreshed every cast); then they fly at the foes.
+ */
+const meteorBeam = (g: Game, s: CastStats, owned: OwnedMove) => {
   const p = g.player
   const offset = range(g.rng, 0, TAU)
   for (let i = 0; i < s.amount; i++) {
@@ -240,21 +243,17 @@ const ancientPower = (g: Game, s: CastStats, owned: OwnedMove) => {
     const y = p.y - 4 + dm.sin(angle) * 12
     const delay = -i * 0.05
     spawnAttack(g, {
-      ...look('ancientPower', 'rock', 'ancientRise'), x, y, shape: { kind: 'circle', r: 1 }, motion: { kind: 'static' },
-      damage: 0, ttl: ANCIENT.rise, activeFrom: Infinity, age: delay,
+      ...look('meteorBeam', 'rock', 'meteorRise'), x, y, shape: { kind: 'circle', r: 1 }, motion: { kind: 'static' },
+      damage: 0, ttl: METEOR.charge, activeFrom: Infinity, age: delay,
     })
     spawnAttack(g, {
-      ...look('ancientPower', 'rock', 'ancientRock'), x, y: y - 10,
+      ...look('meteorBeam', 'rock', 'meteor'), x, y: y - 10,
       shape: { kind: 'circle', r: 5 * s.area }, motion: { kind: 'homing', vx: 0, vy: -s.speed * 0.5, speed: s.speed, turn: 6, target: null },
-      damage: s.damage, knockback: s.knockback, pierce: s.pierce, status: s.status, ttl: 2.4, age: delay - ANCIENT.rise,
+      damage: s.damage, knockback: s.knockback, pierce: s.pierce, status: s.status, ttl: 2.4, age: delay - METEOR.charge,
     })
   }
-  if (chance(g.rng, ancientOdds(owned.level))) {
-    addMoveBuff(g, 'ancientPower', ANCIENT.seconds * p.stats.duration, ANCIENT.boost)
-    burst(g, p.x, p.y - 12, { colors: ['#f8d878', '#ffffff', '#c89848', '#f8f0c0'], count: 40, speed: 90, ttl: 0.9, gravity: -70 })
-    g.events.push({ kind: 'ancientBoost' })
-  }
-  cast(g, 'ancientPower')
+  addMoveBuff(g, 'meteorBeam', METEOR.seconds * p.stats.duration, meteorBoost(owned.level))
+  cast(g, 'meteorBeam')
 }
 
 /** A freezing gust blows the way you walk: everything it touches slows down and gets pushed back. */
@@ -358,10 +357,10 @@ export const TM_MOVES = {
     upgrades: [
       { area: 0.15 },
       { damage: 4 },
-      { fork: [{ stats: { amount: 1 } }, { stats: { area: 0.2, damage: 2 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { damage: 1 }, mods: ['echo'] }, { stats: { area: 0.2, damage: 2 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.4 },
       { damage: 5 },
-      { fork: [{ stats: { damage: 4 }, mods: ['echo'] }, { stats: { amount: 1, area: 0.1 } }] },
+      { fork: [{ stats: { damage: 4 }, mods: ['arc'] }, { stats: { amount: 1, area: 0.1 }, mods: ['trail'] }] },
       { amount: 1, damage: 4 },
     ],
     fire: (g, s) => yawn(g, s),
@@ -375,7 +374,7 @@ export const TM_MOVES = {
     upgrades: [
       { damage: 5 },
       { statusChance: 0.1 },
-      { fork: [{ stats: { amount: 1, damage: -3 } }, { stats: { area: 0.2 }, mods: ['echo'] }] },
+      { fork: [{ stats: { amount: 1, damage: -3 }, mods: ['trail'] }, { stats: { area: 0.2 }, mods: ['echo'] }] },
       { cooldown: -0.2 },
       { damage: 6 },
       { fork: [{ stats: { damage: 4 }, mods: ['arc'] }, { stats: { statusChance: 0.15 }, mods: ['burstOnKill'] }] },
@@ -395,7 +394,7 @@ export const TM_MOVES = {
       { fork: [{ stats: { statusChance: 0.15 }, mods: ['arc'] }, { stats: { damage: 4 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.15 },
       { damage: 7 },
-      { fork: [{ stats: { area: 0.15 }, mods: ['echo'] }, { stats: { damage: 5, statusChance: 0.1 } }] },
+      { fork: [{ stats: { area: 0.15 }, mods: ['echo'] }, { stats: { damage: 5, statusChance: 0.1 }, mods: ['trail'] }] },
       { damage: 8, area: 0.15 },
     ],
     fire: (g, s, owned) => discharge(g, s, owned),
@@ -409,7 +408,7 @@ export const TM_MOVES = {
     upgrades: [
       { damage: 4 },
       { statusChance: 0.1 },
-      { fork: [{ stats: { amount: 1, damage: -2 } }, { stats: { damage: 2 }, mods: ['rear'] }] },
+      { fork: [{ stats: { damage: -2 }, mods: ['split'] }, { stats: { damage: 2 }, mods: ['rear'] }] },
       { cooldown: -0.25 },
       { damage: 5 },
       { fork: [{ stats: { statusDamage: 0.3 }, mods: ['burstOnKill'] }, { stats: { damage: 3 }, mods: ['echo'] }] },
@@ -430,7 +429,7 @@ export const TM_MOVES = {
       { fork: [{ stats: { statusChance: 0.15 }, mods: ['arc'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.1 },
       { damage: 5 },
-      { fork: [{ stats: { amount: 1 }, mods: ['echo'] }, { stats: { damage: 6, area: 0.2 } }] },
+      { fork: [{ stats: { amount: 1 }, mods: ['echo'] }, { stats: { damage: 6, area: 0.2 }, mods: ['trail'] }] },
       { amount: 1, damage: 4 },
     ],
     fire: (g, s) => thunderFang(g, s),
@@ -444,10 +443,10 @@ export const TM_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { fork: [{ stats: { duration: 1.2 } }, { stats: { damage: 3 }, mods: ['burstOnKill'] }] },
+      { fork: [{ stats: { duration: 1.2 }, mods: ['trail'] }, { stats: { damage: 3 }, mods: ['burstOnKill'] }] },
       { cooldown: -0.3 },
       { damage: 5 },
-      { fork: [{ stats: { area: 0.25 }, mods: ['echo'] }, { stats: { statusDamage: 0.3, duration: 0.8 } }] },
+      { fork: [{ stats: { area: 0.25 }, mods: ['echo'] }, { stats: { statusDamage: 0.3, duration: 0.8 }, mods: ['arc'] }] },
       { amount: 2, damage: 4 },
     ],
     fire: (g, s) => lavaPlume(g, s),
@@ -461,20 +460,20 @@ export const TM_MOVES = {
     upgrades: [
       { damage: 4 },
       { statusChance: 0.15 },
-      { fork: [{ stats: { amount: 1 } }, { stats: { area: 0.2 }, mods: ['echo'] }] },
+      { fork: [{ stats: { amount: 1 }, mods: ['burstOnKill'] }, { stats: { area: 0.2 }, mods: ['echo'] }] },
       { cooldown: -0.25 },
       { damage: 5 },
-      { fork: [{ stats: { damage: 4 }, mods: ['arc'] }, { stats: { duration: 0.2, area: 0.15 } }] },
+      { fork: [{ stats: { damage: 4 }, mods: ['arc'] }, { stats: { duration: 0.2, area: 0.15 }, mods: ['twin'] }] },
       { damage: 6, area: 0.15 },
     ],
     fire: (g, s) => auroraBeam(g, s),
   },
 
-  ancientPower: {
-    name: 'Ancient Power',
+  meteorBeam: {
+    name: 'Meteor Beam',
     type: 'rock',
-    base: stats({ damage: 14, cooldown: 1.8, amount: 3, speed: 170, pierce: 1, knockback: 50 }),
-    // The boost's odds grow by level too (`ancientOdds`).
+    base: stats({ damage: 12, cooldown: 1.8, amount: 3, speed: 170, pierce: 1, knockback: 50 }),
+    // The charge's boost grows by level too (`meteorBoost`).
     upgrades: [
       { amount: 1 },
       { damage: 4 },
@@ -484,7 +483,7 @@ export const TM_MOVES = {
       { fork: [{ stats: { amount: 1 }, mods: ['burstOnKill'] }, { stats: { damage: 4 }, mods: ['trail'] }] },
       { amount: 2 },
     ],
-    fire: (g, s, owned) => ancientPower(g, s, owned),
+    fire: (g, s, owned) => meteorBeam(g, s, owned),
   },
 
   icyWind: {
@@ -495,7 +494,7 @@ export const TM_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { fork: [{ stats: { damage: 2 }, mods: ['rear'] }, { stats: { area: 0.3, speed: -20 } }] },
+      { fork: [{ stats: { damage: 2 }, mods: ['rear'] }, { stats: { area: 0.3, speed: -20 }, mods: ['split'] }] },
       { cooldown: -0.25 },
       { damage: 3 },
       { fork: [{ stats: { damage: 2 }, mods: ['burstOnKill'] }, { stats: { amount: 2 }, mods: ['echo'] }] },
@@ -509,14 +508,14 @@ export const TM_MOVES = {
     type: 'steel',
     base: stats({ damage: 26, cooldown: 4.5, amount: 8, speed: 210, duration: 2.5, knockback: 150 }),
     status: { kind: 'sleep', chance: 0.3, duration: 0.5, power: 0 },
-    // The shards fly from `onGuard`, outside the cast: its forks are stat trade-offs only (mods ride on casts).
+    // The shards fly from `onGuard`, outside the cast: the forks' mods ride on the iron body (and Echo hardens it again).
     upgrades: [
       { damage: 6 },
       { duration: 0.5 },
-      { fork: [{ stats: { amount: 4 } }, { stats: { cooldown: -0.8, damage: -4 } }] },
+      { fork: [{ stats: { amount: 4 }, mods: ['burstOnKill'] }, { stats: { cooldown: -0.8, damage: -4 }, mods: ['echo'] }] },
       { damage: 8 },
       { duration: 0.5 },
-      { fork: [{ stats: { damage: 8, area: 0.2 } }, { stats: { statusChance: 0.25, amount: 2 } }] },
+      { fork: [{ stats: { damage: 8, area: 0.2 }, mods: ['arc'] }, { stats: { statusChance: 0.25, amount: 2 }, mods: ['trail'] }] },
       { damage: 10, cooldown: -0.5 },
     ],
     fire: (g, s) => ironHead(g, s),

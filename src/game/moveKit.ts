@@ -39,6 +39,8 @@ import * as dm from '../engine/dmath'
  *   grows on the move's hits, its casts, the player getting hurt or each second
  *   standing still; resets on cast, hurt or walking. Read `stacksOf(owned)`.
  * - `walkedSince(owned, g.player)`: px walked since this move last fired.
+ * - `took(owned, 4, 0)`: whether it took the first branch of its Lv 4 fork,
+ *   for a branch that changes the move itself instead of adding a mod.
  *
  * PLAYER READINGS for cast-time scaling: `hpFraction(p)`, `p.stats.speed`,
  * `p.stats.armor`, `p.level`, `p.items.length`, `p.still` (seconds standing
@@ -166,4 +168,4 @@ export const throwFoe = (e: Enemy, angle: number, force: number, damage: number,
   e.thrown = { damage, move, hit: new Set([e.id]) }
 }
 
-export { hpFraction, scaleBy, stacksOf, walkedSince } from './kitRules'
+export { hpFraction, scaleBy, stacksOf, took, walkedSince } from './kitRules'

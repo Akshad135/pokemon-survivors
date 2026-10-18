@@ -18,6 +18,7 @@ import { awardEgg, dropCoins, dropPickup } from './pickups'
 import { touches } from './props'
 import { isAlive } from './queries'
 import { countNotice } from './tally'
+import { openCursedChest } from './curseSystem'
 import { clearSpot } from './terrain'
 import { openTutor } from './tms'
 import { TUTOR, tutorWeight } from './tmRules'
@@ -219,6 +220,8 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       g.shake = Math.max(g.shake, 3)
       notify(g, { kind: 'chestOpen', coins: coins.reduce((a, b) => a + b, 0) })
       spend(ev)
+      // Sometimes there's a cursed item at the bottom: take it or leave it.
+      openCursedChest(g, ev.x, ev.y)
     },
   },
   spikes: {

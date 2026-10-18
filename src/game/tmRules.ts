@@ -1,5 +1,5 @@
 import type { Rng } from '../engine/rng'
-import { evolvedFrom } from '../data/evolutions'
+import { evolvedFrom, neverEvolves } from '../data/evolutions'
 import type { BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
@@ -7,8 +7,7 @@ import { runLearnset } from './branch'
 import { learnable } from './kitRules'
 import { MAX_MOVES } from './leveling'
 import { isManual, maxMoveLevel, MOVE_IDS, MOVES, type MoveId } from './moves'
-import { SIGNATURE_MOVES } from './signatureMoves'
-import { tmMoveIds } from './tmMoves'
+import { isTmMove, tmMoveIds } from './tmMoves'
 import type { ItemId } from '../data/items'
 import type { Offer, OwnedMove, TmOffer } from './types'
 
@@ -82,15 +81,13 @@ export const forgetChoice = (moves: readonly OwnedMove[], tm: TmOffer): Offer[] 
 let known: readonly MoveId[] | null = null
 
 /**
- * What a Move Tutor knows: the TM moves and every base move, no evolved ones
- * nor the signatures only their own Pokémon learn. Built on first use: this
+ * What a Move Tutor knows: the TM moves and every regular base move. No
+ * evolved moves, nor the ones that never evolve by design (signatures only
+ * their own Pokémon learn, legendary and duo moves). Built on first use: this
  * module is reached while `MOVES` is still being built.
  */
 export const tutorMoves = (): readonly MoveId[] => {
-  if (!known) {
-    const personal = new Set(Object.keys(SIGNATURE_MOVES))
-    known = MOVE_IDS.filter((id) => !evolvedFrom(id) && !personal.has(id))
-  }
+  known ??= MOVE_IDS.filter((id) => isTmMove(id) || (!evolvedFrom(id) && !neverEvolves(id)))
   return known
 }
 

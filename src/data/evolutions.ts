@@ -1,6 +1,9 @@
-import { maxMoveLevel, type MoveId } from '../game/moves'
+import { isLegendary, maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import type { OwnedItem, OwnedMove } from '../game/types'
 import type { ItemId } from './items'
+import { SIGNATURE_MOVES } from '../game/signatureMoves'
+import { EGG_MOVE_2_IDS } from '../game/eggMoves2'
+import { isTmMove } from '../game/tmMoves'
 
 /**
  * Move evolutions, Vampire Survivors style: a move at max level plus its paired
@@ -42,7 +45,43 @@ export const EVOLUTIONS = [
   { from: 'torchSong', item: 'metronome', to: 'burningJealousy' },
   { from: 'drumBeating', item: 'leftovers', to: 'gigaDrain' },
   { from: 'leafBlade', item: 'wideLens', to: 'trailblaze' },
+  // The verb moves: a new form each, with a generic item or a type item's second pair.
+  { from: 'flameWheel', item: 'lightClay', to: 'ragingFury' },
+  { from: 'solarBeam', item: 'powerHerb', to: 'seedFlare' },
+  { from: 'brine', item: 'loadedDice', to: 'waterSpout' },
+  { from: 'electroBall', item: 'choiceScarf', to: 'electroDrift' },
+  { from: 'venoshock', item: 'toxicOrb', to: 'sludgeWave' },
+  { from: 'selfDestruct', item: 'assaultVest', to: 'explosion' },
+  { from: 'roost', item: 'leftovers', to: 'oblivionWing' },
+  { from: 'focusPunch', item: 'blackBelt', to: 'skyUppercut' },
+  { from: 'gyroBall', item: 'metalCoat', to: 'gearGrind' },
+  { from: 'suckerPunch', item: 'blackGlasses', to: 'kowtowCleave' },
+  { from: 'futureSight', item: 'twistedSpoon', to: 'hyperspaceHole' },
+  { from: 'bonemerang', item: 'softSand', to: 'thousandArrows' },
+  { from: 'stealthRock', item: 'hardStone', to: 'stoneAxe' },
+  { from: 'uTurn', item: 'quickClaw', to: 'firstImpression' },
+  { from: 'dragonTail', item: 'dragonFang', to: 'breakingSwipe' },
+  { from: 'sheerCold', item: 'neverMeltIce', to: 'glacialLance' },
 ] as const satisfies readonly MoveEvolution[]
+
+/** The egg families' first batch of signature moves (#106, inline in `MOVES`). */
+const EGG_SIGNATURES: readonly MoveId[] = [
+  'dreamEater', 'forcePalm', 'dig', 'twister', 'sandTomb', 'meteorMash', 'zenHeadbutt', 'foulPlay', 'bodySlam', 'dynamicPunch', 'rollout',
+  'iceBall', 'furyCutter', 'sacredSword', 'dragonDarts', 'snarl', 'gigaImpact', 'flail', 'boneRush', 'metronome', 'echoedVoice', 'curse',
+]
+
+/**
+ * Moves that never evolve by design: signatures and TM moves grow through their forks, and
+ * legendary and duo moves are capstones. Read at call time, since `MOVES` and
+ * the signature tables aren't built yet when this module loads (it imports
+ * back from `moves.ts`).
+ */
+export const neverEvolves = (id: MoveId) => {
+  const def: MoveDef = MOVES[id]
+  const eggs2: readonly MoveId[] = EGG_MOVE_2_IDS
+  const signature = id in SIGNATURE_MOVES || EGG_SIGNATURES.includes(id) || eggs2.includes(id)
+  return signature || isTmMove(id) || isLegendary(id) || def.duo === true
+}
 
 /** The evolution a base move can go through, if any. */
 export const evolutionOf = (move: MoveId): MoveEvolution | undefined => EVOLUTIONS.find((e) => e.from === move)

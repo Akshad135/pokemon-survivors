@@ -51,14 +51,14 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 /* ---------------- Rocks ---------------- */
 
 const STONE = { rim: '#2a2218', base: '#a08868', light: '#dccca4', shade: '#665040', crack: '#463626' } as const
-const ANCIENT = { rim: '#2a2018', base: '#9a8a70', light: '#e4d8b4', shade: '#5a4a38', crack: '#463626' } as const
+const METEOR = { rim: '#201828', base: '#7a6a88', light: '#d8c8e8', shade: '#40304e', crack: '#f87830' } as const
 
 /**
  * A boulder `w`×`h` px: a lumpy outline (`bumps` push the edge in, around the
  * circle), lit from the top right, with a crack. Painted in code so every
  * size stays on the pixel grid.
  */
-const boulder = (w: number, h: number, bumps: readonly number[], pal: typeof STONE | typeof ANCIENT, rune = false) =>
+const boulder = (w: number, h: number, bumps: readonly number[], pal: typeof STONE | typeof METEOR, rune = false) =>
   outlined(
     paint(w, h, (px) => {
       const cx = (w - 1) / 2
@@ -205,7 +205,7 @@ const tent = () =>
 
 export const TM_FX = {
   rocks: lazy(() => [boulder(15, 12, [0, 1, 0, 2, 0, 0, 1, 0, 2, 1], STONE), boulder(12, 10, [1, 0, 0, 2, 1, 0, 0, 1], STONE), boulder(9, 8, [0, 2, 0, 1, 0, 1], STONE)]),
-  ancientRock: lazy(() => boulder(12, 11, [0, 1, 0, 0, 2, 0, 1, 0], ANCIENT, true)),
+  meteor: lazy(() => boulder(12, 11, [0, 1, 0, 0, 2, 0, 1, 0], METEOR, true)),
   jawTop: lazy(() => sprite(JAW, FANG)),
   jawBottom: lazy(() => sprite([...JAW].reverse(), FANG)),
   shard: lazy(() => sprite(SHARD, STEEL, '#101418')),
@@ -306,7 +306,7 @@ export const TM_ICONS: Record<TmMoveId, () => PixelSprite> = {
       }),
       '#202040',
     ),
-  ancientPower: () =>
+  meteorBeam: () =>
     compose(16, 15, [
       [
         paint(16, 15, (px) => {
@@ -318,7 +318,7 @@ export const TM_ICONS: Record<TmMoveId, () => PixelSprite> = {
         0,
         0,
       ],
-      [TM_FX.ancientRock(), 1, 1],
+      [TM_FX.meteor(), 1, 1],
     ]),
   icyWind: () =>
     outlined(

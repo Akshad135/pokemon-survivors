@@ -112,10 +112,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { statusDamage: 0.3 },
+      { fork: [{ stats: { statusDamage: 0.15 }, mods: ['trail'] }, { stats: { damage: -1 }, mods: ['arc'] }] },
       { cooldown: -0.3 },
       { amount: 1 },
-      { damage: 4, area: 0.2 },
+      { fork: [{ stats: { damage: 4 }, mods: ['burstOnKill'] }, { stats: { area: 0.2 }, mods: ['echo'] }] },
       { amount: 2 },
     ],
     // Seeds are lobbed at different foes, a little ahead of them: they sprout on landing.
@@ -147,10 +147,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 3 },
       { duration: 0.3 },
-      { area: 0.2 },
+      { fork: [{ stats: { area: 0.1 }, mods: ['arc'] }, { stats: { area: 0.1 }, mods: ['drain'] }] },
       { cooldown: -0.5 },
       { damage: 4 },
-      { duration: 0.3, area: 0.15 },
+      { fork: [{ stats: { duration: 0.3 }, mods: ['burstOnKill'] }, { stats: { area: 0.15, damage: 16 }, mods: ['execute'] }] },
       { damage: 5, knockback: 50 },
     ],
     // The player spins in their shell: the body hits and flings foes outward, takes less damage and blows enemy shots away.
@@ -173,10 +173,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { duration: 0.3 },
+      { fork: [{ stats: { damage: 2 }, mods: ['twin'] }, { stats: { duration: 0.3 }, mods: ['trail'] }] },
       { amount: 1 },
       { cooldown: -0.3 },
-      { damage: 4, area: 0.15 },
+      { fork: [{ stats: { damage: 4 }, mods: ['burstOnKill'] }, { stats: { area: 0.15 }, mods: ['vortex'] }] },
       { amount: 2 },
     ],
     // Petals spiral out from the player, spinning faster each cast in a row; the third is wilder and leaves them dizzy.
@@ -209,10 +209,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 6 },
-      { area: 0.2 },
+      { fork: [{ stats: { area: 0.1 }, mods: ['trail'] }, { stats: { damage: -4 }, mods: ['echo'] }] },
       { amount: 2 },
       { cooldown: -0.4 },
-      { damage: 8 },
+      { fork: [{ stats: { damage: 8 }, mods: ['burstOnKill'] }, { stats: { damage: 11 }, mods: ['hunter'] }] },
       { amount: 2, area: 0.15 },
     ],
     // Fire bombs burst from the player's back and rain around them; they hit as hard as the player is healthy.
@@ -253,10 +253,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 3 },
       { amount: 1 },
-      { area: 0.2 },
+      { fork: [{ stats: { area: 0.1 }, mods: ['arc'] }, { stats: { area: 0.2 }, mods: ['drain'] }] },
       { duration: 0.5 },
       { damage: 4 },
-      { amount: 2 },
+      { fork: [{ stats: { amount: 1 }, mods: ['burstOnKill'] }, { stats: { amount: 1 }, mods: ['hunter'] }] },
       { cooldown: -1, damage: 3 },
     ],
     // A rampage: `amount` bites a second on foes around the player for `duration`, then they're worn out for a moment.
@@ -280,10 +280,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 3 },
       { area: 0.2 },
-      { cooldown: -0.2 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['arc'] }, { stats: { cooldown: 0.1, damage: 6 }, mods: ['echo'] }] },
       { damage: 4 },
       { amount: 1 },
-      { damage: 5 },
+      { fork: [{ stats: { damage: 10 }, mods: ['execute'] }, { stats: { damage: 2 }, mods: ['burstOnKill'] }] },
       { area: 0.25, knockback: 40 },
     ],
     // Two kicks in a quick arc: the first one marks, so the second lands ×1.5 on whatever the first one caught.
@@ -315,10 +315,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 3 },
       { area: 0.2 },
-      { amount: 1 },
+      { fork: [{ stats: { damage: 7 }, mods: ['rear'] }, { stats: { amount: 1 }, mods: ['trail'] }] },
       { cooldown: -0.25 },
       { damage: 4 },
-      { area: 0.2 },
+      { fork: [{ stats: { area: 0.1, damage: 5 }, mods: ['split'] }, { stats: { cooldown: 0.1 }, mods: ['boomerang'] }] },
       { amount: 1, damage: 4 },
     ],
     // A wave of mud rolls out and widens: everything it splashes is slowed and hits the player softer.
@@ -343,10 +343,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 6 },
       { area: 0.2 },
-      { cooldown: -0.3 },
+      { fork: [{ stats: { cooldown: -0.2 }, mods: ['arc'] }, { stats: { cooldown: -0.3 }, mods: ['trail'] }] },
       { damage: 8 },
       { area: 0.2 },
-      { cooldown: -0.3 },
+      { fork: [{ stats: { cooldown: -0.2, damage: -10 }, mods: ['burstOnKill'] }, { stats: { cooldown: -0.3, damage: 11 }, mods: ['hunter'] }] },
       { damage: 10 },
     ],
     // A huge log hammer is raised and slammed in front of the player; a swing that connects costs a little HP.
@@ -369,10 +369,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 2 },
       { amount: 1 },
-      { speed: 40 },
+      { fork: [{ stats: { damage: 4 }, mods: ['seek'] }, { stats: { damage: -1 }, mods: ['rear'] }] },
       { cooldown: -0.25 },
       { damage: 3 },
-      { area: 0.25 },
+      { fork: [{ stats: { area: 0.1, damage: 4 }, mods: ['split'] }, { stats: { area: 0.25 }, mods: ['trail'] }] },
       { amount: 1, damage: 3 },
     ],
     // A spinning beak-drill that bores through a line of foes, slowing down to grind each one it goes through.
@@ -398,10 +398,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 2 },
       { area: 0.2 },
-      { duration: 0.5 },
+      { fork: [{ stats: { duration: 0.3 }, mods: ['seek'] }, { stats: { damage: 3 }, mods: ['halo'] }] },
       { amount: 1 },
       { damage: 3 },
-      { area: 0.2 },
+      { fork: [{ stats: { area: 0.2 }, mods: ['burstOnKill'] }, { stats: { area: 0.2 }, mods: ['trail'] }] },
       { amount: 1, damage: 3 },
     ],
     // A leafy whirlwind drifts out, sucking foes in and slowing them, then bursts into a ring of blades.
@@ -427,10 +427,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 5 },
       { area: 0.2 },
-      { cooldown: -0.4 },
+      { fork: [{ stats: { cooldown: -0.3 }, mods: ['trail'] }, { stats: { cooldown: -0.4 }, mods: ['arc'] }] },
       { damage: 6 },
       { area: 0.2 },
-      { cooldown: -0.4 },
+      { fork: [{ stats: { cooldown: -0.4 }, mods: ['burstOnKill'] }, { stats: { cooldown: -0.3 }, mods: ['drain'] }] },
       { damage: 8, area: 0.15 },
     ],
     // Wrapped in flames, the player leaps onto the biggest crowd nearby and lands in a fiery crash. Bulk hits harder.
@@ -466,10 +466,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 3 },
       { amount: 2 },
-      { duration: 0.3 },
+      { fork: [{ stats: { duration: 0.3 }, mods: ['arc'] }, { stats: { damage: 16 }, mods: ['drain'] }] },
       { cooldown: -0.5 },
       { damage: 4 },
-      { amount: 2 },
+      { fork: [{ stats: { amount: 1, damage: -4 }, mods: ['burstOnKill'] }, { stats: { amount: 1, damage: 8 }, mods: ['echo'] }] },
       { duration: 0.4, damage: 4 },
     ],
     // The quills bristle: needles fly out, and for `duration` any foe that touches the player is hurt and thrown back instead.
@@ -516,10 +516,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { amount: 2 },
       { damage: 3 },
-      { statusChance: 0.06 },
+      { fork: [{ stats: {}, mods: ['rear'] }, { stats: { statusChance: 0.06 }, mods: ['cruel'] }] },
       { cooldown: -0.25 },
       { damage: 3, area: 0.2 },
-      { amount: 2 },
+      { fork: [{ stats: { amount: 1 }, mods: ['split'] }, { stats: { amount: 1 }, mods: ['halo'] }] },
       { damage: 4, statusChance: 0.06 },
     ],
     // A wavy stream of rainbow rings: each one may confuse, and confused foes stumble into the others.
@@ -544,10 +544,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 3 },
       { area: 0.2 },
-      { duration: 0.4 },
+      { fork: [{ stats: { duration: 0.3 }, mods: ['vortex'] }, { stats: { duration: 0.4 }, mods: ['drain'] }] },
       { cooldown: -0.4 },
       { damage: 4 },
-      { amount: 1 },
+      { fork: [{ stats: { damage: -2 }, mods: ['twin'] }, { stats: { amount: 1, damage: 9 }, mods: ['execute'] }] },
       { damage: 5, area: 0.15 },
     ],
     // The player spins with arms out for `duration`, clotheslining everything around; it goes through wards.
@@ -578,10 +578,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: 4 }, mods: ['trail'] }, { stats: { area: 0.2 }, mods: ['arc'] }] },
       { cooldown: -0.3 },
       { amount: 2 },
-      { damage: 5 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: {}, mods: ['echo'] }] },
       { amount: 2, area: 0.15 },
     ],
     // Slow bubbles float out and pop on a foe (or when they run out), splashing around; a pop near the player heals them.
@@ -607,10 +607,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 5 },
       { pierce: 1 },
-      { cooldown: -0.3 },
+      { fork: [{ stats: { cooldown: -0.2, damage: 8 }, mods: ['hunter'] }, { stats: { cooldown: -0.3 }, mods: ['split'] }] },
       { damage: 6 },
       { amount: 1 },
-      { pierce: 2 },
+      { fork: [{ stats: { pierce: 1, damage: 13 }, mods: ['execute'] }, { stats: { pierce: 2, damage: -9 }, mods: ['arc'] }] },
       { damage: 8 },
     ],
     // A crosshair locks on a foe a little away, then a long shot flies straight through: the farther it flies, the harder it hits.
@@ -648,10 +648,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { cooldown: -0.2 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['split'] }, { stats: { cooldown: -0.2 }, mods: ['trail'] }] },
       { amount: 1 },
       { damage: 5 },
-      { speed: 60 },
+      { fork: [{ stats: { speed: 60, damage: -5 }, mods: ['burstOnKill'] }, { stats: { speed: 60, damage: 6 }, mods: ['execute'] }] },
       { amount: 2 },
     ],
     // A thrown flower that locks on and never misses, blooming on impact; elites and bosses take ×1.5.
@@ -679,10 +679,10 @@ export const SIGNATURE_MOVES = {
     upgrades: [
       { damage: 4 },
       { area: 0.2 },
-      { cooldown: -0.25 },
+      { fork: [{ stats: { cooldown: -0.2 }, mods: ['trail'] }, { stats: { cooldown: -0.25 }, mods: ['drain'] }] },
       { damage: 5 },
       { area: 0.2 },
-      { cooldown: -0.25 },
+      { fork: [{ stats: { cooldown: -0.25, damage: 8 }, mods: ['arc'] }, { stats: { cooldown: -0.25 }, mods: ['burstOnKill'] }] },
       { damage: 6, area: 0.2 },
     ],
     // A dance step: a short dash, untouchable while it lasts (ahead while walking, side to side standing),

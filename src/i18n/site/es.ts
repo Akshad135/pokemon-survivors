@@ -284,6 +284,19 @@ export const siteEs: SiteMessages = {
       itemHead: 'Objeto',
       resultHead: 'Evolución',
       noEvolution: (moves: string) => `Todavía sin evolución: ${moves}.`,
+      duoTitle: 'Ataques en dúo',
+      duoParagraphs: [
+        'Lleva dos ataques al nivel máximo (o evoluciónalos) y, si sus tipos forman una de las recetas de abajo, una carta dorada ofrece unirlos en un ataque en dúo: toma el espacio del primero, libera el del segundo y sube hasta el Nv 5. Los dos ataques usados no vuelven.',
+        'Las recetas van por tipo, así que funcionan con cualquier Pokémon. Solo cabe 1 ataque en dúo por partida, y la Poké Ball nunca une ataques por su cuenta.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Ataque en dúo',
+      cursedTitle: 'Objetos malditos',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `Desde el minuto ${minutes.toLocaleString('es')}, un cofre cerrado tiene ${Math.round(chance * 100)}% de probabilidad de esconder un objeto maldito: muy fuerte, pero con un precio. Tú eliges tomarlo o dejarlo. No ocupa espacio de objeto, dura hasta el final de la partida y puedes tener hasta ${max}.`,
+      ],
+      cursedUpHead: 'Ventaja',
+      cursedDownHead: 'Precio',
     },
     special: {
       paragraphs: (min: number) => [

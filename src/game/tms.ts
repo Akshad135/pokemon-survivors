@@ -2,6 +2,7 @@ import { retain } from '../engine/math'
 import { range } from '../engine/rng'
 import { TYPE_COLORS } from '../data/types'
 import { BOSS_TMS, LEGENDARY_TMS } from '../data/tms'
+import { MYTHICALS } from '../data/waves'
 import type { RiftLegend } from '../data/rifts'
 import { burst, floatText } from './effects'
 import { applyOffer, branchOffers, recomputeStats } from './leveling'
@@ -27,15 +28,16 @@ export const dropTm = (g: Game, x: number, y: number, move: MoveId, source: TmSo
   g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -20, 20), vy: range(g.rng, -40, -20), attracted: false, age: 0, kind: 'tm', move, source })
 }
 
-/** A defeated wave boss leaves its TM (`BOSS_TMS`). */
+/** A defeated wave boss leaves its TM (`BOSS_TMS`); a mythical of the finale its legendary TM. */
 export const dropBossTm = (g: Game, e: Enemy) => {
   const table: Partial<Record<Enemy['kind'], MoveId>> = BOSS_TMS
   const move = table[e.kind]
   if (move) dropTm(g, e.x - 10, e.y + 2, move, 'boss')
+  else if (MYTHICALS.some((id) => id === e.kind)) dropLegendaryTm(g, e.kind, e.x - 10, e.y + 2)
 }
 
-/** A beaten rift legendary offers its legendary TM, until the run has learned one. */
-export const dropLegendaryTm = (g: Game, legend: RiftLegend, x: number, y: number) => {
+/** A beaten legendary offers its legendary TM, until the run has learned one. Rift arenas call it when won. */
+export const dropLegendaryTm = (g: Game, legend: RiftLegend | Enemy['kind'], x: number, y: number) => {
   const move = LEGENDARY_TMS[legend]
   if (move && !g.tm.legendary) dropTm(g, x, y, move, 'legendary')
 }

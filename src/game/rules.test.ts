@@ -72,8 +72,9 @@ describe('level-up offers', () => {
     expect(moves).not.toContain('ember')
   })
 
+  // No two of these make a duo recipe, so nothing is left to offer.
   it('stops offering new moves when slots are full and falls back to a berry when maxed', () => {
-    const full: OwnedMove[] = (['ember', 'fireSpin', 'swift', 'thunder', 'sludgeBomb', 'gust'] as const).map((id) => ({
+    const full: OwnedMove[] = (['ember', 'fireSpin', 'swift', 'iceShard', 'sludgeBomb', 'gust'] as const).map((id) => ({
       id,
       level: maxMoveLevel(id),
       cooldown: 0,

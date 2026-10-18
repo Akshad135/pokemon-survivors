@@ -14,7 +14,7 @@ import { dashedRing } from './strokes'
  * `draw.ts` calls the passes once a frame like the verb moves': `drawTmGround`
  * under the Pokémon (shadows, lava pools, dust), `drawTmAir` over them
  * (rocks, beams, bubbles, fangs, orbs) and `drawTmPlayer` for what a move
- * leaves on the player (Discharge's charge, Ancient Power's boost, the iron body).
+ * leaves on the player (Discharge's charge, Meteor Beam's boost, the iron body).
  * Everything snaps to whole pixels; flicker comes from `hash2`, never from Math.random.
  */
 
@@ -154,7 +154,7 @@ export const drawTmGround = (ctx: Ctx, g: Game, t: number) => {
       case 'yawn':
         drawYawnGround(ctx, a)
         break
-      case 'ancientRise': {
+      case 'meteorRise': {
         const k = Math.min(1, a.age / a.ttl)
         ctx.globalAlpha = 1 - k
         dashedRing(ctx, a.x, a.y + 4, 3 + k * 7, a.id, ['#f8d870', '#c89848'], 0.8, 0.45)
@@ -425,9 +425,9 @@ const drawGeyser = (ctx: Ctx, a: Attack, t: number) => {
   }
 }
 
-const drawAncientRise = (ctx: Ctx, a: Attack) => {
+const drawMeteorRise = (ctx: Ctx, a: Attack) => {
   const k = Math.min(1, a.age / a.ttl)
-  const rock = TM_FX.ancientRock()
+  const rock = TM_FX.meteor()
   blitCentered(ctx, ellipse(5, 5, 'rgba(248,216,112,0.35)'), a.x, a.y - 4 - k * 6)
   ctx.globalAlpha = Math.min(1, k * 3)
   blitCentered(ctx, rock, a.x, a.y - k * 10)
@@ -435,7 +435,7 @@ const drawAncientRise = (ctx: Ctx, a: Attack) => {
   for (let i = 0; i < 3; i++) px(ctx, a.x - 4 + i * 4, a.y + 2 - k * 4, '#a08868')
 }
 
-const drawAncientRock = (ctx: Ctx, a: Attack, t: number) => {
+const drawMeteor = (ctx: Ctx, a: Attack, t: number) => {
   const m = a.motion
   if (m.kind === 'homing') {
     const len = Math.hypot(m.vx, m.vy) || 1
@@ -443,7 +443,7 @@ const drawAncientRock = (ctx: Ctx, a: Attack, t: number) => {
   }
   const glow = 7 + (Math.floor(t * 10 + a.id) % 2)
   blitCentered(ctx, ellipse(glow, glow, 'rgba(248,216,112,0.35)'), a.x, a.y)
-  blitRotated(ctx, TM_FX.ancientRock(), a.x, a.y, a.age * 7)
+  blitRotated(ctx, TM_FX.meteor(), a.x, a.y, a.age * 7)
 }
 
 const drawIcyWind = (ctx: Ctx, a: Attack, t: number) => {
@@ -549,11 +549,11 @@ export const drawTmAir = (ctx: Ctx, g: Game, t: number, visible: (x: number, y: 
       case 'lavaPlume':
         drawGeyser(ctx, a, t)
         break
-      case 'ancientRise':
-        drawAncientRise(ctx, a)
+      case 'meteorRise':
+        drawMeteorRise(ctx, a)
         break
-      case 'ancientRock':
-        drawAncientRock(ctx, a, t)
+      case 'meteor':
+        drawMeteor(ctx, a, t)
         break
       case 'icyWind':
         drawIcyWind(ctx, a, t)
@@ -619,8 +619,8 @@ export const drawTmPlayer = (ctx: Ctx, g: Game, t: number) => {
     }
     if (charge >= 1 && Math.floor(t * 8) % 2 === 0) dashedRing(ctx, p.x, p.y - 10, 15, t * 4, ['#fff8a0', '#f8d030'], 0.4)
   }
-  // Ancient Power's boost: golden motes rising off the player.
-  if (p.moveBuffs.some((b) => b.move === 'ancientPower')) {
+  // Meteor Beam's charge: golden motes rising off the player while the boost lasts.
+  if (p.moveBuffs.some((b) => b.move === 'meteorBeam')) {
     for (let i = 0; i < 6; i++) {
       const ph = (t * 0.9 + i / 6) % 1
       const x = p.x + Math.sin(i * 2.1 + t * 2) * 9

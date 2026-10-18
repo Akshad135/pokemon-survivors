@@ -74,6 +74,7 @@ describe('the Move Tutor', () => {
     expect(pool.length).toBeGreaterThan(5)
     for (const id of pool) expect(banned.has(MOVES[id].type)).toBe(false)
     expect(pool).toContain('rockSlide')
+    for (const id of ['whirlwind', 'firePledge', 'dreamEater'] as const) expect(pool).not.toContain(id)
     // No evolved move, no signature only its Pokémon learns.
     expect(pool).not.toContain('stoneEdge')
     expect(pool).not.toContain('leechSeed')
