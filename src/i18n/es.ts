@@ -2644,6 +2644,187 @@ export const es: Messages = {
         '+12 de daño y +20% de área',
       ],
     },
+    firePledge: {
+      description: 'Pilares de fuego estallan en un anillo a tu alrededor y el suelo de adentro se vuelve un mar de fuego que quema a quien se quede.',
+      upgrades: [
+        '+2 pilares y +10 de daño',
+        'El mar de fuego dura +1s y +15% de área',
+        '+16 de daño y quemaduras 25% más fuertes',
+        '+2 pilares y recarga 0.4s más rápida',
+      ],
+    },
+    waterPledge: {
+      description: 'Géiseres estallan bajo las multitudes y aparece un arcoíris: mientras brilla, tus ataques tienen +25% de probabilidad de estado.',
+      upgrades: [
+        '+1 géiser y +10 de daño',
+        'El arcoíris dura +1.2s',
+        '+25% de área y +12 de daño',
+        '+2 géiseres y recarga 0.35s más rápida',
+      ],
+    },
+    grassPledge: {
+      description: 'Un pantano se extiende a tu alrededor y anda contigo, atascando a todo enemigo en él, y pilares de lianas estallan bajo los que atrapa.',
+      upgrades: [
+        '+1 pilar y +7 de daño',
+        '+20% de área del pantano',
+        '+10 de daño',
+        '+2 pilares y recarga 0.3s más rápida',
+      ],
+    },
+    fusionFlare: {
+      description: 'Un cometa de fuego blanco cae sobre la multitud más grande, explota y deja el suelo en brasas. Quema.',
+      upgrades: [
+        '+1 cometa',
+        '+18 de daño y +15% de área',
+        'Las brasas duran +1s y +15% de probabilidad de quemar',
+        '+1 cometa y recarga 0.4s más rápida',
+      ],
+    },
+    fusionBolt: {
+      description: 'Un cometa de rayos cae sobre la multitud más grande, explota y deja el suelo electrificado. Paraliza.',
+      upgrades: [
+        '+1 cometa',
+        '+36 de daño y +15% de área',
+        'Las chispas duran +1s y +15% de probabilidad de paralizar',
+        '+1 cometa y recarga 0.4s más rápida',
+      ],
+    },
+    ionDeluge: {
+      description: 'Charcos caen bajo los enemigos y conducen: todos electrocutan a la vez a quien esté en ellos, con arcos entre sí. Con lluvia, +1 charco.',
+      upgrades: [
+        '+1 charco',
+        '+9 de daño y los charcos duran +1s',
+        '+25% de área y +10% de probabilidad de paralizar',
+        '+1 charco y recarga 0.3s más rápida',
+      ],
+    },
+    freezeDry: {
+      description: 'Una niebla helada se extiende a tu alrededor y congela a los enemigos (el siguiente golpe hace el doble y rompe el hielo). ×1.4 a congelados.',
+      upgrades: [
+        '+1 ola de niebla',
+        '+6 de daño y +15% de probabilidad de congelar',
+        '+25% de área',
+        '+15% de área y recarga 0.3s más rápida',
+      ],
+    },
+    nightmare: {
+      description: 'Un Hex en cadena que envenena, y una calavera que muerde a cada objetivo otra vez justo después: ×2 a quien tiene estado y ×1.5 más si está envenenado.',
+      upgrades: [
+        '+2 objetivos',
+        '+14 de daño y +15% de probabilidad de envenenar',
+        '+25% de alcance y veneno 25% más fuerte',
+        '+2 objetivos y recarga 0.3s más rápida',
+      ],
+    },
+    /* Legendary moves (`legendaryMoves.ts`) */
+    whirlwind: {
+      description: 'El ciclón plateado de Lugia se alza sobre la multitud más grande y recorre el campo, arrastrando a los enemigos al ojo de la tormenta. Termina en una ráfaga que los lanza lejos a todos.',
+      upgrades: [
+        '+5 de daño',
+        '+20% de área y dura +0.5s',
+        { fork: [{ name: 'Tormenta doble', desc: '+1 ciclón; -3 de daño' }, { name: 'Rayo en la tormenta', desc: 'Los golpes sueltan chispas a los vecinos; +6 de daño' }] },
+        'Recarga 0.7s más rápida y +5 de daño',
+      ],
+    },
+    sacredFire: {
+      description: 'Un fénix de fuego sagrado de Ho-Oh cruza la multitud y deja una línea de llamas arcoíris en el suelo. Quema a menudo.',
+      upgrades: [
+        '+9 de daño',
+        'Las llamas duran +0.6s y +15% de prob. de quemar',
+        { fork: [{ name: 'Llama purificadora', desc: 'Quien cae estalla en fuego; +6 de daño' }, { name: 'Par de fénix', desc: '+1 fénix; -5 de daño' }] },
+        'Recarga 0.5s más rápida y +1 fénix',
+      ],
+    },
+    originPulse: {
+      description: 'El poder de Kyogre: un anillo de agua brillante estalla desde ti hasta el borde de la pantalla, empujándolo todo, y rayos de luz azul salen en todas direcciones.',
+      upgrades: [
+        '+8 de daño',
+        '+2 rayos y +10% de área',
+        { fork: [{ name: 'Marea doble', desc: 'Un segundo pulso llega enseguida; +20% de área' }, { name: 'Corriente viva', desc: 'Los golpes sueltan chispas a los vecinos; +10 de daño' }] },
+        'Recarga 0.6s más rápida y +2 rayos',
+      ],
+    },
+    scorchingSands: {
+      description: 'El calor de Groudon: un muro de arena abrasadora avanza contra los enemigos y deja el suelo al rojo vivo, quemando a quien lo pisa.',
+      upgrades: [
+        '+7 de daño',
+        '+20% de área',
+        { fork: [{ name: 'Dos mareas', desc: '+1 muro de arena' }, { name: 'Arena fundida', desc: 'El suelo dura +1s, quema +30% y quien cae estalla' }] },
+        'Recarga 0.4s más rápida y +8 de daño',
+      ],
+    },
+    dragonAscent: {
+      description: 'Como Rayquaza, subes al cielo en una estela verde y caes como un cometa sobre las multitudes más grandes, una tras otra.',
+      upgrades: [
+        '+15 de daño',
+        '+20% de área',
+        { fork: [{ name: 'Picada triple', desc: '+1 picada' }, { name: 'Impacto meteoro', desc: 'Quien cae estalla; +20 de daño' }] },
+        'Recarga 0.5s más rápida y +1 picada',
+      ],
+    },
+    roarOfTime: {
+      description: 'El rugido de Dialga detiene el tiempo: un reloj se extiende desde ti por toda la pantalla, congela a los enemigos y el siguiente golpe sobre ellos hace el doble. Cuando el tiempo vuelve, estalla sobre ellos otra vez.',
+      upgrades: [
+        '+25 de daño',
+        '+15% de área y el tiempo se detiene +0.3s',
+        { fork: [{ name: 'Tiempo acelerado', desc: 'Recarga 0.7s más rápida' }, { name: 'Fin de los tiempos', desc: 'Quien cae estalla; +30 de daño' }] },
+        'Recarga 0.6s más rápida y +25 de daño',
+      ],
+    },
+    mistBall: {
+      description: 'Las esferas de niebla de Latias flotan hacia enemigos distintos y estallan en una niebla que se queda, hiriendo y debilitando a quien está dentro (hacen menos daño al tocarte).',
+      upgrades: [
+        '+7 de daño',
+        '+1 esfera',
+        { fork: [{ name: 'Niebla espesa', desc: 'Cada lanzamiento se repite a la mitad; +25% de área' }, { name: 'Niebla cargada', desc: 'Los golpes sueltan chispas; la niebla dura +1s y +5 de daño' }] },
+        'Recarga 0.4s más rápida y +1 esfera',
+      ],
+    },
+    lusterPurge: {
+      description: 'El rayo de luz de Latios barre a los enemigos frente a ti, hacia un lado y luego hacia el otro. Puede bajar su defensa (marca: reciben más daño).',
+      upgrades: [
+        '+9 de daño',
+        '+20% de área',
+        { fork: [{ name: 'Luz cruzada', desc: '+1 rayo, hacia el otro lado' }, { name: 'Luz cegadora', desc: 'Los golpes sueltan chispas; +8 de daño y +30% de prob. de marcar' }] },
+        'Recarga 0.5s más rápida y +9 de daño',
+      ],
+    },
+    psychoBoost: {
+      description: 'El poder de Deoxys se concentra en un núcleo sobre ti y dispara cometas psíquicos que persiguen a enemigos distintos y estallan en ellos.',
+      upgrades: [
+        '+10 de daño',
+        '+2 cometas',
+        { fork: [{ name: 'Sobrecarga', desc: 'Quien cae estalla; +12 de daño' }, { name: 'Lluvia de cometas', desc: '+2 cometas con chispas; -6 de daño' }] },
+        'Recarga 0.4s más rápida y +10 de daño',
+      ],
+    },
+    wish: {
+      description: 'El deseo de Jirachi: una lluvia de estrellas cae sobre los enemigos por toda la pantalla, y parte de su daño te cura.',
+      upgrades: [
+        '+2 estrellas',
+        '+10 de daño',
+        { fork: [{ name: 'Deseo cumplido', desc: 'Quien cae estalla; +25% de área' }, { name: 'Mil deseos', desc: '+3 estrellas y la lluvia se repite a la mitad; -6 de daño' }] },
+        'Recarga 0.5s más rápida y +2 estrellas',
+      ],
+    },
+    ancientPower: {
+      description: 'Piedras ancestrales se alzan a tu alrededor con el poder de Mew y disparan a los enemigos. A veces (30%) todas tus estadísticas suben unos segundos.',
+      upgrades: [
+        '+8 de daño',
+        '+2 piedras',
+        { fork: [{ name: 'Poder primordial', desc: 'Las estadísticas suben con 60% de prob. y por +2s' }, { name: 'Piedra angular', desc: 'Quien cae estalla; +10 de daño' }] },
+        'Recarga 0.4s más rápida y +8 de daño',
+      ],
+    },
+    magicalLeaf: {
+      description: 'Las hojas mágicas de Celebi se abren en un anillo a tu alrededor y cada una persigue a su propio enemigo: nunca fallan.',
+      upgrades: [
+        '+2 hojas',
+        '+6 de daño',
+        { fork: [{ name: 'Eco del tiempo', desc: 'Cada lanzamiento se repite a la mitad; +2 de daño' }, { name: 'Tormenta de hojas', desc: '+4 hojas; -4 de daño' }] },
+        'Recarga 0.3s más rápida y +6 de daño',
+      ],
+    },
   },
 
   items: {
@@ -2858,6 +3039,32 @@ export const es: Messages = {
     doubleEdge: 'Doce picados aéreos caen sobre los enemigos más cercanos.',
   },
 
+
+  duo: {
+    tag: '¡DÚO!',
+    frees: 'Libera 1 espacio de ataque · solo 1 por partida',
+    title: 'Ataques en dúo',
+    legend: 'Dos ataques al nivel máximo (o evolucionados) de los tipos indicados se unen en un ataque en dúo. Solo 1 por partida.',
+    done: 'HECHO',
+    fused: (a: string, b: string, to: string) => `¡*${a}* y *${b}* se unieron: *${to}*!`,
+  },
+
+  curses: {
+    lifeOrb: { upside: '+30% de daño.', downside: 'Cada ataque lanzado cuesta 1% de PS (máx. 1 vez por segundo; se detiene en 1 PS).' },
+    choiceBand: { upside: '+40% de daño.', downside: 'No aprendes ataques nuevos: solo mejoras los que tienes.' },
+    flameOrb: { upside: '+25% de daño y +10% de probabilidad de estado.', downside: 'Quedas quemado: pierdes 0,7% de PS por segundo (se detiene en 1 PS).' },
+    ironBall: { upside: '+30% de daño y +1 de defensa.', downside: 'Pesada: −13 de velocidad.' },
+  },
+  curse: {
+    title: '¡Objeto maldito!',
+    subtitle: 'En el fondo del cofre hay algo poderoso… con un precio.',
+    take: 'Tomarlo',
+    leave: 'Dejarlo',
+    note: 'No ocupa espacio de objeto y dura hasta el final de la partida.',
+    label: 'MALDITO',
+    taken: (name: string) => `Tomaste *${name}*… _el poder tiene un precio_.`,
+    left: (name: string) => `Dejaste *${name}* en el cofre.`,
+  },
   traits: {
     healer: (name: string) => `*${name}* cura a los aliados cercanos. ¡Derríbalo primero!`,
     shield: (name: string) => `*${name}* protege a sus aliados con un _escudo_ que absorbe daño.`,

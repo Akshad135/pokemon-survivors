@@ -6,7 +6,7 @@ import { NO_RANKS } from './meta'
 import { createModState, hasMod, inheritMods, MOD, modBits, refreshMods, stampMods } from './mods'
 import { took } from './kitRules'
 import { spawnAttack } from './spawn'
-import { forkAt, maxMoveLevel, MOVE_IDS, moveStats, withBranch } from './moves'
+import { forkAt, isLegendary, maxMoveLevel, MOVE_IDS, moveStats, withBranch } from './moves'
 import { parseReplay, recordEvent, recordStep, resimulate, startGame, startRecording, TICK, type ReplayStart } from './replay'
 import { BASE_STATS } from './stats'
 
@@ -44,7 +44,8 @@ describe('moveStats with forks', () => {
 
   it('makes every branch change how the move plays: a mod, or a branch the move reads itself', () => {
     const own = new Set(['roost 4 0', 'roost 7 1', 'focusPunch 7 1', 'spore 4 0', 'spore 4 1', 'spore 7 1'])
-    for (const id of MOVE_IDS) {
+    // Legendary capstones (Lv4 only) may trade numbers on one side of their fork.
+    for (const id of MOVE_IDS.filter((m) => !isLegendary(m))) {
       for (const level of [4, 7]) {
         forkAt(id, level)?.forEach((b, i) => expect([id, level, i, (b.mods?.length ?? 0) > 0 || own.has(`${id} ${level} ${i}`)]).toEqual([id, level, i, true]))
       }
@@ -168,7 +169,7 @@ describe('Esquecer', () => {
     const staged = startGame(START)
     gainXp(staged, 400)
     const again = resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)
-    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 })
 

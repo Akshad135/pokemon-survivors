@@ -2643,6 +2643,187 @@ export const en: Messages = {
         '+12 damage and +20% area',
       ],
     },
+    firePledge: {
+      description: 'Pillars of fire burst in a ring around you and the ground inside becomes a sea of fire that burns whoever stays in it.',
+      upgrades: [
+        '+2 pillars and +10 damage',
+        'The sea of fire lasts +1s and +15% area',
+        '+16 damage and burns 25% stronger',
+        '+2 pillars and 0.4s faster cooldown',
+      ],
+    },
+    waterPledge: {
+      description: 'Geysers burst under the crowds and a rainbow appears: while it shines, your moves get +25% status chance.',
+      upgrades: [
+        '+1 geyser and +10 damage',
+        'The rainbow lasts +1.2s',
+        '+25% area and +12 damage',
+        '+2 geysers and 0.35s faster cooldown',
+      ],
+    },
+    grassPledge: {
+      description: 'A swamp spreads around you and walks with you, bogging down every foe in it, while vine pillars burst under the ones it holds.',
+      upgrades: [
+        '+1 pillar and +7 damage',
+        '+20% swamp area',
+        '+10 damage',
+        '+2 pillars and 0.3s faster cooldown',
+      ],
+    },
+    fusionFlare: {
+      description: 'A white-hot comet falls on the biggest crowd, explodes and leaves the ground smoldering. Burns.',
+      upgrades: [
+        '+1 comet',
+        '+18 damage and +15% area',
+        'Embers last +1s and +15% burn chance',
+        '+1 comet and 0.4s faster cooldown',
+      ],
+    },
+    fusionBolt: {
+      description: 'A comet of lightning falls on the biggest crowd, explodes and leaves the ground crackling. Paralyzes.',
+      upgrades: [
+        '+1 comet',
+        '+36 damage and +15% area',
+        'Sparks last +1s and +15% paralysis chance',
+        '+1 comet and 0.4s faster cooldown',
+      ],
+    },
+    ionDeluge: {
+      description: 'Puddles land under foes and conduct: all of them zap whoever stands in them at once, with arcs between them. In rain, +1 puddle.',
+      upgrades: [
+        '+1 puddle',
+        '+9 damage and puddles last +1s',
+        '+25% area and +10% paralysis chance',
+        '+1 puddle and 0.3s faster cooldown',
+      ],
+    },
+    freezeDry: {
+      description: 'A freezing mist rolls out around you and freezes foes (the next hit deals double and breaks the ice). ×1.4 on frozen foes.',
+      upgrades: [
+        '+1 wave of mist',
+        '+6 damage and +15% freeze chance',
+        '+25% area',
+        '+15% area and 0.3s faster cooldown',
+      ],
+    },
+    nightmare: {
+      description: 'A chaining Hex that poisons, and a skull that bites each target again right after: ×2 on afflicted foes and ×1.5 more if poisoned.',
+      upgrades: [
+        '+2 targets',
+        '+14 damage and +15% poison chance',
+        '+25% reach and poison 25% stronger',
+        '+2 targets and 0.3s faster cooldown',
+      ],
+    },
+    /* Legendary moves (`legendaryMoves.ts`) */
+    whirlwind: {
+      description: 'Lugia\'s silver cyclone rises over the biggest crowd and roams the field, pulling foes into the eye of the storm. It ends in a gust that flings them all away.',
+      upgrades: [
+        '+5 damage',
+        '+20% area and lasts +0.5s',
+        { fork: [{ name: 'Twin storm', desc: '+1 cyclone; -3 damage' }, { name: 'Thunderhead', desc: 'Hits arc sparks to nearby foes; +6 damage' }] },
+        '0.7s faster cooldown and +5 damage',
+      ],
+    },
+    sacredFire: {
+      description: 'Ho-Oh\'s phoenix of sacred fire streaks through the crowd and leaves a line of rainbow flames on the ground. Often burns.',
+      upgrades: [
+        '+9 damage',
+        'Flames last +0.6s and +15% burn chance',
+        { fork: [{ name: 'Purifying flame', desc: 'Fainted foes burst into fire; +6 damage' }, { name: 'Phoenix pair', desc: '+1 phoenix; -5 damage' }] },
+        '0.5s faster cooldown and +1 phoenix',
+      ],
+    },
+    originPulse: {
+      description: 'Kyogre\'s power: a ring of glowing water bursts from you to the edge of the screen, pushing everything back, and beams of blue light shoot out every way.',
+      upgrades: [
+        '+8 damage',
+        '+2 beams and +10% area',
+        { fork: [{ name: 'Double tide', desc: 'A second pulse follows; +20% area' }, { name: 'Live current', desc: 'Hits arc sparks to nearby foes; +10 damage' }] },
+        '0.6s faster cooldown and +2 beams',
+      ],
+    },
+    scorchingSands: {
+      description: 'Groudon\'s heat: a wall of scorching sand surges at the foes and leaves the ground glowing hot, burning whoever stands on it.',
+      upgrades: [
+        '+7 damage',
+        '+20% area',
+        { fork: [{ name: 'Two tides', desc: '+1 wall of sand' }, { name: 'Molten sand', desc: 'Hot ground lasts +1s, burns +30%, fainted foes burst' }] },
+        '0.4s faster cooldown and +8 damage',
+      ],
+    },
+    dragonAscent: {
+      description: 'Like Rayquaza, you soar into the sky in a green streak and dive as a comet onto the biggest crowds, one after another.',
+      upgrades: [
+        '+15 damage',
+        '+20% area',
+        { fork: [{ name: 'Triple dive', desc: '+1 dive' }, { name: 'Meteor impact', desc: 'Fainted foes burst; +20 damage' }] },
+        '0.5s faster cooldown and +1 dive',
+      ],
+    },
+    roarOfTime: {
+      description: 'Dialga\'s roar stops time: a clock spreads from you across the whole screen, freezing foes, and the next hit on them deals double. When time starts again, it snaps back on them.',
+      upgrades: [
+        '+25 damage',
+        '+15% area and time stops +0.3s',
+        { fork: [{ name: 'Time warp', desc: '0.7s faster cooldown' }, { name: 'End of time', desc: 'Fainted foes burst; +30 damage' }] },
+        '0.6s faster cooldown and +25 damage',
+      ],
+    },
+    mistBall: {
+      description: 'Latias\'s mist orbs drift to different foes and burst into a mist that lingers, hurting and weakening whoever is inside (they deal less contact damage).',
+      upgrades: [
+        '+7 damage',
+        '+1 orb',
+        { fork: [{ name: 'Thick mist', desc: 'Each cast echoes at half power; +25% area' }, { name: 'Charged mist', desc: 'Hits arc sparks; mist lasts +1s and +5 damage' }] },
+        '0.4s faster cooldown and +1 orb',
+      ],
+    },
+    lusterPurge: {
+      description: 'Latios\'s beam of light sweeps the foes in front of you, one way and then the other. May lower their defense (marked: they take more damage).',
+      upgrades: [
+        '+9 damage',
+        '+20% area',
+        { fork: [{ name: 'Crossbeam', desc: '+1 beam, the other way' }, { name: 'Blinding light', desc: 'Hits arc sparks; +8 damage, +30% mark chance' }] },
+        '0.5s faster cooldown and +9 damage',
+      ],
+    },
+    psychoBoost: {
+      description: 'Deoxys\'s power gathers into a core above you and fires psychic comets that chase different foes and blow up on them.',
+      upgrades: [
+        '+10 damage',
+        '+2 comets',
+        { fork: [{ name: 'Overload', desc: 'Fainted foes burst; +12 damage' }, { name: 'Comet shower', desc: '+2 comets that arc sparks; -6 damage' }] },
+        '0.4s faster cooldown and +10 damage',
+      ],
+    },
+    wish: {
+      description: 'Jirachi\'s wish: a shower of stars falls on the foes across the screen, and part of their damage heals you.',
+      upgrades: [
+        '+2 stars',
+        '+10 damage',
+        { fork: [{ name: 'Wish come true', desc: 'Fainted foes burst; +25% area' }, { name: 'A thousand wishes', desc: '+3 stars and the shower echoes at half; -6 damage' }] },
+        '0.5s faster cooldown and +2 stars',
+      ],
+    },
+    ancientPower: {
+      description: 'Ancient stones rise around you with Mew\'s power and shoot at the foes. Sometimes (30%) all your stats rise for a few seconds.',
+      upgrades: [
+        '+8 damage',
+        '+2 stones',
+        { fork: [{ name: 'Primal power', desc: 'Stats rise at 60% odds and for +2s' }, { name: 'Cornerstone', desc: 'Fainted foes burst; +10 damage' }] },
+        '0.4s faster cooldown and +8 damage',
+      ],
+    },
+    magicalLeaf: {
+      description: 'Celebi\'s magical leaves open in a ring around you and each one chases its own foe: they never miss.',
+      upgrades: [
+        '+2 leaves',
+        '+6 damage',
+        { fork: [{ name: 'Time echo', desc: 'Each cast echoes at half power; +2 damage' }, { name: 'Leaf tempest', desc: '+4 leaves; -4 damage' }] },
+        '0.3s faster cooldown and +6 damage',
+      ],
+    },
   },
 
   items: {
@@ -2857,6 +3038,32 @@ export const en: Messages = {
     doubleEdge: 'Twelve dive-bombs crash on the nearest foes.',
   },
 
+
+  duo: {
+    tag: 'DUO!',
+    frees: 'Frees 1 move slot · only 1 per run',
+    title: 'Duo moves',
+    legend: 'Two max-level (or evolved) moves of the types shown fuse into a duo move. Only 1 per run.',
+    done: 'DONE',
+    fused: (a: string, b: string, to: string) => `*${a}* and *${b}* joined forces: *${to}*!`,
+  },
+
+  curses: {
+    lifeOrb: { upside: '+30% damage.', downside: 'Every move cast costs 1% HP (at most once a second; stops at 1 HP).' },
+    choiceBand: { upside: '+40% damage.', downside: 'You learn no new moves: you only upgrade the ones you have.' },
+    flameOrb: { upside: '+25% damage and +10% status chance.', downside: 'You are burned: lose 0.7% HP per second (stops at 1 HP).' },
+    ironBall: { upside: '+30% damage and +1 defense.', downside: 'Heavy: −13 speed.' },
+  },
+  curse: {
+    title: 'Cursed item!',
+    subtitle: 'At the bottom of the chest lies something powerful… for a price.',
+    take: 'Take it',
+    leave: 'Leave it',
+    note: "Takes no item slot and stays until the run's end.",
+    label: 'CURSED',
+    taken: (name: string) => `You took the *${name}*… _power has a price_.`,
+    left: (name: string) => `You left the *${name}* in the chest.`,
+  },
   traits: {
     healer: (name: string) => `*${name}* heals nearby allies. Take it down first!`,
     shield: (name: string) => `*${name}* wards its allies with a _shield_ that soaks damage.`,

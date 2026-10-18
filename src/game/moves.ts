@@ -15,6 +15,8 @@ import { modBits, modHit, refreshMods, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
 import { EGG_MOVES_2 } from './eggMoves2'
+import { DUO_MOVES } from './duoMoves'
+import { LEGENDARY_MOVES } from './legendaryMoves'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
@@ -78,8 +80,12 @@ export type MoveDef = {
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
   minCooldown?: number
+  /** A duo move (`duoRules.ts`): fused from two maxed moves, it never evolves (and needs no evolution). */
+  duo?: true
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
+  /** A legendary's capstone move (`legendaryMoves.ts`): evolved-tier, it never evolves and comes from the legendaries, not a learnset. */
+  legendary?: true
   /** What kind of move it is, for the abilities that boost a kind (Iron Fist, Strong Jaw, Sharpness, Liquid Voice). */
   tags?: readonly MoveTag[]
   /** Per-move counter rule (`OwnedMove.stacks`, see `kitRules.ts`); `fire` reads `owned.stacks`. */
@@ -2248,6 +2254,11 @@ export const MOVES = {
 
   /* ---------- Egg families' signature moves, second batch (`eggMoves2.ts`) ---------- */
   ...EGG_MOVES_2,
+  /* ---------- Duo moves: two maxed moves fused into one (duoMoves.ts, recipes in duoRules.ts) ---------- */
+
+  ...DUO_MOVES,
+  /* ---------- Legendary moves (`legendaryMoves.ts`) ---------- */
+  ...LEGENDARY_MOVES,
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES
@@ -2260,6 +2271,12 @@ export const maxMoveLevel = (id: MoveId) => MOVES[id].upgrades.length + 1
 export const isManual = (id: MoveId) => {
   const def: MoveDef = MOVES[id]
   return def.manual === true
+}
+
+/** Whether the move is a legendary's capstone (`MoveDef.legendary`). */
+export const isLegendary = (id: MoveId) => {
+  const def: MoveDef = MOVES[id]
+  return def.legendary === true
 }
 
 /** The fork a move's step to `level` is, or null for a plain step (and level 1). */

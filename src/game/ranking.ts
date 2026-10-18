@@ -1,4 +1,5 @@
 import type { TitleId } from '../data/achievements'
+import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { RUN_LENGTH } from '../data/waves'
 import { DAY_TIME_ZONE, isDayKey, type DayKey } from './day'
@@ -28,6 +29,11 @@ export type RunResult = {
   starter: PlayableId
   /** Evolution stage reached (2 = final), so the boards show the form it ended in. */
   stage: number
+  /**
+   * The branching evolution it took (Espeon, Gallade…, `data/branches.ts`),
+   * null when it took none. An older game sends none: read as null.
+   */
+  branch: BranchId | null
   difficulty: Difficulty
   /** Seconds survived, endless overtime included. */
   time: number
@@ -69,6 +75,14 @@ const isOutcome = (v: unknown): v is RunOutcome => RUN_OUTCOMES.some((o) => o ==
 
 const isWhole = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max
 
+/**
+ * The branch a run of `starter` that reached `stage` can report: one of its
+ * family's, at a stage the run got to. Anything else (another family's, one
+ * it hasn't evolved into yet, garbage) reads as none.
+ */
+export const runBranch = (starter: PlayableId, stage: number, raw: unknown): BranchId | null =>
+  isBranch(raw) && BRANCHES[raw].line === starter && stage >= BRANCHES[raw].stage ? raw : null
+
 /** The most faints a run of `time` seconds can report (see `RANKED.maxKillRate`). */
 export const maxKills = (time: number) => Math.ceil(time * (RANKED.maxKillRate + (RANKED.killRateGrowth * time) / 60))
 
@@ -79,14 +93,14 @@ export const maxKills = (time: number) => Math.ceil(time * (RANKED.maxKillRate +
  */
 export const parseRunResult = (raw: unknown): RunResult | null => {
   if (!isRecord(raw)) return null
-  const { starter, stage, difficulty, time, outcome, level, kills, version } = raw
+  const { starter, stage, branch, difficulty, time, outcome, level, kills, version } = raw
   if (!isPlayable(starter) || !isDifficulty(difficulty) || !isOutcome(outcome)) return null
   if (typeof time !== 'number' || !Number.isFinite(time) || time < 0 || time > RANKED.maxTime) return null
   if (!isWhole(stage, 0, PLAYABLE[starter].line.length - 1) || !isWhole(level, 1, RANKED.maxLevel)) return null
   if (!isWhole(kills, 0, maxKills(time))) return null
   if (outcome === 'victory' && time < RUN_LENGTH) return null
   if (typeof version !== 'string' || version.length === 0 || version.length > 40) return null
-  return { starter, stage, difficulty, time, outcome, level, kills, version }
+  return { starter, stage, branch: runBranch(starter, stage, branch), difficulty, time, outcome, level, kills, version }
 }
 
 /** Whether `time` seconds of play fit in `elapsed` seconds of wall clock since the start token. */
@@ -99,6 +113,7 @@ export const rankable = (r: RunResult) => r.outcome !== 'quit' || r.time >= 60
 export const runResult = (g: Game, version: string): RunResult => ({
   starter: g.starter,
   stage: g.player.stage,
+  branch: g.branch,
   difficulty: g.difficulty,
   time: g.time,
   outcome: wonRun(g) ? 'victory' : g.phase === 'gameover' ? 'death' : 'quit',
@@ -197,6 +212,8 @@ export type BoardEntry = ProfileName & {
   rank: number
   starter: PlayableId
   stage: number
+  /** The branching evolution the run took (`RunResult.branch`). Missing from an older API. */
+  branch?: BranchId | null
   time: number
   outcome: RunOutcome
   at: string
@@ -233,8 +250,17 @@ export const parseChallengePlace = (v: unknown): ChallengePlace | null => {
   return { day: v.day, official: v.official === true, rank: typeof v.rank === 'number' ? v.rank : null, total: v.total }
 }
 
-/** A run on a public profile (`verified` as on `BoardEntry`). */
-export type ProfileRun = { starter: PlayableId; stage: number; difficulty: Difficulty; time: number; outcome: RunOutcome; at: string; verified: boolean | null }
+/** A run on a public profile (`verified` and `branch` as on `BoardEntry`). */
+export type ProfileRun = {
+  starter: PlayableId
+  stage: number
+  branch?: BranchId | null
+  difficulty: Difficulty
+  time: number
+  outcome: RunOutcome
+  at: string
+  verified: boolean | null
+}
 
 /** What `/profiles/:handle` answers. `followed`: the asking player follows them; `self`: it's the asking player. */
 export type PublicProfile = ProfileName & {

@@ -423,6 +423,113 @@ const SFX = {
     tone(523, 523, 0.3, 'square', 0.06, 0.22)
     tone(784, 784, 0.3, 'triangle', 0.08, 0.22)
   },
+
+  /* Duo moves and cursed items */
+  /** Two moves fusing: both rise in a chord, then a bright landing. */
+  duoFuse: () => {
+    ;[523, 659, 784, 1047].forEach((f, i) => tone(f, f * 1.5, 0.22, 'square', 0.07, i * 0.06))
+    ;[392, 494, 587, 784].forEach((f, i) => tone(f, f * 1.5, 0.22, 'triangle', 0.09, i * 0.06))
+    ;[1568, 2093, 2637].forEach((f, i) => tone(f, f, 0.16, 'square', 0.06, 0.34 + i * 0.07))
+    noise(0.3, 0.08, 0.32)
+  },
+  /** Fire Pledge: pillars roaring up one after the other. */
+  pledgeFire: () => {
+    noise(0.4, 0.16)
+    ;[0, 0.06, 0.12, 0.18].forEach((d, i) => tone(120 + i * 30, 320 + i * 60, 0.14, 'sawtooth', 0.05, d))
+  },
+  /** Water Pledge: geysers gushing, and a twinkle for the rainbow. */
+  pledgeWater: () => {
+    noise(0.3, 0.12)
+    tone(300, 900, 0.22, 'sine', 0.1)
+    ;[1319, 1568, 1976, 2349].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.04, 0.18 + i * 0.06))
+  },
+  /** Grass Pledge: a wet squelch and vines whipping up. */
+  pledgeGrass: () => {
+    tone(140, 60, 0.2, 'triangle', 0.14)
+    noise(0.12, 0.08, 0.05)
+    ;[0.08, 0.16].forEach((d) => tone(400, 1100, 0.08, 'square', 0.04, d))
+  },
+  /** Fusion Flare / Bolt: the comet's whistle as it falls (the impact plays the boom). */
+  comet: () => tone(2200, 300, 0.5, 'sawtooth', 0.05),
+  /** Ion Deluge: drips, then a buzz through the puddles. */
+  ionDeluge: () => {
+    ;[880, 660].forEach((f, i) => tone(f, f * 0.6, 0.06, 'sine', 0.08, i * 0.07))
+    tone(110, 120, 0.25, 'square', 0.05, 0.12)
+    tone(1800, 2400, 0.08, 'square', 0.04, 0.14)
+  },
+  /** Freeze-Dry: a hiss of mist hardening into ice. */
+  freezeDry: () => {
+    noise(0.35, 0.08)
+    tone(2600, 1800, 0.3, 'triangle', 0.06, 0.05)
+    ;[2093, 2637].forEach((f, i) => tone(f, f, 0.06, 'square', 0.04, 0.25 + i * 0.05))
+  },
+  /** Nightmare: a low warble and the skull's laugh. */
+  nightmare: () => {
+    tone(220, 140, 0.3, 'triangle', 0.1)
+    ;[0.18, 0.26, 0.34].forEach((d, i) => tone(660 - i * 80, 520 - i * 80, 0.06, 'square', 0.05, d))
+  },
+  /** A cursed item in the chest: a minor, dropping chord. */
+  curseFound: () => [523, 415, 330, 247].forEach((f, i) => tone(f, f * 0.98, 0.22, 'triangle', 0.12, i * 0.12)),
+  curseTake: () => {
+    tone(160, 80, 0.4, 'sawtooth', 0.1)
+    ;[659, 622, 523].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, 0.1 + i * 0.09))
+  },
+  /* Legendary moves (`game/legendaryMoves.ts`); delayed impacts are scheduled inside their sound. */
+  /** Whirlwind: a long rising howl of wind. */
+  cyclone: () => {
+    noise(0.9, 0.08)
+    tone(140, 420, 0.8, 'sawtooth', 0.04)
+    tone(420, 260, 0.6, 'triangle', 0.04, 0.3)
+  },
+  /** Sacred Fire: the phoenix's cry over crackling flame. */
+  phoenix: () => {
+    tone(880, 1760, 0.16, 'triangle', 0.08)
+    tone(1760, 1320, 0.22, 'triangle', 0.07, 0.15)
+    noise(0.4, 0.07, 0.05)
+  },
+  /** Origin Pulse: a deep boom swelling into a bright sweep. */
+  originPulse: () => {
+    tone(130, 40, 0.5, 'sine', 0.2)
+    noise(0.35, 0.1)
+    tone(400, 1400, 0.4, 'sine', 0.06, 0.18)
+  },
+  sands: () => {
+    noise(0.5, 0.12)
+    tone(220, 70, 0.45, 'sawtooth', 0.07)
+  },
+  /** Dragon Ascent: the climb, then the first dive crashing down. */
+  ascent: () => {
+    tone(300, 1800, 0.4, 'square', 0.05)
+    noise(0.3, 0.2, 0.55)
+    tone(160, 40, 0.35, 'square', 0.14, 0.55)
+  },
+  /** Roar of Time: the roar and the ticking clock, then time snapping back. */
+  roarOfTime: () => {
+    tone(200, 90, 0.6, 'sawtooth', 0.1)
+    ;[0.15, 0.45, 0.75, 1.05, 1.35].forEach((d, i) => tone(i % 2 ? 1200 : 1600, i % 2 ? 1200 : 1600, 0.04, 'square', 0.05, d))
+    tone(1800, 300, 0.25, 'square', 0.08, 1.7)
+    noise(0.2, 0.1, 1.7)
+  },
+  mist: () => {
+    tone(600, 900, 0.25, 'triangle', 0.06)
+    tone(900, 640, 0.3, 'sine', 0.05, 0.12)
+  },
+  lusterPurge: () => {
+    tone(1400, 700, 0.5, 'sawtooth', 0.06)
+    tone(2400, 2200, 0.45, 'sine', 0.04)
+  },
+  /** Psycho Boost: the core charging, then the comets let loose. */
+  psychoBoost: () => {
+    tone(200, 1300, 0.45, 'square', 0.05)
+    ;[0.5, 0.56, 0.62, 0.68].forEach((d) => tone(1500, 500, 0.08, 'square', 0.05, d))
+  },
+  wish: () => [1047, 1319, 1568, 2093, 2637].forEach((f, i) => tone(f, f, 0.18, 'triangle', 0.06, i * 0.07)),
+  /** Ancient Power raised every stat. */
+  ancientBoost: () => {
+    noise(0.25, 0.08)
+    ;[523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, 0.1 + i * 0.06))
+  },
+  leaves: () => [1568, 1976, 2349, 1976, 2637].forEach((f, i) => tone(f, f * 1.05, 0.05, 'triangle', 0.05, i * 0.04)),
 } as const
 
 export type Sfx = keyof typeof SFX
