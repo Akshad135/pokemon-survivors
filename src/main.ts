@@ -31,11 +31,12 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
-import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { banishOffer, chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { recomputeStats } from './game/leveling'
 import { dropMegaStones, grantStone, heldMega } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
+import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
@@ -650,6 +651,7 @@ const syncOverlay = (r: Run) => {
       r.overlay = levelUp(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)), {
         reroll: () => (recordEvent(r.recorder, ['reroll']), rerollOffers(g)),
         skip: () => (recordEvent(r.recorder, ['skip']), skipLevelUp(g)),
+        banish: (i) => (recordEvent(r.recorder, ['banish', i]), banishOffer(g, i)),
       })
       break
     case 'paused':
@@ -822,6 +824,12 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
+    case 'shinyOffer':
+      // The fresh cards on screen say the rest.
+      return playSfx('shiny')
+    case 'banish':
+      // The level-up screen plays the toss itself.
+      return
     case 'consumable': {
       const def = CONSUMABLES[e.item]
       playSfx(def.sfx)
@@ -1305,6 +1313,7 @@ if (import.meta.env.DEV) {
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
+      ...levelUpDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,
