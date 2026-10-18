@@ -7,7 +7,8 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { MEGAS } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { abilityDeltas } from './abilities'
-import { formAt, runLearnset } from './branch'
+import { formAt } from './branch'
+import { FRESH_WEIGHT, runLearnset, unlockedAt } from './learnsets'
 import { buffDeltas } from './buffs'
 import { healPlayer } from './combat'
 import { burst } from './effects'
@@ -39,26 +40,40 @@ export const gainXp = (g: Game, amount: number) => {
 }
 
 /**
- * What the level-up offers depend on. `branch`: where a branching evolution
- * went, which adds its moves to the learnset. `banished`: moves and items
- * forgotten this run (Esquecer), never offered again.
+ * What the level-up offers depend on. `stage`: how far the line evolved,
+ * which unlocks its stages' moves (every stage when left out). `branch`: where
+ * a branching evolution went, which adds its moves to the learnset. `fresh`:
+ * whether the moves the last evolution unlocked still weigh double.
+ * `banished`: moves and items forgotten this run (Esquecer), never offered again.
  */
 export type Loadout = {
   starter: PlayableId
   moves: readonly OwnedMove[]
   items: readonly OwnedItem[]
+  stage?: number
   branch?: BranchId | null
+  fresh?: boolean
   banished?: ReadonlySet<MoveId | ItemId>
 }
 
-export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.player.moves, items: g.player.items, branch: g.branch, banished: g.banished })
+export const loadout = (g: Game): Loadout => ({
+  starter: g.starter,
+  moves: g.player.moves,
+  items: g.player.items,
+  stage: g.player.stage,
+  branch: g.branch,
+  fresh: g.freshMoves > 0,
+  banished: g.banished,
+})
 
 /** Every upgrade the player could pick right now, with selection weights. */
-export const offerPool = ({ starter, moves, items, branch = null, banished }: Loadout): Array<readonly [Offer, number]> => {
+export const offerPool = ({ starter, moves, items, stage, branch = null, fresh, banished }: Loadout): Array<readonly [Offer, number]> => {
   const ownedMoves = new Map(moves.map((m) => [m.id, m.level]))
   const ownedItems = new Map(items.map((i) => [i.id, i.level]))
-  const learnset = runLearnset(starter, branch)
-  const learnsetTypes = new Set<PokeType>(learnset.map((id) => MOVES[id].type))
+  const learnset = runLearnset(starter, branch, stage)
+  // Type items follow the whole line, so a Charcoal can wait for the fire moves an evolution brings.
+  const learnsetTypes = new Set<PokeType>(runLearnset(starter, branch).map((id) => MOVES[id].type))
+  const unlocked = fresh && stage !== undefined ? unlockedAt(starter, branch, stage) : []
   // A base move whose evolution is already owned must not come back as a new move.
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
   const ownedIds = moves.map((m) => m.id)
@@ -66,7 +81,10 @@ export const offerPool = ({ starter, moves, items, branch = null, banished }: Lo
   const moveOffers = learnset.flatMap((id): Array<readonly [Offer, number]> => {
     if (banished?.has(id)) return []
     const level = ownedMoves.get(id)
-    if (level === undefined) return moves.length < MAX_MOVES && !evolvedBases.has(id) && learnable(ownedIds, id, isManual) ? [[{ kind: 'move', id, level: 1 }, 1]] : []
+    if (level === undefined)
+      return moves.length < MAX_MOVES && !evolvedBases.has(id) && learnable(ownedIds, id, isManual)
+        ? [[{ kind: 'move', id, level: 1 }, unlocked.includes(id) ? FRESH_WEIGHT : 1]]
+        : []
     return level < maxMoveLevel(id) ? [[{ kind: 'move', id, level: level + 1 }, UPGRADE_WEIGHT]] : []
   })
   // Owned moves from outside the learnset (evolved ones) keep growing in the slot they took.
@@ -148,12 +166,12 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3, opts: RollOpti
 }
 
 /**
- * The opening draft: up to `count` moves of the learnset the player doesn't
- * have yet (and hasn't forgotten), drawn evenly, to pick the second move.
+ * The opening draft: up to `count` moves of the first stage's list the player
+ * doesn't have yet (and hasn't forgotten), drawn evenly, to pick the second move.
  */
 export const draftOffers = ({ starter, moves, banished }: Loadout, rng: Rng, count = 3): Offer[] => {
   const owned = new Set(moves.map((m) => m.id))
-  const pool = PLAYABLE[starter].learnset.filter((id) => !owned.has(id) && !banished?.has(id))
+  const pool = PLAYABLE[starter].learnset[0].filter((id) => !owned.has(id) && !banished?.has(id))
   const picked: Offer[] = []
   while (picked.length < count && pool.length > 0) {
     const [id] = pool.splice(Math.floor(rng() * pool.length), 1)
