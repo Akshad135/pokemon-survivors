@@ -6,11 +6,14 @@ import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
 import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { forkAt, maxMoveLevel, MOVES, moveStats, type MoveDef, type MoveId } from '../game/moves'
+import { forkAt, isLegendary, maxMoveLevel, MOVES, moveStats, type MoveDef, type MoveId } from '../game/moves'
 import { canBanish, drafting, playerDex } from '../game/game'
 import { rarityOf } from '../game/leveling'
+import { fusable, isDuo, reachableDuos, readyDuos, type DuoRecipe } from '../game/duoRules'
+import { CURSES } from '../data/curses'
 import { modsOf, type ModId } from '../game/mods'
-import { playerForm, runLearnset } from '../game/branch'
+import { playerForm } from '../game/branch'
+import { runLearnset, unlockedAt } from '../game/learnsets'
 import { ABILITIES, isHidden } from '../data/abilities'
 import { abilitySet } from '../game/abilities'
 import { heldMega } from '../game/mega'
@@ -23,7 +26,7 @@ import { overtime } from '../game/endless'
 import { runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
-import { berryIcon, coinIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { berryIcon, coinIcon, curseIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
 import { modIcon } from '../render/modFx'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
@@ -108,14 +111,50 @@ const evoRecipe = (evo: MoveEvolution, ready: boolean) =>
     ready && h('b', {}, t().levelUp.ready),
   )
 
+/** "Ember + Razor Leaf → Fire Pledge" chip of a fusion on the table. */
+const duoChip = (from: readonly [MoveId, MoveId], to: MoveId) =>
+  h(
+    'span',
+    { class: 'evo-recipe duo-recipe ready', title: `${MOVES[from[0]].name} + ${MOVES[from[1]].name} → ${MOVES[to].name}` },
+    h('img', { src: moveIcon(from[0]), alt: '' }),
+    '+',
+    h('img', { src: moveIcon(from[1]), alt: '' }),
+    '→',
+    h('img', { src: moveIcon(to), alt: '' }),
+  )
+
+/** "FIRE + GRASS → Fire Pledge" chip of a recipe, by type. `state` lights it up when ready, or marks the one fused. */
+const recipeChip = (r: DuoRecipe, state: 'ready' | 'done' | null, to: MoveId = r.to) => {
+  const m = t()
+  return h(
+    'span',
+    { class: `duo-type-recipe${state ? ` ${state}` : ''}`, title: `${m.types[r.types[0]]} + ${m.types[r.types[1]]} → ${MOVES[to].name}` },
+    typeBadge(r.types[0]),
+    '+',
+    typeBadge(r.types[1]),
+    '→',
+    h('img', { src: moveIcon(to), alt: '' }),
+    // Only the one on the table (or fused) spells its name: the rest stay compact.
+    state && h('span', { class: 'duo-type-name' }, MOVES[to].name),
+    state && h('b', {}, state === 'ready' ? m.levelUp.ready : m.duo.done),
+  )
+}
+
 /** Recipes an offer takes part in, flagged ready if picking it completes the pair. */
 const offerRecipes = (g: Game, offer: Offer) => {
   const p = g.player
   switch (offer.kind) {
     case 'move': {
       const evo = evolutionOf(offer.id)
-      return evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
+      const evos = evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
+      // Reaching max level makes it a duo ingredient: the fusions it would open show up.
+      if (offer.level < maxMoveLevel(offer.id) || isDuo(offer.id)) return evos
+      const moves = [...p.moves.filter((o) => o.id !== offer.id), { id: offer.id, level: offer.level, cooldown: 0 }]
+      const duos = readyDuos(moves).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves).some((r) => r.to === d.to))
+      return [...evos, ...duos.map((d) => duoChip(d.from, d.to))]
     }
+    case 'duo':
+      return [duoChip(offer.from, offer.to)]
     case 'item': {
       const learnset = runLearnset(g.starter, g.branch)
       return EVOLUTIONS.filter((e) => e.item === offer.id && learnset.includes(e.from)).map((e) =>
@@ -148,7 +187,7 @@ const offerView = (g: Game, offer: Offer) => {
       return {
         icon: moveIcon(offer.id),
         name: def.name,
-        tag: `${evolvedFrom(offer.id) ? '★ ' : ''}${isNew && !rare ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level)}`,
+        tag: `${evolvedFrom(offer.id) || isLegendary(offer.id) ? '★ ' : isDuo(offer.id) ? '✦ ' : ''}${isNew && !rare ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level)}`,
         isNew,
         desc: rare ? `${first} · ${stepLine(offer.id, offer.level)}` : first,
         type: def.type,
@@ -176,6 +215,14 @@ const offerView = (g: Game, offer: Offer) => {
       const desc = m.levelUp.evolves(MOVES[offer.from].name, m.moves[offer.to].description)
       return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type, fork: false, mods: NO_MODS }
     }
+    case 'duo': {
+      const to: MoveDef = MOVES[offer.to]
+      // The recipe chip under it shows the two moves it spends.
+      return { icon: moveIcon(offer.to), name: to.name, tag: m.duo.tag, isNew: true, desc: m.moves[offer.to].description, type: to.type, fork: false, mods: NO_MODS }
+    }
+    // Cursed items, branches and abilities have screens of their own (`ui/cursePick.ts`, `ui/abilityPick.ts`); this is their plain row.
+    case 'curse':
+      return { icon: curseIcon(offer.id), name: CURSES[offer.id].name, tag: offer.take ? m.curse.take : m.curse.leave, isNew: false, desc: m.curses[offer.id].upside, type: null, fork: false, mods: NO_MODS }
     // Branches and abilities have screens of their own (`ui/abilityPick.ts`); this is their plain row.
     case 'form': {
       const b = BRANCHES[offer.id]
@@ -183,6 +230,14 @@ const offerView = (g: Game, offer: Offer) => {
     }
     case 'ability':
       return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null, fork: false, mods: NO_MODS }
+    // TM picks have their own screen too (`ui/tmPick.ts`).
+    case 'tm':
+    case 'forget': {
+      const def: MoveDef = MOVES[offer.id]
+      return { icon: moveIcon(offer.id), name: def.name, tag: m.tm.tag, isNew: offer.kind === 'tm', desc: m.moves[offer.id].description, type: def.type, fork: false, mods: NO_MODS }
+    }
+    case 'pass':
+      return { icon: berryIcon(), name: m.tm.pass, tag: '', isNew: false, desc: '', type: null, fork: false, mods: NO_MODS }
   }
 }
 
@@ -203,18 +258,28 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
   const v = offerView(g, offer)
   const recipes = offerRecipes(g, offer)
   const rarity = rarityOf(offer)
+  // A move the evolution just unlocked, while it still comes up more often: tagged with the form that learns it.
+  const fresh =
+    offer.kind === 'move' && g.freshMoves > 0 && !g.player.moves.some((m) => m.id === offer.id) && unlockedAt(g.starter, g.branch, g.player.stage).includes(offer.id)
   const classes = [
     'offer',
     offer.kind === 'evolution' && 'offer-evo',
     // An evolved move's level-up shows in gold, a notch under an evolution.
-    offer.kind === 'move' && evolvedFrom(offer.id) && 'offer-star',
+    offer.kind === 'move' && (evolvedFrom(offer.id) || isDuo(offer.id)) && 'offer-star',
+    offer.kind === 'duo' && 'offer-duo',
     offer.kind === 'branch' && `offer-branch branch-${offer.branch === 0 ? 'a' : 'b'}`,
     v.fork && 'offer-fork',
     rarity && `offer-${rarity}`,
     !canBanish(offer) && 'offer-keep',
+    fresh && 'offer-fresh',
   ]
   button.className = classes.filter(Boolean).join(' ')
   button.style.setProperty('--i', String(i))
+  // A duo card wears both ingredients' type colors.
+  if (offer.kind === 'duo') {
+    button.style.setProperty('--duo-a', TYPE_COLORS[MOVES[offer.from[0]].type])
+    button.style.setProperty('--duo-b', TYPE_COLORS[MOVES[offer.from[1]].type])
+  }
   // `h` drops the parts a card doesn't have; the button takes what's left.
   const parts = h(
     'div',
@@ -235,14 +300,16 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
         v.name,
         v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag),
         v.fork && h('span', { class: 'tag tag-fork' }, m.forkTag),
+        fresh && h('span', { class: 'tag tag-fresh' }, m.freshTag(playerForm(g).name)),
         rarity && h('span', { class: `tag tag-${rarity}` }, rarity === 'rare' ? m.rare : m.shiny),
       ),
       h('div', { class: 'offer-desc' }, v.desc),
       rarity === 'shiny' && h('div', { class: 'offer-note' }, m.shinyNote),
+      offer.kind === 'duo' && h('div', { class: 'offer-note duo-note' }, t().duo.frees),
       recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
     ),
     v.type && typeBadge(v.type),
-    rarity && h('span', { class: 'offer-shine', 'aria-hidden': 'true' }),
+    (rarity || offer.kind === 'duo') && h('span', { class: 'offer-shine', 'aria-hidden': 'true' }),
     rarity === 'shiny' &&
       h(
         'span',
@@ -282,7 +349,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const actions = [reroll, skip, banish].filter((b) => b !== null)
 
   const offersEl = h('div', { class: fork ? 'offers branches' : 'offers' }, ...buttons)
-  const hintEl = h('div', { class: 'hint-slot' }, hint(m.hintKeys, m.hintTouch))
+  const hintEl = h('div', { class: 'hint-slot' }, hint(fork ? m.pairHintKeys : m.hintKeys, m.hintTouch))
   let banishing = false
   const setBanishing = (on: boolean) => {
     banishing = on
@@ -329,6 +396,9 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   })
   const offEscape = input.onKey((key) => {
     if (key === 'Escape' && banishing) setBanishing(false)
+    // A fork's two paths sit side by side (stacked only on a phone held upright): left and right move too.
+    else if (fork && (key === 'ArrowLeft' || key === 'KeyA')) nav.focus(nav.index - 1)
+    else if (fork && (key === 'ArrowRight' || key === 'KeyD')) nav.focus(nav.index + 1)
   })
 
   const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : m.title(name, g.player.level - g.pendingLevelUps + 1)
@@ -364,6 +434,9 @@ const STAT_ROWS = [
 /** Paired item hint for a loadout move: shows what it needs and whether it is ready. */
 const loadoutHint = (g: Game, id: MoveId) => {
   if (evolvedFrom(id)) return h('span', { class: 'tag tag-new' }, '★ EVO')
+  if (isDuo(id)) return h('span', { class: 'tag tag-duo' }, '✦ DUO')
+  // A legendary's move never evolves: a gold star says where it came from.
+  if (isLegendary(id)) return h('span', { class: 'tag tag-legendary' }, '★')
   const evo = evolutionOf(id)
   if (!evo) return null
   const ready = canEvolve(evo, g.player)
@@ -394,7 +467,37 @@ const loadoutList = (g: Game) =>
     ...g.player.items.map((i) =>
       h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, h('span', { class: 'tag' }, t().level(i.level))),
     ),
+    ...g.curses.held.map((id) =>
+      h('div', { class: 'loadout-row cursed', title: t().curses[id].downside }, h('img', { src: curseIcon(id), alt: '' }), CURSES[id].name, h('span', { class: 'tag tag-curse' }, t().curse.label)),
+    ),
   )
+
+/**
+ * The duo recipes this run can make (both types among the moves it can learn
+ * or holds), lit when ready; once one is fused, just that one, marked done.
+ */
+const duoPanel = (g: Game) => {
+  const m = t().duo
+  const p = g.player
+  const owned = p.moves.find((o) => isDuo(o.id))
+  const types = new Set<PokeType>([...runLearnset(g.starter, g.branch), ...p.moves.map((o) => o.id)].map((id) => MOVES[id].type))
+  const ready = readyDuos(p.moves)
+  const recipes = reachableDuos(types)
+  if (recipes.length === 0 && !owned) return null
+  const chips = owned
+    ? recipes.filter((r) => r.to === owned.id || ('alt' in r && r.alt === owned.id)).map((r) => recipeChip(r, 'done', owned.id))
+    : recipes.map((r) => {
+        const fused = ready.find((d) => d.to === r.to || ('alt' in r && d.to === r.alt))
+        return recipeChip(r, fused ? 'ready' : null, fused?.to)
+      })
+  const half = p.moves.filter(fusable).length > 0
+  return h(
+    'div',
+    { class: 'duo-panel' },
+    h('div', { class: 'duo-recipes' }, h('span', { class: 'duo-panel-title' }, h('img', { src: sparkleIcon(), alt: '' }), m.title), ...chips),
+    !owned && h('p', { class: half ? 'duo-legend near' : 'duo-legend' }, m.legend),
+  )
+}
 
 /** The ability in play for the pause menu: the one picked (its Hidden tag too), the Mega's while that lasts, or when it comes. */
 const abilityPanel = (g: Game) => {
@@ -450,7 +553,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
     el.replaceChildren(
       h(
         'div',
-        { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
+        { class: opening ? 'dialog box pop wide pause-box' : 'dialog box wide pause-box' },
         h('div', { class: 'dialog-title' }, m.title),
         difficultyTag(g.difficulty),
         abilityPanel(g),
@@ -460,6 +563,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
           loadoutList(g),
           h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([key, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, t().stats[key]), h('b', {}, fmt(s))))),
         ),
+        duoPanel(g),
         h('p', { class: 'evo-legend' }, m.evoLegend),
         h('div', { class: 'buttons' }, resume, settingsButton, quit),
       ),

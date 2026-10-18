@@ -6,6 +6,7 @@ import { useConsumable } from './consumables'
 import { rollEgg, type EggSource } from './eggs'
 import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
 import { grantStone } from './mega'
+import { collectTm } from './tms'
 import type { Game, Pickup } from './types'
 import * as dm from '../engine/dmath'
 
@@ -15,7 +16,7 @@ const PULL_SPEED = 420
 /** How fast (1/s) a pulled pickup's velocity turns toward the player. */
 const PULL_STEER = 7
 
-type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone'>
+type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone' | 'tm'>
 
 export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
@@ -78,8 +79,8 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     }
     case 'pokeball': {
-      // It picks on its own, so it never lands on a fork (the player's call) and is always common.
-      const [offer] = rollOffers(loadout(g), g.rng, 1, { forks: false })
+      // It picks on its own, so it never lands on a fork or a duo fusion (the player's calls) and is always common.
+      const [offer] = rollOffers(loadout(g), g.rng, 1, { forks: false, duos: false })
       if (offer) applyOffer(g, offer)
       burst(g, p.x, p.y - 10, { colors: ['#f83838', '#ffffff', '#ffd830'], count: 30, speed: 120, ttl: 0.6 })
       // Evolutions celebrate with their own event instead of the Poké Ball toast.
@@ -91,6 +92,9 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     case 'consumable':
       useConsumable(g, pickup.item)
+      break
+    case 'tm':
+      collectTm(g, pickup)
       break
   }
 }
@@ -138,6 +142,8 @@ export const updatePickups = (g: Game, dt: number) => {
     k.y += k.vy * dt
     // Checked after the move and with this frame's step as slack, so a fast candy can't hop over the player.
     const reach = p.radius + 5 + dm.hypot(k.vx, k.vy) * dt
+    // A TM opens its screen: one at a time, the next one waits on the ground.
+    if (k.kind === 'tm' && g.phase !== 'playing') continue
     if (k.attracted && dm.sq(k.x - p.x) + dm.sq(k.y - (p.y - 6)) < dm.sq(reach)) {
       collect(g, k)
       k.age = -1
