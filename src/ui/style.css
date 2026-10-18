@@ -9256,6 +9256,11 @@ button.hall-tile:hover {
   color: #a07000;
 }
 
+/* A legendary's move in the pause loadout. */
+.tag-legendary {
+  color: #c88a10;
+}
+
 /* In-run toasts and the HUD chip. */
 .ability-toast img {
   width: 20px;
