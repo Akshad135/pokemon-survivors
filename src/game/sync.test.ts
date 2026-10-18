@@ -49,6 +49,11 @@ describe('mergeSaves', () => {
     expect(m.difficulty).toBe('normal')
   })
 
+  it("keeps every family's branch, the incoming side's where both evolved it", () => {
+    const m = mergeSaves(save({ branches: { eevee: 'espeon', ralts: 'gallade' } }), save({ branches: { eevee: 'umbreon', scyther: 'scizor' } }))
+    expect(m.branches).toEqual({ eevee: 'umbreon', ralts: 'gallade', scyther: 'scizor' })
+  })
+
   it('joins the collection and keeps the larger upgrades and records', () => {
     const m = mergeSaves(account, guest)
     expect(m.ranks).toMatchObject({ hpUp: 3, protein: 2, iron: 0 })
