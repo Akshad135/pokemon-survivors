@@ -14,6 +14,7 @@ import type { PlayerStats } from './stats'
 import { modBits, modHit, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
+import { DUO_MOVES } from './duoMoves'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
@@ -75,6 +76,8 @@ export type MoveDef = {
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
   minCooldown?: number
+  /** A duo move (`duoRules.ts`): fused from two maxed moves, it never evolves (and needs no evolution). */
+  duo?: true
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
   /** What kind of move it is, for the abilities that boost a kind (Iron Fist, Strong Jaw, Sharpness, Liquid Voice). */
@@ -1863,6 +1866,10 @@ export const MOVES = {
     upgrades: [{ amount: 1 }, { damage: 8, statusChance: 0.15 }, { area: 0.2 }, { amount: 1, cooldown: -0.3 }],
     fire: (g, s) => evo.alluringVoice(g, s, { move: 'alluringVoice', type: 'fairy', visual: 'alluring' }),
   },
+
+  /* ---------- Duo moves: two maxed moves fused into one (duoMoves.ts, recipes in duoRules.ts) ---------- */
+
+  ...DUO_MOVES,
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES
