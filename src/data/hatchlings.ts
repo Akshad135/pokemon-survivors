@@ -246,8 +246,8 @@ export const HATCHLINGS = {
     color: '#a07858',
     egg: 'common',
     stats: { maxHp: 20, armor: 1, speed: -5 },
-    signature: 'iceShard', // TODO signature: avalanche
-    learnset: [['iceShard', 'earthquake', 'rockTomb', 'sludgeBomb', 'stealthRock'], ['sheerCold', 'whirlpool'], ['gyroBall', 'crunch']],
+    signature: 'avalanche',
+    learnset: [['avalanche', 'iceShard', 'earthquake', 'rockTomb', 'sludgeBomb', 'stealthRock'], ['sheerCold', 'whirlpool'], ['gyroBall', 'crunch']],
     // The only Gen 4 member of these families: Mamoswine completes the line, a slow, heavy-hitting tank.
     line: line3(['Swinub', 220, ['ice', 'ground']], ['Piloswine', 221, ['ice', 'ground']], ['Mamoswine', 473, ['ice', 'ground']], [
       { maxHp: 30, armor: 1, might: 0.08 },
@@ -259,8 +259,8 @@ export const HATCHLINGS = {
     color: '#88a8c8',
     egg: 'common',
     stats: { area: 0.08, might: 0.05, maxHp: -5 },
-    signature: 'iceShard', // TODO signature: frostBreath
-    learnset: [['iceShard', 'gust', 'sheerCold', 'spiritShackle'], ['selfDestruct']],
+    signature: 'frostBreath',
+    learnset: [['frostBreath', 'iceShard', 'gust', 'sheerCold', 'spiritShackle'], ['selfDestruct']],
     line: line2(['Snorunt', 361, ['ice']], ['Glalie', 362, ['ice']], { maxHp: 50, might: 0.22, area: 0.1, armor: 1 }),
   },
 
@@ -294,8 +294,8 @@ export const HATCHLINGS = {
     color: '#78c878',
     egg: 'rare',
     stats: { area: 0.12, regen: 0.15, maxHp: -5 },
-    signature: 'psyshock', // TODO signature: moonblast
-    learnset: [['psyshock', 'disarmingVoice', 'hex', 'razorLeaf', 'futureSight'], ['thunder', 'willOWisp'], []],
+    signature: 'moonblast',
+    learnset: [['moonblast', 'psyshock', 'disarmingVoice', 'hex', 'razorLeaf', 'futureSight'], ['thunder', 'willOWisp'], []],
     line: line3(['Ralts', 280, ['psychic', 'fairy']], ['Kirlia', 281, ['psychic', 'fairy']], ['Gardevoir', 282, ['psychic', 'fairy']], [
       { maxHp: 25, regen: 0.15, might: 0.08 },
       { maxHp: 40, regen: 0.3, might: 0.2, area: 0.1 },
@@ -324,8 +324,8 @@ export const HATCHLINGS = {
     color: '#f0a040',
     egg: 'rare',
     stats: { area: 0.1, statusChance: 0.05, speed: -2 },
-    signature: 'fireSpin', // TODO signature: fieryDance
-    learnset: [['fireSpin', 'ember', 'pinMissile', 'flameWheel', 'futureSight'], ['gust', 'roost', 'psyshock']],
+    signature: 'fieryDance',
+    learnset: [['fieryDance', 'fireSpin', 'ember', 'pinMissile', 'flameWheel', 'futureSight'], ['gust', 'roost', 'psyshock']],
     line: line2(['Larvesta', 636, ['bug', 'fire']], ['Volcarona', 637, ['bug', 'fire']], { maxHp: 50, might: 0.25, area: 0.15, regen: 0.2 }),
   },
   noibat: {
@@ -354,8 +354,8 @@ export const HATCHLINGS = {
     color: '#a068c0',
     egg: 'rare',
     stats: { statusChance: 0.06, cooldown: -0.03, maxHp: -5 },
-    signature: 'sludgeBomb', // TODO signature: overdrive
-    learnset: [['sludgeBomb', 'shockWave', 'venoshock', 'electroBall', 'thunder'], ['toxicSpikes', 'torchSong', 'suckerPunch']],
+    signature: 'overdrive',
+    learnset: [['overdrive', 'sludgeBomb', 'shockWave', 'venoshock', 'electroBall', 'thunder'], ['toxicSpikes', 'torchSong', 'suckerPunch']],
     line: line2(['Toxel', 848, ['electric', 'poison']], ['Toxtricity', 849, ['electric', 'poison']], { maxHp: 45, might: 0.24, area: 0.1, statusDamage: 0.2 }),
   },
   tinkatink: {
@@ -363,8 +363,8 @@ export const HATCHLINGS = {
     color: '#e890b0',
     egg: 'rare',
     stats: { might: 0.1, area: 0.1, cooldown: 0.05, maxHp: 5 },
-    signature: 'earthquake', // TODO signature: gigatonHammer
-    learnset: [['earthquake', 'disarmingVoice', 'flashCannon', 'rockTomb', 'gyroBall'], ['suckerPunch', 'stealthRock'], ['machPunch', 'iceShard']],
+    signature: 'gigatonHammer',
+    learnset: [['gigatonHammer', 'earthquake', 'disarmingVoice', 'flashCannon', 'rockTomb', 'gyroBall'], ['suckerPunch', 'stealthRock'], ['machPunch', 'iceShard']],
     line: line3(['Tinkatink', 957, ['fairy', 'steel']], ['Tinkatuff', 958, ['fairy', 'steel']], ['Tinkaton', 959, ['fairy', 'steel']], [
       { maxHp: 30, might: 0.1, area: 0.05 },
       { maxHp: 50, might: 0.22, area: 0.15, armor: 1 },
@@ -375,8 +375,8 @@ export const HATCHLINGS = {
     color: '#e86040',
     egg: 'rare',
     stats: { might: 0.08, duration: 0.1 },
-    signature: 'ember', // TODO signature: bitterBlade
-    learnset: [['ember', 'fireSpin', 'willOWisp', 'hex', 'flameCharge'], []],
+    signature: 'bitterBlade',
+    learnset: [['bitterBlade', 'ember', 'fireSpin', 'willOWisp', 'hex', 'flameCharge'], []],
     line: line2(['Charcadet', 935, ['fire']], ['Armarouge', 936, ['fire', 'psychic']], { maxHp: 50, might: 0.25, area: 0.1, projectileSpeed: 0.15 }),
   },
 
@@ -444,8 +444,8 @@ export const HATCHLINGS = {
     color: '#b08848',
     egg: 'rare',
     stats: { armor: 2, maxHp: 10, speed: -4 },
-    signature: 'rockTomb', // TODO signature: leechLife
-    learnset: [['rockTomb', 'waterGun', 'razorShell', 'mudShot', 'stealthRock'], ['brine', 'pinMissile', 'leafBlade']],
+    signature: 'leechLife',
+    learnset: [['leechLife', 'rockTomb', 'waterGun', 'razorShell', 'mudShot', 'stealthRock'], ['brine', 'pinMissile', 'leafBlade']],
     line: line2(['Kabuto', 140, ['rock', 'water']], ['Kabutops', 141, ['rock', 'water']], { maxHp: 45, might: 0.25, speed: 5, armor: 1 }),
   },
   houndour: {
@@ -453,8 +453,8 @@ export const HATCHLINGS = {
     color: '#c86838',
     egg: 'rare',
     stats: { statusDamage: 0.15, might: 0.06, maxHp: -5 },
-    signature: 'ember', // TODO signature: fireFang
-    learnset: [['ember', 'crunch', 'sludgeBomb', 'suckerPunch', 'willOWisp'], ['flameWheel', 'toxicSpikes', 'solarBeam']],
+    signature: 'fireFang',
+    learnset: [['fireFang', 'ember', 'crunch', 'sludgeBomb', 'suckerPunch', 'willOWisp'], ['flameWheel', 'toxicSpikes', 'solarBeam']],
     line: line2(['Houndour', 228, ['dark', 'fire']], ['Houndoom', 229, ['dark', 'fire']], { maxHp: 45, might: 0.24, statusDamage: 0.15, speed: 3 }),
   },
   teddiursa: {
@@ -462,8 +462,8 @@ export const HATCHLINGS = {
     color: '#b07040',
     egg: 'rare',
     stats: { maxHp: 15, might: 0.08, speed: -4 },
-    signature: 'crunch', // TODO signature: furySwipes
-    learnset: [['crunch', 'suckerPunch', 'swift', 'quickAttack', 'focusPunch'], ['venoshock', 'machPunch', 'gigaImpact']],
+    signature: 'furySwipes',
+    learnset: [['furySwipes', 'crunch', 'suckerPunch', 'swift', 'quickAttack', 'focusPunch'], ['venoshock', 'machPunch', 'gigaImpact']],
     line: line2(['Teddiursa', 216, ['normal']], ['Ursaring', 217, ['normal']], { maxHp: 65, might: 0.24, armor: 1, area: 0.05 }),
   },
   aron: {
@@ -471,8 +471,8 @@ export const HATCHLINGS = {
     color: '#a8a8b8',
     egg: 'rare',
     stats: { armor: 3, maxHp: 10, might: -0.05, speed: -7 },
-    signature: 'flashCannon', // TODO signature: heavySlam
-    learnset: [['flashCannon', 'rockTomb', 'gyroBall', 'stealthRock', 'earthquake'], ['dragonTail', 'selfDestruct'], ['thunder', 'sheerCold']],
+    signature: 'heavySlam',
+    learnset: [['heavySlam', 'flashCannon', 'rockTomb', 'gyroBall', 'stealthRock', 'earthquake'], ['dragonTail', 'selfDestruct'], ['thunder', 'sheerCold']],
     line: line3(['Aron', 304, ['steel', 'rock']], ['Lairon', 305, ['steel', 'rock']], ['Aggron', 306, ['steel', 'rock']], [
       { maxHp: 35, armor: 1, might: 0.08 },
       { maxHp: 60, armor: 2, might: 0.22, area: 0.05 },
@@ -483,8 +483,8 @@ export const HATCHLINGS = {
     color: '#d88848',
     egg: 'rare',
     stats: { area: 0.1, might: 0.05, speed: -4 },
-    signature: 'earthquake', // TODO signature: bulldoze
-    learnset: [['earthquake', 'sandTomb', 'pinMissile', 'rockTomb', 'dragonBreath'], ['shockWave', 'dig'], ['dragonTail', 'flameWheel']],
+    signature: 'bulldoze',
+    learnset: [['bulldoze', 'earthquake', 'sandTomb', 'pinMissile', 'rockTomb', 'dragonBreath'], ['shockWave', 'dig'], ['dragonTail', 'flameWheel']],
     // The pit-digger takes wing: each stage is faster.
     line: line3(['Trapinch', 328, ['ground']], ['Vibrava', 329, ['ground', 'dragon']], ['Flygon', 330, ['ground', 'dragon']], [
       { maxHp: 20, speed: 4, might: 0.08 },
@@ -496,8 +496,8 @@ export const HATCHLINGS = {
     color: '#78c8f0',
     egg: 'rare',
     stats: { regen: 0.2, area: 0.06, maxHp: 5, speed: -2 },
-    signature: 'gust', // TODO signature: perishSong
-    learnset: [['gust', 'disarmingVoice', 'roost', 'swift', 'dragonBreath'], ['dragonTail', 'fireSpin', 'sheerCold']],
+    signature: 'gust',
+    learnset: [['perishSong', 'gust', 'disarmingVoice', 'roost', 'swift', 'dragonBreath'], ['dragonTail', 'fireSpin', 'sheerCold']],
     line: line2(['Swablu', 333, ['normal', 'flying']], ['Altaria', 334, ['dragon', 'flying']], { maxHp: 55, might: 0.2, regen: 0.3, area: 0.1 }),
   },
   electrike: {
@@ -505,8 +505,8 @@ export const HATCHLINGS = {
     color: '#58b868',
     egg: 'rare',
     stats: { speed: 7, cooldown: -0.04, maxHp: -10 },
-    signature: 'thunder', // TODO signature: chargeBeam
-    learnset: [['thunder', 'shockWave', 'quickAttack', 'crunch', 'electroBall'], ['uTurn', 'flameWheel', 'torchSong']],
+    signature: 'chargeBeam',
+    learnset: [['chargeBeam', 'thunder', 'shockWave', 'quickAttack', 'crunch', 'electroBall'], ['uTurn', 'flameWheel', 'torchSong']],
     line: line2(['Electrike', 309, ['electric']], ['Manectric', 310, ['electric']], { maxHp: 45, speed: 5, might: 0.22, cooldown: -0.04 }),
   },
   shuppet: {
