@@ -13,7 +13,7 @@ import * as dm from '../engine/dmath'
  * ON ANY ATTACK (fields of `spawnAttack`'s init, all off by default):
  * - `bonus: [{ when: 'burned', mult: 1.5 }]` multiplies damage on foes that
  *   match (`BonusWhen` in `kitRules.ts`: afflicted, poisoned, burned,
- *   paralyzed, asleep, frozen, marked, lowHp, flying, elite, boss). Hex uses it.
+ *   paralyzed, asleep, frozen, marked, chilled, lowHp, flying, elite, boss). Hex uses it.
  * - `execute: 0.15` makes regular foes left at or under 15% HP faint outright,
  *   shattering (a `shatter` event). Bosses never.
  * - `drain: 0.3` heals 30% of the damage dealt, from a budget of 4% max HP per

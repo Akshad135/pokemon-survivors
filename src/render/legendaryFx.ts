@@ -1,6 +1,8 @@
 import { blitCentered, blitRotated, ellipse } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
+import { bodyOf } from '../data/bodies'
+import { playerForm } from '../game/branch'
 import { SANDS, TIME } from '../game/legendaryMoves'
 import type { Attack, Game } from '../game/types'
 import { LEGEND_FX } from './legendaryArt'
@@ -470,23 +472,30 @@ const drawTimeVeil = (ctx: Ctx, g: Game, a: Attack) => {
   ctx.fillRect(Math.floor(g.camera.x) - 8, Math.floor(g.camera.y) - 8, g.view.w + 16, g.view.h + 16)
 }
 
-/** The clock over the player: its hands spin back as time stops, stand still while it's stopped, and lurch forward when it starts again. */
-const drawTimeClock = (ctx: Ctx, a: Attack) => {
+/**
+ * The clock over the player's head: it pops in big, settles smaller above the
+ * sprite (never over it: it stays up for seconds), its hands spin back as time
+ * stops, stand still while it's stopped, and lurch forward when it starts again.
+ */
+const drawTimeClock = (ctx: Ctx, g: Game, a: Attack) => {
   const pop = clamp01(a.age / 0.15)
-  const r = Math.round(14 * pop)
+  const settle = clamp01((a.age - 0.15) / 0.3)
+  const r = Math.round(14 * pop - 4 * settle)
   if (r < 2) return
+  const x = Math.round(a.x)
+  const y = Math.round(g.player.y - bodyOf(playerForm(g).dex).bodyH - r - 3)
   const end = a.ttl - 0.25
   const hand = a.age < TIME.time * 0.6 ? -a.age * 30 : a.age > end ? -TIME.time * 18 + (a.age - end) * 40 : -TIME.time * 18
   ctx.globalAlpha = fadeOut(a, 0.2)
-  blitCentered(ctx, ellipse(r + 3, r + 3, 'rgba(168,240,248,0.25)'), a.x, a.y - 14)
-  blitCentered(ctx, ellipse(r, r, '#e8f8ff'), a.x, a.y - 14)
-  clockRing(ctx, a.x, a.y - 14, r, 0)
-  thickLine(ctx, a.x, a.y - 14, a.x + Math.cos(hand - Math.PI / 2) * (r - 4), a.y - 14 + Math.sin(hand - Math.PI / 2) * (r - 4), 2, '#202848')
-  thickLine(ctx, a.x, a.y - 14, a.x + Math.cos(hand / 12 - Math.PI / 2) * (r - 7), a.y - 14 + Math.sin(hand / 12 - Math.PI / 2) * (r - 7), 2, '#4868a8')
+  blitCentered(ctx, ellipse(r + 3, r + 3, 'rgba(168,240,248,0.25)'), x, y)
+  blitCentered(ctx, ellipse(r, r, '#e8f8ff'), x, y)
+  clockRing(ctx, x, y, r, 0)
+  thickLine(ctx, x, y, x + Math.cos(hand - Math.PI / 2) * (r - 3), y + Math.sin(hand - Math.PI / 2) * (r - 3), 2, '#202848')
+  thickLine(ctx, x, y, x + Math.cos(hand / 12 - Math.PI / 2) * (r - 5), y + Math.sin(hand / 12 - Math.PI / 2) * (r - 5), 2, '#4868a8')
   // Dialga's diamond at the hub.
-  px(ctx, a.x - 1, a.y - 16, '#78e0f8', 3, 5)
-  px(ctx, a.x - 2, a.y - 15, '#78e0f8', 5, 3)
-  px(ctx, a.x, a.y - 15, '#ffffff')
+  px(ctx, x - 1, y - 2, '#78e0f8', 3, 5)
+  px(ctx, x - 2, y - 1, '#78e0f8', 5, 3)
+  px(ctx, x, y - 1, '#ffffff')
   ctx.globalAlpha = 1
 }
 
@@ -925,7 +934,7 @@ export const drawLegendaryAir = (ctx: Ctx, g: Game, t: number, visible: (x: numb
         drawAscentImpact(ctx, a, false)
         break
       case 'timeClock':
-        drawTimeClock(ctx, a)
+        drawTimeClock(ctx, g, a)
         break
       case 'mistBall':
         drawMistBall(ctx, a, t)

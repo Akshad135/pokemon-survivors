@@ -48,6 +48,7 @@ import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
+import { tmDevTools } from './game/tmDev'
 import { duoDevTools } from './game/duoDev'
 import { cursePick } from './ui/cursePick'
 import { CURSES } from './data/curses'
@@ -66,7 +67,7 @@ import { unlockShinyStarter } from './game/shinyStarters'
 import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
-import type { Game, GameEvent, Phase } from './game/types'
+import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render } from './render/draw'
 import { drawJoystick } from './render/joystick'
@@ -78,7 +79,7 @@ import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
-import { formatDay, locale, LOCALES, t } from './i18n'
+import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
@@ -99,6 +100,7 @@ import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
 import { abilityPick, branchPick } from './ui/abilityPick'
+import { tmPick } from './ui/tmPick'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
@@ -677,6 +679,12 @@ const syncOverlay = (r: Run) => {
     case 'ability':
       r.overlay = abilityPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
       break
+    case 'tm': {
+      const choose = (offer: Offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer))
+      // A TM raising an owned move to a fork shows the fork's two branches, as a level-up would.
+      r.overlay = g.offers.some((o) => o.kind === 'branch') ? levelUp(ui, input, g, choose) : tmPick(ui, input, g, choose)
+      break
+    }
     case 'curse':
       r.overlay = cursePick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
       break
@@ -919,6 +927,19 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'shinyOffer':
       // The fresh cards on screen say the rest.
       return playSfx('shiny')
+    case 'tm':
+      return
+    case 'tmLearned': {
+      const m = t().tm
+      const name = MOVES[e.move].name
+      playSfx('levelUp')
+      playCry(playerCry(g), 0.35)
+      const text = e.forgot ? m.learnedInstead(MOVES[e.forgot].name, name) : e.level > 1 ? m.raised(name, e.level) : m.learned(name)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(e.move), alt: '' }), rich(text)), 3200, 'tm')
+    }
+    case 'tmMastered':
+      playSfx('coin')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(e.move), alt: '' }), rich(t().tm.mastered(MOVES[e.move].name, formatPokeDollars(e.coins)))), 3000)
     case 'banish':
       // The level-up screen plays the toss itself.
       return
@@ -1440,6 +1461,7 @@ if (import.meta.env.DEV) {
       ...kitDevTools(() => run?.game),
       ...eggMoveDevTools(() => run?.game),
       ...learnDevTools(() => run?.game),
+      ...tmDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),

@@ -7,6 +7,8 @@ import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
 import { BRANCHES, branchesAt, branchStage, familyDex } from '../../data/branches'
+import { ABILITIES, isHidden, type AbilitySet } from '../../data/abilities'
+import { abilitySet } from '../../game/abilities'
 import { formLine } from '../../game/branch'
 import { unlockedAt } from '../../game/learnsets'
 import { starterStats } from '../../game/leveling'
@@ -88,6 +90,13 @@ const learnRows = (source: DexEntry['source'] & { kind: 'starter' }, locale: Loc
   })}</dl>`
 }
 
+/** A family's (or branch's) abilities, the Hidden one marked, with what each does in a run. */
+const abilityList = (set: AbilitySet, locale: Locale) => {
+  const a = LOCALES[locale].messages
+  return html`<ul class="list">${set.map((id, i) => html`<li><b>${ABILITIES[id].name}</b>${isHidden(set, i) && html` <small>(${a.ability.hiddenLong})</small>`}: ${a.abilities[id]}</li>`)}</ul>
+    <p class="note">${a.ability.note}</p>`
+}
+
 const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const game = LOCALES[locale].messages
@@ -119,6 +128,8 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${last.tier.name})</small>`}<br />${game.specials[special.id]}</p>
     <h3>${m.pokedex.learnset}</h3>
     ${learnRows(entry.source, locale)}
+    <h3>${game.ability.section}</h3>
+    ${abilityList(abilitySet(id, branch), locale)}
     ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`
 }
 
