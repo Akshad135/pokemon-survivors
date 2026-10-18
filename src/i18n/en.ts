@@ -125,6 +125,8 @@ export const en: Messages = {
     reroll: (n) => `Reroll (${n})`,
     skip: (n) => `Skip (${n})`,
     hintKeys: '↑ ↓ choose · ENTER confirm · 1-3 shortcut',
+    sideHintKeys: '← → choose · ENTER confirm · 1-3 shortcut',
+    pairHintKeys: '← → choose · ENTER confirm · 1-2 shortcut',
     hintTouch: 'Tap to choose',
     draftTitle: (name) => `${name}: pick a second move!`,
     forkTitle: (move, level) => `${move} Lv ${level} · choose a path`,
