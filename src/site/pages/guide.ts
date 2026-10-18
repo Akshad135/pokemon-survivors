@@ -4,10 +4,10 @@ import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '
 import { BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
-import { EVOLUTIONS } from '../../data/evolutions'
+import { EVOLUTIONS, neverEvolves } from '../../data/evolutions'
 import { CURSE_IDS, CURSES } from '../../data/curses'
 import { CURSE } from '../../game/curses'
-import { DUO_RECIPES, isDuo } from '../../game/duoRules'
+import { DUO_RECIPES } from '../../game/duoRules'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
@@ -23,10 +23,11 @@ import { CONSUMABLES } from '../../game/consumables'
 import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
+import { TUTOR } from '../../game/tmRules'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
-import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
+import { MAX_ITEMS, MAX_MOVES, OFFER_RARITY } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
-import { isLegendary, maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
+import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
@@ -173,7 +174,9 @@ const levels = (locale: Locale, m: SiteMessages) => {
   const baseMove = MOVE_IDS.find((id) => MOVES[id].upgrades.length > 0) ?? 'ember'
   const items = ITEM_IDS.map((id) => [ITEMS[id].name, game.items[id], ITEMS[id].levels.length])
   return html`${paragraphs(l.paragraphs(MAX_MOVES, MAX_ITEMS, maxMoveLevel(baseMove)))}
+    ${paragraphs(l.choices(OFFER_RARITY.rare * 100, Math.round(1 / OFFER_RARITY.shiny)))}
     <p>${l.evolution(first.evolveAt, second.evolveAt)}</p>
+    <p>${l.abilities}</p>
     <h3>${l.itemsTitle}</h3>
     ${table([l.itemHead, l.effectHead, l.levelsHead], items)}`
 }
@@ -187,8 +190,8 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
     html`<b>${MOVES[evo.to].name}</b> ${typeBadge(MOVES[evo.to].type, m)}<br /><small>${game.moves[evo.to].description}</small>`,
   ])
   const evolving = new Set<MoveId>(EVOLUTIONS.flatMap((evo) => [evo.from, evo.to]))
-  // Duo and legendary moves never evolve by design: they are the capstones (duos listed below).
-  const without = MOVE_IDS.filter((id) => !evolving.has(id) && !isDuo(id) && !isLegendary(id)).map((id) => MOVES[id].name)
+  // Signature, TM, legendary and duo moves never evolve by design (`neverEvolves`; duos listed below).
+  const without = MOVE_IDS.filter((id) => !evolving.has(id) && !neverEvolves(id)).map((id) => MOVES[id].name)
   const duos = DUO_RECIPES.map((r) => {
     const made = 'alt' in r ? [r.to, r.alt] : [r.to]
     return [
@@ -200,6 +203,7 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
   return html`${paragraphs(e.paragraphs)}
     ${table([e.moveHead, e.itemHead, e.resultHead], rows)}
     ${without.length > 0 ? html`<p class="note">${e.noEvolution(without.join(', '))}</p>` : ''}
+    <p class="note">${e.neverEvolves}</p>
     <h3>${e.duoTitle}</h3>
     ${paragraphs(e.duoParagraphs)}
     ${table([e.duoTypesHead, e.duoHead], duos)}
@@ -419,6 +423,7 @@ const mapEvents = (m: SiteMessages) => {
     [e.spikes.name, e.spikes.how, e.spikes.reward],
     [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
     [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
+    [e.tutor.name, e.tutor.how(Math.round(TUTOR.first.from / 60), Math.round(TUTOR.first.until / 60)), e.tutor.reward(money([TUTOR.price]))],
   ]
   const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
   return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>

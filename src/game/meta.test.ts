@@ -80,6 +80,11 @@ describe('save parsing', () => {
     const save = buyUpgrade(rich(2000), 'carbos')!
     expect(parseSave(JSON.stringify(save))).toEqual(save)
   })
+  it("keeps only a family's own branches", () => {
+    const raw = JSON.stringify({ version: 1, branches: { eevee: 'sylveon', ralts: 'vaporeon', pichu: 'gallade', snorunt: 'froslass', scyther: 'mega' } })
+    expect(parseSave(raw).branches).toEqual({ eevee: 'sylveon', snorunt: 'froslass' })
+  })
+
   /** `ps:save` as each Phase 2 PR wrote it on its own, before they were merged. */
   const OLD = { version: 1, wallet: 1234, ranks: { hpUp: 2, carbos: 1 } }
   const PR_SAVES = {

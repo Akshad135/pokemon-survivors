@@ -10,6 +10,7 @@ import { logDefeat } from './dex'
 import { DIFFICULTIES } from './difficulty'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
+import { dropBossTm } from './tms'
 import { coinDrops } from './meta'
 import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
@@ -158,6 +159,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
     g.banishes++
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
+    dropBossTm(g, e)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
     if (e.kind === 'mewtwo') {

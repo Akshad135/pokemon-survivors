@@ -290,10 +290,20 @@ export const drawTypeEvolvedAttack = (ctx: Ctx, a: Attack, t: number) => {
       // Thin as it fires up and as it dies, full in between, with a slight hum.
       const life = Math.min(1, a.age / 0.07, (a.ttl - a.age) / 0.14)
       const thick = Math.max(2, Math.round((A.BEAM_CROSS.length + Math.floor((t + a.id * 0.01) * 24) % 2) * Math.min(1.6, r / 8) * life))
-      stretch(ctx, SPR.beam(), a.x, a.y, m.angle, r * 3.2, thick)
+      const length = r * 3.2
+      const cos = Math.cos(m.angle)
+      const sin = Math.sin(m.angle)
+      if (m.radius < 15) {
+        // The segment at the player starts a few px out, so the beams don't paint over the sprite.
+        const near = 8
+        const far = m.radius + length / 2
+        const mid = (near + far) / 2 - m.radius
+        stretch(ctx, SPR.beam(), a.x + cos * mid, a.y + sin * mid, m.angle, far - near, thick)
+        // The muzzle: a flash as it fires, then a small hot spot.
+        const mr = a.age < 0.1 ? Math.round(thick * 0.5) : Math.max(2, Math.round(thick * 0.25))
+        blitCentered(ctx, ellipse(mr, mr, '#ffffff'), a.x + cos * (near - m.radius), a.y + sin * (near - m.radius))
+      } else stretch(ctx, SPR.beam(), a.x, a.y, m.angle, length, thick)
       if (a.flip) beamFlare(ctx, a, t, thick)
-      // The muzzle at the player.
-      if (m.radius < 15) blitCentered(ctx, ellipse(Math.round(thick * 0.6), Math.round(thick * 0.6), '#ffffff'), a.x - Math.cos(m.angle) * 6, a.y - Math.sin(m.angle) * 6)
       return
     }
     case 'parade': {

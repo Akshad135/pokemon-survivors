@@ -27,7 +27,7 @@ export type BranchDef = {
   types: readonly PokeType[]
   /** Stat bonus of the stage, in place of the line's. */
   bonus: StatDelta
-  /** Moves the branch adds to the family's learnset once it evolves. */
+  /** Moves the branch adds to the family's learnset once it evolves into it (on top of the line's lists). */
   moves: readonly MoveId[]
   /** The weather or biome that makes it the likelier offer (`drawBranches`). */
   favors?: { weather?: readonly WeatherId[]; biome?: readonly BiomeId[] }
@@ -40,13 +40,13 @@ export const BRANCHES = {
   vaporeon: {
     line: 'eevee', stage: 1, name: 'Vaporeon', dex: 134, types: ['water'],
     bonus: { maxHp: 90, regen: 0.4, armor: 1, might: 0.12 },
-    moves: ['waterGun', 'whirlpool', 'iceShard'],
+    moves: ['waterGun', 'whirlpool', 'brine', 'iceShard'],
     favors: { weather: ['rain'] },
   },
   jolteon: {
     line: 'eevee', stage: 1, name: 'Jolteon', dex: 135, types: ['electric'],
     bonus: { maxHp: 40, speed: 10, cooldown: -0.08, might: 0.18 },
-    moves: ['thunder', 'shockWave', 'pinMissile'],
+    moves: ['thunder', 'shockWave', 'electroBall', 'pinMissile'],
     favors: { weather: ['clear'] },
   },
   flareon: {
@@ -58,13 +58,13 @@ export const BRANCHES = {
   espeon: {
     line: 'eevee', stage: 1, name: 'Espeon', dex: 196, types: ['psychic'],
     bonus: { maxHp: 45, might: 0.2, cooldown: -0.06, area: 0.1 },
-    moves: ['hex', 'flashCannon', 'shockWave'],
+    moves: ['psyshock', 'futureSight', 'spiritShackle'],
     favors: { weather: ['clear'] },
   },
   umbreon: {
     line: 'eevee', stage: 1, name: 'Umbreon', dex: 197, types: ['dark'],
     bonus: { maxHp: 60, armor: 2, might: 0.2, regen: 0.4 },
-    moves: ['toxicSpikes', 'hex', 'rockTomb'],
+    moves: ['foulPlay', 'suckerPunch', 'toxicSpikes'],
     favors: { weather: ['fog'], biome: ['cave', 'tower'] },
   },
   leafeon: {
@@ -76,13 +76,13 @@ export const BRANCHES = {
   glaceon: {
     line: 'eevee', stage: 1, name: 'Glaceon', dex: 471, types: ['ice'],
     bonus: { maxHp: 45, might: 0.25, area: 0.1 },
-    moves: ['iceShard', 'waterGun', 'gust'],
+    moves: ['iceShard', 'sheerCold', 'whirlpool'],
     favors: { weather: ['snow'], biome: ['snow'] },
   },
   sylveon: {
     line: 'eevee', stage: 1, name: 'Sylveon', dex: 700, types: ['fairy'],
     bonus: { maxHp: 55, regen: 0.6, might: 0.18, area: 0.05 },
-    moves: ['vineWhip', 'gust', 'flashCannon'],
+    moves: ['disarmingVoice', 'psyshock', 'futureSight'],
     favors: { weather: ['clear'] },
   },
 
@@ -90,18 +90,18 @@ export const BRANCHES = {
   gardevoir: {
     line: 'ralts', stage: 2, name: 'Gardevoir', dex: 282, types: ['psychic', 'fairy'],
     bonus: { maxHp: 40, regen: 0.3, might: 0.2, area: 0.1 },
-    moves: ['hex', 'shockWave', 'iceShard'],
+    moves: ['iceShard', 'shockWave', 'solarBeam'],
   },
   gallade: {
     line: 'ralts', stage: 2, name: 'Gallade', dex: 475, types: ['psychic', 'fighting'],
     bonus: { maxHp: 45, might: 0.28, speed: 5, armor: 1 },
-    moves: ['leafBlade', 'machPunch', 'razorShell'],
+    moves: ['sacredSword', 'leafBlade', 'machPunch'],
     special: 'closeCombat',
   },
   glalie: {
     line: 'snorunt', stage: 1, name: 'Glalie', dex: 362, types: ['ice'],
     bonus: { maxHp: 50, might: 0.22, area: 0.1, armor: 1 },
-    moves: ['whirlpool', 'gust', 'flashCannon'],
+    moves: ['earthquake', 'rockTomb', 'crunch'],
   },
   froslass: {
     line: 'snorunt', stage: 1, name: 'Froslass', dex: 478, types: ['ice', 'ghost'],
@@ -112,33 +112,33 @@ export const BRANCHES = {
   poliwrath: {
     line: 'poliwag', stage: 2, name: 'Poliwrath', dex: 62, types: ['water', 'fighting'],
     bonus: { maxHp: 50, might: 0.2, armor: 1, area: 0.05 },
-    moves: ['rockTomb', 'crunch', 'flashCannon'],
+    moves: ['dynamicPunch', 'machPunch', 'focusPunch'],
   },
   politoed: {
     line: 'poliwag', stage: 2, name: 'Politoed', dex: 186, types: ['water'],
     bonus: { maxHp: 50, regen: 0.5, might: 0.15, area: 0.1 },
-    moves: ['disarmingVoice', 'waterShuriken', 'swift'],
+    moves: ['sheerCold', 'waterShuriken', 'disarmingVoice'],
   },
   scizor: {
     line: 'scyther', stage: 1, name: 'Scizor', dex: 212, types: ['bug', 'steel'],
     bonus: { maxHp: 55, armor: 2, might: 0.22 },
-    moves: ['razorShell', 'crunch', 'swift'],
+    moves: ['machPunch', 'gyroBall', 'flashCannon'],
   },
   kleavor: {
     line: 'scyther', stage: 1, name: 'Kleavor', dex: 900, types: ['bug', 'rock'],
     bonus: { maxHp: 50, might: 0.3, area: 0.1 },
-    moves: ['rockTomb', 'earthquake', 'razorShell'],
+    moves: ['rockTomb', 'stealthRock', 'earthquake'],
     special: 'diamondStorm',
   },
   armarouge: {
     line: 'charcadet', stage: 1, name: 'Armarouge', dex: 936, types: ['fire', 'psychic'],
     bonus: { maxHp: 50, might: 0.25, area: 0.1, projectileSpeed: 0.15 },
-    moves: ['pyroBall', 'shockWave', 'dragonBreath'],
+    moves: ['psyshock', 'flashCannon', 'pyroBall'],
   },
   ceruledge: {
     line: 'charcadet', stage: 1, name: 'Ceruledge', dex: 937, types: ['fire', 'ghost'],
     bonus: { maxHp: 55, might: 0.3, speed: 4 },
-    moves: ['leafBlade', 'hex', 'razorShell'],
+    moves: ['solarBeam', 'spiritShackle', 'leafBlade'],
   },
 } as const satisfies Record<string, BranchDef>
 

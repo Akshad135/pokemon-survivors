@@ -15,8 +15,8 @@ import { dashedRing } from './strokes'
 
 type Ctx = CanvasRenderingContext2D
 
-/** Per type: [shadow, body, highlight], the ground and sparks of its mods. */
-const PALETTES: Partial<Record<PokeType, readonly [string, string, string]>> = {
+/** Per type: [shadow, body, highlight], the ground and sparks of its mods (every type: forks reach every move). */
+const PALETTES: Record<PokeType, readonly [string, string, string]> = {
   fire: ['#a02810', '#f08030', '#f8d860'],
   water: ['#2848a8', '#6890f0', '#d0e8ff'],
   grass: ['#285818', '#78c850', '#d8f8a0'],
@@ -25,11 +25,19 @@ const PALETTES: Partial<Record<PokeType, readonly [string, string, string]>> = {
   dark: ['#281818', '#705848', '#c0a0e0'],
   poison: ['#502060', '#a040a0', '#e8a8f0'],
   ice: ['#3878a0', '#98d8d8', '#ffffff'],
+  flying: ['#4838a0', '#a890f0', '#e8e0ff'],
+  bug: ['#485008', '#a8b820', '#e0f070'],
+  rock: ['#584818', '#b8a038', '#e8d888'],
+  ground: ['#785820', '#e0c068', '#f8f0b8'],
+  ghost: ['#302048', '#705898', '#d0b8f8'],
+  fighting: ['#601010', '#c03028', '#f8a080'],
+  psychic: ['#982050', '#f85888', '#ffd0e0'],
+  steel: ['#505068', '#b8b8d0', '#ffffff'],
+  fairy: ['#a04868', '#ee99ac', '#fff0f8'],
+  dragon: ['#301888', '#7038f8', '#c8b0ff'],
 }
 
-const FALLBACK = ['#404048', '#a8a8b8', '#ffffff'] as const
-
-const palette = (type: PokeType) => PALETTES[type] ?? FALLBACK
+const palette = (type: PokeType) => PALETTES[type]
 
 /** Patches of Trail ground, per type, variant and radius: a ragged, dithered blob with a darker rim. */
 const patches = canvasCache<string, HTMLCanvasElement>()

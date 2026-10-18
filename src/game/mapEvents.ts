@@ -20,12 +20,14 @@ import { isAlive } from './queries'
 import { countNotice } from './tally'
 import { openCursedChest } from './curseSystem'
 import { clearSpot } from './terrain'
+import { openTutor } from './tms'
+import { TUTOR, tutorWeight } from './tmRules'
 import type { Game } from './types'
 import * as dm from '../engine/dmath'
 
 /**
  * Points of interest the event director scatters around the player during a
- * run (altars, fountains, locked chests, traps, a fleeing Meowth).
+ * run (altars, fountains, locked chests, traps, a fleeing Meowth, the Move Tutor).
  *
  * Adding one: give it a state in `MapEventStates`, a definition in
  * `MAP_EVENTS` (spawn rule, interaction, reward), art in `render/mapEvents.ts`
@@ -40,6 +42,8 @@ export type MapEventStates = {
   spikes: { phase: SpikePhase }
   bomb: { fuse: number }
   meowth: { hp: number; dir: Dir8; flash: number; hitCooldown: number; seed: number }
+  /** Seconds stood in its ring so far (0..`TUTOR.stand`, drains outside). */
+  tutor: { stand: number }
 }
 
 export type MapEventKind = keyof MapEventStates
@@ -80,6 +84,10 @@ export type MapEventNotice =
   | { kind: 'meowthHit' }
   | { kind: 'payDay'; coins: number }
   | { kind: 'meowthEscaped' }
+  /** A Move Tutor set up its tent nearby, had nothing left to teach, or moved on unvisited. */
+  | { kind: 'tutor' }
+  | { kind: 'tutorEmpty' }
+  | { kind: 'tutorLeft' }
 
 export type MapEventDef<K extends MapEventKind> = {
   spawn: {
@@ -295,6 +303,28 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       burst(g, ev.x, ev.y - 8, { colors: ['#ffffff', '#e8e8f0', '#c8c8d8'], count: 18, speed: 70, ttl: 0.5 })
       notify(g, { kind: 'meowthEscaped' })
     },
+  },
+  tutor: {
+    // Once around minute 3 and maybe again by minute 9 (`tutorWeight`), so the first move from outside the learnset comes early.
+    spawn: { from: TUTOR.first.from, weight: (g) => tutorWeight(g.tm.tutors, g.time), max: 1, lifetime: TUTOR.lifetime, distance: [150, 240] },
+    marker: true,
+    create: () => ({ stand: 0 }),
+    enter: (g) => {
+      g.tm.tutors++
+      notify(g, { kind: 'tutor' })
+    },
+    update: (g, ev, dt) => {
+      const s = ev.state
+      const inside = within(g, ev.x, ev.y, TUTOR.radius + g.player.radius)
+      s.stand = Math.max(0, Math.min(TUTOR.stand, s.stand + (inside ? dt : -dt)))
+      if (s.stand > 0) ev.ttl = Math.max(ev.ttl, ev.age + 3)
+      // One lesson at a time: it waits while another screen is open.
+      if (s.stand < TUTOR.stand || g.phase !== 'playing') return
+      burst(g, ev.x, ev.y - 12, { colors: ['#ffffff', '#f8e8a0', '#78c0f8', '#f87878'], count: 30, speed: 90, ttl: 0.7, gravity: -40 })
+      if (!openTutor(g)) notify(g, { kind: 'tutorEmpty' })
+      spend(ev)
+    },
+    expire: (g) => notify(g, { kind: 'tutorLeft' }),
   },
 }
 
