@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { BOSS_TMS } from '../data/tms'
+import { killEnemy } from './combat'
+import { spawnEnemy } from './enemies'
 import { chooseOffer, step } from './game'
 import { MAX_MOVES } from './leveling'
 import { NO_RANKS } from './meta'
@@ -126,6 +128,12 @@ describe('TMs in a run', () => {
     chooseOffer(g, g.offers.find((o) => o.kind === 'pass')!)
     expect(g.phase).toBe('playing')
     expect(g.player.moves.map((m) => m.id)).toEqual(SIX.map((m) => m.id))
+  })
+
+  it('drop from a defeated wave boss, its own move', () => {
+    const g = run()
+    killEnemy(g, spawnEnemy(g, 'onix', 40, 0))
+    expect(g.pickups.find((k) => k.kind === 'tm')).toMatchObject({ move: BOSS_TMS.onix, source: 'boss' })
   })
 
   it('turn a mastered move’s disc into ₽', () => {

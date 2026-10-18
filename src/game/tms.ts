@@ -6,7 +6,7 @@ import type { RiftLegend } from '../data/rifts'
 import { burst, floatText } from './effects'
 import { applyOffer, branchOffers, recomputeStats } from './leveling'
 import { forkAt, MOVES, type MoveId } from './moves'
-import { forgetChoice, needsForget, TM_REFUND, tmCard, tmChoice, tutorPicks, tutorPool, tutorPrice, type TmSource } from './tmRules'
+import { forgetChoice, needsForget, TM_REFUND, tmChoice, tutorPicks, tutorPool, tutorPrice, type TmSource } from './tmRules'
 import type { Enemy, Game, Offer, Pickup, TmOffer } from './types'
 
 /**
@@ -148,6 +148,3 @@ export const pickTm = (g: Game, offer: Offer): boolean => {
       return false
   }
 }
-
-/** Whether the TM card `id` still teaches the player something (the dev console's check). */
-export const teaches = (g: Game, id: MoveId) => tmCard(g.player.moves, id, 'boss') !== null
