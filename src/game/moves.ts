@@ -13,6 +13,7 @@ import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
 import { scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
+import * as evo from './typeEvolutions'
 
 /**
  * Moves are the weapons. Each level-up upgrade adds a delta to the move's
@@ -1399,6 +1400,129 @@ export const MOVES = {
     fire: (g, s) => {
       for (const angle of radial(g, s.amount, 2.3)) breath(g, s, { move: 'outrage', type: 'dragon', visual: 'outrage' }, angle, 3)
     },
+  },
+
+  /* ---------- Evolved by the newer type items and generic ones (cast in typeEvolutions.ts) ---------- */
+
+  jawLock: {
+    name: 'Jaw Lock',
+    type: 'dark',
+    base: stats({ damage: 17, cooldown: 1.5, amount: 3, area: 1.2, knockback: 40 }),
+    status: { kind: 'slow', chance: 1, duration: 1, power: 0.8 },
+    upgrades: [{ amount: 1 }, { damage: 8 }, { area: 0.25, cooldown: -0.15 }, { amount: 1, damage: 6 }],
+    fire: (g, s) => evo.jawLock(g, s, { move: 'jawLock', type: 'dark', visual: 'jawLock' }),
+  },
+
+  superpower: {
+    name: 'Superpower',
+    type: 'fighting',
+    base: stats({ damage: 44, cooldown: 1.3, amount: 6, area: 1.3, knockback: 110 }),
+    upgrades: [{ damage: 10 }, { amount: 3 }, { area: 0.2 }, { cooldown: -0.25, damage: 8 }],
+    fire: (g, s) => evo.superpower(g, s, { move: 'superpower', type: 'fighting', visual: 'superFist' }),
+  },
+
+  fissure: {
+    name: 'Fissure',
+    type: 'ground',
+    base: stats({ damage: 50, cooldown: 2.1, amount: 4, area: 1.2, duration: 0.9, knockback: 20 }),
+    upgrades: [{ amount: 1 }, { damage: 12 }, { area: 0.2 }, { amount: 1, cooldown: -0.3 }],
+    fire: (g, s) => evo.fissure(g, s, { move: 'fissure', type: 'ground', visual: 'fissure' }),
+  },
+
+  extrasensory: {
+    name: 'Extrasensory',
+    type: 'psychic',
+    base: stats({ damage: 34, cooldown: 2.2, amount: 3, area: 1.2, duration: 1, knockback: 140 }),
+    status: { kind: 'confuse', chance: 0.6, duration: 2.5, power: 0 },
+    upgrades: [{ amount: 1 }, { damage: 10, statusChance: 0.2 }, { area: 0.2 }, { amount: 1, duration: 0.3 }],
+    fire: (g, s) => evo.extrasensory(g, s, { move: 'extrasensory', type: 'psychic', visual: 'psyVortex' }),
+  },
+
+  steelBeam: {
+    name: 'Steel Beam',
+    type: 'steel',
+    base: stats({ damage: 22, cooldown: 2.2, amount: 1, area: 1.2, duration: 0.8, knockback: 30 }),
+    upgrades: [{ damage: 6 }, { amount: 1 }, { duration: 0.3, area: 0.15 }, { amount: 1, damage: 6 }],
+    fire: (g, s) => evo.steelBeam(g, s, { move: 'steelBeam', type: 'steel', visual: 'steelBeam' }),
+  },
+
+  infernalParade: {
+    name: 'Infernal Parade',
+    type: 'ghost',
+    base: stats({ damage: 14, cooldown: 2.6, amount: 6, speed: 75, duration: 3.2, area: 1.2, knockback: 12 }),
+    status: { kind: 'burn', chance: 0.35, duration: 2.5, power: 0.3 },
+    upgrades: [{ amount: 2 }, { damage: 5, statusChance: 0.15 }, { duration: 1, speed: 15 }, { amount: 2, damage: 4 }],
+    fire: (g, s) => evo.infernalParade(g, s, { move: 'infernalParade', type: 'ghost', visual: 'parade' }),
+  },
+
+  phantomForce: {
+    name: 'Phantom Force',
+    type: 'ghost',
+    base: stats({ damage: 36, cooldown: 1.5, amount: 5, area: 1.2, knockback: 30 }),
+    status: { kind: 'slow', chance: 1, duration: 1.4, power: 0.85 },
+    upgrades: [{ amount: 2 }, { damage: 10 }, { area: 0.25 }, { amount: 2, cooldown: -0.2 }],
+    fire: (g, s) => evo.phantomForce(g, s, { move: 'phantomForce', type: 'ghost', visual: 'phantomArrow' }),
+  },
+
+  aquaCutter: {
+    name: 'Aqua Cutter',
+    type: 'water',
+    base: stats({ damage: 15, cooldown: 1.4, amount: 3, speed: 260, area: 1.4, knockback: 40 }),
+    upgrades: [{ amount: 1 }, { damage: 7 }, { area: 0.25 }, { amount: 1, speed: 60 }],
+    fire: (g, s) => evo.aquaCutter(g, s, { move: 'aquaCutter', type: 'water', visual: 'aquaCutter' }),
+  },
+
+  searingShot: {
+    name: 'Searing Shot',
+    type: 'fire',
+    base: stats({ damage: 28, cooldown: 2, amount: 2, speed: 150, area: 1.3, knockback: 90 }),
+    status: { kind: 'burn', chance: 0.5, duration: 2.5, power: 0.35 },
+    upgrades: [{ amount: 1 }, { damage: 10 }, { area: 0.25, statusDamage: 0.25 }, { amount: 1, cooldown: -0.3 }],
+    fire: (g, s) => evo.searingShot(g, s, { move: 'searingShot', type: 'fire', visual: 'searing' }),
+  },
+
+  gigaDrain: {
+    name: 'Giga Drain',
+    type: 'grass',
+    base: stats({ damage: 13, cooldown: 1.7, amount: 4, duration: 1.5 }),
+    status: { kind: 'slow', chance: 1, duration: 0.4, power: 0.5 },
+    upgrades: [{ amount: 1 }, { damage: 4 }, { duration: 0.5 }, { amount: 2, damage: 3 }],
+    fire: (g, s) => evo.gigaDrain(g, s, { move: 'gigaDrain', type: 'grass', visual: 'gigaDrain' }),
+  },
+
+  burningJealousy: {
+    name: 'Burning Jealousy',
+    type: 'fire',
+    base: stats({ damage: 30, cooldown: 2.1, amount: 4, area: 1.2, knockback: 50 }),
+    status: { kind: 'burn', chance: 0.8, duration: 3, power: 0.4 },
+    upgrades: [{ amount: 2 }, { damage: 12 }, { area: 0.25, statusDamage: 0.25 }, { amount: 2, cooldown: -0.3 }],
+    fire: (g, s) => evo.burningJealousy(g, s, { move: 'burningJealousy', type: 'fire', visual: 'jealousy' }),
+  },
+
+  trailblaze: {
+    name: 'Trailblaze',
+    type: 'grass',
+    base: stats({ damage: 24, cooldown: 1.6, amount: 2, area: 1.2, duration: 0.45, knockback: 80 }),
+    upgrades: [{ damage: 8 }, { area: 0.2 }, { amount: 1 }, { cooldown: -0.25, damage: 8 }],
+    fire: (g, s) => evo.trailblaze(g, s, { move: 'trailblaze', type: 'grass', visual: 'trailblaze' }),
+  },
+
+  liquidation: {
+    name: 'Liquidation',
+    type: 'water',
+    base: stats({ damage: 26, cooldown: 1.3, amount: 2, speed: 210, area: 1.3, knockback: 150 }),
+    status: { kind: 'mark', chance: 0.5, duration: 4, power: 0.15 },
+    upgrades: [{ amount: 1 }, { damage: 10 }, { area: 0.2, statusChance: 0.2 }, { amount: 1, cooldown: -0.2 }],
+    fire: (g, s) => evo.liquidation(g, s, { move: 'liquidation', type: 'water', visual: 'liquidation' }),
+  },
+
+  alluringVoice: {
+    name: 'Alluring Voice',
+    type: 'fairy',
+    base: stats({ damage: 24, cooldown: 1.9, amount: 2, area: 1.2, duration: 0.75, knockback: 70 }),
+    status: { kind: 'confuse', chance: 0.45, duration: 2.5, power: 0 },
+    upgrades: [{ amount: 1 }, { damage: 8, statusChance: 0.15 }, { area: 0.2 }, { amount: 1, cooldown: -0.3 }],
+    fire: (g, s) => evo.alluringVoice(g, s, { move: 'alluringVoice', type: 'fairy', visual: 'alluring' }),
   },
 } as const satisfies Record<string, MoveDef>
 

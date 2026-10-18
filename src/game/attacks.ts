@@ -5,6 +5,7 @@ import { damageEnemy } from './combat'
 import { mineArmed, mineBlast, TURRET_RANGE } from './moveRules'
 import { nearestEnemy } from './queries'
 import { spawnAttack } from './spawn'
+import { typeEvolvedTrail } from './typeEvolutions'
 import type { Attack, Enemy, Game, Motion, Trailer, Turret } from './types'
 import * as dm from '../engine/dmath'
 
@@ -244,7 +245,7 @@ const trail = (g: Game, a: Attack) => {
     case 'megahorn': return emit(['#ffffff', '#d8dcf0', '#a8b0d0'], 0.9, { ttl: 0.4, speed: 12 })
     case 'dragonBreath': return emit(['#a070f8', '#7038f8', '#f0e0ff'], 0.5, { gravity: -30, ttl: 0.3, speed: 8 })
     case 'outrage': return emit(['#a070f8', '#f85030', '#f8d030', '#f0e0ff'], 0.7, { gravity: -40, ttl: 0.35, speed: 16 })
-    default: return
+    default: return typeEvolvedTrail(a, emit)
   }
 }
 

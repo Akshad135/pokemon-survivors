@@ -1540,6 +1540,132 @@ export const pt = {
       description: 'Fúria dracônica: sopra cones de fogo em várias direções ao mesmo tempo, girando a cada vez.',
       upgrades: [],
     },
+    jawLock: {
+      description: 'Uma bocarra de sombra surge sob os inimigos mais próximos e morde três vezes, prendendo-os no lugar. Acerta ×1.6 em quem está com menos da metade do HP.',
+      upgrades: [
+        '+1 bocarra',
+        '+8 de dano',
+        '+25% de área e recarga 0.15s mais rápida',
+        '+1 bocarra e +6 de dano',
+      ],
+    },
+    superpower: {
+      description: 'Um golpe colossal arremessa os inimigos da frente contra a horda (quem é arremessado fere quem atinge), seguido de uma saraivada de socos.',
+      upgrades: [
+        '+10 de dano',
+        '+3 socos',
+        '+20% de área',
+        'Recarga 0.25s mais rápida e +8 de dano',
+      ],
+    },
+    fissure: {
+      description: 'O chão se abre em fendas a partir de você que puxam os inimigos para o abismo. Quem fica com menos de 20% do HP cai de vez.',
+      upgrades: [
+        '+1 fenda',
+        '+12 de dano',
+        '+20% de área',
+        '+1 fenda e recarga 0.3s mais rápida',
+      ],
+    },
+    extrasensory: {
+      description: 'Olhos psíquicos se abrem sobre os inimigos e puxam a multidão para o centro antes de explodir. Pode confundir: confusos esbarram e ferem uns aos outros.',
+      upgrades: [
+        '+1 olho',
+        '+10 de dano e +20% de chance de confundir',
+        '+20% de área',
+        '+1 olho e puxa por +0.3s',
+      ],
+    },
+    steelBeam: {
+      description: 'Um raio de aço grosso dispara no inimigo mais próximo e varre a linha devagar, acertando tudo nela várias vezes.',
+      upgrades: [
+        '+6 de dano',
+        '+1 raio',
+        'Dura +0.3s e +15% de área',
+        '+1 raio e +6 de dano',
+      ],
+    },
+    infernalParade: {
+      description: 'Um desfile de chamas fantasmas vaga ao seu redor queimando. Causa ×1.7 de dano em quem está com status.',
+      upgrades: [
+        '+2 chamas',
+        '+5 de dano e +15% de chance de queimar',
+        'Dura +1s e as chamas andam mais rápido',
+        '+2 chamas e +4 de dano',
+      ],
+    },
+    phantomForce: {
+      description: 'Uma salva de flechas some no céu e despenca sobre os inimigos mais próximos, acorrentando-os no lugar.',
+      upgrades: [
+        '+2 flechas',
+        '+10 de dano',
+        '+25% de área',
+        '+2 flechas e recarga 0.2s mais rápida',
+      ],
+    },
+    aquaCutter: {
+      description: 'Shurikens d’água gigantes voam até os inimigos e voltam girando para você, cortando na ida e na volta.',
+      upgrades: [
+        '+1 shuriken',
+        '+7 de dano',
+        '+25% de área',
+        '+1 shuriken e mais velocidade',
+      ],
+    },
+    searingShot: {
+      description: 'Lança bolas de fogo incandescentes que explodem nos inimigos e espalham um anel de brasas. Queima com frequência.',
+      upgrades: [
+        '+1 bola de fogo',
+        '+10 de dano',
+        '+25% de área e queimaduras +25% mais fortes',
+        '+1 bola de fogo e recarga 0.3s mais rápida',
+      ],
+    },
+    gigaDrain: {
+      description: 'Cipós se prendem aos inimigos mais próximos e sugam sua energia, curando você. Se o alvo cai, o cipó pula para o próximo.',
+      upgrades: [
+        '+1 cipó',
+        '+4 de dano',
+        'Sugam por +0.5s',
+        '+2 cipós e +3 de dano',
+      ],
+    },
+    burningJealousy: {
+      description: 'Um canto de inveja ecoa e pilares de fogo irrompem sob os inimigos mais fortes da tela. Causa ×1.5 em elites e chefes, e queima.',
+      upgrades: [
+        '+2 pilares',
+        '+12 de dano',
+        '+25% de área e queimaduras +25% mais fortes',
+        '+2 pilares e recarga 0.3s mais rápida',
+      ],
+    },
+    trailblaze: {
+      description: 'Lâminas de folha gigantes varrem quase um círculo inteiro ao seu redor, de longe.',
+      upgrades: [
+        '+8 de dano',
+        '+20% de área',
+        '+1 lâmina',
+        'Recarga 0.25s mais rápida e +8 de dano',
+      ],
+    },
+    liquidation: {
+      description: 'Ondas que quebram avançam para a frente e para trás, derrubando os inimigos e baixando a defesa deles (marca: levam mais dano).',
+      upgrades: [
+        '+1 onda',
+        '+10 de dano',
+        '+20% de área e +20% de chance de marcar',
+        '+1 onda e recarga 0.2s mais rápida',
+      ],
+    },
+    alluringVoice: {
+      description: 'Ondas de canto em forma de coração se espalham de você, uma após a outra, e podem confundir quem alcançam.',
+      upgrades: [
+        '+1 onda',
+        '+8 de dano e +15% de chance de confundir',
+        '+20% de área',
+        '+1 onda e recarga 0.3s mais rápida',
+      ],
+    },
   },
 
   items: {
@@ -1568,6 +1694,13 @@ export const pt = {
     hardStone: typeBoost('Pedra'),
     silverPowder: typeBoost('Inseto'),
     dragonFang: typeBoost('Dragão'),
+    blackBelt: typeBoost('Lutador'),
+    metalCoat: typeBoost('Aço'),
+    spellTag: typeBoost('Fantasma'),
+    blackGlasses: typeBoost('Sombrio'),
+    twistedSpoon: typeBoost('Psíquico'),
+    softSand: typeBoost('Terra'),
+    fairyFeather: typeBoost('Fada'),
   },
 
   upgrades: {

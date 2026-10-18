@@ -1445,6 +1445,132 @@ export const en: Messages = {
       description: 'Draconic rampage: breathes cones of fire in several directions at once, turning every time.',
       upgrades: [],
     },
+    jawLock: {
+      description: 'A shadow maw rises under the nearest foes and bites three times, holding them in place. Hits ×1.6 on foes under half HP.',
+      upgrades: [
+        '+1 maw',
+        '+8 damage',
+        '+25% area and 0.15s faster cooldown',
+        '+1 maw and +6 damage',
+      ],
+    },
+    superpower: {
+      description: 'A colossal blow hurls the foes in front into the horde (thrown foes hurt whoever they hit), followed by a barrage of punches.',
+      upgrades: [
+        '+10 damage',
+        '+3 punches',
+        '+20% area',
+        '0.25s faster cooldown and +8 damage',
+      ],
+    },
+    fissure: {
+      description: 'The ground splits in cracks running out from you that drag foes into the chasm. Anyone left under 20% HP falls in for good.',
+      upgrades: [
+        '+1 crack',
+        '+12 damage',
+        '+20% area',
+        '+1 crack and 0.3s faster cooldown',
+      ],
+    },
+    extrasensory: {
+      description: 'Psychic eyes open over the foes and drag the crowd into their center before bursting. May confuse: confused foes bump into and hurt each other.',
+      upgrades: [
+        '+1 eye',
+        '+10 damage and +20% confusion chance',
+        '+20% area',
+        '+1 eye and pulls for +0.3s',
+      ],
+    },
+    steelBeam: {
+      description: 'A thick steel beam fires at the nearest foe and slowly sweeps its line, hitting everything on it again and again.',
+      upgrades: [
+        '+6 damage',
+        '+1 beam',
+        'Lasts +0.3s and +15% area',
+        '+1 beam and +6 damage',
+      ],
+    },
+    infernalParade: {
+      description: 'A parade of ghost flames wanders around you, burning. Deals ×1.7 damage to foes with a status condition.',
+      upgrades: [
+        '+2 flames',
+        '+5 damage and +15% burn chance',
+        'Lasts +1s and the flames move faster',
+        '+2 flames and +4 damage',
+      ],
+    },
+    phantomForce: {
+      description: 'A volley of arrows vanishes into the sky and plunges onto the nearest foes, shackling them in place.',
+      upgrades: [
+        '+2 arrows',
+        '+10 damage',
+        '+25% area',
+        '+2 arrows and 0.2s faster cooldown',
+      ],
+    },
+    aquaCutter: {
+      description: 'Giant water shurikens fly at the foes and spin back to you, cutting on the way out and back.',
+      upgrades: [
+        '+1 shuriken',
+        '+7 damage',
+        '+25% area',
+        '+1 shuriken and more speed',
+      ],
+    },
+    searingShot: {
+      description: 'Lobs white-hot fireballs that explode on foes and spray a ring of embers. Burns often.',
+      upgrades: [
+        '+1 fireball',
+        '+10 damage',
+        '+25% area and burns +25% stronger',
+        '+1 fireball and 0.3s faster cooldown',
+      ],
+    },
+    gigaDrain: {
+      description: 'Vines latch onto the nearest foes and drain their energy, healing you. If the target faints, the vine jumps to the next one.',
+      upgrades: [
+        '+1 vine',
+        '+4 damage',
+        'Drains for +0.5s',
+        '+2 vines and +3 damage',
+      ],
+    },
+    burningJealousy: {
+      description: 'A song of envy rings out and pillars of fire burst under the toughest foes on screen. Deals ×1.5 to elites and bosses, and burns.',
+      upgrades: [
+        '+2 pillars',
+        '+12 damage',
+        '+25% area and burns +25% stronger',
+        '+2 pillars and 0.3s faster cooldown',
+      ],
+    },
+    trailblaze: {
+      description: 'Giant leaf blades sweep almost a full circle around you, from far out.',
+      upgrades: [
+        '+8 damage',
+        '+20% area',
+        '+1 blade',
+        '0.25s faster cooldown and +8 damage',
+      ],
+    },
+    liquidation: {
+      description: 'Crashing waves surge forward and back, bowling foes over and lowering their defense (mark: they take more damage).',
+      upgrades: [
+        '+1 wave',
+        '+10 damage',
+        '+20% area and +20% mark chance',
+        '+1 wave and 0.2s faster cooldown',
+      ],
+    },
+    alluringVoice: {
+      description: 'Heart-shaped waves of song spread from you, one after another, and may confuse the foes they reach.',
+      upgrades: [
+        '+1 wave',
+        '+8 damage and +15% confusion chance',
+        '+20% area',
+        '+1 wave and 0.3s faster cooldown',
+      ],
+    },
   },
 
   items: {
@@ -1473,6 +1599,13 @@ export const en: Messages = {
     hardStone: typeBoost('Rock'),
     silverPowder: typeBoost('Bug'),
     dragonFang: typeBoost('Dragon'),
+    blackBelt: typeBoost('Fighting'),
+    metalCoat: typeBoost('Steel'),
+    spellTag: typeBoost('Ghost'),
+    blackGlasses: typeBoost('Dark'),
+    twistedSpoon: typeBoost('Psychic'),
+    softSand: typeBoost('Ground'),
+    fairyFeather: typeBoost('Fairy'),
   },
 
   upgrades: {

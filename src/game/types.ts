@@ -182,6 +182,7 @@ export type Visual =
   | 'telegraph'
   | EvolvedVisual
   | TacticVisual
+  | TypeEvolvedVisual
 
 /** What dealt the damage, for the results screen. */
 export type DamageSource = MoveId | 'special'
@@ -191,6 +192,12 @@ export type EvolvedVisual =
   | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
   | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
   | 'blizzard' | 'stoneEdge' | 'megahorn' | 'outrage'
+
+/** Moves evolved by the newer type items and generic ones (`typeEvolutions.ts`), drawn by `render/typeEvolved.ts`. */
+export type TypeEvolvedVisual =
+  | 'jawLock' | 'jawBite' | 'superFist' | 'superJab' | 'fissure' | 'psyVortex' | 'psyBurst' | 'steelBeam'
+  | 'parade' | 'phantomVolley' | 'phantomFall' | 'phantomArrow' | 'aquaCutter' | 'searing' | 'searingEmber'
+  | 'gigaDrain' | 'jealousySong' | 'jealousy' | 'trailblaze' | 'liquidation' | 'alluring'
 
 /** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
 export type TacticVisual =
