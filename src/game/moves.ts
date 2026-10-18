@@ -14,6 +14,8 @@ import type { PlayerStats } from './stats'
 import { modBits, modHit, refreshMods, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
+import { EGG_MOVES_3 } from './eggMoves3'
+import { TM_MOVES } from './tmMoves'
 import { VERB_EVOLVED_MOVES } from './verbEvolutions'
 import { EGG_MOVES_2 } from './eggMoves2'
 import { DUO_MOVES } from './duoMoves'
@@ -2253,6 +2255,10 @@ export const MOVES = {
     fire: (g, s) => evo.alluringVoice(g, s, { move: 'alluringVoice', type: 'fairy', visual: 'alluring' }),
   },
 
+  /* ---------- Egg signatures, third batch (`eggMoves3.ts`) ---------- */
+  ...EGG_MOVES_3,
+  /* ---------- TM moves: boss discs and the Move Tutor (`tmMoves.ts`) ---------- */
+  ...TM_MOVES,
   /* ---------- Evolutions of the verb moves (`verbEvolutions.ts`) ---------- */
   ...VERB_EVOLVED_MOVES,
   /* ---------- Egg families' signature moves, second batch (`eggMoves2.ts`) ---------- */

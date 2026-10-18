@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
+import { runLearnset } from '../game/learnsets'
 import { offerPool, rollOffers } from '../game/leveling'
 import { isManual, maxMoveLevel, MOVE_IDS, MOVES, moveStats, type MoveId } from '../game/moves'
 import { applyDeltas, BASE_STATS } from '../game/stats'
 import type { OwnedItem, OwnedMove } from '../game/types'
 import { EVOLUTIONS, neverEvolves, readyEvolutions } from './evolutions'
-import { PLAYABLE, PLAYABLE_IDS } from './hatchlings'
+import { PLAYABLE_IDS } from './hatchlings'
 import { ITEMS, type ItemDef } from './items'
 
 const maxed = (id: MoveId): OwnedMove => ({ id, level: maxMoveLevel(id), cooldown: 0 })
@@ -69,9 +70,10 @@ describe('evolution pairs', () => {
     for (const [item, n] of uses) expect([item, n <= (item === 'charcoal' ? 3 : 2)]).toEqual([item, true])
   })
 
-  it('give every move a Pokémon can learn an evolution, each used once (signatures grow by forks instead)', () => {
-    const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id): readonly MoveId[] => PLAYABLE[id].learnset))
+  it('evolve moves some Pokémon can learn, and give every learnable move an evolution (signatures grow by forks instead)', () => {
+    const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id) => runLearnset(id, null)))
     const from: readonly MoveId[] = EVOLUTIONS.map((e) => e.from)
+    for (const id of from) expect([id, learnable.has(id)]).toEqual([id, true])
     for (const id of learnable) if (!neverEvolves(id)) expect([id, from.includes(id)]).toEqual([id, true])
     expect(new Set(from).size).toBe(from.length)
     expect(new Set(EVOLUTIONS.map((e) => e.to)).size).toBe(EVOLUTIONS.length)
@@ -105,7 +107,7 @@ describe('type-boosting items', () => {
   it('are only offered when the starter learns moves of that type', () => {
     const items = offerPool({ starter: 'squirtle', moves: [], items: [] }).flatMap(([o]) => (o.kind === 'item' ? [o.id] : []))
     expect(items).toContain('mysticWater')
-    expect(items).toContain('magnet')
+    expect(items).toContain('metalCoat')
     expect(items).not.toContain('charcoal')
   })
 

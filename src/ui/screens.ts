@@ -12,7 +12,8 @@ import { rarityOf } from '../game/leveling'
 import { fusable, isDuo, reachableDuos, readyDuos, type DuoRecipe } from '../game/duoRules'
 import { CURSES } from '../data/curses'
 import { modsOf, type ModId } from '../game/mods'
-import { playerForm, runLearnset } from '../game/branch'
+import { playerForm } from '../game/branch'
+import { runLearnset, unlockedAt } from '../game/learnsets'
 import { ABILITIES, isHidden } from '../data/abilities'
 import { abilitySet } from '../game/abilities'
 import { heldMega } from '../game/mega'
@@ -229,6 +230,14 @@ const offerView = (g: Game, offer: Offer) => {
     }
     case 'ability':
       return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null, fork: false, mods: NO_MODS }
+    // TM picks have their own screen too (`ui/tmPick.ts`).
+    case 'tm':
+    case 'forget': {
+      const def: MoveDef = MOVES[offer.id]
+      return { icon: moveIcon(offer.id), name: def.name, tag: m.tm.tag, isNew: offer.kind === 'tm', desc: m.moves[offer.id].description, type: def.type, fork: false, mods: NO_MODS }
+    }
+    case 'pass':
+      return { icon: berryIcon(), name: m.tm.pass, tag: '', isNew: false, desc: '', type: null, fork: false, mods: NO_MODS }
   }
 }
 
@@ -249,6 +258,9 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
   const v = offerView(g, offer)
   const recipes = offerRecipes(g, offer)
   const rarity = rarityOf(offer)
+  // A move the evolution just unlocked, while it still comes up more often: tagged with the form that learns it.
+  const fresh =
+    offer.kind === 'move' && g.freshMoves > 0 && !g.player.moves.some((m) => m.id === offer.id) && unlockedAt(g.starter, g.branch, g.player.stage).includes(offer.id)
   const classes = [
     'offer',
     offer.kind === 'evolution' && 'offer-evo',
@@ -259,6 +271,7 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
     v.fork && 'offer-fork',
     rarity && `offer-${rarity}`,
     !canBanish(offer) && 'offer-keep',
+    fresh && 'offer-fresh',
   ]
   button.className = classes.filter(Boolean).join(' ')
   button.style.setProperty('--i', String(i))
@@ -287,6 +300,7 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
         v.name,
         v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag),
         v.fork && h('span', { class: 'tag tag-fork' }, m.forkTag),
+        fresh && h('span', { class: 'tag tag-fresh' }, m.freshTag(playerForm(g).name)),
         rarity && h('span', { class: `tag tag-${rarity}` }, rarity === 'rare' ? m.rare : m.shiny),
       ),
       h('div', { class: 'offer-desc' }, v.desc),
@@ -335,7 +349,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const actions = [reroll, skip, banish].filter((b) => b !== null)
 
   const offersEl = h('div', { class: fork ? 'offers branches' : 'offers' }, ...buttons)
-  const hintEl = h('div', { class: 'hint-slot' }, hint(m.hintKeys, m.hintTouch))
+  const hintEl = h('div', { class: 'hint-slot' }, hint(fork ? m.pairHintKeys : m.hintKeys, m.hintTouch))
   let banishing = false
   const setBanishing = (on: boolean) => {
     banishing = on
@@ -382,6 +396,9 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   })
   const offEscape = input.onKey((key) => {
     if (key === 'Escape' && banishing) setBanishing(false)
+    // A fork's two paths sit side by side (stacked only on a phone held upright): left and right move too.
+    else if (fork && (key === 'ArrowLeft' || key === 'KeyA')) nav.focus(nav.index - 1)
+    else if (fork && (key === 'ArrowRight' || key === 'KeyD')) nav.focus(nav.index + 1)
   })
 
   const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : m.title(name, g.player.level - g.pendingLevelUps + 1)
@@ -536,7 +553,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
     el.replaceChildren(
       h(
         'div',
-        { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
+        { class: opening ? 'dialog box pop wide pause-box' : 'dialog box wide pause-box' },
         h('div', { class: 'dialog-title' }, m.title),
         difficultyTag(g.difficulty),
         abilityPanel(g),
