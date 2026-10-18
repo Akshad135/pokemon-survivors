@@ -3,8 +3,8 @@ import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { stacksOf } from '../game/kitRules'
 import { moveStats } from '../game/moves'
-import { FOCUS, SOLAR, SUCKER, TAIL } from '../game/moveVerbs'
-import { atLevel, gyroMult, ROOST } from '../game/moveVerbRules'
+import { focusCharge, SOLAR, SUCKER, TAIL } from '../game/moveVerbs'
+import { gyroMult, roostSettle } from '../game/moveVerbRules'
 import type { Attack, Game } from '../game/types'
 import { VERB_FX } from './art'
 import { dashedRing } from './strokes'
@@ -138,7 +138,7 @@ const drawRoostGround = (ctx: Ctx, g: Game, t: number) => {
   const owned = ownedOf(g, 'roost')
   const p = g.player
   if (!owned || p.moving || p.hidden) return
-  const settle = atLevel(ROOST.settle, owned.level)
+  const settle = roostSettle(owned)
   const k = Math.min(1, p.still / settle)
   if (k < 1) {
     if (p.still < 0.15) return
@@ -175,7 +175,7 @@ const drawFocusGround = (ctx: Ctx, g: Game, t: number) => {
   const owned = ownedOf(g, 'focusPunch')
   const p = g.player
   if (!owned || p.hidden) return
-  const k = Math.min(1, Math.max(0, stacksOf(owned)) / FOCUS.charge)
+  const k = Math.min(1, Math.max(0, stacksOf(owned)) / focusCharge(owned))
   if (k <= 0) return
   const full = k >= 1
   ctx.globalAlpha = 0.45 + 0.55 * k
@@ -420,7 +420,7 @@ const drawRoostGust = (ctx: Ctx, a: Attack) => {
 const drawRoostAir = (ctx: Ctx, g: Game, t: number) => {
   const owned = ownedOf(g, 'roost')
   const p = g.player
-  if (!owned || p.moving || p.hidden || p.still < atLevel(ROOST.settle, owned.level)) return
+  if (!owned || p.moving || p.hidden || p.still < roostSettle(owned)) return
   const feather = VERB_FX.feather()
   for (let i = 0; i < 3; i++) {
     const ph = (t * 0.45 + i / 3) % 1
@@ -437,7 +437,7 @@ const drawFocusAura = (ctx: Ctx, g: Game, t: number) => {
   const owned = ownedOf(g, 'focusPunch')
   const p = g.player
   if (!owned || p.hidden) return
-  const k = Math.min(1, Math.max(0, stacksOf(owned)) / FOCUS.charge)
+  const k = Math.min(1, Math.max(0, stacksOf(owned)) / focusCharge(owned))
   if (k <= 0) return
   const full = k >= 1
   const n = Math.round(4 + k * 14)

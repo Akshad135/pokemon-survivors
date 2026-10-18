@@ -3,6 +3,7 @@ import { range } from '../engine/rng'
 import { TYPE_COLORS } from '../data/types'
 import { burst } from './effects'
 import { chainTargets } from './moveRules'
+import { bonusApplies, type DamageBonus } from './kitRules'
 import { spawnAttack } from './spawn'
 import type { CastStats } from './moves'
 import type { Attack, Enemy, Game, Motion } from './types'
@@ -47,6 +48,16 @@ export const MODS = {
   arc: { bit: 1 << 9, fits: ['projectile', 'orbit', 'strike'] },
   /** Projectiles circle the player instead of flying off: a ring that keeps turning cast after cast. */
   halo: { bit: 1 << 10, fits: ['projectile'] },
+  /** Its hits heal a share of the damage dealt (the kit's drain budget caps it). */
+  drain: { bit: 1 << 11, fits: ['projectile', 'orbit', 'strike'] },
+  /** Regular foes it leaves at or under `MOD.execute.share` of their HP faint outright. */
+  execute: { bit: 1 << 12, fits: ['projectile', 'orbit', 'strike'] },
+  /** Its hitboxes drag the foes they touch toward their center. */
+  vortex: { bit: 1 << 13, fits: ['orbit', 'strike'] },
+  /** Hits elites and bosses harder. */
+  hunter: { bit: 1 << 14, fits: ['projectile', 'orbit', 'strike'] },
+  /** Hits foes with a status condition harder. */
+  cruel: { bit: 1 << 16, fits: ['projectile', 'orbit', 'strike'] },
 } as const satisfies Record<string, ModDef>
 
 export type ModId = keyof typeof MODS
@@ -68,7 +79,50 @@ export const MOD = {
   twin: { radius: 1.65, spin: -0.8 },
   arc: { jumps: 2, range: 72, damage: 0.5, perAttack: 3 },
   halo: { radius: 38, spin: 3.6, hitInterval: 0.45 },
+  drain: { share: 0.2 },
+  execute: { share: 0.12 },
+  vortex: { pull: 90 },
+  hunter: { mult: 1.5 },
+  cruel: { mult: 1.35 },
 } as const
+
+const HUNTER: readonly DamageBonus[] = [{ when: 'elite', mult: MOD.hunter.mult }, { when: 'boss', mult: MOD.hunter.mult }]
+const CRUEL: DamageBonus = { when: 'afflicted', mult: MOD.cruel.mult }
+
+/**
+ * Puts the hit-time mods (Drain, Execute, Vortex, Hunter, Cruel) on a hitbox's
+ * own kit fields (`spawnAttack` calls it for every modded hitbox). Never
+ * lowers what the move set itself, and adds a bonus only once, so calling it
+ * again on a refreshed hitbox (an aura, the gears) changes nothing.
+ */
+export const stampMods = (a: Attack) => {
+  const bits = a.mod?.bits ?? 0
+  if (bits & MODS.drain.bit) a.drain = Math.max(a.drain, MOD.drain.share)
+  if (bits & MODS.execute.bit) a.execute = Math.max(a.execute, MOD.execute.share)
+  if (bits & MODS.vortex.bit) a.pull = Math.max(a.pull, MOD.vortex.pull)
+  if (bits & MODS.hunter.bit && !a.bonus.includes(HUNTER[0]!)) a.bonus = [...a.bonus, ...HUNTER]
+  if (bits & MODS.cruel.bit && !a.bonus.includes(CRUEL)) a.bonus = [...a.bonus, CRUEL]
+}
+
+/**
+ * A long-lived hitbox a cast refreshes instead of spawning anew (Whirlpool's
+ * aura, Flame Wheel, Gyro Ball's gears) takes the mods of the cast refreshing it,
+ * so a branch picked after it appeared applies at once.
+ */
+export const refreshMods = (g: Game, a: Attack) => {
+  if (g.castMods === 0 || (a.mod && a.mod.bits === g.castMods)) return
+  a.mod = createModState(g.castMods)
+  stampMods(a)
+}
+
+/**
+ * What a hitbox spawned later on behalf of another (a Thrash bite, a bubble's
+ * pop, a turret's shot, a mine's blast, a trailer's patch) takes from it: its
+ * mods, minus `drop`, so the branch reaches the hits that actually land.
+ */
+export const inheritMods = (a: Attack, drop: readonly ModId[] = []): Pick<Attack, 'mod'> => ({
+  mod: a.mod && createModState(a.mod.bits & ~modBits(drop) & ~ECHOED),
+})
 
 /** Per-hitbox state of its mods. `tx`/`ty`: where its trail last dropped ground (NaN: not yet). */
 export type ModState = { bits: number; bounces: number; arcs: number; tx: number; ty: number }
@@ -243,6 +297,9 @@ export const modHit = (g: Game, a: Attack, e: Enemy) => {
   if (bits & MODS.split.bit) split(g, a, e)
   if (bits & MODS.bounce.bit) bounce(g, a)
   if (bits & MODS.arc.bit) arc(g, a, e)
+  // Hunter and Cruel flash when their bonus landed: gold on a big foe, violet on an afflicted one.
+  if (bits & MODS.hunter.bit && (e.elite || e.boss)) burst(g, e.x, e.y - e.radius * 2, { colors: ['#ffffff', '#f8d030', '#f89800'], count: 6, speed: 70, ttl: 0.3, gravity: -40 })
+  if (bits & MODS.cruel.bit && bonusApplies('afflicted', e)) burst(g, e.x, e.y - e.radius, { colors: ['#f8c8f8', '#a040d0', '#582878'], count: 4, speed: 55, ttl: 0.28 })
 }
 
 /** Called when a hit from `a` faints `e` (`damageEnemy`): Burst blows the foe up. */
@@ -277,6 +334,24 @@ export const modTick = (g: Game, a: Attack) => {
     g.particles.push({
       x: a.x + range(g.rng, -4, 4), y: a.y + range(g.rng, -4, 4), vx: 0, vy: -14,
       life: 0, ttl: 0.3, color: g.rng() < 0.5 ? '#ffffff' : TYPE_COLORS[a.type], size: 1, gravity: 0, drag: 2,
+    })
+  }
+  // Drain sheds green motes; Vortex draws specks in from its rim.
+  if (mod.bits & MODS.drain.bit && g.rng() < 0.12) {
+    g.particles.push({
+      x: a.x + range(g.rng, -5, 5), y: a.y + range(g.rng, -5, 5), vx: 0, vy: -20,
+      life: 0, ttl: 0.4, color: g.rng() < 0.5 ? '#78f878' : '#d8f8c8', size: 1, gravity: -20, drag: 1,
+    })
+  }
+  if (mod.bits & MODS.vortex.bit && a.age >= 0 && g.rng() < 0.45) {
+    const r = (a.shape.kind === 'circle' ? a.shape.r : a.shape.w / 2) + 4
+    const angle = range(g.rng, 0, TAU)
+    const cos = dm.cos(angle)
+    const sin = dm.sin(angle)
+    // Inward and a little sideways: a swirl.
+    g.particles.push({
+      x: a.x + cos * r, y: a.y + sin * r * 0.7, vx: (-cos + sin * 0.6) * r * 2.2, vy: (-sin - cos * 0.6) * r * 1.5,
+      life: 0, ttl: 0.4, color: g.rng() < 0.5 ? '#ffffff' : TYPE_COLORS[a.type], size: 1, gravity: 0, drag: 3,
     })
   }
   if (!(mod.bits & MODS.trail.bit)) return

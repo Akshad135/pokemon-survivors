@@ -1,5 +1,5 @@
 import { NO_BONUS } from './kitRules'
-import { createModState } from './mods'
+import { createModState, stampMods } from './mods'
 import type { Attack, Game } from './types'
 
 type AttackInit = Pick<Attack, 'move' | 'type' | 'visual' | 'x' | 'y' | 'shape' | 'motion' | 'damage' | 'ttl'> & Partial<Attack>
@@ -39,6 +39,7 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     memo: 0,
     ...init,
   }
+  if (attack.mod) stampMods(attack)
   g.attacks.push(attack)
   return attack
 }
