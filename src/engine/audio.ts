@@ -220,6 +220,52 @@ const SFX = {
   leap: () => tone(180, 520, 0.3, 'triangle', 0.1),
   /** Soft chime for heal, ward and summon pulses. */
   enemyPulse: () => tone(660, 990, 0.16, 'triangle', 0.06),
+  /* Signature moves (`ui/castSounds.ts`) */
+  /** Hypnosis: a woozy wobble down and up. */
+  hypnosis: () => [523, 392, 523, 392].forEach((f, i) => tone(f, f * 0.94, 0.12, 'triangle', 0.08, i * 0.09)),
+  /** Digging in: a scrape of dirt and a low thud. */
+  dig: () => {
+    noise(0.18, 0.12)
+    tone(140, 60, 0.2, 'triangle', 0.14)
+  },
+  /** A rush of wind spinning up (Twister). */
+  whoosh: () => {
+    noise(0.3, 0.07)
+    tone(200, 620, 0.3, 'triangle', 0.05)
+  },
+  /** Sand hissing round. */
+  sand: () => noise(0.45, 0.06),
+  /** A fist pulling back, winding up. */
+  windup: () => tone(180, 520, 0.18, 'square', 0.07),
+  /** A boulder starting to roll: a low rumble. */
+  roll: () => {
+    tone(70, 110, 0.35, 'sawtooth', 0.09)
+    noise(0.3, 0.05)
+  },
+  /** A blade drawn: a bright ring. */
+  shing: () => [1568, 2349].forEach((f, i) => tone(f, f * 1.1, 0.12, 'square', 0.06, i * 0.04)),
+  /** Two darts zipping off. */
+  zip: () => [0, 0.07].forEach((d) => tone(900, 1800, 0.07, 'square', 0.05, d)),
+  /** A three-headed growl. */
+  growl: () => [110, 98, 123].forEach((f, i) => tone(f, f * 0.8, 0.14, 'sawtooth', 0.08, i * 0.11)),
+  /** Giga Impact's charge: a rising roar. */
+  charge: () => {
+    tone(90, 300, 0.22, 'sawtooth', 0.14)
+    noise(0.2, 0.1)
+  },
+  /** Metronome: tick, tock, and a chime for the pick. */
+  metronome: () => {
+    tone(1200, 1200, 0.03, 'square', 0.07)
+    tone(900, 900, 0.03, 'square', 0.07, 0.14)
+    tone(1047, 1568, 0.12, 'triangle', 0.1, 0.3)
+  },
+  /** A short chirp that echoes. */
+  echo: () => [880, 880, 880].forEach((f, i) => tone(f, f * 1.2, 0.07, 'triangle', 0.09 - i * 0.025, i * 0.09)),
+  /** A curse: an eerie fall. */
+  curse: () => {
+    tone(392, 196, 0.5, 'sawtooth', 0.06)
+    tone(370, 185, 0.5, 'triangle', 0.08, 0.05)
+  },
 } as const
 
 export type Sfx = keyof typeof SFX

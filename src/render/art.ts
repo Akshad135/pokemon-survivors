@@ -7,6 +7,7 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import { EGG_MOVE_ICONS } from './eggMoveArt'
 
 /**
  * All hand-authored pixel art (projectiles, pickups, icons). Sprites are built
@@ -430,6 +431,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   megahorn: () => FX.horn(),
   dragonBreath: () => art(CONE, DRAGON_CONE, '#180840'),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
+  ...EGG_MOVE_ICONS,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -506,6 +508,15 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
 }
 
 export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id])
+
+const iconSprites = canvasCache<MoveId, PixelSprite>()
+
+/** A move's icon as a sprite for the world (Metronome's bubble shows the move it called). */
+export const moveIconSprite = (id: MoveId) => {
+  let sprite = iconSprites.get(id)
+  if (!sprite) iconSprites.set(id, (sprite = MOVE_ICON_ART[id]()))
+  return sprite
+}
 
 export const itemIcon = (id: ItemId) =>
   toIconUrl(`item:${id}`, () => {
