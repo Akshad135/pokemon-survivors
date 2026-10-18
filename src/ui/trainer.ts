@@ -256,5 +256,6 @@ export const trainerCardScreen = (
 
   build(true)
   root.append(el)
-  return { el, dispose }
+  // A screen opened from the card animates on the card's tick (the Hall's legends, the missions' countdowns).
+  return { el, dispose, tick: (time: number) => sub?.tick?.(time) }
 }

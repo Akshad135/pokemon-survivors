@@ -789,6 +789,8 @@ export const es: Messages = {
     enterShiny: (name) => `¡La grieta te lleva hasta un *${name}* _shiny_!`,
     cleared: (name) => `¡*${name}* derrotado! La grieta deja un tesoro.`,
     collapse: '¡La grieta colapsó! Te lanzó de vuelta.',
+    fall: (name: string) => `¡*${name}* te derrotó! La grieta te está expulsando…`,
+    fallen: 'Volviste a la *dimensión normal*. ¡La partida sigue!',
     hudPortal: (time) => `Grieta ${time}`,
     hudArena: (time) => `Colapso ${time}`,
     hudEndless: (time) => `Infinito +${time}`,
@@ -849,6 +851,8 @@ export const es: Messages = {
     hudDawn: (time) => `Amanecer ${time}`,
     hudSky: (n, time) => `Plumas ${n} · ${time}`,
     results: 'Lugares',
+    fall: '¡Te debilitaste! Un *equipo de rescate* viene en camino…',
+    rescued: 'Te rescataron y volviste al mapa. ¡La partida sigue!',
   },
 
   types: {

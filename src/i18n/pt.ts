@@ -881,6 +881,8 @@ export const pt = {
     enterShiny: (name: string) => `A fenda leva você até um *${name}* _shiny_!`,
     cleared: (name: string) => `*${name}* derrotado! A fenda deixa um tesouro.`,
     collapse: 'A fenda colapsou! Você foi jogado de volta.',
+    fall: (name: string) => `*${name}* derrotou você! A fenda está te expulsando…`,
+    fallen: 'Você voltou à *dimensão normal*. A corrida continua!',
     hudPortal: (time: string) => `Fenda ${time}`,
     hudArena: (time: string) => `Colapso ${time}`,
     hudEndless: (time: string) => `Sem fim +${time}`,
@@ -948,6 +950,9 @@ export const pt = {
     hudSky: (n: number, time: string) => `Asas ${n} · ${time}`,
     /** The results' row of places cleared this run. */
     results: 'Lugares',
+    /** Fainting inside: a rescue brings the player back out instead of ending the run. */
+    fall: 'Você desmaiou! Uma *equipe de resgate* está a caminho…',
+    rescued: 'Você foi resgatado e voltou ao mapa. A corrida continua!',
   },
 
   types: {

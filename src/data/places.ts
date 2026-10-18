@@ -80,8 +80,9 @@ export const PLACE = {
   enterTime: 0.6,
   /** Seconds to grab the loot once a place's goal is reached, before heading back out. */
   lootTime: 3,
-  /** The entrance is dropped once the player is this far from it. */
-  despawn: 900,
+  /** Fainting inside doesn't end the run: after `fallTime` seconds the player is rescued back to the door with `fallHp` of their HP. */
+  fallTime: 2,
+  fallHp: 0.3,
 } as const
 
 /** The Mystery Dungeon: floors, light and the PMD wind that blows explorers out. */

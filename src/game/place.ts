@@ -16,6 +16,8 @@ import type { Feature } from './terrain'
  * `placeEntrance.ts`, the inside in `placeInterior.ts`.
  */
 
+export type PlaceOutcome = 'done' | 'timeout' | 'fallen'
+
 /** What the shell hears about a place (sounds, toasts, the dungeon's title card), carried by the `place` GameEvent. */
 export type PlaceNotice =
   /** An entrance appeared on the map (it gets an arrow), or closed unused. */
@@ -41,8 +43,10 @@ export type PlaceNotice =
   | { kind: 'flock' }
   /** The sky's wind calmed with `wings` picked up on the flight. */
   | { kind: 'landed'; wings: number }
-  /** Back on the map: `done` after the goal (or the sky's calm), `timeout` thrown out. */
-  | { kind: 'exit'; outcome: 'done' | 'timeout' }
+  /** The player fainted inside: a rescue brings them back out (the world waits meanwhile). */
+  | { kind: 'fall' }
+  /** Back on the map: `done` after the goal (or the sky's calm), `timeout` thrown out, `fallen` rescued. */
+  | { kind: 'exit'; outcome: PlaceOutcome }
 
 /** An entrance on the map: open until `left` runs out, `charge` counts the seconds the player has stood in its door. */
 export type PlaceEntrance = { id: PlaceId; x: number; y: number; left: number; charge: number; open: boolean; terrain: Feature }
@@ -59,6 +63,8 @@ export type PlaceInteriorOf<K extends PlaceId> = Room & {
   intro: number
   /** Seconds left to grab the loot once the goal is reached; null until then. */
   loot: number | null
+  /** Seconds left on the rescue once the player fainted inside; null while they stand. */
+  fall: number | null
   stash: Stash
   /** The entrance's door on the map: the player comes back out here. */
   door: { x: number; y: number }

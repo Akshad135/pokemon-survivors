@@ -250,7 +250,7 @@ export const sitePt = {
       paragraphs: (minutes: number, starters: number) => [
         `Escolha um dos ${starters} iniciais, de Kanto a Paldea. Cada um tem status, golpe inicial, golpes que aprende e um ataque especial próprios (veja a Pokédex).`,
         `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida. Depois, se quiser, dá para continuar no modo sem fim.`,
-        'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado). Os Poké Dollars coletados vão para a carteira.',
+        'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado ou esteja na arena de uma fenda ou num lugar, de onde você só é mandado de volta ao mapa). Os Poké Dollars coletados vão para a carteira.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Os inimigos comuns ficam mais fortes a cada minuto (chefes não): ${rows.map(([at, hp, dmg]) => `em ${at}, ${hp}x de HP e ${dmg}x de dano`).join('; ')}.`,
@@ -348,9 +348,9 @@ export const sitePt = {
       specialHead: 'Especial Mega',
     },
     rifts: {
-      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; shiny: number }) => [
+      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; fallHp: number; shiny: number }) => [
         `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então toda partida tem 3 fendas, mesmo que os chefes demorem.`,
-        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa. Cair na arena também não encerra a partida: a fenda expulsa você para o mapa com ${r.fallHp}% do HP, sem recompensa, e o seu Revive fica guardado.`,
         'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
         `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
       ],
@@ -368,9 +368,9 @@ export const sitePt = {
       ],
     },
     places: {
-      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string }) => [
+      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string; rescue: number }) => [
         `A partir de ${p.first}, mais ou menos a cada ${n(p.every)} minutos, a entrada de um lugar aparece fora da tela, com uma seta na borda apontando para ela: a boca de uma caverna num morro, o portão de um cemitério ou uma corrente de ar entre pedras. Ela fica aberta por ${p.open}s e, se um chefe estiver vivo, espera ele cair por até ${p.bossWait}s. A partida mostra lugares diferentes antes de repetir algum.`,
-        `Entrar é opcional: fique ${p.enter}s na porta. Lá dentro o mundo espera, como numa fenda: a horda fica congelada e nada novo nasce, mas o relógio da partida continua. Cada lugar tem seus próprios Pokémon, que ficam mais fortes conforme a partida avança, e um limite de tempo; quando ele acaba, você sai pela porta por onde entrou.`,
+        `Entrar é opcional: fique ${p.enter}s na porta. Lá dentro o mundo espera, como numa fenda: a horda fica congelada e nada novo nasce, mas o relógio da partida continua. Cada lugar tem seus próprios Pokémon, que ficam mais fortes conforme a partida avança, e um limite de tempo; quando ele acaba, você sai pela porta por onde entrou. Se desmaiar lá dentro, a partida não acaba: uma equipe de resgate leva você de volta à porta com ${p.rescue}% do HP, sem a recompensa e com o Revive guardado.`,
       ],
       names: { cave: 'Caverna Escura', graveyard: 'Cemitério Assombrado', sky: 'Acima das Nuvens' } satisfies Record<PlaceId, string>,
       placeHead: 'Lugar',

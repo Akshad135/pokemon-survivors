@@ -3218,6 +3218,11 @@ button {
   height: 40px;
 }
 
+.hall-face img.ball {
+  width: 16px;
+  height: 16px;
+}
+
 .hall-stack em {
   margin-left: 16px;
   font-family: var(--title);
@@ -8166,6 +8171,34 @@ a.btn.dex-site {
 .fan-avatar img.ball {
   width: 20px;
   height: 20px;
+}
+
+/* A portrait or sprite still downloading: its Poké Ball wobbles like one about to open. */
+.wobble {
+  transform-origin: 50% 85%;
+  animation: ball-wobble 1.2s steps(1) infinite;
+}
+
+@keyframes ball-wobble {
+  0%,
+  50% {
+    transform: none;
+  }
+  60% {
+    transform: rotate(-20deg);
+  }
+  70% {
+    transform: rotate(20deg);
+  }
+  80% {
+    transform: rotate(-10deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wobble {
+    animation: blink 1.1s steps(2, start) infinite;
+  }
 }
 
 .fan-who {

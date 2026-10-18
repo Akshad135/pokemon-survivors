@@ -59,6 +59,20 @@ export const spawnInPlace = (g: Game, inside: PlaceInterior, dt: number, spotFor
   }
 }
 
+/**
+ * The player's HP hit 0 inside a place: instead of the game over they faint
+ * and get rescued back to the door (`updatePlaceFall` plays it with the world
+ * held still). A held Revive is kept for a real fall.
+ */
+export const fallInPlace = (g: Game) => {
+  const inside = g.place.inside
+  if (!inside || inside.fall !== null) return
+  inside.fall = PLACE.fallTime
+  g.player.hp = 0
+  g.shake = Math.max(g.shake, 8)
+  notifyPlace(g, inside.id, { kind: 'fall' })
+}
+
 /** The place's goal was reached this run. */
 export const markCleared = (g: Game, id: PlaceId) => {
   if (!g.place.cleared.includes(id)) g.place.cleared.push(id)

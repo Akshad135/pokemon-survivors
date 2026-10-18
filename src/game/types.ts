@@ -331,7 +331,8 @@ export type GameEvent =
   | { kind: 'riftClosed' }
   | { kind: 'riftEnter'; enemy: RiftLegend; shiny: boolean }
   | { kind: 'riftCleared'; enemy: RiftLegend; shiny: boolean }
-  | { kind: 'riftExit'; outcome: 'won' | 'collapse' }
+  | { kind: 'riftFall'; enemy: RiftLegend }
+  | { kind: 'riftExit'; outcome: 'won' | 'collapse' | 'fallen' }
   /** Endless mode: Arceus arrived (`defeats` so far) or fell. */
   | { kind: 'reaper'; defeats: number }
   | { kind: 'reaperDown'; defeats: number }

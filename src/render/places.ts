@@ -639,6 +639,32 @@ const drawUpdraft = (ctx: Ctx, ent: PlaceEntrance, t: number) => {
 export const placeIcon = (id: PlaceId) =>
   toIconUrl(`place:${id}`, () => (id === 'cave' ? STAIRS() : id === 'graveyard' ? PLACE_PIECES.keystone(0, 'tower').sprite : wingSprite('swiftWing')))
 
+/* ---------------- Fainting inside ---------------- */
+
+const clamp01 = (k: number) => Math.min(1, Math.max(0, k))
+
+/** The rescue's progress, 0 → 1 (null while the player stands). */
+const fallProgress = (g: Game) => {
+  const fall = g.place.inside?.fall
+  return fall == null ? null : 1 - fall / PLACE.fallTime
+}
+
+/** How the fainted player looks while the rescue comes (the Hurt pose, blinking at first, then fading); null while they stand. */
+export const placeFallLook = (g: Game) => {
+  const k = fallProgress(g)
+  if (k === null) return null
+  return { seconds: k * PLACE.fallTime, lift: 0, alpha: 1 - clamp01((k - 0.6) / 0.3), flash: k < 0.3 && Math.floor(k * 24) % 2 === 0 ? 0.7 : 0, tint: { color: '#000000', amount: 0 }, bar: k < 0.5 }
+}
+
+/** Over everything: the screen fades out as the rescue takes the player away (to black, or to white up in the sky). */
+export const drawPlaceFallOut = (ctx: Ctx, g: Game) => {
+  const k = fallProgress(g)
+  if (k === null || k < 0.5) return
+  const a = clamp01((k - 0.5) / 0.45).toFixed(2)
+  ctx.fillStyle = g.place.inside?.id === 'sky' ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`
+  ctx.fillRect(0, 0, g.view.w, g.view.h)
+}
+
 /* ---------------- Arrow ---------------- */
 
 const ARROWS = {

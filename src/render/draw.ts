@@ -20,8 +20,8 @@ import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } 
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
-import { drawArena, drawRiftArrow, drawRiftPortal, warmArena } from './rift'
-import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings } from './places'
+import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
+import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, placeFallLook } from './places'
 import { roomOf } from '../game/room'
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawCompanion, type CompanionView } from './companion'
@@ -515,6 +515,13 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   // A Mega wears its Mega form (flickering white while it transforms); Aegislash its Blade Forme in Blade stance.
   const mega = megaLook(g)
   const s = sprites(playerDex(g), p.shiny, mega.form ?? (g.special.stance ? STANCE_FORMS[g.special.stance] : undefined))
+  // Fainted in a rift arena (the rift pulls the player up and out) or in a place (a rescue fades them away).
+  const fall = riftFallLook(g) ?? placeFallLook(g)
+  if (fall) {
+    drawPokemon(ctx, s, 'Hurt', p.dir, fall.seconds, p.x, p.y - fall.lift, { alpha: fall.alpha, flash: fall.flash, tint: fall.tint, loop: false, outline: mega.outline })
+    if (fall.bar) drawHpBar(ctx, g)
+    return
+  }
   const anim: AnimName = p.hurt > 0 ? 'Hurt' : p.moving ? 'Walk' : 'Idle'
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
@@ -525,8 +532,12 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
   drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
+  drawHpBar(ctx, g)
+}
 
-  // GBA-style HP bar under the feet.
+/** GBA-style HP bar under the player's feet. */
+const drawHpBar = (ctx: Ctx, g: Game) => {
+  const p = g.player
   const w = 22
   const x = Math.round(p.x - w / 2)
   const y = Math.round(p.y + 4)
@@ -669,6 +680,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawPlaceGround(ctx, g, t)
   drawSpecialAura(ctx, g, t)
   drawMegaGround(ctx, g, camX, camY, t)
+  drawRiftFallGround(ctx, g, camX, camY)
   drawTraitGround(ctx, g, visible)
   drawPickups(ctx, g, t)
 
@@ -713,6 +725,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawPlaceOver(ctx, g, camX, camY)
   drawSleep(ctx, g, t)
   drawTraitAir(ctx, g, visible)
+  drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
@@ -746,6 +759,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   if (!inside) drawRiftArrow(ctx, g, camX, camY, t)
   drawPlaceArrow(ctx, g, camX, camY, t)
   if (!indoors) drawMapEventMarkers(ctx, g, t)
+  drawRiftFallOut(ctx, g)
+  drawPlaceFallOut(ctx, g)
   drawFlash(ctx, g)
   // A dungeon floor's title card holds the screen black (the shell writes the floor over it).
   if (inside && inside.intro > 0) {

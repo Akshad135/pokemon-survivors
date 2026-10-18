@@ -287,7 +287,7 @@ const rifts = (locale: Locale, m: SiteMessages) => {
   ])
   const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
   const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
-  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, shiny: Math.round(1 / RIFT.shinyOdds) }))}
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
     ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
     <p class="note">${r.hpNote(growth)}</p>
     <h3>${r.endlessTitle}</h3>
@@ -314,7 +314,7 @@ const places = (locale: Locale, m: SiteMessages) => {
   ])
   const spiritomb = GRAVEYARD.boss
   const attacks = html`<ul class="list">${(BOSS_PATTERNS[spiritomb] ?? []).map((pt) => html`<li>${patternText(pt, m)}</li>`)}</ul>`
-  return html`${paragraphs(p.paragraphs({ first: clock(PLACE.firstAt), every: PLACE.every / 60, bossWait: PLACE.bossWait, open: PLACE.openTime, enter: num(PLACE.enterTime) }))}
+  return html`${paragraphs(p.paragraphs({ first: clock(PLACE.firstAt), every: PLACE.every / 60, bossWait: PLACE.bossWait, open: PLACE.openTime, enter: num(PLACE.enterTime), rescue: pct(PLACE.fallHp) }))}
     ${table([p.placeHead, p.timeHead, p.speciesHead], rows)}
     <h3>${p.names.cave}</h3>
     ${paragraphs(

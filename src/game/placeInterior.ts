@@ -1,10 +1,10 @@
 import { retain } from '../engine/math'
 import type { FloorPlan, Pt } from '../data/arenas'
-import { PLACES, type PlaceId } from '../data/places'
+import { PLACE, PLACES, type PlaceId } from '../data/places'
 import { onFloor } from './arenaFloor'
 import { buildCave, updateCave } from './cave'
 import { buildGraveyard, updateGraveyard } from './graveyard'
-import type { PlaceInterior, PlaceInteriorOf, PlaceStates } from './place'
+import type { PlaceInterior, PlaceInteriorOf, PlaceOutcome, PlaceStates } from './place'
 import { notifyPlace } from './placeKit'
 import { bringBack, keepOnFloor, setAside } from './room'
 import { buildSky, calmSky, updateSky } from './sky'
@@ -62,6 +62,7 @@ export const enterPlace = <K extends PlaceId>(g: Game, id: K, x: number, y: numb
     left: PLACES[id].time,
     intro: built.intro ?? 0,
     loot: null,
+    fall: null,
     stash,
     door: { x, y },
     spawnBudget: 0,
@@ -75,7 +76,7 @@ export const enterPlace = <K extends PlaceId>(g: Game, id: K, x: number, y: numb
 }
 
 /** Brings the player back out at the entrance's door. */
-export const exitPlace = (g: Game, outcome: 'done' | 'timeout') => {
+export const exitPlace = (g: Game, outcome: PlaceOutcome) => {
   const inside = g.place.inside
   if (!inside) return
   const p = g.player
@@ -87,6 +88,22 @@ export const exitPlace = (g: Game, outcome: 'done' | 'timeout') => {
   bringBack(g, inside.stash)
   g.flash = 0.6
   notifyPlace(g, inside.id, { kind: 'exit', outcome })
+}
+
+/**
+ * Plays the rescue after the player fainted inside and lands them at the door
+ * with `PLACE.fallHp` of their HP. True while it plays (the step waits).
+ */
+export const updatePlaceFall = (g: Game, dt: number) => {
+  const inside = g.place.inside
+  if (!inside || inside.fall === null) return false
+  inside.fall -= dt
+  if (inside.fall > 0) return true
+  const p = g.player
+  p.hp = Math.max(1, Math.round(p.stats.maxHp * PLACE.fallHp))
+  p.hurt = 0
+  exitPlace(g, 'fallen')
+  return true
 }
 
 /** A title card holds the place still (a dungeon floor's): true while it shows, so the step waits. */

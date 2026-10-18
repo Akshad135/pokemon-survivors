@@ -788,6 +788,8 @@ export const en: Messages = {
     enterShiny: (name) => `The rift takes you to a _shiny_ *${name}*!`,
     cleared: (name) => `*${name}* defeated! The rift leaves a treasure.`,
     collapse: 'The rift collapsed! You were thrown back.',
+    fall: (name: string) => `*${name}* defeated you! The rift is casting you out…`,
+    fallen: 'You are back in the *normal dimension*. The run goes on!',
     hudPortal: (time) => `Rift ${time}`,
     hudArena: (time) => `Collapse ${time}`,
     hudEndless: (time) => `Endless +${time}`,
@@ -848,6 +850,8 @@ export const en: Messages = {
     hudDawn: (time) => `Dawn ${time}`,
     hudSky: (n, time) => `Wings ${n} · ${time}`,
     results: 'Places',
+    fall: 'You fainted! A *rescue team* is on its way…',
+    rescued: 'You were rescued back to the map. The run goes on!',
   },
 
   types: {

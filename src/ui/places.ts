@@ -63,7 +63,14 @@ export const placeFeedback = (root: HTMLElement, place: PlaceId, notice: PlaceNo
       return
     case 'landed':
       return toast(root, h('span', { class: 'item-toast' }, h('img', { src: placeIcon('sky'), alt: '' }), m.landed(notice.wings)), 3000, 'place')
+    case 'fall':
+      playSfx('riftFall')
+      return toast(root, rich(m.fall), 2600, 'place')
     case 'exit':
+      if (notice.outcome === 'fallen') {
+        flashScreen(root)
+        return toast(root, rich(m.rescued), 3200, 'place')
+      }
       if (notice.outcome !== 'timeout') return
       if (place === 'cave') {
         playSfx('quake')

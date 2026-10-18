@@ -30,10 +30,10 @@ import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { createPlaceState } from './place'
 import { updatePlaceEntrance } from './placeEntrance'
-import { updatePlace, updatePlaceIntro } from './placeInterior'
+import { updatePlace, updatePlaceFall, updatePlaceIntro } from './placeInterior'
 import { roomOf } from './room'
 import { SKY } from '../data/places'
-import { updateArena } from './riftArena'
+import { updateArena, updateArenaFall } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
@@ -287,6 +287,9 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   // The Mega Evolution plays with the world held still, and so does a dungeon floor's title card.
   if (updateMegaIntro(g, dt)) return
   if (updatePlaceIntro(g, dt)) return
+  // So does the rift throwing a fainted player back out, or a rescue out of a place.
+  if (updateArenaFall(g, dt)) return
+  if (updatePlaceFall(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
     return

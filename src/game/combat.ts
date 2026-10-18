@@ -11,6 +11,8 @@ import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, STATUS_RULES, type StatusKind } from './status'
+import { fallInArena } from './riftArena'
+import { fallInPlace } from './placeKit'
 import { countKill } from './tally'
 import { absorb } from './traits'
 import type { Attack, DamageSource, Enemy, Game } from './types'
@@ -116,7 +118,11 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
     from.ky -= away.y * 60
   }
 
-  if (p.hp <= 0 && !tryRevive(g)) {
+  if (p.hp > 0) return
+  // Falling in a rift arena or a place isn't the end: the rift throws the player back out, a rescue brings them back.
+  if (g.rift.arena) return fallInArena(g)
+  if (g.place.inside) return fallInPlace(g)
+  if (!tryRevive(g)) {
     p.hp = 0
     g.phase = 'gameover'
     g.events.push({ kind: 'gameover' })

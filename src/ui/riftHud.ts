@@ -32,7 +32,7 @@ const pillFor = (g: Game): Pill => {
   const { portal, arena } = g.rift
   if (g.place.inside) return insidePill(g)
   if (arena) {
-    if (arena.loot !== null) return null
+    if (arena.loot !== null || arena.fall !== null) return null
     return { text: m.hudArena(formatTime(Math.ceil(arena.left))), kind: 'arena', urgent: arena.left < 10 }
   }
   if (portal) return { text: m.hudPortal(formatTime(Math.ceil(portal.left))), kind: 'portal', urgent: portal.left < 8 }
