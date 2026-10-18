@@ -1,0 +1,63 @@
+import { TYPE_COLORS } from '../data/types'
+import { burst } from './effects'
+import { nextStacks, type StackEvent } from './kitRules'
+import { MOVES, moveStats, type MoveDef, type MoveId } from './moves'
+import type { Enemy, Game, MoveWindow, OwnedMove } from './types'
+
+/**
+ * Engine side of the move kit: feeds `MoveDef.stacks` its events, runs the
+ * guard and burrow windows and calls the moves' `onGuard` / `emerge` hooks.
+ * `game.ts` calls `updateMoveKit` every tick and `afterCast` after each cast;
+ * `combat.ts` reports hits and hurts through `moveEvent`.
+ */
+
+/** I-frames after a guard negates a hit, so the same crowd can't spend the next window at once. */
+export const GUARD_IFRAMES = 0.4
+
+/** Sends a stack event to the moves whose rule listens to it: `move` only (a hit by it), or all of them (null). */
+export const moveEvent = (g: Game, move: MoveId | null, event: StackEvent) => {
+  for (const owned of g.player.moves) {
+    if (move !== null && owned.id !== move) continue
+    const def: MoveDef = MOVES[owned.id]
+    if (def.stacks) owned.stacks = nextStacks(def.stacks, owned.stacks ?? 0, event)
+  }
+}
+
+/** After `owned` fired: spends or grows its stacks on the cast and stamps where it fired from. */
+export const afterCast = (g: Game, owned: OwnedMove) => {
+  const def: MoveDef = MOVES[owned.id]
+  if (def.stacks) owned.stacks = nextStacks(def.stacks, owned.stacks ?? 0, 'cast')
+  owned.walkedAt = g.player.walked
+}
+
+const ownedOf = (g: Game, w: MoveWindow) => g.player.moves.find((m) => m.id === w.move)
+
+/** A guard window took a hit: the hit is gone, the move's `onGuard` answers it. */
+export const guardHit = (g: Game, w: MoveWindow, from?: Enemy) => {
+  const p = g.player
+  p.guard = null
+  p.iframes = Math.max(p.iframes, GUARD_IFRAMES)
+  const def: MoveDef = MOVES[w.move]
+  burst(g, p.x, p.y - 12, { colors: [TYPE_COLORS[def.type], '#ffffff'], count: 12, speed: 110, ttl: 0.35, size: 2 })
+  g.events.push({ kind: 'guard' })
+  const owned = ownedOf(g, w)
+  if (owned && def.onGuard) def.onGuard(g, moveStats(owned.id, owned.level, p.stats, owned.path), owned, from)
+}
+
+/**
+ * Per tick, before the moves cast: standing-still and walking stack events,
+ * the guard window running out and a burrow ending in its move's `emerge`.
+ */
+export const updateMoveKit = (g: Game, dt: number) => {
+  const p = g.player
+  if (p.moving) moveEvent(g, null, 'move')
+  else if (p.still > 0 && Math.floor(p.still) > Math.floor(p.still - dt)) moveEvent(g, null, 'still')
+  if (p.guard && (p.guard.left -= dt) <= 0) p.guard = null
+  const hidden = p.hidden
+  if (hidden && (hidden.left -= dt) <= 0) {
+    p.hidden = null
+    const def: MoveDef = MOVES[hidden.move]
+    const owned = ownedOf(g, hidden)
+    if (owned && def.emerge) def.emerge(g, moveStats(owned.id, owned.level, p.stats, owned.path), owned)
+  }
+}

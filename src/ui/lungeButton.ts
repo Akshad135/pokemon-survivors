@@ -44,7 +44,7 @@ export const createLungeControls = (onPress: () => void) => {
     }
     if (!owned) return
     setGlyphText(keyLabel, boundLabel('lunge'))
-    const fill = 1 - owned.cooldown / moveStats(owned.id, owned.level, g.player.stats).cooldown
+    const fill = 1 - owned.cooldown / moveStats(owned.id, owned.level, g.player.stats, owned.path).cooldown
     for (const el of [badge, button]) {
       setStyle(el, '--fill', fill.toFixed(3))
       el.classList.toggle('ready', owned.cooldown <= 0)

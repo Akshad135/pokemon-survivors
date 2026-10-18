@@ -1,6 +1,6 @@
 import { PLAYABLE } from '../data/hatchlings'
 import { MEGA } from '../data/megas'
-import { isFinalStage, megaPhase } from '../game/mega'
+import { heldMega, isFinalStage, megaBaseName, megaPhase } from '../game/mega'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { megaIcon } from '../render/megaFx'
@@ -34,7 +34,8 @@ export const createMegaControls = (onPress: () => void) => {
   button.addEventListener('contextmenu', (e) => e.preventDefault())
 
   const update = (g: Game) => {
-    const phase = megaPhase(g.mega, isFinalStage(g.starter, g.player.stage))
+    // A stone of the branch the run didn't take (Glalitite on a Froslass) leaves the button off.
+    const phase = heldMega(g) ? megaPhase(g.mega, isFinalStage(g.starter, g.player.stage)) : 'none'
     const line = PLAYABLE[g.starter].line
     const before = line[line.length - 2]
     const tag = phase === 'locked' && before && 'evolveAt' in before ? t().levelShort(before.evolveAt) : phase === 'ready' ? t().mega.button : ''
@@ -51,7 +52,7 @@ export const createMegaControls = (onPress: () => void) => {
       setText(el, tag)
       el.classList.toggle('hidden', tag === '')
     }
-    badge.title = phase === 'locked' ? t().mega.locked(line[line.length - 1]!.name) : t().mega.title
+    badge.title = phase === 'locked' ? t().mega.locked(megaBaseName(g)) : t().mega.title
   }
 
   return { badge, button, update }

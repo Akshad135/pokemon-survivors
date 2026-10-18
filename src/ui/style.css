@@ -8833,3 +8833,1265 @@ button.hall-tile:hover {
   font-size: 16px;
   color: #6878a8;
 }
+
+/* ---------- Evolution picks: branching evolutions and abilities (ui/abilityPick.ts) ---------- */
+
+.evo-pick,
+.ability-pick {
+  gap: 14px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 52%, rgba(120, 140, 255, 0.22), transparent 70%),
+    rgba(8, 8, 24, 0.72);
+}
+
+.evo-pick-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: min(640px, 94vw);
+  color: #f8f8f8;
+  text-align: center;
+  text-shadow: 2px 2px 0 #101020;
+  animation: pop 0.2s steps(4) both;
+}
+
+.ability-pick .evo-pick-head {
+  flex-direction: row;
+  text-align: left;
+}
+
+.evo-pick-title {
+  font-family: var(--title);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.evo-pick-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+  color: #d0d4f0;
+}
+
+.ability-pick-portrait {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 3px solid #f8f8f8;
+  border-radius: 6px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #283040, 0 0 18px rgba(248, 216, 96, 0.6);
+}
+
+.evo-cards,
+.ability-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--count, 3), minmax(0, 210px));
+  justify-content: center;
+  gap: 14px;
+  width: min(700px, 96vw);
+  padding-top: 12px;
+}
+
+.evo-card,
+.ability-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 10px 12px;
+  color: var(--ink);
+  text-align: center;
+  border: 3px solid #283040;
+  border-radius: 8px;
+  transition: transform 0.12s steps(3), opacity 0.2s steps(3);
+}
+
+.evo-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--type) 34%, #fff), #fff 58%);
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px color-mix(in srgb, var(--type) 75%, #283040),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: card-land 0.36s steps(6) both;
+  animation-delay: calc(var(--i, 0) * 0.12s + 0.1s);
+}
+
+.evo-card .offer-key,
+.ability-card .offer-key {
+
+/* ---------- Level-up cards: entrance, forks, rarity, Esquecer (ui/screens.ts) ---------- */
+
+.levelup .offers {
+  position: relative;
+}
+
+.levelup .offer {
+  position: relative;
+  overflow: hidden;
+  animation: offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms);
+}
+
+@keyframes offer-in {
+  from {
+    transform: translateY(18px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+/* A move card that reaches a fork: a dashed purple frame and its "2 paths" tag. */
+.tag-fork {
+  color: #fff;
+  background: #8048d0;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+.offer-fork:not(.selected) {
+  border-color: #a078e8;
+  border-style: dashed;
+}
+
+/* Rare cards: a blue frame and a shine that sweeps across now and then. */
+.offer-rare {
+  background: linear-gradient(180deg, #e8f0ff, #c8d8f8);
+  border-color: #4878e0;
+  box-shadow: 0 0 0 2px #a8c8f8;
+}
+
+.offer-rare.selected {
+  background: linear-gradient(180deg, #f4f8ff, #dce8ff);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4878e0, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tag-rare {
+  color: #fff;
+  background: #3060d0;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+/* Shiny cards: a gold frame that pulses, twinkles all over and the same shine, warmer. */
+.levelup .offer-shiny {
+  background: linear-gradient(180deg, #fffbe0, #f8e8a0);
+  border-color: #e0a020;
+  animation:
+    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    shiny-frame 0.9s steps(2) infinite;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
+}
+
+.levelup .offer-shiny.selected {
+  background: linear-gradient(180deg, #fffdf0, #fbefc0);
+}
+
+@keyframes shiny-frame {
+  50% {
+    box-shadow: 0 0 0 2px #fff8c0, 0 0 12px 3px #f8d030;
+  }
+}
+
+.tag-shiny {
+  color: #604000;
+  background: linear-gradient(90deg, #f8d030, #fff4a8, #f8d030);
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+.offer-note {
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1.4;
+  color: #a06800;
+  margin-top: 4px;
+}
+
+.offer-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.85) 46%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
+  transform: translateX(-110%);
+  animation: offer-shine 2.6s ease-in-out 0.5s infinite;
+}
+
+.offer-shiny .offer-shine {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
+  animation-duration: 1.9s;
+}
+
+@keyframes offer-shine {
+  55%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+.offer-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.offer-sparkles img {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) scale(0);
+  animation: offer-twinkle 2s steps(4) infinite;
+}
+
+@keyframes offer-twinkle {
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  40%,
+  100% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+/* A fork's branch card: the mods it adds sit as badges on the move's icon. */
+.levelup .offer-icon {
+  position: relative;
+  overflow: visible;
+}
+
+.offer-mods {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  gap: 1px;
+}
+
+.offer-mods img {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+  background: #8048d0;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  padding: 1px;
+}
+
+/* The fork screen: the two branches split apart from where the move card was. */
+.levelup.fork .dialog-title {
+  color: #6038b0;
+}
+
+.offers.branches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.offers.branches::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  margin-left: -2px;
+  background: #fff;
+  box-shadow: 0 0 8px 2px #d0b8ff;
+  pointer-events: none;
+  animation: fork-seam 0.5s ease-out both;
+}
+
+@keyframes fork-seam {
+  from {
+    transform: scaleY(0.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+.levelup .offer-branch {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 14px 12px 12px;
+  border-color: #b8a0e8;
+  background: linear-gradient(180deg, #f4f0ff, #e4dcf8);
+  animation: branch-in-a 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+.levelup .offer-branch.branch-b {
+  animation-name: branch-in-b;
+}
+
+.levelup .offer-branch.selected {
+  background: linear-gradient(180deg, #fff, #f0eaff);
+  border-color: #e83838;
+}
+
+.offer-branch .offer-key {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+.evo-card.selected,
+.ability-card.selected {
+  transform: translateY(-6px);
+  border-color: #e83838;
+}
+
+.evo-card.selected {
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px var(--type),
+    0 10px 0 rgba(0, 0, 0, 0.3),
+    0 0 22px color-mix(in srgb, var(--type) 80%, transparent);
+}
+
+.evo-card.selected .offer-key,
+.ability-card.selected .offer-key {
+  background: #e83838;
+}
+
+/* The pick: the card flashes and grows, the others step back. */
+.evo-card.picked,
+.ability-card.picked {
+  animation: card-pick 0.38s steps(5) both;
+}
+
+.evo-card.passed,
+.ability-card.passed {
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+@keyframes card-land {
+  from {
+    transform: translateY(26px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes card-pick {
+  40% {
+    transform: translateY(-10px) scale(1.08);
+    filter: brightness(1.8);
+  }
+  to {
+    transform: translateY(-8px) scale(1.05);
+    filter: brightness(1.15);
+  }
+}
+
+.evo-card-art {
+  display: grid;
+  place-items: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  position: relative;
+  isolation: isolate;
+  background: radial-gradient(circle, color-mix(in srgb, var(--type) 45%, #fff) 0 44%, color-mix(in srgb, var(--type2) 70%, #283040) 45% 50%, transparent 51%);
+}
+
+/* Slow light rays turning behind the portrait. */
+.evo-card-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 8%, color-mix(in srgb, var(--type) 45%, transparent) 8% 12%, transparent 12% 33%, color-mix(in srgb, var(--type2) 45%, transparent) 33% 37%, transparent 37% 58%, color-mix(in srgb, var(--type) 45%, transparent) 58% 62%, transparent 62% 83%, color-mix(in srgb, var(--type2) 45%, transparent) 83% 87%, transparent 87%);
+  animation: rays 6s steps(48) infinite;
+}
+
+/* The portrait opens out of a flash of light. */
+.evo-card-portrait {
+  width: 80px;
+  height: 80px;
+  border: 3px solid #283040;
+  border-radius: 6px;
+  background: #f8f8f8;
+  animation: silhouette 1s steps(5) both;
+  animation-delay: calc(var(--i, 0) * 0.15s + 0.45s);
+}
+
+@keyframes rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes silhouette {
+  0% {
+    clip-path: inset(50% round 50%);
+    filter: brightness(3);
+  }
+  55% {
+    clip-path: inset(0 round 6px);
+    filter: brightness(2.2);
+  }
+  to {
+    clip-path: inset(0 round 6px);
+    filter: none;
+  }
+}
+
+.evo-card-name {
+  font-family: var(--title);
+  font-size: 12px;
+}
+
+.evo-card-favor {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 96%;
+  padding: 4px 7px 3px;
+  font-family: var(--title);
+  font-size: 7px;
+  white-space: nowrap;
+  color: #503800;
+  background: linear-gradient(#fff0a0, #f8c838);
+  border: 2px solid #283040;
+  border-radius: 4px;
+  transform: translateX(-50%);
+  animation: favor-bob 1.2s steps(2) infinite;
+}
+
+.evo-card-favor img {
+  width: 10px;
+  height: 10px;
+}
+
+@keyframes favor-bob {
+  50% {
+    transform: translate(-50%, -2px);
+  }
+}
+
+.evo-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 8px;
+  font-size: 18px;
+  line-height: 1;
+  color: #405070;
+}
+
+.evo-card-facts {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  margin: 2px 0 0;
+  text-align: left;
+}
+
+.evo-card-facts dt {
+  font-family: var(--title);
+  font-size: 6px;
+  color: #6878a8;
+  text-transform: uppercase;
+}
+
+.evo-card-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.evo-card-facts dd img {
+  width: 20px;
+  height: 20px;
+}
+
+.ability-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.ability-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px 1px 2px;
+  font-size: 15px;
+  line-height: 1;
+  background: #e8e8f0;
+  border-radius: 3px;
+}
+
+.ability-chip img {
+  width: 14px;
+  height: 14px;
+}
+
+.ability-chip.hidden-ability {
+  color: #503800;
+  background: linear-gradient(#fff0b0, #f8d870);
+  box-shadow: inset 0 0 0 1px #c89020;
+}
+
+/* Ability cards flip over one after the other. */
+.ability-card {
+  gap: 8px;
+  padding: 18px 12px 14px;
+  background: linear-gradient(180deg, #ffffff, #e8ecf8);
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px var(--frame),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: card-flip 0.5s steps(8) both;
+  animation-delay: calc(var(--i, 0) * 0.16s + 0.15s);
+}
+
+@keyframes card-flip {
+  from {
+    transform: perspective(600px) rotateY(90deg);
+    filter: brightness(2.4);
+  }
+  60% {
+    filter: brightness(1.4);
+  }
+  to {
+    transform: perspective(600px) rotateY(0deg);
+    filter: none;
+  }
+}
+
+.ability-card-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  background: linear-gradient(#384060, #283048);
+  border-radius: 8px;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ability-card-icon img {
+  width: 48px;
+  height: 48px;
+}
+
+.ability-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ability-card-name {
+  font-family: var(--title);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ability-card-desc {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* The Hidden Ability: a golden frame, a ribbon and a shine running across it. */
+.ability-card.hidden-ability {
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff8d8, #f8e0a0);
+  box-shadow:
+    inset 0 0 0 3px #fff8e0,
+    inset 0 0 0 5px #c89020,
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(248, 208, 48, 0.55);
+}
+
+.ability-card.hidden-ability::before {
+
+.offer-branch .offer-name {
+  justify-content: center;
+  color: #4a2890;
+}
+
+.offer-branch .type-badge {
+  display: none;
+}
+
+.offer-branch .offer-icon {
+  width: 52px;
+  height: 52px;
+  background: #3a2868;
+  box-shadow: 0 0 0 2px #a078e8;
+}
+
+.offer-branch .offer-icon > img {
+  width: 40px;
+  height: 40px;
+}
+
+@keyframes branch-in-a {
+  from {
+    transform: translateX(52%) scaleX(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes branch-in-b {
+  from {
+    transform: translateX(-52%) scaleX(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+/* Esquecer: the cards turn red and the next pick forgets one, which flies off. */
+.btn-banish {
+  color: #b02020;
+}
+
+.btn-banish.active {
+  color: #fff;
+  background: #d83030;
+}
+
+.levelup .offers.banishing .offer {
+  background: linear-gradient(180deg, #ffe8e4, #f8c8c0);
+  border-color: #e05040;
+}
+
+.levelup .offers.banishing .offer.selected {
+  background: linear-gradient(180deg, #fff0ee, #ffd8d0);
+  border-color: #b01818;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e83838;
+}
+
+.offers.banishing .offer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.6) 48%, transparent 58%);
+  background-size: 260% 100%;
+  animation: shine 2.6s steps(16) infinite;
+}
+
+@keyframes shine {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -130% 0;
+  }
+}
+
+.ability-card.hidden-ability .ability-card-icon {
+  background: linear-gradient(#684098, #382058);
+  box-shadow: 0 0 0 2px #f8d030, inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ability-card-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px 3px;
+  font-family: var(--title);
+  font-size: 6px;
+  color: #fff;
+  background: linear-gradient(#a070f0, #6040b0);
+  border-bottom-left-radius: 6px;
+  text-shadow: 1px 1px 0 #301860;
+}
+
+.ability-card-ribbon img {
+  width: 9px;
+  height: 9px;
+}
+
+.tag-hidden {
+  color: #a07000;
+}
+
+/* In-run toasts and the HUD chip. */
+.ability-toast img {
+  width: 20px;
+  height: 20px;
+}
+
+.status-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ability-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 120px;
+  padding: 1px 4px 1px 2px;
+  font-family: var(--title);
+  font-size: 6px;
+  white-space: nowrap;
+  color: #404858;
+  background: #e0e4f0;
+  border-radius: 3px;
+}
+
+.ability-tag img {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.ability-tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ability-tag-count {
+  color: #c83838;
+}
+
+.ability-tag.lit {
+  color: #503800;
+  background: linear-gradient(#fff0a0, #f8c838);
+  animation: tag-glow 0.9s steps(2) infinite;
+}
+
+.ability-tag.mega {
+  color: #fff;
+  background: linear-gradient(90deg, #f85858, #f8a838, #68d868, #58a8f8, #a878f8);
+  text-shadow: 1px 1px 0 #303040;
+}
+
+@keyframes tag-glow {
+  50% {
+    box-shadow: 0 0 0 1px #f8d030, 0 0 6px #f8d030;
+  }
+}
+
+/* The pause menu's ability. */
+.pause-ability {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #eeeef4;
+  border-radius: 6px;
+}
+
+.pause-ability > img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 3px;
+  background: #283048;
+  border-radius: 5px;
+}
+
+.pause-ability b {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: var(--title);
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.pause-ability b small {
+  font-size: 7px;
+  color: #6878a8;
+}
+
+.pause-ability > div > span {
+  display: block;
+  margin-top: 3px;
+  font-size: 18px;
+  line-height: 1;
+  color: #505068;
+}
+
+.pause-ability.hidden-ability {
+  background: linear-gradient(90deg, #fff4c8, #f8f0e0);
+  box-shadow: inset 0 0 0 2px #c89020;
+}
+
+.pause-ability.mega > img {
+  background: #f8f8f8;
+}
+
+/* The partner details: the abilities, and a branching evolution in the line. */
+.ability-row {
+  grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.ability-row.hidden-ability {
+  background: linear-gradient(90deg, #fff4c8, #fff);
+  box-shadow: inset 0 0 0 2px #e0b040;
+}
+
+.branch-abilities {
+  display: grid;
+  grid-template-columns: 24px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  grid-column: 1 / -1;
+  padding: 3px 6px;
+  background: #eeeef4;
+  border-radius: 4px;
+  font-size: 18px;
+}
+
+.branch-abilities > img {
+  width: 24px;
+  height: 24px;
+}
+
+.branch-abilities b {
+  font-family: var(--title);
+  font-size: 7px;
+  font-weight: normal;
+}
+
+.ability-note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.evo-branch-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), 24px);
+  gap: 2px;
+}
+
+.evo-stage .evo-branch-grid img {
+  width: 24px;
+  height: 24px;
+  border-width: 1px;
+  border-radius: 3px;
+}
+
+/* Phones held upright: one card per row, the art beside the words. */
+@media (max-width: 600px) {
+  .evo-pick,
+  .ability-pick {
+    gap: 10px;
+  }
+  .evo-pick-title {
+    font-size: 11px;
+  }
+  .evo-pick-sub {
+    font-size: 17px;
+  }
+  .evo-cards,
+  .ability-cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .evo-card {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas: 'art name' 'art types' 'art stats' 'facts facts';
+    align-items: center;
+    justify-items: start;
+    gap: 4px 10px;
+    padding: 10px 10px 8px;
+    text-align: left;
+  }
+  .evo-card-art {
+    grid-area: art;
+    width: 76px;
+    height: 76px;
+  }
+  .evo-card-portrait {
+    width: 58px;
+    height: 58px;
+  }
+  .evo-card-name {
+    grid-area: name;
+    font-size: 11px;
+  }
+  .evo-card .types {
+    grid-area: types;
+  }
+  .evo-card-stats {
+    grid-area: stats;
+    justify-content: flex-start;
+    font-size: 16px;
+  }
+  .evo-card-facts {
+    grid-area: facts;
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+  }
+  .evo-card-facts > div:last-child:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+  .evo-card-facts dd {
+    font-size: 16px;
+  }
+  .ability-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px 10px;
+    text-align: left;
+  }
+  .ability-card-icon {
+    width: 48px;
+    height: 48px;
+  }
+  .ability-card-icon img {
+    width: 36px;
+    height: 36px;
+  }
+  .ability-card-name {
+    font-size: 9px;
+  }
+  .ability-card-desc {
+    font-size: 18px;
+  }
+  .ability-card .offer-key {
+    display: none;
+  }
+}
+
+/* Phones on their side: three short cards in a row. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .evo-pick,
+  .ability-pick {
+    gap: 8px;
+    padding-top: max(8px, var(--safe-t));
+    padding-bottom: max(8px, var(--safe-b));
+  }
+  .evo-pick-title {
+    font-size: 10px;
+  }
+  .evo-pick-sub {
+    font-size: 16px;
+  }
+  .ability-pick-portrait {
+    width: 40px;
+    height: 40px;
+  }
+  .evo-cards,
+  .ability-cards {
+    gap: 10px;
+    padding-top: 10px;
+  }
+  .evo-card {
+    gap: 3px;
+    padding: 8px 8px 6px;
+  }
+  .evo-card-art {
+    width: 64px;
+    height: 64px;
+  }
+  .evo-card-portrait {
+    width: 48px;
+    height: 48px;
+  }
+  .evo-card-name {
+    font-size: 10px;
+  }
+  .evo-card-stats,
+  .evo-card-facts dd {
+    font-size: 15px;
+  }
+  .ability-card {
+    gap: 4px;
+    padding: 12px 8px 8px;
+  }
+  .ability-card-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .ability-card-icon img {
+    width: 32px;
+    height: 32px;
+  }
+  .ability-card-desc {
+    font-size: 16px;
+  }
+  .evo-pick .hint,
+  .ability-pick .hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evo-card,
+  .ability-card,
+  .evo-card-art::before,
+  .evo-card-portrait,
+  .evo-card-favor,
+  .ability-card.hidden-ability::before,
+  .ability-tag.lit {
+    animation: none;
+  }
+}
+
+.pause-ability b > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* The shine passes under the card's words. */
+.ability-card.hidden-ability > :not(.offer-key, .ability-card-ribbon) {
+  position: relative;
+  z-index: 1;
+
+  background: repeating-linear-gradient(-45deg, rgba(216, 48, 48, 0.12) 0 6px, transparent 6px 12px);
+  background-size: 17px 17px;
+  animation: banish-stripes 0.6s steps(6) infinite;
+}
+
+.levelup .offers.banishing .offer.offer-keep {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.offers.banishing .offer.offer-keep::after {
+  display: none;
+}
+
+@keyframes banish-stripes {
+  to {
+    background-position: 17px 0;
+  }
+}
+
+.levelup .offers .offer.offer-ghost {
+  position: absolute;
+  margin: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg, #ffe8e4, #f8c0b8);
+  border-color: #e05040;
+  animation: offer-toss 0.55s cubic-bezier(0.5, 0, 0.9, 0.6) forwards;
+}
+
+@keyframes offer-toss {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-3%, -6px) rotate(-3deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(70%, 60px) rotate(14deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.levelup .offers .offer.offer-redrawn {
+  animation: offer-redraw 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.12s both;
+}
+
+.levelup .offers .offer.offer-redrawn.offer-shiny {
+  animation:
+    offer-redraw 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.12s both,
+    shiny-frame 0.9s steps(2) infinite;
+}
+
+@keyframes offer-redraw {
+  from {
+    transform: rotateX(80deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* The pause menu's loadout: a badge per mod of the fork branches taken. */
+.loadout-row img.loadout-mod {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  background: #8048d0;
+  border-radius: 3px;
+  padding: 1px;
+}
+
+/* Phones in portrait: the branches stack and split up and down instead. */
+@media (max-width: 600px) {
+  .offers.branches {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .offers.branches::after {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 4px;
+    margin: -2px 0 0;
+    animation-name: fork-seam-across;
+  }
+  .levelup .offer-branch {
+    flex-direction: row;
+    text-align: left;
+    padding: 10px;
+    animation-name: branch-in-up;
+  }
+  .levelup .offer-branch.branch-b {
+    animation-name: branch-in-down;
+  }
+  .offer-branch .offer-key {
+    position: static;
+  }
+  .offer-branch .offer-name {
+    justify-content: flex-start;
+  }
+  .offer-branch .offer-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .offer-branch .offer-icon > img {
+    width: 34px;
+    height: 34px;
+  }
+  .offer-mods img {
+    width: 16px;
+    height: 16px;
+  }
+  .offer-note {
+    font-size: 6px;
+  }
+}
+
+@keyframes fork-seam-across {
+  from {
+    transform: scaleX(0.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@keyframes branch-in-up {
+  from {
+    transform: translateY(52%) scaleY(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes branch-in-down {
+  from {
+    transform: translateY(-52%) scaleY(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+/* Low landscape phones (~360 px tall): tighter cards, no hint, smaller buttons. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .levelup.dialog {
+    gap: 6px;
+    padding: 10px 14px;
+  }
+  .levelup .dialog-title {
+    font-size: 10px;
+  }
+  .levelup .offers {
+    gap: 5px;
+  }
+  .levelup .offer {
+    padding: 5px 10px;
+    gap: 10px;
+  }
+  .levelup .offer-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .levelup .offer-icon > img {
+    width: 28px;
+    height: 28px;
+  }
+  .levelup .offer-name {
+    font-size: 9px;
+  }
+  .levelup .offer-desc {
+    font-size: 17px;
+    margin-top: 2px;
+  }
+  .levelup .offer-note {
+    display: none;
+  }
+  .levelup .evo-recipes {
+    margin-top: 2px;
+  }
+  .levelup .buttons .btn {
+    min-height: 34px;
+    padding: 6px 12px;
+    font-size: 9px;
+  }
+  .levelup .hint-slot {
+    display: none;
+  }
+  .levelup .offer-branch {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelup .offer,
+  .levelup .offer-branch,
+  .levelup .offers .offer.offer-redrawn,
+  .offers.banishing .offer::after,
+  .offer-shine,
+  .offers.branches::after {
+    animation: none;
+  }
+  .offer-shine {
+    display: none;
+  }
+}

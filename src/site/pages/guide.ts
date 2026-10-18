@@ -28,7 +28,8 @@ import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
-import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
+import { BURN_ATTACK, FREEZE_SHATTER, SEED_HEAL, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
+import { SEED_JUMPS } from '../../game/kitRules'
 import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
 import { html, type Child, type Html } from '../html'
@@ -239,11 +240,21 @@ const types = (m: SiteMessages) => {
         return t.effects.slow(STATUS_RULES.slow.boss)
       case 'sleep':
         return t.effects.sleep(FLUTE_SLEEP, STATUS_RULES.sleep.boss)
+      case 'freeze':
+        return t.effects.freeze(FREEZE_SHATTER, STATUS_RULES.freeze.boss)
+      case 'mark':
+        return t.effects.mark(STATUS_RULES.mark.maxStacks)
+      case 'confuse':
+        return t.effects.confuse()
+      case 'seed':
+        return t.effects.seed(SEED_HEAL, SEED_JUMPS)
     }
   }
-  const rows = STATUS_KINDS.map((kind) => {
+  // Only conditions something inflicts: a move, or the Poké Flute for sleep.
+  const rows = STATUS_KINDS.flatMap((kind) => {
     const moves = movesBy(kind)
-    return [t.names[kind], moves.length > 0 ? moves.join(', ') : t.flute, effect(kind)]
+    if (moves.length === 0 && kind !== 'sleep') return []
+    return [[t.names[kind], moves.length > 0 ? moves.join(', ') : t.flute, effect(kind)]]
   })
   return html`<p>${chart}</p>
     <p>${t.statusIntro}</p>

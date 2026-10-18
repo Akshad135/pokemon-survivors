@@ -4,13 +4,15 @@ import type { PokeType } from '../data/types'
 import { spawnAttack } from './spawn'
 import { damageEnemy } from './combat'
 import { enemiesInView, nearestEnemy } from './queries'
+import { NO_BONUS, type DamageBonus, type StackRule } from './kitRules'
 import {
   CHAIN_JUMP, CHAIN_RANGE, chainDamage, chainTargets, HEX_BONUS, LUNGE_IFRAMES, LUNGE_MIN_COOLDOWN, LUNGE_OVERSHOOT,
   LUNGE_SEEK, LUNGE_TIME, lungeLength, lungeTarget, mineCap,
 } from './moveRules'
-import type { Attack, Game, Visual } from './types'
+import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
-import { isAfflicted, scaleStatus, type StatusSpec } from './status'
+import { modBits, modHit, type ModId } from './mods'
+import { scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
 import * as evolved from './evolvedMoves'
 import { TRI_ELEMENTS } from './evolvedRules'
@@ -39,29 +41,69 @@ export type MoveStats = {
   statusDamage: number
 }
 
-/** What `fire` receives: final stats plus the scaled status the move inflicts. */
-export type CastStats = MoveStats & { status: StatusSpec | null }
+/** What `fire` receives: final stats, the scaled status the move inflicts and the mods of the branches taken (`mods.ts`). */
+export type CastStats = MoveStats & { status: StatusSpec | null; mods: number }
 
 /** Stat delta added by one level-up (texts live in `i18n`). */
 type Upgrade = Partial<MoveStats>
+
+/** One way of a fork: a stat trade-off plus the behavior mods it adds (`mods.ts`). */
+export type Branch = { stats: Upgrade; mods?: readonly ModId[] }
+
+/**
+ * A level-up step: a stat delta, or a fork where the player picks one of two
+ * branches (`OwnedMove.path` remembers which). Texts: one line per plain step,
+ * a name and a line per branch for a fork (`Lines` in `i18n/pt.ts`).
+ */
+export type UpgradeStep = Upgrade | { fork: readonly [Branch, Branch] }
 
 export type MoveDef = {
   /** Official English name; descriptions live in `i18n`. */
   name: string
   type: PokeType
   base: MoveStats
-  upgrades: readonly Upgrade[]
+  upgrades: readonly UpgradeStep[]
   /** Condition its hits may inflict (chance and power scale with upgrades and items). */
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
   minCooldown?: number
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
-  fire: (g: Game, s: CastStats) => void
+  /** What kind of move it is, for the abilities that boost a kind (Iron Fist, Strong Jaw, Sharpness, Liquid Voice). */
+  tags?: readonly MoveTag[]
+  /** Per-move counter rule (`OwnedMove.stacks`, see `kitRules.ts`); `fire` reads `owned.stacks`. */
+  stacks?: StackRule
+  /** Casts the move. `owned` is its slot: level, `stacks`, `walkedAt` (`moveKit.ts`). */
+  fire: (g: Game, s: CastStats, owned: OwnedMove) => void
+  /** A guard window it opened (`guard` in `moveKit.ts`) negated a hit from `from` (none for hazards): counter it. */
+  onGuard?: (g: Game, s: CastStats, owned: OwnedMove, from?: Enemy) => void
+  /** A burrow it started (`burrow` in `moveKit.ts`) ended: come back out, usually with a hit. */
+  emerge?: (g: Game, s: CastStats, owned: OwnedMove) => void
+}
+
+/**
+ * Kinds of move abilities boost (`data/abilities.ts`). `weak` (a base hit of
+ * `WEAK_MOVE` or less: Technician) and `status` (inflicts a condition: Sheer
+ * Force) follow from the move's data; the rest are tagged by hand.
+ */
+export type MoveTag = 'punch' | 'bite' | 'slice' | 'sound' | 'weak' | 'status'
+
+/** The strongest base hit Technician still counts as weak. */
+export const WEAK_MOVE = 10
+
+/** Whether a move is of a kind (`MoveTag`). */
+export const hasTag = (def: MoveDef, tag: MoveTag) =>
+  tag === 'weak' ? def.base.damage <= WEAK_MOVE : tag === 'status' ? def.status !== undefined : (def.tags?.includes(tag) ?? false)
+
+/** Extra damage the player's tag boosts give a move (0 without any). */
+const tagBonus = (def: MoveDef, player: PlayerStats) => {
+  let bonus = 0
+  for (const [tag, value] of Object.entries(player.tagDamage) as Array<[MoveTag, number]>) if (hasTag(def, tag)) bonus += value
+  return bonus
 }
 
 /** What a cast helper needs to name and paint its hitboxes. */
-type Look = { move: MoveId; type: PokeType; visual: Visual }
+export type Look = { move: MoveId; type: PokeType; visual: Visual }
 
 const stats = (s: Partial<MoveStats>): MoveStats => ({
   damage: 0, cooldown: 1, area: 1, amount: 1, speed: 0, duration: 1, pierce: Infinity, knockback: 0, statusChance: 0, statusDamage: 0, ...s,
@@ -119,11 +161,11 @@ const lunge = (g: Game, s: CastStats, look: Look, burst = 0) => {
 
 /**
  * Chain: strikes the nearest foe, then jumps to the next nearest ones (`amount`
- * hits in all), ×0.85 damage per jump and ×`hexBonus` on foes with a status
- * condition. The hits land at once, without knockback; each jump leaves a
- * visual-only arc from the previous foe, a few ms apart.
+ * hits in all), ×0.85 damage per jump and `bonus` on the foes it applies to
+ * (Hex: ×1.7 on foes with a status condition). The hits land at once, without
+ * knockback; each jump leaves a visual-only arc from the previous foe, a few ms apart.
  */
-const chain = (g: Game, s: CastStats, look: Look, hexBonus = 1) => {
+const chain = (g: Game, s: CastStats, look: Look, bonus: readonly DamageBonus[] = NO_BONUS) => {
   const p = g.player
   const targets = chainTargets(g.enemies, p, s.amount, CHAIN_RANGE, CHAIN_JUMP * s.area)
   let from = { x: p.x, y: p.y - 10 }
@@ -132,10 +174,12 @@ const chain = (g: Game, s: CastStats, look: Look, hexBonus = 1) => {
     const arc = spawnAttack(g, {
       ...look, ...to, from,
       shape: { kind: 'circle', r: 4 * s.area }, motion: { kind: 'static' },
-      damage: chainDamage(s.damage, hop, isAfflicted(e.status), hexBonus), status: s.status,
+      damage: chainDamage(s.damage, hop), bonus, status: s.status,
       ttl: 0.28, activeFrom: Infinity, age: -hop * 0.035,
     })
     damageEnemy(g, e, arc)
+    // The hit lands here, not in `collide`, so its mods hear of it here.
+    if (arc.mod) modHit(g, arc, e)
     from = to
   })
 }
@@ -213,6 +257,9 @@ const breath = (g: Game, s: CastStats, look: Look, angle: number, puffs: number)
   })
 }
 
+/** Hex hits foes with a status condition ×1.7. */
+const HEX: readonly DamageBonus[] = [{ when: 'afflicted', mult: HEX_BONUS }]
+
 /** Seconds a Rock Tomb boulder takes to fall: its shadow is the warning. */
 const ROCK_FALL = 0.32
 /** Pillars in each Stone Edge line, and the gap between them (px, scaled by area). */
@@ -228,10 +275,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4, statusChance: 0.1 },
-      { cooldown: -0.15 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['seek'] }, { stats: { speed: -40 }, mods: ['trail'] }] },
       { amount: 1 },
       { pierce: 1 },
-      { damage: 6 },
+      { fork: [{ stats: { damage: 4 }, mods: ['split'] }, { stats: { cooldown: 0.1 }, mods: ['rear'] }] },
       { amount: 1, area: 0.25 },
     ],
     fire: (g, s) => {
@@ -256,10 +303,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { area: 0.2 },
-      { damage: 4 },
+      { fork: [{ stats: { damage: -3 }, mods: ['twin'] }, { stats: { damage: 4, speed: -0.6 }, mods: ['trail'] }] },
       { duration: 0.6 },
       { amount: 1 },
-      { damage: 5, statusDamage: 0.25 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: { statusDamage: 0.4 }, mods: ['echo'] }] },
       { amount: 1, speed: 1 },
     ],
     fire: (g, s) => {
@@ -282,10 +329,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { pierce: 1 },
+      { fork: [{ stats: { damage: -1 }, mods: ['rear'] }, { stats: { pierce: 1, speed: -60 }, mods: ['seek'] }] },
       { cooldown: -0.1 },
       { amount: 1 },
-      { damage: 5 },
+      { fork: [{ stats: { damage: 4 }, mods: ['bounce'] }, { stats: { cooldown: 0.1 }, mods: ['boomerang'] }] },
       { amount: 1, pierce: 2 },
     ],
     fire: (g, s) => {
@@ -342,15 +389,16 @@ export const MOVES = {
   razorLeaf: {
     name: 'Razor Leaf',
     type: 'grass',
+    tags: ['slice'],
     base: stats({ damage: 11, cooldown: 1.5, amount: 1, speed: 210, duration: 1, knockback: 25 }),
     status: { kind: 'poison', chance: 0.15, duration: 3, power: 0.2 },
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: -2 }, mods: ['rear'] }, { stats: { area: 0.2 }, mods: ['echo'] }] },
       { amount: 1 },
       { speed: 52 },
-      { damage: 5 },
+      { fork: [{ stats: { statusChance: 0.25 }, mods: ['trail'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
       { amount: 1 },
     ],
     fire: (g, s) => {
@@ -406,10 +454,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { cooldown: -0.18 },
+      { fork: [{ stats: { damage: 6 }, mods: ['bounce'] }, { stats: { amount: 1, damage: 2 }, mods: ['halo'] }] },
       { amount: 1 },
       { pierce: 1 },
-      { damage: 4 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: { cooldown: -0.15 }, mods: ['echo'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => {
@@ -437,10 +485,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 8 },
-      { area: 0.25, statusChance: 0.15 },
+      { fork: [{ stats: { amount: 2, area: -0.25, damage: -6 }, mods: ['echo'] }, { stats: { amount: -2, damage: 34, area: 0.8 }, mods: ['arc'] }] },
       { amount: 1 },
       { cooldown: -0.3 },
-      { damage: 10 },
+      { fork: [{ stats: { damage: 10 }, mods: ['burstOnKill'] }, { stats: { statusChance: 0.15 }, mods: ['trail'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => {
@@ -521,6 +569,7 @@ export const MOVES = {
   machPunch: {
     name: 'Mach Punch',
     type: 'fighting',
+    tags: ['punch'],
     base: stats({ damage: 9, cooldown: 1.1, amount: 3, knockback: 50 }),
     upgrades: [
       { amount: 1 },
@@ -602,6 +651,7 @@ export const MOVES = {
   waterShuriken: {
     name: 'Water Shuriken',
     type: 'water',
+    tags: ['slice'],
     base: stats({ damage: 5, cooldown: 0.9, amount: 2, speed: 230, pierce: 1, knockback: 15 }),
     upgrades: [
       { amount: 1 },
@@ -632,14 +682,15 @@ export const MOVES = {
   crunch: {
     name: 'Crunch',
     type: 'dark',
+    tags: ['bite'],
     base: stats({ damage: 18, cooldown: 1.6, amount: 1, knockback: 30 }),
     upgrades: [
       { damage: 6 },
       { amount: 1 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: -3 }, mods: ['arc'] }, { stats: { area: 0.15 }, mods: ['echo'] }] },
       { cooldown: -0.2 },
       { amount: 1 },
-      { damage: 8 },
+      { fork: [{ stats: { damage: 8 }, mods: ['burstOnKill'] }, { stats: { area: 0.2 }, mods: ['trail'] }] },
       { amount: 1, area: 0.2 },
     ],
     fire: (g, s) => {
@@ -748,6 +799,7 @@ export const MOVES = {
   drumBeating: {
     name: 'Drum Beating',
     type: 'grass',
+    tags: ['sound'],
     base: stats({ damage: 11, cooldown: 1.9, amount: 1, duration: 0.3, knockback: 40 }),
     status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.35 },
     upgrades: [
@@ -776,6 +828,7 @@ export const MOVES = {
   disarmingVoice: {
     name: 'Disarming Voice',
     type: 'fairy',
+    tags: ['sound'],
     base: stats({ damage: 7, cooldown: 1.6, amount: 6, speed: 150, pierce: 1, knockback: 30 }),
     upgrades: [
       { amount: 2 },
@@ -803,6 +856,7 @@ export const MOVES = {
   torchSong: {
     name: 'Torch Song',
     type: 'fire',
+    tags: ['sound'],
     base: stats({ damage: 9, cooldown: 2, amount: 5, speed: 115, pierce: 2, knockback: 20 }),
     upgrades: [
       { amount: 1 },
@@ -830,6 +884,7 @@ export const MOVES = {
   leafBlade: {
     name: 'Leaf Blade',
     type: 'grass',
+    tags: ['slice'],
     base: stats({ damage: 13, cooldown: 1.5, amount: 1, speed: 12, knockback: 50 }),
     upgrades: [
       { damage: 4 },
@@ -857,6 +912,7 @@ export const MOVES = {
   razorShell: {
     name: 'Razor Shell',
     type: 'water',
+    tags: ['slice'],
     base: stats({ damage: 15, cooldown: 1.2, amount: 1, knockback: 80 }),
     upgrades: [
       { amount: 1 },
@@ -907,10 +963,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { cooldown: -0.2 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['burstOnKill'] }, { stats: { amount: -1 }, mods: ['echo'] }] },
       { amount: 1 },
       { damage: 5, statusChance: 0.1 },
-      { area: 0.25 },
+      { fork: [{ stats: { statusChance: 0.1 }, mods: ['trail'] }, { stats: { damage: -2 }, mods: ['arc'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => chain(g, s, { move: 'shockWave', type: 'electric', visual: 'shock' }),
@@ -929,7 +985,7 @@ export const MOVES = {
       { area: 0.25 },
       { amount: 2 },
     ],
-    fire: (g, s) => chain(g, s, { move: 'hex', type: 'ghost', visual: 'hex' }, HEX_BONUS),
+    fire: (g, s) => chain(g, s, { move: 'hex', type: 'ghost', visual: 'hex' }, HEX),
   },
 
   toxicSpikes: {
@@ -1367,20 +1423,41 @@ export const isManual = (id: MoveId) => {
   return def.manual === true
 }
 
-/** Final stats of a move at `level`, after upgrades and player modifiers (incl. type boosts). */
-export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastStats => {
+/** The fork a move's step to `level` is, or null for a plain step (and level 1). */
+export const forkAt = (id: MoveId, level: number) => {
   const def: MoveDef = MOVES[id]
-  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, delta) => {
+  const step = level >= 2 ? def.upgrades[level - 2] : undefined
+  return step && 'fork' in step ? step.fork : null
+}
+
+/** The branch a path takes at step `index` (`OwnedMove.path`). */
+export const branchAt = (path: number, index: number): 0 | 1 => ((path >> index) & 1 ? 1 : 0)
+
+/** A path with the branch picked at the step to `level`. */
+export const withBranch = (path: number, level: number, branch: 0 | 1) => (branch ? path | (1 << (level - 2)) : path & ~(1 << (level - 2)))
+
+/**
+ * Final stats of a move at `level`, after upgrades and player modifiers (incl.
+ * type boosts). Forks follow `path` (`OwnedMove.path`); their branches' mods
+ * come back in `mods`. Trade-offs never take a move below one shot, 0.35 of its size or negative damage.
+ */
+export const moveStats = (id: MoveId, level: number, player: PlayerStats, path = 0): CastStats => {
+  const def: MoveDef = MOVES[id]
+  let mods = 0
+  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, step, i) => {
+    const { stats: delta, mods: added }: Branch = 'fork' in step ? step.fork[branchAt(path, i)] : { stats: step }
+    mods |= modBits(added)
     const next = { ...acc }
     for (const k of Object.keys(delta) as (keyof MoveStats)[]) next[k] += delta[k] ?? 0
     return next
   }, def.base)
   return {
     ...s,
-    damage: s.damage * player.might * (1 + (player.typeDamage[def.type] ?? 0)),
+    mods,
+    damage: Math.max(0, s.damage) * player.might * (1 + (player.typeDamage[def.type] ?? 0) + tagBonus(def, player)),
     cooldown: Math.max(def.minCooldown ?? 0.1, s.cooldown * player.cooldown),
-    area: s.area * player.area,
-    amount: s.amount + player.amount,
+    area: Math.max(0.35, s.area) * player.area,
+    amount: Math.max(1, s.amount) + player.amount,
     speed: s.speed * player.projectileSpeed,
     duration: s.duration * player.duration,
     status: def.status

@@ -504,7 +504,7 @@ export const castThunderbolt = (g: Game, s: CastStats) => {
       move: 'thunderbolt', type: 'electric', visual: src ? 'thunderbolt' : 'boltStrike', ...to,
       from: src ? { x: src.x, y: src.y - src.radius } : { x: to.x, y: to.y - 160 },
       shape: { kind: 'circle', r: 4 * s.area }, motion: { kind: 'static' },
-      damage: chainDamage(s.damage, depth, false), status: s.status, ttl: 0.3, activeFrom: Infinity, age: -depth * 0.045,
+      damage: chainDamage(s.damage, depth), status: s.status, ttl: 0.3, activeFrom: Infinity, age: -depth * 0.045,
     })
     damageEnemy(g, foe, arc)
   })

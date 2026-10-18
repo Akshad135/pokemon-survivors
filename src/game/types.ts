@@ -11,6 +11,10 @@ import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { AbilityId } from '../data/abilities'
+import type { BranchId } from '../data/branches'
+import type { AbilityState } from './abilities'
+import type { BranchFavor } from './branch'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
@@ -33,8 +37,25 @@ import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
 import type { BossFight } from './bossFight'
+import type { ModState } from './mods'
+import type { DamageBonus } from './kitRules'
 
-export type OwnedMove = { id: MoveId; level: number; cooldown: number }
+export type OwnedMove = {
+  id: MoveId
+  level: number
+  cooldown: number
+  /** The branch picked at each fork of its upgrades (bit `i` set: the second branch of step `i`; absent means 0, see `moveStats`). */
+  path?: number
+  /** Counts down to an Echo re-cast (`mods.ts`; absent or ≤ 0: none due). */
+  echo?: number
+  /** The move's own counter (`MoveDef.stacks` grows and resets it; `fire` reads it). Absent = 0. */
+  stacks?: number
+  /** `Player.walked` when it last fired, for `walkedSince`. */
+  walkedAt?: number
+}
+
+/** A move's window on the player (guard, burrow): `left` seconds, and the move whose hook it calls. */
+export type MoveWindow = { left: number; move: MoveId }
 export type OwnedItem = { id: ItemId; level: number }
 
 export type Player = {
@@ -67,6 +88,14 @@ export type Player = {
   luckyShiny: boolean
   /** Distance walked this run, in world px. Hatches the incubator's eggs (`eggs.ts`). */
   walked: number
+  /** Seconds standing still (0 while walking). */
+  still: number
+  /** Guard window (Counter, Protect): the next hit is negated and calls the move's `onGuard` (`hurtPlayer`). */
+  guard: MoveWindow | null
+  /** Burrowed or out of sight (Dig, Fly): invulnerable, foes lose track; the move's `emerge` runs when it ends. */
+  hidden: MoveWindow | null
+  /** Drain heal budget (`drainRefill`) and the game time it was last spent. */
+  drain: { left: number; at: number }
 }
 
 export type EnemyBehavior =
@@ -118,7 +147,11 @@ export type Enemy = {
    * play like a fainted one, gliding away along its knockback, with no reward.
    */
   fled: boolean
+  /** Hurled by a move (Circle Throw): while its knockback is fast it hurts the foes it hits, once each. */
+  thrown: Thrown | null
 }
+
+export type Thrown = { damage: number; move: DamageSource; hit: Set<number> }
 
 export type Shape = { kind: 'circle'; r: number } | { kind: 'rect'; w: number; h: number }
 
@@ -135,6 +168,14 @@ export type Motion =
   | { kind: 'lunge'; vx: number; vy: number; left: number }
   /** Flies along (vx, vy) losing `drag` of its speed per second until it stops and stays put (Ice Shard). */
   | { kind: 'drift'; vx: number; vy: number; drag: number }
+  /**
+   * Flies along (vx, vy) for `out` more seconds, then homes back to the
+   * player's current position at `speed` and vanishes on arrival. Its hit list
+   * clears at the turn, so it hits on both legs.
+   */
+  | { kind: 'return'; vx: number; vy: number; out: number; speed: number }
+  /** Seeded random walk at `speed`, turning up to `turn` rad/s, steered back when farther than `leash` px from the player. */
+  | { kind: 'wander'; heading: number; speed: number; turn: number; leash: number }
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
@@ -146,11 +187,15 @@ export type Visual =
   | 'streak' | 'slash' | 'afterimage'
   /** The rainbow burst that ends a Mega Evolution (`mega.ts`), drawn by `render/megaFx.ts`. */
   | 'megaWave'
+  /** Lingering ground of a Trail mod, the blast of a Burst mod and the sparks of an Arc mod (`mods.ts`), drawn by `render/modFx.ts`. */
+  | 'modTrail' | 'modBurst' | 'modArc'
+  /** A delayed strike's warning on the ground (`moveKit.ts`), drawn by `render/kitFx.ts`. */
+  | 'telegraph'
   | EvolvedVisual
   | TacticVisual
 
-/** What dealt the damage, for the results screen. */
-export type DamageSource = MoveId | 'special'
+/** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
+export type DamageSource = MoveId | 'special' | 'ability'
 
 /** Visuals of evolved moves, drawn by `render/evolved.ts` (casts in `game/evolvedMoves.ts`). */
 export type EvolvedVisual =
@@ -169,6 +214,12 @@ export type TacticVisual =
 
 /** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
 export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
+
+/**
+ * Drops a lingering patch every `every` px the player walks (`moveKit.trailer`).
+ * Patches copy the carrier's move, type and status, at `share` of its damage.
+ */
+export type Trailer = { every: number; acc: number; walked: number; visual: Visual; r: number; ttl: number; hitInterval: number; share: number }
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
@@ -204,6 +255,17 @@ export type Attack = {
   /** Blast visual of a mine. */
   blastVisual: Visual
   turret: Turret | null
+  /** Behavior mods of the fork branch it was cast with (`mods.ts`), or null. */
+  mod: ModState | null
+  /** Damage bonuses against some foes (`kitRules.ts`), e.g. Hex's ×1.7 on afflicted ones. */
+  bonus: readonly DamageBonus[]
+  /** Regular foes left at or under this HP share faint outright (0 = never). */
+  execute: number
+  /** Share of the damage dealt that heals the player, within the drain budget (0 = none). */
+  drain: number
+  /** Px/s it pulls the foes it touches toward its center, divided by their mass (bosses resist more). */
+  pull: number
+  trailer: Trailer | null
 }
 
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
@@ -269,14 +331,27 @@ export type FloatText = {
   slot: number
 }
 
+/**
+ * How lucky a level-up card came out (`rollOffers`): a rare one gives two
+ * levels at once, a shiny one doesn't use the level-up up (the player picks again).
+ */
+export type Rarity = 'rare' | 'shiny'
+
 export type Offer =
-  | { kind: 'move'; id: MoveId; level: number }
-  | { kind: 'item'; id: ItemId; level: number }
+  | { kind: 'move'; id: MoveId; level: number; rarity?: Rarity }
+  | { kind: 'item'; id: ItemId; level: number; rarity?: Rarity }
   | { kind: 'berry' }
   /** Max level move + its paired held item: the move evolves in place. */
   | { kind: 'evolution'; from: MoveId; to: MoveId }
+  /** Where a branching evolution goes (`game/branch.ts`); `favor` says what of the run nudged it forward. */
+  | { kind: 'form'; id: BranchId; favor: BranchFavor }
+  /** An ability to keep for the run, picked when the first evolution lands (`game/abilities.ts`). */
+  | { kind: 'ability'; id: AbilityId; hidden: boolean }
+  /** One way of a fork (`moveStats`): raises the move to `level` taking `branch` (0 or 1). */
+  | { kind: 'branch'; id: MoveId; level: number; branch: 0 | 1; rarity?: Rarity }
 
-export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
+/** `branch` and `ability` wait on a pick from `offers`, like `levelup`: where an evolution goes, and the ability after the first. */
+export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'paused' | 'gameover' | 'victory'
 
 /** Fire-and-forget notifications for audio/UI. Drained by the shell every frame. */
 export type GameEvent =
@@ -310,8 +385,16 @@ export type GameEvent =
   | { kind: 'megaEnd' }
   | { kind: 'megaReady' }
   | { kind: 'evolve'; from: number; to: number }
+  /** A branching evolution waits on the player's pick. */
+  | { kind: 'branchChoice' }
+  /** The ability was picked, or did something worth a word (Sturdy held, a guard blocked, a weather called). */
+  | { kind: 'ability'; id: AbilityId; moment: 'picked' | 'proc' }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
+  /** A shiny level-up card was picked: the player picks again. */
+  | { kind: 'shinyOffer' }
+  /** A level-up card was forgotten (Esquecer) and its slot drawn again. */
+  | { kind: 'banish' }
   | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
   | { kind: 'gameover' }
   | { kind: 'consumable'; item: ConsumableId }
@@ -339,6 +422,10 @@ export type GameEvent =
   | { kind: 'reaperDown'; defeats: number }
   /** A boss, chest or rift left an egg; it goes to the incubator when the run is banked. */
   | { kind: 'egg'; tier: EggTier }
+  /** A foe shattered: an execute, or a frozen foe's ice broken by a hit. */
+  | { kind: 'shatter'; cause: 'execute' | 'freeze' }
+  /** A guard window negated a hit. */
+  | { kind: 'guard' }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -378,10 +465,20 @@ export type Game = {
   /** Level-up rerolls/skips left this run. */
   rerolls: number
   skips: number
+  /** Esquecer charges left (`banishOffer`): from the Poké Mart, plus one per boss defeated and per evolution. */
+  banishes: number
+  /** Moves and items forgotten this run: they never come back as offers. */
+  banished: Set<MoveId | ItemId>
+  /** Mods of the move being cast right now (`updateMoves`), stamped on every hitbox it spawns; 0 otherwise. */
+  castMods: number
   damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null
+  /** Where a branching evolution went (`game/branch.ts`); null until it does, and for the lines that don't branch. */
+  branch: BranchId | null
+  /** The ability picked at the first evolution and its running state (`game/abilities.ts`). */
+  ability: AbilityState
   /** This run's wild cast, drawn at the start (`game/roster.ts`), with the day's outbreak in every stage. */
   roster: Roster
   /** The day's outbreak species, or null (`game/outbreak.ts`): its kills count toward missions (`countKill`). */
