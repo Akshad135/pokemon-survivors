@@ -661,6 +661,9 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 type Drawable = Enemy | 'player' | 'companion' | Solid
 const drawables: Drawable[] = []
+
+/** How far a hitbox reaches from its center, to cull it off screen. */
+const reachOf = (shape: Attack['shape']) => (shape.kind === 'circle' ? shape.r : Math.max(shape.w, shape.h)) + 48
 const isSolid = (d: Drawable): d is Solid => d !== 'player' && d !== 'companion' && 'foot' in d
 
 /* ---------------- Biome ---------------- */
@@ -706,7 +709,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
   drawTerrainGround(ctx, g, look, camX, camY)
-  for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  // Ground marks far off screen (trails left behind, lingering fields) are skipped; the margin covers the widest of them.
+  for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, Math.max(200, reachOf(a.shape)))) drawGroundAttack(ctx, a, t)
   drawVerbGround(ctx, g, t)
   drawTmGround(ctx, g, t)
   drawVerbEvolvedGround(ctx, g, t)
@@ -777,6 +781,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {
+    if (!visible(p.x, p.y, 8)) continue
     ctx.globalAlpha = Math.min(1, (1 - p.life / p.ttl) * 1.5)
     ctx.fillStyle = p.color
     ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
