@@ -8,6 +8,7 @@ import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 import { EGG_MOVE_ICONS } from './eggMoveArt'
+import { EGG_MOVE_2_ICONS } from './eggMove2Art'
 import { SIGNATURE_ICONS } from './signatureArt'
 import * as TE from './typeEvolvedArt'
 
@@ -588,6 +589,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
   liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
   alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
+  ...EGG_MOVE_2_ICONS,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {

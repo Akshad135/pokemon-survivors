@@ -21,6 +21,20 @@ const CAST_SOUNDS: Partial<Record<MoveId, readonly [Sfx, number]>> = {
   metronome: ['metronome', 300],
   echoedVoice: ['echo', 250],
   curse: ['curse', 400],
+  braveBird: ['dive', 300],
+  weatherBall: ['lob', 200],
+  accelerock: ['rockDash', 120],
+  zapCannon: ['zapOrb', 400],
+  aerialAce: ['windCut', 200],
+  crossPoison: ['venomCross', 200],
+  bubbleBeam: ['bubbles', 250],
+  rockBlast: ['rockBurst', 250],
+  cottonSpore: ['cotton', 400],
+  wildCharge: ['sparkRun', 400],
+  playRough: ['brawl', 250],
+  spore: ['sporePuff', 400],
+  waterfall: ['geyser', 300],
+  lastResort: ['starFall', 300],
 }
 
 export const castSound = (move: MoveId) => CAST_SOUNDS[move] ?? null

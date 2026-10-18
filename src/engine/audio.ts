@@ -364,6 +364,65 @@ const SFX = {
     tone(400, 900, 0.1, 'sine', 0.1)
   },
   crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
+  /* Egg signature moves, second batch (`ui/castSounds.ts`) */
+  /** Brave Bird: a screech and a roaring dive. */
+  dive: () => {
+    tone(1400, 700, 0.12, 'square', 0.06)
+    tone(300, 90, 0.25, 'sawtooth', 0.08, 0.04)
+    noise(0.22, 0.07, 0.04)
+  },
+  /** Weather Ball: a soft toss, up and over. */
+  lob: () => tone(330, 660, 0.16, 'triangle', 0.08),
+  /** Accelerock: a quick crack of stone. */
+  rockDash: () => {
+    noise(0.05, 0.1)
+    tone(520, 180, 0.06, 'square', 0.06)
+  },
+  /** Zap Cannon: a heavy electric hum winding up. */
+  zapOrb: () => {
+    tone(80, 160, 0.4, 'sawtooth', 0.09)
+    tone(1200, 1800, 0.06, 'square', 0.04, 0.05)
+    tone(1500, 900, 0.06, 'square', 0.04, 0.18)
+  },
+  /** Aerial Ace: a clean swish of wind. */
+  windCut: () => {
+    noise(0.08, 0.06)
+    tone(1800, 2600, 0.06, 'triangle', 0.05)
+  },
+  /** Cross Poison: two quick slices. */
+  venomCross: () => [0, 0.06].forEach((d) => tone(900, 300, 0.06, 'square', 0.06, d)),
+  /** Bubble Beam: a run of little pops. */
+  bubbles: () => [700, 900, 800, 1100].forEach((f, i) => tone(f, f * 1.5, 0.04, 'sine', 0.07, i * 0.05)),
+  /** Rock Blast: a volley of thuds. */
+  rockBurst: () => [0, 0.09, 0.18].forEach((d) => tone(160, 70, 0.07, 'square', 0.07, d)),
+  /** Cotton Spore: a fluffy puff. */
+  cotton: () => {
+    noise(0.25, 0.04)
+    tone(600, 500, 0.2, 'sine', 0.05)
+  },
+  /** Wild Charge: an electric crackle. */
+  sparkRun: () => {
+    noise(0.2, 0.06)
+    tone(200, 900, 0.18, 'sawtooth', 0.06)
+  },
+  /** Play Rough: a cartoon scuffle. */
+  brawl: () => [0, 0.07, 0.15, 0.21].forEach((d, i) => tone(i % 2 ? 300 : 500, 200, 0.05, 'square', 0.06, d)),
+  /** Spore: a soft, sleepy puff. */
+  sporePuff: () => {
+    noise(0.3, 0.035)
+    tone(523, 392, 0.3, 'triangle', 0.05)
+  },
+  /** Waterfall: water rushing up. */
+  geyser: () => {
+    noise(0.3, 0.09)
+    tone(200, 700, 0.25, 'sine', 0.07)
+  },
+  /** Last Resort: a star falling and a big chime. */
+  starFall: () => {
+    tone(1568, 392, 0.22, 'triangle', 0.08)
+    tone(523, 523, 0.3, 'square', 0.06, 0.22)
+    tone(784, 784, 0.3, 'triangle', 0.08, 0.22)
+  },
 } as const
 
 export type Sfx = keyof typeof SFX
