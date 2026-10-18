@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { runLearnset } from './learnsets'
 import { EVOLUTIONS } from '../data/evolutions'
-import { PLAYABLE, PLAYABLE_IDS } from '../data/hatchlings'
+import { PLAYABLE_IDS } from '../data/hatchlings'
 import { LEGENDARY_MOVE_OF } from '../data/legendaryMoves'
 import { RIFT_LEGENDS } from '../data/rifts'
 import { MYTHICALS } from '../data/waves'
@@ -17,7 +18,7 @@ describe('legendary moves', () => {
   })
 
   it('are evolved-tier capstones: Lv1–5 with a fork at Lv4, never evolving and in no learnset', () => {
-    const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id) => PLAYABLE[id].learnset))
+    const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id) => runLearnset(id, null)))
     const evolving = new Set<MoveId>(EVOLUTIONS.flatMap((e) => [e.from, e.to]))
     for (const id of LEGENDARY) {
       expect([id, isLegendary(id), maxMoveLevel(id)]).toEqual([id, true, 5])
