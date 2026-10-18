@@ -90,6 +90,8 @@ export const sitePt = {
     special: 'Ataque especial',
     specialFinal: 'Na evolução final',
     learnset: 'Golpes que aprende',
+    /** The learnset's first row: what the family starts with (later rows say the level each evolution unlocks its moves at). */
+    learnStart: 'desde o início',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
     eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
