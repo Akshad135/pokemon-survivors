@@ -7,6 +7,7 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import * as TE from './typeEvolvedArt'
 
 /**
  * All hand-authored pixel art (projectiles, pickups, icons). Sprites are built
@@ -430,6 +431,26 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   megahorn: () => FX.horn(),
   dragonBreath: () => art(CONE, DRAGON_CONE, '#180840'),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
+  jawLock: () => art([...TE.MAW_TOP, ...TE.MAW_BOTTOM], TE.MAW, '#d8c0e8'),
+  superpower: () => art(TE.BIG_FIST, TE.FIST_PAL, '#281010'),
+  fissure: () => art(...TE.FISSURE_ICON, '#181818'),
+  extrasensory: () => art(TE.EYE, TE.EYE_PAL, '#401030'),
+  steelBeam: () => art(...TE.BEAM_ICON, '#202838'),
+  infernalParade: () => {
+    const flame = art(TE.PARADE_FLAME, TE.PARADE_PAL, '#181030')
+    return compose(16, 15, [[flame, 0, 1], [flame, 5, 0]])
+  },
+  phantomForce: () => {
+    const arrow = art(TE.SPECTRAL_ARROW, TE.SPECTRAL_PAL, '#181028')
+    return compose(13, 16, [[arrow, 0, 1], [arrow, 6, 0]])
+  },
+  aquaCutter: () => art(TE.PINWHEEL, TE.AQUA, '#102060'),
+  searingShot: () => compose(15, 15, [[art(TE.SEARING_BALL, TE.SEARING_PAL, '#401008'), 0, 0], [art(TE.SEARING_EMBER, TE.SEARING_PAL, '#401008'), 8, 8]]),
+  gigaDrain: () => art(TE.DRAIN_ORB, TE.DRAIN_PAL, '#103010'),
+  burningJealousy: () => art(TE.ENVY_FLAME, TE.ENVY_PAL, '#300818'),
+  trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
+  liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
+  alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -458,6 +479,7 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
   metronome: [['...11...', '...14...', '..1241..', '..1421..', '.122421.', '.124221.', '12422221', '11111111'], { 1: '#583010', 2: '#d89040', 4: '#f8f0d0' }],
   powerHerb: [['.2...2..', '232.232.', '.2...2..', '..1.1...', '...1....', '..11....', '.1......'], { 1: '#386820', 2: '#f8f8f8', 3: '#e83838' }],
+  ...TE.TYPE_ITEM_ART,
 }
 
 /* ---------------- Poké Mart icons ---------------- */
