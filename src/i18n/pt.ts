@@ -1882,7 +1882,7 @@ export const pt = {
       upgrades: [
         '+1 shuriken',
         '+2 de dano',
-        { fork: [{ name: 'Ricochete', desc: 'Ricocheteia em mais 2; recarga -0.08s, +6 de dano' }, { name: 'Rastro d’água', desc: 'Deixa chão que fere; recarga -0.12s, +5 de dano' }] },
+        { fork: [{ name: 'Ricochete', desc: 'Ricocheteia em mais 2; recarga -0.08s, +6 de dano' }, { name: 'Rastro d’água', desc: 'Deixa chão que fere; recarga -0.12s, +7 de dano' }] },
         '+1 shuriken',
         '+3 de dano',
         { fork: [{ name: 'Shuriken duplo', desc: 'Racha em 2 ao acertar; mais rápido' }, { name: 'Corte final', desc: 'Finaliza com ≤12% HP; mais rápido, +2 de dano' }] },

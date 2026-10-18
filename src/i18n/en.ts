@@ -1772,7 +1772,7 @@ export const en: Messages = {
       upgrades: [
         '+1 shuriken',
         '+2 damage',
-        { fork: [{ name: 'Ricochet', desc: 'Bounces to 2 more foes; -0.08s cooldown, +6 damage' }, { name: 'Water Trail', desc: 'Leaves hurting ground; -0.12s cooldown, +5 damage' }] },
+        { fork: [{ name: 'Ricochet', desc: 'Bounces to 2 more foes; -0.08s cooldown, +6 damage' }, { name: 'Water Trail', desc: 'Leaves hurting ground; -0.12s cooldown, +7 damage' }] },
         '+1 shuriken',
         '+3 damage',
         { fork: [{ name: 'Twin Star', desc: 'Splits in 2 on hit; faster' }, { name: 'Final Cut', desc: 'Finishes foes ≤12% HP; faster, +2 damage' }] },

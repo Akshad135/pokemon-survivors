@@ -1072,7 +1072,7 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 2 },
-      { fork: [{ stats: { cooldown: -0.08, damage: 6 }, mods: ['bounce'] }, { stats: { cooldown: -0.12, damage: 5 }, mods: ['trail'] }] },
+      { fork: [{ stats: { cooldown: -0.08, damage: 6 }, mods: ['bounce'] }, { stats: { cooldown: -0.12, damage: 7 }, mods: ['trail'] }] },
       { amount: 1 },
       { damage: 3 },
       { fork: [{ stats: { speed: 60 }, mods: ['split'] }, { stats: { speed: 60, damage: 2 }, mods: ['execute'] }] },

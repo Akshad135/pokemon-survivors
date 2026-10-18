@@ -1773,7 +1773,7 @@ export const es: Messages = {
       upgrades: [
         '+1 shuriken',
         '+2 de daño',
-        { fork: [{ name: 'Rebote', desc: 'Rebota en 2 enemigos más; recarga -0.08s, +6 de daño' }, { name: 'Rastro de agua', desc: 'Deja suelo que daña; recarga -0.12s, +5 de daño' }] },
+        { fork: [{ name: 'Rebote', desc: 'Rebota en 2 enemigos más; recarga -0.08s, +6 de daño' }, { name: 'Rastro de agua', desc: 'Deja suelo que daña; recarga -0.12s, +7 de daño' }] },
         '+1 shuriken',
         '+3 de daño',
         { fork: [{ name: 'Shuriken doble', desc: 'Se parte en 2 al golpear; más rápido' }, { name: 'Corte final', desc: 'Remata con ≤12% HP; más rápido, +2 de daño' }] },
