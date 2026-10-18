@@ -1476,8 +1476,11 @@ button {
   align-items: center;
   margin-top: 4px;
   padding-bottom: 4px;
+  gap: 8px;
   font-family: var(--title);
   font-size: 9px;
+  /* Long headers ("Habilidades (vienen de la evolución elegida)") wrap on a phone. */
+  line-height: 1.4;
   color: #6878a8;
   border-bottom: 2px solid #d8d8e8;
 }
