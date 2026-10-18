@@ -126,7 +126,7 @@ export const branchPick = (root: HTMLElement, input: Input, g: Game, onChoose: (
     { class: 'screen dim evo-pick' },
     h('div', { class: 'evo-pick-head' }, h('div', { class: 'evo-pick-title' }, m.branch.title(playerForm(g).name)), h('p', { class: 'evo-pick-sub' }, m.branch.subtitle)),
     h('div', { class: 'evo-cards' }, ...cards),
-    hint(m.levelUp.hintKeys, m.levelUp.hintTouch),
+    hint(m.levelUp.sideHintKeys, m.levelUp.hintTouch),
   )
   el.style.setProperty('--count', String(cards.length))
   root.append(el)
@@ -167,7 +167,7 @@ export const abilityPick = (root: HTMLElement, input: Input, g: Game, onChoose: 
       h('div', {}, h('div', { class: 'evo-pick-title' }, m.ability.title(form.name)), h('p', { class: 'evo-pick-sub' }, m.ability.subtitle)),
     ),
     h('div', { class: 'ability-cards' }, ...cards),
-    hint(m.levelUp.hintKeys, m.levelUp.hintTouch),
+    hint(m.levelUp.sideHintKeys, m.levelUp.hintTouch),
   )
   root.append(el)
   playSfx('unlock')

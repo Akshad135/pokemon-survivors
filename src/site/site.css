@@ -320,6 +320,8 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  /* A fieldset is min-content wide by default: on a phone its row must scroll, not widen the page. */
+  min-inline-size: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -752,8 +754,10 @@ h3 {
 
 /* ---------- Documents (guide, changelog, legal) ---------- */
 
+/* minmax(0, …) tracks: a wide table scrolls in its .table-wrap instead of widening the page on a phone. */
 .doc {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -774,7 +778,7 @@ h3 {
 
 @media (min-width: 980px) {
   .doc {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     align-items: start;
   }
   .toc {

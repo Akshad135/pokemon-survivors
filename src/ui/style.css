@@ -1476,8 +1476,11 @@ button {
   align-items: center;
   margin-top: 4px;
   padding-bottom: 4px;
+  gap: 8px;
   font-family: var(--title);
   font-size: 9px;
+  /* Long headers ("Habilidades (vienen de la evolución elegida)") wrap on a phone. */
+  line-height: 1.4;
   color: #6878a8;
   border-bottom: 2px solid #d8d8e8;
 }
@@ -1788,8 +1791,14 @@ button {
   font-family: var(--title);
   font-size: 11px;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   align-items: center;
+}
+
+/* A name with several tags (Nv 2, ✦ Ivysaur, RARO! +2 Nv) wraps whole tags onto the next line instead of squeezing each one. */
+.offer-name .tag {
+  white-space: nowrap;
 }
 
 .offer-desc {
@@ -2282,6 +2291,22 @@ button {
   line-height: 1;
   text-align: center;
   color: #6878a8;
+}
+
+/* A phone on its side with a full loadout: the pause scrolls, its buttons stay pinned at the bottom. */
+@media (max-height: 500px) {
+  .pause-box .evo-legend {
+    display: none;
+  }
+  .pause-box > .buttons {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 0 -16px -12px;
+    padding: 8px 16px 12px;
+    background: var(--paper);
+    border-radius: 0 0 8px 8px;
+  }
 }
 
 .slot.evo-ready {
@@ -4281,6 +4306,12 @@ button {
 .item-toast img {
   width: 28px;
   height: 28px;
+}
+
+/* The toast's second line ("Surto de Gastly!" / "Ele aparece muito mais hoje…"), not glued to the first. */
+.item-toast small {
+  display: block;
+  margin-top: 2px;
 }
 
 @media (max-width: 720px) and (min-height: 501px) {
@@ -9137,7 +9168,7 @@ button.hall-tile:hover {
 /* Ability cards flip over one after the other. */
 .ability-card {
   gap: 8px;
-  padding: 18px 12px 14px;
+  padding: 24px 12px 14px;
   background: linear-gradient(180deg, #ffffff, #e8ecf8);
   box-shadow:
     inset 0 0 0 3px #fff,
@@ -9519,6 +9550,8 @@ button.hall-tile:hover {
     gap: 8px;
     padding-top: max(8px, var(--safe-t));
     padding-bottom: max(8px, var(--safe-b));
+    /* The title sits over the HUD's clock and coins here: a darker veil keeps it readable. */
+    background: rgba(8, 8, 24, 0.86);
   }
   .evo-pick-title {
     font-size: 10px;
@@ -9550,13 +9583,19 @@ button.hall-tile:hover {
   .evo-card-name {
     font-size: 10px;
   }
+  /* "Tormenta de arena la favorece" must fit a third of a phone on its side. */
+  .evo-card-favor {
+    max-width: none;
+    padding: 3px 5px 2px;
+    font-size: 6px;
+  }
   .evo-card-stats,
   .evo-card-facts dd {
     font-size: 15px;
   }
   .ability-card {
     gap: 4px;
-    padding: 12px 8px 8px;
+    padding: 20px 8px 8px;
   }
   .ability-card-icon {
     width: 44px;
@@ -10152,7 +10191,8 @@ button.hall-tile:hover {
   padding: 3px 4px 2px;
   border-radius: 3px;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
-  text-shadow: 1px 0 #301000, -1px 0 #301000, 0 1px #301000, 0 -1px #301000;
+  /* A drop shadow, not a 4-way outline: the outline filled in the 8 px letters ("DÚO!" read as a blot). */
+  text-shadow: 1px 1px 0 #301000;
 }
 
 .duo-note {
@@ -10469,6 +10509,54 @@ button.hall-tile:hover {
   .curse-aura {
     width: 64px;
     height: 64px;
+  }
+}
+
+/* A phone on its side: the item on the left, what it does on the right, so the buttons stay on screen. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .curse-pick .curse-box {
+    max-width: min(600px, 94vw);
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    grid-template-areas: 'label label' 'title title' 'art up' 'art down' 'name note' 'buttons buttons';
+    gap: 6px 16px;
+    align-items: center;
+    padding: 12px 18px;
+  }
+  .curse-label {
+    grid-area: label;
+    justify-self: center;
+  }
+  .curse-box .dialog-title {
+    grid-area: title;
+  }
+  .curse-sub,
+  .curse-box .hint {
+    display: none;
+  }
+  .curse-art {
+    grid-area: art;
+  }
+  .curse-name {
+    grid-area: name;
+  }
+  .curse-line {
+    justify-content: flex-start;
+    font-size: 18px;
+  }
+  .curse-line.up {
+    grid-area: up;
+  }
+  .curse-line.down {
+    grid-area: down;
+  }
+  .curse-note {
+    grid-area: note;
+    text-align: left;
+    font-size: 14px;
+  }
+  .curse-box .buttons {
+    grid-area: buttons;
   }
 }
 

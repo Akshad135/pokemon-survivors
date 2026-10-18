@@ -28,6 +28,7 @@ import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawEggAttack, drawEggGround, drawEggPlayer, eggPlayerLook } from './eggMoveFx'
+import { drawEgg3Attack, drawEgg3Ground, drawEgg3Player, egg3PlayerLook } from './eggMove3Fx'
 import { drawEgg2Attack, drawEgg2Ground } from './eggMove2Fx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
 import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
@@ -130,6 +131,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedGround(ctx, a, t)
       drawMoveFxGround(ctx, a)
       drawEggGround(ctx, a, t)
+      drawEgg3Ground(ctx, a, t)
       drawEgg2Ground(ctx, a, t)
       drawSignatureGround(ctx, a, t)
       drawTypeEvolvedGround(ctx, a, t)
@@ -326,6 +328,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
       drawEggAttack(ctx, a, t)
+      drawEgg3Attack(ctx, a, t)
       drawEgg2Attack(ctx, a, t)
       drawSignatureAttack(ctx, a, t)
       drawTypeEvolvedAttack(ctx, a, t)
@@ -558,8 +561,8 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
   const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
   // Burrowed or out of sight (Dig, Fly): a faint ghost of the player.
-  // Signature moves can lift the sprite (Body Slam's leap) or hide it under the mound (Dig).
-  const egg = eggPlayerLook(g)
+  // Signature moves can lift the sprite (Body Slam's leap, Heavy Slam's hop) or hide it under the mound (Dig).
+  const egg = eggPlayerLook(g) ?? egg3PlayerLook(g)
   const alpha = egg ? egg.alpha : p.hidden ? 0.3 : blink && mega.flash === 0 ? 0.45 : 1
   if (alpha > 0) drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y - (egg?.lift ?? 0), { alpha, flash, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
@@ -658,6 +661,9 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 type Drawable = Enemy | 'player' | 'companion' | Solid
 const drawables: Drawable[] = []
+
+/** How far a hitbox reaches from its center, to cull it off screen. */
+const reachOf = (shape: Attack['shape']) => (shape.kind === 'circle' ? shape.r : Math.max(shape.w, shape.h)) + 48
 const isSolid = (d: Drawable): d is Solid => d !== 'player' && d !== 'companion' && 'foot' in d
 
 /* ---------------- Biome ---------------- */
@@ -703,7 +709,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
   drawTerrainGround(ctx, g, look, camX, camY)
-  for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  // Ground marks far off screen (trails left behind, lingering fields) are skipped; the margin covers the widest of them.
+  for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, Math.max(200, reachOf(a.shape)))) drawGroundAttack(ctx, a, t)
   drawVerbGround(ctx, g, t)
   drawTmGround(ctx, g, t)
   drawVerbEvolvedGround(ctx, g, t)
@@ -758,6 +765,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawKitStatus(ctx, g, t, visible)
   drawGuard(ctx, g, t)
   drawEggPlayer(ctx, g, t)
+  drawEgg3Player(ctx, g, t)
   drawSignaturePlayer(ctx, g, t)
   drawTmPlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
@@ -773,6 +781,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {
+    if (!visible(p.x, p.y, 8)) continue
     ctx.globalAlpha = Math.min(1, (1 - p.life / p.ttl) * 1.5)
     ctx.fillStyle = p.color
     ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)

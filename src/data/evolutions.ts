@@ -3,6 +3,7 @@ import type { OwnedItem, OwnedMove } from '../game/types'
 import type { ItemId } from './items'
 import { SIGNATURE_MOVES } from '../game/signatureMoves'
 import { EGG_MOVE_2_IDS } from '../game/eggMoves2'
+import { EGG_MOVE_3_IDS } from '../game/eggMoves3'
 import { isTmMove } from '../game/tmMoves'
 
 /**
@@ -78,8 +79,8 @@ const EGG_SIGNATURES: readonly MoveId[] = [
  */
 export const neverEvolves = (id: MoveId) => {
   const def: MoveDef = MOVES[id]
-  const eggs2: readonly MoveId[] = EGG_MOVE_2_IDS
-  const signature = id in SIGNATURE_MOVES || EGG_SIGNATURES.includes(id) || eggs2.includes(id)
+  const eggs: readonly MoveId[] = [...EGG_SIGNATURES, ...EGG_MOVE_2_IDS, ...EGG_MOVE_3_IDS]
+  const signature = id in SIGNATURE_MOVES || eggs.includes(id)
   return signature || isTmMove(id) || isLegendary(id) || def.duo === true
 }
 

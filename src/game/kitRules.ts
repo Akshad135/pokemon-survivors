@@ -16,6 +16,8 @@ import type { Enemy, OwnedMove, Player } from './types'
 /** What a hit's target must be for `DamageBonus` to apply. */
 export type BonusWhen =
   | 'afflicted' | 'poisoned' | 'burned' | 'paralyzed' | 'asleep' | 'frozen' | 'marked'
+  /** Slowed (chilled) or frozen: Frost Breath's crits. */
+  | 'chilled'
   /** Under `LOW_HP` of its max HP. */
   | 'lowHp'
   /** Flying type, or a leaper mid-jump. */
@@ -40,6 +42,7 @@ export const bonusApplies = (when: BonusWhen, e: Enemy): boolean => {
     case 'asleep': return st.sleep.time > 0
     case 'frozen': return st.freeze.time > 0
     case 'marked': return st.mark.time > 0
+    case 'chilled': return st.slow.time > 0 || st.freeze.time > 0
     case 'lowHp': return e.hp < e.maxHp * LOW_HP
     case 'flying': return e.types.includes('flying') || isAirborne(e)
     case 'elite': return e.elite

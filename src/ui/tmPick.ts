@@ -11,6 +11,7 @@ import { formatPokeDollars, t } from '../i18n'
 import { moveIcon, toIconUrl } from '../render/art'
 import { tmDisc } from '../render/tmArt'
 import { h } from './dom'
+import { stepGrid } from './gridNav'
 import { hint, menu, typeBadge, type Screen } from './screens'
 
 /**
@@ -142,6 +143,7 @@ export const tmPick = (root: HTMLElement, input: Input, g: Game, onChoose: (offe
     : m.subBoss
   const title = forgetting && tm ? m.forgetTitle(who, MOVES[tm.id].name) : tm ? titleOf(g, source, tm.id) : m.titleFound
 
+  const grid = h('div', { class: forgetting ? 'tm-forget' : 'offers tm-offers' }, ...cards)
   const stage = h(
     'div',
     { class: 'tm-stage' },
@@ -152,7 +154,7 @@ export const tmPick = (root: HTMLElement, input: Input, g: Game, onChoose: (offe
       h('div', {}, h('div', { class: 'dialog-title' }, title), h('p', { class: 'tm-sub' }, sub)),
     ),
     source === 'tutor' && !forgetting && h('p', { class: 'tm-wallet' }, m.wallet(formatPokeDollars(g.coins))),
-    h('div', { class: forgetting ? 'tm-forget' : 'offers tm-offers' }, ...cards),
+    grid,
     pass && h('div', { class: 'buttons' }, pass),
     hint(m.hintKeys, m.hintTouch),
   )
@@ -171,12 +173,18 @@ export const tmPick = (root: HTMLElement, input: Input, g: Game, onChoose: (offe
       return
     }
     onChoose(offer)
-  })
-  // Two columns of moves to forget: left and right move too.
+  }, { horizontal: forgetting })
+  // The moves to forget sit in a grid (two columns, one on a phone held upright): ← → walk it, ↑ ↓ move a row, and the last row leads to "keep".
   const off = input.onKey((key) => {
     if (!forgetting) return
-    if (key === 'ArrowLeft' || key === 'KeyA') nav.focus(nav.index - 1)
-    else if (key === 'ArrowRight' || key === 'KeyD') nav.focus(nav.index + 1)
+    const up = key === 'ArrowUp' || key === 'KeyW'
+    if (!up && key !== 'ArrowDown' && key !== 'KeyS') return
+    const keep = cards.length
+    if (nav.index === keep) return up && nav.focus(keep - 1)
+    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length
+    const to = stepGrid(nav.index, up ? 'up' : 'down', cols, cards.length)
+    if (to === 'below') nav.focus(keep)
+    else if (to !== 'above') nav.focus(to)
   })
 
   const el = h(
