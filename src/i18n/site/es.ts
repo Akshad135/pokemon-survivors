@@ -74,6 +74,7 @@ export const siteEs: SiteMessages = {
     special: 'Ataque especial',
     specialFinal: 'En la evolución final',
     learnset: 'Movimientos que aprende',
+    learnStart: 'desde el inicio',
     wildStats: { hp: 'HP', damage: 'Daño por contacto', speed: 'Velocidad', xp: 'EXP' },
     eventNote: 'Aparece en los eventos del mapa: huye de ti y suelta monedas con cada golpe. Derríbalo antes de que escape para ganarte el Pay Day.',
     wildNote: 'Valores base. Los enemigos comunes se vuelven más fuertes cada minuto; los jefes, no.',

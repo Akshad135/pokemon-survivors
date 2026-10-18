@@ -6,8 +6,9 @@ import { HATCHLINGS, isHatchling, PLAYABLE } from '../../data/hatchlings'
 import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
-import { branchesAt, branchStage, familyDex } from '../../data/branches'
-import { formLine, runLearnset } from '../../game/branch'
+import { BRANCHES, branchesAt, branchStage, familyDex } from '../../data/branches'
+import { formLine } from '../../game/branch'
+import { unlockedAt } from '../../game/learnsets'
 import { starterStats } from '../../game/leveling'
 import { MOVES, type MoveId } from '../../game/moves'
 import { resolveSpecial } from '../../game/special'
@@ -64,6 +65,29 @@ const statBars = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Loc
 
 const moveChip = (id: MoveId, m: SiteMessages) => html`<li style="--type:${TYPE_COLORS[MOVES[id].type]}" title="${m.types[MOVES[id].type]}">${MOVES[id].name}</li>`
 
+/**
+ * The learnset by stage: what the family starts with, then what each
+ * evolution unlocks. At a branching stage the branch taken shows its own
+ * moves; before one is taken, every branch gets a row.
+ */
+const learnRows = (source: DexEntry['source'] & { kind: 'starter' }, locale: Locale) => {
+  const m = SITE_MESSAGES[locale]
+  const s: PlayableDef = PLAYABLE[source.id]
+  const branch = source.branch ?? null
+  const row = (name: string, when: string, moves: readonly MoveId[]) =>
+    moves.length > 0 && html`<dt>${name} <small>${when}</small></dt><dd><ul class="chips">${moves.map((mv) => moveChip(mv, m))}</ul></dd>`
+  return html`<dl class="learn">${formLine(source.id, branch).map((st, k) => {
+    const when = k === 0 ? m.pokedex.learnStart : m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)
+    const options = branch === null ? branchesAt(source.id, k) : []
+    if (options.length === 0) return row(st.name, when, unlockedAt(source.id, branch, k))
+    const shared = unlockedAt(source.id, null, k)
+    return [
+      row(options.length > 2 ? LOCALES[locale].messages.branch.choose(options.length) : options.map((b) => BRANCHES[b].name).join(' / '), when, shared),
+      options.map((b) => row(BRANCHES[b].name, when, unlockedAt(source.id, b, k).filter((mv) => !shared.includes(mv)))),
+    ]
+  })}</dl>`
+}
+
 const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const game = LOCALES[locale].messages
@@ -94,7 +118,7 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <h3>${m.pokedex.special}</h3>
     <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${last.tier.name})</small>`}<br />${game.specials[special.id]}</p>
     <h3>${m.pokedex.learnset}</h3>
-    <ul class="chips">${runLearnset(id, branch).map((mv) => moveChip(mv, m))}</ul>
+    ${learnRows(entry.source, locale)}
     ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`
 }
 

@@ -585,6 +585,8 @@ export type Game = {
   castMods: number
   damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
+  /** Level-ups left in which the moves the last evolution unlocked weigh double (`FRESH_LEVELUPS` in `learnsets.ts`). */
+  freshMoves: number
   offers: Offer[]
   evolution: Evolution | null
   /** Where a branching evolution went (`game/branch.ts`); null until it does, and for the lines that don't branch. */

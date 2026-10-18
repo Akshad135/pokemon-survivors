@@ -74,6 +74,7 @@ export const siteEn: SiteMessages = {
     special: 'Special attack',
     specialFinal: 'At the final evolution',
     learnset: 'Moves it learns',
+    learnStart: 'from the start',
     wildStats: { hp: 'HP', damage: 'Contact damage', speed: 'Speed', xp: 'EXP' },
     eventNote: 'Shows up as a map event: it runs from you and drops coins with every hit. Knock it out before it escapes for the Pay Day jackpot.',
     wildNote: 'Base values. Regular enemies get tougher every minute; bosses don\'t.',

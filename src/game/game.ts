@@ -13,6 +13,7 @@ import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
 import { createDexLog } from './dex'
+import { FRESH_LEVELUPS } from './learnsets'
 import { DEFAULT_DIFFICULTY, type Difficulty } from './difficulty'
 import { updateBosses, updateHazards } from './bosses'
 import { updateConsumables } from './consumables'
@@ -150,6 +151,7 @@ export const createGame = (
     castMods: 0,
     damageByMove: {},
     pendingLevelUps: 0,
+    freshMoves: 0,
     offers: [],
     evolution: null,
     branch: null,
@@ -366,6 +368,7 @@ export const chooseOffer = (g: Game, offer: Offer) => {
     return
   }
   g.pendingLevelUps--
+  g.freshMoves = Math.max(0, g.freshMoves - 1)
   advancePhase(g)
 }
 
@@ -407,6 +410,7 @@ export const skipLevelUp = (g: Game) => {
   if (g.phase !== 'levelup' || g.skips <= 0 || choosingBranch(g)) return
   g.skips--
   g.pendingLevelUps--
+  g.freshMoves = Math.max(0, g.freshMoves - 1)
   advancePhase(g)
 }
 
@@ -420,8 +424,9 @@ const updateEvolution = (g: Game, dt: number) => {
   p.radius = Math.max(6, Math.round(bodyOf(evo.to).bodyW * 0.3))
   recomputeStats(g)
   healPlayer(g, p.stats.maxHp * 0.5)
-  // Every evolution earns an Esquecer charge (`banishOffer`).
+  // Every evolution earns an Esquecer charge (`banishOffer`), and the moves it unlocks come up more for a while.
   g.banishes++
+  g.freshMoves = FRESH_LEVELUPS
   g.evolution = null
   g.events.push({ kind: 'evolved', to: evo.to })
   if (g.ability.id === null) offerAbilities(g)

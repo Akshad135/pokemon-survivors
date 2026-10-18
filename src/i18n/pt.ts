@@ -162,6 +162,9 @@ export const pt = {
     start: 'Começar',
     startWith: (name: string) => `Começar com ${name}`,
     close: 'Fechar',
+    /** The details sheet's moves tab, stage by stage: what it starts with, then what each evolution unlocks. */
+    learnStart: 'No início',
+    learnNote: 'Cada evolução libera golpes novos. São só 6 espaços: cada run deixa alguns de fora.',
   },
 
   /** Difficulty picker in the partner select's start bar; the level shows in the pause menu and the results too. */
@@ -205,6 +208,8 @@ export const pt = {
     forkTag: '2 CAMINHOS',
     forkHint: (a: string, b: string) => `Caminho: ${a} ou ${b}`,
     branchOf: (move: string) => `Caminho de ${move}`,
+    /** A move the last evolution unlocked, while it still comes up more often. */
+    freshTag: (form: string) => `✦ ${form}`,
     rare: 'RARO! +2 Nv',
     shiny: 'SHINY!',
     shinyNote: 'Escolha grátis: depois tem outra!',
@@ -750,6 +755,8 @@ export const pt = {
     evolving: (name: string) => `Hã? ${name} está evoluindo!`,
     evolved: (from: string, to: string) => `Parabéns! ${from} evoluiu para ${to}!`,
     moveEvolved: (from: string, to: string) => `*${from}* evoluiu para *${to}*!`,
+    /** After an evolution: the moves it unlocked follow, each with its icon. */
+    learns: (form: string) => `${form} pode aprender:`,
     pokeball: (prize: string) => `Poké Ball: ${prize}`,
     pokeballEmpty: 'nada… estava vazia!',
     pokeballLevel: (name: string, level: number) => `${name} Nv ${level}!`,

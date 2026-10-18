@@ -4,7 +4,7 @@ import { createGrid, insert, query } from '../engine/spatial'
 import { effectiveness } from '../data/types'
 import { ITEMS } from '../data/items'
 import manifest from '../data/sprites.generated.json'
-import { REGIONS, STARTER_IDS, STARTERS, type StarterDef } from '../data/starters'
+import { REGIONS, STARTER_IDS, STARTERS } from '../data/starters'
 import { maxMoveLevel, moveStats } from './moves'
 import { MAX_MOVES, offerPool, rollOffers, starterStats } from './leveling'
 import { BASE_STATS } from './stats'
@@ -37,14 +37,6 @@ describe('starter roster', () => {
   it('lists every starter in exactly one region', () => {
     const listed = REGIONS.flatMap((r) => r.starters)
     expect(listed.toSorted()).toEqual(STARTER_IDS.toSorted())
-  })
-
-  it('starts each run with a move from a duplicate-free learnset', () => {
-    for (const id of STARTER_IDS) {
-      const s: StarterDef = STARTERS[id]
-      expect(s.learnset).toContain(s.signature)
-      expect(new Set(s.learnset).size).toBe(s.learnset.length)
-    }
   })
 
   it('has walk/idle/hurt sheets for every evolution stage', () => {

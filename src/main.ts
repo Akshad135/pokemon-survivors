@@ -34,6 +34,7 @@ import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from '.
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { formAt, playerForm } from './game/branch'
+import { unlockedAt } from './game/learnsets'
 import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
 import { familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
 import { abilityStacks, grantAbility } from './game/abilities'
@@ -74,6 +75,7 @@ import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon } from './render/art'
+import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
 import { weatherIcon } from './render/weather'
@@ -718,6 +720,14 @@ const syncOverlay = (r: Run) => {
   }
 }
 
+/** After an evolution: what the new form can learn now (`unlockedAt`), each move with its icon. */
+const learnsToast = (g: Game) => {
+  const moves = unlockedAt(g.starter, g.branch, g.player.stage)
+  if (moves.length === 0) return
+  const chips = moves.map((id) => h('span', { class: 'learn-move', style: `--type:${TYPE_COLORS[MOVES[id].type]}` }, h('img', { src: moveIcon(id), alt: '' }), MOVES[id].name))
+  toast(ui, h('span', { class: 'learn-toast' }, h('span', {}, t().toast.learns(playerForm(g).name)), h('span', { class: 'learn-moves' }, ...chips)), 5000, 'learns')
+}
+
 /** The ability's word: the pick, and the moments worth a toast (Sturdy holding, a weather called, a milestone, Moody's draw). */
 const abilityFeedback = (g: Game, id: AbilityId, moment: 'picked' | 'proc') => {
   const m = t().ability
@@ -890,7 +900,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       // The Trainer Card wears the branch this family took last.
       const branch = g.branch
       if (branch) updateSave((s) => ({ ...s, branches: { ...s.branches, [g.starter]: branch } }))
-      return toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
+      toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
+      return learnsToast(g)
     }
     case 'moveEvolved':
       playSfx('evolve')

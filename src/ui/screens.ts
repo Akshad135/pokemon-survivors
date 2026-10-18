@@ -12,7 +12,8 @@ import { rarityOf } from '../game/leveling'
 import { fusable, isDuo, reachableDuos, readyDuos, type DuoRecipe } from '../game/duoRules'
 import { CURSES } from '../data/curses'
 import { modsOf, type ModId } from '../game/mods'
-import { playerForm, runLearnset } from '../game/branch'
+import { playerForm } from '../game/branch'
+import { runLearnset, unlockedAt } from '../game/learnsets'
 import { ABILITIES, isHidden } from '../data/abilities'
 import { abilitySet } from '../game/abilities'
 import { heldMega } from '../game/mega'
@@ -257,6 +258,9 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
   const v = offerView(g, offer)
   const recipes = offerRecipes(g, offer)
   const rarity = rarityOf(offer)
+  // A move the evolution just unlocked, while it still comes up more often: tagged with the form that learns it.
+  const fresh =
+    offer.kind === 'move' && g.freshMoves > 0 && !g.player.moves.some((m) => m.id === offer.id) && unlockedAt(g.starter, g.branch, g.player.stage).includes(offer.id)
   const classes = [
     'offer',
     offer.kind === 'evolution' && 'offer-evo',
@@ -267,6 +271,7 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
     v.fork && 'offer-fork',
     rarity && `offer-${rarity}`,
     !canBanish(offer) && 'offer-keep',
+    fresh && 'offer-fresh',
   ]
   button.className = classes.filter(Boolean).join(' ')
   button.style.setProperty('--i', String(i))
@@ -295,6 +300,7 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
         v.name,
         v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag),
         v.fork && h('span', { class: 'tag tag-fork' }, m.forkTag),
+        fresh && h('span', { class: 'tag tag-fresh' }, m.freshTag(playerForm(g).name)),
         rarity && h('span', { class: `tag tag-${rarity}` }, rarity === 'rare' ? m.rare : m.shiny),
       ),
       h('div', { class: 'offer-desc' }, v.desc),
