@@ -792,6 +792,7 @@ h3 {
 
 .doc-body {
   display: grid;
+  /* minmax(0, …): a wide table scrolls in its wrap instead of widening the page on phones. */
   grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   min-width: 0;
