@@ -87,8 +87,8 @@ export const rankDeltas = (ranks: Ranks): StatDelta[] =>
     return 'stat' in effect ? Array.from({ length: ranks[id] }, () => effect.stat) : []
   })
 
-/** Level-up rerolls and skips a run starts with. */
-export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, skips: ranks.escapeRope })
+/** Level-up rerolls, skips and Esquecer charges a run starts with (an Escape Rope rank gives a skip and an Esquecer). */
+export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, skips: ranks.escapeRope, banishes: ranks.escapeRope })
 
 /* ---------------- Save ---------------- */
 

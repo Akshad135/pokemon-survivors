@@ -31,7 +31,7 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
-import { advancePhase, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { formAt, playerForm } from './game/branch'
 import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
 import { familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
@@ -41,7 +41,9 @@ import { recomputeStats, xpFor } from './game/leveling'
 import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
+import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
+import { kitDevTools } from './game/kitDev'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
@@ -657,6 +659,7 @@ const syncOverlay = (r: Run) => {
       r.overlay = levelUp(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)), {
         reroll: () => (recordEvent(r.recorder, ['reroll']), rerollOffers(g)),
         skip: () => (recordEvent(r.recorder, ['skip']), skipLevelUp(g)),
+        banish: (i) => (recordEvent(r.recorder, ['banish', i]), banishOffer(g, i)),
       })
       break
     case 'branch':
@@ -754,6 +757,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'coin': return playSfx('coin', 60)
     case 'heal': return playSfx('heal')
     case 'hurt': return playSfx('hurt', 120)
+    case 'shatter': return playSfx('break', 60)
+    case 'guard': return playSfx('stance', 0)
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
     case 'quake': return playSfx('quake', 150)
@@ -871,6 +876,12 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
+    case 'shinyOffer':
+      // The fresh cards on screen say the rest.
+      return playSfx('shiny')
+    case 'banish':
+      // The level-up screen plays the toss itself.
+      return
     case 'consumable': {
       const def = CONSUMABLES[e.item]
       playSfx(def.sfx)
@@ -1385,6 +1396,8 @@ if (import.meta.env.DEV) {
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       ...riftDevTools(() => run?.game),
+      ...levelUpDevTools(() => run?.game),
+      ...kitDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

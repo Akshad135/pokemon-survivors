@@ -3,7 +3,7 @@ import { createRng } from '../engine/rng'
 import { BRANCH_IDS, BRANCHES, branchesAt, branchesOf } from '../data/branches'
 import manifest from '../data/sprites.generated.json'
 import { drawBranches, formAt, runLearnset } from './branch'
-import { advancePhase } from './game'
+import { advancePhase, chooseOffer } from './game'
 import { NO_RANKS } from './meta'
 import { resimulate, startGame, type Replay, type ReplayStart } from './replay'
 import { resolveSpecial } from './special'
@@ -65,6 +65,8 @@ describe('replays', () => {
   /** Eevee at its evolution level, the branch pick open. */
   const staged = () => {
     const g = startGame(start)
+    // Past the opening draft first.
+    if (g.phase === 'levelup') chooseOffer(g, g.offers[0]!)
     g.player.level = 20
     advancePhase(g)
     return g
@@ -81,7 +83,7 @@ describe('replays', () => {
     resimulate(replay, a)
     resimulate(replay, b)
     expect(a.phase).toBe('playing')
-    expect(branch?.kind === 'branch' && a.branch).toBe(branch?.kind === 'branch' && branch.id)
+    expect(branch?.kind === 'form' && a.branch).toBe(branch?.kind === 'form' && branch.id)
     expect(a.ability.id).not.toBeNull()
     expect([b.branch, b.ability.id, b.player.stage, b.time]).toEqual([a.branch, a.ability.id, a.player.stage, a.time])
   })

@@ -6,8 +6,10 @@ import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
 import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
-import { playerDex } from '../game/game'
+import { forkAt, maxMoveLevel, MOVES, moveStats, type MoveDef, type MoveId } from '../game/moves'
+import { canBanish, drafting, playerDex } from '../game/game'
+import { rarityOf } from '../game/leveling'
+import { modsOf, type ModId } from '../game/mods'
 import { playerForm, runLearnset } from '../game/branch'
 import { ABILITIES, isHidden } from '../data/abilities'
 import { abilitySet } from '../game/abilities'
@@ -22,6 +24,7 @@ import { runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import type { DamageSource, Game, Offer } from '../game/types'
 import { berryIcon, coinIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { modIcon } from '../render/modFx'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
 import { formatNumber, formatPokeDollars, locale, t, type Messages } from '../i18n'
@@ -124,101 +127,223 @@ const offerRecipes = (g: Game, offer: Offer) => {
   }
 }
 
+/** The texts of the upgrade step to `level`: a line, or a fork's two branches. */
+const stepText = (id: MoveId, level: number) => t().moves[id].upgrades[level - 2]
+
+/** One line of a plain step (a fork's own line is its branches' hint). */
+const stepLine = (id: MoveId, level: number) => {
+  const text = stepText(id, level)
+  if (text === undefined) return ''
+  return typeof text === 'string' ? text : t().levelUp.forkHint(text.fork[0].name, text.fork[1].name)
+}
+
 const offerView = (g: Game, offer: Offer) => {
   const m = t()
+  const rare = rarityOf(offer) === 'rare'
   switch (offer.kind) {
     case 'move': {
       const def: MoveDef = MOVES[offer.id]
-      const text = m.moves[offer.id]
-      const isNew = offer.level === 1
+      const isNew = offer.level === 1 || (rare && offer.level === 2)
+      const first = isNew ? m.moves[offer.id].description : stepLine(offer.id, rare ? offer.level - 1 : offer.level)
       return {
         icon: moveIcon(offer.id),
         name: def.name,
-        tag: isNew ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level),
+        tag: isNew && !rare ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level),
         isNew,
-        desc: isNew ? text.description : text.upgrades[offer.level - 2]!,
+        desc: rare ? `${first} · ${stepLine(offer.id, offer.level)}` : first,
         type: def.type,
+        fork: forkAt(offer.id, offer.level) !== null,
+        mods: NO_MODS,
       }
+    }
+    case 'branch': {
+      const def: MoveDef = MOVES[offer.id]
+      const text = stepText(offer.id, offer.level)
+      const branch = typeof text === 'object' ? text.fork[offer.branch] : null
+      const mods = forkAt(offer.id, offer.level)?.[offer.branch].mods ?? NO_MODS
+      return { icon: moveIcon(offer.id), name: branch?.name ?? def.name, tag: '', isNew: false, desc: branch?.desc ?? '', type: def.type, fork: false, mods }
     }
     case 'item': {
       const isNew = offer.level === 1
-      return { icon: itemIcon(offer.id), name: ITEMS[offer.id].name, tag: isNew ? m.new : m.level(offer.level), isNew, desc: m.items[offer.id], type: null }
+      // A rare card stacks two levels of the item.
+      const desc = rare ? `${m.items[offer.id]} x2` : m.items[offer.id]
+      return { icon: itemIcon(offer.id), name: ITEMS[offer.id].name, tag: isNew && !rare ? m.new : m.level(offer.level), isNew, desc, type: null, fork: false, mods: NO_MODS }
     }
     case 'berry':
-      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(PLAYABLE[g.starter].name), type: null }
+      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(PLAYABLE[g.starter].name), type: null, fork: false, mods: NO_MODS }
     case 'evolution': {
       const to: MoveDef = MOVES[offer.to]
       const desc = m.levelUp.evolves(MOVES[offer.from].name, m.moves[offer.to].description)
-      return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type }
+      return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type, fork: false, mods: NO_MODS }
     }
     // Branches and abilities have screens of their own (`ui/abilityPick.ts`); this is their plain row.
-    case 'branch': {
+    case 'form': {
       const b = BRANCHES[offer.id]
-      return { icon: portraitUrl(b.dex), name: b.name, tag: '', isNew: false, desc: m.branch.subtitle, type: b.types[0] ?? null }
+      return { icon: portraitUrl(b.dex), name: b.name, tag: '', isNew: false, desc: m.branch.subtitle, type: b.types[0] ?? null, fork: false, mods: NO_MODS }
     }
     case 'ability':
-      return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null }
+      return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null, fork: false, mods: NO_MODS }
   }
 }
 
-/** Poké Mart charges offered under the level-up choices (only shown when owned). */
-type LevelUpExtras = { reroll: () => void; skip: () => void }
+const NO_MODS: readonly ModId[] = []
 
+/** Twinkles scattered over a shiny card's frame, as [left %, top %, delay s] (CSS animates them). */
+const SPARKLES = [
+  [6, 12, 0],
+  [88, 8, 0.5],
+  [95, 68, 1.1],
+  [32, 82, 0.8],
+  [62, 4, 1.5],
+] as const
+
+/** Fills a level-up card (a persistent button, so a forgotten card's slot keeps its place in the menu). */
+const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
+  const m = t().levelUp
+  const v = offerView(g, offer)
+  const recipes = offerRecipes(g, offer)
+  const rarity = rarityOf(offer)
+  const classes = [
+    'offer',
+    offer.kind === 'evolution' && 'offer-evo',
+    offer.kind === 'branch' && `offer-branch branch-${offer.branch === 0 ? 'a' : 'b'}`,
+    v.fork && 'offer-fork',
+    rarity && `offer-${rarity}`,
+    !canBanish(offer) && 'offer-keep',
+  ]
+  button.className = classes.filter(Boolean).join(' ')
+  button.style.setProperty('--i', String(i))
+  // `h` drops the parts a card doesn't have; the button takes what's left.
+  const parts = h(
+    'div',
+    {},
+    h('span', { class: 'offer-key' }, offer.kind === 'branch' ? (offer.branch === 0 ? 'A' : 'B') : i + 1),
+    h(
+      'div',
+      { class: 'offer-icon' },
+      h('img', { src: v.icon, alt: '' }),
+      v.mods.length > 0 && h('span', { class: 'offer-mods' }, ...v.mods.map((id) => h('img', { src: modIcon(id), alt: '' }))),
+    ),
+    h(
+      'div',
+      { class: 'offer-body' },
+      h(
+        'div',
+        { class: 'offer-name' },
+        v.name,
+        v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag),
+        v.fork && h('span', { class: 'tag tag-fork' }, m.forkTag),
+        rarity && h('span', { class: `tag tag-${rarity}` }, rarity === 'rare' ? m.rare : m.shiny),
+      ),
+      h('div', { class: 'offer-desc' }, v.desc),
+      rarity === 'shiny' && h('div', { class: 'offer-note' }, m.shinyNote),
+      recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
+    ),
+    v.type && typeBadge(v.type),
+    rarity && h('span', { class: 'offer-shine', 'aria-hidden': 'true' }),
+    rarity === 'shiny' &&
+      h(
+        'span',
+        { class: 'offer-sparkles', 'aria-hidden': 'true' },
+        ...SPARKLES.map(([x, y, delay]) => h('img', { src: sparkleIcon(), alt: '', style: `left:${x}%;top:${y}%;animation-delay:${delay}s` })),
+      ),
+  )
+  button.replaceChildren(...parts.childNodes)
+}
+
+/**
+ * What the level-up screen can do besides picking: the Poké Mart charges and
+ * Esquecer (`banish` forgets the card at an index; the run redraws that slot in place).
+ */
+type LevelUpExtras = { reroll: () => void; skip: () => void; banish: (index: number) => void }
+
+/**
+ * The level-up screen, in three guises: the opening draft (the move after the
+ * signature), a fork (a move card split into its two branches, A and B) and a
+ * regular level-up, where Esquecer turns the next pick into forgetting a card:
+ * it flies off and its slot is drawn again.
+ */
 export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
   const m = t().levelUp
   const name = playerForm(g).name
+  const fork = g.offers.find((o) => o.kind === 'branch')
   const buttons = g.offers.map((offer, i) => {
-    const v = offerView(g, offer)
-    const recipes = offerRecipes(g, offer)
-    return h(
-      'button',
-      { class: offer.kind === 'evolution' ? 'offer offer-evo' : 'offer' },
-      h('span', { class: 'offer-key' }, i + 1),
-      h('div', { class: 'offer-icon' }, h('img', { src: v.icon, alt: '' })),
-      h(
-        'div',
-        { class: 'offer-body' },
-        h('div', { class: 'offer-name' }, v.name, v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag)),
-        h('div', { class: 'offer-desc' }, v.desc),
-        recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
-      ),
-      v.type && typeBadge(v.type),
-    )
+    const button = h('button', {})
+    fillCard(g, button, offer, i)
+    return button
   })
 
-  const actions = extras
-    ? [
-        g.rerolls > 0 && ([h('button', { class: 'btn' }, m.reroll(g.rerolls)), extras.reroll] as const),
-        g.skips > 0 && ([h('button', { class: 'btn' }, m.skip(g.skips)), extras.skip] as const),
-      ].filter((a) => a !== false)
-    : []
+  const charge = (left: number, label: string, cls = 'btn') => (extras && !fork && left > 0 ? h('button', { class: cls }, label) : null)
+  const reroll = charge(g.rerolls, m.reroll(g.rerolls))
+  const skip = charge(g.skips, m.skip(g.skips))
+  const banish = charge(g.banishes, m.banish(g.banishes), 'btn btn-banish')
+  const actions = [reroll, skip, banish].filter((b) => b !== null)
+
+  const offersEl = h('div', { class: fork ? 'offers branches' : 'offers' }, ...buttons)
+  const hintEl = h('div', { class: 'hint-slot' }, hint(m.hintKeys, m.hintTouch))
+  let banishing = false
+  const setBanishing = (on: boolean) => {
+    banishing = on
+    offersEl.classList.toggle('banishing', on)
+    banish?.classList.toggle('active', on)
+    if (banish) banish.textContent = on ? m.banishCancel : m.banish(g.banishes)
+    hintEl.replaceChildren(on ? hint(m.banishHintKeys, m.banishHintTouch) : hint(m.hintKeys, m.hintTouch))
+  }
+
+  /** The card at `i` flies off as a ghost while its slot fills with the card drawn in its place. */
+  const forget = (i: number) => {
+    const button = buttons[i]!
+    const ghost = button.cloneNode(true) as HTMLElement
+    ghost.classList.add('offer-ghost')
+    ghost.classList.remove('selected')
+    Object.assign(ghost.style, { top: `${button.offsetTop}px`, left: `${button.offsetLeft}px`, width: `${button.offsetWidth}px`, height: `${button.offsetHeight}px` })
+    offersEl.append(ghost)
+    ghost.addEventListener('animationend', () => ghost.remove())
+    extras?.banish(i)
+    fillCard(g, button, g.offers[i]!, i)
+    button.classList.add('offer-redrawn', 'selected')
+    playSfx('escaped')
+    setBanishing(false)
+    if (g.banishes <= 0) banish?.remove()
+  }
 
   let done = false
   // Space also fires the special attack: ignore presses that were meant for the fight.
   const openedAt = performance.now()
-  const nav = menu(input, [...buttons, ...actions.map(([b]) => b)], (i) => {
+  const nav = menu(input, [...buttons, ...actions], (i) => {
     if (done || performance.now() - openedAt < 400) return
+    const offer = g.offers[i]
+    const action = actions[i - buttons.length]
+    if (banishing && offer) return canBanish(offer) ? forget(i) : playSfx('denied')
+    if (action && action === banish) {
+      playSfx('move')
+      return setBanishing(!banishing)
+    }
     done = true
     playSfx('select')
-    const offer = g.offers[i]
     if (offer) onChoose(offer)
-    else actions[i - buttons.length]?.[1]()
+    else if (action === reroll) extras?.reroll()
+    else if (action === skip) extras?.skip()
+  })
+  const offEscape = input.onKey((key) => {
+    if (key === 'Escape' && banishing) setBanishing(false)
   })
 
+  const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : m.title(name, g.player.level - g.pendingLevelUps + 1)
   const el = h(
     'div',
     { class: 'screen dim' },
     h(
       'div',
-      { class: 'dialog box pop' },
-      h('div', { class: 'dialog-title' }, m.title(name, g.player.level - g.pendingLevelUps + 1)),
-      h('div', { class: 'offers' }, ...buttons),
-      actions.length > 0 && h('div', { class: 'buttons' }, ...actions.map(([b]) => b)),
-      hint(m.hintKeys, m.hintTouch),
+      { class: fork ? 'dialog box pop levelup fork' : 'dialog box pop levelup' },
+      h('div', { class: 'dialog-title' }, title),
+      offersEl,
+      actions.length > 0 && h('div', { class: 'buttons' }, ...actions),
+      hintEl,
     ),
   )
   root.append(el)
-  return { el, dispose: () => (nav.off(), el.remove()) }
+  return { el, dispose: () => (nav.off(), offEscape(), el.remove()) }
 }
 
 /* ---------------- Pause ---------------- */
@@ -258,6 +383,8 @@ const loadoutList = (g: Game) =>
         { class: 'loadout-row' },
         h('img', { src: moveIcon(m.id), alt: '' }),
         MOVES[m.id].name,
+        // The mods of the fork branches taken.
+        ...modsOf(moveStats(m.id, m.level, g.player.stats, m.path).mods).map((id) => h('img', { class: 'loadout-mod', src: modIcon(id), alt: '' })),
         loadoutHint(g, m.id),
         !evolvedFrom(m.id) && h('span', { class: 'tag' }, t().level(m.level)),
       ),

@@ -78,7 +78,7 @@ const pickNav = (input: Input, cards: HTMLElement[], onPick: (i: number) => void
 
 /* ---------------- Branching evolution ---------------- */
 
-const branchCard = (g: Game, offer: Extract<Offer, { kind: 'branch' }>, i: number) => {
+const branchCard = (g: Game, offer: Extract<Offer, { kind: 'form' }>, i: number) => {
   const m = t()
   const def: BranchDef = BRANCHES[offer.id]
   const special = resolveSpecial(g.starter, def.stage, null, offer.id)
@@ -116,7 +116,7 @@ const branchCard = (g: Game, offer: Extract<Offer, { kind: 'branch' }>, i: numbe
 /** Where a branching evolution goes: a card per option, with what it changes. */
 export const branchPick = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void): Screen => {
   const m = t()
-  const cards = g.offers.map((offer, i) => (offer.kind === 'branch' ? branchCard(g, offer, i) : h('span')))
+  const cards = g.offers.map((offer, i) => (offer.kind === 'form' ? branchCard(g, offer, i) : h('span')))
   const off = pickNav(input, cards, (i) => {
     const offer = g.offers[i]
     if (offer) onChoose(offer)
