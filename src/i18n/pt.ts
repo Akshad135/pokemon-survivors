@@ -19,8 +19,14 @@ import type { SpecialId } from '../game/special'
 import type { Stance } from '../game/stance'
 import type { Action } from '../engine/bindings'
 
-/** One string per entry of a tuple, so every move upgrade gets exactly one line. */
-type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: string }
+/** A fork branch's texts: its name and a one-line description (~45 characters). */
+type BranchText = { readonly name: string; readonly desc: string }
+
+/** A plain upgrade step gets one line; a fork step gets its two branches' texts. */
+type StepText<S> = S extends { fork: readonly unknown[] } ? { readonly fork: readonly [BranchText, BranchText] } : string
+
+/** One text per entry of a tuple, so every move upgrade gets exactly one line (or two branches for a fork). */
+type Lines<T extends readonly unknown[]> = { readonly [I in keyof T]: StepText<T[I]> }
 
 /** Translated game content, keyed by the ids in `data/*` and `MOVES`. Names stay official English. */
 export type ContentTexts = {
@@ -188,6 +194,20 @@ export const pt = {
     skip: (n: number) => `Pular (${n})`,
     hintKeys: '↑ ↓ escolher · ENTER confirmar · 1-3 atalho',
     hintTouch: 'Toque para escolher',
+    /** The opening draft, before the run's clock starts. */
+    draftTitle: (name: string) => `${name}: escolha o 2º golpe!`,
+    /** A fork: the move card splits into its two branches. */
+    forkTitle: (move: string, level: number) => `${move} Nv ${level} · escolha um caminho`,
+    forkTag: '2 CAMINHOS',
+    forkHint: (a: string, b: string) => `Caminho: ${a} ou ${b}`,
+    branchOf: (move: string) => `Caminho de ${move}`,
+    rare: 'RARO! +2 Nv',
+    shiny: 'SHINY!',
+    shinyNote: 'Escolha grátis: depois tem outra!',
+    banish: (n: number) => `Esquecer (${n})`,
+    banishCancel: 'Cancelar',
+    banishHintKeys: 'Escolha o card a esquecer · ESC cancela',
+    banishHintTouch: 'Toque no card a esquecer',
   },
 
   pause: {
@@ -1089,10 +1109,10 @@ export const pt = {
       upgrades: [
         '+1 brasa',
         '+4 de dano e +10% de chance de queimar',
-        'Recarga 15% mais rápida',
+        { fork: [{ name: 'Chama guiada', desc: 'As brasas perseguem o alvo; recarga -10%' }, { name: 'Rastro de brasas', desc: 'Deixam o chão em chamas, mas voam devagar' }] },
         '+1 brasa',
         'Atravessa +1 inimigo',
-        '+6 de dano',
+        { fork: [{ name: 'Estilhaço', desc: 'Racham em 2 brasas ao acertar; +4 de dano' }, { name: 'Fogo cruzado', desc: 'Também atira para trás; recarga +10%' }] },
         '+1 brasa e +25% de área',
       ],
     },
@@ -1101,10 +1121,10 @@ export const pt = {
       upgrades: [
         '+1 chama',
         '+20% de área',
-        '+4 de dano',
+        { fork: [{ name: 'Anel duplo', desc: '2º anel maior gira ao contrário; -3 de dano' }, { name: 'Roda de fogo', desc: 'Fogo no chão e +4 de dano; gira mais lento' }] },
         'Dura +0.6s',
         '+1 chama',
-        '+5 de dano e queimaduras +25% mais fortes',
+        { fork: [{ name: 'Combustão', desc: 'Inimigos derrotados explodem; +5 de dano' }, { name: 'Redemoinho', desc: 'Gira de novo logo após (50%); queima mais' }] },
         '+1 chama e gira mais rápido',
       ],
     },
@@ -1113,10 +1133,10 @@ export const pt = {
       upgrades: [
         '+1 jato',
         '+3 de dano',
-        'Atravessa +1 inimigo',
+        { fork: [{ name: 'Jato duplo', desc: 'Também jorra para trás; -1 de dano' }, { name: 'Jato guiado', desc: 'Persegue e atravessa +1 inimigo; mais lento' }] },
         'Recarga 0.1s mais rápida',
         '+1 jato',
-        '+5 de dano',
+        { fork: [{ name: 'Ricochete', desc: 'Ricocheteia em mais 2 inimigos; +4 de dano' }, { name: 'Maré', desc: 'Os jatos voltam e acertam de novo; recarga +15%' }] },
         '+1 jato e atravessa +2',
       ],
     },
@@ -1137,10 +1157,10 @@ export const pt = {
       upgrades: [
         '+1 folha',
         '+4 de dano',
-        '+20% de área',
+        { fork: [{ name: 'Folhas gêmeas', desc: 'Também lança para trás; -2 de dano' }, { name: 'Vendaval', desc: 'Repete (50%) e +20% de área; recarga +10%' }] },
         '+1 folha',
         'Folhas 25% mais rápidas',
-        '+5 de dano',
+        { fork: [{ name: 'Espinheiro', desc: 'Espinhos venenosos no chão; +25% de veneno' }, { name: 'Folha explosiva', desc: 'Inimigos derrotados explodem; +5 de dano' }] },
         '+1 folha',
       ],
     },
@@ -1161,10 +1181,10 @@ export const pt = {
       upgrades: [
         '+1 estrela',
         '+3 de dano',
-        'Recarga 15% mais rápida',
+        { fork: [{ name: 'Estrelas cadentes', desc: 'Ricocheteiam em mais 2 inimigos; +6 de dano' }, { name: 'Constelação', desc: '+1 estrela e +2 de dano; giram ao seu redor' }] },
         '+1 estrela',
         'Atravessa +1 inimigo',
-        '+4 de dano',
+        { fork: [{ name: 'Cometa', desc: 'Quem cai explode em estrelas; +5 de dano' }, { name: 'Chuva de estrelas', desc: 'Lança de novo logo após (50%); recarga -12%' }] },
         '+2 estrelas',
       ],
     },
@@ -1173,10 +1193,10 @@ export const pt = {
       upgrades: [
         '+1 raio',
         '+8 de dano',
-        '+25% de área e +15% de chance de paralisar',
+        { fork: [{ name: 'Tempestade', desc: '+2 raios menores e um eco (50%); -6 de dano' }, { name: 'Raio concentrado', desc: '1 raio enorme, +40 de dano, salta para 2' }] },
         '+1 raio',
         'Recarga 0.3s mais rápida',
-        '+10 de dano',
+        { fork: [{ name: 'Para-raios', desc: 'Quem cai solta uma descarga; +10 de dano' }, { name: 'Chão eletrificado', desc: 'Deixa o chão eletrificado; +15% de paralisia' }] },
         '+2 raios',
       ],
     },
@@ -1257,10 +1277,10 @@ export const pt = {
       upgrades: [
         '+6 de dano',
         '+1 mordida',
-        '+20% de área',
+        { fork: [{ name: 'Mordida em cadeia', desc: 'A mordida salta para 2 inimigos; -3 de dano' }, { name: 'Mordida dupla', desc: 'Morde de novo logo após (50%); +15% de área' }] },
         'Recarga 0.2s mais rápida',
         '+1 mordida',
-        '+8 de dano',
+        { fork: [{ name: 'Presas famintas', desc: 'Quem cai explode em sombras; +8 de dano' }, { name: 'Mordida sombria', desc: 'Deixa sombras que ferem no chão; +20% área' }] },
         '+1 mordida e +20% de área',
       ],
     },
@@ -1377,10 +1397,10 @@ export const pt = {
       upgrades: [
         '+1 salto',
         '+4 de dano',
-        'Recarga 0.2s mais rápida',
+        { fork: [{ name: 'Sobrecarga', desc: 'Inimigos derrotados explodem; recarga -6%' }, { name: 'Eco elétrico', desc: 'A corrente volta logo após (50%); -1 salto' }] },
         '+1 salto',
         '+5 de dano e +10% de chance de paralisar',
-        'Salta 25% mais longe',
+        { fork: [{ name: 'Campo estático', desc: 'Cada salto deixa faíscas; +10% de paralisia' }, { name: 'Ramificação', desc: 'Cada salto se divide em mais 2; -2 de dano' }] },
         '+2 saltos',
       ],
     },
@@ -1581,7 +1601,7 @@ export const pt = {
     expCharm: '+3% de EXP recebida por nível.',
     amuletCoin: '+10% de ₽ ganhos por nível.',
     abilityCapsule: '+1 troca de opções por partida ao subir de nível.',
-    escapeRope: '+1 pulo de subida de nível por partida.',
+    escapeRope: '+1 pulo e +1 Esquecer de subida de nível por partida.',
     shinyCharm: 'Shinies selvagens mais comuns: +1/3 da chance por nível (1/450 → 1/225 no máximo).',
   },
 
