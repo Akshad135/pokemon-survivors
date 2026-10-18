@@ -11,6 +11,10 @@ import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { AbilityId } from '../data/abilities'
+import type { BranchId } from '../data/branches'
+import type { AbilityState } from './abilities'
+import type { BranchFavor } from './branch'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
@@ -149,8 +153,8 @@ export type Visual =
   | EvolvedVisual
   | TacticVisual
 
-/** What dealt the damage, for the results screen. */
-export type DamageSource = MoveId | 'special'
+/** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
+export type DamageSource = MoveId | 'special' | 'ability'
 
 /** Visuals of evolved moves, drawn by `render/evolved.ts`. */
 export type EvolvedVisual =
@@ -272,8 +276,13 @@ export type Offer =
   | { kind: 'berry' }
   /** Max level move + its paired held item: the move evolves in place. */
   | { kind: 'evolution'; from: MoveId; to: MoveId }
+  /** Where a branching evolution goes (`game/branch.ts`); `favor` says what of the run nudged it forward. */
+  | { kind: 'branch'; id: BranchId; favor: BranchFavor }
+  /** An ability to keep for the run, picked when the first evolution lands (`game/abilities.ts`). */
+  | { kind: 'ability'; id: AbilityId; hidden: boolean }
 
-export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
+/** `branch` and `ability` wait on a pick from `offers`, like `levelup`: where an evolution goes, and the ability after the first. */
+export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'paused' | 'gameover' | 'victory'
 
 /** Fire-and-forget notifications for audio/UI. Drained by the shell every frame. */
 export type GameEvent =
@@ -307,6 +316,10 @@ export type GameEvent =
   | { kind: 'megaEnd' }
   | { kind: 'megaReady' }
   | { kind: 'evolve'; from: number; to: number }
+  /** A branching evolution waits on the player's pick. */
+  | { kind: 'branchChoice' }
+  /** The ability was picked, or did something worth a word (Sturdy held, a guard blocked, a weather called). */
+  | { kind: 'ability'; id: AbilityId; moment: 'picked' | 'proc' }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
   | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
@@ -379,6 +392,10 @@ export type Game = {
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null
+  /** Where a branching evolution went (`game/branch.ts`); null until it does, and for the lines that don't branch. */
+  branch: BranchId | null
+  /** The ability picked at the first evolution and its running state (`game/abilities.ts`). */
+  ability: AbilityState
   /** This run's wild cast, drawn at the start (`game/roster.ts`), with the day's outbreak in every stage. */
   roster: Roster
   /** The day's outbreak species, or null (`game/outbreak.ts`): its kills count toward missions (`countKill`). */

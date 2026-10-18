@@ -3,6 +3,7 @@ import type { BiomeId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { AbilityId } from '../data/abilities'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
@@ -34,6 +35,8 @@ export type ContentTexts = {
   blurbs: Record<PlayableId, string>
   /** Special attacks: what each one does, by `SPECIALS` id. */
   specials: Record<SpecialId, string>
+  /** Abilities: what each one does, by `ABILITIES` id. */
+  abilities: Record<AbilityId, string>
 }
 
 const typeBoost = (type: string) => `+10% de dano em golpes do tipo ${type}.`
@@ -768,6 +771,7 @@ export const pt = {
       blaziken: 'velocidade +16, golpes +25% e recargas −10%. O especial vira Blaze Kick, uma investida em cadeia que pode queimar.',
       swampert: 'faz chover (fora das fendas), o que deixa golpes de Água ×1,5; HP +50, golpes +25% e velocidade +8. O especial vira Muddy Water.',
       gardevoir: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
+      gallade: 'golpes +30%, golpes Lutador +25% e velocidade +8. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
       metagross: 'golpes +30%, defesa +2 e velocidade +6. O especial vira Meteor Mash.',
       staraptor: 'golpes +30% e velocidade +10. A investida em cadeia vira Sky Attack e cada pouso solta um anel de lâminas de vento.',
       garchomp: 'golpes +30%, golpes Terra, Pedra e Aço +30% e defesa +1. O especial vira Earth Power.',
@@ -791,6 +795,138 @@ export const pt = {
       salamence: 'golpes Normal e Voador +30%, velocidade +12 e golpes +25%. O especial vira Double-Edge.',
     } satisfies Record<MegaId, string>,
   },
+
+  /** Abilities: the pick at the first evolution, the HUD chip, the pause menu and the partner details (`ui/abilityPick.ts`). Names stay official English (`ABILITIES`). */
+  ability: {
+    title: (name: string) => `${name} despertou uma Habilidade!`,
+    subtitle: 'Escolha uma: ela fica até o fim da partida.',
+    hidden: 'OCULTA',
+    hiddenLong: 'Habilidade Oculta',
+    label: 'Habilidade',
+    pending: 'Escolhida na 1ª evolução',
+    section: 'Habilidades',
+    sectionBranch: 'Habilidades (vêm da evolução escolhida)',
+    note: 'Você escolhe uma na primeira evolução. A Oculta é a mais rara dos jogos.',
+    megaNote: 'Na forma Mega, vale a Habilidade da Mega.',
+    picked: (who: string, ability: string) => `${who} agora tem *${ability}*!`,
+    sturdy: (ability: string) => `*${ability}*: aguentou com 1 HP!`,
+    guard: (ability: string) => `*${ability}* bloqueou o golpe!`,
+    summon: (ability: string) => `*${ability}* mudou o clima!`,
+    stack: (ability: string, n: number) => `*${ability}* ×${n}!`,
+    mood: (ability: string, boost: string) => `*${ability}*: ${boost}!`,
+    /** Moody's boosts, in the order of its options (`data/abilities.ts`). */
+    moods: ['dano alto', 'mais rápido', 'mais área', 'recarga curta', 'mais defesa'],
+    results: 'Habilidade',
+  },
+
+  /** Branching evolutions: the pick and the partner details (`ui/abilityPick.ts`, `data/branches.ts`). */
+  branch: {
+    title: (name: string) => `${name} vai evoluir… mas em quê?`,
+    subtitle: 'A evolução muda o tipo, os status, o especial, os golpes e as Habilidades.',
+    favored: (what: string) => `${what} favorece`,
+    moves: 'Golpes novos',
+    abilities: 'Habilidades',
+    special: 'Especial',
+    section: 'Evoluções possíveis',
+    note: (shown: number, total: number) => `Na evolução aparecem ${shown} das ${total}; o clima e o lugar puxam uma delas.`,
+    noteAll: 'Na evolução você escolhe o caminho.',
+    choose: 'escolha',
+  },
+
+  /** What each ability does (`ABILITIES`). */
+  abilities: {
+    overgrow: 'Com menos de 1/3 do HP, golpes de Planta causam +50%.',
+    blaze: 'Com menos de 1/3 do HP, golpes de Fogo causam +50%.',
+    torrent: 'Com menos de 1/3 do HP, golpes de Água causam +50%.',
+    swarm: 'Com menos de 1/3 do HP, golpes de Inseto causam +50%.',
+    swiftSwim: 'Na chuva: velocidade +18 e recargas −8%.',
+    chlorophyll: 'No sol forte: velocidade +18 e recargas −8%.',
+    sandRush: 'Na tempestade de areia: velocidade +18 e recargas −8%, e a areia não te desgasta.',
+    slushRush: 'Na neve: velocidade +18 e recargas −8%, e a neve não te desgasta.',
+    solarPower: 'No sol forte: golpes +30%, mas recebe 10% mais dano.',
+    rainDish: 'Na chuva: regenera 1,5 HP/s.',
+    hydration: 'Na chuva: regenera 0,6 HP/s e recebe 15% menos dano.',
+    iceBody: 'Na neve: regenera 1,5 HP/s, e a neve não te desgasta.',
+    sandVeil: 'Na tempestade de areia: recebe 25% menos dano, e a areia não te desgasta.',
+    snowCloak: 'Na neve: recebe 25% menos dano, e a neve não te desgasta.',
+    leafGuard: 'No sol forte: recebe 30% menos dano e regenera 0,5 HP/s.',
+    drought: 'Chama o sol forte ao ser escolhida e a cada bioma novo (fora das fendas): Fogo ×1,5.',
+    sandStream: 'Levanta uma tempestade de areia ao ser escolhida e a cada bioma novo: desgasta a horda, não você.',
+    static: 'Inimigos encostados em você podem ficar paralisados.',
+    flameBody: 'Inimigos encostados em você podem se queimar.',
+    poisonPoint: 'Inimigos encostados em você podem ser envenenados.',
+    effectSpore: 'Inimigos encostados em você podem ser envenenados, paralisados ou dormir.',
+    cursedBody: 'Inimigos encostados em você podem ficar bem mais lentos.',
+    cuteCharm: 'Inimigos encostados em você podem cair no sono.',
+    roughSkin: 'Inimigos encostados em você levam dano a cada meio segundo.',
+    intimidate: 'Inimigos que encostam em você causam 25% menos dano.',
+    unnerve: 'Inimigos a até 70 px perdem 25% da velocidade.',
+    unaware: 'Chefes e elites causam 30% menos dano em você.',
+    thickFat: 'Recebe metade do dano de ataques de Fogo e Gelo.',
+    flashFire: 'Recebe 60% menos dano de Fogo, e golpes de Fogo +15%.',
+    waterAbsorb: 'Ataques de Água te curam em vez de ferir.',
+    voltAbsorb: 'Ataques Elétricos te curam em vez de ferir.',
+    lightningRod: 'Ataques Elétricos te curam em vez de ferir, e golpes Elétricos +15%.',
+    bulletproof: 'Projéteis de chefes e explosões causam 60% menos dano.',
+    levitate: 'Você flutua: lava, armadilhas, água e gelo não te afetam.',
+    magicGuard: 'Só golpes diretos te ferem: nada de lava, armadilhas, explosões ou desgaste do clima.',
+    magicBounce: 'A cada 12 s bloqueia um golpe e o devolve em dobro a quem encostou.',
+    illusion: 'A cada 10 s bloqueia um golpe por completo.',
+    damp: 'Explosões não te ferem, e golpes de Água +10%.',
+    clearBody: 'Água e gelo não te atrasam, e recebe 10% menos dano.',
+    shellArmor: 'Defesa +2.',
+    rockHead: 'Defesa +1 e golpes +10%.',
+    heavyMetal: 'Defesa +3 e HP +20, mas velocidade −6.',
+    lightMetal: 'Velocidade +10 e recargas −5%, mas defesa −1.',
+    sturdy: 'Uma vez por partida, o golpe que te derrubaria deixa você com 1 HP.',
+    multiscale: 'Com o HP cheio, recebe metade do dano.',
+    marvelScale: 'Com menos da metade do HP, recebe 30% menos dano.',
+    shedSkin: 'A cada 10 s, cura 6% do HP máximo.',
+    naturalCure: 'Regenera 0,6 HP/s.',
+    gluttony: 'HP +20 e regenera 0,8 HP/s.',
+    guts: 'Com menos da metade do HP, golpes +35%.',
+    quickFeet: 'Com menos da metade do HP, velocidade +16 e recargas −10%.',
+    hugePower: 'Golpes +30%, mas HP −10.',
+    hustle: 'Golpes +30%, mas área −10%.',
+    truant: 'Golpes +40%, mas recargas +15%.',
+    noGuard: 'Área +20%, mas recebe 10% mais dano.',
+    reckless: 'Golpes +25%, mas recebe 10% mais dano.',
+    technician: 'Golpes fracos (dano base até 10) causam +40%.',
+    ironFist: 'Socos causam +35% (Mach Punch…).',
+    strongJaw: 'Mordidas causam +40% (Crunch…).',
+    sharpness: 'Golpes cortantes causam +35% (Razor Leaf, Leaf Blade, Razor Shell, Water Shuriken…).',
+    sheerForce: 'Golpes que causam condições (queimadura, veneno…) causam +25%.',
+    liquidVoice: 'Golpes de som causam +30% (Disarming Voice, Torch Song…), e golpes de Água +10%.',
+    punkRock: 'Golpes de som causam +35% (Disarming Voice…), e recebe 5% menos dano.',
+    adaptability: 'Golpes do mesmo tipo que você causam +25%.',
+    protean: 'Golpes de tipos diferentes do seu causam +20%.',
+    libero: 'Golpes de tipos diferentes do seu causam +20%.',
+    pixilate: 'Golpes Normal +30% e golpes Fada +15%.',
+    grassySurge: 'Regenera 0,8 HP/s e golpes de Planta +10%.',
+    sniper: 'Golpes em chefes e elites causam +25%.',
+    moldBreaker: 'Atravessa escudos de aliados (Bronzong) e causa +15% em chefes e elites.',
+    infiltrator: 'Atravessa escudos de aliados (Bronzong), e golpes +10%.',
+    moxie: 'Cada nocaute dá +1% de dano, até +30%; sem nocautes o bônus vai sumindo.',
+    battleBond: 'A cada 200 nocautes, golpes +8% e velocidade +3, até 3 vezes.',
+    speedBoost: 'A cada 20 s, velocidade +3, até +30.',
+    competitive: 'Ao levar um golpe, golpes +25% por 4 s.',
+    steadfast: 'Ao levar um golpe, velocidade +14 por 3 s.',
+    weakArmor: 'Ao levar um golpe, velocidade +12 e recargas −10% por 3 s, mas recebe 5% mais dano nesse tempo.',
+    contrary: 'Cada golpe que você leva dá +2% de dano até o fim da partida, até +30%.',
+    moody: 'A cada 15 s, um bônus forte e aleatório: dano, velocidade, área, recarga ou defesa.',
+    unburden: 'Cada espaço de item vazio dá velocidade +4 e recargas −2%.',
+    pickup: 'Nocautes às vezes deixam uma Oran Berry.',
+    magician: 'Nocautes às vezes deixam um doce de EXP a mais.',
+    frisk: 'Nocautes às vezes deixam Poké Dólares.',
+    synchronize: '+6% de chance de condição, e condições 20% mais fortes.',
+    sereneGrace: '+10% de chance de condição em todo golpe.',
+    keenEye: 'Alcance de coleta +25 e projéteis 15% mais rápidos.',
+    longReach: 'Área +10% e projéteis 20% mais rápidos.',
+    vitalSpirit: 'Velocidade +8 e recargas −5%.',
+    insomnia: 'Velocidade +5 e regenera 0,3 HP/s.',
+    innerFocus: 'Cada nocaute do especial adianta a recarga dele em 0,25 s.',
+    stanceChange: 'O especial troca entre a Forma Escudo e a Forma Lâmina.',
+  } satisfies Record<AbilityId, string>,
 
   /** Biomes and weather: banners, toasts and the HUD weather icon. */
   world: {

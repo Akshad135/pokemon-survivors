@@ -8,6 +8,10 @@ import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
+import { playerForm, runLearnset } from '../game/branch'
+import { ABILITIES } from '../data/abilities'
+import { BRANCHES } from '../data/branches'
+import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
 import { toSteps } from '../game/eggs'
 import { overtime } from '../game/endless'
@@ -107,7 +111,7 @@ const offerRecipes = (g: Game, offer: Offer) => {
       return evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
     }
     case 'item': {
-      const learnset: readonly MoveId[] = PLAYABLE[g.starter].learnset
+      const learnset = runLearnset(g.starter, g.branch)
       return EVOLUTIONS.filter((e) => e.item === offer.id && learnset.includes(e.from)).map((e) =>
         evoRecipe(e, canEvolve(e, { moves: p.moves, items: [offer] })),
       )
@@ -144,6 +148,13 @@ const offerView = (g: Game, offer: Offer) => {
       const desc = m.levelUp.evolves(MOVES[offer.from].name, m.moves[offer.to].description)
       return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type }
     }
+    // Branches and abilities have screens of their own (`ui/abilityPick.ts`); this is their plain row.
+    case 'branch': {
+      const b = BRANCHES[offer.id]
+      return { icon: portraitUrl(b.dex), name: b.name, tag: '', isNew: false, desc: m.branch.subtitle, type: b.types[0] ?? null }
+    }
+    case 'ability':
+      return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null }
   }
 }
 
@@ -152,7 +163,7 @@ type LevelUpExtras = { reroll: () => void; skip: () => void }
 
 export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
   const m = t().levelUp
-  const name = PLAYABLE[g.starter].line[g.player.stage]!.name
+  const name = playerForm(g).name
   const buttons = g.offers.map((offer, i) => {
     const v = offerView(g, offer)
     const recipes = offerRecipes(g, offer)
@@ -319,8 +330,13 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
 
 /** Icon, name and type for a results-screen damage row (and the run's share card). */
 export const damageSource = (g: Game, id: DamageSource) => {
+  if (id === 'ability') {
+    const ability = g.ability.id
+    const type = playerForm(g).types[0] ?? 'normal'
+    return ability ? { icon: abilityIcon(ability), name: ABILITIES[ability].name, type } : { icon: sparkleIcon(), name: t().ability.results, type }
+  }
   if (id !== 'special') return { icon: moveIcon(id), name: MOVES[id].name, type: MOVES[id].type }
-  const r = resolveSpecial(g.starter, g.player.stage)
+  const r = resolveSpecial(g.starter, g.player.stage, null, g.branch)
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
@@ -398,7 +414,7 @@ export const results = (
   const e = t().eggs
   const r = t().rifts
   const victory = g.phase === 'victory'
-  const name = PLAYABLE[g.starter].line[g.player.stage]!.name
+  const name = playerForm(g).name
   const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const earned = runEarnings(g)

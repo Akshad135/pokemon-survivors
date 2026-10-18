@@ -1,8 +1,9 @@
 import { formatTime } from '../engine/math'
 import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
-import { PLAYABLE } from '../data/hatchlings'
+
 import { playerDex } from '../game/game'
+import { playerForm } from '../game/branch'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import { heldMega } from '../game/mega'
 import type { Game } from '../game/types'
@@ -192,7 +193,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
       name.classList.toggle('mega-name', megaName !== undefined)
-      setText(name, megaName ?? PLAYABLE[g.starter].line[p.stage]!.name)
+      setText(name, megaName ?? playerForm(g).name)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)

@@ -191,7 +191,7 @@ export const updateHazards = (g: Game, dt: number) => {
     if (h.age < h.armAt || h.age > h.disarmAt) continue
     const reach = h.r + p.radius * 0.7
     if (dm.sq(h.x - p.x) + dm.sq(h.y - p.y) >= reach * reach) continue
-    hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual])
+    hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual], h.kind === 'shot' ? 'shot' : 'hazard')
     if (h.vanishOnHit) h.age = h.ttl
   }
   retain(g.hazards, (h) => h.age < h.ttl)

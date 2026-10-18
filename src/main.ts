@@ -32,6 +32,7 @@ import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { formAt, playerForm } from './game/branch'
 import { recomputeStats } from './game/leveling'
 import { dropMegaStones, grantStone, heldMega } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
@@ -230,7 +231,7 @@ const queueMega = () => {
 }
 
 /** The player's name right now: its stage's, or its Mega form's while that lasts. */
-const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || PLAYABLE[g.starter].line[g.player.stage]!.name
+const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || playerForm(g).name
 
 /** The player's cry right now: its Mega form's own while that lasts. */
 const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? heldMega(g)?.form : undefined)
@@ -749,7 +750,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'mega': {
       playSfx('megaBurst', 0)
       playCry(playerCry(g), 0.9)
-      return banner(ui, rich(t().mega.evolved(PLAYABLE[g.starter].line[g.player.stage]!.name, e.name)), 2400)
+      return banner(ui, rich(t().mega.evolved(playerForm(g).name, e.name)), 2400)
     }
     case 'megaEnd':
       playSfx('stance', 0)
@@ -759,7 +760,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, rich(t().mega.ready), 2400, 'mega')
     case 'stance': {
       playSfx('stance', 0)
-      const who = PLAYABLE[g.starter].line[g.player.stage]!.name
+      const who = playerForm(g).name
       return toast(ui, rich(t().toast.stance(who, t().hud.stances[e.stance])), 1200, 'special')
     }
     case 'boss': {
@@ -804,16 +805,15 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
-      r.closeText = textBox(ui, t().toast.evolving(PLAYABLE[g.starter].line[g.player.stage]!.name))
+      r.closeText = textBox(ui, t().toast.evolving(playerForm(g).name))
       return
     }
     case 'evolved': {
-      const line = PLAYABLE[g.starter].line
       playSfx('evolve')
       playCry(sprites(e.to).cry)
       r.closeText?.()
       r.closeText = null
-      return toast(ui, t().toast.evolved(line[g.player.stage - 1]!.name, line[g.player.stage]!.name), 3500)
+      return toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
     }
     case 'moveEvolved':
       playSfx('evolve')

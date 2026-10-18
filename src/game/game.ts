@@ -3,8 +3,12 @@ import { createRng } from '../engine/rng'
 import { createGrid } from '../engine/spatial'
 import { bodyOf } from '../data/bodies'
 import type { EnemyId } from '../data/enemies'
+import { isHidden } from '../data/abilities'
+import { branchesAt } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { abilityImmune, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS } from './bag'
+import { branchContext, drawBranches, playerForm } from './branch'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
@@ -43,7 +47,7 @@ import * as dm from '../engine/dmath'
 
 export const EVOLUTION_TIME = 4.6
 
-export const playerDex = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.dex
+export const playerDex = (g: Game) => playerForm(g).dex
 
 /** What the save brings into a run besides the Poké Mart ranks. */
 export type RunOptions = {
@@ -126,6 +130,8 @@ export const createGame = (
     pendingLevelUps: 0,
     offers: [],
     evolution: null,
+    branch: null,
+    ability: createAbilityState(),
     roster: withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null),
     spawnBudget: 0,
     nextEvent: 0,
@@ -172,7 +178,7 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const vx = moving ? input.x * pace : 0
   const vy = moving ? input.y * pace : 0
   // On ice the player's speed only slowly follows the stick, so they slide.
-  const ice = ground === 'ice' && slow > 0
+  const ice = ground === 'ice' && slow > 0 && !abilityImmune(g, 'terrain')
   if (ice) {
     const grip = 1 - dm.exp(-TERRAIN.iceGrip * dt)
     p.vx += (vx - p.vx) * grip
@@ -218,26 +224,66 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
   }
 }
 
-/** After level-ups resolve: open the next level-up, start an evolution, or resume. */
-const advancePhase = (g: Game) => {
+/**
+ * After level-ups resolve: open the next level-up, ask where a branching
+ * evolution goes, start an evolution, or resume. Exported for the dev console.
+ */
+export const advancePhase = (g: Game) => {
   if (g.pendingLevelUps > 0) {
     g.phase = 'levelup'
     g.offers = rollOffers(loadout(g), g.rng, 3)
     g.events.push({ kind: 'levelup' })
     return
   }
-  const evo = pendingEvolution(g)
-  if (evo) {
-    g.phase = 'evolving'
-    g.evolution = { ...evo, t: 0 }
-    g.events.push({ kind: 'evolve', ...evo })
+  if (!pendingEvolution(g)) {
+    g.phase = 'playing'
     return
   }
-  g.phase = 'playing'
+  const branches = g.branch === null ? branchesAt(g.starter, g.player.stage + 1) : []
+  if (branches.length > 0) {
+    g.phase = 'branch'
+    g.offers = drawBranches(g.rng, branches, branchContext(g)).map(({ id, favor }) => ({ kind: 'branch', id, favor }))
+    g.events.push({ kind: 'branchChoice' })
+    return
+  }
+  startEvolution(g)
 }
 
+const startEvolution = (g: Game) => {
+  const evo = pendingEvolution(g)
+  if (!evo) return advancePhase(g)
+  g.phase = 'evolving'
+  g.evolution = { ...evo, t: 0 }
+  g.events.push({ kind: 'evolve', ...evo })
+}
+
+/** After the first evolution: the abilities to pick from (Honedge's lone Stance Change is just granted). */
+const offerAbilities = (g: Game) => {
+  const set = abilitySet(g.starter, g.branch)
+  if (set.length === 1) {
+    grantAbility(g, set[0])
+    recomputeStats(g)
+    return advancePhase(g)
+  }
+  g.phase = 'ability'
+  g.offers = set.map((id, i) => ({ kind: 'ability', id, hidden: isHidden(set, i) }))
+}
+
+/**
+ * The player's pick from `offers`: a level-up upgrade, where a branching
+ * evolution goes, or the ability. Replays reach it through the `offer` event.
+ */
 export const chooseOffer = (g: Game, offer: Offer) => {
-  if (g.phase !== 'levelup') return
+  if (g.phase === 'branch' && offer.kind === 'branch') {
+    g.branch = offer.id
+    return startEvolution(g)
+  }
+  if (g.phase === 'ability' && offer.kind === 'ability') {
+    grantAbility(g, offer.id)
+    recomputeStats(g)
+    return advancePhase(g)
+  }
+  if (g.phase !== 'levelup' || offer.kind === 'branch' || offer.kind === 'ability') return
   applyOffer(g, offer)
   g.pendingLevelUps--
   advancePhase(g)
@@ -270,7 +316,8 @@ const updateEvolution = (g: Game, dt: number) => {
   healPlayer(g, p.stats.maxHp * 0.5)
   g.evolution = null
   g.events.push({ kind: 'evolved', to: evo.to })
-  advancePhase(g)
+  if (g.ability.id === null) offerAbilities(g)
+  else advancePhase(g)
 }
 
 /** One fixed-timestep simulation tick. */
@@ -297,6 +344,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   }
   updatePlayer(g, input.move, dt)
   updateMega(g, input.mega === true, dt)
+  if (updateAbility(g, dt)) recomputeStats(g)
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)

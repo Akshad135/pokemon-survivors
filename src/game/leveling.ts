@@ -2,9 +2,12 @@ import { retain } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import { evolvedFrom, readyEvolutions } from '../data/evolutions'
 import { ITEM_IDS, ITEMS, type ItemDef, type ItemId } from '../data/items'
+import type { BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { MEGAS } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
+import { abilityDeltas } from './abilities'
+import { formAt, runLearnset } from './branch'
 import { buffDeltas } from './buffs'
 import { healPlayer } from './combat'
 import { burst } from './effects'
@@ -32,15 +35,16 @@ export const gainXp = (g: Game, amount: number) => {
   }
 }
 
-export type Loadout = { starter: PlayableId; moves: readonly OwnedMove[]; items: readonly OwnedItem[] }
+/** What the level-up offers depend on. `branch`: where a branching evolution went, which adds its moves to the learnset. */
+export type Loadout = { starter: PlayableId; moves: readonly OwnedMove[]; items: readonly OwnedItem[]; branch?: BranchId | null }
 
-export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.player.moves, items: g.player.items })
+export const loadout = (g: Game): Loadout => ({ starter: g.starter, moves: g.player.moves, items: g.player.items, branch: g.branch })
 
 /** Every upgrade the player could pick right now, with selection weights. */
-export const offerPool = ({ starter, moves, items }: Loadout): Array<readonly [Offer, number]> => {
+export const offerPool = ({ starter, moves, items, branch = null }: Loadout): Array<readonly [Offer, number]> => {
   const ownedMoves = new Map(moves.map((m) => [m.id, m.level]))
   const ownedItems = new Map(items.map((i) => [i.id, i.level]))
-  const learnset: readonly MoveId[] = PLAYABLE[starter].learnset
+  const learnset = runLearnset(starter, branch)
   const learnsetTypes = new Set<PokeType>(learnset.map((id) => MOVES[id].type))
   // A base move whose evolution is already owned must not come back as a new move.
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
@@ -81,24 +85,28 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3): Offer[] => {
   return picked.length > 0 ? picked : [{ kind: 'berry' }]
 }
 
-/** Stat deltas a playable Pokémon has at an evolution stage, before held items. */
-const starterDeltas = (id: PlayableId, stage: number): StatDelta[] => {
-  const starter = PLAYABLE[id]
-  return [starter.stats, ...starter.line.slice(0, stage + 1).map((s) => s.bonus)]
-}
+/** Stat deltas a playable Pokémon has at an evolution stage (along a branch, when it took one), before held items. */
+const starterDeltas = (id: PlayableId, stage: number, branch: BranchId | null = null): StatDelta[] => [
+  PLAYABLE[id].stats,
+  ...PLAYABLE[id].line.slice(0, stage + 1).map((_, i) => formAt(id, branch, i).bonus),
+]
 
 /** Player stats of a playable Pokémon at an evolution stage, without items (used by the inspect panel). */
-export const starterStats = (id: PlayableId, stage: number) => applyDeltas(BASE_STATS, starterDeltas(id, stage))
+export const starterStats = (id: PlayableId, stage: number, branch: BranchId | null = null) => applyDeltas(BASE_STATS, starterDeltas(id, stage, branch))
 
-/** Rebuilds player stats from starter, Poké Mart ranks, evolution stage, held items, buffs, the Mega form and Aegislash's stance. */
+/**
+ * Rebuilds player stats from starter (and branch), Poké Mart ranks, evolution stage, held items, buffs,
+ * the ability, the Mega form and Aegislash's stance.
+ */
 export const recomputeStats = (g: Game) => {
   const p = g.player
   const before = p.stats.maxHp
   const deltas = applyDeltas(BASE_STATS, [
-    ...starterDeltas(g.starter, p.stage),
+    ...starterDeltas(g.starter, p.stage, g.branch),
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
+    ...abilityDeltas(g, MAX_ITEMS - p.items.length),
     ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),
   ])
   p.stats = stanceStats(deltas, g.special.stance)
@@ -149,10 +157,11 @@ const evolveMove = (g: Game, from: MoveId, to: MoveId) => {
   g.events.push({ kind: 'moveEvolved', from, to })
 }
 
-/** The next evolution, if the player's level has reached it. */
+/** The next evolution, if the player's level has reached it (into the branch picked, for a branching one). */
 export const pendingEvolution = (g: Game) => {
-  const line = PLAYABLE[g.starter].line
-  const stage = line[g.player.stage]
-  const next = line[g.player.stage + 1]
-  return stage && next && 'evolveAt' in stage && g.player.level >= stage.evolveAt ? { from: stage.dex, to: next.dex } : null
+  const p = g.player
+  if (p.stage + 1 >= PLAYABLE[g.starter].line.length) return null
+  const stage = formAt(g.starter, g.branch, p.stage)
+  const next = formAt(g.starter, g.branch, p.stage + 1)
+  return stage.evolveAt !== undefined && p.level >= stage.evolveAt ? { from: stage.dex, to: next.dex } : null
 }

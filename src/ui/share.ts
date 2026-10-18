@@ -7,6 +7,7 @@ import { ACHIEVEMENTS, MEDALS, type Medal, type TitleId } from '../data/achievem
 import { ENEMIES } from '../data/enemies'
 import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS } from '../data/types'
+import { playerForm } from '../game/branch'
 import { dexCounts, dexNews, type Pokedex } from '../game/dex'
 import type { ChallengePlace } from '../game/ranking'
 import { ribbonCounts } from '../game/ribbons'
@@ -73,7 +74,7 @@ const officialPlace = async (place: Promise<ChallengePlace | null>): Promise<Run
  * `place`: a Desafio do dia run's place, as the API answers it at the end of the run.
  */
 export const runShare = (g: Game, dexBase: Pokedex, place: Promise<ChallengePlace | null> | null = null): ShareCard => {
-  const form = PLAYABLE[g.starter].line[g.player.stage]!
+  const form = playerForm(g)
   const trainer = trainerLine(loadSave().title)
   const outcome = g.endless ? 'endless' : g.phase === 'victory' ? 'victory' : 'fainted'
   const moves = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>)

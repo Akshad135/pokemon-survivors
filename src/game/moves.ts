@@ -55,7 +55,30 @@ export type MoveDef = {
   minCooldown?: number
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
+  /** What kind of move it is, for the abilities that boost a kind (Iron Fist, Strong Jaw, Sharpness, Liquid Voice). */
+  tags?: readonly MoveTag[]
   fire: (g: Game, s: CastStats) => void
+}
+
+/**
+ * Kinds of move abilities boost (`data/abilities.ts`). `weak` (a base hit of
+ * `WEAK_MOVE` or less: Technician) and `status` (inflicts a condition: Sheer
+ * Force) follow from the move's data; the rest are tagged by hand.
+ */
+export type MoveTag = 'punch' | 'bite' | 'slice' | 'sound' | 'weak' | 'status'
+
+/** The strongest base hit Technician still counts as weak. */
+export const WEAK_MOVE = 10
+
+/** Whether a move is of a kind (`MoveTag`). */
+export const hasTag = (def: MoveDef, tag: MoveTag) =>
+  tag === 'weak' ? def.base.damage <= WEAK_MOVE : tag === 'status' ? def.status !== undefined : (def.tags?.includes(tag) ?? false)
+
+/** Extra damage the player's tag boosts give a move (0 without any). */
+const tagBonus = (def: MoveDef, player: PlayerStats) => {
+  let bonus = 0
+  for (const [tag, value] of Object.entries(player.tagDamage) as Array<[MoveTag, number]>) if (hasTag(def, tag)) bonus += value
+  return bonus
 }
 
 /** What a cast helper needs to name and paint its hitboxes. */
@@ -340,6 +363,7 @@ export const MOVES = {
   razorLeaf: {
     name: 'Razor Leaf',
     type: 'grass',
+    tags: ['slice'],
     base: stats({ damage: 11, cooldown: 1.5, amount: 1, speed: 210, duration: 1, knockback: 25 }),
     status: { kind: 'poison', chance: 0.15, duration: 3, power: 0.2 },
     upgrades: [
@@ -519,6 +543,7 @@ export const MOVES = {
   machPunch: {
     name: 'Mach Punch',
     type: 'fighting',
+    tags: ['punch'],
     base: stats({ damage: 9, cooldown: 1.1, amount: 3, knockback: 50 }),
     upgrades: [
       { amount: 1 },
@@ -600,6 +625,7 @@ export const MOVES = {
   waterShuriken: {
     name: 'Water Shuriken',
     type: 'water',
+    tags: ['slice'],
     base: stats({ damage: 5, cooldown: 0.9, amount: 2, speed: 230, pierce: 1, knockback: 15 }),
     upgrades: [
       { amount: 1 },
@@ -630,6 +656,7 @@ export const MOVES = {
   crunch: {
     name: 'Crunch',
     type: 'dark',
+    tags: ['bite'],
     base: stats({ damage: 18, cooldown: 1.6, amount: 1, knockback: 30 }),
     upgrades: [
       { damage: 6 },
@@ -746,6 +773,7 @@ export const MOVES = {
   drumBeating: {
     name: 'Drum Beating',
     type: 'grass',
+    tags: ['sound'],
     base: stats({ damage: 11, cooldown: 1.9, amount: 1, duration: 0.3, knockback: 40 }),
     status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.35 },
     upgrades: [
@@ -774,6 +802,7 @@ export const MOVES = {
   disarmingVoice: {
     name: 'Disarming Voice',
     type: 'fairy',
+    tags: ['sound'],
     base: stats({ damage: 7, cooldown: 1.6, amount: 6, speed: 150, pierce: 1, knockback: 30 }),
     upgrades: [
       { amount: 2 },
@@ -801,6 +830,7 @@ export const MOVES = {
   torchSong: {
     name: 'Torch Song',
     type: 'fire',
+    tags: ['sound'],
     base: stats({ damage: 9, cooldown: 2, amount: 5, speed: 115, pierce: 2, knockback: 20 }),
     upgrades: [
       { amount: 1 },
@@ -828,6 +858,7 @@ export const MOVES = {
   leafBlade: {
     name: 'Leaf Blade',
     type: 'grass',
+    tags: ['slice'],
     base: stats({ damage: 13, cooldown: 1.5, amount: 1, speed: 12, knockback: 50 }),
     upgrades: [
       { damage: 4 },
@@ -855,6 +886,7 @@ export const MOVES = {
   razorShell: {
     name: 'Razor Shell',
     type: 'water',
+    tags: ['slice'],
     base: stats({ damage: 15, cooldown: 1.2, amount: 1, knockback: 80 }),
     upgrades: [
       { amount: 1 },
@@ -1413,7 +1445,7 @@ export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastS
   }, def.base)
   return {
     ...s,
-    damage: s.damage * player.might * (1 + (player.typeDamage[def.type] ?? 0)),
+    damage: s.damage * player.might * (1 + (player.typeDamage[def.type] ?? 0) + tagBonus(def, player)),
     cooldown: Math.max(def.minCooldown ?? 0.1, s.cooldown * player.cooldown),
     area: s.area * player.area,
     amount: s.amount + player.amount,

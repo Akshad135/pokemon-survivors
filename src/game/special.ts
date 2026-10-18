@@ -1,6 +1,7 @@
 import { dir8, dirTo, fromAngle, TAU } from '../engine/math'
 import { chance, pick, range } from '../engine/rng'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { BRANCHES, type BranchDef, type BranchId } from '../data/branches'
 import { MEGAS, type MegaId } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
@@ -444,10 +445,14 @@ export const specialIdFor = (species: PlayableId, types: readonly PokeType[], st
   return typeof own === 'string' ? own : (own[Math.min(stage, own.length - 1)] ?? fallback)
 }
 
-/** The special at an evolution stage; in Mega form (`mega`), the Mega's own. */
-export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId | null = null) => {
+/**
+ * The special at an evolution stage; in Mega form (`mega`), the Mega's own.
+ * From a branch's stage on (`branch`), the branch's: its own, or its first type's (Vaporeon's Hydro Cannon).
+ */
+export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId | null = null, branch: BranchId | null = null) => {
   const species = PLAYABLE[starter]
-  const own = mega ? MEGAS[mega].special : undefined
+  const b: BranchDef | null = branch && BRANCHES[branch].line === starter && stage >= BRANCHES[branch].stage ? BRANCHES[branch] : null
+  const own = mega ? MEGAS[mega].special : b ? (b.special ?? specialOfType(b.types[0] ?? 'normal')) : undefined
   const id: SpecialId = own ?? specialIdFor(starter, species.line[0].types, stage)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1
@@ -457,7 +462,7 @@ export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId 
 export type ResolvedSpecial = ReturnType<typeof resolveSpecial>
 
 /** The special the player has right now: its stage's, or its Mega form's while that lasts. */
-export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0 ? g.mega.stone : null)
+export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0 ? g.mega.stone : null, g.branch)
 
 /* ---------------- Timers (pure) ---------------- */
 
