@@ -197,6 +197,7 @@ export const siteEs: SiteMessages = {
       bosses: 'Jefes',
       traits: 'Enemigos especiales',
       rifts: 'Grietas legendarias y modo infinito',
+      places: 'Lugares: cueva, cementerio y cielo',
       megas: 'Megaevolución',
       shinies: 'Shinies',
       eggs: 'Huevos e incubadora',
@@ -347,6 +348,39 @@ export const siteEs: SiteMessages = {
         `A las ${e.reaper}, Arceus desciende para cazarte. Se vuelve más rápido cuanto más tiempo caza, hasta que nadie puede escapar, y nunca te pierde: si te alejas, reaparece en el borde de la pantalla. Se le puede derrotar, pero tiene ${e.hp} de HP; si cae, vuelve ${e.returns} minutos después, más fuerte.`,
         `El tiempo sobrevivido es la métrica principal: cada minuto después de las 15:00 paga ₽${n(e.perMinute)} en la bonificación, y cada Arceus derrotado, ₽${e.reaperBonus} más.`,
       ],
+    },
+    places: {
+      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string }) => [
+        `Desde las ${p.first}, más o menos cada ${n(p.every)} minutos, la entrada de un lugar aparece fuera de la pantalla, con una flecha en el borde que apunta hacia ella: la boca de una cueva en una colina, la reja de un cementerio o una corriente de aire entre piedras. Queda abierta ${p.open}s y, si hay un jefe vivo, espera hasta ${p.bossWait}s a que caiga. La partida muestra lugares distintos antes de repetir alguno.`,
+        `Entrar es opcional: quédate ${p.enter}s en la entrada. Adentro el mundo espera, como en una grieta: la horda se congela y no aparece nada nuevo, pero el reloj de la partida sigue. Cada lugar tiene sus propios Pokémon, que se hacen más fuertes a medida que avanza la partida, y un límite de tiempo; cuando se acaba, sales por donde entraste.`,
+      ],
+      names: { cave: 'Cueva Oscura', graveyard: 'Cementerio Embrujado', sky: 'Sobre las Nubes' },
+      placeHead: 'Lugar',
+      timeHead: 'Tiempo',
+      speciesHead: 'Quién vive ahí',
+      seconds: (s: number) => `${s}s`,
+      cave: (c: { floors: number; light: number; fire: number; electric: number; time: number; wind: string; house: number; egg: number }) => [
+        `Cueva Oscura, un Mundo Misterioso: ${c.floors} pisos de salas y pasillos a oscuras, sorteados en cada visita, y luego la cámara del tesoro. Solo ves un círculo de luz alrededor de tu Pokémon (${c.light} px); los de tipo Fuego llevan una llama (${c.fire} px) y los Eléctricos usan Destello (${c.electric} px). Hay cristales que brillan en las salas, y los Pokémon en la oscuridad solo muestran los ojos.`,
+        `Encuentra la escalera de cada piso, que brilla en la oscuridad, y baja; hay objetos y ₽ en el suelo. En la cámara del tesoro, el cofre está custodiado por una Casa de Monstruos con ${c.house} Pokémon (uno más cada 2 minutos de partida): quédate cerca para abrirlo. Da ₽, una Poké Ball, un Caramelo Raro y una Superpoción, con ${c.egg}% de probabilidad de un huevo.`,
+        `Como en los juegos, un viento avisa tres veces (cuando faltan ${c.wind}) y, a los ${c.time}s, te saca soplando de la cueva.`,
+      ],
+      graveyard: (g: { spirits: number; time: number; shiny: number; hp: string; egg: number }) => [
+        `Cementerio Embrujado: ahí solo viven fantasmas, que salen de las tumbas. Ellos atraviesan las lápidas; tú no. Cada fantasma derrotado manda su espíritu a la Piedra Espíritu en medio del cementerio.`,
+        `Con ${g.spirits} espíritus la piedra se agrieta y Spiritomb despierta (${g.hp} PS a las 1:30, más con el reloj; 1 de cada ${g.shiny} es shiny). Vencerlo da ₽, una Poké Ball, un Caramelo Raro y una Superpoción, cura el 30% de tus PS y tiene ${g.egg}% de probabilidad de un huevo. A los ${g.time}s amanece y los fantasmas desaparecen, con o sin Spiritomb derrotado.`,
+      ],
+      sky: (s: { time: number; tailwind: number; every: number; flock: number }) => [
+        `Sobre las Nubes: solo un Pokémon de tipo Volador puede subir con la corriente de aire, y ni siquiera aparece para quien no vuela. Allá arriba vuelas con viento a favor (+${s.tailwind}% de velocidad), solo aparecen Pokémon voladores y una bandada cruza el cielo cada ${s.flock}s.`,
+        `Cada ${s.every}s el viento trae una pluma que cruza el cielo: atrápala antes de que pase. Cada pluma mejora una estadística hasta el final de la partida. A los ${s.time}s el viento se calma y planeas de vuelta.`,
+      ],
+      wingHead: 'Pluma',
+      effectHead: 'Efecto',
+      wings: {
+        healthWing: (n: number) => `+${n} PS máximos`,
+        muscleWing: (n: number) => `+${n}% de daño`,
+        resistWing: (n: number) => `+${n} de defensa`,
+        swiftWing: (n: number) => `+${n} de velocidad`,
+        prettyWing: (n: number) => `₽${n} al instante`,
+      },
     },
     bosses: {
       paragraphs: (r) => [

@@ -693,6 +693,9 @@ const setOf = (biome: BiomeId) => {
   return set
 }
 
+/** A terraced hill in `biome`'s skin, without crests: the cave's mouth is carved into one. */
+export const cliffOf = (biome: BiomeId, tiers: readonly Tier[], seed: number) => setOf(biome).cliff(tiers, seed)
+
 const raised = (tiers: readonly Tier[], tier: number) => tiers.slice(0, tier).reduce((s, t) => s + t.h, 0)
 
 /** A mountain with what grows on its top, baked into one sprite. */
@@ -737,11 +740,10 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
 const pieces = canvasCache<string, Piece>()
 
 const pieceOf = (biome: BiomeId, kind: PieceKind | ArenaPiece | PlacePiece, variant: number) => {
-  // The arenas' and places' scenery looks the same whatever the biome outside.
-  const fixed = isArenaPiece(kind) || isPlacePiece(kind)
-  const key = fixed ? `fixed:${kind}:${variant}` : `${biome}:${kind}:${variant}`
+  // The arenas' scenery looks the same whatever the biome outside; places' entrances wear the biome's.
+  const key = isArenaPiece(kind) ? `arena:${kind}:${variant}` : `${biome}:${kind}:${variant}`
   let piece = pieces.get(key)
-  if (!piece) pieces.set(key, (piece = isArenaPiece(kind) ? ARENA_PIECES[kind](variant) : isPlacePiece(kind) ? PLACE_PIECES[kind](variant) : build(biome, kind, variant)))
+  if (!piece) pieces.set(key, (piece = isArenaPiece(kind) ? ARENA_PIECES[kind](variant) : isPlacePiece(kind) ? PLACE_PIECES[kind](variant, biome) : build(biome, kind, variant)))
   return piece
 }
 

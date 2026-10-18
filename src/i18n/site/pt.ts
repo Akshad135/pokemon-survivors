@@ -1,5 +1,5 @@
 import type { BossStance } from '../../data/bosses'
-import type { PlaceId } from '../../data/places'
+import type { PlaceId, WingId } from '../../data/places'
 import type { Drop } from '../../data/consumables'
 import type { TraitId } from '../../data/traits'
 import type { TrioId } from '../../data/waves'
@@ -215,6 +215,7 @@ export const sitePt = {
       bosses: 'Chefes',
       traits: 'Inimigos especiais',
       rifts: 'Fendas lendárias e modo sem fim',
+      places: 'Lugares: caverna, cemitério e céu',
       megas: 'Mega Evolução',
       shinies: 'Shinies',
       eggs: 'Ovos e incubadora',
@@ -365,6 +366,39 @@ export const sitePt = {
         `Às ${e.reaper}, Arceus desce para caçar você. Ele fica mais rápido quanto mais tempo caça, até ninguém conseguir fugir, e nunca se perde: se você se afastar, ele reaparece na borda da tela. Dá para derrotá-lo, mas ele tem ${e.hp} de HP; se cair, volta ${e.returns} minutos depois, mais forte.`,
         `O tempo sobrevivido é a métrica principal: cada minuto depois de 15:00 paga ₽${n(e.perMinute)} no bônus, e cada Arceus derrotado mais ₽${e.reaperBonus}.`,
       ],
+    },
+    places: {
+      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string }) => [
+        `A partir de ${p.first}, mais ou menos a cada ${n(p.every)} minutos, a entrada de um lugar aparece fora da tela, com uma seta na borda apontando para ela: a boca de uma caverna num morro, o portão de um cemitério ou uma corrente de ar entre pedras. Ela fica aberta por ${p.open}s e, se um chefe estiver vivo, espera ele cair por até ${p.bossWait}s. A partida mostra lugares diferentes antes de repetir algum.`,
+        `Entrar é opcional: fique ${p.enter}s na porta. Lá dentro o mundo espera, como numa fenda: a horda fica congelada e nada novo nasce, mas o relógio da partida continua. Cada lugar tem seus próprios Pokémon, que ficam mais fortes conforme a partida avança, e um limite de tempo; quando ele acaba, você sai pela porta por onde entrou.`,
+      ],
+      names: { cave: 'Caverna Escura', graveyard: 'Cemitério Assombrado', sky: 'Acima das Nuvens' } satisfies Record<PlaceId, string>,
+      placeHead: 'Lugar',
+      timeHead: 'Tempo',
+      speciesHead: 'Quem vive lá',
+      seconds: (s: number) => `${s}s`,
+      cave: (c: { floors: number; light: number; fire: number; electric: number; time: number; wind: string; house: number; egg: number }) => [
+        `Caverna Escura, uma Mystery Dungeon: ${c.floors} andares de salas e corredores no escuro, sorteados a cada visita, e depois a câmara do tesouro. Você só enxerga um círculo de luz em volta do seu Pokémon (${c.light} px); os de Fogo carregam uma chama (${c.fire} px) e os Elétricos usam Flash (${c.electric} px). Cristais brilham nas salas, e os Pokémon no escuro mostram só os olhos.`,
+        `Ache a escada de cada andar, que brilha no escuro, e desça; itens e ₽ ficam pelo chão. Na câmara do tesouro, o baú é guardado por uma Casa de Monstros com ${c.house} Pokémon (mais um a cada 2 minutos de partida): fique perto dele para abrir. Ele paga ₽, uma Poké Ball, uma Rare Candy e uma Super Potion, com ${c.egg}% de chance de um ovo.`,
+        `Como nos jogos, um vento avisa três vezes (faltando ${c.wind}) e, aos ${c.time}s, sopra você para fora da caverna.`,
+      ],
+      graveyard: (g: { spirits: number; time: number; shiny: number; hp: string; egg: number }) => [
+        `Cemitério Assombrado: só fantasmas vivem lá, e eles saem das covas. Eles atravessam as lápides; você não. Cada fantasma derrotado manda o espírito para a Pedra Peculiar no meio do cemitério.`,
+        `Com ${g.spirits} espíritos, a pedra racha e Spiritomb desperta (${g.hp} de HP às 1:30, mais com o relógio; 1 em ${g.shiny} é shiny). Vencê-lo paga ₽, uma Poké Ball, uma Rare Candy, uma Super Potion, cura 30% do HP e tem ${g.egg}% de chance de um ovo. Aos ${g.time}s o dia nasce e os fantasmas somem, com ou sem Spiritomb derrotado.`,
+      ],
+      sky: (s: { time: number; tailwind: number; every: number; flock: number }) => [
+        `Acima das Nuvens: só um Pokémon do tipo Voador consegue subir pela corrente de ar, e ela nem aparece para quem não voa. Lá em cima você voa com o vento a favor (+${s.tailwind}% de velocidade), só Pokémon voadores aparecem e um bando atravessa o céu a cada ${s.flock}s.`,
+        `A cada ${s.every}s uma asa chega com o vento e atravessa o céu: pegue antes que ela passe. Cada asa melhora um atributo até o fim da partida. Aos ${s.time}s o vento acalma e você plana de volta.`,
+      ],
+      wingHead: 'Asa',
+      effectHead: 'Efeito',
+      wings: {
+        healthWing: (n: number) => `+${n} de HP máximo`,
+        muscleWing: (n: number) => `+${n}% de dano`,
+        resistWing: (n: number) => `+${n} de defesa`,
+        swiftWing: (n: number) => `+${n} de velocidade`,
+        prettyWing: (n: number) => `₽${n} na hora`,
+      } satisfies Record<WingId, (n: number) => string>,
     },
     bosses: {
       paragraphs: (r: BossRules) => [

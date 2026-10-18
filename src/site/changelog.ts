@@ -19,6 +19,37 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-17',
+    title: { pt: 'Lugares para explorar: caverna, cemitério e céu', en: 'Places to explore: a cave, a graveyard and the sky', es: 'Lugares para explorar: cueva, cementerio y cielo' },
+    notes: [
+      {
+        pt: 'Algumas vezes por partida, a entrada de um lugar aparece no mapa, com uma seta apontando para ela. Fique na porta para entrar: lá dentro o mundo espera e o lugar tem seus próprios Pokémon, um objetivo e um limite de tempo. Ideia do @samael no mural de ideias!',
+        en: 'A few times a run, the entrance to a place shows up on the map, with an arrow pointing at it. Stand in the doorway to go in: inside, the world waits and the place has its own Pokémon, a goal and a time limit. An idea from @samael on the ideas board!',
+        es: 'Algunas veces por partida, la entrada de un lugar aparece en el mapa, con una flecha que apunta hacia ella. Quédate en la entrada para pasar: adentro el mundo espera y el lugar tiene sus propios Pokémon, un objetivo y un límite de tiempo. ¡Una idea de @samael en el muro de ideas!',
+      },
+      {
+        pt: 'Caverna Escura, uma Mystery Dungeon: andares no escuro com escadas para achar, uma Casa de Monstros e um baú no fundo. Pokémon de Fogo e Elétricos iluminam mais longe, e o vento avisa antes de soprar você para fora.',
+        en: 'Dark Cave, a Mystery Dungeon: floors in the dark with stairs to find, a Monster House and a chest at the bottom. Fire and Electric types light up farther, and the wind warns before it blows you out.',
+        es: 'Cueva Oscura, un Mundo Misterioso: pisos a oscuras con escaleras que encontrar, una Casa de Monstruos y un cofre al fondo. Los Pokémon de Fuego y Eléctricos iluminan más lejos, y el viento avisa antes de sacarte de la cueva.',
+      },
+      {
+        pt: 'Cemitério Assombrado: só fantasmas, saindo das covas. Os espíritos deles despertam a Pedra Peculiar e, dela, Spiritomb, um chefe novo (que pode ser shiny). Vença antes do amanhecer.',
+        en: 'Haunted Graveyard: ghosts only, rising from the graves. Their spirits stir the Odd Keystone, and out of it comes Spiritomb, a new boss (who can be shiny). Beat it before dawn.',
+        es: 'Cementerio Embrujado: solo fantasmas, saliendo de las tumbas. Sus espíritus despiertan a la Piedra Espíritu y, de ella, a Spiritomb, un jefe nuevo (que puede ser shiny). Véncelo antes del amanecer.',
+      },
+      {
+        pt: 'Acima das Nuvens, só para quem voa: com um Pokémon do tipo Voador, uma corrente de ar leva você ao céu, onde só aparecem voadores e asas chegam com o vento. Cada asa melhora um atributo até o fim da partida.',
+        en: 'Above the Clouds, for flyers only: with a Flying-type Pokémon, an updraft takes you up to the sky, where only flying Pokémon come and wings drift in on the wind. Each wing raises a stat for the rest of the run.',
+        es: 'Sobre las Nubes, solo para quien vuela: con un Pokémon de tipo Volador, una corriente de aire te lleva al cielo, donde solo aparecen voladores y el viento trae plumas. Cada pluma mejora una estadística hasta el final de la partida.',
+      },
+      {
+        pt: 'Três conquistas novas, uma delas com o título Explorador(a), para quem concluir os três lugares.',
+        en: 'Three new achievements, one with the Explorer title, for clearing all three places.',
+        es: 'Tres logros nuevos, uno con el título Explorador(a), para quien complete los tres lugares.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-17',
     pr: 91,
     title: { pt: 'Mural de ideias', en: 'Ideas board', es: 'Muro de ideas' },
     notes: [

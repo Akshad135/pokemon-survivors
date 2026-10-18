@@ -193,6 +193,7 @@ export const siteEn: SiteMessages = {
       bosses: 'Bosses',
       traits: 'Special enemies',
       rifts: 'Legendary rifts and endless mode',
+      places: 'Places: the cave, the graveyard and the sky',
       megas: 'Mega Evolution',
       shinies: 'Shinies',
       eggs: 'Eggs and the incubator',
@@ -343,6 +344,39 @@ export const siteEn: SiteMessages = {
         `At ${e.reaper}, Arceus descends to hunt you. It gets faster the longer it hunts, until nobody can outrun it, and it never loses you: wander off and it reappears at the edge of the screen. It can be beaten, but it has ${e.hp} HP; if it falls, it comes back ${e.returns} minutes later, stronger.`,
         `Time survived is the main score: every minute past 15:00 pays ₽${n(e.perMinute)} in the bonus, and every defeated Arceus another ₽${e.reaperBonus}.`,
       ],
+    },
+    places: {
+      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string }) => [
+        `From ${p.first}, about every ${n(p.every)} minutes, the entrance to a place shows up off screen, with an arrow on the edge pointing at it: a cave’s mouth in a hill, a graveyard’s gate or an updraft between standing stones. It stays open for ${p.open}s and, if a boss is alive, waits up to ${p.bossWait}s for it to fall. A run shows different places before any repeats.`,
+        `Going in is optional: stand ${p.enter}s in the doorway. Inside, the world waits, as in a rift: the horde freezes and nothing new spawns, but the run clock keeps going. Each place has its own Pokémon, which get stronger as the run goes on, and a time limit; when it runs out, you come back out the way you went in.`,
+      ],
+      names: { cave: 'Dark Cave', graveyard: 'Haunted Graveyard', sky: 'Above the Clouds' },
+      placeHead: 'Place',
+      timeHead: 'Time',
+      speciesHead: 'Who lives there',
+      seconds: (s: number) => `${s}s`,
+      cave: (c: { floors: number; light: number; fire: number; electric: number; time: number; wind: string; house: number; egg: number }) => [
+        `Dark Cave, a Mystery Dungeon: ${c.floors} floors of rooms and corridors in the dark, laid out anew on each visit, then the treasure chamber. You only see a circle of light around your Pokémon (${c.light} px); Fire types carry a flame (${c.fire} px) and Electric types use Flash (${c.electric} px). Crystals glow in the rooms, and Pokémon out in the dark show only their eyes.`,
+        `Find each floor’s stairs, which glow in the dark, and head down; items and ₽ lie on the floor. In the treasure chamber the chest is guarded by a Monster House of ${c.house} Pokémon (one more every 2 minutes of the run): stand next to it to open it. It pays ₽, a Poké Ball, a Rare Candy and a Super Potion, with a ${c.egg}% chance of an egg.`,
+        `As in the games, a wind warns three times (with ${c.wind} left) and, at ${c.time}s, blows you out of the cave.`,
+      ],
+      graveyard: (g: { spirits: number; time: number; shiny: number; hp: string; egg: number }) => [
+        `Haunted Graveyard: only ghosts live there, and they rise from the graves. They float through the headstones; you don’t. Every ghost you defeat sends its spirit into the Odd Keystone in the middle of the graveyard.`,
+        `With ${g.spirits} spirits the keystone cracks and Spiritomb breaks out (${g.hp} HP at 1:30, more as the clock runs; 1 in ${g.shiny} is shiny). Beating it pays ₽, a Poké Ball, a Rare Candy and a Super Potion, heals 30% of your HP and has a ${g.egg}% chance of an egg. At ${g.time}s dawn breaks and the ghosts fade, Spiritomb beaten or not.`,
+      ],
+      sky: (s: { time: number; tailwind: number; every: number; flock: number }) => [
+        `Above the Clouds: only a Flying-type Pokémon can ride the updraft up, and it doesn’t even show up for those who can’t fly. Up there you fly with a tailwind (+${s.tailwind}% speed), only flying Pokémon come and a flock crosses the sky every ${s.flock}s.`,
+        `Every ${s.every}s a wing drifts in on the wind and across the sky: grab it before it’s gone. Each wing raises a stat for the rest of the run. At ${s.time}s the wind calms and you glide back down.`,
+      ],
+      wingHead: 'Wing',
+      effectHead: 'Effect',
+      wings: {
+        healthWing: (n: number) => `+${n} max HP`,
+        muscleWing: (n: number) => `+${n}% damage`,
+        resistWing: (n: number) => `+${n} defense`,
+        swiftWing: (n: number) => `+${n} speed`,
+        prettyWing: (n: number) => `₽${n} on the spot`,
+      },
     },
     bosses: {
       paragraphs: (r) => [

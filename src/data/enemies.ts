@@ -88,7 +88,7 @@ export const ENEMIES = {
   latios: { dex: 381, name: 'Latios', types: ['dragon', 'psychic'], hp: 3200, speed: 66, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
   deoxys: { dex: 386, name: 'Deoxys', types: ['psychic'], hp: 2800, speed: 70, damage: 32, xp: 0, mass: 40, boss: true, legendary: true },
   // A place's boss (`data/places.ts`): HP and contact damage are its 1:30 values, scaled by `placeBossScale`.
-  spiritomb: { dex: 442, name: 'Spiritomb', types: ['ghost', 'dark'], hp: 1300, speed: 34, damage: 18, xp: 0, mass: 30, boss: true },
+  spiritomb: { dex: 442, name: 'Spiritomb', types: ['ghost', 'dark'], hp: 1100, speed: 34, damage: 18, xp: 0, mass: 30, boss: true },
   // The endless mode's reaper (`game/endless.ts`): it hunts the player from 20:00.
   arceus: { dex: 493, name: 'Arceus', types: ['normal'], hp: 300000, speed: 60, damage: 90, xp: 0, mass: 999, boss: true, legendary: true, scale: 2 },
 } as const satisfies Record<string, EnemyDef>

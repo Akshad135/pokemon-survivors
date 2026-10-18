@@ -1,7 +1,7 @@
 import { range, weightedPick, type Rng } from '../engine/rng'
 import type { BiomeId } from '../data/biomes'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { GRAVEYARD, PLACE, PLACE_IDS, PLACES, WINGS, WING_IDS, type PlaceDef, type PlaceId, type WingId } from '../data/places'
+import { GRAVEYARD, PLACE, PLACE_IDS, PLACES, PRETTY_WING_COINS, WINGS, WING_IDS, type PlaceDef, type PlaceId, type WingId } from '../data/places'
 import { RUN_LENGTH, STAGES, stageIndexAt, stageStart } from '../data/waves'
 import type { CaveState } from './cave'
 import type { GraveyardState } from './graveyard'
@@ -167,6 +167,12 @@ export const placeSchedule = (flyer: boolean) => {
 
 /** A wing drifting into the sky. */
 export const rollWing = (rng: Rng): WingId => weightedPick(rng, WING_IDS.map((id) => [id, WINGS[id].weight] as const))
+
+/** The number a wing's line shows (its stat, a percent for damage, or the Pretty Wing's ₽). */
+export const wingAmount = (id: WingId) => {
+  const s: { maxHp?: number; might?: number; armor?: number; speed?: number } = WINGS[id].stats
+  return id === 'prettyWing' ? PRETTY_WING_COINS : (s.maxHp ?? s.armor ?? s.speed ?? Math.round((s.might ?? 0) * 100))
+}
 
 /** What the wings picked up this run add to the player's stats. */
 export const wingDeltas = (wings: Partial<Record<WingId, number>>): StatDelta[] =>

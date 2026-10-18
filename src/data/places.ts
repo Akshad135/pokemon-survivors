@@ -46,7 +46,7 @@ export const PLACES = {
   },
   /** A graveyard in the fog: ghosts rise from the graves, their spirits wake the Odd Keystone and Spiritomb. */
   graveyard: {
-    time: 85,
+    time: 90,
     species: ['gastly', 'duskull', 'shuppet', 'litwick', 'sableye', 'drifloon', 'lampent', 'haunter', 'misdreavus', 'dusclops', 'banette', 'gengar', 'chandelure'],
     spawn: { rate: 1.7, max: 24 },
     biomes: { tower: 3, forest: 1.5 },
@@ -106,7 +106,7 @@ export const CAVE = {
 
 /** The graveyard: how many spirits wake the Odd Keystone, and Spiritomb. */
 export const GRAVEYARD = {
-  spirits: 24,
+  spirits: 20,
   /** Seconds a spirit takes to fly from a fainted ghost into the keystone. */
   spiritFlight: 0.7,
   /** Ghosts keep rising at this share of the rate while Spiritomb fights. */

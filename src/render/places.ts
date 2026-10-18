@@ -7,7 +7,8 @@ import { fits } from '../game/arenaFloor'
 import { caveLight } from '../game/cave'
 import type { PlaceEntrance, PlaceInterior, PlaceInteriorOf } from '../game/place'
 import type { Game } from '../game/types'
-import { art } from './art'
+import { art, toIconUrl } from './art'
+import { PLACE_PIECES } from './placePieces'
 import { dashedRing } from './strokes'
 import { sprites } from './sprites'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
@@ -220,14 +221,27 @@ const cloud = (seed: number, size: number): PixelSprite => {
   })
 }
 
+let gradient: { w: number; h: number; canvas: HTMLCanvasElement } | null = null
+onCanvasReset(() => (gradient = null))
+
+/** The sky behind the clouds: deep blue on top to pale at the bottom, in bands dithered into each other. */
+const skyGradient = (w: number, h: number) => {
+  if (gradient?.w === w && gradient.h === h) return gradient.canvas
+  const n = SKY_BANDS.length
+  const canvas = paint(w, h, (px, py) => {
+    const v = (py / h) * (n - 1)
+    const i = Math.floor(v)
+    return SKY_BANDS[Math.min(n - 1, v - i > bayer(px, py) ? i + 1 : i)]!
+  })
+  gradient = { w, h, canvas }
+  return canvas
+}
+
 const CLOUDS = lazy(() => Array.from({ length: 6 }, (_, i) => cloud(i * 7 + 1, 10 + (i % 3) * 6)))
 
 /** Far and near cloud layers scrolling under the player at their own parallax, drifting with the wind. */
 const drawSky = (ctx: Ctx, inside: PlaceInteriorOf<'sky'>, camX: number, camY: number, w: number, h: number, t: number) => {
-  for (let i = 0; i < SKY_BANDS.length; i++) {
-    ctx.fillStyle = SKY_BANDS[i]!
-    ctx.fillRect(0, Math.floor((i * h) / SKY_BANDS.length), w, Math.ceil(h / SKY_BANDS.length) + 1)
-  }
+  ctx.drawImage(skyGradient(w, h), 0, 0)
   const { wind } = inside.state
   const clouds = CLOUDS()
   for (const [depth, tile, count, alpha] of [[0.3, 220, 5, 0.7], [0.7, 180, 6, 1]] as const) {
@@ -297,6 +311,29 @@ export const drawPlaceGround = (ctx: Ctx, g: Game, t: number) => {
     }
     const c = s.chest
     if (c && !c.open && c.progress > 0) chargeArc(ctx, inside.x + c.x, inside.y + c.y, 24, c.progress)
+    return
+  }
+  if (inside.id === 'graveyard') drawKeystoneAura(ctx, inside, t)
+}
+
+const SPIRITS = ['#e0d0ff', '#a890e8', '#ffffff'] as const
+
+/** The spirits the keystone holds circle it, more and faster as it fills, over a violet glow. */
+const drawKeystoneAura = (ctx: Ctx, inside: PlaceInteriorOf<'graveyard'>, t: number) => {
+  const s = inside.state
+  if (s.bossId !== null) return
+  const x = inside.x + s.keystone[0]
+  const y = inside.y + s.keystone[1]
+  const k = s.spirits / GRAVEYARD.spirits
+  ctx.globalAlpha = 0.25 + k * 0.35 + Math.sin(t * (2 + k * 6)) * 0.08
+  blitCentered(ctx, ellipse(16 + Math.round(k * 8), 6 + Math.round(k * 3), '#7860a8'), x, y)
+  ctx.globalAlpha = 1
+  const n = Math.ceil(s.spirits / 2)
+  for (let i = 0; i < n; i++) {
+    const a = t * (1.2 + k * 2.5) + (i / Math.max(1, n)) * TAU
+    const r = 16 + (i % 3) * 3
+    ctx.fillStyle = SPIRITS[i % SPIRITS.length]!
+    ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y - 14 + Math.sin(a) * r * 0.4 - Math.sin(t * 3 + i) * 2), i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1)
   }
 }
 
@@ -311,7 +348,8 @@ export const drawPlaceOver = (ctx: Ctx, g: Game, camX: number, camY: number) => 
 
 /* ---------------- Wings ---------------- */
 
-const WING_ROWS = ['....11', '...121', '..1231', '.12331', '12331.', '1231..', '121...', '11....']
+/** A feather, quill at the bottom left. */
+const WING_ROWS = ['.......111', '......1231', '.....12331', '....123321', '...123321.', '..123321..', '.123321...', '12221.....', '121.......', '1.........']
 
 const WING_COLORS: Record<WingId, readonly [string, string, string]> = {
   healthWing: ['#802838', '#f05870', '#f8c0c8'],
@@ -338,11 +376,16 @@ export const drawWings = (ctx: Ctx, g: Game, t: number) => {
   if (inside?.id !== 'sky') return
   for (const w of inside.state.wings) {
     const tilt = Math.sin(w.age * 3 + w.id) * 0.5
-    blitCentered(ctx, ellipse(4, 2, 'rgba(255,255,255,0.35)'), w.x, w.y + 6)
-    blitRotated(ctx, wingSprite(w.wing), w.x, w.y - 4 + Math.sin(w.age * 2.2) * 2, tilt)
-    if (Math.floor(t * 6 + w.id) % 9 === 0) {
+    const y = w.y - 4 + Math.sin(w.age * 2.2) * 2
+    // A soft halo so it stands out against the clouds.
+    ctx.globalAlpha = 0.45 + Math.sin(t * 4 + w.id) * 0.15
+    blitCentered(ctx, ellipse(8, 8, WING_COLORS[w.wing][2]), w.x, y)
+    ctx.globalAlpha = 1
+    blitRotated(ctx, wingSprite(w.wing), w.x, y, tilt)
+    if (Math.floor(t * 6 + w.id) % 7 === 0) {
       ctx.fillStyle = '#ffffff'
-      ctx.fillRect(Math.round(w.x + 3), Math.round(w.y - 9), 1, 1)
+      ctx.fillRect(Math.round(w.x + 4), Math.round(y - 7), 1, 1)
+      ctx.fillRect(Math.round(w.x + 3), Math.round(y - 6), 3, 1)
     }
   }
 }
@@ -463,19 +506,21 @@ const chargeArc = (ctx: Ctx, x: number, y: number, r: number, k: number) => {
   }
 }
 
-/** The updraft's round of flattened grass with a wind sigil, between the standing stones. */
+/** The updraft's platform: a ring of pale stone around trampled grass, a wind spiral inlaid in the middle. */
 const WIND_DISC = lazy(() => {
-  const R = 30
-  return paint(R * 2 + 1, R + 1, (px, py) => {
+  const R = 32
+  return paint(R * 2 + 1, R + 2, (px, py) => {
     const x = px - R
     const y = (py - R / 2) * 2
     const d = Math.sqrt(x * x + y * y)
     if (d > R) return null
-    if (d > R - 2) return '#a8c0a0'
+    if (d > R - 1.5) return '#5c6680'
+    if (d > R - 6) return (Math.floor((Math.atan2(y, x) / TAU) * 28) % 2 === 0 ? '#c8d0e0' : '#aab4c8')
+    if (d > R - 7) return '#7e88a0'
     const a = Math.atan2(y, x)
-    const swirl = Math.abs(((a * 3 + d / 5) % TAU) - Math.PI) < 0.35 && d > 6 && d < R - 6
-    if (swirl) return '#d8f0f8'
-    return hash2(px, py, 3) < 0.5 ? '#88a878' : '#7c9c6c'
+    const swirl = Math.abs((((a + d / 6) * 3) % TAU) - Math.PI) < 0.3 && d > 4 && d < R - 9
+    if (swirl) return '#e8f8ff'
+    return hash2(px, py, 3) < 0.5 ? '#86a874' : '#7a9c68'
   })
 })
 
@@ -564,27 +609,35 @@ const drawUpdraft = (ctx: Ctx, ent: PlaceEntrance, t: number) => {
   if (!ent.open) return
   const x = ent.x
   const y = ent.y
-  // Streaks of wind spiraling up out of the disc.
-  for (let i = 0; i < 10; i++) {
-    const k = (t * 0.55 + i / 10) % 1
-    const a = t * 2.4 + i * 1.7
-    const r = 20 - k * 10
-    const sx = x + Math.cos(a) * r
-    const sy = y - k * 90 + Math.sin(a) * r * 0.35
-    ctx.globalAlpha = Math.min(1, (1 - k) * 1.6) * 0.8
-    ctx.fillStyle = i % 3 === 0 ? '#ffffff' : '#d8f0f8'
-    ctx.fillRect(Math.round(sx), Math.round(sy), 1, 4)
+  // A glow on the platform, then arcs of wind spiraling up out of it, widening as they rise.
+  ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.1
+  blitCentered(ctx, ellipse(22, 8, '#e8f8ff'), x, y)
+  for (let i = 0; i < 7; i++) {
+    const k = (t * 0.45 + i / 7) % 1
+    const r = 14 + k * 16
+    const cy = y - 4 - k * 110
+    const spin = t * 3 + i * 2.1
+    ctx.globalAlpha = Math.min(1, (1 - k) * 1.8) * 0.85
+    ctx.fillStyle = i % 2 ? '#ffffff' : '#c8ecf8'
+    for (let s = 0; s < 12; s++) {
+      const a = spin + s * 0.16
+      ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.32), 2, 1)
+    }
   }
-  // Leaves (and a feather) caught in it.
-  for (let i = 0; i < 4; i++) {
-    const k = (t * 0.35 + i / 4) % 1
+  // Leaves and a feather caught in it.
+  for (let i = 0; i < 5; i++) {
+    const k = (t * 0.32 + i / 5) % 1
     const a = t * 3 + i * 2.2
     ctx.globalAlpha = Math.min(1, (1 - k) * 2)
-    ctx.fillStyle = LEAF[i]!
-    ctx.fillRect(Math.round(x + Math.cos(a) * (16 - k * 6)), Math.round(y - 6 - k * 70 + Math.sin(a) * 4), 2, 1)
+    ctx.fillStyle = LEAF[i % LEAF.length]!
+    ctx.fillRect(Math.round(x + Math.cos(a) * (12 + k * 10)), Math.round(y - 8 - k * 90 + Math.sin(a) * 3), 2, 1)
   }
   ctx.globalAlpha = 1
 }
+
+/** A place's icon for the DOM (the results, its toasts): the stairs, the Odd Keystone, a wing. */
+export const placeIcon = (id: PlaceId) =>
+  toIconUrl(`place:${id}`, () => (id === 'cave' ? STAIRS() : id === 'graveyard' ? PLACE_PIECES.keystone(0, 'tower').sprite : wingSprite('swiftWing')))
 
 /* ---------------- Arrow ---------------- */
 

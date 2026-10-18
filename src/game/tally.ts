@@ -2,6 +2,7 @@ import type { BiomeId, WeatherId } from '../data/biomes'
 import type { EnemyId } from '../data/enemies'
 import { evolvedFrom } from '../data/evolutions'
 import type { RiftLegend } from '../data/rifts'
+import type { PlaceId } from '../data/places'
 import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
 import type { Difficulty } from './difficulty'
@@ -92,6 +93,9 @@ export type RunSummary = {
   altars: number
   /** Rift legendaries beaten, in order. */
   legends: readonly RiftLegend[]
+  /** Places whose goal was reached (`place.ts`), in order, and how many. */
+  places: readonly PlaceId[]
+  placeClears: number
   reaperDefeats: number
   /** Moves evolved with their paired held item. */
   moveEvolutions: number
@@ -128,6 +132,8 @@ export const summarizeRun = (g: Game): RunSummary => {
     meowths: t.notices.payDay ?? 0,
     altars: t.notices.altar ?? 0,
     legends: [...g.rift.cleared],
+    places: [...g.place.cleared],
+    placeClears: g.place.cleared.length,
     reaperDefeats: g.endless?.reaperDefeats ?? 0,
     moveEvolutions: g.player.moves.filter((m) => evolvedFrom(m.id)).length,
     megas: g.mega.count,

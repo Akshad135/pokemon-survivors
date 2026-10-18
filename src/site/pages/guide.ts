@@ -11,6 +11,7 @@ import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../../data/megas'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
+import { CAVE, GRAVEYARD, PLACE, PLACE_IDS, PLACES, SKY, WING_IDS, WINGS } from '../../data/places'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { BOSS_FIGHT, bossCandidates, ELITE, EVENTS, FINALE, MYTHICALS, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart, TRIO_IDS, TRIOS, type BossEvent } from '../../data/waves'
 import { createRng } from '../../engine/rng'
@@ -28,6 +29,7 @@ import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
+import { placeBossScale, wingAmount } from '../../game/place'
 import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
@@ -301,6 +303,48 @@ const rifts = (locale: Locale, m: SiteMessages) => {
     )}`
 }
 
+const places = (locale: Locale, m: SiteMessages) => {
+  const p = m.guide.places
+  const num = (v: number) => v.toLocaleString(m.lang.tag)
+  const pct = (v: number) => Math.round(v * 100)
+  const rows = PLACE_IDS.map((id) => [
+    p.names[id],
+    p.seconds(PLACES[id].time),
+    html`${PLACES[id].species.map((e) => html`<a class="with-mini" href="${dexLink(locale, ENEMIES[e].name)}" title="${ENEMIES[e].name}">${portrait(ENEMIES[e].dex)}</a>`)}`,
+  ])
+  const spiritomb = GRAVEYARD.boss
+  const attacks = html`<ul class="list">${(BOSS_PATTERNS[spiritomb] ?? []).map((pt) => html`<li>${patternText(pt, m)}</li>`)}</ul>`
+  return html`${paragraphs(p.paragraphs({ first: clock(PLACE.firstAt), every: PLACE.every / 60, bossWait: PLACE.bossWait, open: PLACE.openTime, enter: num(PLACE.enterTime) }))}
+    ${table([p.placeHead, p.timeHead, p.speciesHead], rows)}
+    <h3>${p.names.cave}</h3>
+    ${paragraphs(
+      p.cave({
+        floors: CAVE.floors,
+        light: CAVE.light,
+        fire: CAVE.fireLight,
+        electric: CAVE.electricLight,
+        time: PLACES.cave.time,
+        wind: new Intl.ListFormat(m.lang.tag, { type: 'conjunction' }).format(CAVE.wind.map((s) => `${s}s`)),
+        house: CAVE.monsterHouse,
+        egg: pct(EGG_SOURCES.place.chance),
+      }),
+    )}
+    <h3>${p.names.graveyard}</h3>
+    ${paragraphs(
+      p.graveyard({
+        spirits: GRAVEYARD.spirits,
+        time: PLACES.graveyard.time,
+        shiny: Math.round(1 / GRAVEYARD.shinyOdds),
+        hp: num(Math.round(ENEMIES[spiritomb].hp * placeBossScale(90).hp)),
+        egg: pct(EGG_SOURCES.place.chance),
+      }),
+    )}
+    ${table([m.guide.bosses.bossHead, m.guide.bosses.attacksHead], [[bossName(locale, spiritomb), attacks]])}
+    <h3>${p.names.sky}</h3>
+    ${paragraphs(p.sky({ time: PLACES.sky.time, tailwind: pct(SKY.tailwind - 1), every: SKY.wings.every, flock: SKY.flock.every }))}
+    ${table([p.wingHead, p.effectHead], WING_IDS.map((id) => [WINGS[id].name, p.wings[id](wingAmount(id))]))}`
+}
+
 const megas = (locale: Locale, m: SiteMessages) => {
   const g = m.guide.megas
   const game = LOCALES[locale].messages
@@ -451,6 +495,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   bosses,
   traits,
   rifts,
+  places,
   megas,
   shinies,
   eggs,
