@@ -4,7 +4,7 @@ import { offerPool, rollOffers } from '../game/leveling'
 import { isManual, maxMoveLevel, MOVE_IDS, MOVES, moveStats, type MoveId } from '../game/moves'
 import { applyDeltas, BASE_STATS } from '../game/stats'
 import type { OwnedItem, OwnedMove } from '../game/types'
-import { EVOLUTIONS, NO_EVOLUTION, readyEvolutions } from './evolutions'
+import { EVOLUTIONS, neverEvolves, readyEvolutions } from './evolutions'
 import { PLAYABLE, PLAYABLE_IDS } from './hatchlings'
 import { ITEMS, type ItemDef } from './items'
 
@@ -72,7 +72,7 @@ describe('evolution pairs', () => {
   it('give every move a Pokémon can learn an evolution, each used once (signatures grow by forks instead)', () => {
     const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id): readonly MoveId[] => PLAYABLE[id].learnset))
     const from: readonly MoveId[] = EVOLUTIONS.map((e) => e.from)
-    for (const id of learnable) if (!NO_EVOLUTION.has(id)) expect([id, from.includes(id)]).toEqual([id, true])
+    for (const id of learnable) if (!neverEvolves(id)) expect([id, from.includes(id)]).toEqual([id, true])
     expect(new Set(from).size).toBe(from.length)
     expect(new Set(EVOLUTIONS.map((e) => e.to)).size).toBe(EVOLUTIONS.length)
   })
@@ -80,9 +80,9 @@ describe('evolution pairs', () => {
   it('give every base move in MOVES an evolution, signatures aside', () => {
     const to = new Set<MoveId>(EVOLUTIONS.map((e) => e.to))
     const from = new Set<MoveId>(EVOLUTIONS.map((e) => e.from))
-    const bases = MOVE_IDS.filter((id) => !to.has(id) && !NO_EVOLUTION.has(id))
+    const bases = MOVE_IDS.filter((id) => !to.has(id) && !neverEvolves(id))
     for (const id of bases) expect([id, from.has(id)]).toEqual([id, true])
-    for (const id of NO_EVOLUTION) expect([id, from.has(id)]).toEqual([id, false])
+    for (const id of MOVE_IDS.filter(neverEvolves)) expect([id, from.has(id)]).toEqual([id, false])
   })
 
   it('keep a manual move manual when it evolves (one manual move per loadout)', () => {

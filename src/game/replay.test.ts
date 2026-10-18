@@ -72,7 +72,7 @@ describe('replays', () => {
   it('re-simulate to the same run', () => {
     const { g, replay } = play(40)
     const again = resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)
-    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(replay.events.some((e) => e[1] === 'view')).toBe(true)
   })
 
@@ -85,7 +85,7 @@ describe('replays', () => {
       levelled(s)
       return s
     }
-    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged())).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged())).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, events: replay.events.filter((e) => e[1] !== 'offer') }, staged()).stuck).toBe(true)
   })
 
@@ -98,7 +98,7 @@ describe('replays', () => {
 
   it('re-simulate a chain dash run, presses inside the windows included', () => {
     const { g, replay } = play(40, { ...START, starter: 'treecko' }, 20)
-    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('re-simulate a Mega Evolution, its transformation and its special', () => {
@@ -113,7 +113,7 @@ describe('replays', () => {
     expect(g.mega.count).toBe(1)
     const staged = startGame(start)
     megaReady(staged)
-    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('re-simulate Quick Attack, which only lunges on a press', () => {
@@ -124,7 +124,7 @@ describe('replays', () => {
     const { g, replay } = play(40, start, 300, quickAttack)
     const staged = startGame(start)
     quickAttack(staged)
-    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it("re-simulate a run of the day's outbreak with a Lure and an Incense, which change how it plays", () => {
@@ -132,7 +132,7 @@ describe('replays', () => {
     const { g, replay } = play(40, start)
     expect(g.roster.stages.every((pool) => pool.some(([id]) => id === start.outbreak))).toBe(true)
     expect(g.shinyBoost).toBe(2)
-    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
   })

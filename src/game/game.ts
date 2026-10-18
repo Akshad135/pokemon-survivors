@@ -24,6 +24,9 @@ import {
   type RollOptions,
 } from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
+import { createCurseState } from './curses'
+import { curseCast, decideCurse, updateCurses } from './curseSystem'
+import { updateDuos } from './duoMoves'
 import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
@@ -31,6 +34,7 @@ import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from
 import { afterCast, updateMoveKit } from './moveHooks'
 import { updateSignatures } from './signatures'
 import { updateVerbEvolved } from './verbEvolutions'
+import { updateLegendary } from './legendary'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -121,6 +125,7 @@ export const createGame = (
       guard: null,
       hidden: null,
       drain: { left: 0, at: 0 },
+      rooted: 0,
       moveBuffs: [],
     },
     enemies: [],
@@ -157,6 +162,7 @@ export const createGame = (
     terrain: createTerrain(seed),
     buffs: [],
     mapEvents: createMapEvents(),
+    curses: createCurseState(),
     revives: 0,
     flash: 0,
     biome: createBiome(),
@@ -197,7 +203,9 @@ export type StepInput = { move: Vec; special: boolean; mega?: boolean; lunge?: b
 const updatePlayer = (g: Game, input: Vec, dt: number) => {
   const p = g.player
   const slow = specialSpeedFactor(g)
-  const moving = slow > 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
+  // Rooted (Giga Impact's recharge): the stick does nothing until it wears off.
+  p.rooted = Math.max(0, p.rooted - dt)
+  const moving = slow > 0 && p.rooted <= 0 && Math.abs(input.x) + Math.abs(input.y) > 0.05
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
   const ground = groundAt(g, p.x, p.y)
@@ -265,6 +273,7 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
     castMove(g, owned, s)
     owned.cooldown += s.cooldown
     afterCast(g, owned)
+    curseCast(g)
   }
 }
 
@@ -318,7 +327,7 @@ export const choosingBranch = (g: Game) => g.offers.some((o) => o.kind === 'bran
 
 /**
  * The player's pick from `offers`: a level-up upgrade, where a branching
- * evolution goes, or the ability. Replays reach it through the `offer` event.
+ * evolution goes, the ability, or whether to take a chest's cursed item. Replays reach it through the `offer` event.
  * A move card that reaches a fork opens its two branches instead (picked the
  * same way); a shiny card is a free pick, so a fresh set of cards follows
  * without using the level-up up.
@@ -333,7 +342,11 @@ export const chooseOffer = (g: Game, offer: Offer) => {
     recomputeStats(g)
     return advancePhase(g)
   }
-  if (g.phase !== 'levelup' || offer.kind === 'form' || offer.kind === 'ability') return
+  if (g.phase === 'curse' && offer.kind === 'curse') {
+    decideCurse(g, offer.id, offer.take)
+    return advancePhase(g)
+  }
+  if (g.phase !== 'levelup' || offer.kind === 'form' || offer.kind === 'ability' || offer.kind === 'curse') return
   if (offer.kind === 'move' && forkAt(offer.id, offer.level)) {
     g.offers = branchOffers(offer)
     return
@@ -430,6 +443,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
     updateWeather(g, dt)
   }
   updatePlayer(g, input.move, dt)
+  updateCurses(g)
   updateMega(g, input.mega === true, dt)
   if (updateAbility(g, dt)) recomputeStats(g)
   updateSpecial(g, input.special, dt)
@@ -446,7 +460,9 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateTraits(g, dt)
   updateMoveKit(g, dt)
   updateSignatures(g, dt)
+  updateLegendary(g)
   updateMoves(g, input.lunge === true, dt)
+  updateDuos(g, dt)
   updateAttacks(g, dt)
   updateVerbEvolved(g, dt)
   updateTerrain(g, dt)

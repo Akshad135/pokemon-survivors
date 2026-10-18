@@ -1,7 +1,8 @@
-import { maxMoveLevel, type MoveId } from '../game/moves'
+import { isLegendary, maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import type { OwnedItem, OwnedMove } from '../game/types'
 import type { ItemId } from './items'
-import { SIGNATURE_MOVES, type SignatureMoveId } from '../game/signatureMoves'
+import { SIGNATURE_MOVES } from '../game/signatureMoves'
+import { EGG_MOVE_2_IDS } from '../game/eggMoves2'
 
 /**
  * Move evolutions, Vampire Survivors style: a move at max level plus its paired
@@ -62,12 +63,24 @@ export const EVOLUTIONS = [
   { from: 'sheerCold', item: 'neverMeltIce', to: 'glacialLance' },
 ] as const satisfies readonly MoveEvolution[]
 
+/** The egg families' first batch of signature moves (#106, inline in `MOVES`). */
+const EGG_SIGNATURES: readonly MoveId[] = [
+  'dreamEater', 'forcePalm', 'dig', 'twister', 'sandTomb', 'meteorMash', 'zenHeadbutt', 'foulPlay', 'bodySlam', 'dynamicPunch', 'rollout',
+  'iceBall', 'furyCutter', 'sacredSword', 'dragonDarts', 'snarl', 'gigaImpact', 'flail', 'boneRush', 'metronome', 'echoedVoice', 'curse',
+]
+
 /**
- * Moves that never evolve and grow through their forks instead: the starter
- * signatures (spread from `SIGNATURE_MOVES`). Other one-of-a-kind move tables
- * (egg signatures, TMs, legendary and duo moves) add their ids here.
+ * Moves that never evolve by design: signatures grow through their forks, and
+ * legendary and duo moves are capstones. Read at call time, since `MOVES` and
+ * the signature tables aren't built yet when this module loads (it imports
+ * back from `moves.ts`).
  */
-export const NO_EVOLUTION: ReadonlySet<MoveId> = new Set<MoveId>(Object.keys(SIGNATURE_MOVES) as SignatureMoveId[])
+export const neverEvolves = (id: MoveId) => {
+  const def: MoveDef = MOVES[id]
+  const eggs2: readonly MoveId[] = EGG_MOVE_2_IDS
+  const signature = id in SIGNATURE_MOVES || EGG_SIGNATURES.includes(id) || eggs2.includes(id)
+  return signature || isLegendary(id) || def.duo === true
+}
 
 /** The evolution a base move can go through, if any. */
 export const evolutionOf = (move: MoveId): MoveEvolution | undefined => EVOLUTIONS.find((e) => e.from === move)

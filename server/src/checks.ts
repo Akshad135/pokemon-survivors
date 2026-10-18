@@ -50,7 +50,8 @@ const inlineRunner = (): Runner => async (_id, replay) => {
 /**
  * Re-simulation of ranked runs, one at a time, after the API has answered. A
  * run is verified when its replay ends on the same time, faints and level it
- * reported; otherwise it's marked failed and leaves the boards. A replay that
+ * reported (and then shows the branch its replay took, whatever the game
+ * said); otherwise it's marked failed and leaves the boards. A replay that
  * played another day's outbreak (`outbreakFits`) fails without re-simulating. When the
  * machinery fails instead, the run stays pending for the next start.
  * Only replays of this build's rules are judged (`RULES_VERSION`): an older
@@ -84,7 +85,7 @@ export const createChecks = (ranking: RankingStore, onVerified: (userId: string)
         }
         // The outbreak is a run input: it must be the one of the day the run started (or the day before).
         if (parsed && !outbreakFits(parsed.start.outbreak, reported.startedAt)) {
-          await ranking.setVerified(id, reported.time, false, null)
+          await ranking.setVerified(id, reported.time, { ok: false }, null)
           console.log(`check ${id}: failed, outbreak ${parsed.start.outbreak} isn't the one of ${reported.startedAt.toISOString()}`)
           continue
         }
@@ -92,7 +93,8 @@ export const createChecks = (ranking: RankingStore, onVerified: (userId: string)
         if (!answer) continue
         const r = answer.result
         const ok = !r.stuck && r.time === reported.time && r.kills === reported.kills && r.level === reported.level
-        await ranking.setVerified(id, reported.time, ok, answer.ms)
+        // The branch isn't judged: the replay's own replaces the reported one.
+        await ranking.setVerified(id, reported.time, ok ? { ok, branch: r.branch } : { ok }, answer.ms)
         console.log(`check ${id}: ${ok ? 'verified' : 'failed'} in ${answer.ms} ms`)
         // A verified run may be the one that makes the player's invite count (`gifts.ts`).
         if (ok) await onVerified(reported.userId)
