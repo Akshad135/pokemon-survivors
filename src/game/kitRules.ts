@@ -96,6 +96,14 @@ export const nextStacks = (rule: StackRule, stacks: number, event: StackEvent) =
 
 export const stacksOf = (owned: OwnedMove) => owned.stacks ?? 0
 
+/**
+ * Whether the move took `branch` (0 the first, 1 the second) at the fork on its
+ * step to `level` (`OwnedMove.path`): how a move reads a branch that changes
+ * its own behavior rather than adding a mod.
+ */
+export const took = (owned: OwnedMove, level: number, branch: 0 | 1) =>
+  owned.level >= level && (((owned.path ?? 0) >> (level - 2)) & 1) === branch
+
 /* ---------------- Player readings (cast-time scaling) ---------------- */
 
 export const hpFraction = (p: Player) => (p.stats.maxHp > 0 ? p.hp / p.stats.maxHp : 0)

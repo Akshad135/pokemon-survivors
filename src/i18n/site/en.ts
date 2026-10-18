@@ -281,6 +281,19 @@ export const siteEn: SiteMessages = {
       itemHead: 'Item',
       resultHead: 'Evolution',
       noEvolution: (moves: string) => `No evolution yet: ${moves}.`,
+      duoTitle: 'Duo moves',
+      duoParagraphs: [
+        'Take two moves to max level (or evolve them) and, if their types make one of the recipes below, a golden card offers to fuse them into a duo move: it takes the first one’s slot, frees the second’s and grows up to Lv 5. The two moves it used never come back.',
+        'Recipes go by type, so they work with any Pokémon. A run fits only 1 duo move, and the Poké Ball never fuses moves on its own.',
+      ],
+      duoTypesHead: 'Types',
+      duoHead: 'Duo move',
+      cursedTitle: 'Cursed items',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `From ${minutes.toLocaleString('en-US')} min on, a locked chest has a ${Math.round(chance * 100)}% chance to hide a cursed item: very strong, but with a price. You choose to take it or leave it. It takes no item slot, stays until the run ends, and you can hold up to ${max}.`,
+      ],
+      cursedUpHead: 'Upside',
+      cursedDownHead: 'Price',
     },
     special: {
       paragraphs: (min: number) => [

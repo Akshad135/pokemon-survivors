@@ -48,6 +48,9 @@ import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
+import { duoDevTools } from './game/duoDev'
+import { cursePick } from './ui/cursePick'
+import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
@@ -70,7 +73,7 @@ import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, eggIcon, moveIcon, ribbonIcon } from './render/art'
+import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
@@ -674,6 +677,9 @@ const syncOverlay = (r: Run) => {
     case 'ability':
       r.overlay = abilityPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
       break
+    case 'curse':
+      r.overlay = cursePick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
       break
@@ -893,6 +899,20 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('evolve')
       playCry(playerCry(g), 0.3)
       return toast(ui, rich(t().toast.moveEvolved(MOVES[e.from].name, MOVES[e.to].name), { class: 'toast-evo' }), 3500)
+    case 'duoFused':
+      playSfx('duoFuse')
+      playCry(playerCry(g), 0.3)
+      return toast(
+        ui,
+        h('span', { class: 'item-toast toast-duo' }, h('img', { src: moveIcon(e.to), alt: '' }), rich(t().duo.fused(MOVES[e.from[0]].name, MOVES[e.from[1]].name, MOVES[e.to].name))),
+        3800,
+      )
+    case 'curse': {
+      // The chest's choice has its own screen; Life Orb and Flame Orb bite quietly (the purple number says it).
+      if (e.moment === 'found' || e.moment === 'recoil') return
+      const line = e.moment === 'taken' ? t().curse.taken(CURSES[e.id].name) : t().curse.left(CURSES[e.id].name)
+      return toast(ui, h('span', { class: 'item-toast toast-curse' }, h('img', { src: curseIcon(e.id), alt: '' }), rich(line)), 3000)
+    }
     case 'pokeball':
       playSfx('levelUp')
       return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
@@ -1420,6 +1440,7 @@ if (import.meta.env.DEV) {
       ...kitDevTools(() => run?.game),
       ...eggMoveDevTools(() => run?.game),
       ...learnDevTools(() => run?.game),
+      ...duoDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

@@ -7,7 +7,8 @@ import type { PlayableDef } from '../data/starters'
 import type { PokeType } from '../data/types'
 import { FRESH_WEIGHT, runLearnset, unlockedAt } from './learnsets'
 import { draftOffers, offerPool } from './leveling'
-import { MOVE_IDS, MOVES, type MoveId } from './moves'
+import { isLegendary, MOVE_IDS, MOVES, type MoveId } from './moves'
+import { isDuo } from './duoRules'
 import { SIGNATURE_MOVES } from './signatureMoves'
 
 /** The egg families' signature moves (the starters' are `SIGNATURE_MOVES`). */
@@ -23,10 +24,7 @@ const SIGNATURES = new Set<MoveId>([...(Object.keys(SIGNATURE_MOVES) as MoveId[]
  * that type. Drop an entry when its move lands.
  */
 const PENDING: Partial<Record<PlayableId, PokeType>> = {
-  eevee: 'normal', starly: 'flying', budew: 'normal', rockruff: 'rock', grubbin: 'electric', pidgey: 'flying', zubat: 'poison',
-  poliwag: 'water', roggenrola: 'rock', mareep: 'grass', shinx: 'electric', azurill: 'fairy', shroomish: 'grass', swinub: 'ice',
-  snorunt: 'ice', ralts: 'fairy', larvesta: 'fire', toxel: 'electric', tinkatink: 'steel', charcadet: 'fire', magikarp: 'water',
-  kabuto: 'bug', houndour: 'fire', teddiursa: 'normal', aron: 'steel', trapinch: 'ground', swablu: 'normal', electrike: 'electric',
+  swinub: 'ice', snorunt: 'ice', ralts: 'fairy', larvesta: 'fire', toxel: 'electric', tinkatink: 'steel', charcadet: 'fire', kabuto: 'bug', houndour: 'fire', teddiursa: 'normal', aron: 'steel', trapinch: 'ground', swablu: 'normal', electrike: 'electric',
 }
 
 type Role = 'shot' | 'homing' | 'boomerang' | 'aura' | 'wave' | 'strike' | 'arc' | 'counter' | 'charge' | 'sky' | 'chain' | 'cone' | 'beam' | 'field' | 'dash' | 'roll' | 'support' | 'random'
@@ -47,6 +45,7 @@ const ROLE: Record<string, Role> = {
   flameWheel: 'field', solarBeam: 'beam', brine: 'shot', electroBall: 'shot', venoshock: 'homing', selfDestruct: 'dash', roost: 'support',
   focusPunch: 'charge', gyroBall: 'aura', suckerPunch: 'counter', futureSight: 'sky', bonemerang: 'boomerang', stealthRock: 'field',
   uTurn: 'dash', dragonTail: 'arc', sheerCold: 'aura',
+  braveBird: 'dash', weatherBall: 'shot', accelerock: 'dash', zapCannon: 'shot', aerialAce: 'strike', crossPoison: 'arc', bubbleBeam: 'beam', rockBlast: 'shot', cottonSpore: 'field', wildCharge: 'dash', playRough: 'aura', spore: 'support', waterfall: 'beam', lastResort: 'strike',
 }
 /** The roles that count as a family's utility move: around it, on the ground, a dash or a heal/guard. */
 const UTILITY = new Set<Role>(['aura', 'field', 'dash', 'support'])
@@ -55,8 +54,8 @@ const UTILITY = new Set<Role>(['aura', 'field', 'dash', 'support'])
 const MAX_FAMILIES = 18
 
 const EVOLVED = new Set<MoveId>(EVOLUTIONS.map((e) => e.to))
-/** Every move a family may learn: all but the evolved ones. */
-const LEARNABLE = MOVE_IDS.filter((id) => !EVOLVED.has(id))
+/** Every move a family may learn: all but the evolved ones and the capstones (legendary and duo moves). */
+const LEARNABLE = MOVE_IDS.filter((id) => !EVOLVED.has(id) && !isLegendary(id) && !isDuo(id))
 
 /** Each way a family's run can end: the plain line, or one per branch. */
 const endings = (id: PlayableId): ReadonlyArray<BranchId | null> => {

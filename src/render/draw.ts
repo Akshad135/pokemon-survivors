@@ -28,7 +28,11 @@ import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawEggAttack, drawEggGround, drawEggPlayer, eggPlayerLook } from './eggMoveFx'
+import { drawEgg2Attack, drawEgg2Ground } from './eggMove2Fx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
+import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
+import { drawDuoAir, drawDuoGround } from './duoFx'
+import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
@@ -125,6 +129,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedGround(ctx, a, t)
       drawMoveFxGround(ctx, a)
       drawEggGround(ctx, a, t)
+      drawEgg2Ground(ctx, a, t)
       drawSignatureGround(ctx, a, t)
       drawTypeEvolvedGround(ctx, a, t)
       drawModGround(ctx, a, t)
@@ -320,6 +325,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
       drawEggAttack(ctx, a, t)
+      drawEgg2Attack(ctx, a, t)
       drawSignatureAttack(ctx, a, t)
       drawTypeEvolvedAttack(ctx, a, t)
       drawModAttack(ctx, a, t)
@@ -694,6 +700,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   drawVerbGround(ctx, g, t)
+  drawVerbEvolvedGround(ctx, g, t)
+  drawDuoGround(ctx, g, t)
+  drawLegendaryGround(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
@@ -749,6 +758,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)
+  drawVerbEvolvedAir(ctx, g, t, visible)
+  drawDuoAir(ctx, g, t, visible)
+  drawLegendaryAir(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 

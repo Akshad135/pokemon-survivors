@@ -58,8 +58,8 @@ export const HATCHLINGS = {
     color: '#c89058',
     egg: 'common',
     stats: { growth: 0.1, regen: 0.15 },
-    signature: 'swift', // TODO signature: lastResort
-    learnset: [['swift', 'quickAttack', 'crunch', 'selfDestruct'], ['hex']],
+    signature: 'swift',
+    learnset: [['lastResort', 'swift', 'quickAttack', 'crunch', 'selfDestruct'], ['hex']],
     line: line2(['Eevee', 133, ['normal']], ['Umbreon', 197, ['dark']], { maxHp: 60, armor: 2, might: 0.2, regen: 0.4 }),
   },
   togepi: {
@@ -91,8 +91,8 @@ export const HATCHLINGS = {
     color: '#a08868',
     egg: 'common',
     stats: { speed: 8, magnet: 10, maxHp: -10 },
-    signature: 'gust', // TODO signature: braveBird
-    learnset: [['gust', 'electroBall', 'swift', 'roost', 'uTurn'], ['gyroBall', 'flashCannon'], ['focusPunch', 'selfDestruct']],
+    signature: 'braveBird',
+    learnset: [['braveBird', 'gust', 'electroBall', 'swift', 'roost', 'uTurn'], ['gyroBall', 'flashCannon'], ['focusPunch', 'selfDestruct']],
     line: line3(['Starly', 396, ['normal', 'flying']], ['Staravia', 397, ['normal', 'flying']], ['Staraptor', 398, ['normal', 'flying']], [
       { maxHp: 25, speed: 3, might: 0.08 },
       { maxHp: 40, speed: 4, might: 0.2, projectileSpeed: 0.1 },
@@ -103,8 +103,8 @@ export const HATCHLINGS = {
     color: '#68b868',
     egg: 'common',
     stats: { statusChance: 0.05, statusDamage: 0.15, maxHp: -5 },
-    signature: 'razorLeaf', // TODO signature: weatherBall
-    learnset: [['razorLeaf', 'sludgeBomb', 'disarmingVoice', 'vineWhip', 'toxicSpikes'], ['drumBeating', 'petalDance'], ['venoshock', 'spiritShackle', 'leafBlade']],
+    signature: 'weatherBall',
+    learnset: [['weatherBall', 'razorLeaf', 'sludgeBomb', 'disarmingVoice', 'vineWhip', 'toxicSpikes'], ['drumBeating', 'petalDance'], ['venoshock', 'spiritShackle', 'leafBlade']],
     line: line3(['Budew', 406, ['grass', 'poison']], ['Roselia', 315, ['grass', 'poison']], ['Roserade', 407, ['grass', 'poison']], [
       { maxHp: 20, might: 0.08, statusChance: 0.03 },
       { maxHp: 35, might: 0.18, area: 0.1, statusDamage: 0.15 },
@@ -115,8 +115,8 @@ export const HATCHLINGS = {
     color: '#c0a070',
     egg: 'common',
     stats: { speed: 5, might: 0.08 },
-    signature: 'crunch', // TODO signature: accelerock
-    learnset: [['crunch', 'rockTomb', 'quickAttack', 'stealthRock', 'flameWheel'], ['futureSight', 'electroBall', 'swift']],
+    signature: 'accelerock',
+    learnset: [['accelerock', 'crunch', 'rockTomb', 'quickAttack', 'stealthRock', 'flameWheel'], ['futureSight', 'electroBall', 'swift']],
     line: line2(['Rockruff', 744, ['rock']], ['Lycanroc', 745, ['rock']], { maxHp: 55, might: 0.25, speed: 5, armor: 1 }),
   },
   grubbin: {
@@ -124,8 +124,8 @@ export const HATCHLINGS = {
     color: '#5878c0',
     egg: 'common',
     stats: { area: 0.1, duration: 0.1, maxHp: 10, speed: -5 },
-    signature: 'flashCannon', // TODO signature: zapCannon
-    learnset: [['flashCannon', 'pinMissile', 'toxicSpikes', 'uTurn', 'thunder'], ['shockWave', 'electroBall'], ['gust', 'solarBeam']],
+    signature: 'zapCannon',
+    learnset: [['zapCannon', 'flashCannon', 'pinMissile', 'toxicSpikes', 'uTurn', 'thunder'], ['shockWave', 'electroBall'], ['gust', 'solarBeam']],
     line: line3(['Grubbin', 736, ['bug']], ['Charjabug', 737, ['bug', 'electric']], ['Vikavolt', 738, ['bug', 'electric']], [
       { maxHp: 35, armor: 1, might: 0.06 },
       { maxHp: 45, might: 0.2, area: 0.15 },
@@ -138,8 +138,8 @@ export const HATCHLINGS = {
     color: '#c8a868',
     egg: 'common',
     stats: { speed: 5, projectileSpeed: 0.1, magnet: 6, maxHp: -10 },
-    signature: 'gust', // TODO signature: aerialAce
-    learnset: [['gust', 'quickAttack', 'swift', 'roost', 'uTurn'], ['gyroBall', 'pinMissile'], ['electroBall', 'selfDestruct']],
+    signature: 'aerialAce',
+    learnset: [['aerialAce', 'gust', 'quickAttack', 'swift', 'roost', 'uTurn'], ['gyroBall', 'pinMissile'], ['electroBall', 'selfDestruct']],
     line: line3(['Pidgey', 16, ['normal', 'flying']], ['Pidgeotto', 17, ['normal', 'flying']], ['Pidgeot', 18, ['normal', 'flying']], [
       { maxHp: 20, speed: 3, might: 0.08 },
       { maxHp: 35, speed: 4, might: 0.18, area: 0.1 },
@@ -150,8 +150,8 @@ export const HATCHLINGS = {
     color: '#5878c8',
     egg: 'common',
     stats: { speed: 6, statusDamage: 0.1, maxHp: -10 },
-    signature: 'crunch', // TODO signature: crossPoison
-    learnset: [['crunch', 'gust', 'venoshock', 'swift', 'sludgeBomb'], ['uTurn', 'hex'], ['roost', 'toxicSpikes', 'pinMissile']],
+    signature: 'crossPoison',
+    learnset: [['crossPoison', 'crunch', 'gust', 'venoshock', 'swift', 'sludgeBomb'], ['uTurn', 'hex'], ['roost', 'toxicSpikes', 'pinMissile']],
     line: line3(['Zubat', 41, ['poison', 'flying']], ['Golbat', 42, ['poison', 'flying']], ['Crobat', 169, ['poison', 'flying']], [
       { maxHp: 25, speed: 3, might: 0.08 },
       { maxHp: 35, speed: 6, might: 0.18, cooldown: -0.05 },
@@ -162,8 +162,8 @@ export const HATCHLINGS = {
     color: '#5870c8',
     egg: 'common',
     stats: { cooldown: -0.04, maxHp: 10, speed: -2 },
-    signature: 'waterGun', // TODO signature: bubbleBeam
-    learnset: [['waterGun', 'whirlpool', 'iceShard', 'dreamEater'], ['brine', 'futureSight'], []],
+    signature: 'bubbleBeam',
+    learnset: [['bubbleBeam', 'waterGun', 'whirlpool', 'iceShard', 'dreamEater'], ['brine', 'futureSight'], []],
     line: line3(['Poliwag', 60, ['water']], ['Poliwhirl', 61, ['water']], ['Poliwrath', 62, ['water', 'fighting']], [
       { maxHp: 30, might: 0.08, armor: 1 },
       { maxHp: 50, might: 0.2, armor: 1, area: 0.05 },
@@ -187,8 +187,8 @@ export const HATCHLINGS = {
     egg: 'common',
     // Sturdy and slow like Geodude, but leaner; Gigalith's glowing crystals widen every blow.
     stats: { armor: 2, maxHp: 10, speed: -5 },
-    signature: 'rockTomb', // TODO signature: rockBlast
-    learnset: [['rockTomb', 'flashCannon', 'stealthRock', 'earthquake', 'selfDestruct'], ['gyroBall', 'psyshock'], ['solarBeam', 'electroBall']],
+    signature: 'rockBlast',
+    learnset: [['rockBlast', 'rockTomb', 'flashCannon', 'stealthRock', 'earthquake', 'selfDestruct'], ['gyroBall', 'psyshock'], ['solarBeam', 'electroBall']],
     line: line3(['Roggenrola', 524, ['rock']], ['Boldore', 525, ['rock']], ['Gigalith', 526, ['rock']], [
       { maxHp: 30, armor: 1, might: 0.08 },
       { maxHp: 50, might: 0.2, area: 0.15 },
@@ -199,8 +199,8 @@ export const HATCHLINGS = {
     color: '#f0d070',
     egg: 'common',
     stats: { maxHp: 15, regen: 0.1, statusChance: 0.03, speed: -3 },
-    signature: 'shockWave', // TODO signature: cottonSpore
-    learnset: [['shockWave', 'electroBall', 'rockTomb', 'flashCannon', 'thunder'], ['flameWheel', 'focusPunch'], ['dragonBreath', 'dragonTail']],
+    signature: 'shockWave',
+    learnset: [['cottonSpore', 'shockWave', 'electroBall', 'rockTomb', 'flashCannon', 'thunder'], ['flameWheel', 'focusPunch'], ['dragonBreath', 'dragonTail']],
     line: line3(['Mareep', 179, ['electric']], ['Flaaffy', 180, ['electric']], ['Ampharos', 181, ['electric']], [
       { maxHp: 25, might: 0.08, statusChance: 0.02 },
       { maxHp: 40, might: 0.18, area: 0.12 },
@@ -212,8 +212,8 @@ export const HATCHLINGS = {
     egg: 'common',
     // A lynx that hunts with its fangs; Luxray's glare makes the shocks paralyze more often.
     stats: { might: 0.06, speed: 3, statusChance: 0.02, maxHp: -5 },
-    signature: 'shockWave', // TODO signature: wildCharge
-    learnset: [['shockWave', 'crunch', 'quickAttack', 'electroBall', 'thunder'], ['suckerPunch', 'iceShard'], ['flameWheel', 'uTurn']],
+    signature: 'wildCharge',
+    learnset: [['wildCharge', 'shockWave', 'crunch', 'quickAttack', 'electroBall', 'thunder'], ['suckerPunch', 'iceShard'], ['flameWheel', 'uTurn']],
     line: line3(['Shinx', 403, ['electric']], ['Luxio', 404, ['electric']], ['Luxray', 405, ['electric']], [
       { maxHp: 25, might: 0.1, speed: 2 },
       { maxHp: 40, might: 0.22, statusChance: 0.04 },
@@ -224,8 +224,8 @@ export const HATCHLINGS = {
     color: '#68a8e8',
     egg: 'common',
     stats: { regen: 0.15, maxHp: 10, might: -0.05 },
-    signature: 'disarmingVoice', // TODO signature: playRough
-    learnset: [['disarmingVoice', 'waterGun', 'rollout', 'iceShard', 'whirlpool'], ['razorShell', 'brine'], ['focusPunch', 'waterShuriken']],
+    signature: 'playRough',
+    learnset: [['playRough', 'disarmingVoice', 'waterGun', 'rollout', 'iceShard', 'whirlpool'], ['razorShell', 'brine'], ['focusPunch', 'waterShuriken']],
     // Azumarill's Huge Power: a soft start, a heavy hitter at the end.
     line: line3(['Azurill', 298, ['normal', 'fairy']], ['Marill', 183, ['water', 'fairy']], ['Azumarill', 184, ['water', 'fairy']], [
       { maxHp: 25, might: 0.08 },
@@ -237,8 +237,8 @@ export const HATCHLINGS = {
     color: '#88b070',
     egg: 'common',
     stats: { statusChance: 0.05, regen: 0.15, speed: -3 },
-    signature: 'razorLeaf', // TODO signature: spore
-    learnset: [['razorLeaf', 'venoshock', 'leechSeed', 'toxicSpikes', 'machPunch'], ['focusPunch', 'vineWhip', 'forcePalm']],
+    signature: 'razorLeaf',
+    learnset: [['spore', 'razorLeaf', 'venoshock', 'leechSeed', 'toxicSpikes', 'machPunch'], ['focusPunch', 'vineWhip', 'forcePalm']],
     line: line2(['Shroomish', 285, ['grass']], ['Breloom', 286, ['grass', 'fighting']], { maxHp: 40, might: 0.25, speed: 5, cooldown: -0.04 }),
   },
   swinub: {
@@ -423,8 +423,8 @@ export const HATCHLINGS = {
     egg: 'rare',
     // Splash: weak (but quick to level) until Gyarados.
     stats: { maxHp: -25, might: -0.3, speed: -2, growth: 0.2 },
-    signature: 'waterGun', // TODO signature: waterfall
-    learnset: [['waterGun', 'flail', 'whirlpool', 'swift', 'crunch'], ['thunder', 'twister', 'dragonTail']],
+    signature: 'waterGun',
+    learnset: [['waterfall', 'waterGun', 'flail', 'whirlpool', 'swift', 'crunch'], ['thunder', 'twister', 'dragonTail']],
     line: line2(['Magikarp', 129, ['water']], ['Gyarados', 130, ['water', 'flying']], { maxHp: 90, might: 0.6, armor: 2, area: 0.15 }),
   },
   horsea: {

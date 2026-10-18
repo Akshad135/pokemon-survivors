@@ -8,7 +8,12 @@ import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 import { EGG_MOVE_ICONS } from './eggMoveArt'
+import { EGG_MOVE_2_ICONS } from './eggMove2Art'
 import { SIGNATURE_ICONS } from './signatureArt'
+import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
+import { cursedIcon, DUO_ICONS } from './duoArt'
+import type { CurseId } from '../data/curses'
+import { LEGENDARY_ICONS } from './legendaryArt'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -498,6 +503,8 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...SIGNATURE_ICONS,
+  ...VERB_EVOLVED_ICONS,
+  ...LEGENDARY_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),
@@ -588,6 +595,8 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
   liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
   alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
+  ...EGG_MOVE_2_ICONS,
+  ...DUO_ICONS,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -680,6 +689,9 @@ export const itemIcon = (id: ItemId) =>
     const [rows, pal] = ITEM_ART[id]
     return art(rows, pal, '#181818')
   })
+
+/** A cursed item in its purple frame (`render/duoArt.ts`). */
+export const curseIcon = (id: CurseId) => toIconUrl(`curse:${id}`, () => cursedIcon(id))
 
 export const bagIcon = (id: BagItem) =>
   toIconUrl(`bag:${id}`, () => {
