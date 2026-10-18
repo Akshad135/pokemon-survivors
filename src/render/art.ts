@@ -8,6 +8,7 @@ import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 import { SIGNATURE_ICONS } from './signatureArt'
+import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -497,6 +498,7 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...SIGNATURE_ICONS,
+  ...VERB_EVOLVED_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),

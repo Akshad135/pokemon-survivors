@@ -318,6 +318,78 @@ const SFX = {
     tone(400, 900, 0.1, 'sine', 0.1)
   },
   crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
+  /* Evolved verb moves (`ui/castSfx.ts`) */
+  /** Raging Fury's nova: a roar of flame. */
+  furyNova: () => {
+    noise(0.35, 0.16)
+    tone(140, 55, 0.35, 'sawtooth', 0.14)
+    tone(300, 700, 0.18, 'triangle', 0.06)
+  },
+  /** Seed Flare: the little sun swelling, then the rays bursting out. */
+  seedFlare: () => {
+    tone(440, 1760, 0.38, 'triangle', 0.08)
+    ;[1047, 1319, 1568].forEach((f, i) => tone(f, f, 0.07, 'square', 0.04, 0.08 + i * 0.09))
+    noise(0.4, 0.12, 0.4)
+    tone(1600, 500, 0.45, 'sawtooth', 0.07, 0.4)
+  },
+  spout: () => {
+    noise(0.3, 0.12)
+    tone(220, 880, 0.25, 'sine', 0.12)
+    tone(330, 1100, 0.2, 'sine', 0.06, 0.08)
+  },
+  drift: () => {
+    tone(500, 1900, 0.14, 'square', 0.06)
+    tone(1900, 1200, 0.1, 'square', 0.04, 0.12)
+  },
+  sludge: () => {
+    noise(0.25, 0.1)
+    tone(110, 70, 0.3, 'triangle', 0.16)
+    tone(180, 90, 0.2, 'square', 0.05, 0.05)
+  },
+  /** Explosion: a deeper, longer blast than Self-Destruct's. */
+  bigBoom: () => {
+    noise(1, 0.42)
+    tone(150, 22, 0.9, 'sawtooth', 0.24)
+    tone(80, 25, 1, 'square', 0.14, 0.06)
+  },
+  oblivion: () => {
+    noise(0.3, 0.1)
+    ;[294, 277, 220].forEach((f, i) => tone(f, f * 0.5, 0.3, 'sawtooth', 0.07, i * 0.03))
+    tone(1400, 300, 0.25, 'square', 0.04, 0.1)
+  },
+  uppercut: () => {
+    noise(0.22, 0.24)
+    tone(80, 420, 0.18, 'square', 0.16)
+    tone(220, 60, 0.25, 'sawtooth', 0.1, 0.12)
+  },
+  grind: () => [0, 0.06, 0.12, 0.18].forEach((d, i) => tone(i % 2 ? 260 : 340, 180, 0.06, 'sawtooth', 0.06, d)),
+  cleave: () => {
+    noise(0.12, 0.16)
+    tone(2200, 500, 0.14, 'sawtooth', 0.07)
+    tone(330, 110, 0.18, 'square', 0.08, 0.03)
+  },
+  hyperspace: () => {
+    tone(90, 1400, 0.12, 'triangle', 0.08)
+    noise(0.35, 0.16, 0.05)
+    tone(1200, 70, 0.4, 'sawtooth', 0.1, 0.05)
+  },
+  arrows: () => [0, 0.04, 0.08, 0.12, 0.16, 0.2].forEach((d, i) => tone(1500 + i * 120, 600, 0.05, 'square', 0.035, d)),
+  axe: () => {
+    tone(600, 200, 0.08, 'square', 0.06)
+    noise(0.25, 0.22, 0.02)
+    tone(110, 35, 0.3, 'square', 0.16, 0.02)
+  },
+  impression: () => [0, 0.135, 0.27].forEach((d, i) => tone(500 + i * 200, 1700 + i * 200, 0.08, 'square', 0.05, d)),
+  swipe: () => {
+    noise(0.3, 0.12)
+    tone(120, 300, 0.15, 'sawtooth', 0.1)
+    tone(300, 90, 0.2, 'sawtooth', 0.1, 0.15)
+  },
+  lance: () => {
+    tone(3000, 1300, 0.25, 'triangle', 0.07)
+    tone(2200, 3600, 0.12, 'square', 0.03)
+    noise(0.15, 0.06, 0.05)
+  },
 } as const
 
 export type Sfx = keyof typeof SFX
