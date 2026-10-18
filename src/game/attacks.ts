@@ -2,6 +2,7 @@ import { dir8, dirTo, fromAngle, retain } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { damageEnemy } from './combat'
+import { evolvedImpact, evolvedTick } from './evolvedMoves'
 import { mineArmed, mineBlast, TURRET_RANGE } from './moveRules'
 import { nearestEnemy } from './queries'
 import { spawnAttack } from './spawn'
@@ -146,10 +147,6 @@ const trail = (g: Game, a: Attack) => {
     case 'star': return emit(['#fff8a0', '#ffffff'], 0.5, { ttl: 0.25 })
     case 'sludge': return a.age > a.activeFrom ? emit(['#c070d0', '#a040a0'], 0.25, { gravity: -25, ttl: 0.5, speed: 6 }) : undefined
     case 'flamethrower': return emit(['#f8d030', '#f08030', '#c03020'], 0.8, { gravity: -40, speed: 18 })
-    case 'fireBlast': return emit(['#fff8c0', '#f8d030', '#f08030'], 0.7, { gravity: -60, ttl: 0.4 })
-    case 'hydroPump': return emit(['#a8d8f8', '#4878e8', '#ffffff'], 1, { gravity: 80, speed: 24 })
-    case 'leafStorm': return emit(['#70d048', '#e0f8a0'], 0.3, { ttl: 0.35 })
-    case 'triAttack': return emit([['#f06020', '#ffd080'], ['#60c0f0', '#e0f8ff'], ['#f8d830', '#fff8c0']][a.id % 3]!, 0.6, { ttl: 0.25 })
     case 'gunk': return a.age > a.activeFrom ? emit(['#b878c8', '#6a3a78', '#88a038'], 0.35, { gravity: -25, ttl: 0.6, speed: 8 }) : undefined
     case 'hurricane': return emit(['#ffffff', '#c8d0e8'], 0.8, { gravity: -70, speed: 40, ttl: 0.4 })
     case 'arrow': return emit(['#a070d8', '#705898', '#c8a8f0'], 0.7, { ttl: 0.35, speed: 4 })
@@ -170,6 +167,9 @@ const trail = (g: Game, a: Attack) => {
   }
 }
 
+/** When a hitbox lands: its damage window opens, or it shows up (visual-only ones never open it). */
+const landsAt = (a: Attack) => (a.activeFrom === Infinity ? 0 : a.activeFrom)
+
 export const updateAttacks = (g: Game, dt: number) => {
   for (const a of g.attacks) {
     a.age += dt
@@ -177,7 +177,9 @@ export const updateAttacks = (g: Game, dt: number) => {
     move(g, a, a.motion, dt)
     if (a.grow > 0 && a.shape.kind === 'circle') a.shape = { kind: 'circle', r: a.shape.r + a.grow * dt }
     trail(g, a)
+    evolvedTick(g, a, dt)
     if (a.turret) shoot(g, a, a.turret, dt)
+    if (a.age > landsAt(a) && a.age - dt <= landsAt(a) + 1e-9) evolvedImpact(g, a)
     if (a.age >= a.activeFrom && a.age <= a.activeUntil && (a.blast === 0 || mineArmed(a.age))) collide(g, a)
     if (a.blast > 0 && a.pierce > 0 && a.age >= a.ttl) detonate(g, a, true)
   }

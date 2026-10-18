@@ -152,11 +152,14 @@ export type Visual =
 /** What dealt the damage, for the results screen. */
 export type DamageSource = MoveId | 'special'
 
-/** Visuals of evolved moves, drawn by `render/evolved.ts`. */
+/** Visuals of evolved moves, drawn by `render/evolved.ts` (casts in `game/evolvedMoves.ts`). */
 export type EvolvedVisual =
-  | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
-  | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
-  | 'blizzard' | 'stoneEdge' | 'megahorn' | 'outrage'
+  | 'flamethrower' | 'flameField' | 'fireBlast' | 'starFlame' | 'hydroPump' | 'pumpSplash' | 'surf' | 'leafStorm'
+  | 'powerWhip' | 'triFire' | 'triIce' | 'triBolt' | 'triPrism' | 'wildbolt' | 'wildFork' | 'stormCloud'
+  | 'gunkBomb' | 'gunk' | 'toxicCloud' | 'hurricane' | 'infernoRing' | 'icicleFall' | 'blizzard' | 'snowSwirl'
+  | 'stoneEdge' | 'megahorn' | 'outrage' | 'outrageRoar' | 'boltStrike'
+  /** A bare hit segment that draws nothing (the inner part of Power Whip's vine). */
+  | 'hitbox'
 
 /** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
 export type TacticVisual =
