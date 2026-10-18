@@ -42,7 +42,7 @@ export const siteEn: SiteMessages = {
   pokedex: {
     title: 'Pokémon Survivors Pokédex: starters, enemies, bosses and legendaries',
     description:
-      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 53 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
+      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 54 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `All ${count} Pokémon in Pokémon Survivors, with the game's own numbers: starters from every region, the families that hatch from eggs and their evolutions, the wild horde, the bosses and the legendaries. Hover (or tap) to see the sprite walk, and use ★ to see the shiny.`,

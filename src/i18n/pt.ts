@@ -1655,6 +1655,7 @@ export const pt = {
     zubat: 'Morcego. Rápido, morde e envenena.',
     poliwag: 'Girino. Água, socos e recarga rápida.',
     geodude: 'Rocha. Lento, duro e com pedradas pesadas.',
+    roggenrola: 'Cristal. Couraça grossa, e o Gigalith esmaga em área.',
     mareep: 'Lã elétrica. Choques que paralisam.',
     azurill: 'Bolinha. Fraquinho no início, Huge Power no fim.',
     shroomish: 'Cogumelo. Esporos, e depois os socos do Breloom.',

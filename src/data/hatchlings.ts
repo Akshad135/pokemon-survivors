@@ -181,6 +181,19 @@ export const HATCHLINGS = {
       { maxHp: 55, armor: 1, might: 0.2, area: 0.1 },
     ]),
   },
+  roggenrola: {
+    name: 'Roggenrola',
+    color: '#4868a8',
+    egg: 'common',
+    // Sturdy and slow like Geodude, but leaner; Gigalith's glowing crystals widen every blow.
+    stats: { armor: 2, maxHp: 10, speed: -5 },
+    signature: 'rockTomb',
+    learnset: ['rockTomb', 'earthquake', 'flashCannon', 'machPunch', 'swift', 'psyshock'],
+    line: line3(['Roggenrola', 524, ['rock']], ['Boldore', 525, ['rock']], ['Gigalith', 526, ['rock']], [
+      { maxHp: 30, armor: 1, might: 0.08 },
+      { maxHp: 50, might: 0.2, area: 0.15 },
+    ]),
+  },
   mareep: {
     name: 'Mareep',
     color: '#f0d070',

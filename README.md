@@ -8,7 +8,7 @@
 
 **A free Vampire Survivors–style roguelite with Pokémon, playable in the browser.**
 
-Pick one of 27 starters (or hatch eggs for 53 more Pokémon, 80 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
+Pick one of 27 starters (or hatch eggs for 54 more Pokémon, 81 in all), survive 15 minutes of wild hordes, learn moves, evolve, and take down Mewtwo.
 
 [**▶ Play at pokemonsurvivors.com**](https://www.pokemonsurvivors.com)
 
@@ -92,7 +92,7 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
     </tr>
   </table>
 
-- **Eggs and 52 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 52 families from every type and generation (Pichu, Eevee, Pidgey, Geodude, Gastly, Abra, Magikarp, Riolu, Zorua… and the rarest Dratini, Larvitar, Beldum, Bagon, Gible, Deino, Dreepy, Slakoth and Feebas), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars. A 53rd family, Munchlax → Snorlax, only hatches from the Friendship Egg, which comes from inviting friends.
+- **Eggs and 53 more playable Pokémon.** Bosses, locked chests and rifts sometimes leave an egg. It waits in a 3-slot incubator and hatches with the steps you take in runs, unlocking one of 53 families from every type and generation (Pichu, Eevee, Pidgey, Geodude, Gastly, Abra, Magikarp, Riolu, Zorua… and the rarest Dratini, Larvitar, Beldum, Bagon, Gible, Deino, Dreepy, Slakoth and Feebas), each with its own move, special and mid-run evolution. Hatching plays a little scene with the cry, 1% of hatchlings are shiny for good, and duplicates become Poké Dollars. A 54th family, Munchlax → Snorlax, only hatches from the Friendship Egg, which comes from inviting friends.
 - **Invites and Mystery Gifts.** Every link the game shares carries your handle. A friend who signs up through it gets a Friendship Egg, you follow each other, and once they've played 3 verified runs you get a Mystery Gift: a Friendship Egg for the first friend, the Ambassador title and an exclusive card frame at 3, a shiny Munchlax at 10. Profiles show how many friends you brought.
 - **Supporters.** The game is free with nothing for sale; donating (Pix, cards, Apple Pay or Google Pay, on the support page) with an account brings a cosmetic thank-you as Mystery Gifts: the Supporter title and card frame, a ♥ badge by your @ on the boards and profile, a shiny of your choice (any starter, or an egg family, which unlocks it), a companion that follows you in runs, your name in the Hall of Fame and the victory's credits, and a vote on the next egg family. R$ 50 or US$ 10 in all makes it Gold: a golden card background, PC Box wallpaper and badge. A donation made without an account comes with a code to redeem in the game. Nothing changes a run or the ranking.
 
@@ -115,7 +115,7 @@ The game is in Brazilian Portuguese 🇧🇷, English 🇺🇸 and Spanish 🌎,
 - **Daily Challenge and ribbons**: one run a day that is the same for everyone (Brasília time): the same seed, Pokémon (any playable one, egg families you haven't hatched yet included) and difficulty, with no Poké Mart upgrades, Lure, Incense or Shiny Charm, and the day's outbreak on. Only your first finished run of the day goes on the challenge board; the rest are practice. A few hours after the day closes, everyone on it gets a ribbon as a Mystery Gift: gold for the top 10%, silver for the top half, bronze for taking part. Ribbons show on your profile and Trainer Card, and an official attempt's card shows its place. Guests can play and practice it too, off the board.
 - **Shinies**: any wild Pokémon can be a shiny elite (1/450, down to 1/225 with the Shiny Charm), and your starter has a 1/64 chance to be shiny for the whole run. Rolling it unlocks that Pokémon's shiny for good (pick Normal or Shiny on the select screen), and every shiny you catch lives in the **PC Box**, 30 to a box like the games' PC.
 - **Share cards**: the results screen draws a pixel art card of the run (your Pokémon, time, level, the shinies you caught, the legendaries you beat) to share, copy or download, and the PC Box and your profile draw your **Trainer Card**. Shared links carry your handle (`?ref=`).
-- **In-game Pokédex** of 571 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
+- **In-game Pokédex** of 572 species: every one you've seen, how many you defeated and which you caught. A defeated shiny is yours, and so are the Pokémon you hatch and every form you play. The end of a run shows what's new.
 - **Five biomes per run**: Route 1, Viridian Forest, Mt. Moon, Mt. Silver and Lavender Tower, each with its own ground, breakables and theme, cross-dissolving with no loading screen.
 - **Weather** for everyone: harsh sunlight (Fire ×1.5, Water ×0.75), rain (the opposite), sandstorm and snow (wear down non-immune types) and fog (short sight).
 - **Items on the map**: break item balls, berry trees and tall grass for Potions, Rare Candies, Max Repels, a Voltorb that explodes, and more.
