@@ -40,6 +40,7 @@ import type { BossFight } from './bossFight'
 import type { ModState } from './mods'
 import type { DamageBonus } from './kitRules'
 import type { MoveSound } from './moveVerbs'
+import type { LegendaryVisual } from './legendaryMoves'
 
 export type OwnedMove = {
   id: MoveId
@@ -201,6 +202,8 @@ export type Visual =
   | VerbVisual
   | SignatureVisual
   | TypeEvolvedVisual
+  /** Legendary moves (`legendaryMoves.ts`), drawn by `render/legendaryFx.ts`. */
+  | LegendaryVisual
 
 /** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
 export type DamageSource = MoveId | 'special' | 'ability'
