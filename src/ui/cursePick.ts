@@ -37,7 +37,7 @@ export const cursePick = (root: HTMLElement, input: Input, g: Game, onChoose: (o
     el.classList.add(picked.kind === 'curse' && picked.take ? 'taking' : 'leaving')
     setTimeout(() => onChoose(picked), PICK_MS)
   }, { horizontal: true })
-  // The hint says ↑ ↓: up and down move between the two buttons too.
+  // Up and down move between the two buttons too.
   const offArrows = input.onKey((key) => {
     if (key === 'ArrowUp' || key === 'KeyW') nav.focus(nav.index - 1)
     else if (key === 'ArrowDown' || key === 'KeyS') nav.focus(nav.index + 1)
@@ -57,7 +57,7 @@ export const cursePick = (root: HTMLElement, input: Input, g: Game, onChoose: (o
       h('p', { class: 'curse-line down' }, h('b', {}, '▼'), text.downside),
       h('p', { class: 'curse-note' }, m.curse.note),
       h('div', { class: 'buttons' }, ...buttons),
-      hint(m.levelUp.hintKeys, m.levelUp.hintTouch),
+      hint(m.levelUp.pairHintKeys, m.levelUp.hintTouch),
     ),
   )
   root.append(el)
