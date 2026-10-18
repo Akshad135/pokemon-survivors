@@ -1563,6 +1563,7 @@ export const es: Messages = {
     geodude: 'Roca. Lento, duro y con pedradas pesadas.',
     roggenrola: 'Cristal. Coraza gruesa, y Gigalith aplasta en área.',
     mareep: 'Lana eléctrica. Descargas que paralizan.',
+    shinx: 'Lince eléctrico. Colmillos y descargas, y la mirada de Luxray paraliza.',
     azurill: 'Pelotita. Débil al inicio, Huge Power al final.',
     shroomish: 'Hongo. Esporas, y luego los puñetazos de Breloom.',
     swinub: 'Cerdito. Hielo en el suelo y mucha resistencia.',

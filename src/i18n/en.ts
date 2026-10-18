@@ -1562,6 +1562,7 @@ export const en: Messages = {
     geodude: 'Rock. Slow, tough, with heavy boulders.',
     roggenrola: 'Crystal. Thick armor, and Gigalith crushes wide.',
     mareep: 'Electric wool. Shocks that paralyze.',
+    shinx: 'Electric lynx. Fangs and shocks, and Luxray\'s glare paralyzes.',
     azurill: 'Bouncy ball. Weak at first, Huge Power at the end.',
     shroomish: 'Mushroom. Spores, then Breloom\'s punches.',
     swinub: 'Piglet. Ice on the ground and lots of grit.',
