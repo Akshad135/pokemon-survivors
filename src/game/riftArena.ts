@@ -6,8 +6,9 @@ import { healPlayer, hurtPlayer } from './combat'
 import { dropItem } from './consumables'
 import { burst, floatText } from './effects'
 import { spawnEnemy } from './enemies'
-import { dropMegaStones } from './mega'
+import { dropMegaStones, heldMega } from './mega'
 import { dropCoins, dropPickup } from './pickups'
+import { dropLegendaryTm } from './tms'
 import { riftLoot, riftScale, type RiftArena } from './rift'
 import { rollShiny } from './shiny'
 import { groundAt, playerTypes } from './terrain'
@@ -151,7 +152,9 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
   for (let i = 0; i < loot.pokeballs; i++) dropPickup(g, x - 8 + i * 8, y + 4, 'pokeball')
   loot.items.forEach((item, i) => dropItem(g, x + 10 + i * 6, y, item))
   // A Mega line's first beaten legendary also leaves its Mega Stone (or both, to choose from).
-  if (!g.mega.stone && !g.pickups.some((k) => k.kind === 'megaStone')) dropMegaStones(g, x, y - 10)
+  if (!heldMega(g) && !g.pickups.some((k) => k.kind === 'megaStone')) dropMegaStones(g, x, y - 10)
+  // So does its legendary TM, until the run has learned one.
+  dropLegendaryTm(g, arena.legend, x + 14, y - 6)
   const p = g.player
   const heal = Math.round(healPlayer(g, p.stats.maxHp * loot.heal))
   floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
@@ -185,7 +188,7 @@ export const updateArena = (g: Game, dt: number) => {
   for (const e of g.enemies) keepOnFloor(e, arena, whole, [], e.radius)
   // Shots break on the edge.
   retain(g.hazards, (h) => onFloor(whole, h.x - arena.x, h.y - arena.y, 4))
-  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'])
+  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'], 'lava')
 
   if (arena.loot === null) {
     const boss = g.enemies.find((e) => e.id === arena.bossId)
