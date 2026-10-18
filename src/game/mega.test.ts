@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { MEGA_BRANCH } from '../data/branches'
 import { PLAYABLE } from '../data/hatchlings'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
@@ -23,8 +24,10 @@ describe('mega data', () => {
 
   it('tells apart the forms and stones of a line with two Megas', () => {
     for (const line of MEGA_LINES) {
+      // Gardevoir's and Gallade's Megas share a form key: they live under different dex numbers (`MEGA_BRANCH`).
+      const forms = megasOf(line).map((id) => `${MEGA_BRANCH[id] ?? ''}:${MEGAS[id].form}`)
       const defs = megasOf(line).map((id): MegaDef => MEGAS[id])
-      expect(new Set(defs.map((d) => d.form)).size).toBe(defs.length)
+      expect(new Set(forms).size).toBe(defs.length)
       expect(new Set(defs.map((d) => d.stone)).size).toBe(defs.length)
     }
     expect(megasOf('charmander')).toEqual(['charizardX', 'charizardY'])

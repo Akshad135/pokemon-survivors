@@ -1,4 +1,5 @@
 import type { PokeType } from '../data/types'
+import type { MoveTag } from './moves'
 
 /**
  * Player-wide modifiers, Vampire Survivors style. Every source (starter,
@@ -31,6 +32,8 @@ export type PlayerStats = {
   greed: number
   /** extra damage per move type, on top of might (0.1 = +10% for that type) */
   typeDamage: Partial<Record<PokeType, number>>
+  /** extra damage per kind of move (`MoveTag`), from abilities (Iron Fist, Technician…) */
+  tagDamage: Partial<Record<MoveTag, number>>
   /** added to every move's status chance */
   statusChance: number
   /** extra burn/poison damage (0.2 = +20%) */
@@ -60,6 +63,7 @@ export const BASE_STATS: PlayerStats = {
   growth: 1,
   greed: 1,
   typeDamage: {},
+  tagDamage: {},
   statusChance: 0,
   statusDamage: 0,
   damageTaken: 1,
@@ -68,11 +72,14 @@ export const BASE_STATS: PlayerStats = {
 }
 
 export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): PlayerStats =>
-  deltas.reduce<PlayerStats>((acc, { typeDamage, ...delta }) => {
-    const next = { ...acc, typeDamage: { ...acc.typeDamage } }
+  deltas.reduce<PlayerStats>((acc, { typeDamage, tagDamage, ...delta }) => {
+    const next = { ...acc, typeDamage: { ...acc.typeDamage }, tagDamage: { ...acc.tagDamage } }
     for (const k of Object.keys(delta) as (keyof typeof delta)[]) next[k] += delta[k] ?? 0
     for (const [type, bonus] of Object.entries(typeDamage ?? {}) as Array<[PokeType, number]>) {
       next.typeDamage[type] = (next.typeDamage[type] ?? 0) + bonus
+    }
+    for (const [tag, bonus] of Object.entries(tagDamage ?? {}) as Array<[MoveTag, number]>) {
+      next.tagDamage[tag] = (next.tagDamage[tag] ?? 0) + bonus
     }
     return next
   }, base)

@@ -41,7 +41,7 @@ export const guardHit = (g: Game, w: MoveWindow, from?: Enemy) => {
   burst(g, p.x, p.y - 12, { colors: [TYPE_COLORS[def.type], '#ffffff'], count: 12, speed: 110, ttl: 0.35, size: 2 })
   g.events.push({ kind: 'guard' })
   const owned = ownedOf(g, w)
-  if (owned && def.onGuard) def.onGuard(g, moveStats(owned.id, owned.level, p.stats), owned, from)
+  if (owned && def.onGuard) def.onGuard(g, moveStats(owned.id, owned.level, p.stats, owned.path), owned, from)
 }
 
 /**
@@ -58,6 +58,6 @@ export const updateMoveKit = (g: Game, dt: number) => {
     p.hidden = null
     const def: MoveDef = MOVES[hidden.move]
     const owned = ownedOf(g, hidden)
-    if (owned && def.emerge) def.emerge(g, moveStats(owned.id, owned.level, p.stats), owned)
+    if (owned && def.emerge) def.emerge(g, moveStats(owned.id, owned.level, p.stats, owned.path), owned)
   }
 }

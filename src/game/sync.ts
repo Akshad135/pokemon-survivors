@@ -46,6 +46,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - Ribbons: a union, one per day (the better one if both sides had that day).
  * - Shiny picks: a union by ticket; a pick made on either side stays made.
  * - The companion: `incoming`'s, if it has one (like the title).
+ * - Branches taken: per family, `incoming`'s when it has one (like the partner).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -72,6 +73,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     ribbons: mergeRibbons(base.ribbons, incoming.ribbons),
     shinyPicks: mergeShinyPicks(base.shinyPicks, incoming.shinyPicks),
     companion: incoming.companion ?? base.companion,
+    branches: { ...base.branches, ...incoming.branches },
   }
 }
 

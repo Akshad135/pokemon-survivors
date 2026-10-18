@@ -6,6 +6,8 @@ import { HATCHLINGS, isHatchling, PLAYABLE } from '../../data/hatchlings'
 import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
+import { branchesAt, branchStage, familyDex } from '../../data/branches'
+import { formLine, runLearnset } from '../../game/branch'
 import { starterStats } from '../../game/leveling'
 import { MOVES, type MoveId } from '../../game/moves'
 import { resolveSpecial } from '../../game/special'
@@ -36,7 +38,7 @@ const sheetsOf = (dex: number) => {
 }
 
 /** Species drawn at the same zoom: a whole evolution line, so Charmeleon never looks smaller than Charmander. */
-const family = (entry: DexEntry) => (entry.source.kind === 'starter' ? PLAYABLE[entry.source.id].line.map((s) => s.dex) : [entry.dex])
+const family = (entry: DexEntry) => (entry.source.kind === 'starter' ? familyDex(entry.source.id) : [entry.dex])
 
 /**
  * Up to four stacked sheets (idle/walk × normal/shiny); CSS shows one at a time.
@@ -52,7 +54,7 @@ const stage = (entry: DexEntry, css: SpriteCss, m: SiteMessages) => {
 }
 
 const statBars = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
-  const stats = starterStats(entry.source.id, entry.source.stage)
+  const stats = starterStats(entry.source.id, entry.source.stage, entry.source.branch ?? null)
   const labels = LOCALES[locale].messages.stats
   return html`<dl class="bars">${STAT_BARS.map(
     (b) =>
@@ -65,15 +67,20 @@ const moveChip = (id: MoveId, m: SiteMessages) => html`<li style="--type:${TYPE_
 const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const game = LOCALES[locale].messages
-  const { id, stage: i, wild } = entry.source
+  const { id, stage: i, wild, branch = null } = entry.source
   const s: PlayableDef = PLAYABLE[id]
   const signature = MOVES[s.signature]
-  const special = resolveSpecial(id, i)
+  const special = resolveSpecial(id, i, null, branch)
   const final = special.final
-  const last = resolveSpecial(id, s.line.length - 1)
-  const line = s.line.map(
-    (st, k) => html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li><a href="#${slugOf(st.name)}"${k === i ? html` aria-current="true"` : ''}><img src="${asset(st.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${st.name}</a></li>`,
-  )
+  const last = resolveSpecial(id, s.line.length - 1, null, branch)
+  // A stage a branching evolution decides shows every branch it can take.
+  const line = formLine(id, branch).map((st, k) => {
+    const options = branchesAt(id, k)
+    const forms = options.length > 0 ? options.map(branchStage) : [st]
+    return html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li>${forms.map(
+      (f) => html`<a href="#${slugOf(f.name)}"${f.dex === entry.dex ? html` aria-current="true"` : ''}><img src="${asset(f.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${f.name}</a>`,
+    )}</li>`
+  })
   // A 2-stage line's second stage is already the final one.
   const stageName = m.pokedex.stageOf(i > 0 && i === s.line.length - 1 ? 2 : i)
   return html`<p class="blurb">${stageName} · ${game.blurbs[id]}</p>
@@ -87,7 +94,7 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <h3>${m.pokedex.special}</h3>
     <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${last.tier.name})</small>`}<br />${game.specials[special.id]}</p>
     <h3>${m.pokedex.learnset}</h3>
-    <ul class="chips">${s.learnset.map((mv) => moveChip(mv, m))}</ul>
+    <ul class="chips">${runLearnset(id, branch).map((mv) => moveChip(mv, m))}</ul>
     ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`
 }
 

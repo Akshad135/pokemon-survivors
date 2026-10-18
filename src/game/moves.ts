@@ -11,9 +11,12 @@ import {
 } from './moveRules'
 import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
+import { modBits, modHit, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import * as dm from '../engine/dmath'
 import * as evo from './typeEvolutions'
+import * as evolved from './evolvedMoves'
+import { TRI_ELEMENTS } from './evolvedRules'
 
 /**
  * Moves are the weapons. Each level-up upgrade adds a delta to the move's
@@ -39,24 +42,36 @@ export type MoveStats = {
   statusDamage: number
 }
 
-/** What `fire` receives: final stats plus the scaled status the move inflicts. */
-export type CastStats = MoveStats & { status: StatusSpec | null }
+/** What `fire` receives: final stats, the scaled status the move inflicts and the mods of the branches taken (`mods.ts`). */
+export type CastStats = MoveStats & { status: StatusSpec | null; mods: number }
 
 /** Stat delta added by one level-up (texts live in `i18n`). */
 type Upgrade = Partial<MoveStats>
+
+/** One way of a fork: a stat trade-off plus the behavior mods it adds (`mods.ts`). */
+export type Branch = { stats: Upgrade; mods?: readonly ModId[] }
+
+/**
+ * A level-up step: a stat delta, or a fork where the player picks one of two
+ * branches (`OwnedMove.path` remembers which). Texts: one line per plain step,
+ * a name and a line per branch for a fork (`Lines` in `i18n/pt.ts`).
+ */
+export type UpgradeStep = Upgrade | { fork: readonly [Branch, Branch] }
 
 export type MoveDef = {
   /** Official English name; descriptions live in `i18n`. */
   name: string
   type: PokeType
   base: MoveStats
-  upgrades: readonly Upgrade[]
+  upgrades: readonly UpgradeStep[]
   /** Condition its hits may inflict (chance and power scale with upgrades and items). */
   status?: StatusSpec
   /** Floor for the cooldown after every reduction (lunges, see `LUNGE_MIN_COOLDOWN`). */
   minCooldown?: number
   /** Fires on the player's press (Shift, the lunge button) instead of on its own, once recharged (`updateMoves`). */
   manual?: true
+  /** What kind of move it is, for the abilities that boost a kind (Iron Fist, Strong Jaw, Sharpness, Liquid Voice). */
+  tags?: readonly MoveTag[]
   /** Per-move counter rule (`OwnedMove.stacks`, see `kitRules.ts`); `fire` reads `owned.stacks`. */
   stacks?: StackRule
   /** Casts the move. `owned` is its slot: level, `stacks`, `walkedAt` (`moveKit.ts`). */
@@ -65,6 +80,27 @@ export type MoveDef = {
   onGuard?: (g: Game, s: CastStats, owned: OwnedMove, from?: Enemy) => void
   /** A burrow it started (`burrow` in `moveKit.ts`) ended: come back out, usually with a hit. */
   emerge?: (g: Game, s: CastStats, owned: OwnedMove) => void
+}
+
+/**
+ * Kinds of move abilities boost (`data/abilities.ts`). `weak` (a base hit of
+ * `WEAK_MOVE` or less: Technician) and `status` (inflicts a condition: Sheer
+ * Force) follow from the move's data; the rest are tagged by hand.
+ */
+export type MoveTag = 'punch' | 'bite' | 'slice' | 'sound' | 'weak' | 'status'
+
+/** The strongest base hit Technician still counts as weak. */
+export const WEAK_MOVE = 10
+
+/** Whether a move is of a kind (`MoveTag`). */
+export const hasTag = (def: MoveDef, tag: MoveTag) =>
+  tag === 'weak' ? def.base.damage <= WEAK_MOVE : tag === 'status' ? def.status !== undefined : (def.tags?.includes(tag) ?? false)
+
+/** Extra damage the player's tag boosts give a move (0 without any). */
+const tagBonus = (def: MoveDef, player: PlayerStats) => {
+  let bonus = 0
+  for (const [tag, value] of Object.entries(player.tagDamage) as Array<[MoveTag, number]>) if (hasTag(def, tag)) bonus += value
+  return bonus
 }
 
 /** What a cast helper needs to name and paint its hitboxes. */
@@ -143,6 +179,8 @@ const chain = (g: Game, s: CastStats, look: Look, bonus: readonly DamageBonus[] 
       ttl: 0.28, activeFrom: Infinity, age: -hop * 0.035,
     })
     damageEnemy(g, e, arc)
+    // The hit lands here, not in `collide`, so its mods hear of it here.
+    if (arc.mod) modHit(g, arc, e)
     from = to
   })
 }
@@ -238,10 +276,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4, statusChance: 0.1 },
-      { cooldown: -0.15 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['seek'] }, { stats: { speed: -40 }, mods: ['trail'] }] },
       { amount: 1 },
       { pierce: 1 },
-      { damage: 6 },
+      { fork: [{ stats: { damage: 4 }, mods: ['split'] }, { stats: { cooldown: 0.1 }, mods: ['rear'] }] },
       { amount: 1, area: 0.25 },
     ],
     fire: (g, s) => {
@@ -266,10 +304,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { area: 0.2 },
-      { damage: 4 },
+      { fork: [{ stats: { damage: -3 }, mods: ['twin'] }, { stats: { damage: 4, speed: -0.6 }, mods: ['trail'] }] },
       { duration: 0.6 },
       { amount: 1 },
-      { damage: 5, statusDamage: 0.25 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: { statusDamage: 0.4 }, mods: ['echo'] }] },
       { amount: 1, speed: 1 },
     ],
     fire: (g, s) => {
@@ -292,10 +330,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { pierce: 1 },
+      { fork: [{ stats: { damage: -1 }, mods: ['rear'] }, { stats: { pierce: 1, speed: -60 }, mods: ['seek'] }] },
       { cooldown: -0.1 },
       { amount: 1 },
-      { damage: 5 },
+      { fork: [{ stats: { damage: 4 }, mods: ['bounce'] }, { stats: { cooldown: 0.1 }, mods: ['boomerang'] }] },
       { amount: 1, pierce: 2 },
     ],
     fire: (g, s) => {
@@ -352,15 +390,16 @@ export const MOVES = {
   razorLeaf: {
     name: 'Razor Leaf',
     type: 'grass',
+    tags: ['slice'],
     base: stats({ damage: 11, cooldown: 1.5, amount: 1, speed: 210, duration: 1, knockback: 25 }),
     status: { kind: 'poison', chance: 0.15, duration: 3, power: 0.2 },
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: -2 }, mods: ['rear'] }, { stats: { area: 0.2 }, mods: ['echo'] }] },
       { amount: 1 },
       { speed: 52 },
-      { damage: 5 },
+      { fork: [{ stats: { statusChance: 0.25 }, mods: ['trail'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
       { amount: 1 },
     ],
     fire: (g, s) => {
@@ -416,10 +455,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 3 },
-      { cooldown: -0.18 },
+      { fork: [{ stats: { damage: 6 }, mods: ['bounce'] }, { stats: { amount: 1, damage: 2 }, mods: ['halo'] }] },
       { amount: 1 },
       { pierce: 1 },
-      { damage: 4 },
+      { fork: [{ stats: { damage: 5 }, mods: ['burstOnKill'] }, { stats: { cooldown: -0.15 }, mods: ['echo'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => {
@@ -447,10 +486,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 8 },
-      { area: 0.25, statusChance: 0.15 },
+      { fork: [{ stats: { amount: 2, area: -0.25, damage: -6 }, mods: ['echo'] }, { stats: { amount: -2, damage: 34, area: 0.8 }, mods: ['arc'] }] },
       { amount: 1 },
       { cooldown: -0.3 },
-      { damage: 10 },
+      { fork: [{ stats: { damage: 10 }, mods: ['burstOnKill'] }, { stats: { statusChance: 0.15 }, mods: ['trail'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => {
@@ -531,6 +570,7 @@ export const MOVES = {
   machPunch: {
     name: 'Mach Punch',
     type: 'fighting',
+    tags: ['punch'],
     base: stats({ damage: 9, cooldown: 1.1, amount: 3, knockback: 50 }),
     upgrades: [
       { amount: 1 },
@@ -612,6 +652,7 @@ export const MOVES = {
   waterShuriken: {
     name: 'Water Shuriken',
     type: 'water',
+    tags: ['slice'],
     base: stats({ damage: 5, cooldown: 0.9, amount: 2, speed: 230, pierce: 1, knockback: 15 }),
     upgrades: [
       { amount: 1 },
@@ -642,14 +683,15 @@ export const MOVES = {
   crunch: {
     name: 'Crunch',
     type: 'dark',
+    tags: ['bite'],
     base: stats({ damage: 18, cooldown: 1.6, amount: 1, knockback: 30 }),
     upgrades: [
       { damage: 6 },
       { amount: 1 },
-      { area: 0.2 },
+      { fork: [{ stats: { damage: -3 }, mods: ['arc'] }, { stats: { area: 0.15 }, mods: ['echo'] }] },
       { cooldown: -0.2 },
       { amount: 1 },
-      { damage: 8 },
+      { fork: [{ stats: { damage: 8 }, mods: ['burstOnKill'] }, { stats: { area: 0.2 }, mods: ['trail'] }] },
       { amount: 1, area: 0.2 },
     ],
     fire: (g, s) => {
@@ -747,7 +789,7 @@ export const MOVES = {
           move: 'earthquake', type: 'ground', visual: 'quake', x: p.x, y: p.y,
           shape: { kind: 'circle', r: 8 },
           motion: { kind: 'static' },
-          damage: s.damage, knockback: s.knockback, ttl: s.duration, grow: (84 * s.area) / s.duration,
+          damage: s.damage, knockback: s.knockback, ttl: s.duration, grow: (72 * s.area) / s.duration,
           age: -i * 0.35,
         })
       }
@@ -758,6 +800,7 @@ export const MOVES = {
   drumBeating: {
     name: 'Drum Beating',
     type: 'grass',
+    tags: ['sound'],
     base: stats({ damage: 11, cooldown: 1.9, amount: 1, duration: 0.3, knockback: 40 }),
     status: { kind: 'slow', chance: 1, duration: 0.6, power: 0.35 },
     upgrades: [
@@ -786,6 +829,7 @@ export const MOVES = {
   disarmingVoice: {
     name: 'Disarming Voice',
     type: 'fairy',
+    tags: ['sound'],
     base: stats({ damage: 7, cooldown: 1.6, amount: 6, speed: 150, pierce: 1, knockback: 30 }),
     upgrades: [
       { amount: 2 },
@@ -813,6 +857,7 @@ export const MOVES = {
   torchSong: {
     name: 'Torch Song',
     type: 'fire',
+    tags: ['sound'],
     base: stats({ damage: 9, cooldown: 2, amount: 5, speed: 115, pierce: 2, knockback: 20 }),
     upgrades: [
       { amount: 1 },
@@ -840,6 +885,7 @@ export const MOVES = {
   leafBlade: {
     name: 'Leaf Blade',
     type: 'grass',
+    tags: ['slice'],
     base: stats({ damage: 13, cooldown: 1.5, amount: 1, speed: 12, knockback: 50 }),
     upgrades: [
       { damage: 4 },
@@ -867,6 +913,7 @@ export const MOVES = {
   razorShell: {
     name: 'Razor Shell',
     type: 'water',
+    tags: ['slice'],
     base: stats({ damage: 15, cooldown: 1.2, amount: 1, knockback: 80 }),
     upgrades: [
       { amount: 1 },
@@ -917,10 +964,10 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { cooldown: -0.2 },
+      { fork: [{ stats: { cooldown: -0.1 }, mods: ['burstOnKill'] }, { stats: { amount: -1 }, mods: ['echo'] }] },
       { amount: 1 },
       { damage: 5, statusChance: 0.1 },
-      { area: 0.25 },
+      { fork: [{ stats: { statusChance: 0.1 }, mods: ['trail'] }, { stats: { damage: -2 }, mods: ['arc'] }] },
       { amount: 2 },
     ],
     fire: (g, s) => chain(g, s, { move: 'shockWave', type: 'electric', visual: 'shock' }),
@@ -1081,204 +1128,144 @@ export const MOVES = {
   },
 
   /* ---------- Evolved moves (max level move + paired held item, see data/evolutions.ts) ---------- */
+  // Most casts live in `evolvedMoves.ts`, reached through `evolved.` at cast time: that module
+  // imports combat code that leads back here, so its exports aren't ready while `MOVES` is built.
 
   flamethrower: {
     name: 'Flamethrower',
     type: 'fire',
-    base: stats({ damage: 18, cooldown: 0.9, amount: 7, speed: 240, area: 1.3, knockback: 30 }),
+    base: stats({ damage: 18, cooldown: 0.9, amount: 7, speed: 240, duration: 1.4, area: 1.3, knockback: 30 }),
     status: { kind: 'burn', chance: 0.35, duration: 2.5, power: 0.35 },
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      const angle = aimAngle(g, 300)
-      for (let i = 0; i < s.amount; i++) {
-        const v = fromAngle(angle + range(g.rng, -0.14, 0.14), s.speed * range(g.rng, 0.9, 1.1))
-        spawnAttack(g, {
-          move: 'flamethrower', type: 'fire', visual: 'flamethrower', x: p.x, y: p.y - 6,
-          shape: { kind: 'circle', r: 4 * s.area },
-          motion: { kind: 'linear', vx: v.x, vy: v.y },
-          damage: s.damage, knockback: s.knockback, ttl: 0.75, grow: 10 * s.area, status: s.status,
-          age: -i * 0.05,
-        })
-      }
-    },
+    upgrades: [
+      { damage: 5, area: 0.15 },
+      { amount: 2, speed: 40 },
+      { duration: 0.8, statusDamage: 0.3 },
+      { cooldown: -0.15, amount: 2 },
+    ],
+    fire: (g, s) => evolved.castFlamethrower(g, s),
   },
 
   fireBlast: {
     name: 'Fire Blast',
     type: 'fire',
-    base: stats({ damage: 26, cooldown: 3.6, amount: 5, speed: 2.8, duration: 3.4, area: 1.3, knockback: 60 }),
+    base: stats({ damage: 40, cooldown: 2.4, amount: 2, duration: 0.8, area: 1.2, knockback: 90 }),
     status: { kind: 'burn', chance: 0.4, duration: 3, power: 0.35 },
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      for (let i = 0; i < s.amount; i++) {
-        spawnAttack(g, {
-          move: 'fireBlast', type: 'fire', visual: 'fireBlast', x: p.x, y: p.y,
-          shape: { kind: 'circle', r: 10 * s.area },
-          motion: { kind: 'orbit', angle: (i / s.amount) * TAU, spin: s.speed, radius: 46 * s.area },
-          damage: s.damage, knockback: s.knockback, hitInterval: 0.35, ttl: s.duration, status: s.status,
-        })
-      }
-    },
+    upgrades: [
+      { amount: 1 },
+      { damage: 8, area: 0.15 },
+      { duration: 0.4, statusChance: 0.15 },
+      { cooldown: -0.4, damage: 8 },
+    ],
+    fire: (g, s) => evolved.castFireBlast(g, s),
   },
 
   hydroPump: {
     name: 'Hydro Pump',
     type: 'water',
-    base: stats({ damage: 30, cooldown: 0.7, amount: 3, speed: 360, area: 1.4, knockback: 150 }),
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      for (const [i, angle] of fan(dm.atan2(p.facing.y, p.facing.x), s.amount, 0.22).entries()) {
-        const v = fromAngle(angle, s.speed)
-        spawnAttack(g, {
-          move: 'hydroPump', type: 'water', visual: 'hydroPump', x: p.x, y: p.y - 6,
-          shape: { kind: 'circle', r: 7 * s.area },
-          motion: { kind: 'linear', vx: v.x, vy: v.y },
-          damage: s.damage, knockback: s.knockback, ttl: 0.9,
-          age: -(i % 2) * 0.05,
-        })
-      }
-    },
+    base: stats({ damage: 36, cooldown: 1, amount: 2, area: 1.2, knockback: 170 }),
+    upgrades: [
+      { damage: 8 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.2, knockback: 60 },
+    ],
+    fire: (g, s) => evolved.castHydroPump(g, s),
   },
 
   surf: {
     name: 'Surf',
     type: 'water',
-    base: stats({ damage: 26, cooldown: 1.3, amount: 2, duration: 0.9, knockback: 110 }),
+    base: stats({ damage: 24, cooldown: 1.6, amount: 2, duration: 0.9, knockback: 140 }),
     status: { kind: 'slow', chance: 1, duration: 0.8, power: 0.5 },
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      for (let i = 0; i < s.amount; i++) {
-        spawnAttack(g, {
-          move: 'surf', type: 'water', visual: 'surf', x: p.x, y: p.y,
-          shape: { kind: 'circle', r: 8 },
-          motion: { kind: 'follow', ox: 0, oy: -4 },
-          damage: s.damage, knockback: s.knockback, ttl: s.duration, grow: (150 * s.area) / s.duration, status: s.status,
-          age: -i * 0.35,
-        })
-      }
-    },
+    upgrades: [
+      { damage: 6 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.25, damage: 4 },
+    ],
+    fire: (g, s) => evolved.castSurf(g, s),
   },
 
   leafStorm: {
     name: 'Leaf Storm',
     type: 'grass',
-    base: stats({ damage: 20, cooldown: 1.6, amount: 10, speed: 240, area: 1.4, knockback: 35 }),
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      const spin = g.time * 1.7
-      for (let i = 0; i < s.amount; i++) {
-        const d = fromAngle(spin + (i / s.amount) * TAU)
-        spawnAttack(g, {
-          move: 'leafStorm', type: 'grass', visual: 'leafStorm', x: p.x, y: p.y - 6,
-          shape: { kind: 'circle', r: 6 * s.area },
-          motion: { kind: 'boomerang', vx: d.x * s.speed, vy: d.y * s.speed, ax: -d.x * s.speed * 1.5, ay: -d.y * s.speed * 1.5 },
-          damage: s.damage, knockback: s.knockback, hitInterval: 0.5, ttl: 2.2 * s.duration,
-        })
-      }
-    },
+    base: stats({ damage: 15, cooldown: 1.8, amount: 10, speed: 240, duration: 1.8, area: 1.2, knockback: 35 }),
+    upgrades: [
+      { amount: 4 },
+      { damage: 6 },
+      { area: 0.2, duration: 0.4 },
+      { cooldown: -0.25, speed: 60 },
+    ],
+    fire: (g, s) => evolved.castLeafStorm(g, s),
   },
 
   powerWhip: {
     name: 'Power Whip',
     type: 'grass',
-    base: stats({ damage: 48, cooldown: 1, amount: 4, area: 1.7, knockback: 130 }),
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      const side = p.facing.x < 0 ? -1 : 1
-      const w = 72 * s.area
-      const h = 16 * s.area
-      for (let i = 0; i < s.amount; i++) {
-        const dir = i % 2 === 0 ? side : -side
-        spawnAttack(g, {
-          move: 'powerWhip', type: 'grass', visual: 'powerWhip', x: p.x, y: p.y,
-          shape: { kind: 'rect', w, h },
-          motion: { kind: 'follow', ox: dir * (w / 2 + 4), oy: 2 - Math.floor(i / 2) * 16 },
-          damage: s.damage, knockback: s.knockback, ttl: 0.3, flip: dir < 0,
-          age: -Math.floor(i / 2) * 0.08,
-        })
-      }
-    },
+    base: stats({ damage: 36, cooldown: 1.3, amount: 2, area: 1.3, knockback: 130 }),
+    upgrades: [
+      { damage: 10 },
+      { area: 0.2 },
+      { amount: 1 },
+      { cooldown: -0.25, knockback: 40 },
+    ],
+    fire: (g, s) => evolved.castPowerWhip(g, s),
   },
 
   triAttack: {
     name: 'Tri Attack',
     type: 'normal',
-    base: stats({ damage: 18, cooldown: 1, amount: 9, speed: 210, pierce: 3, area: 1.2, knockback: 30 }),
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      const taken = new Set<number>()
-      for (let i = 0; i < s.amount; i++) {
-        const target = nearestEnemy(g, p.x, p.y, 340, taken)
-        if (target) taken.add(target.id)
-        const v = fromAngle((i / s.amount) * TAU, s.speed)
-        spawnAttack(g, {
-          move: 'triAttack', type: 'normal', visual: 'triAttack', x: p.x, y: p.y - 8,
-          shape: { kind: 'circle', r: 5 * s.area },
-          motion: { kind: 'homing', vx: v.x, vy: v.y, speed: s.speed, turn: 8, target },
-          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 2.5,
-        })
-      }
-    },
+    base: stats({ damage: 22, cooldown: 1.3, amount: 3, area: 1.2, knockback: 30 }),
+    // The fire beam's burn; the ice and lightning beams derive theirs from it (`TRI_ELEMENTS`).
+    status: TRI_ELEMENTS[0].status,
+    upgrades: [
+      { damage: 6 },
+      { statusChance: 0.2, area: 0.15 },
+      { amount: 3 },
+      { cooldown: -0.25, damage: 6 },
+    ],
+    fire: (g, s) => evolved.castTriAttack(g, s),
   },
 
   wildboltStorm: {
     name: 'Wildbolt Storm',
     type: 'electric',
-    base: stats({ damage: 46, cooldown: 1.7, amount: 9, area: 1.5, knockback: 30 }),
+    base: stats({ damage: 40, cooldown: 1.8, amount: 6, area: 1.4, knockback: 30 }),
     status: { kind: 'paralysis', chance: 0.5, duration: 2.5, power: 0 },
-    upgrades: [],
-    fire: (g, s) => {
-      const targets = enemiesInView(g)
-      if (targets.length === 0) return
-      for (let i = 0; i < s.amount; i++) {
-        const t = pick(g.rng, targets)
-        spawnAttack(g, {
-          move: 'wildboltStorm', type: 'electric', visual: 'wildbolt', x: t.x, y: t.y,
-          shape: { kind: 'circle', r: 16 * s.area },
-          motion: { kind: 'static' },
-          damage: s.damage, knockback: s.knockback, ttl: 0.55, activeFrom: 0.2, activeUntil: 0.3, status: s.status,
-          age: -i * 0.07,
-        })
-      }
-      g.events.push({ kind: 'thunder' })
-    },
+    upgrades: [
+      { amount: 2 },
+      { damage: 10 },
+      { area: 0.25, statusChance: 0.15 },
+      { cooldown: -0.3, amount: 2 },
+    ],
+    fire: (g, s) => evolved.castWildboltStorm(g, s),
   },
 
   gunkShot: {
     name: 'Gunk Shot',
     type: 'poison',
-    base: stats({ damage: 14, cooldown: 2.8, amount: 5, duration: 4, area: 1.7 }),
+    base: stats({ damage: 17, cooldown: 2.4, amount: 2, duration: 2.2, area: 1.4 }),
     status: { kind: 'poison', chance: 0.7, duration: 3.5, power: 0.4 },
-    upgrades: [],
-    fire: (g, s) => {
-      const p = g.player
-      const nearby = enemiesInView(g).filter((e) => dm.sq(e.x - p.x) + dm.sq(e.y - p.y) < 160 * 160)
-      for (let i = 0; i < s.amount; i++) {
-        const t = nearby.length > 0 ? pick(g.rng, nearby) : { x: p.x + range(g.rng, -100, 100), y: p.y + range(g.rng, -70, 70) }
-        spawnAttack(g, {
-          move: 'gunkShot', type: 'poison', visual: 'gunk', x: t.x, y: t.y,
-          shape: { kind: 'circle', r: 22 * s.area },
-          motion: { kind: 'static' },
-          damage: s.damage, hitInterval: 0.4, ttl: 0.45 + s.duration, activeFrom: 0.45, status: s.status,
-          from: { x: p.x, y: p.y - 10 },
-          age: -i * 0.12,
-        })
-      }
-    },
+    upgrades: [
+      { amount: 1 },
+      { damage: 4, statusDamage: 0.25 },
+      { duration: 0.6, area: 0.2 },
+      { cooldown: -0.4, damage: 5 },
+    ],
+    fire: (g, s) => evolved.castGunkShot(g, s),
   },
 
   hurricane: {
     name: 'Hurricane',
     type: 'flying',
     base: stats({ damage: 16, cooldown: 4.5, amount: 2, speed: 1.6, duration: 4.5, knockback: 50 }),
-    upgrades: [],
+    upgrades: [
+      { damage: 5 },
+      { amount: 1 },
+      { area: 0.2, duration: 1 },
+      { cooldown: -0.6, speed: 0.4 },
+    ],
+    // Funnels orbit the player and drag the foes around them in (`evolvedTick`).
     fire: (g, s) => {
       const p = g.player
       for (let i = 0; i < s.amount; i++) {
@@ -1298,26 +1285,41 @@ export const MOVES = {
     base: stats({ damage: 36, cooldown: 1.5, speed: 560, area: 1.4, knockback: 160 }),
     minCooldown: LUNGE_MIN_COOLDOWN,
     manual: true,
-    upgrades: [],
-    fire: (g, s) => lunge(g, s, { move: 'extremeSpeed', type: 'normal', visual: 'extremeSpeed' }, 44),
+    upgrades: [
+      { damage: 10 },
+      { area: 0.25 },
+      { speed: 60, damage: 6 },
+      { damage: 12, knockback: 60 },
+    ],
+    fire: (g, s) => lunge(g, s, { move: 'extremeSpeed', type: 'normal', visual: 'extremeSpeed' }, 32 * s.area),
   },
 
   thunderbolt: {
     name: 'Thunderbolt',
     type: 'electric',
-    base: stats({ damage: 30, cooldown: 1.1, amount: 9, area: 1.3 }),
+    base: stats({ damage: 30, cooldown: 1.2, amount: 8, area: 1.3 }),
     status: { kind: 'paralysis', chance: 0.35, duration: 2, power: 0 },
-    upgrades: [],
-    fire: (g, s) => chain(g, s, { move: 'thunderbolt', type: 'electric', visual: 'thunderbolt' }),
+    upgrades: [
+      { amount: 3 },
+      { damage: 8 },
+      { area: 0.25, statusChance: 0.15 },
+      { cooldown: -0.2, amount: 3 },
+    ],
+    fire: (g, s) => evolved.castThunderbolt(g, s),
   },
 
   barbBarrage: {
     name: 'Barb Barrage',
     type: 'poison',
-    base: stats({ damage: 42, cooldown: 1, amount: 3, duration: 7, area: 1.5, knockback: 70 }),
+    base: stats({ damage: 38, cooldown: 1.2, amount: 4, duration: 7, area: 1.4, knockback: 70 }),
     status: { kind: 'poison', chance: 0.8, duration: 3.5, power: 0.4 },
-    upgrades: [],
-    fire: (g, s) => mine(g, s, { move: 'barbBarrage', type: 'poison', visual: 'barbs' }, 'barbsBlast'),
+    upgrades: [
+      { amount: 2 },
+      { damage: 10 },
+      { area: 0.2, statusDamage: 0.3 },
+      { cooldown: -0.2, amount: 2 },
+    ],
+    fire: (g, s) => evolved.castBarbBarrage(g, s),
   },
 
   inferno: {
@@ -1325,24 +1327,39 @@ export const MOVES = {
     type: 'fire',
     base: stats({ damage: 22, cooldown: 4.5, amount: 3, speed: 200, duration: 8, knockback: 30 }),
     status: { kind: 'burn', chance: 0.6, duration: 3, power: 0.4 },
-    upgrades: [],
-    fire: (g, s) => turret(g, s, { move: 'inferno', type: 'fire', visual: 'inferno' }, 'infernoShot', 0.45),
+    upgrades: [
+      { damage: 6 },
+      { amount: 1 },
+      { area: 0.25, duration: 2 },
+      { cooldown: -1, statusChance: 0.15 },
+    ],
+    fire: (g, s) => evolved.castInferno(g, s),
   },
+
   blizzard: {
     name: 'Blizzard',
     type: 'ice',
-    base: stats({ damage: 20, cooldown: 1.8, amount: 10, speed: 260, duration: 3, area: 1.4, knockback: 30 }),
+    base: stats({ damage: 22, cooldown: 1.8, amount: 8, duration: 2.6, area: 1.3, knockback: 30 }),
     status: { kind: 'slow', chance: 1, duration: 1.5, power: 0.6 },
-    upgrades: [],
-    // A ring of shards all around: a frozen fence that the horde has to wade through.
-    fire: (g, s) => shards(g, s, { move: 'blizzard', type: 'ice', visual: 'blizzard' }, radial(g, s.amount, 0.9), 3),
+    upgrades: [
+      { amount: 3 },
+      { damage: 6 },
+      { area: 0.2, duration: 1 },
+      { cooldown: -0.3, amount: 2 },
+    ],
+    fire: (g, s) => evolved.castBlizzard(g, s),
   },
 
   stoneEdge: {
     name: 'Stone Edge',
     type: 'rock',
     base: stats({ damage: 34, cooldown: 1.5, amount: 3, area: 1.3, knockback: 90 }),
-    upgrades: [],
+    upgrades: [
+      { damage: 10 },
+      { amount: 1 },
+      { area: 0.2 },
+      { cooldown: -0.3, damage: 6 },
+    ],
     // Lines of stone pillars burst from the ground towards the nearest foes, one after another.
     fire: (g, s) => {
       const p = g.player
@@ -1369,37 +1386,29 @@ export const MOVES = {
   megahorn: {
     name: 'Megahorn',
     type: 'bug',
-    base: stats({ damage: 44, cooldown: 1.2, amount: 3, speed: 300, area: 1.5, knockback: 140 }),
+    base: stats({ damage: 42, cooldown: 1.4, amount: 2, speed: 340, area: 1.5, knockback: 140 }),
     status: { kind: 'poison', chance: 0.3, duration: 3, power: 0.3 },
-    upgrades: [],
-    // Huge horns that bore through everything in their way, bending towards a foe each.
-    fire: (g, s) => {
-      const p = g.player
-      const taken = new Set<number>()
-      fan(aimAngle(g, 300), s.amount, 0.5).forEach((angle, i) => {
-        const target = nearestEnemy(g, p.x, p.y, 300, taken)
-        if (target) taken.add(target.id)
-        const v = fromAngle(angle, s.speed)
-        spawnAttack(g, {
-          move: 'megahorn', type: 'bug', visual: 'megahorn', x: p.x, y: p.y - 8,
-          shape: { kind: 'circle', r: 7 * s.area },
-          motion: { kind: 'homing', vx: v.x, vy: v.y, speed: s.speed, turn: 3.5, target },
-          damage: s.damage, knockback: s.knockback, ttl: 1.4, status: s.status, age: -i * 0.05,
-        })
-      })
-    },
+    upgrades: [
+      { damage: 10 },
+      { amount: 1 },
+      { area: 0.25, speed: 40 },
+      { cooldown: -0.25, statusChance: 0.2 },
+    ],
+    fire: (g, s) => evolved.castMegahorn(g, s),
   },
 
   outrage: {
     name: 'Outrage',
     type: 'dragon',
-    base: stats({ damage: 26, cooldown: 0.9, amount: 3, speed: 200, area: 1.4, knockback: 70 }),
+    base: stats({ damage: 18, cooldown: 1.6, amount: 3, speed: 200, area: 1.4, knockback: 70 }),
     status: { kind: 'burn', chance: 0.3, duration: 2.5, power: 0.35 },
-    upgrades: [],
-    // A rampage: a breath cone in `amount` directions at once, turning a little every cast.
-    fire: (g, s) => {
-      for (const angle of radial(g, s.amount, 2.3)) breath(g, s, { move: 'outrage', type: 'dragon', visual: 'outrage' }, angle, 3)
-    },
+    upgrades: [
+      { damage: 5 },
+      { amount: 1 },
+      { area: 0.2 },
+      { cooldown: -0.25, statusChance: 0.15 },
+    ],
+    fire: (g, s) => evolved.castOutrage(g, s),
   },
 
   /* ---------- Evolved by the newer type items and generic ones (cast in typeEvolutions.ts) ---------- */
@@ -1538,20 +1547,41 @@ export const isManual = (id: MoveId) => {
   return def.manual === true
 }
 
-/** Final stats of a move at `level`, after upgrades and player modifiers (incl. type boosts). */
-export const moveStats = (id: MoveId, level: number, player: PlayerStats): CastStats => {
+/** The fork a move's step to `level` is, or null for a plain step (and level 1). */
+export const forkAt = (id: MoveId, level: number) => {
   const def: MoveDef = MOVES[id]
-  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, delta) => {
+  const step = level >= 2 ? def.upgrades[level - 2] : undefined
+  return step && 'fork' in step ? step.fork : null
+}
+
+/** The branch a path takes at step `index` (`OwnedMove.path`). */
+export const branchAt = (path: number, index: number): 0 | 1 => ((path >> index) & 1 ? 1 : 0)
+
+/** A path with the branch picked at the step to `level`. */
+export const withBranch = (path: number, level: number, branch: 0 | 1) => (branch ? path | (1 << (level - 2)) : path & ~(1 << (level - 2)))
+
+/**
+ * Final stats of a move at `level`, after upgrades and player modifiers (incl.
+ * type boosts). Forks follow `path` (`OwnedMove.path`); their branches' mods
+ * come back in `mods`. Trade-offs never take a move below one shot, 0.35 of its size or negative damage.
+ */
+export const moveStats = (id: MoveId, level: number, player: PlayerStats, path = 0): CastStats => {
+  const def: MoveDef = MOVES[id]
+  let mods = 0
+  const s = def.upgrades.slice(0, level - 1).reduce<MoveStats>((acc, step, i) => {
+    const { stats: delta, mods: added }: Branch = 'fork' in step ? step.fork[branchAt(path, i)] : { stats: step }
+    mods |= modBits(added)
     const next = { ...acc }
     for (const k of Object.keys(delta) as (keyof MoveStats)[]) next[k] += delta[k] ?? 0
     return next
   }, def.base)
   return {
     ...s,
-    damage: s.damage * player.might * (1 + (player.typeDamage[def.type] ?? 0)),
+    mods,
+    damage: Math.max(0, s.damage) * player.might * (1 + (player.typeDamage[def.type] ?? 0) + tagBonus(def, player)),
     cooldown: Math.max(def.minCooldown ?? 0.1, s.cooldown * player.cooldown),
-    area: s.area * player.area,
-    amount: s.amount + player.amount,
+    area: Math.max(0.35, s.area) * player.area,
+    amount: Math.max(1, s.amount) + player.amount,
     speed: s.speed * player.projectileSpeed,
     duration: s.duration * player.duration,
     status: def.status
