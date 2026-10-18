@@ -5,6 +5,9 @@ import { BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { EVOLUTIONS } from '../../data/evolutions'
+import { CURSE_IDS, CURSES } from '../../data/curses'
+import { CURSE } from '../../game/curses'
+import { DUO_RECIPES, isDuo } from '../../game/duoRules'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
@@ -184,10 +187,25 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
     html`<b>${MOVES[evo.to].name}</b> ${typeBadge(MOVES[evo.to].type, m)}<br /><small>${game.moves[evo.to].description}</small>`,
   ])
   const evolving = new Set<MoveId>(EVOLUTIONS.flatMap((evo) => [evo.from, evo.to]))
-  const without = MOVE_IDS.filter((id) => !evolving.has(id)).map((id) => MOVES[id].name)
+  // Duo moves never evolve: they are the other capstone, listed below.
+  const without = MOVE_IDS.filter((id) => !evolving.has(id) && !isDuo(id)).map((id) => MOVES[id].name)
+  const duos = DUO_RECIPES.map((r) => {
+    const made = 'alt' in r ? [r.to, r.alt] : [r.to]
+    return [
+      html`${typeBadge(r.types[0], m)} + ${typeBadge(r.types[1], m)}`,
+      html`${made.map((id, i) => html`${i > 0 ? html`<br />` : ''}<b>${MOVES[id].name}</b> ${typeBadge(MOVES[id].type, m)}<br /><small>${game.moves[id].description}</small>`)}`,
+    ]
+  })
+  const curses = CURSE_IDS.map((id) => [html`<b>${CURSES[id].name}</b>`, game.curses[id].upside, game.curses[id].downside])
   return html`${paragraphs(e.paragraphs)}
     ${table([e.moveHead, e.itemHead, e.resultHead], rows)}
-    ${without.length > 0 ? html`<p class="note">${e.noEvolution(without.join(', '))}</p>` : ''}`
+    ${without.length > 0 ? html`<p class="note">${e.noEvolution(without.join(', '))}</p>` : ''}
+    <h3>${e.duoTitle}</h3>
+    ${paragraphs(e.duoParagraphs)}
+    ${table([e.duoTypesHead, e.duoHead], duos)}
+    <h3>${e.cursedTitle}</h3>
+    ${paragraphs(e.cursedParagraphs(CURSE.from / 60, CURSE.chance, CURSE.max))}
+    ${table([e.itemHead, e.cursedUpHead, e.cursedDownHead], curses)}`
 }
 
 const special = (locale: Locale, m: SiteMessages) => {

@@ -300,6 +300,19 @@ export const sitePt = {
       itemHead: 'Item',
       resultHead: 'Evolução',
       noEvolution: (moves: string) => `Ainda sem evolução: ${moves}.`,
+      duoTitle: 'Golpes em dupla',
+      duoParagraphs: [
+        'Leve dois golpes ao nível máximo (ou evolua-os) e, se os tipos deles formarem uma das receitas abaixo, um card dourado oferece uni-los num golpe em dupla: ele toma o espaço do primeiro, libera o do segundo e sobe até o Nv 5. Os dois golpes usados não voltam mais.',
+        'As receitas vão por tipo, então funcionam com qualquer Pokémon. Só cabe 1 golpe em dupla por partida, e a Poké Ball nunca une golpes sozinha.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Golpe em dupla',
+      cursedTitle: 'Itens amaldiçoados',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `A partir de ${minutes.toLocaleString('pt-BR')} min, um baú trancado tem ${Math.round(chance * 100)}% de chance de esconder um item amaldiçoado: muito forte, mas com um preço. Você escolhe pegar ou deixar. Ele não ocupa espaço de item, fica até o fim da partida, e cabem até ${max}.`,
+      ],
+      cursedUpHead: 'Vantagem',
+      cursedDownHead: 'Preço',
     },
     special: {
       paragraphs: (min: number) => [
