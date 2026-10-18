@@ -990,6 +990,222 @@ export const es: Messages = {
   },
 
   moves: {
+    leechSeed: {
+      description: 'Lanza semillas a los enemigos más cercanos. La semilla absorbe PS con el tiempo y te cura; cuando el enemigo cae, salta a dos vecinos.',
+      upgrades: [
+        '+1 semilla',
+        '+3 de daño',
+        'Las semillas absorben +30%',
+        'Recarga 0.3s más rápida',
+        '+1 semilla',
+        '+4 de daño y +20% de área',
+        '+2 semillas',
+      ],
+    },
+    rapidSpin: {
+      description: 'Giras dentro del caparazón: tu cuerpo golpea y lanza lejos a los enemigos. Mientras giras recibes 40% menos daño, vas más rápido y desvías disparos enemigos.',
+      upgrades: [
+        '+3 de daño',
+        'Gira +0.3s',
+        '+20% de área',
+        'Recarga 0.5s más rápida',
+        '+4 de daño',
+        'Gira +0.3s y +15% de área',
+        '+5 de daño y lanza más lejos',
+      ],
+    },
+    petalDance: {
+      description: 'Pétalos giran en espiral a tu alrededor, más rápido con cada danza seguida. La tercera danza es la más fuerte, pero te deja mareado y lento un instante.',
+      upgrades: [
+        '+1 pétalo',
+        '+3 de daño',
+        'Danza +0.3s',
+        '+1 pétalo',
+        'Recarga 0.3s más rápida',
+        '+4 de daño y +15% de área',
+        '+2 pétalos',
+      ],
+    },
+    eruption: {
+      description: 'Bombas de fuego salen de tu espalda y llueven a tu alrededor. Cuantos más PS tengas, más fuerte. Puede quemar.',
+      upgrades: [
+        '+1 bomba',
+        '+6 de daño',
+        '+20% de área',
+        '+2 bombas',
+        'Recarga 0.4s más rápida',
+        '+8 de daño',
+        '+2 bombas y +15% de área',
+      ],
+    },
+    thrash: {
+      description: 'Furia: durante 2.5s muerdes sin parar a los enemigos a tu alrededor. Después quedas cansado y más lento un instante.',
+      upgrades: [
+        '+3 de daño',
+        '+1 mordida por segundo',
+        '+20% de alcance',
+        'Furia +0.5s',
+        '+4 de daño',
+        '+2 mordidas por segundo',
+        'Recarga 1s más rápida y +3 de daño',
+      ],
+    },
+    doubleKick: {
+      description: 'Dos patadas rápidas en arco: la primera marca, y la segunda pega ×1.5 a quien atrapó la primera.',
+      upgrades: [
+        '+3 de daño',
+        '+20% de área',
+        'Recarga 0.2s más rápida',
+        '+4 de daño',
+        '+1 par de patadas, hacia atrás',
+        '+5 de daño',
+        '+25% de área y empuja más',
+      ],
+    },
+    mudShot: {
+      description: 'Una ola de barro que se ensancha frente a ti. Quien recibe el golpe queda embarrado: camina más lento y hace 25% menos daño de contacto.',
+      upgrades: [
+        '+3 de daño',
+        '+20% de área',
+        '+1 ola',
+        'Recarga 0.25s más rápida',
+        '+4 de daño',
+        '+20% de área',
+        '+1 ola y +4 de daño',
+      ],
+    },
+    woodHammer: {
+      description: 'Alza un mazo de tronco y aplasta el suelo frente a ti con mucha fuerza. Cada mazazo que acierta te cuesta un poco de PS.',
+      upgrades: [
+        '+6 de daño',
+        '+20% de área',
+        'Recarga 0.3s más rápida',
+        '+8 de daño',
+        '+20% de área',
+        'Recarga 0.3s más rápida',
+        '+10 de daño',
+      ],
+    },
+    drillPeck: {
+      description: 'Un pico-taladro giratorio perfora una fila de enemigos y frena para triturar a cada uno que atraviesa.',
+      upgrades: [
+        '+2 de daño',
+        '+1 taladro',
+        'Taladro más rápido',
+        'Recarga 0.25s más rápida',
+        '+3 de daño',
+        '+25% de área',
+        '+1 taladro y +3 de daño',
+      ],
+    },
+    leafTornado: {
+      description: 'Un remolino de hojas avanza atrayendo y ralentizando a los enemigos, y al final estalla en un anillo de cuchillas.',
+      upgrades: [
+        '+2 de daño',
+        '+20% de área',
+        'Dura +0.5s',
+        '+1 remolino',
+        '+3 de daño',
+        '+20% de área',
+        '+1 remolino y +3 de daño',
+      ],
+    },
+    flameCharge: {
+      description: 'Envuelto en llamas, saltas sobre el grupo de enemigos más grande cercano y caes en una explosión de fuego. Cuantos más PS máximos, más fuerte. Puede quemar.',
+      upgrades: [
+        '+5 de daño',
+        '+20% de área',
+        'Recarga 0.4s más rápida',
+        '+6 de daño',
+        '+20% de área',
+        'Recarga 0.4s más rápida',
+        '+8 de daño y +15% de área',
+      ],
+    },
+    needleArm: {
+      description: 'Tus púas se erizan: agujas salen hacia todos lados y, durante 1.5s, quien te toque no hace daño y además sale herido y despedido.',
+      upgrades: [
+        '+3 de daño',
+        '+2 agujas',
+        'Púas +0.3s',
+        'Recarga 0.5s más rápida',
+        '+4 de daño',
+        '+2 agujas',
+        'Púas +0.4s y +4 de daño',
+      ],
+    },
+    psybeam: {
+      description: 'Un rayo ondulante de anillos psíquicos de colores. Puede confundir: el enemigo confundido camina sin rumbo y lastima a los otros con los que choca.',
+      upgrades: [
+        '+2 anillos',
+        '+3 de daño',
+        '+6% de probabilidad de confundir',
+        'Recarga 0.25s más rápida',
+        '+3 de daño y +20% de área',
+        '+2 anillos',
+        '+4 de daño y +6% de probabilidad de confundir',
+      ],
+    },
+    darkestLariat: {
+      description: 'Giras con los brazos abiertos durante 1.5s, arrollando todo a tu alrededor. Atraviesa escudos.',
+      upgrades: [
+        '+3 de daño',
+        '+20% de alcance',
+        'Gira +0.4s',
+        'Recarga 0.4s más rápida',
+        '+4 de daño',
+        '+1 brazo',
+        '+5 de daño y +15% de alcance',
+      ],
+    },
+    sparklingAria: {
+      description: 'Burbujas lentas flotan y revientan al tocar a un enemigo, mojando todo alrededor. Las que revientan cerca de ti te curan un poco.',
+      upgrades: [
+        '+1 burbuja',
+        '+4 de daño',
+        '+20% de área',
+        'Recarga 0.3s más rápida',
+        '+2 burbujas',
+        '+5 de daño',
+        '+2 burbujas y +15% de área',
+      ],
+    },
+    snipeShot: {
+      description: 'La mira se fija en un enemigo más lejano y un disparo certero lo atraviesa en línea recta: cuanto más lejos vuela, más fuerte. Atraviesa escudos.',
+      upgrades: [
+        '+5 de daño',
+        'Atraviesa +1 enemigo',
+        'Recarga 0.3s más rápida',
+        '+6 de daño',
+        '+1 disparo',
+        'Atraviesa +2 enemigos',
+        '+8 de daño',
+      ],
+    },
+    flowerTrick: {
+      description: 'Lanza una flor que persigue al objetivo y nunca falla, floreciendo al impactar. Hace ×1.5 a élites y jefes.',
+      upgrades: [
+        '+1 flor',
+        '+4 de daño',
+        'Recarga 0.2s más rápida',
+        '+1 flor',
+        '+5 de daño',
+        'Flores más rápidas',
+        '+2 flores',
+      ],
+    },
+    aquaStep: {
+      description: 'Un paso de baile: te deslizas hacia adelante salpicando agua, invulnerable en el camino. Cada paso seguido te hace 3% más rápido (hasta 15%).',
+      upgrades: [
+        '+4 de daño',
+        '+20% de alcance',
+        'Recarga 0.25s más rápida',
+        '+5 de daño',
+        '+20% de alcance',
+        'Recarga 0.25s más rápida',
+        '+6 de daño y +20% de alcance',
+      ],
+    },
     ember: {
       description: 'Dispara brasas al enemigo más cercano. Puede quemar.',
       upgrades: [
@@ -1111,7 +1327,7 @@ export const es: Messages = {
       ],
     },
     machPunch: {
-      description: 'Combo de puñetazos rápidos al enemigo más cercano.',
+      description: 'Combo de puñetazos rápidos al enemigo más cercano; el último lanza una onda de choque hacia adelante. Recarga más rápido mientras caminas.',
       upgrades: [
         '+1 puñetazo',
         '+3 de daño',
@@ -1135,7 +1351,7 @@ export const es: Messages = {
       ],
     },
     spiritShackle: {
-      description: 'Abanico de flechas espectrales que atraviesan enemigos.',
+      description: 'Abanico de flechas espectrales que atraviesan enemigos y los clavan a su propia sombra un instante.',
       upgrades: [
         '+1 flecha',
         '+3 de daño',
@@ -1147,7 +1363,7 @@ export const es: Messages = {
       ],
     },
     waterShuriken: {
-      description: 'Shurikens de agua teledirigidos, rápidos y certeros.',
+      description: 'Shurikens de agua teledirigidos que crecen y se vuelven más fuertes con cada enemigo que cortan.',
       upgrades: [
         '+1 shuriken',
         '+2 de daño',
@@ -1171,7 +1387,7 @@ export const es: Messages = {
       ],
     },
     pyroBall: {
-      description: 'Patea una bola de fuego que explota al caer.',
+      description: 'Patea una bola de fuego que explota al caer y rebota hacia el enemigo más cercano.',
       upgrades: [
         '+1 bola',
         '+6 de daño',
@@ -1207,7 +1423,7 @@ export const es: Messages = {
       ],
     },
     drumBeating: {
-      description: 'Golpes de tambor: ondas de raíces que ralentizan enemigos.',
+      description: 'Golpes de tambor: ondas de raíces que ralentizan enemigos. Cada tercer golpe es más grande y más fuerte.',
       upgrades: [
         '+4 de daño',
         '+20% de área',
@@ -1231,7 +1447,7 @@ export const es: Messages = {
       ],
     },
     torchSong: {
-      description: 'Canto llameante: notas de fuego en todas direcciones.',
+      description: 'Canto llameante: notas de fuego en todas direcciones. Cada canto seguido es 8% más fuerte (hasta 5); recibir daño corta la racha.',
       upgrades: [
         '+1 nota',
         '+3 de daño',
@@ -1243,7 +1459,7 @@ export const es: Messages = {
       ],
     },
     leafBlade: {
-      description: 'Hoja giratoria que corta todo a tu alrededor.',
+      description: 'Hoja giratoria que corta todo a tu alrededor. Cada tercer giro es crítico: una hoja dorada más grande con daño ×2.',
       upgrades: [
         '+4 de daño',
         '+20% de área',
@@ -1255,7 +1471,7 @@ export const es: Messages = {
       ],
     },
     razorShell: {
-      description: 'Tajo de concha afilada en arco frente a ti.',
+      description: 'Tajo de concha afilada en arco frente a ti. Puede marcar al enemigo, que recibe más daño de cada golpe.',
       upgrades: [
         'También ataca atrás',
         '+5 de daño',

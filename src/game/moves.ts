@@ -12,6 +12,9 @@ import {
 import type { Attack, Enemy, Game, OwnedMove, Visual } from './types'
 import type { PlayerStats } from './stats'
 import { scaleStatus, type StatusSpec } from './status'
+import { SIGNATURE_MOVES } from './signatureMoves'
+import { beatOf } from './signatureRules'
+import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
 
 /**
@@ -228,7 +231,21 @@ const ROCK_FALL = 0.32
 const EDGE_PILLARS = 6
 const EDGE_GAP = 15
 
+/** Leaf Blade crits on every third swing, Drum Beating hits its downbeat on every third beat. */
+const LEAF_BLADE_BAR = 3
+const DRUM_BAR = 3
+/** Mach Punch recharges this much faster while the player walks. */
+const MACH_HASTE = 0.3
+/** Torch Song: power each cast in a row adds (lost when the player is hurt), up to `TORCH_MAX` casts. */
+const TORCH_POWER = 0.08
+const TORCH_MAX = 5
+/** How far a Pyro Ball looks for a second foe to bounce onto. */
+const PYRO_BOUNCE = 90
+
 export const MOVES = {
+  /* ---------- Starter signatures (`signatureMoves.ts`) ---------- */
+  ...SIGNATURE_MOVES,
+
   ember: {
     name: 'Ember',
     type: 'fire',
@@ -540,17 +557,27 @@ export const MOVES = {
       { damage: 5 },
       { amount: 2 },
     ],
-    fire: (g, s) => {
+    // The combo's last jab breaks the sound barrier: a shockwave flies on ahead. Walking recharges it faster.
+    fire: (g, s, owned) => {
+      const p = g.player
       const angle = aimAngle(g, 90)
       for (let i = 0; i < s.amount; i++) {
         const jab = angle + (i % 2 === 0 ? 0.3 : -0.3)
         spawnAttack(g, {
-          move: 'machPunch', type: 'fighting', visual: 'fist', x: g.player.x, y: g.player.y,
+          move: 'machPunch', type: 'fighting', visual: 'fist', x: p.x, y: p.y,
           shape: { kind: 'circle', r: 9 * s.area },
           motion: { kind: 'follow', ...reachOffset(jab, 20 * s.area) },
           damage: s.damage, knockback: s.knockback, ttl: 0.14, age: -i * 0.09,
         })
       }
+      const v = fromAngle(angle, 260)
+      const off = fromAngle(angle, 24 * s.area)
+      spawnAttack(g, {
+        move: 'machPunch', type: 'fighting', visual: 'sonicJab', x: p.x + off.x, y: p.y - 8 + off.y,
+        shape: { kind: 'circle', r: 7 * s.area }, motion: { kind: 'linear', vx: v.x, vy: v.y },
+        damage: s.damage * 0.6, knockback: s.knockback * 0.6, ttl: 0.3, age: -(s.amount - 1) * 0.09 - 0.05,
+      })
+      if (p.moving) owned.cooldown -= s.cooldown * MACH_HASTE
     },
   },
 
@@ -585,6 +612,8 @@ export const MOVES = {
     name: 'Spirit Shackle',
     type: 'ghost',
     base: stats({ damage: 8, cooldown: 1.4, amount: 3, speed: 260, pierce: 2, knockback: 20 }),
+    // Pins each foe it goes through to its shadow for a moment (`signatures.ts` draws the shadow).
+    status: { kind: 'slow', chance: 1, duration: 0.8, power: 0.9 },
     upgrades: [
       { amount: 1 },
       { damage: 3 },
@@ -602,7 +631,7 @@ export const MOVES = {
           move: 'spiritShackle', type: 'ghost', visual: 'arrow', x: p.x, y: p.y - 8,
           shape: { kind: 'circle', r: 4 * s.area },
           motion: { kind: 'linear', vx: v.x, vy: v.y },
-          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 1.2,
+          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 1.2, status: s.status,
         })
       }
     },
@@ -611,7 +640,8 @@ export const MOVES = {
   waterShuriken: {
     name: 'Water Shuriken',
     type: 'water',
-    base: stats({ damage: 5, cooldown: 0.9, amount: 2, speed: 230, pierce: 1, knockback: 15 }),
+    // Each shuriken swells with every foe it cuts (`signatures.ts`).
+    base: stats({ damage: 5, cooldown: 0.9, amount: 2, speed: 230, pierce: 2, knockback: 15 }),
     upgrades: [
       { amount: 1 },
       { damage: 2 },
@@ -695,6 +725,18 @@ export const MOVES = {
           from: { x: p.x, y: p.y - 6 },
           age: -i * 0.12,
         })
+        // The ball bounces off the first foe onto the nearest other one, for 60% of the damage.
+        const next = nearby.filter((e) => e !== t && dm.sq(e.x - t.x) + dm.sq(e.y - t.y) < PYRO_BOUNCE * PYRO_BOUNCE)
+        next.sort((a, b) => dm.sq(a.x - t.x) + dm.sq(a.y - t.y) - (dm.sq(b.x - t.x) + dm.sq(b.y - t.y)) || a.id - b.id)
+        const to = next[0] ?? { x: t.x + (t.x - p.x) * 0.4, y: t.y + (t.y - p.y) * 0.4 }
+        spawnAttack(g, {
+          move: 'pyroBall', type: 'fire', visual: 'pyro', x: to.x, y: to.y,
+          shape: { kind: 'circle', r: 15 * s.area },
+          motion: { kind: 'static' },
+          damage: s.damage * 0.6, knockback: s.knockback * 0.7, ttl: 0.6, activeFrom: 0.3, activeUntil: 0.4,
+          from: { x: t.x, y: t.y - 6 },
+          age: -i * 0.12 - 0.5,
+        })
       }
     },
   },
@@ -768,17 +810,22 @@ export const MOVES = {
       { amount: 1 },
       { area: 0.25, damage: 5 },
     ],
-    fire: (g, s) => {
+    // A beat in three: the third is the downbeat, a bigger, harder ring.
+    fire: (g, s, owned) => {
       const p = g.player
+      const beat = beatOf(stacksOf(owned), DRUM_BAR)
+      owned.stacks = beat.next
+      const k = beat.strong ? 1.35 : 1
       for (let i = 0; i < s.amount; i++) {
         spawnAttack(g, {
           move: 'drumBeating', type: 'grass', visual: 'drumRoots', x: p.x, y: p.y,
           shape: { kind: 'circle', r: 6 },
           motion: { kind: 'follow', ox: 0, oy: 0 },
-          damage: s.damage, knockback: s.knockback, ttl: s.duration, grow: (62 * s.area) / s.duration, status: s.status,
-          age: -i * 0.25,
+          damage: s.damage * (beat.strong ? 1.6 : 1), knockback: s.knockback * k, ttl: s.duration,
+          grow: (62 * s.area * k) / s.duration, status: s.status, age: -i * 0.25, memo: beat.strong ? 1 : 0,
         })
       }
+      if (beat.strong) g.shake = Math.max(g.shake, 2)
     },
   },
 
@@ -813,6 +860,8 @@ export const MOVES = {
     name: 'Torch Song',
     type: 'fire',
     base: stats({ damage: 9, cooldown: 2, amount: 5, speed: 115, pierce: 2, knockback: 20 }),
+    // Each song in a row burns brighter (+8% per cast, up to 5); getting hurt breaks the streak.
+    stacks: { grow: 'cast', max: TORCH_MAX, reset: 'hurt' },
     upgrades: [
       { amount: 1 },
       { damage: 3 },
@@ -822,15 +871,16 @@ export const MOVES = {
       { damage: 5 },
       { amount: 2, area: 0.2 },
     ],
-    fire: (g, s) => {
+    fire: (g, s, owned) => {
       const p = g.player
+      const streak = stacksOf(owned)
       for (const angle of radial(g, s.amount, -1.1)) {
         const v = fromAngle(angle, s.speed)
         spawnAttack(g, {
           move: 'torchSong', type: 'fire', visual: 'note', x: p.x, y: p.y - 10,
           shape: { kind: 'circle', r: 5 * s.area },
           motion: { kind: 'linear', vx: v.x, vy: v.y },
-          damage: s.damage, knockback: s.knockback, pierce: s.pierce, ttl: 1.4,
+          damage: s.damage * (1 + TORCH_POWER * streak), knockback: s.knockback, pierce: s.pierce, ttl: 1.4, memo: streak,
         })
       }
     },
@@ -849,17 +899,22 @@ export const MOVES = {
       { area: 0.2 },
       { amount: 1 },
     ],
-    fire: (g, s) => {
+    // A high critical-hit ratio: every third swing is a critical one, a bigger golden blade at ×2.
+    fire: (g, s, owned) => {
       const p = g.player
       const start = dm.atan2(p.facing.y, p.facing.x)
+      const beat = beatOf(stacksOf(owned), LEAF_BLADE_BAR)
+      owned.stacks = beat.next
+      const k = beat.strong ? 1.25 : 1
       for (let i = 0; i < s.amount; i++) {
         spawnAttack(g, {
           move: 'leafBlade', type: 'grass', visual: 'blade', x: p.x, y: p.y,
-          shape: { kind: 'circle', r: 9 * s.area },
-          motion: { kind: 'orbit', angle: start + (i / s.amount) * TAU, spin: s.speed, radius: 24 * s.area },
-          damage: s.damage, knockback: s.knockback, ttl: TAU / s.speed,
+          shape: { kind: 'circle', r: 9 * s.area * k },
+          motion: { kind: 'orbit', angle: start + (i / s.amount) * TAU, spin: s.speed, radius: 24 * s.area * k },
+          damage: s.damage * (beat.strong ? 2 : 1), knockback: s.knockback * k, ttl: TAU / s.speed, memo: beat.strong ? 1 : 0,
         })
       }
+      if (beat.strong) g.events.push({ kind: 'cast', move: 'leafBlade' })
     },
   },
 
@@ -867,6 +922,8 @@ export const MOVES = {
     name: 'Razor Shell',
     type: 'water',
     base: stats({ damage: 15, cooldown: 1.2, amount: 1, knockback: 80 }),
+    // Lowers defense: a cut foe may be marked to take more damage from every hit.
+    status: { kind: 'mark', chance: 0.5, duration: 4, power: 0.15 },
     upgrades: [
       { amount: 1 },
       { damage: 5 },
@@ -884,7 +941,7 @@ export const MOVES = {
           move: 'razorShell', type: 'water', visual: 'shell', x: p.x, y: p.y,
           shape: { kind: 'circle', r: 20 * s.area },
           motion: { kind: 'follow', ...reachOffset(start + (i / s.amount) * TAU, 18 * s.area) },
-          damage: s.damage, knockback: s.knockback, ttl: 0.22, age: -i * 0.08,
+          damage: s.damage, knockback: s.knockback, ttl: 0.22, age: -i * 0.08, status: s.status,
         })
       }
     },

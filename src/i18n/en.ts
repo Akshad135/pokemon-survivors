@@ -989,6 +989,222 @@ export const en: Messages = {
   },
 
   moves: {
+    leechSeed: {
+      description: 'Lobs seeds at the nearest foes. A seed drains HP over time and heals you; when the foe faints, it jumps to two neighbors.',
+      upgrades: [
+        '+1 seed',
+        '+3 damage',
+        'Seeds drain +30%',
+        'Recharges 0.3s faster',
+        '+1 seed',
+        '+4 damage and +20% area',
+        '+2 seeds',
+      ],
+    },
+    rapidSpin: {
+      description: 'You spin in your shell: your body hits and flings foes away. While spinning you take 40% less damage, move faster and knock enemy shots aside.',
+      upgrades: [
+        '+3 damage',
+        'Spins +0.3s',
+        '+20% area',
+        'Recharges 0.5s faster',
+        '+4 damage',
+        'Spins +0.3s and +15% area',
+        '+5 damage and flings farther',
+      ],
+    },
+    petalDance: {
+      description: 'Petals spiral out around you, faster with every dance in a row. The third dance is the strongest, but leaves you dizzy and slow for a moment.',
+      upgrades: [
+        '+1 petal',
+        '+3 damage',
+        'Dances +0.3s',
+        '+1 petal',
+        'Recharges 0.3s faster',
+        '+4 damage and +15% area',
+        '+2 petals',
+      ],
+    },
+    eruption: {
+      description: 'Fire bombs burst from your back and rain down around you. The more HP you have, the harder they hit. May burn.',
+      upgrades: [
+        '+1 bomb',
+        '+6 damage',
+        '+20% area',
+        '+2 bombs',
+        'Recharges 0.4s faster',
+        '+8 damage',
+        '+2 bombs and +15% area',
+      ],
+    },
+    thrash: {
+      description: 'A rampage: for 2.5s you bite the foes around you nonstop. Then you are worn out and slower for a moment.',
+      upgrades: [
+        '+3 damage',
+        '+1 bite per second',
+        '+20% reach',
+        'Rampage +0.5s',
+        '+4 damage',
+        '+2 bites per second',
+        'Recharges 1s faster and +3 damage',
+      ],
+    },
+    doubleKick: {
+      description: 'Two quick kicks in an arc: the first marks, so the second lands ×1.5 on whatever the first one caught.',
+      upgrades: [
+        '+3 damage',
+        '+20% area',
+        'Recharges 0.2s faster',
+        '+4 damage',
+        '+1 pair of kicks, behind you',
+        '+5 damage',
+        '+25% area and pushes harder',
+      ],
+    },
+    mudShot: {
+      description: 'A wave of mud that widens in front of you. Whatever it splashes gets muddy: it walks slower and deals 25% less contact damage.',
+      upgrades: [
+        '+3 damage',
+        '+20% area',
+        '+1 wave',
+        'Recharges 0.25s faster',
+        '+4 damage',
+        '+20% area',
+        '+1 wave and +4 damage',
+      ],
+    },
+    woodHammer: {
+      description: 'Raises a log hammer and smashes the ground in front of you with great force. Every swing that connects costs a little of your HP.',
+      upgrades: [
+        '+6 damage',
+        '+20% area',
+        'Recharges 0.3s faster',
+        '+8 damage',
+        '+20% area',
+        'Recharges 0.3s faster',
+        '+10 damage',
+      ],
+    },
+    drillPeck: {
+      description: 'A spinning beak-drill bores through a line of foes, slowing down to grind each one it goes through.',
+      upgrades: [
+        '+2 damage',
+        '+1 drill',
+        'Faster drill',
+        'Recharges 0.25s faster',
+        '+3 damage',
+        '+25% area',
+        '+1 drill and +3 damage',
+      ],
+    },
+    leafTornado: {
+      description: 'A leafy whirlwind drifts forward, pulling foes in and slowing them, then bursts into a ring of blades.',
+      upgrades: [
+        '+2 damage',
+        '+20% area',
+        'Lasts +0.5s',
+        '+1 whirlwind',
+        '+3 damage',
+        '+20% area',
+        '+1 whirlwind and +3 damage',
+      ],
+    },
+    flameCharge: {
+      description: 'Wrapped in flames, you leap onto the biggest crowd nearby and land in a fiery crash. The more max HP, the harder it hits. May burn.',
+      upgrades: [
+        '+5 damage',
+        '+20% area',
+        'Recharges 0.4s faster',
+        '+6 damage',
+        '+20% area',
+        'Recharges 0.4s faster',
+        '+8 damage and +15% area',
+      ],
+    },
+    needleArm: {
+      description: 'Your quills bristle: needles fly every way, and for 1.5s any foe that touches you deals no damage and gets hurt and thrown back instead.',
+      upgrades: [
+        '+3 damage',
+        '+2 needles',
+        'Quills +0.3s',
+        'Recharges 0.5s faster',
+        '+4 damage',
+        '+2 needles',
+        'Quills +0.4s and +4 damage',
+      ],
+    },
+    psybeam: {
+      description: 'A wavy beam of colorful psychic rings. May confuse: a confused foe wanders off and hurts the others it bumps into.',
+      upgrades: [
+        '+2 rings',
+        '+3 damage',
+        '+6% chance to confuse',
+        'Recharges 0.25s faster',
+        '+3 damage and +20% area',
+        '+2 rings',
+        '+4 damage and +6% chance to confuse',
+      ],
+    },
+    darkestLariat: {
+      description: 'You spin with your arms out for 1.5s, mowing down everything around you. Goes through shields.',
+      upgrades: [
+        '+3 damage',
+        '+20% reach',
+        'Spins +0.4s',
+        'Recharges 0.4s faster',
+        '+4 damage',
+        '+1 arm',
+        '+5 damage and +15% reach',
+      ],
+    },
+    sparklingAria: {
+      description: 'Slow bubbles float out and pop when they touch a foe, splashing everything around. Bubbles that pop near you heal you a little.',
+      upgrades: [
+        '+1 bubble',
+        '+4 damage',
+        '+20% area',
+        'Recharges 0.3s faster',
+        '+2 bubbles',
+        '+5 damage',
+        '+2 bubbles and +15% area',
+      ],
+    },
+    snipeShot: {
+      description: 'A crosshair locks onto a foe farther away and a precise shot flies straight through: the farther it flies, the harder it hits. Goes through shields.',
+      upgrades: [
+        '+5 damage',
+        'Pierces +1 foe',
+        'Recharges 0.3s faster',
+        '+6 damage',
+        '+1 shot',
+        'Pierces +2 foes',
+        '+8 damage',
+      ],
+    },
+    flowerTrick: {
+      description: 'Throws a flower that chases its target and never misses, blooming on impact. Deals ×1.5 to elites and bosses.',
+      upgrades: [
+        '+1 flower',
+        '+4 damage',
+        'Recharges 0.2s faster',
+        '+1 flower',
+        '+5 damage',
+        'Faster flowers',
+        '+2 flowers',
+      ],
+    },
+    aquaStep: {
+      description: 'A dance step: you glide forward in a splash of water, untouchable on the way. Each step in a row makes you 3% faster (up to 15%).',
+      upgrades: [
+        '+4 damage',
+        '+20% reach',
+        'Recharges 0.25s faster',
+        '+5 damage',
+        '+20% reach',
+        'Recharges 0.25s faster',
+        '+6 damage and +20% reach',
+      ],
+    },
     ember: {
       description: 'Shoots embers at the nearest foe. May burn.',
       upgrades: [
@@ -1110,7 +1326,7 @@ export const en: Messages = {
       ],
     },
     machPunch: {
-      description: 'A combo of quick punches on the nearest foe.',
+      description: 'A combo of quick punches on the nearest foe; the last one sends a shockwave ahead. Recharges faster while you walk.',
       upgrades: [
         '+1 punch',
         '+3 damage',
@@ -1134,7 +1350,7 @@ export const en: Messages = {
       ],
     },
     spiritShackle: {
-      description: 'A fan of spectral arrows that pierce foes.',
+      description: 'A fan of spectral arrows that pierce foes and pin them to their own shadow for a moment.',
       upgrades: [
         '+1 arrow',
         '+3 damage',
@@ -1146,7 +1362,7 @@ export const en: Messages = {
       ],
     },
     waterShuriken: {
-      description: 'Fast, accurate homing water shurikens.',
+      description: 'Homing water shurikens that grow bigger and stronger with every foe they cut.',
       upgrades: [
         '+1 shuriken',
         '+2 damage',
@@ -1170,7 +1386,7 @@ export const en: Messages = {
       ],
     },
     pyroBall: {
-      description: 'Kicks a fireball that explodes on landing.',
+      description: 'Kicks a fireball that explodes on landing and bounces onto the nearest foe.',
       upgrades: [
         '+1 ball',
         '+6 damage',
@@ -1206,7 +1422,7 @@ export const en: Messages = {
       ],
     },
     drumBeating: {
-      description: 'Drum beats: waves of roots that slow foes down.',
+      description: 'Drum beats: waves of roots that slow foes down. Every third beat is a bigger, harder one.',
       upgrades: [
         '+4 damage',
         '+20% area',
@@ -1230,7 +1446,7 @@ export const en: Messages = {
       ],
     },
     torchSong: {
-      description: 'A blazing song: notes of fire in every direction.',
+      description: 'A blazing song: notes of fire in every direction. Each song in a row is 8% stronger (up to 5); getting hurt breaks the streak.',
       upgrades: [
         '+1 note',
         '+3 damage',
@@ -1242,7 +1458,7 @@ export const en: Messages = {
       ],
     },
     leafBlade: {
-      description: 'A spinning blade that cuts everything around you.',
+      description: 'A spinning blade that cuts everything around you. Every third swing is a critical one: a bigger golden blade with ×2 damage.',
       upgrades: [
         '+4 damage',
         '+20% area',
@@ -1254,7 +1470,7 @@ export const en: Messages = {
       ],
     },
     razorShell: {
-      description: 'A sharp shell slash in an arc in front of you.',
+      description: 'A sharp shell slash in an arc in front of you. May mark the foe, which then takes more damage from every hit.',
       upgrades: [
         'Also strikes behind',
         '+5 damage',

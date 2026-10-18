@@ -1084,6 +1084,222 @@ export const pt = {
   },
 
   moves: {
+    leechSeed: {
+      description: 'Arremessa sementes nos inimigos mais próximos. A semente suga HP com o tempo e cura você; quando o inimigo cai, ela pula para dois vizinhos.',
+      upgrades: [
+        '+1 semente',
+        '+3 de dano',
+        'Sementes sugam +30%',
+        'Recarga 0.3s mais rápida',
+        '+1 semente',
+        '+4 de dano e +20% de área',
+        '+2 sementes',
+      ],
+    },
+    rapidSpin: {
+      description: 'Você gira no casco: o corpo acerta e arremessa os inimigos para longe. Enquanto gira, recebe 40% menos dano, fica mais rápido e rebate disparos inimigos.',
+      upgrades: [
+        '+3 de dano',
+        'Gira +0.3s',
+        '+20% de área',
+        'Recarga 0.5s mais rápida',
+        '+4 de dano',
+        'Gira +0.3s e +15% de área',
+        '+5 de dano e arremessa mais longe',
+      ],
+    },
+    petalDance: {
+      description: 'Pétalas giram em espiral ao seu redor, mais rápidas a cada dança seguida. A terceira dança é a mais forte, mas deixa você tonto e lento por um instante.',
+      upgrades: [
+        '+1 pétala',
+        '+3 de dano',
+        'Dança +0.3s',
+        '+1 pétala',
+        'Recarga 0.3s mais rápida',
+        '+4 de dano e +15% de área',
+        '+2 pétalas',
+      ],
+    },
+    eruption: {
+      description: 'Bombas de fogo saem das suas costas e chovem ao seu redor. Quanto mais HP você tiver, mais forte. Pode queimar.',
+      upgrades: [
+        '+1 bomba',
+        '+6 de dano',
+        '+20% de área',
+        '+2 bombas',
+        'Recarga 0.4s mais rápida',
+        '+8 de dano',
+        '+2 bombas e +15% de área',
+      ],
+    },
+    thrash: {
+      description: 'Fúria: por 2.5s você morde sem parar os inimigos ao seu redor. Depois fica cansado e mais lento por um instante.',
+      upgrades: [
+        '+3 de dano',
+        '+1 mordida por segundo',
+        '+20% de alcance',
+        'Fúria +0.5s',
+        '+4 de dano',
+        '+2 mordidas por segundo',
+        'Recarga 1s mais rápida e +3 de dano',
+      ],
+    },
+    doubleKick: {
+      description: 'Dois chutes rápidos em arco: o primeiro marca, e o segundo acerta ×1.5 em quem o primeiro pegou.',
+      upgrades: [
+        '+3 de dano',
+        '+20% de área',
+        'Recarga 0.2s mais rápida',
+        '+4 de dano',
+        '+1 par de chutes, para trás',
+        '+5 de dano',
+        '+25% de área e empurra mais',
+      ],
+    },
+    mudShot: {
+      description: 'Uma onda de lama que se alarga à sua frente. Quem é atingido fica enlameado: anda mais devagar e causa 25% menos dano de contato.',
+      upgrades: [
+        '+3 de dano',
+        '+20% de área',
+        '+1 onda',
+        'Recarga 0.25s mais rápida',
+        '+4 de dano',
+        '+20% de área',
+        '+1 onda e +4 de dano',
+      ],
+    },
+    woodHammer: {
+      description: 'Ergue um martelo de tronco e esmaga o chão à sua frente com muita força. Cada martelada que acerta custa um pouco do seu HP.',
+      upgrades: [
+        '+6 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+8 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+10 de dano',
+      ],
+    },
+    drillPeck: {
+      description: 'Um bico-broca giratório perfura uma fila de inimigos, freando para triturar cada um que atravessa.',
+      upgrades: [
+        '+2 de dano',
+        '+1 broca',
+        'Broca mais rápida',
+        'Recarga 0.25s mais rápida',
+        '+3 de dano',
+        '+25% de área',
+        '+1 broca e +3 de dano',
+      ],
+    },
+    leafTornado: {
+      description: 'Um redemoinho de folhas avança puxando e desacelerando os inimigos, e no fim explode num anel de lâminas.',
+      upgrades: [
+        '+2 de dano',
+        '+20% de área',
+        'Dura +0.5s',
+        '+1 redemoinho',
+        '+3 de dano',
+        '+20% de área',
+        '+1 redemoinho e +3 de dano',
+      ],
+    },
+    flameCharge: {
+      description: 'Envolto em chamas, você salta sobre o maior grupo de inimigos por perto e cai numa explosão de fogo. Quanto mais HP máximo, mais forte. Pode queimar.',
+      upgrades: [
+        '+5 de dano',
+        '+20% de área',
+        'Recarga 0.4s mais rápida',
+        '+6 de dano',
+        '+20% de área',
+        'Recarga 0.4s mais rápida',
+        '+8 de dano e +15% de área',
+      ],
+    },
+    needleArm: {
+      description: 'Seus espinhos se eriçam: agulhas voam para todos os lados e, por 1.5s, quem encostar em você não causa dano e ainda é ferido e arremessado.',
+      upgrades: [
+        '+3 de dano',
+        '+2 agulhas',
+        'Espinhos +0.3s',
+        'Recarga 0.5s mais rápida',
+        '+4 de dano',
+        '+2 agulhas',
+        'Espinhos +0.4s e +4 de dano',
+      ],
+    },
+    psybeam: {
+      description: 'Um feixe ondulante de anéis psíquicos coloridos. Pode confundir: o inimigo confuso anda sem rumo e machuca os outros em que esbarra.',
+      upgrades: [
+        '+2 anéis',
+        '+3 de dano',
+        '+6% de chance de confundir',
+        'Recarga 0.25s mais rápida',
+        '+3 de dano e +20% de área',
+        '+2 anéis',
+        '+4 de dano e +6% de chance de confundir',
+      ],
+    },
+    darkestLariat: {
+      description: 'Você gira de braços abertos por 1.5s, atropelando tudo ao redor. Atravessa escudos.',
+      upgrades: [
+        '+3 de dano',
+        '+20% de alcance',
+        'Gira +0.4s',
+        'Recarga 0.4s mais rápida',
+        '+4 de dano',
+        '+1 braço',
+        '+5 de dano e +15% de alcance',
+      ],
+    },
+    sparklingAria: {
+      description: 'Bolhas lentas flutuam e estouram ao tocar um inimigo, molhando tudo em volta. As que estouram perto de você curam um pouco.',
+      upgrades: [
+        '+1 bolha',
+        '+4 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+2 bolhas',
+        '+5 de dano',
+        '+2 bolhas e +15% de área',
+      ],
+    },
+    snipeShot: {
+      description: 'A mira trava num inimigo mais distante e um tiro certeiro atravessa em linha reta: quanto mais longe voa, mais forte. Atravessa escudos.',
+      upgrades: [
+        '+5 de dano',
+        'Atravessa +1 inimigo',
+        'Recarga 0.3s mais rápida',
+        '+6 de dano',
+        '+1 tiro',
+        'Atravessa +2 inimigos',
+        '+8 de dano',
+      ],
+    },
+    flowerTrick: {
+      description: 'Lança uma flor que persegue o alvo e nunca erra, desabrochando no impacto. Causa ×1.5 em elites e chefes.',
+      upgrades: [
+        '+1 flor',
+        '+4 de dano',
+        'Recarga 0.2s mais rápida',
+        '+1 flor',
+        '+5 de dano',
+        'Flores mais rápidas',
+        '+2 flores',
+      ],
+    },
+    aquaStep: {
+      description: 'Um passo de dança: você desliza para a frente espirrando água, invulnerável no caminho. Cada passo seguido deixa você 3% mais rápido (até 15%).',
+      upgrades: [
+        '+4 de dano',
+        '+20% de alcance',
+        'Recarga 0.25s mais rápida',
+        '+5 de dano',
+        '+20% de alcance',
+        'Recarga 0.25s mais rápida',
+        '+6 de dano e +20% de alcance',
+      ],
+    },
     ember: {
       description: 'Dispara brasas no inimigo mais próximo. Pode queimar.',
       upgrades: [
@@ -1205,7 +1421,7 @@ export const pt = {
       ],
     },
     machPunch: {
-      description: 'Combo de socos rápidos no inimigo mais próximo.',
+      description: 'Combo de socos rápidos no inimigo mais próximo; o último soco solta uma onda de choque à frente. Recarrega mais rápido enquanto você anda.',
       upgrades: [
         '+1 soco',
         '+3 de dano',
@@ -1229,7 +1445,7 @@ export const pt = {
       ],
     },
     spiritShackle: {
-      description: 'Rajada de flechas espectrais em leque que atravessam inimigos.',
+      description: 'Rajada de flechas espectrais em leque que atravessam inimigos e os prendem à própria sombra por um instante.',
       upgrades: [
         '+1 flecha',
         '+3 de dano',
@@ -1241,7 +1457,7 @@ export const pt = {
       ],
     },
     waterShuriken: {
-      description: 'Shurikens d’água teleguiadas, rápidas e certeiras.',
+      description: 'Shurikens d’água teleguiadas que crescem e ficam mais fortes a cada inimigo que cortam.',
       upgrades: [
         '+1 shuriken',
         '+2 de dano',
@@ -1265,7 +1481,7 @@ export const pt = {
       ],
     },
     pyroBall: {
-      description: 'Chuta uma bola de fogo que explode ao cair.',
+      description: 'Chuta uma bola de fogo que explode ao cair e quica no inimigo mais próximo.',
       upgrades: [
         '+1 bola',
         '+6 de dano',
@@ -1301,7 +1517,7 @@ export const pt = {
       ],
     },
     drumBeating: {
-      description: 'Batidas de tambor: ondas de raízes que desaceleram inimigos.',
+      description: 'Batidas de tambor: ondas de raízes que desaceleram inimigos. A cada três batidas, a terceira é maior e mais forte.',
       upgrades: [
         '+4 de dano',
         '+20% de área',
@@ -1325,7 +1541,7 @@ export const pt = {
       ],
     },
     torchSong: {
-      description: 'Canto flamejante: notas de fogo em todas as direções.',
+      description: 'Canto flamejante: notas de fogo em todas as direções. Cada canto seguido fica 8% mais forte (até 5); levar dano zera a sequência.',
       upgrades: [
         '+1 nota',
         '+3 de dano',
@@ -1337,7 +1553,7 @@ export const pt = {
       ],
     },
     leafBlade: {
-      description: 'Lâmina giratória que corta tudo ao seu redor.',
+      description: 'Lâmina giratória que corta tudo ao seu redor. A cada três giros, um é crítico: uma lâmina dourada maior, com dano ×2.',
       upgrades: [
         '+4 de dano',
         '+20% de área',
@@ -1349,7 +1565,7 @@ export const pt = {
       ],
     },
     razorShell: {
-      description: 'Golpe de concha afiada em arco à sua frente.',
+      description: 'Golpe de concha afiada em arco à sua frente. Pode marcar o inimigo, que passa a receber mais dano de cada golpe.',
       upgrades: [
         'Também ataca atrás',
         '+5 de dano',
