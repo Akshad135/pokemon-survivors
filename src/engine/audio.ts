@@ -364,6 +364,57 @@ const SFX = {
     tone(400, 900, 0.1, 'sine', 0.1)
   },
   crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
+  /* Egg signatures, third batch (`ui/castSounds.ts`) */
+  /** Fiery Dance: a crackle and a twirl of rising notes. */
+  flameDance: () => {
+    noise(0.2, 0.06)
+    ;[392, 523, 659].forEach((f, i) => tone(f, f * 1.2, 0.09, 'triangle', 0.07, i * 0.06))
+  },
+  /** Overdrive: a distorted power chord chugging. */
+  riff: () => [0, 0.11, 0.22].forEach((d, i) => {
+    tone(110 * (i === 2 ? 1.5 : 1), 108, 0.09, 'sawtooth', 0.09, d)
+    tone(165 * (i === 2 ? 1.5 : 1), 160, 0.09, 'square', 0.05, d)
+  }),
+  /** Gigaton Hammer: a heavy clang with a metal ring. */
+  gigaton: () => {
+    tone(90, 40, 0.3, 'square', 0.16)
+    tone(1320, 1250, 0.25, 'triangle', 0.06, 0.02)
+    noise(0.15, 0.12)
+  },
+  /** Bitter Blade: a hiss of ghost fire cutting the air. */
+  soulSlash: () => {
+    noise(0.14, 0.08)
+    tone(880, 330, 0.16, 'sawtooth', 0.05)
+  },
+  /** Heavy Slam: a dull steel thud. */
+  thud: () => {
+    tone(120, 45, 0.26, 'triangle', 0.18)
+    tone(600, 560, 0.12, 'square', 0.04, 0.02)
+  },
+  /** Bulldoze: earth rumbling forward. */
+  rumble: () => {
+    tone(60, 90, 0.4, 'sawtooth', 0.08)
+    noise(0.35, 0.07)
+  },
+  /** Perish Song: three eerie notes falling. */
+  perish: () => [659, 587, 466].forEach((f, i) => tone(f, f * 0.98, 0.24, 'triangle', 0.09, i * 0.22)),
+  /** Charge Beam: a quick electric buzz. */
+  zap: () => {
+    tone(220, 1760, 0.12, 'square', 0.06)
+    noise(0.1, 0.05, 0.05)
+  },
+  /** Moonblast: a soft chime. */
+  moonChime: () => [1047, 1319, 1568].forEach((f, i) => tone(f, f, 0.18, 'sine', 0.07, i * 0.05)),
+  /** Frost Breath: a cold hiss with a shimmer. */
+  frost: () => {
+    noise(0.25, 0.06)
+    tone(2093, 2637, 0.2, 'sine', 0.03)
+  },
+  /** Avalanche: snow thundering down. */
+  avalanche: () => {
+    noise(0.45, 0.1)
+    tone(140, 50, 0.45, 'triangle', 0.1)
+  },
   /* Legendary moves (`game/legendaryMoves.ts`); delayed impacts are scheduled inside their sound. */
   /** Whirlwind: a long rising howl of wind. */
   cyclone: () => {

@@ -28,6 +28,7 @@ import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawEggAttack, drawEggGround, drawEggPlayer, eggPlayerLook } from './eggMoveFx'
+import { drawEgg3Attack, drawEgg3Ground, drawEgg3Player, egg3PlayerLook } from './eggMove3Fx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
 import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
@@ -126,6 +127,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedGround(ctx, a, t)
       drawMoveFxGround(ctx, a)
       drawEggGround(ctx, a, t)
+      drawEgg3Ground(ctx, a, t)
       drawSignatureGround(ctx, a, t)
       drawTypeEvolvedGround(ctx, a, t)
       drawModGround(ctx, a, t)
@@ -321,6 +323,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
       drawEggAttack(ctx, a, t)
+      drawEgg3Attack(ctx, a, t)
       drawSignatureAttack(ctx, a, t)
       drawTypeEvolvedAttack(ctx, a, t)
       drawModAttack(ctx, a, t)
@@ -552,8 +555,8 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
   const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
   // Burrowed or out of sight (Dig, Fly): a faint ghost of the player.
-  // Signature moves can lift the sprite (Body Slam's leap) or hide it under the mound (Dig).
-  const egg = eggPlayerLook(g)
+  // Signature moves can lift the sprite (Body Slam's leap, Heavy Slam's hop) or hide it under the mound (Dig).
+  const egg = eggPlayerLook(g) ?? egg3PlayerLook(g)
   const alpha = egg ? egg.alpha : p.hidden ? 0.3 : blink && mega.flash === 0 ? 0.45 : 1
   if (alpha > 0) drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y - (egg?.lift ?? 0), { alpha, flash, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
@@ -745,6 +748,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawKitStatus(ctx, g, t, visible)
   drawGuard(ctx, g, t)
   drawEggPlayer(ctx, g, t)
+  drawEgg3Player(ctx, g, t)
   drawSignaturePlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
   drawRiftFallAir(ctx, g, t)
