@@ -320,6 +320,8 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  /* A fieldset is min-content wide by default: on a phone its row must scroll, not widen the page. */
+  min-inline-size: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -724,6 +726,27 @@ h3 {
   font-size: 19px;
 }
 
+/* The learnset by stage: the stage's name and level over its move chips. */
+.learn {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.learn dt {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.learn dt small {
+  font-size: inherit;
+  opacity: 0.8;
+}
+
+.learn dd {
+  margin: 0 0 4px;
+}
+
 .list {
   margin: 0;
   padding-left: 18px;
@@ -731,8 +754,10 @@ h3 {
 
 /* ---------- Documents (guide, changelog, legal) ---------- */
 
+/* minmax(0, …) tracks: a wide table scrolls in its .table-wrap instead of widening the page on a phone. */
 .doc {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -753,7 +778,7 @@ h3 {
 
 @media (min-width: 980px) {
   .doc {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     align-items: start;
   }
   .toc {
@@ -767,6 +792,8 @@ h3 {
 
 .doc-body {
   display: grid;
+  /* minmax(0, …): a wide table scrolls in its wrap instead of widening the page on phones. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   min-width: 0;
 }

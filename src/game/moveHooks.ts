@@ -1,8 +1,8 @@
 import { TYPE_COLORS } from '../data/types'
 import { burst } from './effects'
 import { nextStacks, type StackEvent } from './kitRules'
-import { MOVES, moveStats, type MoveDef, type MoveId } from './moves'
-import type { Enemy, Game, MoveWindow, OwnedMove } from './types'
+import { MOVES, moveStats, type CastStats, type MoveDef, type MoveId } from './moves'
+import type { Attack, Enemy, Game, MoveWindow, OwnedMove } from './types'
 
 /**
  * Engine side of the move kit: feeds `MoveDef.stacks` its events, runs the
@@ -23,6 +23,13 @@ export const moveEvent = (g: Game, move: MoveId | null, event: StackEvent) => {
   }
 }
 
+/** A hit by `attack` landed on `e`: the move's `onHit` reacts (Rollout's ramp, Ice Ball's growth). */
+export const moveHit = (g: Game, attack: Attack, e: Enemy) => {
+  if (attack.move === 'special' || attack.move === 'ability') return
+  const def: MoveDef = MOVES[attack.move]
+  def.onHit?.(g, attack, e)
+}
+
 /** After `owned` fired: spends or grows its stacks on the cast and stamps where it fired from. */
 export const afterCast = (g: Game, owned: OwnedMove) => {
   const def: MoveDef = MOVES[owned.id]
@@ -41,7 +48,15 @@ export const guardHit = (g: Game, w: MoveWindow, from?: Enemy) => {
   burst(g, p.x, p.y - 12, { colors: [TYPE_COLORS[def.type], '#ffffff'], count: 12, speed: 110, ttl: 0.35, size: 2 })
   g.events.push({ kind: 'guard' })
   const owned = ownedOf(g, w)
-  if (owned && def.onGuard) def.onGuard(g, moveStats(owned.id, owned.level, p.stats), owned, from)
+  if (owned && def.onGuard) withMods(g, moveStats(owned.id, owned.level, p.stats, owned.path), (s) => def.onGuard!(g, s, owned, from))
+}
+
+/** Runs a hook with the move's fork mods stamped on what it spawns, like a cast (`castMove` in `game.ts`). */
+const withMods = (g: Game, s: CastStats, run: (s: CastStats) => void) => {
+  const before = g.castMods
+  g.castMods = s.mods
+  run(s)
+  g.castMods = before
 }
 
 /**
@@ -58,6 +73,6 @@ export const updateMoveKit = (g: Game, dt: number) => {
     p.hidden = null
     const def: MoveDef = MOVES[hidden.move]
     const owned = ownedOf(g, hidden)
-    if (owned && def.emerge) def.emerge(g, moveStats(owned.id, owned.level, p.stats), owned)
+    if (owned && def.emerge) withMods(g, moveStats(owned.id, owned.level, p.stats, owned.path), (s) => def.emerge!(g, s, owned))
   }
 }

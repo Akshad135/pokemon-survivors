@@ -17,14 +17,25 @@ import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
+import { drawModAttack, drawModGround } from './modFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawDrainVines, drawTypeEvolvedAttack, drawTypeEvolvedGround } from './typeEvolved'
 import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
+import { drawEggAttack, drawEggGround, drawEggPlayer, eggPlayerLook } from './eggMoveFx'
+import { drawEgg3Attack, drawEgg3Ground, drawEgg3Player, egg3PlayerLook } from './eggMove3Fx'
+import { drawEgg2Attack, drawEgg2Ground } from './eggMove2Fx'
+import { drawVerbAir, drawVerbGround } from './verbFx'
+import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
+import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
+import { drawDuoAir, drawDuoGround } from './duoFx'
+import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
+import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather } from './weather'
@@ -86,6 +97,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'drumRoots': {
       ctx.globalAlpha = Math.max(0, 1 - a.age / a.ttl)
       dashedRing(ctx, a.x, a.y - 4, r, a.age * 4, ['#78c850', '#a87840', '#58a838'], 0.75)
+      // The downbeat rings twice.
+      if (a.memo === 1) dashedRing(ctx, a.x, a.y - 4, r - 3, -a.age * 5, ['#c8f080', '#ffffff'], 0.6)
       for (let i = 0; i < 10; i++) {
         const angle = (i / 10) * TAU + a.id
         const x = Math.round(a.x + Math.cos(angle) * r)
@@ -117,6 +130,12 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
     default:
       drawEvolvedGround(ctx, a, t)
       drawMoveFxGround(ctx, a)
+      drawEggGround(ctx, a, t)
+      drawEgg3Ground(ctx, a, t)
+      drawEgg2Ground(ctx, a, t)
+      drawSignatureGround(ctx, a, t)
+      drawTypeEvolvedGround(ctx, a, t)
+      drawModGround(ctx, a, t)
       return drawSpecialGround(ctx, a)
   }
 }
@@ -155,7 +174,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'flame':
       return blitCentered(ctx, FX.flame()[Math.floor((t + a.id) * 10) % 2]!, a.x, a.y - 2)
     case 'water': {
-      const angle = m.kind === 'linear' ? Math.atan2(m.vy, m.vx) : 0
+      // Seeking and returning jets (fork mods) point their way too.
+      const angle = m.kind === 'linear' || m.kind === 'homing' || m.kind === 'boomerang' ? Math.atan2(m.vy, m.vx) : 0
       return blitRotated(ctx, FX.water(), a.x, a.y, angle)
     }
     case 'leaf': {
@@ -226,7 +246,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'arrow':
       return blitRotated(ctx, FX.arrow(), a.x, a.y, m.kind === 'linear' ? Math.atan2(m.vy, m.vx) : 0)
     case 'shuriken':
-      return blitRotated(ctx, FX.shuriken(), a.x, a.y, a.age * 22)
+      // Water Shuriken swells as it cuts (`signatures.ts`).
+      return blitRotated(ctx, FX.shuriken(), a.x, a.y, a.age * 22, a.shape.kind === 'circle' && a.shape.r > 6 ? 2 : 1)
     case 'jaws': {
       const r = a.shape.kind === 'circle' ? a.shape.r : 10
       const scale = Math.max(1, Math.round(r / 7))
@@ -263,12 +284,17 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'heart':
       return blitCentered(ctx, FX.heart(), a.x, a.y + Math.round(Math.sin(a.age * 14) * 1.5))
-    case 'note':
-      return blitCentered(ctx, FX.note(), a.x + Math.round(Math.sin(a.age * 12) * 2), a.y)
+    case 'note': {
+      const x = a.x + Math.round(Math.sin(a.age * 12) * 2)
+      // Torch Song's streak: from the third song in a row the notes burn inside a flame.
+      if (a.memo >= 3) blitCentered(ctx, FX.flame()[Math.floor((t + a.id) * 10) % 2]!, x, a.y - 3)
+      return blitCentered(ctx, FX.note(), x, a.y)
+    }
     case 'blade': {
       if (m.kind !== 'orbit') return
       const r = a.shape.kind === 'circle' ? a.shape.r : 9
-      return blitRotated(ctx, FX.blade(), a.x, a.y, m.angle + Math.PI * 0.75, Math.max(1, Math.round(r / 5)))
+      // Leaf Blade's critical swing is golden.
+      return blitRotated(ctx, a.memo === 1 ? FX.critBlade() : FX.blade(), a.x, a.y, m.angle + Math.PI * 0.75, Math.max(1, Math.round(r / 5)))
     }
     case 'shell': {
       if (m.kind !== 'follow' || a.shape.kind !== 'circle') return
@@ -301,6 +327,12 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     default:
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
+      drawEggAttack(ctx, a, t)
+      drawEgg3Attack(ctx, a, t)
+      drawEgg2Attack(ctx, a, t)
+      drawSignatureAttack(ctx, a, t)
+      drawTypeEvolvedAttack(ctx, a, t)
+      drawModAttack(ctx, a, t)
       drawMegaAttack(ctx, a)
       return drawSpecialAttack(ctx, a, t)
   }
@@ -529,8 +561,10 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
   const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
   // Burrowed or out of sight (Dig, Fly): a faint ghost of the player.
-  const alpha = p.hidden ? 0.3 : blink && mega.flash === 0 ? 0.45 : 1
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha, flash, outline: mega.outline })
+  // Signature moves can lift the sprite (Body Slam's leap, Heavy Slam's hop) or hide it under the mound (Dig).
+  const egg = eggPlayerLook(g) ?? egg3PlayerLook(g)
+  const alpha = egg ? egg.alpha : p.hidden ? 0.3 : blink && mega.flash === 0 ? 0.45 : 1
+  if (alpha > 0) drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y - (egg?.lift ?? 0), { alpha, flash, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
   drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
@@ -564,6 +598,10 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
     }
     if (k.kind === 'megaStone') {
       drawMegaStone(ctx, k.mega, k.x, k.y + bob, t)
+      continue
+    }
+    if (k.kind === 'tm') {
+      drawTmDisc(ctx, k, k.x, k.y + bob, t)
       continue
     }
     const sprite =
@@ -623,6 +661,9 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 type Drawable = Enemy | 'player' | 'companion' | Solid
 const drawables: Drawable[] = []
+
+/** How far a hitbox reaches from its center, to cull it off screen. */
+const reachOf = (shape: Attack['shape']) => (shape.kind === 'circle' ? shape.r : Math.max(shape.w, shape.h)) + 48
 const isSolid = (d: Drawable): d is Solid => d !== 'player' && d !== 'companion' && 'foot' in d
 
 /* ---------------- Biome ---------------- */
@@ -668,7 +709,13 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const visible = (x: number, y: number, m = 48) => x > camX - m && x < camX + w + m && y > camY - m && y < camY + h + m * 2
 
   drawTerrainGround(ctx, g, look, camX, camY)
-  for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  // Ground marks far off screen (trails left behind, lingering fields) are skipped; the margin covers the widest of them.
+  for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, Math.max(200, reachOf(a.shape)))) drawGroundAttack(ctx, a, t)
+  drawVerbGround(ctx, g, t)
+  drawTmGround(ctx, g, t)
+  drawVerbEvolvedGround(ctx, g, t)
+  drawDuoGround(ctx, g, t)
+  drawLegendaryGround(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
@@ -717,13 +764,24 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawSleep(ctx, g, t)
   drawKitStatus(ctx, g, t, visible)
   drawGuard(ctx, g, t)
+  drawEggPlayer(ctx, g, t)
+  drawEgg3Player(ctx, g, t)
+  drawSignaturePlayer(ctx, g, t)
+  drawTmPlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
   drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
+  drawVerbAir(ctx, g, t, visible)
+  drawTmAir(ctx, g, t, visible)
+  drawVerbEvolvedAir(ctx, g, t, visible)
+  drawDuoAir(ctx, g, t, visible)
+  drawLegendaryAir(ctx, g, t, visible)
+  drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {
+    if (!visible(p.x, p.y, 8)) continue
     ctx.globalAlpha = Math.min(1, (1 - p.life / p.ttl) * 1.5)
     ctx.fillStyle = p.color
     ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size)
