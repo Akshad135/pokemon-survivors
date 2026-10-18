@@ -5,6 +5,7 @@ import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
 import type { AbilityId } from '../data/abilities'
 import type { ItemId } from '../data/items'
+import type { CurseId } from '../data/curses'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
 import type { Difficulty } from '../game/difficulty'
@@ -2321,6 +2322,78 @@ export const pt = {
         '+1 onda e recarga 0.3s mais rápida',
       ],
     },
+    firePledge: {
+      description: 'Pilares de fogo irrompem num anel ao seu redor e o chão de dentro vira um mar de fogo que queima quem fica nele.',
+      upgrades: [
+        '+2 pilares e +10 de dano',
+        'O mar de fogo dura +1s e +15% de área',
+        '+16 de dano e queimaduras +25% mais fortes',
+        '+2 pilares e recarga 0.4s mais rápida',
+      ],
+    },
+    waterPledge: {
+      description: 'Gêiseres explodem sob as multidões e um arco-íris surge: enquanto brilha, seus golpes têm +25% de chance de status.',
+      upgrades: [
+        '+1 gêiser e +10 de dano',
+        'O arco-íris dura +1.2s',
+        '+25% de área e +12 de dano',
+        '+2 gêiseres e recarga 0.35s mais rápida',
+      ],
+    },
+    grassPledge: {
+      description: 'Um pântano se espalha ao seu redor e anda com você, atolando todo inimigo nele, e pilares de cipó irrompem sob os que ele prende.',
+      upgrades: [
+        '+1 pilar e +7 de dano',
+        '+20% de área do pântano',
+        '+10 de dano',
+        '+2 pilares e recarga 0.3s mais rápida',
+      ],
+    },
+    fusionFlare: {
+      description: 'Um cometa de fogo branco cai na maior multidão, explode e deixa o chão em brasa. Queima.',
+      upgrades: [
+        '+1 cometa',
+        '+18 de dano e +15% de área',
+        'Brasas duram +1s e +15% de chance de queimar',
+        '+1 cometa e recarga 0.4s mais rápida',
+      ],
+    },
+    fusionBolt: {
+      description: 'Um cometa de raios cai na maior multidão, explode e deixa o chão eletrizado. Paralisa.',
+      upgrades: [
+        '+1 cometa',
+        '+36 de dano e +15% de área',
+        'Faíscas duram +1s e +15% de chance de paralisar',
+        '+1 cometa e recarga 0.4s mais rápida',
+      ],
+    },
+    ionDeluge: {
+      description: 'Poças caem sob os inimigos e conduzem: todas eletrocutam juntas quem estiver nelas, com arcos entre si. Na chuva, +1 poça.',
+      upgrades: [
+        '+1 poça',
+        '+9 de dano e poças duram +1s',
+        '+25% de área e +10% de chance de paralisar',
+        '+1 poça e recarga 0.3s mais rápida',
+      ],
+    },
+    freezeDry: {
+      description: 'Uma névoa gelada se espalha ao seu redor e congela os inimigos (o próximo golpe causa o dobro e quebra o gelo). ×1.4 em congelados.',
+      upgrades: [
+        '+1 onda de névoa',
+        '+6 de dano e +15% de chance de congelar',
+        '+25% de área',
+        '+15% de área e recarga 0.3s mais rápida',
+      ],
+    },
+    nightmare: {
+      description: 'Um Hex em cadeia que envenena, e uma caveira que morde cada alvo de novo logo depois: ×2 em quem tem status e ×1.5 a mais se envenenado.',
+      upgrades: [
+        '+2 alvos',
+        '+14 de dano e +15% de chance de envenenar',
+        '+25% de alcance e veneno +25% mais forte',
+        '+2 alvos e recarga 0.3s mais rápida',
+      ],
+    },
   },
 
   items: {
@@ -2535,6 +2608,34 @@ export const pt = {
     doubleEdge: 'Doze mergulhos aéreos caem nos inimigos mais próximos.',
   },
 
+
+  /** Duo moves (`game/duoRules.ts`): the level-up card, the pause screen's recipes and the toast. */
+  duo: {
+    tag: 'DUO!',
+    frees: 'Libera 1 espaço de golpe · só 1 por partida',
+    title: 'Golpes em dupla',
+    legend: 'Dois golpes no nível máximo (ou evoluídos) dos tipos indicados se unem num golpe em dupla. Só 1 por partida.',
+    done: 'FEITO',
+    fused: (a: string, b: string, to: string) => `*${a}* e *${b}* se uniram: *${to}*!`,
+  },
+
+  /** Cursed items (`data/curses.ts`): what each gives and costs, the chest's choice and the toasts. */
+  curses: {
+    lifeOrb: { upside: '+30% de dano.', downside: 'Cada golpe lançado custa 1% do HP (no máx. 1 vez por segundo; para em 1 HP).' },
+    choiceBand: { upside: '+40% de dano.', downside: 'Você não aprende golpes novos: só melhora os que já tem.' },
+    flameOrb: { upside: '+25% de dano e +10% de chance de status.', downside: 'Você fica queimado: perde 0,7% do HP por segundo (para em 1 HP).' },
+    ironBall: { upside: '+30% de dano e +1 de defesa.', downside: 'Pesada: −13 de velocidade.' },
+  } satisfies Record<CurseId, { upside: string; downside: string }>,
+  curse: {
+    title: 'Item amaldiçoado!',
+    subtitle: 'No fundo do baú há algo poderoso… com um preço.',
+    take: 'Pegar',
+    leave: 'Deixar',
+    note: 'Não ocupa espaço de item e fica até o fim da partida.',
+    label: 'AMALDIÇOADO',
+    taken: (name: string) => `Você pegou *${name}*… _o poder tem um preço_.`,
+    left: (name: string) => `Você deixou *${name}* no baú.`,
+  },
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {
     healer: (name: string) => `*${name}* cura os aliados por perto. Derrube primeiro!`,

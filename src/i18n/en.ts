@@ -2211,6 +2211,78 @@ export const en: Messages = {
         '+1 wave and 0.3s faster cooldown',
       ],
     },
+    firePledge: {
+      description: 'Pillars of fire burst in a ring around you and the ground inside becomes a sea of fire that burns whoever stays in it.',
+      upgrades: [
+        '+2 pillars and +10 damage',
+        'The sea of fire lasts +1s and +15% area',
+        '+16 damage and burns 25% stronger',
+        '+2 pillars and 0.4s faster cooldown',
+      ],
+    },
+    waterPledge: {
+      description: 'Geysers burst under the crowds and a rainbow appears: while it shines, your moves get +25% status chance.',
+      upgrades: [
+        '+1 geyser and +10 damage',
+        'The rainbow lasts +1.2s',
+        '+25% area and +12 damage',
+        '+2 geysers and 0.35s faster cooldown',
+      ],
+    },
+    grassPledge: {
+      description: 'A swamp spreads around you and walks with you, bogging down every foe in it, while vine pillars burst under the ones it holds.',
+      upgrades: [
+        '+1 pillar and +7 damage',
+        '+20% swamp area',
+        '+10 damage',
+        '+2 pillars and 0.3s faster cooldown',
+      ],
+    },
+    fusionFlare: {
+      description: 'A white-hot comet falls on the biggest crowd, explodes and leaves the ground smoldering. Burns.',
+      upgrades: [
+        '+1 comet',
+        '+18 damage and +15% area',
+        'Embers last +1s and +15% burn chance',
+        '+1 comet and 0.4s faster cooldown',
+      ],
+    },
+    fusionBolt: {
+      description: 'A comet of lightning falls on the biggest crowd, explodes and leaves the ground crackling. Paralyzes.',
+      upgrades: [
+        '+1 comet',
+        '+36 damage and +15% area',
+        'Sparks last +1s and +15% paralysis chance',
+        '+1 comet and 0.4s faster cooldown',
+      ],
+    },
+    ionDeluge: {
+      description: 'Puddles land under foes and conduct: all of them zap whoever stands in them at once, with arcs between them. In rain, +1 puddle.',
+      upgrades: [
+        '+1 puddle',
+        '+9 damage and puddles last +1s',
+        '+25% area and +10% paralysis chance',
+        '+1 puddle and 0.3s faster cooldown',
+      ],
+    },
+    freezeDry: {
+      description: 'A freezing mist rolls out around you and freezes foes (the next hit deals double and breaks the ice). ×1.4 on frozen foes.',
+      upgrades: [
+        '+1 wave of mist',
+        '+6 damage and +15% freeze chance',
+        '+25% area',
+        '+15% area and 0.3s faster cooldown',
+      ],
+    },
+    nightmare: {
+      description: 'A chaining Hex that poisons, and a skull that bites each target again right after: ×2 on afflicted foes and ×1.5 more if poisoned.',
+      upgrades: [
+        '+2 targets',
+        '+14 damage and +15% poison chance',
+        '+25% reach and poison 25% stronger',
+        '+2 targets and 0.3s faster cooldown',
+      ],
+    },
   },
 
   items: {
@@ -2425,6 +2497,32 @@ export const en: Messages = {
     doubleEdge: 'Twelve dive-bombs crash on the nearest foes.',
   },
 
+
+  duo: {
+    tag: 'DUO!',
+    frees: 'Frees 1 move slot · only 1 per run',
+    title: 'Duo moves',
+    legend: 'Two max-level (or evolved) moves of the types shown fuse into a duo move. Only 1 per run.',
+    done: 'DONE',
+    fused: (a: string, b: string, to: string) => `*${a}* and *${b}* joined forces: *${to}*!`,
+  },
+
+  curses: {
+    lifeOrb: { upside: '+30% damage.', downside: 'Every move cast costs 1% HP (at most once a second; stops at 1 HP).' },
+    choiceBand: { upside: '+40% damage.', downside: 'You learn no new moves: you only upgrade the ones you have.' },
+    flameOrb: { upside: '+25% damage and +10% status chance.', downside: 'You are burned: lose 0.7% HP per second (stops at 1 HP).' },
+    ironBall: { upside: '+30% damage and +1 defense.', downside: 'Heavy: −13 speed.' },
+  },
+  curse: {
+    title: 'Cursed item!',
+    subtitle: 'At the bottom of the chest lies something powerful… for a price.',
+    take: 'Take it',
+    leave: 'Leave it',
+    note: "Takes no item slot and stays until the run's end.",
+    label: 'CURSED',
+    taken: (name: string) => `You took the *${name}*… _power has a price_.`,
+    left: (name: string) => `You left the *${name}* in the chest.`,
+  },
   traits: {
     healer: (name: string) => `*${name}* heals nearby allies. Take it down first!`,
     shield: (name: string) => `*${name}* wards its allies with a _shield_ that soaks damage.`,

@@ -2212,6 +2212,78 @@ export const es: Messages = {
         '+1 onda y enfriamiento 0.3s más rápido',
       ],
     },
+    firePledge: {
+      description: 'Pilares de fuego estallan en un anillo a tu alrededor y el suelo de adentro se vuelve un mar de fuego que quema a quien se quede.',
+      upgrades: [
+        '+2 pilares y +10 de daño',
+        'El mar de fuego dura +1s y +15% de área',
+        '+16 de daño y quemaduras 25% más fuertes',
+        '+2 pilares y recarga 0.4s más rápida',
+      ],
+    },
+    waterPledge: {
+      description: 'Géiseres estallan bajo las multitudes y aparece un arcoíris: mientras brilla, tus ataques tienen +25% de probabilidad de estado.',
+      upgrades: [
+        '+1 géiser y +10 de daño',
+        'El arcoíris dura +1.2s',
+        '+25% de área y +12 de daño',
+        '+2 géiseres y recarga 0.35s más rápida',
+      ],
+    },
+    grassPledge: {
+      description: 'Un pantano se extiende a tu alrededor y anda contigo, atascando a todo enemigo en él, y pilares de lianas estallan bajo los que atrapa.',
+      upgrades: [
+        '+1 pilar y +7 de daño',
+        '+20% de área del pantano',
+        '+10 de daño',
+        '+2 pilares y recarga 0.3s más rápida',
+      ],
+    },
+    fusionFlare: {
+      description: 'Un cometa de fuego blanco cae sobre la multitud más grande, explota y deja el suelo en brasas. Quema.',
+      upgrades: [
+        '+1 cometa',
+        '+18 de daño y +15% de área',
+        'Las brasas duran +1s y +15% de probabilidad de quemar',
+        '+1 cometa y recarga 0.4s más rápida',
+      ],
+    },
+    fusionBolt: {
+      description: 'Un cometa de rayos cae sobre la multitud más grande, explota y deja el suelo electrificado. Paraliza.',
+      upgrades: [
+        '+1 cometa',
+        '+36 de daño y +15% de área',
+        'Las chispas duran +1s y +15% de probabilidad de paralizar',
+        '+1 cometa y recarga 0.4s más rápida',
+      ],
+    },
+    ionDeluge: {
+      description: 'Charcos caen bajo los enemigos y conducen: todos electrocutan a la vez a quien esté en ellos, con arcos entre sí. Con lluvia, +1 charco.',
+      upgrades: [
+        '+1 charco',
+        '+9 de daño y los charcos duran +1s',
+        '+25% de área y +10% de probabilidad de paralizar',
+        '+1 charco y recarga 0.3s más rápida',
+      ],
+    },
+    freezeDry: {
+      description: 'Una niebla helada se extiende a tu alrededor y congela a los enemigos (el siguiente golpe hace el doble y rompe el hielo). ×1.4 a congelados.',
+      upgrades: [
+        '+1 ola de niebla',
+        '+6 de daño y +15% de probabilidad de congelar',
+        '+25% de área',
+        '+15% de área y recarga 0.3s más rápida',
+      ],
+    },
+    nightmare: {
+      description: 'Un Hex en cadena que envenena, y una calavera que muerde a cada objetivo otra vez justo después: ×2 a quien tiene estado y ×1.5 más si está envenenado.',
+      upgrades: [
+        '+2 objetivos',
+        '+14 de daño y +15% de probabilidad de envenenar',
+        '+25% de alcance y veneno 25% más fuerte',
+        '+2 objetivos y recarga 0.3s más rápida',
+      ],
+    },
   },
 
   items: {
@@ -2426,6 +2498,32 @@ export const es: Messages = {
     doubleEdge: 'Doce picados aéreos caen sobre los enemigos más cercanos.',
   },
 
+
+  duo: {
+    tag: '¡DÚO!',
+    frees: 'Libera 1 espacio de ataque · solo 1 por partida',
+    title: 'Ataques en dúo',
+    legend: 'Dos ataques al nivel máximo (o evolucionados) de los tipos indicados se unen en un ataque en dúo. Solo 1 por partida.',
+    done: 'HECHO',
+    fused: (a: string, b: string, to: string) => `¡*${a}* y *${b}* se unieron: *${to}*!`,
+  },
+
+  curses: {
+    lifeOrb: { upside: '+30% de daño.', downside: 'Cada ataque lanzado cuesta 1% de PS (máx. 1 vez por segundo; se detiene en 1 PS).' },
+    choiceBand: { upside: '+40% de daño.', downside: 'No aprendes ataques nuevos: solo mejoras los que tienes.' },
+    flameOrb: { upside: '+25% de daño y +10% de probabilidad de estado.', downside: 'Quedas quemado: pierdes 0,7% de PS por segundo (se detiene en 1 PS).' },
+    ironBall: { upside: '+30% de daño y +1 de defensa.', downside: 'Pesada: −13 de velocidad.' },
+  },
+  curse: {
+    title: '¡Objeto maldito!',
+    subtitle: 'En el fondo del cofre hay algo poderoso… con un precio.',
+    take: 'Tomarlo',
+    leave: 'Dejarlo',
+    note: 'No ocupa espacio de objeto y dura hasta el final de la partida.',
+    label: 'MALDITO',
+    taken: (name: string) => `Tomaste *${name}*… _el poder tiene un precio_.`,
+    left: (name: string) => `Dejaste *${name}* en el cofre.`,
+  },
   traits: {
     healer: (name: string) => `*${name}* cura a los aliados cercanos. ¡Derríbalo primero!`,
     shield: (name: string) => `*${name}* protege a sus aliados con un _escudo_ que absorbe daño.`,
