@@ -18,6 +18,47 @@ export type ChangelogEntry = {
  */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-18',
+    title: { pt: 'Golpes, golpes e mais golpes', en: 'Moves, moves and more moves', es: 'Movimientos, movimientos y más movimientos' },
+    notes: [
+      {
+        pt: 'A ideia mais votada do mural de ideias (71 votos) dizia que os golpes eram poucos e as partidas, todas iguais. Agora são 196 golpes, e cada família tem a sua assinatura: Brave Bird, Weather Ball, Spore, Fiery Dance, Gigaton Hammer, Moonblast e dezenas de outras, cada uma com um jeito próprio de jogar.',
+        en: 'The top idea on the ideas board (71 votes) said moves were too few and every run felt the same. Now there are 196 moves, and every family has its own signature: Brave Bird, Weather Ball, Spore, Fiery Dance, Gigaton Hammer, Moonblast and dozens more, each one playing its own way.',
+        es: 'La idea más votada del muro de ideas (71 votos) decía que había pocos movimientos y que todas las partidas eran iguales. Ahora son 196 movimientos, y cada familia tiene su firma: Brave Bird, Weather Ball, Spore, Fiery Dance, Gigaton Hammer, Moonblast y decenas más, cada una con su propia forma de jugar.',
+      },
+      {
+        pt: 'Os golpes que um Pokémon aprende crescem a cada evolução, e a lista final tem mais golpes do que os 6 espaços: toda partida deixa alguns de fora. A partida começa com um draft do 2º golpe.',
+        en: 'The moves a Pokémon learns grow with each evolution, and the final list has more moves than the 6 slots: every run leaves some out. A run starts with a draft for your 2nd move.',
+        es: 'Los movimientos que aprende un Pokémon crecen con cada evolución, y la lista final tiene más movimientos que los 6 espacios: cada partida deja algunos fuera. La partida empieza con un draft de tu 2.º movimiento.',
+      },
+      {
+        pt: 'Todo golpe base se divide em dois caminhos no Nv 4 e no Nv 7, que mudam como ele joga (ricochetear, explodir, deixar rastro, ecoar…). Cards raros sobem 2 níveis, cards shiny são uma escolha grátis, e o botão Esquecer tira da partida o que você não quer ver.',
+        en: 'Every base move splits into two paths at Lv 4 and Lv 7 that change how it plays (bouncing, exploding, leaving a trail, echoing…). Rare cards give 2 levels, shiny cards are a free pick, and the Forget button takes what you don’t want out of the run.',
+        es: 'Todo movimiento base se divide en dos caminos en el Nv. 4 y en el Nv. 7, que cambian cómo juega (rebotar, explotar, dejar un rastro, hacer eco…). Las cartas raras suben 2 niveles, las shiny son una elección gratis, y el botón Olvidar saca de la partida lo que no quieres ver.',
+      },
+      {
+        pt: '91 Habilidades: na primeira evolução você escolhe 1 de 3, a Oculta incluída. Eevee escolhe entre as 8 eeveelutions, e Kirlia, Snorunt, Poliwhirl, Scyther e Charcadet também ramificam. Chegou a Mega Gallade: 38 Megas.',
+        en: '91 Abilities: at the first evolution you pick 1 of 3, the Hidden one included. Eevee picks among its 8 eeveelutions, and Kirlia, Snorunt, Poliwhirl, Scyther and Charcadet branch too. Mega Gallade is here: 38 Megas.',
+        es: '91 Habilidades: en la primera evolución eliges 1 de 3, la Oculta incluida. Eevee elige entre sus 8 eeveeluciones, y Kirlia, Snorunt, Poliwhirl, Scyther y Charcadet también se ramifican. Llegó Mega Gallade: 38 Megas.',
+      },
+      {
+        pt: 'Agora todo golpe comum evolui, com 7 itens de tipo novos (Black Belt, Metal Coat, Spell Tag, Black Glasses, Twisted Spoon, Soft Sand e Fairy Feather), e os golpes evoluídos mudam de forma e seguem subindo até o Nv 5.',
+        en: 'Every regular move now evolves, with 7 new type items (Black Belt, Metal Coat, Spell Tag, Black Glasses, Twisted Spoon, Soft Sand and Fairy Feather), and evolved moves change shape and keep growing up to Lv 5.',
+        es: 'Ahora todo movimiento común evoluciona, con 7 objetos de tipo nuevos (Black Belt, Metal Coat, Spell Tag, Black Glasses, Twisted Spoon, Soft Sand y Fairy Feather), y los movimientos evolucionados cambian de forma y siguen subiendo hasta el Nv. 5.',
+      },
+      {
+        pt: 'Golpes de fora do repertório: chefes derrotados deixam um TM (Rock Slide, Ice Beam, Psystrike…), o Tutor de Golpes arma a tenda no mapa, e vencer uma fenda oferece o golpe lendário do próprio lendário (Sacred Fire, Origin Pulse, Roar of Time…). Com os espaços cheios: "1, 2 e… Puf!".',
+        en: 'Moves from outside the learnset: beaten bosses drop a TM (Rock Slide, Ice Beam, Psystrike…), the Move Tutor pitches a tent on the map, and clearing a rift offers the legendary’s own move (Sacred Fire, Origin Pulse, Roar of Time…). With every slot full: "1, 2 and… Poof!".',
+        es: 'Movimientos de fuera de la lista: los jefes derrotados dejan una MT (Rock Slide, Ice Beam, Psystrike…), el Tutor de Movimientos arma su carpa en el mapa, y ganar una grieta ofrece el movimiento legendario del propio legendario (Sacred Fire, Origin Pulse, Roar of Time…). Con los espacios llenos: "1, 2 y… ¡Puf!".',
+      },
+      {
+        pt: 'Golpes em dupla: dois golpes no máximo com os tipos certos se unem em Fire Pledge, Water Pledge, Grass Pledge, Fusion Flare, Fusion Bolt, Ion Deluge, Freeze-Dry ou Nightmare (um por partida). E baús trancados podem esconder um item amaldiçoado: Life Orb, Choice Band, Flame Orb ou Iron Ball, muito fortes, com um preço.',
+        en: 'Duo moves: two maxed moves of the right types fuse into Fire Pledge, Water Pledge, Grass Pledge, Fusion Flare, Fusion Bolt, Ion Deluge, Freeze-Dry or Nightmare (one per run). And locked chests may hide a cursed item: Life Orb, Choice Band, Flame Orb or Iron Ball, very strong, at a price.',
+        es: 'Movimientos en dúo: dos movimientos al máximo de los tipos correctos se unen en Fire Pledge, Water Pledge, Grass Pledge, Fusion Flare, Fusion Bolt, Ion Deluge, Freeze-Dry o Nightmare (uno por partida). Y los cofres cerrados pueden esconder un objeto maldito: Life Orb, Choice Band, Flame Orb o Iron Ball, muy fuertes, con un precio.',
+      },
+    ],
+  },
+  {
     date: '2026-10-17',
     pr: 98,
     title: { pt: 'Shinx chegou aos ovos', en: 'Shinx hatches from eggs', es: 'Shinx sale de los huevos' },
