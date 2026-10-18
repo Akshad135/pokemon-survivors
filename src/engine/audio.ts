@@ -318,6 +318,57 @@ const SFX = {
     tone(400, 900, 0.1, 'sine', 0.1)
   },
   crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
+
+  /* Duo moves and cursed items */
+  /** Two moves fusing: both rise in a chord, then a bright landing. */
+  duoFuse: () => {
+    ;[523, 659, 784, 1047].forEach((f, i) => tone(f, f * 1.5, 0.22, 'square', 0.07, i * 0.06))
+    ;[392, 494, 587, 784].forEach((f, i) => tone(f, f * 1.5, 0.22, 'triangle', 0.09, i * 0.06))
+    ;[1568, 2093, 2637].forEach((f, i) => tone(f, f, 0.16, 'square', 0.06, 0.34 + i * 0.07))
+    noise(0.3, 0.08, 0.32)
+  },
+  /** Fire Pledge: pillars roaring up one after the other. */
+  pledgeFire: () => {
+    noise(0.4, 0.16)
+    ;[0, 0.06, 0.12, 0.18].forEach((d, i) => tone(120 + i * 30, 320 + i * 60, 0.14, 'sawtooth', 0.05, d))
+  },
+  /** Water Pledge: geysers gushing, and a twinkle for the rainbow. */
+  pledgeWater: () => {
+    noise(0.3, 0.12)
+    tone(300, 900, 0.22, 'sine', 0.1)
+    ;[1319, 1568, 1976, 2349].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.04, 0.18 + i * 0.06))
+  },
+  /** Grass Pledge: a wet squelch and vines whipping up. */
+  pledgeGrass: () => {
+    tone(140, 60, 0.2, 'triangle', 0.14)
+    noise(0.12, 0.08, 0.05)
+    ;[0.08, 0.16].forEach((d) => tone(400, 1100, 0.08, 'square', 0.04, d))
+  },
+  /** Fusion Flare / Bolt: the comet's whistle as it falls (the impact plays the boom). */
+  comet: () => tone(2200, 300, 0.5, 'sawtooth', 0.05),
+  /** Ion Deluge: drips, then a buzz through the puddles. */
+  ionDeluge: () => {
+    ;[880, 660].forEach((f, i) => tone(f, f * 0.6, 0.06, 'sine', 0.08, i * 0.07))
+    tone(110, 120, 0.25, 'square', 0.05, 0.12)
+    tone(1800, 2400, 0.08, 'square', 0.04, 0.14)
+  },
+  /** Freeze-Dry: a hiss of mist hardening into ice. */
+  freezeDry: () => {
+    noise(0.35, 0.08)
+    tone(2600, 1800, 0.3, 'triangle', 0.06, 0.05)
+    ;[2093, 2637].forEach((f, i) => tone(f, f, 0.06, 'square', 0.04, 0.25 + i * 0.05))
+  },
+  /** Nightmare: a low warble and the skull's laugh. */
+  nightmare: () => {
+    tone(220, 140, 0.3, 'triangle', 0.1)
+    ;[0.18, 0.26, 0.34].forEach((d, i) => tone(660 - i * 80, 520 - i * 80, 0.06, 'square', 0.05, d))
+  },
+  /** A cursed item in the chest: a minor, dropping chord. */
+  curseFound: () => [523, 415, 330, 247].forEach((f, i) => tone(f, f * 0.98, 0.22, 'triangle', 0.12, i * 0.12)),
+  curseTake: () => {
+    tone(160, 80, 0.4, 'sawtooth', 0.1)
+    ;[659, 622, 523].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, 0.1 + i * 0.09))
+  },
 } as const
 
 export type Sfx = keyof typeof SFX

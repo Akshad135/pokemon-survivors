@@ -26,4 +26,12 @@ export const CAST_SFX: Partial<Record<MoveId, readonly [Sfx, number]>> = {
   flowerTrick: ['flower', 150],
   aquaStep: ['splash', 200],
   leafBlade: ['crit', 200],
+  firePledge: ['pledgeFire', 300],
+  waterPledge: ['pledgeWater', 300],
+  grassPledge: ['pledgeGrass', 300],
+  fusionFlare: ['comet', 200],
+  fusionBolt: ['comet', 200],
+  ionDeluge: ['ionDeluge', 250],
+  freezeDry: ['freezeDry', 250],
+  nightmare: ['nightmare', 250],
 }

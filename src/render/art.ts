@@ -8,6 +8,8 @@ import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 import { SIGNATURE_ICONS } from './signatureArt'
+import { cursedIcon, DUO_ICONS } from './duoArt'
+import type { CurseId } from '../data/curses'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -586,6 +588,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
   liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
   alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
+  ...DUO_ICONS,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -669,6 +672,9 @@ export const itemIcon = (id: ItemId) =>
     const [rows, pal] = ITEM_ART[id]
     return art(rows, pal, '#181818')
   })
+
+/** A cursed item in its purple frame (`render/duoArt.ts`). */
+export const curseIcon = (id: CurseId) => toIconUrl(`curse:${id}`, () => cursedIcon(id))
 
 export const bagIcon = (id: BagItem) =>
   toIconUrl(`bag:${id}`, () => {
