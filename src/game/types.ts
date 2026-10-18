@@ -40,6 +40,8 @@ import type { BossFight } from './bossFight'
 import type { ModState } from './mods'
 import type { DamageBonus } from './kitRules'
 import type { MoveSound } from './moveVerbs'
+import type { TmSource } from './tmRules'
+import type { TmState } from './tms'
 
 export type OwnedMove = {
   id: MoveId
@@ -201,6 +203,7 @@ export type Visual =
   | VerbVisual
   | SignatureVisual
   | TypeEvolvedVisual
+  | TmVisual
 
 /** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
 export type DamageSource = MoveId | 'special' | 'ability'
@@ -237,6 +240,11 @@ export type SignatureVisual =
   | 'mudWave' | 'hammer' | 'drill' | 'leafTornado' | 'tornadoLeaf' | 'flameCharge' | 'flameLanding'
   | 'needleArm' | 'needle' | 'psybeam' | 'lariat' | 'bubble' | 'bubblePop' | 'snipeSight' | 'snipeShot'
   | 'flowerTrick' | 'aquaStep' | 'pinShadow' | 'pyroBounce' | 'sonicJab'
+
+/** TM moves (`tmMoves.ts`), drawn by `render/tmFx.ts`. */
+export type TmVisual =
+  | 'rockSlide' | 'yawn' | 'iceBeam' | 'discharge' | 'heatWave' | 'thunderFang' | 'lavaPlume' | 'lavaPool' | 'auroraBeam'
+  | 'ancientRise' | 'ancientRock' | 'icyWind' | 'ironHead' | 'ironShard' | 'psystrike' | 'psyHover'
 
 /** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
 export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
@@ -328,7 +336,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource })
 
 export type Particle = {
   x: number
@@ -379,9 +387,20 @@ export type Offer =
   | { kind: 'ability'; id: AbilityId; hidden: boolean }
   /** One way of a fork (`moveStats`): raises the move to `level` taking `branch` (0 or 1). */
   | { kind: 'branch'; id: MoveId; level: number; branch: 0 | 1; rarity?: Rarity }
+  | TmOffer
+  /** The move to forget so a TM's move takes its slot (`game/tms.ts`). */
+  | { kind: 'forget'; id: MoveId; tm: TmOffer }
+  /** Walks away from a TM: leaves the disc, the lesson or the forgetting. */
+  | { kind: 'pass' }
 
-/** `branch` and `ability` wait on a pick from `offers`, like `levelup`: where an evolution goes, and the ability after the first. */
-export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'paused' | 'gameover' | 'victory'
+/** A TM's move to learn (or raise to `level` if owned), from a disc, a Move Tutor (for `price` run ₽) or a rift legendary. */
+export type TmOffer = { kind: 'tm'; id: MoveId; level: number; source: TmSource; price: number }
+
+/**
+ * `branch`, `ability` and `tm` wait on a pick from `offers`, like `levelup`: where an evolution goes,
+ * the ability after the first, and a TM's move to learn (and which to forget for it).
+ */
+export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'tm' | 'paused' | 'gameover' | 'victory'
 
 /** Fire-and-forget notifications for audio/UI. Drained by the shell every frame. */
 export type GameEvent =
@@ -460,6 +479,14 @@ export type GameEvent =
   | { kind: 'moveSound'; sound: MoveSound }
   /** A move with its own cast sound fired (the shell maps it, `ui/castSfx.ts`). */
   | { kind: 'cast'; move: MoveId }
+  /** A TM's choice opened (a disc touched, a Move Tutor's lesson). */
+  | { kind: 'tm'; source: TmSource }
+  /** A TM's move was learned (`level` 1) or raised, maybe in place of the move `forgot`. */
+  | { kind: 'tmLearned'; move: MoveId; level: number; forgot: MoveId | null; source: TmSource }
+  /** A TM disc's move was already mastered: it turned into ₽. */
+  | { kind: 'tmMastered'; move: MoveId; coins: number }
+  /** Ancient Power's rare boost landed on the player. */
+  | { kind: 'ancientBoost' }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -543,6 +570,8 @@ export type Game = {
   traits: { seen: Set<TraitId>; nextIntro: number }
   /** Legendary rifts: the portal on the map, the arena and what was met this run. */
   rift: RiftState
+  /** TMs and Move Tutors this run (`game/tms.ts`): tutors met, lessons taken, the legendary TM. */
+  tm: TmState
   /** Set once the player goes on past Mewtwo (endless mode). */
   endless: EndlessState | null
   /** Species seen, defeated and caught this run, for the Pokédex (`game/dex.ts`). */

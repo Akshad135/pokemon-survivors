@@ -30,6 +30,7 @@ import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
 import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
 import { updateSignatures } from './signatures'
+import { createTmState, pickTm } from './tms'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -162,6 +163,7 @@ export const createGame = (
     weather: createWeather(),
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
+    tm: createTmState(),
     endless: null,
     tally: createTally(),
     eggs: { found: [], lucky: options.luckyEgg === true, boost: options.incense ? BAG_ITEMS.incense.boost : 1 },
@@ -317,7 +319,7 @@ export const choosingBranch = (g: Game) => g.offers.some((o) => o.kind === 'bran
 
 /**
  * The player's pick from `offers`: a level-up upgrade, where a branching
- * evolution goes, or the ability. Replays reach it through the `offer` event.
+ * evolution goes, the ability, or a TM's choice. Replays reach it through the `offer` event.
  * A move card that reaches a fork opens its two branches instead (picked the
  * same way); a shiny card is a free pick, so a fresh set of cards follows
  * without using the level-up up.
@@ -332,7 +334,12 @@ export const chooseOffer = (g: Game, offer: Offer) => {
     recomputeStats(g)
     return advancePhase(g)
   }
-  if (g.phase !== 'levelup' || offer.kind === 'form' || offer.kind === 'ability') return
+  // A TM's screen: learn, forget a move for it, or pass (`tms.ts`).
+  if (g.phase === 'tm') {
+    if (pickTm(g, offer)) advancePhase(g)
+    return
+  }
+  if (g.phase !== 'levelup' || offer.kind === 'form' || offer.kind === 'ability' || offer.kind === 'tm' || offer.kind === 'forget' || offer.kind === 'pass') return
   if (offer.kind === 'move' && forkAt(offer.id, offer.level)) {
     g.offers = branchOffers(offer)
     return
