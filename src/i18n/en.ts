@@ -1436,13 +1436,13 @@ export const en: Messages = {
     selfDestruct: {
       description: 'Manual: spends 20% of your current HP on a huge explosion around you, and leaves you invulnerable for a moment.',
       upgrades: [
+        '+15 damage',
+        '+15% area',
+        '1s faster cooldown',
         '+20 damage',
         '+15% area',
         '1s faster cooldown',
-        '+25 damage',
-        '+15% area',
-        '1s faster cooldown',
-        '+30 damage and +20% area',
+        '+25 damage and +20% area',
       ],
     },
     roost: {
@@ -1460,13 +1460,13 @@ export const en: Messages = {
     focusPunch: {
       description: 'Focuses while you take no damage, and the aura grows. Once charged, the next foe nearby takes a devastating punch. Getting hit resets the charge.',
       upgrades: [
-        '+20 damage',
+        '+18 damage',
         'Charges faster',
         '+20% area',
-        '+25 damage',
+        '+22 damage',
         'Charges faster',
-        '+30 damage',
-        '+25 damage and +20% area',
+        '+26 damage',
+        '+22 damage and +20% area',
       ],
     },
     gyroBall: {

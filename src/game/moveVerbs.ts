@@ -225,8 +225,8 @@ export const roost: Cast = (g, s, owned) => {
 
 /* ---------------- Focus Punch ---------------- */
 
-/** Casts (`cooldown` apart) to charge Focus Punch, how near a foe must be for the punch, and its shockwave. */
-export const FOCUS = { charge: 12, reach: 46, shock: 28, shockShare: 0.4 } as const
+/** Casts (`cooldown` apart) to charge Focus Punch, how near a foe must be for the punch, its shockwave and the i-frames after it. */
+export const FOCUS = { charge: 8, reach: 46, shock: 34, shockShare: 0.5, iframes: 0.4 } as const
 
 /**
  * Charges one stack per cast while the player isn't hurt (a hit resets it,
@@ -254,10 +254,12 @@ export const focusPunch: Cast = (g, s, owned) => {
   spawnAttack(g, {
     move: 'focusPunch', type: 'fighting', visual: 'focusShock', ...at,
     shape: { kind: 'circle', r: 6 }, motion: { kind: 'static' },
-    damage: s.damage * FOCUS.shockShare, knockback: s.knockback * 0.5, ttl: 0.32, activeUntil: 0.16,
+    damage: s.damage * FOCUS.shockShare, knockback: s.knockback, ttl: 0.32, activeUntil: 0.16,
     grow: (FOCUS.shock * s.area - 6) / 0.16,
   })
   burst(g, at.x, at.y, { colors: ['#ffffff', '#f8d030', '#f87040', '#c03028'], count: 22, speed: 180, ttl: 0.4, size: 2 })
+  // The follow-through: a breath of safety while the shockwave clears the crowd.
+  p.iframes = Math.max(p.iframes, FOCUS.iframes)
   g.shake = Math.max(g.shake, 6)
   g.hitstop = Math.max(g.hitstop, 0.07)
   sound(g, 'focusPunch')

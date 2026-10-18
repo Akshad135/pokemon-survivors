@@ -171,9 +171,24 @@ const drawSuckerZone = (ctx: Ctx, g: Game, t: number) => {
   ctx.globalAlpha = 1
 }
 
+/** Focus Punch charging, on the floor: a ring under the feet that widens and brightens with the charge. */
+const drawFocusGround = (ctx: Ctx, g: Game, t: number) => {
+  const owned = ownedOf(g, 'focusPunch')
+  const p = g.player
+  if (!owned || p.hidden) return
+  const k = Math.min(1, Math.max(0, stacksOf(owned)) / FOCUS.charge)
+  if (k <= 0) return
+  const full = k >= 1
+  ctx.globalAlpha = 0.45 + 0.55 * k
+  blitCentered(ctx, ellipse(Math.round(8 + k * 6), Math.max(1, Math.round(3 + k * 2)), full ? 'rgba(248,112,64,0.45)' : 'rgba(192,48,40,0.3)'), p.x, p.y)
+  dashedRing(ctx, p.x, p.y, 10 + k * 6, t * (3 + k * 6), full ? ['#ffffff', '#f8d030', '#f87040'] : ['#f87040', '#c03028'], 0.3 + 0.5 * k, 0.42)
+  ctx.globalAlpha = 1
+}
+
 /** Ground layer (under the Pokémon). */
 export const drawVerbGround = (ctx: Ctx, g: Game, t: number) => {
   drawSuckerZone(ctx, g, t)
+  drawFocusGround(ctx, g, t)
   drawRoostGround(ctx, g, t)
   let wheel = false
   for (const a of g.attacks) {
@@ -262,30 +277,34 @@ const drawSolarCharge = (ctx: Ctx, g: Game, a: Attack, t: number) => {
   if (k > 0.75 && Math.floor(t * 20) % 2 === 0) twinkle(ctx, a.x, a.y, 4 + glow, '#ffffff')
 }
 
-/** One slice of Solar Beam: a stretch of the beam around its segment, layered green, pale and white. */
-const drawSolarSlice = (ctx: Ctx, g: Game, a: Attack, t: number) => {
-  const m = a.motion
-  if (m.kind !== 'orbit') return
+/**
+ * Solar Beam: every live beam drawn layer by layer over all its slices (outer
+ * glow, pale body, white core), so the slices join into one solid beam. Each
+ * slice covers the gap to its neighbors.
+ */
+const drawSolarBeams = (ctx: Ctx, g: Game, t: number) => {
   const p = g.player
-  const r = radiusOf(a)
-  const k = a.age / a.ttl
-  // Swells in fast, narrows out at the end.
-  const w = r * Math.min(1, a.age / 0.06) * Math.min(1, (1 - k) / 0.25 + 0.2)
-  const cx = Math.cos(m.angle)
-  const cy = Math.sin(m.angle)
-  const x0 = p.x + cx * (m.radius - 6)
-  const y0 = p.y - 8 + cy * (m.radius - 6)
-  const x1 = p.x + cx * (m.radius + 6)
-  const y1 = p.y - 8 + cy * (m.radius + 6)
-  const flick = Math.floor(t * 30 + m.radius) % 2
-  thickLine(ctx, x0, y0, x1, y1, Math.max(1, Math.round(w * 1.5)) + flick, 'rgba(120,200,80,0.55)')
-  thickLine(ctx, x0, y0, x1, y1, Math.max(1, Math.round(w * 0.9)), '#d8f8a0')
-  thickLine(ctx, x0, y0, x1, y1, Math.max(1, Math.round(w * 0.4)), '#ffffff')
-  if (m.radius < 14) {
-    blitCentered(ctx, ellipse(Math.round(w * 1.1) + 1, Math.round(w * 1.1) + 1, 'rgba(248,248,192,0.7)'), p.x + cx * 8, p.y - 8 + cy * 8)
-  }
-  if (a.flip) {
-    spokes(ctx, a.x, a.y, 2, Math.round(w * 1.4) + 4, 8, ['#ffffff', '#d8f8a0', '#78c850'], t * 6)
+  const layers = [
+    { k: 1.5, color: 'rgba(120,200,80,0.6)', flick: true },
+    { k: 0.95, color: '#d8f8a0', flick: false },
+    { k: 0.4, color: '#ffffff', flick: false },
+  ] as const
+  for (const layer of layers) {
+    for (const a of g.attacks) {
+      const m = a.motion
+      if (a.visual !== 'solarBeam' || a.age < 0 || m.kind !== 'orbit') continue
+      const r = radiusOf(a)
+      const k = a.age / a.ttl
+      // Swells in fast, narrows out at the end.
+      const w = r * Math.min(1, a.age / 0.06) * Math.min(1, (1 - k) / 0.25 + 0.2)
+      const half = Math.max(5, ((SOLAR.length * r) / SOLAR.r - 12) / (SOLAR.segments - 1) / 2 + 1)
+      const cx = Math.cos(m.angle)
+      const cy = Math.sin(m.angle)
+      const flick = layer.flick ? Math.floor(t * 30 + m.radius) % 2 : 0
+      thickLine(ctx, p.x + cx * (m.radius - half), p.y - 8 + cy * (m.radius - half), p.x + cx * (m.radius + half), p.y - 8 + cy * (m.radius + half), Math.max(1, Math.round(w * layer.k)) + flick, layer.color)
+      if (layer.k < 1 && m.radius < 14) blitCentered(ctx, ellipse(Math.round(w * 0.6) + 1, Math.round(w * 0.6) + 1, '#f8f8c0'), p.x + cx * 10, p.y - 8 + cy * 10)
+      if (layer.k < 1 && a.flip) spokes(ctx, a.x, a.y, 2, Math.round(w * 1.4) + 4, 8, ['#ffffff', '#d8f8a0', '#78c850'], t * 6)
+    }
   }
 }
 
@@ -304,9 +323,10 @@ const drawBrine = (ctx: Ctx, a: Attack) => {
   // A column of water rising and falling apart.
   const h = Math.round(r * 1.6 * Math.sin(Math.min(1, e * 1.6) * Math.PI))
   if (h > 0) {
-    px(ctx, a.x - 3, a.y + 6 - h, '#3868c8', 7, h)
-    px(ctx, a.x - 2, a.y + 6 - h, '#88b8f0', 4, h)
-    px(ctx, a.x - 1, a.y + 6 - h, '#ffffff', 1, h)
+    px(ctx, a.x - 5, a.y + 6 - h, '#3868c8', 11, h)
+    px(ctx, a.x - 3, a.y + 6 - h, '#88b8f0', 6, h)
+    px(ctx, a.x - 1, a.y + 6 - h, '#ffffff', 2, h)
+    px(ctx, a.x - 6, a.y + 6 - h, '#ffffff', 13, 1)
   }
   for (let i = 0; i < 10; i++) {
     const ang = -Math.PI / 2 + (hash2(a.id, i) - 0.5) * 2.6
@@ -430,7 +450,7 @@ const drawFocusAura = (ctx: Ctx, g: Game, t: number) => {
     const y = p.y - 2 - ph * (16 + k * 12) + Math.sin(side) * 3
     ctx.globalAlpha = 1 - ph
     const c = full ? (i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#f8d030' : '#f87040') : i % 2 ? '#f87040' : '#c03028'
-    px(ctx, x, y, c, full ? 2 : 1, full ? 2 : 1)
+    px(ctx, x, y, c, k > 0.5 ? 2 : 1, k > 0.5 ? 2 : 1)
   }
   ctx.globalAlpha = 1
   if (full) {
@@ -447,6 +467,7 @@ const drawFocusPunch = (ctx: Ctx, a: Attack, t: number) => {
   const x = a.from.x + (a.x - a.from.x) * (0.55 + 0.45 * k)
   const y = a.from.y + (a.y - a.from.y) * (0.55 + 0.45 * k)
   ctx.globalAlpha = fadeOut(a, 0.2)
+  for (let i = -1; i <= 1; i++) thickLine(ctx, x - Math.cos(ang) * 14 - Math.sin(ang) * i * 4, y - Math.sin(ang) * 14 + Math.cos(ang) * i * 4, x - Math.cos(ang) * (26 - Math.abs(i) * 6) - Math.sin(ang) * i * 4, y - Math.sin(ang) * (26 - Math.abs(i) * 6) + Math.cos(ang) * i * 4, 1, i === 0 ? '#ffffff' : '#f8d030')
   blitRotated(ctx, VERB_FX.bigFist(), x, y, ang, 2)
   if (a.age >= 0.04) {
     const e = Math.min(1, (a.age - 0.04) / 0.25)
@@ -468,10 +489,8 @@ const drawGear = (ctx: Ctx, g: Game, a: Attack, t: number) => {
   const grind = gyroMult(Math.hypot(p.vx, p.vy))
   const frames = VERB_FX.gear()
   const r = radiusOf(a)
-  const scale = Math.max(1, Math.round((r * 2) / frames[0]!.width + 0.2))
   const frame = frames[Math.floor(t * (8 + grind * 10) + a.id) % frames.length]!
-  if (scale === 1) blitCentered(ctx, frame, a.x, a.y)
-  else blitRotated(ctx, frame, a.x, a.y, 0, scale)
+  blitCentered(ctx, frame, a.x, a.y)
   if (grind > 1.3) {
     const m = a.motion
     const back = m.kind === 'orbit' ? m.angle - Math.PI / 2 * Math.sign(m.spin || 1) : 0
@@ -507,11 +526,12 @@ const drawFutureColumn = (ctx: Ctx, a: Attack, t: number) => {
   const w = Math.max(2, Math.round(r * 0.9 * (1 - e * 0.7)))
   const top = a.y - 260
   ctx.globalAlpha = Math.max(0, 1 - e * e)
-  px(ctx, a.x - w, top, 'rgba(248,88,136,0.5)', w * 2 + 1, a.y - top)
-  px(ctx, a.x - Math.round(w * 0.55), top, '#f8a0c8', Math.round(w * 1.1) + 1, a.y - top)
+  px(ctx, a.x - w, top, '#c03878', w * 2 + 1, a.y - top)
+  px(ctx, a.x - w + 1, top, '#f878b0', w * 2 - 1, a.y - top)
+  px(ctx, a.x - Math.round(w * 0.55), top, '#ffc0dc', Math.round(w * 1.1) + 1, a.y - top)
   px(ctx, a.x - Math.round(w * 0.2), top, '#ffffff', Math.max(1, Math.round(w * 0.4)) + 1, a.y - top)
   if (a.age < 0.07) blitCentered(ctx, ellipse(Math.round(r * 1.2), Math.round(r * 0.6), 'rgba(255,255,255,0.8)'), a.x, a.y)
-  blitCentered(ctx, ellipse(Math.round(r * (0.6 + e * 0.6)), Math.max(1, Math.round(r * 0.3 * (0.6 + e * 0.6))), 'rgba(248,88,136,0.45)'), a.x, a.y)
+  blitCentered(ctx, ellipse(Math.round(r * (0.6 + e * 0.6)), Math.max(1, Math.round(r * 0.3 * (0.6 + e * 0.6))), '#f878b0'), a.x, a.y)
   dashedRing(ctx, a.x, a.y, r * (0.8 + e * 0.8), t * 4 + a.id, ['#ffd0e8', '#f85888', '#ffffff'], 0.7, 0.45)
   ctx.globalAlpha = 1
 }
@@ -604,14 +624,12 @@ const drawSheerColdRing = (ctx: Ctx, a: Attack, t: number) => {
 export const drawVerbAir = (ctx: Ctx, g: Game, t: number, visible: (x: number, y: number, m?: number) => boolean) => {
   drawFocusAura(ctx, g, t)
   drawRoostAir(ctx, g, t)
+  drawSolarBeams(ctx, g, t)
   for (const a of g.attacks) {
     if (a.age < 0 || !visible(a.x, a.y, 200)) continue
     switch (a.visual) {
       case 'solarCharge':
         drawSolarCharge(ctx, g, a, t)
-        break
-      case 'solarBeam':
-        drawSolarSlice(ctx, g, a, t)
         break
       case 'brine':
         drawBrine(ctx, a)

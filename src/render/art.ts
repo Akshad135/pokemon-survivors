@@ -204,7 +204,7 @@ const BRINE_ICON = ['.......5..', '..111.555.', '.12321.5..', '1234321...', '123
 /** Electro Ball: 1 rim, 2 yellow, 3 light, 4 white, 5 the bolt across it. */
 const ELECTRO = ['..11111..', '.1222221.', '122235221', '122355321', '123553321', '123533221', '122532221', '.1222221.', '..11111..']
 /** Venoshock's glob, dripping: 1 rim, 2 poison, 3 light, 4 toxic glint. */
-const GLOB = ['..111..', '.12221.', '1233221', '1234221', '1222221', '.12221.', '..1.1..']
+const GLOB = ['...111...', '..12221..', '.1233221.', '123342221', '123422221', '122222221', '.1222221.', '..11211..', '...1.1...']
 /** Self-Destruct's icon: a blast star. 1 red, 2 orange, 3 yellow, 4 white. */
 const BLAST = [
   '.....1.....', '.1...1...1.', '..1.121.1..', '...12321...', '.112343211.', '11234443211',
@@ -212,11 +212,6 @@ const BLAST = [
 ]
 /** A feather: 1 rim, 2 vane, 3 shine, 4 quill. */
 const FEATHER = ['..1..', '.121.', '12321', '12321', '12321', '.121.', '.141.', '..4..', '..4..']
-/** Big fist pointing right (Focus Punch): 1 rim, 2 glove, 3 light, 4 knuckle line. */
-const BIG_FIST = [
-  '..11111111..', '.1222222221.', '123333333211', '123343434321', '123333333321',
-  '123333333321', '122333333221', '.1222222221.', '..11111111..',
-]
 /** Sucker Punch's shadow fist pointing right. */
 const SHADOW_FIST = ['..1111..', '.122221.', '12333311', '12333331', '12333321', '.1222221', '..11111.']
 /** Future Sight's eye: 1 rim, 2 iris ring, 3 glow, 4 pupil. */
@@ -224,7 +219,7 @@ const EYE = ['...11111...', '.112222211.', '12223332221', '12233433221', '122233
 /** A bone: 1 rim, 2 bone, 3 shine. */
 const BONE = ['.11.......11.', '1321111111231', '.12222222221.', '1221111111221', '.11.......11.']
 /** A floating pointed stone (Stealth Rock): 1 rim, 2 stone, 3 light, 4 shade. */
-const POINTED_STONE = ['...1...', '..131..', '..1321.', '.13321.', '.132221', '1322241', '.12244.', '..1441.', '...11..']
+const POINTED_STONE = ['....1....', '...131...', '...1321..', '..133221.', '..132221.', '.13322241', '132222441', '.1222441.', '..12441..', '...141...', '....1....']
 /** U-turn's icon: down, around and back up. */
 const U_ARROW = ['.1.....1..', '121...121.', '121..12221', '121....2..', '121....2..', '.121..21..', '..1222...'.padEnd(10, '.'), '...111....']
 /** Dragon Tail's icon: a scaled tail curling into a spade tip. */
@@ -244,7 +239,6 @@ const GRASS_SUN = { 1: '#f8e070', 2: '#58b838', 3: '#c8f088', 4: '#ffffff' }
 const BRINE_SEA = { 1: '#183878', 2: '#3868c8', 3: '#88b8f0', 4: '#ffffff', 5: '#ffffff' }
 const ELECTRIC = { 1: '#906800', 2: '#f8d030', 3: '#fff8a0', 4: '#ffffff', 5: '#ffffff' }
 const POISON = { 1: '#381040', 2: '#9038a0', 3: '#d080e0', 4: '#b8f060' }
-const FIGHT = { 1: '#481010', 2: '#c03028', 3: '#f88060', 4: '#902018' }
 const SHADOW = { 1: '#100810', 2: '#382838', 3: '#6a5068' }
 const PSYCHIC = { 1: '#801850', 2: '#f85888', 3: '#ffd0e8', 4: '#300818' }
 const BONE_WHITE = { 1: '#584830', 2: '#e8e0c8', 3: '#ffffff' }
@@ -253,25 +247,25 @@ const BUG = { 1: '#506010', 2: '#a8b820', 3: '#e0f080' }
 const DRAGON = { 1: '#200868', 2: '#7038f8', 3: '#b898ff' }
 
 /**
- * A steel gear, `teeth` teeth around a hub with a hole, rotated by `turn`
+ * A steel gear, `teeth` square teeth around a body with a hub, rotated by `turn`
  * (radians): authored as pixel rows from its shape, so every frame stays crisp.
- * 1 rim, 2 steel, 3 light (top half), 4 hole.
+ * 1 rim, 2 steel, 3 shine (top left), 4 hole, 5 hub.
  */
 const gearRows = (size: number, teeth: number, turn: number) => {
   const c = (size - 1) / 2
   const inside = (x: number, y: number) => {
     const d = Math.hypot(x - c, y - c)
-    const a = Math.atan2(y - c, x - c) + turn
-    return d <= c * 0.72 || (d <= c + 0.3 && Math.cos(a * teeth) > 0.25)
+    const seg = ((((Math.atan2(y - c, x - c) + turn) / (Math.PI * 2)) * teeth) % 1 + 1) % 1
+    return d <= c * 0.7 || (d <= c + 0.4 && seg < 0.45)
   }
   return Array.from({ length: size }, (_, y) =>
     Array.from({ length: size }, (_, x) => {
       if (!inside(x, y)) return '.'
       const d = Math.hypot(x - c, y - c)
-      if (d < c * 0.22) return '4'
-      const edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)
-      if (edge || Math.abs(d - c * 0.42) < 0.5) return '1'
-      return y < c ? '3' : '2'
+      if (d < c * 0.2) return '4'
+      if (d < c * 0.38) return '5'
+      if (!inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)) return '1'
+      return x + y < 2 * c - c * 0.5 ? '3' : '2'
     }).join(''),
   )
 }
@@ -282,13 +276,14 @@ export const VERB_FX = {
   electro: lazy(() => art(ELECTRO, ELECTRIC, '#403000')),
   glob: lazy(() => art(GLOB, POISON, '#200818')),
   feather: lazy(() => art(FEATHER, { 1: '#6858b0', 2: '#e8e0f8', 3: '#ffffff', 4: '#a890f0' })),
-  bigFist: lazy(() => art(BIG_FIST, FIGHT, '#200808')),
+  /** Focus Punch's fist: Mach Punch's, hotter, with a glowing rim (drawn ×2). */
+  bigFist: lazy(() => art(FIST, { 1: '#701810', 2: '#e04030', 3: '#ffa080' }, '#fff0a0')),
   shadowFist: lazy(() => art(SHADOW_FIST, SHADOW, '#e8e0f0')),
   eye: lazy(() => art(EYE, PSYCHIC, '#200818')),
   bone: lazy(() => art(BONE, BONE_WHITE, '#201810')),
   stones: lazy(() => [art(POINTED_STONE, STONE_GREY, '#181008'), outlined(fromStrings(POINTED_STONE, STONE_GREY, { mirror: true }), '#181008')]),
   /** Four turns of the gear (an eighth of a tooth apart each). */
-  gear: lazy(() => [0, 1, 2, 3].map((k) => art(gearRows(13, 8, (k * Math.PI) / 16), { 1: '#383848', 2: '#9898b0', 3: '#d8d8e8', 4: '#202028' }, '#101018'))),
+  gear: lazy(() => [0, 1, 2, 3].map((k) => art(gearRows(15, 8, (k * Math.PI) / 16), { 1: '#505068', 2: '#a0a0b8', 3: '#e0e0f0', 4: '#181820', 5: '#707088' }, '#101018'))),
   crystal: lazy(() => art(CRYSTAL, ICE, '#183048')),
 }
 
@@ -545,12 +540,12 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   venoshock: () => VERB_FX.glob(),
   selfDestruct: () => art(BLAST, FIRE, '#401008'),
   roost: () => compose(9, 12, [[VERB_FX.feather(), 0, 0], [VERB_FX.feather(), 3, 1]]),
-  focusPunch: () => VERB_FX.bigFist(),
+  focusPunch: () => art(FIST, { 1: '#701810', 2: '#e04030', 3: '#ffa080' }, '#f8d030'),
   gyroBall: () => VERB_FX.gear()[0]!,
   suckerPunch: () => VERB_FX.shadowFist(),
   futureSight: () => VERB_FX.eye(),
   bonemerang: () => VERB_FX.bone(),
-  stealthRock: () => compose(14, 12, [[VERB_FX.stones()[0]!, 0, 1], [VERB_FX.stones()[1]!, 5, 0]]),
+  stealthRock: () => compose(16, 14, [[VERB_FX.stones()[0]!, 0, 1], [VERB_FX.stones()[1]!, 5, 0]]),
   uTurn: () => art(U_ARROW, BUG, '#283008'),
   dragonTail: () => art(TAIL_ICON, DRAGON, '#100430'),
   sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),

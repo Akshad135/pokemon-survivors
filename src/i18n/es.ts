@@ -1437,13 +1437,13 @@ export const es: Messages = {
     selfDestruct: {
       description: 'Manual: gasta el 20% de tus HP actuales en una explosión enorme a tu alrededor, y te deja invulnerable un instante.',
       upgrades: [
+        '+15 de daño',
+        '+15% de área',
+        'Recarga 1s más rápida',
         '+20 de daño',
         '+15% de área',
         'Recarga 1s más rápida',
-        '+25 de daño',
-        '+15% de área',
-        'Recarga 1s más rápida',
-        '+30 de daño y +20% de área',
+        '+25 de daño y +20% de área',
       ],
     },
     roost: {
@@ -1461,13 +1461,13 @@ export const es: Messages = {
     focusPunch: {
       description: 'Se concentra mientras no recibes daño, y el aura crece. Cargado, le da un puñetazo devastador al próximo enemigo cercano. Recibir un golpe reinicia la carga.',
       upgrades: [
-        '+20 de daño',
+        '+18 de daño',
         'Carga más rápido',
         '+20% de área',
-        '+25 de daño',
+        '+22 de daño',
         'Carga más rápido',
-        '+30 de daño',
-        '+25 de daño y +20% de área',
+        '+26 de daño',
+        '+22 de daño y +20% de área',
       ],
     },
     gyroBall: {
