@@ -33,7 +33,9 @@ export const drawTelegraph = (ctx: Ctx, a: Attack) => {
   dashedRing(ctx, a.x, a.y, r, a.age * 6, late ? ['#ffffff'] : [color, '#ffffff'], 0.75, 0.5)
 }
 
-const SPROUT = lazy(() => fromStrings(['g...g', 'gg.gg', '.gLg.', '..L..'], { g: '#78c850', L: '#386828' }))
+const SPROUT = lazy(() =>
+  fromStrings(['.k...k.', 'kGk.kGk', 'kGGkGGk', '.kgGgk.', '..kgk..', '...k...'], { k: '#183818', G: '#98e060', g: '#48a030' }),
+)
 const STAR = lazy(() => fromStrings(['.y.', 'yWy', '.y.'], { y: '#f8d030', W: '#ffffff' }))
 
 /** Corner brackets around a marked foe's body, closing in a little on each beat, and one pip per stack above. */
@@ -50,9 +52,9 @@ const drawMark = (ctx: Ctx, e: Enemy, cy: number, t: number) => {
   const stacks = e.status.mark.stacks
   const top = Math.round(cy - s - 4)
   for (let i = 0; i < stacks; i++) {
-    const x = Math.round(e.x - (stacks * 3 - 1) / 2 + i * 3)
-    px(ctx, x - 0, top - 1, '#181818', 3, 3)
-    px(ctx, x + 1, top, '#f85868')
+    const x = Math.round(e.x - (stacks * 4 - 1) / 2 + i * 4)
+    px(ctx, x - 1, top - 1, '#381018', 4, 4)
+    px(ctx, x, top, '#f85868', 2, 2)
   }
 }
 
@@ -87,7 +89,7 @@ export const drawKitStatus = (ctx: Ctx, g: Game, t: number, visible: (x: number,
     const cy = e.y - e.radius
     const head = e.y - e.radius * 2.4
     if (st.freeze.time > 0) drawIce(ctx, e, cy)
-    if (st.seed.time > 0) blitCentered(ctx, SPROUT(), e.x + Math.round(Math.sin(t * 3 + e.id) * 0.8), head - 1)
+    if (st.seed.time > 0) blitCentered(ctx, SPROUT(), e.x, head - 2 + (Math.floor(t * 3 + e.id) % 2))
     if (st.confuse.time > 0) {
       for (let k = 0; k < 3; k++) {
         const a = t * 5 + e.id + (k * Math.PI * 2) / 3
