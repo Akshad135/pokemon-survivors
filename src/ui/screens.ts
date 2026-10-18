@@ -183,6 +183,14 @@ const offerView = (g: Game, offer: Offer) => {
     }
     case 'ability':
       return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null, fork: false, mods: NO_MODS }
+    // TM picks have their own screen too (`ui/tmPick.ts`).
+    case 'tm':
+    case 'forget': {
+      const def: MoveDef = MOVES[offer.id]
+      return { icon: moveIcon(offer.id), name: def.name, tag: m.tm.tag, isNew: offer.kind === 'tm', desc: m.moves[offer.id].description, type: def.type, fork: false, mods: NO_MODS }
+    }
+    case 'pass':
+      return { icon: berryIcon(), name: m.tm.pass, tag: '', isNew: false, desc: '', type: null, fork: false, mods: NO_MODS }
   }
 }
 

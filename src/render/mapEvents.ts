@@ -8,9 +8,11 @@ import { art, lazy, PICKUPS, SPARKLE, toIconUrl } from './art'
 import { consumableSprite } from './props'
 import { drawPokemon, loadedSprites } from './sprites'
 import { dashedRing } from './strokes'
+import { tmDisc, TM_FX } from './tmArt'
+import { TUTOR } from '../game/tmRules'
 
 /**
- * Map events on the ground (altar, fountain, chest, traps, Meowth) and the
+ * Map events on the ground (altar, fountain, chest, traps, Meowth, the Move Tutor) and the
  * arrows that point at the important ones from the screen edge.
  */
 
@@ -195,6 +197,29 @@ const drawMeowth = (ctx: Ctx, ev: MapEventOf<'meowth'>, t: number) => {
   if (ev.gone < 0 && (t + ev.id * 0.2) % 0.9 < 0.15) blitCentered(ctx, PICKUPS.coins()[0]!, ev.x + 7, ev.y - s.bodyH - 4)
 }
 
+/**
+ * The Move Tutor's striped tent with the old tutor beside it, waving a TM.
+ * Standing in the ring fills it; the disc above the tent spins faster as it does.
+ */
+const drawTutor = (ctx: Ctx, ev: MapEventOf<'tutor'>, t: number) => {
+  const k = ev.state.stand / TUTOR.stand
+  dashedRing(ctx, ev.x, ev.y - 2, TUTOR.radius, t * 1.5, ['#78c0f8', '#3868b0'], 0.35)
+  if (k > 0) progressArc(ctx, ev.x, ev.y - 2, TUTOR.radius, k, '#d8f0ff')
+  groundShadow(ctx, ev.x, ev.y + 1, 13)
+  const tent = TM_FX.tent()
+  ctx.drawImage(tent, Math.round(ev.x - tent.width / 2), Math.round(ev.y - tent.height + 1))
+  const tutor = TM_FX.tutor()
+  const hop = Math.floor(t * 2 + ev.id) % 4 === 0 ? 1 : 0
+  groundShadow(ctx, ev.x - 16, ev.y + 2, 4)
+  ctx.drawImage(tutor, Math.round(ev.x - 16 - tutor.width / 2), Math.round(ev.y - tutor.height + 2 - hop))
+  // A TM disc bobbing over the tent, in a color that cycles through the types it can teach.
+  const colors = ['#f08030', '#6890f0', '#f8d030', '#98d8d8', '#b8a038', '#f85888', '#705898', '#a8a878']
+  const color = colors[Math.floor(t * 1.2 + ev.id) % colors.length]!
+  const bob = Math.round(Math.sin(t * 3 + ev.id) * 2)
+  blitCentered(ctx, tmDisc(color), ev.x, ev.y - tent.height - 6 + bob - Math.round(k * 4))
+  if (ev.gone < 0 && (t + ev.id * 0.3) % 1.6 < 0.2) blitCentered(ctx, SPARKLE()[1]!, ev.x + 7, ev.y - tent.height - 10)
+}
+
 const near = (g: Game, x: number, y: number, m = 60) =>
   x > g.camera.x - m && x < g.camera.x + g.view.w + m && y > g.camera.y - m && y < g.camera.y + g.view.h + m
 
@@ -206,6 +231,7 @@ const drawEvent = (ctx: Ctx, ev: MapEvent, t: number) => {
     case 'spikes': return drawSpikes(ctx, ev, t)
     case 'bomb': return drawBomb(ctx, ev, t)
     case 'meowth': return drawMeowth(ctx, ev, t)
+    case 'tutor': return drawTutor(ctx, ev, t)
   }
 }
 
@@ -229,6 +255,7 @@ const MARKER: Partial<Record<MapEventKind, { arrow: number; icon: () => PixelSpr
   fountain: { arrow: 1, icon: () => ART().drop },
   chest: { arrow: 2, icon: () => ART().chest },
   meowth: { arrow: 3, icon: () => PICKUPS.coins()[0]! },
+  tutor: { arrow: 1, icon: () => tmDisc('#78c0f8') },
 }
 
 export type MarkerInsets = { top: number; bottom: number; side: number }

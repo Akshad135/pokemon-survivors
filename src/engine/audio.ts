@@ -265,6 +265,58 @@ const SFX = {
   },
   electroBall: () => tone(900, 1800, 0.1, 'square', 0.05),
   suckerPunch: () => tone(300, 140, 0.06, 'square', 0.07),
+  /* TM moves (`ui/castSfx.ts`) */
+  /** Rock Slide: rocks thudding down one after another. */
+  rockSlide: () => [0.34, 0.41, 0.48, 0.55].forEach((d, i) => {
+    noise(0.07, 0.1, d)
+    tone(150 - i * 12, 60, 0.08, 'square', 0.1, d)
+  }),
+  /** Yawn: a long, lazy slide down, and the pop. */
+  yawn: () => {
+    tone(520, 260, 0.6, 'triangle', 0.08)
+    tone(780, 1400, 0.05, 'sine', 0.06, 0.9)
+  },
+  iceBeam: () => {
+    tone(1800, 2600, 0.18, 'triangle', 0.06)
+    tone(2400, 1200, 0.28, 'sine', 0.04, 0.05)
+  },
+  discharge: () => {
+    noise(0.18, 0.1)
+    tone(140, 900, 0.12, 'sawtooth', 0.05)
+    tone(900, 300, 0.1, 'square', 0.04, 0.1)
+  },
+  heatWave: () => {
+    noise(0.4, 0.08)
+    tone(200, 320, 0.4, 'triangle', 0.06)
+  },
+  thunderFang: () => {
+    tone(1200, 400, 0.05, 'square', 0.07, 0.08)
+    noise(0.08, 0.1, 0.1)
+  },
+  lavaPlume: () => {
+    noise(0.35, 0.14)
+    tone(90, 40, 0.35, 'sawtooth', 0.12)
+  },
+  /** Aurora Beam: a shimmering run up the scale. */
+  auroraBeam: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f * 1.01, 0.14, 'triangle', 0.05, i * 0.06)),
+  ancientPower: () => {
+    tone(196, 392, 0.3, 'triangle', 0.08)
+    tone(294, 588, 0.3, 'triangle', 0.05, 0.08)
+  },
+  icyWind: () => {
+    noise(0.35, 0.07)
+    tone(1600, 900, 0.3, 'sine', 0.04)
+  },
+  /** Iron Head: a metal clang. */
+  ironHead: () => {
+    tone(880, 860, 0.25, 'square', 0.06)
+    tone(1320, 1290, 0.2, 'triangle', 0.05)
+    noise(0.05, 0.08)
+  },
+  psystrike: () => {
+    tone(440, 1760, 0.22, 'sine', 0.07)
+    tone(660, 1320, 0.22, 'triangle', 0.04, 0.3)
+  },
   /* Starter signature moves (`ui/castSfx.ts`) */
   seedPop: () => [330, 494].forEach((f, i) => tone(f, f * 1.5, 0.06, 'triangle', 0.1, i * 0.07)),
   spin: () => {

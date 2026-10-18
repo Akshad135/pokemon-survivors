@@ -28,6 +28,7 @@ import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
+import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
@@ -585,6 +586,10 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
       drawMegaStone(ctx, k.mega, k.x, k.y + bob, t)
       continue
     }
+    if (k.kind === 'tm') {
+      drawTmDisc(ctx, k, k.x, k.y + bob, t)
+      continue
+    }
     const sprite =
       k.kind === 'xp' ? candies[xpTier(k.value)]!
       : k.kind === 'coin' ? coins[coinTier(k.value)]!
@@ -689,6 +694,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
   drawVerbGround(ctx, g, t)
+  drawTmGround(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
@@ -738,11 +744,13 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawKitStatus(ctx, g, t, visible)
   drawGuard(ctx, g, t)
   drawSignaturePlayer(ctx, g, t)
+  drawTmPlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
   drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)
+  drawTmAir(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 

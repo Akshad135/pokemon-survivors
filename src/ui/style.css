@@ -10103,3 +10103,308 @@ button.hall-tile:hover {
     display: none;
   }
 }
+
+/* ---------- TMs and the Move Tutor (`ui/tmPick.ts`) ---------- */
+
+.tm-pick {
+  border-color: var(--type);
+  box-shadow: 0 0 0 3px #181828, 0 0 0 6px var(--type), 0 10px 0 rgba(0, 0, 0, 0.3);
+}
+
+.tm-pick.tm-legendary {
+  --type: #f8d030;
+  background: linear-gradient(180deg, #fffbe8, #f8f0d0);
+  box-shadow: 0 0 0 3px #3a2600, 0 0 0 6px #f8d030, 0 0 24px 6px rgba(248, 208, 48, 0.45);
+}
+
+.tm-pick.tm-tutor {
+  --type: #3868b8;
+}
+
+.tm-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tm-head .dialog-title {
+  text-align: left;
+}
+
+.tm-head-disc {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  animation: tm-spin 1.4s steps(1) infinite;
+}
+
+/* The disc turning over, coin-like, in whole steps. */
+@keyframes tm-spin {
+  0% { transform: scaleX(1); }
+  20% { transform: scaleX(0.66); }
+  30% { transform: scaleX(0.33); }
+  40% { transform: scaleX(-0.33); }
+  50% { transform: scaleX(-0.66); }
+  60% { transform: scaleX(-1); }
+  75% { transform: scaleX(-0.33); }
+  85% { transform: scaleX(0.33); }
+  92% { transform: scaleX(0.66); }
+}
+
+.tm-forgetting .tm-head-disc {
+  animation: none;
+}
+
+.tm-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tm-wallet {
+  margin: -4px 0 0;
+  font-size: 20px;
+  text-align: right;
+  color: #806010;
+}
+
+.tm-card {
+  position: relative;
+  border-left: 6px solid var(--type);
+  animation: pop 0.25s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+.tm-card .tm-icon {
+  box-shadow: 0 0 0 2px var(--type);
+}
+
+.tm-card.tm-gold {
+  background: linear-gradient(180deg, #fff8d0, #f8e090);
+  border-color: #e0a020;
+  border-left-color: #f8d030;
+}
+
+.tm-card.tm-broke {
+  opacity: 0.6;
+}
+
+.tag-tm {
+  color: #fff;
+  background: var(--type);
+  border-radius: 3px;
+  padding: 2px 3px 1px;
+}
+
+.tm-price {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  padding: 4px 6px 3px;
+  color: #382800;
+  background: #f8d030;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tm-price.broke {
+  color: #fff;
+  background: #c83030;
+}
+
+.tm-forget {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tm-forget-move {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 8px;
+  text-align: left;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-left: 5px solid var(--type);
+  border-radius: 6px;
+  animation: pop 0.2s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.05s);
+}
+
+.tm-forget-move.selected {
+  background: #fff;
+  border-color: #e83838;
+  box-shadow: 0 0 0 2px #fff, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tm-forget-move.selected .offer-key {
+  background: #e83838;
+}
+
+.tm-forget-move img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.tm-forget-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.tm-forget-name small {
+  display: block;
+  font-family: var(--body);
+  font-size: 18px;
+  color: #6878a8;
+}
+
+.tm-pass {
+  min-width: 60%;
+}
+
+/* "1, 2 and… Poof!": the move's chip shrinks into a puff of pixel smoke, then the new one pops in. */
+.tm-poof {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  min-height: 200px;
+  padding: 16px 0;
+}
+
+.tm-poof-line {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+}
+
+.tm-poof-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-family: var(--title);
+  font-size: 11px;
+  background: #e8e8f0;
+  border: 3px solid #303040;
+  border-radius: 6px;
+}
+
+.tm-poof-chip img {
+  width: 40px;
+  height: 40px;
+}
+
+.tm-poof-chip.gone {
+  animation: tm-gone 0.3s steps(3) forwards;
+}
+
+.tm-poof-chip.learned {
+  background: #fff8d0;
+  border-color: #e0a020;
+  animation: tm-learned 0.4s steps(4);
+}
+
+@keyframes tm-gone {
+  to {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes tm-learned {
+  0% { transform: scale(0.3); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.tm-poof-smoke {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.tm-poof-smoke i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #a8a8c0;
+  opacity: 0;
+}
+
+.tm-poof-smoke.on i {
+  animation: tm-smoke 0.55s steps(5) forwards;
+}
+
+@keyframes tm-smoke {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(4px) scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(var(--d)) scale(0.4);
+  }
+}
+
+@media (max-width: 520px) {
+  .tm-forget {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .tm-forget-move {
+    min-height: 42px;
+    padding: 4px 8px;
+  }
+  .tm-head-disc {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .tm-pick {
+    padding: 12px 16px;
+  }
+  .tm-stage {
+    gap: 8px;
+  }
+  .tm-forget-move {
+    min-height: 38px;
+    padding: 3px 8px;
+  }
+  .tm-forget-move .type-badge,
+  .tm-pick .hint {
+    display: none;
+  }
+  .tm-poof {
+    min-height: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-head-disc,
+  .tm-card,
+  .tm-forget-move {
+    animation: none;
+  }
+}
