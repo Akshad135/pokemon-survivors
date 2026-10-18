@@ -2585,6 +2585,115 @@ export const pt = {
         '+1 onda e recarga 0.3s mais rápida',
       ],
     },
+    /* Legendary moves (`legendaryMoves.ts`) */
+    whirlwind: {
+      description: 'Um ciclone prateado de Lugia se ergue sobre a maior multidão e vaga pelo campo, puxando os inimigos para o olho da tempestade. No fim, explode numa rajada que arremessa todos para longe.',
+      upgrades: [
+        '+5 de dano',
+        '+20% de área e dura +0.5s',
+        { fork: [{ name: 'Tempestade dupla', desc: '+1 ciclone; -3 de dano' }, { name: 'Raio na tormenta', desc: 'Acertos soltam faíscas nos vizinhos; +6 de dano' }] },
+        'Recarga 0.7s mais rápida e +5 de dano',
+      ],
+    },
+    sacredFire: {
+      description: 'Uma fênix de fogo sagrado de Ho-Oh cruza a multidão e deixa um rastro de chamas arco-íris no chão. Queima com frequência.',
+      upgrades: [
+        '+9 de dano',
+        'Chamas duram +0.6s e +15% de chance de queimar',
+        { fork: [{ name: 'Chama purificadora', desc: 'Quem cai explode em fogo; +6 de dano' }, { name: 'Par de fênix', desc: '+1 fênix; -5 de dano' }] },
+        'Recarga 0.5s mais rápida e +1 fênix',
+      ],
+    },
+    originPulse: {
+      description: 'O poder de Kyogre: um anel de água brilhante explode de você até a beira da tela, empurrando tudo, e feixes de luz azul disparam em todas as direções.',
+      upgrades: [
+        '+8 de dano',
+        '+2 feixes e +10% de área',
+        { fork: [{ name: 'Maré dupla', desc: 'Um segundo pulso vem logo depois; +20% de área' }, { name: 'Corrente elétrica', desc: 'Acertos soltam faíscas nos vizinhos; +10 de dano' }] },
+        'Recarga 0.6s mais rápida e +2 feixes',
+      ],
+    },
+    scorchingSands: {
+      description: 'O calor de Groudon: uma muralha de areia escaldante avança contra os inimigos e deixa o chão em brasa, queimando quem pisa nele.',
+      upgrades: [
+        '+7 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Duas marés', desc: '+1 muralha de areia' }, { name: 'Areia derretida', desc: 'Chão quente dura +1s, queima +30% e quem cai explode' }] },
+        'Recarga 0.4s mais rápida e +8 de dano',
+      ],
+    },
+    dragonAscent: {
+      description: 'Como Rayquaza, você sobe ao céu num rastro verde e mergulha como um cometa sobre as maiores multidões, uma depois da outra.',
+      upgrades: [
+        '+15 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Mergulho triplo', desc: '+1 mergulho' }, { name: 'Impacto meteoro', desc: 'Quem cai explode; +20 de dano' }] },
+        'Recarga 0.5s mais rápida e +1 mergulho',
+      ],
+    },
+    roarOfTime: {
+      description: 'O rugido de Dialga para o tempo: um relógio se espalha de você por toda a tela, congela os inimigos e o próximo acerto neles dói em dobro. Quando o tempo volta, ele estala sobre eles de novo.',
+      upgrades: [
+        '+25 de dano',
+        '+15% de área e o tempo para +0.3s',
+        { fork: [{ name: 'Tempo acelerado', desc: 'Recarga 0.7s mais rápida' }, { name: 'Fim dos tempos', desc: 'Quem cai explode; +30 de dano' }] },
+        'Recarga 0.6s mais rápida e +25 de dano',
+      ],
+    },
+    mistBall: {
+      description: 'Esferas de névoa de Latias flutuam até inimigos diferentes e estouram numa névoa que fica no chão, ferindo e enfraquecendo quem está dentro (causam menos dano ao encostar).',
+      upgrades: [
+        '+7 de dano',
+        '+1 esfera',
+        { fork: [{ name: 'Névoa espessa', desc: 'Cada lançamento se repete pela metade; +25% de área' }, { name: 'Névoa carregada', desc: 'Acertos soltam faíscas; névoa dura +1s e +5 de dano' }] },
+        'Recarga 0.4s mais rápida e +1 esfera',
+      ],
+    },
+    lusterPurge: {
+      description: 'O feixe de luz de Latios varre os inimigos à sua frente, de um lado e depois do outro. Pode baixar a defesa deles (marca: levam mais dano).',
+      upgrades: [
+        '+9 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Luz cruzada', desc: '+1 feixe, para o outro lado' }, { name: 'Luz ofuscante', desc: 'Acertos soltam faíscas; +8 de dano e +30% de chance de marcar' }] },
+        'Recarga 0.5s mais rápida e +9 de dano',
+      ],
+    },
+    psychoBoost: {
+      description: 'O poder de Deoxys se concentra num núcleo acima de você e dispara cometas psíquicos que perseguem inimigos diferentes e explodem neles.',
+      upgrades: [
+        '+10 de dano',
+        '+2 cometas',
+        { fork: [{ name: 'Sobrecarga', desc: 'Quem cai explode; +12 de dano' }, { name: 'Chuva de cometas', desc: '+2 cometas com faíscas; -6 de dano' }] },
+        'Recarga 0.4s mais rápida e +10 de dano',
+      ],
+    },
+    wish: {
+      description: 'O desejo de Jirachi: uma chuva de estrelas cai sobre os inimigos por toda a tela, e parte do dano delas cura você.',
+      upgrades: [
+        '+2 estrelas',
+        '+10 de dano',
+        { fork: [{ name: 'Desejo realizado', desc: 'Quem cai explode; +25% de área' }, { name: 'Mil desejos', desc: '+3 estrelas e a chuva se repete pela metade; -6 de dano' }] },
+        'Recarga 0.5s mais rápida e +2 estrelas',
+      ],
+    },
+    ancientPower: {
+      description: 'Pedras ancestrais se erguem ao seu redor com o poder de Mew e disparam nos inimigos. Às vezes (30%), todos os seus atributos sobem por alguns segundos.',
+      upgrades: [
+        '+8 de dano',
+        '+2 pedras',
+        { fork: [{ name: 'Poder primordial', desc: 'Atributos sobem com 60% de chance e por +2s' }, { name: 'Pedra fundamental', desc: 'Quem cai explode; +10 de dano' }] },
+        'Recarga 0.4s mais rápida e +8 de dano',
+      ],
+    },
+    magicalLeaf: {
+      description: 'Folhas mágicas de Celebi se abrem num anel ao seu redor e cada uma persegue o seu próprio inimigo: nunca erram.',
+      upgrades: [
+        '+2 folhas',
+        '+6 de dano',
+        { fork: [{ name: 'Eco do tempo', desc: 'Cada lançamento se repete pela metade; +2 de dano' }, { name: 'Tempestade de folhas', desc: '+4 folhas; -4 de dano' }] },
+        'Recarga 0.3s mais rápida e +6 de dano',
+      ],
+    },
   },
 
   items: {

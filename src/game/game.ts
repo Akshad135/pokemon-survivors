@@ -30,6 +30,7 @@ import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
 import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
 import { updateSignatures } from './signatures'
+import { updateLegendary } from './legendary'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -448,6 +449,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateTraits(g, dt)
   updateMoveKit(g, dt)
   updateSignatures(g, dt)
+  updateLegendary(g)
   updateMoves(g, input.lunge === true, dt)
   updateAttacks(g, dt)
   updateTerrain(g, dt)

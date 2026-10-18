@@ -78,7 +78,7 @@ describe('a challenge replay', () => {
     }
     const replay = parseReplay(JSON.parse(JSON.stringify(rec.replay)))!
     expect(challengeProblem(replay.start, DAY)).toBeNull()
-    expect(resimulate(replay)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(resimulate(replay)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 })
 

@@ -80,7 +80,8 @@ describe('replays', () => {
     const branch = drawn.offers[1]
     const a = staged()
     const b = staged()
-    resimulate(replay, a)
+    // The boards show the branch the replay took, so it comes back with the result.
+    expect(resimulate(replay, a).branch).toBe(a.branch)
     resimulate(replay, b)
     expect(a.phase).toBe('playing')
     expect(branch?.kind === 'form' && a.branch).toBe(branch?.kind === 'form' && branch.id)

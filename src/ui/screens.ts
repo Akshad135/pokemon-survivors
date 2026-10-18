@@ -6,7 +6,7 @@ import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
 import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { forkAt, maxMoveLevel, MOVES, moveStats, type MoveDef, type MoveId } from '../game/moves'
+import { forkAt, isLegendary, maxMoveLevel, MOVES, moveStats, type MoveDef, type MoveId } from '../game/moves'
 import { canBanish, drafting, playerDex } from '../game/game'
 import { rarityOf } from '../game/leveling'
 import { modsOf, type ModId } from '../game/mods'
@@ -148,7 +148,7 @@ const offerView = (g: Game, offer: Offer) => {
       return {
         icon: moveIcon(offer.id),
         name: def.name,
-        tag: `${evolvedFrom(offer.id) ? '★ ' : ''}${isNew && !rare ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level)}`,
+        tag: `${evolvedFrom(offer.id) || isLegendary(offer.id) ? '★ ' : ''}${isNew && !rare ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level)}`,
         isNew,
         desc: rare ? `${first} · ${stepLine(offer.id, offer.level)}` : first,
         type: def.type,
@@ -364,6 +364,8 @@ const STAT_ROWS = [
 /** Paired item hint for a loadout move: shows what it needs and whether it is ready. */
 const loadoutHint = (g: Game, id: MoveId) => {
   if (evolvedFrom(id)) return h('span', { class: 'tag tag-new' }, '★ EVO')
+  // A legendary's move never evolves: a gold star says where it came from.
+  if (isLegendary(id)) return h('span', { class: 'tag tag-legendary' }, '★')
   const evo = evolutionOf(id)
   if (!evo) return null
   const ready = canEvolve(evo, g.player)
