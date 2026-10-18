@@ -38,6 +38,7 @@ import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
 import { kitDevTools } from './game/kitDev'
+import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
@@ -715,6 +716,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'shatter': return playSfx('break', 60)
     case 'guard': return playSfx('stance', 0)
+    case 'cast': {
+      const sfx = CAST_SFX[e.move]
+      return sfx && playSfx(sfx[0], sfx[1])
+    }
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
     case 'quake': return playSfx('quake', 150)

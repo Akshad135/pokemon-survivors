@@ -220,6 +220,59 @@ const SFX = {
   leap: () => tone(180, 520, 0.3, 'triangle', 0.1),
   /** Soft chime for heal, ward and summon pulses. */
   enemyPulse: () => tone(660, 990, 0.16, 'triangle', 0.06),
+  /* Starter signature moves (`ui/castSfx.ts`) */
+  seedPop: () => [330, 494].forEach((f, i) => tone(f, f * 1.5, 0.06, 'triangle', 0.1, i * 0.07)),
+  spin: () => {
+    noise(0.3, 0.07)
+    tone(220, 880, 0.3, 'triangle', 0.08)
+  },
+  petals: () => [1047, 1319, 1568, 1319].forEach((f, i) => tone(f, f, 0.08, 'triangle', 0.06, i * 0.05)),
+  eruption: () => {
+    noise(0.45, 0.16)
+    tone(110, 35, 0.45, 'sawtooth', 0.14)
+  },
+  growl: () => {
+    tone(150, 90, 0.22, 'sawtooth', 0.1)
+    tone(156, 95, 0.22, 'square', 0.05)
+  },
+  kick: () => [0, 0.15].forEach((d, i) => {
+    noise(0.05, 0.1, d)
+    tone(i ? 240 : 180, 60, 0.08, 'square', 0.1, d)
+  }),
+  splat: () => {
+    noise(0.12, 0.12)
+    tone(200, 70, 0.12, 'triangle', 0.12)
+  },
+  hammer: () => {
+    noise(0.25, 0.22)
+    tone(120, 30, 0.3, 'square', 0.18)
+  },
+  drill: () => tone(520, 980, 0.22, 'square', 0.05),
+  whirl: () => {
+    noise(0.5, 0.05)
+    tone(300, 520, 0.5, 'triangle', 0.06)
+  },
+  charge: () => {
+    noise(0.2, 0.1)
+    tone(160, 640, 0.3, 'sawtooth', 0.08)
+  },
+  quills: () => [1600, 2000].forEach((f, i) => tone(f, f * 0.5, 0.06, 'sawtooth', 0.05, i * 0.04)),
+  psybeam: () => [660, 880, 740, 990].forEach((f, i) => tone(f, f * 1.2, 0.07, 'triangle', 0.06, i * 0.05)),
+  lariat: () => [0, 0.18, 0.36].forEach((d) => {
+    noise(0.1, 0.06, d)
+    tone(300, 160, 0.12, 'sawtooth', 0.05, d)
+  }),
+  aria: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.14, 'triangle', 0.07, i * 0.09)),
+  snipe: () => {
+    tone(1800, 240, 0.09, 'square', 0.1)
+    noise(0.05, 0.1)
+  },
+  flower: () => [1319, 1760, 2093].forEach((f, i) => tone(f, f, 0.06, 'triangle', 0.07, i * 0.04)),
+  splash: () => {
+    noise(0.12, 0.08)
+    tone(400, 900, 0.1, 'sine', 0.1)
+  },
+  crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
 } as const
 
 export type Sfx = keyof typeof SFX

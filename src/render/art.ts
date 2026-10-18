@@ -7,6 +7,7 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import { SIGNATURE_ICONS } from './signatureArt'
 
 /**
  * All hand-authored pixel art (projectiles, pickups, icons). Sprites are built
@@ -160,6 +161,8 @@ export const FX = {
   heart: lazy(() => art(HEART, { 1: '#a02858', 2: '#f878a8', 3: '#ffffff' }, '#401020')),
   note: lazy(() => art(NOTE, { 1: '#c03018', 2: '#f8b030' }, '#401008')),
   blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
+  /** Leaf Blade's critical swing. */
+  critBlade: lazy(() => art(BLADE, { 1: '#806010', 2: '#f8d030', 3: '#ffffff' }, '#302008')),
   spikes: lazy(() => art(SPIKE, { 1: '#e0b8f0', 2: '#a040c0', 3: '#502060' }, '#201028')),
   barbs: lazy(() => art(BARBS, { 1: '#f0d8f8', 2: '#b058d0', 3: '#6a2a88', 4: '#88c040' }, '#201028')),
   wisp: lazy(() => {
@@ -377,6 +380,7 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 }
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
+  ...SIGNATURE_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),
