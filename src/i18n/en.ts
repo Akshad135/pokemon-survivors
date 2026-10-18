@@ -1614,6 +1614,7 @@ export const en: Messages = {
     zubat: 'Bat. Fast, bites and poisons.',
     poliwag: 'Tadpole. Water, punches and quick cooldowns.',
     geodude: 'Rock. Slow, tough, with heavy boulders.',
+    roggenrola: 'Crystal. Thick armor, and Gigalith crushes wide.',
     mareep: 'Electric wool. Shocks that paralyze.',
     azurill: 'Bouncy ball. Weak at first, Huge Power at the end.',
     shroomish: 'Mushroom. Spores, then Breloom\'s punches.',

@@ -1615,6 +1615,7 @@ export const es: Messages = {
     zubat: 'Murciélago. Rápido, muerde y envenena.',
     poliwag: 'Renacuajo. Agua, puñetazos y recarga rápida.',
     geodude: 'Roca. Lento, duro y con pedradas pesadas.',
+    roggenrola: 'Cristal. Coraza gruesa, y Gigalith aplasta en área.',
     mareep: 'Lana eléctrica. Descargas que paralizan.',
     azurill: 'Pelotita. Débil al inicio, Huge Power al final.',
     shroomish: 'Hongo. Esporas, y luego los puñetazos de Breloom.',

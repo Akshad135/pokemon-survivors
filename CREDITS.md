@@ -463,6 +463,12 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 634 | Zweilous (shiny) | [Hemlock](https://baphomets.neocities.org/) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 635 | Hydreigon | Top_Kec | baronessfaron, JustAGunk |
 | 635 | Hydreigon (shiny) | Top_Kec, [Deeshura](https://bsky.app/profile/deeshura.bsky.social) | [Morei](https://bsky.app/profile/murpia57.bsky.social), baronessfaron, JustAGunk |
+| 524 | Roggenrola | [powercristal](https://www.deviantart.com/powercristal) | [Gust](https://twitter.com/Estelaris__) |
+| 524 | Roggenrola (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Gust](https://twitter.com/Estelaris__) |
+| 525 | Boldore | [Soulja](https://twitter.com/OlSoulja) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 525 | Boldore (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 526 | Gigalith | [Soulja](https://twitter.com/OlSoulja) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 526 | Gigalith (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 | 446 | Munchlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 446 | Munchlax (shiny) | El_Pangoro_Parse | Lovi |
 | 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
@@ -961,10 +967,6 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 510 | Liepard (shiny) | ShyStarryRain | [Caitemis](https://caitemis-art.tumblr.com/), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 519 | Pidove | [powercristal](https://www.deviantart.com/powercristal), [Caitemis](https://caitemis-art.tumblr.com/) | [TawnySoup](https://linktr.ee/tawnysoup) |
 | 519 | Pidove (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [TawnySoup](https://linktr.ee/tawnysoup) |
-| 524 | Roggenrola | [powercristal](https://www.deviantart.com/powercristal) | [Gust](https://twitter.com/Estelaris__) |
-| 524 | Roggenrola (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Gust](https://twitter.com/Estelaris__) |
-| 525 | Boldore | [Soulja](https://twitter.com/OlSoulja) | [Emmuffin](https://twitter.com/Ernmuffin) |
-| 525 | Boldore (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 528 | Swoobat | [NeroIntruder](https://twitter.com/NeroIntruder) | [mucrush](https://www.deviantart.com/mucrush), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 528 | Swoobat (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 530 | Excadrill | [Soulja](https://twitter.com/OlSoulja), Skycloud383 | baronessfaron |

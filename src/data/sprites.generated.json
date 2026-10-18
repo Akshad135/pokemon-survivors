@@ -37327,6 +37327,93 @@
       }
     }
   },
+  "526": {
+    "anims": {
+      "Walk": {
+        "frameWidth": 40,
+        "frameHeight": 48,
+        "durations": [
+          15,
+          15,
+          15,
+          15
+        ]
+      },
+      "Idle": {
+        "frameWidth": 40,
+        "frameHeight": 48,
+        "durations": [
+          40,
+          20,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          10
+        ]
+      },
+      "Hurt": {
+        "frameWidth": 48,
+        "frameHeight": 56,
+        "durations": [
+          2,
+          8
+        ]
+      }
+    },
+    "portrait": true,
+    "body": {
+      "bodyW": 31,
+      "bodyH": 30,
+      "footY": 8
+    },
+    "cry": true,
+    "shiny": {
+      "anims": {
+        "Walk": {
+          "frameWidth": 40,
+          "frameHeight": 48,
+          "durations": [
+            15,
+            15,
+            15,
+            15
+          ]
+        },
+        "Idle": {
+          "frameWidth": 40,
+          "frameHeight": 48,
+          "durations": [
+            40,
+            20,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            10
+          ]
+        },
+        "Hurt": {
+          "frameWidth": 48,
+          "frameHeight": 56,
+          "durations": [
+            2,
+            8
+          ]
+        }
+      },
+      "portrait": true,
+      "body": {
+        "bodyW": 31,
+        "bodyH": 30,
+        "footY": 8
+      }
+    }
+  },
   "528": {
     "anims": {
       "Walk": {
