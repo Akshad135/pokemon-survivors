@@ -157,7 +157,7 @@ describe('Esquecer', () => {
     const staged = startGame(START)
     gainXp(staged, 400)
     const again = resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)
-    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, phase: g.phase, stuck: false })
+    expect(again).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 })
 
