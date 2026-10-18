@@ -712,6 +712,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'coin': return playSfx('coin', 60)
     case 'heal': return playSfx('heal')
     case 'hurt': return playSfx('hurt', 120)
+    case 'shatter': return playSfx('break', 60)
+    case 'guard': return playSfx('stance', 0)
     case 'levelup': return playSfx('levelUp')
     case 'thunder': return playSfx('thunder', 150)
     case 'quake': return playSfx('quake', 150)

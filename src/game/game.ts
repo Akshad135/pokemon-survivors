@@ -19,7 +19,8 @@ import { applyOffer, loadout, pendingEvolution, recomputeStats, rollOffers, xpFo
 import { createMapEvents, updateMapEvents } from './mapEvents'
 import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
-import { isManual, MOVES, moveStats } from './moves'
+import { isManual, MOVES, moveStats, type MoveDef } from './moves'
+import { afterCast, updateMoveKit } from './moveHooks'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -104,6 +105,10 @@ export const createGame = (
       shiny,
       luckyShiny: lucky,
       walked: 0,
+      still: 0,
+      guard: null,
+      hidden: null,
+      drain: { left: 0, at: 0 },
     },
     enemies: [],
     attacks: [],
@@ -193,6 +198,7 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
     p.facing = { x: input.x / len, y: input.y / len }
     p.dir = dir8(input.x, input.y)
   }
+  p.still = p.moving ? 0 : p.still + dt
   p.animTime += dt
   p.iframes = Math.max(0, p.iframes - dt)
   p.hurt = Math.max(0, p.hurt - dt)
@@ -213,8 +219,10 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
       if (owned.cooldown > 0) continue
     }
     const s = moveStats(owned.id, owned.level, g.player.stats)
-    MOVES[owned.id].fire(g, s)
+    const def: MoveDef = MOVES[owned.id]
+    def.fire(g, s, owned)
     owned.cooldown += s.cooldown
+    afterCast(g, owned)
   }
 }
 
@@ -309,6 +317,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateEndless(g)
   rebuildGrid(g)
   updateTraits(g, dt)
+  updateMoveKit(g, dt)
   updateMoves(g, input.lunge === true, dt)
   updateAttacks(g, dt)
   updateTerrain(g, dt)

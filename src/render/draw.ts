@@ -9,7 +9,7 @@ import { FLEE_TIME } from '../game/enemies'
 import { EVOLUTION_TIME, playerDex } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
-import { isAsleep } from '../game/status'
+import { isHeld } from '../game/status'
 import { inSolid, overTerrain, type Solid } from '../game/terrain'
 import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
@@ -24,6 +24,7 @@ import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRift
 import { drawPokemon, sprites, type AnimName } from './sprites'
 import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
+import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather } from './weather'
@@ -44,6 +45,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
   if (a.shape.kind !== 'circle') return
   const r = a.shape.r
   switch (a.visual) {
+    case 'telegraph':
+      return drawTelegraph(ctx, a)
     case 'whirlpool': {
       blitCentered(ctx, ellipse(Math.round(r), Math.round(r), 'rgba(80,140,240,0.16)'), a.x, a.y - 4)
       dashedRing(ctx, a.x, a.y - 4, r, t * 5, ['#a8d0f8', '#ffffff', '#6890f0'], 0.45)
@@ -293,6 +296,7 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'whirlpool':
     case 'quake':
     case 'drumRoots':
+    case 'telegraph':
       return
     default:
       drawEvolvedAttack(ctx, a, t)
@@ -419,7 +423,7 @@ export const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, sinc
 
 /* ---------------- Entities ---------------- */
 
-const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isAsleep(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
+const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isHeld(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
 
 /** `time` is game time (shiny entrance), `t` wall time (status tint). */
 const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
@@ -524,7 +528,9 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   // Aegislash flashes white for a moment as it swaps stance.
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
   const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
-  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha: blink && mega.flash === 0 ? 0.45 : 1, flash, outline: mega.outline })
+  // Burrowed or out of sight (Dig, Fly): a faint ghost of the player.
+  const alpha = p.hidden ? 0.3 : blink && mega.flash === 0 ? 0.45 : 1
+  drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y, { alpha, flash, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
   drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
@@ -709,6 +715,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     }
   }
   drawSleep(ctx, g, t)
+  drawKitStatus(ctx, g, t, visible)
+  drawGuard(ctx, g, t)
   drawTraitAir(ctx, g, visible)
   drawRiftFallAir(ctx, g, t)
 

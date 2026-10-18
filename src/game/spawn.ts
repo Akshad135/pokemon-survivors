@@ -1,3 +1,4 @@
+import { NO_BONUS } from './kitRules'
 import type { Attack, Game } from './types'
 
 type AttackInit = Pick<Attack, 'move' | 'type' | 'visual' | 'x' | 'y' | 'shape' | 'motion' | 'damage' | 'ttl'> & Partial<Attack>
@@ -23,6 +24,11 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     blast: 0,
     blastVisual: init.visual,
     turret: null,
+    bonus: NO_BONUS,
+    execute: 0,
+    drain: 0,
+    pull: 0,
+    trailer: null,
     ...init,
   }
   g.attacks.push(attack)
