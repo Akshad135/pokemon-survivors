@@ -2211,6 +2211,150 @@ export const en: Messages = {
         '+1 wave and 0.3s faster cooldown',
       ],
     },
+    ragingFury: {
+      description: 'You rampage wreathed in fire: the cloak burns whoever touches it while you walk, your trail becomes a burning road, and every few steps the fury bursts in a nova of flame. Standing still, it only smoulders. May burn.',
+      upgrades: [
+        '+4 damage',
+        'Flames last +0.6s and +15% area',
+        '+5 damage and +15% burn chance',
+        '+5 damage and +20% area',
+      ],
+    },
+    seedFlare: {
+      description: 'A small sun swells over you and bursts into rays that sweep the whole circle; where they end, seeds of light bloom in blasts. In harsh sunlight the rays sweep around twice.',
+      upgrades: [
+        '+10 damage',
+        '+1 ray',
+        '+20% area',
+        '+12 damage and 0.4s faster cooldown',
+      ],
+    },
+    waterSpout: {
+      description: 'A geyser bursts from you and rains heavy drops on the most hurt foes in view. The more HP you have, the harder it rains; foes under 50% HP take double.',
+      upgrades: [
+        '+2 drops',
+        '+8 damage',
+        '+25% area',
+        '+2 drops and 0.2s faster cooldown',
+      ],
+    },
+    electroDrift: {
+      description: 'Electric orbs drift out from you in a widening spiral, joined by lightning that hurts whoever stands between them. The faster you are, the bigger and stronger they get. May paralyze.',
+      upgrades: [
+        '+1 orb',
+        '+7 damage',
+        'Last +0.4s and +20% area',
+        '+1 orb and +15% paralysis chance',
+      ],
+    },
+    sludgeWave: {
+      description: 'Waves of sludge roll out from you one after another and may poison. Foes already poisoned take double and burst in a toxic geyser that poisons the ones nearby.',
+      upgrades: [
+        '+3 damage',
+        '+1 wave',
+        '+20% area and +15% poison chance',
+        '+3 damage and 0.3s faster cooldown',
+      ],
+    },
+    explosion: {
+      description: 'Manual: costs a fifth of your current HP for a colossal blast, and you are safe inside it. Every foe it knocks out explodes too, and those blasts can knock out more.',
+      upgrades: [
+        '+25 damage',
+        '+15% area',
+        '1.2s faster cooldown',
+        '+30 damage and +15% area',
+      ],
+    },
+    oblivionWing: {
+      description: 'Crimson wings unfold behind you and fire beams at the nearest foes, draining half the damage as HP. Stand still for a moment for twice the beams.',
+      upgrades: [
+        '+9 damage',
+        '+1 beam',
+        '0.2s faster cooldown',
+        '+1 beam and +9 damage',
+      ],
+    },
+    skyUppercut: {
+      description: 'Charges like Focus Punch (getting hit resets it), but the punch comes from below: a colossal fist bursts out of the ground under the toughest foes in view, bosses first, with a shockwave around it.',
+      upgrades: [
+        '+20 damage',
+        '+1 fist',
+        '+20% area',
+        '+24 damage and +1 fist',
+      ],
+    },
+    gearGrind: {
+      description: 'Giant gears roll out at the nearest foes, grinding through everything in their way, and roll back to you. Like Gyro Ball, they hit harder the slower you move.',
+      upgrades: [
+        '+6 damage',
+        '+20% area',
+        '+1 gear',
+        '+7 damage and 0.25s faster cooldown',
+      ],
+    },
+    kowtowCleave: {
+      description: 'Like Sucker Punch, it watches the ground around you: a foe that steps in gets a blade cleave swept through the whole arc toward it. Never misses: it goes through wards.',
+      upgrades: [
+        '+10 damage',
+        '+1 cleave',
+        '+20% area',
+        '+11 damage and 0.12s faster cooldown',
+      ],
+    },
+    hyperspaceHole: {
+      description: 'Rings open in space over the densest groups in view and drag the foes around them inside; then each one collapses in a burst.',
+      upgrades: [
+        '+14 damage',
+        '+1 ring',
+        '+20% area and they pull +0.3s longer',
+        '+16 damage and 0.5s faster cooldown',
+      ],
+    },
+    thousandArrows: {
+      description: 'A volley of arrows rises from the ground around you and rains on the farthest foes in reach. It brings flyers down: flying foes take double.',
+      upgrades: [
+        '+3 arrows',
+        '+9 damage',
+        '+25% area',
+        '+3 arrows and 0.2s faster cooldown',
+      ],
+    },
+    stoneAxe: {
+      description: 'A great stone axe chops down on the nearest foe and the impact scatters floating splinters around it, Stealth Rock style: they hurt every foe that walks into them.',
+      upgrades: [
+        '+10 damage',
+        '+1 splinter',
+        'Splinters last +4s and +15% area',
+        '+12 damage and +1 splinter',
+      ],
+    },
+    firstImpression: {
+      description: 'Manual: a zigzag of dashes, each one through the next nearest foe, untouchable throughout, ending in a burst where you land.',
+      upgrades: [
+        '+9 damage',
+        '+1 dash',
+        '0.3s faster cooldown',
+        '+10 damage and +1 dash',
+      ],
+    },
+    breakingSwipe: {
+      description: 'Your tail swipes more than a full turn around you: every foe in reach is hit, weakened (it hurts less on contact) and flung away, hurting the ones it crashes into.',
+      upgrades: [
+        '+8 damage',
+        '+20% area',
+        '0.3s faster cooldown',
+        '+10 damage and +15% area',
+      ],
+    },
+    glacialLance: {
+      description: 'Colossal lances of ice pierce the horde in a straight line: they shatter regular foes under 25% HP at once and may freeze the rest; at the end of their flight, they burst into frost.',
+      upgrades: [
+        '+1 lance',
+        '+10 damage',
+        '+20% area and +15% freeze chance',
+        '+1 lance and 0.3s faster cooldown',
+      ],
+    },
   },
 
   items: {

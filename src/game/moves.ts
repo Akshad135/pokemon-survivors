@@ -14,6 +14,7 @@ import type { PlayerStats } from './stats'
 import { modBits, modHit, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
+import { VERB_EVOLVED_MOVES } from './verbEvolutions'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
@@ -1863,6 +1864,9 @@ export const MOVES = {
     upgrades: [{ amount: 1 }, { damage: 8, statusChance: 0.15 }, { area: 0.2 }, { amount: 1, cooldown: -0.3 }],
     fire: (g, s) => evo.alluringVoice(g, s, { move: 'alluringVoice', type: 'fairy', visual: 'alluring' }),
   },
+
+  /* ---------- Evolutions of the verb moves (`verbEvolutions.ts`) ---------- */
+  ...VERB_EVOLVED_MOVES,
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES

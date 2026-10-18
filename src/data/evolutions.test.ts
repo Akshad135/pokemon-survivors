@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { offerPool, rollOffers } from '../game/leveling'
-import { maxMoveLevel, MOVES, moveStats, type MoveId } from '../game/moves'
+import { isManual, maxMoveLevel, MOVE_IDS, MOVES, moveStats, type MoveId } from '../game/moves'
 import { applyDeltas, BASE_STATS } from '../game/stats'
 import type { OwnedItem, OwnedMove } from '../game/types'
-import { EVOLUTIONS, readyEvolutions } from './evolutions'
+import { EVOLUTIONS, NO_EVOLUTION, readyEvolutions } from './evolutions'
 import { PLAYABLE, PLAYABLE_IDS } from './hatchlings'
 import { ITEMS, type ItemDef } from './items'
 
@@ -69,12 +69,24 @@ describe('evolution pairs', () => {
     for (const [item, n] of uses) expect([item, n <= (item === 'charcoal' ? 3 : 2)]).toEqual([item, true])
   })
 
-  it('give every move a Pokémon can learn an evolution, each used once', () => {
+  it('give every move a Pokémon can learn an evolution, each used once (signatures grow by forks instead)', () => {
     const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id): readonly MoveId[] => PLAYABLE[id].learnset))
     const from: readonly MoveId[] = EVOLUTIONS.map((e) => e.from)
-    for (const id of learnable) expect([id, from.includes(id)]).toEqual([id, true])
+    for (const id of learnable) if (!NO_EVOLUTION.has(id)) expect([id, from.includes(id)]).toEqual([id, true])
     expect(new Set(from).size).toBe(from.length)
     expect(new Set(EVOLUTIONS.map((e) => e.to)).size).toBe(EVOLUTIONS.length)
+  })
+
+  it('give every base move in MOVES an evolution, signatures aside', () => {
+    const to = new Set<MoveId>(EVOLUTIONS.map((e) => e.to))
+    const from = new Set<MoveId>(EVOLUTIONS.map((e) => e.from))
+    const bases = MOVE_IDS.filter((id) => !to.has(id) && !NO_EVOLUTION.has(id))
+    for (const id of bases) expect([id, from.has(id)]).toEqual([id, true])
+    for (const id of NO_EVOLUTION) expect([id, from.has(id)]).toEqual([id, false])
+  })
+
+  it('keep a manual move manual when it evolves (one manual move per loadout)', () => {
+    for (const evo of EVOLUTIONS) expect([evo.to, isManual(evo.to)]).toEqual([evo.to, isManual(evo.from)])
   })
 
   it('pair a generic item too: Pyro Ball and Muscle Band make Searing Shot', () => {

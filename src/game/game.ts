@@ -30,6 +30,7 @@ import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
 import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
 import { updateSignatures } from './signatures'
+import { updateVerbEvolved } from './verbEvolutions'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
 import { updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
@@ -447,6 +448,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateSignatures(g, dt)
   updateMoves(g, input.lunge === true, dt)
   updateAttacks(g, dt)
+  updateVerbEvolved(g, dt)
   updateTerrain(g, dt)
   if (!inArena) {
     updateProps(g, dt)

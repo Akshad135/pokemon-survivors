@@ -2212,6 +2212,150 @@ export const es: Messages = {
         '+1 onda y enfriamiento 0.3s más rápido',
       ],
     },
+    ragingFury: {
+      description: 'Avanzas con furia envuelto en llamas: el manto quema a quien lo toca mientras caminas, tu rastro se vuelve un camino en brasas y, cada pocos pasos, la furia estalla en una nova de fuego. Quieto, solo humea. Puede quemar.',
+      upgrades: [
+        '+4 de daño',
+        'Las llamas duran +0.6s y +15% de área',
+        '+5 de daño y +15% de probabilidad de quemar',
+        '+5 de daño y +20% de área',
+      ],
+    },
+    seedFlare: {
+      description: 'Un pequeño sol crece sobre ti y estalla en rayos que barren el círculo entero; donde terminan, semillas de luz florecen en explosiones. Con sol intenso, los rayos dan dos vueltas.',
+      upgrades: [
+        '+10 de daño',
+        '+1 rayo',
+        '+20% de área',
+        '+12 de daño y recarga 0.4s más rápida',
+      ],
+    },
+    waterSpout: {
+      description: 'Un géiser brota de ti y llueven gotas pesadas sobre los enemigos más heridos a la vista. Cuanto más PS tienes, más fuerte la lluvia; quien está por debajo del 50% de PS recibe el doble.',
+      upgrades: [
+        '+2 gotas',
+        '+8 de daño',
+        '+25% de área',
+        '+2 gotas y recarga 0.2s más rápida',
+      ],
+    },
+    electroDrift: {
+      description: 'Orbes eléctricos salen de ti en una espiral cada vez más amplia, unidos por rayos que hieren a quien queda entre ellos. Cuanto más veloz eres, más grandes y fuertes. Puede paralizar.',
+      upgrades: [
+        '+1 orbe',
+        '+7 de daño',
+        'Duran +0.4s y +20% de área',
+        '+1 orbe y +15% de probabilidad de paralizar',
+      ],
+    },
+    sludgeWave: {
+      description: 'Olas de lodo salen de ti una tras otra y pueden envenenar. Los enemigos ya envenenados reciben el doble y estallan en un géiser tóxico que envenena a los de alrededor.',
+      upgrades: [
+        '+3 de daño',
+        '+1 ola',
+        '+20% de área y +15% de probabilidad de envenenar',
+        '+3 de daño y recarga 0.3s más rápida',
+      ],
+    },
+    explosion: {
+      description: 'Manual: cuesta un quinto de tus PS actuales por una explosión colosal, y quedas a salvo dentro de ella. Cada enemigo que derriba también explota, y esas explosiones pueden derribar a más.',
+      upgrades: [
+        '+25 de daño',
+        '+15% de área',
+        'Recarga 1.2s más rápida',
+        '+30 de daño y +15% de área',
+      ],
+    },
+    oblivionWing: {
+      description: 'Alas carmesí se abren detrás de ti y disparan rayos a los enemigos más cercanos, drenando la mitad del daño en PS. Quieto por un instante, el doble de rayos.',
+      upgrades: [
+        '+9 de daño',
+        '+1 rayo',
+        'Recarga 0.2s más rápida',
+        '+1 rayo y +9 de daño',
+      ],
+    },
+    skyUppercut: {
+      description: 'Se carga como Focus Punch (recibir daño la reinicia), pero el golpe viene de abajo: un puño colosal brota del suelo bajo los enemigos más fuertes a la vista, jefes primero, con una onda de choque alrededor.',
+      upgrades: [
+        '+20 de daño',
+        '+1 puño',
+        '+20% de área',
+        '+24 de daño y +1 puño',
+      ],
+    },
+    gearGrind: {
+      description: 'Engranajes gigantes ruedan hacia los enemigos más cercanos, moliendo todo a su paso, y vuelven hacia ti. Como Gyro Ball, golpean más fuerte cuanto más despacio te mueves.',
+      upgrades: [
+        '+6 de daño',
+        '+20% de área',
+        '+1 engranaje',
+        '+7 de daño y recarga 0.25s más rápida',
+      ],
+    },
+    kowtowCleave: {
+      description: 'Como Sucker Punch, vigila el suelo a tu alrededor: quien entra recibe un tajo de hoja que barre todo el arco hacia él. Nunca falla: atraviesa escudos.',
+      upgrades: [
+        '+10 de daño',
+        '+1 tajo',
+        '+20% de área',
+        '+11 de daño y recarga 0.12s más rápida',
+      ],
+    },
+    hyperspaceHole: {
+      description: 'Se abren anillos en el espacio sobre los grupos más densos a la vista y arrastran a los enemigos de alrededor hacia dentro; luego cada uno colapsa en una explosión.',
+      upgrades: [
+        '+14 de daño',
+        '+1 anillo',
+        '+20% de área y atraen +0.3s más',
+        '+16 de daño y recarga 0.5s más rápida',
+      ],
+    },
+    thousandArrows: {
+      description: 'Una lluvia de flechas sube del suelo a tu alrededor y cae sobre los enemigos más lejanos a tu alcance. Derriba a los voladores: los enemigos voladores reciben el doble.',
+      upgrades: [
+        '+3 flechas',
+        '+9 de daño',
+        '+25% de área',
+        '+3 flechas y recarga 0.2s más rápida',
+      ],
+    },
+    stoneAxe: {
+      description: 'Una gran hacha de piedra cae sobre el enemigo más cercano y el impacto esparce astillas flotantes a su alrededor, como Stealth Rock: hieren a quien pase por ellas.',
+      upgrades: [
+        '+10 de daño',
+        '+1 astilla',
+        'Las astillas duran +4s y +15% de área',
+        '+12 de daño y +1 astilla',
+      ],
+    },
+    firstImpression: {
+      description: 'Manual: un zigzag de embestidas, cada una atravesando al siguiente enemigo más cercano, intocable todo el tiempo, que termina en una explosión donde te detienes.',
+      upgrades: [
+        '+9 de daño',
+        '+1 embestida',
+        'Recarga 0.3s más rápida',
+        '+10 de daño y +1 embestida',
+      ],
+    },
+    breakingSwipe: {
+      description: 'Tu cola da más de una vuelta entera a tu alrededor: todo enemigo a tu alcance es golpeado, debilitado (hace menos daño al tocarte) y lanzado, hiriendo a quien golpee.',
+      upgrades: [
+        '+8 de daño',
+        '+20% de área',
+        'Recarga 0.3s más rápida',
+        '+10 de daño y +15% de área',
+      ],
+    },
+    glacialLance: {
+      description: 'Lanzas colosales de hielo atraviesan la horda en línea recta: hacen añicos al instante a los enemigos comunes con menos del 25% de PS y pueden congelar al resto; al final de su vuelo, estallan en escarcha.',
+      upgrades: [
+        '+1 lanza',
+        '+10 de daño',
+        '+20% de área y +15% de probabilidad de congelar',
+        '+1 lanza y recarga 0.3s más rápida',
+      ],
+    },
   },
 
   items: {

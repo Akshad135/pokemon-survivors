@@ -2321,6 +2321,150 @@ export const pt = {
         '+1 onda e recarga 0.3s mais rápida',
       ],
     },
+    ragingFury: {
+      description: 'Você avança em fúria, envolto em chamas: o manto queima quem encosta enquanto você anda, o rastro vira uma estrada em brasa e, a cada poucos passos, a fúria explode numa nova de fogo. Parado, só fumega. Pode queimar.',
+      upgrades: [
+        '+4 de dano',
+        'Chamas duram +0.6s e +15% de área',
+        '+5 de dano e +15% de chance de queimar',
+        '+5 de dano e +20% de área',
+      ],
+    },
+    seedFlare: {
+      description: 'Um pequeno sol cresce sobre você e explode em raios que varrem o círculo inteiro; onde eles terminam, sementes de luz desabrocham em explosões. Sob sol forte, os raios dão duas voltas.',
+      upgrades: [
+        '+10 de dano',
+        '+1 raio',
+        '+20% de área',
+        '+12 de dano e recarga 0.4s mais rápida',
+      ],
+    },
+    waterSpout: {
+      description: 'Um gêiser jorra de você e chove gotas pesadas sobre os inimigos mais feridos à vista. Quanto mais HP você tem, mais forte a chuva; quem está abaixo de 50% do HP leva o dobro.',
+      upgrades: [
+        '+2 gotas',
+        '+8 de dano',
+        '+25% de área',
+        '+2 gotas e recarga 0.2s mais rápida',
+      ],
+    },
+    electroDrift: {
+      description: 'Orbes elétricos saem de você numa espiral cada vez mais larga, ligados por raios que ferem quem fica entre eles. Quanto mais veloz você é, maiores e mais fortes. Pode paralisar.',
+      upgrades: [
+        '+1 orbe',
+        '+7 de dano',
+        'Duram +0.4s e +20% de área',
+        '+1 orbe e +15% de chance de paralisar',
+      ],
+    },
+    sludgeWave: {
+      description: 'Ondas de lodo rolam de você, uma após a outra, e podem envenenar. Inimigos já envenenados levam o dobro e explodem num gêiser tóxico que envenena quem está perto.',
+      upgrades: [
+        '+3 de dano',
+        '+1 onda',
+        '+20% de área e +15% de chance de envenenar',
+        '+3 de dano e recarga 0.3s mais rápida',
+      ],
+    },
+    explosion: {
+      description: 'Manual: custa um quinto do seu HP atual por uma explosão colossal, e você fica a salvo dentro dela. Cada inimigo que ela derruba explode também, e essas explosões podem derrubar mais.',
+      upgrades: [
+        '+25 de dano',
+        '+15% de área',
+        'Recarga 1.2s mais rápida',
+        '+30 de dano e +15% de área',
+      ],
+    },
+    oblivionWing: {
+      description: 'Asas carmesim se abrem atrás de você e disparam raios nos inimigos mais próximos, drenando metade do dano em HP. Parado por um instante, o dobro de raios.',
+      upgrades: [
+        '+9 de dano',
+        '+1 raio',
+        'Recarga 0.2s mais rápida',
+        '+1 raio e +9 de dano',
+      ],
+    },
+    skyUppercut: {
+      description: 'Carrega como Focus Punch (levar dano zera a carga), mas o soco vem de baixo: um punho colossal irrompe do chão sob os inimigos mais fortes à vista, chefes primeiro, com uma onda de choque ao redor.',
+      upgrades: [
+        '+20 de dano',
+        '+1 punho',
+        '+20% de área',
+        '+24 de dano e +1 punho',
+      ],
+    },
+    gearGrind: {
+      description: 'Engrenagens gigantes rolam até os inimigos mais próximos, moendo tudo no caminho, e voltam até você. Como Gyro Ball, saem com mais força quanto mais devagar você anda.',
+      upgrades: [
+        '+6 de dano',
+        '+20% de área',
+        '+1 engrenagem',
+        '+7 de dano e recarga 0.25s mais rápida',
+      ],
+    },
+    kowtowCleave: {
+      description: 'Como Sucker Punch, vigia o chão ao seu redor: quem entra leva um golpe de lâmina que varre todo o arco na direção dele. Nunca erra: atravessa escudos.',
+      upgrades: [
+        '+10 de dano',
+        '+1 corte',
+        '+20% de área',
+        '+11 de dano e recarga 0.12s mais rápida',
+      ],
+    },
+    hyperspaceHole: {
+      description: 'Anéis se abrem no espaço sobre os grupos mais densos à vista e puxam os inimigos ao redor para dentro; depois cada um desaba numa explosão.',
+      upgrades: [
+        '+14 de dano',
+        '+1 anel',
+        '+20% de área e puxam por +0.3s',
+        '+16 de dano e recarga 0.5s mais rápida',
+      ],
+    },
+    thousandArrows: {
+      description: 'Uma saraivada de flechas sobe do chão ao seu redor e chove sobre os inimigos mais distantes ao alcance. Derruba quem voa: inimigos voadores levam o dobro.',
+      upgrades: [
+        '+3 flechas',
+        '+9 de dano',
+        '+25% de área',
+        '+3 flechas e recarga 0.2s mais rápida',
+      ],
+    },
+    stoneAxe: {
+      description: 'Um grande machado de pedra desce sobre o inimigo mais próximo e o impacto espalha lascas flutuantes ao redor, como Stealth Rock: elas ferem quem passa por elas.',
+      upgrades: [
+        '+10 de dano',
+        '+1 lasca',
+        'Lascas duram +4s e +15% de área',
+        '+12 de dano e +1 lasca',
+      ],
+    },
+    firstImpression: {
+      description: 'Manual: um zigue-zague de investidas, cada uma atravessando o próximo inimigo mais próximo, intocável o tempo todo, terminando numa explosão onde você para.',
+      upgrades: [
+        '+9 de dano',
+        '+1 investida',
+        'Recarga 0.3s mais rápida',
+        '+10 de dano e +1 investida',
+      ],
+    },
+    breakingSwipe: {
+      description: 'A cauda dá mais de uma volta inteira ao seu redor: todo inimigo ao alcance é atingido, enfraquecido (machuca menos ao encostar) e arremessado, ferindo quem ele atingir.',
+      upgrades: [
+        '+8 de dano',
+        '+20% de área',
+        'Recarga 0.3s mais rápida',
+        '+10 de dano e +15% de área',
+      ],
+    },
+    glacialLance: {
+      description: 'Lanças colossais de gelo atravessam a horda em linha reta: estilhaçam na hora inimigos comuns abaixo de 25% do HP e podem congelar os outros; no fim do voo, explodem em geada.',
+      upgrades: [
+        '+1 lança',
+        '+10 de dano',
+        '+20% de área e +15% de chance de congelar',
+        '+1 lança e recarga 0.3s mais rápida',
+      ],
+    },
   },
 
   items: {

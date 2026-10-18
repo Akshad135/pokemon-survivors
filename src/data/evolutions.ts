@@ -1,6 +1,7 @@
 import { maxMoveLevel, type MoveId } from '../game/moves'
 import type { OwnedItem, OwnedMove } from '../game/types'
 import type { ItemId } from './items'
+import { SIGNATURE_MOVES, type SignatureMoveId } from '../game/signatureMoves'
 
 /**
  * Move evolutions, Vampire Survivors style: a move at max level plus its paired
@@ -42,7 +43,31 @@ export const EVOLUTIONS = [
   { from: 'torchSong', item: 'metronome', to: 'burningJealousy' },
   { from: 'drumBeating', item: 'leftovers', to: 'gigaDrain' },
   { from: 'leafBlade', item: 'wideLens', to: 'trailblaze' },
+  // The verb moves: a new form each, with a generic item or a type item's second pair.
+  { from: 'flameWheel', item: 'lightClay', to: 'ragingFury' },
+  { from: 'solarBeam', item: 'powerHerb', to: 'seedFlare' },
+  { from: 'brine', item: 'loadedDice', to: 'waterSpout' },
+  { from: 'electroBall', item: 'choiceScarf', to: 'electroDrift' },
+  { from: 'venoshock', item: 'toxicOrb', to: 'sludgeWave' },
+  { from: 'selfDestruct', item: 'assaultVest', to: 'explosion' },
+  { from: 'roost', item: 'leftovers', to: 'oblivionWing' },
+  { from: 'focusPunch', item: 'blackBelt', to: 'skyUppercut' },
+  { from: 'gyroBall', item: 'metalCoat', to: 'gearGrind' },
+  { from: 'suckerPunch', item: 'blackGlasses', to: 'kowtowCleave' },
+  { from: 'futureSight', item: 'twistedSpoon', to: 'hyperspaceHole' },
+  { from: 'bonemerang', item: 'softSand', to: 'thousandArrows' },
+  { from: 'stealthRock', item: 'hardStone', to: 'stoneAxe' },
+  { from: 'uTurn', item: 'quickClaw', to: 'firstImpression' },
+  { from: 'dragonTail', item: 'dragonFang', to: 'breakingSwipe' },
+  { from: 'sheerCold', item: 'neverMeltIce', to: 'glacialLance' },
 ] as const satisfies readonly MoveEvolution[]
+
+/**
+ * Moves that never evolve and grow through their forks instead: the starter
+ * signatures (spread from `SIGNATURE_MOVES`). Other one-of-a-kind move tables
+ * (egg signatures, TMs, legendary and duo moves) add their ids here.
+ */
+export const NO_EVOLUTION: ReadonlySet<MoveId> = new Set<MoveId>(Object.keys(SIGNATURE_MOVES) as SignatureMoveId[])
 
 /** The evolution a base move can go through, if any. */
 export const evolutionOf = (move: MoveId): MoveEvolution | undefined => EVOLUTIONS.find((e) => e.from === move)

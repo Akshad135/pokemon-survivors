@@ -201,6 +201,7 @@ export type Visual =
   | VerbVisual
   | SignatureVisual
   | TypeEvolvedVisual
+  | VerbEvolvedVisual
 
 /** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
 export type DamageSource = MoveId | 'special' | 'ability'
@@ -231,6 +232,13 @@ export type VerbVisual =
   | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'
   | 'roostGust' | 'focusPunch' | 'focusShock' | 'gyroBall' | 'suckerPunch' | 'futureSight' | 'bone' | 'stealthRock'
   | 'uTurn' | 'dragonTail' | 'sheerCold'
+/** The verb moves' evolutions (`verbEvolutions.ts`), drawn by `render/verbEvolvedFx.ts`. */
+export type VerbEvolvedVisual =
+  | 'ragingFury' | 'furyBlaze' | 'furyNova' | 'seedSun' | 'seedFlare' | 'seedBloom' | 'waterSpout' | 'spoutDrop'
+  | 'electroDrift' | 'driftLink' | 'sludgeWave' | 'sludgeGeyser' | 'explosion' | 'explosionChain' | 'oblivionWing'
+  | 'oblivionBeam' | 'skyUppercut' | 'uppercutShock' | 'gearGrind' | 'kowtowCleave' | 'hyperspaceHole' | 'hyperspaceBurst'
+  | 'thousandArrows' | 'stoneAxe' | 'axeSplinter' | 'firstImpression' | 'impressionBurst' | 'breakingSwipe'
+  | 'glacialLance' | 'lanceBurst'
 /** Starter signature moves (`signatureMoves.ts`), drawn by `render/signatureFx.ts`. */
 export type SignatureVisual =
   | 'leechSeed' | 'rapidSpin' | 'petal' | 'eruptionFall' | 'eruption' | 'thrash' | 'thrashBite' | 'kick'
