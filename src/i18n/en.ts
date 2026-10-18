@@ -739,7 +739,7 @@ export const en: Messages = {
     section: 'Possible evolutions',
     note: (shown, total) => `${shown} of the ${total} show up at the evolution; the weather and the place pull one of them in.`,
     noteAll: 'You pick the path at the evolution.',
-    choose: 'pick',
+    choose: (n) => `${n} options`,
   },
 
   abilities: {
@@ -832,7 +832,7 @@ export const en: Messages = {
     longReach: 'Area +10% and projectiles 20% faster.',
     vitalSpirit: 'Speed +8 and cooldowns −5%.',
     insomnia: 'Speed +5 and 0.3 HP/s regen.',
-    innerFocus: 'Each knockout by the special cuts 0.25 s off its cooldown.',
+    innerFocus: 'Each knockout by the special cuts 0.25\u00a0s off its cooldown.',
     stanceChange: 'The special swaps between Shield Forme and Blade Forme.',
   },
 
@@ -1590,7 +1590,7 @@ export const en: Messages = {
     toxicOrb: 'Burn and poison deal +20% damage.',
     assaultVest: '+20 max HP and +1 defense.',
     metronome: 'At the end of every jump or dash (and when other specials go off), fires 1 of your moves from there. 2 at max level, but in a chain the second only on the last jump.',
-    powerHerb: 'Each foe the special defeats (or any defeated mid-chain) cuts 0.25 s off its cooldown.',
+    powerHerb: 'Each foe the special defeats (or any defeated mid-chain) cuts 0.25\u00a0s off its cooldown.',
     charcoal: typeBoost('Fire'),
     mysticWater: typeBoost('Water'),
     miracleSeed: typeBoost('Grass'),

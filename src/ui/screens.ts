@@ -9,7 +9,10 @@ import { TYPE_COLORS, type PokeType } from '../data/types'
 import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { playerDex } from '../game/game'
 import { playerForm, runLearnset } from '../game/branch'
-import { ABILITIES } from '../data/abilities'
+import { ABILITIES, isHidden } from '../data/abilities'
+import { abilitySet } from '../game/abilities'
+import { heldMega } from '../game/mega'
+import { megaIcon } from '../render/megaFx'
 import { BRANCHES } from '../data/branches'
 import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
@@ -264,6 +267,20 @@ const loadoutList = (g: Game) =>
     ),
   )
 
+/** The ability in play for the pause menu: the one picked (its Hidden tag too), the Mega's while that lasts, or when it comes. */
+const abilityPanel = (g: Game) => {
+  const m = t().ability
+  const mega = g.mega.active > 0 ? heldMega(g) : null
+  const id = g.ability.id
+  const row = (cls: string, icon: string, name: Node | string, text: string) =>
+    h('div', { class: `pause-ability ${cls}` }, h('img', { src: icon, alt: '' }), h('div', {}, h('b', {}, h('small', {}, m.label), name), h('span', {}, text)))
+  if (mega) return row('mega', megaIcon(), mega.ability, m.megaNote)
+  if (!id) return row('pending', sparkleIcon(), '—', m.pending)
+  const set = abilitySet(g.starter, g.branch)
+  const hidden = isHidden(set, set.indexOf(id))
+  return row(hidden ? 'hidden-ability' : '', abilityIcon(id), h('span', {}, ABILITIES[id].name, hidden && h('span', { class: 'tag tag-hidden' }, m.hidden)), t().abilities[id])
+}
+
 /**
  * `settings` opens the settings screen on top (see `openSettings`) and must
  * call `back` once it closes; the pause menu hides meanwhile, then redraws
@@ -307,6 +324,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
         { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
         h('div', { class: 'dialog-title' }, m.title),
         difficultyTag(g.difficulty),
+        abilityPanel(g),
         h(
           'div',
           { class: 'pause-grid' },

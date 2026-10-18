@@ -740,7 +740,7 @@ export const es: Messages = {
     section: 'Evoluciones posibles',
     note: (shown, total) => `En la evolución aparecen ${shown} de las ${total}; el clima y el lugar atraen a una de ellas.`,
     noteAll: 'En la evolución eliges el camino.',
-    choose: 'elige',
+    choose: (n) => `${n} opciones`,
   },
 
   abilities: {
@@ -833,7 +833,7 @@ export const es: Messages = {
     longReach: 'Área +10% y proyectiles 20% más rápidos.',
     vitalSpirit: 'Velocidad +8 y recargas −5%.',
     insomnia: 'Velocidad +5 y regeneras 0,3 HP/s.',
-    innerFocus: 'Cada derrota del especial adelanta su recarga 0,25 s.',
+    innerFocus: 'Cada derrota del especial adelanta su recarga 0,25\u00a0s.',
     stanceChange: 'El especial cambia entre la Forma Escudo y la Forma Filo.',
   },
 

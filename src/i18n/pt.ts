@@ -830,7 +830,7 @@ export const pt = {
     section: 'Evoluções possíveis',
     note: (shown: number, total: number) => `Na evolução aparecem ${shown} das ${total}; o clima e o lugar puxam uma delas.`,
     noteAll: 'Na evolução você escolhe o caminho.',
-    choose: 'escolha',
+    choose: (n: number) => `${n} opções`,
   },
 
   /** What each ability does (`ABILITIES`). */
@@ -924,7 +924,7 @@ export const pt = {
     longReach: 'Área +10% e projéteis 20% mais rápidos.',
     vitalSpirit: 'Velocidade +8 e recargas −5%.',
     insomnia: 'Velocidade +5 e regenera 0,3 HP/s.',
-    innerFocus: 'Cada nocaute do especial adianta a recarga dele em 0,25 s.',
+    innerFocus: 'Cada nocaute do especial adianta a recarga dele em 0,25\u00a0s.',
     stanceChange: 'O especial troca entre a Forma Escudo e a Forma Lâmina.',
   } satisfies Record<AbilityId, string>,
 

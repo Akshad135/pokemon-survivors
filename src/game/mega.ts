@@ -1,6 +1,7 @@
 import { MEGA, MEGAS, megasOf, type MegaDef, type MegaId } from '../data/megas'
 import { MEGA_BRANCH } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { formAt } from './branch'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
 import { isAlive } from './queries'
@@ -77,6 +78,13 @@ export const runMegas = (g: Game) => megasOf(g.starter).filter((id) => fitsBranc
  * didn't take (a Glalitite for a Froslass) is dead weight: the next rift drops a fitting one, if any.
  */
 export const heldMega = (g: Game): MegaDef | null => (g.mega.stone && fitsBranch(g, g.mega.stone) ? MEGAS[g.mega.stone] : null)
+
+/** The final stage the held Mega Evolves from: the branch's own for a branch's Mega (Gallade), else the run's. */
+export const megaBaseName = (g: Game) => {
+  const stone = g.mega.stone
+  const line = PLAYABLE[g.starter].line
+  return formAt(g.starter, (stone && MEGA_BRANCH[stone]) || g.branch, line.length - 1).name
+}
 
 /** Gap between the two stones of a line with two Megas, so the player can walk to just one. */
 const STONE_GAP = 40

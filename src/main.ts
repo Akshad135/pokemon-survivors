@@ -19,7 +19,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, playableDex, type HatchlingId, type PlayableId } from './data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
@@ -31,10 +31,14 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
-import { chooseOffer, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { advancePhase, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { formAt, playerForm } from './game/branch'
-import { recomputeStats } from './game/leveling'
-import { dropMegaStones, grantStone, heldMega } from './game/mega'
+import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
+import { familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
+import { abilityStacks, grantAbility } from './game/abilities'
+import { abilityIcon } from './render/abilityArt'
+import { recomputeStats, xpFor } from './game/leveling'
+import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { riftDevTools } from './game/riftDev'
@@ -83,6 +87,7 @@ import { pokedexScreen } from './ui/pokedex'
 import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
 import { flashScreen, levelUp, pauseMenu, results, textBox, type Screen } from './ui/screens'
+import { abilityPick, branchPick } from './ui/abilityPick'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
@@ -529,7 +534,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
   const plan = c ? { seed: c.seed, outbreak: c.outbreak, roster: runRoster(c.seed, c.outbreak) } : upcoming.outbreak === outbreakToday() ? upcoming : planRun()
   if (!c) upcoming = planRun()
-  await loadAll([...playableDex(starter), ...openingDex(plan)])
+  // The whole family, branches included: the evolution scene can land on any of them.
+  await loadAll([...familyDex(starter), ...openingDex(plan)])
   // The outbreak's shiny can show up in the first minute.
   void preloadShinies([ENEMIES[plan.outbreak].dex])
   // Armed bag items are used up as the run starts (the challenge leaves them in the Bag).
@@ -554,9 +560,9 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   // The 1/64 roll unlocks this Pokémon's shiny for good (Normal/Shiny on the select screen).
   if (game.player.luckyShiny) updateSave((s) => ({ ...s, shinyStarters: unlockShinyStarter(s.shinyStarters, starter) }))
   // A shiny run must not start in normal colors.
-  if (game.player.shiny) await preloadShinies(playableDex(starter))
+  if (game.player.shiny) await preloadShinies(familyDex(starter))
   // Alternate forms (Aegislash's Blade Forme) stream in behind; until then the normal form stands in.
-  void preloadForms(playableDex(starter), game.player.shiny)
+  void preloadForms(familyDex(starter), game.player.shiny)
   loading.remove()
   run = {
     game,
@@ -653,6 +659,12 @@ const syncOverlay = (r: Run) => {
         skip: () => (recordEvent(r.recorder, ['skip']), skipLevelUp(g)),
       })
       break
+    case 'branch':
+      r.overlay = branchPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
+    case 'ability':
+      r.overlay = abilityPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
       break
@@ -683,6 +695,35 @@ const syncOverlay = (r: Run) => {
       )
       break
   }
+}
+
+/** The ability's word: the pick, and the moments worth a toast (Sturdy holding, a weather called, a milestone, Moody's draw). */
+const abilityFeedback = (g: Game, id: AbilityId, moment: 'picked' | 'proc') => {
+  const m = t().ability
+  const name = ABILITIES[id].name
+  const icon = (text: string) => h('span', { class: 'item-toast ability-toast' }, h('img', { src: abilityIcon(id), alt: '' }), rich(text))
+  if (moment === 'picked') {
+    playSfx('unlock')
+    return toast(ui, icon(m.picked(playerForm(g).name, name)), 3200, 'ability')
+  }
+  const effects: readonly AbilityEffect[] = ABILITIES[id].effects
+  const kind = effects.find((e) => e.kind !== 'immune' && e.kind !== 'stats')?.kind
+  if (kind === 'sturdy') {
+    playSfx('stance', 0)
+    flashScreen(ui)
+    return toast(ui, icon(m.sturdy(name)), 2600, 'ability')
+  }
+  if (kind === 'guard') return playSfx('stance', 0)
+  if (kind === 'summon') return toast(ui, icon(m.summon(name)), 2200, 'ability')
+  if (kind === 'onKill') {
+    playSfx('shiny')
+    return toast(ui, icon(m.stack(name, abilityStacks(g))), 2200, 'ability')
+  }
+  if (kind === 'moody') {
+    const mood = m.moods[g.ability.mood]
+    return mood && toast(ui, icon(m.mood(name, mood)), 1800, 'ability')
+  }
+  if (kind === 'timer') playSfx('item')
 }
 
 const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) => {
@@ -736,7 +777,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('unlock')
       return toast(
         ui,
-        h('span', { class: 'item-toast mega-toast' }, h('img', { src: megaStoneIcon(def), alt: '' }), h('span', {}, rich(t().mega.stone(def.stone)), h('small', {}, rich(final ? t().mega.stoneReady : t().mega.stoneLocked(line.at(-1)!.name))))),
+        h('span', { class: 'item-toast mega-toast' }, h('img', { src: megaStoneIcon(def), alt: '' }), h('span', {}, rich(t().mega.stone(def.stone)), h('small', {}, rich(final ? t().mega.stoneReady : t().mega.stoneLocked(megaBaseName(g)))))),
         4200,
         'mega',
       )
@@ -802,6 +843,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('shiny')
       return toast(ui, rich(t().toast.shinyPlayer(PLAYABLE[g.starter].name)), 3600)
     }
+    case 'branchChoice':
+      playCry(playerCry(g), 0.6)
+      return
+    case 'ability':
+      return abilityFeedback(g, e.id, e.moment)
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
@@ -1161,13 +1207,42 @@ const devMega = (mode: 'now' | 'ready' | 'stone' = 'now', mega?: MegaId) => {
   const p = g.player
   if (mode === 'stone') return dropMegaStones(g, p.x + 40, p.y)
   if (mega && !ids.includes(mega)) return `${PLAYABLE[g.starter].name}'s Megas: ${ids.join(', ')}`
+  const pick = mega ?? ids[0]
+  // A branch's Mega (Gallade's) needs its branch.
+  g.branch = MEGA_BRANCH[pick] ?? g.branch
   p.stage = PLAYABLE[g.starter].line.length - 1
   p.radius = Math.max(6, Math.round(bodyOf(playerDex(g)).bodyW * 0.3))
   recomputeStats(g)
   g.mega.stone = null
-  grantStone(g, mega ?? ids[0])
+  grantStone(g, pick)
   g.mega.charge = 0
   if (mode === 'now') queueMega()
+}
+
+/**
+ * Dev: the evolution picks. `ps.evolve()` levels up to the next evolution, asking
+ * where a branching one goes; `ps.evolve('vaporeon')` takes that branch straight away.
+ */
+const devEvolve = (branch?: BranchId) => {
+  const g = run?.game
+  if (!g || g.phase !== 'playing') return 'Start a run (and close menus) first'
+  const stage = formAt(g.starter, g.branch, g.player.stage)
+  if (stage.evolveAt === undefined) return 'Already at the final stage'
+  if (branch) g.branch = branch
+  g.player.level = Math.max(g.player.level, stage.evolveAt)
+  g.player.xp = 0
+  g.player.xpNext = xpFor(g.player.level)
+  advancePhase(g)
+}
+
+/** Dev: `ps.ability()` opens the ability pick now; `ps.ability('blaze')` takes that one. */
+const devAbility = (id?: AbilityId) => {
+  const g = run?.game
+  if (!g) return
+  if (!id) return offerAbilities(g)
+  grantAbility(g, id)
+  recomputeStats(g)
+  return g.ability
 }
 
 /** Dev: eggs and hatching, to stage the incubator and the hatching scene. */
@@ -1293,6 +1368,8 @@ if (import.meta.env.DEV) {
       theme: currentTheme,
       spawn: devSpawn,
       mega: devMega,
+      evolve: devEvolve,
+      ability: devAbility,
       event: devEvent,
       challenge: devChallenge,
       dex: () => loadSave().dex,

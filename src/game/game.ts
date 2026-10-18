@@ -257,8 +257,8 @@ const startEvolution = (g: Game) => {
   g.events.push({ kind: 'evolve', ...evo })
 }
 
-/** After the first evolution: the abilities to pick from (Honedge's lone Stance Change is just granted). */
-const offerAbilities = (g: Game) => {
+/** After the first evolution: the abilities to pick from (Honedge's lone Stance Change is just granted). Exported for the dev console. */
+export const offerAbilities = (g: Game) => {
   const set = abilitySet(g.starter, g.branch)
   if (set.length === 1) {
     grantAbility(g, set[0])
