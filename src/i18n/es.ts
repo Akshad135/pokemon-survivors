@@ -1055,7 +1055,7 @@ export const es: Messages = {
       upgrades: [
         '+1 hoja',
         '+4 de daño',
-        { fork: [{ name: 'Hojas gemelas', desc: 'También lanza hacia atrás; -2 de daño' }, { name: 'Ventarrón', desc: 'Repite (50%) y +20% de área; recarga +10%' }] },
+        { fork: [{ name: 'Hojas gemelas', desc: 'También lanza hacia atrás; -2 de daño' }, { name: 'Ventarrón', desc: 'Lanza otra vez justo después (50%); +20% área' }] },
         '+1 hoja',
         'Hojas 25% más rápidas',
         { fork: [{ name: 'Zarzal', desc: 'Espinas venenosas en el suelo; +25% veneno' }, { name: 'Hoja explosiva', desc: 'Los enemigos derrotados explotan; +5 de daño' }] },
@@ -1091,7 +1091,7 @@ export const es: Messages = {
       upgrades: [
         '+1 rayo',
         '+8 de daño',
-        { fork: [{ name: 'Tormenta', desc: '+2 rayos más pequeños y un eco (50%); -6 daño' }, { name: 'Rayo concentrado', desc: '1 rayo enorme, +40 de daño, salta a 2' }] },
+        { fork: [{ name: 'Tormenta', desc: '+2 rayos más pequeños y un eco (50%); -6 daño' }, { name: 'Rayo concentrado', desc: '1 rayo enorme, +34 de daño, salta a 2' }] },
         '+1 rayo',
         'Recarga 0.3s más rápida',
         { fork: [{ name: 'Pararrayos', desc: 'Quien cae suelta una descarga; +10 de daño' }, { name: 'Suelo eléctrico', desc: 'Deja el suelo electrificado; +15% parálisis' }] },

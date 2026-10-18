@@ -358,7 +358,7 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 4 },
-      { fork: [{ stats: { damage: -2 }, mods: ['rear'] }, { stats: { area: 0.2, cooldown: 0.15 }, mods: ['echo'] }] },
+      { fork: [{ stats: { damage: -2 }, mods: ['rear'] }, { stats: { area: 0.2 }, mods: ['echo'] }] },
       { amount: 1 },
       { speed: 52 },
       { fork: [{ stats: { statusChance: 0.25 }, mods: ['trail'] }, { stats: { damage: 5 }, mods: ['burstOnKill'] }] },
@@ -448,7 +448,7 @@ export const MOVES = {
     upgrades: [
       { amount: 1 },
       { damage: 8 },
-      { fork: [{ stats: { amount: 2, area: -0.25, damage: -6 }, mods: ['echo'] }, { stats: { amount: -2, damage: 40, area: 0.8 }, mods: ['arc'] }] },
+      { fork: [{ stats: { amount: 2, area: -0.25, damage: -6 }, mods: ['echo'] }, { stats: { amount: -2, damage: 34, area: 0.8 }, mods: ['arc'] }] },
       { amount: 1 },
       { cooldown: -0.3 },
       { fork: [{ stats: { damage: 10 }, mods: ['burstOnKill'] }, { stats: { statusChance: 0.15 }, mods: ['trail'] }] },

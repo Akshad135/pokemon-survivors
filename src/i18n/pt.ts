@@ -1157,7 +1157,7 @@ export const pt = {
       upgrades: [
         '+1 folha',
         '+4 de dano',
-        { fork: [{ name: 'Folhas gêmeas', desc: 'Também lança para trás; -2 de dano' }, { name: 'Vendaval', desc: 'Repete (50%) e +20% de área; recarga +10%' }] },
+        { fork: [{ name: 'Folhas gêmeas', desc: 'Também lança para trás; -2 de dano' }, { name: 'Vendaval', desc: 'Lança de novo logo após (50%); +20% de área' }] },
         '+1 folha',
         'Folhas 25% mais rápidas',
         { fork: [{ name: 'Espinheiro', desc: 'Espinhos venenosos no chão; +25% de veneno' }, { name: 'Folha explosiva', desc: 'Inimigos derrotados explodem; +5 de dano' }] },
@@ -1193,7 +1193,7 @@ export const pt = {
       upgrades: [
         '+1 raio',
         '+8 de dano',
-        { fork: [{ name: 'Tempestade', desc: '+2 raios menores e um eco (50%); -6 de dano' }, { name: 'Raio concentrado', desc: '1 raio enorme, +40 de dano, salta para 2' }] },
+        { fork: [{ name: 'Tempestade', desc: '+2 raios menores e um eco (50%); -6 de dano' }, { name: 'Raio concentrado', desc: '1 raio enorme, +34 de dano, salta para 2' }] },
         '+1 raio',
         'Recarga 0.3s mais rápida',
         { fork: [{ name: 'Para-raios', desc: 'Quem cai solta uma descarga; +10 de dano' }, { name: 'Chão eletrificado', desc: 'Deixa o chão eletrificado; +15% de paralisia' }] },

@@ -1054,7 +1054,7 @@ export const en: Messages = {
       upgrades: [
         '+1 leaf',
         '+4 damage',
-        { fork: [{ name: 'Twin Leaves', desc: 'Also throws backwards; -2 damage' }, { name: 'Gale', desc: 'Repeats (50%), +20% area; 10% slower cooldown' }] },
+        { fork: [{ name: 'Twin Leaves', desc: 'Also throws backwards; -2 damage' }, { name: 'Gale', desc: 'Throws again right after (50%); +20% area' }] },
         '+1 leaf',
         'Leaves 25% faster',
         { fork: [{ name: 'Bramble', desc: 'Poison thorns on the ground; +25% poison' }, { name: 'Leaf Burst', desc: 'Defeated foes explode; +5 damage' }] },
@@ -1090,7 +1090,7 @@ export const en: Messages = {
       upgrades: [
         '+1 bolt',
         '+8 damage',
-        { fork: [{ name: 'Storm', desc: '+2 smaller bolts and an echo (50%); -6 damage' }, { name: 'Focused Bolt', desc: '1 huge bolt, +40 damage, arcs to 2 foes' }] },
+        { fork: [{ name: 'Storm', desc: '+2 smaller bolts and an echo (50%); -6 damage' }, { name: 'Focused Bolt', desc: '1 huge bolt, +34 damage, arcs to 2 foes' }] },
         '+1 bolt',
         '0.3s faster cooldown',
         { fork: [{ name: 'Lightning Rod', desc: 'Defeated foes discharge; +10 damage' }, { name: 'Charged Ground', desc: 'Leaves charged ground; +15% paralysis' }] },
