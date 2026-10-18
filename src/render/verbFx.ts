@@ -589,18 +589,24 @@ const drawDragonTail = (ctx: Ctx, g: Game, a: Attack) => {
   for (let i = 0; i <= steps; i++) {
     const k = i / steps
     const ang = start + swept * k
-    const thick = 1 + Math.round(k * 4)
+    const thick = 2 + Math.round(k * 5)
     for (let d = 0; d < thick; d++) {
       const rr = r - d
-      const c = d === 0 ? '#b898ff' : d === thick - 1 ? '#200868' : (i + d) % 3 === 0 ? '#9070ff' : '#7038f8'
-      px(ctx, p.x + Math.cos(ang) * rr, p.y - 8 + Math.sin(ang) * rr * 0.75, c)
+      const c = d === 0 ? (k > 0.55 ? '#ffffff' : '#d8c8ff') : d === thick - 1 ? '#200868' : (i + d) % 4 === 0 ? '#b898ff' : (i + d) % 2 === 0 ? '#9070ff' : '#7038f8'
+      px(ctx, p.x + Math.cos(ang) * rr, p.y - 8 + Math.sin(ang) * rr * 0.75, c, 2, 2)
     }
+  }
+  // Whoosh lines outside the arc.
+  for (let i = 0; i < 3; i++) {
+    const ang = start + swept * (0.5 + i * 0.2)
+    px(ctx, p.x + Math.cos(ang) * (r + 4 + i), p.y - 8 + Math.sin(ang) * (r + 4 + i) * 0.75, '#ffffff')
   }
   // The spade tip at the leading end.
   const tipX = p.x + Math.cos(m.angle) * r
   const tipY = p.y - 8 + Math.sin(m.angle) * r * 0.75
-  px(ctx, tipX - 2, tipY - 2, '#200868', 5, 5)
-  px(ctx, tipX - 1, tipY - 1, '#b898ff', 3, 3)
+  px(ctx, tipX - 3, tipY - 3, '#200868', 7, 7)
+  px(ctx, tipX - 2, tipY - 2, '#9070ff', 5, 5)
+  px(ctx, tipX - 1, tipY - 1, '#d8c8ff', 3, 3)
   px(ctx, tipX, tipY, '#ffffff')
   ctx.globalAlpha = 1
 }
