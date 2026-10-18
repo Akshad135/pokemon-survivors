@@ -269,6 +269,15 @@ export const siteEs: SiteMessages = {
         'Los objetos de tipo (Charcoal, Mystic Water…) solo aparecen si tu Pokémon aprende movimientos de ese tipo. Cuando no queda nada que ofrecer, llega una Oran Berry (+40 HP).',
         'Cambiar (sortear otras ofertas) y Saltar (renunciar a la subida de nivel sin elegir nada, útil cuando ninguna oferta sirve) son cargas que se compran en el Poké Mart.',
       ],
+      choices: (rarePercent: number, shinyOneIn: number) => [
+        'La partida empieza con un draft: con el reloj detenido, eliges tu 2.º movimiento entre 3 de la lista de tu Pokémon.',
+        'Todo movimiento base se divide en dos caminos en el Nv. 4 y en el Nv. 7: la carta dice "2 caminos" y, al elegirla, se abre en los dos. Cada camino cambia cómo juega el movimiento (rebotar, explotar, dejar un rastro, hacer eco…), no solo los números.',
+        `Cada carta sortea su rareza: la rara (${n(rarePercent)}% de probabilidad, marco azul) sube 2 niveles de una vez, y la shiny (1 de ${shinyOneIn}, el doble con el Shiny Charm) es una elección gratis, seguida de otra.`,
+        'Olvidar saca una oferta de la partida: la carta sale volando, el espacio se sortea de nuevo y ese movimiento u objeto no vuelve más. Las cargas vienen de la Escape Rope del Poké Mart, de cada jefe derrotado y de cada evolución.',
+        'La lista de movimientos crece con tu Pokémon: cada evolución desbloquea movimientos nuevos (un aviso muestra cuáles), que salen más seguido en las 3 subidas de nivel siguientes. Hay más movimientos que espacios, así que cada partida deja algunos fuera.',
+        'Los jefes derrotados dejan una MT con un movimiento de fuera de su lista, el Tutor de Movimientos enseña tipos que no tienes y ganar una grieta ofrece el movimiento legendario del propio legendario (uno por partida). Con los espacios llenos, aprender pide olvidar un movimiento.',
+      ],
+      abilities: 'En su primera evolución, tu Pokémon despierta una Habilidad: elige 1 de 3 (la tercera es la Habilidad Oculta), y dura toda la partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia y Poliwhirl además preguntan en qué evolucionar, y cada forma tiene su propio tipo, especial, movimientos y Habilidades.',
       evolution: (first: number, second: number) =>
         `Tu Pokémon evoluciona en el Nv. ${first} y en el Nv. ${second}, como en los juegos. Cada evolución da más HP y estadísticas, y la evolución final potencia el ataque especial.`,
       itemsTitle: 'Held items',
@@ -285,6 +294,7 @@ export const siteEs: SiteMessages = {
       itemHead: 'Objeto',
       resultHead: 'Evolución',
       noEvolution: (moves: string) => `Todavía sin evolución: ${moves}.`,
+      neverEvolves: 'Los movimientos firma, de MT, legendarios y en dúo no evolucionan: ya son un movimiento final y crecen por sus propios caminos.',
       duoTitle: 'Ataques en dúo',
       duoParagraphs: [
         'Lleva dos ataques al nivel máximo (o evoluciónalos) y, si sus tipos forman una de las recetas de abajo, una carta dorada ofrece unirlos en un ataque en dúo: toma el espacio del primero, libera el del segundo y sube hasta el Nv 5. Los dos ataques usados no vuelven.',
