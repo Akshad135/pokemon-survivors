@@ -6,7 +6,16 @@ const run = (o: Partial<Record<keyof RunResult, unknown>> = {}) => ({ starter: '
 
 describe('parseRunResult', () => {
   it('keeps a plausible run', () => {
-    expect(parseRunResult(run())).toEqual(run())
+    expect(parseRunResult(run())).toEqual({ ...run(), branch: null })
+  })
+
+  it("keeps a branch of the run's family it evolved into, and reads any other as none", () => {
+    const eevee = (stage: number, branch: unknown) => parseRunResult(run({ starter: 'eevee', stage, branch }))?.branch
+    expect(eevee(1, 'espeon')).toBe('espeon')
+    // Another family's branch, one Eevee hasn't evolved into yet, garbage.
+    for (const [stage, branch] of [[1, 'gallade'], [0, 'espeon'], [1, 'mewtwo'], [1, 7]] as const) expect(eevee(stage, branch)).toBeNull()
+    // Kirlia (stage 1) isn't Gardevoir yet.
+    expect(parseRunResult(run({ starter: 'ralts', stage: 1, branch: 'gardevoir' }))?.branch).toBeNull()
   })
 
   it('refuses unknown Pokémon, difficulties, outcomes and stages', () => {

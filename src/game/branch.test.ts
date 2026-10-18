@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { BRANCH_IDS, BRANCHES, branchesAt, branchesOf } from '../data/branches'
 import manifest from '../data/sprites.generated.json'
-import { drawBranches, formAt, runLearnset } from './branch'
+import { drawBranches, formAt } from './branch'
+import { runLearnset } from './learnsets'
 import { advancePhase, chooseOffer } from './game'
 import { NO_RANKS } from './meta'
 import { resimulate, startGame, type Replay, type ReplayStart } from './replay'
@@ -80,7 +81,8 @@ describe('replays', () => {
     const branch = drawn.offers[1]
     const a = staged()
     const b = staged()
-    resimulate(replay, a)
+    // The boards show the branch the replay took, so it comes back with the result.
+    expect(resimulate(replay, a).branch).toBe(a.branch)
     resimulate(replay, b)
     expect(a.phase).toBe('playing')
     expect(branch?.kind === 'form' && a.branch).toBe(branch?.kind === 'form' && branch.id)
