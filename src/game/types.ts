@@ -210,6 +210,7 @@ export type Visual =
   | EvolvedVisual
   | TacticVisual
   | EggMoveVisual
+  | EggMove3Visual
   | VerbVisual
   | SignatureVisual
   | TypeEvolvedVisual
@@ -246,6 +247,11 @@ export type EggMoveVisual =
   | 'meteorMash' | 'zenHeadbutt' | 'foulPlay' | 'bodySlam' | 'slamWave' | 'dynamicPunch' | 'rollout' | 'iceBall'
   | 'furyCutter' | 'sacredSword' | 'sacredEdge' | 'dragonDart' | 'snarl' | 'gigaImpact' | 'gigaWave' | 'flail'
   | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse'
+/** The third batch of egg signatures (`eggMoves3.ts`), drawn by `render/eggMove3Fx.ts`. */
+export type EggMove3Visual =
+  | 'fieryDance' | 'overdrive' | 'gigatonHammer' | 'hammerTap' | 'hammerQuake' | 'bitterBlade' | 'leechLife' | 'fireFang'
+  | 'furySwipes' | 'heavySlam' | 'heavyQuake' | 'bulldoze' | 'perishWave' | 'perishMark' | 'chargeBeam' | 'moonblast'
+  | 'moonBurst' | 'frostBreath' | 'avalanche'
 /** The verb moves (`moveVerbs.ts`), drawn by `render/verbFx.ts`. */
 export type VerbVisual =
   | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'

@@ -8,6 +8,7 @@ import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
 import { EGG_MOVE_ICONS } from './eggMoveArt'
+import { EGG_MOVE_3_ICONS } from './eggMove3Art'
 import { SIGNATURE_ICONS } from './signatureArt'
 import { LEGENDARY_ICONS } from './legendaryArt'
 import * as TE from './typeEvolvedArt'
@@ -570,6 +571,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
   ...EGG_MOVE_ICONS,
+  ...EGG_MOVE_3_ICONS,
   jawLock: () => art([...TE.MAW_TOP, ...TE.MAW_BOTTOM], TE.MAW, '#d8c0e8'),
   superpower: () => art(TE.BIG_FIST, TE.FIST_PAL, '#281010'),
   fissure: () => art(...TE.FISSURE_ICON, '#181818'),

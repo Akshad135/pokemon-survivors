@@ -14,6 +14,7 @@ import type { PlayerStats } from './stats'
 import { modBits, modHit, refreshMods, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
+import { EGG_MOVES_3 } from './eggMoves3'
 import { LEGENDARY_MOVES } from './legendaryMoves'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
@@ -2248,6 +2249,8 @@ export const MOVES = {
     fire: (g, s) => evo.alluringVoice(g, s, { move: 'alluringVoice', type: 'fairy', visual: 'alluring' }),
   },
 
+  /* ---------- Egg signatures, third batch (`eggMoves3.ts`) ---------- */
+  ...EGG_MOVES_3,
   /* ---------- Legendary moves (`legendaryMoves.ts`) ---------- */
   ...LEGENDARY_MOVES,
 } as const satisfies Record<string, MoveDef>
