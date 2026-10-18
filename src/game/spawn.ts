@@ -1,11 +1,13 @@
 import { NO_BONUS } from './kitRules'
+import { createModState } from './mods'
 import type { Attack, Game } from './types'
 
 type AttackInit = Pick<Attack, 'move' | 'type' | 'visual' | 'x' | 'y' | 'shape' | 'motion' | 'damage' | 'ttl'> & Partial<Attack>
 
 /**
  * Creates a hitbox with sensible defaults. A negative `age` delays the attack:
- * it stays dormant (invisible, harmless) until its age crosses zero.
+ * it stays dormant (invisible, harmless) until its age crosses zero. It
+ * carries the mods of the move being cast, if any (`Game.castMods`).
  */
 export const spawnAttack = (g: Game, init: AttackInit) => {
   const attack: Attack = {
@@ -24,6 +26,7 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     blast: 0,
     blastVisual: init.visual,
     turret: null,
+    mod: createModState(g.castMods),
     bonus: NO_BONUS,
     execute: 0,
     drain: 0,
@@ -32,6 +35,8 @@ export const spawnAttack = (g: Game, init: AttackInit) => {
     sure: false,
     blind: 0,
     tier: 0,
+    ignoreWards: false,
+    memo: 0,
     ...init,
   }
   g.attacks.push(attack)

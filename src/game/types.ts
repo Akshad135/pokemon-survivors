@@ -11,6 +11,10 @@ import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { AbilityId } from '../data/abilities'
+import type { BranchId } from '../data/branches'
+import type { AbilityState } from './abilities'
+import type { BranchFavor } from './branch'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
@@ -28,17 +32,23 @@ import type { RiftState } from './rift'
 import type { SpecialState } from './special'
 import type { Stance } from './stance'
 import type { RunTally } from './tally'
-import type { PlayerStats } from './stats'
+import type { PlayerStats, StatDelta } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
 import type { BossFight } from './bossFight'
+import type { ModState } from './mods'
 import type { DamageBonus } from './kitRules'
+import type { MoveSound } from './moveVerbs'
 
 export type OwnedMove = {
   id: MoveId
   level: number
   cooldown: number
+  /** The branch picked at each fork of its upgrades (bit `i` set: the second branch of step `i`; absent means 0, see `moveStats`). */
+  path?: number
+  /** Counts down to an Echo re-cast (`mods.ts`; absent or ≤ 0: none due). */
+  echo?: number
   /** The move's own counter (`MoveDef.stacks` grows and resets it; `fire` reads it). Absent = 0. */
   stacks?: number
   /** `Player.walked` when it last fired, for `walkedSince`. */
@@ -47,6 +57,8 @@ export type OwnedMove = {
 
 /** A move's window on the player (guard, burrow): `left` seconds, and the move whose hook it calls. */
 export type MoveWindow = { left: number; move: MoveId }
+/** A move's timed effect on the player's stats (Rapid Spin's guard, Petal Dance's dizziness): `recomputeStats` adds `stats` while `left` lasts. */
+export type MoveBuff = { move: MoveId; left: number; stats: StatDelta; applied: boolean }
 export type OwnedItem = { id: ItemId; level: number }
 
 export type Player = {
@@ -89,6 +101,8 @@ export type Player = {
   drain: { left: number; at: number }
   /** Seconds the player can't walk (Giga Impact's recharge); moves still carry them. */
   rooted: number
+  /** Moves' timed stat effects on the player (`signatures.ts`). */
+  moveBuffs: MoveBuff[]
 }
 
 export type EnemyBehavior =
@@ -188,20 +202,34 @@ export type Visual =
   | 'streak' | 'slash' | 'afterimage'
   /** The rainbow burst that ends a Mega Evolution (`mega.ts`), drawn by `render/megaFx.ts`. */
   | 'megaWave'
+  /** Lingering ground of a Trail mod, the blast of a Burst mod and the sparks of an Arc mod (`mods.ts`), drawn by `render/modFx.ts`. */
+  | 'modTrail' | 'modBurst' | 'modArc'
   /** A delayed strike's warning on the ground (`moveKit.ts`), drawn by `render/kitFx.ts`. */
   | 'telegraph'
   | EvolvedVisual
   | TacticVisual
   | EggMoveVisual
+  | VerbVisual
+  | SignatureVisual
+  | TypeEvolvedVisual
 
-/** What dealt the damage, for the results screen. */
-export type DamageSource = MoveId | 'special'
+/** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
+export type DamageSource = MoveId | 'special' | 'ability'
 
-/** Visuals of evolved moves, drawn by `render/evolved.ts`. */
+/** Visuals of evolved moves, drawn by `render/evolved.ts` (casts in `game/evolvedMoves.ts`). */
 export type EvolvedVisual =
-  | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
-  | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
-  | 'blizzard' | 'stoneEdge' | 'megahorn' | 'outrage'
+  | 'flamethrower' | 'flameField' | 'fireBlast' | 'starFlame' | 'hydroPump' | 'pumpSplash' | 'surf' | 'leafStorm'
+  | 'powerWhip' | 'triFire' | 'triIce' | 'triBolt' | 'triPrism' | 'wildbolt' | 'wildFork' | 'stormCloud'
+  | 'gunkBomb' | 'gunk' | 'toxicCloud' | 'hurricane' | 'infernoRing' | 'icicleFall' | 'blizzard' | 'snowSwirl'
+  | 'stoneEdge' | 'megahorn' | 'outrage' | 'outrageRoar' | 'boltStrike'
+  /** A bare hit segment that draws nothing (the inner part of Power Whip's vine). */
+  | 'hitbox'
+
+/** Moves evolved by the newer type items and generic ones (`typeEvolutions.ts`), drawn by `render/typeEvolved.ts`. */
+export type TypeEvolvedVisual =
+  | 'jawLock' | 'jawBite' | 'superFist' | 'superJab' | 'fissure' | 'psyVortex' | 'psyBurst' | 'steelBeam'
+  | 'parade' | 'phantomVolley' | 'phantomFall' | 'phantomArrow' | 'aquaCutter' | 'searing' | 'searingEmber'
+  | 'gigaDrain' | 'jealousySong' | 'jealousy' | 'trailblaze' | 'liquidation' | 'alluring'
 
 /** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
 export type TacticVisual =
@@ -215,6 +243,17 @@ export type EggMoveVisual =
   | 'meteorMash' | 'zenHeadbutt' | 'foulPlay' | 'bodySlam' | 'slamWave' | 'dynamicPunch' | 'rollout' | 'iceBall'
   | 'furyCutter' | 'sacredSword' | 'sacredEdge' | 'dragonDart' | 'snarl' | 'gigaImpact' | 'gigaWave' | 'flail'
   | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse'
+/** The verb moves (`moveVerbs.ts`), drawn by `render/verbFx.ts`. */
+export type VerbVisual =
+  | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'
+  | 'roostGust' | 'focusPunch' | 'focusShock' | 'gyroBall' | 'suckerPunch' | 'futureSight' | 'bone' | 'stealthRock'
+  | 'uTurn' | 'dragonTail' | 'sheerCold'
+/** Starter signature moves (`signatureMoves.ts`), drawn by `render/signatureFx.ts`. */
+export type SignatureVisual =
+  | 'leechSeed' | 'rapidSpin' | 'petal' | 'eruptionFall' | 'eruption' | 'thrash' | 'thrashBite' | 'kick'
+  | 'mudWave' | 'hammer' | 'drill' | 'leafTornado' | 'tornadoLeaf' | 'flameCharge' | 'flameLanding'
+  | 'needleArm' | 'needle' | 'psybeam' | 'lariat' | 'bubble' | 'bubblePop' | 'snipeSight' | 'snipeShot'
+  | 'flowerTrick' | 'aquaStep' | 'pinShadow' | 'pyroBounce' | 'sonicJab'
 
 /** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
 export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
@@ -259,6 +298,8 @@ export type Attack = {
   /** Blast visual of a mine. */
   blastVisual: Visual
   turret: Turret | null
+  /** Behavior mods of the fork branch it was cast with (`mods.ts`), or null. */
+  mod: ModState | null
   /** Damage bonuses against some foes (`kitRules.ts`), e.g. Hex's ×1.7 on afflicted ones. */
   bonus: readonly DamageBonus[]
   /** Regular foes left at or under this HP share faint outright (0 = never). */
@@ -274,6 +315,10 @@ export type Attack = {
   blind: number
   /** A free intensity counter for the move's rules and look (Rollout's streak, Echoed Voice's echo); 0 by default. */
   tier: number
+  /** Goes through a Bronzong ward instead of being soaked by it (Darkest Lariat, Snipe Shot). */
+  ignoreWards: boolean
+  /** A number the move keeps on its hitbox (Thrash's bite timer, Snipe Shot's base damage…), read by `signatures.ts` and the renderer. */
+  memo: number
 }
 
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
@@ -339,14 +384,27 @@ export type FloatText = {
   slot: number
 }
 
+/**
+ * How lucky a level-up card came out (`rollOffers`): a rare one gives two
+ * levels at once, a shiny one doesn't use the level-up up (the player picks again).
+ */
+export type Rarity = 'rare' | 'shiny'
+
 export type Offer =
-  | { kind: 'move'; id: MoveId; level: number }
-  | { kind: 'item'; id: ItemId; level: number }
+  | { kind: 'move'; id: MoveId; level: number; rarity?: Rarity }
+  | { kind: 'item'; id: ItemId; level: number; rarity?: Rarity }
   | { kind: 'berry' }
   /** Max level move + its paired held item: the move evolves in place. */
   | { kind: 'evolution'; from: MoveId; to: MoveId }
+  /** Where a branching evolution goes (`game/branch.ts`); `favor` says what of the run nudged it forward. */
+  | { kind: 'form'; id: BranchId; favor: BranchFavor }
+  /** An ability to keep for the run, picked when the first evolution lands (`game/abilities.ts`). */
+  | { kind: 'ability'; id: AbilityId; hidden: boolean }
+  /** One way of a fork (`moveStats`): raises the move to `level` taking `branch` (0 or 1). */
+  | { kind: 'branch'; id: MoveId; level: number; branch: 0 | 1; rarity?: Rarity }
 
-export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
+/** `branch` and `ability` wait on a pick from `offers`, like `levelup`: where an evolution goes, and the ability after the first. */
+export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'paused' | 'gameover' | 'victory'
 
 /** Fire-and-forget notifications for audio/UI. Drained by the shell every frame. */
 export type GameEvent =
@@ -380,8 +438,16 @@ export type GameEvent =
   | { kind: 'megaEnd' }
   | { kind: 'megaReady' }
   | { kind: 'evolve'; from: number; to: number }
+  /** A branching evolution waits on the player's pick. */
+  | { kind: 'branchChoice' }
+  /** The ability was picked, or did something worth a word (Sturdy held, a guard blocked, a weather called). */
+  | { kind: 'ability'; id: AbilityId; moment: 'picked' | 'proc' }
   | { kind: 'evolved'; to: number }
   | { kind: 'pokeball'; offer: Offer | null }
+  /** A shiny level-up card was picked: the player picks again. */
+  | { kind: 'shinyOffer' }
+  /** A level-up card was forgotten (Esquecer) and its slot drawn again. */
+  | { kind: 'banish' }
   | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
   | { kind: 'gameover' }
   | { kind: 'consumable'; item: ConsumableId }
@@ -413,7 +479,9 @@ export type GameEvent =
   | { kind: 'shatter'; cause: 'execute' | 'freeze' }
   /** A guard window negated a hit. */
   | { kind: 'guard' }
-  /** A move with a cast sound fired, or its big moment landed (`ui/castSounds.ts` picks the sound). */
+  /** A verb move asks for its sound (`moveVerbs.ts`). */
+  | { kind: 'moveSound'; sound: MoveSound }
+  /** A move with a cast sound fired, or its big moment landed (`ui/castSounds.ts`, then `ui/castSfx.ts`, pick the sound). */
   | { kind: 'cast'; move: MoveId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
@@ -454,10 +522,20 @@ export type Game = {
   /** Level-up rerolls/skips left this run. */
   rerolls: number
   skips: number
+  /** Esquecer charges left (`banishOffer`): from the Poké Mart, plus one per boss defeated and per evolution. */
+  banishes: number
+  /** Moves and items forgotten this run: they never come back as offers. */
+  banished: Set<MoveId | ItemId>
+  /** Mods of the move being cast right now (`updateMoves`), stamped on every hitbox it spawns; 0 otherwise. */
+  castMods: number
   damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
   offers: Offer[]
   evolution: Evolution | null
+  /** Where a branching evolution went (`game/branch.ts`); null until it does, and for the lines that don't branch. */
+  branch: BranchId | null
+  /** The ability picked at the first evolution and its running state (`game/abilities.ts`). */
+  ability: AbilityState
   /** This run's wild cast, drawn at the start (`game/roster.ts`), with the day's outbreak in every stage. */
   roster: Roster
   /** The day's outbreak species, or null (`game/outbreak.ts`): its kills count toward missions (`countKill`). */

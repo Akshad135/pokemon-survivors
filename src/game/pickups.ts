@@ -78,7 +78,8 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     }
     case 'pokeball': {
-      const [offer] = rollOffers(loadout(g), g.rng, 1)
+      // It picks on its own, so it never lands on a fork (the player's call) and is always common.
+      const [offer] = rollOffers(loadout(g), g.rng, 1, { forks: false })
       if (offer) applyOffer(g, offer)
       burst(g, p.x, p.y - 10, { colors: ['#f83838', '#ffffff', '#ffd830'], count: 30, speed: 120, ttl: 0.6 })
       // Evolutions celebrate with their own event instead of the Poké Ball toast.

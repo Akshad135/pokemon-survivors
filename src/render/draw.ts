@@ -17,15 +17,19 @@ import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
+import { drawModAttack, drawModGround } from './modFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
 import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
 import { drawPokemon, sprites, type AnimName } from './sprites'
+import { drawDrainVines, drawTypeEvolvedAttack, drawTypeEvolvedGround } from './typeEvolved'
 import { drawCompanion, type CompanionView } from './companion'
 import { drawStatusBadge, statusTint } from './status'
 import { drawGuard, drawKitStatus, drawTelegraph } from './kitFx'
 import { drawEggAttack, drawEggGround, drawEggPlayer, eggPlayerLook } from './eggMoveFx'
+import { drawVerbAir, drawVerbGround } from './verbFx'
+import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather } from './weather'
@@ -87,6 +91,8 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'drumRoots': {
       ctx.globalAlpha = Math.max(0, 1 - a.age / a.ttl)
       dashedRing(ctx, a.x, a.y - 4, r, a.age * 4, ['#78c850', '#a87840', '#58a838'], 0.75)
+      // The downbeat rings twice.
+      if (a.memo === 1) dashedRing(ctx, a.x, a.y - 4, r - 3, -a.age * 5, ['#c8f080', '#ffffff'], 0.6)
       for (let i = 0; i < 10; i++) {
         const angle = (i / 10) * TAU + a.id
         const x = Math.round(a.x + Math.cos(angle) * r)
@@ -119,6 +125,9 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedGround(ctx, a, t)
       drawMoveFxGround(ctx, a)
       drawEggGround(ctx, a, t)
+      drawSignatureGround(ctx, a, t)
+      drawTypeEvolvedGround(ctx, a, t)
+      drawModGround(ctx, a, t)
       return drawSpecialGround(ctx, a)
   }
 }
@@ -157,7 +166,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'flame':
       return blitCentered(ctx, FX.flame()[Math.floor((t + a.id) * 10) % 2]!, a.x, a.y - 2)
     case 'water': {
-      const angle = m.kind === 'linear' ? Math.atan2(m.vy, m.vx) : 0
+      // Seeking and returning jets (fork mods) point their way too.
+      const angle = m.kind === 'linear' || m.kind === 'homing' || m.kind === 'boomerang' ? Math.atan2(m.vy, m.vx) : 0
       return blitRotated(ctx, FX.water(), a.x, a.y, angle)
     }
     case 'leaf': {
@@ -228,7 +238,8 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'arrow':
       return blitRotated(ctx, FX.arrow(), a.x, a.y, m.kind === 'linear' ? Math.atan2(m.vy, m.vx) : 0)
     case 'shuriken':
-      return blitRotated(ctx, FX.shuriken(), a.x, a.y, a.age * 22)
+      // Water Shuriken swells as it cuts (`signatures.ts`).
+      return blitRotated(ctx, FX.shuriken(), a.x, a.y, a.age * 22, a.shape.kind === 'circle' && a.shape.r > 6 ? 2 : 1)
     case 'jaws': {
       const r = a.shape.kind === 'circle' ? a.shape.r : 10
       const scale = Math.max(1, Math.round(r / 7))
@@ -265,12 +276,17 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'heart':
       return blitCentered(ctx, FX.heart(), a.x, a.y + Math.round(Math.sin(a.age * 14) * 1.5))
-    case 'note':
-      return blitCentered(ctx, FX.note(), a.x + Math.round(Math.sin(a.age * 12) * 2), a.y)
+    case 'note': {
+      const x = a.x + Math.round(Math.sin(a.age * 12) * 2)
+      // Torch Song's streak: from the third song in a row the notes burn inside a flame.
+      if (a.memo >= 3) blitCentered(ctx, FX.flame()[Math.floor((t + a.id) * 10) % 2]!, x, a.y - 3)
+      return blitCentered(ctx, FX.note(), x, a.y)
+    }
     case 'blade': {
       if (m.kind !== 'orbit') return
       const r = a.shape.kind === 'circle' ? a.shape.r : 9
-      return blitRotated(ctx, FX.blade(), a.x, a.y, m.angle + Math.PI * 0.75, Math.max(1, Math.round(r / 5)))
+      // Leaf Blade's critical swing is golden.
+      return blitRotated(ctx, a.memo === 1 ? FX.critBlade() : FX.blade(), a.x, a.y, m.angle + Math.PI * 0.75, Math.max(1, Math.round(r / 5)))
     }
     case 'shell': {
       if (m.kind !== 'follow' || a.shape.kind !== 'circle') return
@@ -304,6 +320,9 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       drawEvolvedAttack(ctx, a, t)
       drawMoveFxAttack(ctx, a, t)
       drawEggAttack(ctx, a, t)
+      drawSignatureAttack(ctx, a, t)
+      drawTypeEvolvedAttack(ctx, a, t)
+      drawModAttack(ctx, a, t)
       drawMegaAttack(ctx, a)
       return drawSpecialAttack(ctx, a, t)
   }
@@ -674,6 +693,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   drawTerrainGround(ctx, g, look, camX, camY)
   for (const a of g.attacks) if (a.age >= 0) drawGroundAttack(ctx, a, t)
+  drawVerbGround(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
@@ -723,10 +743,13 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawKitStatus(ctx, g, t, visible)
   drawGuard(ctx, g, t)
   drawEggPlayer(ctx, g, t)
+  drawSignaturePlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
   drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
+  drawVerbAir(ctx, g, t, visible)
+  drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {

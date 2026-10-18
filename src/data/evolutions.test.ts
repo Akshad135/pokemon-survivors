@@ -5,6 +5,7 @@ import { maxMoveLevel, MOVES, moveStats, type MoveId } from '../game/moves'
 import { applyDeltas, BASE_STATS } from '../game/stats'
 import type { OwnedItem, OwnedMove } from '../game/types'
 import { EVOLUTIONS, readyEvolutions } from './evolutions'
+import { PLAYABLE, PLAYABLE_IDS } from './hatchlings'
 import { ITEMS, type ItemDef } from './items'
 
 const maxed = (id: MoveId): OwnedMove => ({ id, level: maxMoveLevel(id), cooldown: 0 })
@@ -33,17 +34,52 @@ describe('move evolution eligibility', () => {
     const pool = offerPool({ starter: 'charmander', moves: [{ id: 'flamethrower', level: 1, cooldown: 0 }], items: [] })
     const moves = pool.flatMap(([o]) => (o.kind === 'move' ? [o.id] : []))
     expect(moves).not.toContain('ember')
-    expect(moves).not.toContain('flamethrower')
     expect(moves).toContain('fireSpin')
   })
 })
 
+describe('evolved moves keep growing', () => {
+  const offersFor = (id: MoveId, level: number) =>
+    offerPool({ starter: 'charmander', moves: [{ id, level, cooldown: 0 }], items: [] }).flatMap(([o, w]) => (o.kind === 'move' && o.id === id ? [[o.level, w]] : []))
+
+  it('go from Lv1 to Lv5, like every evolved move', () => {
+    for (const evo of EVOLUTIONS) expect(maxMoveLevel(evo.to)).toBe(5)
+  })
+
+  it('offers the next level up to the max, weighed like any owned move’s', () => {
+    const upgrade = offerPool({ starter: 'charmander', moves: [{ id: 'fireSpin', level: 2, cooldown: 0 }], items: [] }).find(([o]) => o.kind === 'move' && o.id === 'fireSpin')
+    expect(offersFor('flamethrower', 1)).toEqual([[2, upgrade?.[1]]])
+    expect(offersFor('flamethrower', 4)).toEqual([[5, upgrade?.[1]]])
+    expect(offersFor('flamethrower', 5)).toEqual([])
+  })
+})
+
 describe('evolution pairs', () => {
-  it('keep the move type and use that type’s boosting item', () => {
+  it('keep the move type and pair with that type’s boosting item or a generic one', () => {
     for (const evo of EVOLUTIONS) {
       const item: ItemDef = ITEMS[evo.item]
-      expect([MOVES[evo.to].type, item.boosts]).toEqual([MOVES[evo.from].type, MOVES[evo.from].type])
+      expect(MOVES[evo.to].type).toBe(MOVES[evo.from].type)
+      expect([MOVES[evo.from].type, undefined]).toContain(item.boosts)
     }
+  })
+
+  it('never let one item evolve more than two moves (Charcoal keeps its original three)', () => {
+    const uses = new Map<string, number>()
+    for (const evo of EVOLUTIONS) uses.set(evo.item, (uses.get(evo.item) ?? 0) + 1)
+    for (const [item, n] of uses) expect([item, n <= (item === 'charcoal' ? 3 : 2)]).toEqual([item, true])
+  })
+
+  it('give every move a Pokémon can learn an evolution, each used once', () => {
+    const learnable = new Set<MoveId>(PLAYABLE_IDS.flatMap((id): readonly MoveId[] => PLAYABLE[id].learnset))
+    const from: readonly MoveId[] = EVOLUTIONS.map((e) => e.from)
+    for (const id of learnable) expect([id, from.includes(id)]).toEqual([id, true])
+    expect(new Set(from).size).toBe(from.length)
+    expect(new Set(EVOLUTIONS.map((e) => e.to)).size).toBe(EVOLUTIONS.length)
+  })
+
+  it('pair a generic item too: Pyro Ball and Muscle Band make Searing Shot', () => {
+    const ready = readyEvolutions({ moves: [maxed('pyroBall')], items: [{ id: 'muscleBand', level: 1 }] })
+    expect(ready.map((e) => e.to)).toEqual(['searingShot'])
   })
 })
 
@@ -59,5 +95,11 @@ describe('type-boosting items', () => {
     expect(items).toContain('mysticWater')
     expect(items).toContain('magnet')
     expect(items).not.toContain('charcoal')
+  })
+
+  it('include the newer type items for learnsets of their type', () => {
+    const items = offerPool({ starter: 'gastly', moves: [], items: [] }).flatMap(([o]) => (o.kind === 'item' ? [o.id] : []))
+    expect(items).toContain('spellTag')
+    expect(items).not.toContain('metalCoat')
   })
 })

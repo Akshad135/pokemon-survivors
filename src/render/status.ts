@@ -40,6 +40,9 @@ export const statusTint = (st: EnemyStatus, t: number, seed: number) => {
     case 'mark':
       tint.amount = 0.12
       break
+    case 'weaken':
+      tint.amount = 0.34
+      break
   }
   return tint
 }
@@ -51,6 +54,7 @@ const LETTERS: Record<string, readonly string[]> = {
   B: ['110', '101', '110', '101', '110'],
   C: ['011', '100', '100', '100', '011'],
   D: ['110', '101', '101', '101', '110'],
+  U: ['101', '101', '101', '101', '111'],
   E: ['111', '100', '110', '100', '111'],
   F: ['111', '100', '110', '100', '100'],
   K: ['101', '101', '110', '101', '101'],
@@ -72,6 +76,7 @@ const BADGES = {
   confuse: { text: 'CNF', bg: '#c05898' },
   seed: { text: 'SED', bg: '#489838' },
   mark: { text: 'MRK', bg: '#c83848' },
+  weaken: { text: 'MUD', bg: '#886030' },
 } as const satisfies Record<Exclude<StatusKind, 'slow'>, { text: string; bg: string }>
 
 const badgeCache = canvasCache<StatusKind, PixelSprite>()

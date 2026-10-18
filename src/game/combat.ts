@@ -3,12 +3,15 @@ import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS, type PokeType } from '../data/types'
 import { ENEMY_BERRY_CHANCE } from '../data/consumables'
 import { ENEMIES } from '../data/enemies'
+import type { HitKind } from '../data/abilities'
+import { abilityHolds, abilityHurt, abilityImmune, abilityKill, abilityTakes, strikeBonus } from './abilities'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { logDefeat } from './dex'
 import { DIFFICULTIES } from './difficulty'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
 import { coinDrops } from './meta'
+import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
 import { applyStatus, breakOnHit, hitTakenMult, STATUS_RULES, type StatusKind } from './status'
 import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY, SEED_JUMPS, SEED_MIN_TIME, SEED_REACH } from './kitRules'
@@ -27,9 +30,9 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   const eff = attack.sure ? Math.max(1, effectiveness(attack.type, e.types)) : effectiveness(attack.type, e.types)
   // Conditional bonuses (Hex), a mark and a freeze multiply the hit; without them it's exactly ×1.
   const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status))
-  const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * range(g.rng, 0.9, 1.1)))
-  // A Bronzong ward soaks the hit first.
-  const dmg = attack.sure ? raw : absorb(e.trait, raw)
+  const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
+  // A Bronzong ward soaks the hit first, unless the move or the ability (Infiltrator) goes through wards.
+  const dmg = attack.sure || attack.ignoreWards || abilityImmune(g, 'wards') ? raw : absorb(e.trait, raw)
   e.hp -= dmg
   e.flash = 0.16
   g.damageByMove[attack.move] = (g.damageByMove[attack.move] ?? 0) + dmg
@@ -54,7 +57,7 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   burst(g, e.x, e.y - e.radius, { colors: [TYPE_COLORS[attack.type], '#ffffff'], count: eff > 1 ? 6 : 3, speed: 70, ttl: 0.25 })
   g.events.push({ kind: 'hit', effective: eff })
   if (attack.drain > 0) drainHeal(g, dmg, attack.drain)
-  if (attack.move !== 'special') {
+  if (attack.move !== 'special' && attack.move !== 'ability') {
     moveEvent(g, attack.move, 'hit')
     moveHit(g, attack, e)
   }
@@ -63,7 +66,10 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
     shatter(g, e, 'execute')
     e.hp = 0
   }
-  if (e.hp <= 0) killEnemy(g, e, attack.move)
+  if (e.hp <= 0) {
+    killEnemy(g, e, attack.move)
+    if (attack.mod) modKill(g, e, attack)
+  }
 }
 
 /** Ice shards flying off a foe: a frozen foe's ice broken, or an execute. */
@@ -133,6 +139,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   g.kills++
   if (source === 'special' || g.special.chaining) g.special.kills++
   countKill(g.tally, e, weatherHere(g), g.biome.id, g.outbreak)
+  abilityKill(g, e)
   const big = e.boss || e.shiny
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })
@@ -147,6 +154,8 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.boss) {
+    // Every boss defeated earns an Esquecer charge (`banishOffer`).
+    g.banishes++
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     if (g.bossId === e.id) g.bossId = null
@@ -164,14 +173,17 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
 
 /**
  * Damages the player. `from` (a body that touched them) gets shoved back; hazards pass none.
- * `types` is the attack's typing for the weather (a body attacks with its own types).
+ * `types` is the attack's typing for the weather (a body attacks with its own types), and
+ * `hit` what kind of harm it is, for the abilities (`abilityTakes`): a body, a boss's strike, lava…
  */
-export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? []) => {
+export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? [], hit: HitKind = from ? 'body' : 'hazard') => {
   const p = g.player
   if (p.iframes > 0 || p.hidden || isRepelled(g) || g.phase !== 'playing') return
   if (p.guard) return guardHit(g, p.guard, from)
   if (from && blinded(g, from)) return
-  const dmg = Math.max(1, Math.round(amount * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken - p.stats.armor))
+  const taken = abilityTakes(g, amount, types, hit, from)
+  if (taken === null) return
+  const dmg = Math.max(1, Math.round(taken * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken - p.stats.armor))
   p.hp -= dmg
   p.iframes = 0.5
   p.hurt = 0.3
@@ -179,6 +191,7 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   floatText(g, p.x, p.y - 28, String(dmg), '#ff5040', true)
   burst(g, p.x, p.y - 10, { colors: ['#ff5040', '#ffffff'], count: 6, speed: 80, ttl: 0.3 })
   g.events.push({ kind: 'hurt' })
+  abilityHurt(g)
   moveEvent(g, null, 'hurt')
   // A small shove keeps the player from being body-blocked into a death spiral.
   if (from) {
@@ -190,7 +203,8 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   if (p.hp > 0) return
   // Falling in a rift arena isn't the end: the rift throws the player back out.
   if (g.rift.arena) return fallInArena(g)
-  if (!tryRevive(g)) {
+  // Sturdy holds before a Revive is spent.
+  if (!abilityHolds(g) && !tryRevive(g)) {
     p.hp = 0
     g.phase = 'gameover'
     g.events.push({ kind: 'gameover' })

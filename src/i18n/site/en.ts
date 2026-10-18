@@ -300,7 +300,7 @@ export const siteEn: SiteMessages = {
       statusHead: 'Status',
       movesHead: 'Inflicted by',
       effectHead: 'Effect',
-      names: { burn: 'Burn', poison: 'Poison', paralysis: 'Paralysis', slow: 'Slow', sleep: 'Sleep', freeze: 'Freeze', mark: 'Mark', confuse: 'Confusion', seed: 'Seed' },
+      names: { burn: 'Burn', poison: 'Poison', paralysis: 'Paralysis', slow: 'Slow', sleep: 'Sleep', freeze: 'Freeze', mark: 'Mark', confuse: 'Confusion', seed: 'Seed', weaken: 'Weakened' },
       effects: {
         burn: (attack: number) => `Damage over time. Burned enemies deal only ${n(attack * 100)}% contact damage.`,
         poison: (stacks: number) => `Damage over time that stacks up to ${stacks}x.`,
@@ -311,6 +311,7 @@ export const siteEn: SiteMessages = {
         mark: (stacks: number) => `A marked enemy takes more damage from every hit, stacking up to ${stacks}x.`,
         confuse: () => 'The enemy wanders aimlessly and hurts the enemies it bumps into. Bosses are immune.',
         seed: (heal: number, jumps: number) => `Damage over time that heals you for ${n(heal * 100)}% of it. When the enemy faints, the seed jumps to ${jumps} neighbors.`,
+        weaken: (boss: number) => `Mud in the eyes: the enemy deals less contact damage. On bosses it lasts ${n(boss * 100)}% as long.`,
       },
       flute: 'Poké Flute (map item)',
       itemsNote: 'King\'s Rock raises the status chance, Toxic Orb raises burn and poison damage, and Light Clay makes statuses last longer.',

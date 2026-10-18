@@ -266,6 +266,104 @@ const SFX = {
     tone(392, 196, 0.5, 'sawtooth', 0.06)
     tone(370, 185, 0.5, 'triangle', 0.08, 0.05)
   },
+  /* Verb moves (`game/moveVerbs.ts`); a delayed hit is scheduled inside its sound. */
+  /** Solar Beam: light gathering for a second, then the beam. */
+  solarCharge: () => {
+    tone(330, 1320, 0.95, 'triangle', 0.08)
+    ;[784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.08, 'square', 0.035, 0.2 + i * 0.18))
+    noise(0.45, 0.12, 1)
+    tone(1400, 380, 0.5, 'sawtooth', 0.08, 1)
+  },
+  solarBeam: () => {
+    noise(0.45, 0.12)
+    tone(1400, 380, 0.5, 'sawtooth', 0.08)
+  },
+  focusReady: () => [1047, 1568].forEach((f, i) => tone(f, f, 0.09, 'square', 0.08, i * 0.07)),
+  focusPunch: () => {
+    noise(0.18, 0.22)
+    tone(220, 50, 0.22, 'square', 0.18)
+  },
+  /** Future Sight: an eerie rising chime, then the columns crashing two seconds later. */
+  futureSight: () => {
+    ;[659, 831, 988, 1319].forEach((f, i) => tone(f, f * 1.02, 0.25, 'triangle', 0.06, i * 0.09))
+    noise(0.3, 0.14, 2)
+    tone(900, 120, 0.35, 'sawtooth', 0.08, 2)
+  },
+  bone: () => tone(520, 260, 0.14, 'triangle', 0.08),
+  stealthRock: () => [0, 0.05, 0.1].forEach((d) => tone(240, 120, 0.06, 'square', 0.08, d)),
+  uTurn: () => {
+    tone(600, 1500, 0.12, 'square', 0.06)
+    tone(1500, 600, 0.12, 'square', 0.06, 0.2)
+  },
+  dragonTail: () => {
+    noise(0.16, 0.12)
+    tone(160, 70, 0.18, 'sawtooth', 0.12)
+  },
+  sheerCold: () => {
+    tone(2400, 1200, 0.3, 'triangle', 0.06)
+    tone(3200, 1600, 0.25, 'sine', 0.05, 0.05)
+  },
+  roost: () => [988, 1319, 1568].forEach((f, i) => tone(f, f, 0.12, 'triangle', 0.08, i * 0.06)),
+  /** Brine: the lob, then the splash as it lands. */
+  brine: () => {
+    tone(400, 700, 0.1, 'triangle', 0.05)
+    noise(0.14, 0.1, 0.28)
+  },
+  electroBall: () => tone(900, 1800, 0.1, 'square', 0.05),
+  suckerPunch: () => tone(300, 140, 0.06, 'square', 0.07),
+  /* Starter signature moves (`ui/castSfx.ts`) */
+  seedPop: () => [330, 494].forEach((f, i) => tone(f, f * 1.5, 0.06, 'triangle', 0.1, i * 0.07)),
+  spin: () => {
+    noise(0.3, 0.07)
+    tone(220, 880, 0.3, 'triangle', 0.08)
+  },
+  petals: () => [1047, 1319, 1568, 1319].forEach((f, i) => tone(f, f, 0.08, 'triangle', 0.06, i * 0.05)),
+  eruption: () => {
+    noise(0.45, 0.16)
+    tone(110, 35, 0.45, 'sawtooth', 0.14)
+  },
+  thrashGrowl: () => {
+    tone(150, 90, 0.22, 'sawtooth', 0.1)
+    tone(156, 95, 0.22, 'square', 0.05)
+  },
+  kick: () => [0, 0.15].forEach((d, i) => {
+    noise(0.05, 0.1, d)
+    tone(i ? 240 : 180, 60, 0.08, 'square', 0.1, d)
+  }),
+  splat: () => {
+    noise(0.12, 0.12)
+    tone(200, 70, 0.12, 'triangle', 0.12)
+  },
+  hammer: () => {
+    noise(0.25, 0.22)
+    tone(120, 30, 0.3, 'square', 0.18)
+  },
+  drill: () => tone(520, 980, 0.22, 'square', 0.05),
+  whirl: () => {
+    noise(0.5, 0.05)
+    tone(300, 520, 0.5, 'triangle', 0.06)
+  },
+  flameRush: () => {
+    noise(0.2, 0.1)
+    tone(160, 640, 0.3, 'sawtooth', 0.08)
+  },
+  quills: () => [1600, 2000].forEach((f, i) => tone(f, f * 0.5, 0.06, 'sawtooth', 0.05, i * 0.04)),
+  psybeam: () => [660, 880, 740, 990].forEach((f, i) => tone(f, f * 1.2, 0.07, 'triangle', 0.06, i * 0.05)),
+  lariat: () => [0, 0.18, 0.36].forEach((d) => {
+    noise(0.1, 0.06, d)
+    tone(300, 160, 0.12, 'sawtooth', 0.05, d)
+  }),
+  aria: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, f, 0.14, 'triangle', 0.07, i * 0.09)),
+  snipe: () => {
+    tone(1800, 240, 0.09, 'square', 0.1)
+    noise(0.05, 0.1)
+  },
+  flower: () => [1319, 1760, 2093].forEach((f, i) => tone(f, f, 0.06, 'triangle', 0.07, i * 0.04)),
+  splash: () => {
+    noise(0.12, 0.08)
+    tone(400, 900, 0.1, 'sine', 0.1)
+  },
+  crit: () => [1568, 2349].forEach((f, i) => tone(f, f, 0.06, 'square', 0.07, i * 0.04)),
 } as const
 
 export type Sfx = keyof typeof SFX
