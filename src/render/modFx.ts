@@ -77,7 +77,7 @@ const drawTrail = (ctx: Ctx, a: Attack, t: number) => {
   ctx.globalAlpha = 1
 }
 
-/** A Burst: a quick flash, an expanding double ring and eight rays. */
+/** A Burst: a quick white core, an expanding double ring and eight rays. */
 const drawBurst = (ctx: Ctx, a: Attack) => {
   if (a.shape.kind !== 'circle') return
   const [dark, body, light] = palette(a.type)
@@ -85,7 +85,8 @@ const drawBurst = (ctx: Ctx, a: Attack) => {
   const ease = 1 - (1 - k) * (1 - k)
   const r = Math.max(2, Math.round(a.shape.r * (0.35 + 0.65 * ease)))
   ctx.globalAlpha = Math.max(0, 1 - k)
-  if (k < 0.35) blitCentered(ctx, ellipse(Math.round(r * 0.7), Math.round(r * 0.7), '#ffffff'), a.x, a.y)
+  // A small white core for the first frames, then only the rings.
+  if (k < 0.18) blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.35)), Math.max(1, Math.round(r * 0.35)), '#ffffff'), a.x, a.y)
   blitCentered(ctx, ring(r, 2, body), a.x, a.y)
   blitCentered(ctx, ring(Math.max(1, r - 3), 1, light), a.x, a.y)
   dashedRing(ctx, a.x, a.y, r + 2, a.id, [dark, body], 0.4)
