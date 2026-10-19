@@ -21,7 +21,7 @@ import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
 import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
 import { track } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
@@ -71,6 +71,7 @@ import { rosterSchedule, type Roster } from './game/roster'
 import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
+import { playsShiny } from './game/shinyPicks'
 import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
@@ -574,8 +575,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     starter,
     difficulty: save.difficulty,
     ranks: save.ranks,
-    // A shiny hatch is shiny for good; a starter rolled shiny once plays shiny when picked so.
-    shiny: (isHatchling(starter) && save.hatched[starter]?.shiny === true) || save.shinyStarters[starter] === true,
+    // An owned shiny (rolled once, a ticket or a shiny hatch) plays shiny unless switched to Normal.
+    shiny: playsShiny(save, starter),
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
     outbreak: plan.outbreak,
     lure: used.lure,

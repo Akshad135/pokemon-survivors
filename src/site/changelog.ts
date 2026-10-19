@@ -142,6 +142,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Normal ou Shiny, você escolhe', en: 'Normal or Shiny, your call', es: 'Normal o Shiny, tú eliges' },
+        notes: [
+          {
+            pt: 'Um Pokémon que nasceu shiny do ovo (ou que você escolheu como apoiador) agora também tem o seletor Normal/Shiny na escolha do Pokémon, como os iniciais. O shiny continua seu, na Pokédex e nas conquistas: só muda a cor com que você joga, e a escolha vale no lobby, no Cartão de Treinador e no Hall da Fama, em todos os seus aparelhos.',
+            en: 'A Pokémon that hatched shiny (or that you picked as a supporter) now gets the Normal/Shiny picker on the Pokémon select too, like the starters. The shiny stays yours, in the Pokédex and the achievements: only the colors you play change, and the pick shows in the lobby, on the Trainer Card and in the Hall of Fame, on all your devices.',
+            es: 'Un Pokémon que nació shiny del huevo (o que elegiste como patrocinador) ahora también tiene el selector Normal/Shiny en la elección del Pokémon, como los iniciales. El shiny sigue siendo tuyo, en la Pokédex y en los logros: solo cambian los colores con los que juegas, y la elección se ve en el lobby, en la Tarjeta de Entrenador y en el Salón de la Fama, en todos tus dispositivos.',
+          },
+        ],
+      },
     ],
   },
   {
