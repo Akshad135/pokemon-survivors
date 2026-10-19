@@ -210,6 +210,8 @@ export const en: Messages = {
     damageNumbers: 'Damage numbers',
     damageModes: { all: 'All', reduced: 'Reduced', off: 'OFF' },
     screenShake: 'Screen shake',
+    flashes: 'Flashes',
+    flashModes: { normal: 'Normal', reduced: 'Reduced' },
     joystick: 'Joystick',
     joystickModes: { floating: 'Follows finger', fixed: 'Fixed' },
     on: 'ON',

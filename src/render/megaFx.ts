@@ -6,6 +6,7 @@ import { heldMega, rainbow } from '../game/mega'
 import type { Attack, Game } from '../game/types'
 import { lazy, outlined, toIconUrl } from './art'
 import { hasSheets } from './sprites'
+import { CALM_PERIOD } from './flashes'
 
 /** Code-drawn pixel art for Mega Evolution (`game/mega.ts`): the symbol, the stones, the transformation and the form's aura. */
 
@@ -70,8 +71,9 @@ type MegaLook = { form: MegaForm | undefined; flash: number; outline?: string }
  * it lasts; during the transformation a white silhouette that flickers between
  * the two forms faster and faster, then fades into the Mega's colors. A Mega
  * SpriteCollab hasn't drawn yet wears its final stage with a rainbow outline.
+ * `calm` (Flashes: reduced) keeps the swap slow and the silhouette half white.
  */
-export const megaLook = (g: Game): MegaLook => {
+export const megaLook = (g: Game, calm: boolean): MegaLook => {
   const def = heldMega(g)
   if (!def) return { form: undefined, flash: 0 }
   if (g.mega.intro <= 0) {
@@ -80,12 +82,14 @@ export const megaLook = (g: Game): MegaLook => {
     return { form: def.form, flash: 0, outline }
   }
   const k = introProgress(g)
-  if (k < 0.35) return { form: undefined, flash: k / 0.35 }
+  const white = calm ? 0.5 : 1
+  if (k < 0.35) return { form: undefined, flash: (white * k) / 0.35 }
   if (k < 0.8) {
-    const period = 0.16 - (k - 0.35) * 0.28
-    return { form: Math.floor((k - 0.35) / period) % 2 === 0 ? def.form : undefined, flash: 1 }
+    // `k` is a share of the intro: the calm swap is `CALM_PERIOD` seconds long.
+    const period = calm ? CALM_PERIOD / MEGA.intro : 0.16 - (k - 0.35) * 0.28
+    return { form: Math.floor((k - 0.35) / period) % 2 === 0 ? def.form : undefined, flash: white }
   }
-  return { form: def.form, flash: 1 - (k - 0.8) / 0.2 }
+  return { form: def.form, flash: white * (1 - (k - 0.8) / 0.2) }
 }
 
 /**

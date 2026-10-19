@@ -448,6 +448,36 @@ export const SPIT_FX = {
   orb: lazy(() => art(SMALL_ORB, { 1: '#9898a8', 2: '#e8e8f0', 3: '#ffffff' }, '#383848')),
 }
 
+/** The rim every hostile shot wears (the horde's spit, the bosses' and the world's shots). */
+const HOSTILE_RIM = '#f81838'
+const rimmed = new WeakMap<PixelSprite, PixelSprite>()
+
+/**
+ * `sprite` with a 1 px red rim around its opaque pixels (outside its own dark
+ * outline), so enemy shots read against the player's effects on a busy screen.
+ * Built once per sprite: a frame only looks it up. Hard-edged, as the rim
+ * comes from the pixels themselves (a see-through bubble isn't tinted inside).
+ */
+export const hostile = (sprite: PixelSprite): PixelSprite => {
+  const cached = rimmed.get(sprite)
+  if (cached) return cached
+  const w = sprite.width + 2
+  const h = sprite.height + 2
+  const canvas = createCanvas(w, h)
+  const ctx = context2d(canvas)
+  ctx.drawImage(sprite, 1, 1)
+  const { data } = ctx.getImageData(0, 0, w, h)
+  const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && data[(y * w + x) * 4 + 3]! > 0
+  ctx.fillStyle = HOSTILE_RIM
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) ctx.fillRect(x, y, 1, 1)
+    }
+  }
+  rimmed.set(sprite, canvas)
+  return canvas
+}
+
 /* ---------------- Enemy traits ---------------- */
 
 const PLUS = ['..1..', '..1..', '11211', '..1..', '..1..']
