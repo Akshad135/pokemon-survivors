@@ -186,6 +186,16 @@ export const applyGift = (save: Save, gift: Gift): GiftOutcome => {
   return { status: 'applied', save: { ...given.save, gifts: [...given.save.gifts, gift.id] }, hatch: given.hatch }
 }
 
+/**
+ * The gift to open next of those waiting: the oldest that can land now, else
+ * the oldest (`blocked`: an egg waiting for room in the incubator). Null when none waits.
+ */
+export const giftToOpen = (save: Save, waiting: readonly Gift[]): { gift: Gift; blocked: boolean } | null => {
+  const open = waiting.find((g) => applyGift(save, g).status !== 'wait')
+  const gift = open ?? waiting[0]
+  return gift ? { gift, blocked: !open } : null
+}
+
 /* ---------------- Save field ---------------- */
 
 /** The save's `gifts`: the ids of the gifts applied, without duplicates. */

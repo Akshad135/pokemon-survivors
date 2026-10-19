@@ -3140,6 +3140,7 @@ button {
 
 .lobby-stage {
   grid-area: stage;
+  position: relative;
   min-height: 0;
   display: flex;
   align-items: center;
@@ -3701,6 +3702,89 @@ button {
 
 .lobby-partner {
   position: relative;
+}
+
+/* Presente!: the gift box on the grass beside the partner while Mystery Gifts wait (ui/title.ts), hopping, with a sparkle that blinks. */
+.lobby-gift {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 56px);
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px 6px;
+  border-color: #581830;
+  --frame: #f8d030;
+  font: inherit;
+  color: var(--ink);
+  pointer-events: auto;
+}
+
+.lobby-gift[hidden] {
+  display: none;
+}
+
+.lobby-gift:hover,
+.lobby-gift.selected {
+  --frame: #e83838;
+}
+
+.lobby-gift-box {
+  width: 48px;
+  height: 44px;
+  animation: gift-hop 0.9s steps(2, start) infinite;
+}
+
+.lobby-gift-sparkle {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+  animation: blink 1.2s steps(2) infinite;
+}
+
+.lobby-gift b {
+  font-family: var(--title);
+  font-size: 8px;
+  font-weight: normal;
+  color: #c02838;
+}
+
+.lobby-gift .lobby-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+}
+
+.lobby-gift .key-hint {
+  position: absolute;
+  bottom: -6px;
+  left: -6px;
+}
+
+@media (min-width: 900px) and (min-height: 600px) {
+  .lobby-gift {
+    left: calc(50% + 96px);
+    padding: 10px 14px 8px;
+  }
+  .lobby-gift-box {
+    width: 72px;
+    height: 66px;
+  }
+  .lobby-gift b {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-gift-box,
+  .lobby-gift-sparkle {
+    animation: none;
+  }
 }
 
 /* Only the partner's body and its plate take taps: the rest of the stage is grass to walk on. */
@@ -4758,19 +4842,52 @@ button {
   font-style: normal;
 }
 
-/* Presente Misterioso: the box, why it came and what it brought. */
-.gift-banner {
+/* Presente Misterioso (ui/gifts.ts): the closed box, shaking open, and what came out. */
+.gift-dialog {
+  width: min(420px, 94vw);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  text-align: left;
+  gap: 12px;
+  text-align: center;
 }
 
-.gift-box {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  animation: gift-hop 0.9s steps(3) 2;
+.gift-why {
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1.2;
+  color: #c04890;
+}
+
+.gift-note {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.gift-more {
+  font-family: var(--body);
+  font-size: 16px;
+  color: #7880a0;
+}
+
+.gift-big {
+  padding: 8px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.gift-big img {
+  display: block;
+  width: 96px;
+  height: 88px;
+  animation: gift-hop 0.9s steps(2, start) infinite;
+}
+
+.gift-big.opening img {
+  animation: gift-shake 0.7s steps(8) forwards;
 }
 
 @keyframes gift-hop {
@@ -4779,27 +4896,55 @@ button {
   }
 }
 
-.gift-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+@keyframes gift-shake {
+  0% { transform: rotate(0); }
+  12% { transform: rotate(-10deg); }
+  25% { transform: rotate(10deg); }
+  37% { transform: rotate(-12deg); }
+  50% { transform: rotate(12deg); }
+  62% { transform: rotate(-14deg) translateY(-4px); }
+  75% { transform: rotate(14deg) translateY(-8px); }
+  100% { transform: scale(1.3); opacity: 0; }
 }
 
-.gift-text small {
-  font-size: 7px;
-  color: #c04890;
+/* What came out: it pops in over a burst of light. */
+.gift-prize {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 104px;
 }
 
-/* Gifts that came together share one banner, grouped by why they came. */
-.gift-group + .gift-group {
-  margin-top: 4px;
+.gift-prize img {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  animation: gift-pop 0.4s steps(4) both;
 }
 
-.gift-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.gift-burst {
+  position: absolute;
+  inset: -8px;
+  background: repeating-conic-gradient(#f8d03055 0 12deg, transparent 12deg 30deg);
+  border-radius: 50%;
+  mask-image: radial-gradient(circle, #000 40%, transparent 70%);
+  animation: hall-spin 12s linear infinite;
+}
+
+@keyframes gift-pop {
+  0% { transform: scale(0.2); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift-big img,
+  .gift-prize img,
+  .gift-burst {
+    animation: none;
+  }
 }
 
 .gift-line {

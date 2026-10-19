@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EGG_TIERS, EGGS, hatchPool } from './eggs'
-import { applyGift, DISCORD_GIFT, parseGift, type Gift, type GiftContent } from './gifts'
+import { applyGift, DISCORD_GIFT, giftToOpen, parseGift, type Gift, type GiftContent } from './gifts'
 import { EMPTY_SAVE, parseSaveData, type Save } from './meta'
 
 const gift = (content: GiftContent, id = 'g1'): Gift => ({ id, content, reason: null })
@@ -70,5 +70,17 @@ describe('Friendship Egg', () => {
   it('only hatches Munchlax, and Munchlax hatches from nothing else', () => {
     expect(hatchPool('friend', {}).map(([id]) => id)).toEqual(['munchlax'])
     expect(hatchPool('common', {}).some(([id]) => id === 'munchlax')).toBe(false)
+  })
+})
+
+describe('giftToOpen', () => {
+  it('skips an egg waiting for room and opens the next gift', () => {
+    const full: Save = { ...EMPTY_SAVE, eggs: Array.from({ length: EGGS.slots }, () => ({ tier: 'common' as const, steps: 0 })) }
+    const egg = gift({ kind: 'egg', tier: 'rare' }, 'g1')
+    const coins = gift({ kind: 'coins', amount: 100 }, 'g2')
+    expect(giftToOpen(full, [egg, coins])).toEqual({ gift: coins, blocked: false })
+    expect(giftToOpen(full, [egg])).toEqual({ gift: egg, blocked: true })
+    expect(giftToOpen(EMPTY_SAVE, [egg, coins])).toEqual({ gift: egg, blocked: false })
+    expect(giftToOpen(EMPTY_SAVE, [])).toBeNull()
   })
 })

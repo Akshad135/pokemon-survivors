@@ -22,7 +22,7 @@ import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
+import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
@@ -94,7 +94,7 @@ import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
-import { announceGifts } from './ui/gifts'
+import { giftScreen } from './ui/gifts'
 import { playGate } from './ui/account'
 import { trainerCardScreen } from './ui/trainer'
 import { discordScreen } from './ui/discord'
@@ -297,6 +297,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
       challenge: () => showChallenge(),
       incubator: () => showIncubator(() => showTitle({ focus: 'eggs' })),
+      gifts: showGifts,
       missions: () => showMissions(),
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
@@ -400,35 +401,34 @@ const hatchAt = (index: number, then: () => void) => {
 const showHatch = (hatch: Hatch, then: () => void, holdAt?: number, after = () => {}) =>
   setScreen(hatchScene(ui, input, hatch, { play: () => (void startRun(hatch.id), after()), done: () => (then(), after()) }, holdAt))
 
-/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then the gifts' hatches, then `then`. */
+/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then `then`. */
 const afterRun = (then: () => void) => {
   endRun()
   const ready = loadSave().eggs.findIndex(isReady)
-  if (ready < 0) return playGiftHatches(then)
+  if (ready < 0) return then()
   hatchAt(ready, () => afterRun(then))
 }
 
-/** Shiny hatches a Mystery Gift brought (already in the save), waiting to play out of a run. */
-const giftHatches: Hatch[] = []
-
-/** Plays each waiting gift hatch's scene (recording it in the missions and medals), then `then`. */
-const playGiftHatches = (then: () => void) => {
-  const hatch = giftHatches.shift()
-  if (!hatch) return then()
-  const record = saveHatch(loadSave(), hatch.shiny)
-  void syncSave()
-  showHatch(hatch, () => playGiftHatches(then), undefined, () => later(() => progressToast(ui, record)))
-}
-
 /**
- * Mystery Gifts that landed in the save (a sync, or a dev helper): a banner
- * each, and a shiny hatch plays right away on the title, else after the run.
+ * The lobby's gift box: opens the waiting Mystery Gifts one by one. A shiny
+ * hatch plays its scene (recorded in the missions and medals) and a shiny
+ * ticket goes to the Hall's picker, each coming back to the next gift, or
+ * to the lobby once none waits.
  */
-onGifts((arrived, waiting) => {
-  announceGifts(ui, arrived, waiting)
-  giftHatches.push(...arrived.flatMap((a) => (a.hatch ? [a.hatch] : [])))
-  if (giftHatches.length > 0 && !run && screen?.el.classList.contains('title-home')) playGiftHatches(() => showTitle())
-})
+const showGifts = () => {
+  const back = () => (giftInbox().length > 0 ? showGifts() : showTitle({ focus: 'gifts' }))
+  setScreen(
+    giftScreen(ui, input, {
+      hatch: (hatch) => {
+        const record = saveHatch(loadSave(), hatch.shiny)
+        void syncSave()
+        showHatch(hatch, back, undefined, () => later(() => progressToast(ui, record)))
+      },
+      pick: () => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, 'pick')),
+      close: () => showTitle({ focus: 'gifts' }),
+    }),
+  )
+}
 
 /** Moves the run's steps and new eggs into the incubator, once each (a victory banks, then endless banks again). */
 const bankHatchery = (r: Run) => {
@@ -1507,10 +1507,10 @@ const devEggs = {
   save: loadSave,
 }
 
-/** Dev: Mystery Gifts and invites, to stage the gift banners, the Ambassador's rewards and the title's invite banner. */
+/** Dev: Mystery Gifts and invites, to stage the lobby's gift box, the Ambassador's rewards and the title's invite banner. */
 const devGifts = {
   /**
-   * Lands a Mystery Gift as if the account brought it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
+   * Puts a Mystery Gift in the lobby's gift box as if a sync listed it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
    * `ps.gift('title')`, `ps.gift('style', 'ambassador')` (a frame), `ps.gift('shinyHatch', 'munchlax')`,
    * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice).
    * `why`: an inviter's handle (welcome) or a count of friends brought.
@@ -1520,16 +1520,16 @@ const devGifts = {
     const content = parseGiftContent({ kind, ...raw })
     if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick'
     const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
-    return receiveGifts([{ id: `dev-${Date.now()}`, content, reason }])
+    return stageGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
-  /** Lands the thank-you for joining the Discord (`DISCORD_GIFT`) as if linking brought it: its banner and hatching scene. */
-  discordGift: () => receiveGifts([{ id: `dev-discord-${Date.now()}`, content: DISCORD_GIFT, reason: { kind: 'discord' } }]),
+  /** Puts the thank-you for joining the Discord (`DISCORD_GIFT`) in the gift box, as if linking brought it. */
+  discordGift: () => stageGifts([{ id: `dev-discord-${Date.now()}`, content: DISCORD_GIFT, reason: { kind: 'discord' } }]),
   /**
-   * Lands a supporter's thank-you as Mystery Gifts in one sync, as if a donation was credited: `supporter`
+   * Puts a supporter's thank-you in the gift box as Mystery Gifts in one sync, as if a donation was credited: `supporter`
    * brings the title, the frame and a shiny ticket; `gold` every tier up to gold (a first donation of R$ 50).
    */
   supporter: (tier: SupporterTier = 'supporter') =>
-    receiveGifts(
+    stageGifts(
       SUPPORTER_TIERS.slice(0, SUPPORTER_TIERS.indexOf(tier) + 1).flatMap((t) =>
         TIER_GIFTS[t].map((content, i) => ({ id: `dev-support-${t}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier: t } as const })),
       ),
