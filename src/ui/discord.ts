@@ -2,9 +2,12 @@ import { accountState, accountsEnabled, linkDiscord, onAccountChange, type Accou
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { t } from '../i18n'
+import { HATCHLINGS } from '../data/hatchlings'
+import { DISCORD_GIFT } from '../game/gifts'
 import { discordIcon } from '../render/art'
 import { discordStatus } from './discordStatus'
-import { h, later } from './dom'
+import { h, later, rich } from './dom'
+import { contentLine } from './gifts'
 import { hint, menu, type Screen } from './screens'
 
 /** The community server's permanent invite (made by the bot, on #welcome). */
@@ -21,7 +24,8 @@ type Action = { label: string; run: () => void; tone?: 'discord' }
  * (`discordStatus`) a way in: "Sign in with Discord" for a guest (it creates
  * the account and links both), "Link Discord" for an account (leaves for
  * Discord and comes back linked: `linkDiscord`), the linked username once it
- * is, and the server's invite for everyone. It follows the account state.
+ * is, and the server's invite for everyone. Until it's linked, the gift
+ * linking brings (`DISCORD_GIFT`) shows above the buttons. It follows the account state.
  * Back, Esc or Backspace call `onClose` after the key dispatch.
  */
 export const discordScreen = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
@@ -45,7 +49,9 @@ export const discordScreen = (root: HTMLElement, input: Input, onClose: () => vo
     nav?.off()
     nav = menu(input, buttons, (i) => (playSfx('select'), later(all[i]!.run)))
     const line = (text: string, cls = '') => h('p', { class: `account-line ${cls}` }, text)
-    const failed = (status.kind === 'guest' || status.kind === 'link') && status.failed
+    const unlinked = status.kind === 'guest' || status.kind === 'link'
+    const failed = unlinked && status.failed
+    const gift = contentLine({ content: DISCORD_GIFT })
     el.replaceChildren(
       h(
         'div',
@@ -55,6 +61,7 @@ export const discordScreen = (root: HTMLElement, input: Input, onClose: () => vo
         status.kind === 'linked' && h('p', { class: 'account-line discord-linked' }, h('b', {}, `✓ ${m.connected(status.name)}`)),
         status.kind === 'link' && line(m.linkPitch, 'account-note'),
         status.kind === 'guest' && line(m.guestPitch, 'account-note'),
+        unlinked && h('p', { class: 'account-line discord-gift' }, h('img', { src: gift.src, alt: '' }), rich(m.gift(HATCHLINGS[DISCORD_GIFT.family].name))),
         status.kind === 'busy' && line(m.busy, 'blink'),
         failed && line(m.failed, 'account-error'),
         h('div', { class: 'buttons account-buttons' }, ...buttons),

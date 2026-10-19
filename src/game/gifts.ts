@@ -39,16 +39,25 @@ export type GiftKind = GiftContent['kind']
 
 /**
  * Why it came: an invite's welcome (from the inviter's handle), friends
- * brought, a donation (`game/supporters.ts`), or a present from the game's
- * admin (`game/admin.ts`, from their handle).
+ * brought, a donation (`game/supporters.ts`), a present from the game's
+ * admin (`game/admin.ts`, from their handle), or joining the community
+ * Discord with the account linked (`DISCORD_GIFT`).
  */
 export type GiftReason =
   | { kind: 'welcome'; from: string | null }
   | { kind: 'friends'; count: number }
   | { kind: 'support'; tier: SupporterTier }
   | { kind: 'staff'; from: string | null }
+  | { kind: 'discord' }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
+
+/**
+ * The thank-you for joining the community Discord: a shiny Noibat (Echoed
+ * Voice, in Discord's purple), once per account, when linking puts the
+ * player in the server. The Discord screen shows it before they link.
+ */
+export const DISCORD_GIFT = { kind: 'shinyHatch', family: 'noibat' } as const satisfies GiftContent
 
 /** Most coins one gift may bring. */
 const MAX_COINS = 100_000
@@ -102,6 +111,7 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (v.kind === 'friends') return { kind: 'friends', count: wholeNumber(v.count) }
   if (v.kind === 'support' && isSupporterTier(v.tier)) return { kind: 'support', tier: v.tier }
   if (v.kind === 'staff') return { kind: 'staff', from: parseHandle(v.from) }
+  if (v.kind === 'discord') return { kind: 'discord' }
   return null
 }
 

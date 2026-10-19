@@ -1,17 +1,21 @@
 import type { ClerkClient } from '@clerk/backend'
+import { DISCORD_GIFT } from '../../src/game/gifts'
 import { supporterTier, type SupporterTier } from '../../src/game/supporters'
 import { isRecord } from '../../src/game/parse'
 import type { Sql } from './db'
 import { idsByName, restClient, type DiscordConfig } from './discord'
+import { sendGift } from './gifts'
 
 /**
  * A game account linked to Discord. The player connects Discord to their
  * Clerk account in the game (or signs up with it); `link` then reads that
  * account from Clerk, remembers its id on `users`, puts the player in the
  * community server (Discord's `guilds.join`, with the OAuth token Clerk keeps)
- * and gives them their supporter role. A donation that raises a linked
- * player's tier updates the role (`syncRoles`). Linking never grants Trainer:
- * that one is earned in #introductions (`discord.ts`).
+ * and gives them their supporter role. Once they're in, the account gets
+ * its thank-you (`DISCORD_GIFT`, key `discord`: once per account, however
+ * often they relink). A donation that raises a linked player's tier updates
+ * the role (`syncRoles`). Linking never grants Trainer: that one is earned
+ * in #introductions (`discord.ts`).
  */
 
 /** The server's supporter roles, by name (`scripts/discord/setup.mjs`). */
@@ -90,6 +94,9 @@ export const discordLink = (sql: Sql, clerk: ClerkClient, bot: DiscordConfig | n
     return data[0]?.token ?? null
   }
 
+  /** Sends the account its thank-you for joining (once: the key). */
+  const thank = (userId: string) => sql.begin((tx) => sendGift(tx, userId, DISCORD_GIFT, { kind: 'discord' }, 'discord'))
+
   /** Adds the player to the server with their token (`guilds.join`); already in, Discord just answers 204. */
   const join = async (discordId: string, token: string | null) => {
     if (!call || !token) return false
@@ -119,11 +126,31 @@ export const discordLink = (sql: Sql, clerk: ClerkClient, bot: DiscordConfig | n
       let joined = false
       try {
         joined = await join(account.id, token)
-        if (joined) await applyRoles(account.id, await tierOf(userId))
+        if (joined) {
+          await thank(userId)
+          await applyRoles(account.id, await tierOf(userId))
+        }
       } catch (err) {
         console.error(`discord join failed for ${userId}`, err)
       }
       return { linked: true, username: account.username, joined }
+    },
+
+    /**
+     * On boot: thanks the linked players still in the server who never got
+     * the gift (they linked before it existed, or Discord failed then).
+     * Someone who left (404) waits for their next link.
+     */
+    settle: async () => {
+      if (!call) return
+      const due = await sql<{ id: string; discord_id: string }[]>`
+        select id, discord_id from users u
+        where discord_id is not null and not exists (select 1 from gifts g where g.user_id = u.id and g.key = 'discord')`
+      for (const row of due) {
+        const member = await call('GET', `${guild}/members/${row.discord_id}`).catch(() => null)
+        if (member) await thank(row.id)
+      }
+      if (due.length > 0) console.log(`discord gifts settled for ${due.length} linked players`)
     },
 
     /** Forgets the player's Discord account (they unlinked it). They stay in the server with their roles. */

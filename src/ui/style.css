@@ -2952,6 +2952,24 @@ button {
   color: #389048;
 }
 
+/* The gift linking brings: its portrait beside the line, on a blurple tint. */
+.discord-gift {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  text-align: left;
+  background: #e8eafe;
+  border: 2px solid #5865f2;
+}
+
+.discord-gift img {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  image-rendering: pixelated;
+}
+
 .btn.discord-btn {
   display: flex;
   align-items: center;

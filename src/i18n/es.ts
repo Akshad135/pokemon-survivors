@@ -284,6 +284,8 @@ export const es: Messages = {
     connected: (name) => `Conectado como @${name}`,
     row: (name) => `Discord: @${name}`,
     failed: 'No se pudo conectar Discord. Inténtalo de nuevo.',
+    gift: (name) => `¡Gana un *${name}* _shiny_ cuando conectes y entres al servidor!`,
+    cardGift: (name) => `Gana un ${name} shiny`,
     busy: 'Conectando…',
     back: 'Volver',
   },
@@ -614,6 +616,7 @@ export const es: Messages = {
     shinyPick: '¡Un *shiny a tu elección*! Toca el Salón de la Fama para elegirlo.',
     support: (tier) => (tier === 'gold' ? 'Por llegar a Patrocinador(a) Oro ♥' : 'Por apoyar el proyecto ♥'),
     staff: (from) => (from ? `Un regalo de @${from}, que hace el juego ♥` : 'Un regalo de quien hace el juego ♥'),
+    discord: 'Por unirte a nuestro Discord ♥',
   },
 
   supporters: {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EGG_TIERS, EGGS, hatchPool } from './eggs'
-import { applyGift, parseGift, type Gift, type GiftContent } from './gifts'
+import { applyGift, DISCORD_GIFT, parseGift, type Gift, type GiftContent } from './gifts'
 import { EMPTY_SAVE, parseSaveData, type Save } from './meta'
 
 const gift = (content: GiftContent, id = 'g1'): Gift => ({ id, content, reason: null })
@@ -58,6 +58,11 @@ describe('parseGift', () => {
     expect(parseGift({ id: 'x', content: { kind: 'ribbon', tier: 'gold' } })).toBeNull()
     expect(parseGift({ id: 'x', content: { kind: 'style', style: { slot: 'frame', id: 'meadow' } } })).toBeNull()
     expect(parseGift({ id: 'x', content: { kind: 'coins', amount: -5 } })).toBeNull()
+  })
+
+  it('reads the Discord thank-you as the API stores it', () => {
+    const stored = JSON.parse(JSON.stringify({ id: 'x', content: DISCORD_GIFT, reason: { kind: 'discord' } }))
+    expect(parseGift(stored)).toEqual({ id: 'x', content: DISCORD_GIFT, reason: { kind: 'discord' } })
   })
 })
 

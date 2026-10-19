@@ -284,6 +284,8 @@ export const en: Messages = {
     connected: (name) => `Linked as @${name}`,
     row: (name) => `Discord: @${name}`,
     failed: 'Couldn’t link Discord. Try again.',
+    gift: (name) => `Get a *shiny ${name}* when you link and join the server!`,
+    cardGift: (name) => `Get a shiny ${name}`,
     busy: 'Connecting…',
     back: 'Back',
   },
@@ -614,6 +616,7 @@ export const en: Messages = {
     shinyPick: 'A *shiny of your choice*! Tap the Hall of Fame to pick it.',
     support: (tier) => (tier === 'gold' ? 'For reaching Gold Supporter ♥' : 'For supporting the project ♥'),
     staff: (from) => (from ? `A present from @${from}, who makes the game ♥` : 'A present from the game\'s maker ♥'),
+    discord: 'For joining our Discord ♥',
   },
 
   supporters: {

@@ -32,7 +32,7 @@ export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: s
   }
 }
 
-/** Why it came: an invite, friends brought, a donation, the admin's present, or a day of the challenge (the place is in the ribbon). */
+/** Why it came: an invite, friends brought, a donation, the admin's present, joining the Discord, or a day of the challenge (the place is in the ribbon). */
 const reasonLine = (gift: Gift) => {
   const c = gift.content
   if (c.kind === 'ribbon') return t().gifts.ribbonWhy(formatDay(c.ribbon.day), c.ribbon.rank, c.ribbon.total)
@@ -47,6 +47,8 @@ const reasonLine = (gift: Gift) => {
       return t().gifts.support(r.tier)
     case 'staff':
       return t().gifts.staff(r.from)
+    case 'discord':
+      return t().gifts.discord
   }
 }
 

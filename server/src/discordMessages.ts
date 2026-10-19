@@ -1,8 +1,9 @@
 import { ENEMIES, type EnemyId } from '../../src/data/enemies'
-import { PLAYABLE } from '../../src/data/hatchlings'
+import { HATCHLINGS, PLAYABLE } from '../../src/data/hatchlings'
 import { formatTime } from '../../src/engine/math'
 import { dailyChallenge, type Challenge } from '../../src/game/challenge'
 import type { DayKey } from '../../src/game/day'
+import { DISCORD_GIFT } from '../../src/game/gifts'
 import type { Difficulty } from '../../src/game/difficulty'
 import type { ChangelogUpdate } from '../../src/site/changelog'
 
@@ -74,7 +75,7 @@ export const greetMessage = (userId: string): OutgoingMessage => ({
 })
 
 export const welcomeMessage = (userId: string, messageId: string): OutgoingMessage => ({
-  content: `Welcome, <@${userId}>! 🎉 You're a **Trainer** now and the whole server is open. Say hi in the other channels, and play anytime at ${PLAY_URL}`,
+  content: `Welcome, <@${userId}>! 🎉 You're a **Trainer** now and the whole server is open. Say hi in the other channels, and play anytime at ${PLAY_URL}\n🎁 Link your game account to Discord (the Discord button in the game's lobby) and a **shiny ${HATCHLINGS[DISCORD_GIFT.family].name}** is yours!`,
   allowed_mentions: { parse: [], users: [userId] },
   message_reference: replyTo(messageId),
 })

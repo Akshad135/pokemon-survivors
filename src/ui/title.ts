@@ -5,8 +5,9 @@ import { joystick, type Input, type Stick } from '../engine/input'
 import { formatTime, type Vec } from '../engine/math'
 import { blitCentered, context2d, ellipse } from '../engine/pixelart'
 import { ENEMIES } from '../data/enemies'
-import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { HATCHLINGS, isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { isReady } from '../game/eggs'
+import { DISCORD_GIFT } from '../game/gifts'
 import { nextMilestone } from '../game/referral'
 import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks } from '../game/shinyPicks'
@@ -244,10 +245,15 @@ const discordButton = (onClick: () => void) => {
   return el
 }
 
-/** Discord under Convide amigos (wide screens and portrait phones): what a tap does, joining, linking, or the linked @username. */
+/**
+ * Discord under Convide amigos (wide screens and portrait phones): the linked
+ * @username, or, while linking can bring it, the gift it brings (`DISCORD_GIFT`,
+ * bobbing like the invites' prize); joining when this build has no accounts.
+ */
 const discordCard = () => {
   const m = t().discord
   const row = h('span', { class: 'lobby-invites-row' })
+  const prize = h('img', { class: 'lobby-invites-prize', src: contentLine({ content: DISCORD_GIFT }).src, alt: '' })
   const el = h(
     'button',
     { class: 'lobby-invites lobby-discord-card box', type: 'button' },
@@ -255,8 +261,11 @@ const discordCard = () => {
     h('span', { class: 'lobby-invites-text' }, h('b', {}, m.title), row),
   )
   followAccount(el, (s) => {
-    const text = s.kind === 'signedIn' && s.discord ? `✓ @${s.discord}` : s.kind === 'signedIn' ? m.link : m.join
+    const linked = s.kind === 'signedIn' && s.discord
+    const text = linked ? `✓ @${s.discord}` : accountsEnabled ? m.cardGift(HATCHLINGS[DISCORD_GIFT.family].name) : m.join
     row.textContent = text
+    if (!linked && accountsEnabled) el.append(prize)
+    else prize.remove()
     el.setAttribute('aria-label', `${m.title}: ${text}`)
   })
   return el

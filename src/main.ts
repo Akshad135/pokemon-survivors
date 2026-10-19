@@ -90,7 +90,7 @@ import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
-import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
+import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { announceGifts } from './ui/gifts'
 import { playGate } from './ui/account'
 import { trainerCardScreen } from './ui/trainer'
@@ -1465,6 +1465,8 @@ const devGifts = {
     const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
     return receiveGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
+  /** Lands the thank-you for joining the Discord (`DISCORD_GIFT`) as if linking brought it: its banner and hatching scene. */
+  discordGift: () => receiveGifts([{ id: `dev-discord-${Date.now()}`, content: DISCORD_GIFT, reason: { kind: 'discord' } }]),
   /**
    * Lands a supporter's thank-you as Mystery Gifts in one sync, as if a donation was credited: `supporter`
    * brings the title, the frame and a shiny ticket; `gold` every tier up to gold (a first donation of R$ 50).

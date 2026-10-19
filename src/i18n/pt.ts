@@ -374,6 +374,8 @@ export const pt = {
     connected: (name: string) => `Conectado como @${name}`,
     row: (name: string) => `Discord: @${name}`,
     failed: 'Não deu para conectar o Discord. Tente de novo.',
+    gift: (name: string) => `Ganhe um *${name}* _shiny_ quando conectar e entrar no servidor!`,
+    cardGift: (name: string) => `Ganhe um ${name} shiny`,
     busy: 'Conectando…',
     back: 'Voltar',
   },
@@ -728,6 +730,7 @@ export const pt = {
     shinyPick: 'Um *shiny à sua escolha*! Toque no Hall da Fama para escolher.',
     support: (tier: SupporterTier): string => (tier === 'gold' ? 'Por chegar a Apoiador(a) Ouro ♥' : 'Por apoiar o projeto ♥'),
     staff: (from: string | null) => (from ? `Um presente de @${from}, que faz o jogo ♥` : 'Um presente de quem faz o jogo ♥'),
+    discord: 'Por entrar no nosso Discord ♥',
   },
 
   /**
