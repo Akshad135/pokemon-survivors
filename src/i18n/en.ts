@@ -3684,6 +3684,17 @@ export const en: Messages = {
     taken: (name: string) => `You took the *${name}*… _power has a price_.`,
     left: (name: string) => `You left the *${name}* in the chest.`,
   },
+  pokeballPick: {
+    label: 'POKÉ BALL',
+    title: 'Something new in the Poké Ball!',
+    take: 'Take',
+    leave: 'Leave',
+    moveSlot: (used: number, max: number) => `Takes a move slot (${used}/${max} in use).`,
+    itemSlot: (used: number, max: number) => `Takes an item slot (${used}/${max} in use).`,
+    note: "Leave it and it's gone. Upgrades to what you have go in on their own.",
+    left: (name: string) => `You left *${name}* behind.`,
+    itemHintTouch: 'Tap to choose',
+  },
   traits: {
     healer: (name: string) => `*${name}* heals nearby allies. Take it down first!`,
     shield: (name: string) => `*${name}* wards its allies with a _shield_ that soaks damage.`,
