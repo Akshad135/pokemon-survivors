@@ -66,9 +66,11 @@ const LINK_KEY = 'ps:account'
  * This device's account: who signed in, the revision of the account's save it
  * last got (null until its first sync), which pushes build on, the public
  * handle and the Discord username the API last heard of (see `AccountState`).
- * `name` is the profile's display name once there is one.
+ * `name` is the profile's display name once there is one. `discordAccount`:
+ * the id of the Clerk connection that username came from, which tells a
+ * Discord account connected or removed since (Clerk may leave its username empty).
  */
-type Link = { userId: string; name: string; revision: number | null; handle?: string | null; discord?: string | null }
+type Link = { userId: string; name: string; revision: number | null; handle?: string | null; discord?: string | null; discordAccount?: string | null }
 
 const readLink = (): Link | null => {
   try {
@@ -80,6 +82,7 @@ const readLink = (): Link | null => {
       revision: typeof data.revision === 'number' ? data.revision : null,
       handle: typeof data.handle === 'string' || data.handle === null ? data.handle : undefined,
       discord: typeof data.discord === 'string' || data.discord === null ? data.discord : undefined,
+      discordAccount: typeof data.discordAccount === 'string' || data.discordAccount === null ? data.discordAccount : undefined,
     }
   } catch {
     return null
@@ -234,7 +237,7 @@ const relink = (c: Clerk, user: NonNullable<Clerk['user']>) => {
   const was = readLink()
   const same = was?.userId === user.id
   const name = same && was.handle ? was.name : displayName(c)
-  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined, discord: same ? was.discord : undefined })
+  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined, discord: same ? was.discord : undefined, discordAccount: same ? was.discordAccount : undefined })
   setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined, discord: same ? was.discord : undefined })
 }
 
@@ -331,32 +334,32 @@ const sendReferral = async (token: string) => {
 const discordOf = (user: NonNullable<Clerk['user']>) =>
   user.externalAccounts.find((a) => a.provider === 'discord' && a.verification?.status === 'verified') ?? null
 
-/** Keeps the Discord username (or its absence) in the link and the state. */
-const setDiscord = (discord: string | null, failed = false) => {
+/** Keeps the Discord username (or its absence) and the Clerk connection it came from in the link and the state. */
+const setDiscord = (discord: string | null, account: string | null, failed = false) => {
   const saved = readLink()
-  if (saved) writeLink({ ...saved, discord })
+  if (saved) writeLink({ ...saved, discord, discordAccount: account })
   if (state.kind === 'signedIn') setState({ ...state, discord, discordFailed: failed })
 }
 
 /**
  * Tells the API about a change of the player's Discord account (connected in
  * the game, by signing in with Discord, or removed in Clerk's account page):
- * a new one gets linked (`POST`, which joins the server), a removed one
- * forgotten (`DELETE`). A failure leaves the link as it was, to try again next sync.
+ * a new one gets linked (`POST`, which joins the server and answers the
+ * username, asked of Discord itself), a removed one forgotten (`DELETE`).
+ * A failure leaves the link as it was, to try again next sync.
  */
 const syncDiscord = async (c: Clerk, token: string) => {
   if (!c.user) return
   const account = discordOf(c.user)
-  const username = account ? account.username || account.providerUserId : null
-  const known = readLink()?.discord
-  if (username === known || (username === null && known === undefined)) {
-    if (known === undefined) setDiscord(null)
-    return
-  }
+  const known = readLink()?.discordAccount
+  if ((account?.id ?? null) === known) return
+  if (!account && known === undefined) return setDiscord(null, null)
   try {
-    const res = await fetch(`${API_URL}/discord/link`, { method: username ? 'POST' : 'DELETE', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const res = await fetch(`${API_URL}/discord/link`, { method: account ? 'POST' : 'DELETE', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
     if (!res.ok) throw new Error(`discord link failed: ${res.status}`)
-    setDiscord(username)
+    const body: unknown = await res.json()
+    const username = isRecord(body) && typeof body.username === 'string' && body.username ? body.username : account ? account.username || 'Discord' : null
+    setDiscord(username, account?.id ?? null)
   } catch (err) {
     console.warn('discord link failed', err)
   }
@@ -379,6 +382,12 @@ export const linkDiscord = async (): Promise<boolean> => {
     if (!c.user) {
       await signIn('discord')
       return true
+    }
+    // Connected already (the API didn't take it yet): linking is a sync away.
+    if (discordOf(c.user)) {
+      const token = devToken() ?? (await c.session?.getToken())
+      if (token) await syncDiscord(c, token)
+      return state.kind === 'signedIn' && state.discord ? true : failed()
     }
     const redirectUrl = `${pageUrl()}?${DISCORD_CALLBACK}`
     // A connection left halfway (cancelled on Discord) is retried rather than added again.
@@ -412,7 +421,7 @@ const finishDiscord = async () => {
   await syncSave()
   try {
     const c = await loadClerk()
-    if (c.user && !discordOf(c.user) && c.user.externalAccounts.some((a) => a.provider === 'discord')) setDiscord(null, true)
+    if (c.user && !discordOf(c.user) && c.user.externalAccounts.some((a) => a.provider === 'discord')) setDiscord(null, null, true)
   } catch {
     // Offline: the next sync tries again.
   }
