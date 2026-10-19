@@ -86,7 +86,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   that day's challenge isn't open (`challengeOpen`).
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
  *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
- *   replay is re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
+ *   replay may be re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
  *   400 for an implausible result or a replay of another run, 404 for an
  *   unknown token, 409 when it contradicts what the run already recorded, 422

@@ -6908,11 +6908,6 @@ a.btn.dex-site {
   align-items: flex-end;
 }
 
-/* Not re-simulated by the server yet. */
-.rank-time small.pending {
-  color: #f8d030;
-}
-
 .rank-time b {
   font-family: var(--title);
   font-size: 11px;

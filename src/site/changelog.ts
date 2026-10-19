@@ -19,6 +19,23 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-19',
+    pr: 128,
+    title: { pt: 'Ranking na hora', en: 'Instant ranking', es: 'Ranking al instante' },
+    notes: [
+      {
+        pt: 'A sua partida entra no ranking assim que termina, sem o "Conferindo…" que podia durar horas. O servidor ainda confere as partidas do topo e do Desafio do dia, e só tira do ranking uma partida que não chega ao resultado que mostrou.',
+        en: 'Your run joins the ranking as soon as it ends, without the "Checking…" that could last hours. The server still checks the runs at the top and the Daily Challenge, and only takes a run off the ranking when it doesn\'t end where it said.',
+        es: 'Tu partida entra al ranking en cuanto termina, sin el "Revisando…" que podía durar horas. El servidor todavía revisa las partidas de la cima y del Desafío del día, y solo saca del ranking una partida que no llega al resultado que mostró.',
+      },
+      {
+        pt: 'As fitas do Desafio do dia saem para todas as tentativas oficiais, sem esperar a conferência.',
+        en: 'Daily Challenge ribbons go out for every official attempt, without waiting for the check.',
+        es: 'Las cintas del Desafío del día salen para todos los intentos oficiales, sin esperar la revisión.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-19',
     title: { pt: 'Convide amigos', en: 'Invite friends', es: 'Invita amigos' },
     notes: [
       {

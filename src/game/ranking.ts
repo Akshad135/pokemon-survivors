@@ -204,9 +204,8 @@ export const isBoardPeriod = (v: unknown): v is BoardPeriod => BOARD_PERIODS.som
 export const BOARD_SIZE = 50
 
 /**
- * One player's best run on a board. `at` is when the run started (ISO);
- * `verified` is null while the server hasn't re-simulated it yet (runs that
- * failed never show).
+ * One player's best run on a board. `at` is when the run started (ISO). Runs
+ * whose re-simulation failed never show.
  */
 export type BoardEntry = ProfileName & {
   rank: number
@@ -217,7 +216,6 @@ export type BoardEntry = ProfileName & {
   time: number
   outcome: RunOutcome
   at: string
-  verified: boolean | null
   /** The player's supporter badge (`game/supporters.ts`), null when they have none or hide it. Missing from an older API. */
   supporter?: SupporterTier | null
 }
@@ -250,7 +248,7 @@ export const parseChallengePlace = (v: unknown): ChallengePlace | null => {
   return { day: v.day, official: v.official === true, rank: typeof v.rank === 'number' ? v.rank : null, total: v.total }
 }
 
-/** A run on a public profile (`verified` and `branch` as on `BoardEntry`). */
+/** A run on a public profile (`branch` as on `BoardEntry`). */
 export type ProfileRun = {
   starter: PlayableId
   stage: number
@@ -259,7 +257,6 @@ export type ProfileRun = {
   time: number
   outcome: RunOutcome
   at: string
-  verified: boolean | null
 }
 
 /** What `/profiles/:handle` answers. `followed`: the asking player follows them; `self`: it's the asking player. */

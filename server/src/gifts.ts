@@ -18,8 +18,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
  *
  * Invites: `refer` records who brought a new account (`canRefer`), makes
  * them follow each other and welcomes the newcomer with a Friendship Egg;
- * `credit` (after each verified run) counts the invite for the inviter once
- * the newcomer has enough verified runs (`creditDue`) and sends the
+ * `credit` (after each finished run) counts the invite for the inviter once
+ * the newcomer has finished enough runs (`creditDue`) and sends the
  * milestone gifts (`milestoneGifts`). Everything is counted here, never on the device.
  */
 /**
