@@ -58,6 +58,8 @@ import { tensionDevTools } from './game/tensionDev'
 import { hazardDevTools } from './game/hazardDev'
 import { spitterDevTools } from './game/spitterDev'
 import { cursePick } from './ui/cursePick'
+import { pokeballPick } from './ui/pokeballPick'
+import { dropPickup } from './game/pickups'
 import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
@@ -702,6 +704,9 @@ const syncOverlay = (r: Run) => {
     case 'curse':
       r.overlay = cursePick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
       break
+    case 'pokeball':
+      r.overlay = pokeballPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
+      break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
       break
@@ -770,6 +775,9 @@ const abilityFeedback = (g: Game, id: AbilityId, moment: 'picked' | 'proc') => {
   }
   if (kind === 'timer') playSfx('item')
 }
+
+/** The move or item a Poké Ball held, by its official name. */
+const offerName = (offer: Offer) => (offer.kind === 'move' ? MOVES[offer.id].name : offer.kind === 'item' ? ITEMS[offer.id].name : '')
 
 const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) => {
   const m = t().toast
@@ -961,7 +969,13 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, h('span', { class: 'item-toast toast-curse' }, h('img', { src: curseIcon(e.id), alt: '' }), rich(line)), 3000)
     }
     case 'pokeball':
-      playSfx('levelUp')
+      // A new move or item opens its own screen; taking it already sounded there.
+      if (e.moment === 'found') return playSfx('pokeballOpen')
+      if (e.moment === 'left') return e.offer && toast(ui, rich(t().pokeballPick.left(offerName(e.offer))), 2200)
+      if (e.moment === 'auto') {
+        playSfx('pokeballOpen')
+        playSfx('levelUp')
+      }
       return toast(ui, t().toast.pokeball(offerLabel(e.offer)))
     case 'shinyOffer':
       // The fresh cards on screen say the rest.
@@ -1550,6 +1564,8 @@ if (import.meta.env.DEV) {
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
+      /** `ps.ball(3)` drops Poké Balls 20 px to the right of the player (inside the magnet), side by side. */
+      ball: (n = 1) => withRun((g) => Array.from({ length: n }, (_, i) => dropPickup(g, g.player.x + 20 + i * 6, g.player.y, 'pokeball'))),
       ...riftDevTools(() => run?.game),
       ...levelUpDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),

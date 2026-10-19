@@ -118,6 +118,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Poké Balls que perguntam', en: 'Poké Balls that ask', es: 'Poké Balls que preguntan' },
+        notes: [
+          {
+            pt: 'Quando uma Poké Ball traz um golpe ou item novo, que ocuparia um espaço, o jogo pausa e pergunta: Pegar ou Deixar. Se deixar, ele some. Melhorias do que você já tem continuam entrando sozinhas, e abrir uma Poké Ball agora tem um estalo e um brilho.',
+            en: "When a Poké Ball holds a new move or item, one that would take a slot, the game pauses and asks: Take or Leave. Leave it and it's gone. Upgrades to what you already have still go in on their own, and opening a Poké Ball now pops and sparkles.",
+            es: 'Cuando una Poké Ball trae un movimiento u objeto nuevo, que ocuparía un espacio, el juego se pausa y pregunta: Tomar o Dejar. Si lo dejas, desaparece. Las mejoras de lo que ya tienes siguen entrando solas, y abrir una Poké Ball ahora hace un chasquido y brilla.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Novidades no lobby', en: "What's new, in the lobby", es: 'Novedades en el lobby' },
         notes: [
           {

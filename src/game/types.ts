@@ -452,7 +452,7 @@ export type Offer =
   | TmOffer
   /** The move to forget so a TM's move takes its slot (`game/tms.ts`). */
   | { kind: 'forget'; id: MoveId; tm: TmOffer }
-  /** Walks away from a TM: leaves the disc, the lesson or the forgetting. */
+  /** Walks away from a TM (the disc, the lesson or the forgetting) or from a Poké Ball's new move or item. */
   | { kind: 'pass' }
   /** Two maxed moves of a recipe's types fuse into a duo move (`duoRules.ts`): `from[0]`'s slot takes it, `from[1]`'s frees up. */
   | { kind: 'duo'; to: MoveId; from: readonly [MoveId, MoveId] }
@@ -463,10 +463,11 @@ export type Offer =
 export type TmOffer = { kind: 'tm'; id: MoveId; level: number; source: TmSource; price: number }
 
 /**
- * `branch`, `ability`, `curse` and `tm` wait on a pick from `offers`, like `levelup`: where an evolution goes, the ability
- * after the first, whether to take a locked chest's cursed item, and a TM's move to learn (and which to forget for it).
+ * `branch`, `ability`, `curse`, `tm` and `pokeball` wait on a pick from `offers`, like `levelup`: where an evolution goes,
+ * the ability after the first, whether to take a locked chest's cursed item, a TM's move to learn (and which to forget
+ * for it), and whether to take a Poké Ball's new move or item.
  */
-export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'curse' | 'tm' | 'paused' | 'gameover' | 'victory'
+export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'curse' | 'tm' | 'pokeball' | 'paused' | 'gameover' | 'victory'
 
 /** Fire-and-forget notifications for audio/UI. Drained by the shell every frame. */
 export type GameEvent =
@@ -505,7 +506,8 @@ export type GameEvent =
   /** The ability was picked, or did something worth a word (Sturdy held, a guard blocked, a weather called). */
   | { kind: 'ability'; id: AbilityId; moment: 'picked' | 'proc' }
   | { kind: 'evolved'; to: number }
-  | { kind: 'pokeball'; offer: Offer | null }
+  /** A Poké Ball opened: its prize went in on its own (`auto`), or a new move or item was `found` and then `taken` or `left`. */
+  | { kind: 'pokeball'; offer: Offer | null; moment: 'auto' | 'found' | 'taken' | 'left' }
   /** A shiny level-up card was picked: the player picks again. */
   | { kind: 'shinyOffer' }
   /** A level-up card was forgotten (Esquecer) and its slot drawn again. */

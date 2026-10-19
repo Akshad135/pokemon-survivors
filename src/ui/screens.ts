@@ -347,6 +347,14 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
   button.replaceChildren(...parts.childNodes)
 }
 
+/** A level-up card on its own, shown rather than picked (a Poké Ball's new move or item); holding it opens the move card. */
+export const offerTile = (g: Game, offer: Offer) => {
+  const tile = h('div', {})
+  fillCard(g, tile, offer, 0)
+  holdMoveCard(tile, () => offerCard(g, offer))
+  return tile
+}
+
 /**
  * What the level-up screen can do besides picking: the Poké Mart charges and
  * Esquecer (`banish` forgets the card at an index; the run redraws that slot in place).
