@@ -121,12 +121,12 @@ export const FIELD_TUNING = {
     defense: { reach: 50, hold: 25, hp: 100, bite: 5, every: 3.5, raiders: 4, perMinute: 0.5, elites: 0, max: 36 },
     collect: { time: 60, balls: 5, guards: 0, eliteGuards: false },
     escort: { time: 80, hp: 100, bite: 6 },
-    reward: { coins: 3, coinMinutes: 3, shinyCard: false, egg: 0.35 },
+    reward: { coins: 3, coinMinutes: 3, shinyCard: false, egg: 0.25 },
   },
   hard: {
-    defense: { reach: 45, hold: 27, hp: 100, bite: 6, every: 3, raiders: 5, perMinute: 0.6, elites: 1, max: 44 },
-    collect: { time: 55, balls: 5, guards: 4, eliteGuards: false },
-    escort: { time: 70, hp: 100, bite: 8 },
+    defense: { reach: 42, hold: 28, hp: 100, bite: 7.5, every: 2.7, raiders: 5, perMinute: 0.7, elites: 2, max: 50 },
+    collect: { time: 50, balls: 6, guards: 5, eliteGuards: false },
+    escort: { time: 64, hp: 100, bite: 10 },
     reward: { coins: 4, coinMinutes: 3, shinyCard: false, egg: 0.5 },
   },
   nightmare: {
