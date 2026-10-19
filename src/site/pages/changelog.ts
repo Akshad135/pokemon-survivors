@@ -1,20 +1,15 @@
 import type { Locale } from '../../i18n'
 import { SITE_MESSAGES } from '../../i18n/site'
-import { CHANGELOG, type ChangelogEntry } from '../changelog'
+import { CHANGELOG } from '../changelog'
 import { html } from '../html'
 import { layout } from '../layout'
-import { REPO_URL } from '../routes'
 
-/** Entries grouped by date, keeping the file's newest-first order. */
-const byDate = (entries: readonly ChangelogEntry[]) =>
-  entries.reduce<Array<{ date: string; entries: ChangelogEntry[] }>>((groups, entry) => {
-    const last = groups[groups.length - 1]
-    if (last?.date === entry.date) last.entries.push(entry)
-    else groups.push({ date: entry.date, entries: [entry] })
-    return groups
-  }, [])
-
-/** `/novidades/`: the changelog, in every language, from `site/changelog.ts`. */
+/**
+ * `/novidades/`: the changelog, in every language, from `site/changelog.ts`.
+ * One card per update: its date and title, the highlights, then every change
+ * folded under a `<details>` (open on the newest). Each card's id is its date,
+ * so the lobby's Novidades links straight to it.
+ */
 export const changelogPage = (locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const longDate = (iso: string) =>
@@ -24,16 +19,21 @@ export const changelogPage = (locale: Locale) => {
     <p class="lead">${m.changelog.intro}</p>
   </div>
   <div class="doc-body narrow">
-    ${byDate(CHANGELOG).map(
-      (group) => html`<section class="changelog-day">
-      <h2><time datetime="${group.date}">${longDate(group.date)}</time></h2>
-      ${group.entries.map(
-        (e) => html`<article class="box doc-section">
-        <h3>${e.title[locale]}${e.pr !== undefined && html` <a class="pr" href="${REPO_URL}/pull/${e.pr}">${m.changelog.pr(e.pr)}</a>`}</h3>
-        <ul>${e.notes.map((note) => html`<li>${note[locale]}</li>`)}</ul>
-      </article>`,
-      )}
-    </section>`,
+    ${CHANGELOG.map(
+      (update, i) => html`<article class="box doc-section changelog-update" id="${update.date}">
+      <p class="changelog-date"><time datetime="${update.date}">${longDate(update.date)}</time></p>
+      <h2>${update.title[locale]}</h2>
+      <ul class="changelog-highlights">${update.highlights.map((line) => html`<li>${line[locale]}</li>`)}</ul>
+      <details${i === 0 && html` open`}>
+        <summary>${m.changelog.changes(update.changes.length)}</summary>
+        ${update.changes.map(
+          (change) => html`<section class="changelog-change">
+          <h3>${change.title[locale]}</h3>
+          <ul>${change.notes.map((note) => html`<li>${note[locale]}</li>`)}</ul>
+        </section>`,
+        )}
+      </details>
+    </article>`,
     )}
   </div>`
   return layout({ id: 'changelog', locale, title: m.changelog.title, description: m.changelog.description }, main)

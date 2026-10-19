@@ -585,8 +585,8 @@ export const sitePt = {
     description:
       'Tudo o que mudou no Pokémon Survivors, atualização por atualização: iniciais, chefes lendários, shinies, evolução de golpes, Poké Mart, versão mobile e mais.',
     h1: 'Novidades',
-    intro: 'O histórico de atualizações do jogo, da mais nova para a mais antiga. Cada entrada leva ao pull request com os detalhes no GitHub.',
-    pr: (n: number) => `PR #${n}`,
+    intro: 'Tudo o que mudou no jogo, atualização por atualização, da mais nova para a mais antiga. Cada uma abre com os destaques.',
+    changes: (n: number) => `Todas as mudanças (${n})`,
   },
 
   support: {

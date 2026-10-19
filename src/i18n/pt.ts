@@ -635,6 +635,18 @@ export const pt = {
     startedPractice: 'Treino: não entra no ranking do desafio.',
   },
 
+  /** Novidades: the lobby's button (a dot while an update is unread) and the newest update's highlights it opens. */
+  news: {
+    title: 'NOVIDADES',
+    open: 'Novidades',
+    unread: 'Novidades: atualização nova!',
+    update: (date: string) => `Atualização de ${date}`,
+    seeAll: 'Ver tudo',
+    close: 'Fechar',
+    hintKeys: '← → escolher · ENTER confirmar · ESC voltar',
+    hintTouch: 'Toque para escolher',
+  },
+
   /** Ribbons of the Desafio do dia, on the profile and the Trainer Card. */
   ribbons: {
     names: { gold: 'Fita de Ouro', silver: 'Fita de Prata', bronze: 'Fita de Bronze' } satisfies Record<RibbonTier, string>,

@@ -12,7 +12,7 @@ import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { bulbIcon, coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, eggIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
@@ -23,9 +23,10 @@ import { boundKey } from './inputLabels'
 import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
 import { contentLine } from './gifts'
 import { countedFriends, loadInvites } from './invites'
+import { isUnread, latestUpdate } from './news'
 import { hallFace, hallPortrait } from './supporters'
 import type { Screen } from './screens'
-import { gearButton, helpButton, shellBody, topBar, walletChip } from './shell'
+import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } from './shell'
 import { nearestInDirection, type Direction } from './spatial'
 import { toast } from './toasts'
 import { trainerChip } from './trainer'
@@ -33,6 +34,7 @@ import { trainerChip } from './trainer'
 /** What the lobby can highlight. A screen opened over it gets the one it came from, to come back to it. */
 export type LobbyFocus =
   | 'trainer'
+  | 'news'
   | 'help'
   | 'settings'
   | 'outbreak'
@@ -78,6 +80,8 @@ export type TitleActions = {
    * title (the language may have changed), highlighting `focus`.
    */
   settings: (focus: LobbyFocus) => Screen
+  /** Opens Novidades (the newest update's highlights) over the title, like `settings`. */
+  news: (focus: LobbyFocus) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: LobbyFocus) => Screen
   /** Opens the Poké Mart over the title, like `settings`. */
@@ -202,6 +206,23 @@ const missionsCard = () => {
     h('b', {}, `${done}/${daily.length}`),
   )
   el.setAttribute('aria-label', `${m.missions}: ${m.missionsLeft(left)}`)
+  return el
+}
+
+/* ---------------- Novidades ---------------- */
+
+/** Novidades in the top bar: a page of patch notes that wiggles under a red "!" while the newest update is unread. */
+const newsButton = (onClick: () => void) => {
+  const m = t().news
+  const el = iconButton(newsIcon(), m.open, onClick, 'N')
+  el.classList.add('lobby-news')
+  void latestUpdate().then((update) => {
+    if (!isUnread(update)) return
+    el.classList.add('unread')
+    el.setAttribute('aria-label', m.unread)
+    el.title = m.unread
+    el.append(h('em', { class: 'lobby-badge' }, '!'))
+  })
   return el
 }
 
@@ -425,12 +446,12 @@ const heldMove = (input: Input): Vec => {
 }
 
 /** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls). */
-const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
+const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyN: 'news', KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
 
 /**
  * Title screen over the live meadow: the pixel logo and a blinking "press
- * start", then the lobby. The top bar holds the Trainer chip, the wallet, `?`
- * (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
+ * start", then the lobby. The top bar holds the Trainer chip, the wallet,
+ * Novidades, `?` (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
  * Missões), the Hall da Fama card sits beside them (Convide amigos under it), the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
  * Loja, Ranking, Ideias). Arrows move between all of them by where they are on
@@ -509,6 +530,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const runs: Record<Exclude<LobbyFocus, 'trainer' | 'hall'>, () => void> = {
     help: () => location.assign(ROUTES.guide[lang]),
     settings: () => openOver(actions.settings),
+    news: () => openOver(actions.news),
     outbreak: () => toast(root, rich(`*${ENEMIES[outbreakToday()].name}*: ${t().outbreak.blurb}`), 3600, 'outbreak'),
     challenge: actions.challenge,
     missions: actions.missions,
@@ -534,7 +556,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     bar.replaceWith(
       topBar({
         left: chip.el,
-        right: [walletChip(save.wallet), navigable(helpButton(press('help')), 'help'), navigable(gearButton(press('settings')), 'settings')],
+        right: [walletChip(save.wallet), navigable(newsButton(press('news')), 'news'), navigable(helpButton(press('help')), 'help'), navigable(gearButton(press('settings')), 'settings')],
       }),
     )
 
