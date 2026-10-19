@@ -410,7 +410,7 @@ export const siteEn: SiteMessages = {
         `Bosses, locked chests and rifts sometimes leave an egg, at most ${perRun} per run. It goes to the incubator, which has ${slots} slots. Every ${stepPx} px walked in a run counts as a step, and every egg in the incubator walks along. An egg found mid-run already counts the steps taken after it.`,
         `Once an egg is ready, it hatches when you leave the run or in the incubator (in the main menu and in the Eggs tab of the Pokémon select). Families you don't have yet come out ${weight}x more often. The hatchling has a 1 in ${shiny} chance to be shiny, and then it stays shiny in every run.`,
         'A duplicate, or an egg found with the incubator full, becomes Poké Dollars. A player who never had an egg is sure to get the first one.',
-        "The Friendship Egg never drops in runs: it comes as a Mystery Gift when you sign up through someone's invite, and when a friend you invited finishes 3 runs. Only Munchlax hatches from it. At 3 friends you get the Ambassador title and an exclusive frame, at 5 an Ultra rare egg, and at 10 a shiny Munchlax. Your link and each friend's progress are on the Invite friends card, on the home screen.",
+        "The Friendship Egg never drops in runs: it comes as a Mystery Gift when you sign up through someone's invite, and when a friend you invited finishes 3 runs. Only Munchlax hatches from it. At 3 friends you get the Ambassador title and an exclusive frame, at 5 an Ultra rare egg, and at 10 a shiny Dratini. Your link and each friend's progress are on the Invite friends card, on the home screen.",
       ],
       tierHead: 'Egg',
       stepsHead: 'Steps',

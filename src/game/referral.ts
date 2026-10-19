@@ -61,7 +61,7 @@ export const FRIEND_MILESTONES = [
   { friends: 1, gifts: [{ kind: 'egg', tier: 'friend' }] },
   { friends: 3, gifts: [{ kind: 'title', title: 'ambassador' }, { kind: 'style', style: { slot: 'frame', id: 'ambassador' } }] },
   { friends: 5, gifts: [{ kind: 'egg', tier: 'ultra' }] },
-  { friends: 10, gifts: [{ kind: 'shinyHatch', family: 'munchlax' }] },
+  { friends: 10, gifts: [{ kind: 'shinyHatch', family: 'dratini' }] },
 ] as const satisfies readonly { friends: number; gifts: readonly GiftContent[] }[]
 
 export type FriendMilestone = (typeof FRIEND_MILESTONES)[number]

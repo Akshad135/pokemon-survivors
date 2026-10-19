@@ -554,7 +554,7 @@ export const en: Messages = {
     copied: 'Link copied! Just paste it to your friends.',
     shareText: 'Play Pokémon Survivors with me? Join through my link and get a Friendship Egg:',
     rewards: 'Rewards',
-    reward: { 1: 'Friendship Egg', 3: 'Ambassador title and frame', 5: 'Ultra rare egg', 10: 'Shiny Munchlax' },
+    reward: { 1: 'Friendship Egg', 3: 'Ambassador title and frame', 5: 'Ultra rare egg', 10: 'Shiny Dratini' },
     milestone: (friends) => (friends === 1 ? '1 friend' : `${friends} friends`),
     friends: 'Your friends',
     noFriends: 'Nobody has joined through your link yet.',

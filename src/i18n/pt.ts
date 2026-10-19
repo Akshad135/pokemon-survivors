@@ -664,7 +664,7 @@ export const pt = {
     shareText: 'Bora jogar Pokémon Survivors comigo? Entra pelo meu link e ganha um Ovo da Amizade:',
     rewards: 'Recompensas',
     /** What each milestone pays (`FRIEND_MILESTONES`). */
-    reward: { 1: 'Ovo da Amizade', 3: 'Título e moldura Embaixador(a)', 5: 'Ovo ultra raro', 10: 'Munchlax shiny' } satisfies Record<FriendMilestone['friends'], string>,
+    reward: { 1: 'Ovo da Amizade', 3: 'Título e moldura Embaixador(a)', 5: 'Ovo ultra raro', 10: 'Dratini shiny' } satisfies Record<FriendMilestone['friends'], string>,
     milestone: (friends: number) => (friends === 1 ? '1 amigo' : `${friends} amigos`),
     friends: 'Seus amigos',
     noFriends: 'Ninguém entrou pelo seu link ainda.',

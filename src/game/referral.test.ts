@@ -45,7 +45,7 @@ describe('invite rewards', () => {
     expect(milestonesReached(0)).toEqual([])
     expect(milestonesReached(1).map((m) => m.friends)).toEqual([1])
     expect(milestonesReached(6).map((m) => m.friends)).toEqual([1, 3, 5])
-    expect(milestonesReached(10).at(-1)?.gifts).toEqual([{ kind: 'shinyHatch', family: 'munchlax' }])
+    expect(milestonesReached(10).at(-1)?.gifts).toEqual([{ kind: 'shinyHatch', family: 'dratini' }])
   })
 
   it('point at the next milestone, none past the last', () => {

@@ -554,7 +554,7 @@ export const es: Messages = {
     copied: '¡Link copiado! Solo pégalo para tus amigos.',
     shareText: '¿Jugamos Pokémon Survivors? Entra por mi link y gana un Huevo de la Amistad:',
     rewards: 'Recompensas',
-    reward: { 1: 'Huevo de la Amistad', 3: 'Título y marco Embajador(a)', 5: 'Huevo ultra raro', 10: 'Munchlax shiny' },
+    reward: { 1: 'Huevo de la Amistad', 3: 'Título y marco Embajador(a)', 5: 'Huevo ultra raro', 10: 'Dratini shiny' },
     milestone: (friends) => (friends === 1 ? '1 amigo' : `${friends} amigos`),
     friends: 'Tus amigos',
     noFriends: 'Nadie ha entrado por tu link todavía.',
