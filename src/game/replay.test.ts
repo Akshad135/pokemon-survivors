@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { chooseOffer, step } from './game'
+import { chooseOffer, step, takeBerryLevelUps } from './game'
+import { ITEM_IDS, ITEMS } from '../data/items'
+import { maxMoveLevel } from './moves'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { spawnMapEvent } from './mapEvents'
@@ -228,6 +230,31 @@ describe('replays', () => {
     const staged = startGame(start)
     late(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate level-ups that took the berry on their own, several in a row', () => {
+    /** Six maxed moves (no evolution or duo among them) and six maxed items, past the draft, with level-ups waiting. */
+    const maxed = (g: Game) => {
+      g.player.moves = (['ember', 'fireSpin', 'swift', 'iceShard', 'sludgeBomb', 'gust'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0, path: 0 }))
+      g.player.items = ITEM_IDS.slice(0, 6).map((id) => ({ id, level: ITEMS[id].levels.length }))
+      Object.assign(g, { phase: 'playing', pendingLevelUps: 0, offers: [] })
+      recomputeStats(g)
+      gainXp(g, 300)
+    }
+    const view = { ...START.view }
+    const g = startGame(START, view)
+    maxed(g)
+    const rec = startRecording(START)
+    let taken = 0
+    while (g.time < 10) {
+      taken += takeBerryLevelUps(g, (i) => recordEvent(rec, ['offer', i]))
+      expect(g.phase).not.toBe('levelup')
+      step(g, { move: recordStep(rec, view, { x: 1, y: 0 }), special: false }, TICK)
+    }
+    expect(taken).toBeGreaterThan(1)
+    const staged = startGame(START)
+    maxed(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('give a run played on another seed away', () => {

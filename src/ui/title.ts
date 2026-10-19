@@ -1,4 +1,5 @@
 import { accountState, accountsEnabled, giftInbox, onAccountChange, onInbox, type AccountState } from '../account'
+import { track } from '../analytics'
 import { playSfx } from '../engine/audio'
 import { ACTIONS } from '../engine/bindings'
 import { joystick, type Input, type Stick } from '../engine/input'
@@ -31,6 +32,7 @@ import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } fro
 import { nearestInDirection, type Direction } from './spatial'
 import { toast } from './toasts'
 import { trainerChip } from './trainer'
+import { uiDpr, uiViewport } from './uiScale'
 
 /** What the lobby can highlight. A screen opened over it gets the one it came from, to come back to it. */
 export type LobbyFocus =
@@ -115,9 +117,9 @@ const LANDSCAPE = '(max-height: 500px) and (orientation: landscape)'
 const NARROW = '(max-width: 759px) and (min-height: 501px), (max-width: 759px) and (orientation: portrait)'
 const layout = () => (matchMedia(LANDSCAPE).matches ? 'landscape' : matchMedia(NARROW).matches ? 'narrow' : 'wide')
 
-/** Sizes a pixel-art canvas to `k` device px per art px, so its pixels stay square. Touches the style only when it changes. */
+/** Sizes a pixel-art canvas in `#ui` to `k` device px per art px (UI size included), so its pixels stay square. Touches the style only when it changes. */
 const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
-  const dpr = window.devicePixelRatio || 1
+  const dpr = uiDpr()
   const width = `${(canvas.width * k) / dpr}px`
   if (canvas.style.width === width) return
   canvas.style.width = width
@@ -126,8 +128,7 @@ const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel: big for the intro, smaller in the lobby. */
 const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
-  const vw = window.innerWidth
-  const vh = window.innerHeight
+  const { w: vw, h: vh } = uiViewport()
   const mode = layout()
   // The top bar takes about 60 px off the height.
   const [maxW, maxH] = intro
@@ -137,7 +138,7 @@ const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
       : mode === 'narrow'
         ? [Math.min(vw * 0.8, 420), (vh - 60) * 0.11]
         : [Math.min(vw - 620, 460), (vh - 60) * 0.17]
-  pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, window.devicePixelRatio || 1))
+  pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, uiDpr()))
 }
 
 
@@ -163,7 +164,7 @@ const outbreakCard = () => {
   void Promise.allSettled([loadSpecies(def.dex), loadSpecies(def.dex, true)])
   const el = todayCard('outbreak', t().home.outbreak, null, null, ...walkers, h('b', {}, def.name), h('img', { class: 'lobby-sparkle', src: sparkleIcon(), alt: '' }))
   const tick = (time: number) => {
-    const k = Math.max(1, Math.round((window.devicePixelRatio || 1) * (layout() === 'wide' ? 1.5 : 1)))
+    const k = Math.max(1, Math.round(uiDpr() * (layout() === 'wide' ? 1.5 : 1)))
     walkers.forEach((canvas, i) => {
       pixelSize(canvas, k)
       const ctx = context2d(canvas)
@@ -444,7 +445,7 @@ const partnerStage = (onPlay: () => void) => {
   const el = h('div', { class: 'lobby-stage' }, partner)
   const shadow = ellipse(13, 3, 'rgba(16, 24, 16, 0.3)')
   const tick = (time: number) => {
-    const dpr = window.devicePixelRatio || 1
+    const dpr = uiDpr()
     const room = el.clientHeight - plate.offsetHeight - 8
     const k = Math.min(Math.round(4 * dpr), logoScale(STAGE.w, STAGE.h, el.clientWidth, Math.max(room, 1), dpr))
     pixelSize(canvas, k)
@@ -618,14 +619,14 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     play: actions.play,
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
-  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), later(runs[key]))
+  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), track('lobby_press', { entry: key }), later(runs[key]))
   const pressable = <T extends HTMLElement>(node: T, key: keyof typeof runs) => (node.addEventListener('click', press(key)), navigable(node, key))
 
   const buildLobby = () => {
     const save = loadSave()
     const landscape = layout() === 'landscape'
     navs = []
-    const chip = trainerChip(input, { onOpen: () => openOver(actions.trainer) })
+    const chip = trainerChip(input, { onOpen: () => (track('lobby_press', { entry: 'trainer' }), openOver(actions.trainer)) })
     closeChip = chip.dispose
     navigable(chip.el, 'trainer')
     bar.replaceWith(
@@ -646,7 +647,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     stage.el.append(pressable(giftButton(), 'gifts'))
     actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
-    const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
+    const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), track('lobby_press', { entry: 'hall' }), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
     const side = h(
       'div',
       { class: 'lobby-side' },

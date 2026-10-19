@@ -74,7 +74,11 @@ const gameVersion = () => {
 export default defineConfig({
   plugins: [sitePages()],
   define: { __GAME_VERSION__: JSON.stringify(gameVersion()) },
+  // PostHog's proxy, as vercel.json has it, to try analytics locally (`ps:analytics` set to `on` in localStorage).
+  server: { proxy: { '/ingest': { target: 'https://us.i.posthog.com', changeOrigin: true, rewrite: (path) => path.replace(/^\/ingest/, '') } } },
   build: {
+    // Hidden source maps, for `scripts/sourcemaps.mjs` to upload to PostHog, only where it will.
+    sourcemap: process.env.POSTHOG_CLI_API_KEY ? 'hidden' : false,
     rolldownOptions: {
       input: { main: 'index.html', en: 'en/index.html', es: 'es/index.html' },
     },

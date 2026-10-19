@@ -24,6 +24,7 @@ import { h, later } from './dom'
 import { boxSpecies, caughtShinies } from './pcBox'
 import { loadSave } from './save'
 import { damageSource, hint, menu, type Screen } from './screens'
+import { uiDpr, uiViewport } from './uiScale'
 
 /**
  * Sharing a card: the data each card shows (built from the run or the save),
@@ -194,7 +195,7 @@ const primaryMethod = (file: File): ShareMethod => {
 
 /** Whole device px per card px that fit `maxW`×`maxH` CSS px, as the CSS width: the preview stays pixel-sharp. */
 const previewWidth = (maxW: number, maxH: number) => {
-  const dpr = window.devicePixelRatio || 1
+  const dpr = uiDpr()
   const k = logoScale(CARD.w, CARD.h, maxW, maxH, dpr)
   return Math.min((CARD.w * k) / dpr, maxW)
 }
@@ -223,8 +224,7 @@ export const sharePreview = (root: HTMLElement, input: Input, card: ShareCard, o
   }
 
   const fitImage = () => {
-    const vw = window.visualViewport?.width ?? window.innerWidth
-    const vh = window.visualViewport?.height ?? window.innerHeight
+    const { w: vw, h: vh } = uiViewport()
     const sideBySide = vh <= 500 && vw > vh
     const width = sideBySide ? previewWidth(vw * 0.5, vh - 32) : previewWidth(Math.min(vw - 72, 520), vh - 250)
     img.style.width = `${width}px`
