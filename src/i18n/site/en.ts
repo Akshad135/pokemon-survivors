@@ -560,8 +560,8 @@ export const siteEn: SiteMessages = {
     description:
       'Everything that changed in Pokémon Survivors, update by update: starters, legendary bosses, shinies, move evolutions, the Poké Mart, the mobile version and more.',
     h1: 'Changelog',
-    intro: 'The game\'s update history, newest first. Each entry links to the pull request with the details on GitHub.',
-    pr: (n: number) => `PR #${n}`,
+    intro: 'Everything that changed in the game, update by update, newest first. Each one opens with its highlights.',
+    changes: (n: number) => `All changes (${n})`,
   },
 
   support: {

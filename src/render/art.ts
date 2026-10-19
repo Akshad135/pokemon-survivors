@@ -759,6 +759,25 @@ export const heartIcon = () => toIconUrl('heart', FX.heart)
 export const gearIcon = () => toIconUrl('gear', () => art(GEAR, { 1: '#303040' }))
 export const helpIcon = () => toIconUrl('help', () => art(HELP, { 1: '#303040' }))
 
+/** Novidades: a dog-eared page of patch notes. 1 outline, 2 paper, 3 the fold, 4 the red headline, 5 text. */
+const NEWS = [
+  '11111111...',
+  '122222211..',
+  '1244442131.',
+  '12222221331',
+  '12555551111',
+  '12222222221',
+  '12555555521',
+  '12222222221',
+  '12555552221',
+  '12222222221',
+  '12555555521',
+  '12222222221',
+  '11111111111',
+]
+
+export const newsIcon = () => toIconUrl('news', () => art(NEWS, { 1: '#303040', 2: '#f8f8f8', 3: '#c8d0e0', 4: '#e83850', 5: '#9098b8' }))
+
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>
   tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()

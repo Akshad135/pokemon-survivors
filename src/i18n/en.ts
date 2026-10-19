@@ -530,6 +530,17 @@ export const en: Messages = {
     startedPractice: "Practice: it won't go on the challenge ranking.",
   },
 
+  news: {
+    title: "WHAT'S NEW",
+    open: "What's new",
+    unread: "What's new: a new update!",
+    update: (date: string) => `Update of ${date}`,
+    seeAll: 'See everything',
+    close: 'Close',
+    hintKeys: '← → choose · ENTER confirm · ESC back',
+    hintTouch: 'Tap to choose',
+  },
+
   ribbons: {
     names: { gold: 'Gold Ribbon', silver: 'Silver Ribbon', bronze: 'Bronze Ribbon' },
     section: 'Challenge ribbons',

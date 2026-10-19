@@ -564,8 +564,8 @@ export const siteEs: SiteMessages = {
     description:
       'Todo lo que cambió en Pokémon Survivors, actualización por actualización: iniciales, jefes legendarios, shinies, evolución de movimientos, Poké Mart, versión para celular y más.',
     h1: 'Novedades',
-    intro: 'El historial de actualizaciones del juego, de la más nueva a la más antigua. Cada entrada lleva al pull request con los detalles en GitHub.',
-    pr: (n: number) => `PR #${n}`,
+    intro: 'Todo lo que cambió en el juego, actualización por actualización, de la más nueva a la más antigua. Cada una empieza con sus destacados.',
+    changes: (n: number) => `Todos los cambios (${n})`,
   },
 
   support: {

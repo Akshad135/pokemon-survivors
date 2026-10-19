@@ -530,6 +530,17 @@ export const es: Messages = {
     startedPractice: 'Práctica: no entra al ranking del desafío.',
   },
 
+  news: {
+    title: 'NOVEDADES',
+    open: 'Novedades',
+    unread: 'Novedades: ¡actualización nueva!',
+    update: (date: string) => `Actualización del ${date}`,
+    seeAll: 'Ver todo',
+    close: 'Cerrar',
+    hintKeys: '← → elegir · ENTER confirmar · ESC volver',
+    hintTouch: 'Toca para elegir',
+  },
+
   ribbons: {
     names: { gold: 'Cinta de Oro', silver: 'Cinta de Plata', bronze: 'Cinta de Bronce' },
     section: 'Cintas del desafío',

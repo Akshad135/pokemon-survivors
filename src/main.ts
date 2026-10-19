@@ -102,6 +102,7 @@ import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } 
 import { martDevTools } from './ui/martDev'
 import { missionDevTools } from './ui/missionsDev'
 import { pcBoxScreen } from './ui/pcBox'
+import { newsScreen } from './ui/news'
 import { pokedexScreen } from './ui/pokedex'
 import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
@@ -295,6 +296,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
+      news: (focus) => newsScreen(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       mart: (focus) => shop(ui, input, () => showTitle({ focus })),
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
