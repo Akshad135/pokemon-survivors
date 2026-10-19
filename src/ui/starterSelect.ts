@@ -9,8 +9,8 @@ import { bodyOf } from '../data/bodies'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
-import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
-import { bagIcon, eggIcon, PICKUPS, sparkleIcon } from '../render/art'
+import { ownsShiny, pickShinyForm, playsShiny } from '../game/shinyPicks'
+import { bagIcon, eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
 import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
@@ -65,11 +65,10 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const m = t()
   const save = loadSave()
   const unlocked = (id: PlayableId) => isUnlocked(save.hatched, id)
-  /** A shiny hatch is shiny for good; a shiny rolled once can be picked (`shinyStarters`). */
-  const hatchedShiny = (id: PlayableId) => isHatchling(id) && save.hatched[id]?.shiny === true
-  let picks: ShinyStarters = save.shinyStarters
-  const canPick = (id: PlayableId) => id in picks && !hatchedShiny(id)
-  const shinyOf = (id: PlayableId) => hatchedShiny(id) || picks[id] === true
+  /** The save with the Normal/Shiny picks made on this screen; any shiny owned (rolled once, a ticket, a shiny hatch) can be picked. */
+  let forms = save
+  const canPick = (id: PlayableId) => ownsShiny(save, id)
+  const shinyOf = (id: PlayableId) => playsShiny(forms, id)
 
   let tab: Tab = isHatchling(initial) ? 'eggs' : 'starters'
   /** Each tab remembers its own cursor, so switching back lands where it was. */
@@ -102,15 +101,27 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     )
   }
   const shinyTag = () => h('img', { class: 'partner-cell-shiny', src: sparkleIcon(), alt: 'Shiny' })
+  /** What a family's clear says (`game/clears.ts`): the hardest difficulty it beat Mewtwo on. */
+  const clearText = (id: PlayableId) => {
+    const level = save.clears[id]
+    return level ? m.dex.clearedOn(m.difficulty.names[level]) : null
+  }
+  /** The trophy in a cleared family's corner, in the metal of its hardest clear. */
+  const clearTag = (id: PlayableId) => {
+    const level = save.clears[id]
+    return level ? h('img', { class: 'partner-cell-clear', src: trophyIcon(level), alt: clearText(id) ?? '' }) : null
+  }
+  const cellTitle = (id: PlayableId, name: string) => [name, clearText(id)].filter((s) => s !== null).join(' · ')
 
   const cells = new Map<PlayableId, HTMLElement>()
   const starterCell = (id: StarterId) => {
     const el = h(
       'button',
-      { class: 'partner-cell', type: 'button', title: PLAYABLE[id].name, style: `--t:${PLAYABLE[id].color}`, onclick: () => tapCell(id) },
+      { class: 'partner-cell', type: 'button', title: cellTitle(id, PLAYABLE[id].name), style: `--t:${PLAYABLE[id].color}`, onclick: () => tapCell(id) },
       cellPortrait(id),
       h('span', { class: 'partner-cell-name' }, PLAYABLE[id].name),
       shinyOf(id) && shinyTag(),
+      clearTag(id),
     )
     cells.set(id, el)
     return el
@@ -122,12 +133,13 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       {
         class: open ? 'partner-cell egg' : 'partner-cell egg locked',
         type: 'button',
-        title: open ? PLAYABLE[id].name : m.eggs.locked,
+        title: cellTitle(id, open ? PLAYABLE[id].name : m.eggs.locked),
         style: `--t:${open ? PLAYABLE[id].color : '#8890b0'}`,
         onclick: () => tapCell(id),
       },
       open ? cellPortrait(id) : cellSilhouette(id),
       shinyOf(id) && shinyTag(),
+      clearTag(id),
     )
     cells.set(id, el)
     return el
@@ -148,6 +160,13 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     ),
   )
 
+  /** The teaser's portraits, so a Normal/Shiny pick repaints them too. */
+  const teaserPortraits = new Map<PlayableId, HTMLImageElement>()
+  const teaserPortrait = (id: PlayableId) => {
+    const img = h('img', { src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })
+    teaserPortraits.set(id, img)
+    return img
+  }
   /** Desktop only: the hatched families under the grid, a shortcut into the Eggs tab. */
   const teaser = h(
     'div',
@@ -155,7 +174,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     h('small', { class: 'partner-teaser-label' }, m.partner.hatched),
     ...(owned.length > 0
       ? owned.slice(0, TEASER).map((id) =>
-          h('button', { class: 'partner-teaser-cell', type: 'button', title: PLAYABLE[id].name, onclick: () => (setTab('eggs'), select(id)) }, h('img', { src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })),
+          h('button', { class: 'partner-teaser-cell', type: 'button', title: PLAYABLE[id].name, onclick: () => (setTab('eggs'), select(id)) }, teaserPortrait(id)),
         )
       : [h('span', { class: 'partner-teaser-empty' }, m.partner.noneHatched)]),
     h('button', { class: 'partner-teaser-more', type: 'button', onclick: () => setTab('eggs') }, owned.length > TEASER ? `+${owned.length - TEASER} ▸` : '▸'),
@@ -197,6 +216,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     const form = PLAYABLE[id].line[stage]!
     void loadSpecies(form.dex, shinyOf(id)).catch(() => {})
     hero.style.setProperty('--accent', open ? PLAYABLE[id].color : '#8890b0')
+    const level = save.clears[id]
     const pedestal = h('div', { class: 'partner-pedestal' }, sprite)
     if (isHatchling(id) && !open) {
       const tier = HATCHLINGS[id].egg
@@ -242,6 +262,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
           h('small', { class: 'partner-dex' }, `#${String(form.dex).padStart(3, '0')}`),
           h('h3', { class: 'partner-name' }, form.name),
           h('div', { class: 'types' }, ...form.types.map(typeBadge)),
+          level && h('p', { class: 'partner-clear' }, h('img', { src: trophyIcon(level), alt: '' }), m.dex.clearedOn(m.difficulty.names[level])),
           h('p', { class: 'partner-blurb' }, m.blurbs[id]),
           h('div', { class: 'partner-hero-actions' }, canPick(id) && shinyPicker(shinyOf(id), setShiny), more(true)),
         ),
@@ -367,11 +388,14 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   function setShiny(shiny: boolean) {
     const id = current()
     if (!canPick(id) || shinyOf(id) === shiny) return
-    picks = pickShinyStarter(picks, id, shiny)
-    updateSave((s) => ({ ...s, shinyStarters: pickShinyStarter(s.shinyStarters, id, shiny) }))
+    forms = pickShinyForm(forms, id, shiny)
+    updateSave((s) => pickShinyForm(s, id, shiny))
     playSfx(shiny ? 'shiny' : 'move')
     const cell = cells.get(id)!
-    cell.querySelector<HTMLImageElement>('.partner-cell-portrait')!.src = portraitUrl(PLAYABLE[id].line[0].dex, shiny)
+    const portrait = portraitUrl(PLAYABLE[id].line[0].dex, shiny)
+    cell.querySelector<HTMLImageElement>('.partner-cell-portrait')!.src = portrait
+    const teased = teaserPortraits.get(id)
+    if (teased) teased.src = portrait
     cell.querySelector('.partner-cell-shiny')?.remove()
     if (shiny) cell.append(shinyTag())
     renderHero()

@@ -483,6 +483,30 @@ button {
   height: 14px;
 }
 
+/* A clear's trophy (10 px icon at 2×), opposite the shiny star. */
+.partner-cell-clear {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 20px;
+  height: 20px;
+}
+
+.partner-clear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: #505068;
+}
+
+.partner-clear img {
+  width: 20px;
+  height: 20px;
+}
+
 .partner-cell.selected {
   z-index: 1;
   border: 3px solid #e83030;
@@ -4661,6 +4685,11 @@ button {
   animation: screen-flash 0.9s steps(6) forwards;
 }
 
+/* Settings → Flashes: reduced. The cry and the toast carry the moment instead. */
+:root[data-flashes='reduced'] .screen-flash {
+  display: none;
+}
+
 @keyframes screen-flash {
   0%,
   30% {
@@ -6598,6 +6627,22 @@ button {
   right: 1px;
   width: 14px;
   height: 14px;
+}
+
+/* A clear's trophy (10 px icon at 2×), opposite the caught mark. */
+.dex-clear {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.dex-fact .dex-clear-icon {
+  width: 20px;
+  height: 20px;
+  margin: -6px 4px -6px 0;
+  vertical-align: middle;
 }
 
 .dex-cell.selected {
@@ -11140,6 +11185,127 @@ button.hall-tile:hover {
   }
   .curse-box .buttons {
     grid-area: buttons;
+  }
+}
+
+/* ---------- A Poké Ball's new move or item (ui/pokeballPick.ts) ---------- */
+
+.ball-pick .ball-box {
+  max-width: min(460px, 94vw);
+  text-align: center;
+  border-color: #c02828;
+  box-shadow: 0 0 0 2px #401010, 0 0 22px rgba(248, 56, 56, 0.45);
+}
+
+.ball-label {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: #d03030;
+  padding: 3px 7px 2px 4px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.ball-label img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  animation: ball-wobble 0.9s steps(4) infinite;
+}
+
+@keyframes ball-wobble {
+  25% {
+    transform: rotate(-14deg);
+  }
+  75% {
+    transform: rotate(14deg);
+  }
+}
+
+/* The prize is a level-up card, shown rather than picked: no shortcut digit, it pops out of the ball. */
+.ball-card .offer {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border-color: #e83838;
+  animation: ball-prize 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.35) both;
+}
+
+.ball-card .offer-key {
+  display: none;
+}
+
+@keyframes ball-prize {
+  from {
+    transform: translateY(14px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.ball-slot,
+.ball-note {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.05;
+  color: #505870;
+}
+
+.ball-note {
+  font-size: 16px;
+  color: #808898;
+}
+
+.ball-pick .btn.ball-take {
+  background: #d03030;
+  color: #fff;
+  border-color: #401010;
+}
+
+.ball-pick .btn.ball-take.selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 12px #f86060;
+}
+
+.ball-pick .btn.picked {
+  transform: scale(1.08);
+}
+
+.ball-pick.taking .ball-card .offer {
+  animation: ball-grab 0.28s ease-in forwards;
+}
+
+.ball-pick.leaving .ball-card .offer {
+  animation: ball-drop 0.28s ease-in forwards;
+}
+
+@keyframes ball-grab {
+  to {
+    transform: translateY(30px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes ball-drop {
+  to {
+    transform: translateY(-16px);
+    opacity: 0;
+    filter: grayscale(1);
+  }
+}
+
+/* A phone on its side: the hint and the note go, so the card and the buttons fit. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .ball-pick .ball-box {
+    padding: 10px 16px;
+    gap: 6px;
+  }
+  .ball-note,
+  .ball-box .hint {
+    display: none;
   }
 }
 

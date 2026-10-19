@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { mergeShinyStarters, parseShinyStarters, pickShinyStarter, unlockShinyStarter } from './shinyStarters'
+import { mergeShinyStarters, parseShinyStarters, unlockShinyStarter } from './shinyStarters'
 
 describe('shiny starters', () => {
   it('unlock picked shiny, and a second roll keeps the pick', () => {
     expect(unlockShinyStarter({}, 'charmander')).toEqual({ charmander: true })
     expect(unlockShinyStarter({ charmander: false }, 'charmander')).toEqual({ charmander: false })
-  })
-
-  it('only switch Normal/Shiny on an unlocked starter', () => {
-    expect(pickShinyStarter({ charmander: true }, 'charmander', false)).toEqual({ charmander: false })
-    expect(pickShinyStarter({}, 'squirtle', true)).toEqual({})
   })
 
   it('merge as a union, with the incoming pick', () => {
