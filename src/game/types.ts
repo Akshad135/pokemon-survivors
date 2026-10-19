@@ -12,7 +12,7 @@ import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
-import type { AbilityId } from '../data/abilities'
+import type { AbilityId, HitKind } from '../data/abilities'
 import type { BranchId } from '../data/branches'
 import type { AbilityState } from './abilities'
 import type { BranchFavor } from './branch'
@@ -517,7 +517,8 @@ export type GameEvent =
   | { kind: 'duoFused'; from: readonly [MoveId, MoveId]; to: MoveId }
   /** A cursed item turned up in a chest, was taken or left, or bit back (Life Orb's recoil, Flame Orb's burn). */
   | { kind: 'curse'; id: CurseId; moment: 'found' | 'taken' | 'left' | 'recoil' }
-  | { kind: 'gameover' }
+  /** The run is over: what landed the last hit (the foe's species, none for a hazard, and the kind of hit), for analytics. */
+  | { kind: 'gameover'; foe: EnemyId | null; hit: HitKind }
   | { kind: 'consumable'; item: ConsumableId }
   | { kind: 'propBreak' }
   | { kind: 'revive' }

@@ -666,8 +666,8 @@ export const siteEs: SiteMessages = {
       nonCommercial: 'Como los sprites son CC BY-NC, el juego en su conjunto no se puede usar con fines comerciales.',
     },
     privacy: [
-      'Jugar como invitado es la opción por defecto y no requiere registro: así el juego no usa cookies, anuncios ni rastreadores, y no recopila datos personales.',
-      'Todo lo que el juego recuerda queda en el localStorage de tu navegador, en tu dispositivo. Como invitado, nada de eso se envía a ningún servidor:',
+      'Jugar como invitado es la opción por defecto y no requiere registro: el juego no usa cookies ni anuncios y no pide ningún dato personal, como tu nombre o correo electrónico.',
+      'Todo lo que el juego recuerda queda en el localStorage de tu navegador, en tu dispositivo. Como invitado, nada de eso se envía a ningún servidor, salvo el identificador aleatorio de ph_ps, que va con las estadísticas de uso (abajo):',
     ],
     storage: {
       'ps:save': 'Poké Dollars, mejoras compradas en el Poké Mart, la Pokédex del juego (especies vistas, cuántas derrotaste y cuáles capturaste), los huevos de la incubadora (eggs), los Pokémon eclosionados (hatched), el progreso de las misiones, los logros, los récords (como Pokémon derrotados y el mayor tiempo sobrevivido) y el título elegido.',
@@ -676,6 +676,7 @@ export const siteEs: SiteMessages = {
       'ps:muted': 'Solo si jugaste versiones antiguas: el sonido desactivado de antes de que existieran los Ajustes. El juego solo lee esta clave, ya no la escribe.',
       'ps:account': 'Solo si entras con una cuenta: qué cuenta está conectada en este dispositivo (su id, tu nombre y tu nombre de usuario) y la última versión del progreso que sincronizó.',
       'ps:runs': 'Solo con una cuenta: resultados de partidas que todavía no llegaron al ranking (por ejemplo, sin internet). Se borran de aquí en cuanto el servidor los recibe.',
+      ph_ps: 'Un identificador aleatorio de este dispositivo, que PostHog usa para contar partidas y errores (abajo). No dice quién eres.',
     },
     account: [
       'Las cuentas son opcionales y sirven para guardar el progreso en la nube y continuar en otro dispositivo. El inicio de sesión es con Google, a través de Clerk (clerk.com), que recibe de Google tu nombre, correo electrónico y foto y usa sus propias cookies para mantener tu sesión iniciada. El juego nunca ve tu contraseña.',
@@ -688,6 +689,7 @@ export const siteEs: SiteMessages = {
       'Para borrar estos datos, elimina los datos del sitio en la configuración del navegador.',
       'Los sprites, sonidos y fuentes vienen del propio sitio, sin llamadas a servicios de terceros. El sitio está alojado en Vercel, que, como cualquier servidor, puede registrar datos técnicos de acceso (como la dirección IP) para operar y proteger el servicio.',
       'Para saber cuántas personas visitan el sitio y juegan, usamos Vercel Web Analytics y una instancia propia de Umami, en un servidor nuestro. Cuentan las visitas de forma anónima y agregada (página, país, navegador, dispositivo y sitio de origen) y, en el caso de Umami, también el resumen de cada partida (Pokémon inicial, hasta qué minuto y nivel llegaste y si ganaste), sin cookies y sin identificarte ni seguirte entre sitios.',
+      'En el juego también usamos PostHog (posthog.com, con los datos guardados en Estados Unidos) para entender cómo se juega y corregir errores. Recibe el resumen de cada partida (Pokémon, dificultad, movimientos, objetos, hasta qué minuto y nivel llegaste y cómo terminó), qué pantallas abres en el menú y, cuando el juego tiene un error, el mensaje del error y el replay de la partida en curso (la semilla y los comandos, nada personal). Todo va ligado al identificador aleatorio de ph_ps y, si iniciaste sesión, al id de tu cuenta y a tu nombre de usuario, nunca a tu correo ni a tu nombre. PostHog no usa cookies aquí y no te sigue entre sitios.',
       'Las donaciones se pagan en las páginas de AbacatePay (abacatepay.com: Pix y tarjetas brasileñas) o de Stripe (stripe.com: tarjetas de otros países, Apple Pay y Google Pay). Tus datos de pago van directo a ellos, y el juego nunca ve tu tarjeta. Nos muestran el monto y, como a cualquiera que recibe un pago, datos de quien pagó (como nombre y correo), que solo usamos para registrar la donación. Si das un @ (o canjeas el código de la donación), queda ligada a esa cuenta del juego para que lleguen las recompensas; el monto nunca se muestra en público, solo el sello de patrocinador, que puedes ocultar.',
     ],
     contact: [

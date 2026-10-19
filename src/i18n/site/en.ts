@@ -662,8 +662,8 @@ export const siteEn: SiteMessages = {
       nonCommercial: 'Because the sprites are CC BY-NC, the game as a whole can\'t be used commercially.',
     },
     privacy: [
-      'Playing as a guest is the default and needs no sign-up: that way the game has no cookies, ads or trackers, and collects no personal data.',
-      'Everything the game remembers lives in your browser\'s localStorage, on your device. As a guest, none of it is sent to any server:',
+      'Playing as a guest is the default and needs no sign-up: the game has no cookies or ads and never asks for personal data such as your name or email.',
+      'Everything the game remembers lives in your browser\'s localStorage, on your device. As a guest, none of it is sent to any server, except the random id in ph_ps, which goes with the usage statistics (below):',
     ],
     storage: {
       'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs), the Pokémon hatched (hatched), mission progress, achievements, records (like Pokémon defeated and your longest survival) and the title you picked.',
@@ -672,6 +672,7 @@ export const siteEn: SiteMessages = {
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',
       'ps:account': 'Only if you sign in: which account is signed in on this device (its id, your name and your username) and the last version of your progress it synced.',
       'ps:runs': 'Only with an account: run results that have not reached the ranking yet (for example, while offline). They leave as soon as the server gets them.',
+      ph_ps: 'A random id for this device, which PostHog uses to count runs and errors (below). It says nothing about who you are.',
     },
     account: [
       'Accounts are optional and keep your progress in the cloud so you can continue on another device. Sign-in is with Google, handled by Clerk (clerk.com), which gets your name, email and picture from Google and uses its own cookies to keep you signed in. The game never sees your password.',
@@ -684,6 +685,7 @@ export const siteEn: SiteMessages = {
       'To delete this data, clear the site data in your browser settings.',
       'Sprites, sounds and fonts are served by this site, with no calls to third-party services. The site is hosted on Vercel which, like any web server, may log technical access data (such as IP addresses) to run and protect the service.',
       'To know how many people visit and play, the site uses Vercel Web Analytics and its own Umami instance, on our own server. They count visits anonymously and in aggregate (page, country, browser, device and referring site) and, in Umami\'s case, a summary of each run (starter Pokémon, the minute and level you reached and whether you won), with no cookies and without identifying you or following you across sites.',
+      'In the game we also use PostHog (posthog.com, with data stored in the United States) to understand how it is played and to fix bugs. It receives a summary of each run (Pokémon, difficulty, moves, items, the minute and level you reached and how it ended), which menu screens you open and, when the game hits an error, the error message and the replay of the run in progress (its seed and your inputs, nothing personal). All of it is tied to the random id in ph_ps and, if you signed in, to your account id and username, never to your email or name. PostHog uses no cookies here and does not follow you across sites.',
       'Donations are paid on AbacatePay\'s pages (abacatepay.com: Pix and Brazilian cards) or Stripe\'s (stripe.com: cards from other countries, Apple Pay and Google Pay). Your payment details go straight to them, and the game never sees your card. They show us the amount and, as they would to anyone receiving a payment, details of who paid (such as name and email), which we use for nothing but recording the donation. If you give an @ (or redeem the donation\'s code), it\'s tied to that game account so the rewards reach it; the amount is never shown publicly, only the supporter badge, which you can hide.',
     ],
     contact: [

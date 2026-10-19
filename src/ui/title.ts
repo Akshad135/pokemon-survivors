@@ -1,4 +1,5 @@
 import { accountState, accountsEnabled, onAccountChange, type AccountState } from '../account'
+import { track } from '../analytics'
 import { playSfx } from '../engine/audio'
 import { ACTIONS } from '../engine/bindings'
 import { joystick, type Input, type Stick } from '../engine/input'
@@ -576,14 +577,14 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     play: actions.play,
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
-  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), later(runs[key]))
+  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), track('lobby_press', { entry: key }), later(runs[key]))
   const pressable = <T extends HTMLElement>(node: T, key: keyof typeof runs) => (node.addEventListener('click', press(key)), navigable(node, key))
 
   const buildLobby = () => {
     const save = loadSave()
     const landscape = layout() === 'landscape'
     navs = []
-    const chip = trainerChip(input, { onOpen: () => openOver(actions.trainer) })
+    const chip = trainerChip(input, { onOpen: () => (track('lobby_press', { entry: 'trainer' }), openOver(actions.trainer)) })
     closeChip = chip.dispose
     navigable(chip.el, 'trainer')
     bar.replaceWith(
@@ -603,7 +604,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     stage = partnerStage(press('play'))
     actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
-    const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
+    const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), track('lobby_press', { entry: 'hall' }), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
     const side = h(
       'div',
       { class: 'lobby-side' },

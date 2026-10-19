@@ -197,6 +197,7 @@ src/
   i18n/     every player-facing string: pt.ts (reference), en.ts and es.ts; site/ has the website copy
   site/     static pages rendered at build time from data/: Pokédex, guide, changelog, legal
   account.ts  optional accounts: Clerk loaded on demand, save sync with the API
+  analytics.ts  events and error reports: PostHog (loaded once the game is up, through the /ingest proxy) and Umami
   ranking.ts  ranked runs (start token, offline queue), boards, profiles and follows through the API
 server/     accounts API (Hono + Postgres, Clerk tokens), deployed with Docker: see server/README.md
 ```

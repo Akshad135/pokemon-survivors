@@ -687,8 +687,8 @@ export const sitePt = {
       nonCommercial: 'Como os sprites são CC BY-NC, o jogo como um todo não pode ser usado comercialmente.',
     },
     privacy: [
-      'Jogar como convidado é o padrão e não exige cadastro: assim o jogo não usa cookies, anúncios nem rastreadores, e não coleta dados pessoais.',
-      'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho. Como convidado, nada disso é enviado para nenhum servidor:',
+      'Jogar como convidado é o padrão e não exige cadastro: o jogo não usa cookies nem anúncios e não pede nenhum dado pessoal, como nome ou e-mail.',
+      'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho. Como convidado, nada disso é enviado para nenhum servidor, a não ser o identificador aleatório do ph_ps, que vai junto com as estatísticas de uso (abaixo):',
     ],
     storage: {
       'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou), os ovos da incubadora (eggs), os Pokémon chocados (hatched), progresso das missões, conquistas, recordes (como Pokémon derrotados e o maior tempo sobrevivido) e o título escolhido.',
@@ -697,6 +697,7 @@ export const sitePt = {
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',
       'ps:account': 'Só se você entrar com uma conta: qual conta está conectada neste aparelho (o id dela, seu nome e seu nome de usuário) e a última versão do progresso que ele sincronizou.',
       'ps:runs': 'Só com uma conta: resultados de partidas que ainda não chegaram ao ranking (por exemplo, sem internet). Saem daqui assim que o servidor recebe.',
+      ph_ps: 'Um identificador aleatório deste aparelho, que o PostHog usa para contar partidas e erros (abaixo). Ele não diz quem você é.',
     },
     account: [
       'Contas são opcionais e servem para guardar o progresso na nuvem e continuar em outro aparelho. O login é com o Google, feito pelo Clerk (clerk.com), que recebe do Google seu nome, e-mail e foto e usa cookies próprios para manter você conectado. O jogo nunca vê sua senha.',
@@ -709,6 +710,7 @@ export const sitePt = {
       'Para apagar esses dados, limpe os dados do site nas configurações do navegador.',
       'Sprites, sons e fontes vêm do próprio site, sem chamadas a serviços de terceiros. O site é hospedado na Vercel, que, como qualquer servidor, pode registrar dados técnicos de acesso (como endereço IP) para operar e proteger o serviço.',
       'Para saber quantas pessoas visitam o site e jogam, usamos o Vercel Web Analytics e uma instância própria do Umami, num servidor nosso. Eles contam visitas de forma anônima e agregada (página, país, navegador, dispositivo e site de origem) e, no caso do Umami, também o resumo de cada partida (Pokémon inicial, até que minuto e nível você chegou e se venceu), sem cookies e sem identificar ou seguir você entre sites.',
+      'No jogo, usamos também o PostHog (posthog.com, com os dados guardados nos Estados Unidos) para entender como ele é jogado e corrigir erros. Ele recebe o resumo de cada partida (Pokémon, dificuldade, golpes, itens, até que minuto e nível você chegou e como ela terminou), quais telas você abre no menu e, quando o jogo dá erro, a mensagem do erro e o replay da partida em andamento (a semente e os comandos, sem nada pessoal). Tudo isso vai ligado ao identificador aleatório do ph_ps e, se você entrou com uma conta, ao id dela e ao seu nome de usuário, nunca ao seu e-mail ou nome. O PostHog não usa cookies aqui e não segue você entre sites.',
       'Doações são pagas nas páginas da AbacatePay (abacatepay.com: Pix e cartões brasileiros) ou do Stripe (stripe.com: cartões de outros países, Apple Pay e Google Pay). Os dados de pagamento vão direto para eles, e o jogo nunca vê seu cartão. Eles nos mostram o valor e, como a qualquer recebedor, dados de quem pagou (como nome e e-mail), que não usamos para nada além de registrar a doação. Se você der um @ (ou resgatar o código da doação), ela fica ligada a essa conta do jogo para as recompensas chegarem; o valor nunca aparece em público, só o selo de apoiador, que dá para esconder.',
     ],
     contact: [
