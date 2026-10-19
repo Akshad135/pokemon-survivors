@@ -1,4 +1,4 @@
-import { accountState, accountsEnabled, onAccountChange, type AccountState } from '../account'
+import { accountState, accountsEnabled, giftInbox, onAccountChange, onInbox, type AccountState } from '../account'
 import { playSfx } from '../engine/audio'
 import { ACTIONS } from '../engine/bindings'
 import { joystick, type Input, type Stick } from '../engine/input'
@@ -13,7 +13,7 @@ import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks, playsShiny } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { bulbIcon, coinIcon, discordIcon, eggIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
@@ -43,6 +43,7 @@ export type LobbyFocus =
   | 'challenge'
   | 'missions'
   | 'hall'
+  | 'gifts'
   | 'invite'
   | 'friends'
   | 'pokedex'
@@ -75,6 +76,8 @@ export type TitleActions = {
   missions: () => void
   /** Opens the egg incubator. */
   incubator: () => void
+  /** Opens the waiting Mystery Gifts (the gift box on the partner's stage). */
+  gifts: () => void
   /** The lobby is up: after the "press start" gesture, so the browser lets audio play. */
   ready: () => void
   /**
@@ -263,6 +266,33 @@ const discordCard = () => {
     else prize.remove()
     el.setAttribute('aria-label', `${m.title}: ${text}`)
   })
+  return el
+}
+
+/**
+ * Presente!: a wrapped box on the partner's stage, hopping and sparkling,
+ * with how many Mystery Gifts wait. Hidden while none does; it follows the
+ * inbox, so a gift a sync lists shows up with the lobby already open.
+ */
+const giftButton = () => {
+  const m = t().gifts
+  const count = h('em', { class: 'lobby-badge' })
+  const el = h(
+    'button',
+    { class: 'lobby-gift box', type: 'button' },
+    h('img', { class: 'lobby-gift-box', src: giftIcon(), alt: '' }),
+    h('img', { class: 'lobby-gift-sparkle', src: sparkleIcon(), alt: '' }),
+    h('b', {}, m.button),
+    count,
+    h('span', { class: 'key-hint' }, 'G'),
+  )
+  const paint = (n: number) => {
+    el.hidden = n === 0
+    count.textContent = String(n)
+    el.setAttribute('aria-label', m.buttonLabel(n))
+  }
+  paint(giftInbox().length)
+  const off = onInbox((gifts) => (el.isConnected ? paint(gifts.length) : off()))
   return el
 }
 
@@ -486,7 +516,7 @@ const heldMove = (input: Input): Vec => {
 }
 
 /** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls). */
-const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyN: 'news', KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
+const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyG: 'gifts', KeyN: 'news', KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
 
 /**
  * Title screen over the live meadow: the pixel logo and a blinking "press
@@ -536,7 +566,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   /** Everything the arrows reach, wherever the layout puts it. */
   let navs: { el: HTMLElement; key: LobbyFocus }[] = []
-  const itemOf = (key: LobbyFocus) => navs.find((n) => n.key === key)?.el
+  /** The element of `key`, while it shows (the gift box hides with nothing to open). */
+  const itemOf = (key: LobbyFocus) => navs.find((n) => n.key === key && !n.el.hidden)?.el
 
   const select = (key: LobbyFocus, sound = true) => {
     if (key !== current && sound) playSfx('move')
@@ -552,7 +583,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   }
 
   const move = (dir: Direction) => {
-    const next = navs[nearestInDirection(navs.map((n) => n.el.getBoundingClientRect()), navs.findIndex((n) => n.key === current), dir)]
+    const shown = navs.filter((n) => !n.el.hidden)
+    const next = shown[nearestInDirection(shown.map((n) => n.el.getBoundingClientRect()), shown.findIndex((n) => n.key === current), dir)]
     if (next) select(next.key)
   }
 
@@ -575,6 +607,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     outbreak: () => toast(root, rich(`*${ENEMIES[outbreakToday()].name}*: ${t().outbreak.blurb}`), 3600, 'outbreak'),
     challenge: actions.challenge,
     missions: actions.missions,
+    gifts: actions.gifts,
     invite: () => openOver(actions.trainer),
     friends: () => openOver(actions.invites),
     pokedex: () => openOver(actions.pokedex),
@@ -610,6 +643,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
     const outbreak = outbreakCard()
     stage = partnerStage(press('play'))
+    stage.el.append(pressable(giftButton(), 'gifts'))
     actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
     const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')

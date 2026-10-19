@@ -138,6 +138,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Presentes Misteriosos na caixa', en: 'Mystery Gifts in a box', es: 'Regalos Misteriosos en una caja' },
+        notes: [
+          {
+            pt: 'Os Presentes Misteriosos agora esperam numa caixa ao lado do seu parceiro no lobby. Toque nela para abrir um de cada vez: um shiny choca na hora e o shiny à sua escolha abre direto a escolha, sem passar pelo Hall da Fama.',
+            en: 'Mystery Gifts now wait in a box beside your partner in the lobby. Tap it to open them one at a time: a shiny hatches on the spot and a shiny of your choice opens its picker right away, no trip to the Hall of Fame.',
+            es: 'Los Regalos Misteriosos ahora esperan en una caja junto a tu compañero en el lobby. Tócala para abrirlos de a uno: un shiny eclosiona en el momento y el shiny a tu elección abre la elección directo, sin pasar por el Salón de la Fama.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Servidor no Discord', en: 'Discord server', es: 'Servidor en Discord' },
         notes: [
           {
