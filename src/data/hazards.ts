@@ -26,7 +26,7 @@ export type HazardPace = {
 export const HAZARD_PACE = {
   normal: { start: 540, every: [12, 7], ramp: 6, telegraph: 1.2, damage: 1.2, finale: 0 },
   hard: { start: 420, every: [10, 5.5], ramp: 7, telegraph: 1.05, damage: 1.5, finale: 0.4 },
-  nightmare: { start: 300, every: [8, 4], ramp: 8, telegraph: 0.9, damage: 1.9, finale: 0.6 },
+  nightmare: { start: 300, every: [9, 4], ramp: 8, telegraph: 0.9, damage: 1.6, finale: 0.6 },
 } as const satisfies Record<Difficulty, HazardPace>
 
 /** Telegraphs never land quicker than this (s): every hazard must stay readable on a phone. */
