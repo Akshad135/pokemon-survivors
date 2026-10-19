@@ -92,7 +92,13 @@ export const featureAt = (seed: number, cx: number, cy: number): Feature | null 
   }
 }
 
-const cellKey = (cx: number, cy: number) => (cx + 32768) * 65536 + (cy + 32768)
+/**
+ * A cell's key, kept a small integer (15 bits per axis, wrapping every 32768 cells)
+ * so the lookups the walkers make every tick don't box a number. `cellOfKey` reads it back.
+ */
+const cellKey = (cx: number, cy: number) => ((cx & 0x7fff) << 15) | (cy & 0x7fff)
+/** The signed 15-bit cell coordinate stored in the low bits of `v`. */
+const unwrap = (v: number) => ((v & 0x7fff) << 17) >> 17
 
 const cell = (g: Game, cx: number, cy: number) => {
   const key = cellKey(cx, cy)
@@ -105,18 +111,19 @@ const NEAR: Feature[] = []
 
 /** Features whose cells overlap the box around (x, y). Reuses one array: copy it if you keep it. */
 export const featuresNear = (g: Game, x: number, y: number, rx: number, ry = rx): readonly Feature[] => {
-  NEAR.length = 0
-  if (g.rift.arena) {
-    NEAR.push(g.rift.arena.terrain)
-    return NEAR
-  }
-  const C = TERRAIN.cell
-  for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
-    for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
-      const f = cell(g, cx, cy)
-      if (f) NEAR.push(f)
+  // Filled by index and cut to size, never emptied first (that would drop its storage every call).
+  let n = 0
+  if (g.rift.arena) NEAR[n++] = g.rift.arena.terrain
+  else {
+    const C = TERRAIN.cell
+    for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
+      for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
+        const f = cell(g, cx, cy)
+        if (f) NEAR[n++] = f
+      }
     }
   }
+  NEAR.length = n
   return NEAR
 }
 
@@ -228,8 +235,8 @@ export const updateTerrain = (g: Game, dt: number) => {
     const pcx = Math.floor(p.x / C)
     const pcy = Math.floor(p.y / C)
     for (const key of g.terrain.cells.keys()) {
-      const cx = Math.floor(key / 65536) - 32768
-      const cy = (key % 65536) - 32768
+      const cx = unwrap(key >> 15)
+      const cy = unwrap(key)
       if (Math.abs(cx - pcx) > 5 || Math.abs(cy - pcy) > 5) g.terrain.cells.delete(key)
     }
   }

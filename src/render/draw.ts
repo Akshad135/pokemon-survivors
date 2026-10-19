@@ -1,7 +1,7 @@
 import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
-import { biomeAt } from '../data/biomes'
+import { BIOME_ORDER, BIOMES, biomeAt } from '../data/biomes'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HazardVisual } from '../data/bosses'
 import { TYPE_COLORS } from '../data/types'
@@ -38,7 +38,7 @@ import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
-import { drawWeather } from './weather'
+import { drawWeather, warmFog } from './weather'
 import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
 import { drawGround, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
@@ -661,6 +661,16 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
 
 type Drawable = Enemy | 'player' | 'companion' | Solid
 const drawables: Drawable[] = []
+/** `drawables` in depth order, with each one's depth worked out once: the sort compares them thousands of times a frame. */
+const inDepth: Drawable[] = []
+const depthKeys: number[] = []
+const depthOrder: number[] = []
+/** Compares by depth returning -1, 0 or 1: a fractional difference would be boxed on every call. */
+const byDepth = (a: number, b: number) => {
+  const da = depthKeys[a]!
+  const db = depthKeys[b]!
+  return da < db ? -1 : da > db ? 1 : 0
+}
 
 /** How far a hitbox reaches from its center, to cull it off screen. */
 const reachOf = (shape: Attack['shape']) => (shape.kind === 'circle' ? shape.r : Math.max(shape.w, shape.h)) + 48
@@ -672,6 +682,30 @@ const isSolid = (d: Drawable): d is Solid => d !== 'player' && d !== 'companion'
 const BIOME_FADE = 2.4
 /** How far ahead (game seconds) the next biome's ground starts building in the background. */
 const BIOME_WARMUP = 10
+
+/** How far past the view's edges (px) the ground is built ahead of time. */
+const GROUND_LOOKAHEAD = 128
+
+/**
+ * Builds at most one piece of scenery not built yet, most needed first: the
+ * ground about to scroll in, this biome's terrain sprites, the next biome's
+ * ground and terrain, the fog veil where fog can roll in; and while `calm` (no
+ * run, or a menu over it), every biome's terrain. True if it built one. The
+ * shell calls it in idle time: a mountain or the veil takes longer than a frame
+ * lasts, so building one the first time it shows would stall that frame.
+ */
+export const warmScenery = (g: Game | null, calm: boolean) => {
+  if (g && !g.rift.arena) {
+    const { w, h } = g.view
+    const { x, y } = g.camera
+    const here = g.biome.id
+    const upcoming = biomeAt(g.time + BIOME_WARMUP)
+    if (warmGround(here, x, y, w, h, GROUND_LOOKAHEAD) || warmTerrain(here)) return true
+    if (upcoming !== here && (warmGround(upcoming, x, y, w, h) || warmTerrain(upcoming))) return true
+    if (('fog' in BIOMES[here].weather || 'fog' in BIOMES[upcoming].weather) && warmFog(w, h)) return true
+  }
+  return calm && BIOME_ORDER.some((b) => warmTerrain(b))
+}
 
 /** The ground dissolve in progress, if any. */
 const biomeFade = (g: Game) => {
@@ -697,10 +731,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   if (g.rift.arena) drawArena(ctx, g.rift.arena, camX, camY, w, h, t)
   else drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
   const upcoming = biomeAt(g.time + BIOME_WARMUP)
+  // Scenery warms in idle time (`warmScenery`); in case that never comes, one of the next biome's chunks per frame.
   if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
-  // One terrain sprite per frame at most: this biome's first, then the next one's.
   if (g.rift.arena) warmArena(g.rift.arena)
-  else if (!warmTerrain(g.biome.id) && upcoming !== g.biome.id) warmTerrain(upcoming)
   // Scenery changes outfit halfway through the dissolve, like the breakables.
   const look = fade && fade.k < 0.5 ? fade.from : g.biome.id
   ctx.save()
@@ -737,9 +770,18 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   // Mid-jump leapers sort last so they fly over the horde, and so does a flyer over a rock or a mountain.
   const depth = (d: Drawable) =>
     d === 'player' ? g.player.y : d === 'companion' ? (companion?.y ?? 0) : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
-  drawables.sort((a, b) => depth(a) - depth(b))
+  // Filled by index and cut to size (emptying them would drop their storage every frame).
+  const n = drawables.length
+  for (let i = 0; i < n; i++) {
+    depthKeys[i] = depth(drawables[i]!)
+    depthOrder[i] = i
+  }
+  depthKeys.length = depthOrder.length = inDepth.length = n
+  // A stable sort of the indices: ties keep their order, as sorting `drawables` itself would.
+  depthOrder.sort(byDepth)
+  for (let i = 0; i < n; i++) inDepth[i] = drawables[depthOrder[i]!]!
 
-  for (const d of drawables) {
+  for (const d of inDepth) {
     if (d === 'player') {
       shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
       drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
@@ -748,14 +790,14 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
   }
   drawAfterimages(ctx, g)
-  for (const d of drawables) {
+  for (const d of inDepth) {
     if (d === 'player') drawPlayer(ctx, g)
     else if (d === 'companion') companion && drawCompanion(ctx, companion, t)
     else if (isSolid(d)) drawSolid(ctx, g, d, look)
     else drawEnemy(ctx, d, g.time, t)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
-  for (const d of drawables) {
+  for (const d of inDepth) {
     if (d !== 'player' && d !== 'companion' && !isSolid(d) && d.boss && d.dying < 0) {
       const def: EnemyDef = ENEMIES[d.kind]
       drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
