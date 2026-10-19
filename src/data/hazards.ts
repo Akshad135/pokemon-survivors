@@ -40,7 +40,7 @@ export const MIN_TELEGRAPH = 0.8
 export const HAZARD_HIT = { contact: 9, foeHp: 50, foes: 0.35 } as const
 
 /**
- * Pace multipliers: while a boss is in the fight (its own strikes must stay readable),
+ * Pace multipliers: while a boss is in the fight or an Alpha charges (their own attacks must stay readable),
  * and how many seconds after a boss arrives the world holds still (its entrance banner).
  * In endless mode attacks keep quickening by `endless` per minute past the run, down to `floor` of the ramp's end.
  */
