@@ -4,6 +4,7 @@ import type { ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
 import type { SupporterTier } from '../game/supporters'
 import type { EggTier } from '../game/eggs'
+import type { Difficulty } from '../game/difficulty'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
@@ -964,3 +965,17 @@ export const ribbonSprite = (tier: RibbonTier) => {
 export const ribbonIcon = (tier: RibbonTier) => toIconUrl(`ribbon:${tier}`, () => ribbonSprite(tier))
 
 export const medalIcon = (medal: Medal, locked = false) => toIconUrl(`medal:${locked ? 'locked' : medal}`, () => medalSprite(medal, locked))
+
+/* ---------------- Clears ---------------- */
+
+/** A clear's trophy (`game/clears.ts`), on the Pokédex and the partner select. 1 outline, 2 shade, 3 metal, 4 shine. */
+const TROPHY = ['111111111', '1.14321.1', '1.14321.1', '.1143211.', '..14321..', '...131...', '...131...', '..13321..', '..11111..']
+
+/** The hardest difficulty cleared picks the metal: bronze for Normal, silver for Hard, gold for Nightmare, like the medals. */
+const TROPHY_METAL = {
+  normal: { 1: '#402010', 2: '#985028', 3: '#d88848', 4: '#f8c890' },
+  hard: { 1: '#303848', 2: '#788098', 3: '#c8d0e0', 4: '#ffffff' },
+  nightmare: { 1: '#584010', 2: '#b07010', 3: '#f8c838', 4: '#fff0a0' },
+} as const satisfies Record<Difficulty, Palette>
+
+export const trophyIcon = (d: Difficulty) => toIconUrl(`trophy:${d}`, () => art(TROPHY, TROPHY_METAL[d]))

@@ -567,6 +567,10 @@ export const pt = {
     seen: 'Vistos',
     defeated: 'Derrotados',
     caught: 'Capturados',
+    /** Clears (`game/clears.ts`): the Pokémon that beat Mewtwo, the hardest difficulty picking the trophy's metal. */
+    cleared: 'Zerados',
+    clear: 'Zerado',
+    clearedOn: (level: string) => `Venceu o Mewtwo no ${level}`,
     filters: { all: 'Todos', seen: 'Vistos', caught: 'Capturados', missing: 'Faltam' },
     roles: { starter: 'Inicial', egg: 'Ovo', enemy: 'Selvagem', boss: 'Chefe', legendary: 'Lendário', event: 'Evento' },
     owned: 'Capturado',

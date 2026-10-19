@@ -202,6 +202,21 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Troféu de zerado', en: 'Clear trophies', es: 'Trofeo de superado' },
+        notes: [
+          {
+            pt: 'Venceu o Mewtwo com um Pokémon? A linha evolutiva dele ganha um troféu na Pokédex e na escolha de parceiro: bronze no Normal, prata no Difícil e ouro no Pesadelo. A Pokédex conta quantos você já zerou, para tentar zerar com todos. Ideia de @havenlad no Mural de ideias.',
+            en: 'Beat Mewtwo with a Pokémon? Its evolution line gets a trophy in the Pokédex and on the partner select: bronze on Normal, silver on Hard, gold on Nightmare. The Pokédex counts how many you cleared, so you can go for a clear with every one. An idea from @havenlad on the Ideas board.',
+            es: '¿Venciste a Mewtwo con un Pokémon? Su línea evolutiva gana un trofeo en la Pokédex y en la elección de compañero: bronce en Normal, plata en Difícil y oro en Pesadilla. La Pokédex cuenta cuántos superaste, para intentar superarlo con todos. Idea de @havenlad en el Muro de ideas.',
+          },
+          {
+            pt: 'Vitórias de antes também contam quando o seu histórico mostra com quem foram (por exemplo, se todas foram com iniciais de uma mesma região).',
+            en: 'Earlier wins count too when your records show who won them (for example, if they were all with starters from one region).',
+            es: 'Las victorias de antes también cuentan cuando tu historial muestra con quién fueron (por ejemplo, si todas fueron con iniciales de una misma región).',
+          },
+        ],
+      },
     ],
   },
   {
