@@ -95,6 +95,16 @@ Cost, measured on an Apple M4 Pro with Node 24 (bot runs with a full Poké Mart,
 
 The cost grows with the horde: late endless minutes are the heavy ones. A VPS core is likely 2 to 3 times slower.
 
+### Discord bot
+
+The community Discord (built by `scripts/discord/setup.mjs`) has a bot that runs inside the API (`src/discord.ts`, texts in `src/discordMessages.ts`), only when `DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` are set. It finds its channels and roles by name, and claims a key in `discord_posts` before each post, so two instances side by side in a rollout never post twice.
+
+- **Introduction gate:** a gateway connection (Node's own `WebSocket`, intents GUILDS, GUILD_MESSAGES and MESSAGE_CONTENT) watches #introductions. A message with at least 20 letters or digits from a member without **Trainer** gets the role, a 👋 and a welcome (once per player); a shorter one gets a nudge. The setup script's `GATE` makes only Trainers talk elsewhere. When the connection comes back (a deploy, a drop), the bot reads the last 50 introductions and lets in whoever it missed.
+- **Patch notes:** on boot, the changelog's updates (`src/site/changelog.ts`, English) newer than the last one posted go to #patch-notes, pinging **Patch Notes Ping**, and the last one posted is edited to match (an update grows through its day). The very first boot only posts the newest update.
+- **Daily posts:** every 15 minutes it looks for what's due: the day's Desafio do dia in #daily-challenge (pinging **Daily Challenge Ping**) and its outbreak in #daily-outbreak when the Brasília day starts, and yesterday's top 3 in #daily-challenge once the ribbons are due (`ribbonsDue`).
+
+The bot's application has **Message Content** and **Server Members** on (Developer Portal → Bot → Privileged Gateway Intents), which needs no review under 100 servers.
+
 ## Environment
 
 | Variable | |
@@ -107,6 +117,7 @@ The cost grows with the horde: late endless minutes are the heavy ones. A VPS co
 | `ABACATEPAY_WEBHOOK_SECRET` | Optional. The AbacatePay webhook's secret: `whsec_` plus base64 (`echo "whsec_$(openssl rand -base64 32)"`), the same one typed in its dashboard. Without it the webhook answers 503 |
 | `STRIPE_WEBHOOK_SECRET` | Optional. The Stripe webhook endpoint's signing secret (`whsec_…`). Without it the webhook answers 503 |
 | `STRIPE_PAYMENT_LINK` | Optional. The donation Payment Link's id (`plink_…`): set, the webhook ignores other Checkout Sessions of the account |
+| `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Optional. The community Discord bot's token and the server's id. Without both there's no bot |
 | `PORT` | Default `3000` |
 
 ## Database
@@ -125,6 +136,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `donations`: one row per donation (`provider`, its `ref`, the account it's for, the amount and points, the `code` of one with no account, `paid_at`, `credited_at`).
 - `users.supporter_points`, `supporter_since`, `supporter_public`: a supporter's total, since when, and whether they show it. `poll_votes`: the supporters' poll.
 - `suggestions`: the idea board (`status` `open`, `done` or `hidden`, `score` recounted from the votes on every vote, `done_at`). `suggestion_votes`: one vote per player per idea (1 or -1; taking it back deletes the row).
+- `discord_posts`: what the Discord bot already did, by key (`patch:<date>`, `challenge:<day>`, `podium:<day>`, `outbreak:<day>`, `welcome:<user>`, `short:<message>`), with the message a patch note became so it can be edited.
 
 ## Local development
 
@@ -150,7 +162,7 @@ The Dokploy project **Pokémon Survivors** has two services:
 
 ### When it deploys
 
-A push to `main` deploys the API automatically, but only when it touches `server/**`, `src/game/**`, `src/data/**` or `src/engine/**`. Those are the folders the API bundle imports. **If the bundle starts importing another folder of `src/`, add it to this list in Dokploy** (and here). Otherwise a change there ships to the site but not to the API, and the two drift apart.
+A push to `main` deploys the API automatically, but only when it touches `server/**`, `src/game/**`, `src/data/**`, `src/engine/**` or `src/site/**` (the Discord bot posts the changelog). Those are the folders the API bundle imports. **If the bundle starts importing another folder of `src/`, add it to this list in Dokploy** (and here). Otherwise a change there ships to the site but not to the API, and the two drift apart.
 
 ### Rollout
 
@@ -172,6 +184,7 @@ New versions roll out with no downtime:
 | `DATABASE_URL` | Dokploy (`api`) | Internal connection string of `survivors-postgres-kwkfm5` |
 | `CLERK_SECRET_KEY` | Dokploy (`api`) | Production instance secret key |
 | `ABACATEPAY_API_KEY` | Dokploy (`api`) | AbacatePay production key, with `CHECKOUT:CREATE`, `PRODUCT:CREATE` and `PRODUCT:READ` |
+| `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Dokploy (`api`) | The "Pokémon Survivors" bot's token and the community server's id |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
 | `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
 
