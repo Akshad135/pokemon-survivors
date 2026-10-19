@@ -19,6 +19,7 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-19',
+    pr: 119,
     title: { pt: 'Tutor de Golpes que combina com você', en: 'A Move Tutor that suits you', es: 'Un Tutor de Movimientos a tu medida' },
     notes: [
       {
