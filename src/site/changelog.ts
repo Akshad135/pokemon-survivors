@@ -19,6 +19,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-18',
+    title: { pt: 'Mega Evolução sem travar o jogo', en: 'Mega Evolution no longer freezes the game', es: 'La Megaevolución ya no congela el juego' },
+    notes: [
+      {
+        pt: 'Mega Evoluir enquanto o especial ainda carregava travava o jogo e a partida se perdia. Acontecia com os Megas cujo especial é uma sequência de investidas: Raichu X, Feraligatr, Scizor, Blaziken, Gallade, Banette e Greninja. Agora a carga é cancelada e o especial do Mega já vem pronto. Obrigado ao @DashtheBard pelo aviso!',
+        en: 'Mega Evolving while your special was still charging froze the game and the run was lost. It happened with the Megas whose special is a chain of dashes: Raichu X, Feraligatr, Scizor, Blaziken, Gallade, Banette and Greninja. Now the charge is canceled and the Mega’s special comes ready. Thanks to @DashtheBard for the report!',
+        es: 'Megaevolucionar mientras el especial aún se cargaba congelaba el juego y se perdía la partida. Pasaba con los Megas cuyo especial es una cadena de embestidas: Raichu X, Feraligatr, Scizor, Blaziken, Gallade, Banette y Greninja. Ahora la carga se cancela y el especial del Mega ya viene listo. ¡Gracias a @DashtheBard por el aviso!',
+      },
+    ],
+  },
+  {
+    date: '2026-10-18',
     pr: 115,
     title: { pt: 'Golpes, golpes e mais golpes', en: 'Moves, moves and more moves', es: 'Movimientos, movimientos y más movimientos' },
     notes: [
