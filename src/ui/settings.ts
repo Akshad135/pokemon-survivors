@@ -2,6 +2,8 @@ import { playSfx, setMix } from '../engine/audio'
 import { STICK_MODES, type Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALE_IDS, LOCALES, setLocale, t, type Locale } from '../i18n'
+import { bugReportsEnabled } from '../bugReport'
+import { bugReportForm } from './bugReport'
 import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
@@ -158,9 +160,9 @@ const languageRow = (pick: (next: Locale) => void): Row => {
   return { el, adjust: step, activate: () => step(1), sync: () => seg.set(locale()) }
 }
 
-/** Opens the remap screen (keyboard keys and gamepad buttons). */
-const controlsRow = (open: () => void): Row => {
-  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().controls.open), h('b', { class: 'setting-choice' }, '▶'))
+/** Opens a screen on top (the remap screen, the bug report form): Enter, a tap or →. */
+const openRow = (label: string, open: () => void): Row => {
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, label), h('b', { class: 'setting-choice' }, '▶'))
   return { el, adjust: (dir) => dir > 0 && open(), activate: open, sync: () => {} }
 }
 
@@ -185,7 +187,8 @@ let lastTab: Tab = 'sound'
 /**
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
  * (language, damage numbers, screen shake, flashes, UI size), Controles (touch joystick and the
- * remap screen) and Sobre (what the game is, legal and credits, GitHub).
+ * remap screen) and Sobre (what the game is, legal and credits, GitHub, and
+ * the bug report form when there's an API to send it to).
  * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
@@ -242,9 +245,17 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           ...uiScaleRows(m.uiScale, m.uiScaleAuto),
         ]
       case 'controls':
-        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(showControls)]
+        return [
+          choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]),
+          openRow(t().controls.open, () => showSub((back) => openControls(root, input, back))),
+        ]
       case 'about':
-        return [linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
+        return [
+          ...(bugReportsEnabled ? [openRow(m.reportBug, () => showSub((back) => bugReportForm(root, input, back)))] : []),
+          linkRow(m.guide, ROUTES.guide[lang]),
+          linkRow(m.legal, ROUTES.legal[lang]),
+          linkRow(m.github, REPO_URL, true),
+        ]
     }
   }
 
@@ -283,7 +294,8 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     sync()
   }
 
-  const showControls = () => {
+  /** Hides the settings under another screen (`open`), which calls `back` to bring them back as they were. */
+  const showSub = (open: (back: () => void) => Screen) => {
     playSfx('select')
     nav?.off()
     away = true
@@ -291,7 +303,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     // Open after this key dispatch, or the new screen would receive the same press.
     later(() => {
       if (!el.isConnected) return
-      sub = openControls(root, input, () => {
+      sub = open(() => {
         sub = null
         away = false
         el.classList.remove('hidden')

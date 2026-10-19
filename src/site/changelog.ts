@@ -227,6 +227,21 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Reportar bug', en: 'Report a bug', es: 'Reportar un error' },
+        notes: [
+          {
+            pt: 'Achou um bug? Em Ajustes → Sobre, ou direto na pausa, conte o que aconteceu e mande, sem precisar de conta. Junto vão dados técnicos (versão, aparelho, tela e os últimos erros do jogo), que você pode desligar e ver antes de enviar.',
+            en: "Found a bug? From Settings → About, or straight from the pause screen, tell us what happened and send it, no account needed. Technical info goes along (version, device, screen and the game's last errors), which you can turn off and look at before sending.",
+            es: '¿Encontraste un error? En Ajustes → Acerca de, o directo en la pausa, cuenta lo que pasó y envíalo, sin necesitar cuenta. Van junto datos técnicos (versión, dispositivo, pantalla y los últimos errores del juego), que puedes apagar y ver antes de enviar.',
+          },
+          {
+            pt: 'Se o jogo fechar sozinho no meio de uma partida, na próxima vez que você abrir ele pergunta se quer reportar, com o que deu para salvar da partida, para a gente achar o problema.',
+            en: 'If the game closes by itself in the middle of a run, the next time you open it asks whether you want to report it, with what it could save about the run, so we can track the problem down.',
+            es: 'Si el juego se cierra solo en medio de una partida, la próxima vez que lo abras pregunta si quieres reportarlo, con lo que pudo guardar de la partida, para que encontremos el problema.',
+          },
+        ],
+      },
     ],
   },
   {

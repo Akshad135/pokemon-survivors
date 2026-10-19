@@ -602,25 +602,27 @@ const abilityPanel = (g: Game) => {
 }
 
 /**
- * `settings` opens the settings screen on top (see `openSettings`) and must
- * call `back` once it closes; the pause menu hides meanwhile, then redraws
+ * `settings` opens the settings screen on top (see `openSettings`) and
+ * `report` the bug report form (null: no API to send it to); each must call
+ * `back` once it closes. The pause menu hides meanwhile, then redraws
  * itself, in the new language if it changed.
  */
-type PauseActions = { resume: () => void; quit: () => void; settings: (back: () => void) => Screen }
+type PauseActions = { resume: () => void; quit: () => void; settings: (back: () => void) => Screen; report: ((back: () => void) => Screen) | null }
 
 export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: PauseActions): Screen => {
   const el = h('div', { class: 'screen dim pause-screen' })
   let nav: ReturnType<typeof menu> | null = null
-  let settings: Screen | null = null
+  /** The screen open on top (settings, the bug report). */
+  let sub: Screen | null = null
 
-  const openSettings = () => {
-    if (settings) return
+  const openSub = (open: (back: () => void) => Screen, focus: number) => {
+    if (sub) return
     nav?.off()
     el.classList.add('hidden')
-    settings = actions.settings(() => {
-      settings = null
+    sub = open(() => {
+      sub = null
       el.classList.remove('hidden')
-      render(1, false)
+      render(focus, false)
     })
   }
 
@@ -629,13 +631,18 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
     const m = t().pause
     const resume = h('button', { class: 'btn' }, m.resume)
     const settingsButton = h('button', { class: 'btn' }, m.settings)
+    const report = actions.report
+    const reportButton = report && h('button', { class: 'btn' }, m.reportBug)
     const quit = h('button', { class: 'btn' }, m.quit)
+    const buttons = [resume, settingsButton, ...(reportButton ? [reportButton] : []), quit]
     nav?.off()
-    nav = menu(input, [resume, settingsButton, quit], (i) => {
-      if (i === 0) actions.resume()
-      // Open after this key dispatch, or the settings would receive the same Enter.
-      if (i === 1) later(openSettings)
-      if (i === 2) actions.quit()
+    nav = menu(input, buttons, (i) => {
+      const pressed = buttons[i]
+      if (pressed === resume) actions.resume()
+      // Open after this key dispatch, or the new screen would receive the same Enter.
+      if (pressed === settingsButton) later(() => openSub(actions.settings, i))
+      if (pressed === reportButton && report) later(() => openSub(report, i))
+      if (pressed === quit) actions.quit()
     }, { initial: focus })
     el.replaceChildren(
       h(
@@ -657,16 +664,16 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
           h('p', { class: 'evo-legend' }, m.evoLegend),
           hint(m.cardHintKeys, m.cardHintTouch),
         ),
-        h('div', { class: 'buttons' }, resume, settingsButton, quit),
+        h('div', { class: 'buttons' }, ...buttons),
       ),
     )
   }
 
   render(0, true)
-  // Esc inside the settings only closes them.
-  const offEsc = input.onKey((k) => k === 'Escape' && !settings && actions.resume())
+  // Esc inside the settings (or the report) only closes them.
+  const offEsc = input.onKey((k) => k === 'Escape' && !sub && actions.resume())
   root.append(el)
-  return { el, dispose: () => (settings?.dispose(), nav?.off(), offEsc(), el.remove()) }
+  return { el, dispose: () => (sub?.dispose(), nav?.off(), offEsc(), el.remove()) }
 }
 
 /* ---------------- Results ---------------- */

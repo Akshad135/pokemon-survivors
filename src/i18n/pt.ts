@@ -235,6 +235,7 @@ export const pt = {
     resume: 'Continuar',
     quit: 'Desistir',
     settings: 'Ajustes',
+    reportBug: 'Reportar bug',
     evoLegend: 'Golpe no nível máximo + o item indicado = evolução na próxima Poké Ball ou subida de nível!',
     statsTitle: 'Status',
     movesTitle: 'Golpes',
@@ -309,6 +310,7 @@ export const pt = {
     about: 'Pokémon Survivors é um fan game gratuito e não oficial, sem ligação com a Nintendo, The Pokémon Company, GAME FREAK ou Creatures.',
     legal: 'Legal e créditos',
     github: 'Código no GitHub',
+    reportBug: 'Reportar bug',
     guide: 'Como jogar',
     hintKeys: '↑ ↓ escolher · ← → ajustar ou trocar de aba · ESC voltar',
     hintTouch: 'Toque ou arraste para ajustar',
@@ -864,6 +866,36 @@ export const pt = {
     },
     hintKeys: '↑ ↓ ← → escolher · ENTER votar · Q E aba · N nova ideia · ESC voltar',
     hintTouch: 'Toque em ▲ ou ▼ para votar',
+  },
+
+  /** Bug reports (Ajustes → Sobre, the pause menu, and the prompt after the game closed mid-run). */
+  bugReport: {
+    title: 'REPORTAR BUG',
+    crashTitle: 'O JOGO FECHOU?',
+    lead: 'Conte o que aconteceu: o que você estava fazendo, o que esperava e o que deu errado.',
+    crashLead: (run: string | null) => `Parece que o jogo fechou sozinho durante a sua última partida${run ? ` (${run})` : ''}. Conte o que aconteceu, que a gente investiga.`,
+    crashText: 'O jogo fechou sozinho no meio da partida.',
+    field: 'O que aconteceu?',
+    placeholder: 'Ex.: na caverna, o jogo travou quando o Onix apareceu.',
+    tech: 'Incluir dados técnicos',
+    techHint: 'Versão, aparelho, tela, a partida (Pokémon, tempo, dificuldade) e os últimos erros do jogo. Nada do seu save.',
+    techShow: 'Ver o que vai junto',
+    note: 'Não precisa de conta. Se você entrou, o relatório vai com o seu @.',
+    send: 'Enviar',
+    sending: 'Enviando…',
+    back: 'Voltar',
+    sent: 'Relatório enviado. Valeu por ajudar a melhorar o jogo!',
+    errors: {
+      short: (min: number) => `Escreva pelo menos ${min} letras.`,
+      invalid: 'Esse relatório não deu para enviar. Revise o texto e tente de novo.',
+      limit: 'Você mandou vários relatórios agora há pouco. Tente de novo mais tarde.',
+      offline: 'Sem conexão. Tente de novo daqui a pouco.',
+    },
+    prompt: {
+      text: 'Parece que o jogo fechou durante uma partida. Quer contar o que aconteceu?',
+      report: 'Reportar',
+      dismiss: 'Agora não',
+    },
   },
 
   /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */

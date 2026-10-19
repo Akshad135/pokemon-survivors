@@ -2,6 +2,7 @@ import { createClerkClient } from '@clerk/backend'
 import { serve } from '@hono/node-server'
 import { adminStore } from './admin'
 import { createApp } from './app'
+import { bugReportStore, createBugReports, discordBugForum } from './bugReports'
 import { clerkVerifier } from './auth'
 import { connect, migrate, saveStore } from './db'
 import { createChecks } from './checks'
@@ -44,6 +45,12 @@ const app = createApp({
   supporters: supporterStore(sql, { onTierUp: (userId) => void discord.syncRoles(userId) }),
   discord,
   suggestions: suggestionStore(sql),
+  // Stored always; posted to #bug-reports when the bot is set up.
+  bugReports: createBugReports({
+    store: bugReportStore(sql),
+    forum: env.discord ? discordBugForum({ ...env.discord, forumId: env.discordBugForumId }) : null,
+    handleOf: async (userId) => (await ranking.profileName(userId))?.handle ?? null,
+  }),
   admin: adminStore(sql, clerk, env.adminEmails),
   webhooks: { stripeSecret: env.stripeWebhookSecret, stripePaymentLink: env.stripePaymentLink, abacatePaySecret: env.abacatePayWebhookSecret },
   allowedOrigin: env.allowedOrigin,
