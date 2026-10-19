@@ -926,7 +926,7 @@ export const pt = {
     titleTutor: 'Tutor de Golpes',
     subBoss: 'Um golpe de fora do seu repertório. Aprender?',
     subLegendary: 'Só dá para aprender um TM lendário por partida.',
-    subTutor: (free: boolean): string => (free ? 'Ensino um golpe de um tipo que você não tem. A primeira aula é grátis!' : 'Ensino um golpe de um tipo que você não tem. Cobro em ₽ da partida.'),
+    subTutor: (free: boolean): string => (free ? 'Ensino golpes que combinam com o seu tipo e que você não aprenderia sozinho. A primeira aula é grátis!' : 'Ensino golpes que combinam com o seu tipo e que você não aprenderia sozinho. Cobro em ₽ da partida.'),
     tag: 'TM',
     free: 'GRÁTIS',
     wallet: (coins: string) => `Você tem ${coins}`,

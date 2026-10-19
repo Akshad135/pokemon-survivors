@@ -292,7 +292,7 @@ export const sitePt = {
         `Cada card sorteia a raridade: o raro (${n(rarePercent)}% de chance, moldura azul) sobe 2 níveis de uma vez, e o shiny (1 em ${shinyOneIn}, o dobro com o Shiny Charm) é uma escolha grátis, seguida de outra.`,
         'Esquecer tira uma oferta da partida: o card sai voando, o espaço é sorteado de novo e aquele golpe ou item não volta mais. As cargas vêm do Escape Rope do Poké Mart, de cada chefe derrotado e de cada evolução.',
         'A lista de golpes cresce com o Pokémon: cada evolução libera golpes novos (um aviso mostra quais), que aparecem com mais frequência nas 3 subidas de nível seguintes. São mais golpes do que espaços, então cada partida deixa alguns de fora.',
-        'Chefes derrotados deixam um TM com um golpe de fora do repertório, o Tutor de Golpes ensina tipos que você não tem, e vencer uma fenda oferece o golpe lendário do próprio lendário (um por partida). Com os espaços cheios, aprender pede para esquecer um golpe.',
+        'Chefes derrotados deixam um TM com um golpe de fora do repertório, o Tutor de Golpes ensina golpes que combinam com o seu tipo, e vencer uma fenda oferece o golpe lendário do próprio lendário (um por partida). Com os espaços cheios, aprender pede para esquecer um golpe.',
       ],
       abilities: 'Na primeira evolução, o Pokémon desperta uma Habilidade: escolha 1 de 3 (a terceira é a Habilidade Oculta), que vale até o fim da partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia e Poliwhirl ainda perguntam em quem evoluir, e cada forma tem tipo, especial, golpes e Habilidades próprios.',
       evolution: (first: number, second: number) =>
@@ -512,7 +512,7 @@ export const sitePt = {
       tutor: {
         name: 'Tutor de Golpes',
         how: (from: number, until: number) => `Arma a tenda uma vez entre ${from} e ${until} min (às vezes mais uma). Fique no círculo dela.`,
-        reward: (price: string) => `Ensina 1 de 2 golpes de tipos que você não tem. A primeira aula é grátis; a próxima custa ${price} da partida.`,
+        reward: (price: string) => `Ensina 1 de 2 golpes que combinam com o tipo do seu Pokémon e que ele não aprende sozinho (nunca um golpe de Água para o Grovyle). A primeira aula é grátis; a próxima custa ${price} da partida.`,
       },
     },
     mart: {

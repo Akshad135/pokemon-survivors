@@ -809,7 +809,7 @@ export const es: Messages = {
     titleTutor: 'Tutor de Movimientos',
     subBoss: 'Un movimiento fuera de tu repertorio. ¿Aprenderlo?',
     subLegendary: 'Solo se puede aprender una MT legendaria por partida.',
-    subTutor: (free: boolean) => (free ? 'Enseño un movimiento de un tipo que no tienes. ¡La primera clase es gratis!' : 'Enseño un movimiento de un tipo que no tienes. Cobro en ₽ de la partida.'),
+    subTutor: (free: boolean) => (free ? 'Enseño movimientos que van con tu tipo y que no aprenderías por tu cuenta. ¡La primera clase es gratis!' : 'Enseño movimientos que van con tu tipo y que no aprenderías por tu cuenta. Cobro en ₽ de la partida.'),
     tag: 'MT',
     free: 'GRATIS',
     wallet: (coins: string) => `Tienes ${coins}`,

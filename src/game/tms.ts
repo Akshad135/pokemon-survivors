@@ -4,6 +4,7 @@ import { TYPE_COLORS } from '../data/types'
 import { BOSS_TMS, LEGENDARY_TMS } from '../data/tms'
 import { MYTHICALS } from '../data/waves'
 import type { RiftLegend } from '../data/rifts'
+import { playerForm } from './branch'
 import { burst, floatText } from './effects'
 import { applyOffer, branchOffers, recomputeStats } from './leveling'
 import { forkAt, MOVES, type MoveId } from './moves'
@@ -65,9 +66,9 @@ export const collectTm = (g: Game, pickup: Extract<Pickup, { kind: 'tm' }>) => {
   g.events.push({ kind: 'tmMastered', move: pickup.move, coins })
 }
 
-/** A Move Tutor's lesson: two moves of types the player lacks, paid from the run's ₽ after the first. False when it has nothing to teach. */
+/** A Move Tutor's lesson: two moves of types that suit the player's form, paid from the run's ₽ after the first. False when it has nothing to teach. */
 export const openTutor = (g: Game) => {
-  const pool = tutorPool({ starter: g.starter, branch: g.branch, moves: g.player.moves, banished: g.banished })
+  const pool = tutorPool({ starter: g.starter, branch: g.branch, types: playerForm(g).types, moves: g.player.moves, banished: g.banished })
   return openTm(g, tutorPicks(pool, g.rng), 'tutor', tutorPrice(g.tm.lessons))
 }
 

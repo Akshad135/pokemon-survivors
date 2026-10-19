@@ -9,6 +9,7 @@ import { MAX_MOVES } from './leveling'
 import { isManual, maxMoveLevel, MOVE_IDS, MOVES, type MoveId } from './moves'
 import { isTmMove, tmMoveIds } from './tmMoves'
 import type { ItemId } from '../data/items'
+import { TUTOR_AFFINITY } from '../data/tms'
 import type { Offer, OwnedMove, TmOffer } from './types'
 
 /**
@@ -91,28 +92,32 @@ export const tutorMoves = (): readonly MoveId[] => {
   return known
 }
 
-/** What a tutor's pick depends on. */
+/** What a tutor's pick depends on: the run's family, the types of the form it's in and the moves held. */
 export type TutorLoadout = {
   starter: PlayableId
   branch: BranchId | null
+  types: readonly PokeType[]
   moves: readonly OwnedMove[]
   banished?: ReadonlySet<MoveId | ItemId>
 }
 
+/** The move types a tutor teaches a form: its own types and their `TUTOR_AFFINITY`. */
+export const tutorTypes = (types: readonly PokeType[]): ReadonlySet<PokeType> => new Set<PokeType>([...types, ...types.flatMap((t) => TUTOR_AFFINITY[t])])
+
 /**
- * The moves a tutor can teach this player: of a type outside the types of the
- * family's whole learnset (every stage) and of the moves held, so never a
- * move the family learns anyway; not owned (nor evolved from), not forgotten
- * with Esquecer, and learnable next to the moves held (one manual move).
+ * The moves a tutor can teach this player: of a type that suits the form
+ * (`tutorTypes`), never one the family learns anyway; not owned (nor evolved
+ * from), not forgotten with Esquecer, and learnable next to the moves held
+ * (one manual move).
  */
-export const tutorPool = ({ starter, branch, moves, banished }: TutorLoadout): MoveId[] => {
+export const tutorPool = ({ starter, branch, types, moves, banished }: TutorLoadout): MoveId[] => {
   const learnset = runLearnset(starter, branch)
   const owned = moves.map((m) => m.id)
-  const types = new Set<PokeType>([...learnset, ...owned].map((id) => MOVES[id].type))
+  const suits = tutorTypes(types)
   const evolvedBases = new Set(moves.flatMap((m) => evolvedFrom(m.id)?.from ?? []))
   return tutorMoves().filter(
     (id) =>
-      !types.has(MOVES[id].type) && !learnset.includes(id) && !owned.includes(id) && !evolvedBases.has(id) && !banished?.has(id) && learnable(owned, id, isManual),
+      suits.has(MOVES[id].type) && !learnset.includes(id) && !owned.includes(id) && !evolvedBases.has(id) && !banished?.has(id) && learnable(owned, id, isManual),
   )
 }
 
