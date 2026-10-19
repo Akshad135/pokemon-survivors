@@ -665,4 +665,9 @@ export type Game = {
   alphas: AlphaClock
   /** The world's own attacks on the player (`game/hazards.ts`). */
   worldHazards: WorldHazardState
+  /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
+  prize: PrizeSource | null
 }
+
+/** Where a prize level-up came from: an Alpha's gem or a field mission. */
+export type PrizeSource = 'alpha' | 'mission'

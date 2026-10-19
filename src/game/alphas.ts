@@ -7,7 +7,7 @@ import { hurtPlayer } from './combat'
 import type { Difficulty } from './difficulty'
 import { burst } from './effects'
 import { spawnEnemy } from './enemies'
-import { loadout, rollOffers, withRarity, xpFor } from './leveling'
+import { openPrizeLevelUp, xpFor } from './leveling'
 import { dropPickup, dropXp } from './pickups'
 import { inView } from './queries'
 import { hasTrait, type StagePool } from './roster'
@@ -328,13 +328,8 @@ export const alphaDown = (g: Game, e: Enemy) => {
   g.events.push({ kind: 'alpha', enemy: e.kind, moment: 'down' })
 }
 
-/**
- * The Alpha's prize picked up: a level-up opens at once, its cards all rare
- * when they can be (two levels at once; never a fork, that one is the player's call).
- */
+/** The Alpha's prize picked up: a prize level-up of rare cards opens at once (`openPrizeLevelUp`). */
 export const openAlphaPrize = (g: Game) => {
-  g.offers = rollOffers(loadout(g), g.rng, 3, { forks: false }).map((o) => withRarity(o, 0, 0))
-  g.pendingLevelUps++
-  g.phase = 'levelup'
-  g.events.push({ kind: 'levelup' }, { kind: 'alphaPrize' })
+  openPrizeLevelUp(g, 'alpha')
+  g.events.push({ kind: 'alphaPrize' })
 }

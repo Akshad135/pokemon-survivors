@@ -141,6 +141,7 @@ export const en: Messages = {
     banishCancel: 'Cancel',
     banishHintKeys: 'Choose the card to forget · ESC cancels',
     banishHintTouch: 'Tap the card to forget',
+    prize: { alpha: 'Alpha prize!', mission: 'Mission complete!' },
   },
 
   difficulty: {
@@ -1160,6 +1161,9 @@ export const en: Messages = {
       rift25: 'Rift walker',
       mega1: 'Mega Bond',
       mega25: 'Mega Master',
+      alpha1: 'First Alpha',
+      alpha25: 'Alpha Tracker',
+      alpha100: 'Alpha Hunter',
       legends: 'Legend Tamer',
       shinyLegend: 'Shining legend',
       champion: 'Champion',
@@ -1193,6 +1197,7 @@ export const en: Messages = {
       champion: 'Champion',
       regions: 'Master of Regions',
       reaperDown: 'Living Legend',
+      alpha100: 'Alpha Hunter',
       ambassador: 'Ambassador',
       supporter: 'Supporter',
     },
@@ -1225,6 +1230,7 @@ export const en: Messages = {
       hatches: (n) => (n === '1' ? 'Hatch an egg' : `Hatch ${n} eggs`),
       shinyHatches: () => 'Hatch a shiny Pokémon (1 in 100)',
       megas: (n) => (n === '1' ? 'Mega Evolve once' : `Mega Evolve ${n} times`),
+      alphaKills: (n) => (n === '1' ? 'Defeat an Alpha Pokémon' : `Defeat ${n} Alpha Pokémon`),
     },
     region: (name) => `Defeat Mewtwo with a starter from ${name}`,
   },

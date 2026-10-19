@@ -141,6 +141,7 @@ export const es: Messages = {
     banishCancel: 'Cancelar',
     banishHintKeys: 'Elige la carta a olvidar · ESC cancela',
     banishHintTouch: 'Toca la carta a olvidar',
+    prize: { alpha: '¡Premio del Alfa!', mission: '¡Misión cumplida!' },
   },
 
   difficulty: {
@@ -1161,6 +1162,9 @@ export const es: Messages = {
       rift25: 'Viajero de las grietas',
       mega1: 'Lazo Mega',
       mega25: 'Maestro Mega',
+      alpha1: 'Primer Alfa',
+      alpha25: 'Rastreador de Alfas',
+      alpha100: 'Cazador de Alfas',
       legends: 'Domador de Leyendas',
       shinyLegend: 'Leyenda brillante',
       champion: 'Campeón',
@@ -1194,6 +1198,7 @@ export const es: Messages = {
       champion: 'Campeón',
       regions: 'Maestro de las Regiones',
       reaperDown: 'Leyenda Viviente',
+      alpha100: 'Cazador de Alfas',
       ambassador: 'Embajador(a)',
       supporter: 'Patrocinador(a)',
     },
@@ -1226,6 +1231,7 @@ export const es: Messages = {
       hatches: (n) => (n === '1' ? 'Haz eclosionar un huevo' : `Haz eclosionar ${n} huevos`),
       shinyHatches: () => 'Haz eclosionar un Pokémon shiny (1 de cada 100)',
       megas: (n) => (n === '1' ? 'Megaevoluciona una vez' : `Megaevoluciona ${n} veces`),
+      alphaKills: (n) => (n === '1' ? 'Derrota a un Pokémon Alfa' : `Derrota a ${n} Pokémon Alfa`),
     },
     region: (name) => `Vence a Mewtwo con un inicial de ${name}`,
   },

@@ -187,6 +187,7 @@ export const createGame = (
     tension: createTension(),
     alphas: createAlphaClock(options.difficulty ?? DEFAULT_DIFFICULTY),
     worldHazards: createWorldHazards(),
+    prize: null,
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -292,6 +293,7 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
  * evolution goes, start an evolution, or resume. Exported for the dev console.
  */
 export const advancePhase = (g: Game) => {
+  g.prize = null
   if (g.pendingLevelUps > 0) {
     g.phase = 'levelup'
     g.offers = rollOffers(loadout(g), g.rng, 3, rolling(g))

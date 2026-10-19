@@ -12,7 +12,7 @@ import {
   FIELD_MISSION_KINDS, missionCoins, NEST, nextMissionAt, type FieldMissionKind, type FieldTuning,
 } from './fieldMissionRules'
 import { makeElite } from './horde'
-import { loadout, rollOffers, withRarity } from './leveling'
+import { openPrizeLevelUp } from './leveling'
 import { DIRECTOR, spawnSpot } from './mapEventRules'
 import type { MapEvent, MapEventDef, MapEventNotice, MapEventOf } from './mapEvents'
 import { COIN_VALUES } from './meta'
@@ -99,14 +99,6 @@ const ambushRing = (g: Game, x: number, y: number, r: number, count: number, eli
   }
 }
 
-/** A level-up of lucky cards: every card that can be rare is, and on Nightmare the first one is shiny (a free pick). */
-const luckyLevelUp = (g: Game, shinyFirst: boolean) => {
-  g.offers = rollOffers(loadout(g), g.rng, 3, { forks: false }).map((o, i) => withRarity(o, 0, shinyFirst && i === 0 ? 1 : 0))
-  g.pendingLevelUps++
-  g.phase = 'levelup'
-  g.events.push({ kind: 'levelup' })
-}
-
 /** Pays a finished mission at (x, y): coins on the ground, the lucky level-up, and the defense's egg roll (an Incense raises it). */
 const reward = (g: Game, ev: MapEventOf<FieldMissionKind>, x: number, y: number, egg: boolean) => {
   const r = tuningOf(g).reward
@@ -119,7 +111,7 @@ const reward = (g: Game, ev: MapEventOf<FieldMissionKind>, x: number, y: number,
   g.shake = Math.max(g.shake, 3)
   notify(g, { kind: 'missionDone', mission: ev.kind, coins: coins.reduce((a, b) => a + b, 0), egg: hatched })
   ev.gone = 0
-  luckyLevelUp(g, r.shinyCard)
+  openPrizeLevelUp(g, 'mission', r.shinyCard)
 }
 
 const fail = (g: Game, ev: MapEventOf<FieldMissionKind>) => {
