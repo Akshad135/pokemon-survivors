@@ -475,6 +475,30 @@ button {
   height: 14px;
 }
 
+/* A clear's trophy (10 px icon at 2×), opposite the shiny star. */
+.partner-cell-clear {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 20px;
+  height: 20px;
+}
+
+.partner-clear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: #505068;
+}
+
+.partner-clear img {
+  width: 20px;
+  height: 20px;
+}
+
 .partner-cell.selected {
   z-index: 1;
   border: 3px solid #e83030;
@@ -6590,6 +6614,22 @@ button {
   right: 1px;
   width: 14px;
   height: 14px;
+}
+
+/* A clear's trophy (10 px icon at 2×), opposite the caught mark. */
+.dex-clear {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.dex-fact .dex-clear-icon {
+  width: 20px;
+  height: 20px;
+  margin: -6px 4px -6px 0;
+  vertical-align: middle;
 }
 
 .dex-cell.selected {

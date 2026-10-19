@@ -10,7 +10,7 @@ import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
 import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
-import { bagIcon, eggIcon, PICKUPS, sparkleIcon } from '../render/art'
+import { bagIcon, eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
 import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
@@ -102,15 +102,27 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     )
   }
   const shinyTag = () => h('img', { class: 'partner-cell-shiny', src: sparkleIcon(), alt: 'Shiny' })
+  /** What a family's clear says (`game/clears.ts`): the hardest difficulty it beat Mewtwo on. */
+  const clearText = (id: PlayableId) => {
+    const level = save.clears[id]
+    return level ? m.dex.clearedOn(m.difficulty.names[level]) : null
+  }
+  /** The trophy in a cleared family's corner, in the metal of its hardest clear. */
+  const clearTag = (id: PlayableId) => {
+    const level = save.clears[id]
+    return level ? h('img', { class: 'partner-cell-clear', src: trophyIcon(level), alt: clearText(id) ?? '' }) : null
+  }
+  const cellTitle = (id: PlayableId, name: string) => [name, clearText(id)].filter((s) => s !== null).join(' · ')
 
   const cells = new Map<PlayableId, HTMLElement>()
   const starterCell = (id: StarterId) => {
     const el = h(
       'button',
-      { class: 'partner-cell', type: 'button', title: PLAYABLE[id].name, style: `--t:${PLAYABLE[id].color}`, onclick: () => tapCell(id) },
+      { class: 'partner-cell', type: 'button', title: cellTitle(id, PLAYABLE[id].name), style: `--t:${PLAYABLE[id].color}`, onclick: () => tapCell(id) },
       cellPortrait(id),
       h('span', { class: 'partner-cell-name' }, PLAYABLE[id].name),
       shinyOf(id) && shinyTag(),
+      clearTag(id),
     )
     cells.set(id, el)
     return el
@@ -122,12 +134,13 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       {
         class: open ? 'partner-cell egg' : 'partner-cell egg locked',
         type: 'button',
-        title: open ? PLAYABLE[id].name : m.eggs.locked,
+        title: cellTitle(id, open ? PLAYABLE[id].name : m.eggs.locked),
         style: `--t:${open ? PLAYABLE[id].color : '#8890b0'}`,
         onclick: () => tapCell(id),
       },
       open ? cellPortrait(id) : cellSilhouette(id),
       shinyOf(id) && shinyTag(),
+      clearTag(id),
     )
     cells.set(id, el)
     return el
@@ -197,6 +210,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     const form = PLAYABLE[id].line[stage]!
     void loadSpecies(form.dex, shinyOf(id)).catch(() => {})
     hero.style.setProperty('--accent', open ? PLAYABLE[id].color : '#8890b0')
+    const level = save.clears[id]
     const pedestal = h('div', { class: 'partner-pedestal' }, sprite)
     if (isHatchling(id) && !open) {
       const tier = HATCHLINGS[id].egg
@@ -242,6 +256,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
           h('small', { class: 'partner-dex' }, `#${String(form.dex).padStart(3, '0')}`),
           h('h3', { class: 'partner-name' }, form.name),
           h('div', { class: 'types' }, ...form.types.map(typeBadge)),
+          level && h('p', { class: 'partner-clear' }, h('img', { src: trophyIcon(level), alt: '' }), m.dex.clearedOn(m.difficulty.names[level])),
           h('p', { class: 'partner-blurb' }, m.blurbs[id]),
           h('div', { class: 'partner-hero-actions' }, canPick(id) && shinyPicker(shinyOf(id), setShiny), more(true)),
         ),
