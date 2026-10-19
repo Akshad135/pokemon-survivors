@@ -20,6 +20,7 @@ import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialId } from '../game/special'
 import type { Stance } from '../game/stance'
 import type { SheetStat } from '../game/statSheet'
+import type { StatusKind } from '../game/status'
 import type { Action } from '../engine/bindings'
 
 /** A fork branch's texts: its name and a one-line description (~45 characters). */
@@ -204,7 +205,7 @@ export const pt = {
     /** Cards side by side: a branching evolution's forms or the abilities (1-3), a fork's two paths or a cursed item's take or leave (1-2). */
     sideHintKeys: '← → escolher · ENTER confirmar · 1-3 atalho',
     pairHintKeys: '← → escolher · ENTER confirmar · 1-2 atalho',
-    hintTouch: 'Toque para escolher',
+    hintTouch: 'Toque para escolher · segure para ver o golpe',
     /** The opening draft, before the run's clock starts. */
     draftTitle: (name: string) => `${name}: escolha o 2º golpe!`,
     /** A fork: the move card splits into its two branches. */
@@ -256,6 +257,30 @@ export const pt = {
       comboMoves: 'Golpes em combo',
       specialRecharge: 'Recarga do especial',
     } satisfies Record<SheetStat, string>,
+    cardHintKeys: 'Passe o mouse num golpe para ver a ficha dele',
+    cardHintTouch: 'Segure um golpe para ver a ficha dele',
+  },
+
+  /** The move card: hover a move icon, or hold it on touch (`ui/moveCard.ts`). Stat names come from `stats`. */
+  moveCard: {
+    level: (n: number, max: number) => `Nv ${n}/${max}`,
+    evolved: '★ EVOLUÍDO',
+    pierce: 'Perfura',
+    status: {
+      burn: 'Queimar',
+      poison: 'Envenenar',
+      paralysis: 'Paralisar',
+      slow: 'Lentidão',
+      sleep: 'Sono',
+      freeze: 'Congelar',
+      mark: 'Marcar',
+      confuse: 'Confundir',
+      seed: 'Semente',
+      weaken: 'Enfraquecer',
+    } satisfies Record<StatusKind, string>,
+    seconds: (s: string) => `${s}s`,
+    evolves: 'Evolução',
+    evolvedFrom: 'Evoluiu de',
   },
 
   settings: {

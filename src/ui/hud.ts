@@ -22,6 +22,7 @@ import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
+import { moveCard, withMoveCard } from './moveCard'
 import { createMovePad } from './movePad'
 import { createSpecialControls } from './specialButton'
 
@@ -31,7 +32,7 @@ const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-
  * In-run heads-up display. `update` is called every frame and only touches what changed.
  * `onSpecial`, `onMega` and `onLunge` fire when the touch special, Mega and lunge buttons are pressed;
  * `onPause` backs the on-screen pause button (phones have no Esc key); `isHeld` (the input's)
- * lights the desktop WASD keys. Labels are
+ * lights the desktop WASD keys. Hovering or holding a move slot opens its card (`withMoveCard`). Labels are
  * read at creation: rebuild the HUD after a language switch.
  */
 export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () => void, onLunge: () => void, onPause: () => void, isHeld: (code: string) => boolean) => {
@@ -147,12 +148,14 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
         const ready = evo !== undefined && canEvolve(evo, p)
         const duo = m !== undefined && isDuo(m.id)
         const cls = ['slot', ready && 'evo-ready', m && fusing.has(m.id) && 'duo-ready', duo && 'duo'].filter(Boolean).join(' ')
-        return h(
+        const slot = h(
           'div',
           { class: cls },
           m && h('img', { src: moveIcon(m.id), alt: '' }),
           m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? `★${m.level}` : duo ? `✦${m.level}` : m.level),
         )
+        if (m) withMoveCard(slot, () => moveCard(g, m.id, { level: m.level, path: m.path, describe: true }))
+        return slot
       }),
     )
     itemSlots.replaceChildren(

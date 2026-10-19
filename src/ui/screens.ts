@@ -6,7 +6,7 @@ import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
 import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { forkAt, isLegendary, maxMoveLevel, MOVES, moveStats, type MoveDef, type MoveId } from '../game/moves'
+import { forkAt, isLegendary, maxMoveLevel, MOVES, moveStats, withBranch, type MoveDef, type MoveId } from '../game/moves'
 import { canBanish, drafting, playerDex } from '../game/game'
 import { rarityOf } from '../game/leveling'
 import { fusable, isDuo, reachableDuos, readyDuos, type DuoRecipe } from '../game/duoRules'
@@ -35,6 +35,7 @@ import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
 import { h, later } from './dom'
 import { boundPadHint, glyphText } from './inputLabels'
+import { holdMoveCard, hoverMoveCard, moveCard, withMoveCard } from './moveCard'
 
 export type Screen = {
   el: HTMLElement
@@ -242,6 +243,27 @@ const offerView = (g: Game, offer: Offer) => {
   }
 }
 
+/**
+ * The move card behind a level-up card: the level it grants, compared with the
+ * level the player has (along the branches taken, plus the one a fork card adds).
+ * An evolution or a duo shows the new move at level 1.
+ */
+const offerCard = (g: Game, offer: Offer) => {
+  switch (offer.kind) {
+    case 'move':
+    case 'branch': {
+      const owned = g.player.moves.find((m) => m.id === offer.id)
+      const path = offer.kind === 'branch' ? withBranch(owned?.path ?? 0, offer.level, offer.branch) : owned?.path
+      return moveCard(g, offer.id, { level: offer.level, from: owned?.level, path })
+    }
+    case 'evolution':
+    case 'duo':
+      return moveCard(g, offer.to, { level: 1 })
+    default:
+      return null
+  }
+}
+
 const NO_MODS: readonly ModId[] = []
 
 /** Twinkles scattered over a shiny card's frame, as [left %, top %, delay s] (CSS animates them). */
@@ -281,17 +303,21 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
     button.style.setProperty('--duo-a', TYPE_COLORS[MOVES[offer.from[0]].type])
     button.style.setProperty('--duo-b', TYPE_COLORS[MOVES[offer.from[1]].type])
   }
+  const icon = h(
+    'div',
+    { class: 'offer-icon' },
+    h('img', { src: v.icon, alt: '' }),
+    v.mods.length > 0 && h('span', { class: 'offer-mods' }, ...v.mods.map((id) => h('img', { src: modIcon(id), alt: '' }))),
+  )
+  // The mouse opens the move card over the icon only, so it doesn't cover the other choices (a finger holds the whole card, see `levelUp`).
+  const card = offerCard(g, offer)
+  if (card) hoverMoveCard(icon, () => card)
   // `h` drops the parts a card doesn't have; the button takes what's left.
   const parts = h(
     'div',
     {},
     h('span', { class: 'offer-key' }, offer.kind === 'branch' ? (offer.branch === 0 ? 'A' : 'B') : i + 1),
-    h(
-      'div',
-      { class: 'offer-icon' },
-      h('img', { src: v.icon, alt: '' }),
-      v.mods.length > 0 && h('span', { class: 'offer-mods' }, ...v.mods.map((id) => h('img', { src: modIcon(id), alt: '' }))),
-    ),
+    icon,
     h(
       'div',
       { class: 'offer-body' },
@@ -340,6 +366,8 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const buttons = g.offers.map((offer, i) => {
     const button = h('button', {})
     fillCard(g, button, offer, i)
+    // Read at hold time: Esquecer redraws a slot with another offer.
+    holdMoveCard(button, () => offerCard(g, g.offers[i]!))
     return button
   })
 
@@ -486,8 +514,8 @@ const moveList = (g: Game) =>
   h(
     'div',
     { class: 'loadout-list' },
-    ...g.player.moves.map((m) =>
-      h(
+    ...g.player.moves.map((m) => {
+      const row = h(
         'div',
         { class: 'loadout-row' },
         h('img', { src: moveIcon(m.id), alt: '' }),
@@ -496,8 +524,10 @@ const moveList = (g: Game) =>
         ...modsOf(moveStats(m.id, m.level, g.player.stats, m.path).mods).map((id) => h('img', { class: 'loadout-mod', src: modIcon(id), alt: '' })),
         loadoutHint(g, m.id),
         levelTag(m.level, maxMoveLevel(m.id)),
-      ),
-    ),
+      )
+      withMoveCard(row, () => moveCard(g, m.id, { level: m.level, path: m.path, describe: true }))
+      return row
+    }),
   )
 
 const itemList = (g: Game) =>
@@ -610,6 +640,7 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
           ),
           duoPanel(g),
           h('p', { class: 'evo-legend' }, m.evoLegend),
+          hint(m.cardHintKeys, m.cardHintTouch),
         ),
         h('div', { class: 'buttons' }, resume, settingsButton, quit),
       ),
