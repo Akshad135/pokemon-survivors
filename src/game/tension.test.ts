@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { armored } from './combat'
-import { createTension, edgeDistance, harmAfter, reachAfter, TENSION, TENSION_PEAK, tensionAfter, tensionMods } from './tension'
+import { createTension, edgeDistance, harmAfter, reachAfter, TENSION, TENSION_PEAK, tensionAfter, tensionCeiling, tensionMods } from './tension'
 
 /** Runs `tensionAfter` for `seconds` at 60 Hz with a fixed reach, harm and HP share. */
 const hold = (level: number, reach: number, seconds: number, harm = 0, hp = 1) => {
@@ -14,6 +14,12 @@ describe('tension', () => {
     expect(hold(0, 1, 10)).toBeLessThan(0.3)
     expect(hold(0, 1, TENSION.rise + 1)).toBe(1)
     expect(hold(0, TENSION.calm, TENSION.rise)).toBeCloseTo(0.5)
+  })
+
+  it('stays out of the early game: none before it starts, all of it only from the late game', () => {
+    expect(tensionCeiling(TENSION.from)).toBe(0)
+    expect(tensionCeiling((TENSION.from + TENSION.full) / 2)).toBeCloseTo(0.5)
+    expect(tensionCeiling(TENSION.full + 60)).toBe(1)
   })
 
   it('falls when the horde dies at the player\'s feet, faster when the player is hurting or low', () => {

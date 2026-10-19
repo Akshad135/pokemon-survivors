@@ -430,7 +430,7 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
     else if (fork && (key === 'ArrowRight' || key === 'KeyD')) nav.focus(nav.index + 1)
   })
 
-  const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : m.title(name, g.player.level - g.pendingLevelUps + 1)
+  const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : g.prize ? m.prize[g.prize] : m.title(name, g.player.level - g.pendingLevelUps + 1)
   const el = h(
     'div',
     { class: 'screen dim' },

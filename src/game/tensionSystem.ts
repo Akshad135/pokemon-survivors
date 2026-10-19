@@ -1,4 +1,4 @@
-import { edgeDistance, harmAfter, reachAfter, TENSION, tensionAfter } from './tension'
+import { edgeDistance, harmAfter, reachAfter, TENSION, tensionAfter, tensionCeiling } from './tension'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -26,7 +26,7 @@ export const updateTension = (g: Game, dt: number) => {
   const s = g.tension
   s.harm = harmAfter(s.harm, 0, dt)
   if (g.time < TENSION.from) return
-  s.level = tensionAfter(s, g.player.hp / Math.max(1, g.player.stats.maxHp), dt)
+  s.level = Math.min(tensionCeiling(g.time), tensionAfter(s, g.player.hp / Math.max(1, g.player.stats.maxHp), dt))
 }
 
 /**

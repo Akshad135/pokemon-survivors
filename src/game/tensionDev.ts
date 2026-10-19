@@ -6,7 +6,8 @@ import type { Game } from './types'
  * builds only: `ps.tension()` prints it (level, reach, harm and what it does
  * to the spawns right now) and `ps.tension(0.8)` sets its level (0..1). Setting
  * it also marks the player dominant (reach 1, no harm), so it holds until
- * the horde gets close or the player gets hurt.
+ * the horde gets close or the player gets hurt (or, before `TENSION.full`,
+ * the run time's ceiling pulls it down).
  */
 export const tensionDevTools = (game: () => Game | undefined) => ({
   tension: (level?: number) => {

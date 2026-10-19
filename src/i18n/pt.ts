@@ -18,6 +18,7 @@ import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialId } from '../game/special'
+import type { PrizeSource } from '../game/types'
 import type { Stance } from '../game/stance'
 import type { SheetStat } from '../game/statSheet'
 import type { StatusKind } from '../game/status'
@@ -222,6 +223,8 @@ export const pt = {
     banishCancel: 'Cancelar',
     banishHintKeys: 'Escolha o card a esquecer · ESC cancela',
     banishHintTouch: 'Toque no card a esquecer',
+    /** Title of a prize level-up (every card rare), by where it came from (`Game.prize`). */
+    prize: { alpha: 'Prêmio do Alfa!', mission: 'Missão cumprida!' } satisfies Record<PrizeSource, string>,
   },
 
   pause: {
@@ -1290,6 +1293,9 @@ export const pt = {
       rift25: 'Viajante das fendas',
       mega1: 'Laço Mega',
       mega25: 'Mestre Mega',
+      alpha1: 'Primeiro Alfa',
+      alpha25: 'Rastreador de Alfas',
+      alpha100: 'Caçador de Alfas',
       legends: 'Domador de Lendas',
       shinyLegend: 'Lenda brilhante',
       champion: 'Campeão',
@@ -1323,6 +1329,7 @@ export const pt = {
       champion: 'Campeão',
       regions: 'Mestre das Regiões',
       reaperDown: 'Lenda Viva',
+      alpha100: 'Caçador de Alfas',
       ambassador: 'Embaixador(a)',
       supporter: 'Apoiador(a)',
     } satisfies Record<TitleId, string>,
@@ -1355,6 +1362,7 @@ export const pt = {
       hatches: (n: string) => (n === '1' ? 'Choque um ovo' : `Choque ${n} ovos`),
       shinyHatches: () => 'Choque um Pokémon shiny (1 em 100)',
       megas: (n: string) => (n === '1' ? 'Mega Evolua uma vez' : `Mega Evolua ${n} vezes`),
+      alphaKills: (n: string) => (n === '1' ? 'Derrote um Pokémon Alfa' : `Derrote ${n} Pokémon Alfa`),
     } satisfies Record<AchievementStat, (n: string) => string>,
     region: (name: string) => `Vença o Mewtwo com um inicial de ${name}`,
   },

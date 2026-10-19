@@ -14,7 +14,7 @@ import type { RunSummary } from './tally'
  */
 
 /** Run summary fields that add up over a lifetime as they are. */
-const SUMMED = ['kills', 'shinyKills', 'bossKills', 'shinyLegends', 'chests', 'meowths', 'altars', 'coins', 'moveEvolutions', 'reaperDefeats', 'megas'] as const satisfies readonly (keyof RunSummary)[]
+const SUMMED = ['kills', 'shinyKills', 'bossKills', 'shinyLegends', 'chests', 'meowths', 'altars', 'coins', 'moveEvolutions', 'reaperDefeats', 'megas', 'alphaKills'] as const satisfies readonly (keyof RunSummary)[]
 
 const COUNTERS = [...SUMMED, 'runs', 'wins', 'rifts', 'finalStages', 'shinyStarters', 'missions', 'bestTime', 'bestLevel', 'bestOvertime', 'hatches', 'shinyHatches'] as const
 
