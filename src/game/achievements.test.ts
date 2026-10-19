@@ -28,6 +28,14 @@ describe('achievements', () => {
     expect(recordAchievements(first.achievements, summary({ kills: 5 }), null).unlocked).toEqual([])
   })
 
+  it('count Alphas toward their own medals, the gold one with the Alpha Hunter title', () => {
+    const first = recordAchievements(NO_ACHIEVEMENTS, summary({ alphaKills: 25 }), null)
+    expect(first.unlocked).toEqual(['firstRun', 'alpha1', 'alpha25'])
+    const later = recordAchievements(first.achievements, summary({ alphaKills: 75 }), null)
+    expect(later.unlocked).toEqual(['alpha100'])
+    expect(ACHIEVEMENTS.alpha100).toMatchObject({ medal: 'gold', title: true })
+  })
+
   it('track region wins and the grass/fire/water trio', () => {
     let save = NO_ACHIEVEMENTS
     for (const starter of ['bulbasaur', 'cyndaquil', 'mudkip'] as const) save = recordAchievements(save, summary({ starter, victory: true }), null).achievements

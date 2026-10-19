@@ -19,7 +19,10 @@ import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY,
 import { guardHit, moveEvent, moveHit } from './moveHooks'
 import { fallInArena } from './riftArena'
 import { countKill } from './tally'
+import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
+import { alphaDown } from './alphas'
+import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
 import * as dm from '../engine/dmath'
@@ -42,7 +45,8 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   // Vines push sideways; everything else pushes away from the hitbox center.
   const p = g.player
   const away = attack.shape.kind === 'rect' ? { x: Math.sign(e.x - p.x) || 1, y: 0 } : dirTo(attack.x, attack.y, e.x, e.y, p.facing)
-  const kb = attack.knockback / e.mass
+  // The regular horde stiffens with the minutes (`hordeGrit`), so late crowds press through an aura.
+  const kb = attack.knockback / (e.boss ? e.mass : e.mass * hordeGrit(g.time, g.difficulty))
   e.kx += away.x * kb
   e.ky += away.y * kb
 
@@ -138,6 +142,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   e.dying = 0
   e.hp = 0
   g.kills++
+  noteKill(g, e)
   if (source === 'special' || g.special.chaining) g.special.kills++
   countKill(g.tally, e, weatherHere(g), g.biome.id, g.outbreak)
   abilityKill(g, e)
@@ -151,10 +156,14 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   logDefeat(g.dexLog, dex, e.shiny)
   if (fresh) g.events.push({ kind: 'caught', enemy: e.kind })
 
-  if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
+  // Under tension a regular's faint gives a share of its loot (`tension.ts`); a boss's never shrinks.
+  const share = e.boss ? 1 : g.tension.share
+  if (e.xp > 0) dropXp(g, e.x, e.y, e.xp * share)
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
-  if (e.boss) {
+  if (e.alpha) {
+    alphaDown(g, e)
+  } else if (e.boss) {
     // Every boss defeated earns an Esquecer charge (`banishOffer`).
     g.banishes++
     dropPickup(g, e.x, e.y, 'pokeball')
@@ -166,12 +175,18 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
       g.phase = 'victory'
       g.events.push({ kind: 'victory' })
     }
-  } else if (chance(g.rng, ENEMY_BERRY_CHANCE)) {
+  } else if (chance(g.rng, ENEMY_BERRY_CHANCE * share)) {
     dropPickup(g, e.x + 6, e.y, 'berry')
   } else {
-    enemyDrop(g, e)
+    enemyDrop(g, e, share)
   }
 }
+
+/** The most of a hit armor takes off: past it, more armor stops paying, so late hits never shrink to 1. */
+export const ARMOR_CAP = 0.5
+
+/** A `raw` hit on the player after `armor`: each point takes 1 off (a negative one adds 1), up to `ARMOR_CAP` of the hit. At least 1. */
+export const armored = (raw: number, armor: number) => Math.max(1, Math.round(raw - Math.min(armor, raw * ARMOR_CAP)))
 
 /**
  * Damages the player. `from` (a body that touched them) gets shoved back; hazards pass none.
@@ -185,9 +200,11 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   if (from && blinded(g, from)) return
   const taken = abilityTakes(g, amount, types, hit, from)
   if (taken === null) return
-  const dmg = Math.max(1, Math.round(taken * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken - p.stats.armor))
+  const mods = DIFFICULTIES[g.difficulty]
+  const dmg = armored(taken * mods.enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken, p.stats.armor)
   p.hp -= dmg
-  p.iframes = 0.5
+  p.iframes = mods.iframes
+  noteHarm(g, dmg)
   p.hurt = 0.3
   g.shake = Math.max(g.shake, 3)
   floatText(g, p.x, p.y - 28, String(dmg), '#ff5040', true)

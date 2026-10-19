@@ -109,9 +109,9 @@ export const dropItem = (g: Game, x: number, y: number, drop: Drop) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -25, 25), vy: range(g.rng, -40, -20), attracted: false, age: 0, kind: 'consumable', item: drop })
 }
 
-/** Very rare consumable drop from a fainted regular enemy. */
-export const enemyDrop = (g: Game, e: Enemy) => {
-  if (chance(g.rng, ENEMY_DROP_CHANCE)) dropItem(g, e.x - 6, e.y, rollDrop(DROP_TABLES.enemy, g.time, g.rng))
+/** Very rare consumable drop from a fainted regular enemy; `odds` scales its chance (the pressure director's loot share). */
+export const enemyDrop = (g: Game, e: Enemy, odds = 1) => {
+  if (chance(g.rng, ENEMY_DROP_CHANCE * odds)) dropItem(g, e.x - 6, e.y, rollDrop(DROP_TABLES.enemy, g.time, g.rng))
 }
 
 export const useConsumable = (g: Game, id: ConsumableId) => {

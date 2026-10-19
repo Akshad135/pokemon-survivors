@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { BIOMES } from '../data/biomes'
-import { bossCandidates, EVENTS, MYTHICALS, RUNNER, STAGES, stageStart, TRIO_IDS, TRIOS } from '../data/waves'
+import { bossCandidates, EVENTS, MYTHICALS, RUNNER, STAGES, stageIndexAt, stageStart, TRIO_IDS, TRIOS } from '../data/waves'
+import { SPIT_FROM } from './spitters'
 import { biomeWeight, byTypes, drawRoster, pickSpawn, rosterSchedule, stageBiome, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM, withTrio, type SpeciesWeight } from './roster'
 
 const def = (id: EnemyId): EnemyDef => ENEMIES[id]
@@ -38,6 +39,20 @@ describe('drawRoster', () => {
         expect(runner).not.toBeNull()
         expect(ids(r.stages[i]!)).toContain(runner)
         expect(def(runner!).trait).toBeUndefined()
+      })
+    }
+  })
+
+  it('draws each stage’s spitter from its lowest tier, outside its cast, from the first stage spitters can play in', () => {
+    const first = stageIndexAt(SPIT_FROM)
+    for (let seed = 1; seed <= 50; seed++) {
+      const r = drawRoster(createRng(seed))
+      r.spitters.forEach((spitter, i) => {
+        if (i < first) return expect(spitter).toBeNull()
+        expect(spitter).not.toBeNull()
+        expect(ids(r.stages[i]!)).not.toContain(spitter)
+        expect(def(spitter!).tier).toBe(Math.min(...STAGES[i]!.cast))
+        expect(def(spitter!).trait).toBeUndefined()
       })
     }
   })

@@ -19,6 +19,7 @@ import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialId } from '../game/special'
+import type { PrizeSource } from '../game/types'
 import type { Stance } from '../game/stance'
 import type { SheetStat } from '../game/statSheet'
 import type { StatusKind } from '../game/status'
@@ -223,6 +224,8 @@ export const pt = {
     banishCancel: 'Cancelar',
     banishHintKeys: 'Escolha o card a esquecer · ESC cancela',
     banishHintTouch: 'Toque no card a esquecer',
+    /** Title of a prize level-up (every card rare), by where it came from (`Game.prize`). */
+    prize: { alpha: 'Prêmio do Alfa!', mission: 'Missão cumprida!' } satisfies Record<PrizeSource, string>,
   },
 
   pause: {
@@ -1159,6 +1162,28 @@ export const pt = {
     tutor: 'Um *Tutor de Golpes* armou a tenda por perto! Fique nela para uma aula.',
     tutorEmpty: 'O Tutor de Golpes não tem mais nada para te ensinar.',
     tutorLeft: 'O Tutor de Golpes seguiu viagem…',
+    /** Field missions (`fieldMissions.ts`): toasts and the HUD pill (`time` is m:ss). */
+    field: {
+      defense: 'Missão: um *ovo* está em perigo! Siga a seta e defenda o ninho.',
+      collect: (n: number) => `Missão: *${n} Poké Balls* se perderam por aqui! Ache todas a tempo.`,
+      escort: 'Missão: um *Togepi* se perdeu! Ache e leve ele de volta ao ninho.',
+      nestRaid: 'Os selvagens querem o ovo! *Fique no anel* até salvar ele.',
+      ballFound: (got: number, of: number) => `Poké Ball *${got}/${of}*`,
+      togepiJoin: 'O *Togepi* está seguindo você! Leve ele até o ninho.',
+      done: (coins: string) => `*Missão cumprida!* ${coins} e um nível com cartas raras!`,
+      doneEgg: (coins: string) => `*Missão cumprida!* O ovo é seu, mais ${coins} e cartas raras!`,
+      failed: {
+        defense: 'O ovo se perdeu…',
+        collect: 'Acabou o tempo: as Poké Balls sumiram…',
+        escort: 'O Togepi fugiu assustado…',
+      },
+      hudReach: (time: string) => `Ovo em perigo ${time}`,
+      hudDefend: (left: string) => `Defenda o ovo ${left}`,
+      hudAway: (left: string) => `Volte ao ninho! ${left}`,
+      hudCollect: (got: number, of: number, time: string) => `Poké Balls ${got}/${of} · ${time}`,
+      hudFind: (time: string) => `Ache o Togepi ${time}`,
+      hudEscort: (time: string) => `Leve o Togepi ao ninho ${time}`,
+    },
   },
   /** Legendary rifts and the endless mode after Mewtwo. */
   rifts: {
@@ -1302,6 +1327,9 @@ export const pt = {
       rift25: 'Viajante das fendas',
       mega1: 'Laço Mega',
       mega25: 'Mestre Mega',
+      alpha1: 'Primeiro Alfa',
+      alpha25: 'Rastreador de Alfas',
+      alpha100: 'Caçador de Alfas',
       legends: 'Domador de Lendas',
       shinyLegend: 'Lenda brilhante',
       champion: 'Campeão',
@@ -1335,6 +1363,7 @@ export const pt = {
       champion: 'Campeão',
       regions: 'Mestre das Regiões',
       reaperDown: 'Lenda Viva',
+      alpha100: 'Caçador de Alfas',
       ambassador: 'Embaixador(a)',
       supporter: 'Apoiador(a)',
     } satisfies Record<TitleId, string>,
@@ -1367,6 +1396,7 @@ export const pt = {
       hatches: (n: string) => (n === '1' ? 'Choque um ovo' : `Choque ${n} ovos`),
       shinyHatches: () => 'Choque um Pokémon shiny (1 em 100)',
       megas: (n: string) => (n === '1' ? 'Mega Evolua uma vez' : `Mega Evolua ${n} vezes`),
+      alphaKills: (n: string) => (n === '1' ? 'Derrote um Pokémon Alfa' : `Derrote ${n} Pokémon Alfa`),
     } satisfies Record<AchievementStat, (n: string) => string>,
     region: (name: string) => `Vença o Mewtwo com um inicial de ${name}`,
   },
@@ -3535,7 +3565,7 @@ export const pt = {
     dowsingMachine: 'Atrai Exp. Candies de mais longe.',
     kingsRock: '+6% de chance de causar status (queimar, envenenar, paralisar).',
     toxicOrb: 'Queimadura e veneno causam +20% de dano.',
-    assaultVest: '+20 HP máximo e +1 de defesa.',
+    assaultVest: '+20 HP máximo e +1 de defesa (1 a menos em cada golpe, até metade dele).',
     metronome: 'Ao fim de cada salto ou investida (e ao soltar os outros especiais), dispara 1 dos seus golpes dali. No nível máximo, 2, mas numa cadeia o segundo só sai no último salto.',
     powerHerb: 'Cada inimigo derrubado pelo especial (ou durante uma cadeia) corta 0,25 s da recarga dele.',
     charcoal: typeBoost('Fogo'),
@@ -3561,7 +3591,7 @@ export const pt = {
   upgrades: {
     hpUp: '+10 de HP máximo por nível.',
     protein: '+5% de dano por nível.',
-    iron: '+1 de defesa por nível.',
+    iron: '+1 de defesa por nível: cada golpe tira 1 a menos, até metade dele.',
     carbos: '+5% de velocidade por nível.',
     calcium: '+5% de área dos golpes por nível.',
     zinc: 'Golpes recarregam 2,5% mais rápido por nível.',
@@ -3771,7 +3801,19 @@ export const pt = {
     kamikaze: (name: string) => `*${name}* pisca e _explode_! Saia do círculo vermelho.`,
     beam: (name: string) => `*${name}* mira um _raio_: saia da linha no chão!`,
     leaper: (name: string) => `*${name}* salta sobre a horda: fuja da _sombra_!`,
+    spitter: (name: string) => `*${name}* cospe de longe, e o disparo passa pela sua aura: _ande_ para desviar!`,
   } satisfies Record<TraitId, (name: string) => string>,
+  /** Alpha Pokémon (`game/alphas.ts`): the tag over it and its toasts. */
+  alphas: {
+    tag: 'ALFA',
+    appeared: (name: string) => `Um *${name} Alfa* apareceu! Saia da _linha vermelha_ quando ele mirar.`,
+    defeated: (name: string) => `Você derrotou o *${name} Alfa*! Pegue o _prêmio_.`,
+    prize: '*Prêmio do Alfa*: cartas _raras_!',
+  },
+  /** Explainer toast the first time the world strikes at the player in a run (`game/hazards.ts`). */
+  hazards: {
+    intro: '*O mundo ataca!* O chão marca onde você está e cai em seguida: _não fique parado_.',
+  },
 } satisfies ContentTexts & Record<string, unknown>
 
 export type Messages = typeof pt

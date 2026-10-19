@@ -5593,10 +5593,38 @@ button {
   text-align: center;
 }
 
+/* Field missions (`ui/fieldMissionHud.ts`): the goal and its clock, under the rift pill when both show. */
+.mission-pill {
+  position: absolute;
+  top: 98px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  font-size: 9px;
+  white-space: nowrap;
+  text-shadow: none;
+  color: #a02868;
+}
+
+.mission-pill.stacked {
+  top: 124px;
+}
+
+.mission-pill.urgent {
+  animation: rift-pulse 0.5s steps(2) infinite;
+}
+
 @media (max-width: 600px) {
   .rift-pill {
     top: 108px;
     font-size: 7px;
+  }
+  .mission-pill {
+    top: 108px;
+    font-size: 7px;
+  }
+  .mission-pill.stacked {
+    top: 128px;
   }
   .endless-hint {
     font-size: 16px;
