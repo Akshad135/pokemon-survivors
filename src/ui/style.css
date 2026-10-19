@@ -2944,8 +2944,8 @@ button {
 }
 
 .discord-title img {
-  width: 26px;
-  height: 20px;
+  width: 36px;
+  height: 30px;
 }
 
 .discord-linked b {
@@ -2967,8 +2967,8 @@ button {
 }
 
 .btn.discord-btn img {
-  width: 26px;
-  height: 20px;
+  width: 18px;
+  height: 15px;
 }
 
 .account-note {
@@ -3244,8 +3244,8 @@ button {
 }
 
 .lobby-discord img {
-  width: 26px;
-  height: 20px;
+  width: 36px;
+  height: 30px;
 }
 
 .lobby-discord .lobby-badge {
@@ -3575,8 +3575,8 @@ button {
 }
 
 .lobby-discord-icon {
-  width: 26px;
-  height: 20px;
+  width: 36px;
+  height: 30px;
   flex: none;
 }
 
@@ -5313,8 +5313,8 @@ button {
 }
 
 .trainer-row img.wide {
-  width: 26px;
-  height: 20px;
+  width: 18px;
+  height: 15px;
 }
 
 /* The linked Discord under the @handle. */
@@ -5325,8 +5325,8 @@ button {
 }
 
 .trainer-discord img {
-  width: 26px;
-  height: 20px;
+  width: 18px;
+  height: 15px;
 }
 
 .trainer-row i {
