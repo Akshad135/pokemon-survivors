@@ -9,7 +9,7 @@ import { bodyOf } from '../data/bodies'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
 import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
-import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
+import { ownsShiny, pickShinyForm, playsShiny } from '../game/shinyPicks'
 import { bagIcon, eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
 import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
@@ -65,11 +65,10 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const m = t()
   const save = loadSave()
   const unlocked = (id: PlayableId) => isUnlocked(save.hatched, id)
-  /** A shiny hatch is shiny for good; a shiny rolled once can be picked (`shinyStarters`). */
-  const hatchedShiny = (id: PlayableId) => isHatchling(id) && save.hatched[id]?.shiny === true
-  let picks: ShinyStarters = save.shinyStarters
-  const canPick = (id: PlayableId) => id in picks && !hatchedShiny(id)
-  const shinyOf = (id: PlayableId) => hatchedShiny(id) || picks[id] === true
+  /** The save with the Normal/Shiny picks made on this screen; any shiny owned (rolled once, a ticket, a shiny hatch) can be picked. */
+  let forms = save
+  const canPick = (id: PlayableId) => ownsShiny(save, id)
+  const shinyOf = (id: PlayableId) => playsShiny(forms, id)
 
   let tab: Tab = isHatchling(initial) ? 'eggs' : 'starters'
   /** Each tab remembers its own cursor, so switching back lands where it was. */
@@ -161,6 +160,13 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     ),
   )
 
+  /** The teaser's portraits, so a Normal/Shiny pick repaints them too. */
+  const teaserPortraits = new Map<PlayableId, HTMLImageElement>()
+  const teaserPortrait = (id: PlayableId) => {
+    const img = h('img', { src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })
+    teaserPortraits.set(id, img)
+    return img
+  }
   /** Desktop only: the hatched families under the grid, a shortcut into the Eggs tab. */
   const teaser = h(
     'div',
@@ -168,7 +174,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     h('small', { class: 'partner-teaser-label' }, m.partner.hatched),
     ...(owned.length > 0
       ? owned.slice(0, TEASER).map((id) =>
-          h('button', { class: 'partner-teaser-cell', type: 'button', title: PLAYABLE[id].name, onclick: () => (setTab('eggs'), select(id)) }, h('img', { src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })),
+          h('button', { class: 'partner-teaser-cell', type: 'button', title: PLAYABLE[id].name, onclick: () => (setTab('eggs'), select(id)) }, teaserPortrait(id)),
         )
       : [h('span', { class: 'partner-teaser-empty' }, m.partner.noneHatched)]),
     h('button', { class: 'partner-teaser-more', type: 'button', onclick: () => setTab('eggs') }, owned.length > TEASER ? `+${owned.length - TEASER} ▸` : '▸'),
@@ -382,11 +388,14 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   function setShiny(shiny: boolean) {
     const id = current()
     if (!canPick(id) || shinyOf(id) === shiny) return
-    picks = pickShinyStarter(picks, id, shiny)
-    updateSave((s) => ({ ...s, shinyStarters: pickShinyStarter(s.shinyStarters, id, shiny) }))
+    forms = pickShinyForm(forms, id, shiny)
+    updateSave((s) => pickShinyForm(s, id, shiny))
     playSfx(shiny ? 'shiny' : 'move')
     const cell = cells.get(id)!
-    cell.querySelector<HTMLImageElement>('.partner-cell-portrait')!.src = portraitUrl(PLAYABLE[id].line[0].dex, shiny)
+    const portrait = portraitUrl(PLAYABLE[id].line[0].dex, shiny)
+    cell.querySelector<HTMLImageElement>('.partner-cell-portrait')!.src = portrait
+    const teased = teaserPortraits.get(id)
+    if (teased) teased.src = portrait
     cell.querySelector('.partner-cell-shiny')?.remove()
     if (shiny) cell.append(shinyTag())
     renderHero()

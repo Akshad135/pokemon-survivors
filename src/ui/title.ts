@@ -5,11 +5,11 @@ import { joystick, type Input, type Stick } from '../engine/input'
 import { formatTime, type Vec } from '../engine/math'
 import { blitCentered, context2d, ellipse } from '../engine/pixelart'
 import { ENEMIES } from '../data/enemies'
-import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { PLAYABLE } from '../data/hatchlings'
 import { isReady } from '../game/eggs'
 import { nextMilestone } from '../game/referral'
 import { dayKey, missionStatus } from '../game/missions'
-import { pendingPicks } from '../game/shinyPicks'
+import { pendingPicks, playsShiny } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
 import { bulbIcon, coinIcon, discordIcon, eggIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
@@ -136,11 +136,6 @@ const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
   pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, window.devicePixelRatio || 1))
 }
 
-/** Whether the save plays `id` shiny (a shiny starter picked so, or a shiny hatch). */
-const playsShiny = (id: PlayableId) => {
-  const save = loadSave()
-  return save.shinyStarters[id] === true || (isHatchling(id) && save.hatched[id]?.shiny === true)
-}
 
 /* ---------------- Hoje: the day's cards ---------------- */
 
@@ -399,7 +394,7 @@ const strollHint = () => {
 const partnerStage = (onPlay: () => void) => {
   const save = loadSave()
   const form = PLAYABLE[save.partner].line[0]
-  const shiny = playsShiny(save.partner)
+  const shiny = playsShiny(save, save.partner)
   void loadSpecies(form.dex, shiny).catch(() => {})
   const canvas = h('canvas', { class: 'lobby-partner-sprite', width: STAGE.w, height: STAGE.h, 'aria-hidden': 'true' })
   const plate = h('span', { class: 'lobby-plate' }, h('b', {}, form.name), h('small', {}, `${t().home.change} ▸`))

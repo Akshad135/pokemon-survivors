@@ -35,6 +35,7 @@ import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
 import { h, later } from './dom'
 import { boundPadHint, glyphText } from './inputLabels'
+import { pressGuard } from './pressGuard'
 import { holdMoveCard, hoverMoveCard, moveCard, withMoveCard } from './moveCard'
 
 export type Screen = {
@@ -70,10 +71,15 @@ export const hint = (keys: string, touch: string) =>
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
+ * `guard` (ms) makes a menu that opens mid-fight ignore picks at first:
+ * taps and clicks for that long, keys and pad buttons until they pause
+ * (`pressGuard`).
  */
-export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
+export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number; guard?: number } = {}) => {
   let index = opts.initial ?? 0
   const openedAt = performance.now()
+  const takes = pressGuard(opts.guard ?? 0)
+  const tapGuard = Math.max(TAP_GUARD_MS, opts.guard ?? 0)
   const focus = (i: number, sound = true) => {
     index = (i + buttons.length) % buttons.length
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
@@ -81,7 +87,7 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
   }
   buttons.forEach((b, i) => {
     b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => performance.now() - openedAt > TAP_GUARD_MS && activate(i))
+    b.addEventListener('click', () => performance.now() - openedAt > tapGuard && activate(i))
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
@@ -89,10 +95,11 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
   const off = input.onKey((key) => {
     if (prev.includes(key)) focus(index - 1)
     else if (next.includes(key)) focus(index + 1)
-    else if (key === 'Enter' || key === 'Space') activate(index)
-    else if (/^Digit[1-9]$/.test(key)) {
+    else if (key === 'Enter' || key === 'Space') {
+      if (takes(performance.now() - openedAt)) activate(index)
+    } else if (/^Digit[1-9]$/.test(key)) {
       const i = Number(key.slice(5)) - 1
-      if (i < buttons.length) activate(i)
+      if (i < buttons.length && takes(performance.now() - openedAt)) activate(i)
     }
   })
   return { off, focus, get index() { return index } }
@@ -345,6 +352,14 @@ const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
       ),
   )
   button.replaceChildren(...parts.childNodes)
+}
+
+/** A level-up card on its own, shown rather than picked (a Poké Ball's new move or item); holding it opens the move card. */
+export const offerTile = (g: Game, offer: Offer) => {
+  const tile = h('div', {})
+  fillCard(g, tile, offer, 0)
+  holdMoveCard(tile, () => offerCard(g, offer))
+  return tile
 }
 
 /**
@@ -656,6 +671,9 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
 
 /* ---------------- Results ---------------- */
 
+/** How long the results ignore confirms after a faint or a victory (`menu`'s `guard`). */
+const RESULTS_GUARD_MS = 900
+
 /** Icon, name and type for a results-screen damage row (and the run's share card). */
 export const damageSource = (g: Game, id: DamageSource) => {
   if (id === 'ability') {
@@ -776,8 +794,9 @@ export const results = (
     share && (() => later(() => openSub(extras.share?.open, share))),
     boards && (() => later(() => openSub(ranking?.open, boards))),
   ].filter((a) => typeof a === 'function')
-  const bindNav = (initial = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial })
-  let nav = bindNav()
+  const bindNav = (initial = 0, guard = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial, guard })
+  // The run ends mid-fight: A and Space, still being pressed for the special, would pick the focused button (Retry).
+  let nav = bindNav(0, RESULTS_GUARD_MS)
 
   const el = h(
     'div',

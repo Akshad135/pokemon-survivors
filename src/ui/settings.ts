@@ -5,6 +5,7 @@ import { locale, LOCALE_IDS, LOCALES, setLocale, t, type Locale } from '../i18n'
 import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
+import { FLASH_MODES } from '../render/flashes'
 import { loadSettings, writeSettings, type Settings } from './save'
 import { hint, menu, type Screen } from './screens'
 import { backButton, shellBody, tabStrip, topBar, segmented } from './shell'
@@ -12,10 +13,15 @@ import { REPO_URL, ROUTES } from '../site/routes'
 
 /* ---------------- Live settings ---------------- */
 
-/** Pushes settings out to where they act: the audio mix, and `data-stick` for the HUD's CSS (the status box moves off the fixed stick). */
+/**
+ * Pushes settings out to where they act: the audio mix, `data-stick` for the
+ * HUD's CSS (the status box moves off the fixed stick) and `data-flashes`
+ * (reduced hides the shell's white screen flash).
+ */
 const apply = (s: Settings) => {
   setMix(s)
   document.documentElement.dataset.stick = s.joystick
+  document.documentElement.dataset.flashes = s.flashes
 }
 
 let current = loadSettings()
@@ -160,7 +166,7 @@ let lastTab: Tab = 'sound'
 
 /**
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
- * (language, damage numbers, screen shake), Controles (touch joystick and the
+ * (language, damage numbers, screen shake, flashes), Controles (touch joystick and the
  * remap screen) and Sobre (what the game is, legal and credits, GitHub).
  * Changes apply and persist immediately.
  *
@@ -214,6 +220,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           languageRow(pickLanguage),
           choiceRow(m.damageNumbers, 'damageNumbers', DAMAGE_NUMBERS, (mode) => m.damageModes[mode]),
           toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
+          choiceRow(m.flashes, 'flashes', FLASH_MODES, (mode) => m.flashModes[mode]),
         ]
       case 'controls':
         return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(showControls)]

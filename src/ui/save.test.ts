@@ -24,6 +24,11 @@ describe('parseSettings', () => {
     expect(parseSettings(JSON.stringify({ joystick: 'left' })).joystick).toBe('floating')
   })
 
+  it('reads the flashes mode, normal unless it says reduced', () => {
+    expect(parseSettings(JSON.stringify({ flashes: 'reduced' })).flashes).toBe('reduced')
+    expect(parseSettings(JSON.stringify({ flashes: false })).flashes).toBe('normal')
+  })
+
   it('clamps volumes to 0..1', () => {
     expect(parseSettings(JSON.stringify({ musicVolume: 4, sfxVolume: -1 }))).toMatchObject({ musicVolume: 1, sfxVolume: 0 })
   })

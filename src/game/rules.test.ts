@@ -6,7 +6,7 @@ import { ITEMS } from '../data/items'
 import manifest from '../data/sprites.generated.json'
 import { REGIONS, STARTER_IDS, STARTERS } from '../data/starters'
 import { maxMoveLevel, moveStats } from './moves'
-import { MAX_MOVES, offerPool, rollOffers, starterStats } from './leveling'
+import { MAX_MOVES, nothingToChoose, offerPool, rollOffers, starterStats } from './leveling'
 import { BASE_STATS } from './stats'
 import type { OwnedMove } from './types'
 
@@ -74,6 +74,12 @@ describe('level-up offers', () => {
     expect(full).toHaveLength(MAX_MOVES)
     const items = (Object.keys(ITEMS) as (keyof typeof ITEMS)[]).slice(0, 6).map((id) => ({ id, level: ITEMS[id].levels.length }))
     expect(rollOffers({ starter: 'charmander', moves: full, items }, createRng(2))).toEqual([{ kind: 'berry' }])
+  })
+
+  it('has nothing to choose only when every card is the berry', () => {
+    expect(nothingToChoose([{ kind: 'berry' }])).toBe(true)
+    expect(nothingToChoose([{ kind: 'berry' }, { kind: 'move', id: 'ember', level: 2 }])).toBe(false)
+    expect(nothingToChoose([])).toBe(false)
   })
 })
 

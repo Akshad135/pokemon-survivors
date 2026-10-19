@@ -7,6 +7,7 @@ import type { Game } from '../game/types'
 import { art, lazy, PICKUPS, SPARKLE, toIconUrl } from './art'
 import { drawPokemon, loadedSprites } from './sprites'
 import { dashedRing } from './strokes'
+import { HURT_TINT } from './flashes'
 
 /**
  * Field missions on the ground (the nest and its egg, the lost Poké Balls,
@@ -87,7 +88,7 @@ const drawCollect = (ctx: Ctx, ev: MapEventOf<'collect'>, t: number) => {
   }
 }
 
-const drawEscort = (ctx: Ctx, g: Game, ev: MapEventOf<'escort'>, t: number) => {
+const drawEscort = (ctx: Ctx, g: Game, ev: MapEventOf<'escort'>, t: number, calm: boolean) => {
   const s = ev.state
   // Its nest, with a heart over it once Togepi is on the way.
   dashedRing(ctx, s.home.x, s.home.y, ESCORT.arrive + 4, t, ['#f878a8', '#ffffff'], 0.3)
@@ -96,19 +97,22 @@ const drawEscort = (ctx: Ctx, g: Game, ev: MapEventOf<'escort'>, t: number) => {
   const sprites = loadedSprites(TOGEPI_DEX)
   if (!sprites) return
   blitCentered(ctx, ellipse(5, 2, 'rgba(16,40,16,0.3)'), ev.x, ev.y)
-  drawPokemon(ctx, sprites, s.flash > 0 ? 'Hurt' : s.moving ? 'Walk' : 'Idle', s.dir, ev.age, ev.x, ev.y, { flash: s.flash > 0.1 ? 0.6 : 0 })
+  drawPokemon(ctx, sprites, s.flash > 0 ? 'Hurt' : s.moving ? 'Walk' : 'Idle', s.dir, ev.age, ev.x, ev.y, {
+    flash: s.flash > 0.1 && !calm ? 0.6 : 0,
+    tint: s.flash > 0.1 && calm ? HURT_TINT : undefined,
+  })
   if (ev.gone >= 0) return
   hpBar(ctx, ev.x, ev.y - sprites.bodyH - 6, s.hp / FIELD_TUNING[g.difficulty].escort.hp, 14)
   // Lost and calling: a blinking heart until the player comes close.
   if (!s.following && Math.floor(t * 2) % 2 === 0) blitCentered(ctx, ART().heart, ev.x + 8, ev.y - sprites.bodyH - 4)
 }
 
-/** Draws a field mission's ground layer. */
-export const drawFieldMission = (ctx: Ctx, g: Game, ev: MissionEvent, t: number) => {
+/** Draws a field mission's ground layer. `calm` (Flashes: reduced) tints a hurt Togepi instead of flashing it white. */
+export const drawFieldMission = (ctx: Ctx, g: Game, ev: MissionEvent, t: number, calm: boolean) => {
   switch (ev.kind) {
     case 'defense': return drawDefense(ctx, g, ev, t)
     case 'collect': return drawCollect(ctx, ev, t)
-    case 'escort': return drawEscort(ctx, g, ev, t)
+    case 'escort': return drawEscort(ctx, g, ev, t, calm)
   }
 }
 

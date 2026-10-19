@@ -23,7 +23,7 @@ import { updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
 import { rebuildGrid, updateEnemies } from './enemies'
 import {
-  applyOffer, branchOffers, draftOffers, loadout, offerSubject, pendingEvolution, recomputeStats, rollOffers, shinyOfferOdds, xpFor,
+  applyOffer, branchOffers, draftOffers, loadout, nothingToChoose, offerSubject, pendingEvolution, recomputeStats, rollOffers, shinyOfferOdds, xpFor,
   type RollOptions,
 } from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
@@ -40,7 +40,7 @@ import { createTmState, pickTm } from './tms'
 import { updateVerbEvolved } from './verbEvolutions'
 import { updateLegendary } from './legendary'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
-import { updatePickups } from './pickups'
+import { decidePokeball, updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
 import { withOutbreak } from './outbreak'
@@ -339,7 +339,8 @@ export const choosingBranch = (g: Game) => g.offers.some((o) => o.kind === 'bran
 
 /**
  * The player's pick from `offers`: a level-up upgrade, where a branching
- * evolution goes, the ability, whether to take a chest's cursed item, or a TM's choice.
+ * evolution goes, the ability, whether to take a chest's cursed item or a
+ * Poké Ball's new move or item, or a TM's choice.
  * Replays reach it through the `offer` event.
  * A move card that reaches a fork opens its two branches instead (picked the
  * same way); a shiny card is a free pick, so a fresh set of cards follows
@@ -364,6 +365,10 @@ export const chooseOffer = (g: Game, offer: Offer) => {
     decideCurse(g, offer.id, offer.take)
     return advancePhase(g)
   }
+  if (g.phase === 'pokeball') {
+    decidePokeball(g, offer)
+    return advancePhase(g)
+  }
   if (g.phase !== 'levelup' || offer.kind === 'form' || offer.kind === 'ability' || offer.kind === 'curse' || offer.kind === 'tm' || offer.kind === 'forget' || offer.kind === 'pass') return
   if (offer.kind === 'move' && forkAt(offer.id, offer.level)) {
     g.offers = branchOffers(offer)
@@ -378,6 +383,22 @@ export const chooseOffer = (g: Game, offer: Offer) => {
   g.pendingLevelUps--
   g.freshMoves = Math.max(0, g.freshMoves - 1)
   advancePhase(g)
+}
+
+/**
+ * Takes the level-ups with nothing to choose (`nothingToChoose`: only the Oran
+ * Berry), one after another, so no screen opens for them. The shell calls it,
+ * and `record` notes each pick first: a replay makes them as `offer` events,
+ * like a tap. Returns how many it took.
+ */
+export const takeBerryLevelUps = (g: Game, record: (index: number) => void) => {
+  let taken = 0
+  while (g.phase === 'levelup' && nothingToChoose(g.offers)) {
+    record(0)
+    chooseOffer(g, g.offers[0]!)
+    taken++
+  }
+  return taken
 }
 
 /** Spends a Poké Mart reroll: draws a fresh set of level-up offers (a fresh draft at the start). */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createGame } from './game'
-import { dropXp, updatePickups } from './pickups'
+import { chooseOffer, createGame } from './game'
+import { dropXp, pokeballAsks, updatePickups } from './pickups'
 import * as dm from '../engine/dmath'
 
 const DT = 1 / 60
@@ -32,5 +32,33 @@ describe('magnet', () => {
       updatePickups(g, DT)
     }
     expect(g.pickups).toHaveLength(0)
+  })
+})
+
+describe('Poké Ball prizes', () => {
+  const owned = { moves: [{ id: 'ember', level: 2, cooldown: 0, path: 0 }], items: [{ id: 'charcoal', level: 1 }] } as const
+
+  it('ask before a new move or item takes a slot, and upgrade what the player has on their own', () => {
+    expect(pokeballAsks({ kind: 'move', id: 'fireSpin', level: 1 }, owned)).toBe(true)
+    expect(pokeballAsks({ kind: 'item', id: 'muscleBand', level: 1 }, owned)).toBe(true)
+    expect(pokeballAsks({ kind: 'move', id: 'ember', level: 3 }, owned)).toBe(false)
+    expect(pokeballAsks({ kind: 'item', id: 'charcoal', level: 2 }, owned)).toBe(false)
+    expect(pokeballAsks({ kind: 'evolution', from: 'ember', to: 'flamethrower' }, owned)).toBe(false)
+    expect(pokeballAsks({ kind: 'berry' }, owned)).toBe(false)
+  })
+
+  it('leave a new item behind on a pass, or put it in on a take', () => {
+    const g = createGame('charmander', { w: 400, h: 240 }, 3)
+    const ball = () => {
+      g.phase = 'pokeball'
+      g.offers = [{ kind: 'item', id: 'muscleBand', level: 1 }, { kind: 'pass' }]
+    }
+    ball()
+    chooseOffer(g, g.offers[1]!)
+    expect(g.phase).toBe('playing')
+    expect(g.player.items).toEqual([])
+    ball()
+    chooseOffer(g, g.offers[0]!)
+    expect(g.player.items).toEqual([{ id: 'muscleBand', level: 1 }])
   })
 })

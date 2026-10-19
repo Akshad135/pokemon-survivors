@@ -201,6 +201,8 @@ export const pt = {
     evolution: 'EVOLUÇÃO!',
     evolves: (from: string, description: string) => `${from} evolui! ${description}`,
     berry: (name: string) => `${name} recupera 40 HP.`,
+    /** Toast of level-ups that took the Oran Berry on their own (nothing else to pick), `count` of them at once. */
+    autoBerry: (level: number, count: number) => `Nv ${level}! Tudo no máximo: *Oran Berry*${count > 1 ? ` ×${count}` : ''}`,
     reroll: (n: number) => `Trocar (${n})`,
     skip: (n: number) => `Pular (${n})`,
     hintKeys: '↑ ↓ escolher · ENTER confirmar · 1-3 atalho',
@@ -295,6 +297,8 @@ export const pt = {
     damageNumbers: 'Números de dano',
     damageModes: { all: 'Todos', reduced: 'Reduzidos', off: 'OFF' },
     screenShake: 'Tremor de tela',
+    flashes: 'Clarões',
+    flashModes: { normal: 'Normais', reduced: 'Reduzidos' },
     joystick: 'Joystick',
     joystickModes: { floating: 'Segue o dedo', fixed: 'Fixo' },
     on: 'ON',
@@ -3826,6 +3830,19 @@ export const pt = {
     label: 'AMALDIÇOADO',
     taken: (name: string) => `Você pegou *${name}*… _o poder tem um preço_.`,
     left: (name: string) => `Você deixou *${name}* no baú.`,
+  },
+  /** A Poké Ball's new move or held item (`ui/pokeballPick.ts`): take it or leave it. */
+  pokeballPick: {
+    label: 'POKÉ BALL',
+    title: 'Algo novo na Poké Ball!',
+    take: 'Pegar',
+    leave: 'Deixar',
+    moveSlot: (used: number, max: number) => `Ocupa um espaço de golpe (${used}/${max} em uso).`,
+    itemSlot: (used: number, max: number) => `Ocupa um espaço de item (${used}/${max} em uso).`,
+    note: 'Se deixar, ela some. Melhorias do que você já tem entram sozinhas.',
+    left: (name: string) => `Você deixou *${name}* para trás.`,
+    /** Touch hint when the prize is a held item (a move's card says to hold it for the move card). */
+    itemHintTouch: 'Toque para escolher',
   },
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {

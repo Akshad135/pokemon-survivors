@@ -38,7 +38,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  *   spending, so ₽ spent on one side and kept on the other isn't counted twice.
  * - The title: `incoming`'s, if it shows one.
  * - The difficulty and the partner picked last: `incoming`'s, settings rather than progress.
- * - Shiny starters: a union; each Normal/Shiny pick is `incoming`'s when it has one.
+ * - Shiny starters: a union; each Normal/Shiny pick (a shiny hatch's too) is
+ *   `incoming`'s when it has one, else `base`'s, so a hatch switched to Normal stays so.
  * - The bag: each item's got and used counters keep the larger side; what's
  *   armed is `incoming`'s. The daily counter: the most recent day, the most
  *   bought of each item on the same day. Styles: a union, worn as `incoming`.

@@ -68,6 +68,14 @@ describe('mergeSaves', () => {
     expect(m.gifts).toEqual(['gift-a', 'gift-b'])
   })
 
+  it("keeps a shiny hatch's Normal pick against a device that never picked, and the incoming pick when both did", () => {
+    const hatched = save({ hatched: { gible: { shiny: true } } })
+    const normal = save({ hatched: { gible: { shiny: true } }, shinyStarters: { gible: false } })
+    expect(mergeSaves(normal, hatched).shinyStarters).toEqual({ gible: false })
+    expect(mergeSaves(hatched, normal).shinyStarters).toEqual({ gible: false })
+    expect(mergeSaves(normal, save({ shinyStarters: { gible: true } })).shinyStarters).toEqual({ gible: true })
+  })
+
   it('keeps the current day of missions, and the most progress on the same week', () => {
     const m = mergeSaves(account, guest)
     expect(m.missions.daily).toEqual(guest.missions.daily)

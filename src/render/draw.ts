@@ -13,7 +13,7 @@ import { isHeld } from '../game/status'
 import { inSolid, overTerrain, type Solid } from '../game/terrain'
 import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
-import { FX, HAZARD_FX, PICKUPS, SPARKLE, SPIT_FX } from './art'
+import { FX, HAZARD_FX, hostile, PICKUPS, SPARKLE, SPIT_FX } from './art'
 import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents, markerInsets } from './mapEvents'
 import { ALPHA_PRIZE, alphaOutline, drawAlphaAir, drawAlphaGround, drawAlphaMarkers } from './alphas'
@@ -44,6 +44,7 @@ import { drawWeather, warmFog } from './weather'
 import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
 import { drawGround, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
+import { CALM_PERIOD, HURT_TINT, type Flashes } from './flashes'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -448,35 +449,39 @@ const drawWorldZone = (ctx: Ctx, h: Hazard, line: string, fill: string) => {
   ctx.globalAlpha = 1
 }
 
-/** Air layer: projectiles, lightning bolts and falling rocks. */
+/**
+ * Air layer: projectiles, lightning bolts and falling rocks. Every shot and
+ * falling piece wears the red `hostile` rim, so it never passes for one of the
+ * player's own (an enemy's Ember is the player's Ember sprite).
+ */
 const drawHazard = (ctx: Ctx, h: Hazard) => {
   if (h.kind === 'shot') {
     const y = h.y - 6
     switch (h.visual) {
       case 'ice':
       case 'grass':
-        return blitRotated(ctx, HAZARD_FX[h.visual](), h.x, y, Math.atan2(h.vy, h.vx))
+        return blitRotated(ctx, hostile(HAZARD_FX[h.visual]()), h.x, y, Math.atan2(h.vy, h.vx))
       case 'fire':
-        return blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
+        return blitCentered(ctx, hostile(FX.ember()[Math.floor(h.age * 12) % 2]!), h.x, y)
       case 'rock':
-        return blitCentered(ctx, HAZARD_FX.rock(), h.x, y)
+        return blitCentered(ctx, hostile(HAZARD_FX.rock()), h.x, y)
       case 'water':
       case 'dragon':
       case 'steel':
       case 'aero':
       case 'judgment':
-        return blitCentered(ctx, HAZARD_FX[h.visual](), h.x, y + (Math.floor(h.age * 10) % 2))
+        return blitCentered(ctx, hostile(HAZARD_FX[h.visual]()), h.x, y + (Math.floor(h.age * 10) % 2))
       case 'fireball':
       case 'seed':
-        return blitRotated(ctx, SPIT_FX[h.visual](), h.x, y, Math.atan2(h.vy, h.vx))
+        return blitRotated(ctx, hostile(SPIT_FX[h.visual]()), h.x, y, Math.atan2(h.vy, h.vx))
       case 'spark':
-        return blitRotated(ctx, SPIT_FX.spark()[Math.floor(h.age * 16) % 2]!, h.x, y, Math.atan2(h.vy, h.vx))
+        return blitRotated(ctx, hostile(SPIT_FX.spark()[Math.floor(h.age * 16) % 2]!), h.x, y, Math.atan2(h.vy, h.vx))
       case 'bubble':
       case 'sludge':
       case 'orb':
-        return blitCentered(ctx, SPIT_FX[h.visual](), h.x, y + (Math.floor(h.age * 8) % 2))
+        return blitCentered(ctx, hostile(SPIT_FX[h.visual]()), h.x, y + (Math.floor(h.age * 8) % 2))
       default:
-        return blitCentered(ctx, HAZARD_FX.psychic(), h.x, y + (Math.floor(h.age * 10) % 2))
+        return blitCentered(ctx, hostile(HAZARD_FX.psychic()), h.x, y + (Math.floor(h.age * 10) % 2))
     }
   }
   // The world's telegraphs land under the player, where the horde piles up: their blinking rim shows over the sprites too.
@@ -487,9 +492,9 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     const fall = 1 - (h.armAt - h.age) / 0.35
     if (fall <= 0) return
     const y = h.y - 3 - (1 - fall) * 120
-    if (h.visual === 'ice') blitRotated(ctx, HAZARD_FX.ice(), h.x, y, Math.PI / 2)
-    else if (h.visual === 'fire') blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
-    else blitCentered(ctx, HAZARD_FX.rock(), h.x, y)
+    if (h.visual === 'ice') blitRotated(ctx, hostile(HAZARD_FX.ice()), h.x, y, Math.PI / 2)
+    else if (h.visual === 'fire') blitCentered(ctx, hostile(FX.ember()[Math.floor(h.age * 12) % 2]!), h.x, y)
+    else blitCentered(ctx, hostile(HAZARD_FX.rock()), h.x, y)
     return
   }
   if ((h.visual === 'thunder' || h.visual === 'judgment') && h.age >= h.armAt) {
@@ -538,8 +543,11 @@ export const drawSparkles = (ctx: Ctx, x: number, cy: number, size: number, sinc
 
 const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' : isHeld(e.status) || traitPace(e) === 0 ? 'Idle' : 'Walk')
 
-/** `time` is game time (shiny entrance), `t` wall time (status tint). */
-const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
+/**
+ * `time` is game time (shiny entrance), `t` wall time (status tint). `calm`
+ * (Flashes: reduced) swaps the white hit flash for a dim red tint.
+ */
+const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, calm: boolean) => {
   const def: EnemyDef = ENEMIES[e.kind]
   const s = sprites(def.dex, e.shiny)
   const scale = drawScale(e)
@@ -551,7 +559,7 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
   }
   if (e.dying >= 0) {
     const k = e.dying / 0.4
-    drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: 0.6 + k * 0.4, loop: false, scale })
+    drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: calm ? 0 : 0.6 + k * 0.4, tint: calm ? HURT_TINT : undefined, loop: false, scale })
     return
   }
   // Leapers are drawn lifted mid-jump; their shadow stays on the ground.
@@ -561,8 +569,9 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
   const anim = enemyAnim(e)
   if (e.runner && anim === 'Walk' && e.status.stun <= 0) drawSpeedLines(ctx, e, y - Math.round((s.bodyH * scale) / 2), s.bodyW * scale, t)
   if (rage) RAGE_TINT.amount = 0.15 + 0.15 * pulse(t, 3)
-  const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (rage ? RAGE_TINT : undefined)
-  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: e.flash > 0.08 ? 0.85 : 0, tint, scale, outline: outlineOf(e, t) })
+  const hit = e.flash > 0.08
+  const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (calm && hit ? HURT_TINT : rage ? RAGE_TINT : undefined)
+  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: hit && !calm ? 0.85 : 0, tint, scale, outline: outlineOf(e, t, calm) })
   if (e.shiny) drawSparkles(ctx, e.x, y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
   if (rage) drawRageEmbers(ctx, e.x, y - (s.bodyH * scale) / 2, size, t, e.id)
 }
@@ -573,10 +582,13 @@ const RAGE_TINT = { color: '#f83020', amount: 0 }
 /** 0..1 triangle wave at `hz`. */
 const pulse = (t: number, hz: number) => Math.abs(((t * hz) % 2) - 1)
 
-/** Enraged bosses flicker red and orange fast; elites keep a slow crimson throb so a crowd of them reads at a glance on a phone. */
-const outlineOf = (e: Enemy, t: number) => {
-  if (e.alpha) return alphaOutline(e, t)
-  if (e.fight?.enraged) return Math.floor(t * 8) % 2 === 0 ? '#f83020' : '#f8a020'
+/**
+ * Enraged bosses flicker red and orange fast (steady red when `calm`); elites
+ * keep a slow crimson throb so a crowd of them reads at a glance on a phone.
+ */
+const outlineOf = (e: Enemy, t: number, calm: boolean) => {
+  if (e.alpha) return alphaOutline(e, t, calm)
+  if (e.fight?.enraged) return calm || Math.floor(t * 8) % 2 === 0 ? '#f83020' : '#f8a020'
   if (e.elite) return Math.floor(t * 2.5 + e.id * 0.37) % 2 === 0 ? '#e02838' : '#f86858'
   return undefined
 }
@@ -614,9 +626,9 @@ const drawRageEmbers = (ctx: Ctx, x: number, cy: number, size: number, t: number
 const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8c830' : '#f04030')
 
 /** Chain dash afterimages: fading type-colored copies of the player along the lunge. */
-const drawAfterimages = (ctx: Ctx, g: Game) => {
+const drawAfterimages = (ctx: Ctx, g: Game, calm: boolean) => {
   const p = g.player
-  const s = sprites(playerDex(g), p.shiny, megaLook(g).form)
+  const s = sprites(playerDex(g), p.shiny, megaLook(g, calm).form)
   for (const a of g.attacks) {
     if (a.visual !== 'afterimage' || a.age < 0) continue
     const k = a.age / a.ttl
@@ -624,15 +636,16 @@ const drawAfterimages = (ctx: Ctx, g: Game) => {
   }
 }
 
-const drawPlayer = (ctx: Ctx, g: Game) => {
+/** `calm` (Flashes: reduced): a hit tints the player dim red, and nothing on it flickers white. */
+const drawPlayer = (ctx: Ctx, g: Game, calm: boolean) => {
   const p = g.player
   // A Mega wears its Mega form (flickering white while it transforms); Aegislash its Blade Forme in Blade stance.
-  const mega = megaLook(g)
+  const mega = megaLook(g, calm)
   const s = sprites(playerDex(g), p.shiny, mega.form ?? (g.special.stance ? STANCE_FORMS[g.special.stance] : undefined))
   // Fainted in a rift arena: the rift pulls the player up and out.
   const fall = riftFallLook(g)
   if (fall) {
-    drawPokemon(ctx, s, 'Hurt', p.dir, fall.seconds, p.x, p.y - fall.lift, { alpha: fall.alpha, flash: fall.flash, tint: fall.tint, loop: false, outline: mega.outline })
+    drawPokemon(ctx, s, 'Hurt', p.dir, fall.seconds, p.x, p.y - fall.lift, { alpha: fall.alpha, flash: calm ? 0 : fall.flash, tint: fall.tint, loop: false, outline: mega.outline })
     if (fall.bar) drawHpBar(ctx, g)
     return
   }
@@ -641,12 +654,15 @@ const drawPlayer = (ctx: Ctx, g: Game) => {
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
   // Aegislash flashes white for a moment as it swaps stance.
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
-  const flash = Math.max(mega.flash, p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
+  const flash = Math.max(mega.flash, calm ? 0 : p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
+  const tint = calm && p.hurt > 0.2 ? HURT_TINT : undefined
   // Burrowed or out of sight (Dig, Fly): a faint ghost of the player.
   // Signature moves can lift the sprite (Body Slam's leap, Heavy Slam's hop) or hide it under the mound (Dig).
   const egg = eggPlayerLook(g) ?? egg3PlayerLook(g)
-  const alpha = egg ? egg.alpha : p.hidden ? 0.3 : blink && mega.flash === 0 ? 0.45 : 1
-  if (alpha > 0) drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y - (egg?.lift ?? 0), { alpha, flash, outline: mega.outline })
+  // Invulnerable after a hit: blinking, or a steady see-through when calm.
+  const faded = calm ? p.iframes > 0 && g.special.active <= 0 : blink
+  const alpha = egg ? egg.alpha : p.hidden ? 0.3 : faded && mega.flash === 0 ? (calm ? 0.65 : 0.45) : 1
+  if (alpha > 0) drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y - (egg?.lift ?? 0), { alpha, flash, tint, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
   if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
   drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
@@ -698,7 +714,8 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
 
 /* ---------------- Evolution scene ---------------- */
 
-const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
+/** The evolution scene. `calm` (Flashes: reduced) slows the silhouettes' swap and drops the white screen flashes. */
+const drawEvolution = (ctx: Ctx, g: Game, t: number, calm: boolean) => {
   const evo = g.evolution
   if (!evo) return
   const { w, h } = g.view
@@ -717,7 +734,7 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
   } else if (k < flashEnd) {
     // Alternating silhouettes that speed up, like the handheld games.
     const progress = (k - flashStart) / (flashEnd - flashStart)
-    const period = 0.5 - progress * 0.44
+    const period = Math.max(calm ? CALM_PERIOD : 0, 0.5 - progress * 0.44)
     const showNew = Math.floor((k - flashStart) / period) % 2 === 1
     drawPokemon(ctx, showNew ? to : from, 'Idle', 0, t, cx, cy, { scale: 2, flash: 1 })
     for (let i = 0; i < 10; i++) {
@@ -729,12 +746,12 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number) => {
   } else {
     drawPokemon(ctx, to, 'Idle', 0, t, cx, cy, { scale: 2 })
     const white = 1 - (k - flashEnd) / 0.5
-    if (white > 0) {
+    if (white > 0 && !calm) {
       ctx.fillStyle = `rgba(255,255,255,${white})`
       ctx.fillRect(0, 0, w, h)
     }
   }
-  if (k > EVOLUTION_TIME - 0.2) {
+  if (k > EVOLUTION_TIME - 0.2 && !calm) {
     ctx.fillStyle = `rgba(255,255,255,${(k - EVOLUTION_TIME + 0.2) * 2})`
     ctx.fillRect(0, 0, w, h)
   }
@@ -800,10 +817,11 @@ const biomeFade = (g: Game) => {
 const TEXT_PASSES = [false, true] as const
 
 /** Player preferences from the settings screen, and the supporter's companion walking along (`render/companion.ts`). */
-export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean; companion?: CompanionView | null }
+export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean; flashes: Flashes; companion?: CompanionView | null }
 
 export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const { w, h } = g.view
+  const calm = opts.flashes === 'reduced'
   const shake = opts.screenShake ? g.shake : 0
   const shakeX = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 2) : 0
   const shakeY = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 2) : 0
@@ -836,7 +854,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
   // Map events wait outside with the rest of the world while the player is in an arena.
-  if (!g.rift.arena) drawMapEvents(ctx, g, t)
+  if (!g.rift.arena) drawMapEvents(ctx, g, t, calm)
   if (g.rift.portal) drawRiftPortal(ctx, g.rift.portal, t)
   drawSpecialAura(ctx, g, t)
   drawMegaGround(ctx, g, camX, camY, t)
@@ -873,12 +891,12 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     else if (d === 'companion') companion && shadow(ctx, companion.x, companion.y, sprites(companion.dex).bodyW)
     else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
   }
-  drawAfterimages(ctx, g)
+  drawAfterimages(ctx, g, calm)
   for (const d of inDepth) {
-    if (d === 'player') drawPlayer(ctx, g)
+    if (d === 'player') drawPlayer(ctx, g, calm)
     else if (d === 'companion') companion && drawCompanion(ctx, companion, t)
     else if (isSolid(d)) drawSolid(ctx, g, d, look)
-    else drawEnemy(ctx, d, g.time, t)
+    else drawEnemy(ctx, d, g.time, t, calm)
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of inDepth) {
@@ -937,6 +955,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   if (!g.rift.arena) drawMapEventMarkers(ctx, g, t)
   drawAlphaMarkers(ctx, g, t, markerInsets())
   drawRiftFallOut(ctx, g)
-  drawFlash(ctx, g)
-  if (g.phase === 'evolving') drawEvolution(ctx, g, t)
+  // Explosions, rift jumps, a Mega's burst: white over the whole screen, unless flashes are reduced.
+  if (!calm) drawFlash(ctx, g)
+  if (g.phase === 'evolving') drawEvolution(ctx, g, t, calm)
 }
