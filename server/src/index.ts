@@ -23,8 +23,9 @@ await migrate(sql, new URL('../migrations/', import.meta.url))
 
 const clerk = createClerkClient({ secretKey: env.clerkSecretKey })
 const ranking = rankingStore(sql)
-// The player's Discord account: linking joins them to the server; a donation that raises their tier updates their role.
+// The player's Discord account: linking joins them to the server (with a gift); a donation that raises their tier updates their role.
 const discord = discordLink(sql, clerk, env.discord)
+void discord.settle().catch((err) => console.error('discord gifts settle failed', err))
 const gifts = giftStore(sql)
 const checks = createChecks(ranking)
 // Runs that were waiting for a check when the last instance stopped.
