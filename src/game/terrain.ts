@@ -111,18 +111,19 @@ const NEAR: Feature[] = []
 
 /** Features whose cells overlap the box around (x, y). Reuses one array: copy it if you keep it. */
 export const featuresNear = (g: Game, x: number, y: number, rx: number, ry = rx): readonly Feature[] => {
-  NEAR.length = 0
-  if (g.rift.arena) {
-    NEAR.push(g.rift.arena.terrain)
-    return NEAR
-  }
-  const C = TERRAIN.cell
-  for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
-    for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
-      const f = cell(g, cx, cy)
-      if (f) NEAR.push(f)
+  // Filled by index and cut to size, never emptied first (that would drop its storage every call).
+  let n = 0
+  if (g.rift.arena) NEAR[n++] = g.rift.arena.terrain
+  else {
+    const C = TERRAIN.cell
+    for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
+      for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
+        const f = cell(g, cx, cy)
+        if (f) NEAR[n++] = f
+      }
     }
   }
+  NEAR.length = n
   return NEAR
 }
 

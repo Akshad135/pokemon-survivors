@@ -665,7 +665,12 @@ const drawables: Drawable[] = []
 const inDepth: Drawable[] = []
 const depthKeys: number[] = []
 const depthOrder: number[] = []
-const byDepth = (a: number, b: number) => depthKeys[a]! - depthKeys[b]!
+/** Compares by depth returning -1, 0 or 1: a fractional difference would be boxed on every call. */
+const byDepth = (a: number, b: number) => {
+  const da = depthKeys[a]!
+  const db = depthKeys[b]!
+  return da < db ? -1 : da > db ? 1 : 0
+}
 
 /** How far a hitbox reaches from its center, to cull it off screen. */
 const reachOf = (shape: Attack['shape']) => (shape.kind === 'circle' ? shape.r : Math.max(shape.w, shape.h)) + 48
@@ -765,16 +770,16 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   // Mid-jump leapers sort last so they fly over the horde, and so does a flyer over a rock or a mountain.
   const depth = (d: Drawable) =>
     d === 'player' ? g.player.y : d === 'companion' ? (companion?.y ?? 0) : isSolid(d) ? d.y : isAirborne(d) || (overTerrain(d) && inSolid(g, d.x, d.y, 4)) ? d.y + 4096 : d.y
-  depthKeys.length = 0
-  depthOrder.length = 0
-  for (let i = 0; i < drawables.length; i++) {
-    depthKeys.push(depth(drawables[i]!))
-    depthOrder.push(i)
+  // Filled by index and cut to size (emptying them would drop their storage every frame).
+  const n = drawables.length
+  for (let i = 0; i < n; i++) {
+    depthKeys[i] = depth(drawables[i]!)
+    depthOrder[i] = i
   }
+  depthKeys.length = depthOrder.length = inDepth.length = n
   // A stable sort of the indices: ties keep their order, as sorting `drawables` itself would.
   depthOrder.sort(byDepth)
-  inDepth.length = 0
-  for (const i of depthOrder) inDepth.push(drawables[i]!)
+  for (let i = 0; i < n; i++) inDepth[i] = drawables[depthOrder[i]!]!
 
   for (const d of inDepth) {
     if (d === 'player') {

@@ -25,9 +25,13 @@ export const insert = (grid: Grid, index: number, x: number, y: number) => {
   bucket.push(index)
 }
 
-/** Collects indices of every bucket overlapping the square around (x, y) into `out`. */
+/**
+ * Collects indices of every bucket overlapping the square around (x, y) into `out`.
+ * It's filled by index and cut to size at the end, never emptied first: `length = 0`
+ * would drop its storage and every query would grow a new one.
+ */
 export const query = (grid: Grid, x: number, y: number, radius: number, out: number[]) => {
-  out.length = 0
+  let n = 0
   const minX = Math.floor((x - radius) / grid.cell)
   const maxX = Math.floor((x + radius) / grid.cell)
   const minY = Math.floor((y - radius) / grid.cell)
@@ -35,8 +39,9 @@ export const query = (grid: Grid, x: number, y: number, radius: number, out: num
   for (let cx = minX; cx <= maxX; cx++) {
     for (let cy = minY; cy <= maxY; cy++) {
       const bucket = grid.cells.get(key(cx, cy))
-      if (bucket) for (const i of bucket) out.push(i)
+      if (bucket) for (const i of bucket) out[n++] = i
     }
   }
+  out.length = n
   return out
 }
