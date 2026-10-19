@@ -3605,6 +3605,10 @@ export const en: Messages = {
     kamikaze: (name: string) => `*${name}* blinks and _explodes_! Get out of the red circle.`,
     beam: (name: string) => `*${name}* aims a _beam_: step off the line on the ground!`,
     leaper: (name: string) => `*${name}* leaps over the horde: dodge the _shadow_!`,
+    spitter: (name: string) => `*${name}* spits from afar, and the shot gets past your aura: _keep moving_ to dodge it!`,
+  },
+  hazards: {
+    intro: '*The world strikes!* The ground marks where you stand, then it lands: _keep moving_.',
   },
   alphas: {
     tag: 'ALPHA',

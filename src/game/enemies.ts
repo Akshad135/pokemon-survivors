@@ -8,9 +8,12 @@ import { bodyOf } from '../data/bodies'
 import { fightPace } from './bossFight'
 import { bumpDamage, hurtPlayer } from './combat'
 import { leadTime } from './horde'
+import { inView } from './queries'
+import { isSpitter, spitBand, spitterStride } from './spitters'
 import { CONFUSE_BUMP, CONFUSE_CONTACT, createStatus, isFrozen, statusAttack, statusPace } from './status'
 import { enemyGroundPace } from './terrain'
 import { createTraitState, isAirborne, traitPace } from './traits'
+import { TRAITS } from '../data/traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -119,6 +122,7 @@ export const despawnEnemy = (e: Enemy) => {
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
   const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
+  const band = spitBand(g.view)
 
   for (const e of g.enemies) {
     if (e.dying >= 0) {
@@ -143,7 +147,8 @@ export const updateEnemies = (g: Game, dt: number) => {
       vx = dm.cos(h) * pace * LOST_PACE
       vy = dm.sin(h) * pace * LOST_PACE
     } else if (e.behavior.kind === 'chase') {
-      // Runners head where the player is going; a boss in a fight walks at its stance's pace and a ranged one holds its distance.
+      // Runners head where the player is going; a boss in a fight walks at its stance's pace and a ranged one holds its distance;
+      // a spitter walks into sight and holds its band, backing off from a player who comes close.
       let tx = p.x
       let ty = p.y
       let speed = pace
@@ -154,6 +159,8 @@ export const updateEnemies = (g: Game, dt: number) => {
       } else if (e.fight) {
         const hold = STANCES[e.fight.stance].hold
         speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+      } else if (isSpitter(e)) {
+        speed = pace * spitterStride(dm.hypot(p.x - e.x, p.y - e.y), inView(g, e.x, e.y, -TRAITS.spitter.inset), band)
       }
       const d = dirTo(e.x, e.y, tx, ty)
       vx = d.x * speed
@@ -171,7 +178,8 @@ export const updateEnemies = (g: Game, dt: number) => {
     e.kx *= damp
     e.ky *= damp
     if (e.thrown && dm.sq(e.kx) + dm.sq(e.ky) < THROWN_MIN * THROWN_MIN) e.thrown = null
-    if (Math.abs(vx) + Math.abs(vy) > 1) e.dir = dir8(vx, vy)
+    // A spitter backing off keeps facing the player.
+    if (Math.abs(vx) + Math.abs(vy) > 1) e.dir = isSpitter(e) && e.behavior.kind === 'chase' ? dir8(p.x - e.x, p.y - e.y) : dir8(vx, vy)
 
     // Wrap stragglers back in front of the player instead of letting them get lost.
     if (e.behavior.kind === 'chase' && !e.boss && Math.abs(e.x - p.x) + Math.abs(e.y - p.y) > recycleDist * 1.3) {

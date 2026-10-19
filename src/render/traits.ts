@@ -2,6 +2,7 @@ import { blitCentered, ellipse, ring, type PixelSprite } from '../engine/pixelar
 import { ENEMIES } from '../data/enemies'
 import { TRAITS } from '../data/traits'
 import { TYPE_COLORS } from '../data/types'
+import { flavorOf } from '../game/spitters'
 import { blastRadius, HEALED_TIME, leapHeight, traitPace } from '../game/traits'
 import type { Enemy, Game } from '../game/types'
 import { TRAIT_FX } from './art'
@@ -125,6 +126,7 @@ export const drawTraitAir = (ctx: Ctx, g: Game, visible: Visible) => {
 
     const lift = traitLift(e)
     const cy = e.y - e.radius - lift
+    if (act?.kind === 'spitter' && act.phase === 'charge') spitGlow(ctx, g, e, act.t, act.t / flavorOf(e.types).charge)
     if (st.wardTime > 0 && st.ward > 0 && (st.wardTime > 1.5 || Math.floor(st.wardTime * 8) % 2 === 0)) {
       const hit = st.wardHit < 0.12
       blitCentered(ctx, ellipse(e.radius + 4, e.radius + 4, hit ? 'rgba(255,255,255,0.35)' : 'rgba(136,184,248,0.22)'), e.x, cy)
@@ -143,6 +145,22 @@ export const drawTraitAir = (ctx: Ctx, g: Game, visible: Visible) => {
       blitCentered(ctx, alert, e.x, top + (Math.floor(g.time * 8) % 2))
     }
   }
+}
+
+/**
+ * A spitter's telegraph: a glow of its type's color swelling at its mouth,
+ * on the side facing the player, blinking faster as the shot gets close (`t` seconds in, `k` 0..1).
+ */
+const spitGlow = (ctx: Ctx, g: Game, e: Enemy, t: number, k: number) => {
+  const p = g.player
+  const d = Math.hypot(p.x - e.x, p.y - e.y) || 1
+  const x = e.x + ((p.x - e.x) / d) * e.radius * 0.7
+  const y = e.y - sprites(ENEMIES[e.kind].dex).bodyH * 0.5 + ((p.y - e.y) / d) * e.radius * 0.4
+  const color = TYPE_COLORS[e.types[0] ?? 'normal']
+  const r = Math.max(1, Math.round(1 + k * 3))
+  blitCentered(ctx, ellipse(r + 2, r + 2, 'rgba(255,255,255,0.35)'), x, y)
+  blitCentered(ctx, ellipse(r, r, blink(t, k) ? '#ffffff' : color), x, y)
+  if (!blink(t, k)) blitCentered(ctx, ring(r + 3, 1, color), x, y)
 }
 
 /** How high a leaper is drawn above its ground position (its shadow stays on the ground). */
@@ -167,6 +185,11 @@ export const traitTint = (e: Enemy) => {
   if (act.kind === 'beam' && act.phase === 'aim') {
     tint.color = TYPE_COLORS[e.types[0] ?? 'electric']
     tint.amount = 0.2 + (act.t / TRAITS.beam.aim) * 0.4
+    return tint
+  }
+  if (act.kind === 'spitter' && act.phase === 'charge') {
+    tint.color = TYPE_COLORS[e.types[0] ?? 'normal']
+    tint.amount = 0.2 + (act.t / flavorOf(e.types).charge) * 0.4
     return tint
   }
   if (act.kind === 'leaper' && act.phase === 'crouch') {

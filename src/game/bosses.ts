@@ -2,7 +2,7 @@ import { dir8, dirTo, retain, TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { BOSS_PATTERNS, BOSS_RAGE, type BossPattern, type HazardVisual } from '../data/bosses'
 import { FINALE, fleesFrom } from '../data/waves'
-import { attackWait, chainTarget, createFight, fightsInStances, patternLive, shouldEnrage, tickStance } from './bossFight'
+import { attackCount, attackWait, chainChance, chainTarget, createFight, fightsInStances, leadTime, patternLive, shouldEnrage, telegraph, tickStance, type BossFight } from './bossFight'
 import { hurtPlayer } from './combat'
 import { burst } from './effects'
 import { blastHorde } from './enemies'
@@ -13,41 +13,79 @@ import * as dm from '../engine/dmath'
 
 type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 'ttl'> & Partial<Hazard>
 
-/** Adds a hazard that hurts the player (boss patterns, an Alpha's shockwave). */
+/** Adds an enemy hazard (boss attacks, the horde's spit, an Alpha's shockwave). */
 export const spawnHazard = (g: Game, init: HazardInit) => {
-  g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, ...init })
+  g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, leaper: -1, world: false, ...init })
 }
 
 /** How long a strike keeps hurting after it lands. */
 const STRIKE_WINDOW = 0.15
 
-const fire = (g: Game, boss: Enemy, pattern: BossPattern) => {
+/** A boss's attack, pressed by its fight's difficulty (`attackCount`, `telegraph`); rift legendaries and Arceus pass no fight. */
+const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | null) => {
   const p = g.player
   switch (pattern.kind) {
     case 'strikes': {
       const center = pattern.target === 'player' ? p : boss
-      for (let i = 0; i < pattern.count; i++) {
-        // The first strike always aims at the target; the rest scatter around it.
-        const a = range(g.rng, 0, TAU)
-        const d = i === 0 ? 0 : range(g.rng, pattern.radius, pattern.spread)
+      const count = attackCount(pattern.count, fight)
+      const delay = telegraph(pattern.delay, fight)
+      for (let i = 0; i < count; i++) {
+        // The first strike always aims at the target; the rest scatter around it, or follow the
+        // player's path (`lead`, as far as the difficulty's `aim`); a single led one lands at the path's end.
+        let x = center.x
+        let y = center.y
+        if (pattern.lead !== undefined) {
+          const ahead = leadTime(pattern.lead, delay, fight) * (count > 1 ? i / (count - 1) : 1)
+          x += p.vx * ahead + range(g.rng, -3, 3)
+          y += p.vy * ahead + range(g.rng, -3, 3)
+        } else if (i > 0) {
+          const a = range(g.rng, 0, TAU)
+          const d = range(g.rng, pattern.radius, pattern.spread)
+          x += dm.cos(a) * d
+          y += dm.sin(a) * d * 0.8
+        }
         spawnHazard(g, {
           kind: 'strike',
           visual: pattern.visual,
-          x: center.x + dm.cos(a) * d,
-          y: center.y + dm.sin(a) * d * 0.8,
+          x,
+          y,
           r: pattern.radius,
           damage: pattern.damage,
-          armAt: pattern.delay,
-          disarmAt: pattern.delay + STRIKE_WINDOW,
-          ttl: pattern.delay + 0.45,
+          armAt: delay,
+          disarmAt: delay + STRIKE_WINDOW,
+          ttl: delay + 0.45,
+          leaper: pattern.leap ? boss.id : -1,
+        })
+      }
+      return
+    }
+    case 'volley': {
+      const count = attackCount(pattern.count, fight)
+      const windup = telegraph(pattern.windup, fight)
+      const aim = dm.atan2(p.y - boss.y, p.x - boss.x)
+      for (let i = 0; i < count; i++) {
+        const a = count > 1 ? aim - pattern.arc / 2 + (pattern.arc * i) / (count - 1) : aim
+        spawnHazard(g, {
+          kind: 'shot',
+          visual: pattern.visual,
+          x: boss.x + dm.cos(a) * boss.radius,
+          y: boss.y + dm.sin(a) * boss.radius,
+          vx: dm.cos(a) * pattern.speed,
+          vy: dm.sin(a) * pattern.speed,
+          r: pattern.radius,
+          damage: pattern.damage,
+          armAt: windup,
+          ttl: windup + 5,
+          vanishOnHit: true,
         })
       }
       return
     }
     case 'ring': {
       const offset = range(g.rng, 0, TAU)
-      for (let i = 0; i < pattern.count; i++) {
-        const a = offset + (i / pattern.count) * TAU
+      const count = attackCount(pattern.count, fight)
+      for (let i = 0; i < count; i++) {
+        const a = offset + (i / count) * TAU
         spawnHazard(g, {
           kind: 'shot',
           visual: pattern.visual,
@@ -124,17 +162,20 @@ const enrage = (g: Game, e: Enemy) => {
 
 /**
  * Ticks every boss's attack patterns. Bosses only attack once they're close
- * enough to be seen. Wave bosses also swap stance (only the live stance's
- * patterns count down; entering one holds its attacks `BOSS_RAGE.open` s) and,
- * once enraged, attack sooner and sometimes chain a second attack.
+ * enough to be seen. Wave bosses also swap stance (only the live patterns count
+ * down; entering a stance holds its attacks `BOSS_RAGE.open` s), unlock
+ * patterns as their HP drops and, once enraged, attack sooner and sometimes
+ * chain a second attack. A `far` pattern that comes due waits, ready, until
+ * the player keeps away.
  */
 export const updateBosses = (g: Game, dt: number) => {
   const reach = bossReach(g)
   for (const e of g.enemies) {
     const patterns = BOSS_PATTERNS[e.kind]
     if (!patterns || e.dying >= 0) continue
-    if (e.fight === null && fightsInStances(e.kind)) e.fight = createFight(g.rng)
+    if (e.fight === null && fightsInStances(e.kind)) e.fight = createFight(g.rng, g.difficulty)
     const fight = e.fight
+    if (fight) fight.share = e.hp / e.maxHp
     if (fight && shouldEnrage(fight, e.hp, e.maxHp)) enrage(g, e)
     // Stunned, asleep or frozen bosses hold their attacks (paralysis and the Poké Flute pay off here).
     if (e.status.stun > 0 || isHeld(e.status)) continue
@@ -144,18 +185,36 @@ export const updateBosses = (g: Game, dt: number) => {
         if (pt.stance === fight.stance) e.cooldowns[i] = Math.max(e.cooldowns[i]!, BOSS_RAGE.open)
       })
     }
-    const near = dm.hypot(e.x - g.player.x, e.y - g.player.y) < reach
+    const dist = dm.hypot(e.x - g.player.x, e.y - g.player.y)
+    const near = dist < reach
     patterns.forEach((pattern, i) => {
-      if (fight && !patternLive(pattern, fight.stance)) return
+      if (fight && !patternLive(pattern, fight)) return
       e.cooldowns[i]! -= dt
       if (e.cooldowns[i]! > 0 || !near) return
-      fire(g, e, pattern)
-      e.cooldowns[i]! += attackWait(pattern.every, fight)
-      if (!fight?.enraged || pattern.kind === 'trail' || !chance(g.rng, BOSS_RAGE.chain)) return
-      const next = chainTarget(patterns, fight.stance, i)
+      if (fight && pattern.far !== undefined && dist < pattern.far) {
+        e.cooldowns[i] = 0
+        return
+      }
+      fire(g, e, pattern, fight)
+      e.cooldowns[i]! += attackWait(pattern, fight)
+      if (!fight?.enraged || pattern.kind === 'trail' || !chance(g.rng, chainChance(fight))) return
+      const next = chainTarget(patterns, fight, i)
       if (next >= 0) e.cooldowns[next] = Math.min(e.cooldowns[next]!, BOSS_RAGE.gap)
     })
   }
+}
+
+/** A boss lands where its `leap` strike hits, in a puff of dust at both ends; one that fell or fled meanwhile stays put. */
+const land = (g: Game, h: Hazard) => {
+  const boss = g.enemies.find((e) => e.id === h.leaper)
+  if (!boss || boss.dying >= 0) return
+  const colors = IMPACT[h.visual]?.colors ?? ['#ffffff']
+  burst(g, boss.x, boss.y - boss.radius * 0.5, { colors, count: 24, speed: 110, ttl: 0.45, size: 2, drag: 5 })
+  boss.x = h.x
+  boss.y = h.y
+  boss.kx = 0
+  boss.ky = 0
+  g.shake = Math.max(g.shake, 5)
 }
 
 const IMPACT: Partial<Record<HazardVisual, { colors: readonly string[]; event: 'thunder' | 'quake' }>> = {
@@ -179,8 +238,11 @@ export const updateHazards = (g: Game, dt: number) => {
   for (const h of g.hazards) {
     const before = h.age
     h.age += dt
-    h.x += h.vx * dt
-    h.y += h.vy * dt
+    // A volley's shots hover by the boss through their windup.
+    if (h.age >= h.armAt) {
+      h.x += h.vx * dt
+      h.y += h.vy * dt
+    }
 
     const impact = IMPACT[h.visual]
     if (impact && h.kind === 'strike' && before < h.armAt && h.age >= h.armAt) {
@@ -188,6 +250,7 @@ export const updateHazards = (g: Game, dt: number) => {
       g.shake = Math.max(g.shake, 2)
       g.events.push({ kind: impact.event })
     }
+    if (h.leaper >= 0 && before < h.armAt && h.age >= h.armAt) land(g, h)
 
     if (h.age < h.armAt || h.age > h.disarmAt) continue
     const reach = h.r + p.radius * 0.7

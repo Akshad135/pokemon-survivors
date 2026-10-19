@@ -53,6 +53,8 @@ import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
 import { tmDevTools } from './game/tmDev'
 import { duoDevTools } from './game/duoDev'
+import { hazardDevTools } from './game/hazardDev'
+import { spitterDevTools } from './game/spitterDev'
 import { cursePick } from './ui/cursePick'
 import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
@@ -801,6 +803,7 @@ const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
   kamikaze: { warn: 'selfDestruct', fire: 'blast' },
   beam: { warn: 'beamCharge', fire: 'beam' },
   leaper: { warn: 'leap', fire: 'quake' },
+  spitter: { warn: null, fire: 'spit' },
 }
 
 const handleEvent = (r: Run, e: GameEvent) => {
@@ -1015,6 +1018,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(def.dex).cry, 0.35)
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
     }
+    case 'hazardIntro':
+      return toast(ui, rich(t().hazards.intro), 3400)
     case 'riftOpen':
       playSfx('shiny')
       return toast(ui, rich(t().rifts.open), 3200)
@@ -1535,6 +1540,8 @@ if (import.meta.env.DEV) {
       ...learnDevTools(() => run?.game),
       ...tmDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
+      ...hazardDevTools(() => run?.game),
+      ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

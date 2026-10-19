@@ -24,6 +24,8 @@ export type TraitAct =
   | { kind: 'beam'; cooldown: number; phase: 'idle' | 'aim' | 'fire'; t: number; ox: number; oy: number; dx: number; dy: number }
   /** Locks the landing spot (toX, toY) when it crouches. */
   | { kind: 'leaper'; cooldown: number; phase: 'idle' | 'crouch' | 'air'; t: number; fromX: number; fromY: number; toX: number; toY: number }
+  /** Glows for its flavor's `charge` (`t` counts it), then spits at where the player stands (`game/spitters.ts`). */
+  | { kind: 'spitter'; cooldown: number; phase: 'idle' | 'charge'; t: number }
 
 /** Every enemy's trait-related state, grouped so the `Enemy` type stays tidy. */
 export type TraitState = {
@@ -61,6 +63,8 @@ export const createTraitState = (trait: TraitId | undefined, roll: number): Trai
       return { act: { kind: trait, cooldown: wait(TRAITS.beam.every), phase: 'idle', t: 0, ox: 0, oy: 0, dx: 1, dy: 0 }, ...base }
     case 'leaper':
       return { act: { kind: trait, cooldown: wait(TRAITS.leaper.every), phase: 'idle', t: 0, fromX: 0, fromY: 0, toX: 0, toY: 0 }, ...base }
+    case 'spitter':
+      return { act: { kind: trait, cooldown: 1 + roll * TRAITS.spitter.first, phase: 'idle', t: 0 }, ...base }
   }
 }
 
@@ -118,7 +122,7 @@ export const onBeam = (ox: number, oy: number, dx: number, dy: number, length: n
 /** Height of a jump `k` (0..1) of the way through: a parabola peaking at `peak`. */
 export const leapHeight = (k: number, peak: number) => 4 * k * (1 - k) * peak
 
-/** Movement multiplier from the trait: rooted while a fuse burns, a beam aims or fires, or a leap is under way. */
+/** Movement multiplier from the trait: rooted while a fuse burns, a beam aims or fires, a leap is under way or a spitter glows. */
 export const traitPace = (e: Enemy) => {
   const act = e.trait.act
   if (!act) return 1
@@ -127,6 +131,7 @@ export const traitPace = (e: Enemy) => {
       return act.fuse < 0 ? 1 : 0
     case 'beam':
     case 'leaper':
+    case 'spitter':
       return act.phase === 'idle' ? 1 : 0
     default:
       return 1

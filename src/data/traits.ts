@@ -11,11 +11,13 @@ import type { ENEMIES, EnemyId } from './enemies'
  * - `kamikaze`: walks up to the player, stops, blinks and explodes, hurting the player and enemies in the blast.
  * - `beam`: stops, draws its aim line on the ground, then fires a straight beam along it.
  * - `leaper`: crouches and jumps over the horde to where the player stood; its shadow marks the landing.
+ * - `spitter`: holds a band of distance, glows and spits slow shots at the player (the horde's ranged
+ *   role: each stage draws one species for it, `game/spitters.ts`, with its flavor by type).
  *
  * Damage is a multiple of the enemy's contact damage and healing/wards a share of
  * the target's max HP, so every trait scales with the run like the enemy does.
  */
-export type TraitId = 'healer' | 'shield' | 'summoner' | 'kamikaze' | 'beam' | 'leaper'
+export type TraitId = 'healer' | 'shield' | 'summoner' | 'kamikaze' | 'beam' | 'leaper' | 'spitter'
 
 /** Tuning per trait. Times in seconds, distances in world px. */
 export const TRAITS = {
@@ -72,6 +74,25 @@ export const TRAITS = {
     /** Shockwave radius at the landing spot. */
     radius: 20,
     damage: 1.5,
+  },
+  spitter: {
+    /** Holds between these distances from the player (`spitBand` shrinks `min` on a narrow screen). */
+    min: 110,
+    max: 190,
+    /** Keeps walking in until it's this far inside the screen edge, so its shots come from where you can see. */
+    inset: 14,
+    /** Backs off at this share of its pace when the player comes closer than `min`. */
+    back: 0.6,
+    /** Fires only with the player this close (wide screens show spitters farther out). */
+    reach: 230,
+    /** First shot comes 1 to 1 + `first` seconds after it spawns. */
+    first: 1.5,
+    /** How far a shot flies before it fizzles, px. */
+    range: 260,
+    /** Shot damage, in multiples of contact damage (before the difficulty's `damage` and the flavor's). */
+    damage: 1.1,
+    /** Spit shots alive at once, across every spitter: past it a spitter skips its volley. */
+    shots: 40,
   },
 } as const satisfies Record<TraitId, Record<string, number>>
 
