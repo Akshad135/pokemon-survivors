@@ -3393,7 +3393,7 @@ export const en: Messages = {
     dowsingMachine: 'Pulls in Exp. Candies from farther away.',
     kingsRock: '+6% chance to inflict status (burn, poison, paralysis).',
     toxicOrb: 'Burn and poison deal +20% damage.',
-    assaultVest: '+20 max HP and +1 defense.',
+    assaultVest: '+20 max HP and +1 defense (1 less from every hit, up to half of it).',
     metronome: 'At the end of every jump or dash (and when other specials go off), fires 1 of your moves from there. 2 at max level, but in a chain the second only on the last jump.',
     powerHerb: 'Each foe the special defeats (or any defeated mid-chain) cuts 0.25\u00a0s off its cooldown.',
     charcoal: typeBoost('Fire'),
@@ -3419,7 +3419,7 @@ export const en: Messages = {
   upgrades: {
     hpUp: '+10 max HP per rank.',
     protein: '+5% damage per rank.',
-    iron: '+1 defense per rank.',
+    iron: '+1 defense per rank: every hit deals 1 less, up to half of it.',
     carbos: '+5% speed per rank.',
     calcium: '+5% move area per rank.',
     zinc: 'Moves cool down 2.5% faster per rank.',
@@ -3626,5 +3626,15 @@ export const en: Messages = {
     kamikaze: (name: string) => `*${name}* blinks and _explodes_! Get out of the red circle.`,
     beam: (name: string) => `*${name}* aims a _beam_: step off the line on the ground!`,
     leaper: (name: string) => `*${name}* leaps over the horde: dodge the _shadow_!`,
+    spitter: (name: string) => `*${name}* spits from afar, and the shot gets past your aura: _keep moving_ to dodge it!`,
+  },
+  hazards: {
+    intro: '*The world strikes!* The ground marks where you stand, then it lands: _keep moving_.',
+  },
+  alphas: {
+    tag: 'ALPHA',
+    appeared: (name: string) => `An *Alpha ${name}* appeared! Step off the _red line_ when it aims.`,
+    defeated: (name: string) => `You beat the *Alpha ${name}*! Grab the _prize_.`,
+    prize: '*Alpha prize*: _rare_ cards!',
   },
 }

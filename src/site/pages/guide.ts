@@ -1,7 +1,7 @@
 import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId } from '../../data/achievements'
 import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionTemplate } from '../../data/missions'
 import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
-import { BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
+import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { EVOLUTIONS, neverEvolves } from '../../data/evolutions'
@@ -302,7 +302,7 @@ const bosses = (locale: Locale, m: SiteMessages) => {
     ])
   }
   const rows = EVENTS.flatMap((e) => (e.kind === 'boss' ? rowsOf(e) : []))
-  const rules = { ...BOSS_RAGE, fight: BOSS_FIGHT.rate, window: BOSS_FIGHT.duration, finale: FINALE.rate }
+  const rules = { ...BOSS_RAGE, fight: BOSS_FIGHT.rate, window: BOSS_FIGHT.duration, finale: FINALE.rate, press: BOSS_DIFFICULTY }
   const trioTimes = EVENTS.flatMap((e) => (e.kind === 'boss' && 'trio' in e ? [clock(e.at)] : []))
   const rare = EVENTS.find((e): e is BossEvent => e.kind === 'boss' && 'mythical' in e)
   const trios = TRIO_IDS.map((id) => `${m.trios.names[id]} (${TRIOS[id].map((enemy) => ENEMIES[enemy].name).join(', ')})`)

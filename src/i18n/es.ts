@@ -3394,7 +3394,7 @@ export const es: Messages = {
     dowsingMachine: 'Atrae Exp. Candies desde más lejos.',
     kingsRock: '+6% de prob. de causar estados (quemar, envenenar, paralizar).',
     toxicOrb: 'Quemadura y veneno hacen +20% de daño.',
-    assaultVest: '+20 de HP máximo y +1 de defensa.',
+    assaultVest: '+20 de HP máximo y +1 de defensa (1 menos en cada golpe, hasta la mitad).',
     metronome: 'Al final de cada salto o embestida (y al soltar los otros especiales), lanza 1 de tus movimientos desde ahí. En el nivel máximo, 2, pero en una cadena el segundo solo sale en el último salto.',
     powerHerb: 'Cada enemigo derrotado por el especial (o durante una cadena) le quita 0,25 s a su recarga.',
     charcoal: typeBoost('Fuego'),
@@ -3420,7 +3420,7 @@ export const es: Messages = {
   upgrades: {
     hpUp: '+10 de HP máximo por nivel.',
     protein: '+5% de daño por nivel.',
-    iron: '+1 de defensa por nivel.',
+    iron: '+1 de defensa por nivel: cada golpe quita 1 menos, hasta la mitad.',
     carbos: '+5% de velocidad por nivel.',
     calcium: '+5% de área de los movimientos por nivel.',
     zinc: 'Los movimientos recargan 2,5% más rápido por nivel.',
@@ -3627,5 +3627,15 @@ export const es: Messages = {
     kamikaze: (name: string) => `¡*${name}* parpadea y _explota_! Sal del círculo rojo.`,
     beam: (name: string) => `*${name}* apunta un _rayo_: ¡sal de la línea en el suelo!`,
     leaper: (name: string) => `*${name}* salta sobre la horda: ¡huye de la _sombra_!`,
+    spitter: (name: string) => `*${name}* escupe desde lejos y el disparo atraviesa tu aura: ¡_muévete_ para esquivarlo!`,
+  },
+  hazards: {
+    intro: '*¡El mundo ataca!* El suelo marca dónde estás y luego cae: _no te quedes quieto_.',
+  },
+  alphas: {
+    tag: 'ALFA',
+    appeared: (name: string) => `¡Apareció un *${name} Alfa*! Sal de la _línea roja_ cuando apunte.`,
+    defeated: (name: string) => `¡Derrotaste al *${name} Alfa*! Toma el _premio_.`,
+    prize: '*Premio del Alfa*: ¡cartas _raras_!',
   },
 }

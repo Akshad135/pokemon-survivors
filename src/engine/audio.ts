@@ -220,6 +220,11 @@ const SFX = {
   leap: () => tone(180, 520, 0.3, 'triangle', 0.1),
   /** Soft chime for heal, ward and summon pulses. */
   enemyPulse: () => tone(660, 990, 0.16, 'triangle', 0.06),
+  /** A spitter's shot: a short wet "ptoo". */
+  spit: () => {
+    noise(0.05, 0.05)
+    tone(520, 240, 0.08, 'square', 0.05)
+  },
   /* Signature moves (`ui/castSounds.ts`) */
   /** Hypnosis: a woozy wobble down and up. */
   hypnosis: () => [523, 392, 523, 392].forEach((f, i) => tone(f, f * 0.94, 0.12, 'triangle', 0.08, i * 0.09)),

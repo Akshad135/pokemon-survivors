@@ -275,6 +275,9 @@ export const setMarkerInsets = (next: MarkerInsets) => {
   inset = next
 }
 
+/** The margins edge arrows keep (the Alphas' too, `render/alphas.ts`). */
+export const markerInsets = () => inset
+
 /**
  * Screen layer: an arrow on the screen edge for every important event that's
  * off-screen, with its icon, pointing the way.

@@ -3523,7 +3523,7 @@ export const pt = {
     dowsingMachine: 'Atrai Exp. Candies de mais longe.',
     kingsRock: '+6% de chance de causar status (queimar, envenenar, paralisar).',
     toxicOrb: 'Queimadura e veneno causam +20% de dano.',
-    assaultVest: '+20 HP máximo e +1 de defesa.',
+    assaultVest: '+20 HP máximo e +1 de defesa (1 a menos em cada golpe, até metade dele).',
     metronome: 'Ao fim de cada salto ou investida (e ao soltar os outros especiais), dispara 1 dos seus golpes dali. No nível máximo, 2, mas numa cadeia o segundo só sai no último salto.',
     powerHerb: 'Cada inimigo derrubado pelo especial (ou durante uma cadeia) corta 0,25 s da recarga dele.',
     charcoal: typeBoost('Fogo'),
@@ -3549,7 +3549,7 @@ export const pt = {
   upgrades: {
     hpUp: '+10 de HP máximo por nível.',
     protein: '+5% de dano por nível.',
-    iron: '+1 de defesa por nível.',
+    iron: '+1 de defesa por nível: cada golpe tira 1 a menos, até metade dele.',
     carbos: '+5% de velocidade por nível.',
     calcium: '+5% de área dos golpes por nível.',
     zinc: 'Golpes recarregam 2,5% mais rápido por nível.',
@@ -3759,7 +3759,19 @@ export const pt = {
     kamikaze: (name: string) => `*${name}* pisca e _explode_! Saia do círculo vermelho.`,
     beam: (name: string) => `*${name}* mira um _raio_: saia da linha no chão!`,
     leaper: (name: string) => `*${name}* salta sobre a horda: fuja da _sombra_!`,
+    spitter: (name: string) => `*${name}* cospe de longe, e o disparo passa pela sua aura: _ande_ para desviar!`,
   } satisfies Record<TraitId, (name: string) => string>,
+  /** Alpha Pokémon (`game/alphas.ts`): the tag over it and its toasts. */
+  alphas: {
+    tag: 'ALFA',
+    appeared: (name: string) => `Um *${name} Alfa* apareceu! Saia da _linha vermelha_ quando ele mirar.`,
+    defeated: (name: string) => `Você derrotou o *${name} Alfa*! Pegue o _prêmio_.`,
+    prize: '*Prêmio do Alfa*: cartas _raras_!',
+  },
+  /** Explainer toast the first time the world strikes at the player in a run (`game/hazards.ts`). */
+  hazards: {
+    intro: '*O mundo ataca!* O chão marca onde você está e cai em seguida: _não fique parado_.',
+  },
 } satisfies ContentTexts & Record<string, unknown>
 
 export type Messages = typeof pt

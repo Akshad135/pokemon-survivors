@@ -60,6 +60,7 @@ describe('withOutbreak', () => {
       expect(pool.filter(([s]) => s !== id)).toEqual(roster.stages[i]!.filter(([s]) => s !== id))
     })
     expect(out.runners).not.toContain(id)
+    expect(out.spitters).not.toContain(id)
     expect(out.events).toEqual(roster.events)
     expect(withOutbreak(out, id)).toEqual(out)
     expect(withOutbreak(roster, null)).toBe(roster)

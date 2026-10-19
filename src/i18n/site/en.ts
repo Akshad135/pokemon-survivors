@@ -103,6 +103,7 @@ export const siteEn: SiteMessages = {
       kamikaze: 'Kamikaze',
       beam: 'Beam',
       leaper: 'Leaper',
+      spitter: 'Spitter',
     },
     effects: {
       healer: (every: number, percent: number) => `Every ${n(every)}s, a green pulse heals ${n(percent)}% of the max HP of wounded allies nearby.`,
@@ -115,6 +116,8 @@ export const siteEn: SiteMessages = {
       beam: (aim: number, damage: number) => `Stops, draws the beam's line on the ground for ${n(aim)}s and fires: ${n(damage)}x its contact damage.`,
       leaper: (warn: number, damage: number) =>
         `Leaps over the horde to where you stood. The shadow on the ground marks the landing ${n(warn)}s ahead, and the impact deals ${n(damage)}x its contact damage.`,
+      spitter: (charge: number, damage: number) =>
+        `Keeps its distance, glows for ${n(charge)}s and spits a slow shot at where you stand: ${n(damage)}x its contact damage. Its type shapes the shot: a fireball, a bubble, sludge that leaves a puddle, a fast spark or three seeds.`,
     },
     tips: {
       healer: 'Take it down first, or the horde keeps topping up.',
@@ -123,6 +126,7 @@ export const siteEn: SiteMessages = {
       kamikaze: 'Get out of the red circle, or lure it into the horde: the blast hurts enemies too.',
       beam: 'The aim locks when the line shows up: one step aside is enough.',
       leaper: 'Get off the shadow before it lands.',
+      spitter: 'The shot is slow: one step aside is enough. Standing still is what it wants.',
     },
   },
 
@@ -133,6 +137,14 @@ export const siteEn: SiteMessages = {
     ring: (count: number, every: number, damage: number) => `Ring of ${count} projectiles every ${n(every)}s (${damage} damage)`,
     trail: (ttl: number, damage: number) => `Leaves a harmful trail for ${n(ttl)}s (${damage} damage)`,
     stance: { close: 'Up close', ranged: 'At range' },
+    path: (count: number, every: number, damage: number) =>
+      `${count} marked strikes along your path, from where you stand to where you're heading, every ${n(every)}s (${damage} damage)`,
+    leap: (every: number, damage: number) => `Leaps onto you, a circle marking where it lands, every ${n(every)}s (${damage} damage)`,
+    volley: (count: number, every: number, damage: number) =>
+      `Volley of ${count} ${s(count, 'projectile', 'projectiles')} aimed at you, with aim lines before it fires, every ${n(every)}s (${damage} damage)`,
+    far: 'if you keep away',
+    below: (percent: number) => `under ${n(percent)}% HP`,
+    from: { normal: 'on every difficulty', hard: 'on Hard and Nightmare', nightmare: 'on Nightmare only' },
   },
 
   trios: {
@@ -374,6 +386,7 @@ export const siteEn: SiteMessages = {
       paragraphs: (r) => [
         'Bosses arrive at fixed times. Legendaries make an entrance with a screen flash, their cry and a banner. All of them get an HP bar at the top and their own attacks: marked circles on the ground show where a hit will land, so step out of them.',
         `Each boss switches between two ways of fighting every ${r.stance[0]} to ${r.stance[1]} seconds: up close, it rushes in and slams the area around itself; at range, it stops a few steps away and aims at you. Under ${n(r.below * 100)}% HP it enrages (red outline, cry and a screen flash): ${n(Math.round((r.speed - 1) * 100))}% faster, ${n(Math.round((1 - r.wait) * 100))}% less time between attacks and, ${n(r.chain * 100)}% of the time, a second attack right after the first.`,
+        `Standing still doesn't work: every boss aims where you stand or along the path you're taking, and running far away earns you a leap or an aimed volley. Enraging also unlocks a new attack. On Hard bosses attack ${n(Math.round((1 - r.press.hard.pace) * 100))}% more often, with ${n(Math.round((r.press.hard.more - 1) * 100))}% more projectiles and slightly shorter warnings, and chain ${n(r.press.hard.chain * 100)}% of the time when enraged; on Nightmare, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% more often, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% more projectiles, ${n(r.press.nightmare.chain * 100)}% chains and one extra attack each. From Hard up, Mewtwo has a second phase under 40% HP.`,
         'Bosses don\'t get tougher over time, and each one drops a Poké Ball and a shower of Poké Dollars.',
         `For each boss's first ${r.window}s, while it's nearby, only ${n(r.fight * 100)}% of the regular enemies spawn, so the fight is with it; then the horde comes back. Each boss has until the next one arrives: if it's still standing when the next boss shows up, it flees and leaves nothing behind. Mewtwo is the last one: it blasts the horde away when it arrives and, while it stands, only ${n(r.finale * 100)}% of the regular enemies spawn, so the fight is about dodging its attacks.`,
       ],
