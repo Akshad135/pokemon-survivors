@@ -1,5 +1,6 @@
 import type { ClerkClient } from '@clerk/backend'
 import { supporterTier, type SupporterTier } from '../../src/game/supporters'
+import { isRecord } from '../../src/game/parse'
 import type { Sql } from './db'
 import { idsByName, restClient, type DiscordConfig } from './discord'
 
@@ -31,10 +32,22 @@ export const supporterRoleChanges = (tier: SupporterTier | null): { add: string[
 /** What Clerk says of one of a user's external accounts (the fields `discordAccount` reads). */
 export type ExternalAccountInfo = { provider: string; providerUserId: string; username: string | null; verification: { status: string } | null }
 
-/** The user's verified Discord account (`provider` is `discord`, or `oauth_discord` from older APIs), or null. */
+/**
+ * The user's verified Discord account (`provider` is `discord`, or
+ * `oauth_discord` from older APIs), or null. Clerk sometimes finishes a
+ * connection without reading the profile: `id` and `username` come empty, and
+ * `link` asks Discord itself (`discordMe`).
+ */
 export const discordAccount = (accounts: readonly ExternalAccountInfo[]) => {
-  const found = accounts.find((a) => (a.provider === 'discord' || a.provider === 'oauth_discord') && a.verification?.status === 'verified' && a.providerUserId)
+  const found = accounts.find((a) => (a.provider === 'discord' || a.provider === 'oauth_discord') && a.verification?.status === 'verified')
   return found ? { id: found.providerUserId, username: found.username ?? '' } : null
+}
+
+/** Who a Discord OAuth token belongs to (`GET /users/@me`), or null when Discord won't say. */
+const discordMe = async (token: string) => {
+  const res = await fetch('https://discord.com/api/v10/users/@me', { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'DiscordBot (https://www.pokemonsurvivors.com, 1)' } })
+  const me: unknown = res.ok ? await res.json() : null
+  return isRecord(me) && typeof me.id === 'string' ? { id: me.id, username: typeof me.username === 'string' ? me.username : '' } : null
 }
 
 /** What linking came to: `joined` when the player is in the server now (false without the bot or when Discord refused). */
@@ -71,21 +84,32 @@ export const discordLink = (sql: Sql, clerk: ClerkClient, bot: DiscordConfig | n
     return supporterTier(row?.points ?? 0)
   }
 
-  /** Adds the player to the server with Clerk's token for them (`guilds.join`); already in, Discord just answers 204. */
-  const join = async (userId: string, discordId: string) => {
-    if (!call) return false
+  /** The Discord OAuth token Clerk keeps for the player (`identify guilds.join`), or null. */
+  const oauthToken = async (userId: string) => {
     const { data } = await clerk.users.getUserOauthAccessToken(userId, 'discord')
-    const token = data[0]?.token
-    if (!token) return false
+    return data[0]?.token ?? null
+  }
+
+  /** Adds the player to the server with their token (`guilds.join`); already in, Discord just answers 204. */
+  const join = async (discordId: string, token: string | null) => {
+    if (!call || !token) return false
     await call('PUT', `${guild}/members/${discordId}`, { access_token: token })
     return true
   }
 
   return {
-    /** Reads the player's Discord account from Clerk and links it. Throws when Clerk can't answer. */
+    /**
+     * Reads the player's Discord account from Clerk and links it, asking
+     * Discord who it is with Clerk's token (Clerk's own copy may be empty).
+     * Throws when Clerk can't answer.
+     */
     link: async (userId: string): Promise<LinkResult> => {
       const user = await clerk.users.getUser(userId)
-      const account = discordAccount(user.externalAccounts)
+      const connected = discordAccount(user.externalAccounts)
+      if (!connected) return { linked: false }
+      const token = await oauthToken(userId)
+      const me = token ? await discordMe(token).catch(() => null) : null
+      const account = me ?? (connected.id ? connected : null)
       if (!account) return { linked: false }
       // One game account per Discord account: Clerk keeps it on one user at a time, so another row holding it is stale (it moved).
       await sql`update users set discord_id = null, discord_name = null where discord_id = ${account.id} and id <> ${userId}`
@@ -94,7 +118,7 @@ export const discordLink = (sql: Sql, clerk: ClerkClient, bot: DiscordConfig | n
         on conflict (id) do update set discord_id = excluded.discord_id, discord_name = excluded.discord_name`
       let joined = false
       try {
-        joined = await join(userId, account.id)
+        joined = await join(account.id, token)
         if (joined) await applyRoles(account.id, await tierOf(userId))
       } catch (err) {
         console.error(`discord join failed for ${userId}`, err)
