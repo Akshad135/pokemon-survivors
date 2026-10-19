@@ -353,6 +353,7 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
   grass: ['#78d850', 'rgba(112,208,72,0.28)'],
   judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
+  poison: ['#c060d8', 'rgba(160,64,192,0.3)'],
 }
 
 /** Ground layer: telegraph circles, landed shockwaves and lingering fire. */
@@ -375,12 +376,41 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
     ctx.globalAlpha = 1
     return
   }
+  if (h.kind === 'zone' && h.world) return drawWorldZone(ctx, h, line, fill)
   if (h.kind === 'zone') {
     ctx.globalAlpha = Math.min(1, h.age / 0.15, (h.ttl - h.age) / 0.4)
     blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), fill), h.x, h.y)
     if (h.visual === 'fire') blitCentered(ctx, FX.flame()[Math.floor((h.age + h.id) * 8) % 2]!, h.x, h.y - 5)
     ctx.globalAlpha = 1
   }
+}
+
+/**
+ * A world hazard's lingering patch (`game/hazards.ts`): telegraphed like a strike,
+ * then a round patch (its hitbox is round) with a few pieces standing in it.
+ */
+const drawWorldZone = (ctx: Ctx, h: Hazard, line: string, fill: string) => {
+  const r = Math.round(h.r)
+  if (h.age < h.armAt) {
+    const k = h.age / h.armAt
+    blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
+    if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+    return
+  }
+  ctx.globalAlpha = Math.min(1, (h.ttl - h.age) / 0.4)
+  blitCentered(ctx, ellipse(r, r, fill), h.x, h.y)
+  // Thunder crackles: its rim flickers.
+  if (h.visual !== 'thunder' || Math.floor((h.age + h.id) * 10) % 3 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+  for (let i = 0; i < 3; i++) {
+    const a = h.id * 2.4 + i * 2.1
+    const x = h.x + Math.cos(a) * r * 0.5
+    const y = h.y + Math.sin(a) * r * 0.45
+    if (h.visual === 'rock') blitCentered(ctx, HAZARD_FX.stealthRock(), x, y - 2)
+    else if (h.visual === 'poison') blitCentered(ctx, HAZARD_FX.toxicSpike(), x, y - 2)
+    else if (h.visual === 'ice') blitRotated(ctx, HAZARD_FX.ice(), x, y - 2, -Math.PI / 2)
+    else if (h.visual === 'fire') blitCentered(ctx, FX.flame()[Math.floor((h.age + h.id + i) * 8) % 2]!, x, y - 4)
+  }
+  ctx.globalAlpha = 1
 }
 
 /** Air layer: projectiles, lightning bolts and falling rocks. */
@@ -406,9 +436,14 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     }
   }
   if (h.kind !== 'strike') return
-  if (h.visual === 'rock' && h.age < h.armAt) {
+  // Rocks fall onto their circles; so do the world's hail and flares (`game/hazards.ts`).
+  if (h.age < h.armAt && (h.visual === 'rock' || (h.world && (h.visual === 'ice' || h.visual === 'fire')))) {
     const fall = 1 - (h.armAt - h.age) / 0.35
-    if (fall > 0) blitCentered(ctx, HAZARD_FX.rock(), h.x, h.y - 3 - (1 - fall) * 120)
+    if (fall <= 0) return
+    const y = h.y - 3 - (1 - fall) * 120
+    if (h.visual === 'ice') blitRotated(ctx, HAZARD_FX.ice(), h.x, y, Math.PI / 2)
+    else if (h.visual === 'fire') blitCentered(ctx, FX.ember()[Math.floor(h.age * 12) % 2]!, h.x, y)
+    else blitCentered(ctx, HAZARD_FX.rock(), h.x, y)
     return
   }
   if ((h.visual === 'thunder' || h.visual === 'judgment') && h.age >= h.armAt) {

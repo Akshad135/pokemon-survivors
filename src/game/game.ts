@@ -16,6 +16,7 @@ import { createDexLog } from './dex'
 import { FRESH_LEVELUPS } from './learnsets'
 import { DEFAULT_DIFFICULTY, type Difficulty } from './difficulty'
 import { updateBosses, updateHazards } from './bosses'
+import { createWorldHazards, updateWorldHazards } from './hazards'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
@@ -181,6 +182,7 @@ export const createGame = (
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
+    worldHazards: createWorldHazards(),
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -464,6 +466,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   rebuildGrid(g)
   updateEnemies(g, dt)
   updateBosses(g, dt)
+  updateWorldHazards(g, dt)
   updateHazards(g, dt)
   updateStatuses(g, dt)
   updateRiftPortal(g, dt)

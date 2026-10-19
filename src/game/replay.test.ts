@@ -137,6 +137,21 @@ describe('replays', () => {
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
   })
 
+  it("re-simulate the world's hazards, landing on the player and the horde", () => {
+    /** Nightmare at 6:00, past the wave events, with the world's next attack due. */
+    const late = (g: Game) => {
+      g.time = 360
+      g.nextEvent = 99
+      g.worldHazards.charge = 0.99
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(366, start, 300, late)
+    expect(g.worldHazards.fired).toBeGreaterThan(0)
+    const staged = startGame(start)
+    late(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
   it('give a run played on another seed away', () => {
     const { g, replay } = play(40)
     const other = resimulate({ ...replay, start: { ...replay.start, seed: 8 } })

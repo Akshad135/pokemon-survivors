@@ -3607,4 +3607,7 @@ export const es: Messages = {
     beam: (name: string) => `*${name}* apunta un _rayo_: ¡sal de la línea en el suelo!`,
     leaper: (name: string) => `*${name}* salta sobre la horda: ¡huye de la _sombra_!`,
   },
+  hazards: {
+    intro: '*¡El mundo ataca!* El suelo marca dónde estás y luego cae: _no te quedes quieto_.',
+  },
 }

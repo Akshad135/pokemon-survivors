@@ -2,6 +2,7 @@ import type { Dir8 } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
+import type { WorldHazardState } from './hazards'
 import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
 import type { RiftLegend } from '../data/rifts'
@@ -376,6 +377,8 @@ export type Hazard = {
   ttl: number
   /** Projectiles vanish on hit; zones linger. */
   vanishOnHit: boolean
+  /** Thrown by the world rather than a boss (`game/hazards.ts`): its strikes also hurt the foes they land on. */
+  world: boolean
 }
 
 export type Pickup = {
@@ -544,6 +547,8 @@ export type GameEvent =
   | { kind: 'tmLearned'; move: MoveId; level: number; forgot: MoveId | null; source: TmSource }
   /** A TM disc's move was already mastered: it turned into ₽. */
   | { kind: 'tmMastered'; move: MoveId; coins: number }
+  /** The world struck at the player for the first time this run (`game/hazards.ts`): a one-time explainer toast. */
+  | { kind: 'hazardIntro' }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -642,4 +647,6 @@ export type Game = {
   /** Counters for missions and achievements (`game/tally.ts`). */
   tally: RunTally
   events: GameEvent[]
+  /** The world's own attacks on the player (`game/hazards.ts`). */
+  worldHazards: WorldHazardState
 }

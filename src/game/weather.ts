@@ -44,6 +44,7 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   aero: ['flying'],
   grass: ['grass'],
   judgment: ['normal'],
+  poison: ['poison'],
 }
 
 /** Rolls the next weather spell from the biome's odds, never repeating `current`. */

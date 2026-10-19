@@ -87,7 +87,7 @@ const runEvent = (g: Game, event: WaveEvent, index: number) => {
 }
 
 /** The finale boss (Mewtwo) is alive in the regular run. It's the last boss to arrive, so while it lives `bossId` points at it. */
-const finaleAlive = (g: Game) => {
+export const finaleAlive = (g: Game) => {
   if (g.endless || g.bossId === null) return false
   const boss = g.enemies.find((e) => e.id === g.bossId)
   return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && bossCandidates(e).includes(boss.kind))

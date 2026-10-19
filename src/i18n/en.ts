@@ -3606,4 +3606,7 @@ export const en: Messages = {
     beam: (name: string) => `*${name}* aims a _beam_: step off the line on the ground!`,
     leaper: (name: string) => `*${name}* leaps over the horde: dodge the _shadow_!`,
   },
+  hazards: {
+    intro: '*The world strikes!* The ground marks where you stand, then it lands: _keep moving_.',
+  },
 }

@@ -3738,6 +3738,10 @@ export const pt = {
     beam: (name: string) => `*${name}* mira um _raio_: saia da linha no chão!`,
     leaper: (name: string) => `*${name}* salta sobre a horda: fuja da _sombra_!`,
   } satisfies Record<TraitId, (name: string) => string>,
+  /** Explainer toast the first time the world strikes at the player in a run (`game/hazards.ts`). */
+  hazards: {
+    intro: '*O mundo ataca!* O chão marca onde você está e cai em seguida: _não fique parado_.',
+  },
 } satisfies ContentTexts & Record<string, unknown>
 
 export type Messages = typeof pt

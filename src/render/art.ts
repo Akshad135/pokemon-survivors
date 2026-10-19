@@ -409,6 +409,8 @@ export const EMOTES = lazy(() => {
 const SHARD = ['....11.', '..1221.', '1123331', '..1221.', '....11.']
 const SMALL_ORB = ['.111.', '12221', '12321', '12221', '.111.']
 const ROCK = ['..1111..', '.122221.', '12233221', '12232221', '12222211', '.112211.', '..1111..']
+/** A pointed shard standing in the ground: Stealth Rock and Toxic Spikes (world hazards). */
+const GROUND_SPIKE = ['..1..', '.131.', '.121.', '12321', '12221', '11111']
 
 export const HAZARD_FX = {
   ice: lazy(() => art(SHARD, { 1: '#3878a8', 2: '#98d8f8', 3: '#ffffff' }, '#183048')),
@@ -421,6 +423,8 @@ export const HAZARD_FX = {
   steel: lazy(() => art(SMALL_ORB, { 1: '#4868a8', 2: '#a8c8f0', 3: '#ffffff' }, '#182040')),
   aero: lazy(() => art(SMALL_ORB, { 1: '#7890c0', 2: '#d8e8f8', 3: '#ffffff' }, '#283858')),
   judgment: lazy(() => art(SMALL_ORB, { 1: '#c09020', 2: '#f8e070', 3: '#ffffff' }, '#483008')),
+  stealthRock: lazy(() => art(GROUND_SPIKE, { 1: '#584020', 2: '#a08040', 3: '#e0c880' }, '#181818')),
+  toxicSpike: lazy(() => art(GROUND_SPIKE, { 1: '#502068', 2: '#a050c8', 3: '#e8b0f8' }, '#200828')),
 }
 
 /* ---------------- Enemy traits ---------------- */
