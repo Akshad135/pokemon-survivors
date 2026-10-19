@@ -94,6 +94,7 @@ import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { announceGifts } from './ui/gifts'
 import { playGate } from './ui/account'
 import { trainerCardScreen } from './ui/trainer'
+import { discordScreen } from './ui/discord'
 import { createHud, type Hud } from './ui/hud'
 import { bankEggs, challengeToday, depositPokeDollars, loadAttempt, loadSave, outbreakToday, recordRunProgress, saveAttempt, saveHatch, today, updateSave, writeSave } from './ui/save'
 import { challengeScreen, challengeShiny } from './ui/challenge'
@@ -297,6 +298,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       news: (focus) => newsScreen(ui, input, () => showTitle({ focus })),
+      discord: (focus) => discordScreen(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       mart: (focus) => shop(ui, input, () => showTitle({ focus })),
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.

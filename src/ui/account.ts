@@ -8,8 +8,8 @@ import { hint, menu, type Screen } from './screens'
 type Action = { label: string; run: () => void }
 
 /**
- * Asked when a guest taps Play (accounts on): sign in with Google, which also
- * creates the account, or play as a guest. Signing in leaves for Google; an
+ * Asked when a guest taps Play (accounts on): sign in with Google or Discord,
+ * which also creates the account, or play as a guest. Signing in leaves for the provider; an
  * account already open in another tab links right away and goes on to `play`.
  * Back, Esc or Backspace call `onBack`.
  */
@@ -25,6 +25,7 @@ export const playGate = (root: HTMLElement, input: Input, actions: { play: () =>
       ? [{ label: m.back, run: () => leave(actions.back) }]
       : [
           { label: m.google, run: () => void signIn() },
+          { label: t().discord.signIn, run: () => void signIn('discord') },
           { label: m.playAsGuest, run: () => leave(actions.guest) },
         ]
     const buttons = all.map((a) => h('button', { class: 'btn' }, a.label))

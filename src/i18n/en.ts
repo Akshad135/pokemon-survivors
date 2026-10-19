@@ -271,6 +271,23 @@ export const en: Messages = {
     gateGuestNote: "As a guest, your progress stays on this device only and your runs don't count for the ranking.",
   },
 
+  discord: {
+    title: 'DISCORD',
+    open: 'Discord',
+    pitch: 'The community server has the game’s news, the Daily Challenge podium and other trainers. It speaks English, with rooms for other languages.',
+    linkPitch: 'Link your Discord to join the server right away and get your supporter role.',
+    guestPitch: 'Signing in with Discord creates your account (or opens the one you have) and links both at once.',
+    link: 'Link Discord',
+    signIn: 'Sign in with Discord',
+    openServer: 'Open the server',
+    join: 'Join the server',
+    connected: (name) => `Linked as @${name}`,
+    row: (name) => `Discord: @${name}`,
+    failed: 'Couldn’t link Discord. Try again.',
+    busy: 'Connecting…',
+    back: 'Back',
+  },
+
   ranking: {
     title: 'RANKING',
     periods: { day: 'Today', week: 'Week', all: 'All time' },

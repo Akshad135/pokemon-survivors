@@ -778,6 +778,27 @@ const NEWS = [
 
 export const newsIcon = () => toIconUrl('news', () => art(NEWS, { 1: '#303040', 2: '#f8f8f8', 3: '#c8d0e0', 4: '#e83850', 5: '#9098b8' }))
 
+/** Discord's app icon: the white Clyde on a blurple rounded square. 1 outline, 2 blurple, 3 white. */
+const DISCORD = [
+  '..11111111111111..',
+  '.1222222222222221.',
+  '122222222222222221',
+  '122233222222332221',
+  '122333333333333221',
+  '122333333333333221',
+  '123333333333333321',
+  '123332233332233321',
+  '123332233332233321',
+  '123332233332233321',
+  '123333333333333321',
+  '122333322223333221',
+  '122233222222332221',
+  '.1222222222222221.',
+  '..11111111111111..',
+]
+
+export const discordIcon = () => toIconUrl('discord', () => art(DISCORD, { 1: '#283070', 2: '#5865f2', 3: '#ffffff' }))
+
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>
   tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()

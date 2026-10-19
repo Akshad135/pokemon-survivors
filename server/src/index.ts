@@ -7,6 +7,7 @@ import { connect, migrate, saveStore } from './db'
 import { createChecks } from './checks'
 import { createRibbons } from './challenge'
 import { discordStore, startDiscord } from './discord'
+import { discordLink } from './discordLink'
 import { abacatePay } from './donations'
 import { giftStore } from './gifts'
 import { rankingStore } from './ranking'
@@ -18,7 +19,10 @@ const env = loadEnv()
 const sql = connect(env.databaseUrl)
 await migrate(sql, new URL('../migrations/', import.meta.url))
 
+const clerk = createClerkClient({ secretKey: env.clerkSecretKey })
 const ranking = rankingStore(sql)
+// The player's Discord account: linking joins them to the server; a donation that raises their tier updates their role.
+const discord = discordLink(sql, clerk, env.discord)
 const gifts = giftStore(sql)
 const checks = createChecks(ranking)
 // Runs that were waiting for a check when the last instance stopped.
@@ -37,9 +41,10 @@ const app = createApp({
   checks,
   verify: clerkVerifier(env),
   donate: env.abacatePayKey ? abacatePay(env.abacatePayKey) : null,
-  supporters: supporterStore(sql),
+  supporters: supporterStore(sql, { onTierUp: (userId) => void discord.syncRoles(userId) }),
+  discord,
   suggestions: suggestionStore(sql),
-  admin: adminStore(sql, createClerkClient({ secretKey: env.clerkSecretKey }), env.adminEmails),
+  admin: adminStore(sql, clerk, env.adminEmails),
   webhooks: { stripeSecret: env.stripeWebhookSecret, stripePaymentLink: env.stripePaymentLink, abacatePaySecret: env.abacatePayWebhookSecret },
   allowedOrigin: env.allowedOrigin,
   ping: () => sql`select 1`.then(() => true, () => false),

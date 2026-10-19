@@ -2935,6 +2935,42 @@ button {
   color: #e83838;
 }
 
+/* The Discord screen: the logo in the title, and Discord's blurple on its main button. */
+.discord-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.discord-title img {
+  width: 36px;
+  height: 30px;
+}
+
+.discord-linked b {
+  color: #389048;
+}
+
+.btn.discord-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #fff;
+  background: #5865f2;
+}
+
+.btn.discord-btn.selected {
+  background: #6d79f6;
+  border-color: #283070;
+}
+
+.btn.discord-btn img {
+  width: 18px;
+  height: 15px;
+}
+
 .account-note {
   font-size: 17px;
   color: #6878a8;
@@ -3200,6 +3236,22 @@ button {
 
 .lobby-badge.done {
   background: #389048;
+}
+
+/* Discord in the top bar (its icon is wider than tall), with a green ✓ once linked. */
+.lobby-discord {
+  position: relative;
+}
+
+.lobby-discord img {
+  width: 36px;
+  height: 30px;
+}
+
+.lobby-discord .lobby-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
 }
 
 /* Novidades in the top bar: while an update is unread, a "!" pulses on its corner and the page hops now and then. */
@@ -3505,6 +3557,27 @@ button {
   .lobby-invites-prize {
     animation: none;
   }
+}
+
+/* Discord under Convide amigos, in Discord's blurple. */
+.lobby-discord-card {
+  border-color: #283070;
+  --frame: #5865f2;
+}
+
+.lobby-discord-card:hover,
+.lobby-discord-card.selected {
+  --frame: #e83838;
+}
+
+.lobby-discord-card .lobby-invites-text b {
+  color: #5865f2;
+}
+
+.lobby-discord-icon {
+  width: 36px;
+  height: 30px;
+  flex: none;
 }
 
 /* The partner on stage, over its name plate (canvas sized by `partnerStage`). */
@@ -5237,6 +5310,23 @@ button {
   flex: none;
   width: 20px;
   height: 20px;
+}
+
+.trainer-row img.wide {
+  width: 18px;
+  height: 15px;
+}
+
+/* The linked Discord under the @handle. */
+.trainer-id small.trainer-discord {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trainer-discord img {
+  width: 18px;
+  height: 15px;
 }
 
 .trainer-row i {

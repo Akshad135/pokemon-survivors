@@ -360,6 +360,24 @@ export const pt = {
     gateGuestNote: 'Como convidado, o progresso fica só neste aparelho e suas partidas não entram no ranking.',
   },
 
+  /** The community Discord: its screen (the lobby's Discord button, the Trainer Card's row) and linking a Discord account. */
+  discord: {
+    title: 'DISCORD',
+    open: 'Discord',
+    pitch: 'O servidor da comunidade tem as novidades do jogo, o pódio do Desafio do dia e outros treinadores. Lá se fala inglês, com salas para cada idioma.',
+    linkPitch: 'Conecte seu Discord para entrar no servidor direto e ganhar seu cargo de apoiador.',
+    guestPitch: 'Entrar com o Discord cria sua conta (ou abre a que você já tem) e já conecta os dois.',
+    link: 'Conectar Discord',
+    signIn: 'Entrar com Discord',
+    openServer: 'Abrir o servidor',
+    join: 'Entrar no servidor',
+    connected: (name: string) => `Conectado como @${name}`,
+    row: (name: string) => `Discord: @${name}`,
+    failed: 'Não deu para conectar o Discord. Tente de novo.',
+    busy: 'Conectando…',
+    back: 'Voltar',
+  },
+
   /** Boards (title menu, end of a run). Day and week follow Brasília's clock. */
   ranking: {
     title: 'RANKING',
