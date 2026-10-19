@@ -10,6 +10,7 @@ import { eliteSpawn, makeElite, makeRunner } from './horde'
 import { oldestRenewable, RENEWAL } from './renewal'
 import { hasTrait, pickSpawn } from './roster'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
+import { isSpitter, makeSpitter, SPITTERS } from './spitters'
 import type { Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -87,7 +88,7 @@ const runEvent = (g: Game, event: WaveEvent, index: number) => {
 }
 
 /** The finale boss (Mewtwo) is alive in the regular run. It's the last boss to arrive, so while it lives `bossId` points at it. */
-const finaleAlive = (g: Game) => {
+export const finaleAlive = (g: Game) => {
   if (g.endless || g.bossId === null) return false
   const boss = g.enemies.find((e) => e.id === g.bossId)
   return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && bossCandidates(e).includes(boss.kind))
@@ -114,18 +115,23 @@ const retireOld = (g: Game) => {
  * pressure. At the cap the oldest off-screen enemy makes room (renewal); past
  * `ELITE.fill` of the cap new spawns come in as elites (never while the finale
  * boss lives, so the last fight stays a duel), and the stage's runner species
- * as runners. Shinies are neither.
+ * as runners. From `SPITTERS.from` a `share` of the spawns are the stage's
+ * spitter species instead, up to `alive` of them (none while the finale boss
+ * lives either). Shinies are none of these.
  */
 export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
   const index = stageIndexAt(g.time)
   const pool = g.roster.stages[index] ?? []
   const runner = g.roster.runners[index] ?? null
+  const spit = SPITTERS[g.difficulty]
+  const spitter = g.roster.spitters[index] ?? null
   const reach = bossReach(g)
   const more = DIFFICULTIES[g.difficulty].spawnRate
   let regular = 0
   let traitsAlive = 0
   let elites = 0
+  let spitters = 0
   let bossNear = false
   for (const e of g.enemies) {
     if (e.dying >= 0) continue
@@ -138,10 +144,12 @@ export const updateSpawner = (g: Game, dt: number) => {
     if (e.behavior.kind === 'chase') regular++
     if (e.elite) elites++
     if (hasTrait(e.kind)) traitsAlive++
+    if (isSpitter(e)) spitters++
   }
   const finale = finaleAlive(g)
   const pressure = pressureOf(g, finale, bossNear)
   const cap = stage.max * pressure.max * more
+  const spitting = spitter !== null && !finale && g.time >= spit.from
 
   g.spawnBudget += stage.rate * pressure.rate * more * dt
   while (g.spawnBudget >= 1) {
@@ -153,10 +161,12 @@ export const updateSpawner = (g: Game, dt: number) => {
       const gone = g.enemies[old]!
       if (hasTrait(gone.kind)) traitsAlive--
       if (gone.elite) elites--
+      if (isSpitter(gone)) spitters--
       despawnEnemy(gone)
       regular--
     }
-    const kind = pickSpawn(g.rng, pool, traitsAlive)
+    const spits = spitting && spitters < spit.alive && chance(g.rng, spit.share)
+    const kind = spits ? spitter : pickSpawn(g.rng, pool, traitsAlive)
     if (!kind) continue
     if (hasTrait(kind)) traitsAlive++
     if (rollShiny(g.rng, SHINY_ODDS.enemy * g.shinyBoost)) {
@@ -172,6 +182,10 @@ export const updateSpawner = (g: Game, dt: number) => {
         elites++
       }
       if (kind === runner) makeRunner(e)
+      if (spits) {
+        makeSpitter(e, g.rng())
+        spitters++
+      }
     }
     regular++
   }

@@ -51,6 +51,7 @@ import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
 import { tmDevTools } from './game/tmDev'
 import { duoDevTools } from './game/duoDev'
+import { spitterDevTools } from './game/spitterDev'
 import { cursePick } from './ui/cursePick'
 import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
@@ -775,6 +776,7 @@ const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
   kamikaze: { warn: 'selfDestruct', fire: 'blast' },
   beam: { warn: 'beamCharge', fire: 'beam' },
   leaper: { warn: 'leap', fire: 'quake' },
+  spitter: { warn: null, fire: 'spit' },
 }
 
 const handleEvent = (r: Run, e: GameEvent) => {
@@ -1494,6 +1496,7 @@ if (import.meta.env.DEV) {
       ...learnDevTools(() => run?.game),
       ...tmDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
+      ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

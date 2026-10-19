@@ -2,7 +2,12 @@ import type { Difficulty } from '../game/difficulty'
 import type { EnemyId } from './enemies'
 
 /** How an enemy hazard looks (and sounds when it lands). */
-export type HazardVisual = 'rock' | 'slam' | 'thunder' | 'ice' | 'fire' | 'psychic' | 'water' | 'dragon' | 'steel' | 'aero' | 'grass' | 'judgment'
+export type HazardVisual =
+  | 'rock' | 'slam' | 'thunder' | 'ice' | 'fire' | 'psychic' | 'water' | 'dragon' | 'steel' | 'aero' | 'grass' | 'judgment'
+  /** The horde's spit shots (`game/spitters.ts`), one look per flavor; `sludge` also names its puddle. */
+  | SpitVisual
+
+export type SpitVisual = 'fireball' | 'bubble' | 'sludge' | 'spark' | 'seed' | 'orb'
 
 /**
  * A wave boss fights in two stances it swaps every few seconds (`BOSS_RAGE.stance`):

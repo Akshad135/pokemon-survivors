@@ -13,7 +13,7 @@ import { isHeld } from '../game/status'
 import { inSolid, overTerrain, type Solid } from '../game/terrain'
 import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
-import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
+import { FX, HAZARD_FX, PICKUPS, SPARKLE, SPIT_FX } from './art'
 import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
 import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
@@ -353,6 +353,12 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
   grass: ['#78d850', 'rgba(112,208,72,0.28)'],
   judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
+  fireball: ['#f08030', 'rgba(240,128,48,0.25)'],
+  bubble: ['#58a8f8', 'rgba(88,168,248,0.28)'],
+  sludge: ['#602070', 'rgba(160,64,176,0.85)'],
+  spark: ['#f8e030', 'rgba(248,224,48,0.22)'],
+  seed: ['#78d850', 'rgba(112,208,72,0.28)'],
+  orb: ['#e8e8f0', 'rgba(200,200,216,0.3)'],
 }
 
 /** How far a volley's aim line reaches, px, and the step between its dashes. */
@@ -396,9 +402,16 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
   }
   if (h.kind === 'shot' && h.age < h.armAt) return drawAimLine(ctx, h, line)
   if (h.kind === 'zone') {
-    ctx.globalAlpha = Math.min(1, h.age / 0.15, (h.ttl - h.age) / 0.4)
-    blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), fill), h.x, h.y)
+    // A zone fades in over the 0.15 s before it arms (a lobbed sludge's puddle shows as the blob lands).
+    const shown = h.age - Math.max(0, h.armAt - 0.15)
+    if (shown < 0) return
+    ctx.globalAlpha = Math.min(1, shown / 0.15, (h.ttl - h.age) / 0.4)
+    const ry = Math.max(1, Math.round(r * 0.5))
+    // A sludge puddle gets a hard rim and a bubble that pops now and then.
+    if (h.visual === 'sludge') blitCentered(ctx, ellipse(r + 1, ry + 1, line), h.x, h.y)
+    blitCentered(ctx, ellipse(r, ry, fill), h.x, h.y)
     if (h.visual === 'fire') blitCentered(ctx, FX.flame()[Math.floor((h.age + h.id) * 8) % 2]!, h.x, h.y - 5)
+    if (h.visual === 'sludge' && Math.floor((h.age + h.id) * 3) % 2 === 0) blitCentered(ctx, ring(1, 1, '#e0a0f0'), h.x + ((h.id % 5) - 2) * 2, h.y - 1)
     ctx.globalAlpha = 1
   }
 }
@@ -421,6 +434,15 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
       case 'aero':
       case 'judgment':
         return blitCentered(ctx, HAZARD_FX[h.visual](), h.x, y + (Math.floor(h.age * 10) % 2))
+      case 'fireball':
+      case 'seed':
+        return blitRotated(ctx, SPIT_FX[h.visual](), h.x, y, Math.atan2(h.vy, h.vx))
+      case 'spark':
+        return blitRotated(ctx, SPIT_FX.spark()[Math.floor(h.age * 16) % 2]!, h.x, y, Math.atan2(h.vy, h.vx))
+      case 'bubble':
+      case 'sludge':
+      case 'orb':
+        return blitCentered(ctx, SPIT_FX[h.visual](), h.x, y + (Math.floor(h.age * 8) % 2))
       default:
         return blitCentered(ctx, HAZARD_FX.psychic(), h.x, y + (Math.floor(h.age * 10) % 2))
     }

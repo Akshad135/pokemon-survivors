@@ -44,6 +44,13 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   aero: ['flying'],
   grass: ['grass'],
   judgment: ['normal'],
+  // The horde's spit (`spitters.ts`).
+  fireball: ['fire'],
+  bubble: ['water'],
+  sludge: ['poison'],
+  spark: ['electric'],
+  seed: ['grass'],
+  orb: ['normal'],
 }
 
 /** Rolls the next weather spell from the biome's odds, never repeating `current`. */

@@ -65,7 +65,8 @@ export const outbreakFits = (outbreak: EnemyId | null, startedAt: Date) => {
  * The run's cast with the outbreak in every stage, weighing as much as the
  * stage's heaviest species, so it's the most common Pokémon of the run.
  * Done after the draw, so the rest of the cast is the same either way. It
- * never runs (a whole horde of runners would be no outbreak).
+ * never runs or spits (a whole horde of runners would be no outbreak, and
+ * a species that only sometimes spits would be hard to read).
  */
 export const withOutbreak = (roster: Roster, outbreak: EnemyId | null): Roster => {
   if (outbreak === null) return roster
@@ -76,5 +77,6 @@ export const withOutbreak = (roster: Roster, outbreak: EnemyId | null): Roster =
       return [...pool.filter(([id]) => id !== outbreak), [outbreak, weight] as const]
     }),
     runners: roster.runners.map((id) => (id === outbreak ? null : id)),
+    spitters: roster.spitters.map((id) => (id === outbreak ? null : id)),
   }
 }

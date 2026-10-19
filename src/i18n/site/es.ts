@@ -104,6 +104,7 @@ export const siteEs: SiteMessages = {
       kamikaze: 'Kamikaze',
       beam: 'Rayo',
       leaper: 'Saltador',
+      spitter: 'Escupidor',
     },
     effects: {
       healer: (every: number, percent: number) =>
@@ -117,6 +118,8 @@ export const siteEs: SiteMessages = {
       beam: (aim: number, damage: number) => `Se detiene, dibuja en el suelo la línea del rayo durante ${n(aim)}s y dispara: ${n(damage)}x su daño por contacto.`,
       leaper: (warn: number, damage: number) =>
         `Salta sobre la horda hasta donde estabas. La sombra en el suelo marca la caída ${n(warn)}s antes, y el impacto causa ${n(damage)}x su daño por contacto.`,
+      spitter: (charge: number, damage: number) =>
+        `Se queda a distancia, brilla ${n(charge)}s y escupe un disparo lento donde estás: ${n(damage)}x su daño por contacto. Su tipo cambia el disparo: una bola de fuego, una burbuja, lodo que deja un charco, una chispa rápida o tres semillas.`,
     },
     tips: {
       healer: 'Derríbalo primero, o la horda vuelve a llenarse de vida.',
@@ -125,6 +128,7 @@ export const siteEs: SiteMessages = {
       kamikaze: 'Sal del círculo rojo, o atráelo al medio de la horda: la explosión también daña a los enemigos.',
       beam: 'La mira se fija cuando aparece la línea: basta con un paso al costado.',
       leaper: 'Quítate de la sombra antes de la caída.',
+      spitter: 'El disparo es lento: un paso al costado basta. Quedarse quieto es lo que quiere.',
     },
   },
 
