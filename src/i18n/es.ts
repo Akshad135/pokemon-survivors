@@ -127,7 +127,7 @@ export const es: Messages = {
     hintKeys: '↑ ↓ elegir · ENTER confirmar · 1-3 atajo',
     sideHintKeys: '← → elegir · ENTER confirmar · 1-3 atajo',
     pairHintKeys: '← → elegir · ENTER confirmar · 1-2 atajo',
-    hintTouch: 'Toca para elegir',
+    hintTouch: 'Toca para elegir · mantén para ver el movimiento',
     draftTitle: (name) => `${name}: ¡elige el 2.º movimiento!`,
     forkTitle: (move, level) => `${move} Nv ${level} · elige un camino`,
     forkTag: '2 CAMINOS',
@@ -159,6 +159,18 @@ export const es: Messages = {
     quit: 'Rendirse',
     settings: 'Ajustes',
     evoLegend: 'Movimiento al nivel máximo + el objeto indicado = ¡evolución en la próxima Poké Ball o subida de nivel!',
+    cardHintKeys: 'Pasa el ratón por un movimiento para ver su ficha',
+    cardHintTouch: 'Mantén pulsado un movimiento para ver su ficha',
+  },
+
+  moveCard: {
+    level: (n, max) => `Nv ${n}/${max}`,
+    evolved: '★ EVOLUCIONADO',
+    pierce: 'Perfora',
+    status: { burn: 'Quemar', poison: 'Envenenar', paralysis: 'Paralizar', slow: 'Ralentizar', sleep: 'Dormir', freeze: 'Congelar', mark: 'Marcar', confuse: 'Confundir', seed: 'Semilla', weaken: 'Debilitar' },
+    seconds: (s) => `${s}s`,
+    evolves: 'Evolución',
+    evolvedFrom: 'Evolucionó de',
   },
 
   settings: {

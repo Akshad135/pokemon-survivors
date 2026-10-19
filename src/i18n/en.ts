@@ -127,7 +127,7 @@ export const en: Messages = {
     hintKeys: '↑ ↓ choose · ENTER confirm · 1-3 shortcut',
     sideHintKeys: '← → choose · ENTER confirm · 1-3 shortcut',
     pairHintKeys: '← → choose · ENTER confirm · 1-2 shortcut',
-    hintTouch: 'Tap to choose',
+    hintTouch: 'Tap to choose · hold to see the move',
     draftTitle: (name) => `${name}: pick a second move!`,
     forkTitle: (move, level) => `${move} Lv ${level} · choose a path`,
     forkTag: '2 PATHS',
@@ -159,6 +159,18 @@ export const en: Messages = {
     quit: 'Give up',
     settings: 'Settings',
     evoLegend: 'Max-level move + its paired item = evolution on the next Poké Ball or level-up!',
+    cardHintKeys: 'Hover a move to see its card',
+    cardHintTouch: 'Hold a move to see its card',
+  },
+
+  moveCard: {
+    level: (n, max) => `Lv ${n}/${max}`,
+    evolved: '★ EVOLVED',
+    pierce: 'Pierce',
+    status: { burn: 'Burn', poison: 'Poison', paralysis: 'Paralyze', slow: 'Slow', sleep: 'Sleep', freeze: 'Freeze', mark: 'Mark', confuse: 'Confuse', seed: 'Seed', weaken: 'Weaken' },
+    seconds: (s) => `${s}s`,
+    evolves: 'Evolution',
+    evolvedFrom: 'Evolved from',
   },
 
   settings: {
