@@ -96,6 +96,20 @@ describe('mega evolution', () => {
     expect(g.mega.charge).toBe(MEGA.recharge)
   })
 
+  it('drops a wind-up the Mega cut short when its special is a chain', () => {
+    const g = createGame('totodile', { w: 480, h: 270 }, 1)
+    g.player.stage = 2
+    recomputeStats(g)
+    grantStone(g, 'feraligatr')
+    step(g, { move: { x: 0, y: 0 }, special: true }, DT)
+    expect(g.special.charge).toBeGreaterThan(0)
+    step(g, { move: { x: 0, y: 0 }, special: false, mega: true }, DT)
+    for (let t = 0; t <= MEGA.intro + DT; t += DT) step(g, { move: { x: 0, y: 0 }, special: false }, DT)
+    expect(resolveSpecial('totodile', 2, g.mega.stone).id).toBe('waveCrash')
+    expect(g.special.charge).toBe(0)
+    expect(g.special.cooldown).toBe(0)
+  })
+
   it('only takes a stone of its own line', () => {
     const g = createGame('cyndaquil', { w: 480, h: 270 }, 1)
     grantStone(g, 'charizardX')

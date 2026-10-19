@@ -1024,6 +1024,8 @@ const orbBurst = (g: Game, r: ResolvedSpecial, count: number) => {
  */
 const updateChain = (g: Game, r: ResolvedSpecial, pressed: boolean, dt: number) => {
   const s = g.special
+  // A chain never charges: drop the wind-up of a charged special swapped out mid-charge (Mega Evolving during Hydro Cannon's).
+  s.charge = 0
   const cooldown = specialCooldown(r.def, g.player.stats)
   if (s.active <= 0) tickChain(s, dt, cooldown)
   if (triggerSpecial(s, pressed, dt)) startJump(g, r)
