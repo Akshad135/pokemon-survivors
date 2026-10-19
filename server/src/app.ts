@@ -22,6 +22,7 @@ import type { BugReports } from './bugReports'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
 import type { DiscordLink } from './discordLink'
+import type { Report } from './errors'
 import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
@@ -52,6 +53,8 @@ export type AppDeps = {
   allowedOrigin: (origin: string) => boolean
   /** Whether the database answers, for `/health`. */
   ping: () => Promise<boolean>
+  /** Error tracking for the 500s (`errors.ts`). */
+  report: Report
 }
 
 type Auth = { Variables: { userId: string } }
@@ -148,8 +151,9 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (`AdminSent[]`), the latest sent by hand. `PUT /admin/suggestions/:id` `{ status }`: marks an idea
  *   `done` (shipped), `open` again or `hidden` (off the board). `{ status }`, 404 for an unknown idea.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, webhooks, allowedOrigin, ping }: AppDeps) => {
-  const app = new Hono()
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, webhooks, allowedOrigin, ping, report }: AppDeps) => {
+  // `userId` is set by `auth` or `maybeAuth` on the routes that ask who's calling; `onError` reports it.
+  const app = new Hono<MaybeAuth>()
 
   app.use(logger())
   app.use(cors({ origin: (origin) => (allowedOrigin(origin) ? origin : null), allowMethods: ['GET', 'PUT', 'POST', 'DELETE'], allowHeaders: ['Authorization', 'Content-Type'], maxAge: 86400 }))
@@ -455,6 +459,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
 
   app.onError((err, c) => {
     console.error(err)
+    report(err, { userId: c.var.userId, method: c.req.method, route: c.req.routePath })
     return c.json({ error: 'internal error' }, 500)
   })
 

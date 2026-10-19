@@ -17,7 +17,8 @@
     "@clerk/backend": "^3.23.2",
     "@hono/node-server": "^2.1.5",
     "hono": "^4.13.13",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "posthog-node": "^5.56.2"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

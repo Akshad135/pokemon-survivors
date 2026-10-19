@@ -2,8 +2,7 @@ import type { Clerk } from '@clerk/clerk-js'
 import { loadClerkUIScript } from '@clerk/shared/loadClerkJsScript'
 import type { ClerkUIConstructor } from '@clerk/shared/types'
 import { track } from './analytics'
-import type { Hatch } from './game/eggs'
-import { applyGift, parseGift, type Gift } from './game/gifts'
+import { applyGift, giftToOpen, parseGift, type Gift, type GiftOutcome } from './game/gifts'
 import { parseSaveData } from './game/meta'
 import { isRecord } from './game/parse'
 import type { ProfileName } from './game/ranking'
@@ -16,7 +15,8 @@ import { loadSave, writeSave } from './ui/save'
  * (`game/sync.ts`). Clerk is loaded only when the player signs in, or on
  * boot for a device that already did, so guests never download it.
  *
- * Each sync also brings the Mystery Gifts waiting in the account (`GET /gifts`)
+ * Each sync also lists the Mystery Gifts waiting in the account (`GET /gifts`,
+ * opened from the lobby: `openGift`)
  * and, on a device's first sync, the invite it landed with (`POST /referral`).
  * A Discord account connected to the player's (`linkDiscord`, or signing in
  * with Discord) is reported to the API (`POST /discord/link`), which puts
@@ -237,6 +237,7 @@ const relink = (c: Clerk, user: NonNullable<Clerk['user']>) => {
   const was = readLink()
   const same = was?.userId === user.id
   const name = same && was.handle ? was.name : displayName(c)
+  if (!same) setInbox([])
   writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined, discord: same ? was.discord : undefined, discordAccount: same ? was.discordAccount : undefined })
   setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined, discord: same ? was.discord : undefined })
 }
@@ -429,57 +430,83 @@ const finishDiscord = async () => {
 
 /* ---------------- Mystery Gifts ---------------- */
 
-/** A gift that landed in the save, with the hatch to play for a shiny hatch. */
-export type GiftArrival = { gift: Gift; hatch: Hatch | null }
-
-const giftListeners = new Set<(arrived: readonly GiftArrival[], waiting: number) => void>()
-
-/** Calls `fn` whenever gifts land in the save (and with how many wait for room in the incubator). Returns the unsubscribe. */
-export const onGifts = (fn: (arrived: readonly GiftArrival[], waiting: number) => void) => {
-  giftListeners.add(fn)
-  return () => void giftListeners.delete(fn)
-}
-
 /**
- * Applies gifts to the local save, one by one (`applyGift`), and tells the
- * listeners what landed. Returns the ids the account may mark claimed: the
- * ones that landed now or before. (Dev helpers stage gifts through it too.)
+ * The account's unopened gifts, oldest first, as the last sync listed them.
+ * They wait in the API's inbox until the player opens them from the lobby's
+ * gift box (`openGift`), so a gift that arrives mid-run waits for the lobby
+ * and a reload loses nothing.
  */
-export const receiveGifts = (gifts: readonly Gift[]) => {
-  const arrived: GiftArrival[] = []
-  const claim: string[] = []
-  let waiting = 0
-  for (const gift of gifts) {
-    const out = applyGift(loadSave(), gift)
-    if (out.status === 'wait') waiting++
-    else claim.push(gift.id)
-    if (out.status === 'applied') {
-      writeSave(out.save)
-      arrived.push({ gift, hatch: out.hatch })
-    }
-  }
-  if (arrived.length > 0 || waiting > 0) giftListeners.forEach((fn) => fn(arrived, waiting))
-  return { claim, landed: arrived.length > 0 }
+let inbox: Gift[] = []
+
+const inboxListeners = new Set<(gifts: readonly Gift[]) => void>()
+
+const setInbox = (gifts: Gift[]) => {
+  inbox = gifts
+  inboxListeners.forEach((fn) => fn(inbox))
+}
+
+/** The gifts waiting to be opened. */
+export const giftInbox = (): readonly Gift[] => inbox
+
+/** The gift to open next (`giftToOpen`). */
+export const nextGift = () => giftToOpen(loadSave(), inbox)
+
+/** Calls `fn` whenever the gifts waiting to be opened change. Returns the unsubscribe. */
+export const onInbox = (fn: (gifts: readonly Gift[]) => void) => {
+  inboxListeners.add(fn)
+  return () => void inboxListeners.delete(fn)
+}
+
+/** Marks gifts claimed in the API. Failing is harmless: the save keeps their ids, and the next sync claims them again. */
+const claimGifts = async (ids: readonly string[], token?: string | null) => {
+  const auth = token ?? (await sessionToken())
+  if (!auth || ids.length === 0) return
+  await fetch(`${API_URL}/gifts/claim`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch(() => {})
 }
 
 /**
- * Fetches the account's unclaimed gifts, applies them and marks them
- * claimed. A gift this build doesn't know stays unclaimed for a newer one.
- * True when the save changed (it needs another push). Never throws.
+ * Opens the waiting gift `id`: applies it to the save (`applyGift`), takes it
+ * out of the inbox and marks it claimed. A gift the save already has just
+ * leaves; one that can't land yet (an egg with the incubator full) stays.
+ * Null for an id that isn't waiting.
+ */
+export const openGift = (id: string): GiftOutcome | null => {
+  const gift = inbox.find((g) => g.id === id)
+  if (!gift) return null
+  const out = applyGift(loadSave(), gift)
+  if (out.status === 'wait') return out
+  if (out.status === 'applied') writeSave(out.save)
+  setInbox(inbox.filter((g) => g.id !== id))
+  void claimGifts([id])
+  if (out.status === 'applied') void syncSave()
+  return out
+}
+
+/** Puts gifts in the inbox as if a sync listed them (the dev helpers stage gifts with it). */
+export const stageGifts = (gifts: readonly Gift[]) => setInbox([...inbox.filter((g) => !gifts.some((n) => n.id === g.id)), ...gifts])
+
+/**
+ * Lists the account's unclaimed gifts into the inbox. The ones the save
+ * already applied (their claim failed) are claimed again instead; a kind
+ * this build doesn't know stays in the API for a newer one. Never throws.
  */
 const fetchGifts = async (token: string) => {
   try {
-    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    const res = await fetch(`${API_URL}/gifts`, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const res = await fetch(`${API_URL}/gifts`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
     const body: unknown = res.ok ? await res.json() : null
-    if (!isRecord(body) || !Array.isArray(body.gifts)) return false
-    const { claim, landed } = receiveGifts(body.gifts.flatMap((g: unknown) => parseGift(g) ?? []))
-    // The save already holds what landed, so a failed claim just lists those gifts again next time.
-    if (claim.length > 0) await fetch(`${API_URL}/gifts/claim`, { method: 'POST', headers, body: JSON.stringify({ ids: claim }), signal: AbortSignal.timeout(TIMEOUT_MS) })
-    return landed
+    if (!isRecord(body) || !Array.isArray(body.gifts)) return
+    const gifts = body.gifts.flatMap((g: unknown) => parseGift(g) ?? [])
+    const applied = loadSave().gifts
+    await claimGifts(gifts.filter((g) => applied.includes(g.id)).map((g) => g.id), token)
+    // Staged ones (dev) stay; the API's list replaces the rest.
+    setInbox([...gifts.filter((g) => !applied.includes(g.id)), ...inbox.filter((g) => g.id.startsWith('dev-'))])
   } catch (err) {
     console.warn('gifts failed', err)
-    return false
   }
 }
 
@@ -503,6 +530,7 @@ export const syncSave = async () => {
       // Clerk's session rules: signed out elsewhere goes back to guest, another user takes the device.
       if (!c.user) {
         writeLink(null)
+        setInbox([])
         setState({ kind: 'guest' })
         break
       }
@@ -514,8 +542,7 @@ export const syncSave = async () => {
       if (token) {
         await loadProfile(token)
         await syncDiscord(c, token)
-        // Gifts that landed changed the save: push it again.
-        if (await fetchGifts(token)) again = true
+        await fetchGifts(token)
       }
     } catch (err) {
       console.warn('account sync failed', err)
@@ -551,6 +578,7 @@ export const signIn = async (provider: 'google' | 'discord' = 'google') => {
 export const signOut = async () => {
   setState({ kind: 'busy' })
   writeLink(null)
+  setInbox([])
   try {
     await (await loadClerk()).signOut()
   } catch (err) {

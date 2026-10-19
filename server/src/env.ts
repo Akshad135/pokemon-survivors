@@ -37,6 +37,8 @@ export const loadEnv = () => {
       process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_GUILD_ID
         ? { token: process.env.DISCORD_BOT_TOKEN, guildId: process.env.DISCORD_GUILD_ID }
         : null,
+    /** Optional: the game's PostHog project token (`phc_…`, the client's `VITE_POSTHOG_KEY`). Without it errors only go to the log. */
+    posthogKey: process.env.POSTHOG_KEY || undefined,
     /** Optional: the #bug-reports forum's channel id, where the bot posts bug reports. Unset, it's found by name. */
     discordBugForumId: process.env.DISCORD_BUG_FORUM_ID || null,
     /** Emails (comma separated, `ADMIN_EMAILS`) whose verified owners run the gift desk (`admin.ts`). Empty: nobody is admin. */
