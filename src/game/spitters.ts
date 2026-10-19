@@ -69,8 +69,8 @@ export const hasFlavor = (types: readonly PokeType[]) => FLAVOR_OF[types[0] ?? '
  * volley; a flavor's own `count` is the floor).
  */
 export const SPITTERS = {
-  normal: { from: 180, share: 0.06, alive: 6, every: 4.2, damage: 0.8, volley: [1, 1] },
-  hard: { from: 150, share: 0.09, alive: 7, every: 3.4, damage: 1.15, volley: [1, 2] },
+  normal: { from: 180, share: 0.06, alive: 4, every: 5, damage: 0.8, volley: [1, 1] },
+  hard: { from: 150, share: 0.09, alive: 7, every: 3.8, damage: 1.15, volley: [1, 2] },
   nightmare: { from: 120, share: 0.13, alive: 10, every: 2.6, damage: 1.15, volley: [2, 3] },
 } as const satisfies Record<Difficulty, { from: number; share: number; alive: number; every: number; damage: number; volley: readonly [number, number] }>
 

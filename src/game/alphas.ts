@@ -101,7 +101,7 @@ export type AlphaRules = {
  * Normal's hits softer: a casual player who stands still should get hurt, not flattened.
  */
 export const ALPHA_RULES = {
-  normal: { from: 240, every: [85, 100], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 45, hp: 1, damage: 1.5, hit: 1.2 },
+  normal: { from: 240, every: [85, 100], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 45, hp: 1, damage: 1.2, hit: 1 },
   hard: { from: 240, every: [75, 90], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 30, hp: 1, damage: 2, hit: 1.4 },
   nightmare: { from: 240, every: [60, 75], alive: 2, shock: true, rage: true, endless: 0.6, bossQuiet: 0, hp: 0.7, damage: 2, hit: 1.6 },
 } as const satisfies Record<Difficulty, AlphaRules>

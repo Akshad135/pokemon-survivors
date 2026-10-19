@@ -70,7 +70,7 @@ export const TENSION = {
  */
 export const TENSION_PEAK = {
   normal: { rate: 1.25, cap: 1.05, near: 0.5, speed: 1.05, elite: 0.05, surgeEvery: 60 },
-  hard: { rate: 1.75, cap: 1.1, near: 0.75, speed: 1.12, elite: 0.12, surgeEvery: 30 },
+  hard: { rate: 1.6, cap: 1.1, near: 0.75, speed: 1.12, elite: 0.12, surgeEvery: 30 },
   nightmare: { rate: 2.5, cap: 1.15, near: 1, speed: 1.2, elite: 0.2, surgeEvery: 20 },
 } as const satisfies Record<Difficulty, { rate: number; cap: number; near: number; speed: number; elite: number; surgeEvery: number }>
 
