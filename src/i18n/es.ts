@@ -3606,5 +3606,6 @@ export const es: Messages = {
     kamikaze: (name: string) => `¡*${name}* parpadea y _explota_! Sal del círculo rojo.`,
     beam: (name: string) => `*${name}* apunta un _rayo_: ¡sal de la línea en el suelo!`,
     leaper: (name: string) => `*${name}* salta sobre la horda: ¡huye de la _sombra_!`,
+    spitter: (name: string) => `*${name}* escupe desde lejos y el disparo atraviesa tu aura: ¡_muévete_ para esquivarlo!`,
   },
 }

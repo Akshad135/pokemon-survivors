@@ -103,6 +103,7 @@ export const siteEn: SiteMessages = {
       kamikaze: 'Kamikaze',
       beam: 'Beam',
       leaper: 'Leaper',
+      spitter: 'Spitter',
     },
     effects: {
       healer: (every: number, percent: number) => `Every ${n(every)}s, a green pulse heals ${n(percent)}% of the max HP of wounded allies nearby.`,
@@ -115,6 +116,8 @@ export const siteEn: SiteMessages = {
       beam: (aim: number, damage: number) => `Stops, draws the beam's line on the ground for ${n(aim)}s and fires: ${n(damage)}x its contact damage.`,
       leaper: (warn: number, damage: number) =>
         `Leaps over the horde to where you stood. The shadow on the ground marks the landing ${n(warn)}s ahead, and the impact deals ${n(damage)}x its contact damage.`,
+      spitter: (charge: number, damage: number) =>
+        `Keeps its distance, glows for ${n(charge)}s and spits a slow shot at where you stand: ${n(damage)}x its contact damage. Its type shapes the shot: a fireball, a bubble, sludge that leaves a puddle, a fast spark or three seeds.`,
     },
     tips: {
       healer: 'Take it down first, or the horde keeps topping up.',
@@ -123,6 +126,7 @@ export const siteEn: SiteMessages = {
       kamikaze: 'Get out of the red circle, or lure it into the horde: the blast hurts enemies too.',
       beam: 'The aim locks when the line shows up: one step aside is enough.',
       leaper: 'Get off the shadow before it lands.',
+      spitter: 'The shot is slow: one step aside is enough. Standing still is what it wants.',
     },
   },
 

@@ -423,6 +423,27 @@ export const HAZARD_FX = {
   judgment: lazy(() => art(SMALL_ORB, { 1: '#c09020', 2: '#f8e070', 3: '#ffffff' }, '#483008')),
 }
 
+/* ---------------- The horde's spit (`game/spitters.ts`) ---------------- */
+
+/** A small fireball pointing right, its tail behind: flown head first. */
+const SPIT_FIREBALL = ['....1111.', '..1122331', '112233441', '..1122331', '....1111.']
+/** 3 is the see-through inside of the bubble. */
+const SPIT_BUBBLE = ['..111..', '.13331.', '1323331', '1333331', '1333331', '.13331.', '..111..']
+const SPIT_SLUDGE = ['..111..', '.12221.', '1223221', '1222221', '.12221.', '..1.1..']
+/** A thin zigzag bolt pointing right. */
+const SPIT_SPARK = ['..11...11', '.1..1.1..', '1....1...']
+const SPIT_SEED = ['.11..', '12231', '.111.']
+
+export const SPIT_FX = {
+  fireball: lazy(() => art(SPIT_FIREBALL, { 1: '#a82010', 2: '#f07020', 3: '#f8c040', 4: '#ffffff' }, '#401008')),
+  bubble: lazy(() => art(SPIT_BUBBLE, { 1: '#58a8f8', 2: '#ffffff', 3: 'rgba(168,216,248,0.45)' }, '#183870')),
+  sludge: lazy(() => art(SPIT_SLUDGE, { 1: '#502060', 2: '#a040a0', 3: '#e0a0f0' }, '#200820')),
+  /** Two frames: the bolt flickers between yellow and white. */
+  spark: lazy(() => [art(SPIT_SPARK, { 1: '#f8e030' }, '#504010'), art(SPIT_SPARK, { 1: '#ffffff' }, '#a08010')]),
+  seed: lazy(() => art(SPIT_SEED, { 1: '#a07838', 2: '#e0c068', 3: '#fff0b0' }, '#281808')),
+  orb: lazy(() => art(SMALL_ORB, { 1: '#9898a8', 2: '#e8e8f0', 3: '#ffffff' }, '#383848')),
+}
+
 /* ---------------- Enemy traits ---------------- */
 
 const PLUS = ['..1..', '..1..', '11211', '..1..', '..1..']

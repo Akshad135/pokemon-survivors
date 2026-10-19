@@ -121,6 +121,7 @@ export const sitePt = {
       kamikaze: 'Kamikaze',
       beam: 'Raio',
       leaper: 'Saltador',
+      spitter: 'Cuspidor',
     } satisfies Record<TraitId, string>,
     effects: {
       healer: (every: number, percent: number) =>
@@ -134,6 +135,8 @@ export const sitePt = {
       beam: (aim: number, damage: number) => `Para, desenha no chão a linha do raio por ${n(aim)}s e dispara: ${n(damage)}x o dano de contato.`,
       leaper: (warn: number, damage: number) =>
         `Salta sobre a horda até onde você estava. A sombra no chão marca a queda ${n(warn)}s antes, e o impacto causa ${n(damage)}x o dano de contato.`,
+      spitter: (charge: number, damage: number) =>
+        `Fica a distância, brilha por ${n(charge)}s e cospe um disparo lento onde você está: ${n(damage)}x o dano de contato. O tipo muda o disparo: bola de fogo, bolha, lodo que deixa uma poça, faísca rápida ou três sementes.`,
     } satisfies Record<TraitId, unknown>,
     tips: {
       healer: 'Derrube primeiro, senão a horda volta a encher a vida.',
@@ -142,6 +145,7 @@ export const sitePt = {
       kamikaze: 'Saia do círculo vermelho, ou atraia para o meio da horda: a explosão fere os inimigos também.',
       beam: 'A mira trava quando a linha aparece: um passo para o lado basta.',
       leaper: 'Saia de cima da sombra antes da queda.',
+      spitter: 'O disparo é lento: um passo para o lado basta. Ficar parado é o que ele quer.',
     } satisfies Record<TraitId, string>,
   },
 

@@ -2,6 +2,7 @@ import { BOSS_PATTERNS, type BossPattern } from '../../data/bosses'
 import { ENEMIES, type EnemyDef } from '../../data/enemies'
 import { TIERS } from '../../data/roster'
 import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
+import { SPIT_FLAVORS } from '../../game/spitters'
 import { HATCHLINGS, isHatchling, PLAYABLE } from '../../data/hatchlings'
 import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
@@ -172,6 +173,8 @@ export const traitText = (trait: TraitId, id: keyof typeof ENEMIES, m: SiteMessa
       return e.beam(TRAITS.beam.aim, TRAITS.beam.damage)
     case 'leaper':
       return e.leaper(TRAITS.leaper.crouch + TRAITS.leaper.air, TRAITS.leaper.damage)
+    case 'spitter':
+      return e.spitter(SPIT_FLAVORS.orb.charge, TRAITS.spitter.damage)
   }
 }
 

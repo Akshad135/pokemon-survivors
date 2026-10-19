@@ -5,6 +5,8 @@ import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
+import { spawnEnemy } from './enemies'
+import { makeSpitter } from './spitters'
 import type { Game } from './types'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
@@ -124,6 +126,19 @@ describe('replays', () => {
     const { g, replay } = play(40, start, 300, quickAttack)
     const staged = startGame(start)
     quickAttack(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate spitters, their volleys and their puddles', () => {
+    const spitters = (g: Game) => {
+      const kinds = ['grimer', 'growlithe', 'oddish', 'psyduck'] as const
+      kinds.forEach((kind, i) => makeSpitter(spawnEnemy(g, kind, g.player.x + (i - 1.5) * 60, g.player.y - 120), i / 4))
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(40, start, 300, spitters)
+    expect(g.events.filter((e) => e.kind === 'trait' && e.trait === 'spitter' && e.phase === 'fire').length).toBeGreaterThan(3)
+    const staged = startGame(start)
+    spitters(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
