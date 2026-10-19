@@ -226,7 +226,7 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   if (!abilityHolds(g) && !tryRevive(g)) {
     p.hp = 0
     g.phase = 'gameover'
-    g.events.push({ kind: 'gameover' })
+    g.events.push({ kind: 'gameover', foe: from?.kind ?? null, hit })
   }
 }
 

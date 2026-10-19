@@ -1,12 +1,15 @@
 import { HATCHLINGS } from '../data/hatchlings'
-import type { GiftArrival } from '../account'
+import { giftInbox, nextGift, openGift } from '../account'
+import { playSfx } from '../engine/audio'
+import type { Input } from '../engine/input'
+import type { Hatch } from '../game/eggs'
 import type { Gift } from '../game/gifts'
 import { formatDay, formatPokeDollars, t } from '../i18n'
 import { coinIcon, eggIcon, giftIcon, medalIcon, ribbonIcon, sparkleIcon } from '../render/art'
 import { frameIcon } from '../render/cosmetics'
 import { portraitUrl } from '../render/sprites'
-import { h, rich } from './dom'
-import { banner, toast } from './toasts'
+import { h, later, rich } from './dom'
+import { hint, menu, type Screen } from './screens'
 
 /** What a gift brought: an icon and a line of light markup. The admin's desk previews gifts with it too. */
 export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: string } => {
@@ -32,8 +35,8 @@ export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: s
   }
 }
 
-/** Why it came: an invite, friends brought, a donation, the admin's present, or a day of the challenge (the place is in the ribbon). */
-const reasonLine = (gift: Gift) => {
+/** Why it came: an invite, friends brought, a donation, the admin's present, joining the Discord, or a day of the challenge (the place is in the ribbon). */
+export const reasonLine = (gift: Gift) => {
   const c = gift.content
   if (c.kind === 'ribbon') return t().gifts.ribbonWhy(formatDay(c.ribbon.day), c.ribbon.rank, c.ribbon.total)
   const r = gift.reason
@@ -47,36 +50,126 @@ const reasonLine = (gift: Gift) => {
       return t().gifts.support(r.tier)
     case 'staff':
       return t().gifts.staff(r.from)
+    case 'discord':
+      return t().gifts.discord
   }
 }
 
-/** How long a gift banner stays up: a little longer for each line it lists. */
-const bannerMs = (lines: number) => 4600 + (lines - 1) * 1200
+/** How long the box shakes before it bursts open, in ms (`.gift-big.opening` in the CSS). */
+const OPENING_MS = 700
+
+type Action = { label: string; run: () => void }
+
+export type GiftScreenActions = {
+  /** A shiny hatch came out: play its scene (this screen is gone by then). */
+  hatch: (hatch: Hatch) => void
+  /** A shiny ticket came out and the player wants to pick now: the Hall's shiny picker. */
+  pick: () => void
+  /** Back to the lobby. */
+  close: () => void
+}
 
 /**
- * "Presente Misterioso!": one banner for the gifts that landed together (the
- * box, then what they brought, grouped under why they came: a supporter tier
- * brings three at once), and a toast when some wait for room in the
- * incubator. Banners take turns through the toast queue, over the title or a run,
- * and a tap puts one away.
+ * Presente Misterioso: the lobby's gift box opens the waiting gifts one at a
+ * time (`nextGift`). The closed box says why it came; a tap or Abrir shakes
+ * it open (`openGift` lands it in the save) and shows what it brought. A
+ * shiny hatch goes straight to its hatching scene, a shiny ticket offers its
+ * picker, and Próximo opens the next. An egg with the incubator full waits
+ * in the box. Esc or Backspace go back to the lobby, except while it opens.
  */
-export const announceGifts = (root: HTMLElement, arrived: readonly GiftArrival[], waiting: number) => {
-  if (arrived.length > 0) {
-    const groups = new Map<string, { why: string | null; lines: HTMLElement[] }>()
-    for (const { gift } of arrived) {
-      const why = reasonLine(gift)
-      const line = contentLine(gift)
-      const group = groups.get(why ?? '') ?? { why, lines: [] }
-      group.lines.push(h('span', { class: 'gift-line' }, h('img', { src: line.src, alt: '' }), rich(line.text)))
-      groups.set(why ?? '', group)
-    }
-    const title = h('b', {}, t().gifts.title)
-    const [only] = groups.size === 1 ? [...groups.values()] : []
-    // One reason sits above the title, as for a single gift; several each head their own lines.
-    const body = only
-      ? [only.why && h('small', {}, only.why), title, ...only.lines]
-      : [title, ...[...groups.values()].map((g) => h('span', { class: 'gift-group' }, g.why && h('small', {}, g.why), ...g.lines))]
-    banner(root, h('span', { class: 'gift-banner' }, h('img', { class: 'gift-box', src: giftIcon(), alt: '' }), h('span', { class: 'gift-text' }, ...body)), bannerMs(arrived.length), true)
+export const giftScreen = (root: HTMLElement, input: Input, actions: GiftScreenActions): Screen => {
+  const el = h('div', { class: 'screen dim' })
+  let nav: ReturnType<typeof menu> | null = null
+  let timer = 0
+  let busy = false
+  let closed = false
+
+  const show = (gift: Gift, body: readonly (HTMLElement | false)[], buttons: readonly Action[], opening = true) => {
+    const m = t().gifts
+    const why = reasonLine(gift)
+    const els = buttons.map((a) => h('button', { class: 'btn' }, a.label))
+    nav?.off()
+    nav = menu(input, els, (i) => (playSfx('select'), later(buttons[i]!.run)), { horizontal: true })
+    el.replaceChildren(
+      h(
+        'div',
+        { class: opening ? 'dialog box pop gift-dialog' : 'dialog box gift-dialog' },
+        why && h('small', { class: 'gift-why' }, why),
+        h('div', { class: 'dialog-title' }, m.title),
+        ...body,
+        h('div', { class: 'buttons' }, ...els),
+        hint(m.hintKeys, m.hintTouch),
+      ),
+    )
   }
-  if (waiting > 0) toast(root, h('span', { class: 'item-toast' }, h('img', { src: giftIcon(), alt: '' }), t().gifts.wait), 4200, 'gift-wait')
+
+  /** The next gift's closed box, or the lobby when none waits. */
+  const closedBox = () => {
+    const m = t().gifts
+    const next = nextGift()
+    if (!next) return close()
+    const more = giftInbox().length - 1
+    const box = h('button', { class: 'gift-big', type: 'button', 'aria-label': m.open }, h('img', { src: giftIcon(), alt: '' }))
+    if (next.blocked) return show(next.gift, [box, h('p', { class: 'gift-note' }, m.full)], [{ label: m.ok, run: close }])
+    box.addEventListener('click', () => open(next.gift, box))
+    show(next.gift, [box, h('p', { class: 'gift-note' }, m.tapToOpen), more > 0 && h('small', { class: 'gift-more' }, m.more(more))], [
+      { label: m.open, run: () => open(next.gift, box) },
+      { label: m.later, run: close },
+    ])
+  }
+
+  /** Shakes the box, then lands the gift and shows what came out. */
+  const open = (gift: Gift, box: HTMLElement) => {
+    if (busy) return
+    busy = true
+    nav?.off()
+    box.classList.add('opening')
+    playSfx('item')
+    timer = window.setTimeout(() => {
+      busy = false
+      reveal(gift)
+    }, OPENING_MS)
+  }
+
+  const reveal = (gift: Gift) => {
+    const m = t().gifts
+    const out = openGift(gift.id)
+    if (!out || out.status === 'claimed') return closedBox()
+    if (out.status === 'wait') return closedBox()
+    if (out.hatch) {
+      const hatch = out.hatch
+      dispose()
+      return later(() => actions.hatch(hatch))
+    }
+    playSfx('unlock')
+    const line = contentLine(gift)
+    const left = giftInbox().length
+    const prize = h('div', { class: 'gift-prize' }, h('span', { class: 'gift-burst', 'aria-hidden': 'true' }), h('img', { src: line.src, alt: '' }))
+    const buttons: Action[] = [
+      ...(gift.content.kind === 'shinyPick' ? [{ label: m.pickNow, run: () => (dispose(), later(actions.pick)) }] : []),
+      left > 0 ? { label: m.next(left), run: closedBox } : { label: m.ok, run: close },
+    ]
+    show(gift, [prize, rich(line.text, { class: 'gift-note' })], buttons, false)
+  }
+
+  const offKeys = input.onKey((key) => (key === 'Escape' || key === 'Backspace') && !busy && close())
+
+  const dispose = () => {
+    closed = true
+    window.clearTimeout(timer)
+    nav?.off()
+    offKeys()
+    el.remove()
+  }
+
+  const close = () => {
+    if (closed) return
+    playSfx('select')
+    dispose()
+    later(actions.close)
+  }
+
+  root.append(el)
+  closedBox()
+  return { el, dispose }
 }

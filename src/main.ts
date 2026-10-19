@@ -22,8 +22,8 @@ import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
-import { track } from './analytics'
+import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, startAccount, syncSave } from './account'
+import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
@@ -70,7 +70,7 @@ import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
-import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
+import { parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
 import { playsShiny } from './game/shinyPicks'
@@ -93,8 +93,8 @@ import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
 import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
-import { parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
-import { announceGifts } from './ui/gifts'
+import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
+import { giftScreen } from './ui/gifts'
 import { playGate } from './ui/account'
 import { trainerCardScreen } from './ui/trainer'
 import { discordScreen } from './ui/discord'
@@ -297,6 +297,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
       challenge: () => showChallenge(),
       incubator: () => showIncubator(() => showTitle({ focus: 'eggs' })),
+      gifts: showGifts,
       missions: () => showMissions(),
       ready: () => (pressedStart = true),
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
@@ -400,35 +401,34 @@ const hatchAt = (index: number, then: () => void) => {
 const showHatch = (hatch: Hatch, then: () => void, holdAt?: number, after = () => {}) =>
   setScreen(hatchScene(ui, input, hatch, { play: () => (void startRun(hatch.id), after()), done: () => (then(), after()) }, holdAt))
 
-/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then the gifts' hatches, then `then`. */
+/** Leaves the run; every egg it made ready hatches first ("Oh? The Egg is hatching!"), then `then`. */
 const afterRun = (then: () => void) => {
   endRun()
   const ready = loadSave().eggs.findIndex(isReady)
-  if (ready < 0) return playGiftHatches(then)
+  if (ready < 0) return then()
   hatchAt(ready, () => afterRun(then))
 }
 
-/** Shiny hatches a Mystery Gift brought (already in the save), waiting to play out of a run. */
-const giftHatches: Hatch[] = []
-
-/** Plays each waiting gift hatch's scene (recording it in the missions and medals), then `then`. */
-const playGiftHatches = (then: () => void) => {
-  const hatch = giftHatches.shift()
-  if (!hatch) return then()
-  const record = saveHatch(loadSave(), hatch.shiny)
-  void syncSave()
-  showHatch(hatch, () => playGiftHatches(then), undefined, () => later(() => progressToast(ui, record)))
-}
-
 /**
- * Mystery Gifts that landed in the save (a sync, or a dev helper): a banner
- * each, and a shiny hatch plays right away on the title, else after the run.
+ * The lobby's gift box: opens the waiting Mystery Gifts one by one. A shiny
+ * hatch plays its scene (recorded in the missions and medals) and a shiny
+ * ticket goes to the Hall's picker, each coming back to the next gift, or
+ * to the lobby once none waits.
  */
-onGifts((arrived, waiting) => {
-  announceGifts(ui, arrived, waiting)
-  giftHatches.push(...arrived.flatMap((a) => (a.hatch ? [a.hatch] : [])))
-  if (giftHatches.length > 0 && !run && screen?.el.classList.contains('title-home')) playGiftHatches(() => showTitle())
-})
+const showGifts = () => {
+  const back = () => (giftInbox().length > 0 ? showGifts() : showTitle({ focus: 'gifts' }))
+  setScreen(
+    giftScreen(ui, input, {
+      hatch: (hatch) => {
+        const record = saveHatch(loadSave(), hatch.shiny)
+        void syncSave()
+        showHatch(hatch, back, undefined, () => later(() => progressToast(ui, record)))
+      },
+      pick: () => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, 'pick')),
+      close: () => showTitle({ focus: 'gifts' }),
+    }),
+  )
+}
 
 /** Moves the run's steps and new eggs into the incubator, once each (a victory banks, then endless banks again). */
 const bankHatchery = (r: Run) => {
@@ -488,13 +488,42 @@ const rankRun = (r: Run) => {
   }
 }
 
-/** Reports how the run ended, once. */
-const reportRun = (r: Run) => {
+/** Reports how the run ended, once, with the build it ended on and, for a faint, what landed the last hit. */
+const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | null = null) => {
   if (r.reported) return
   r.reported = true
   const g = r.game
-  const outcome = g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
-  track('run_end', { starter: g.starter, difficulty: g.difficulty, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
+  const p = g.player
+  track('run_end', {
+    starter: g.starter,
+    difficulty: g.difficulty,
+    outcome: g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit',
+    minute: Math.floor(g.time / 60),
+    level: p.level,
+    kills: g.kills,
+    stage: p.stage,
+    branch: g.branch,
+    ability: g.ability.id,
+    mega: g.mega.stone,
+    megas: g.mega.count,
+    moves: p.moves.map((m) => `${m.id}:${m.level}`),
+    items: p.items.map((i) => `${i.id}:${i.level}`),
+    bosses: g.tally.bossKills,
+    foe: faint?.foe ?? null,
+    hit: faint?.hit ?? null,
+    ...challengeKind(r.challenge),
+  })
+}
+
+/** The `challenge` field of a run's events: a Desafio do dia run says whether it started as the official attempt. */
+const challengeKind = (c: { official: boolean } | null) => (c ? { challenge: c.official ? ('official' as const) : ('practice' as const) } : {})
+
+/** What an error report says about where the player was: in a run, its replay so far, which plays the run again up to the error (`resimulate`). */
+const errorContext = (): ErrorContext => {
+  const r = run
+  if (!r) return { in_run: false }
+  const g = r.game
+  return { in_run: true, starter: g.starter, phase: g.phase, minute: Math.floor(g.time / 60), tick: r.recorder.tick, replay: JSON.stringify(r.recorder.replay) }
 }
 
 const endRun = () => {
@@ -618,7 +647,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
     companion: runCompanion(game.player),
   }
-  track('run_start', { starter, difficulty: game.difficulty, ...(daily ? { challenge: daily.official ? 'official' : 'practice' } : {}) })
+  track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -1017,7 +1046,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'gameover':
       bankRun(r, true)
       recordProgress(r)
-      reportRun(r)
+      reportRun(r, e)
       rankRun(r)
       playSfx('gameOver')
       return playCry(playerCry(g))
@@ -1324,6 +1353,11 @@ const promptProfile = () => {
 }
 
 const boot = () => {
+  startAnalytics(errorContext)
+  // Events and errors tie to the account on this device, known from its link before Clerk loads.
+  const identifyAccount = () => identify(accountUserId(), accountHandle())
+  identifyAccount()
+  onAccountChange(identifyAccount)
   document.documentElement.lang = LOCALES[locale()].tag
   // Someone's link (`?ref=`, a profile): remember who brought this device, before anything reads the URL.
   captureRef()
@@ -1473,10 +1507,10 @@ const devEggs = {
   save: loadSave,
 }
 
-/** Dev: Mystery Gifts and invites, to stage the gift banners, the Ambassador's rewards and the title's invite banner. */
+/** Dev: Mystery Gifts and invites, to stage the lobby's gift box, the Ambassador's rewards and the title's invite banner. */
 const devGifts = {
   /**
-   * Lands a Mystery Gift as if the account brought it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
+   * Puts a Mystery Gift in the lobby's gift box as if a sync listed it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
    * `ps.gift('title')`, `ps.gift('style', 'ambassador')` (a frame), `ps.gift('shinyHatch', 'munchlax')`,
    * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice).
    * `why`: an inviter's handle (welcome) or a count of friends brought.
@@ -1486,14 +1520,16 @@ const devGifts = {
     const content = parseGiftContent({ kind, ...raw })
     if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick'
     const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
-    return receiveGifts([{ id: `dev-${Date.now()}`, content, reason }])
+    return stageGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
+  /** Puts the thank-you for joining the Discord (`DISCORD_GIFT`) in the gift box, as if linking brought it. */
+  discordGift: () => stageGifts([{ id: `dev-discord-${Date.now()}`, content: DISCORD_GIFT, reason: { kind: 'discord' } }]),
   /**
-   * Lands a supporter's thank-you as Mystery Gifts in one sync, as if a donation was credited: `supporter`
+   * Puts a supporter's thank-you in the gift box as Mystery Gifts in one sync, as if a donation was credited: `supporter`
    * brings the title, the frame and a shiny ticket; `gold` every tier up to gold (a first donation of R$ 50).
    */
   supporter: (tier: SupporterTier = 'supporter') =>
-    receiveGifts(
+    stageGifts(
       SUPPORTER_TIERS.slice(0, SUPPORTER_TIERS.indexOf(tier) + 1).flatMap((t) =>
         TIER_GIFTS[t].map((content, i) => ({ id: `dev-support-${t}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier: t } as const })),
       ),
@@ -1565,6 +1601,14 @@ if (import.meta.env.DEV) {
       field: devField,
       challenge: devChallenge,
       dex: () => loadSave().dex,
+      /** Plays an error report's `replay` (the JSON string from PostHog) again: a simulation error throws here at the same tick. */
+      replay: (json: string) => {
+        const replay = parseReplay(JSON.parse(json))
+        if (!replay) return 'Not a replay'
+        // The report's `version` is the commit to check out when the rules differ.
+        if (rulesStanding(replay.rules) !== 'same') console.warn(`ps: the replay plays by rules ${replay.rules}, this build by ${RULES_VERSION}: it may end elsewhere`)
+        return resimulate(replay)
+      },
       /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */
       meadow: () => scene,
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
