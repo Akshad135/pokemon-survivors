@@ -4,6 +4,7 @@ import type { Difficulty } from '../../src/game/difficulty'
 import { dexCounts } from '../../src/game/dex'
 import { parseSaveData } from '../../src/game/meta'
 import {
+  BOARD_PERIODS,
   BOARD_SIZE,
   BOARD_TIME_ZONE,
   clockAllows,
@@ -36,7 +37,7 @@ export type FinishError = 'unknown' | 'mismatch' | 'clock' | 'challenge'
 /** A run's end that went in, with its challenge day and whether it's the official attempt (null for any other run). */
 export type Finished = { ok: true; challenge: DayKey | null; official: boolean | null }
 
-type RunRow = { starter: PlayableId; stage: number; branch: BranchId | null; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date; verified: boolean | null }
+type RunRow = { starter: PlayableId; stage: number; branch: BranchId | null; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date }
 
 const toRun = (r: RunRow): ProfileRun => ({
   starter: r.starter,
@@ -46,7 +47,6 @@ const toRun = (r: RunRow): ProfileRun => ({
   time: r.survived,
   outcome: r.outcome,
   at: r.started_at.toISOString(),
-  verified: r.verified,
 })
 
 type SupporterRow = { supporter_points: number; supporter_public: boolean }
@@ -66,8 +66,8 @@ const isUniqueViolation = (err: unknown) => typeof err === 'object' && err !== n
 /**
  * Ranked runs, boards, profiles and follows. Boards rank each player once, by
  * their best run (ties go to who did it first), and only list players with a
- * handle. Runs whose re-simulation failed (`checks.ts`) count nowhere; runs
- * still waiting for it count, marked. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
+ * handle. A run counts as soon as it's reported: only one whose re-simulation
+ * failed (`checks.ts`) counts nowhere. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
  * and a run counts for the period it started in.
  */
 export const rankingStore = (sql: Sql) => {
@@ -76,7 +76,7 @@ export const rankingStore = (sql: Sql) => {
   /** Every player's best run on a board, ranked, as a fragment to select from. */
   const ranked = ({ difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
     with best as (
-      select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, r.verified
+      select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
       from runs r
       where r.finished_at is not null and r.verified is not false and r.difficulty = ${difficulty}
         ${period === 'all' ? sql`` : sql`and r.started_at >= (date_trunc(${period}, now() at time zone ${BOARD_TIME_ZONE}) at time zone ${BOARD_TIME_ZONE})`}
@@ -94,7 +94,7 @@ export const rankingStore = (sql: Sql) => {
    * how many are on it.
    */
   const challengeRanked = (day: DayKey, friends: boolean, viewer: string | null) => sql`
-    select r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, r.verified, u.handle, u.name, u.supporter_points, u.supporter_public,
+    select r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
       (row_number() over (order by r.survived desc, r.started_at))::int as rank,
       (count(*) over ())::int as total
     from runs r join users u on u.id = r.user_id
@@ -188,6 +188,31 @@ export const rankingStore = (sql: Sql) => {
     },
 
     /**
+     * Whether the run with `id` is on show now: a challenge's official
+     * attempt (it earns a ribbon), or the player's line on a board within the
+     * top `top.global` of its difficulty or the top `top.starter` of its
+     * Pokémon, for the day, the week or all time.
+     */
+    shown: async (id: string, top: { global: number; starter: number }) => {
+      const [run] = await sql<{ user_id: string; starter: PlayableId; difficulty: Difficulty; survived: number; official: boolean }[]>`
+        select user_id, starter, difficulty, survived, official is true as official from runs where id = ${id} and finished_at is not null`
+      if (!run) return false
+      if (run.official) return true
+      const boards = BOARD_PERIODS.flatMap((period) => [
+        { query: { difficulty: run.difficulty, period, starter: null, friends: false, viewer: null }, size: top.global },
+        { query: { difficulty: run.difficulty, period, starter: run.starter, friends: false, viewer: null }, size: top.starter },
+      ])
+      const lines = await Promise.all(
+        boards.map(async ({ query, size }) => {
+          const [line] = await sql<{ rank: number; survived: number }[]>`select rank, survived from (${ranked(query)}) board where user_id = ${run.user_id}`
+          // The player's line is this run when no other run of theirs beat it.
+          return line !== undefined && line.rank <= size && line.survived === run.survived
+        }),
+      )
+      return lines.some(Boolean)
+    },
+
+    /**
      * Stores a check's verdict, unless the run grew since (endless mode sent it
      * again: that newer report gets its own check). A verified run's replay
      * isn't needed anymore; a failed one keeps it, to look into. A verified
@@ -199,7 +224,7 @@ export const rankingStore = (sql: Sql) => {
         where id = ${id} and survived = ${time} and verified is null`
     },
 
-    /** Forgets the replay of a run no check can judge (recorded under older rules): it stays unverified, like a run sent without one. */
+    /** Forgets the replay of a run that won't be checked (not on show, or recorded under older rules): it stays unverified, like a run sent without one. */
     dropReplay: async (id: string) => {
       await sql`update runs set replay = null where id = ${id} and verified is null`
     },
@@ -247,15 +272,15 @@ export const rankingStore = (sql: Sql) => {
     },
 
     /**
-     * Places for `day`'s ribbons: each verified official attempt by a player
-     * with a handle (the board's players), with a competition rank (ties
-     * share the better place) and how many there are.
+     * Places for `day`'s ribbons: each official attempt on the board (by a
+     * player with a handle, not failed), with a competition rank (ties share
+     * the better place) and how many there are.
      */
     ribbonPlaces: (day: DayKey) =>
       sql<{ user_id: string; rank: number; total: number }[]>`
         select r.user_id, (rank() over (order by r.survived desc))::int as rank, (count(*) over ())::int as total
         from runs r join users u on u.id = r.user_id
-        where r.challenge = ${day}::date and r.official and r.verified is true and r.finished_at is not null and u.handle is not null`,
+        where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null`,
 
     /** The top of a board, and the viewer's own line wherever they are. */
     board: async (query: BoardQuery): Promise<Board> => {
@@ -280,11 +305,11 @@ export const rankingStore = (sql: Sql) => {
       const supporter = self ? supporterTier(user.supporter_points) : badgeOf(user)
       const [records, recent, [counts], [save], ribbons] = await Promise.all([
         sql<RunRow[]>`
-          select distinct on (difficulty) starter, stage, branch, difficulty, survived, outcome, started_at, verified
+          select distinct on (difficulty) starter, stage, branch, difficulty, survived, outcome, started_at
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by difficulty, survived desc, started_at`,
         sql<RunRow[]>`
-          select starter, stage, branch, difficulty, survived, outcome, started_at, verified
+          select starter, stage, branch, difficulty, survived, outcome, started_at
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by started_at desc limit 10`,
         sql<{ followers: number; following: number; followed: boolean; brought: number }[]>`

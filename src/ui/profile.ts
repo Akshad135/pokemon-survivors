@@ -57,7 +57,7 @@ const recentRow = (run: ProfileRun) =>
     h('span', { class: 'profile-run-name' }, runForm(run).name),
     difficultyTag(run.difficulty),
     h('b', {}, formatTime(run.time)),
-    h('small', {}, `${run.verified === null ? t().ranking.pending : t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
+    h('small', {}, `${t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
   )
 
 /** The Desafio do dia ribbons won, gold first, or null before the first one (or from an older API). */

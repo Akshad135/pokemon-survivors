@@ -26,7 +26,7 @@ export const REFERRAL = {
   /**
    * Runs the friend must finish before the invite counts for whoever brought
    * them. A run counts as soon as it's reported, unless its check failed
-   * (like the boards): the check queue can lag by hours.
+   * (like the boards).
    */
   runs: 3,
   /** How old an account may be for its sign up to credit an invite. */

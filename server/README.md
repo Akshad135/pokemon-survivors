@@ -50,9 +50,9 @@ The game asks for a start token when a run begins and sends the result when it e
 The day's challenge is pure from the Brasília date (`dailyChallenge` in `src/game/challenge.ts`): the seed, the Pokémon and the difficulty, with no upgrades, Lure, Incense or lucky egg, and the day's outbreak on.
 
 - A challenge run says so when it starts (`POST /runs { challenge }`), and the row keeps the day (`runs.challenge`). It can only start on its day (10 minutes of grace past midnight).
-- When it ends, its replay must be that day's challenge (`challengeProblem`: seed, Pokémon, difficulty, outbreak, all ranks at 0, no items), else 400. The first challenge run of the player's day to finish is their official attempt (`runs.official`); later ones are practice and stay off the challenge board (they still count on the regular boards, like any run). Re-simulation then checks the attempt like any run, and a failed one leaves the board.
+- When it ends, its replay must be that day's challenge (`challengeProblem`: seed, Pokémon, difficulty, outbreak, all ranks at 0, no items), else 400. The first challenge run of the player's day to finish is their official attempt (`runs.official`); later ones are practice and stay off the challenge board (they still count on the regular boards, like any run). Re-simulation always checks an official attempt, and a failed one leaves the board.
 - The challenge board ranks each player's official attempt, players with a handle only, like the other boards.
-- Ribbons (`src/challenge.ts`): every 15 minutes the API looks at the last two days, and once a day ended 3 hours ago (`ribbonsDue`), ranks its verified official attempts with ties sharing a place and sends each player a Mystery Gift `ribbon` (`ribbonFor`: gold for the top 10%, silver for the top half, bronze for the rest, the #1 always gold) with `key` `ribbon:<day>`. Running it again sends nothing twice, and a run verified late still gets its ribbon on the next look. Profiles count ribbons from the `gifts` table, so they show before the game claims them.
+- Ribbons (`src/challenge.ts`): every 15 minutes the API looks at the last two days, and once a day ended 3 hours ago (`ribbonsDue`), ranks its official attempts (not failed) with ties sharing a place and sends each player a Mystery Gift `ribbon` (`ribbonFor`: gold for the top 10%, silver for the top half, bronze for the rest, the #1 always gold) with `key` `ribbon:<day>`. Running it again sends nothing twice. Profiles count ribbons from the `gifts` table, so they show before the game claims them.
 
 ### Invites and Mystery Gifts
 
@@ -61,7 +61,7 @@ Every reward outside a run goes through the gift inbox (`src/gifts.ts`): `send(u
 Invites are counted here, never on the device:
 
 - `POST /referral` records `referred_by` only for a new account: no save stored yet, first seen in the last 48 hours, no inviter yet, and not the player's own handle (`canRefer` in `src/game/referral.ts`). The game sends it on a device's first sync, before the save goes up. Both players then follow each other and the newcomer gets a Friendship Egg (`key` `welcome`).
-- After each verified run (`checks.ts` calls `credit`), once the newcomer has 3 verified runs the invite counts for the inviter (once: `referral_credited_at`), who gets the milestone's gifts (`key` `friends:<count>:<i>`): 1 friend, a Friendship Egg; 3, the Ambassador title and frame; 10, a shiny Munchlax.
+- After each finished run (`PUT /runs/:token` calls `credit`), once the newcomer has 3 runs that didn't fail their check the invite counts for the inviter (once: `referral_credited_at`), who gets the milestone's gifts (`key` `friends:<count>:<i>`): 1 friend, a Friendship Egg; 3, the Ambassador title and frame; 10, a shiny Munchlax.
 - Public profiles show `brought`, the friends whose invite counted.
 
 ### Supporters
@@ -83,7 +83,7 @@ For gifting players by hand (someone who talked about the game on social media, 
 
 ### Verification by re-simulation
 
-The result comes with the run's replay (`src/game/replay.ts`). After answering, the API re-simulates it from the seed (`src/checks.ts`), one run at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported; otherwise it's marked failed and counts nowhere. The branch isn't judged: a verified run takes the one its replay took over the one the game reported (which `parseRunResult` already keeps only when it's of the run's family, at a stage it reached). Boards and profiles show pending runs marked (`verified: null`). A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
+Runs are trusted: one counts on the boards as soon as it's reported, and only a failed check takes it off. The result comes with the run's replay (`src/game/replay.ts`). After answering, the API queues it (`src/checks.ts`), and when its turn comes re-simulates it from the seed only if the run is on show: a challenge's official attempt, or the player's line in the top 50 of its difficulty's day, week or all-time board, or the top 3 of its Pokémon's (`CHECKED`, `shown`). A random 5% of the other runs is checked too, to keep an eye on determinism; every other replay is dropped unchecked. Checks run one at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported; otherwise it's marked failed and counts nowhere. The branch isn't judged: a verified run takes the one its replay took over the one the game reported (which `parseRunResult` already keeps only when it's of the run's family, at a stage it reached). Boards and profiles never show whether a run was checked. A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
 
 Cost, measured on an Apple M4 Pro with Node 24 (bot runs with a full Poké Mart, `dist/verify.js`):
 
@@ -117,7 +117,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `saves`: one JSONB save per user, with the save's schema `version` and a `revision` bumped on every push.
 - `runs`: one row per ranked run, created at its start (the id is the start token) and filled when it ends. Unfinished rows never show, and are dropped after 7 days.
 - `follows`: who follows whom, one way.
-- `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending).
+- `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending, or when the run wasn't checked).
 - `runs.branch`: the branching evolution the run took (`BranchId`, Espeon, Gallade…), so the boards show the form it ended in. Null when it took none, and on every run before it was stored (those keep showing the line's own form).
 - `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
 - `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.

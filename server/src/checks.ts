@@ -1,5 +1,6 @@
 import { Worker } from 'node:worker_threads'
 import { outbreakFits } from '../../src/game/outbreak'
+import { BOARD_SIZE } from '../../src/game/ranking'
 import { parseReplay, rulesStanding, type Replay, type Resimulated } from '../../src/game/replay'
 import type { RankingStore } from './ranking'
 
@@ -48,12 +49,24 @@ const inlineRunner = (): Runner => async (_id, replay) => {
 }
 
 /**
- * Re-simulation of ranked runs, one at a time, after the API has answered. A
- * run is verified when its replay ends on the same time, faints and level it
- * reported (and then shows the branch its replay took, whatever the game
- * said); otherwise it's marked failed and leaves the boards. A replay that
- * played another day's outbreak (`outbreakFits`) fails without re-simulating. When the
- * machinery fails instead, the run stays pending for the next start.
+ * Which runs get re-simulated. Runs are trusted: one counts on the boards as
+ * soon as it's reported, and only a failed check takes it off. So only the
+ * runs on show are checked (`RankingStore.shown`: a challenge's official
+ * attempt, a line in the top `top.global` of a difficulty's board or the
+ * top `top.starter` of a Pokémon's), plus a `sample` of the rest, which
+ * keeps an eye on the simulation's determinism. Every other run's replay is
+ * dropped unchecked.
+ */
+export const CHECKED = { top: { global: BOARD_SIZE, starter: 3 }, sample: 0.05 } as const
+
+/**
+ * Re-simulation of ranked runs, one at a time, after the API has answered,
+ * for the runs worth it (`CHECKED`). A run is verified when its replay ends
+ * on the same time, faints and level it reported (and then shows the branch
+ * its replay took, whatever the game said); otherwise it's marked failed and
+ * leaves the boards. A replay that played another day's outbreak
+ * (`outbreakFits`) fails without re-simulating. When the machinery fails
+ * instead, the run stays pending for the next start.
  * Only replays of this build's rules are judged (`RULES_VERSION`): an older
  * one (a run that straddled a balance deploy) loses its replay and stays
  * unverified, like a run from a game that sent none; a newer one waits for
@@ -74,6 +87,11 @@ export const createChecks = (ranking: RankingStore) => {
       try {
         const reported = await ranking.runToCheck(id)
         if (!reported) continue
+        // Whether it's on show is judged when its turn comes, against the boards as they are then.
+        if (Math.random() >= CHECKED.sample && !(await ranking.shown(id, CHECKED.top))) {
+          await ranking.dropReplay(id)
+          continue
+        }
         const parsed = parseReplay(reported.replay)
         const rules = parsed?.rules
         const standing = rules === undefined ? 'same' : rulesStanding(rules)
