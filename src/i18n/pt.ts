@@ -295,6 +295,8 @@ export const pt = {
     damageNumbers: 'Números de dano',
     damageModes: { all: 'Todos', reduced: 'Reduzidos', off: 'OFF' },
     screenShake: 'Tremor de tela',
+    uiScale: 'Tamanho da interface',
+    uiScaleAuto: 'Auto',
     joystick: 'Joystick',
     joystickModes: { floating: 'Segue o dedo', fixed: 'Fixo' },
     on: 'ON',

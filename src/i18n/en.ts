@@ -209,6 +209,8 @@ export const en: Messages = {
     damageNumbers: 'Damage numbers',
     damageModes: { all: 'All', reduced: 'Reduced', off: 'OFF' },
     screenShake: 'Screen shake',
+    uiScale: 'UI size',
+    uiScaleAuto: 'Auto',
     joystick: 'Joystick',
     joystickModes: { floating: 'Follows finger', fixed: 'Fixed' },
     on: 'ON',

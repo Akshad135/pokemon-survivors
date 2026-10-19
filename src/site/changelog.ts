@@ -142,6 +142,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Tamanho da interface', en: 'UI size', es: 'Tamaño de la interfaz' },
+        notes: [
+          {
+            pt: 'Em telas grandes, os menus e o HUD agora crescem junto com o mapa em vez de ficarem minúsculos. Em Ajustes → Jogo dá para escolher o tamanho, de 100% a 200%, ou deixar no Auto. No celular nada muda.',
+            en: 'On big screens, the menus and the HUD now grow with the map instead of staying tiny. Pick the size in Settings → Game, from 100% to 200%, or leave it on Auto. Nothing changes on phones.',
+            es: 'En pantallas grandes, los menús y el HUD ahora crecen junto con el mapa en vez de quedarse diminutos. En Ajustes → Juego puedes elegir el tamaño, de 100% a 200%, o dejarlo en Auto. En el celular no cambia nada.',
+          },
+        ],
+      },
     ],
   },
   {
