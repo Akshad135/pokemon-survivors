@@ -479,6 +479,8 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
         return blitCentered(ctx, HAZARD_FX.psychic(), h.x, y + (Math.floor(h.age * 10) % 2))
     }
   }
+  // The world's telegraphs land under the player, where the horde piles up: their blinking rim shows over the sprites too.
+  if (h.world && h.age < h.armAt && Math.floor(h.age * (6 + (h.age / h.armAt) * 18)) % 2 === 0) blitCentered(ctx, ring(Math.round(h.r), 1, HAZARD_COLORS[h.visual][0]), h.x, h.y)
   if (h.kind !== 'strike') return
   // Rocks fall onto their circles; so do the world's hail and flares (`game/hazards.ts`).
   if (h.age < h.armAt && (h.visual === 'rock' || (h.world && (h.visual === 'ice' || h.visual === 'fire')))) {

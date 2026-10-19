@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { RUN_LENGTH } from '../data/waves'
 import { ALPHA, alphaCandidates, alphaHp, dashSpeed } from './alphas'
-import { HORDE_GRIT, hordeGrit } from './horde'
+import { GRIT_FROM, HORDE_GRIT, hordeGrit } from './horde'
 import { hasTrait } from './roster'
 
 const IDS = Object.keys(ENEMIES) as EnemyId[]
@@ -40,8 +40,9 @@ describe('dashSpeed', () => {
 })
 
 describe('hordeGrit', () => {
-  it('grows from ×1 at the start to its peak at the end of the run, and holds there', () => {
+  it('stays ×1 through the early game, grows to its peak at the end of the run, and holds there', () => {
     expect(hordeGrit(0, 'normal')).toBe(1)
+    expect(hordeGrit(GRIT_FROM, 'nightmare')).toBe(1)
     expect(hordeGrit(RUN_LENGTH, 'normal')).toBe(HORDE_GRIT.normal)
     expect(hordeGrit(RUN_LENGTH * 2, 'nightmare')).toBe(HORDE_GRIT.nightmare)
     expect(hordeGrit(RUN_LENGTH / 2, 'nightmare')).toBeGreaterThan(hordeGrit(RUN_LENGTH / 2, 'normal'))

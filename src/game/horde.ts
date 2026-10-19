@@ -30,10 +30,15 @@ export const leadTime = (dist: number, speed: number) => (speed > 0 ? Math.min(R
 
 /**
  * How much harder the regular horde is to knock back by the end of the run:
- * it grows from ×1 at 0:00 to this at `RUN_LENGTH` (and stays there in endless
+ * ×1 until `GRIT_FROM` (the early game keeps its bounce, or a weak start gets
+ * swamped), then it grows to this at `RUN_LENGTH` (and stays there in endless
  * mode), so a late horde stops bouncing off an aura and presses in.
  */
-export const HORDE_GRIT = { normal: 2.5, hard: 3, nightmare: 4 } as const satisfies Record<Difficulty, number>
+export const HORDE_GRIT = { normal: 2.5, hard: 3, nightmare: 3.5 } as const satisfies Record<Difficulty, number>
+
+/** Run time (s) the horde starts stiffening at. */
+export const GRIT_FROM = 300
 
 /** Knockback divisor on top of a regular foe's `mass` at `time` (`damageEnemy`). */
-export const hordeGrit = (time: number, difficulty: Difficulty) => 1 + (HORDE_GRIT[difficulty] - 1) * Math.min(1, time / RUN_LENGTH)
+export const hordeGrit = (time: number, difficulty: Difficulty) =>
+  1 + (HORDE_GRIT[difficulty] - 1) * Math.min(1, Math.max(0, (time - GRIT_FROM) / (RUN_LENGTH - GRIT_FROM)))

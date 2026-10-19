@@ -7,7 +7,7 @@ import { hurtPlayer } from './combat'
 import type { Difficulty } from './difficulty'
 import { burst } from './effects'
 import { spawnEnemy } from './enemies'
-import { loadout, rollOffers, withRarity, xpFor } from './leveling'
+import { openPrizeLevelUp, xpFor } from './leveling'
 import { dropPickup, dropXp } from './pickups'
 import { inView } from './queries'
 import { hasTrait, type StagePool } from './roster'
@@ -37,8 +37,6 @@ export const ALPHA = {
    * horde early on (measured: a fixed ×32 took 25–45 s of focused fire at 5:00 and 5–16 s at 10:00).
    */
   hp: { early: 12, late: 32, ramp: [240, 600] as const },
-  /** Contact damage, times a regular's. */
-  damage: 2,
   /** Knockback resistance: knockback is divided by it, so the aura can't hold it back. */
   mass: 400,
   /** Walking pace, times its species'. */
@@ -62,8 +60,6 @@ export const ALPHA = {
     max: 190,
     /** The dash runs this far past where the player stood when the aim locked. */
     overshoot: 70,
-    /** Contact damage multiplier of the dash's hit (once per dash). */
-    hit: 1.6,
     /** Seconds it stands, winded, after a dash. */
     recover: 0.6,
     /** Seconds between charges. */
@@ -92,17 +88,22 @@ export type AlphaRules = {
   bossQuiet: number
   /** Its HP times this, on top of the difficulty's: Nightmare's threat is its charges and numbers, not a longer fight. */
   hp: number
+  /** Contact damage, times a regular's. */
+  damage: number
+  /** The dash's hit (once per dash), times its contact damage. */
+  hit: number
 }
 
 /**
  * Per difficulty: Nightmare starts earlier, comes more often, two at once, with
  * the shockwave and the rage. Measured with a focused build (Treecko, bot): Normal
  * takes 5–17 s to beat one at 10:00–14:00, Hard 5–16 s; Nightmare took 16–34 s at full HP, hence its `hp`.
+ * Normal's hits softer: a casual player who stands still should get hurt, not flattened.
  */
 export const ALPHA_RULES = {
-  normal: { from: 240, every: [85, 100], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 45, hp: 1 },
-  hard: { from: 240, every: [75, 90], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 30, hp: 1 },
-  nightmare: { from: 200, every: [60, 75], alive: 2, shock: true, rage: true, endless: 0.6, bossQuiet: 0, hp: 0.7 },
+  normal: { from: 240, every: [85, 100], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 45, hp: 1, damage: 1.2, hit: 1 },
+  hard: { from: 240, every: [75, 90], alive: 1, shock: false, rage: false, endless: 0.6, bossQuiet: 30, hp: 1, damage: 2, hit: 1.4 },
+  nightmare: { from: 240, every: [60, 75], alive: 2, shock: true, rage: true, endless: 0.6, bossQuiet: 0, hp: 0.7, damage: 2, hit: 1.6 },
 } as const satisfies Record<Difficulty, AlphaRules>
 
 /** The run's Alpha schedule: when the next one is due. */
@@ -168,7 +169,7 @@ export const spawnAlpha = (g: Game, kind: EnemyId, x: number, y: number) => {
   const e = spawnEnemy(g, kind, x, y)
   e.boss = true
   e.hp = e.maxHp = Math.round(e.maxHp * alphaHp(g.time) * ALPHA_RULES[g.difficulty].hp)
-  e.damage *= ALPHA.damage
+  e.damage *= ALPHA_RULES[g.difficulty].damage
   e.mass = ALPHA.mass
   e.radius *= ALPHA.scale
   e.speed *= ALPHA.speed
@@ -248,7 +249,7 @@ const dash = (g: Game, e: Enemy, a: AlphaState, dt: number) => {
   a.run += step
   if (!a.hit && dm.sq(e.x - p.x) + dm.sq(e.y - p.y) < dm.sq(e.radius + p.radius)) {
     a.hit = true
-    hurtPlayer(g, e.damage * ALPHA.charge.hit, e)
+    hurtPlayer(g, e.damage * ALPHA_RULES[g.difficulty].hit, e)
   }
   if (g.rng() < dt * 20) burst(g, e.x - a.dx * e.radius, e.y, { colors: ['#c8b080', '#a08858'], count: 2, speed: 30, ttl: 0.3, drag: 6 })
   if (a.run >= a.length - 0.01) recover(g, e, a)
@@ -328,13 +329,8 @@ export const alphaDown = (g: Game, e: Enemy) => {
   g.events.push({ kind: 'alpha', enemy: e.kind, moment: 'down' })
 }
 
-/**
- * The Alpha's prize picked up: a level-up opens at once, its cards all rare
- * when they can be (two levels at once; never a fork, that one is the player's call).
- */
+/** The Alpha's prize picked up: a prize level-up of rare cards opens at once (`openPrizeLevelUp`). */
 export const openAlphaPrize = (g: Game) => {
-  g.offers = rollOffers(loadout(g), g.rng, 3, { forks: false }).map((o) => withRarity(o, 0, 0))
-  g.pendingLevelUps++
-  g.phase = 'levelup'
-  g.events.push({ kind: 'levelup' }, { kind: 'alphaPrize' })
+  openPrizeLevelUp(g, 'alpha')
+  g.events.push({ kind: 'alphaPrize' })
 }

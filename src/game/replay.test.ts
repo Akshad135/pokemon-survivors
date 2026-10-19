@@ -3,6 +3,7 @@ import { createRng } from '../engine/rng'
 import { chooseOffer, step } from './game'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
+import { spawnMapEvent } from './mapEvents'
 import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
@@ -129,6 +130,22 @@ describe('replays', () => {
     const { g, replay } = play(40, start, 300, quickAttack)
     const staged = startGame(start)
     quickAttack(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate field missions: a raided nest and lost Poké Balls underfoot', () => {
+    const missions = (g: Game) => {
+      const p = g.player
+      spawnMapEvent(g, 'defense', Math.round(p.x), Math.round(p.y))
+      const balls = spawnMapEvent(g, 'collect', Math.round(p.x), Math.round(p.y))
+      // One ball right under the player, so the run picks it up.
+      balls.state.balls[0] = { x: Math.round(p.x), y: Math.round(p.y), got: false }
+    }
+    const { g, replay } = play(40, START, 300, missions)
+    expect(g.tally.notices.nestRaid).toBe(1)
+    expect(g.tally.notices.ballFound).toBeGreaterThanOrEqual(1)
+    const staged = startGame(START)
+    missions(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 

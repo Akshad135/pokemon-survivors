@@ -117,6 +117,8 @@ export type EnemyBehavior =
   | { kind: 'chase' }
   /** Flies in a straight line and despawns after `ttl` (swarm events). */
   | { kind: 'flyby'; vx: number; vy: number; ttl: number }
+  /** Walks to a field mission's nest at (x, y) and bites the egg there, turning on the player within `aggro` px (`fieldMissions.ts`). */
+  | { kind: 'raid'; mission: number; x: number; y: number; aggro: number }
 
 export type Enemy = {
   id: number
@@ -663,4 +665,9 @@ export type Game = {
   alphas: AlphaClock
   /** The world's own attacks on the player (`game/hazards.ts`). */
   worldHazards: WorldHazardState
+  /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
+  prize: PrizeSource | null
 }
+
+/** Where a prize level-up came from: an Alpha's gem or a field mission. */
+export type PrizeSource = 'alpha' | 'mission'
