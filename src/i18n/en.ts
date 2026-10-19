@@ -808,7 +808,7 @@ export const en: Messages = {
     titleTutor: 'Move Tutor',
     subBoss: 'A move from outside your learnset. Learn it?',
     subLegendary: 'Only one legendary TM can be learned per run.',
-    subTutor: (free: boolean) => (free ? 'I teach a move of a type you lack. The first lesson is free!' : 'I teach a move of a type you lack. I charge the run’s ₽.'),
+    subTutor: (free: boolean) => (free ? 'I teach moves that suit your type, ones you’d never learn on your own. The first lesson is free!' : 'I teach moves that suit your type, ones you’d never learn on your own. I charge the run’s ₽.'),
     tag: 'TM',
     free: 'FREE',
     wallet: (coins: string) => `You have ${coins}`,

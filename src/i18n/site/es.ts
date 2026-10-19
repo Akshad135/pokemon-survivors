@@ -275,7 +275,7 @@ export const siteEs: SiteMessages = {
         `Cada carta sortea su rareza: la rara (${n(rarePercent)}% de probabilidad, marco azul) sube 2 niveles de una vez, y la shiny (1 de ${shinyOneIn}, el doble con el Shiny Charm) es una elección gratis, seguida de otra.`,
         'Olvidar saca una oferta de la partida: la carta sale volando, el espacio se sortea de nuevo y ese movimiento u objeto no vuelve más. Las cargas vienen de la Escape Rope del Poké Mart, de cada jefe derrotado y de cada evolución.',
         'La lista de movimientos crece con tu Pokémon: cada evolución desbloquea movimientos nuevos (un aviso muestra cuáles), que salen más seguido en las 3 subidas de nivel siguientes. Hay más movimientos que espacios, así que cada partida deja algunos fuera.',
-        'Los jefes derrotados dejan una MT con un movimiento de fuera de su lista, el Tutor de Movimientos enseña tipos que no tienes y ganar una grieta ofrece el movimiento legendario del propio legendario (uno por partida). Con los espacios llenos, aprender pide olvidar un movimiento.',
+        'Los jefes derrotados dejan una MT con un movimiento de fuera de su lista, el Tutor de Movimientos enseña movimientos que van con tu tipo y ganar una grieta ofrece el movimiento legendario del propio legendario (uno por partida). Con los espacios llenos, aprender pide olvidar un movimiento.',
       ],
       abilities: 'En su primera evolución, tu Pokémon despierta una Habilidad: elige 1 de 3 (la tercera es la Habilidad Oculta), y dura toda la partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia y Poliwhirl además preguntan en qué evolucionar, y cada forma tiene su propio tipo, especial, movimientos y Habilidades.',
       evolution: (first: number, second: number) =>
@@ -495,7 +495,7 @@ export const siteEs: SiteMessages = {
       tutor: {
         name: 'Tutor de Movimientos',
         how: (from: number, until: number) => `Arma su carpa una vez entre los minutos ${from} y ${until} (a veces una más). Quédate en su círculo.`,
-        reward: (price: string) => `Enseña 1 de 2 movimientos de tipos que no tienes. La primera clase es gratis; la siguiente cuesta ${price} de la partida.`,
+        reward: (price: string) => `Enseña 1 de 2 movimientos que van con el tipo de tu Pokémon y que no aprende por su cuenta (nunca uno de Agua para Grovyle). La primera clase es gratis; la siguiente cuesta ${price} de la partida.`,
       },
     },
     mart: {

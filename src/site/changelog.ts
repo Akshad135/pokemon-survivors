@@ -18,6 +18,17 @@ export type ChangelogEntry = {
  */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: '2026-10-19',
+    title: { pt: 'Tutor de Golpes que combina com você', en: 'A Move Tutor that suits you', es: 'Un Tutor de Movimientos a tu medida' },
+    notes: [
+      {
+        pt: 'O Tutor de Golpes agora ensina golpes que combinam com o tipo da forma em que você está, e não mais qualquer tipo que faltasse: um Grovyle ouve falar de Earthquake, Crunch, U-turn ou Sludge Bomb, mas nunca de Water Shuriken. Os golpes continuam sendo de fora do repertório da família.',
+        en: "The Move Tutor now teaches moves that suit your current form's type instead of any type you lacked: a Grovyle hears about Earthquake, Crunch, U-turn or Sludge Bomb, but never Water Shuriken. The moves are still ones its family doesn't learn on its own.",
+        es: 'El Tutor de Movimientos ahora enseña movimientos que van con el tipo de tu forma actual, en lugar de cualquier tipo que te faltara: un Grovyle oye hablar de Earthquake, Crunch, U-turn o Sludge Bomb, pero nunca de Water Shuriken. Siguen siendo movimientos que su familia no aprende por su cuenta.',
+      },
+    ],
+  },
+  {
     date: '2026-10-18',
     pr: 68,
     title: { pt: 'Ficha de status na pausa', en: 'Stat sheet on the pause screen', es: 'Ficha de estadísticas en la pausa' },

@@ -271,7 +271,7 @@ export const siteEn: SiteMessages = {
         `Every card rolls a rarity: a rare one (${n(rarePercent)}% chance, blue frame) gives 2 levels at once, and a shiny one (1 in ${shinyOneIn}, twice as often with the Shiny Charm) is a free pick, followed by another.`,
         'Forget takes an offer out of the run: the card flies off, the slot is rerolled and that move or item never comes back. Charges come from the Poké Mart’s Escape Rope, every boss beaten and every evolution.',
         'The move list grows with your Pokémon: each evolution unlocks new moves (a toast shows which), and they show up more often for the next 3 level ups. There are more moves than slots, so every run leaves some out.',
-        'Beaten bosses drop a TM with a move from outside the learnset, the Move Tutor teaches types you don’t have, and clearing a rift offers the legendary’s own move (one per run). With every slot full, learning one asks you to forget a move.',
+        'Beaten bosses drop a TM with a move from outside the learnset, the Move Tutor teaches moves that suit your type, and clearing a rift offers the legendary’s own move (one per run). With every slot full, learning one asks you to forget a move.',
       ],
       abilities: 'At its first evolution, your Pokémon awakens an Ability: pick 1 of 3 (the third is the Hidden Ability), and it lasts the whole run. Eevee, Snorunt, Scyther, Charcadet, Kirlia and Poliwhirl also ask what to evolve into, and each form has its own type, special, moves and Abilities.',
       evolution: (first: number, second: number) =>
@@ -491,7 +491,7 @@ export const siteEn: SiteMessages = {
       tutor: {
         name: 'Move Tutor',
         how: (from: number, until: number) => `Pitches a tent once between minutes ${from} and ${until} (sometimes once more). Stand in its ring.`,
-        reward: (price: string) => `Teaches 1 of 2 moves of types you lack. The first lesson is free; the next costs ${price} of the run's money.`,
+        reward: (price: string) => `Teaches 1 of 2 moves that suit your Pokémon's type and that it doesn't learn on its own (never a Water move for Grovyle). The first lesson is free; the next costs ${price} of the run's money.`,
       },
     },
     mart: {

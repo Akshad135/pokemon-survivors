@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
+import { BRANCHES, type BranchId } from '../data/branches'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { BOSS_TMS } from '../data/tms'
+import { formLine } from './branch'
 import { killEnemy } from './combat'
 import { spawnEnemy } from './enemies'
 import { chooseOffer, step } from './game'
@@ -10,7 +13,7 @@ import { MOVES, maxMoveLevel, type MoveId } from './moves'
 import { recordEvent, recordStep, resimulate, startGame, startRecording, TICK, type ReplayStart } from './replay'
 import { isTmMove } from './tmMoves'
 import { runLearnset } from './learnsets'
-import { forgetChoice, needsForget, tmCard, tmChoice, tutorPicks, tutorPool, tutorPrice, tutorWeight, TUTOR } from './tmRules'
+import { forgetChoice, needsForget, tmCard, tmChoice, tutorPicks, tutorPool, tutorPrice, tutorTypes, tutorWeight, TUTOR } from './tmRules'
 import { collectTm, dropLegendaryTm, dropTm, openTutor } from './tms'
 import type { Game, OwnedMove, TmOffer } from './types'
 
@@ -67,19 +70,32 @@ describe('forgetting a move for a TM', () => {
 })
 
 describe('the Move Tutor', () => {
-  const loadout = { starter: 'squirtle', branch: null, moves: [owned('waterGun'), owned('iceBeam')] } as const
+  const loadout = { starter: 'squirtle', branch: null, types: ['water'], moves: [owned('waterGun'), owned('iceBeam')] } as const
 
-  it('only teaches types outside the learnset and the moves held', () => {
-    const pool = tutorPool(loadout)
-    const learnset = runLearnset('squirtle', null)
-    const banned = new Set([...learnset, 'iceBeam' as const].map((id) => MOVES[id].type))
-    expect(pool.length).toBeGreaterThan(3)
-    for (const id of pool) expect([id, banned.has(MOVES[id].type) || learnset.includes(id)]).toEqual([id, false])
-    expect(pool).toContain('rockSlide')
-    for (const id of ['whirlwind', 'firePledge', 'dreamEater'] as const) expect(pool).not.toContain(id)
+  it('teaches moves that suit the form, never one its family learns anyway', () => {
+    const grovyle = { starter: 'treecko', branch: null, types: ['grass'], moves: [owned('leafBlade')] } as const
+    const pool = tutorPool(grovyle)
+    const learnset = runLearnset('treecko', null)
+    const suits = tutorTypes(['grass'])
+    for (const id of pool) expect([id, suits.has(MOVES[id].type) && !learnset.includes(id)]).toEqual([id, true])
+    for (const type of ['water', 'fire', 'ice', 'electric'] as const) expect(suits.has(type)).toBe(false)
+    expect(pool).toEqual(expect.arrayContaining(['uTurn', 'sludgeBomb', 'earthquake']))
+    expect(tutorPool(loadout)).toContain('rockSlide')
+    for (const id of ['whirlwind', 'firePledge', 'dreamEater'] as const) expect(tutorPool(loadout)).not.toContain(id)
     // No evolved move, no signature only its Pokémon learns.
-    expect(pool).not.toContain('stoneEdge')
+    expect(tutorPool(loadout)).not.toContain('stoneEdge')
     expect(pool).not.toContain('leechSeed')
+  })
+
+  it('has two moves of different types for every form, from its first move', () => {
+    for (const id of Object.keys(PLAYABLE) as PlayableId[]) {
+      const branches = [null, ...(Object.keys(BRANCHES) as BranchId[]).filter((b) => BRANCHES[b].line === id)]
+      for (const branch of branches)
+        for (const form of formLine(id, branch)) {
+          const pool = tutorPool({ starter: id, branch, types: form.types, moves: [owned(PLAYABLE[id].signature)] })
+          expect([form.name, tutorPicks(pool, createRng(1)).length]).toEqual([form.name, TUTOR.offers])
+        }
+    }
   })
 
   it('leaves out forgotten moves and a second manual move', () => {
