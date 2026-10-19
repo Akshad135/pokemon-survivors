@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_BINDINGS, rebind } from './bindings'
-import { padActions, padChanges, padFamily, padName, stickActions, type PadState } from './gamepad'
+import { padActions, padChanges, padFamily, padName, stickActions, stickVector, type PadState } from './gamepad'
 
 const pad = DEFAULT_BINDINGS.pad
 const none = new Set<never>()
@@ -25,8 +25,19 @@ describe('stickActions', () => {
   })
 })
 
+describe('stickVector', () => {
+  it('rests inside a radial dead zone, then keeps any angle and ramps up to full speed short of the rim', () => {
+    expect(stickVector([0.1, -0.12])).toEqual({ x: 0, y: 0 })
+    const tilted = stickVector([Math.cos(0.35), Math.sin(0.35)])
+    expect(Math.atan2(tilted.y, tilted.x)).toBeCloseTo(0.35)
+    expect(Math.hypot(tilted.x, tilted.y)).toBeCloseTo(1)
+    expect(Math.hypot(...Object.values(stickVector([0.55, 0])))).toBeCloseTo(0.5)
+    expect(Math.hypot(...Object.values(stickVector([1, 1])))).toBeCloseTo(1)
+  })
+})
+
 describe('padChanges', () => {
-  const state = (index: number, id: string, buttons: number[]): PadState => ({ index, id, buttons: new Set(buttons), stick: new Set() })
+  const state = (index: number, id: string, buttons: number[]): PadState => ({ index, id, buttons: new Set(buttons), stick: new Set(), move: { x: 0, y: 0 } })
 
   it('sees a press on one pad while another pad holds the same button', () => {
     const virtual = state(1, 'Virtual pad', [0, 3])

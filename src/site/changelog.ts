@@ -162,6 +162,21 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Controle mais gostoso', en: 'Smoother gamepad play', es: 'Control más cómodo' },
+        notes: [
+          {
+            pt: 'O analógico do controle agora anda em qualquer direção, e com a velocidade que você inclina, como o joystick de toque. O direcional e o teclado continuam em 8 direções.',
+            en: 'The gamepad stick now moves in any direction, at the speed you tilt it, like the touch joystick. The D-pad and the keyboard stay at 8 directions.',
+            es: 'El stick del control ahora se mueve en cualquier dirección, con la velocidad con que lo inclinas, como el joystick táctil. La cruceta y el teclado siguen en 8 direcciones.',
+          },
+          {
+            pt: 'Apertar A (ou Espaço) para o especial na hora em que a partida acaba não começa outra sem querer: a tela de resultado espera uma pausa curta nos seus toques.',
+            en: "Pressing A (or Space) for the special right as a run ends no longer starts another by accident: the results screen waits for a short pause in your presses.",
+            es: 'Apretar A (o Espacio) para el especial justo cuando termina la partida ya no empieza otra sin querer: la pantalla de resultados espera una breve pausa en tus pulsaciones.',
+          },
+        ],
+      },
     ],
   },
   {
