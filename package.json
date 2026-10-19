@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@clerk/clerk-js": "^6.39.0",
+    "@clerk/shared": "^4.40.0",
     "@fontsource/press-start-2p": "^5.3.0",
     "@fontsource/vt323": "^5.3.0"
   },

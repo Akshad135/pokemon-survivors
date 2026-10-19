@@ -1,4 +1,6 @@
 import type { Clerk } from '@clerk/clerk-js'
+import { loadClerkUIScript } from '@clerk/shared/loadClerkJsScript'
+import type { ClerkUIConstructor } from '@clerk/shared/types'
 import { track } from './analytics'
 import type { Hatch } from './game/eggs'
 import { applyGift, parseGift, type Gift } from './game/gifts'
@@ -150,12 +152,27 @@ const withTimeout = <T>(promise: Promise<T>) =>
 
 let clerk: Promise<Clerk> | null = null
 
+declare global {
+  interface Window {
+    /** Set by Clerk's UI script (`loadClerkUIScript`). */
+    __internal_ClerkUICtor?: ClerkUIConstructor
+  }
+}
+
+/**
+ * Clerk's prebuilt UI, from Clerk's CDN like their React SDK does. The game
+ * draws its own screens; it's here for the modals Clerk opens itself, such as
+ * the reverification before linking Discord. It loads beside Clerk, never blocking it.
+ */
+const loadClerkUI = (): Promise<ClerkUIConstructor> =>
+  loadClerkUIScript({ publishableKey: PUBLISHABLE_KEY! }).then(() => window.__internal_ClerkUICtor ?? Promise.reject(new Error('no Clerk UI')))
+
 /** Clerk, loaded on first use (its own chunk). A failed load can be retried. */
 const loadClerk = () =>
   (clerk ??= withTimeout(
     import('@clerk/clerk-js').then(async ({ Clerk }) => {
       const instance = new Clerk(PUBLISHABLE_KEY!)
-      await instance.load()
+      await instance.load({ ui: { ClerkUI: loadClerkUI() } })
       return instance
     }),
   ).catch((err: unknown) => {
