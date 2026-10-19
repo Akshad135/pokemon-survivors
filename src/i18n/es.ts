@@ -3373,7 +3373,7 @@ export const es: Messages = {
     dowsingMachine: 'Atrae Exp. Candies desde más lejos.',
     kingsRock: '+6% de prob. de causar estados (quemar, envenenar, paralizar).',
     toxicOrb: 'Quemadura y veneno hacen +20% de daño.',
-    assaultVest: '+20 de HP máximo y +1 de defensa.',
+    assaultVest: '+20 de HP máximo y +1 de defensa (1 menos en cada golpe, hasta la mitad).',
     metronome: 'Al final de cada salto o embestida (y al soltar los otros especiales), lanza 1 de tus movimientos desde ahí. En el nivel máximo, 2, pero en una cadena el segundo solo sale en el último salto.',
     powerHerb: 'Cada enemigo derrotado por el especial (o durante una cadena) le quita 0,25 s a su recarga.',
     charcoal: typeBoost('Fuego'),
@@ -3399,7 +3399,7 @@ export const es: Messages = {
   upgrades: {
     hpUp: '+10 de HP máximo por nivel.',
     protein: '+5% de daño por nivel.',
-    iron: '+1 de defensa por nivel.',
+    iron: '+1 de defensa por nivel: cada golpe quita 1 menos, hasta la mitad.',
     carbos: '+5% de velocidad por nivel.',
     calcium: '+5% de área de los movimientos por nivel.',
     zinc: 'Los movimientos recargan 2,5% más rápido por nivel.',

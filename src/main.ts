@@ -51,6 +51,7 @@ import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
 import { tmDevTools } from './game/tmDev'
 import { duoDevTools } from './game/duoDev'
+import { tensionDevTools } from './game/tensionDev'
 import { cursePick } from './ui/cursePick'
 import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
@@ -1494,6 +1495,7 @@ if (import.meta.env.DEV) {
       ...learnDevTools(() => run?.game),
       ...tmDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
+      ...tensionDevTools(() => run?.game),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

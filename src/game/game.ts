@@ -49,6 +49,7 @@ import { updateArena, updateArenaFall } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
+import { createTension } from './tension'
 import { updateStatuses } from './statusSystem'
 import { createTally } from './tally'
 import { createWeather, updateWeather } from './weather'
@@ -181,6 +182,7 @@ export const createGame = (
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
+    tension: createTension(),
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp

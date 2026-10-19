@@ -45,6 +45,7 @@ import type { TmState } from './tms'
 import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
+import type { TensionState } from './tension'
 
 export type OwnedMove = {
   id: MoveId
@@ -642,4 +643,6 @@ export type Game = {
   /** Counters for missions and achievements (`game/tally.ts`). */
   tally: RunTally
   events: GameEvent[]
+  /** The pressure director (`tension.ts`): a dominant player gets a faster, closer, nastier horde. */
+  tension: TensionState
 }

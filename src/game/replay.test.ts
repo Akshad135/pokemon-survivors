@@ -6,6 +6,7 @@ import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
 import type { Game } from './types'
+import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
 const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
@@ -135,6 +136,18 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it('re-simulate a Nightmare run under full tension: close spawns, tense elites and a surge', () => {
+    const tense = (g: Game) => {
+      Object.assign(g.tension, { level: 1, reach: 1, surge: TENSION_PEAK.nightmare.surgeEvery - 1 })
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(40, start, 300, tense)
+    expect(g.tension.surges).toBeGreaterThan(0)
+    const staged = startGame(start)
+    tense(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('give a run played on another seed away', () => {
