@@ -33,6 +33,7 @@ import { spawnEnemy } from './game/enemies'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
+import { FIELD, FIELD_MISSION_KINDS, TOGEPI_DEX, type FieldMissionKind } from './game/fieldMissionRules'
 import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { formAt, playerForm } from './game/branch'
 import { unlockedAt } from './game/learnsets'
@@ -516,10 +517,11 @@ let upcoming = planRun()
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the rift legendaries and the endless mode's reaper.
+ * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper.
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
+  { dex: TOGEPI_DEX, at: FIELD.first },
   ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.firstAt })),
   { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
 ]
@@ -1283,6 +1285,13 @@ const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
   return spawnMapEvent(run.game, kind, Math.round(p.x + dx), Math.round(p.y + dy))
 }
 
+/** Dev: starts a field mission of `kind` about `dx` px to the right of the player, e.g. `ps.field('defense')`. */
+const devField = (kind: FieldMissionKind = 'defense', dx = 120) => {
+  if (!run || !FIELD_MISSION_KINDS.includes(kind)) return `Kinds: ${FIELD_MISSION_KINDS.join(', ')}`
+  const p = run.game.player
+  return spawnMapEvent(run.game, kind, Math.round(p.x + dx), Math.round(p.y))
+}
+
 // Dev-only handle for poking at the running game from the console.
 /** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots); `shiny` makes them shiny elites. */
 const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
@@ -1477,6 +1486,7 @@ if (import.meta.env.DEV) {
       evolve: devEvolve,
       ability: devAbility,
       event: devEvent,
+      field: devField,
       challenge: devChallenge,
       dex: () => loadSave().dex,
       /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */

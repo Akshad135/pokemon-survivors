@@ -114,6 +114,8 @@ export type EnemyBehavior =
   | { kind: 'chase' }
   /** Flies in a straight line and despawns after `ttl` (swarm events). */
   | { kind: 'flyby'; vx: number; vy: number; ttl: number }
+  /** Walks to a field mission's nest at (x, y) and bites the egg there, turning on the player within `aggro` px (`fieldMissions.ts`). */
+  | { kind: 'raid'; mission: number; x: number; y: number; aggro: number }
 
 export type Enemy = {
   id: number

@@ -157,6 +157,16 @@ export const updateEnemies = (g: Game, dt: number) => {
       const d = dirTo(e.x, e.y, tx, ty)
       vx = d.x * speed
       vy = d.y * speed
+    } else if (e.behavior.kind === 'raid') {
+      // A raider walks to the nest and stays at the egg, unless the player comes close.
+      const b = e.behavior
+      const onPlayer = dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < b.aggro * b.aggro && !p.hidden
+      const tx = onPlayer ? p.x : b.x
+      const ty = onPlayer ? p.y : b.y
+      const atEgg = !onPlayer && dm.sq(b.x - e.x) + dm.sq(b.y - e.y) < dm.sq(e.radius + 4)
+      const d = dirTo(e.x, e.y, tx, ty)
+      vx = atEgg ? 0 : d.x * pace
+      vy = atEgg ? 0 : d.y * pace
     } else {
       vx = frozen ? 0 : e.behavior.vx
       vy = frozen ? 0 : e.behavior.vy

@@ -446,6 +446,7 @@ export const sitePt = {
         rift: 'Lendário de uma fenda',
         final: 'Mewtwo e o mítico raro (Mew, Celebi ou Jirachi)',
         reaper: 'Arceus, no modo sem fim',
+        mission: 'Missão de campo: o ninho defendido (Normal / Difícil / Pesadelo)',
       } satisfies Record<EggSource, string>,
     },
     items: {
@@ -513,6 +514,12 @@ export const sitePt = {
         name: 'Tutor de Golpes',
         how: (from: number, until: number) => `Arma a tenda uma vez entre ${from} e ${until} min (às vezes mais uma). Fique no círculo dela.`,
         reward: (price: string) => `Ensina 1 de 2 golpes que combinam com o tipo do seu Pokémon e que ele não aprende sozinho (nunca um golpe de Água para o Grovyle). A primeira aula é grátis; a próxima custa ${price} da partida.`,
+      },
+      field: {
+        name: 'Missões de campo',
+        how: (first: string, gap: number) =>
+          `A partir de ${first}, uma por vez, a cada ${gap} min mais ou menos, longe de você e contra o relógio: defender um ovo no ninho de uma invasão (fique no anel), achar Poké Balls perdidas espalhadas ou levar um Togepi perdido até o ninho. Ignorar não custa nada.`,
+        reward: 'Um nível com cartas raras (no Pesadelo a primeira é shiny), ₽ e o prêmio da missão: uma chance de ovo, um item e cura.',
       },
     },
     mart: {

@@ -425,6 +425,7 @@ export const siteEn: SiteMessages = {
         rift: 'A rift legendary',
         final: 'Mewtwo and the rare mythical (Mew, Celebi or Jirachi)',
         reaper: 'Arceus, in endless mode',
+        mission: 'Field mission: the defended nest (Normal / Hard / Nightmare)',
       },
     },
     items: {
@@ -492,6 +493,12 @@ export const siteEn: SiteMessages = {
         name: 'Move Tutor',
         how: (from: number, until: number) => `Pitches a tent once between minutes ${from} and ${until} (sometimes once more). Stand in its ring.`,
         reward: (price: string) => `Teaches 1 of 2 moves that suit your Pokémon's type and that it doesn't learn on its own (never a Water move for Grovyle). The first lesson is free; the next costs ${price} of the run's money.`,
+      },
+      field: {
+        name: 'Field missions',
+        how: (first, gap) =>
+          `From ${first} on, one at a time, every ${gap} min or so, a walk away and against the clock: defend an egg in its nest from a raid (stay in the ring), find lost Poké Balls scattered around, or lead a lost Togepi back to its nest. Ignoring one costs nothing.`,
+        reward: "A level of rare cards (on Nightmare the first one is shiny), ₽ and the mission's prize: a shot at an egg, an item and a heal.",
       },
     },
     mart: {

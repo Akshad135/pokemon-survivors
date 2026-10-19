@@ -1125,6 +1125,28 @@ export const pt = {
     tutor: 'Um *Tutor de Golpes* armou a tenda por perto! Fique nela para uma aula.',
     tutorEmpty: 'O Tutor de Golpes não tem mais nada para te ensinar.',
     tutorLeft: 'O Tutor de Golpes seguiu viagem…',
+    /** Field missions (`fieldMissions.ts`): toasts and the HUD pill (`time` is m:ss). */
+    field: {
+      defense: 'Missão: um *ovo* está em perigo! Siga a seta e defenda o ninho.',
+      collect: (n: number) => `Missão: *${n} Poké Balls* se perderam por aqui! Ache todas a tempo.`,
+      escort: 'Missão: um *Togepi* se perdeu! Ache e leve ele de volta ao ninho.',
+      nestRaid: 'Os selvagens querem o ovo! *Fique no anel* até salvar ele.',
+      ballFound: (got: number, of: number) => `Poké Ball *${got}/${of}*`,
+      togepiJoin: 'O *Togepi* está seguindo você! Leve ele até o ninho.',
+      done: (coins: string) => `*Missão cumprida!* ${coins} e um nível com cartas raras!`,
+      doneEgg: (coins: string) => `*Missão cumprida!* O ovo é seu, mais ${coins} e cartas raras!`,
+      failed: {
+        defense: 'O ovo se perdeu…',
+        collect: 'Acabou o tempo: as Poké Balls sumiram…',
+        escort: 'O Togepi fugiu assustado…',
+      },
+      hudReach: (time: string) => `Ovo em perigo ${time}`,
+      hudDefend: (left: string) => `Defenda o ovo ${left}`,
+      hudAway: (left: string) => `Volte ao ninho! ${left}`,
+      hudCollect: (got: number, of: number, time: string) => `Poké Balls ${got}/${of} · ${time}`,
+      hudFind: (time: string) => `Ache o Togepi ${time}`,
+      hudEscort: (time: string) => `Leve o Togepi ao ninho ${time}`,
+    },
   },
   /** Legendary rifts and the endless mode after Mewtwo. */
   rifts: {
