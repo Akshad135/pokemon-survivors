@@ -42,7 +42,7 @@ export const siteEs: SiteMessages = {
   pokedex: {
     title: 'Pokédex de Pokémon Survivors: iniciales, enemigos, jefes y legendarios',
     description:
-      'Todos los Pokémon de Pokémon Survivors con sprite animado y shiny: los 27 iniciales y las 52 familias de los huevos con sus evoluciones, enemigos salvajes, jefes y legendarios. Tipos, estadísticas en el juego, movimientos, especiales y cuándo aparece cada uno.',
+      'Todos los Pokémon de Pokémon Survivors con sprite animado y shiny: los 27 iniciales y las 55 familias de los huevos con sus evoluciones, enemigos salvajes, jefes y legendarios. Tipos, estadísticas en el juego, movimientos, especiales y cuándo aparece cada uno.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Los ${count} Pokémon que existen en Pokémon Survivors, con los números del juego: iniciales de todas las regiones, las familias que salen de los huevos y sus evoluciones, la horda salvaje, los jefes y los legendarios. Pasa el mouse (o toca) para ver el sprite caminando y usa ★ para ver el shiny.`,
@@ -74,6 +74,7 @@ export const siteEs: SiteMessages = {
     special: 'Ataque especial',
     specialFinal: 'En la evolución final',
     learnset: 'Movimientos que aprende',
+    learnStart: 'desde el inicio',
     wildStats: { hp: 'HP', damage: 'Daño por contacto', speed: 'Velocidad', xp: 'EXP' },
     eventNote: 'Aparece en los eventos del mapa: huye de ti y suelta monedas con cada golpe. Derríbalo antes de que escape para ganarte el Pay Day.',
     wildNote: 'Valores base. Los enemigos comunes se vuelven más fuertes cada minuto; los jefes, no.',
@@ -206,20 +207,21 @@ export const siteEs: SiteMessages = {
     controls: {
       head: { action: 'Acción', keyboard: 'Teclado', gamepad: 'Control', touch: 'Táctil' },
       rows: [
-        ['Moverse', 'WASD o flechas', '— (todavía no)', 'Arrastra en cualquier parte de la pantalla (joystick flotante)'],
+        ['Moverse', 'WASD o flechas', 'D-pad o stick izquierdo', 'Arrastra en cualquier parte de la pantalla (joystick flotante)'],
         ['Ataque especial', 'Espacio', 'A (Xbox) o ✕ (PlayStation)', 'Botón redondo abajo a la derecha'],
         ['Megaevolución', 'E', 'Y (Xbox) o △ (PlayStation)', 'Botón MEGA, arriba del especial'],
         ['Embestida (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) o □ (PlayStation)', 'Botón redondo a la izquierda del especial'],
         ['Pausar', 'Esc o P', 'Start', 'Botón arriba a la derecha'],
         ['Navegar por los menús', 'Flechas, Enter confirma, Esc vuelve', 'D-pad o stick izquierdo, A confirma, B vuelve', 'Toca'],
         ['Elegir mejora', '1 a 3, o ↑ ↓ y Enter', 'D-pad y A', 'Toca la opción'],
-        ['Elegir el inicial', '← → compañero, ↑ ↓ región, 1 a 9, Enter', 'D-pad y A', 'Toca para ver, toca otra vez para elegir'],
-        ['Abrir el Poké Mart', 'L en la selección de compañero', '—', 'Botón POKé MART, arriba a la derecha'],
+        ['Elegir al compañero', 'Flechas en la cuadrícula, Tab Iniciales/Huevos, 1 a 9 región, I detalles, Enter empieza', 'D-pad (↓ en la última fila lleva a Huevos) y A', 'Toca para ver, toca otra vez (o Empezar) para jugar'],
+        ['Abrir el Poké Mart', 'L en la selección de compañero', '—', 'Toca la cartera (₽) arriba en la selección de compañero'],
         ['Activar/desactivar sonido', 'M', 'Ajustes', 'Ajustes'],
         ['Idioma', 'I en la pantalla de título, o Ajustes', 'Ajustes', 'PT | EN | ES en la pantalla de título, o Ajustes'],
       ],
       notes: [
-        'Con control, el D-pad y el stick izquierdo navegan por todos los menús, A confirma, B vuelve y Start pausa. Durante la partida, A usa el ataque especial, pero el control todavía no mueve al Pokémon: para moverte, usa el teclado o la pantalla táctil.',
+        'Con control, el D-pad y el stick izquierdo mueven al Pokémon y navegan por todos los menús, A confirma, B vuelve y Start pausa. Durante la partida, A usa el ataque especial.',
+        'En Ajustes → Controles → Teclado y control, puedes cambiar la tecla y el botón del control de cada acción (moverse, especial, Mega, embestida, pausa, confirmar y volver). Las flechas y Esc siempre funcionan.',
         'En el celular puedes instalar el juego como app a pantalla completa: abre el menú del navegador y elige "Agregar a la pantalla de inicio".',
       ],
     },
@@ -227,13 +229,13 @@ export const siteEs: SiteMessages = {
       paragraphs: (minutes: number, starters: number) => [
         `Elige uno de los ${starters} iniciales, de Kanto a Paldea. Cada uno tiene sus propias estadísticas, movimiento inicial, movimientos que aprende y ataque especial (mira la Pokédex).`,
         `Muévete por el campo y esquiva: los movimientos se disparan solos al ritmo de su recarga. Sobrevive ${minutes} minutos de hordas cada vez más grandes. Al final aparece Mewtwo, y derrotarlo gana la partida. Después, si quieres, puedes seguir en el modo infinito.`,
-        'Si tu HP llega a cero, la partida termina (a menos que tengas un Revive guardado). Los Poké Dollars que recogiste van a tu billetera.',
+        'Si tu HP llega a cero, la partida termina (a menos que tengas un Revive guardado o estés en la arena de una grieta, que solo te expulsa de vuelta). Los Poké Dollars que recogiste van a tu billetera.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Los enemigos comunes se vuelven más fuertes cada minuto (los jefes no): ${rows.map(([at, hp, dmg]) => `a las ${at}, ${hp}x de HP y ${dmg}x de daño`).join('; ')}.`,
       difficulty: 'Dificultad',
       difficultyIntro:
-        'Elige la dificultad en la pantalla de selección de Pokémon, debajo del botón de elegir (o con la tecla X). Todas vienen desbloqueadas y tu elección queda guardada. Normal es la partida base; los otros niveles multiplican:',
+        'Elige la dificultad en la barra de abajo de la selección de compañero, junto al botón Empezar (o con la tecla X). Todas vienen desbloqueadas y tu elección queda guardada. Normal es la partida base; los otros niveles multiplican:',
       difficultyHead: ['Nivel', 'HP de los enemigos', 'Daño que recibes', 'Ritmo de aparición', 'Velocidad de los enemigos', 'Escala por minuto', 'Curación'],
       timeline: 'Línea de tiempo',
       timeHead: 'Tiempo',
@@ -267,6 +269,15 @@ export const siteEs: SiteMessages = {
         'Los objetos de tipo (Charcoal, Mystic Water…) solo aparecen si tu Pokémon aprende movimientos de ese tipo. Cuando no queda nada que ofrecer, llega una Oran Berry (+40 HP).',
         'Cambiar (sortear otras ofertas) y Saltar (renunciar a la subida de nivel sin elegir nada, útil cuando ninguna oferta sirve) son cargas que se compran en el Poké Mart.',
       ],
+      choices: (rarePercent: number, shinyOneIn: number) => [
+        'La partida empieza con un draft: con el reloj detenido, eliges tu 2.º movimiento entre 3 de la lista de tu Pokémon.',
+        'Todo movimiento base se divide en dos caminos en el Nv. 4 y en el Nv. 7: la carta dice "2 caminos" y, al elegirla, se abre en los dos. Cada camino cambia cómo juega el movimiento (rebotar, explotar, dejar un rastro, hacer eco…), no solo los números.',
+        `Cada carta sortea su rareza: la rara (${n(rarePercent)}% de probabilidad, marco azul) sube 2 niveles de una vez, y la shiny (1 de ${shinyOneIn}, el doble con el Shiny Charm) es una elección gratis, seguida de otra.`,
+        'Olvidar saca una oferta de la partida: la carta sale volando, el espacio se sortea de nuevo y ese movimiento u objeto no vuelve más. Las cargas vienen de la Escape Rope del Poké Mart, de cada jefe derrotado y de cada evolución.',
+        'La lista de movimientos crece con tu Pokémon: cada evolución desbloquea movimientos nuevos (un aviso muestra cuáles), que salen más seguido en las 3 subidas de nivel siguientes. Hay más movimientos que espacios, así que cada partida deja algunos fuera.',
+        'Los jefes derrotados dejan una MT con un movimiento de fuera de su lista, el Tutor de Movimientos enseña tipos que no tienes y ganar una grieta ofrece el movimiento legendario del propio legendario (uno por partida). Con los espacios llenos, aprender pide olvidar un movimiento.',
+      ],
+      abilities: 'En su primera evolución, tu Pokémon despierta una Habilidad: elige 1 de 3 (la tercera es la Habilidad Oculta), y dura toda la partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia y Poliwhirl además preguntan en qué evolucionar, y cada forma tiene su propio tipo, especial, movimientos y Habilidades.',
       evolution: (first: number, second: number) =>
         `Tu Pokémon evoluciona en el Nv. ${first} y en el Nv. ${second}, como en los juegos. Cada evolución da más HP y estadísticas, y la evolución final potencia el ataque especial.`,
       itemsTitle: 'Held items',
@@ -283,6 +294,20 @@ export const siteEs: SiteMessages = {
       itemHead: 'Objeto',
       resultHead: 'Evolución',
       noEvolution: (moves: string) => `Todavía sin evolución: ${moves}.`,
+      neverEvolves: 'Los movimientos firma, de MT, legendarios y en dúo no evolucionan: ya son un movimiento final y crecen por sus propios caminos.',
+      duoTitle: 'Ataques en dúo',
+      duoParagraphs: [
+        'Lleva dos ataques al nivel máximo (o evoluciónalos) y, si sus tipos forman una de las recetas de abajo, una carta dorada ofrece unirlos en un ataque en dúo: toma el espacio del primero, libera el del segundo y sube hasta el Nv 5. Los dos ataques usados no vuelven.',
+        'Las recetas van por tipo, así que funcionan con cualquier Pokémon. Solo cabe 1 ataque en dúo por partida, y la Poké Ball nunca une ataques por su cuenta.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Ataque en dúo',
+      cursedTitle: 'Objetos malditos',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `Desde el minuto ${minutes.toLocaleString('es')}, un cofre cerrado tiene ${Math.round(chance * 100)}% de probabilidad de esconder un objeto maldito: muy fuerte, pero con un precio. Tú eliges tomarlo o dejarlo. No ocupa espacio de objeto, dura hasta el final de la partida y puedes tener hasta ${max}.`,
+      ],
+      cursedUpHead: 'Ventaja',
+      cursedDownHead: 'Precio',
     },
     special: {
       paragraphs: (min: number) => [
@@ -303,13 +328,18 @@ export const siteEs: SiteMessages = {
       statusHead: 'Estado',
       movesHead: 'Lo causa',
       effectHead: 'Efecto',
-      names: { burn: 'Quemadura', poison: 'Veneno', paralysis: 'Parálisis', slow: 'Lentitud', sleep: 'Sueño' },
+      names: { burn: 'Quemadura', poison: 'Veneno', paralysis: 'Parálisis', slow: 'Lentitud', sleep: 'Sueño', freeze: 'Congelación', mark: 'Marca', confuse: 'Confusión', seed: 'Semilla', weaken: 'Debilitado' },
       effects: {
         burn: (attack: number) => `Daño por segundo. El enemigo quemado solo causa el ${n(attack * 100)}% del daño por contacto.`,
         poison: (stacks: number) => `Daño por segundo que se acumula hasta ${stacks}x.`,
         paralysis: (boss: number) => `Inmoviliza al enemigo por un instante y después se traba de vez en cuando. En jefes dura el ${n(boss * 100)}% del tiempo.`,
         slow: (boss: number) => `Ralentiza a quien está cerca. En jefes dura el ${n(boss * 100)}% del tiempo.`,
         sleep: (seconds: number, boss: number) => `Los enemigos en pantalla se duermen durante ${seconds}s. En jefes dura el ${n(boss * 100)}% del tiempo.`,
+        freeze: (shatter: number, boss: number) => `Congela al enemigo en su lugar. El siguiente golpe hace ${shatter}x de daño y rompe el hielo. En jefes dura el ${n(boss * 100)}% del tiempo.`,
+        mark: (stacks: number) => `El enemigo marcado recibe más daño de cada golpe, acumulando hasta ${stacks}x.`,
+        confuse: () => 'El enemigo deambula sin rumbo y lastima a los enemigos con los que choca. Los jefes son inmunes.',
+        seed: (heal: number, jumps: number) => `Daño por segundo que te cura un ${n(heal * 100)}% del daño. Cuando el enemigo cae, la semilla salta a ${jumps} vecinos.`,
+        weaken: (boss: number) => `Barro en los ojos: el enemigo hace menos daño de contacto. En jefes dura un ${n(boss * 100)}% del tiempo.`,
       },
       flute: 'Poké Flute (objeto del mapa)',
       itemsNote: 'King\'s Rock aumenta la probabilidad de estado, Toxic Orb aumenta el daño de quemadura y veneno, y Light Clay hace que los estados duren más.',
@@ -327,7 +357,7 @@ export const siteEs: SiteMessages = {
     rifts: {
       paragraphs: (r) => [
         `Desde las ${r.first}, más o menos cada ${n(r.every)} minutos, se abre una grieta legendaria fuera de la pantalla, con una flecha morada en el borde que apunta hacia ella. Se queda abierta ${r.portal}s. Si hay un jefe vivo en ese momento, espera a que caiga hasta ${r.bossWait}s, así que toda partida tiene 3 grietas, aunque los jefes tarden.`,
-        `Entrar es opcional: quédate ${n(r.enter)}s dentro de la grieta. Te lleva a la arena de un legendario de otra generación, cada una con su forma y su terreno: islas en aguas poco profundas, pilares para cubrirte, un pozo cuya marea sube, ríos de lava con puentes, un borde que se derrumba, una isla rodeada de oleaje, un meteoro en el espacio. Tienes ${r.arena}s para vencerlo; si se acaba el tiempo, la grieta colapsa y te devuelve sin recompensa.`,
+        `Entrar es opcional: quédate ${n(r.enter)}s dentro de la grieta. Te lleva a la arena de un legendario de otra generación, cada una con su forma y su terreno: islas en aguas poco profundas, pilares para cubrirte, un pozo cuya marea sube, ríos de lava con puentes, un borde que se derrumba, una isla rodeada de oleaje, un meteoro en el espacio. Tienes ${r.arena}s para vencerlo; si se acaba el tiempo, la grieta colapsa y te devuelve sin recompensa. Caer en la arena tampoco termina la partida: la grieta te expulsa al mapa con ${r.fallHp}% de HP, sin recompensa, y tu Revive queda guardado.`,
         'El reloj de la partida sigue corriendo adentro, pero la horda de afuera se congela y no aparece nada nuevo. Cuando vuelves, los enemigos son más fuertes porque pasó el tiempo, y los eventos que quedaron pendientes llegan de golpe.',
         `La recompensa vale el riesgo: mucha EXP, dos bolsas de ₽ además de la lluvia del jefe, Poké Balls extra, un Rare Candy, una Super Potion y la mitad del HP de vuelta. En 1 de cada ${r.shiny} grietas el legendario es shiny y paga el doble de ₽ y una Poké Ball más.`,
       ],
@@ -462,6 +492,11 @@ export const siteEs: SiteMessages = {
         how: (ttl: number) => `Huye de ti y escapa en ${ttl}s. Tus movimientos lo alcanzan.`,
         reward: (jackpot: string) => `Una moneda con cada golpe y el Pay Day (${jackpot}) si se debilita.`,
       },
+      tutor: {
+        name: 'Tutor de Movimientos',
+        how: (from: number, until: number) => `Arma su carpa una vez entre los minutos ${from} y ${until} (a veces una más). Quédate en su círculo.`,
+        reward: (price: string) => `Enseña 1 de 2 movimientos de tipos que no tienes. La primera clase es gratis; la siguiente cuesta ${price} de la partida.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
@@ -525,7 +560,7 @@ export const siteEs: SiteMessages = {
       late: 'El pago aún no se confirmó. Vuelve a esta página en un rato para ver tu código.',
       sent: (handle: string) => `Las recompensas fueron para @${handle}. Llegan como Regalo Misterioso la próxima vez que el juego se sincronice.`,
       code: 'Tu código de canje:',
-      codeHint: 'En el juego, inicia sesión y abre el ♥ del título → Tengo un código. Vale una vez, para la cuenta que lo canjee: puede ser la de un amigo.',
+      codeHint: 'En el juego, inicia sesión y abre el Salón de la Fama del título → Tengo un código. Vale una vez, para la cuenta que lo canjee: puede ser la de un amigo.',
       copy: 'Copiar',
       copied: '¡Copiado!',
       used: 'El código de esta donación ya se canjeó.',

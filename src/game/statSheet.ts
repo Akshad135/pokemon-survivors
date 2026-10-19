@@ -2,8 +2,11 @@ import { ITEMS, type ItemId } from '../data/items'
 import type { PokeType } from '../data/types'
 import { BASE_STATS, type PlayerStats } from './stats'
 
-/** Every stat the pause screen lists; `typeDamage` gets one row per boosted type instead. */
-export type SheetStat = Exclude<keyof PlayerStats, 'typeDamage'>
+/**
+ * Every stat the pause screen lists; `typeDamage` gets one row per boosted type
+ * instead, and `tagDamage` (only abilities give it) is told by the ability panel.
+ */
+export type SheetStat = Exclude<keyof PlayerStats, 'typeDamage' | 'tagDamage'>
 
 /**
  * Every stat in listing order: `core` ones always show, `extra` ones only once

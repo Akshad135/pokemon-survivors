@@ -58,7 +58,7 @@ export const sitePt = {
   pokedex: {
     title: 'Pokédex do Pokémon Survivors: iniciais, inimigos, chefes e lendários',
     description:
-      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 52 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
+      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 55 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Os ${count} Pokémon que existem no Pokémon Survivors, com os números do jogo: iniciais de todas as regiões, as famílias que saem dos ovos e suas evoluções, a horda selvagem, os chefes e os lendários. Passe o mouse (ou toque) para ver o sprite andando e use ★ para ver o shiny.`,
@@ -90,6 +90,8 @@ export const sitePt = {
     special: 'Ataque especial',
     specialFinal: 'Na evolução final',
     learnset: 'Golpes que aprende',
+    /** The learnset's first row: what the family starts with (later rows say the level each evolution unlocks its moves at). */
+    learnStart: 'desde o início',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
     eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
@@ -222,20 +224,21 @@ export const sitePt = {
     controls: {
       head: { action: 'Ação', keyboard: 'Teclado', gamepad: 'Controle', touch: 'Toque' },
       rows: [
-        ['Andar', 'WASD ou setas', '— (ainda não)', 'Arraste em qualquer lugar da tela (joystick flutuante)'],
+        ['Andar', 'WASD ou setas', 'D-pad ou analógico esquerdo', 'Arraste em qualquer lugar da tela (joystick flutuante)'],
         ['Ataque especial', 'Espaço', 'A (Xbox) ou ✕ (PlayStation)', 'Botão redondo no canto inferior direito'],
         ['Mega Evolução', 'E', 'Y (Xbox) ou △ (PlayStation)', 'Botão MEGA, acima do especial'],
         ['Bote (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) ou □ (PlayStation)', 'Botão redondo à esquerda do especial'],
         ['Pausar', 'Esc ou P', 'Start', 'Botão no canto superior direito'],
         ['Navegar nos menus', 'Setas, Enter confirma, Esc volta', 'D-pad ou analógico esquerdo, A confirma, B volta', 'Toque'],
         ['Escolher upgrade', '1 a 3, ou ↑ ↓ e Enter', 'D-pad e A', 'Toque na opção'],
-        ['Escolher o inicial', '← → parceiro, ↑ ↓ região, 1 a 9, Enter', 'D-pad e A', 'Toque para ver, toque de novo para escolher'],
-        ['Abrir o Poké Mart', 'L na escolha de parceiro', '—', 'Botão POKé MART, no canto superior direito'],
+        ['Escolher o parceiro', 'Setas na grade, Tab Iniciais/Ovos, 1 a 9 região, I detalhes, Enter começa', 'D-pad (↓ na última linha leva aos Ovos) e A', 'Toque para ver, toque de novo (ou Começar) para jogar'],
+        ['Abrir o Poké Mart', 'L na escolha de parceiro', '—', 'Toque na carteira (₽), no topo da escolha de parceiro'],
         ['Som liga/desliga', 'M', 'Ajustes', 'Ajustes'],
         ['Idioma', 'I na tela de título, ou Ajustes', 'Ajustes', 'PT | EN | ES na tela de título, ou Ajustes'],
       ],
       notes: [
-        'No controle, o D-pad e o analógico esquerdo navegam em todos os menus, A confirma, B volta e Start pausa. Dentro da partida, A usa o ataque especial, mas o controle ainda não move o Pokémon: para andar, use o teclado ou o toque.',
+        'No controle, o D-pad e o analógico esquerdo movem o Pokémon e navegam em todos os menus, A confirma, B volta e Start pausa. Dentro da partida, A usa o ataque especial.',
+        'Em Ajustes → Controles → Teclado e controle, dá para trocar a tecla e o botão do controle de cada ação (andar, especial, Mega, bote, pausar, confirmar e voltar). As setas e o Esc sempre funcionam.',
         'No celular, dá para instalar o jogo como app em tela cheia: abra o menu do navegador e escolha "Adicionar à tela inicial".',
       ],
     },
@@ -243,13 +246,13 @@ export const sitePt = {
       paragraphs: (minutes: number, starters: number) => [
         `Escolha um dos ${starters} iniciais, de Kanto a Paldea. Cada um tem status, golpe inicial, golpes que aprende e um ataque especial próprios (veja a Pokédex).`,
         `Ande pelo campo e desvie: os golpes disparam sozinhos no ritmo da recarga. Sobreviva ${minutes} minutos de hordas cada vez maiores. No fim, Mewtwo aparece, e derrotá-lo vence a partida. Depois, se quiser, dá para continuar no modo sem fim.`,
-        'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado). Os Poké Dollars coletados vão para a carteira.',
+        'Se o seu HP chegar a zero, a partida acaba (a não ser que você tenha um Revive guardado ou esteja na arena de uma fenda, que só expulsa você de volta). Os Poké Dollars coletados vão para a carteira.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Os inimigos comuns ficam mais fortes a cada minuto (chefes não): ${rows.map(([at, hp, dmg]) => `em ${at}, ${hp}x de HP e ${dmg}x de dano`).join('; ')}.`,
       difficulty: 'Dificuldade',
       difficultyIntro:
-        'Escolha a dificuldade na tela de seleção do Pokémon, embaixo do botão de escolher (ou com a tecla X). Todas já vêm liberadas e a escolha fica salva. O Normal é a partida base; os outros níveis multiplicam:',
+        'Escolha a dificuldade na barra de baixo da escolha de parceiro, ao lado do botão Começar (ou com a tecla X). Todas já vêm liberadas e a escolha fica salva. O Normal é a partida base; os outros níveis multiplicam:',
       difficultyHead: ['Nível', 'HP dos inimigos', 'Dano que você leva', 'Ritmo de spawn', 'Velocidade dos inimigos', 'Escala por minuto', 'Cura'],
       timeline: 'Linha do tempo',
       timeHead: 'Tempo',
@@ -283,6 +286,15 @@ export const sitePt = {
         'Itens de tipo (Charcoal, Mystic Water…) só aparecem se o seu Pokémon aprende golpes daquele tipo. Quando não sobra nada para oferecer, vem uma Oran Berry (+40 HP).',
         'Trocar (sortear outras ofertas) e Pular (dispensar a subida de nível sem escolher nada, útil quando nenhuma oferta serve) são cargas compradas no Poké Mart.',
       ],
+      choices: (rarePercent: number, shinyOneIn: number) => [
+        'A partida começa com um draft: com o relógio parado, você escolhe o 2º golpe entre 3 da lista do seu Pokémon.',
+        'Todo golpe base se divide em dois caminhos no Nv 4 e no Nv 7: o card mostra "2 caminhos" e, ao ser escolhido, se abre nos dois. Cada caminho muda como o golpe joga (ricochetear, explodir, deixar rastro, ecoar…), não só os números.',
+        `Cada card sorteia a raridade: o raro (${n(rarePercent)}% de chance, moldura azul) sobe 2 níveis de uma vez, e o shiny (1 em ${shinyOneIn}, o dobro com o Shiny Charm) é uma escolha grátis, seguida de outra.`,
+        'Esquecer tira uma oferta da partida: o card sai voando, o espaço é sorteado de novo e aquele golpe ou item não volta mais. As cargas vêm do Escape Rope do Poké Mart, de cada chefe derrotado e de cada evolução.',
+        'A lista de golpes cresce com o Pokémon: cada evolução libera golpes novos (um aviso mostra quais), que aparecem com mais frequência nas 3 subidas de nível seguintes. São mais golpes do que espaços, então cada partida deixa alguns de fora.',
+        'Chefes derrotados deixam um TM com um golpe de fora do repertório, o Tutor de Golpes ensina tipos que você não tem, e vencer uma fenda oferece o golpe lendário do próprio lendário (um por partida). Com os espaços cheios, aprender pede para esquecer um golpe.',
+      ],
+      abilities: 'Na primeira evolução, o Pokémon desperta uma Habilidade: escolha 1 de 3 (a terceira é a Habilidade Oculta), que vale até o fim da partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia e Poliwhirl ainda perguntam em quem evoluir, e cada forma tem tipo, especial, golpes e Habilidades próprios.',
       evolution: (first: number, second: number) =>
         `Seu Pokémon evolui no Nv ${first} e no Nv ${second}, como nos jogos. Cada evolução dá mais HP e status, e a evolução final fortalece o ataque especial.`,
       itemsTitle: 'Held items',
@@ -299,6 +311,20 @@ export const sitePt = {
       itemHead: 'Item',
       resultHead: 'Evolução',
       noEvolution: (moves: string) => `Ainda sem evolução: ${moves}.`,
+      neverEvolves: 'Golpes assinatura, de TM, lendários e em dupla não evoluem: eles já são o golpe final e crescem pelos próprios caminhos.',
+      duoTitle: 'Golpes em dupla',
+      duoParagraphs: [
+        'Leve dois golpes ao nível máximo (ou evolua-os) e, se os tipos deles formarem uma das receitas abaixo, um card dourado oferece uni-los num golpe em dupla: ele toma o espaço do primeiro, libera o do segundo e sobe até o Nv 5. Os dois golpes usados não voltam mais.',
+        'As receitas vão por tipo, então funcionam com qualquer Pokémon. Só cabe 1 golpe em dupla por partida, e a Poké Ball nunca une golpes sozinha.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Golpe em dupla',
+      cursedTitle: 'Itens amaldiçoados',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `A partir de ${minutes.toLocaleString('pt-BR')} min, um baú trancado tem ${Math.round(chance * 100)}% de chance de esconder um item amaldiçoado: muito forte, mas com um preço. Você escolhe pegar ou deixar. Ele não ocupa espaço de item, fica até o fim da partida, e cabem até ${max}.`,
+      ],
+      cursedUpHead: 'Vantagem',
+      cursedDownHead: 'Preço',
     },
     special: {
       paragraphs: (min: number) => [
@@ -319,13 +345,18 @@ export const sitePt = {
       statusHead: 'Status',
       movesHead: 'Causado por',
       effectHead: 'Efeito',
-      names: { burn: 'Queimadura', poison: 'Veneno', paralysis: 'Paralisia', slow: 'Lentidão', sleep: 'Sono' } satisfies Record<StatusKind, string>,
+      names: { burn: 'Queimadura', poison: 'Veneno', paralysis: 'Paralisia', slow: 'Lentidão', sleep: 'Sono', freeze: 'Congelamento', mark: 'Marca', confuse: 'Confusão', seed: 'Semente', weaken: 'Enfraquecido' } satisfies Record<StatusKind, string>,
       effects: {
         burn: (attack: number) => `Dano por segundo. O inimigo queimado causa só ${n(attack * 100)}% do dano de contato.`,
         poison: (stacks: number) => `Dano por segundo que acumula até ${stacks}x.`,
         paralysis: (boss: number) => `Trava o inimigo por um instante e depois ele engasga de vez em quando. Em chefes dura ${n(boss * 100)}% do tempo.`,
         slow: (boss: number) => `Desacelera quem está perto. Em chefes dura ${n(boss * 100)}% do tempo.`,
         sleep: (seconds: number, boss: number) => `Os inimigos na tela dormem por ${seconds}s. Em chefes dura ${n(boss * 100)}% do tempo.`,
+        freeze: (shatter: number, boss: number) => `Congela o inimigo no lugar. O próximo golpe causa ${shatter}x de dano e quebra o gelo. Em chefes dura ${n(boss * 100)}% do tempo.`,
+        mark: (stacks: number) => `O inimigo marcado recebe mais dano de cada golpe, acumulando até ${stacks}x.`,
+        confuse: () => 'O inimigo anda sem rumo e machuca os outros inimigos em que esbarra. Chefes são imunes.',
+        seed: (heal: number, jumps: number) => `Dano por segundo que cura você em ${n(heal * 100)}% do dano. Quando o inimigo cai, a semente pula para ${jumps} vizinhos.`,
+        weaken: (boss: number) => `Lama nos olhos: o inimigo causa menos dano de contato. Em chefes dura ${n(boss * 100)}% do tempo.`,
       } satisfies Record<StatusKind, unknown>,
       flute: 'Poké Flute (item do mapa)',
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
@@ -341,9 +372,9 @@ export const sitePt = {
       specialHead: 'Especial Mega',
     },
     rifts: {
-      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; shiny: number }) => [
+      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; fallHp: number; shiny: number }) => [
         `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então toda partida tem 3 fendas, mesmo que os chefes demorem.`,
-        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa. Cair na arena também não encerra a partida: a fenda expulsa você para o mapa com ${r.fallHp}% do HP, sem recompensa, e o seu Revive fica guardado.`,
         'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
         `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
       ],
@@ -478,6 +509,11 @@ export const sitePt = {
         how: (ttl: number) => `Corre de você e escapa em ${ttl}s. Seus golpes acertam ele.`,
         reward: (jackpot: string) => `Uma moeda a cada golpe e o Pay Day (${jackpot}) se ele desmaiar.`,
       },
+      tutor: {
+        name: 'Tutor de Golpes',
+        how: (from: number, until: number) => `Arma a tenda uma vez entre ${from} e ${until} min (às vezes mais uma). Fique no círculo dela.`,
+        reward: (price: string) => `Ensina 1 de 2 golpes de tipos que você não tem. A primeira aula é grátis; a próxima custa ${price} da partida.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
@@ -541,7 +577,7 @@ export const sitePt = {
       late: 'O pagamento ainda não foi confirmado. Volte a esta página daqui a pouco para ver seu código.',
       sent: (handle: string) => `As recompensas foram para @${handle}. Elas chegam como Presente Misterioso na próxima sincronização do jogo.`,
       code: 'Seu código de resgate:',
-      codeHint: 'No jogo, entre na sua conta e abra o ♥ do título → Tenho um código. Ele vale uma vez, para a conta que resgatar: pode ser a de um amigo.',
+      codeHint: 'No jogo, entre na sua conta e abra o Hall da Fama do título → Tenho um código. Ele vale uma vez, para a conta que resgatar: pode ser a de um amigo.',
       copy: 'Copiar',
       copied: 'Copiado!',
       used: 'O código desta doação já foi resgatado.',

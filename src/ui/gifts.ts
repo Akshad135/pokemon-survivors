@@ -8,8 +8,8 @@ import { portraitUrl } from '../render/sprites'
 import { h, rich } from './dom'
 import { banner, toast } from './toasts'
 
-/** What a gift brought: an icon and a line of light markup. */
-const contentLine = (gift: Gift): { src: string; text: string } => {
+/** What a gift brought: an icon and a line of light markup. The admin's desk previews gifts with it too. */
+export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: string } => {
   const m = t().gifts
   const c = gift.content
   switch (c.kind) {
@@ -32,7 +32,7 @@ const contentLine = (gift: Gift): { src: string; text: string } => {
   }
 }
 
-/** Why it came: an invite, friends brought, a donation, or a day of the challenge (the place is in the ribbon). */
+/** Why it came: an invite, friends brought, a donation, the admin's present, or a day of the challenge (the place is in the ribbon). */
 const reasonLine = (gift: Gift) => {
   const c = gift.content
   if (c.kind === 'ribbon') return t().gifts.ribbonWhy(formatDay(c.ribbon.day), c.ribbon.rank, c.ribbon.total)
@@ -45,6 +45,8 @@ const reasonLine = (gift: Gift) => {
       return t().gifts.friends(r.count)
     case 'support':
       return t().gifts.support(r.tier)
+    case 'staff':
+      return t().gifts.staff(r.from)
   }
 }
 

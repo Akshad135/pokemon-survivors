@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { MEGA_BRANCH } from '../data/branches'
 import { PLAYABLE } from '../data/hatchlings'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
@@ -23,8 +24,10 @@ describe('mega data', () => {
 
   it('tells apart the forms and stones of a line with two Megas', () => {
     for (const line of MEGA_LINES) {
+      // Gardevoir's and Gallade's Megas share a form key: they live under different dex numbers (`MEGA_BRANCH`).
+      const forms = megasOf(line).map((id) => `${MEGA_BRANCH[id] ?? ''}:${MEGAS[id].form}`)
       const defs = megasOf(line).map((id): MegaDef => MEGAS[id])
-      expect(new Set(defs.map((d) => d.form)).size).toBe(defs.length)
+      expect(new Set(forms).size).toBe(defs.length)
       expect(new Set(defs.map((d) => d.stone)).size).toBe(defs.length)
     }
     expect(megasOf('charmander')).toEqual(['charizardX', 'charizardY'])
@@ -91,6 +94,20 @@ describe('mega evolution', () => {
     step(g, { move: { x: 0, y: 0 }, special: false }, DT)
     expect(g.player.stats.might).toBeCloseTo(might)
     expect(g.mega.charge).toBe(MEGA.recharge)
+  })
+
+  it('drops a wind-up the Mega cut short when its special is a chain', () => {
+    const g = createGame('totodile', { w: 480, h: 270 }, 1)
+    g.player.stage = 2
+    recomputeStats(g)
+    grantStone(g, 'feraligatr')
+    step(g, { move: { x: 0, y: 0 }, special: true }, DT)
+    expect(g.special.charge).toBeGreaterThan(0)
+    step(g, { move: { x: 0, y: 0 }, special: false, mega: true }, DT)
+    for (let t = 0; t <= MEGA.intro + DT; t += DT) step(g, { move: { x: 0, y: 0 }, special: false }, DT)
+    expect(resolveSpecial('totodile', 2, g.mega.stone).id).toBe('waveCrash')
+    expect(g.special.charge).toBe(0)
+    expect(g.special.cooldown).toBe(0)
   })
 
   it('only takes a stone of its own line', () => {

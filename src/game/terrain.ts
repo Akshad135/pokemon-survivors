@@ -1,5 +1,6 @@
 import { hash2, weightedPick } from '../engine/rng'
-import { PLAYABLE } from '../data/hatchlings'
+import { abilityImmune } from './abilities'
+import { playerForm } from './branch'
 import { ARENA_LAYOUTS, type ArenaPiece } from '../data/arenas'
 import { CLIFFS, CLUSTER_SLOTS, LAKES, SOLID_FOOT, TERRAIN, type Ellipse, type FeatureKind, type SolidKind } from '../data/terrain'
 import { arenaGround } from './arenaFloor'
@@ -191,10 +192,10 @@ export const overTerrain = (e: Enemy) =>
 export const enemyGroundPace = (g: Game, e: Enemy) =>
   overTerrain(e) || e.types.includes('water') || groundAt(g, e.x, e.y) !== 'water' ? 1 : TERRAIN.waterPace
 
-export const playerTypes = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.types
+export const playerTypes = (g: Game) => playerForm(g).types
 
-/** The player's pace in water: Water types swim at full speed. */
-export const playerWaterPace = (g: Game) => (playerTypes(g).includes('water') ? 1 : TERRAIN.waterPace)
+/** The player's pace in water: Water types swim at full speed, and so does an ability that ignores terrain (Levitate). */
+export const playerWaterPace = (g: Game) => (playerTypes(g).includes('water') || abilityImmune(g, 'terrain') ? 1 : TERRAIN.waterPace)
 
 /**
  * Nudges an enemy pressed against a solid along its edge, toward the player's

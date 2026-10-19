@@ -6,8 +6,9 @@ import { healPlayer, hurtPlayer } from './combat'
 import { dropItem } from './consumables'
 import { burst, floatText } from './effects'
 import { spawnEnemy } from './enemies'
-import { dropMegaStones } from './mega'
+import { dropMegaStones, heldMega } from './mega'
 import { dropCoins, dropPickup } from './pickups'
+import { dropLegendaryTm } from './tms'
 import { riftLoot, riftScale, type RiftArena } from './rift'
 import { rollShiny } from './shiny'
 import { groundAt, playerTypes } from './terrain'
@@ -17,7 +18,8 @@ import type { Enemy, Game } from './types'
  * The arena behind a rift: a floor with its own shape, scenery and ground
  * rule (`data/arenas.ts`) where the player duels one legendary. Entering sets
  * the world aside (horde, hazards, pickups, props) and leaving puts it back
- * exactly as it was. The run clock keeps going.
+ * exactly as it was. The run clock keeps going. Falling here doesn't end the
+ * run: the rift throws the fainted player back out (`fallInArena`).
  */
 
 /** Seconds of invulnerability when stepping in or out, so nobody lands on a hit. */
@@ -65,12 +67,12 @@ export const enterArena = (g: Game, legend: RiftLegend, x: number, y: number) =>
       return { kind: s.piece, x: x + s.x, y: y + s.y, variant: i, foot: [{ ...foot, x: x + s.x + foot.x, y: y + s.y + foot.y }] }
     }),
   }
-  g.rift.arena = { legend, shiny, x, y, left: RIFT.arenaTime, age: 0, bossId: boss.id, loot: null, stash, terrain }
+  g.rift.arena = { legend, shiny, x, y, left: RIFT.arenaTime, age: 0, bossId: boss.id, loot: null, fall: null, stash, terrain }
   g.events.push({ kind: 'riftEnter', enemy: legend, shiny })
 }
 
-/** Brings the player back to the world they left. `won` decides the toast; the loot was already dropped. */
-export const exitArena = (g: Game, outcome: 'won' | 'collapse') => {
+/** Brings the player back to the world they left. `outcome` decides the toast; the loot was already dropped. */
+export const exitArena = (g: Game, outcome: 'won' | 'collapse' | 'fallen') => {
   const arena = g.rift.arena
   if (!arena) return
   const { stash } = arena
@@ -103,6 +105,36 @@ export const exitArena = (g: Game, outcome: 'won' | 'collapse') => {
   g.events.push({ kind: 'riftExit', outcome })
 }
 
+/**
+ * The player's HP hit 0 in the arena: instead of the game over, they faint and
+ * the rift throws them out (`updateArenaFall` plays it with the world held
+ * still). A held Revive is kept for a real fall.
+ */
+export const fallInArena = (g: Game) => {
+  const arena = g.rift.arena
+  if (!arena || arena.fall !== null) return
+  arena.fall = RIFT.fallTime
+  g.player.hp = 0
+  g.shake = Math.max(g.shake, 8)
+  g.events.push({ kind: 'riftFall', enemy: arena.legend })
+}
+
+/**
+ * Runs the defeat while it plays and lands the player back outside with a bit
+ * of HP when it ends. Returns whether it is playing (the simulation waits).
+ */
+export const updateArenaFall = (g: Game, dt: number) => {
+  const arena = g.rift.arena
+  if (!arena || arena.fall === null) return false
+  arena.fall -= dt
+  if (arena.fall > 0) return true
+  const p = g.player
+  p.hp = Math.max(1, Math.round(p.stats.maxHp * RIFT.fallHp))
+  p.hurt = 0
+  exitArena(g, 'fallen')
+  return true
+}
+
 /** Keeps a circle on the arena's floor (world coordinates in, arena coordinates for the geometry). */
 const keepOnFloor = (o: { x: number; y: number }, arena: RiftArena, floor: Parameters<typeof keepOn>[0], holes: Parameters<typeof keepOn>[1], r: number) => {
   const local = { x: o.x - arena.x, y: o.y - arena.y }
@@ -120,7 +152,9 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
   for (let i = 0; i < loot.pokeballs; i++) dropPickup(g, x - 8 + i * 8, y + 4, 'pokeball')
   loot.items.forEach((item, i) => dropItem(g, x + 10 + i * 6, y, item))
   // A Mega line's first beaten legendary also leaves its Mega Stone (or both, to choose from).
-  if (!g.mega.stone && !g.pickups.some((k) => k.kind === 'megaStone')) dropMegaStones(g, x, y - 10)
+  if (!heldMega(g) && !g.pickups.some((k) => k.kind === 'megaStone')) dropMegaStones(g, x, y - 10)
+  // So does its legendary TM, until the run has learned one.
+  dropLegendaryTm(g, arena.legend, x + 14, y - 6)
   const p = g.player
   const heal = Math.round(healPlayer(g, p.stats.maxHp * loot.heal))
   floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
@@ -137,7 +171,8 @@ const win = (g: Game, arena: RiftArena, boss: Enemy | undefined) => {
  */
 export const updateArena = (g: Game, dt: number) => {
   const arena = g.rift.arena
-  if (!arena) return
+  // A player who fainted this tick is on the way out: no win, no collapse.
+  if (!arena || arena.fall !== null) return
   const layout = ARENA_LAYOUTS[arena.legend]
   const before = stepsAt(layout.tide, arena.age) + stepsAt(layout.crumble, arena.age)
   arena.age += dt
@@ -153,7 +188,7 @@ export const updateArena = (g: Game, dt: number) => {
   for (const e of g.enemies) keepOnFloor(e, arena, whole, [], e.radius)
   // Shots break on the edge.
   retain(g.hazards, (h) => onFloor(whole, h.x - arena.x, h.y - arena.y, 4))
-  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'])
+  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'], 'lava')
 
   if (arena.loot === null) {
     const boss = g.enemies.find((e) => e.id === arena.bossId)

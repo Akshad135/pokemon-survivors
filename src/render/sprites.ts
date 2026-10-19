@@ -1,7 +1,7 @@
 import { bodyOf, type Body } from '../data/bodies'
 import type { MegaForm } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
-import { createCanvas, context2d, fromStrings } from '../engine/pixelart'
+import { createCanvas, context2d, fromStrings, onCanvasReset } from '../engine/pixelart'
 import type { Dir8 } from '../engine/math'
 
 /**
@@ -184,6 +184,15 @@ const PUFF = [
 
 let puff: Sheet | null = null
 const standIns = new Map<Dex, SpeciesSprites>()
+
+// A GPU reset blanks the silhouettes (and their tints, keyed by them) and the puff, all canvases.
+// The sheets are images and survive, so the silhouettes are redrawn from them.
+onCanvasReset(() => {
+  for (const s of cache.values()) for (const sheet of Object.values(s.anims)) sheet.white = silhouette(sheet.img)
+  puff = null
+  standIns.clear()
+})
+
 /** Downloads `sprites` already kicked off: dex numbers (normal forms) and alternate form cache keys. */
 const requested = new Set<Dex | string>()
 
@@ -243,6 +252,12 @@ export const sprites = (dex: Dex, shiny = false, form?: FormKey) =>
 
 export const portraitUrl = (dex: Dex, shiny = false) =>
   `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`
+
+/** A species' Walk sheet and frame size, for DOM art drawn from its first frame (facing down). */
+export const walkSheet = (dex: Dex) => {
+  const walk = MANIFEST[String(dex)]?.anims.Walk
+  return walk && { url: `${base(dex)}/Walk.png`, fw: walk.frameWidth, fh: walk.frameHeight }
+}
 
 /** Sprites if already loaded, without throwing (menus draw progressively). */
 export const loadedSprites = (dex: Dex, shiny = false): SpeciesSprites | undefined => cache.get(cacheKey(dex, shiny))

@@ -1,4 +1,4 @@
-import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
+import { canvasCache, context2d, createCanvas, fromStrings, lazy, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { Medal } from '../data/achievements'
 import type { ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
@@ -7,6 +7,16 @@ import type { EggTier } from '../game/eggs'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
+import { EGG_MOVE_ICONS } from './eggMoveArt'
+import { EGG_MOVE_3_ICONS } from './eggMove3Art'
+import { EGG_MOVE_2_ICONS } from './eggMove2Art'
+import { SIGNATURE_ICONS } from './signatureArt'
+import { TM_ICONS } from './tmArt'
+import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
+import { cursedIcon, DUO_ICONS } from './duoArt'
+import type { CurseId } from '../data/curses'
+import { LEGENDARY_ICONS } from './legendaryArt'
+import * as TE from './typeEvolvedArt'
 
 /**
  * All hand-authored pixel art (projectiles, pickups, icons). Sprites are built
@@ -28,10 +38,7 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   return canvas
 }
 
-export const lazy = <T>(build: () => T) => {
-  let value: T | undefined
-  return () => (value ??= build())
-}
+export { lazy }
 
 export const art = (rows: readonly string[], palette: Palette, outline?: string) => {
   const sprite = fromStrings(rows, palette)
@@ -58,6 +65,9 @@ const SHURIKEN = ['...1...', '...1...', '..121..', '1112111', '..121..', '...1..
 const JAW = ['.111111111.', '12222222221', '13.3.3.3.31']
 const ORB = ['..111..', '.12221.', '1223221', '1233321', '1223221', '.12221.', '..111..']
 const HEART = ['.11.11.', '1221221', '1232221', '1222221', '.12221.', '..121..', '...1...']
+/** Settings gear and help mark for the menus' top bar (`ui/shell.ts`): one ink color, holes see through to the button. */
+const GEAR = ['....1111....', '.11.1111.11.', '.1111111111.', '..11111111..', '11111..11111', '1111....1111', '1111....1111', '11111..11111', '..11111111..', '.1111111111.', '.11.1111.11.', '....1111....']
+const HELP = ['.111111.', '11111111', '111..111', '....1111', '...1111.', '..1111..', '..111...', '........', '..111...', '..111...']
 const NOTE = ['...11.', '...121', '...1.1', '...1..', '.111..', '1221..', '.11...']
 const BLADE = ['.......11', '.....1121', '...11231.', '.11231...', '1231.....', '11.......']
 
@@ -108,6 +118,13 @@ const PILLAR = [
 const NEEDLE = ['11......', '.1222223', '11......']
 /** Horn pointing right. */
 const HORN = ['111..........', '1221111......', '.1222221111..', '.123333333441', '.1222221111..', '1221111......', '111..........']
+/** Gunk Shot's heap of garbage: 1 rim, 2 sludge, 3 shine, 4 slime, 5 junk. */
+const TRASH = [
+  '.....1111.....', '...11222211...', '..1223322221..', '.122332225221.', '.123222225521.', '12222442222221',
+  '12224444222321', '12222442222221', '.122222224421.', '.112222244211.', '...11111111...',
+]
+/** Blizzard's falling icicle, point down: 1 edge, 2 ice, 3 light, 4 shine. */
+const ICICLE = ['.11111.', '1233321', '1234321', '1234321', '.12421.', '.12421.', '.12321.', '..121..', '..121..', '..121..', '...1...', '...1...']
 const SNOWFLAKE = ['....1....', '.1..1..1.', '..1.1.1..', '...121...', '111222111', '...121...', '..1.1.1..', '.1..1..1.', '....1....']
 
 const ICE = { 1: '#3878a8', 2: '#98d8f8', 3: '#d8f0ff', 4: '#ffffff' }
@@ -160,6 +177,8 @@ export const FX = {
   heart: lazy(() => art(HEART, { 1: '#a02858', 2: '#f878a8', 3: '#ffffff' }, '#401020')),
   note: lazy(() => art(NOTE, { 1: '#c03018', 2: '#f8b030' }, '#401008')),
   blade: lazy(() => art(BLADE, { 1: '#286020', 2: '#78d850', 3: '#f0fff0' }, '#183010')),
+  /** Leaf Blade's critical swing. */
+  critBlade: lazy(() => art(BLADE, { 1: '#806010', 2: '#f8d030', 3: '#ffffff' }, '#302008')),
   spikes: lazy(() => art(SPIKE, { 1: '#e0b8f0', 2: '#a040c0', 3: '#502060' }, '#201028')),
   barbs: lazy(() => art(BARBS, { 1: '#f0d8f8', 2: '#b058d0', 3: '#6a2a88', 4: '#88c040' }, '#201028')),
   wisp: lazy(() => {
@@ -181,6 +200,114 @@ export const FX = {
   pin: lazy(() => art(NEEDLE, { 1: '#587018', 2: '#d8f070', 3: '#ffffff' }, '#203008')),
   horn: lazy(() => art(HORN, { 1: '#585870', 2: '#c8c8d8', 3: '#e8e8f0', 4: '#ffffff' }, '#202030')),
   snowflake: lazy(() => art(SNOWFLAKE, { 1: '#98d8f8', 2: '#ffffff' }, '#183048')),
+  gunkBomb: lazy(() => art(TRASH, { 1: '#281830', 2: '#6a3a78', 3: '#b878c8', 4: '#88a038', 5: '#e0e0c8' }, '#100810')),
+  icicle: lazy(() => art(ICICLE, { 1: '#5898c8', 2: '#c8e8ff', 3: '#ffffff', 4: '#ffffff' }, '#183048')),
+  /** Leaf Storm's second leaf color, so the storm reads as many leaves. */
+  leafStormGold: lazy(() => art(LEAF, { 1: '#506010', 2: '#b8d038', 3: '#f8f8b0' }, '#203008')),
+}
+
+/* ---------------- Verb moves (`render/verbFx.ts`) ---------------- */
+
+/** A small flame licking up from the ground: 1 rim, 2 flame, 3 light, 4 core. */
+const FLAME_LICK = ['...1...', '..12...', '..121..', '.1221..', '.12321.', '1233321', '1234321', '1233321', '.11111.']
+/** A ring of fire (Flame Wheel's icon). */
+const FIRE_RING = [
+  '....1111....', '..11222211..', '.1233333321.', '.123....421.', '123......321', '12........21',
+  '12........21', '123......321', '.124....321.', '.1233333321.', '..11222211..', '....1111....',
+]
+/** The sun gathering into a beam (Solar Beam's icon): 1 rays, 2 leaf green, 3 light, 4 white. */
+const SUN_BEAM = [
+  '.1..1........', '..1222.......', '1.233321.....', '.23444322222.', '1234444333333',
+  '.23444322222.', '1.233321.....', '..1222.......', '.1..1........',
+]
+/** A ball of brine: 1 rim, 2 sea, 3 light, 4 salt shine. */
+const BRINE_BALL = ['..111..', '.12321.', '1234321', '1233421', '1223321', '.12221.', '..111..']
+/** Brine's icon: the ball with salt crystals flying off. */
+const BRINE_ICON = ['.......5..', '..111.555.', '.12321.5..', '1234321...', '1233421.5.', '1223321...', '.12221..5.', '..111.....']
+/** Electro Ball: 1 rim, 2 yellow, 3 light, 4 white, 5 the bolt across it. */
+const ELECTRO = ['..11111..', '.1222221.', '122235221', '122355321', '123553321', '123533221', '122532221', '.1222221.', '..11111..']
+/** Venoshock's glob, dripping: 1 rim, 2 poison, 3 light, 4 toxic glint. */
+const GLOB = ['...111...', '..12221..', '.1233221.', '123342221', '123422221', '122222221', '.1222221.', '..11211..', '...1.1...']
+/** Self-Destruct's icon: a blast star. 1 red, 2 orange, 3 yellow, 4 white. */
+const BLAST = [
+  '.....1.....', '.1...1...1.', '..1.121.1..', '...12321...', '.112343211.', '11234443211',
+  '.112343211.', '...12321...', '..1.121.1..', '.1...1...1.', '.....1.....',
+]
+/** A feather: 1 rim, 2 vane, 3 shine, 4 quill. */
+const FEATHER = ['..1..', '.121.', '12321', '12321', '12321', '.121.', '.141.', '..4..', '..4..']
+/** Sucker Punch's shadow fist pointing right. */
+const SHADOW_FIST = ['..1111..', '.122221.', '12333311', '12333331', '12333321', '.1222221', '..11111.']
+/** Future Sight's eye: 1 rim, 2 iris ring, 3 glow, 4 pupil. */
+const EYE = ['...11111...', '.112222211.', '12223332221', '12233433221', '12223332221', '.112222211.', '...11111...']
+/** A bone: 1 rim, 2 bone, 3 shine. */
+const BONE = ['.11.......11.', '1321111111231', '.12222222221.', '1221111111221', '.11.......11.']
+/** A floating pointed stone (Stealth Rock): 1 rim, 2 stone, 3 light, 4 shade. */
+const POINTED_STONE = ['....1....', '...131...', '...1321..', '..133221.', '..132221.', '.13322241', '132222441', '.1222441.', '..12441..', '...141...', '....1....']
+/** U-turn's icon: down, around and back up. */
+const U_ARROW = ['.1.....1..', '121...121.', '121..12221', '121....2..', '121....2..', '.121..21..', '..1222...'.padEnd(10, '.'), '...111....']
+/** Dragon Tail's icon: a scaled tail curling into a spade tip. */
+const TAIL_ICON = [
+  '.........11', '........121', '.......1231', '..111..1221', '.12221.121.', '1233221221.',
+  '1231.12221.', '121...111..', '.1.........',
+]
+/** Sheer Cold's icon: a crystal in a ring of frost. */
+const CRYSTAL = ['....1....', '...121...', '..12321..', '.1234321.', '123444321', '.1234321.', '..12321..', '...121...', '....1....']
+const FROST_RING = [
+  '...1.1.1...', '.1.......1.', '...........', '1.........1', '...........', '1.........1',
+  '...........', '1.........1', '...........', '.1.......1.', '...1.1.1...',
+]
+
+const FIRE = { 1: '#a82010', 2: '#e85818', 3: '#f8b030', 4: '#fff4b0' }
+const GRASS_SUN = { 1: '#f8e070', 2: '#58b838', 3: '#c8f088', 4: '#ffffff' }
+const BRINE_SEA = { 1: '#183878', 2: '#3868c8', 3: '#88b8f0', 4: '#ffffff', 5: '#ffffff' }
+const ELECTRIC = { 1: '#906800', 2: '#f8d030', 3: '#fff8a0', 4: '#ffffff', 5: '#ffffff' }
+const POISON = { 1: '#381040', 2: '#9038a0', 3: '#d080e0', 4: '#b8f060' }
+const SHADOW = { 1: '#100810', 2: '#382838', 3: '#6a5068' }
+const PSYCHIC = { 1: '#801850', 2: '#f85888', 3: '#ffd0e8', 4: '#300818' }
+const BONE_WHITE = { 1: '#584830', 2: '#e8e0c8', 3: '#ffffff' }
+const STONE_GREY = { 1: '#282420', 2: '#a09888', 3: '#ece4d4', 4: '#666058' }
+const BUG = { 1: '#506010', 2: '#a8b820', 3: '#e0f080' }
+const DRAGON = { 1: '#200868', 2: '#7038f8', 3: '#b898ff' }
+
+/**
+ * A steel gear, `teeth` square teeth around a body with a hub, rotated by `turn`
+ * (radians): authored as pixel rows from its shape, so every frame stays crisp.
+ * 1 rim, 2 steel, 3 shine (top left), 4 hole, 5 hub.
+ */
+const gearRows = (size: number, teeth: number, turn: number) => {
+  const c = (size - 1) / 2
+  const inside = (x: number, y: number) => {
+    const d = Math.hypot(x - c, y - c)
+    const seg = ((((Math.atan2(y - c, x - c) + turn) / (Math.PI * 2)) * teeth) % 1 + 1) % 1
+    return d <= c * 0.7 || (d <= c + 0.4 && seg < 0.45)
+  }
+  return Array.from({ length: size }, (_, y) =>
+    Array.from({ length: size }, (_, x) => {
+      if (!inside(x, y)) return '.'
+      const d = Math.hypot(x - c, y - c)
+      if (d < c * 0.2) return '4'
+      if (d < c * 0.38) return '5'
+      if (!inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)) return '1'
+      return x + y < 2 * c - c * 0.5 ? '3' : '2'
+    }).join(''),
+  )
+}
+
+export const VERB_FX = {
+  flameLick: lazy(() => [art(FLAME_LICK, FIRE), fromStrings(FLAME_LICK, FIRE, { mirror: true })]),
+  brine: lazy(() => art(BRINE_BALL, BRINE_SEA, '#0c1c40')),
+  electro: lazy(() => art(ELECTRO, ELECTRIC, '#403000')),
+  glob: lazy(() => art(GLOB, POISON, '#200818')),
+  feather: lazy(() => art(FEATHER, { 1: '#6858b0', 2: '#e8e0f8', 3: '#ffffff', 4: '#a890f0' })),
+  /** Focus Punch's fist: Mach Punch's, hotter, with a glowing rim (drawn ×2). */
+  bigFist: lazy(() => art(FIST, { 1: '#701810', 2: '#e04030', 3: '#ffa080' }, '#fff0a0')),
+  shadowFist: lazy(() => art(SHADOW_FIST, SHADOW, '#e8e0f0')),
+  eye: lazy(() => art(EYE, PSYCHIC, '#200818')),
+  bone: lazy(() => art(BONE, BONE_WHITE, '#201810')),
+  stones: lazy(() => [art(POINTED_STONE, STONE_GREY, '#181008'), outlined(fromStrings(POINTED_STONE, STONE_GREY, { mirror: true }), '#181008')]),
+  /** Four turns of the gear (an eighth of a tooth apart each). */
+  gear: lazy(() => [0, 1, 2, 3].map((k) => art(gearRows(15, 8, (k * Math.PI) / 16), { 1: '#505068', 2: '#a0a0b8', 3: '#e0e0f0', 4: '#181820', 5: '#707088' }, '#101018'))),
+  crystal: lazy(() => art(CRYSTAL, ICE, '#183048')),
 }
 
 /* ---------------- Eggs ---------------- */
@@ -215,7 +342,7 @@ const EGG_PALETTES = {
 const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048' } as const satisfies Record<EggTier, string>
 
 /** Memoized sprite per key (one per tier and crack stage). */
-const eggCache = new Map<string, PixelSprite>()
+const eggCache = canvasCache<string, PixelSprite>()
 const toSprite = (key: string, build: () => PixelSprite) => {
   let s = eggCache.get(key)
   if (!s) eggCache.set(key, (s = build()))
@@ -250,6 +377,33 @@ const SPARKLES = [
 
 export const SPARKLE = lazy(() => SPARKLES.map((rows) => fromStrings(rows, { 1: '#f8e070', 2: '#ffffff' })))
 
+/* ---------------- Lobby emotes (render/titleScene.ts) ---------------- */
+
+/** A speech bubble with its tail at the bottom; the 7×7 icon goes at (2, 2). */
+const BUBBLE = [
+  '..1111111..', '.122222221.', '12222222221', '12222222221', '12222222221', '12222222221', '12222222221',
+  '12222222221', '12222222221', '.122222221.', '..1112111..', '....121....', '.....1.....',
+]
+const EMOTE_ICONS = {
+  heart: { rows: ['.11.11.', '1211111', '1111111', '1111111', '.11111.', '..111..', '...1...'], palette: { 1: '#e83850', 2: '#ffb8c8' } },
+  note: { rows: ['...11..', '...1.1.', '...1..1', '...1...', '.111...', '1111...', '.11....'], palette: { 1: '#3868d0' } },
+  bang: { rows: ['..111..', '..111..', '..111..', '...1...', '.......', '..111..', '..111..'], palette: { 1: '#e83838' } },
+  sparkle: { rows: SPARKLES[2], palette: { 1: '#e8a800', 2: '#f8e070' } },
+} as const satisfies Record<string, { rows: readonly string[]; palette: Palette }>
+
+export type Emote = keyof typeof EMOTE_ICONS
+
+/** PMD-style emote bubbles the lobby's Pokémon pop over their heads when they meet. */
+export const EMOTES = lazy(() => {
+  const build = (icon: (typeof EMOTE_ICONS)[Emote]) => {
+    const sprite = fromStrings(BUBBLE, { 1: '#283040', 2: '#f8f8f8' })
+    context2d(sprite).drawImage(fromStrings(icon.rows, icon.palette), 2, 2)
+    return sprite
+  }
+  const { heart, note, bang, sparkle } = EMOTE_ICONS
+  return { heart: build(heart), note: build(note), bang: build(bang), sparkle: build(sparkle) } satisfies Record<Emote, PixelSprite>
+})
+
 /* ---------------- Boss hazards ---------------- */
 
 const SHARD = ['....11.', '..1221.', '1123331', '..1221.', '....11.']
@@ -278,7 +432,7 @@ const ALERT = ['22', '22', '22', '22', '33', '..', '22', '33']
 const BEAM = ['1', '2', '2', '3', '3', '3', '2', '2', '1']
 const BEAM_TELEGRAPH = ['1', '2', '2', '2', '2', '2', '1']
 
-const beams = new Map<string, PixelSprite>()
+const beams = canvasCache<string, PixelSprite>()
 
 export const TRAIT_FX = {
   healCross: lazy(() => art(PLUS, { 1: '#58d858', 2: '#ffffff' }, '#184818')),
@@ -350,6 +504,10 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 }
 
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
+  ...SIGNATURE_ICONS,
+  ...TM_ICONS,
+  ...VERB_EVOLVED_ICONS,
+  ...LEGENDARY_ICONS,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),
@@ -402,7 +560,47 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   pinMissile: () => compose(10, 11, [[FX.pin(), 0, 0], [FX.pin(), 2, 3], [FX.pin(), 0, 6]]),
   megahorn: () => FX.horn(),
   dragonBreath: () => art(CONE, DRAGON_CONE, '#180840'),
+  flameWheel: () => art(FIRE_RING, FIRE, '#401008'),
+  solarBeam: () => art(SUN_BEAM, GRASS_SUN, '#183810'),
+  brine: () => art(BRINE_ICON, BRINE_SEA, '#0c1c40'),
+  electroBall: () => VERB_FX.electro(),
+  venoshock: () => VERB_FX.glob(),
+  selfDestruct: () => art(BLAST, FIRE, '#401008'),
+  roost: () => compose(9, 12, [[VERB_FX.feather(), 0, 0], [VERB_FX.feather(), 3, 1]]),
+  focusPunch: () => art(FIST, { 1: '#701810', 2: '#e04030', 3: '#ffa080' }, '#f8d030'),
+  gyroBall: () => VERB_FX.gear()[0]!,
+  suckerPunch: () => VERB_FX.shadowFist(),
+  futureSight: () => VERB_FX.eye(),
+  bonemerang: () => VERB_FX.bone(),
+  stealthRock: () => compose(16, 14, [[VERB_FX.stones()[0]!, 0, 1], [VERB_FX.stones()[1]!, 5, 0]]),
+  uTurn: () => art(U_ARROW, BUG, '#283008'),
+  dragonTail: () => art(TAIL_ICON, DRAGON, '#100430'),
+  sheerCold: () => compose(13, 13, [[art(FROST_RING, { 1: '#d8f0ff' }, '#3878a8'), 0, 0], [VERB_FX.crystal(), 1, 1]]),
   outrage: () => outlined(FX.dragonFlame()[0]!, '#180840'),
+  ...EGG_MOVE_ICONS,
+  ...EGG_MOVE_3_ICONS,
+  jawLock: () => art([...TE.MAW_TOP, ...TE.MAW_BOTTOM], TE.MAW, '#d8c0e8'),
+  superpower: () => art(TE.BIG_FIST, TE.FIST_PAL, '#281010'),
+  fissure: () => art(...TE.FISSURE_ICON, '#181818'),
+  extrasensory: () => art(TE.EYE, TE.EYE_PAL, '#401030'),
+  steelBeam: () => art(...TE.BEAM_ICON, '#202838'),
+  infernalParade: () => {
+    const flame = art(TE.PARADE_FLAME, TE.PARADE_PAL, '#181030')
+    return compose(16, 15, [[flame, 0, 1], [flame, 5, 0]])
+  },
+  phantomForce: () => {
+    const arrow = art(TE.SPECTRAL_ARROW, TE.SPECTRAL_PAL, '#181028')
+    return compose(13, 16, [[arrow, 0, 1], [arrow, 6, 0]])
+  },
+  aquaCutter: () => art(TE.PINWHEEL, TE.AQUA, '#102060'),
+  searingShot: () => compose(15, 15, [[art(TE.SEARING_BALL, TE.SEARING_PAL, '#401008'), 0, 0], [art(TE.SEARING_EMBER, TE.SEARING_PAL, '#401008'), 8, 8]]),
+  gigaDrain: () => art(TE.DRAIN_ORB, TE.DRAIN_PAL, '#103010'),
+  burningJealousy: () => art(TE.ENVY_FLAME, TE.ENVY_PAL, '#300818'),
+  trailblaze: () => art(TE.GIANT_BLADE, TE.BLADE_PAL, '#103010'),
+  liquidation: () => art(TE.CRESCENT, TE.WAVE_PAL, '#102060'),
+  alluringVoice: () => compose(15, 15, [[art(TE.heartRing(15), TE.HEART_PAL, '#401020'), 0, 0], [FX.heart(), 3, 3]]),
+  ...EGG_MOVE_2_ICONS,
+  ...DUO_ICONS,
 }
 
 const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
@@ -431,6 +629,7 @@ const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
   assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
   metronome: [['...11...', '...14...', '..1241..', '..1421..', '.122421.', '.124221.', '12422221', '11111111'], { 1: '#583010', 2: '#d89040', 4: '#f8f0d0' }],
   powerHerb: [['.2...2..', '232.232.', '.2...2..', '..1.1...', '...1....', '..11....', '.1......'], { 1: '#386820', 2: '#f8f8f8', 3: '#e83838' }],
+  ...TE.TYPE_ITEM_ART,
 }
 
 /* ---------------- Poké Mart icons ---------------- */
@@ -480,11 +679,23 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
 
 export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id])
 
+const iconSprites = canvasCache<MoveId, PixelSprite>()
+
+/** A move's icon as a sprite for the world (Metronome's bubble shows the move it called). */
+export const moveIconSprite = (id: MoveId) => {
+  let sprite = iconSprites.get(id)
+  if (!sprite) iconSprites.set(id, (sprite = MOVE_ICON_ART[id]()))
+  return sprite
+}
+
 export const itemIcon = (id: ItemId) =>
   toIconUrl(`item:${id}`, () => {
     const [rows, pal] = ITEM_ART[id]
     return art(rows, pal, '#181818')
   })
+
+/** A cursed item in its purple frame (`render/duoArt.ts`). */
+export const curseIcon = (id: CurseId) => toIconUrl(`curse:${id}`, () => cursedIcon(id))
 
 export const bagIcon = (id: BagItem) =>
   toIconUrl(`bag:${id}`, () => {
@@ -503,11 +714,29 @@ export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICK
 export const berryIcon = () => toIconUrl('berry', PICKUPS.berry)
 export const pokeballIcon = () => toIconUrl('pokeball', PICKUPS.pokeball)
 export const heartIcon = () => toIconUrl('heart', FX.heart)
+export const gearIcon = () => toIconUrl('gear', () => art(GEAR, { 1: '#303040' }))
+export const helpIcon = () => toIconUrl('help', () => art(HELP, { 1: '#303040' }))
 
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>
   tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()
 export const sparkleIcon = () => toIconUrl('sparkle', () => outlined(SPARKLE()[2]!, '#584010'))
+
+/** PlayStation's face buttons in their colors, the size of a Press Start 2P letter: the pixel fonts have no ✕ ○ □ △ (see `ui/inputLabels.ts`). */
+const PAD_GLYPHS = {
+  '✕': [['11....11', '111..111', '.111111.', '..1111..', '..1111..', '.111111.', '111..111', '11....11'], '#4a80e0'],
+  '○': [['..1111..', '.111111.', '111..111', '11....11', '11....11', '111..111', '.111111.', '..1111..'], '#e04850'],
+  '□': [['11111111', '11111111', '11....11', '11....11', '11....11', '11....11', '11111111', '11111111'], '#d058b8'],
+  '△': [['...11...', '..1111..', '..1111..', '.11..11.', '.11..11.', '11....11', '11111111', '11111111'], '#28a888'],
+} as const satisfies Record<string, readonly [readonly string[], string]>
+
+export type PadGlyph = keyof typeof PAD_GLYPHS
+export const isPadGlyph = (text: string): text is PadGlyph => text in PAD_GLYPHS
+export const padGlyphIcon = (glyph: PadGlyph) =>
+  toIconUrl(`pad:${glyph}`, () => {
+    const [rows, color] = PAD_GLYPHS[glyph]
+    return art(rows, { 1: color })
+  })
 
 /** Presente Misterioso: a wrapped box with a bow. 1 outline, 2 ribbon, 3 paper, 4 paper shade, 5 ribbon shade. */
 const GIFT = [
@@ -525,6 +754,25 @@ const GIFT = [
 ]
 
 export const giftIcon = () => toIconUrl('gift', () => art(GIFT, { 1: '#301018', 2: '#f8d030', 3: '#e83850', 4: '#a82038', 5: '#c89000' }))
+
+/** Ideias (the idea board): a lit bulb. 1 outline, 2 glass, 3 shine, 4 shade, 5-6 the screw base. */
+const BULB = [
+  '...11111...',
+  '..1322221..',
+  '.132222241.',
+  '13222222241',
+  '13222222241',
+  '12222222241',
+  '.122222441.',
+  '..1224441..',
+  '...12241...',
+  '...15551...',
+  '...16661...',
+  '...15551...',
+  '....111....',
+]
+
+export const bulbIcon = () => toIconUrl('bulb', () => art(BULB, { 1: '#303040', 2: '#f8d030', 3: '#fff8c0', 4: '#c89000', 5: '#c8d0e0', 6: '#7880a0' }))
 
 /* ---------------- Medals ---------------- */
 
@@ -556,7 +804,7 @@ const MEDAL_RIBBON = { 1: '#282830', 2: '#e04848', 3: '#4878e0' } as const
 /** Locked medals are a flat silhouette of the same shape. */
 const MEDAL_LOCKED = { 1: '#383848', 2: '#686878', 3: '#585868', 4: '#9898a8', 5: '#585868', 6: '#787888' } as const
 
-const MEDAL_SPRITES = new Map<string, PixelSprite>()
+const MEDAL_SPRITES = canvasCache<string, PixelSprite>()
 
 /** A medal as a sprite (share cards draw it on a canvas), cached. */
 export const medalSprite = (medal: Medal, locked = false) => {
@@ -592,7 +840,7 @@ const RIBBON_COLORS = {
   bronze: { 1: '#402010', 2: '#985028', 3: '#c87840', 4: '#e8a868', 5: '#f8d0a0', 6: '#fff0e0' },
 } as const satisfies Record<RibbonTier, Palette>
 
-const RIBBON_SPRITES = new Map<RibbonTier, PixelSprite>()
+const RIBBON_SPRITES = canvasCache<RibbonTier, PixelSprite>()
 
 /** A ribbon as a sprite (the Trainer Card draws it), cached. */
 export const ribbonSprite = (tier: RibbonTier) => {

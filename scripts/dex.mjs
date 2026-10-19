@@ -25,7 +25,12 @@ export const HATCHLINGS = [
   58, 59, 37, 38, 104, 105, 123, 212, 129, 130, 116, 117, 230, 140, 141, 228, 229, 216, 217,
   304, 305, 306, 328, 329, 330, 333, 334, 309, 310, 353, 354, // rare
   371, 372, 373, 287, 288, 289, 349, 350, // ultra rare
+  633, 634, 635, // Deino's line (ultra rare)
+  524, 525, 526, // Roggenrola's line (common)
+  403, 404, 405, // Shinx's line (common)
   446, 143, // Friendship Egg (invites)
+  // Branching evolutions (src/data/branches.ts): the eeveelutions, Gallade, Froslass, Politoed, Kleavor and Ceruledge
+  134, 135, 136, 196, 470, 471, 700, 475, 478, 186, 900, 937,
 ]
 export const HORDE = Object.values(roster).map((s) => s.dex)
 /** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
@@ -62,6 +67,7 @@ export const FORMS = {
   354: { mega: '0001' },
   362: { mega: '0001' },
   448: { mega: '0001' },
+  475: { mega: '0001' },
 }
 
 /**
@@ -99,6 +105,7 @@ export const FORM_CRIES = {
   398: { mega: 'staraptor-mega' },
   445: { mega: 'garchomp-mega', megaZ: 'garchomp-mega-z' },
   448: { mega: 'lucario-mega', megaZ: 'lucario-mega-z' },
+  475: { mega: 'gallade-mega' },
   500: { mega: 'emboar-mega' },
   652: { mega: 'chesnaught-mega' },
   655: { mega: 'delphox-mega' },

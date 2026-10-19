@@ -1,4 +1,4 @@
-import { context2d, createCanvas, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
+import { canvasCache, context2d, createCanvas, fromStrings, lazy, onCanvasReset, type Palette } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import type { BiomeId } from '../data/biomes'
 
@@ -248,7 +248,7 @@ const STYLES: Record<BiomeId, GroundStyle> = {
   },
 }
 
-const decorCache = new Map<BiomeId, (ctx: CanvasRenderingContext2D, s: Spot) => void>()
+const decorCache = canvasCache<BiomeId, (ctx: CanvasRenderingContext2D, s: Spot) => void>()
 
 const decorFor = (biome: BiomeId) => {
   let decorate = decorCache.get(biome)
@@ -315,7 +315,7 @@ const buildChunk = (biome: BiomeId, cx: number, cy: number) => {
   return canvas
 }
 
-const chunks = new Map<string, HTMLCanvasElement>()
+const chunks = canvasCache<string, HTMLCanvasElement>()
 
 const chunkKey = (biome: BiomeId, cx: number, cy: number) => `${biome}:${cx},${cy}`
 
@@ -351,19 +351,18 @@ const drawChunks = (ctx: CanvasRenderingContext2D, biome: BiomeId, camX: number,
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 
 /** One dither mask per step: step `n` lets `n` of every 16 pixels through. */
-const masks = (() => {
-  let cache: PixelSprite[] | null = null
-  return () =>
-    (cache ??= Array.from({ length: 17 }, (_, n) => {
-      const c = createCanvas(4, 4)
-      const mctx = context2d(c)
-      mctx.fillStyle = '#000'
-      BAYER.forEach((v, i) => v < n && mctx.fillRect(i % 4, Math.floor(i / 4), 1, 1))
-      return c
-    }))
-})()
+const masks = lazy(() =>
+  Array.from({ length: 17 }, (_, n) => {
+    const c = createCanvas(4, 4)
+    const mctx = context2d(c)
+    mctx.fillStyle = '#000'
+    BAYER.forEach((v, i) => v < n && mctx.fillRect(i % 4, Math.floor(i / 4), 1, 1))
+    return c
+  }),
+)
 
 let scratch: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; patterns: CanvasPattern[] } | null = null
+onCanvasReset(() => (scratch = null))
 
 const scratchFor = (w: number, h: number) => {
   if (!scratch || scratch.canvas.width !== w || scratch.canvas.height !== h) {

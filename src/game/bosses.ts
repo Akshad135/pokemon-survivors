@@ -6,7 +6,7 @@ import { attackWait, chainTarget, createFight, fightsInStances, patternLive, sho
 import { hurtPlayer } from './combat'
 import { burst } from './effects'
 import { blastHorde } from './enemies'
-import { isAsleep } from './status'
+import { isHeld } from './status'
 import type { Enemy, Game, Hazard } from './types'
 import { HAZARD_TYPES } from './weather'
 import * as dm from '../engine/dmath'
@@ -135,8 +135,8 @@ export const updateBosses = (g: Game, dt: number) => {
     if (e.fight === null && fightsInStances(e.kind)) e.fight = createFight(g.rng)
     const fight = e.fight
     if (fight && shouldEnrage(fight, e.hp, e.maxHp)) enrage(g, e)
-    // Stunned or asleep bosses hold their attacks (paralysis and the Poké Flute pay off here).
-    if (e.status.stun > 0 || isAsleep(e.status)) continue
+    // Stunned, asleep or frozen bosses hold their attacks (paralysis and the Poké Flute pay off here).
+    if (e.status.stun > 0 || isHeld(e.status)) continue
     if (e.cooldowns.length === 0) e.cooldowns = patterns.map((pt) => pt.every * 0.5)
     if (fight && tickStance(fight, dt, g.rng)) {
       patterns.forEach((pt, i) => {
@@ -191,7 +191,7 @@ export const updateHazards = (g: Game, dt: number) => {
     if (h.age < h.armAt || h.age > h.disarmAt) continue
     const reach = h.r + p.radius * 0.7
     if (dm.sq(h.x - p.x) + dm.sq(h.y - p.y) >= reach * reach) continue
-    hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual])
+    hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual], h.kind === 'shot' ? 'shot' : 'hazard')
     if (h.vanishOnHit) h.age = h.ttl
   }
   retain(g.hazards, (h) => h.age < h.ttl)

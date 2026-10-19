@@ -60,6 +60,10 @@ export const RIFT = {
   arenaTime: 60,
   /** Seconds to grab the loot after the legendary falls. */
   lootTime: 3,
+  /** Seconds the defeat plays (the player faints and the rift spits them out) before they land back outside. */
+  fallTime: 2.4,
+  /** Share of max HP the player lands back outside with after falling in the arena. */
+  fallHp: 0.3,
   /** Chance the legendary behind a rift is shiny (double ₽, an extra Poké Ball). */
   shinyOdds: 1 / 8,
 } as const
