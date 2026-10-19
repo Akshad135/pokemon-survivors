@@ -3823,6 +3823,19 @@ export const pt = {
     taken: (name: string) => `Você pegou *${name}*… _o poder tem um preço_.`,
     left: (name: string) => `Você deixou *${name}* no baú.`,
   },
+  /** A Poké Ball's new move or held item (`ui/pokeballPick.ts`): take it or leave it. */
+  pokeballPick: {
+    label: 'POKÉ BALL',
+    title: 'Algo novo na Poké Ball!',
+    take: 'Pegar',
+    leave: 'Deixar',
+    moveSlot: (used: number, max: number) => `Ocupa um espaço de golpe (${used}/${max} em uso).`,
+    itemSlot: (used: number, max: number) => `Ocupa um espaço de item (${used}/${max} em uso).`,
+    note: 'Se deixar, ela some. Melhorias do que você já tem entram sozinhas.',
+    left: (name: string) => `Você deixou *${name}* para trás.`,
+    /** Touch hint when the prize is a held item (a move's card says to hold it for the move card). */
+    itemHintTouch: 'Toque para escolher',
+  },
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {
     healer: (name: string) => `*${name}* cura os aliados por perto. Derrube primeiro!`,
