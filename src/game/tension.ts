@@ -43,6 +43,8 @@ export const TENSION = {
   rise: 90,
   /** Run time (s) before tension starts building: the first waves are a warm-up for everyone. */
   from: 90,
+  /** Run time (s) from which tension may reach its peak; before it, its ceiling climbs from 0 at `from` (`tensionCeiling`). */
+  full: 600,
   /** Seconds from full tension to 0 while the player is hurting or low. */
   fall: 30,
   /** Time constant (s) of `harm`. */
@@ -68,8 +70,8 @@ export const TENSION = {
  */
 export const TENSION_PEAK = {
   normal: { rate: 1.25, cap: 1.05, near: 0.5, speed: 1.05, elite: 0.05, surgeEvery: 60 },
-  hard: { rate: 2, cap: 1.1, near: 0.75, speed: 1.12, elite: 0.15, surgeEvery: 30 },
-  nightmare: { rate: 3, cap: 1.15, near: 1, speed: 1.2, elite: 0.3, surgeEvery: 20 },
+  hard: { rate: 1.75, cap: 1.1, near: 0.75, speed: 1.12, elite: 0.12, surgeEvery: 30 },
+  nightmare: { rate: 2.5, cap: 1.15, near: 1, speed: 1.2, elite: 0.2, surgeEvery: 20 },
 } as const satisfies Record<Difficulty, { rate: number; cap: number; near: number; speed: number; elite: number; surgeEvery: number }>
 
 export type TensionPeak = (typeof TENSION_PEAK)[Difficulty]
@@ -102,6 +104,9 @@ export const tensionAfter = (s: Pick<TensionState, 'level' | 'reach' | 'harm'>, 
   const dominance = Math.min(1, Math.max(0, (s.reach - TENSION.calm) / (TENSION.dominant - TENSION.calm)))
   return Math.min(1, s.level + ((0.5 + dominance * 0.5) * dt) / TENSION.rise)
 }
+
+/** The most tension the director may hold at run time `time`: none before `TENSION.from`, all of it from `TENSION.full`, so the early game stays a warm-up. */
+export const tensionCeiling = (time: number) => Math.min(1, Math.max(0, (time - TENSION.from) / (TENSION.full - TENSION.from)))
 
 /**
  * The spawn multipliers at tension `level` on a difficulty's `peak`: each knob

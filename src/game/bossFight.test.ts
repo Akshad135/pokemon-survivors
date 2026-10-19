@@ -60,7 +60,7 @@ describe('boss fights', () => {
 
     expect(telegraph(1.2, normal)).toBe(1.2)
     expect(telegraph(1.4, nightmare)).toBeCloseTo(1.4 * BOSS_DIFFICULTY.nightmare.telegraph)
-    expect(telegraph(0.9, nightmare)).toBe(MIN_TELEGRAPH)
+    expect(telegraph(0.85, nightmare)).toBe(MIN_TELEGRAPH)
     expect(telegraph(0.7, nightmare)).toBe(0.7)
     expect(telegraph(0.7, null)).toBe(0.7)
   })
