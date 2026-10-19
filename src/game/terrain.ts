@@ -92,7 +92,13 @@ export const featureAt = (seed: number, cx: number, cy: number): Feature | null 
   }
 }
 
-const cellKey = (cx: number, cy: number) => (cx + 32768) * 65536 + (cy + 32768)
+/**
+ * A cell's key, kept a small integer (15 bits per axis, wrapping every 32768 cells)
+ * so the lookups the walkers make every tick don't box a number. `cellOfKey` reads it back.
+ */
+const cellKey = (cx: number, cy: number) => ((cx & 0x7fff) << 15) | (cy & 0x7fff)
+/** The signed 15-bit cell coordinate stored in the low bits of `v`. */
+const unwrap = (v: number) => ((v & 0x7fff) << 17) >> 17
 
 const cell = (g: Game, cx: number, cy: number) => {
   const key = cellKey(cx, cy)
@@ -228,8 +234,8 @@ export const updateTerrain = (g: Game, dt: number) => {
     const pcx = Math.floor(p.x / C)
     const pcy = Math.floor(p.y / C)
     for (const key of g.terrain.cells.keys()) {
-      const cx = Math.floor(key / 65536) - 32768
-      const cy = (key % 65536) - 32768
+      const cx = unwrap(key >> 15)
+      const cy = unwrap(key)
       if (Math.abs(cx - pcx) > 5 || Math.abs(cy - pcy) > 5) g.terrain.cells.delete(key)
     }
   }

@@ -6,7 +6,11 @@ export type Grid = { cell: number; cells: Map<number, number[]>; used: number[][
 
 export const createGrid = (cell: number): Grid => ({ cell, cells: new Map(), used: [] })
 
-const key = (cx: number, cy: number) => (cx + 32768) * 65536 + (cy + 32768)
+/**
+ * A cell's key, kept a small integer (15 bits per axis, wrapping every 32768 cells,
+ * about a million px) so Map lookups don't box a number on every query.
+ */
+const key = (cx: number, cy: number) => ((cx & 0x7fff) << 15) | (cy & 0x7fff)
 
 export const clearGrid = (grid: Grid) => {
   for (const bucket of grid.used) bucket.length = 0

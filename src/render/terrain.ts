@@ -255,26 +255,27 @@ const cliff = (tiers: readonly Tier[], skin: CliffSkin, seed: number): Piece => 
   tiers.forEach((tier, ti) => {
     // The footprint on the ground, row `r` standing where screen row `r` would be at elevation 0.
     // Edges wobble a little around the ellipses, so a mountain never looks like a cake.
+    // The wobble along x depends on the column alone and the one along y on the row alone: worked out once each.
     const mask = new Uint8Array(w * h)
+    const wobbleX = Array.from({ length: w }, (_, sx) => (wobble((sx + 0.5 - ax) / 7, seed + ti) - 0.5) * amp)
     for (let r = 0; r < h; r++) {
-      for (let sx = 0; sx < w; sx++) {
-        const fx = sx + 0.5 - ax
-        const fy = r + 0.5 - ay
-        mask[r * w + sx] = inFoot(tier.foot, fx, fy, (wobble(fx / 7, seed + ti) - 0.5) * amp + (wobble((fy + 300) / 5, seed + 9) - 0.5) * amp * 0.4) ? 1 : 0
-      }
+      const fy = r + 0.5 - ay
+      const wobbleY = (wobble((fy + 300) / 5, seed + 9) - 0.5) * amp * 0.4
+      for (let sx = 0; sx < w; sx++) mask[r * w + sx] = inFoot(tier.foot, sx + 0.5 - ax, fy, wobbleX[sx]! + wobbleY) ? 1 : 0
     }
+    /** Whether the footprint reaches screen pixel (sx, sy) at elevation `e`. */
+    const on = (sx: number, sy: number, e: number) => sy + e < h && mask[(sy + e) * w + sx] === 1
     for (let sy = 0; sy < h; sy++) {
       for (let sx = 0; sx < w; sx++) {
         const fx = sx + 0.5 - ax
         const gy = sy + 0.5 - ay
-        const on = (e: number) => sy + e < h && mask[(sy + e) * w + sx] === 1
-        if (on(base + tier.h)) {
+        if (on(sx, sy, base + tier.h)) {
           const l = 0.55 + (noise(sx, sy, seed) - 0.5) * 0.5 + (noise(sx >> 2, sy >> 2, seed + 1) - 0.5) * 0.3
           put(g, sx, sy, shade(skin.top, l, sx, sy), TOP + ti)
           continue
         }
         for (let e = base + tier.h - 1; e >= base; e--) {
-          if (!on(e)) continue
+          if (!on(sx, sy, e)) continue
           const fy = gy + e
           // Which ellipse this bit of wall belongs to tells which way it faces.
           let nx = 0

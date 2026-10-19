@@ -679,6 +679,23 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
 
 export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id])
 
+/** Move and held item icons not made yet, for `warmIcon`. */
+let unmadeIcons: (() => unknown)[] | null = null
+
+/**
+ * Makes one level-up icon (a move's or a held item's) not made yet, so the
+ * cards open without encoding their pictures. True if it made one. Called in idle time.
+ */
+export const warmIcon = () => {
+  unmadeIcons ??= [
+    ...(Object.keys(MOVE_ICON_ART) as MoveId[]).map((id) => () => moveIcon(id)),
+    ...(Object.keys(ITEM_ART) as ItemId[]).map((id) => () => itemIcon(id)),
+  ]
+  const next = unmadeIcons.pop()
+  next?.()
+  return next !== undefined
+}
+
 const iconSprites = canvasCache<MoveId, PixelSprite>()
 
 /** A move's icon as a sprite for the world (Metronome's bubble shows the move it called). */

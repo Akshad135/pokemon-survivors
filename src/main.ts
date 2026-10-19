@@ -7,6 +7,7 @@ import { castSound } from './ui/castSounds'
 import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
+import { advancePacer, pacer, resetPacer } from './engine/pacing'
 import { context2d, resetCanvases } from './engine/pixelart'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
@@ -69,12 +70,12 @@ import { createCompanion, stepCompanion, type CompanionView } from './render/com
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
-import { render } from './render/draw'
+import { render, warmScenery } from './render/draw'
 import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon } from './render/art'
+import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
@@ -1110,7 +1111,8 @@ window.addEventListener('beforeunload', (e) => {
 /* ---------------- Loop ---------------- */
 
 let last = performance.now()
-let acc = 0
+/** The simulation's tick accumulator, snapped to the display's cadence (`engine/pacing.ts`). */
+const pace = pacer()
 
 const frame = (now: number) => {
   const dt = Math.min(0.1, (now - last) / 1000)
@@ -1125,9 +1127,9 @@ const frame = (now: number) => {
     const g = r.game
     let steps = 0
     if (g.phase === 'playing' || g.phase === 'evolving') {
-      acc += dt
+      advancePacer(pace, dt, STEP)
       // A level-up or a faint ends the frame's steps: the ones left over would go into the replay as ticks the run never played.
-      while (acc >= STEP && (g.phase === 'playing' || g.phase === 'evolving')) {
+      while (pace.acc >= STEP && (g.phase === 'playing' || g.phase === 'evolving')) {
         // The simulation gets the stick as the replay stores it (`moveCode`), so a re-simulation sees the same run.
         if (specialQueued) recordEvent(r.recorder, ['special'])
         if (megaQueued) recordEvent(r.recorder, ['mega'])
@@ -1136,11 +1138,11 @@ const frame = (now: number) => {
         specialQueued = false
         megaQueued = false
         lungeQueued = false
-        acc -= STEP
+        pace.acc -= STEP
         steps++
       }
     } else {
-      acc = 0
+      resetPacer(pace)
       specialQueued = false
       megaQueued = false
       lungeQueued = false
@@ -1180,6 +1182,34 @@ const frame = (now: number) => {
   duckMusic(run?.game.phase === 'paused' && !isSettingsOpen())
   requestAnimationFrame(frame)
 }
+
+/* ---------------- Idle warm-up ---------------- */
+
+/** Frame slack (ms) a warm-up step waits for, so it fits before the next frame. */
+const IDLE_SLACK = 6
+const hasIdle = 'requestIdleCallback' in window
+
+/**
+ * Sculpts terrain sprites (`warmScenery`) and makes the level-up icons (`warmIcon`)
+ * in the browser's idle time, as many as the frame's slack allows, so neither
+ * stalls a frame the first time it shows. Once all are made it checks again
+ * every second (the run moves on to new biomes). Without `requestIdleCallback`
+ * (Safari), one per timer.
+ */
+const pumpWarmUp = (deadline: { didTimeout: boolean; timeRemaining: () => number }) => {
+  // Menus and level-ups are calm (an evolution isn't: it plays on the canvas): what no frame waits on yet (other biomes) is built there.
+  const calm = !run || (run.game.phase !== 'playing' && run.game.phase !== 'evolving')
+  const warm = () => warmScenery(run?.game ?? null, calm) || warmIcon()
+  let made = false
+  if (deadline.didTimeout) made = warm()
+  else while (deadline.timeRemaining() > IDLE_SLACK && warm()) made = true
+  scheduleWarmUp(made ? (hasIdle ? 0 : 50) : 1000)
+}
+const scheduleWarmUp = (ms: number) =>
+  setTimeout(() => {
+    if (hasIdle) requestIdleCallback(pumpWarmUp, { timeout: 2000 })
+    else pumpWarmUp({ didTimeout: true, timeRemaining: () => 0 })
+  }, ms)
 
 /* ---------------- Boot ---------------- */
 
@@ -1236,6 +1266,7 @@ const boot = () => {
   // Back from signing in, the player already pressed start before leaving: straight to the menu.
   else showTitle({ intro: !backFromSignIn() })
   requestAnimationFrame(frame)
+  scheduleWarmUp(1000)
   void preloadInBackground()
   promptProfile()
   startAccount()
