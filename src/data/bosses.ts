@@ -86,7 +86,7 @@ export const MIN_TELEGRAPH = 0.8
  * boss hits more often instead of lasting longer.
  */
 export const BOSS_DIFFICULTY = {
-  normal: { pace: 1, more: 1, telegraph: 1, aim: 0.6, chain: BOSS_RAGE.chain },
+  normal: { pace: 1, more: 1, telegraph: 1, aim: 0.75, chain: BOSS_RAGE.chain },
   hard: { pace: 0.88, more: 1.25, telegraph: 0.92, aim: 0.85, chain: 0.5 },
   nightmare: { pace: 0.78, more: 1.4, telegraph: 0.86, aim: 1, chain: 0.65 },
 } as const satisfies Record<Difficulty, { pace: number; more: number; telegraph: number; aim: number; chain: number }>

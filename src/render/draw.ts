@@ -380,6 +380,8 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
     if (h.age < h.armAt) {
       const k = h.age / h.armAt
       blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
+      // A boss about to land here (`leap`) casts its shadow first, growing as it falls.
+      if (h.leaper >= 0) blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.7 * k)), Math.max(1, Math.round(r * 0.35 * k)), 'rgba(24,16,32,0.45)'), h.x, h.y)
       // The outline blinks faster as the impact gets close.
       if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
       return
