@@ -119,6 +119,7 @@ The bot's application has **Message Content** and **Server Members** on (Develop
 | `STRIPE_WEBHOOK_SECRET` | Optional. The Stripe webhook endpoint's signing secret (`whsec_…`). Without it the webhook answers 503 |
 | `STRIPE_PAYMENT_LINK` | Optional. The donation Payment Link's id (`plink_…`): set, the webhook ignores other Checkout Sessions of the account |
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Optional. The community Discord bot's token and the server's id. Without both there's no bot |
+| `POSTHOG_KEY` | Optional. The game's PostHog project token (`phc_…`, the same as the client's `VITE_POSTHOG_KEY`): 500s, uncaught exceptions and rejections go to its error tracking (`src/errors.ts`), tied to the player's id when the request had one. Without it errors only go to the log |
 | `PORT` | Default `3000` |
 
 ## Database
@@ -187,8 +188,11 @@ New versions roll out with no downtime:
 | `CLERK_SECRET_KEY` | Dokploy (`api`) | Production instance secret key |
 | `ABACATEPAY_API_KEY` | Dokploy (`api`) | AbacatePay production key, with `CHECKOUT:CREATE`, `PRODUCT:CREATE` and `PRODUCT:READ` |
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Dokploy (`api`) | The "Pokémon Survivors" bot's token and the community server's id |
+| `POSTHOG_KEY` | Dokploy (`api`) | PostHog (US cloud) project token, public |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
 | `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
+| `VITE_POSTHOG_KEY` | Vercel, production only | The same PostHog project token: the game's events and errors (`src/analytics.ts`) |
+| `POSTHOG_CLI_API_KEY`, `POSTHOG_CLI_PROJECT_ID` | Vercel, production only | A PostHog personal key with error tracking write access and the project's id, for `scripts/sourcemaps.mjs` to upload the source maps |
 
 ### Local development
 
