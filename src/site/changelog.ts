@@ -142,6 +142,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Level-up sem toque com tudo no máximo', en: 'No more tapping when everything is maxed', es: 'Subir de nivel sin tocar con todo al máximo' },
+        notes: [
+          {
+            pt: 'Com todos os golpes e itens no máximo, o level-up só tinha a Oran Berry para escolher. Agora ela é pega sozinha, sem abrir a tela, e um aviso rápido mostra o nível e quantas foram (com o Exp. Share, várias de uma vez).',
+            en: 'With every move and item maxed out, a level-up only had the Oran Berry to pick. Now it takes itself without opening the screen, and a quick notice shows the level and how many you got (several at once with an Exp. Share).',
+            es: 'Con todos los movimientos e ítems al máximo, subir de nivel solo ofrecía la Oran Berry. Ahora se toma sola, sin abrir la pantalla, y un aviso rápido muestra el nivel y cuántas fueron (con el Exp. Share, varias a la vez).',
+          },
+        ],
+      },
     ],
   },
   {

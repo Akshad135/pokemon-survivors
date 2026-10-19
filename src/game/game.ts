@@ -23,7 +23,7 @@ import { updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
 import { rebuildGrid, updateEnemies } from './enemies'
 import {
-  applyOffer, branchOffers, draftOffers, loadout, offerSubject, pendingEvolution, recomputeStats, rollOffers, shinyOfferOdds, xpFor,
+  applyOffer, branchOffers, draftOffers, loadout, nothingToChoose, offerSubject, pendingEvolution, recomputeStats, rollOffers, shinyOfferOdds, xpFor,
   type RollOptions,
 } from './leveling'
 import { createMapEvents, updateMapEvents } from './mapEvents'
@@ -378,6 +378,22 @@ export const chooseOffer = (g: Game, offer: Offer) => {
   g.pendingLevelUps--
   g.freshMoves = Math.max(0, g.freshMoves - 1)
   advancePhase(g)
+}
+
+/**
+ * Takes the level-ups with nothing to choose (`nothingToChoose`: only the Oran
+ * Berry), one after another, so no screen opens for them. The shell calls it,
+ * and `record` notes each pick first: a replay makes them as `offer` events,
+ * like a tap. Returns how many it took.
+ */
+export const takeBerryLevelUps = (g: Game, record: (index: number) => void) => {
+  let taken = 0
+  while (g.phase === 'levelup' && nothingToChoose(g.offers)) {
+    record(0)
+    chooseOffer(g, g.offers[0]!)
+    taken++
+  }
+  return taken
 }
 
 /** Spends a Poké Mart reroll: draws a fresh set of level-up offers (a fresh draft at the start). */
