@@ -122,6 +122,7 @@ export const en: Messages = {
     evolution: 'EVOLUTION!',
     evolves: (from, description) => `${from} evolves! ${description}`,
     berry: (name) => `${name} restores 40 HP.`,
+    autoBerry: (level, count) => `Lv ${level}! All maxed out: *Oran Berry*${count > 1 ? ` ×${count}` : ''}`,
     reroll: (n) => `Reroll (${n})`,
     skip: (n) => `Skip (${n})`,
     hintKeys: '↑ ↓ choose · ENTER confirm · 1-3 shortcut',

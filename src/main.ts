@@ -36,7 +36,7 @@ import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { FIELD, FIELD_MISSION_KINDS, TOGEPI_DEX, type FieldMissionKind } from './game/fieldMissionRules'
-import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step, takeBerryLevelUps } from './game/game'
 import { formAt, playerForm } from './game/branch'
 import { unlockedAt } from './game/learnsets'
 import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
@@ -84,7 +84,7 @@ import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
+import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
@@ -740,6 +740,10 @@ const syncOverlay = (r: Run) => {
   }
 }
 
+/** Level-ups that took the Oran Berry on their own (`takeBerryLevelUps`): the level reached and how many at once. */
+const berryToast = (g: Game, count: number) =>
+  toast(ui, h('span', { class: 'item-toast' }, h('img', { src: berryIcon(), alt: '' }), rich(t().levelUp.autoBerry(g.player.level, count))), 2200, 'autoBerry')
+
 /** After an evolution: what the new form can learn now (`unlockedAt`), each move with its icon. */
 const learnsToast = (g: Game) => {
   const moves = unlockedAt(g.starter, g.branch, g.player.stage)
@@ -1206,7 +1210,10 @@ const frame = (now: number) => {
       megaQueued = false
       lungeQueued = false
     }
+    // A level-up with only the Oran Berry to pick takes it without a screen, recorded like a tap.
+    const berries = takeBerryLevelUps(g, (i) => recordEvent(r.recorder, ['offer', i]))
     for (const e of g.events.splice(0)) handleEvent(r, e)
+    if (berries > 0) berryToast(g, berries)
     if (run === r) {
       syncOverlay(r)
       // Toasts and banners wait out menus, level-ups and evolutions with their clocks stopped.
