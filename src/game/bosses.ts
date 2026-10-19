@@ -13,7 +13,8 @@ import * as dm from '../engine/dmath'
 
 type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 'ttl'> & Partial<Hazard>
 
-const spawnHazard = (g: Game, init: HazardInit) => {
+/** Adds a hazard that hurts the player (boss patterns, an Alpha's shockwave). */
+export const spawnHazard = (g: Game, init: HazardInit) => {
   g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, ...init })
 }
 

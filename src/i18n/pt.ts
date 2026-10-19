@@ -3738,6 +3738,13 @@ export const pt = {
     beam: (name: string) => `*${name}* mira um _raio_: saia da linha no chão!`,
     leaper: (name: string) => `*${name}* salta sobre a horda: fuja da _sombra_!`,
   } satisfies Record<TraitId, (name: string) => string>,
+  /** Alpha Pokémon (`game/alphas.ts`): the tag over it and its toasts. */
+  alphas: {
+    tag: 'ALFA',
+    appeared: (name: string) => `Um *${name} Alfa* apareceu! Saia da _linha vermelha_ quando ele mirar.`,
+    defeated: (name: string) => `Você derrotou o *${name} Alfa*! Pegue o _prêmio_.`,
+    prize: '*Prêmio do Alfa*: cartas _raras_!',
+  },
 } satisfies ContentTexts & Record<string, unknown>
 
 export type Messages = typeof pt

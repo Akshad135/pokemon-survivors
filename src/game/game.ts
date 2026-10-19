@@ -9,6 +9,7 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS } from './bag'
 import { branchContext, drawBranches, playerForm } from './branch'
+import { createAlphaClock, updateAlphas } from './alphas'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
@@ -181,6 +182,7 @@ export const createGame = (
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
+    alphas: createAlphaClock(options.difficulty ?? DEFAULT_DIFFICULTY),
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -462,6 +464,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)
+  updateAlphas(g, dt)
   updateEnemies(g, dt)
   updateBosses(g, dt)
   updateHazards(g, dt)

@@ -1,4 +1,5 @@
-import { ELITE, RUNNER } from '../data/waves'
+import { ELITE, RUN_LENGTH, RUNNER } from '../data/waves'
+import type { Difficulty } from './difficulty'
 import type { Enemy } from './types'
 
 /** New regular spawns are elites once `regular` enemies fill `ELITE.fill` of the effective `cap`, while `elites` stay under `ELITE.share` of it. */
@@ -26,3 +27,13 @@ export const makeRunner = (e: Pick<Enemy, 'runner' | 'hp' | 'maxHp' | 'speed'>) 
  * position plus the player's velocity times this, so circling doesn't shake it.
  */
 export const leadTime = (dist: number, speed: number) => (speed > 0 ? Math.min(RUNNER.lead, dist / speed) : 0)
+
+/**
+ * How much harder the regular horde is to knock back by the end of the run:
+ * it grows from ×1 at 0:00 to this at `RUN_LENGTH` (and stays there in endless
+ * mode), so a late horde stops bouncing off an aura and presses in.
+ */
+export const HORDE_GRIT = { normal: 2.5, hard: 3, nightmare: 4 } as const satisfies Record<Difficulty, number>
+
+/** Knockback divisor on top of a regular foe's `mass` at `time` (`damageEnemy`). */
+export const hordeGrit = (time: number, difficulty: Difficulty) => 1 + (HORDE_GRIT[difficulty] - 1) * Math.min(1, time / RUN_LENGTH)

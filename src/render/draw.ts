@@ -15,7 +15,9 @@ import { isAirborne, traitPace } from '../game/traits'
 import type { Attack, Enemy, Game, Hazard } from '../game/types'
 import { FX, HAZARD_FX, PICKUPS, SPARKLE } from './art'
 import { drawEvolvedAttack, drawEvolvedGround, drawFrost, drawPuff, drawShard } from './evolved'
-import { drawMapEventMarkers, drawMapEvents } from './mapEvents'
+import { drawMapEventMarkers, drawMapEvents, markerInsets } from './mapEvents'
+import { ALPHA_PRIZE, alphaOutline, drawAlphaAir, drawAlphaGround, drawAlphaMarkers } from './alphas'
+import { drawScale } from '../game/alphas'
 import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } from './megaFx'
 import { drawModAttack, drawModGround } from './modFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
@@ -461,7 +463,7 @@ const enemyAnim = (e: Enemy): AnimName => (e.dying >= 0 || e.flash > 0 ? 'Hurt' 
 const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number) => {
   const def: EnemyDef = ENEMIES[e.kind]
   const s = sprites(def.dex, e.shiny)
-  const scale = def.scale ?? 1
+  const scale = drawScale(e)
   if (e.fled) {
     // Running off: it keeps walking away, rising a little, and fades out at the end.
     const k = e.dying / FLEE_TIME
@@ -494,6 +496,7 @@ const pulse = (t: number, hz: number) => Math.abs(((t * hz) % 2) - 1)
 
 /** Enraged bosses flicker red and orange fast; elites keep a slow crimson throb so a crowd of them reads at a glance on a phone. */
 const outlineOf = (e: Enemy, t: number) => {
+  if (e.alpha) return alphaOutline(e, t)
   if (e.fight?.enraged) return Math.floor(t * 8) % 2 === 0 ? '#f83020' : '#f8a020'
   if (e.elite) return Math.floor(t * 2.5 + e.id * 0.37) % 2 === 0 ? '#e02838' : '#f86858'
   return undefined
@@ -608,6 +611,7 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
       k.kind === 'xp' ? candies[xpTier(k.value)]!
       : k.kind === 'coin' ? coins[coinTier(k.value)]!
       : k.kind === 'berry' ? PICKUPS.berry()
+      : k.kind === 'alphaPrize' ? ALPHA_PRIZE()
       : PICKUPS.pokeball()
     blitCentered(ctx, sprite, k.x, k.y + bob)
   }
@@ -759,6 +763,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawMegaGround(ctx, g, camX, camY, t)
   drawRiftFallGround(ctx, g, camX, camY)
   drawTraitGround(ctx, g, visible)
+  drawAlphaGround(ctx, g, t, visible)
   drawPickups(ctx, g, t)
 
   drawables.length = 0
@@ -800,7 +805,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const d of inDepth) {
     if (d !== 'player' && d !== 'companion' && !isSolid(d) && d.boss && d.dying < 0) {
       const def: EnemyDef = ENEMIES[d.kind]
-      drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * (def.scale ?? 1) - 5)
+      drawStatusBadge(ctx, d.status, d.x, d.y - sprites(def.dex).bodyH * drawScale(d) - (d.alpha ? 14 : 5))
     }
   }
   drawSleep(ctx, g, t)
@@ -811,6 +816,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawSignaturePlayer(ctx, g, t)
   drawTmPlayer(ctx, g, t)
   drawTraitAir(ctx, g, visible)
+  drawAlphaAir(ctx, g, t, visible)
   drawRiftFallAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
@@ -850,6 +856,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   drawRiftArrow(ctx, g, camX, camY, t)
   if (!g.rift.arena) drawMapEventMarkers(ctx, g, t)
+  drawAlphaMarkers(ctx, g, t, markerInsets())
   drawRiftFallOut(ctx, g)
   drawFlash(ctx, g)
   if (g.phase === 'evolving') drawEvolution(ctx, g, t)

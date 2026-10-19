@@ -3606,4 +3606,10 @@ export const en: Messages = {
     beam: (name: string) => `*${name}* aims a _beam_: step off the line on the ground!`,
     leaper: (name: string) => `*${name}* leaps over the horde: dodge the _shadow_!`,
   },
+  alphas: {
+    tag: 'ALPHA',
+    appeared: (name: string) => `An *Alpha ${name}* appeared! Step off the _red line_ when it aims.`,
+    defeated: (name: string) => `You beat the *Alpha ${name}*! Grab the _prize_.`,
+    prize: '*Alpha prize*: _rare_ cards!',
+  },
 }

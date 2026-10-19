@@ -45,6 +45,7 @@ import type { TmState } from './tms'
 import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
+import type { AlphaClock, AlphaState } from './alphas'
 
 export type OwnedMove = {
   id: MoveId
@@ -161,6 +162,8 @@ export type Enemy = {
   fled: boolean
   /** Hurled by a move (Circle Throw): while its knockback is fast it hurts the foes it hits, once each. */
   thrown: Thrown | null
+  /** An Alpha's charge cycle (`alphas.ts`); null for everyone else. An Alpha is also `boss` to the combat rules. */
+  alpha: AlphaState | null
 }
 
 export type Thrown = { damage: number; move: DamageSource; hit: Set<number> }
@@ -387,7 +390,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' })
 
 export type Particle = {
   x: number
@@ -544,6 +547,10 @@ export type GameEvent =
   | { kind: 'tmLearned'; move: MoveId; level: number; forgot: MoveId | null; source: TmSource }
   /** A TM disc's move was already mastered: it turned into ₽. */
   | { kind: 'tmMastered'; move: MoveId; coins: number }
+  /** An Alpha (`alphas.ts`) came, aimed or started a charge, landed its shockwave, enraged or fell. */
+  | { kind: 'alpha'; enemy: EnemyId; moment: 'spawn' | 'aim' | 'charge' | 'shock' | 'enrage' | 'down' }
+  /** The Alpha's prize was picked up: a level-up of rare cards opens. */
+  | { kind: 'alphaPrize' }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -642,4 +649,6 @@ export type Game = {
   /** Counters for missions and achievements (`game/tally.ts`). */
   tally: RunTally
   events: GameEvent[]
+  /** When the next Alpha is due (`alphas.ts`). */
+  alphas: AlphaClock
 }

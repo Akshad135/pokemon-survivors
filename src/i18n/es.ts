@@ -3607,4 +3607,10 @@ export const es: Messages = {
     beam: (name: string) => `*${name}* apunta un _rayo_: ¡sal de la línea en el suelo!`,
     leaper: (name: string) => `*${name}* salta sobre la horda: ¡huye de la _sombra_!`,
   },
+  alphas: {
+    tag: 'ALFA',
+    appeared: (name: string) => `¡Apareció un *${name} Alfa*! Sal de la _línea roja_ cuando apunte.`,
+    defeated: (name: string) => `¡Derrotaste al *${name} Alfa*! Toma el _premio_.`,
+    prize: '*Premio del Alfa*: ¡cartas _raras_!',
+  },
 }

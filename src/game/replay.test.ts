@@ -3,6 +3,7 @@ import { createRng } from '../engine/rng'
 import { chooseOffer, step } from './game'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
+import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
 import type { Game } from './types'
@@ -135,6 +136,23 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it('re-simulate Alphas on Nightmare: their charges, shockwaves, rage, fall and the prize level-up', () => {
+    /** A frail Alpha next to the player (its prize lands in reach) and a whole one a bit farther. */
+    const alphas = (g: Game) => {
+      const kind = pickAlpha(g.rng, g.roster.stages[0]!)!
+      spawnAlpha(g, kind, g.player.x + 30, g.player.y).hp = 1
+      spawnAlpha(g, kind, g.player.x - 150, g.player.y)
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(40, start, 300, alphas)
+    const moments = new Set(g.events.flatMap((e) => (e.kind === 'alpha' ? [e.moment] : [])))
+    expect([...moments]).toEqual(expect.arrayContaining(['spawn', 'down', 'aim', 'charge', 'shock']))
+    expect(g.events.some((e) => e.kind === 'alphaPrize')).toBe(true)
+    const staged = startGame(start)
+    alphas(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('give a run played on another seed away', () => {
