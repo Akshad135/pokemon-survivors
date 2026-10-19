@@ -307,6 +307,8 @@ const overwritesFor = (access, channel) => {
     return [deny(GUILD, P.viewChannel), ...[...staff, ...supporters].map((id) => allow(id, P.viewChannel | TALK | VOICE)), botMember]
   if (channel?.readOnly) return [deny(GUILD, TALK), ...staff.map((id) => allow(id, TALK)), botMember]
   if (channel?.open) return [allow(GUILD, P.sendMessages)]
+  // Onboarding needs @everyone to join its default voice channels: behind the gate they listen, Trainers talk.
+  if (channel?.type === 'voice' && GATE) return [allow(GUILD, P.connect)]
   return []
 }
 
