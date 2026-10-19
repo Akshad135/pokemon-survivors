@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyGift } from './gifts'
 import { EMPTY_SAVE, parseSaveData, type Save } from './meta'
-import { mergeShinyPicks, pendingPicks, pickShiny, shinyChoices } from './shinyPicks'
+import { mergeShinyPicks, pendingPicks, pickShiny, pickShinyForm, playsShiny, shinyChoices } from './shinyPicks'
 import { mergeSaves } from './sync'
 
 /** A save holding one shiny ticket, from its Mystery Gift. */
@@ -43,6 +43,21 @@ describe('shiny picks', () => {
     expect(mergeShinyPicks(ticketed().shinyPicks, picked.shinyPicks)).toEqual([{ id: 't1', pick: 'charmander' }])
     expect(mergeShinyPicks(picked.shinyPicks, ticketed().shinyPicks)).toEqual([{ id: 't1', pick: 'charmander' }])
     expect(mergeSaves(ticketed(), picked).shinyPicks).toEqual(picked.shinyPicks)
+  })
+
+  it('plays a shiny hatch Normal once picked so, keeping it owned', () => {
+    const hatched: Save = { ...EMPTY_SAVE, hatched: { gible: { shiny: true } } }
+    expect(playsShiny(hatched, 'gible')).toBe(true)
+    const normal = pickShinyForm(hatched, 'gible', false)
+    expect(playsShiny(normal, 'gible')).toBe(false)
+    expect(normal.hatched.gible).toEqual({ shiny: true })
+    expect(shinyChoices(normal)).not.toContain('gible')
+    expect(playsShiny(pickShinyForm(normal, 'gible', true), 'gible')).toBe(true)
+  })
+
+  it('leaves a shiny not owned locked', () => {
+    expect(pickShinyForm(EMPTY_SAVE, 'squirtle', true)).toBe(EMPTY_SAVE)
+    expect(pickShinyForm({ ...EMPTY_SAVE, hatched: { gible: { shiny: false } } }, 'gible', true).shinyStarters).toEqual({})
   })
 
   it('survives the save parser, dropping unknown picks', () => {

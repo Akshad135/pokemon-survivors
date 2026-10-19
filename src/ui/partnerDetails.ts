@@ -217,8 +217,9 @@ export const evoLine = (id: PlayableId, stage: number, onStage: (stage: number) 
 }
 
 /**
- * Normal / Shiny, for a Pokémon whose shiny the player rolled once (`Z`
- * flips it). The screen saves the pick right away, so the next run plays it.
+ * Normal / Shiny, for a Pokémon whose shiny the player owns (rolled once, a
+ * ticket or a shiny hatch; `Z` flips it). The screen saves the pick right
+ * away, so the next run plays it.
  */
 export const shinyPicker = (shiny: boolean, set: (shiny: boolean) => void) => {
   const m = t().title
