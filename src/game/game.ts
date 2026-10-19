@@ -9,6 +9,7 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS } from './bag'
 import { branchContext, drawBranches, playerForm } from './branch'
+import { createAlphaClock, updateAlphas } from './alphas'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
@@ -50,6 +51,7 @@ import { updateArena, updateArenaFall } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
+import { createTension } from './tension'
 import { updateStatuses } from './statusSystem'
 import { createTally } from './tally'
 import { createWeather, updateWeather } from './weather'
@@ -182,7 +184,10 @@ export const createGame = (
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
+    tension: createTension(),
+    alphas: createAlphaClock(options.difficulty ?? DEFAULT_DIFFICULTY),
     worldHazards: createWorldHazards(),
+    prize: null,
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -288,6 +293,7 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
  * evolution goes, start an evolution, or resume. Exported for the dev console.
  */
 export const advancePhase = (g: Game) => {
+  g.prize = null
   if (g.pendingLevelUps > 0) {
     g.phase = 'levelup'
     g.offers = rollOffers(loadout(g), g.rng, 3, rolling(g))
@@ -464,6 +470,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)
+  updateAlphas(g, dt)
   updateEnemies(g, dt)
   updateBosses(g, dt)
   updateWorldHazards(g, dt)

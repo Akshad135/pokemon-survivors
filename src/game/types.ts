@@ -46,6 +46,8 @@ import type { TmState } from './tms'
 import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
+import type { TensionState } from './tension'
+import type { AlphaClock, AlphaState } from './alphas'
 
 export type OwnedMove = {
   id: MoveId
@@ -115,6 +117,8 @@ export type EnemyBehavior =
   | { kind: 'chase' }
   /** Flies in a straight line and despawns after `ttl` (swarm events). */
   | { kind: 'flyby'; vx: number; vy: number; ttl: number }
+  /** Walks to a field mission's nest at (x, y) and bites the egg there, turning on the player within `aggro` px (`fieldMissions.ts`). */
+  | { kind: 'raid'; mission: number; x: number; y: number; aggro: number }
 
 export type Enemy = {
   id: number
@@ -162,6 +166,8 @@ export type Enemy = {
   fled: boolean
   /** Hurled by a move (Circle Throw): while its knockback is fast it hurts the foes it hits, once each. */
   thrown: Thrown | null
+  /** An Alpha's charge cycle (`alphas.ts`); null for everyone else. An Alpha is also `boss` to the combat rules. */
+  alpha: AlphaState | null
 }
 
 export type Thrown = { damage: number; move: DamageSource; hit: Set<number> }
@@ -392,7 +398,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' })
 
 export type Particle = {
   x: number
@@ -549,6 +555,10 @@ export type GameEvent =
   | { kind: 'tmLearned'; move: MoveId; level: number; forgot: MoveId | null; source: TmSource }
   /** A TM disc's move was already mastered: it turned into ₽. */
   | { kind: 'tmMastered'; move: MoveId; coins: number }
+  /** An Alpha (`alphas.ts`) came, aimed or started a charge, landed its shockwave, enraged or fell. */
+  | { kind: 'alpha'; enemy: EnemyId; moment: 'spawn' | 'aim' | 'charge' | 'shock' | 'enrage' | 'down' }
+  /** The Alpha's prize was picked up: a level-up of rare cards opens. */
+  | { kind: 'alphaPrize' }
   /** The world struck at the player for the first time this run (`game/hazards.ts`): a one-time explainer toast. */
   | { kind: 'hazardIntro' }
 
@@ -649,6 +659,15 @@ export type Game = {
   /** Counters for missions and achievements (`game/tally.ts`). */
   tally: RunTally
   events: GameEvent[]
+  /** The pressure director (`tension.ts`): a dominant player gets a faster, closer, nastier horde. */
+  tension: TensionState
+  /** When the next Alpha is due (`alphas.ts`). */
+  alphas: AlphaClock
   /** The world's own attacks on the player (`game/hazards.ts`). */
   worldHazards: WorldHazardState
+  /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
+  prize: PrizeSource | null
 }
+
+/** Where a prize level-up came from: an Alpha's gem or a field mission. */
+export type PrizeSource = 'alpha' | 'mission'
