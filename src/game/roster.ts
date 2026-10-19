@@ -4,6 +4,7 @@ import { biomeAt, BIOMES, type BiomeId } from '../data/biomes'
 import type { Tier } from '../data/roster'
 import { isSummoner, SUMMONS } from '../data/traits'
 import type { PokeType } from '../data/types'
+import { hasFlavor, SPIT_FROM } from './spitters'
 import { bossOf, EVENTS, MYTHICALS, RUN_LENGTH, RUNNER, STAGES, stageIndexAt, stageStart, TRIO_IDS, TRIOS, type TrioId, type WaveEvent, type WaveStage } from '../data/waves'
 
 /** Weighted spawn pool of one stage, as `weightedPick` takes it. */
@@ -19,6 +20,8 @@ export type Roster = {
   trio: TrioId
   /** Per stage, the species whose regular spawns are runners (`RUNNER`), or null. */
   runners: readonly (EnemyId | null)[]
+  /** Per stage, the species the spawner sends in as spitters (`game/spitters.ts`), outside the stage's pool, or null. */
+  spitters: readonly (EnemyId | null)[]
 }
 
 /**
@@ -64,6 +67,9 @@ const TRAITED = new Set(TIERED.flatMap(([id, def]) => (def.trait ? [id] : [])))
 /** True for species with a behavior trait (`data/traits.ts`). */
 export const hasTrait = (id: EnemyId) => TRAITED.has(id)
 
+/** Draw odds of a spitter whose type has its own spit flavor (`hasFlavor`). */
+const FLAVOR_ODDS = 3
+
 const isFlyer = (def: EnemyDef) => def.types.includes('flying')
 
 /** One regular spawn from a stage's pool, skipping trait species while `traitsAlive` is at `TRAIT_ALIVE`. */
@@ -91,8 +97,11 @@ const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((
  * species of their tier the run has already met; neither ever takes a trait
  * species, which stay within `TRAIT_CAP` per stage. From stage `RUNNER.from`,
  * one of each stage's new species without a trait is its runner (spawning at
- * `RUNNER.weight`). Last come the run's legendary trio and the mythical its
- * rare finale slot would bring. Same seed, same cast.
+ * `RUNNER.weight`). Then come the run's legendary trio and the mythical its
+ * rare finale slot would bring, and last, from the first stage that can have
+ * spitters, each stage's spitter: a species of the stage's lowest tier from
+ * outside its cast, leaning `FLAVOR_ODDS` towards types with their own spit.
+ * Same seed, same cast.
  */
 export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events = EVENTS }: RosterOptions = {}): Roster => {
   const used = new Set<EnemyId>()
@@ -160,6 +169,19 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
   const trio = pick(rng, TRIO_IDS)
   const mythical = pick(rng, MYTHICALS)
 
+  // Drawn after everything else, so the rest of the roster is the same with or without spitters.
+  const firstSpitter = stageIndexAt(SPIT_FROM)
+  const spitters = casts.map(({ carried, fresh }, i) => {
+    const stage = stages[i]
+    if (i < firstSpitter || !stage) return null
+    const cast = new Set([...carried, ...fresh])
+    const open = ofTier(Math.min(...stage.cast) as Tier, false).filter(([id]) => !cast.has(id))
+    if (open.length === 0) return null
+    const id = drawOne(rng, open, (def) => weight(def, i) * (hasFlavor(def.types) ? FLAVOR_ODDS : 1))
+    used.add(id)
+    return id
+  })
+
   return {
     stages: casts.map(({ carried, fresh }, i) => [
       ...carried.map((id) => [id, hasTrait(id) ? TRAIT_SPAWN : CARRIED] as const),
@@ -167,6 +189,7 @@ export const drawRoster = (rng: Rng, { weight = () => 1, stages = STAGES, events
     ]),
     events: events.map((e, i) => (e.kind === 'boss' ? bossOf(e, trio, mythical) : eventSpecies[i] ?? null)),
     runners,
+    spitters,
     trio,
   }
 }
@@ -221,6 +244,7 @@ export const rosterSchedule = (roster: Roster, events: readonly WaveEvent[] = EV
       const id = roster.events[i]
       return id ? [{ id, at: e.at }] : []
     }),
+    ...roster.spitters.flatMap((id, i) => (id ? [{ id, at: stageStart(i) }] : [])),
   ].sort((a, b) => a.at - b.at)
   const seen = new Set<number>()
   return needs.flatMap(({ id, at }) => {

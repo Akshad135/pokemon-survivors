@@ -5,6 +5,9 @@ import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
+import { spawnWaveBoss } from './spawner'
+import { spawnEnemy } from './enemies'
+import { makeSpitter } from './spitters'
 import type { Game } from './types'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
@@ -124,6 +127,33 @@ describe('replays', () => {
     const { g, replay } = play(40, start, 300, quickAttack)
     const staged = startGame(start)
     quickAttack(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it("re-simulate a Nightmare Mewtwo in its second phase: leaps, aimed volleys and path strikes", () => {
+    const phaseTwo = (g: Game) => {
+      const boss = spawnWaveBoss(g, 'mewtwo', g.time)
+      boss.hp = boss.maxHp * 0.35
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(30, start, 300, phaseTwo)
+    const staged = startGame(start)
+    phaseTwo(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    const mewtwo = (r: Game) => r.enemies.find((e) => e.kind === 'mewtwo')!
+    expect([staged.player.hp, mewtwo(staged).x, mewtwo(staged).y]).toEqual([g.player.hp, mewtwo(g).x, mewtwo(g).y])
+  })
+
+  it('re-simulate spitters, their volleys and their puddles', () => {
+    const spitters = (g: Game) => {
+      const kinds = ['grimer', 'growlithe', 'oddish', 'psyduck'] as const
+      kinds.forEach((kind, i) => makeSpitter(spawnEnemy(g, kind, g.player.x + (i - 1.5) * 60, g.player.y - 120), i / 4))
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(40, start, 300, spitters)
+    expect(g.events.filter((e) => e.kind === 'trait' && e.trait === 'spitter' && e.phase === 'fire').length).toBeGreaterThan(3)
+    const staged = startGame(start)
+    spitters(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 

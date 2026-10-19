@@ -379,6 +379,8 @@ export type Hazard = {
   vanishOnHit: boolean
   /** Thrown by the world rather than a boss (`game/hazards.ts`): its strikes also hurt the foes they land on. */
   world: boolean
+  /** Id of the boss that lands with this strike (a `leap`), or -1. A shot with an `armAt` hovers until then (a volley's windup). */
+  leaper: number
 }
 
 export type Pickup = {
