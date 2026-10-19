@@ -19,6 +19,43 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-19',
+    pr: 128,
+    title: { pt: 'Modo difícil de verdade', en: 'Hard mode, for real', es: 'Modo difícil de verdad' },
+    notes: [
+      {
+        pt: 'Ficar parado não funciona mais. Cada fase tem uma espécie que cospe de longe: ela brilha antes e solta um disparo lento do seu tipo (bola de fogo, bolha, lodo que deixa poça, faísca, sementes) que passa pela aura. Basta dar um passo para o lado.',
+        en: "Standing still doesn't work anymore. Each stage has a species that spits from afar: it glows first and fires a slow shot of its type (fireball, bubble, sludge that leaves a puddle, spark, seeds) that passes through your aura. One step aside is enough.",
+        es: 'Quedarse quieto ya no funciona. Cada fase tiene una especie que escupe de lejos: brilla antes y suelta un disparo lento de su tipo (bola de fuego, burbuja, lodo que deja un charco, chispa, semillas) que atraviesa el aura. Basta con dar un paso al costado.',
+      },
+      {
+        pt: 'Pokémon Alfa: gigantes de brilho vermelho entram na horda, não recuam com os golpes e investem numa linha vermelha que miram antes. Derrote um para ganhar EXP, ₽ e o Prêmio do Alfa, um level-up só de cartas raras. Conquistas novas: Primeiro Alfa, Rastreador de Alfas e Caçador de Alfas, que dá título.',
+        en: "Alpha Pokémon: red-glowing giants join the horde, shrug off knockback and charge along a red lane they aim first. Beat one for EXP, ₽ and the Alpha's prize, a level-up of rare cards only. New achievements: First Alpha, Alpha Tracker and Alpha Hunter, which grants a title.",
+        es: 'Pokémon Alfa: gigantes de brillo rojo se unen a la horda, no retroceden con los golpes y embisten por una línea roja que apuntan antes. Derrota a uno para ganar EXP, ₽ y el Premio del Alfa, una subida de nivel solo de cartas raras. Logros nuevos: Primer Alfa, Rastreador de Alfas y Cazador de Alfas, que da título.',
+      },
+      {
+        pt: 'O mapa ataca: mais para o fim da partida caem raios na chuva, granizo na neve, Rock Slide na tempestade de areia, chamas no sol e Stealth Rock ou Toxic Spikes no chão, sempre onde você está e sempre marcados no chão antes de cair.',
+        en: 'The map strikes back: later in a run, Thunder falls in the rain, hail in the snow, Rock Slide in a sandstorm, flames in the sun, and Stealth Rock or Toxic Spikes cover the ground, always where you stand and always marked on the ground before they land.',
+        es: 'El mapa ataca: más adelante en la partida caen rayos con lluvia, granizo con nieve, Rock Slide en la tormenta de arena, llamas con sol, y Stealth Rock o Toxic Spikes cubren el suelo, siempre donde estás y siempre marcados en el suelo antes de caer.',
+      },
+      {
+        pt: 'Missões de campo: um ovo em perigo para defender no ninho, Poké Balls perdidas para juntar contra o relógio e um Togepi perdido para levar para casa. Aparecem longe de você e pagam ₽ e um level-up de cartas raras.',
+        en: 'Field missions: an egg in danger to defend in its nest, lost Poké Balls to gather against the clock and a lost Togepi to lead home. They show up away from you and pay ₽ and a level-up of rare cards.',
+        es: 'Misiones de campo: un huevo en peligro que defender en su nido, Poké Balls perdidas que juntar contra el reloj y un Togepi perdido que llevar a casa. Aparecen lejos de ti y pagan ₽ y una subida de nivel de cartas raras.',
+      },
+      {
+        pt: 'Chefes mais espertos, sem ganhar HP: miram no caminho que você vai fazer, saltam em quem foge e liberam um ataque novo na fúria. No Pesadelo cada um tem um ataque a mais, e no Difícil e no Pesadelo o Mewtwo tem uma segunda fase.',
+        en: "Smarter bosses, with no extra HP: they aim at the path you're taking, leap at you when you keep away and unlock a new attack when enraged. On Nightmare each gets an extra attack, and on Hard and Nightmare Mewtwo has a second phase.",
+        es: 'Jefes más astutos, sin ganar PS: apuntan al camino que vas a tomar, saltan sobre quien huye y liberan un ataque nuevo con la furia. En Pesadilla cada uno tiene un ataque más, y en Difícil y Pesadilla Mewtwo tiene una segunda fase.',
+      },
+      {
+        pt: 'A horda do fim da partida recua menos com os golpes e bate mais forte, Iron e Assault Vest tiram no máximo metade de cada golpe, e quem está dominando sem levar dano vê a horda chegar mais rápida e mais perto (no Pesadelo, bem mais). O Normal continua tranquilo para quem se mexe.',
+        en: "Late hordes get knocked back less and hit harder, Iron and Assault Vest take off at most half of a hit, and a player who's dominating without getting hurt sees the horde come faster and closer (much more so on Nightmare). Normal stays relaxed for anyone who keeps moving.",
+        es: 'La horda del final de la partida retrocede menos con los golpes y pega más fuerte, Iron y Assault Vest quitan como máximo la mitad de cada golpe, y quien está dominando sin recibir daño ve a la horda llegar más rápido y más cerca (en Pesadilla, mucho más). Normal sigue tranquilo para quien se mueve.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-19',
     pr: 119,
     title: { pt: 'Tutor de Golpes que combina com você', en: 'A Move Tutor that suits you', es: 'Un Tutor de Movimientos a tu medida' },
     notes: [
