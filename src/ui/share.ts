@@ -5,12 +5,13 @@ import type { Input } from '../engine/input'
 import { formatTime } from '../engine/math'
 import { ACHIEVEMENTS, MEDALS, type Medal, type TitleId } from '../data/achievements'
 import { ENEMIES } from '../data/enemies'
-import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { TYPE_COLORS } from '../data/types'
 import { playerForm } from '../game/branch'
 import { dexCounts, dexNews, type Pokedex } from '../game/dex'
 import type { ChallengePlace } from '../game/ranking'
 import { ribbonCounts } from '../game/ribbons'
+import { playsShiny } from '../game/shinyPicks'
 import type { Save } from '../game/meta'
 import type { DamageSource, Game } from '../game/types'
 import { CARD, cardBlob, drawRunCard, drawTrainerCard, type CardMon, type CardTrainer, type RunCardData, type TrainerCardData } from '../render/card'
@@ -23,6 +24,7 @@ import { h, later } from './dom'
 import { boxSpecies, caughtShinies } from './pcBox'
 import { loadSave } from './save'
 import { damageSource, hint, menu, type Screen } from './screens'
+import { uiDpr, uiViewport } from './uiScale'
 
 /**
  * Sharing a card: the data each card shows (built from the run or the save),
@@ -138,11 +140,10 @@ export const trainerShare = (partner: PlayableId): ShareCard => {
     .sort(showcaseOrder)
     .map((e) => mon(e.dex, true))
   const first = PLAYABLE[partner].line[0]
-  const partnerShiny = save.shinyStarters[partner] === true || (isHatchling(partner) && save.hatched[partner]?.shiny === true)
   const card: TrainerCardData = {
     date: new Date(),
     name: s.kind === 'signedIn' && s.name ? s.name : null,
-    partner: { dex: first.dex, name: first.name, shiny: partnerShiny },
+    partner: { dex: first.dex, name: first.name, shiny: playsShiny(save, partner) },
     medals,
     shinies: shinies.length,
     ribbons: ribbonCounts(save.ribbons),
@@ -194,7 +195,7 @@ const primaryMethod = (file: File): ShareMethod => {
 
 /** Whole device px per card px that fit `maxW`×`maxH` CSS px, as the CSS width: the preview stays pixel-sharp. */
 const previewWidth = (maxW: number, maxH: number) => {
-  const dpr = window.devicePixelRatio || 1
+  const dpr = uiDpr()
   const k = logoScale(CARD.w, CARD.h, maxW, maxH, dpr)
   return Math.min((CARD.w * k) / dpr, maxW)
 }
@@ -223,8 +224,7 @@ export const sharePreview = (root: HTMLElement, input: Input, card: ShareCard, o
   }
 
   const fitImage = () => {
-    const vw = window.visualViewport?.width ?? window.innerWidth
-    const vh = window.visualViewport?.height ?? window.innerHeight
+    const { w: vw, h: vh } = uiViewport()
     const sideBySide = vh <= 500 && vw > vh
     const width = sideBySide ? previewWidth(vw * 0.5, vh - 32) : previewWidth(Math.min(vw - 72, 520), vh - 250)
     img.style.width = `${width}px`

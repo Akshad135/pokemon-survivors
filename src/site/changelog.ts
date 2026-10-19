@@ -118,6 +118,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Poké Balls que perguntam', en: 'Poké Balls that ask', es: 'Poké Balls que preguntan' },
+        notes: [
+          {
+            pt: 'Quando uma Poké Ball traz um golpe ou item novo, que ocuparia um espaço, o jogo pausa e pergunta: Pegar ou Deixar. Se deixar, ele some. Melhorias do que você já tem continuam entrando sozinhas, e abrir uma Poké Ball agora tem um estalo e um brilho.',
+            en: "When a Poké Ball holds a new move or item, one that would take a slot, the game pauses and asks: Take or Leave. Leave it and it's gone. Upgrades to what you already have still go in on their own, and opening a Poké Ball now pops and sparkles.",
+            es: 'Cuando una Poké Ball trae un movimiento u objeto nuevo, que ocuparía un espacio, el juego se pausa y pregunta: Tomar o Dejar. Si lo dejas, desaparece. Las mejoras de lo que ya tienes siguen entrando solas, y abrir una Poké Ball ahora hace un chasquido y brilla.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Novidades no lobby', en: "What's new, in the lobby", es: 'Novedades en el lobby' },
         notes: [
           {
@@ -139,6 +149,81 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'Conecte seu Discord à conta, no botão do Discord ou no Cartão de Treinador, para entrar no servidor direto e ganhar o cargo de apoiador. Também dá para entrar no jogo com o Discord.',
             en: 'Link your Discord to your account, from the Discord button or the Trainer Card, to join the server right away and get your supporter role. You can also sign in to the game with Discord.',
             es: 'Conecta tu Discord a tu cuenta, desde el botón de Discord o la Tarjeta de Entrenador, para entrar al servidor directo y recibir tu rol de patrocinador. También puedes entrar al juego con Discord.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Normal ou Shiny, você escolhe', en: 'Normal or Shiny, your call', es: 'Normal o Shiny, tú eliges' },
+        notes: [
+          {
+            pt: 'Um Pokémon que nasceu shiny do ovo (ou que você escolheu como apoiador) agora também tem o seletor Normal/Shiny na escolha do Pokémon, como os iniciais. O shiny continua seu, na Pokédex e nas conquistas: só muda a cor com que você joga, e a escolha vale no lobby, no Cartão de Treinador e no Hall da Fama, em todos os seus aparelhos.',
+            en: 'A Pokémon that hatched shiny (or that you picked as a supporter) now gets the Normal/Shiny picker on the Pokémon select too, like the starters. The shiny stays yours, in the Pokédex and the achievements: only the colors you play change, and the pick shows in the lobby, on the Trainer Card and in the Hall of Fame, on all your devices.',
+            es: 'Un Pokémon que nació shiny del huevo (o que elegiste como patrocinador) ahora también tiene el selector Normal/Shiny en la elección del Pokémon, como los iniciales. El shiny sigue siendo tuyo, en la Pokédex y en los logros: solo cambian los colores con los que juegas, y la elección se ve en el lobby, en la Tarjeta de Entrenador y en el Salón de la Fama, en todos tus dispositivos.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Controle mais gostoso', en: 'Smoother gamepad play', es: 'Control más cómodo' },
+        notes: [
+          {
+            pt: 'O analógico do controle agora anda em qualquer direção, e com a velocidade que você inclina, como o joystick de toque. O direcional e o teclado continuam em 8 direções.',
+            en: 'The gamepad stick now moves in any direction, at the speed you tilt it, like the touch joystick. The D-pad and the keyboard stay at 8 directions.',
+            es: 'El stick del control ahora se mueve en cualquier dirección, con la velocidad con que lo inclinas, como el joystick táctil. La cruceta y el teclado siguen en 8 direcciones.',
+          },
+          {
+            pt: 'Apertar A (ou Espaço) para o especial na hora em que a partida acaba não começa outra sem querer: a tela de resultado espera uma pausa curta nos seus toques.',
+            en: "Pressing A (or Space) for the special right as a run ends no longer starts another by accident: the results screen waits for a short pause in your presses.",
+            es: 'Apretar A (o Espacio) para el especial justo cuando termina la partida ya no empieza otra sin querer: la pantalla de resultados espera una breve pausa en tus pulsaciones.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Level-up sem toque com tudo no máximo', en: 'No more tapping when everything is maxed', es: 'Subir de nivel sin tocar con todo al máximo' },
+        notes: [
+          {
+            pt: 'Com todos os golpes e itens no máximo, o level-up só tinha a Oran Berry para escolher. Agora ela é pega sozinha, sem abrir a tela, e um aviso rápido mostra o nível e quantas foram (com o Exp. Share, várias de uma vez).',
+            en: 'With every move and item maxed out, a level-up only had the Oran Berry to pick. Now it takes itself without opening the screen, and a quick notice shows the level and how many you got (several at once with an Exp. Share).',
+            es: 'Con todos los movimientos e ítems al máximo, subir de nivel solo ofrecía la Oran Berry. Ahora se toma sola, sin abrir la pantalla, y un aviso rápido muestra el nivel y cuántas fueron (con el Exp. Share, varias a la vez).',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Menos clarões, disparos mais visíveis', en: 'Fewer flashes, easier-to-see shots', es: 'Menos destellos, disparos más visibles' },
+        notes: [
+          {
+            pt: 'Nova opção em Ajustes → Jogo: Clarões Reduzidos. Some o clarão branco da tela (fúria dos chefes, fendas, Mega Evolução, evolução, ovos chocando), os Pokémon atingidos ficam com um tom vermelho escuro em vez de piscar em branco e nada pisca rápido.',
+            en: 'New option in Settings → Game: Flashes Reduced. No more white screen flashes (enraged bosses, rifts, Mega Evolution, evolving, hatching eggs), Pokémon that get hit take a dark red tint instead of flashing white, and nothing flickers fast.',
+            es: 'Nueva opción en Ajustes → Juego: Destellos Reducidos. Se van los destellos blancos de la pantalla (furia de los jefes, grietas, Megaevolución, evolución, huevos que eclosionan), los Pokémon golpeados toman un tono rojo oscuro en vez de parpadear en blanco y nada parpadea rápido.',
+          },
+          {
+            pt: 'Os disparos inimigos (cuspidores, chefes e o próprio mapa) agora têm um contorno vermelho, para não se perderem no meio dos seus golpes.',
+            en: 'Enemy shots (spitters, bosses and the map itself) now have a red outline, so they stand out among your own attacks.',
+            es: 'Los disparos enemigos (escupidores, jefes y el propio mapa) ahora tienen un contorno rojo, para que no se pierdan entre tus ataques.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Troféu de zerado', en: 'Clear trophies', es: 'Trofeo de superado' },
+        notes: [
+          {
+            pt: 'Venceu o Mewtwo com um Pokémon? A linha evolutiva dele ganha um troféu na Pokédex e na escolha de parceiro: bronze no Normal, prata no Difícil e ouro no Pesadelo. A Pokédex conta quantos você já zerou, para tentar zerar com todos. Ideia de @havenlad no Mural de ideias.',
+            en: 'Beat Mewtwo with a Pokémon? Its evolution line gets a trophy in the Pokédex and on the partner select: bronze on Normal, silver on Hard, gold on Nightmare. The Pokédex counts how many you cleared, so you can go for a clear with every one. An idea from @havenlad on the Ideas board.',
+            es: '¿Venciste a Mewtwo con un Pokémon? Su línea evolutiva gana un trofeo en la Pokédex y en la elección de compañero: bronce en Normal, plata en Difícil y oro en Pesadilla. La Pokédex cuenta cuántos superaste, para intentar superarlo con todos. Idea de @havenlad en el Muro de ideas.',
+          },
+          {
+            pt: 'Vitórias de antes também contam quando o seu histórico mostra com quem foram (por exemplo, se todas foram com iniciais de uma mesma região).',
+            en: 'Earlier wins count too when your records show who won them (for example, if they were all with starters from one region).',
+            es: 'Las victorias de antes también cuentan cuando tu historial muestra con quién fueron (por ejemplo, si todas fueron con iniciales de una misma región).',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Tamanho da interface', en: 'UI size', es: 'Tamaño de la interfaz' },
+        notes: [
+          {
+            pt: 'Em telas grandes, os menus e o HUD agora crescem junto com o mapa em vez de ficarem minúsculos. Em Ajustes → Jogo dá para escolher o tamanho, de 100% a 200%, ou deixar no Auto. No celular nada muda.',
+            en: 'On big screens, the menus and the HUD now grow with the map instead of staying tiny. Pick the size in Settings → Game, from 100% to 200%, or leave it on Auto. Nothing changes on phones.',
+            es: 'En pantallas grandes, los menús y el HUD ahora crecen junto con el mapa en vez de quedarse diminutos. En Ajustes → Juego puedes elegir el tamaño, de 100% a 200%, o dejarlo en Auto. En el celular no cambia nada.',
           },
         ],
       },

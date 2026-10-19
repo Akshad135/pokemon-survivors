@@ -4,6 +4,7 @@ import type { ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
 import type { SupporterTier } from '../game/supporters'
 import type { EggTier } from '../game/eggs'
+import type { Difficulty } from '../game/difficulty'
 import type { RibbonTier } from '../game/ribbons'
 import type { UpgradeId } from '../game/meta'
 import type { MoveId } from '../game/moves'
@@ -446,6 +447,36 @@ export const SPIT_FX = {
   spark: lazy(() => [art(SPIT_SPARK, { 1: '#f8e030' }, '#504010'), art(SPIT_SPARK, { 1: '#ffffff' }, '#a08010')]),
   seed: lazy(() => art(SPIT_SEED, { 1: '#a07838', 2: '#e0c068', 3: '#fff0b0' }, '#281808')),
   orb: lazy(() => art(SMALL_ORB, { 1: '#9898a8', 2: '#e8e8f0', 3: '#ffffff' }, '#383848')),
+}
+
+/** The rim every hostile shot wears (the horde's spit, the bosses' and the world's shots). */
+const HOSTILE_RIM = '#f81838'
+const rimmed = new WeakMap<PixelSprite, PixelSprite>()
+
+/**
+ * `sprite` with a 1 px red rim around its opaque pixels (outside its own dark
+ * outline), so enemy shots read against the player's effects on a busy screen.
+ * Built once per sprite: a frame only looks it up. Hard-edged, as the rim
+ * comes from the pixels themselves (a see-through bubble isn't tinted inside).
+ */
+export const hostile = (sprite: PixelSprite): PixelSprite => {
+  const cached = rimmed.get(sprite)
+  if (cached) return cached
+  const w = sprite.width + 2
+  const h = sprite.height + 2
+  const canvas = createCanvas(w, h)
+  const ctx = context2d(canvas)
+  ctx.drawImage(sprite, 1, 1)
+  const { data } = ctx.getImageData(0, 0, w, h)
+  const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && data[(y * w + x) * 4 + 3]! > 0
+  ctx.fillStyle = HOSTILE_RIM
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) ctx.fillRect(x, y, 1, 1)
+    }
+  }
+  rimmed.set(sprite, canvas)
+  return canvas
 }
 
 /* ---------------- Enemy traits ---------------- */
@@ -934,3 +965,17 @@ export const ribbonSprite = (tier: RibbonTier) => {
 export const ribbonIcon = (tier: RibbonTier) => toIconUrl(`ribbon:${tier}`, () => ribbonSprite(tier))
 
 export const medalIcon = (medal: Medal, locked = false) => toIconUrl(`medal:${locked ? 'locked' : medal}`, () => medalSprite(medal, locked))
+
+/* ---------------- Clears ---------------- */
+
+/** A clear's trophy (`game/clears.ts`), on the Pokédex and the partner select. 1 outline, 2 shade, 3 metal, 4 shine. */
+const TROPHY = ['111111111', '1.14321.1', '1.14321.1', '.1143211.', '..14321..', '...131...', '...131...', '..13321..', '..11111..']
+
+/** The hardest difficulty cleared picks the metal: bronze for Normal, silver for Hard, gold for Nightmare, like the medals. */
+const TROPHY_METAL = {
+  normal: { 1: '#402010', 2: '#985028', 3: '#d88848', 4: '#f8c890' },
+  hard: { 1: '#303848', 2: '#788098', 3: '#c8d0e0', 4: '#ffffff' },
+  nightmare: { 1: '#584010', 2: '#b07010', 3: '#f8c838', 4: '#fff0a0' },
+} as const satisfies Record<Difficulty, Palette>
+
+export const trophyIcon = (d: Difficulty) => toIconUrl(`trophy:${d}`, () => art(TROPHY, TROPHY_METAL[d]))

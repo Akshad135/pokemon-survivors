@@ -1,11 +1,9 @@
-import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { formAt } from './branch'
 import type { Save } from './meta'
+import { playsShiny } from './shinyPicks'
 import { ownsStyle } from './style'
 import { canWalkWith, isSupporter, type Companion, type SupporterTier } from './supporters'
-
-/** Whether the save plays `id` shiny: a starter's shiny picked, or a family hatched shiny. */
-const playsShiny = (save: Save, id: PlayableId) => save.shinyStarters[id] === true || (isHatchling(id) && save.hatched[id]?.shiny === true)
 
 /**
  * The trainer's face on the Trainer chip and card: the supporter's companion
@@ -29,13 +27,14 @@ export const savedSupporterTier = (save: Save): SupporterTier | null =>
 
 /**
  * The Pokémon a supporter stands with on the Hall da Fama (the API reads it
- * from their synced save): a shiny they picked with a ticket, else their
- * companion, else their partner, shiny when they play it so. Only supporters
- * reach the wall, so the companion needs no title check here.
+ * from their synced save): a shiny they picked with a ticket (in the form
+ * they play it, Shiny unless switched to Normal), else their companion, else
+ * their partner, shiny when they play it so. Only supporters reach the wall,
+ * so the companion needs no title check here.
  */
 export const hallPokemon = (save: Save): Companion => {
   const picked = save.shinyPicks.findLast((p) => p.pick !== null)?.pick
-  if (picked) return { id: picked, shiny: true }
+  if (picked) return { id: picked, shiny: save.shinyStarters[picked] !== false }
   if (save.companion && canWalkWith(save, save.companion)) return save.companion
   return { id: save.partner, shiny: playsShiny(save, save.partner) }
 }
