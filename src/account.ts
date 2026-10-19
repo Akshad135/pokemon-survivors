@@ -352,24 +352,42 @@ const syncDiscord = async (c: Clerk, token: string) => {
  * Discord instead, which creates the account and connects it at once.
  * Resolves false when it couldn't leave.
  */
-export const linkDiscord = async () => {
+export const linkDiscord = async (): Promise<boolean> => {
+  const failed = () => {
+    if (state.kind === 'signedIn') setState({ ...state, discordFailed: true })
+    return false
+  }
   try {
     const c = await loadClerk()
-    if (!c.user) return void (await signIn('discord'))
+    if (!c.user) {
+      await signIn('discord')
+      return true
+    }
     const redirectUrl = `${pageUrl()}?${DISCORD_CALLBACK}`
     // A connection left halfway (cancelled on Discord) is retried rather than added again.
     const unfinished = c.user.externalAccounts.find((a) => a.provider === 'discord' && a.verification?.status !== 'verified')
-    const account = unfinished ? await unfinished.reauthorize({ redirectUrl }) : await c.user.createExternalAccount({ strategy: 'oauth_discord', redirectUrl })
+    const account = await (unfinished ? unfinished.reauthorize({ redirectUrl }) : c.user.createExternalAccount({ strategy: 'oauth_discord', redirectUrl })).catch(
+      (err: unknown) => {
+        if (!needsReverification(err)) throw err
+        // Connecting an account is a sensitive action: Clerk's own modal confirms it's them (a code by email), then it goes on.
+        c.__internal_openReverification({ afterVerification: () => void linkDiscord(), afterVerificationCancelled: failed })
+        return null
+      },
+    )
+    if (!account) return true
     const to = account.verification?.externalVerificationRedirectURL
     if (!to) throw new Error('no redirect')
     location.assign(to.href)
     return true
   } catch (err) {
     console.warn('discord link failed', err)
-    if (state.kind === 'signedIn') setState({ ...state, discordFailed: true })
-    return false
+    return failed()
   }
 }
+
+/** Whether Clerk refused an action until the player proves it's them again (`session_reverification_required`). */
+const needsReverification = (err: unknown) =>
+  isRecord(err) && Array.isArray(err.errors) && err.errors.some((e: unknown) => isRecord(e) && e.code === 'session_reverification_required')
 
 /** Back from Discord (`?discord`): cleans the URL and syncs now, which links the account; a connection that didn't finish says so. */
 const finishDiscord = async () => {
