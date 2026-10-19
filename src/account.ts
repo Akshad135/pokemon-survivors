@@ -8,7 +8,7 @@ import type { ProfileName } from './game/ranking'
 import { loadSave, writeSave } from './ui/save'
 
 /**
- * Optional player accounts (Google through Clerk). Playing as a guest stays
+ * Optional player accounts (Google or Discord through Clerk). Playing as a guest stays
  * the default: the save lives in `localStorage` either way, and an account
  * only mirrors it to the API (`server/`), merging saves with `applyPush`
  * (`game/sync.ts`). Clerk is loaded only when the player signs in, or on
@@ -16,6 +16,9 @@ import { loadSave, writeSave } from './ui/save'
  *
  * Each sync also brings the Mystery Gifts waiting in the account (`GET /gifts`)
  * and, on a device's first sync, the invite it landed with (`POST /referral`).
+ * A Discord account connected to the player's (`linkDiscord`, or signing in
+ * with Discord) is reported to the API (`POST /discord/link`), which puts
+ * them in the community server with their supporter role.
  *
  * Nothing here may block the game: offline, a missing API or a Clerk outage
  * just leave the save local and the sync status `offline`.
@@ -28,21 +31,30 @@ export const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
 /** Without both keys the account button doesn't show and the game is guest only. */
 export const accountsEnabled = Boolean(PUBLISHABLE_KEY && API_URL)
 
-/** Query parameter of the page Google sends the player back to. */
+/** Query parameter of the page Google (or Discord) sends the player back to after signing in. */
 const CALLBACK = 'login'
+
+/** Query parameter of the page Discord sends the player back to after connecting it to their account. */
+const DISCORD_CALLBACK = 'discord'
 
 const TIMEOUT_MS = 12_000
 
-/** True while the page is the one Google sent the player back to: boot skips the "press start" intro. */
-export const backFromSignIn = () => accountsEnabled && new URLSearchParams(location.search).has(CALLBACK)
+/** True while the page is the one Google or Discord sent the player back to: boot skips the "press start" intro. */
+export const backFromSignIn = () => accountsEnabled && (new URLSearchParams(location.search).has(CALLBACK) || new URLSearchParams(location.search).has(DISCORD_CALLBACK))
 
 export type SyncStatus = 'syncing' | 'synced' | 'offline'
 
 /**
  * `failed`: the last sign in didn't go through. `handle`: the player's public
  * handle, null before they pick one, undefined until the API said.
+ * `discord`: the username of the Discord account connected to theirs, null
+ * when none is, undefined until Clerk said; `discordFailed`: connecting one
+ * just didn't go through (cancelled, or it belongs to another account).
  */
-export type AccountState = { kind: 'guest'; failed?: boolean } | { kind: 'busy' } | { kind: 'signedIn'; name: string; sync: SyncStatus; handle: string | null | undefined }
+export type AccountState =
+  | { kind: 'guest'; failed?: boolean }
+  | { kind: 'busy' }
+  | { kind: 'signedIn'; name: string; sync: SyncStatus; handle: string | null | undefined; discord: string | null | undefined; discordFailed?: boolean }
 
 /* ---------------- Device link ---------------- */
 
@@ -50,10 +62,11 @@ const LINK_KEY = 'ps:account'
 
 /**
  * This device's account: who signed in, the revision of the account's save it
- * last got (null until its first sync), which pushes build on, and the public
- * handle (see `AccountState`). `name` is the profile's display name once there is one.
+ * last got (null until its first sync), which pushes build on, the public
+ * handle and the Discord username the API last heard of (see `AccountState`).
+ * `name` is the profile's display name once there is one.
  */
-type Link = { userId: string; name: string; revision: number | null; handle?: string | null }
+type Link = { userId: string; name: string; revision: number | null; handle?: string | null; discord?: string | null }
 
 const readLink = (): Link | null => {
   try {
@@ -64,6 +77,7 @@ const readLink = (): Link | null => {
       name: typeof data.name === 'string' ? data.name : '',
       revision: typeof data.revision === 'number' ? data.revision : null,
       handle: typeof data.handle === 'string' || data.handle === null ? data.handle : undefined,
+      discord: typeof data.discord === 'string' || data.discord === null ? data.discord : undefined,
     }
   } catch {
     return null
@@ -203,8 +217,8 @@ const relink = (c: Clerk, user: NonNullable<Clerk['user']>) => {
   const was = readLink()
   const same = was?.userId === user.id
   const name = same && was.handle ? was.name : displayName(c)
-  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined })
-  setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined })
+  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined, discord: same ? was.discord : undefined })
+  setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined, discord: same ? was.discord : undefined })
 }
 
 /** Keeps a profile (or its absence) in the link and the state; a profile's name replaces Google's. */
@@ -294,6 +308,81 @@ const sendReferral = async (token: string) => {
   }
 }
 
+/* ---------------- Discord ---------------- */
+
+/** The Discord account connected to the Clerk user, once its connection finished, or null. */
+const discordOf = (user: NonNullable<Clerk['user']>) =>
+  user.externalAccounts.find((a) => a.provider === 'discord' && a.verification?.status === 'verified') ?? null
+
+/** Keeps the Discord username (or its absence) in the link and the state. */
+const setDiscord = (discord: string | null, failed = false) => {
+  const saved = readLink()
+  if (saved) writeLink({ ...saved, discord })
+  if (state.kind === 'signedIn') setState({ ...state, discord, discordFailed: failed })
+}
+
+/**
+ * Tells the API about a change of the player's Discord account (connected in
+ * the game, by signing in with Discord, or removed in Clerk's account page):
+ * a new one gets linked (`POST`, which joins the server), a removed one
+ * forgotten (`DELETE`). A failure leaves the link as it was, to try again next sync.
+ */
+const syncDiscord = async (c: Clerk, token: string) => {
+  if (!c.user) return
+  const account = discordOf(c.user)
+  const username = account ? account.username || account.providerUserId : null
+  const known = readLink()?.discord
+  if (username === known || (username === null && known === undefined)) {
+    if (known === undefined) setDiscord(null)
+    return
+  }
+  try {
+    const res = await fetch(`${API_URL}/discord/link`, { method: username ? 'POST' : 'DELETE', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!res.ok) throw new Error(`discord link failed: ${res.status}`)
+    setDiscord(username)
+  } catch (err) {
+    console.warn('discord link failed', err)
+  }
+}
+
+/**
+ * "Link Discord": connects a Discord account to the signed-in player's
+ * (Clerk's `createExternalAccount`) and leaves for Discord, which sends them
+ * back to `?discord`, where the next sync links it. A guest signs in with
+ * Discord instead, which creates the account and connects it at once.
+ * Resolves false when it couldn't leave.
+ */
+export const linkDiscord = async () => {
+  try {
+    const c = await loadClerk()
+    if (!c.user) return void (await signIn('discord'))
+    const redirectUrl = `${pageUrl()}?${DISCORD_CALLBACK}`
+    // A connection left halfway (cancelled on Discord) is retried rather than added again.
+    const unfinished = c.user.externalAccounts.find((a) => a.provider === 'discord' && a.verification?.status !== 'verified')
+    const account = unfinished ? await unfinished.reauthorize({ redirectUrl }) : await c.user.createExternalAccount({ strategy: 'oauth_discord', redirectUrl })
+    const to = account.verification?.externalVerificationRedirectURL
+    if (!to) throw new Error('no redirect')
+    location.assign(to.href)
+    return true
+  } catch (err) {
+    console.warn('discord link failed', err)
+    if (state.kind === 'signedIn') setState({ ...state, discordFailed: true })
+    return false
+  }
+}
+
+/** Back from Discord (`?discord`): cleans the URL and syncs now, which links the account; a connection that didn't finish says so. */
+const finishDiscord = async () => {
+  history.replaceState(null, '', pageUrl())
+  await syncSave()
+  try {
+    const c = await loadClerk()
+    if (c.user && !discordOf(c.user) && c.user.externalAccounts.some((a) => a.provider === 'discord')) setDiscord(null, true)
+  } catch {
+    // Offline: the next sync tries again.
+  }
+}
+
 /* ---------------- Mystery Gifts ---------------- */
 
 /** A gift that landed in the save, with the hatch to play for a shiny hatch. */
@@ -380,6 +469,7 @@ export const syncSave = async () => {
       setSync('synced')
       if (token) {
         await loadProfile(token)
+        await syncDiscord(c, token)
         // Gifts that landed changed the save: push it again.
         if (await fetchGifts(token)) again = true
       }
@@ -394,11 +484,11 @@ export const syncSave = async () => {
 /* ---------------- Sign in and out ---------------- */
 
 /**
- * "Sign in with Google": leaves for Google and comes back to this page
- * (`?login`), where `startAccount` finishes it. Already signed in to Clerk
- * (another tab), it just links this device.
+ * "Sign in with Google" (or Discord): leaves for the provider and comes back
+ * to this page (`?login`), where `startAccount` finishes it. Already signed
+ * in to Clerk (another tab), it just links this device.
  */
-export const signIn = async () => {
+export const signIn = async (provider: 'google' | 'discord' = 'google') => {
   setState({ kind: 'busy' })
   try {
     const c = await loadClerk()
@@ -406,7 +496,7 @@ export const signIn = async () => {
     if (!c.client) throw new Error('no client')
     // Both back to `?login`, so the device always gets linked, however Clerk finishes.
     const back = `${pageUrl()}?${CALLBACK}`
-    await c.client.signIn.authenticateWithRedirect({ strategy: 'oauth_google', redirectUrl: back, redirectUrlComplete: back })
+    await c.client.signIn.authenticateWithRedirect({ strategy: `oauth_${provider}`, redirectUrl: back, redirectUrlComplete: back })
   } catch (err) {
     console.warn('sign in failed', err)
     setState({ kind: 'guest', failed: true })
@@ -499,15 +589,17 @@ const finishSignIn = async () => {
 }
 
 /**
- * Boot: finishes a sign in coming back from Google, or, on a device that
- * signed in before, shows the account right away and syncs once Clerk has
- * loaded in the background (after the game's own assets).
+ * Boot: finishes a sign in coming back from Google or Discord, or, on a
+ * device that signed in before, shows the account right away and syncs once
+ * Clerk has loaded in the background (after the game's own assets). Back
+ * from connecting Discord, it syncs at once.
  */
 export const startAccount = () => {
   if (!accountsEnabled) return
-  if (backFromSignIn()) return void finishSignIn()
+  if (new URLSearchParams(location.search).has(CALLBACK)) return void finishSignIn()
   const saved = readLink()
   if (!saved) return
-  setState({ kind: 'signedIn', name: saved.name, sync: 'syncing', handle: saved.handle })
+  setState({ kind: 'signedIn', name: saved.name, sync: 'syncing', handle: saved.handle, discord: saved.discord })
+  if (new URLSearchParams(location.search).has(DISCORD_CALLBACK)) return void finishDiscord()
   setTimeout(() => void syncSave(), 3000)
 }

@@ -1,4 +1,4 @@
-import { accountState, accountsEnabled } from '../account'
+import { accountState, accountsEnabled, onAccountChange, type AccountState } from '../account'
 import { playSfx } from '../engine/audio'
 import { ACTIONS } from '../engine/bindings'
 import { joystick, type Input, type Stick } from '../engine/input'
@@ -12,7 +12,7 @@ import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { bulbIcon, coinIcon, eggIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, discordIcon, eggIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
@@ -35,6 +35,7 @@ import { trainerChip } from './trainer'
 export type LobbyFocus =
   | 'trainer'
   | 'news'
+  | 'discord'
   | 'help'
   | 'settings'
   | 'outbreak'
@@ -82,6 +83,8 @@ export type TitleActions = {
   settings: (focus: LobbyFocus) => Screen
   /** Opens Novidades (the newest update's highlights) over the title, like `settings`. */
   news: (focus: LobbyFocus) => Screen
+  /** Opens the Discord screen (the community server, linking a Discord account) over the title, like `settings`. */
+  discord: (focus: LobbyFocus) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: LobbyFocus) => Screen
   /** Opens the Poké Mart over the title, like `settings`. */
@@ -222,6 +225,39 @@ const newsButton = (onClick: () => void) => {
     el.setAttribute('aria-label', m.unread)
     el.title = m.unread
     el.append(h('em', { class: 'lobby-badge' }, '!'))
+  })
+  return el
+}
+
+/** Calls `paint` now and on every account change while `el` is on the page: a link that lands with the lobby up (back from Discord, the sync finishing) shows at once. */
+const followAccount = (el: HTMLElement, paint: (s: AccountState) => void) => {
+  paint(accountState())
+  const off = onAccountChange((s) => (el.isConnected ? paint(s) : off()))
+}
+
+/** Discord in the top bar (landscape phones, whose side column is full), with a green ✓ once the player linked their Discord. */
+const discordButton = (onClick: () => void) => {
+  const el = iconButton(discordIcon(), t().discord.open, onClick)
+  el.classList.add('lobby-discord')
+  const badge = h('em', { class: 'lobby-badge done' }, '✓')
+  followAccount(el, (s) => (s.kind === 'signedIn' && s.discord ? el.append(badge) : badge.remove()))
+  return el
+}
+
+/** Discord under Convide amigos (wide screens and portrait phones): what a tap does, joining, linking, or the linked @username. */
+const discordCard = () => {
+  const m = t().discord
+  const row = h('span', { class: 'lobby-invites-row' })
+  const el = h(
+    'button',
+    { class: 'lobby-invites lobby-discord-card box', type: 'button' },
+    h('img', { class: 'lobby-discord-icon', src: discordIcon(), alt: '' }),
+    h('span', { class: 'lobby-invites-text' }, h('b', {}, m.title), row),
+  )
+  followAccount(el, (s) => {
+    const text = s.kind === 'signedIn' && s.discord ? `✓ @${s.discord}` : s.kind === 'signedIn' ? m.link : m.join
+    row.textContent = text
+    el.setAttribute('aria-label', `${m.title}: ${text}`)
   })
   return el
 }
@@ -531,6 +567,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     help: () => location.assign(ROUTES.guide[lang]),
     settings: () => openOver(actions.settings),
     news: () => openOver(actions.news),
+    discord: () => openOver(actions.discord),
     outbreak: () => toast(root, rich(`*${ENEMIES[outbreakToday()].name}*: ${t().outbreak.blurb}`), 3600, 'outbreak'),
     challenge: actions.challenge,
     missions: actions.missions,
@@ -549,6 +586,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   const buildLobby = () => {
     const save = loadSave()
+    const landscape = layout() === 'landscape'
     navs = []
     const chip = trainerChip(input, { onOpen: () => openOver(actions.trainer) })
     closeChip = chip.dispose
@@ -556,7 +594,13 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     bar.replaceWith(
       topBar({
         left: chip.el,
-        right: [walletChip(save.wallet), navigable(newsButton(press('news')), 'news'), navigable(helpButton(press('help')), 'help'), navigable(gearButton(press('settings')), 'settings')],
+        right: [
+          walletChip(save.wallet),
+          ...(landscape ? [navigable(discordButton(press('discord')), 'discord')] : []),
+          navigable(newsButton(press('news')), 'news'),
+          navigable(helpButton(press('help')), 'help'),
+          navigable(gearButton(press('settings')), 'settings'),
+        ],
       }),
     )
 
@@ -565,7 +609,13 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
     const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
-    const side = h('div', { class: 'lobby-side' }, hall, ...(accountsEnabled ? [pressable(invitesCard(), 'friends')] : []))
+    const side = h(
+      'div',
+      { class: 'lobby-side' },
+      hall,
+      ...(accountsEnabled ? [pressable(invitesCard(), 'friends')] : []),
+      ...(landscape ? [] : [pressable(discordCard(), 'discord')]),
+    )
     inviteBanner(side, press('invite'), (banner) => navigable(banner, 'invite'))
 
     const ready = save.eggs.filter(isReady).length

@@ -6,10 +6,11 @@ import { MEDALS } from '../data/achievements'
 import { RIBBON_TIERS, ribbonCounts } from '../game/ribbons'
 import { savedSupporterTier, trainerAvatar } from '../game/trainer'
 import { formatNumber, LOCALES, locale, t } from '../i18n'
-import { medalIcon, pokeballIcon, ribbonIcon, supporterIcon } from '../render/art'
+import { discordIcon, medalIcon, pokeballIcon, ribbonIcon, supporterIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { fetchSupporterStatus } from '../supporters'
 import { adminScreen } from './admin'
+import { discordScreen } from './discord'
 import { h, later } from './dom'
 import { missionsScreen } from './missions'
 import { profileEditor, profileScreen } from './profile'
@@ -69,16 +70,17 @@ export const trainerChip = (input: Input, opts: { onOpen: () => void }) => {
 /** Month and year of a date, in the current language (`10/2026`). */
 const monthYear = (iso: string) => new Date(iso).toLocaleDateString(LOCALES[locale()].tag, { month: '2-digit', year: 'numeric' })
 
-/** One row under the card: a label, maybe an icon, and what it opens. `tone: 'out'` is the red sign out. */
-type Row = { label: string; run: () => void; icon?: string; tone?: 'out' }
+/** One row under the card: a label, maybe an icon (`wide`: Discord's, not square), and what it opens. `tone: 'out'` is the red sign out. */
+type Row = { label: string; run: () => void; icon?: string; wide?: boolean; tone?: 'out' }
 
 /**
  * The Trainer Card (from the Trainer chip): avatar, name, @handle, title,
- * runs, wins, Pokédex and shinies, medals and ribbons, the sync state (a tap
- * syncs), then rows to edit the profile, see it, share the card image,
- * Apoiadores (supporters), missions and achievements, the admin's gift desk
- * and sign out. Guests get the same card from the local save, with "Criar
- * conta / Entrar" when accounts are on. It follows the account state.
+ * runs, wins, Pokédex and shinies, medals and ribbons, the linked Discord,
+ * the sync state (a tap syncs), then rows to edit the profile, see it, share
+ * the card image, Discord (link it, or the server once linked), Apoiadores
+ * (supporters), missions and achievements, the admin's gift desk and sign
+ * out. Guests get the same card from the local save, with "Criar conta /
+ * Entrar" and "Entrar com Discord" when accounts are on. It follows the account state.
  *
  * `supporters` opens Apoiadores over it (it can start a run, so the caller
  * builds it); every screen opened from here comes back to the card. The gear
@@ -124,12 +126,19 @@ export const trainerCardScreen = (
     const m = t().trainer
     const share: Row = { label: m.share, run: () => openSub((back) => sharePreview(root, input, trainerShare(loadSave().partner), back)) }
     const missions: Row = { label: m.missions, run: () => openSub((back) => missionsScreen(root, input, back)) }
-    if (s.kind !== 'signedIn') return [...(s.kind === 'guest' && accountsEnabled ? [{ label: m.join, run: () => void signIn() }] : []), share, missions]
+    const discord: Row = {
+      label: s.kind === 'signedIn' && s.discord ? t().discord.row(s.discord) : s.kind === 'signedIn' ? t().discord.link : t().discord.signIn,
+      icon: discordIcon(),
+      wide: true,
+      run: () => openSub((back) => discordScreen(root, input, back)),
+    }
+    if (s.kind !== 'signedIn') return [...(s.kind === 'guest' && accountsEnabled ? [{ label: m.join, run: () => void signIn() }, discord] : []), share, missions]
     const handle = s.handle
     return [
       { label: handle === null ? m.createProfile : m.editProfile, run: () => openSub((back) => profileEditor(root, input, back)) },
       ...(handle ? [{ label: m.viewProfile, run: () => openSub((back) => profileScreen(root, input, handle, back)) }] : []),
       share,
+      discord,
       ...(tier ? [{ label: since ? m.supporterSince(tier === 'gold', monthYear(since)) : t().supporters.badge(tier), icon: supporterIcon(tier), run: () => openSub(opts.supporters) }] : []),
       missions,
       // Admin only, so not translated (see `ui/admin.ts`).
@@ -158,6 +167,7 @@ export const trainerCardScreen = (
     const ribbons = ribbonCounts(save.ribbons)
     const name = s.kind === 'signedIn' ? s.name || m.guest : m.guest
     const handle = s.kind === 'signedIn' && s.handle ? `@${s.handle}` : null
+    const discord = s.kind === 'signedIn' && s.discord ? s.discord : null
     const stat = (n: number, label: string) => h('span', { class: 'trainer-stat' }, h('b', {}, formatNumber(n)), h('small', {}, label))
     const chips = [
       ...[...MEDALS].reverse().filter((medal) => medals[medal] > 0).map((medal) => [medalIcon(medal), t().achievements.medals[medal], medals[medal]] as const),
@@ -170,7 +180,14 @@ export const trainerCardScreen = (
         'div',
         { class: 'trainer-head' },
         avatar(s, 'big'),
-        h('div', { class: 'trainer-id' }, h('h3', {}, name), handle && h('small', {}, handle), titleLine('trainer-title')),
+        h(
+          'div',
+          { class: 'trainer-id' },
+          h('h3', {}, name),
+          handle && h('small', {}, handle),
+          discord && h('small', { class: 'trainer-discord' }, h('img', { src: discordIcon(), alt: 'Discord' }), discord),
+          titleLine('trainer-title'),
+        ),
       ),
       h(
         'div',
@@ -212,7 +229,7 @@ export const trainerCardScreen = (
     const sync = syncLine(s)
     const rows = rowsFor(s, tier)
     const buttons = rows.map((r) =>
-      h('button', { class: `box trainer-row${r.tone ? ` ${r.tone}` : ''}`, type: 'button' }, r.icon && h('img', { src: r.icon, alt: '' }), h('span', {}, r.label), !r.tone && h('i', { 'aria-hidden': 'true' }, '▶')),
+      h('button', { class: `box trainer-row${r.tone ? ` ${r.tone}` : ''}`, type: 'button' }, r.icon && h('img', { src: r.icon, alt: '', class: r.wide ? 'wide' : '' }), h('span', {}, r.label), !r.tone && h('i', { 'aria-hidden': 'true' }, '▶')),
     )
     const syncs = sync instanceof HTMLButtonElement
     const items = syncs ? [sync, ...buttons] : buttons

@@ -271,6 +271,23 @@ export const es: Messages = {
     gateGuestNote: 'Como invitado, el progreso queda solo en este dispositivo y tus partidas no entran al ranking.',
   },
 
+  discord: {
+    title: 'DISCORD',
+    open: 'Discord',
+    pitch: 'El servidor de la comunidad tiene las novedades del juego, el podio del Desafío del día y otros entrenadores. Allí se habla inglés, con salas para cada idioma.',
+    linkPitch: 'Conecta tu Discord para entrar al servidor directo y recibir tu rol de patrocinador.',
+    guestPitch: 'Entrar con Discord crea tu cuenta (o abre la que ya tienes) y conecta las dos de una vez.',
+    link: 'Conectar Discord',
+    signIn: 'Entrar con Discord',
+    openServer: 'Abrir el servidor',
+    join: 'Entrar al servidor',
+    connected: (name) => `Conectado como @${name}`,
+    row: (name) => `Discord: @${name}`,
+    failed: 'No se pudo conectar Discord. Inténtalo de nuevo.',
+    busy: 'Conectando…',
+    back: 'Volver',
+  },
+
   ranking: {
     title: 'RANKING',
     periods: { day: 'Hoy', week: 'Semana', all: 'Total' },

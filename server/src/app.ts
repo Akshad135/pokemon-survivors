@@ -19,6 +19,7 @@ import type { AdminStore } from './admin'
 import type { Verify } from './auth'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
+import type { DiscordLink } from './discordLink'
 import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
@@ -38,6 +39,8 @@ export type AppDeps = {
   supporters: SupporterStore
   /** The idea board. */
   suggestions: SuggestionStore
+  /** The player's Discord account: the community server and its supporter role. */
+  discord: Pick<DiscordLink, 'link' | 'unlink'>
   /** The gift desk: who is admin (asked of Clerk), finding players and sending them gifts. */
   admin: Pick<AdminStore, 'isAdmin' | 'search' | 'send' | 'recent'>
   /** Webhook secrets: Stripe's signing secret and Payment Link, AbacatePay's URL secret. Unset ones answer 503. */
@@ -119,6 +122,10 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /suggestions` (auth) `{ title, body }`: posts an idea (`parseSuggestionDraft`), 201 `{ suggestion }`.
  *   400 invalid, 403 before the player has a handle, 429 past `SUGGESTION.perDay` in 24 hours.
  * - `PUT /suggestions/:id/vote` (auth) `{ vote }` (1, -1, or 0 to take it back): `{ score, vote }`. 404 unknown, 409 shipped.
+ * - `POST /discord/link` (auth): links the Discord account the player connected in Clerk, joins them
+ *   to the community server and gives them their supporter role. `{ username, joined }`; 404 when
+ *   Clerk has no verified Discord account for them, 503 when Clerk can't answer.
+ * - `DELETE /discord/link` (auth): forgets it (the player unlinked Discord). `{ unlinked: true }`.
  * - `/admin…` (admin): the gift desk, 403 for anyone whose verified email isn't in `ADMIN_EMAILS`.
  *   `GET /admin`: `{ admin: true }`. `GET /admin/users?q=`: `{ users }` (`AdminUser[]`) by handle or email.
  *   `POST /admin/gifts` `{ userId, content, request }`: sends a gift (`parseAdminGift`), `{ sent }`
@@ -126,7 +133,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (`AdminSent[]`), the latest sent by hand. `PUT /admin/suggestions/:id` `{ status }`: marks an idea
  *   `done` (shipped), `open` again or `hidden` (off the board). `{ status }`, 404 for an unknown idea.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, admin, webhooks, allowedOrigin, ping }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, discord, admin, webhooks, allowedOrigin, ping }: AppDeps) => {
   const app = new Hono()
 
   app.use(logger())
@@ -320,6 +327,18 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const paid = abacateDonation(JSON.parse(raw))
     if (paid) await supporters.paid(paid)
     return c.json({ received: true })
+  })
+
+  app.post('/discord/link', auth, async (c) => {
+    const linked = await discord.link(c.var.userId).catch((err: unknown) => (console.error('discord link failed', err), null))
+    if (!linked) return c.json({ error: 'clerk unavailable' }, 503)
+    if (!linked.linked) return c.json({ error: 'no discord account' }, 404)
+    return c.json({ username: linked.username, joined: linked.joined })
+  })
+
+  app.delete('/discord/link', auth, async (c) => {
+    await discord.unlink(c.var.userId)
+    return c.json({ unlinked: true })
   })
 
   app.get('/me/supporter', auth, async (c) => c.json(await supporters.mine(c.var.userId)))

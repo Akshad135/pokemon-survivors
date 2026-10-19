@@ -76,7 +76,7 @@ export const discordStore = (sql: Sql) => ({
 export type DiscordStore = ReturnType<typeof discordStore>
 
 /** A Discord REST call as the bot, waiting out rate limits. Throws on any other error. */
-const restClient =
+export const restClient =
   (token: string) =>
   async (method: string, path: string, body?: unknown): Promise<unknown> => {
     for (;;) {
@@ -99,7 +99,7 @@ const str = (v: unknown) => (typeof v === 'string' ? v : null)
 const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : null)
 
 /** `name → id` of a list of channels or roles. */
-const idsByName = (list: unknown) =>
+export const idsByName = (list: unknown) =>
   new Map(
     (Array.isArray(list) ? list : []).flatMap((x) => {
       const name = isRecord(x) ? str(x.name) : null

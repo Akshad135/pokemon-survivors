@@ -33,7 +33,7 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
       { pt: 'Ficar parado não funciona mais: cuspidores de longe, Pokémon Alfa gigantes e o mapa atacando.', en: "Standing still doesn't work anymore: ranged spitters, giant Alpha Pokémon and a map that strikes back.", es: 'Quedarse quieto ya no funciona: escupidores a distancia, Pokémon Alfa gigantes y el mapa que ataca.' },
       { pt: 'Missões de campo: defenda um ovo, junte Poké Balls e leve um Togepi perdido para casa.', en: 'Field missions: defend an egg, gather Poké Balls and lead a lost Togepi home.', es: 'Misiones de campo: defiende un huevo, junta Poké Balls y lleva a casa a un Togepi perdido.' },
       { pt: 'Chefes mais espertos, que miram onde você vai e ganham um ataque novo na fúria.', en: "Smarter bosses that aim where you're going and gain a new attack when enraged.", es: 'Jefes más astutos, que apuntan adonde vas y ganan un ataque nuevo con la furia.' },
-      { pt: 'Sua partida entra no ranking assim que termina.', en: 'Your run joins the ranking as soon as it ends.', es: 'Tu partida entra al ranking en cuanto termina.' },
+      { pt: 'Servidor no Discord: conecte sua conta para entrar direto e ganhar seu cargo de apoiador.', en: 'A Discord server: link your account to join right away and get your supporter role.', es: 'Servidor en Discord: conecta tu cuenta para entrar directo y recibir tu rol de patrocinador.' },
       { pt: 'Convide amigos e ganhe ovos, um título e até um Dratini shiny.', en: 'Invite friends to earn eggs, a title and even a shiny Dratini.', es: 'Invita amigos y gana huevos, un título y hasta un Dratini shiny.' },
     ],
     changes: [
@@ -124,6 +124,21 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'O botão Novidades, no topo do lobby, pula com um "!" quando sai uma atualização e mostra os destaques dela. Ver tudo abre esta página, que agora vem organizada por atualização, com os destaques primeiro.',
             en: 'The What\'s new button, at the top of the lobby, hops with a "!" when an update comes out and shows its highlights. See everything opens this page, now organized by update, highlights first.',
             es: 'El botón Novedades, arriba en el lobby, salta con un "!" cuando sale una actualización y muestra sus destacados. Ver todo abre esta página, que ahora viene organizada por actualización, con los destacados primero.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Servidor no Discord', en: 'Discord server', es: 'Servidor en Discord' },
+        notes: [
+          {
+            pt: 'O jogo ganhou um servidor no Discord, com as novidades, o pódio do Desafio do dia, o Surto do dia e salas para cada idioma. O botão do Discord fica no topo do lobby.',
+            en: 'The game has a Discord server now, with the news, the Daily Challenge podium, the daily outbreak and rooms for each language. The Discord button sits at the top of the lobby.',
+            es: 'El juego tiene un servidor en Discord, con las novedades, el podio del Desafío del día, el Brote del día y salas para cada idioma. El botón de Discord está arriba en el lobby.',
+          },
+          {
+            pt: 'Conecte seu Discord à conta, no botão do Discord ou no Cartão de Treinador, para entrar no servidor direto e ganhar o cargo de apoiador. Também dá para entrar no jogo com o Discord.',
+            en: 'Link your Discord to your account, from the Discord button or the Trainer Card, to join the server right away and get your supporter role. You can also sign in to the game with Discord.',
+            es: 'Conecta tu Discord a tu cuenta, desde el botón de Discord o la Tarjeta de Entrenador, para entrar al servidor directo y recibir tu rol de patrocinador. También puedes entrar al juego con Discord.',
           },
         ],
       },
