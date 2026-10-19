@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangelogUpdate } from '../../src/site/changelog'
-import { greetMessage, INTRO_MIN_CHARS, introDecision, meaningfulLength, patchMessage, patchPlan, podiumMessage } from './discordMessages'
+import { greetMessage, hasWords, introDecision, patchMessage, patchPlan, podiumMessage } from './discordMessages'
 
 const update = (date: string): ChangelogUpdate => {
   const text = { pt: date, en: date, es: date }
@@ -8,17 +8,15 @@ const update = (date: string): ChangelogUpdate => {
 }
 
 describe('the introduction gate', () => {
-  it('counts letters and digits, not mentions, emojis or links', () => {
-    expect(meaningfulLength('Hi! I’m Ash 🙂')).toBe(7)
-    expect(meaningfulLength('<@123456789> <:pikachu:987654321> https://example.com/abc')).toBe(0)
-    expect(meaningfulLength('Olá, sou o João de São Paulo')).toBe(21)
+  it('reads words, not mentions, emojis or links', () => {
+    expect(hasWords('Olá 🙂')).toBe(true)
+    expect(hasWords('<@123456789> <:pikachu:987654321> https://example.com/abc 🙂')).toBe(false)
   })
 
-  it('welcomes a real introduction and nudges a "hi"', () => {
-    const intro = 'Hey! I’m Misty from Cerulean, I love Starmie'
-    expect(meaningfulLength(intro)).toBeGreaterThanOrEqual(INTRO_MIN_CHARS)
-    expect(introDecision({ bot: false, trainer: false, content: intro })).toBe('welcome')
-    expect(introDecision({ bot: false, trainer: false, content: 'hi everyone!!' })).toBe('tooShort')
+  it('welcomes anything written, however short, and nudges a lone emoji or link', () => {
+    expect(introDecision({ bot: false, trainer: false, content: 'charizard is op :<' })).toBe('welcome')
+    expect(introDecision({ bot: false, trainer: false, content: 'hi' })).toBe('welcome')
+    expect(introDecision({ bot: false, trainer: false, content: '👋 https://example.com' })).toBe('empty')
   })
 
   it('pings only the newcomer it greets', () => {
