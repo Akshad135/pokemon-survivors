@@ -46,6 +46,7 @@ import type { TmState } from './tms'
 import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
+import type { TensionState } from './tension'
 import type { AlphaClock, AlphaState } from './alphas'
 
 export type OwnedMove = {
@@ -116,6 +117,8 @@ export type EnemyBehavior =
   | { kind: 'chase' }
   /** Flies in a straight line and despawns after `ttl` (swarm events). */
   | { kind: 'flyby'; vx: number; vy: number; ttl: number }
+  /** Walks to a field mission's nest at (x, y) and bites the egg there, turning on the player within `aggro` px (`fieldMissions.ts`). */
+  | { kind: 'raid'; mission: number; x: number; y: number; aggro: number }
 
 export type Enemy = {
   id: number
@@ -656,8 +659,15 @@ export type Game = {
   /** Counters for missions and achievements (`game/tally.ts`). */
   tally: RunTally
   events: GameEvent[]
+  /** The pressure director (`tension.ts`): a dominant player gets a faster, closer, nastier horde. */
+  tension: TensionState
   /** When the next Alpha is due (`alphas.ts`). */
   alphas: AlphaClock
   /** The world's own attacks on the player (`game/hazards.ts`). */
   worldHazards: WorldHazardState
+  /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
+  prize: PrizeSource | null
 }
+
+/** Where a prize level-up came from: an Alpha's gem or a field mission. */
+export type PrizeSource = 'alpha' | 'mission'

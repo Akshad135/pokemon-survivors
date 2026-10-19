@@ -17,6 +17,8 @@ export type DifficultyMods = {
   ramp: number
   /** Every heal: regen, berries, potions, fountains, evolving, rift loot. */
   healing: number
+  /** Seconds the player can't be hurt again after a hit: it caps how many hits a crowd lands per second. */
+  iframes: number
 }
 
 /**
@@ -25,12 +27,14 @@ export type DifficultyMods = {
  * in the run (`enemyHp` × the steeper `ramp`), so the horde still melts under a
  * build that fits the minute. Measured with a headless bot: when Nightmare
  * leaned on HP (×3.5, ×4.5 Normal's late HP) the horde stopped dying, filled its
- * cap and buried Mewtwo in a blob nobody could reach.
+ * cap and buried Mewtwo in a blob nobody could reach. Shorter i-frames let a
+ * crowd land more hits per second, and the pressure director (`tension.ts`,
+ * peaks in `TENSION_PEAK`) piles on while a build wins too easily.
  */
 export const DIFFICULTIES = {
-  normal: { enemyHp: 1, enemyDamage: 1, spawnRate: 1, enemySpeed: 1, ramp: 1, healing: 1 },
-  hard: { enemyHp: 1.4, enemyDamage: 1.45, spawnRate: 1.25, enemySpeed: 1.1, ramp: 1.12, healing: 1 },
-  nightmare: { enemyHp: 1.8, enemyDamage: 2, spawnRate: 1.5, enemySpeed: 1.2, ramp: 1.25, healing: 0.5 },
+  normal: { enemyHp: 1, enemyDamage: 1, spawnRate: 1, enemySpeed: 1, ramp: 1, healing: 1, iframes: 0.5 },
+  hard: { enemyHp: 1.4, enemyDamage: 1.45, spawnRate: 1.25, enemySpeed: 1.1, ramp: 1.12, healing: 1, iframes: 0.4 },
+  nightmare: { enemyHp: 1.8, enemyDamage: 2, spawnRate: 1.5, enemySpeed: 1.2, ramp: 1.25, healing: 0.5, iframes: 0.3 },
 } as const satisfies Record<string, DifficultyMods>
 
 export type Difficulty = keyof typeof DIFFICULTIES

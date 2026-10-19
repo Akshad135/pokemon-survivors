@@ -10,6 +10,8 @@ import { drawPokemon, loadedSprites } from './sprites'
 import { dashedRing } from './strokes'
 import { tmDisc, TM_FX } from './tmArt'
 import { TUTOR } from '../game/tmRules'
+import { isMission } from '../game/fieldMissions'
+import { drawFieldMission, missionIcon, missionSpot } from './fieldMissions'
 
 /**
  * Map events on the ground (altar, fountain, chest, traps, Meowth, the Move Tutor) and the
@@ -45,7 +47,8 @@ const ART = lazy(() => ({
   bomb: art(BOMB_ART, { 1: '#383848', 2: '#a0a8c8', 3: '#a08060' }, '#101018'),
   bombLit: art(BOMB_ART, { 1: '#c03028', 2: '#ffb0a0', 3: '#a08060' }, '#101018'),
   drop: art(DROP, { 1: '#2860b0', 2: '#78c0f8', 3: '#ffffff' }, '#101830'),
-  arrows: ['#f8e8a0', '#78c0f8', '#f8c830', '#f8d030'].map((c) => art(ARROW, { 1: '#181818', 2: c })),
+  // The last one (pink) is the field missions'.
+  arrows: ['#f8e8a0', '#78c0f8', '#f8c830', '#f8d030', '#f878a8'].map((c) => art(ARROW, { 1: '#181818', 2: c })),
 }))
 
 export const fountainIcon = () => toIconUrl('fountain', () => ART().drop)
@@ -223,7 +226,8 @@ const drawTutor = (ctx: Ctx, ev: MapEventOf<'tutor'>, t: number) => {
 const near = (g: Game, x: number, y: number, m = 60) =>
   x > g.camera.x - m && x < g.camera.x + g.view.w + m && y > g.camera.y - m && y < g.camera.y + g.view.h + m
 
-const drawEvent = (ctx: Ctx, ev: MapEvent, t: number) => {
+const drawEvent = (ctx: Ctx, g: Game, ev: MapEvent, t: number) => {
+  if (isMission(ev)) return drawFieldMission(ctx, g, ev, t)
   switch (ev.kind) {
     case 'altar': return drawAltar(ctx, ev, t)
     case 'fountain': return drawFountain(ctx, ev, t)
@@ -238,11 +242,12 @@ const drawEvent = (ctx: Ctx, ev: MapEvent, t: number) => {
 /** Ground layer: every map event near the screen, fading out once spent. */
 export const drawMapEvents = (ctx: Ctx, g: Game, t: number) => {
   for (const ev of g.mapEvents.list) {
-    if (!near(g, ev.x, ev.y)) continue
+    // A collect mission's balls spread far from its center.
+    if (!near(g, ev.x, ev.y, ev.kind === 'collect' || ev.kind === 'escort' ? 400 : 60)) continue
     // A popped bomb leaves nothing behind; the rest fade out.
     if (ev.gone >= 0 && ev.kind === 'bomb') continue
     ctx.globalAlpha = ev.gone >= 0 ? Math.max(0, 1 - ev.gone / FADE) : 1
-    drawEvent(ctx, ev, t)
+    drawEvent(ctx, g, ev, t)
   }
   ctx.globalAlpha = 1
 }
@@ -256,6 +261,9 @@ const MARKER: Partial<Record<MapEventKind, { arrow: number; icon: () => PixelSpr
   chest: { arrow: 2, icon: () => ART().chest },
   meowth: { arrow: 3, icon: () => PICKUPS.coins()[0]! },
   tutor: { arrow: 1, icon: () => tmDisc('#78c0f8') },
+  defense: { arrow: 4, icon: () => missionIcon('defense') },
+  collect: { arrow: 4, icon: () => missionIcon('collect') },
+  escort: { arrow: 4, icon: () => missionIcon('escort') },
 }
 
 export type MarkerInsets = { top: number; bottom: number; side: number }
@@ -281,8 +289,10 @@ export const drawMapEventMarkers = (ctx: Ctx, g: Game, t: number) => {
   for (const ev of g.mapEvents.list) {
     const marker = MARKER[ev.kind]
     if (ev.gone >= 0 || !marker || !MAP_EVENTS[ev.kind].marker) continue
-    const sx = ev.x - g.camera.x
-    const sy = ev.y - 8 - g.camera.y
+    // A mission points at where to go next (the nearest ball, Togepi's nest).
+    const at = isMission(ev) ? missionSpot(g, ev) : ev
+    const sx = at.x - g.camera.x
+    const sy = at.y - 8 - g.camera.y
     if (sx > 4 && sx < w - 4 && sy > 4 && sy < h - 4) continue
     const dx = sx - cx
     const dy = sy - cy

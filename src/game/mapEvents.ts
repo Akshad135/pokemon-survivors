@@ -20,6 +20,7 @@ import { isAlive } from './queries'
 import { countNotice } from './tally'
 import { openCursedChest } from './curseSystem'
 import { clearSpot } from './terrain'
+import { createFieldMissions, directMissions, FIELD_MISSIONS, type FieldMissionNotice, type FieldMissionState, type FieldMissionStates } from './fieldMissions'
 import { openTutor } from './tms'
 import { TUTOR, tutorWeight } from './tmRules'
 import type { Game } from './types'
@@ -27,7 +28,8 @@ import * as dm from '../engine/dmath'
 
 /**
  * Points of interest the event director scatters around the player during a
- * run (altars, fountains, locked chests, traps, a fleeing Meowth, the Move Tutor).
+ * run (altars, fountains, locked chests, traps, a fleeing Meowth, the Move Tutor),
+ * and the field missions, placed by their own director (`fieldMissions.ts`).
  *
  * Adding one: give it a state in `MapEventStates`, a definition in
  * `MAP_EVENTS` (spawn rule, interaction, reward), art in `render/mapEvents.ts`
@@ -44,7 +46,7 @@ export type MapEventStates = {
   meowth: { hp: number; dir: Dir8; flash: number; hitCooldown: number; seed: number }
   /** Seconds stood in its ring so far (0..`TUTOR.stand`, drains outside). */
   tutor: { stand: number }
-}
+} & FieldMissionStates
 
 export type MapEventKind = keyof MapEventStates
 
@@ -67,6 +69,8 @@ export type MapEventsState = {
   list: MapEvent[]
   /** Game time of the director's next spawn attempt. */
   next: number
+  /** The field missions' own director (`fieldMissions.ts`). */
+  missions: FieldMissionState
 }
 
 /** What the shell hears about (sounds, toasts), carried by the `mapEvent` GameEvent. */
@@ -88,6 +92,8 @@ export type MapEventNotice =
   | { kind: 'tutor' }
   | { kind: 'tutorEmpty' }
   | { kind: 'tutorLeft' }
+  /** Field missions (`fieldMissions.ts`). */
+  | FieldMissionNotice
 
 export type MapEventDef<K extends MapEventKind> = {
   spawn: {
@@ -113,7 +119,7 @@ export type MapEventDef<K extends MapEventKind> = {
   expire?: (g: Game, ev: MapEventOf<K>) => void
 }
 
-export const createMapEvents = (): MapEventsState => ({ list: [], next: DIRECTOR.first })
+export const createMapEvents = (): MapEventsState => ({ list: [], next: DIRECTOR.first, missions: createFieldMissions() })
 
 const notify = (g: Game, notice: MapEventNotice) => {
   countNotice(g.tally, notice)
@@ -326,6 +332,7 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
     },
     expire: (g) => notify(g, { kind: 'tutorLeft' }),
   },
+  ...FIELD_MISSIONS,
 }
 
 export const MAP_EVENT_KINDS = Object.keys(MAP_EVENTS) as MapEventKind[]
@@ -377,6 +384,7 @@ const direct = (g: Game) => {
 /** Runs the director, every live event's interaction, and clears faded or far-away events. */
 export const updateMapEvents = (g: Game, dt: number) => {
   direct(g)
+  directMissions(g, spawnMapEvent)
   const p = g.player
   for (const ev of g.mapEvents.list) {
     ev.age += dt

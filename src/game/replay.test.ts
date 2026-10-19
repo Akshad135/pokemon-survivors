@@ -3,6 +3,7 @@ import { createRng } from '../engine/rng'
 import { chooseOffer, step } from './game'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
+import { spawnMapEvent } from './mapEvents'
 import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
@@ -10,6 +11,7 @@ import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
 import { makeSpitter } from './spitters'
 import type { Game } from './types'
+import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
 const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
@@ -131,6 +133,22 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
+  it('re-simulate field missions: a raided nest and lost Poké Balls underfoot', () => {
+    const missions = (g: Game) => {
+      const p = g.player
+      spawnMapEvent(g, 'defense', Math.round(p.x), Math.round(p.y))
+      const balls = spawnMapEvent(g, 'collect', Math.round(p.x), Math.round(p.y))
+      // One ball right under the player, so the run picks it up.
+      balls.state.balls[0] = { x: Math.round(p.x), y: Math.round(p.y), got: false }
+    }
+    const { g, replay } = play(40, START, 300, missions)
+    expect(g.tally.notices.nestRaid).toBe(1)
+    expect(g.tally.notices.ballFound).toBeGreaterThanOrEqual(1)
+    const staged = startGame(START)
+    missions(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
   it("re-simulate a Nightmare Mewtwo in its second phase: leaps, aimed volleys and path strikes", () => {
     const phaseTwo = (g: Game) => {
       const boss = spawnWaveBoss(g, 'mewtwo', g.time)
@@ -166,6 +184,18 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it('re-simulate a Nightmare run under full tension: close spawns, tense elites and a surge', () => {
+    const tense = (g: Game) => {
+      Object.assign(g.tension, { level: 1, reach: 1, surge: TENSION_PEAK.nightmare.surgeEvery - 1 })
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(40, start, 300, tense)
+    expect(g.tension.surges).toBeGreaterThan(0)
+    const staged = startGame(start)
+    tense(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('re-simulate Alphas on Nightmare: their charges, shockwaves, rage, fall and the prize level-up', () => {

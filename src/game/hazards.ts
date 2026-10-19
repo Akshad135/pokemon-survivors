@@ -58,7 +58,8 @@ const countAt = (g: Game, counts: readonly [number, number]) => Math.round(lerp(
 
 /**
  * Pace multiplier right now: 0 inside a rift arena, before the start, during a
- * boss's entrance and (on Normal) while Mewtwo lives; cut while a boss is in the fight.
+ * boss's entrance and (on Normal) while Mewtwo lives; cut while a boss is in
+ * the fight, or an Alpha nearby aims or charges (its red lane must stay readable).
  */
 const paceNow = (g: Game) => {
   if (g.rift.arena !== null || g.time < HAZARD_PACE[g.difficulty].start) return 0
@@ -66,8 +67,13 @@ const paceNow = (g: Game) => {
   let fight = false
   for (const e of g.enemies) {
     if (!e.boss || e.dying >= 0) continue
+    const near = dm.sq(e.x - g.player.x) + dm.sq(e.y - g.player.y) < reach * reach
+    if (e.alpha) {
+      fight ||= near && e.alpha.phase !== 'walk'
+      continue
+    }
     if (g.time - e.bornAt < HAZARD_RULES.entrance) return 0
-    fight ||= dm.sq(e.x - g.player.x) + dm.sq(e.y - g.player.y) < reach * reach
+    fight ||= near
   }
   const finale = finaleAlive(g) ? HAZARD_PACE[g.difficulty].finale : 1
   return finale * (fight ? HAZARD_RULES.bossFight : 1)
