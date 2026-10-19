@@ -4,7 +4,8 @@ import type { Vec } from './math'
 
 /**
  * Keyboard + gamepad + pointer (virtual joystick, floating or fixed) input.
- * `readMove` returns a vector with length ≤ 1. `readStick` exposes the joystick
+ * `readMove` returns a vector with length ≤ 1: analog from the touch joystick
+ * and the pad's left stick, 8 directions from keys and the D-pad. `readStick` exposes the joystick
  * (CSS px) so the shell can draw it. Discrete presses are delivered through
  * `onKey` as key codes, after the player's bindings (see `engine/bindings.ts`):
  * a remapped key and a gamepad button arrive as the codes the screens already handle.
@@ -118,6 +119,8 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
   let activePad: string | null = null
   /** Codes the pads hold in a run (the directions), read by `readMove` like held keys. */
   let padHeld: string[] = []
+  /** The pad's left stick in a run, analog (`stickVector`); zero at rest or in a menu. */
+  let padMove: Vec = { x: 0, y: 0 }
   /** The fixed center the current touch grabbed (null: it's floating). */
   let anchor: Vec | null = null
 
@@ -168,6 +171,7 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
 
   const readMove = (): Vec => {
     if (stick) return stick.vec
+    if (padMove.x !== 0 || padMove.y !== 0) return padMove
     let x = 0
     let y = 0
     for (const code of [...held.values(), ...padHeld]) {
@@ -189,11 +193,12 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
   // Edge-detected per button, not per code: a button held across a run/menu switch doesn't press again.
   const poll = (playing: boolean) => {
     const now = readPads()
-    const { buttons, stick: axes, fresh, freshStick, pressed } = padChanges(pads, now)
+    const { buttons, stick: axes, fresh, freshStick, pressed, move } = padChanges(pads, now)
     pads = now
     if (pressed !== null) activePad = pressed
     const pad = bindings().pad
     padHeld = playing ? padActions(pad, buttons, axes, true).map((a) => ACTIONS[a].code) : []
+    padMove = playing ? move : { x: 0, y: 0 }
     if (capturing) return fresh.forEach((button) => capturing?.({ device: 'pad', button }))
     padActions(pad, fresh, freshStick, playing).forEach((a) => dispatch(ACTIONS[a].code))
   }
