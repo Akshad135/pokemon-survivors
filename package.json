@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/sourcemaps.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -15,6 +15,7 @@
     "bodies": "node scripts/bodies.mjs"
   },
   "devDependencies": {
+    "@posthog/cli": "^0.16.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.4"
@@ -23,7 +24,8 @@
     "@clerk/clerk-js": "^6.39.0",
     "@clerk/shared": "^4.40.0",
     "@fontsource/press-start-2p": "^5.3.0",
-    "@fontsource/vt323": "^5.3.0"
+    "@fontsource/vt323": "^5.3.0",
+    "posthog-js": "^1.438.12"
   },
   "license": "MIT",
   "homepage": "https://www.pokemonsurvivors.com",

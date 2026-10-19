@@ -22,8 +22,8 @@ import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountState, accountsEnabled, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
-import { track } from './analytics'
+import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, onAccountChange, onGifts, receiveGifts, startAccount, syncSave } from './account'
+import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
@@ -36,7 +36,7 @@ import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
 import { FIELD, FIELD_MISSION_KINDS, TOGEPI_DEX, type FieldMissionKind } from './game/fieldMissionRules'
-import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
+import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step, takeBerryLevelUps } from './game/game'
 import { formAt, playerForm } from './game/branch'
 import { unlockedAt } from './game/learnsets'
 import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
@@ -70,7 +70,7 @@ import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
-import { recordEvent, recordStep, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
+import { parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
 import { playsShiny } from './game/shinyPicks'
@@ -84,7 +84,7 @@ import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
+import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
@@ -160,6 +160,8 @@ let dirty = true
  */
 const resize = () => {
   stickCenter = null
+  // The HUD may have moved (a new viewport or UI size): re-measure it after layout (and after module init, so `run` exists by then).
+  requestAnimationFrame(() => run && syncMarkerInsets())
   const width = window.visualViewport?.width ?? window.innerWidth
   const height = window.visualViewport?.height ?? window.innerHeight
   const fit = fitView(width, height, window.devicePixelRatio || 1)
@@ -171,11 +173,10 @@ const resize = () => {
   canvas.height = view.h
   canvas.style.width = `${view.w * cssScale}px`
   canvas.style.height = `${view.h * cssScale}px`
-  document.documentElement.style.setProperty('--px', `${Math.max(2, Math.round(cssScale))}px`)
+  // One world pixel, for the UI's pixel frames (style.css turns it into #ui's zoomed px as `--px`).
+  document.documentElement.style.setProperty('--world-px', `${Math.max(2, Math.round(cssScale))}px`)
   context2d(canvas)
   dirty = true
-  // Runs after layout (and after module init, so `run` exists by then).
-  requestAnimationFrame(() => run && syncMarkerInsets())
 }
 // Rotation often reports stale sizes in the same tick, so re-measure on the next frame too.
 const scheduleResize = () => (resize(), requestAnimationFrame(resize))
@@ -487,13 +488,42 @@ const rankRun = (r: Run) => {
   }
 }
 
-/** Reports how the run ended, once. */
-const reportRun = (r: Run) => {
+/** Reports how the run ended, once, with the build it ended on and, for a faint, what landed the last hit. */
+const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | null = null) => {
   if (r.reported) return
   r.reported = true
   const g = r.game
-  const outcome = g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit'
-  track('run_end', { starter: g.starter, difficulty: g.difficulty, outcome, minute: Math.floor(g.time / 60), level: g.player.level, kills: g.kills })
+  const p = g.player
+  track('run_end', {
+    starter: g.starter,
+    difficulty: g.difficulty,
+    outcome: g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit',
+    minute: Math.floor(g.time / 60),
+    level: p.level,
+    kills: g.kills,
+    stage: p.stage,
+    branch: g.branch,
+    ability: g.ability.id,
+    mega: g.mega.stone,
+    megas: g.mega.count,
+    moves: p.moves.map((m) => `${m.id}:${m.level}`),
+    items: p.items.map((i) => `${i.id}:${i.level}`),
+    bosses: g.tally.bossKills,
+    foe: faint?.foe ?? null,
+    hit: faint?.hit ?? null,
+    ...challengeKind(r.challenge),
+  })
+}
+
+/** The `challenge` field of a run's events: a Desafio do dia run says whether it started as the official attempt. */
+const challengeKind = (c: { official: boolean } | null) => (c ? { challenge: c.official ? ('official' as const) : ('practice' as const) } : {})
+
+/** What an error report says about where the player was: in a run, its replay so far, which plays the run again up to the error (`resimulate`). */
+const errorContext = (): ErrorContext => {
+  const r = run
+  if (!r) return { in_run: false }
+  const g = r.game
+  return { in_run: true, starter: g.starter, phase: g.phase, minute: Math.floor(g.time / 60), tick: r.recorder.tick, replay: JSON.stringify(r.recorder.replay) }
 }
 
 const endRun = () => {
@@ -617,7 +647,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
     companion: runCompanion(game.player),
   }
-  track('run_start', { starter, difficulty: game.difficulty, ...(daily ? { challenge: daily.official ? 'official' : 'practice' } : {}) })
+  track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
@@ -739,6 +769,10 @@ const syncOverlay = (r: Run) => {
       break
   }
 }
+
+/** Level-ups that took the Oran Berry on their own (`takeBerryLevelUps`): the level reached and how many at once. */
+const berryToast = (g: Game, count: number) =>
+  toast(ui, h('span', { class: 'item-toast' }, h('img', { src: berryIcon(), alt: '' }), rich(t().levelUp.autoBerry(g.player.level, count))), 2200, 'autoBerry')
 
 /** After an evolution: what the new form can learn now (`unlockedAt`), each move with its icon. */
 const learnsToast = (g: Game) => {
@@ -1012,7 +1046,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'gameover':
       bankRun(r, true)
       recordProgress(r)
-      reportRun(r)
+      reportRun(r, e)
       rankRun(r)
       playSfx('gameOver')
       return playCry(playerCry(g))
@@ -1206,7 +1240,10 @@ const frame = (now: number) => {
       megaQueued = false
       lungeQueued = false
     }
+    // A level-up with only the Oran Berry to pick takes it without a screen, recorded like a tap.
+    const berries = takeBerryLevelUps(g, (i) => recordEvent(r.recorder, ['offer', i]))
     for (const e of g.events.splice(0)) handleEvent(r, e)
+    if (berries > 0) berryToast(g, berries)
     if (run === r) {
       syncOverlay(r)
       // Toasts and banners wait out menus, level-ups and evolutions with their clocks stopped.
@@ -1316,6 +1353,11 @@ const promptProfile = () => {
 }
 
 const boot = () => {
+  startAnalytics(errorContext)
+  // Events and errors tie to the account on this device, known from its link before Clerk loads.
+  const identifyAccount = () => identify(accountUserId(), accountHandle())
+  identifyAccount()
+  onAccountChange(identifyAccount)
   document.documentElement.lang = LOCALES[locale()].tag
   // Someone's link (`?ref=`, a profile): remember who brought this device, before anything reads the URL.
   captureRef()
@@ -1559,6 +1601,14 @@ if (import.meta.env.DEV) {
       field: devField,
       challenge: devChallenge,
       dex: () => loadSave().dex,
+      /** Plays an error report's `replay` (the JSON string from PostHog) again: a simulation error throws here at the same tick. */
+      replay: (json: string) => {
+        const replay = parseReplay(JSON.parse(json))
+        if (!replay) return 'Not a replay'
+        // The report's `version` is the commit to check out when the rules differ.
+        if (rulesStanding(replay.rules) !== 'same') console.warn(`ps: the replay plays by rules ${replay.rules}, this build by ${RULES_VERSION}: it may end elsewhere`)
+        return resimulate(replay)
+      },
       /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */
       meadow: () => scene,
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */

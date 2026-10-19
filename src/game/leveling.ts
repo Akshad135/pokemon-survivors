@@ -204,6 +204,9 @@ export const draftOffers = ({ starter, moves, banished }: Loadout, rng: Rng, cou
   return picked.length > 0 ? picked : [{ kind: 'berry' }]
 }
 
+/** Whether a level-up has nothing to choose: every card is the Oran Berry (moves and items all maxed out). */
+export const nothingToChoose = (offers: readonly Offer[]) => offers.length > 0 && offers.every((o) => o.kind === 'berry')
+
 /** The two cards of a fork, standing in for the move card that reached it (its rarity carries over). */
 export const branchOffers = (offer: Extract<Offer, { kind: 'move' }>): Offer[] =>
   ([0, 1] as const).map((branch) => ({ kind: 'branch', id: offer.id, level: offer.level, branch, ...(offer.rarity && { rarity: offer.rarity }) }))

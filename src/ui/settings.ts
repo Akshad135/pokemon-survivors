@@ -5,21 +5,31 @@ import { locale, LOCALE_IDS, LOCALES, setLocale, t, type Locale } from '../i18n'
 import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
+import { FLASH_MODES } from '../render/flashes'
 import { loadSettings, writeSettings, type Settings } from './save'
 import { hint, menu, type Screen } from './screens'
 import { backButton, shellBody, tabStrip, topBar, segmented } from './shell'
 import { REPO_URL, ROUTES } from '../site/routes'
+import { applyUiScale, maxUiZoom, UI_SCALES, uiZoom, type UiScale } from './uiScale'
 
 /* ---------------- Live settings ---------------- */
 
-/** Pushes settings out to where they act: the audio mix, and `data-stick` for the HUD's CSS (the status box moves off the fixed stick). */
+/**
+ * Pushes settings out to where they act: the audio mix, `data-stick` for the
+ * HUD's CSS (the status box moves off the fixed stick) and `data-flashes`
+ * (reduced hides the shell's white screen flash), and the UI size.
+ */
 const apply = (s: Settings) => {
   setMix(s)
   document.documentElement.dataset.stick = s.joystick
+  document.documentElement.dataset.flashes = s.flashes
+  applyUiScale(s.uiScale)
 }
 
 let current = loadSettings()
 apply(current)
+// The UI size depends on the viewport too (`auto`, and the room it leaves).
+window.addEventListener('resize', () => applyUiScale(current.uiScale))
 
 /** Redraws the open settings screen when a change comes from elsewhere (the M key). */
 let refresh: (() => void) | null = null
@@ -122,6 +132,20 @@ const choiceRow = <K extends keyof Settings>(label: string, key: K, options: rea
   }
 }
 
+const percent = (zoom: number) => `${Math.round(zoom * 100)}%`
+
+/**
+ * `◀ Auto (125%) ▶`: the UI size steps that fit this viewport (`maxUiZoom`), or
+ * no row where only 100% does (phones, small windows). Shows the zoom in use,
+ * so a stored size the window can't fit reads as what it got.
+ */
+const uiScaleRows = (label: string, auto: string): Row[] => {
+  const room = maxUiZoom(window.innerWidth, window.innerHeight)
+  if (room <= 1) return []
+  const options = UI_SCALES.filter((s) => s === 'auto' || s <= room)
+  return [choiceRow(label, 'uiScale', options, (s: UiScale) => (s === 'auto' ? `${auto} (${percent(uiZoom())})` : percent(uiZoom())))]
+}
+
 /** PT / EN / ES, picked on a tap or ← →. `pick` switches the language and must rebuild the screen. */
 const languageRow = (pick: (next: Locale) => void): Row => {
   const seg = segmented(
@@ -160,7 +184,7 @@ let lastTab: Tab = 'sound'
 
 /**
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
- * (language, damage numbers, screen shake), Controles (touch joystick and the
+ * (language, damage numbers, screen shake, flashes, UI size), Controles (touch joystick and the
  * remap screen) and Sobre (what the game is, legal and credits, GitHub).
  * Changes apply and persist immediately.
  *
@@ -214,6 +238,8 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           languageRow(pickLanguage),
           choiceRow(m.damageNumbers, 'damageNumbers', DAMAGE_NUMBERS, (mode) => m.damageModes[mode]),
           toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
+          choiceRow(m.flashes, 'flashes', FLASH_MODES, (mode) => m.flashModes[mode]),
+          ...uiScaleRows(m.uiScale, m.uiScaleAuto),
         ]
       case 'controls':
         return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(showControls)]

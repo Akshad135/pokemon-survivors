@@ -14,8 +14,10 @@ import { rankingStore } from './ranking'
 import { supporterStore } from './supporters'
 import { suggestionStore } from './suggestions'
 import { loadEnv } from './env'
+import { errorReports } from './errors'
 
 const env = loadEnv()
+const errors = errorReports(env.posthogKey)
 const sql = connect(env.databaseUrl)
 await migrate(sql, new URL('../migrations/', import.meta.url))
 
@@ -49,10 +51,11 @@ const app = createApp({
   webhooks: { stripeSecret: env.stripeWebhookSecret, stripePaymentLink: env.stripePaymentLink, abacatePaySecret: env.abacatePayWebhookSecret },
   allowedOrigin: env.allowedOrigin,
   ping: () => sql`select 1`.then(() => true, () => false),
+  report: errors.report,
 })
 
 const server = serve({ fetch: app.fetch, port: env.port }, (info) => console.log(`api listening on :${info.port}`))
 
-const shutdown = () => server.close(() => void sql.end({ timeout: 5 }).then(() => process.exit(0)))
+const shutdown = () => server.close(() => void Promise.all([sql.end({ timeout: 5 }), errors.flush()]).then(() => process.exit(0)))
 process.on('SIGTERM', shutdown)
 process.on('SIGINT', shutdown)

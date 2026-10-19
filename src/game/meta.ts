@@ -1,6 +1,7 @@
 import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type GiftTitleId, type TitleId } from '../data/achievements'
 import { NO_ACHIEVEMENTS, parseAchievements, parseGiftTitles, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
+import { addClear, parseClears, pastClears, type Clears } from './clears'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
 import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficulty'
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
@@ -140,6 +141,8 @@ export type Save = {
   companion: Companion | null
   /** Where each branching family evolved last (`data/branches.ts`): the Trainer Card shows that form. */
   branches: Branches
+  /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
+  clears: Clears
 }
 
 /** The branch each branching family took in its latest run that got there. */
@@ -179,6 +182,7 @@ export const EMPTY_SAVE: Save = {
   shinyPicks: [],
   companion: null,
   branches: {},
+  clears: {},
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -238,6 +242,8 @@ export const parseSaveData = (json: unknown): Save => {
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
     branches: parseBranches(data.branches),
+    // Saves from before clears were tracked get the ones their records prove.
+    clears: data.clears === undefined ? pastClears(achievements.lifetime) : parseClears(data.clears),
   }
 }
 
@@ -335,13 +341,13 @@ const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
 
 /**
  * Records a run (or what changed since `before`, the snapshot already recorded
- * for it) into the missions and lifetime records, and pays the rewards. `save`
+ * for it) into the missions, lifetime records and clears, and pays the rewards. `save`
  * already has the run's Pokédex log; `eggRoom` is how many reward eggs the run
  * can still take (`EGGS.perRun` minus the eggs it found or got already).
  */
 export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date, eggRoom: number = EGGS.perRun) => {
   const m = recordMissions(save.missions, summary, before, date)
-  return settle(save, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
+  return settle({ ...save, clears: addClear(save.clears, summary) }, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
 }
 
 /** Records a hatched egg (`save` already has it hatched) into the missions and records, and pays the rewards. */
