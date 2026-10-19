@@ -30,7 +30,7 @@ export const TICK = 1 / 60
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
  * Replays from before the field existed are rules 1.
  */
-export const RULES_VERSION = 20
+export const RULES_VERSION = 21
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a

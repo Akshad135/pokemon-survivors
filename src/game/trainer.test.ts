@@ -41,6 +41,7 @@ describe('hallPokemon', () => {
   it('shows a shiny picked with a ticket first, then the companion, then the partner', () => {
     const picked: Save = { ...supporter, shinyPicks: [{ id: 'a', pick: 'gible' }, { id: 'b', pick: null }], companion: { id: 'squirtle', shiny: false } }
     expect(hallPokemon(picked)).toEqual({ id: 'gible', shiny: true })
+    expect(hallPokemon({ ...picked, shinyStarters: { gible: false } })).toEqual({ id: 'gible', shiny: false })
     expect(hallPokemon({ ...picked, shinyPicks: [{ id: 'b', pick: null }] })).toEqual({ id: 'squirtle', shiny: false })
     expect(hallPokemon({ ...supporter, partner: 'bulbasaur', shinyStarters: { bulbasaur: true } })).toEqual({ id: 'bulbasaur', shiny: true })
   })

@@ -22,6 +22,17 @@ const NOT_PICKABLE: ReadonlySet<PlayableId> = new Set(['munchlax'])
 /** The player can already play `id` shiny: a starter rolled shiny once, or a family hatched shiny. */
 export const ownsShiny = (save: Save, id: PlayableId) => id in save.shinyStarters || (isHatchling(id) && save.hatched[id]?.shiny === true)
 
+/**
+ * Whether the save plays `id` shiny: its shiny is owned and not switched to
+ * Normal on the select screen (a shiny hatch nobody picked plays shiny).
+ * Only the form shown and played; owning it (Pokédex, achievements) stays.
+ */
+export const playsShiny = (save: Save, id: PlayableId) => ownsShiny(save, id) && save.shinyStarters[id] !== false
+
+/** Picks Normal or Shiny for `id` (kept in `shinyStarters`, so it syncs); a shiny not owned stays locked. */
+export const pickShinyForm = (save: Save, id: PlayableId, shiny: boolean): Save =>
+  ownsShiny(save, id) ? { ...save, shinyStarters: { ...save.shinyStarters, [id]: shiny } } : save
+
 /** What a ticket can become, in the select screen's order: every Pokémon not shiny yet (Munchlax aside). */
 export const shinyChoices = (save: Save): PlayableId[] => PLAYABLE_IDS.filter((id) => !NOT_PICKABLE.has(id) && !ownsShiny(save, id))
 

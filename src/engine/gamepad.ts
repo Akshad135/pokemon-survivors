@@ -1,4 +1,5 @@
 import { ACTION_IDS, inScope, type Action, type Table } from './bindings'
+import type { Vec } from './math'
 
 /** Left stick deflection that counts as a D-pad press. */
 const STICK_PRESS = 0.6
@@ -14,6 +15,23 @@ export const stickActions = (axes: readonly number[]) => {
   return held
 }
 
+/** Left stick travel (0..1) the player's thumb rests in without moving: worn sticks drift a little. */
+const STICK_DEAD_ZONE = 0.2
+/** Travel that already means full speed, so the rim (and a square gate's corners) isn't a precision target. */
+const STICK_FULL_AT = 0.9
+
+/**
+ * The left stick as a move vector (length ≤ 1), any direction: still inside a
+ * radial dead zone, then speed ramps up to 1 at `STICK_FULL_AT`. This is how
+ * a run reads the stick; menus read it as directions (`stickActions`).
+ */
+export const stickVector = (axes: readonly number[]): Vec => {
+  const [x = 0, y = 0] = axes
+  const travel = Math.hypot(x, y)
+  const speed = Math.min(1, Math.max(0, (travel - STICK_DEAD_ZONE) / (STICK_FULL_AT - STICK_DEAD_ZONE)))
+  return speed > 0 ? { x: (x / travel) * speed, y: (y / travel) * speed } : { x: 0, y: 0 }
+}
+
 /**
  * Actions a pad state triggers in this context (`playing`: a run, not a menu):
  * the bound buttons in `buttons` plus the stick directions in `stick`.
@@ -21,19 +39,26 @@ export const stickActions = (axes: readonly number[]) => {
 export const padActions = (pad: Table<number>, buttons: ReadonlySet<number>, stick: ReadonlySet<Action>, playing: boolean) =>
   ACTION_IDS.filter((a) => inScope(a, playing) && (stick.has(a) || (pad[a] !== null && buttons.has(pad[a]))))
 
-/** One connected pad: its `Gamepad.index` and `id`, the standard-mapping buttons it holds and its left stick as directions. */
-export type PadState = { index: number; id: string; buttons: ReadonlySet<number>; stick: ReadonlySet<Action> }
+/**
+ * One connected pad: its `Gamepad.index` and `id`, the standard-mapping
+ * buttons it holds and its left stick, as directions (`stick`) and as a
+ * move vector (`move`).
+ */
+export type PadState = { index: number; id: string; buttons: ReadonlySet<number>; stick: ReadonlySet<Action>; move: Vec }
 
 /** Every connected pad, read now. */
 export const readPads = (): PadState[] =>
   (navigator.getGamepads?.() ?? []).flatMap((pad) =>
-    pad ? [{ index: pad.index, id: pad.id, buttons: new Set(pad.buttons.flatMap((b, i) => (b.pressed ? [i] : []))), stick: stickActions(pad.axes) }] : [],
+    pad
+      ? [{ index: pad.index, id: pad.id, buttons: new Set(pad.buttons.flatMap((b, i) => (b.pressed ? [i] : []))), stick: stickActions(pad.axes), move: stickVector(pad.axes) }]
+      : [],
   )
 
 /**
  * What the pads did since the last frame: the buttons and stick directions
- * held on any pad, the ones just pressed, and the id of a pad that pressed
- * something (null if none did). Presses are edge-detected pad by pad, so a
+ * held on any pad, the ones just pressed, the id of a pad that pressed
+ * something (null if none did) and the first tilted left stick as a move
+ * vector (`move`, zero when every stick rests). Presses are edge-detected pad by pad, so a
  * pad that keeps a button down (a second controller, a virtual one) doesn't
  * swallow the same button on the pad the player is using.
  */
@@ -43,7 +68,9 @@ export const padChanges = (before: readonly PadState[], now: readonly PadState[]
   const fresh = new Set<number>()
   const freshStick = new Set<Action>()
   let pressed: string | null = null
+  let move: Vec = { x: 0, y: 0 }
   for (const pad of now) {
+    if (move.x === 0 && move.y === 0) move = pad.move
     const last = before.find((p) => p.index === pad.index && p.id === pad.id)
     for (const b of pad.buttons) {
       buttons.add(b)
@@ -58,7 +85,7 @@ export const padChanges = (before: readonly PadState[], now: readonly PadState[]
       pressed = pad.id
     }
   }
-  return { buttons, stick, fresh, freshStick, pressed }
+  return { buttons, stick, fresh, freshStick, pressed, move }
 }
 
 /** Controller layouts, by the names printed on their buttons. Anything unknown reads as Xbox, the most common layout on PC. */

@@ -650,6 +650,12 @@ const SFX = {
     tone(220, 140, 0.3, 'triangle', 0.1)
     ;[0.18, 0.26, 0.34].forEach((d, i) => tone(660 - i * 80, 520 - i * 80, 0.06, 'square', 0.05, d))
   },
+  /** A Poké Ball pops open: the click of the button, a puff and a quick rising sparkle. */
+  pokeballOpen: () => {
+    tone(1400, 900, 0.03, 'square', 0.08)
+    noise(0.06, 0.08, 0.03)
+    ;[1568, 2093, 2637].forEach((f, i) => tone(f, f, 0.05, 'triangle', 0.08, 0.06 + i * 0.04))
+  },
   /** A cursed item in the chest: a minor, dropping chord. */
   curseFound: () => [523, 415, 330, 247].forEach((f, i) => tone(f, f * 0.98, 0.22, 'triangle', 0.12, i * 0.12)),
   curseTake: () => {
