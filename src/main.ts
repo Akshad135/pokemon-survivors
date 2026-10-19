@@ -113,6 +113,7 @@ import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
 import { shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
+import { invitesScreen } from './ui/invites'
 import { titleScreen, type LobbyFocus, type Meadow } from './ui/title'
 import { creditsLine, supportersScreen } from './ui/supporters'
 import { suggestionsScreen } from './ui/suggestions'
@@ -302,6 +303,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
       ideas: rankingEnabled ? (focus) => suggestionsScreen(ui, input, () => showTitle({ focus })) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
+      invites: (focus) => invitesScreen(ui, input, () => showTitle({ focus })),
       meadow,
     }, opts),
   )

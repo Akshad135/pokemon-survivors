@@ -1,5 +1,5 @@
 import type { GiftContent, GiftReason } from '../../src/game/gifts'
-import { canRefer, creditDue, milestoneGifts, WELCOME_GIFT } from '../../src/game/referral'
+import { canRefer, creditDue, MAX_INVITED, milestonesReached, REFERRAL, WELCOME_GIFT, type InvitedFriend } from '../../src/game/referral'
 import type { TransactionSql } from 'postgres'
 import type { Sql } from './db'
 
@@ -18,8 +18,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
  *
  * Invites: `refer` records who brought a new account (`canRefer`), makes
  * them follow each other and welcomes the newcomer with a Friendship Egg;
- * `credit` (after each verified run) counts the invite for the inviter once
- * the newcomer has enough verified runs (`creditDue`) and sends the
+ * `credit` (after each finished run) counts the invite for the inviter once
+ * the newcomer has finished enough runs (`creditDue`) and sends the
  * milestone gifts (`milestoneGifts`). Everything is counted here, never on the device.
  */
 /**
@@ -36,7 +36,40 @@ export const sendGift = async (q: TransactionSql, userId: string, content: GiftC
   return rows.length > 0
 }
 
+/**
+ * Pays `inviter` the gifts of every milestone their counted friends reached,
+ * each under its own key, so only the new ones land. Locks the inviter's row
+ * first, so two friends counting at once don't read the same total. How many
+ * friends counted.
+ */
+const reward = async (tx: TransactionSql, inviter: string) => {
+  await tx`select id from users where id = ${inviter} for update`
+  const [brought] = await tx<{ n: number }[]>`select count(*)::int as n from users where referred_by = ${inviter} and referral_credited_at is not null`
+  const friends = brought?.n ?? 0
+  for (const m of milestonesReached(friends)) {
+    for (const [i, content] of m.gifts.entries()) await sendGift(tx, inviter, content, { kind: 'friends', count: m.friends }, `friends:${m.friends}:${i}`)
+  }
+  return friends
+}
+
 export const giftStore = (sql: Sql) => {
+  /**
+   * After a finished run of `userId`: if someone brought them and this is
+   * the run that makes the invite count, credits it once and pays the
+   * inviter's milestones (`reward`).
+   */
+  const credit = (userId: string) =>
+    sql.begin(async (tx) => {
+      const [me] = await tx<{ referred_by: string | null; credited: boolean }[]>`
+        select referred_by, referral_credited_at is not null as credited from users where id = ${userId} for update`
+      if (!me?.referred_by || me.credited) return
+      const [runs] = await tx<{ n: number }[]>`select count(*)::int as n from runs where user_id = ${userId} and finished_at is not null and verified is not false`
+      if (!creditDue(runs?.n ?? 0, me.credited)) return
+      await tx`update users set referral_credited_at = now() where id = ${userId}`
+      const friends = await reward(tx, me.referred_by)
+      console.log(`invite of ${userId} counted for ${me.referred_by} (${friends} friends)`)
+    })
+
   return {
     /** Sends a gift to `userId` (who must have a users row). With a `key`, only the first send of that key lands. */
     send: (userId: string, content: GiftContent, reason: GiftReason | null = null, key: string | null = null) =>
@@ -86,27 +119,30 @@ export const giftStore = (sql: Sql) => {
         return true
       }),
 
+    credit,
+
     /**
-     * After a verified run of `userId`: if someone brought them and this is
-     * the run that makes the invite count, credits it once and sends the
-     * inviter the gifts of the milestone their count reaches.
+     * On boot: credits the invites whose runs got there while nobody was
+     * counting, and pays every inviter the milestones they reached (a
+     * milestone added since reaches whoever already passed it). Keys make it
+     * safe to run on every start.
      */
-    credit: (userId: string) =>
-      sql.begin(async (tx) => {
-        const [me] = await tx<{ referred_by: string | null; credited: boolean }[]>`
-          select referred_by, referral_credited_at is not null as credited from users where id = ${userId} for update`
-        if (!me?.referred_by || me.credited) return
-        const [runs] = await tx<{ n: number }[]>`select count(*)::int as n from runs where user_id = ${userId} and verified is true`
-        if (!creditDue(runs?.n ?? 0, me.credited)) return
-        await tx`update users set referral_credited_at = now() where id = ${userId}`
-        // The inviter's row keeps two friends counting at once from reading the same total.
-        await tx`select id from users where id = ${me.referred_by} for update`
-        const [brought] = await tx<{ n: number }[]>`select count(*)::int as n from users where referred_by = ${me.referred_by} and referral_credited_at is not null`
-        const friends = brought?.n ?? 0
-        const gifts = milestoneGifts(friends)
-        for (const [i, content] of gifts.entries()) await sendGift(tx, me.referred_by, content, { kind: 'friends', count: friends }, `friends:${friends}:${i}`)
-        console.log(`invite of ${userId} counted for ${me.referred_by} (${friends} friends, ${gifts.length} gifts)`)
-      }),
+    settle: async () => {
+      const pending = await sql<{ id: string }[]>`select id from users where referred_by is not null and referral_credited_at is null`
+      for (const { id } of pending) await credit(id)
+      const inviters = await sql<{ id: string }[]>`select distinct referred_by as id from users where referral_credited_at is not null and referred_by is not null`
+      for (const { id } of inviters) await sql.begin((tx) => reward(tx, id))
+    },
+
+    /** The friends who signed up with `userId`'s link, newest first: their finished runs (up to what counts) and whether they counted. */
+    invites: async (userId: string): Promise<InvitedFriend[]> => {
+      const rows = await sql<{ handle: string | null; name: string | null; runs: number; counted: boolean }[]>`
+        select u.handle, u.name, u.referral_credited_at is not null as counted,
+          (select count(*)::int from (select 1 from runs r where r.user_id = u.id and r.finished_at is not null and r.verified is not false limit ${REFERRAL.runs}) x) as runs
+        from users u where u.referred_by = ${userId}
+        order by u.referred_at desc nulls last limit ${MAX_INVITED}`
+      return rows.map((r) => ({ handle: r.handle, name: r.name ?? '', runs: r.runs, counted: r.counted }))
+    },
   }
 }
 

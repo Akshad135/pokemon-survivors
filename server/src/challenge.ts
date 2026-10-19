@@ -9,11 +9,11 @@ const EVERY_MS = 15 * 60_000
 
 /**
  * The Desafio do dia's ribbons: once a day has closed (`ribbonsDue`), ranks
- * its verified official attempts (`ribbonPlaces`) and sends each player a
- * Mystery Gift with their ribbon (`ribbonFor`). Each gift's key is the day
- * (`ribbon:2026-10-15`), so running it again sends nothing twice: `tick`
- * looks at the last two days every `EVERY_MS` (a server that was down
- * catches up, and a run verified late still gets its ribbon).
+ * its official attempts (`ribbonPlaces`, the ones whose check didn't fail)
+ * and sends each player a Mystery Gift with their ribbon (`ribbonFor`). Each
+ * gift's key is the day (`ribbon:2026-10-15`), so running it again sends
+ * nothing twice: `tick` looks at the last two days every `EVERY_MS` (a
+ * server that was down catches up).
  */
 export const createRibbons = (ranking: Pick<RankingStore, 'ribbonPlaces'>, gifts: Pick<GiftStore, 'sendAll'>) => {
   /** Sends `day`'s ribbons. How many players it went over. */

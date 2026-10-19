@@ -8,6 +8,7 @@ import type { ItemId } from '../data/items'
 import type { CurseId } from '../data/curses'
 import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
+import type { FriendMilestone } from '../game/referral'
 import type { Difficulty } from '../game/difficulty'
 import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
 import type { BagItem } from '../game/bag'
@@ -377,12 +378,10 @@ export const pt = {
     you: 'você',
     myProfile: 'Meu perfil',
     back: 'Voltar',
-    resets: 'Hoje e Semana viram à meia-noite de Brasília (a semana começa na segunda). O servidor confere cada partida antes de ela ficar no ranking.',
+    resets: 'Hoje e Semana viram à meia-noite de Brasília (a semana começa na segunda).',
     hintKeys: '↑ ↓ jogador · ← → período · Q E dificuldade · F amigos · ENTER perfil · ESC voltar',
     hintTouch: 'Toque num treinador para ver o perfil',
     outcomes: { victory: 'Venceu', death: 'Desmaiou', quit: 'Desistiu' },
-    /** A run the server hasn't re-simulated yet (it checks every run against its replay). */
-    pending: 'Conferindo…',
     /** End of a run: where the player stands now. */
     sending: 'Enviando para o ranking…',
     place: { day: 'hoje', week: 'na semana', all: 'no total' },
@@ -645,7 +644,42 @@ export const pt = {
   /** Invites: the banner a guest who came by a friend's link sees on the title screen. */
   invite: {
     banner: (name: string) => `*${name}* te convidou!`,
-    blurb: 'Crie uma conta e vocês dois ganham um Ovo da Amizade.',
+    blurb: 'Entre com uma conta e ganhe um Ovo da Amizade. Jogue 3 partidas e quem te convidou ganha também.',
+  },
+
+  /** Convide amigos: the lobby card and the screen with the player's invite link, the reward ladder and who came. */
+  invites: {
+    title: 'CONVIDE AMIGOS',
+    /** The lobby card under it: the reward for the first friend, then the way to the next milestone. */
+    cardFirst: 'Ganhe um Ovo da Amizade',
+    cardNext: (friends: number, next: number) => `${friends}/${next} amigos`,
+    cardAll: (friends: number) => (friends === 1 ? '1 amigo trazido' : `${friends} amigos trazidos`),
+    how: 'Como funciona',
+    steps: ['Seu amigo abre o *seu link*.', 'Entra com uma conta e já ganha um *Ovo da Amizade*.', 'Quando ele terminar *3 partidas*, conta para você.'],
+    /** The in-app browsers of X and Instagram don't let Google sign in: the friend must move to the browser, and the link goes along. */
+    tip: 'Se o link abrir dentro do X ou do Instagram, seu amigo deve tocar em "Abrir no navegador" antes de entrar.',
+    link: 'Seu link',
+    share: 'Compartilhar link',
+    copy: 'Copiar link',
+    copied: 'Link copiado! É só colar para seus amigos.',
+    shareText: 'Bora jogar Pokémon Survivors comigo? Entra pelo meu link e ganha um Ovo da Amizade:',
+    rewards: 'Recompensas',
+    /** What each milestone pays (`FRIEND_MILESTONES`). */
+    reward: { 1: 'Ovo da Amizade', 3: 'Título e moldura Embaixador(a)', 5: 'Ovo ultra raro', 10: 'Dratini shiny' } satisfies Record<FriendMilestone['friends'], string>,
+    milestone: (friends: number) => (friends === 1 ? '1 amigo' : `${friends} amigos`),
+    friends: 'Seus amigos',
+    noFriends: 'Ninguém entrou pelo seu link ainda.',
+    runs: (runs: number, need: number) => `${runs}/${need} partidas`,
+    counted: 'Contou!',
+    loading: 'Carregando…',
+    offline: 'Sem conexão: a lista de amigos não carregou.',
+    guest: 'Entre com uma conta para ganhar o seu link de convite.',
+    signIn: 'Entrar',
+    noHandle: 'Crie seu perfil (@) para ganhar o seu link de convite.',
+    createProfile: 'Criar perfil',
+    back: 'Voltar',
+    hintKeys: '← → botão · ENTER escolher · ESC voltar',
+    hintTouch: 'Toque em um botão',
   },
 
   /** Presente Misterioso: gifts from the server (invites, and later ribbons). */
