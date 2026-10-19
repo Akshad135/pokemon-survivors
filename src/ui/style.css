@@ -4653,6 +4653,11 @@ button {
   animation: screen-flash 0.9s steps(6) forwards;
 }
 
+/* Settings → Flashes: reduced. The cry and the toast carry the moment instead. */
+:root[data-flashes='reduced'] .screen-flash {
+  display: none;
+}
+
 @keyframes screen-flash {
   0%,
   30% {

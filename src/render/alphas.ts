@@ -60,10 +60,10 @@ export const drawAlphaGround = (ctx: Ctx, g: Game, time: number, visible: Visibl
   }
 }
 
-/** Crimson throb of an Alpha's outline (a fast red-orange flicker once enraged). */
-export const alphaOutline = (e: Enemy, time: number) => {
+/** Crimson throb of an Alpha's outline (a fast red-orange flicker once enraged, steady red when `calm`: Flashes reduced). */
+export const alphaOutline = (e: Enemy, time: number, calm: boolean) => {
   if (!e.alpha) return undefined
-  if (e.alpha.enraged) return Math.floor(time * 8) % 2 === 0 ? '#f83020' : '#f8a020'
+  if (e.alpha.enraged) return calm || Math.floor(time * 8) % 2 === 0 ? '#f83020' : '#f8a020'
   return Math.floor(time * 3 + e.id * 0.37) % 2 === 0 ? '#f82828' : '#c01020'
 }
 

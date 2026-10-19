@@ -142,6 +142,21 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Menos clarões, disparos mais visíveis', en: 'Fewer flashes, easier-to-see shots', es: 'Menos destellos, disparos más visibles' },
+        notes: [
+          {
+            pt: 'Nova opção em Ajustes → Jogo: Clarões Reduzidos. Some o clarão branco da tela (fúria dos chefes, fendas, Mega Evolução, evolução, ovos chocando), os Pokémon atingidos ficam com um tom vermelho escuro em vez de piscar em branco e nada pisca rápido.',
+            en: 'New option in Settings → Game: Flashes Reduced. No more white screen flashes (enraged bosses, rifts, Mega Evolution, evolving, hatching eggs), Pokémon that get hit take a dark red tint instead of flashing white, and nothing flickers fast.',
+            es: 'Nueva opción en Ajustes → Juego: Destellos Reducidos. Se van los destellos blancos de la pantalla (furia de los jefes, grietas, Megaevolución, evolución, huevos que eclosionan), los Pokémon golpeados toman un tono rojo oscuro en vez de parpadear en blanco y nada parpadea rápido.',
+          },
+          {
+            pt: 'Os disparos inimigos (cuspidores, chefes e o próprio mapa) agora têm um contorno vermelho, para não se perderem no meio dos seus golpes.',
+            en: 'Enemy shots (spitters, bosses and the map itself) now have a red outline, so they stand out among your own attacks.',
+            es: 'Los disparos enemigos (escupidores, jefes y el propio mapa) ahora tienen un contorno rojo, para que no se pierdan entre tus ataques.',
+          },
+        ],
+      },
     ],
   },
   {

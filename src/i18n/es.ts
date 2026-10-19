@@ -209,6 +209,8 @@ export const es: Messages = {
     damageNumbers: 'Números de daño',
     damageModes: { all: 'Todos', reduced: 'Reducidos', off: 'OFF' },
     screenShake: 'Temblor de pantalla',
+    flashes: 'Destellos',
+    flashModes: { normal: 'Normales', reduced: 'Reducidos' },
     joystick: 'Joystick',
     joystickModes: { floating: 'Sigue el dedo', fixed: 'Fijo' },
     on: 'ON',

@@ -12,6 +12,7 @@ import { tmDisc, TM_FX } from './tmArt'
 import { TUTOR } from '../game/tmRules'
 import { isMission } from '../game/fieldMissions'
 import { drawFieldMission, missionIcon, missionSpot } from './fieldMissions'
+import { HURT_TINT } from './flashes'
 
 /**
  * Map events on the ground (altar, fountain, chest, traps, Meowth, the Move Tutor) and the
@@ -186,16 +187,18 @@ const drawBomb = (ctx: Ctx, ev: MapEventOf<'bomb'>, t: number) => {
   ctx.fillRect(tipX, tipY, lit ? 2 : 1, lit ? 2 : 1)
 }
 
-const drawMeowth = (ctx: Ctx, ev: MapEventOf<'meowth'>, t: number) => {
+/** `calm` (Flashes: reduced): a hit tints it dim red instead of white, and it fades instead of blinking as it leaves. */
+const drawMeowth = (ctx: Ctx, ev: MapEventOf<'meowth'>, t: number, calm: boolean) => {
   const s = loadedSprites(MEOWTH_DEX)
   if (!s) return
   const fainted = ev.gone >= 0 && ev.state.hp <= 0
   // Blinks in its last seconds, before it escapes.
-  const leaving = ev.gone < 0 && ev.ttl - ev.age < 3 && Math.floor(t * 10) % 2 === 0
+  const leaving = ev.gone < 0 && ev.ttl - ev.age < 3 && (calm || Math.floor(t * 10) % 2 === 0)
   groundShadow(ctx, ev.x, ev.y, Math.max(4, Math.round(s.bodyW * 0.36)))
   drawPokemon(ctx, s, fainted || ev.state.flash > 0 ? 'Hurt' : 'Walk', ev.state.dir, ev.age * 1.6, ev.x, ev.y, {
-    flash: ev.state.flash > 0.1 ? 0.8 : 0,
-    alpha: leaving ? 0.5 : 1,
+    flash: ev.state.flash > 0.1 && !calm ? 0.8 : 0,
+    tint: ev.state.flash > 0.1 && calm ? HURT_TINT : undefined,
+    alpha: leaving ? (calm ? 0.7 : 0.5) : 1,
   })
   if (ev.gone < 0 && (t + ev.id * 0.2) % 0.9 < 0.15) blitCentered(ctx, PICKUPS.coins()[0]!, ev.x + 7, ev.y - s.bodyH - 4)
 }
@@ -226,28 +229,28 @@ const drawTutor = (ctx: Ctx, ev: MapEventOf<'tutor'>, t: number) => {
 const near = (g: Game, x: number, y: number, m = 60) =>
   x > g.camera.x - m && x < g.camera.x + g.view.w + m && y > g.camera.y - m && y < g.camera.y + g.view.h + m
 
-const drawEvent = (ctx: Ctx, g: Game, ev: MapEvent, t: number) => {
-  if (isMission(ev)) return drawFieldMission(ctx, g, ev, t)
+const drawEvent = (ctx: Ctx, g: Game, ev: MapEvent, t: number, calm: boolean) => {
+  if (isMission(ev)) return drawFieldMission(ctx, g, ev, t, calm)
   switch (ev.kind) {
     case 'altar': return drawAltar(ctx, ev, t)
     case 'fountain': return drawFountain(ctx, ev, t)
     case 'chest': return drawChest(ctx, ev, t)
     case 'spikes': return drawSpikes(ctx, ev, t)
     case 'bomb': return drawBomb(ctx, ev, t)
-    case 'meowth': return drawMeowth(ctx, ev, t)
+    case 'meowth': return drawMeowth(ctx, ev, t, calm)
     case 'tutor': return drawTutor(ctx, ev, t)
   }
 }
 
-/** Ground layer: every map event near the screen, fading out once spent. */
-export const drawMapEvents = (ctx: Ctx, g: Game, t: number) => {
+/** Ground layer: every map event near the screen, fading out once spent. `calm`: Flashes reduced (`render/flashes.ts`). */
+export const drawMapEvents = (ctx: Ctx, g: Game, t: number, calm: boolean) => {
   for (const ev of g.mapEvents.list) {
     // A collect mission's balls spread far from its center.
     if (!near(g, ev.x, ev.y, ev.kind === 'collect' || ev.kind === 'escort' ? 400 : 60)) continue
     // A popped bomb leaves nothing behind; the rest fade out.
     if (ev.gone >= 0 && ev.kind === 'bomb') continue
     ctx.globalAlpha = ev.gone >= 0 ? Math.max(0, 1 - ev.gone / FADE) : 1
-    drawEvent(ctx, g, ev, t)
+    drawEvent(ctx, g, ev, t, calm)
   }
   ctx.globalAlpha = 1
 }
