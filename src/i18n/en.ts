@@ -223,6 +223,7 @@ export const en: Messages = {
     legal: 'Legal and credits',
     github: 'Source on GitHub',
     guide: 'How to play',
+    install: 'Install the app',
     hintKeys: '↑ ↓ choose · ← → adjust or switch tab · ESC back',
     hintTouch: 'Tap or drag to adjust',
   },
@@ -293,6 +294,15 @@ export const en: Messages = {
     cardGift: (name) => `Get a shiny ${name}`,
     busy: 'Connecting…',
     back: 'Back',
+  },
+
+  install: {
+    title: 'INSTALL THE APP',
+    pitch: 'Play fullscreen, straight from an icon on your Home Screen.',
+    share: "Tap *Share* in Safari's toolbar (or in the three-dot menu).",
+    addHome: 'Pick *Add to Home Screen*, then tap *Add*.',
+    iosStorage: "The app keeps its progress apart from Safari's: sign in to your account to bring it along.",
+    ok: 'Got it',
   },
 
   ranking: {

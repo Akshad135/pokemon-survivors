@@ -11,6 +11,7 @@ import { hint, menu, type Screen } from './screens'
 import { backButton, shellBody, tabStrip, topBar, segmented } from './shell'
 import { REPO_URL, ROUTES } from '../site/routes'
 import { applyUiScale, maxUiZoom, UI_SCALES, uiZoom, type UiScale } from './uiScale'
+import { currentInstallOffer, installHelpScreen, onInstallChange, promptInstall } from './install'
 
 /* ---------------- Live settings ---------------- */
 
@@ -175,6 +176,19 @@ const linkRow = (label: string, href: string, external = false): Row => {
   return { el, adjust: () => {}, activate: () => (external ? window.open(href, '_blank', 'noopener') : location.assign(href)), sync: () => {} }
 }
 
+/**
+ * Instalar o app (Sobre), only while the game can be installed and isn't
+ * running installed: Chromium's own prompt, or on iOS the Share → "Add to
+ * Home Screen" how-to (`openHelp`).
+ */
+const installRows = (label: string, openHelp: () => void): Row[] => {
+  const offer = currentInstallOffer()
+  if (!offer) return []
+  const go = () => (offer === 'prompt' ? (playSfx('select'), void promptInstall()) : openHelp())
+  const el = h('button', { class: 'setting-row install-row' }, h('span', { class: 'setting-label' }, label), h('b', { class: 'setting-choice' }, '▶'))
+  return [{ el, adjust: (dir) => dir > 0 && go(), activate: go, sync: () => {} }]
+}
+
 const TABS = ['sound', 'game', 'controls', 'about'] as const
 
 type Tab = (typeof TABS)[number]
@@ -185,7 +199,8 @@ let lastTab: Tab = 'sound'
 /**
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
  * (language, damage numbers, screen shake, flashes, UI size), Controles (touch joystick and the
- * remap screen) and Sobre (what the game is, legal and credits, GitHub).
+ * remap screen) and Sobre (installing the app, what the game is, legal and
+ * credits, GitHub).
  * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
@@ -242,9 +257,9 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           ...uiScaleRows(m.uiScale, m.uiScaleAuto),
         ]
       case 'controls':
-        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(showControls)]
+        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(() => showSub(openControls))]
       case 'about':
-        return [linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
+        return [...installRows(m.install, () => showSub(installHelpScreen)), linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
     }
   }
 
@@ -283,7 +298,8 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     sync()
   }
 
-  const showControls = () => {
+  /** Opens a screen on top (the remap screen, the iOS install how-to); this one comes back when it closes. */
+  const showSub = (open: (root: HTMLElement, input: Input, onClose: () => void) => Screen) => {
     playSfx('select')
     nav?.off()
     away = true
@@ -291,7 +307,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     // Open after this key dispatch, or the new screen would receive the same press.
     later(() => {
       if (!el.isConnected) return
-      sub = openControls(root, input, () => {
+      sub = open(root, input, () => {
         sub = null
         away = false
         el.classList.remove('hidden')
@@ -308,10 +324,14 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     else if (key === 'Escape' || key === 'Backspace') close() // Backspace is also the gamepad's B
   })
 
+  // A prompt arriving or the app getting installed while Sobre is open shows or hides its row.
+  const offInstall = onInstallChange(() => !away && tab === 'about' && build(nav?.index ?? 0, false))
+
   const dispose = () => {
     sub?.dispose()
     nav?.off()
     offKeys()
+    offInstall()
     el.remove()
     if (refresh === sync) refresh = null
   }

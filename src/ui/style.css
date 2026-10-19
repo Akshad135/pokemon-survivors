@@ -3026,6 +3026,44 @@ button {
   color: #6878a8;
 }
 
+/* The iOS install how-to (Settings → About): numbered steps, each led by Safari's icon at 3x. */
+.install-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: install;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.install-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  line-height: 1.2;
+  counter-increment: install;
+}
+
+.install-step::before {
+  content: counter(install);
+  flex: none;
+  font-family: var(--title);
+  font-size: 12px;
+  color: #e83838;
+}
+
+.install-step img {
+  flex: none;
+  width: 39px;
+  height: 39px;
+}
+
+.install-step b {
+  color: #3878f0;
+}
+
 .account-error {
   color: #e83838;
 }

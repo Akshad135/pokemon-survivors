@@ -223,6 +223,7 @@ export const es: Messages = {
     legal: 'Legal y créditos',
     github: 'Código en GitHub',
     guide: 'Cómo jugar',
+    install: 'Instalar la app',
     hintKeys: '↑ ↓ elegir · ← → ajustar o cambiar de pestaña · ESC volver',
     hintTouch: 'Toca o arrastra para ajustar',
   },
@@ -293,6 +294,15 @@ export const es: Messages = {
     cardGift: (name) => `Gana un ${name} shiny`,
     busy: 'Conectando…',
     back: 'Volver',
+  },
+
+  install: {
+    title: 'INSTALAR LA APP',
+    pitch: 'Juega en pantalla completa, directo desde un ícono en tu pantalla de inicio.',
+    share: 'Toca *Compartir* en la barra de Safari (o en el menú de tres puntos).',
+    addHome: 'Elige *Agregar a pantalla de inicio* y toca *Agregar*.',
+    iosStorage: 'La app guarda el progreso aparte del de Safari: inicia sesión en tu cuenta para llevarlo contigo.',
+    ok: 'Entendido',
   },
 
   ranking: {

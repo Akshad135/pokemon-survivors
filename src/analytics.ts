@@ -49,6 +49,12 @@ type AnalyticsEvents = {
   ref_land: { ref: string; via: 'ref' | 'profile'; first: 0 | 1 }
   /** A new account signed up with an invite and the API counted it (`POST /referral`). */
   ref_signup: { ref: string }
+  /**
+   * Installing the app (`ui/install.ts`): Chromium's prompt shown from Settings (`prompt`) and the
+   * answer (`accepted`, `dismissed`), the iOS how-to opened (`ios`), and any install at all,
+   * from our button or the browser's menu (`installed`).
+   */
+  install: { step: 'prompt' | 'accepted' | 'dismissed' | 'ios' | 'installed' }
 }
 
 declare global {
