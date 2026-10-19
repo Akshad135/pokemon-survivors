@@ -52,26 +52,24 @@ const DIFFICULTY_NAMES = { normal: 'Normal', hard: 'Hard', nightmare: 'Nightmare
 
 /* ---------------- Introduction gate ---------------- */
 
-/** Letters and digits an introduction needs (mentions, custom emojis and links don't count). */
-export const INTRO_MIN_CHARS = 20
-
-/** How many letters and digits `content` has, mentions, custom emojis and links left out. */
-export const meaningfulLength = (content: string) =>
-  content.replace(/<a?:\w+:\d+>|<(?:@[!&]?|#)\d+>|https?:\/\/\S+/g, '').match(/[\p{L}\p{N}]/gu)?.length ?? 0
+/** Whether `content` has any words: mentions, custom emojis and links alone don't count. */
+export const hasWords = (content: string) =>
+  /[\p{L}\p{N}]/u.test(content.replace(/<a?:\w+:\d+>|<(?:@[!&]?|#)\d+>|https?:\/\/\S+/g, ''))
 
 /**
  * What the gate does with a message in #introductions: nothing for bots and
- * members who are Trainers already, a welcome (and the Trainer role) for a
- * real introduction, and a nudge for a "hi".
+ * members who are Trainers already, a welcome (and the Trainer role) for
+ * anything written, however short, and a nudge for a lone emoji, sticker or link.
+ * The gate proves a person read the channel, not that they wrote enough.
  */
-export const introDecision = (m: { bot: boolean; trainer: boolean; content: string }): 'ignore' | 'welcome' | 'tooShort' =>
-  m.bot || m.trainer ? 'ignore' : meaningfulLength(m.content) >= INTRO_MIN_CHARS ? 'welcome' : 'tooShort'
+export const introDecision = (m: { bot: boolean; trainer: boolean; content: string }): 'ignore' | 'welcome' | 'empty' =>
+  m.bot || m.trainer ? 'ignore' : hasWords(m.content) ? 'welcome' : 'empty'
 
 const replyTo = (messageId: string) => ({ message_id: messageId, fail_if_not_exists: false }) as const
 
 /** Pings a newcomer in #introductions as they join: only Trainers talk elsewhere, and the ping takes them where they can. */
 export const greetMessage = (userId: string): OutgoingMessage => ({
-  content: `Welcome to the server, <@${userId}>! 👋 Introduce yourself right here (your name or nick, where you're from, your favorite Pokémon...) to unlock chatting in every channel.`,
+  content: `Welcome to the server, <@${userId}>! 👋 Say something about yourself right here to unlock chatting in every channel. Anything works: your nick, where you're from, your favorite Pokémon...`,
   allowed_mentions: { parse: [], users: [userId] },
 })
 
@@ -81,8 +79,8 @@ export const welcomeMessage = (userId: string, messageId: string): OutgoingMessa
   message_reference: replyTo(messageId),
 })
 
-export const tooShortMessage = (userId: string, messageId: string): OutgoingMessage => ({
-  content: `Hey <@${userId}>, tell us a bit more 🙂 Your name or nick, where you're from, your favorite Pokémon... A sentence or two unlocks the server!`,
+export const emptyMessage = (userId: string, messageId: string): OutgoingMessage => ({
+  content: `Hey <@${userId}>, write a few words 🙂 Anything works, even just your favorite Pokémon, and the server unlocks!`,
   allowed_mentions: { parse: [], users: [userId] },
   message_reference: replyTo(messageId),
 })

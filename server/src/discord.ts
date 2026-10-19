@@ -12,7 +12,7 @@ import {
   patchMessage,
   patchPlan,
   podiumMessage,
-  tooShortMessage,
+  emptyMessage,
   welcomeMessage,
   type OutgoingMessage,
 } from './discordMessages'
@@ -251,7 +251,7 @@ export const startDiscord = (config: DiscordConfig, deps: { store: DiscordStore;
       }
     }
 
-    /** The gate's answer to one message. `nudge`: whether a short one gets a reply (not when sweeping old ones). */
+    /** The gate's answer to one message. `nudge`: whether an empty one gets a reply (not when sweeping old ones). */
     const gate = async (m: IntroMessage, nudge: boolean) => {
       if (m.bot) return
       const roles = m.roles ?? (await rolesOf(m.userId))
@@ -264,8 +264,8 @@ export const startDiscord = (config: DiscordConfig, deps: { store: DiscordStore;
           await call('PUT', `/channels/${intro}/messages/${m.id}/reactions/${encodeURIComponent('👋')}/@me`)
           await call('POST', `/channels/${intro}/messages`, welcomeMessage(m.userId, m.id))
         }
-      } else if (decision === 'tooShort' && nudge) {
-        await post(`short:${m.id}`, intro, tooShortMessage(m.userId, m.id))
+      } else if (decision === 'empty' && nudge) {
+        await post(`empty:${m.id}`, intro, emptyMessage(m.userId, m.id))
       }
     }
 
@@ -273,7 +273,7 @@ export const startDiscord = (config: DiscordConfig, deps: { store: DiscordStore;
     const sweep = async () => {
       const history = await call('GET', `/channels/${intro}/messages?limit=50`)
       const messages = (Array.isArray(history) ? history : []).map(introMessage).filter((m): m is IntroMessage => m !== null)
-      // Each author's latest real introduction; the gate checks whether they're a Trainer already.
+      // Each author's latest introduction with words; the gate checks whether they're a Trainer already.
       const latest = new Map<string, IntroMessage>()
       for (const m of messages) {
         if (!latest.has(m.userId) && introDecision({ bot: m.bot, trainer: false, content: m.content }) === 'welcome') latest.set(m.userId, m)
