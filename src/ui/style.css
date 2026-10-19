@@ -1,5 +1,12 @@
 :root {
-  --px: 3px;
+  /* UI size (Settings → Jogo, ui/uiScale.ts): #ui is drawn zoomed by this. */
+  --ui-zoom: 1;
+  /* One world pixel (main.ts sets --world-px from the canvas scale), in #ui's zoomed px: frames stay on the world's grid. */
+  --px: calc(var(--world-px, 3px) / var(--ui-zoom));
+  /* Viewport units for zoomed elements: zoom scales vw/vh too, so these divide it back out. */
+  --vw: calc(1vw / var(--ui-zoom));
+  --vh: calc(1vh / var(--ui-zoom));
+  --dvh: calc(1dvh / var(--ui-zoom));
   --ink: #303040;
   --paper: #f8f8f8;
   --frame: #6878a8;
@@ -58,6 +65,7 @@ canvas {
   position: fixed;
   inset: 0;
   pointer-events: none;
+  zoom: var(--ui-zoom);
 }
 
 /* The page's text description (index.html): there for screen readers and crawlers, never drawn over the game. */
@@ -1736,7 +1744,7 @@ button {
 /* ---------- Dialogs ---------- */
 
 .dialog {
-  width: min(560px, 94vw);
+  width: min(560px, 94 * var(--vw));
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -1745,7 +1753,7 @@ button {
 }
 
 .dialog.wide {
-  width: min(680px, 94vw);
+  width: min(680px, 94 * var(--vw));
 }
 
 .dialog-title {
@@ -2207,7 +2215,7 @@ button {
   top: 64px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(420px, 70vw);
+  width: min(420px, 70 * var(--vw));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2813,7 +2821,7 @@ button {
   left: 50%;
   bottom: calc(24px + var(--safe-b));
   transform: translateX(-50%);
-  width: min(720px, 92vw);
+  width: min(720px, 92 * var(--vw));
   padding: 16px 22px;
   font-size: 30px;
   line-height: 1.1;
@@ -2841,7 +2849,7 @@ button {
   align-items: center;
   gap: 6px;
   width: max-content;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100 * var(--vw) - 32px);
 }
 
 .toasts.held,
@@ -2945,7 +2953,7 @@ button {
 }
 
 .dialog.account {
-  width: min(460px, 94vw);
+  width: min(460px, 94 * var(--vw));
 }
 
 .account-line {
@@ -3023,7 +3031,7 @@ button {
 
 /* The intro: logo and "press start", centered. */
 .title-home .shell-body {
-  gap: clamp(12px, 3vh, 32px);
+  gap: clamp(12px, 3 * var(--vh), 32px);
 }
 
 /* Sized in whole device pixels per logo pixel by `fitLogo` (ui/title.ts). */
@@ -4492,7 +4500,7 @@ button {
   }
   .boss {
     top: 76px;
-    width: 76vw;
+    width: calc(76 * var(--vw));
   }
   .status {
     left: 8px;
@@ -4554,7 +4562,7 @@ button {
     left: auto;
     transform: none;
     align-items: flex-end;
-    max-width: min(40vw, 320px);
+    max-width: min(40 * var(--vw), 320px);
     max-height: calc(100% - 80px - var(--safe-t) - 110px);
   }
   .toast {
@@ -4632,7 +4640,7 @@ button {
 
 @media (max-width: 720px) and (min-height: 501px) {
   .toasts {
-    max-width: 90vw;
+    max-width: calc(90 * var(--vw));
   }
   .toast {
     font-size: 18px;
@@ -4699,11 +4707,11 @@ button {
   top: 28%;
   transform: translateX(-50%);
   width: max-content;
-  max-width: 92vw;
+  max-width: calc(92 * var(--vw));
   padding: 14px 22px;
   text-align: center;
   font-family: var(--title);
-  font-size: clamp(11px, 2.4vw, 18px);
+  font-size: clamp(11px, 2.4 * var(--vw), 18px);
   line-height: 1.5;
   border-color: #806010;
   box-shadow:
@@ -5572,14 +5580,14 @@ button {
 /* ---------- Controls (remap screen) ---------- */
 
 .dialog.controls {
-  width: min(520px, 96vw);
+  width: min(520px, 96 * var(--vw));
 }
 
 .controls-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 56vh;
+  max-height: calc(56 * var(--vh));
   overflow-y: auto;
 }
 
@@ -5699,7 +5707,7 @@ button {
     font-size: 15px;
   }
   .controls-list {
-    max-height: 34vh;
+    max-height: calc(34 * var(--vh));
   }
   .control-row {
     min-height: 32px;
@@ -5843,14 +5851,14 @@ button {
 
 .biome-banner small {
   font-family: var(--body);
-  font-size: clamp(16px, 2.6vw, 22px);
+  font-size: clamp(16px, 2.6 * var(--vw), 22px);
   line-height: 1;
   opacity: 0.7;
 }
 
 .banner .biome-banner b {
   color: var(--ink);
-  font-size: clamp(12px, 3vw, 22px);
+  font-size: clamp(12px, 3 * var(--vw), 22px);
 }
 
 .weather-toast > span,
@@ -6112,7 +6120,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: min(420px, 92vw);
+  max-width: min(420px, 92 * var(--vw));
   padding: 11px 14px 11px 11px;
   border-color: #581830;
   --frame: #e05888;
@@ -6440,7 +6448,7 @@ button {
 
 .hatch {
   align-items: center;
-  width: min(420px, 94vw);
+  width: min(420px, 94 * var(--vw));
 }
 
 /* 112 × 96 canvas at a whole-number scale. */
@@ -7871,7 +7879,7 @@ a.btn.dex-site {
   }
   .pc-grid {
     grid-area: grid;
-    width: calc((100dvh - 80px) * 6 / 5);
+    width: calc((100 * var(--dvh) - 80px) * 6 / 5);
     padding: 4px;
     gap: 3px;
   }
@@ -8197,7 +8205,7 @@ a.btn.dex-site {
 /* ---------- Apoiadores (supporters) ---------- */
 
 .dialog.supporters {
-  width: min(520px, 94vw);
+  width: min(520px, 94 * var(--vw));
   gap: 10px;
 }
 
@@ -8219,7 +8227,7 @@ a.btn.dex-site {
 
 .pick-scroll {
   min-height: 0;
-  max-height: min(52vh, 420px);
+  max-height: min(52 * var(--vh), 420px);
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -8287,7 +8295,7 @@ a.btn.dex-site {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: min(46vh, 380px);
+  max-height: min(46 * var(--vh), 380px);
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
@@ -9057,7 +9065,7 @@ button.hall-tile:hover {
 @media (orientation: landscape) and (min-width: 640px) {
   .screen.shell.hall-screen {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(230px, 30vw, 330px);
+    grid-template-columns: minmax(0, 1fr) clamp(230px, 30 * var(--vw), 330px);
     grid-template-rows: auto minmax(0, 1fr);
     column-gap: 14px;
     row-gap: 8px;
@@ -9500,7 +9508,7 @@ button.hall-tile:hover {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  max-width: min(640px, 94vw);
+  max-width: min(640px, 94 * var(--vw));
   color: #f8f8f8;
   text-align: center;
   text-shadow: 2px 2px 0 #101020;
@@ -9541,7 +9549,7 @@ button.hall-tile:hover {
   grid-template-columns: repeat(var(--count, 3), minmax(0, 210px));
   justify-content: center;
   gap: 14px;
-  width: min(700px, 96vw);
+  width: min(700px, 96 * var(--vw));
   padding-top: 12px;
 }
 
@@ -10977,7 +10985,7 @@ button.hall-tile:hover {
 
 /* The chest's choice: the item floats in a purple aura over a dark violet box. */
 .curse-pick .curse-box {
-  max-width: min(360px, 92vw);
+  max-width: min(360px, 92 * var(--vw));
   text-align: center;
   background: linear-gradient(180deg, #f4ecfa, #e4d4f2);
   border-color: #7030b0;
@@ -11135,7 +11143,7 @@ button.hall-tile:hover {
 /* A phone on its side: the item on the left, what it does on the right, so the buttons stay on screen. */
 @media (max-height: 500px) and (orientation: landscape) {
   .curse-pick .curse-box {
-    max-width: min(600px, 94vw);
+    max-width: min(600px, 94 * var(--vw));
     display: grid;
     grid-template-columns: 150px 1fr;
     grid-template-areas: 'label label' 'title title' 'art up' 'art down' 'name note' 'buttons buttons';
@@ -11754,7 +11762,7 @@ button.hall-tile:hover {
 
 .move-card {
   width: 280px;
-  max-width: calc(100vw - 16px);
+  max-width: calc(100 * var(--vw) - 16px);
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
@@ -11771,6 +11779,8 @@ button.hall-tile:hover {
   top: 0;
   z-index: 50;
   pointer-events: none;
+  /* Lives on <body>, outside #ui: zoomed like it (ui/moveCard.ts places it in zoomed px). */
+  zoom: var(--ui-zoom);
   animation: card-in 0.1s steps(2) both;
 }
 

@@ -212,6 +212,8 @@ export const es: Messages = {
     screenShake: 'Temblor de pantalla',
     flashes: 'Destellos',
     flashModes: { normal: 'Normales', reduced: 'Reducidos' },
+    uiScale: 'Tamaño de la interfaz',
+    uiScaleAuto: 'Auto',
     joystick: 'Joystick',
     joystickModes: { floating: 'Sigue el dedo', fixed: 'Fijo' },
     on: 'ON',

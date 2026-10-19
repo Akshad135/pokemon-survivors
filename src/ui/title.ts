@@ -30,6 +30,7 @@ import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } fro
 import { nearestInDirection, type Direction } from './spatial'
 import { toast } from './toasts'
 import { trainerChip } from './trainer'
+import { uiDpr, uiViewport } from './uiScale'
 
 /** What the lobby can highlight. A screen opened over it gets the one it came from, to come back to it. */
 export type LobbyFocus =
@@ -111,9 +112,9 @@ const LANDSCAPE = '(max-height: 500px) and (orientation: landscape)'
 const NARROW = '(max-width: 759px) and (min-height: 501px), (max-width: 759px) and (orientation: portrait)'
 const layout = () => (matchMedia(LANDSCAPE).matches ? 'landscape' : matchMedia(NARROW).matches ? 'narrow' : 'wide')
 
-/** Sizes a pixel-art canvas to `k` device px per art px, so its pixels stay square. Touches the style only when it changes. */
+/** Sizes a pixel-art canvas in `#ui` to `k` device px per art px (UI size included), so its pixels stay square. Touches the style only when it changes. */
 const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
-  const dpr = window.devicePixelRatio || 1
+  const dpr = uiDpr()
   const width = `${(canvas.width * k) / dpr}px`
   if (canvas.style.width === width) return
   canvas.style.width = width
@@ -122,8 +123,7 @@ const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel: big for the intro, smaller in the lobby. */
 const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
-  const vw = window.innerWidth
-  const vh = window.innerHeight
+  const { w: vw, h: vh } = uiViewport()
   const mode = layout()
   // The top bar takes about 60 px off the height.
   const [maxW, maxH] = intro
@@ -133,7 +133,7 @@ const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
       : mode === 'narrow'
         ? [Math.min(vw * 0.8, 420), (vh - 60) * 0.11]
         : [Math.min(vw - 620, 460), (vh - 60) * 0.17]
-  pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, window.devicePixelRatio || 1))
+  pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, uiDpr()))
 }
 
 
@@ -159,7 +159,7 @@ const outbreakCard = () => {
   void Promise.allSettled([loadSpecies(def.dex), loadSpecies(def.dex, true)])
   const el = todayCard('outbreak', t().home.outbreak, null, null, ...walkers, h('b', {}, def.name), h('img', { class: 'lobby-sparkle', src: sparkleIcon(), alt: '' }))
   const tick = (time: number) => {
-    const k = Math.max(1, Math.round((window.devicePixelRatio || 1) * (layout() === 'wide' ? 1.5 : 1)))
+    const k = Math.max(1, Math.round(uiDpr() * (layout() === 'wide' ? 1.5 : 1)))
     walkers.forEach((canvas, i) => {
       pixelSize(canvas, k)
       const ctx = context2d(canvas)
@@ -405,7 +405,7 @@ const partnerStage = (onPlay: () => void) => {
   const el = h('div', { class: 'lobby-stage' }, partner)
   const shadow = ellipse(13, 3, 'rgba(16, 24, 16, 0.3)')
   const tick = (time: number) => {
-    const dpr = window.devicePixelRatio || 1
+    const dpr = uiDpr()
     const room = el.clientHeight - plate.offsetHeight - 8
     const k = Math.min(Math.round(4 * dpr), logoScale(STAGE.w, STAGE.h, el.clientWidth, Math.max(room, 1), dpr))
     pixelSize(canvas, k)

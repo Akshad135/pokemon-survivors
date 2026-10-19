@@ -299,6 +299,8 @@ export const pt = {
     screenShake: 'Tremor de tela',
     flashes: 'Clarões',
     flashModes: { normal: 'Normais', reduced: 'Reduzidos' },
+    uiScale: 'Tamanho da interface',
+    uiScaleAuto: 'Auto',
     joystick: 'Joystick',
     joystickModes: { floating: 'Segue o dedo', fixed: 'Fixo' },
     on: 'ON',

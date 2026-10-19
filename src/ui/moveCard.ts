@@ -7,6 +7,7 @@ import { formatDecimal, t } from '../i18n'
 import { itemIcon, moveIcon } from '../render/art'
 import { h } from './dom'
 import { typeBadge } from './screens'
+import { uiViewport, uiZoom } from './uiScale'
 
 /** How long a finger rests on a move before its card opens. */
 const HOLD_MS = 280
@@ -134,7 +135,7 @@ export const hideMoveCard = () => {
   open = null
 }
 
-/** Where the card points: the anchor's box, or the fingertip on a touch hold (`below` is how far clear of it the card must stay). */
+/** Where the card points: the anchor's box, or the fingertip on a touch hold (`below` is how far clear of it the card must stay), in the UI's zoomed px. */
 type Target = { top: number; bottom: number; left: number; right: number; below: number }
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(min, v), max)
@@ -143,8 +144,7 @@ const clamp = (v: number, min: number, max: number) => Math.min(Math.max(min, v)
 const place = (card: HTMLElement, t: Target) => {
   const w = card.offsetWidth
   const hgt = card.offsetHeight
-  const vw = window.innerWidth
-  const vh = window.innerHeight
+  const { w: vw, h: vh } = uiViewport()
   const centered = clamp((t.left + t.right) / 2 - w / 2, GAP, vw - GAP - w)
   const at = (x: number, y: number) => (card.style.transform = `translate(${Math.round(x)}px, ${Math.round(clamp(y, GAP, vh - GAP - hgt))}px)`)
   if (t.top - GAP - hgt >= GAP) return at(centered, t.top - GAP - hgt)
@@ -163,12 +163,14 @@ const show = (anchor: HTMLElement, card: HTMLElement, finger?: { x: number; y: n
   hideMoveCard()
   card.classList.add('floating')
   document.body.append(card)
+  // Screen px to the card's zoomed px (it's zoomed like #ui, see `.move-card.floating`).
+  const z = uiZoom()
   const r = anchor.getBoundingClientRect()
   place(
     card,
     finger
-      ? { top: finger.y - FINGER_GAP, bottom: finger.y, left: finger.x, right: finger.x, below: FINGER_GAP }
-      : { top: r.top, bottom: r.bottom, left: r.left, right: r.right, below: GAP },
+      ? { top: finger.y / z - FINGER_GAP, bottom: finger.y / z, left: finger.x / z, right: finger.x / z, below: FINGER_GAP }
+      : { top: r.top / z, bottom: r.bottom / z, left: r.left / z, right: r.right / z, below: GAP },
   )
   const watch = () => {
     if (!open) return

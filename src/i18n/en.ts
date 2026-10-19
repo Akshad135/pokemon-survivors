@@ -212,6 +212,8 @@ export const en: Messages = {
     screenShake: 'Screen shake',
     flashes: 'Flashes',
     flashModes: { normal: 'Normal', reduced: 'Reduced' },
+    uiScale: 'UI size',
+    uiScaleAuto: 'Auto',
     joystick: 'Joystick',
     joystickModes: { floating: 'Follows finger', fixed: 'Fixed' },
     on: 'ON',

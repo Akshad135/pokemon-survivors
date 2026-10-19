@@ -12,6 +12,7 @@ import { STICK_MODES, type StickMode } from '../engine/input'
 import { DAMAGE_NUMBERS, type DamageNumbers } from '../render/damageNumbers'
 import { FLASH_MODES, type Flashes } from '../render/flashes'
 import { DEFAULT_BINDINGS, parseBindings, type Bindings } from '../engine/bindings'
+import { UI_SCALES, type UiScale } from './uiScale'
 
 const KEY = 'ps:save'
 
@@ -147,6 +148,8 @@ export type Settings = {
   controls: Bindings
   /** Touch joystick: follows the thumb (the default) or waits in the bottom-left corner. */
   joystick: StickMode
+  /** Menus and HUD size (`ui/uiScale.ts`). Per device, like the controls. */
+  uiScale: UiScale
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -158,6 +161,7 @@ export const DEFAULT_SETTINGS: Settings = {
   flashes: 'normal',
   controls: DEFAULT_BINDINGS,
   joystick: 'floating',
+  uiScale: 'auto',
 }
 
 const volume = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback)
@@ -184,6 +188,7 @@ export const parseSettings = (raw: string | null, defaults = DEFAULT_SETTINGS): 
     flashes: FLASH_MODES.find((m) => m === data.flashes) ?? defaults.flashes,
     controls: parseBindings(data.controls),
     joystick: STICK_MODES.find((m) => m === data.joystick) ?? defaults.joystick,
+    uiScale: UI_SCALES.find((s) => s === data.uiScale) ?? defaults.uiScale,
   }
 }
 

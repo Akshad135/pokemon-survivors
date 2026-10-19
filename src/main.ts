@@ -160,6 +160,8 @@ let dirty = true
  */
 const resize = () => {
   stickCenter = null
+  // The HUD may have moved (a new viewport or UI size): re-measure it after layout (and after module init, so `run` exists by then).
+  requestAnimationFrame(() => run && syncMarkerInsets())
   const width = window.visualViewport?.width ?? window.innerWidth
   const height = window.visualViewport?.height ?? window.innerHeight
   const fit = fitView(width, height, window.devicePixelRatio || 1)
@@ -171,11 +173,10 @@ const resize = () => {
   canvas.height = view.h
   canvas.style.width = `${view.w * cssScale}px`
   canvas.style.height = `${view.h * cssScale}px`
-  document.documentElement.style.setProperty('--px', `${Math.max(2, Math.round(cssScale))}px`)
+  // One world pixel, for the UI's pixel frames (style.css turns it into #ui's zoomed px as `--px`).
+  document.documentElement.style.setProperty('--world-px', `${Math.max(2, Math.round(cssScale))}px`)
   context2d(canvas)
   dirty = true
-  // Runs after layout (and after module init, so `run` exists by then).
-  requestAnimationFrame(() => run && syncMarkerInsets())
 }
 // Rotation often reports stale sizes in the same tick, so re-measure on the next frame too.
 const scheduleResize = () => (resize(), requestAnimationFrame(resize))
