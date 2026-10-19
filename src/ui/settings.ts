@@ -1,11 +1,14 @@
 import { playSfx, setMix } from '../engine/audio'
 import { STICK_MODES, type Input } from '../engine/input'
 import { clamp } from '../engine/math'
-import { locale, LOCALES, nextLocale, setLocale, t } from '../i18n'
+import { locale, LOCALE_IDS, LOCALES, setLocale, t, type Locale } from '../i18n'
+import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
 import { loadSettings, writeSettings, type Settings } from './save'
 import { hint, menu, type Screen } from './screens'
+import { backButton, shellBody, tabStrip, topBar, segmented } from './shell'
+import { REPO_URL, ROUTES } from '../site/routes'
 
 /* ---------------- Live settings ---------------- */
 
@@ -119,100 +122,160 @@ const choiceRow = <K extends keyof Settings>(label: string, key: K, options: rea
   }
 }
 
-/** `◀ Português ▶`: any press cycles the language (there are only two, so direction doesn't matter). */
-const languageRow = (onSwitch: () => void): Row => {
-  const el = h(
-    'button',
-    { class: 'setting-row' },
-    h('span', { class: 'setting-label' }, t().language),
-    h('b', { class: 'setting-choice', lang: LOCALES[locale()].tag }, `◀ ${LOCALES[locale()].name} ▶`),
+/** PT / EN / ES, picked on a tap or ← →. `pick` switches the language and must rebuild the screen. */
+const languageRow = (pick: (next: Locale) => void): Row => {
+  const seg = segmented(
+    LOCALE_IDS.map((id) => ({ id, label: LOCALES[id].short, lang: LOCALES[id].tag, title: LOCALES[id].name })),
+    locale(),
+    pick,
   )
-  return { el, adjust: onSwitch, activate: onSwitch, sync: () => {} }
+  const el = h('div', { class: 'setting-row column', role: 'group', 'aria-label': t().language }, h('span', { class: 'setting-label' }, t().language), seg.el)
+  const step = (dir: -1 | 1) => pick(LOCALE_IDS[(LOCALE_IDS.indexOf(locale()) + dir + LOCALE_IDS.length) % LOCALE_IDS.length]!)
+  return { el, adjust: step, activate: () => step(1), sync: () => seg.set(locale()) }
 }
 
-const backRow = (label: string, close: () => void): Row => {
-  const el = h('button', { class: 'btn' }, label)
-  return { el, adjust: () => {}, activate: close, sync: () => {} }
+/** Opens the remap screen (keyboard keys and gamepad buttons). */
+const controlsRow = (open: () => void): Row => {
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().controls.open), h('b', { class: 'setting-choice' }, '▶'))
+  return { el, adjust: (dir) => dir > 0 && open(), activate: open, sync: () => {} }
 }
 
-/** A group of rows under a heading. */
-type Section = { title: string; rows: Row[] }
-
-/** The Controls section: how the player moves. */
-const controlRows = (): Row[] => {
-  const m = t().settings
-  return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode])]
+/** A link out of the game (Sobre): Enter or a tap follows it (the menu's tap, so a fresh screen's guard applies). */
+const linkRow = (label: string, href: string, external = false): Row => {
+  const el = h(
+    'a',
+    { class: 'setting-row', href, onclick: (e: Event) => e.preventDefault() },
+    h('span', { class: 'setting-label' }, label),
+    h('b', { class: 'setting-choice' }, '▶'),
+  )
+  return { el, adjust: () => {}, activate: () => (external ? window.open(href, '_blank', 'noopener') : location.assign(href)), sync: () => {} }
 }
+
+const TABS = ['sound', 'game', 'controls', 'about'] as const
+
+type Tab = (typeof TABS)[number]
+
+/** The tab Settings opened on last, so the pause menu comes back to the same place. */
+let lastTab: Tab = 'sound'
 
 /**
- * Settings dialog in three sections: Audio (music and effects volume, mute),
- * Game (damage numbers, screen shake, language) and Controls (touch joystick).
+ * Settings in four tabs: Som (music and effects volume, mute), Jogo
+ * (language, damage numbers, screen shake), Controles (touch joystick and the
+ * remap screen) and Sobre (what the game is, legal and credits, GitHub).
  * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
- * input). The Back button, Esc or Backspace (gamepad B) close it: it removes itself, then calls
- * `onClose` after the current key dispatch. The language may have changed by
- * then, so `onClose` should rebuild any text it owns. `dispose` closes it
- * without calling `onClose` (e.g. when the caller's own screen goes away).
+ * input), with a top bar whose ◀ closes it like Esc or Backspace (gamepad B):
+ * it removes itself, then calls `onClose` after the current key dispatch. The
+ * tab strip is the first line: ← → on it switch tabs, ↑ ↓ walk the rows. The
+ * language may have changed by then, so `onClose` should rebuild any text it
+ * owns. `dispose` closes it without calling `onClose` (e.g. when the caller's
+ * own screen goes away).
  */
 export const openSettings = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
-  const el = h('div', { class: 'screen dim' })
+  const el = h('div', { class: 'screen shell dim settings-screen' })
   let rows: Row[] = []
   let nav: ReturnType<typeof menu> | null = null
+  /** The remap screen open on top: this one hides and ignores keys until it closes. */
+  let sub: Screen | null = null
+  let away = false
+  let tab: Tab = lastTab
 
   const sync = () => rows.forEach((r) => r.sync())
 
-  const switchLanguage = () => {
-    setLocale(nextLocale(locale()))
+  const pickLanguage = (next: Locale) => {
+    if (next === locale()) return
+    setLocale(next)
     playSfx('select')
     // Rebuild after this key dispatch, or the new rows would receive the same press.
     later(() => build(nav?.index ?? 0, false))
   }
 
-  /** `opening` plays the pop-in; rebuilds after a language switch don't. */
-  const build = (focus: number, opening: boolean) => {
+  const showTab = (next: Tab, focus: number) => {
+    if (next === tab) return
+    tab = lastTab = next
+    playSfx('move')
+    later(() => build(focus, false))
+  }
+
+  /** The rows of each tab. */
+  const tabRows = (which: Tab): Row[] => {
     const m = t().settings
-    const sections: Section[] = [
-      {
-        title: m.audio,
-        rows: [
+    const lang = locale()
+    switch (which) {
+      case 'sound':
+        return [
           slider(m.music, 'musicVolume'),
           slider(m.sfx, 'sfxVolume', () => playSfx('pickup', 90)),
           toggle(m.sound, (s) => !s.muted, (on) => ({ muted: !on })),
-        ],
-      },
-      {
-        title: m.game,
-        rows: [
+        ]
+      case 'game':
+        return [
+          languageRow(pickLanguage),
           choiceRow(m.damageNumbers, 'damageNumbers', DAMAGE_NUMBERS, (mode) => m.damageModes[mode]),
           toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
-          languageRow(switchLanguage),
-        ],
-      },
-      { title: m.controls, rows: controlRows() },
-    ]
-    const back = backRow(m.back, close)
-    rows = [...sections.flatMap((s) => s.rows), back]
+        ]
+      case 'controls':
+        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(showControls)]
+      case 'about':
+        return [linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
+    }
+  }
+
+  /** `opening` plays the pop-in; rebuilds after a language or tab switch don't. */
+  const build = (focus: number, opening: boolean) => {
+    const m = t().settings
+    const strip = tabStrip(TABS.map((id) => m.tabs[id]), TABS.indexOf(tab), (i) => showTab(TABS[i]!, 0))
+    const at = TABS.indexOf(tab)
+    const tabsRow: Row = {
+      el: strip.el,
+      adjust: (dir) => showTab(TABS[(at + dir + TABS.length) % TABS.length]!, 0),
+      activate: () => rows.length > 1 && nav?.focus(1),
+      sync: () => {},
+    }
+    const content = tabRows(tab)
+    rows = [tabsRow, ...content]
     nav?.off()
-    nav = menu(input, rows.map((r) => r.el), (i) => rows[i]?.activate(), { initial: focus })
+    nav = menu(input, rows.map((r) => r.el), (i) => rows[i]?.activate(), { initial: Math.min(focus, rows.length - 1) })
     el.replaceChildren(
-      h(
-        'div',
-        { class: opening ? 'dialog box pop settings' : 'dialog box settings' },
-        h('div', { class: 'dialog-title' }, m.title),
+      topBar({ left: backButton(close), title: m.title }),
+      shellBody(
         h(
           'div',
-          { class: 'settings-list' },
-          ...sections.map((s) => h('div', { class: 'settings-group' }, h('div', { class: 'settings-section' }, s.title), ...s.rows.map((r) => r.el))),
+          { class: opening ? 'settings-panel pop' : 'settings-panel' },
+          strip.el,
+          h(
+            'div',
+            { class: 'box settings-rows', role: 'tabpanel' },
+            tab === 'about' ? h('p', { class: 'settings-about' }, m.about, h('small', {}, t().title.credits)) : null,
+            ...content.map((r) => r.el),
+          ),
+          hint(m.hintKeys, m.hintTouch),
         ),
-        h('div', { class: 'buttons' }, back.el),
-        hint(m.hintKeys, m.hintTouch),
       ),
     )
     sync()
   }
 
+  const showControls = () => {
+    playSfx('select')
+    nav?.off()
+    away = true
+    el.classList.add('hidden')
+    // Open after this key dispatch, or the new screen would receive the same press.
+    later(() => {
+      if (!el.isConnected) return
+      sub = openControls(root, input, () => {
+        sub = null
+        away = false
+        el.classList.remove('hidden')
+        build(nav?.index ?? 0, false)
+      })
+    })
+  }
+
   const offKeys = input.onKey((key) => {
+    if (away) return
     const row = nav && rows[nav.index]
     if (key === 'ArrowLeft' || key === 'KeyA') row?.adjust(-1)
     else if (key === 'ArrowRight' || key === 'KeyD') row?.adjust(1)
@@ -220,6 +283,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
   })
 
   const dispose = () => {
+    sub?.dispose()
     nav?.off()
     offKeys()
     el.remove()
@@ -235,7 +299,8 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     later(onClose)
   }
 
-  build(0, true)
+  // The first row, not the tab strip: ← → there adjust it right away.
+  build(1, true)
   refresh = sync
   root.append(el)
   return { el, dispose }

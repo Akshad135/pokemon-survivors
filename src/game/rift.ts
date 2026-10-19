@@ -28,6 +28,8 @@ export type RiftArena = {
   bossId: number
   /** Seconds left to grab the loot once the legendary falls; null while it stands. */
   loot: number | null
+  /** Seconds left on the defeat (the player fainted, the rift throws them out); null while they stand. */
+  fall: number | null
   stash: RiftStash
   /** What stands on the floor, in world px: map terrain's rules (`game/terrain.ts`) collide with it. */
   terrain: Feature

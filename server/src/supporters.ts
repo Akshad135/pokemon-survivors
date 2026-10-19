@@ -3,6 +3,8 @@ import type { TransactionSql } from 'postgres'
 import { POLL, POLL_OPTION_IDS, type PollOptionId } from '../../src/data/supporters'
 import { donationPoints, newCode, supporterTier, TIER_GIFTS, tiersReached, type SupporterTier } from '../../src/game/supporters'
 import type { DonationStatus, Poll, SupporterStatus, WallEntry } from '../../src/game/supporters'
+import { parseSaveData } from '../../src/game/meta'
+import { hallPokemon } from '../../src/game/trainer'
 import type { Sql } from './db'
 import { sendGift } from './gifts'
 import type { PaidDonation } from './webhooks'
@@ -98,15 +100,28 @@ export const supporterStore = (sql: Sql) => {
       await sql`update users set supporter_public = ${show} where id = ${userId}`
     },
 
-    /** Supporters who show themselves and have a handle, oldest first. */
+    /**
+     * Supporters who show themselves and have a handle, oldest first, with
+     * their title and Pokémon for the Hall da Fama. Only the save fields
+     * those read come out of Postgres, never the whole save.
+     */
     wall: async (): Promise<WallEntry[]> => {
-      const rows = await sql<{ handle: string; name: string | null; points: number; since: Date }[]>`
-        select handle, name, supporter_points as points, supporter_since as since from users
-        where supporter_points > 0 and supporter_public and handle is not null
-        order by supporter_since, id limit ${WALL_SIZE}`
+      const rows = await sql<{ handle: string; name: string | null; points: number; since: Date; save: unknown }[]>`
+        select u.handle, u.name, u.supporter_points as points, u.supporter_since as since,
+          case when s.user_id is null then null else jsonb_build_object(
+            'version', s.data->'version', 'partner', s.data->'partner', 'shinyPicks', s.data->'shinyPicks',
+            'companion', s.data->'companion', 'shinyStarters', s.data->'shinyStarters', 'hatched', s.data->'hatched',
+            'title', s.data->'title', 'titles', s.data->'titles', 'achievements', jsonb_build_object('unlocked', s.data->'achievements'->'unlocked')
+          ) end as save
+        from users u left join saves s on s.user_id = u.id
+        where u.supporter_points > 0 and u.supporter_public and u.handle is not null
+        order by u.supporter_since, u.id limit ${WALL_SIZE}`
       return rows.flatMap((r) => {
         const tier = supporterTier(r.points)
-        return tier ? [{ handle: r.handle, name: r.name ?? r.handle, tier, since: r.since.toISOString() }] : []
+        if (!tier) return []
+        // Never synced: no title, and the Hall shows a Poké Ball.
+        const save = r.save === null ? null : parseSaveData(r.save)
+        return [{ handle: r.handle, name: r.name ?? r.handle, tier, since: r.since.toISOString(), title: save?.title ?? null, pokemon: save ? hallPokemon(save) : null }]
       })
     },
 

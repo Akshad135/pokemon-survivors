@@ -4,6 +4,7 @@ import { STANCES } from '../game/stance'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { specialIcon, stanceIcon } from '../render/specialFx'
+import { boundLabel, setGlyphText } from './inputLabels'
 import { h, setStyle, setText } from './dom'
 
 /**
@@ -18,7 +19,8 @@ export const createSpecialControls = (onPress: () => void) => {
   const buttonIcon = h('img', { alt: '' })
   const badgeTag = h('span', { class: 'special-tag hidden' })
   const buttonTag = h('span', { class: 'special-tag hidden' })
-  const badge = h('div', { class: 'special special-badge' }, badgeIcon, h('span', { class: 'special-key' }, t().spaceKey), badgeTag)
+  const keyLabel = h('span', { class: 'special-key' })
+  const badge = h('div', { class: 'special special-badge' }, badgeIcon, keyLabel, badgeTag)
   const button = h('button', { class: 'special special-button', type: 'button', 'aria-label': t().hud.specialAttack }, buttonIcon, buttonTag)
 
   // Claim the touch so the floating joystick (pointerdown anywhere) never sees it.
@@ -34,6 +36,7 @@ export const createSpecialControls = (onPress: () => void) => {
   const update = (g: Game) => {
     const r = gameSpecial(g)
     const s = g.special
+    setGlyphText(keyLabel, boundLabel('special'))
     const look = `${r.tier.name}|${s.stance}`
     if (key !== look) {
       key = look

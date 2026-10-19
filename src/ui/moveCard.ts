@@ -22,6 +22,8 @@ type CardOptions = {
   level: number
   /** Level the stats are compared with (a level-up upgrade shows what it adds). */
   from?: number
+  /** The fork branches taken (`OwnedMove.path`); a fork offer passes the branch it adds. */
+  path?: number
   /** Adds the move's description (the level-up cards already show it). */
   describe?: boolean
 }
@@ -80,7 +82,7 @@ const evolutionLine = (g: Game, id: MoveId, level: number) => {
 }
 
 /** The card's content: name, type, level, the stats with the player's modifiers and how the move evolves. */
-export const moveCard = (g: Game, id: MoveId, { level, from, describe = false }: CardOptions) => {
+export const moveCard = (g: Game, id: MoveId, { level, from, path, describe = false }: CardOptions) => {
   const m = t()
   const def: MoveDef = MOVES[id]
   const evolved = evolvedFrom(id) !== undefined
@@ -91,14 +93,20 @@ export const moveCard = (g: Game, id: MoveId, { level, from, describe = false }:
       'div',
       { class: 'card-head' },
       h('img', { src: moveIcon(id), alt: '' }),
-      h('div', { class: 'card-title' }, h('b', {}, def.name), h('span', { class: 'tag' }, evolved ? m.moveCard.evolved : m.moveCard.level(level, maxMoveLevel(id)))),
+      h(
+        'div',
+        { class: 'card-title' },
+        h('b', {}, def.name),
+        // Evolved moves keep leveling: the star says where they came from.
+        h('span', { class: 'tag' }, evolved && `${m.moveCard.evolved} · `, m.moveCard.level(level, maxMoveLevel(id))),
+      ),
       typeBadge(def.type),
     ),
     describe && h('p', { class: 'card-desc' }, m.moves[id].description),
     h(
       'div',
       { class: 'card-stats' },
-      ...moveSheet(id, level, g.player.stats, from).flatMap((row) => [
+      ...moveSheet(id, level, g.player.stats, from, path).flatMap((row) => [
         h('span', {}, rowLabel(row, def)),
         h(
           'b',
@@ -170,40 +178,44 @@ const show = (anchor: HTMLElement, card: HTMLElement, finger?: { x: number; y: n
   open = { card, anchor, frame: requestAnimationFrame(watch) }
 }
 
-/**
- * Opens the card from `build` while the mouse is over `hover`, or while a
- * finger holds `press` (the whole level-up card is easier to hold than its icon).
- * A hold never counts as a tap: the click it ends with is swallowed before
- * the menu sees it, so attach this before `menu()` binds its clicks.
- */
-export const withMoveCard = (press: HTMLElement, build: () => HTMLElement, hover: HTMLElement = press) => {
-  hover.classList.add('has-card')
-  hover.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && show(hover, build()))
-  hover.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && open?.anchor === hover && hideMoveCard())
+/** Opens the card from `build` while the mouse is over `el`. */
+export const hoverMoveCard = (el: HTMLElement, build: () => HTMLElement) => {
+  el.classList.add('has-card')
+  el.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && show(el, build()))
+  el.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && open?.anchor === el && hideMoveCard())
+}
 
+/**
+ * Opens the card from `build` while a finger holds `el` (nothing opens when it
+ * returns null). A hold never counts as a tap: the click it ends with is
+ * swallowed before the menu sees it, so attach this before `menu()` binds its clicks.
+ */
+export const holdMoveCard = (el: HTMLElement, build: () => HTMLElement | null) => {
   let timer = 0
   let start = { x: 0, y: 0 }
   let held = false
   const release = () => {
     clearTimeout(timer)
-    if (open?.anchor === press) hideMoveCard()
+    if (open?.anchor === el) hideMoveCard()
   }
-  press.addEventListener('pointerdown', (e) => {
+  el.addEventListener('pointerdown', (e) => {
     held = false
     if (e.pointerType === 'mouse') return
     start = { x: e.clientX, y: e.clientY }
     clearTimeout(timer)
     timer = window.setTimeout(() => {
+      const card = build()
+      if (!card) return
       held = true
-      show(press, build(), start)
+      show(el, card, start)
     }, HOLD_MS)
   })
-  press.addEventListener('pointermove', (e) => {
+  el.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse' && !held && Math.hypot(e.clientX - start.x, e.clientY - start.y) > HOLD_SLOP) clearTimeout(timer)
   })
-  press.addEventListener('pointerup', release)
-  press.addEventListener('pointercancel', release)
-  press.addEventListener(
+  el.addEventListener('pointerup', release)
+  el.addEventListener('pointercancel', release)
+  el.addEventListener(
     'click',
     (e) => {
       if (!held) return
@@ -214,5 +226,11 @@ export const withMoveCard = (press: HTMLElement, build: () => HTMLElement, hover
     { capture: true },
   )
   // Android opens a context menu on a long press.
-  press.addEventListener('contextmenu', (e) => e.preventDefault())
+  el.addEventListener('contextmenu', (e) => e.preventDefault())
+}
+
+/** Hover and hold on the same element: a HUD slot, a pause loadout row. */
+export const withMoveCard = (el: HTMLElement, build: () => HTMLElement) => {
+  hoverMoveCard(el, build)
+  holdMoveCard(el, build)
 }

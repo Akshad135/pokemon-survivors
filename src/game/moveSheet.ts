@@ -25,17 +25,20 @@ const MEANINGFUL = {
 export const sheetStats = (id: MoveId): SheetStat[] => {
   const def: MoveDef = MOVES[id]
   const optional = (Object.keys(MEANINGFUL) as (keyof typeof MEANINGFUL)[]).filter(
-    (stat) => MEANINGFUL[stat](def.base[stat]) || def.upgrades.some((u) => u[stat] !== undefined),
+    (stat) => MEANINGFUL[stat](def.base[stat]) || def.upgrades.some((u) => ('fork' in u ? u.fork.some((b) => b.stats[stat] !== undefined) : u[stat] !== undefined)),
   )
   return ['damage', 'cooldown', ...optional, ...(def.status ? ['status' as const] : [])]
 }
 
 const valueOf = (s: CastStats, stat: SheetStat) => (stat === 'status' ? (s.status?.chance ?? 0) : s[stat])
 
-/** The card's lines for `id` at `level` with the player's modifiers; `from` (a lower level, for level-up offers) fills `before`. */
-export const moveSheet = (id: MoveId, level: number, player: PlayerStats, from?: number): SheetRow[] => {
-  const now = moveStats(id, level, player)
-  const prev = from !== undefined ? moveStats(id, from, player) : null
+/**
+ * The card's lines for `id` at `level` with the player's modifiers, along the
+ * fork branches in `path`; `from` (a lower level, for level-up offers) fills `before`.
+ */
+export const moveSheet = (id: MoveId, level: number, player: PlayerStats, from?: number, path = 0): SheetRow[] => {
+  const now = moveStats(id, level, player, path)
+  const prev = from !== undefined ? moveStats(id, from, player, path) : null
   return sheetStats(id).map((stat) => {
     const value = valueOf(now, stat)
     const before = prev ? valueOf(prev, stat) : value

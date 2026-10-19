@@ -23,6 +23,7 @@ const enemy = (over: Partial<Enemy> = {}): Enemy => ({
   trait: createTraitState(undefined, 0),
   dying: -1,
   fled: false,
+  thrown: null,
   ...over,
 })
 

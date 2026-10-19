@@ -36,12 +36,47 @@ export const fromStrings = (rows: readonly string[], palette: Palette, opts: { m
 /** Swaps palette colors of a string sprite – handy for item/candy tiers. */
 export const recolor = (rows: readonly string[], palette: Palette) => fromStrings(rows, palette)
 
-const memo = <A extends readonly unknown[], R>(fn: (...args: A) => R) => {
-  const cache = new Map<string, R>()
+/* ---------- GPU resets ---------- */
+
+const resets: Array<() => void> = []
+
+/**
+ * Registers how to drop a cache of drawn canvases. When the browser loses its GPU context
+ * (memory pressure on phones, a driver reset), every 2D canvas comes back blank, so a cache
+ * kept past that would silently draw nothing: no ground under the horde, which then smears.
+ */
+export const onCanvasReset = (reset: () => void) => {
+  resets.push(reset)
+}
+
+/** Drops every registered cache so it redraws. Called when the game canvas gets its context back. */
+export const resetCanvases = () => {
+  for (const reset of resets) reset()
+}
+
+/** A Map holding drawn canvases, emptied on a GPU reset. */
+export const canvasCache = <K, V>() => {
+  const cache = new Map<K, V>()
+  onCanvasReset(() => cache.clear())
+  return cache
+}
+
+/** Builds a value holding canvases on first use, and again after a GPU reset. */
+export const lazy = <T>(build: () => T) => {
+  let value: T | undefined
+  onCanvasReset(() => (value = undefined))
+  return () => (value ??= build())
+}
+
+/** Caches `fn` per arguments. Past `max` entries the oldest goes, for keys that rarely repeat. */
+const memo = <A extends readonly unknown[], R>(fn: (...args: A) => R, max = Infinity) => {
+  const cache = canvasCache<string, R>()
   return (...args: A) => {
     const k = args.join('|')
     let v = cache.get(k)
-    if (v === undefined) cache.set(k, (v = fn(...args)))
+    if (v !== undefined) return v
+    if (cache.size >= max) cache.delete(cache.keys().next().value!)
+    cache.set(k, (v = fn(...args)))
     return v
   }
 }
@@ -113,7 +148,10 @@ const GLYPHS: Record<string, readonly string[]> = {
   '₽': ['0110', '0101', '0110', '1110', '0100'],
 }
 
-/** Renders text with a 1px dark outline into a cached sprite. */
+/**
+ * Renders text with a 1px dark outline into a cached sprite. Bounded: a damage total changes
+ * with every merged hit, so a long run would otherwise pile up tens of thousands of canvases.
+ */
 export const textSprite = memo((text: string, color: string, outline: string = '#181010'): PixelSprite => {
   const chars = [...text].map((c) => GLYPHS[c] ?? GLYPHS['0']!)
   const width = chars.reduce((w, g) => w + g[0]!.length + 1, 1)
@@ -132,4 +170,4 @@ export const textSprite = memo((text: string, color: string, outline: string = '
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1]] as const) plot(outline, dx, dy)
   plot(color, 0, 0)
   return canvas
-})
+}, 1024)

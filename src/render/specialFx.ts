@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitRotated, canvasCache, context2d, createCanvas, ellipse, fromStrings, lazy, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { gameSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } from '../game/special'
@@ -10,11 +10,6 @@ import type { Form } from './sprites'
 /** Code-drawn pixel art for the special attacks (`game/special.ts`). */
 
 type Ctx = CanvasRenderingContext2D
-
-const lazy = <T>(build: () => T) => {
-  let value: T | undefined
-  return () => (value ??= build())
-}
 
 const ROOT = [
   '....1....', '...151...', '...121...', '..1231...', '..12321..', '.512321..', '1.12321..',
@@ -38,7 +33,7 @@ const pixelRing = (ctx: Ctx, x: number, y: number, r: number, thickness: number,
   }
 }
 
-const slabCache = new Map<string, PixelSprite>()
+const slabCache = canvasCache<string, PixelSprite>()
 
 /** One slice of the water beam: blue edges, white core, with flowing streaks (2 frames). */
 const beamSlab = (width: number, frame: number) => {
@@ -142,7 +137,7 @@ const GLYPHS: Record<FormSpecial, { rows: readonly string[]; turn?: boolean }> =
   doubleEdge: { rows: ['1.......1', '12.....21', '.123.321.', '..13431..', '...141...', '...131...', '..1.1.1..', '.1..1..1.', '111111111'] },
 }
 
-const glyphCache = new Map<FormSpecial, PixelSprite>()
+const glyphCache = canvasCache<FormSpecial, PixelSprite>()
 
 /** A special's piece, outlined so it reads on any biome. */
 const glyph = (id: FormSpecial) => {
@@ -256,7 +251,7 @@ const SLASH = [
   '1.1...........1.1',
 ]
 
-const slashCache = new Map<PokeType, PixelSprite>()
+const slashCache = canvasCache<PokeType, PixelSprite>()
 
 const slashSprite = (type: PokeType) => {
   const cached = slashCache.get(type)
@@ -267,7 +262,7 @@ const slashSprite = (type: PokeType) => {
   return sprite
 }
 
-const streakCache = new Map<PokeType, PixelSprite>()
+const streakCache = canvasCache<PokeType, PixelSprite>()
 
 /** One 10 px slice of the speed line the lunge leaves: type-colored edges, white core. */
 const streakSprite = (type: PokeType) => {
@@ -486,7 +481,8 @@ export const drawSpecialAura = (ctx: Ctx, g: Game, t: number) => {
   const p = g.player
   const r = gameSpecial(g)
   const { def } = r
-  const k = s.charge / def.charge
+  // Capped: a special with no wind-up (a chain) would make it Infinity, and the ring's loop endless.
+  const k = Math.min(1, s.charge / def.charge)
   const color = TYPE_COLORS[def.type]
   pixelRing(ctx, p.x, p.y - 10, Math.round(8 + k * 20), 2, Math.floor(t * 24) % 2 ? color : '#ffffff')
   const reach = specialReach(g, r) * (1 - k * 0.5)

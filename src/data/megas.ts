@@ -280,6 +280,18 @@ export const MEGAS = {
     stats: { might: 0.15, typeDamage: { normal: 0.3, fairy: 0.3 }, regen: 1.5 },
     special: 'moonblast',
   },
+  /** Only for the runs that took Kirlia to Gallade (`MEGA_BRANCH` in `data/branches.ts`); Mega Gardevoir is the other branch's. */
+  gallade: {
+    line: 'ralts',
+    name: 'Mega Gallade',
+    stone: 'Galladite',
+    form: 'mega',
+    colors: ['#3a8a5a', '#d8f0e0', '#e84848'],
+    ability: 'Inner Focus',
+    effect: { kind: 'stats' },
+    stats: { might: 0.3, speed: 8, typeDamage: { fighting: 0.25 } },
+    special: 'auraStorm',
+  },
   aggron: {
     line: 'aron',
     name: 'Mega Aggron',

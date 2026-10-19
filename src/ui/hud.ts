@@ -1,22 +1,29 @@
 import { formatTime } from '../engine/math'
 import { canEvolve, evolutionOf, evolvedFrom } from '../data/evolutions'
 import { ENEMIES } from '../data/enemies'
-import { PLAYABLE } from '../data/hatchlings'
+import { ABILITIES } from '../data/abilities'
+import { abilityLit, abilityStacks } from '../game/abilities'
 import { playerDex } from '../game/game'
+import { playerForm } from '../game/branch'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import { heldMega } from '../game/mega'
 import type { Game } from '../game/types'
 import { weatherHere } from '../game/weather'
 import { formatPokeDollars, t } from '../i18n'
-import { coinIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
+import { coinIcon, curseIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
+import { CURSES } from '../data/curses'
+import { isDuo, readyDuos } from '../game/duoRules'
 import { consumableIcon } from '../render/props'
 import { weatherIcon } from '../render/weather'
 import { portraitUrl } from '../render/sprites'
+import { abilityIcon } from '../render/abilityArt'
+import { megaIcon } from '../render/megaFx'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
 import { moveCard, withMoveCard } from './moveCard'
+import { createMovePad } from './movePad'
 import { createSpecialControls } from './specialButton'
 
 const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-mid' : 'hp-low')
@@ -24,11 +31,12 @@ const hpClass = (ratio: number) => (ratio > 0.5 ? 'hp-high' : ratio > 0.2 ? 'hp-
 /**
  * In-run heads-up display. `update` is called every frame and only touches what changed.
  * `onSpecial`, `onMega` and `onLunge` fire when the touch special, Mega and lunge buttons are pressed;
- * `onPause` backs the on-screen pause button (phones have no Esc key). Hovering or
- * holding a move slot opens its card (`withMoveCard`). Labels are
+ * `onPause` backs the on-screen pause button (phones have no Esc key); `isHeld` (the input's)
+ * lights the desktop WASD keys. Hovering or holding a move slot opens its card (`withMoveCard`). Labels are
  * read at creation: rebuild the HUD after a language switch.
  */
-export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () => void, onLunge: () => void, onPause: () => void) => {
+export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () => void, onLunge: () => void, onPause: () => void, isHeld: (code: string) => boolean) => {
+  const movePad = createMovePad(isHeld)
   const special = createSpecialControls(onSpecial)
   const mega = createMegaControls(onMega)
   const lunge = createLungeControls(onLunge)
@@ -52,6 +60,11 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const level = h('div', { class: 'status-level' })
   const hpFill = h('div', { class: 'hp-fill' })
   const hpText = h('div', { class: 'status-hp-text' })
+  // The ability picked at the first evolution (the Mega's while it lasts), lit while it's doing something.
+  const abilityImg = h('img', { alt: '' })
+  const abilityName = h('span', { class: 'ability-tag-name' })
+  const abilityCount = h('span', { class: 'ability-tag-count' })
+  const ability = h('span', { class: 'ability-tag hidden' }, abilityImg, abilityName, abilityCount)
   // pointerdown (not click) feels instant on touch and never steals keyboard focus.
   const pause = h('button', { class: 'pause-btn box', 'aria-label': t().hud.pause }, h('span'), h('span'))
   pause.addEventListener('pointerdown', (e) => {
@@ -91,9 +104,10 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
         { class: 'status-body' },
         h('div', { class: 'status-head' }, name, level),
         h('div', { class: 'status-hp' }, h('span', { class: 'hp-tag' }, 'HP'), h('div', { class: 'hp-bar' }, hpFill)),
-        hpText,
+        h('div', { class: 'status-foot' }, ability, hpText),
       ),
     ),
+    movePad.el,
     special.button,
     mega.button,
     lunge.button,
@@ -106,6 +120,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   let buffKey = ''
   let buffFills: HTMLElement[] = []
   let weatherKey = ''
+  let abilityKey = ''
 
   /** Timed buffs (icon + draining bar) and a held Revive. Rebuilt only when the set changes. */
   const renderBuffs = (g: Game) => {
@@ -117,23 +132,29 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
         return h('div', { class: 'buff' }, h('img', { src: consumableIcon(b.id), alt: '' }), h('div', { class: 'buff-bar' }, fill))
       }),
       ...(g.revives > 0 ? [h('div', { class: 'buff revive', title: 'Revive' }, h('img', { src: consumableIcon('revive'), alt: '' }))] : []),
+      // Cursed items stay for the run, in their purple frame.
+      ...g.curses.held.map((id) => h('div', { class: 'buff cursed', title: `${CURSES[id].name}: ${t().curses[id].downside}` }, h('img', { src: curseIcon(id), alt: '' }))),
     )
   }
 
   const renderSlots = (g: Game) => {
     const p = g.player
+    // Moves a fusion on the table would use blink in the duo's colors.
+    const fusing = new Set(readyDuos(p.moves).flatMap((d) => d.from))
     moveSlots.replaceChildren(
       ...Array.from({ length: MAX_MOVES }, (_, i) => {
         const m = p.moves[i]
         const evo = m && evolutionOf(m.id)
         const ready = evo !== undefined && canEvolve(evo, p)
+        const duo = m !== undefined && isDuo(m.id)
+        const cls = ['slot', ready && 'evo-ready', m && fusing.has(m.id) && 'duo-ready', duo && 'duo'].filter(Boolean).join(' ')
         const slot = h(
           'div',
-          { class: ready ? 'slot evo-ready' : 'slot' },
+          { class: cls },
           m && h('img', { src: moveIcon(m.id), alt: '' }),
-          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? '★' : m.level),
+          m && h('span', { class: 'slot-level' }, evolvedFrom(m.id) ? `★${m.level}` : duo ? `✦${m.level}` : m.level),
         )
-        if (m) withMoveCard(slot, () => moveCard(g, m.id, { level: m.level, describe: true }))
+        if (m) withMoveCard(slot, () => moveCard(g, m.id, { level: m.level, path: m.path, describe: true }))
         return slot
       }),
     )
@@ -160,6 +181,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     }
     setText(kills, String(g.kills))
     setText(coins, formatPokeDollars(g.coins))
+    movePad.update()
     special.update(g)
     mega.update(g)
     lunge.update(g)
@@ -171,7 +193,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
       renderSlots(g)
     }
 
-    const bkey = `${g.buffs.map((b) => b.id).join()}|${g.revives}`
+    const bkey = `${g.buffs.map((b) => b.id).join()}|${g.revives}|${g.curses.held.join()}`
     if (bkey !== buffKey) {
       buffKey = bkey
       renderBuffs(g)
@@ -191,7 +213,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
       name.classList.toggle('mega-name', megaName !== undefined)
-      setText(name, megaName ?? PLAYABLE[g.starter].line[p.stage]!.name)
+      setText(name, megaName ?? playerForm(g).name)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
@@ -199,6 +221,23 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     const fillClass = `hp-fill ${hpClass(ratio)}`
     if (hpFill.className !== fillClass) hpFill.className = fillClass
     setText(hpText, `${Math.ceil(p.hp)}/${Math.round(p.stats.maxHp)}`)
+
+    const megaDef = g.mega.active > 0 ? heldMega(g) : null
+    const id = g.ability.id
+    const stacks = megaDef || !id ? 0 : abilityStacks(g)
+    const lit = !megaDef && id !== null && abilityLit(g)
+    const akey = `${id}|${megaDef?.ability}|${lit}|${stacks}`
+    if (akey !== abilityKey) {
+      abilityKey = akey
+      ability.classList.toggle('hidden', !id && !megaDef)
+      ability.classList.toggle('lit', lit)
+      ability.classList.toggle('mega', megaDef !== null)
+      if (megaDef) abilityImg.setAttribute('src', megaIcon())
+      else if (id) abilityImg.setAttribute('src', abilityIcon(id))
+      setText(abilityName, megaDef ? megaDef.ability : id ? ABILITIES[id].name : '')
+      setText(abilityCount, stacks > 0 ? t().hud.jumps(stacks) : '')
+      ability.setAttribute('title', megaDef ? t().ability.megaNote : id ? t().abilities[id] : '')
+    }
 
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
     boss.classList.toggle('hidden', !b)

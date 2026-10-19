@@ -4,18 +4,20 @@ import type { Input } from '../engine/input'
 import { HATCHLINGS, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
 import { POLL, SUPPORTER, type PollOptionId } from '../data/supporters'
 import { pendingPicks, pickShiny, ownsShiny, shinyChoices } from '../game/shinyPicks'
-import { canWalkWith, isSupporter, parseCode, type SupporterStatus } from '../game/supporters'
+import { canWalkWith, hallOf, isSupporter, parseCode, type Companion, type SupporterStatus, type WallEntry } from '../game/supporters'
+import { savedSupporterTier } from '../game/trainer'
 import { LOCALES, locale, t } from '../i18n'
-import { eggIcon, heartIcon, medalIcon, pokeballIcon, sparkleIcon, supporterIcon } from '../render/art'
-import { frameIcon } from '../render/cosmetics'
-import { cryUrl, portraitUrl } from '../render/sprites'
+import { context2d } from '../engine/pixelart'
+import { eggIcon, giftIcon, heartIcon, medalIcon, pokeballIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { cryUrl, drawPokemon, hasShiny, loadSpecies, portraitUrl, type SpeciesSprites } from '../render/sprites'
 import { ROUTES } from '../site/routes'
 import { fetchPoll, fetchSupporterStatus, fetchWall, redeemCode, setSupporterPublic, vote } from '../supporters'
-import { h, later, rich, topRight } from './dom'
+import { h, later, rich } from './dom'
 import { hatchScene } from './incubator'
 import { profileEditor, profileScreen } from './profile'
 import { loadSave, updateSave } from './save'
 import { hint, menu, type Screen } from './screens'
+import { actionBar, backButton, shellBody, topBar } from './shell'
 import { toast } from './toasts'
 
 /**
@@ -35,26 +37,6 @@ const supportUrl = () => {
   const s = accountState()
   const handle = s.kind === 'signedIn' ? s.handle : null
   return `${ROUTES.support[locale()]}${handle ? `?u=${encodeURIComponent(handle)}` : ''}`
-}
-
-/**
- * "♥ Apoie o projeto" chip in the top-right corner of the menus before a run
- * (title and starter select), left of the account chip or the Poké Mart. It
- * opens the Apoiadores screen, and twinkles with a sparkle while a shiny
- * ticket waits for its pick; without accounts (no rewards to give) it opens
- * the support page in a new tab. Phones show just the heart. Returns a disposer.
- */
-export const supportButton = (root: HTMLElement, open: () => void) => {
-  const m = t()
-  const waiting = accountsEnabled && pendingPicks(loadSave()).length > 0
-  const label = waiting ? `${m.home.support} · ${m.supporters.banner}` : m.home.support
-  const attrs = { class: waiting ? 'support-chip box waiting' : 'support-chip box', title: label, 'aria-label': label }
-  const icon = h('img', { src: heartIcon(), alt: '' })
-  const el = accountsEnabled
-    ? h('button', { ...attrs, type: 'button', onclick: () => (playSfx('select'), later(open)) }, icon, h('span', {}, m.home.support), waiting && h('img', { class: 'support-sparkle', src: sparkleIcon(), alt: '' }))
-    : h('a', { ...attrs, href: ROUTES.support[locale()], target: '_blank', rel: 'noopener' }, icon, h('span', {}, m.home.support))
-  topRight(root).append(el)
-  return () => el.remove()
 }
 
 /* ---------------- Spatial navigation ---------------- */
@@ -406,71 +388,118 @@ const codeScreen = (root: HTMLElement, input: Input, redeemed: () => void, back:
   return { el, dispose, dim: 0.5 }
 }
 
-/** The wall: every supporter who shows themselves, oldest first; tapping one opens their profile. */
-const wallScreen = (root: HTMLElement, input: Input, back: Back): Screen => {
-  const m = t().supporters
-  const o = overlay(root, input, back)
-  let sub: Screen | null = null
+/* ---------------- Hall da Fama ---------------- */
 
-  const frame = (body: Node[], rows: { el: HTMLElement; handle: string }[]) => {
-    const backButton = h('button', { class: 'btn' }, m.back)
-    const all = [...rows.map((r) => r.el), backButton]
-    const nav = menu(input, all, (i) => {
-      playSfx('select')
-      const row = rows[i]
-      if (!row) return later(o.close)
-      later(() => {
-        o.setNav(() => {})
-        o.el.classList.add('hidden')
-        sub = profileScreen(root, input, row.handle, () => {
-          sub = null
-          o.el.classList.remove('hidden')
-          o.setNav(nav.off)
-          void load()
-        })
-      })
-    })
-    o.setNav(nav.off)
-    o.el.replaceChildren(
-      h('div', { class: 'dialog box pop supporters' }, h('div', { class: 'dialog-title' }, m.wallTitle), h('p', { class: 'account-line' }, m.wallIntro), ...body, h('div', { class: 'buttons' }, backButton), hint(m.hintKeys, m.hintTouch)),
-    )
-  }
-
-  const load = async () => {
-    frame([h('p', { class: 'profile-note blink' }, m.loading)], [])
-    const wall = await fetchWall()
-    if (!o.el.isConnected || sub) return
-    if (!wall) return frame([h('p', { class: 'profile-note' }, m.offline)], [])
-    const rows = wall.map((e) => ({
-      handle: e.handle,
-      el: h('button', { class: 'wall-row', type: 'button' }, h('img', { src: supporterIcon(e.tier), alt: m.badge(e.tier) }), h('b', {}, e.name), h('small', {}, `@${e.handle}`)),
-    }))
-    frame(rows.length > 0 ? [h('div', { class: 'wall-rows' }, ...rows.map((r) => r.el))] : [h('p', { class: 'profile-note' }, m.wallEmpty)], rows)
-  }
-
-  void load()
-  return { el: o.el, dispose: () => (sub?.dispose(), o.dispose()), dim: 0.5 }
+/** The final stage of a supporter's Pokémon (like the Trainer chip), shiny only if it has a shiny sprite; null for an API from before the Hall. */
+export const hallFace = (p: Companion | null) => {
+  if (!p) return null
+  const dex = PLAYABLE[p.id].line[PLAYABLE[p.id].line.length - 1]!.dex
+  return { dex, shiny: p.shiny && hasShiny(dex) }
 }
 
-/* ---------------- The hub ---------------- */
+type Face = NonNullable<ReturnType<typeof hallFace>>
 
-/** One line of what donating brings: an icon and light markup. */
-const perk = (src: string, text: string) => h('li', {}, h('img', { src, alt: '' }), rich(text))
+/**
+ * A supporter's portrait for a round avatar: a Poké Ball wobbles in its
+ * place while it downloads, a shiny that won't load wears the normal colors,
+ * and a portrait that never comes leaves the Poké Ball resting.
+ */
+export const hallPortrait = (face: Face) => {
+  const img = h('img', { class: 'ball wobble', src: pokeballIcon(), alt: '' })
+  const urls = [...new Set([portraitUrl(face.dex, face.shiny), portraitUrl(face.dex)])]
+  const next = () => {
+    const url = urls.shift()
+    if (!url) return void img.classList.remove('wobble')
+    const probe = new Image()
+    probe.onload = () => ((img.src = url), img.classList.remove('ball', 'wobble'))
+    probe.onerror = next
+    probe.src = url
+  }
+  next()
+  return img
+}
 
-const perks = () => {
-  const p = t().supporters.perks
+/**
+ * A Lenda (gold tier): their Pokémon idling on a gold pedestal under a
+ * spotlight, name, @handle and equipped title. A Poké Ball wobbles on the
+ * pedestal while the sheets download (and rests there if they never come);
+ * then `draw` animates the sprite on the frame's tick.
+ */
+const legendCard = (e: WallEntry) => {
+  const face = hallFace(e.pokemon)
+  const canvas = h('canvas', { class: 'legend-sprite', width: 96, height: 88 })
+  const ball = h('img', { class: `legend-ball${face ? ' wobble' : ''}`, src: pokeballIcon(), alt: '' })
+  let sprites: SpeciesSprites | null = null
+  if (face)
+    void loadSpecies(face.dex, face.shiny)
+      .catch(() => loadSpecies(face.dex))
+      .then(
+        (loaded) => ((sprites = loaded), ball.replaceWith(canvas)),
+        () => ball.classList.remove('wobble'),
+      )
+  const el = h(
+    'button',
+    { class: 'legend-card', type: 'button', 'aria-label': `${e.name} @${e.handle}` },
+    h('span', { class: 'legend-beam', 'aria-hidden': 'true' }),
+    h('img', { class: 'legend-spark one', src: sparkleIcon(), alt: '' }),
+    h('img', { class: 'legend-spark two', src: sparkleIcon(), alt: '' }),
+    h('span', { class: 'legend-stage' }, ball, h('span', { class: 'legend-pedestal' })),
+    h('b', { class: 'legend-name' }, e.name),
+    h('small', { class: 'legend-handle' }, `@${e.handle}`),
+    e.title && h('em', { class: 'legend-title' }, t().achievements.titles[e.title]),
+  )
+  const draw = (time: number) => {
+    if (!sprites) return
+    const ctx = context2d(canvas)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // Small Pokémon get doubled (whole pixels), like the Pokédex; big ones stay 1:1.
+    drawPokemon(ctx, sprites, 'Idle', 0, time, canvas.width / 2, canvas.height - 6, { scale: sprites.bodyH * 2 <= canvas.height - 24 ? 2 : 1 })
+  }
+  return { el, draw }
+}
+
+/** A supporter's chip: avatar, name, @handle and ♥ (phones keep the avatar and name). */
+const fanChip = (e: WallEntry) => {
+  const face = hallFace(e.pokemon)
   return h(
-    'ul',
-    { class: 'supporter-perks' },
-    perk(frameIcon('supporter'), p.title),
-    perk(heartIcon(), p.badge),
-    perk(sparkleIcon(), p.shiny),
-    perk(pokeballIcon(), p.companion),
-    perk(medalIcon('gold'), p.wall),
-    perk(eggIcon('rare'), p.vote),
-    perk(supporterIcon('gold'), p.gold),
+    'button',
+    { class: 'fan-chip', type: 'button', 'aria-label': `${e.name} @${e.handle}` },
+    h('span', { class: 'fan-avatar' }, face ? hallPortrait(face) : h('img', { src: pokeballIcon(), class: 'ball', alt: '' })),
+    h('span', { class: 'fan-who' }, h('b', {}, e.name), h('small', {}, `@${e.handle}`)),
+    h('img', { class: 'fan-heart', src: heartIcon(), alt: '' }),
   )
 }
+
+/**
+ * The legends' strip: a row on wide screens (it scrolls sideways when they
+ * don't fit), a swipeable carousel with dots on phones. The card nearest the
+ * middle is `centered` (lit on phones) and its dot is on.
+ */
+const legendStrip = (cards: HTMLElement[]) => {
+  const strip = h('div', { class: 'legend-strip' }, ...cards)
+  const dots = cards.map(() => h('i', {}))
+  const mark = () => {
+    const mid = strip.scrollLeft + strip.clientWidth / 2
+    let best = 0
+    cards.forEach((c, i) => Math.abs(c.offsetLeft + c.offsetWidth / 2 - mid) < Math.abs(cards[best]!.offsetLeft + cards[best]!.offsetWidth / 2 - mid) && (best = i))
+    cards.forEach((c, i) => (c.classList.toggle('centered', i === best), dots[i]!.classList.toggle('on', i === best)))
+  }
+  strip.addEventListener('scroll', mark, { passive: true })
+  // Laid out on the next frame: then the first card is the centered one.
+  requestAnimationFrame(mark)
+  return [strip, cards.length > 1 ? h('div', { class: 'hall-dots', 'aria-hidden': 'true' }, ...dots) : null]
+}
+
+/** One perk of the call to action: an icon over a short label. A `run` makes it a button (a supporter's actions). */
+type Tile = { icon: string; label: string; title?: string; run?: () => void; glow?: boolean }
+
+const tileEl = (tile: Tile) =>
+  h(
+    tile.run ? 'button' : 'span',
+    { class: `hall-tile${tile.glow ? ' glow' : ''}`, ...(tile.run ? { type: 'button' } : {}), title: tile.title ?? tile.label },
+    h('img', { src: tile.icon, alt: '' }),
+    h('small', {}, tile.label),
+  )
 
 export type SupportersActions = {
   /** Starts a run with a Pokémon just picked shiny. */
@@ -479,27 +508,36 @@ export type SupportersActions = {
 }
 
 /**
- * The Apoiadores screen (the heart chip on the title and the starter select):
- * the perks, "Doar" (the support page in a new tab, with the player's handle),
- * and for an account its standing and what it can do: pick its shiny (one per
- * ticket), choose a companion, vote, see the wall, redeem a code, show or hide
- * its badge. `open: 'pick'` goes straight to the shiny picker while a ticket waits (the heart chip twinkles then).
+ * The Hall da Fama (the lobby's Hall card, the Trainer Card's supporter
+ * row): the Lendas (gold) on
+ * pedestals, the other supporters as chips (a tap opens their profile), and
+ * the call to action with the cosmetic perks and "Apoiar" (the support page
+ * in a new tab, with the player's handle). A supporter's perks become their
+ * actions there: pick their shiny (one per ticket), the companion, the poll,
+ * a code, show or hide themselves; anyone else gets the poll, a code and
+ * sign in as links. Wide screens put the call to action in a column on the
+ * right; phones in a footer. `open: 'pick'` goes straight to the shiny picker
+ * while a ticket waits (the lobby's Hall card sparkles then).
  */
 export const supportersScreen = (root: HTMLElement, input: Input, actions: SupportersActions, open: 'pick' | null = null): Screen => {
-  const el = h('div', { class: 'screen dim' })
-  let nav: ReturnType<typeof menu> | null = null
+  const el = h('div', { class: 'screen shell hall-screen', style: `--sparkle:url(${sparkleIcon()})` })
+  let nav: ReturnType<typeof spatialNav> | null = null
   let sub: Screen | null = null
   /** The account's standing: undefined while it loads, null when the API can't say. */
   let status: SupporterStatus | null | undefined
+  /** The wall: undefined while it loads, null offline. */
+  let wall: WallEntry[] | null | undefined
+  let legends: ReturnType<typeof legendCard>[] = []
   let closed = false
 
   const openSub = (make: (back: Back) => Screen) => {
     nav?.off()
+    nav = null
     el.classList.add('hidden')
     sub = make(() => {
       sub = null
       el.classList.remove('hidden')
-      build(false)
+      build()
     })
   }
 
@@ -509,76 +547,143 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
     status = undefined
     void fetchSupporterStatus().then((next) => {
       status = next
-      if (!closed) build(false)
+      if (!closed) build()
     })
   }
 
-  /** What the account part says right now. */
-  const standing = (): Node | null => {
+  const profile = (handle: string) => openSub((back) => profileScreen(root, input, handle, back))
+  const picker = () => openSub((back) => shinyPicker(root, input, { play: (id) => (dispose(), actions.play(id)) }, back))
+
+  /** The tier the top bar's chip shows: the API's word once it came, the save's until then. */
+  const myTier = () => (accountState().kind !== 'signedIn' ? null : status === undefined || status === null ? savedSupporterTier(loadSave()) : status.tier)
+
+  /** The account's line in the call to action, for anyone who isn't a supporter yet. */
+  const standing = (): string | null => {
     const m = t().supporters
     const s = accountState()
-    const line = (text: string, cls = '') => h('p', { class: `account-line ${cls}` }, text)
     if (!accountsEnabled) return null
-    if (s.kind !== 'signedIn') return line(m.guest, 'account-note')
-    if (s.handle === null) return line(m.noHandle, 'account-note')
-    if (status === undefined) return line(m.loading, 'blink')
-    if (status?.tier && status.since) return h('p', { class: 'account-line supporter-since' }, h('img', { src: supporterIcon(status.tier), alt: '' }), rich(m.since(status.tier, longDay(status.since))))
-    return line(status === null && isSupporter(loadSave()) ? m.offline : m.none, 'account-note')
+    if (s.kind !== 'signedIn') return m.guest
+    if (s.handle === null) return m.noHandle
+    if (status === undefined) return m.loading
+    return status === null && isSupporter(loadSave()) ? m.offline : m.none
   }
 
-  const build = (opening: boolean) => {
-    if (sub || closed) return
+  /** The call to action: the perks (a supporter's actions), the links and "Apoiar". Returns it and its buttons in order. */
+  const cta = () => {
     const m = t().supporters
     const s = accountState()
     const save = loadSave()
-    const pending = pendingPicks(save).length
     const signedIn = s.kind === 'signedIn'
-    const all: Action[] = [
-      { label: `♥ ${m.donate}`, run: () => void window.open(supportUrl(), '_blank', 'noopener') },
-      ...(accountsEnabled && s.kind === 'guest' ? [{ label: m.signIn, run: () => void signIn() }] : []),
-      ...(signedIn && s.handle === null ? [{ label: m.createProfile, run: () => openSub((back) => profileEditor(root, input, () => back())) }] : []),
-      ...(pending > 0 ? [{ label: m.pick(pending), run: () => openSub((back) => shinyPicker(root, input, { play: (id) => (dispose(), actions.play(id)) }, back)) }] : []),
-      ...(isSupporter(save) ? [{ label: m.companion, run: () => openSub((back) => companionPicker(root, input, back)) }] : []),
-      { label: m.vote, run: () => openSub((back) => pollScreen(root, input, status ?? null, back)) },
-      { label: m.wall, run: () => openSub((back) => wallScreen(root, input, back)) },
-      ...(signedIn ? [{ label: m.code, run: () => openSub((back) => codeScreen(root, input, loadStatus, back)) }] : []),
-      ...(status?.tier
-        ? [
-            {
-              label: m.show(status.public),
-              run: async () => {
-                const next = await setSupporterPublic(!status?.public)
-                if (!next) return toast(root, m.offline, 2200)
-                status = next
-                build(false)
-              },
+    const tier = myTier()
+    const pending = pendingPicks(save).length
+    const poll = () => openSub((back) => pollScreen(root, input, status ?? null, back))
+    const code = () => openSub((back) => codeScreen(root, input, loadStatus, back))
+    const tiles: Tile[] = tier
+      ? [
+          ...(pending > 0 ? [{ icon: sparkleIcon(), label: m.perks.shiny, title: m.pick(pending), run: picker, glow: true }] : []),
+          ...(isSupporter(save) ? [{ icon: eggIcon('friend'), label: m.perks.companion, title: m.companion, run: () => openSub((back) => companionPicker(root, input, back)) }] : []),
+          { icon: giftIcon(), label: m.perks.vote, title: m.vote, run: poll },
+          { icon: pokeballIcon(), label: m.codeShort, title: m.code, run: code },
+          {
+            icon: heartIcon(),
+            label: m.shown(status?.public !== false),
+            title: m.show(status?.public !== false),
+            run: async () => {
+              const next = await setSupporterPublic(!status?.public)
+              if (!next) return toast(root, m.offline, 2200)
+              status = next
+              build()
             },
-          ]
-        : []),
-      { label: m.back, run: close },
-    ]
-    const buttons = all.map((a) => h('button', { class: 'btn' }, a.label))
-    if (pending > 0) buttons[all.findIndex((a) => a.label === m.pick(pending))]?.classList.add('glow')
-    nav?.off()
-    nav = menu(input, buttons, (i) => (playSfx('select'), later(all[i]!.run)), { initial: Math.min(nav?.index ?? 0, buttons.length - 1) })
-    el.replaceChildren(
-      h(
-        'div',
-        { class: opening ? 'dialog box pop supporters' : 'dialog box supporters' },
-        h('div', { class: 'dialog-title' }, h('img', { class: 'title-heart', src: heartIcon(), alt: '' }), m.title),
-        h('p', { class: 'account-line' }, m.lead),
-        standing(),
-        h('h3', { class: 'pick-label' }, m.perksTitle),
-        perks(),
-        h('div', { class: 'buttons supporter-buttons' }, ...buttons),
-        hint(m.hintKeys, m.hintTouch),
-      ),
+          },
+        ]
+      : [
+          { icon: supporterIcon('gold'), label: m.perks.title },
+          { icon: medalIcon('gold'), label: m.perks.frame },
+          { icon: sparkleIcon(), label: m.perks.shiny },
+          { icon: eggIcon('friend'), label: m.perks.companion },
+          { icon: giftIcon(), label: m.perks.vote },
+        ]
+    const links: Action[] = tier
+      ? []
+      : [
+          ...(accountsEnabled && s.kind === 'guest' ? [{ label: m.signIn, run: () => void signIn() }] : []),
+          ...(signedIn && s.handle === null ? [{ label: m.createProfile, run: () => openSub((back) => profileEditor(root, input, () => back())) }] : []),
+          { label: m.vote, run: poll },
+          ...(signedIn ? [{ label: m.code, run: code }] : []),
+        ]
+    const tileEls = tiles.map(tileEl)
+    const linkEls = links.map((a) => h('button', { class: 'hall-link', type: 'button' }, a.label))
+    const support = h('button', { class: 'hall-support', type: 'button' }, h('span', {}, m.donate), h('img', { src: heartIcon(), alt: '' }))
+    const note = tier && status?.since ? h('p', { class: 'hall-cta-note since' }, h('img', { src: supporterIcon(tier), alt: '' }), rich(m.since(tier, longDay(status.since)))) : null
+    const line = tier ? null : standing()
+    const el = actionBar(
+      h('h3', { class: 'hall-cta-title' }, tier ? m.yours : m.join),
+      note ?? h('p', { class: 'hall-cta-note' }, m.cosmetic),
+      h('div', { class: 'hall-tiles' }, ...tileEls),
+      line !== null && h('p', { class: `hall-cta-line${status === undefined && line === m.loading ? ' blink' : ''}` }, line),
+      linkEls.length > 0 && h('div', { class: 'hall-links' }, ...linkEls),
+      tier ? null : h('p', { class: 'hall-cta-gold' }, rich(m.gold)),
+      support,
     )
+    el.classList.add('hall-cta')
+    const buttons = [
+      ...tiles.flatMap((tile, i) => (tile.run ? [{ el: tileEls[i]!, run: tile.run }] : [])),
+      ...links.map((a, i) => ({ el: linkEls[i]!, run: a.run })),
+      { el: support, run: () => void window.open(supportUrl(), '_blank', 'noopener') },
+    ]
+    return { el, buttons }
   }
 
-  const offState = onAccountChange(() => (loadStatus(), build(false)))
+  /** The Lendas and the supporters, or why they aren't here. Returns the sections and their buttons in order. */
+  const hall = () => {
+    const m = t().supporters
+    const sections: Node[] = [h('p', { class: 'hall-lead' }, m.lead)]
+    const buttons: { el: HTMLElement; run: () => void }[] = []
+    legends = []
+    if (wall === undefined || wall === null) return { sections: [...sections, h('p', { class: `hall-note${wall === undefined ? ' blink' : ''}` }, wall === undefined ? m.loading : m.offline)], buttons }
+    const split = hallOf(wall)
+    legends = split.legends.map(legendCard)
+    const empty = h('div', { class: 'legend-card empty' }, h('span', { class: 'legend-stage' }, h('span', { class: 'legend-pedestal' })), h('b', { class: 'legend-name' }, m.firstLegend))
+    sections.push(
+      h(
+        'section',
+        { class: 'hall-legends' },
+        h('h3', { class: 'hall-label gold' }, `${m.legends} · ${m.goldFrom}`),
+        ...(legends.length > 0 ? legendStrip(legends.map((c) => c.el)) : [h('div', { class: 'legend-strip' }, empty)]),
+      ),
+    )
+    const fans = split.supporters.map((e) => ({ e, el: fanChip(e) }))
+    sections.push(
+      h(
+        'section',
+        { class: 'hall-fans' },
+        h('h3', { class: 'hall-label pink' }, m.fans(split.supporters.length)),
+        fans.length > 0 ? h('div', { class: 'fan-grid' }, ...fans.map((f) => f.el)) : h('p', { class: 'hall-note' }, m.wallEmpty),
+      ),
+    )
+    buttons.push(...split.legends.map((e, i) => ({ el: legends[i]!.el, run: () => profile(e.handle) })), ...fans.map((f) => ({ el: f.el, run: () => profile(f.e.handle) })))
+    return { sections, buttons }
+  }
+
+  const build = () => {
+    if (sub || closed) return
+    const m = t().supporters
+    const tier = myTier()
+    const body = hall()
+    const call = cta()
+    const all = [...body.buttons, ...call.buttons]
+    const at = nav?.index
+    nav?.off()
+    // The highlight starts on "Apoiar", or on the shiny while a ticket waits.
+    const start = call.buttons.findIndex((b) => b.el.classList.contains('glow'))
+    nav = spatialNav(input, all.map((b) => b.el), (i) => (playSfx('select'), later(all[i]!.run)), at ?? body.buttons.length + (start >= 0 ? start : call.buttons.length - 1))
+    const you = tier && h('span', { class: `shell-chip hall-you ${tier}`, title: m.you(tier) }, h('img', { src: supporterIcon(tier), alt: '' }), h('span', {}, m.you(tier)))
+    el.replaceChildren(topBar({ left: backButton(close), title: m.title, right: [you] }), shellBody(...body.sections), call.el)
+  }
+
+  const offState = onAccountChange(() => (loadStatus(), build()))
   // A redeemed code's gifts land on the next sync: the shiny ticket and the companion show up then.
-  const offGifts = onGifts(() => build(false))
+  const offGifts = onGifts(() => build())
   const offKeys = input.onKey((key) => !sub && (key === 'Escape' || key === 'Backspace') && close())
 
   function dispose() {
@@ -600,9 +705,20 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
 
   root.append(el)
   loadStatus()
-  build(true)
-  if (open === 'pick' && pendingPicks(loadSave()).length > 0) openSub((back) => shinyPicker(root, input, { play: (id) => (dispose(), actions.play(id)) }, back))
-  return { el, tick: (time) => sub?.tick?.(time), dispose, dim: 0.5 }
+  build()
+  void fetchWall().then((next) => {
+    wall = next
+    // The lists moved under the highlight: it starts over.
+    nav?.off()
+    nav = null
+    if (!closed) build()
+  })
+  if (open === 'pick' && pendingPicks(loadSave()).length > 0) picker()
+  const tick = (time: number) => {
+    if (sub) return sub.tick?.(time)
+    for (const card of legends) card.draw(time)
+  }
+  return { el, tick, dispose, dim: 0.5 }
 }
 
 /**

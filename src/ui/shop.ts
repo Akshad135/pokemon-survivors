@@ -11,29 +11,11 @@ import { equipStyle, ownsStyle } from '../game/style'
 import { bagIcon, coinIcon, eggIcon, upgradeIcon } from '../render/art'
 import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
-import { h, later, setText, topRight } from './dom'
+import { h, later, setText } from './dom'
 import { counterToday, loadSave, today, writeSave } from './save'
-import { menu, type Screen } from './screens'
+import { hint, menu, type Screen } from './screens'
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
-
-/**
- * Small Poké Mart entry on the title screen (top-right corner). `L` opens it too.
- * Returns a disposer.
- */
-export const martButton = (root: HTMLElement, input: Input, onOpen: () => void) => {
-  const el = h(
-    'button',
-    { class: 'mart-entry box', 'aria-label': t().mart.open },
-    h('img', { src: coinIcon(2), alt: '' }),
-    h('span', { class: 'mart-entry-text' }, h('b', {}, 'POKé MART'), h('span', {}, formatPokeDollars(loadSave().wallet))),
-    h('span', { class: 'key-hint' }, 'L'),
-  )
-  el.addEventListener('click', () => later(onOpen))
-  const off = input.onKey((key) => key === 'KeyL' && later(onOpen))
-  topRight(root).append(el)
-  return () => (off(), el.remove())
-}
 
 /** Yes/no dialog layered over the mart. Defaults to "no" so a stray Enter is harmless. */
 const confirmDialog = (root: HTMLElement, input: Input, text: string, onAnswer: (yes: boolean) => void): Screen => {
@@ -391,7 +373,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
       list,
       h('div', { class: 'mart-desc' }, descIconBox, h('div', { class: 'mart-desc-body' }, descTitle, descText), buy),
       buttons,
-      h('p', { class: 'hint' }, m.hint),
+      hint(m.hint, ''),
     ),
   )
   root.append(el)

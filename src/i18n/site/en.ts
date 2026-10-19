@@ -42,7 +42,7 @@ export const siteEn: SiteMessages = {
   pokedex: {
     title: 'Pokémon Survivors Pokédex: starters, enemies, bosses and legendaries',
     description:
-      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 52 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
+      'Every Pokémon in Pokémon Survivors with animated and shiny sprites: the 27 starters and the 55 egg families with their evolutions, wild enemies, bosses and legendaries. Types, in-game stats, moves, specials and when each one shows up.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `All ${count} Pokémon in Pokémon Survivors, with the game's own numbers: starters from every region, the families that hatch from eggs and their evolutions, the wild horde, the bosses and the legendaries. Hover (or tap) to see the sprite walk, and use ★ to see the shiny.`,
@@ -74,6 +74,7 @@ export const siteEn: SiteMessages = {
     special: 'Special attack',
     specialFinal: 'At the final evolution',
     learnset: 'Moves it learns',
+    learnStart: 'from the start',
     wildStats: { hp: 'HP', damage: 'Contact damage', speed: 'Speed', xp: 'EXP' },
     eventNote: 'Shows up as a map event: it runs from you and drops coins with every hit. Knock it out before it escapes for the Pay Day jackpot.',
     wildNote: 'Base values. Regular enemies get tougher every minute; bosses don\'t.',
@@ -202,20 +203,21 @@ export const siteEn: SiteMessages = {
     controls: {
       head: { action: 'Action', keyboard: 'Keyboard', gamepad: 'Gamepad', touch: 'Touch' },
       rows: [
-        ['Move', 'WASD or arrow keys', '— (not yet)', 'Drag anywhere on the screen (floating joystick)'],
+        ['Move', 'WASD or arrow keys', 'D-pad or left stick', 'Drag anywhere on the screen (floating joystick)'],
         ['Special attack', 'Space', 'A (Xbox) or ✕ (PlayStation)', 'Round button, bottom right'],
         ['Mega Evolution', 'E', 'Y (Xbox) or △ (PlayStation)', 'MEGA button, above the special'],
         ['Lunge (Quick Attack, Extreme Speed)', 'Shift', 'X (Xbox) or □ (PlayStation)', 'Round button, left of the special'],
         ['Pause', 'Esc or P', 'Start', 'Button, top right'],
         ['Navigate menus', 'Arrows, Enter confirms, Esc goes back', 'D-pad or left stick, A confirms, B goes back', 'Tap'],
         ['Pick an upgrade', '1 to 3, or ↑ ↓ and Enter', 'D-pad and A', 'Tap it'],
-        ['Pick your starter', '← → partner, ↑ ↓ region, 1 to 9, Enter', 'D-pad and A', 'Tap to inspect, tap again to pick'],
-        ['Open the Poké Mart', 'L on the starter select', '—', 'POKé MART button, top right'],
+        ['Pick your partner', 'Arrows in the grid, Tab Starters/Eggs, 1 to 9 region, I details, Enter starts', 'D-pad (↓ on the last row leads to Eggs) and A', 'Tap to view, tap again (or Start) to play'],
+        ['Open the Poké Mart', 'L on the partner select', '—', 'Tap the wallet (₽) at the top of the partner select'],
         ['Sound on/off', 'M', 'Settings', 'Settings'],
         ['Language', 'I on the title screen, or Settings', 'Settings', 'PT | EN | ES on the title screen, or Settings'],
       ],
       notes: [
-        'On a gamepad, the D-pad and left stick navigate every menu, A confirms, B goes back and Start pauses. In a run, A fires the special attack, but the gamepad can\'t move your Pokémon yet: use the keyboard or touch to move.',
+        'On a gamepad, the D-pad and left stick move your Pokémon and navigate every menu, A confirms, B goes back and Start pauses. In a run, A fires the special attack.',
+        'In Settings → Controls → Keyboard and gamepad, you can change the key and the gamepad button of every action (move, special, Mega, lunge, pause, confirm and back). The arrows and Esc always work.',
         'On phones you can install the game as a fullscreen app: open the browser menu and choose "Add to Home Screen".',
       ],
     },
@@ -223,13 +225,13 @@ export const siteEn: SiteMessages = {
       paragraphs: (minutes: number, starters: number) => [
         `Pick one of ${starters} starters, Kanto to Paldea. Each one has its own stats, starting move, learnset and special attack (see the Pokédex).`,
         `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run. After that you can keep going in endless mode.`,
-        'If your HP hits zero the run is over (unless you are holding a Revive). The Poké Dollars you picked up go to your wallet.',
+        'If your HP hits zero the run is over (unless you are holding a Revive, or are in a rift’s arena, which just casts you back out). The Poké Dollars you picked up go to your wallet.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Regular enemies get tougher every minute (bosses don't): ${rows.map(([at, hp, dmg]) => `at ${at}, ${hp}x HP and ${dmg}x damage`).join('; ')}.`,
       difficulty: 'Difficulty',
       difficultyIntro:
-        'Pick the difficulty on the Pokémon select screen, under the choose button (or with the X key). Every level is open from the start and your pick is saved. Normal is the base run; the other levels multiply:',
+        'Pick the difficulty in the partner select\'s bottom bar, next to the Start button (or with the X key). Every level is open from the start and your pick is saved. Normal is the base run; the other levels multiply:',
       difficultyHead: ['Level', 'Enemy HP', 'Damage you take', 'Spawn rate', 'Enemy speed', 'Scaling per minute', 'Healing'],
       timeline: 'Timeline',
       timeHead: 'Time',
@@ -263,6 +265,15 @@ export const siteEn: SiteMessages = {
         'Type items (Charcoal, Mystic Water…) only show up if your Pokémon learns moves of that type. When there is nothing left to offer, you get an Oran Berry (+40 HP).',
         'Reroll (draw new offers) and Skip (pass on a level up without picking anything, handy when no offer fits) are charges bought in the Poké Mart.',
       ],
+      choices: (rarePercent: number, shinyOneIn: number) => [
+        'A run starts with a draft: with the clock stopped, you pick your 2nd move out of 3 from your Pokémon’s list.',
+        'Every base move splits into two paths at Lv 4 and Lv 7: the card says "2 paths" and, once picked, opens into both. Each path changes how the move plays (bouncing, exploding, leaving a trail, echoing…), not just its numbers.',
+        `Every card rolls a rarity: a rare one (${n(rarePercent)}% chance, blue frame) gives 2 levels at once, and a shiny one (1 in ${shinyOneIn}, twice as often with the Shiny Charm) is a free pick, followed by another.`,
+        'Forget takes an offer out of the run: the card flies off, the slot is rerolled and that move or item never comes back. Charges come from the Poké Mart’s Escape Rope, every boss beaten and every evolution.',
+        'The move list grows with your Pokémon: each evolution unlocks new moves (a toast shows which), and they show up more often for the next 3 level ups. There are more moves than slots, so every run leaves some out.',
+        'Beaten bosses drop a TM with a move from outside the learnset, the Move Tutor teaches types you don’t have, and clearing a rift offers the legendary’s own move (one per run). With every slot full, learning one asks you to forget a move.',
+      ],
+      abilities: 'At its first evolution, your Pokémon awakens an Ability: pick 1 of 3 (the third is the Hidden Ability), and it lasts the whole run. Eevee, Snorunt, Scyther, Charcadet, Kirlia and Poliwhirl also ask what to evolve into, and each form has its own type, special, moves and Abilities.',
       evolution: (first: number, second: number) =>
         `Your Pokémon evolves at Lv ${first} and Lv ${second}, just like on the handhelds. Each evolution adds HP and stats, and the final one powers up the special attack.`,
       itemsTitle: 'Held items',
@@ -279,6 +290,20 @@ export const siteEn: SiteMessages = {
       itemHead: 'Item',
       resultHead: 'Evolution',
       noEvolution: (moves: string) => `No evolution yet: ${moves}.`,
+      neverEvolves: 'Signature, TM, legendary and duo moves don’t evolve: they are already a final move and grow along their own paths.',
+      duoTitle: 'Duo moves',
+      duoParagraphs: [
+        'Take two moves to max level (or evolve them) and, if their types make one of the recipes below, a golden card offers to fuse them into a duo move: it takes the first one’s slot, frees the second’s and grows up to Lv 5. The two moves it used never come back.',
+        'Recipes go by type, so they work with any Pokémon. A run fits only 1 duo move, and the Poké Ball never fuses moves on its own.',
+      ],
+      duoTypesHead: 'Types',
+      duoHead: 'Duo move',
+      cursedTitle: 'Cursed items',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `From ${minutes.toLocaleString('en-US')} min on, a locked chest has a ${Math.round(chance * 100)}% chance to hide a cursed item: very strong, but with a price. You choose to take it or leave it. It takes no item slot, stays until the run ends, and you can hold up to ${max}.`,
+      ],
+      cursedUpHead: 'Upside',
+      cursedDownHead: 'Price',
     },
     special: {
       paragraphs: (min: number) => [
@@ -299,13 +324,18 @@ export const siteEn: SiteMessages = {
       statusHead: 'Status',
       movesHead: 'Inflicted by',
       effectHead: 'Effect',
-      names: { burn: 'Burn', poison: 'Poison', paralysis: 'Paralysis', slow: 'Slow', sleep: 'Sleep' },
+      names: { burn: 'Burn', poison: 'Poison', paralysis: 'Paralysis', slow: 'Slow', sleep: 'Sleep', freeze: 'Freeze', mark: 'Mark', confuse: 'Confusion', seed: 'Seed', weaken: 'Weakened' },
       effects: {
         burn: (attack: number) => `Damage over time. Burned enemies deal only ${n(attack * 100)}% contact damage.`,
         poison: (stacks: number) => `Damage over time that stacks up to ${stacks}x.`,
         paralysis: (boss: number) => `Freezes the enemy for a moment, then it stutters now and then. Lasts ${n(boss * 100)}% as long on bosses.`,
         slow: (boss: number) => `Slows down anything close. Lasts ${n(boss * 100)}% as long on bosses.`,
         sleep: (seconds: number, boss: number) => `Enemies on screen fall asleep for ${seconds}s. Lasts ${n(boss * 100)}% as long on bosses.`,
+        freeze: (shatter: number, boss: number) => `Freezes the enemy in place. The next hit deals ${shatter}x damage and breaks the ice. Lasts ${n(boss * 100)}% as long on bosses.`,
+        mark: (stacks: number) => `A marked enemy takes more damage from every hit, stacking up to ${stacks}x.`,
+        confuse: () => 'The enemy wanders aimlessly and hurts the enemies it bumps into. Bosses are immune.',
+        seed: (heal: number, jumps: number) => `Damage over time that heals you for ${n(heal * 100)}% of it. When the enemy faints, the seed jumps to ${jumps} neighbors.`,
+        weaken: (boss: number) => `Mud in the eyes: the enemy deals less contact damage. On bosses it lasts ${n(boss * 100)}% as long.`,
       },
       flute: 'Poké Flute (map item)',
       itemsNote: 'King\'s Rock raises the status chance, Toxic Orb raises burn and poison damage, and Light Clay makes statuses last longer.',
@@ -323,7 +353,7 @@ export const siteEn: SiteMessages = {
     rifts: {
       paragraphs: (r) => [
         `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so every run gets 3 rifts, even when bosses take a while.`,
-        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away, an island ringed by surf, a meteor in space. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward.`,
+        `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away, an island ringed by surf, a meteor in space. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward. Fainting in the arena doesn’t end the run either: the rift casts you back onto the map with ${r.fallHp}% HP, no reward, and your Revive stays in the Bag.`,
         'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
         `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
       ],
@@ -458,6 +488,11 @@ export const siteEn: SiteMessages = {
         how: (ttl: number) => `Runs from you and escapes after ${ttl}s. Your moves can hit it.`,
         reward: (jackpot: string) => `A coin with every hit, and the Pay Day (${jackpot}) if it faints.`,
       },
+      tutor: {
+        name: 'Move Tutor',
+        how: (from: number, until: number) => `Pitches a tent once between minutes ${from} and ${until} (sometimes once more). Stand in its ring.`,
+        reward: (price: string) => `Teaches 1 of 2 moves of types you lack. The first lesson is free; the next costs ${price} of the run's money.`,
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
@@ -521,7 +556,7 @@ export const siteEn: SiteMessages = {
       late: "The payment isn't confirmed yet. Come back to this page in a little while to see your code.",
       sent: (handle: string) => `The rewards went to @${handle}. They arrive as a Mystery Gift the next time the game syncs.`,
       code: 'Your redeem code:',
-      codeHint: "In the game, sign in and open the ♥ on the title → I have a code. It works once, for the account that redeems it: it can be a friend's.",
+      codeHint: "In the game, sign in and open the Hall of Fame on the title → I have a code. It works once, for the account that redeems it: it can be a friend's.",
       copy: 'Copy',
       copied: 'Copied!',
       used: "This donation's code was already redeemed.",

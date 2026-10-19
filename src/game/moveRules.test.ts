@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CHAIN_FALLOFF, chainDamage, chainTargets, HEX_BONUS, LUNGE_IFRAMES, LUNGE_MAX, LUNGE_MIN_COOLDOWN, lungeLength, lungeTarget,
+  CHAIN_FALLOFF, chainDamage, chainTargets, LUNGE_IFRAMES, LUNGE_MAX, LUNGE_MIN_COOLDOWN, lungeLength, lungeTarget,
   MINE_ARM, mineArmed, mineBlast, mineCap,
 } from './moveRules'
 import { createGame, step } from './game'
@@ -76,10 +76,8 @@ describe('chain', () => {
   })
 
   it('loses 15% per jump and hits afflicted foes ×1.7 with Hex', () => {
-    expect(chainDamage(100, 0, false)).toBe(100)
-    expect(chainDamage(100, 2, false)).toBeCloseTo(100 * CHAIN_FALLOFF * CHAIN_FALLOFF)
-    expect(chainDamage(100, 0, true)).toBe(100)
-    expect(chainDamage(100, 1, true, HEX_BONUS)).toBeCloseTo(85 * 1.7)
+    expect(chainDamage(100, 0)).toBe(100)
+    expect(chainDamage(100, 2)).toBeCloseTo(100 * CHAIN_FALLOFF * CHAIN_FALLOFF)
   })
 })
 

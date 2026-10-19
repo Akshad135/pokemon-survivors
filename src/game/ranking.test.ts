@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { RUN_LENGTH } from '../data/waves'
-import { clockAllows, freeHandle, handleProblem, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, suggestHandle, type RunResult } from './ranking'
+import { clockAllows, freeHandle, handleProblem, maxKills, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, suggestHandle, type RunResult } from './ranking'
 
 const run = (o: Partial<Record<keyof RunResult, unknown>> = {}) => ({ starter: 'charmander', stage: 1, difficulty: 'hard', time: 300, outcome: 'death', level: 20, kills: 800, version: 'abc1234', ...o })
 
 describe('parseRunResult', () => {
   it('keeps a plausible run', () => {
-    expect(parseRunResult(run())).toEqual(run())
+    expect(parseRunResult(run())).toEqual({ ...run(), branch: null })
+  })
+
+  it("keeps a branch of the run's family it evolved into, and reads any other as none", () => {
+    const eevee = (stage: number, branch: unknown) => parseRunResult(run({ starter: 'eevee', stage, branch }))?.branch
+    expect(eevee(1, 'espeon')).toBe('espeon')
+    // Another family's branch, one Eevee hasn't evolved into yet, garbage.
+    for (const [stage, branch] of [[1, 'gallade'], [0, 'espeon'], [1, 'mewtwo'], [1, 7]] as const) expect(eevee(stage, branch)).toBeNull()
+    // Kirlia (stage 1) isn't Gardevoir yet.
+    expect(parseRunResult(run({ starter: 'ralts', stage: 1, branch: 'gardevoir' }))?.branch).toBeNull()
   })
 
   it('refuses unknown Pokémon, difficulties, outcomes and stages', () => {
@@ -19,8 +28,13 @@ describe('parseRunResult', () => {
   })
 
   it('refuses more faints than the clock allows, and impossible times', () => {
-    expect(parseRunResult(run({ kills: 300 * RANKED.maxKillRate + 1 }))).toBeNull()
+    expect(parseRunResult(run({ kills: maxKills(300) + 1 }))).toBeNull()
     for (const time of [-1, Number.NaN, RANKED.maxTime + 1, '300']) expect(parseRunResult(run({ time }))).toBeNull()
+  })
+
+  it('lets long endless runs faint far more per second', () => {
+    // A real 2-hour endless run: 342,655 faints in 7,335 s (~47/s).
+    expect(parseRunResult(run({ outcome: 'victory', time: 7335, level: 430, kills: 342_655 }))).not.toBeNull()
   })
 })
 

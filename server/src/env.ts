@@ -29,6 +29,8 @@ export const loadEnv = () => {
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,
     /** Optional: the donation Payment Link's id (`plink_…`); set, other Checkout Sessions of the account are ignored. */
     stripePaymentLink: process.env.STRIPE_PAYMENT_LINK || null,
+    /** Emails (comma separated, `ADMIN_EMAILS`) whose verified owners run the gift desk (`admin.ts`). Empty: nobody is admin. */
+    adminEmails: (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
     /** Whether the game at `origin` may call the API (CORS) and own its tokens (`azp`). */
     allowedOrigin: (origin: string) => origins.includes(origin) || LOCALHOST.test(origin),
   }

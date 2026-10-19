@@ -37,8 +37,16 @@ export type GiftContent =
 
 export type GiftKind = GiftContent['kind']
 
-/** Why it came: an invite's welcome (from the inviter's handle), friends brought, or a donation (`game/supporters.ts`). */
-export type GiftReason = { kind: 'welcome'; from: string | null } | { kind: 'friends'; count: number } | { kind: 'support'; tier: SupporterTier }
+/**
+ * Why it came: an invite's welcome (from the inviter's handle), friends
+ * brought, a donation (`game/supporters.ts`), or a present from the game's
+ * admin (`game/admin.ts`, from their handle).
+ */
+export type GiftReason =
+  | { kind: 'welcome'; from: string | null }
+  | { kind: 'friends'; count: number }
+  | { kind: 'support'; tier: SupporterTier }
+  | { kind: 'staff'; from: string | null }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
 
@@ -93,6 +101,7 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (v.kind === 'welcome') return { kind: 'welcome', from: parseHandle(v.from) }
   if (v.kind === 'friends') return { kind: 'friends', count: wholeNumber(v.count) }
   if (v.kind === 'support' && isSupporterTier(v.tier)) return { kind: 'support', tier: v.tier }
+  if (v.kind === 'staff') return { kind: 'staff', from: parseHandle(v.from) }
   return null
 }
 

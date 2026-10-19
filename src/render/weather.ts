@@ -1,4 +1,4 @@
-import { context2d, createCanvas, ellipse, fromStrings, type PixelSprite } from '../engine/pixelart'
+import { context2d, createCanvas, ellipse, fromStrings, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import type { WeatherId } from '../data/biomes'
 import { WEATHER } from '../data/weather'
@@ -87,6 +87,7 @@ const sand = (ctx: Ctx, w: number, h: number, camX: number, camY: number, t: num
 /** Stepped light shafts from the top-left, built once per view size. */
 const sunRays = (() => {
   let cache: PixelSprite | null = null
+  onCanvasReset(() => (cache = null))
   return (w: number, h: number) => {
     if (cache && cache.width === w && cache.height === h) return cache
     const c = createCanvas(w, h)
@@ -132,6 +133,7 @@ const FOG_LEVELS = 4
  */
 const fogVeil = (() => {
   let cache: { key: string; canvas: PixelSprite } | null = null
+  onCanvasReset(() => (cache = null))
   return (w: number, h: number, sight: number) => {
     const key = `${w}x${h}:${sight}`
     if (cache?.key === key) return cache.canvas

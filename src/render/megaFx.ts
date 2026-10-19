@@ -1,4 +1,4 @@
-import { blitCentered, fromStrings, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, canvasCache, fromStrings, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { MEGA, MEGAS, type MegaDef, type MegaId, type MegaForm } from '../data/megas'
 import { playerDex } from '../game/game'
@@ -38,7 +38,7 @@ export const megaIcon = () => toIconUrl('mega', MEGA_SYMBOL)
 /** A Mega Stone: a marble in the line's colors with its helix inside. 2 shell, 3 shine, 4 helix. */
 const STONE = ['..222..', '.23322.', '2332242', '2224222', '2242222', '.22422.', '..222..']
 
-const stones = new Map<string, PixelSprite>()
+const stones = canvasCache<string, PixelSprite>()
 
 const stoneSprite = (def: MegaDef) => {
   let sprite = stones.get(def.stone)

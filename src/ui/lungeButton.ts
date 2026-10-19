@@ -3,6 +3,7 @@ import { isManual, MOVES, moveStats } from '../game/moves'
 import type { Game } from '../game/types'
 import { t } from '../i18n'
 import { moveIcon } from '../render/art'
+import { boundLabel, setGlyphText } from './inputLabels'
 import { h, setStyle } from './dom'
 
 /**
@@ -14,7 +15,8 @@ import { h, setStyle } from './dom'
 export const createLungeControls = (onPress: () => void) => {
   const badgeIcon = h('img', { alt: '' })
   const buttonIcon = h('img', { alt: '' })
-  const badge = h('div', { class: 'special special-badge lunge hidden' }, badgeIcon, h('span', { class: 'special-key' }, t().shiftKey))
+  const keyLabel = h('span', { class: 'special-key' })
+  const badge = h('div', { class: 'special special-badge lunge hidden' }, badgeIcon, keyLabel)
   const button = h('button', { class: 'special lunge lunge-button hidden', type: 'button', 'aria-label': t().hud.lunge }, buttonIcon)
 
   // Claim the touch so the floating joystick (pointerdown anywhere) never sees it.
@@ -41,7 +43,8 @@ export const createLungeControls = (onPress: () => void) => {
       }
     }
     if (!owned) return
-    const fill = 1 - owned.cooldown / moveStats(owned.id, owned.level, g.player.stats).cooldown
+    setGlyphText(keyLabel, boundLabel('lunge'))
+    const fill = 1 - owned.cooldown / moveStats(owned.id, owned.level, g.player.stats, owned.path).cooldown
     for (const el of [badge, button]) {
       setStyle(el, '--fill', fill.toFixed(3))
       el.classList.toggle('ready', owned.cooldown <= 0)

@@ -58,7 +58,7 @@ export const CHAIN_RANGE = 200
 export const CHAIN_JUMP = 90
 /** Damage multiplier per jump. */
 export const CHAIN_FALLOFF = 0.85
-/** Hex-style moves hit foes with a status condition this much harder. */
+/** Hex hits foes with a status condition this much harder (an `afflicted` bonus, `kitRules.ts`). */
 export const HEX_BONUS = 1.7
 
 /**
@@ -88,9 +88,8 @@ export const chainTargets = <T extends Foe>(foes: readonly T[], from: Point, cou
   return hit
 }
 
-/** Damage of the `hop`-th hit (0 = first): ×0.85 per jump, ×`bonus` on a foe with a status condition. */
-export const chainDamage = (damage: number, hop: number, afflicted: boolean, bonus = 1) =>
-  damage * dm.pow(CHAIN_FALLOFF, hop) * (afflicted ? bonus : 1)
+/** Damage of the `hop`-th hit (0 = first): ×0.85 per jump. A bonus (Hex) applies on the hit (`Attack.bonus`). */
+export const chainDamage = (damage: number, hop: number) => damage * dm.pow(CHAIN_FALLOFF, hop)
 
 /* ---------------- Mines (Toxic Spikes, Barb Barrage) ---------------- */
 

@@ -177,93 +177,44 @@ button {
   }
 }
 
+/* A gamepad in use (`data-input="pad"`, see ui/inputLabels.ts): its hints replace the
+   keyboard and touch ones, and keyboard-only chips (shortcuts, 1-3, the WASD keycaps) step aside. */
+.pad-only {
+  display: none;
+}
+
+:root[data-input='pad'] .pad-only {
+  display: inline;
+}
+
+:root[data-input='pad'] :is(.keys-only, .touch-only, .key-hint, .offer-key, .move-pad) {
+  display: none;
+}
+
+/* ← and → as Press Start 2P's ↑ turned: the font has no sideways arrows (see `glyphText`). */
+.side-arrow {
+  display: inline-block;
+  line-height: 1;
+  transform: rotate(90deg);
+}
+
+.side-arrow.left {
+  transform: rotate(-90deg);
+}
+
+/* PlayStation's ✕ ○ □ △: a 10 px icon around an 8 px glyph, so the glyph is one letter tall. */
+.pad-glyph {
+  height: 1.25em;
+  vertical-align: -0.2em;
+  image-rendering: pixelated;
+}
+
 .dialog .hint {
   color: #707088;
   text-shadow: none;
 }
 
-/* ---------- Title / starter select ---------- */
-
-.logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  font-family: var(--title);
-  line-height: 1;
-}
-
-.logo-top {
-  font-size: clamp(28px, 6vw, 56px);
-  color: #ffcb05;
-  letter-spacing: 2px;
-  text-shadow:
-    -4px 0 0 #2a5aa8, 4px 0 0 #2a5aa8, 0 -4px 0 #2a5aa8, 0 4px 0 #2a5aa8,
-    -4px -4px 0 #2a5aa8, 4px 4px 0 #2a5aa8, -4px 4px 0 #2a5aa8, 4px -4px 0 #2a5aa8,
-    0 10px 0 #101830;
-}
-
-.logo-bottom {
-  margin-top: 18px;
-  font-size: clamp(14px, 3vw, 28px);
-  color: #fff;
-  letter-spacing: 6px;
-  text-shadow: 3px 0 0 #c82828, -3px 0 0 #c82828, 0 3px 0 #c82828, 0 -3px 0 #c82828, 0 7px 0 #101830;
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  font-family: var(--title);
-  font-size: 12px;
-  color: #fff;
-  text-shadow: 2px 2px 0 #101020;
-}
-
-.select-screen {
-  justify-content: flex-start;
-  gap: 10px;
-  padding: 14px 12px 10px;
-  overflow-y: auto;
-  touch-action: pan-y;
-}
-
-.select-screen .logo-top {
-  font-size: clamp(22px, 4.2vw, 44px);
-}
-
-.select-screen .logo-bottom {
-  margin-top: 16px;
-  font-size: clamp(11px, 2.2vw, 22px);
-}
-
-.select-screen .subtitle {
-  margin: 0;
-}
-
-.select-screen .credits {
-  position: static;
-}
-
-.select-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 560px) minmax(0, 460px);
-  grid-template-areas: 'main inspect' 'footer inspect';
-  grid-template-rows: auto 1fr;
-  gap: 16px;
-  align-items: start;
-  width: min(1040px, 100%);
-}
-
-.select-main {
-  grid-area: main;
-}
-
-.select-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
+/* ---------- Region tabs (Pokédex filters, ranking boards) ---------- */
 
 .region-tabs {
   display: flex;
@@ -278,7 +229,7 @@ button {
   display: none;
 }
 
-/* With a mouse there's no swipe and the scrollbar is hidden: wrap so Paldea and Eggs stay in sight. */
+/* With a mouse there's no swipe and the scrollbar is hidden: wrap so every tab stays in sight. */
 @media (hover: hover) and (pointer: fine) {
   .region-tabs {
     flex-wrap: wrap;
@@ -316,45 +267,6 @@ button {
   color: #2a5aa8;
 }
 
-.starters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  padding-top: 10px;
-}
-
-.starter-card {
-  min-width: 0;
-  padding: 10px 6px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  transition: transform 0.12s steps(3);
-}
-
-.starter-card.selected {
-  transform: translateY(-10px);
-  --frame: var(--accent);
-  box-shadow:
-    inset 0 0 0 var(--px) var(--paper),
-    inset 0 0 0 calc(var(--px) * 2) var(--accent),
-    0 0 0 var(--px) #fff,
-    0 calc(var(--px) * 4) 0 rgba(0, 0, 0, 0.35);
-}
-
-.starter-sprite {
-  width: 128px;
-  max-width: 100%;
-  aspect-ratio: 64 / 56;
-  background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--accent) 30%, transparent) 0 35%, transparent 36%);
-}
-
-.starter-name {
-  font-family: var(--title);
-  font-size: 12px;
-}
-
 .types {
   display: flex;
   flex-wrap: wrap;
@@ -362,40 +274,1175 @@ button {
   gap: 4px;
 }
 
-/* ---------- Inspect panel ---------- */
+/* ---------- Partner select (ui/starterSelect.ts, ui/partnerDetails.ts) ---------- */
 
-.inspect {
-  grid-area: inspect;
+/*
+ * Three shapes: wide screens (roster box left, partner panel right), phones held
+ * upright (compact panel on top, the roster transposed to a row per region and
+ * scrolling, the details as a bottom sheet) and short landscape screens (roster
+ * and compact panel side by side). The phone query is PHONE in ui/starterSelect.ts.
+ */
+
+.partner-screen .shell-body {
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 4px 2px 6px;
+}
+
+/* A long title needs the room: the slots keep their own width and the title takes the rest. */
+.partner-screen .shell-slot {
+  flex: none;
+}
+
+.partner-screen .shell-title {
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.partner-title-short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .partner-title-long {
+    display: none;
+  }
+  .partner-title-short {
+    display: inline;
+  }
+}
+
+.partner-screen .shell-wallet .key-hint {
+  font-size: 7px;
+  padding: 3px 4px 2px;
+}
+
+.partner-layout {
+  flex: 1 1 0;
+  min-height: 430px;
+  align-self: center;
+  width: min(1180px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'roster hero';
+  gap: 14px;
+}
+
+/* Roster: Iniciais / Ovos and the grid. */
+.partner-roster {
+  grid-area: roster;
   min-width: 0;
-  max-height: calc(100dvh - 150px);
-  overflow-y: auto;
-  touch-action: pan-y;
-  padding: 14px 16px 16px;
-  scrollbar-width: thin;
-}
-
-.inspect .dialog-title {
-  font-size: 10px;
-  color: #6878a8;
-  text-align: left;
-  margin-bottom: 4px;
-}
-
-.inspect-body {
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  padding: 14px 16px;
 }
 
-.inspect-head {
+.partner-tabs {
+  flex: none;
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+.partner-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-family: var(--title);
+  font-size: 10px;
+  color: #6878a8;
+  white-space: nowrap;
+  background: #e3e7f2;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.partner-tab small {
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.partner-tab:hover {
+  border-color: #6878a8;
+}
+
+.partner-tab.on {
+  color: #fff;
+  background: #283040;
+  border-color: #283040;
+}
+
+.partner-tabs .key-hint {
+  margin-left: 4px;
+}
+
+.partner-pane,
+.partner-eggs {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.inspect-head .types {
+.partner-roster.eggs .partner-pane,
+.partner-roster:not(.eggs) .partner-eggs {
+  display: none;
+}
+
+/* Wide: regions are columns (a short label on top), Grass / Fire / Water the rows, a type marker on the left. */
+.partner-grid {
+  display: grid;
+  grid-template-columns: 10px repeat(9, minmax(0, 58px));
+  grid-template-rows: auto repeat(3, auto);
+  grid-auto-flow: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 6px 4px;
+}
+
+.partner-types,
+.partner-region {
+  display: contents;
+}
+
+.partner-types i {
+  justify-self: center;
+  width: 8px;
+  height: 70%;
+  background: var(--t);
+  border-radius: 4px;
+}
+
+.partner-reg {
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1;
+  color: #6878a8;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.partner-reg .long {
+  display: none;
+}
+
+/* Portraits stay at their 40 px and get cropped by a smaller cell, never scaled off the pixel grid. */
+.partner-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--t) 22%, #fff);
+  border: 2px solid color-mix(in srgb, var(--t) 55%, #fff);
+  border-radius: 8px;
+}
+
+.partner-cell:hover {
+  border-color: var(--t);
+}
+
+.partner-cell-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  border-radius: 5px;
+}
+
+.partner-cell-name {
+  display: none;
+}
+
+.partner-cell-shiny {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+}
+
+.partner-cell.selected {
+  z-index: 1;
+  border: 3px solid #e83030;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #e83030;
+}
+
+.partner-cell.selected::after {
+  content: 'P1';
+  position: absolute;
+  top: -9px;
+  left: -7px;
+  padding: 2px 3px;
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1;
+  color: #fff;
+  background: #e83030;
+  border-radius: 3px;
+}
+
+/* Families still in their egg: their silhouette on grey (the egg if the sprite is missing). */
+.partner-cell.locked {
+  background: #d4d8e4;
+  border-color: #b8bed0;
+}
+
+.partner-cell-silhouette {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 5px;
+}
+
+.partner-cell-silhouette i {
+  flex: none;
+  filter: brightness(0);
+  image-rendering: pixelated;
+}
+
+.partner-cell-egg {
+  width: 28px;
+  height: 32px;
+}
+
+/* Wide screens: the hatched families under the grid, a shortcut into Ovos. */
+.partner-teaser {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: auto;
+  padding-top: 10px;
+  overflow: hidden;
+  border-top: 2px dashed #d0d6e6;
+}
+
+.partner-teaser-label {
+  flex: none;
+  margin-right: 6px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #6878a8;
+}
+
+.partner-teaser-cell {
+  flex: none;
+  padding: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+
+.partner-teaser-cell img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.partner-teaser-cell:hover {
+  border-color: #6878a8;
+}
+
+.partner-teaser-empty {
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #707088;
+}
+
+.partner-teaser-more {
+  flex: none;
+  margin-left: auto;
+  min-height: 40px;
+  padding: 0 8px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #3868c0;
+  background: none;
+  border: 0;
+}
+
+/* Ovos: a scrolling grid of the families and the way into the incubator. ↑ ↓ read the column count from here. */
+.partner-egg-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  align-content: start;
+  gap: 6px;
+  padding: 8px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.partner-eggs .incubator-entry {
+  flex: none;
+  align-self: center;
+  min-height: 44px;
+}
+
+/* The partner: Idle sprite on a pedestal tinted by its type, role, stats and evolution line. */
+.partner-hero {
+  grid-area: hero;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.partner-hero-top {
+  display: flex;
+  gap: 12px;
+}
+
+.partner-pedestal {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 144px;
+  height: 156px;
+  padding-bottom: 6px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 34% 9% at 50% 88%, color-mix(in srgb, var(--accent) 60%, #fff) 0 98%, transparent 100%),
+    linear-gradient(color-mix(in srgb, var(--accent) 12%, #fff), color-mix(in srgb, var(--accent) 34%, #fff));
+  border-radius: 10px;
+}
+
+.partner-sprite {
+  display: block;
+  flex: none;
+  width: 144px;
+  height: 144px;
+}
+
+.partner-id {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.partner-id .types {
   justify-content: flex-start;
 }
+
+.partner-dex {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #8890a8;
+}
+
+.partner-name {
+  margin: 0;
+  font-family: var(--title);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.partner-blurb {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.partner-intro {
+  color: #505068;
+}
+
+.partner-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.partner-stats .stat-bar {
+  grid-template-columns: 92px minmax(0, 1fr) 52px;
+}
+
+.partner-evo .evo-line {
+  justify-content: flex-start;
+}
+
+.partner-more {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 8px 10px;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+  color: #3868c0;
+  background: #eef2fc;
+  border: 2px solid #c8d4f0;
+  border-radius: 6px;
+}
+
+.partner-more:hover {
+  border-color: #3868c0;
+}
+
+.partner-more.compact {
+  display: none;
+  min-height: 40px;
+  margin: 0 0 0 auto;
+  padding: 6px 10px;
+}
+
+/* One action bar: Bag, difficulty, Começar. */
+.shell-actions.partner-bar {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+}
+
+.partner-bag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-bag-label {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #c8d0ff;
+}
+
+.partner-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: #3a4460;
+  border: 2px solid #56607e;
+  border-radius: 8px;
+}
+
+.partner-slot img {
+  width: 30px;
+  height: 30px;
+}
+
+.partner-slot em {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  padding: 3px 4px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  font-style: normal;
+  line-height: 1;
+  color: #fff;
+  background: #283040;
+  border-radius: 6px;
+}
+
+.partner-slot .key-hint {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  padding: 2px 3px;
+  font-size: 7px;
+}
+
+.partner-slot:hover {
+  border-color: #f8d030;
+}
+
+.partner-slot.on {
+  background: var(--paper);
+  border-color: #f8d030;
+  box-shadow: 0 0 0 2px #283040;
+}
+
+.partner-slot.empty img {
+  opacity: 0.4;
+}
+
+.partner-slot.empty:hover {
+  border-color: #56607e;
+}
+
+.partner-diff {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.partner-diff-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.partner-diff .shell-seg {
+  background: #3a4460;
+}
+
+.partner-diff .shell-seg-option {
+  --level: #58b858;
+  min-height: 40px;
+  padding: 0 12px;
+  font-size: 9px;
+  color: #c8d0ff;
+  white-space: nowrap;
+}
+
+.partner-diff .shell-seg-option.hard {
+  --level: #f08030;
+}
+
+.partner-diff .shell-seg-option.nightmare {
+  --level: #a040c8;
+}
+
+.partner-diff .shell-seg-option:hover {
+  color: #fff;
+}
+
+.partner-diff .shell-seg-option.on {
+  color: #fff;
+  background: var(--level);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Two lines at most, held open so the bar keeps its height when the level changes. */
+.partner-blurb-line {
+  display: -webkit-box;
+  max-width: 420px;
+  min-height: 2em;
+  margin: 0;
+  overflow: hidden;
+  font-size: 17px;
+  line-height: 1;
+  color: #e8e8f8;
+  text-align: right;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Começar takes the difficulty's color: green, orange, purple. */
+.partner-go {
+  --go: #48a848;
+  --go-hi: #78d070;
+  --go-lo: #2e7a30;
+  --go-ink: #1e5a20;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 22px;
+  overflow: hidden;
+  font-family: var(--title);
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 2px 2px 0 var(--go-ink);
+  background: linear-gradient(var(--go-hi), var(--go));
+  border: 3px solid #283040;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 -6px 0 var(--go-lo),
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.partner-go.hard {
+  --go: #e07020;
+  --go-hi: #f8a050;
+  --go-lo: #a04810;
+  --go-ink: #703008;
+}
+
+.partner-go.nightmare {
+  --go: #8838b8;
+  --go-hi: #b868e0;
+  --go-lo: #5c2080;
+  --go-ink: #3c1058;
+}
+
+.partner-go.locked {
+  --go: #8890a8;
+  --go-hi: #a8b0c4;
+  --go-lo: #606880;
+  --go-ink: #404860;
+  font-size: 11px;
+}
+
+.partner-go:hover {
+  filter: brightness(1.08);
+}
+
+.partner-go:active {
+  transform: translateY(2px);
+}
+
+.partner-go .key-hint {
+  font-size: 7px;
+  text-shadow: none;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.partner-go-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Details: a dialog on wide screens, a bottom sheet on phones. */
+.partner-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, var(--safe-t)) max(16px, var(--safe-r)) max(16px, var(--safe-b)) max(16px, var(--safe-l));
+  background: rgba(8, 8, 24, 0.55);
+  pointer-events: auto;
+}
+
+.partner-sheet {
+  width: min(620px, 100%);
+  height: min(640px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 3px solid #283040;
+  border-radius: 14px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: pop 0.18s steps(4) both;
+}
+
+.partner-sheet-grip {
+  display: none;
+}
+
+.partner-sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-sheet-id {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.partner-sheet-id > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.partner-sheet-portrait {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+}
+
+.partner-sheet-name {
+  font-family: var(--title);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.shell-btn.partner-sheet-close {
+  font-size: 14px;
+}
+
+.partner-sheet-tabs.shell-tabs {
+  flex: none;
+  background: #e3e7f2;
+}
+
+.partner-sheet-tabs .shell-tab {
+  color: #6878a8;
+}
+
+.partner-sheet-tabs .shell-tab.on {
+  color: #fff;
+  background: #283040;
+}
+
+.partner-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 2px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+}
+
+.partner-sheet-body > * {
+  flex-shrink: 0;
+}
+
+.partner-sheet .partner-go {
+  min-height: 52px;
+  font-size: 11px;
+}
+
+/* Portrait tablets: the roster on top, the panel under it. */
+@media (orientation: portrait) and (min-width: 701px) {
+  .partner-layout {
+    flex: 1 0 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas: 'roster' 'hero';
+  }
+}
+
+/* Phones held upright (PHONE in ui/starterSelect.ts): compact panel, then a row per region. */
+@media (orientation: portrait) and (max-width: 700px) {
+  .partner-screen .shell-body {
+    overflow: hidden;
+    padding: 2px 0 0;
+  }
+  .partner-layout {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .partner-hero {
+    flex: none;
+    padding: 10px;
+    overflow: visible;
+  }
+  .partner-hero-top {
+    gap: 10px;
+  }
+  .partner-pedestal {
+    width: 96px;
+    height: 112px;
+    padding-bottom: 4px;
+  }
+  .partner-sprite {
+    width: 108px;
+    height: 108px;
+  }
+  .partner-id {
+    flex: 1 1 auto;
+    gap: 5px;
+  }
+  .partner-name {
+    font-size: 12px;
+  }
+  .partner-blurb {
+    font-size: 17px;
+  }
+  .partner-stats,
+  .partner-evo,
+  .partner-more {
+    display: none;
+  }
+  .partner-more.compact {
+    display: flex;
+  }
+  .partner-hero-actions {
+    align-self: stretch;
+  }
+  .partner-roster {
+    flex: 1 1 0;
+    padding: 0;
+    gap: 8px;
+    background: none;
+    border: 0;
+    box-shadow: none;
+  }
+  .partner-tabs {
+    padding: 4px;
+    background: rgba(24, 30, 48, 0.78);
+    border-radius: 10px;
+  }
+  .partner-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 6px;
+    color: #c8d0ff;
+    background: transparent;
+    border-color: transparent;
+  }
+  .partner-tab:hover {
+    border-color: transparent;
+  }
+  .partner-tab.on {
+    color: #283040;
+    background: var(--paper);
+    border-color: var(--paper);
+  }
+  .partner-pane {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .partner-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 8px 6px;
+  }
+  .partner-types,
+  .partner-teaser {
+    display: none;
+  }
+  .partner-region {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 6px;
+  }
+  .partner-reg {
+    grid-column: 1 / -1;
+    padding-left: 4px;
+    font-size: 8px;
+    color: #fff;
+    text-align: left;
+    text-shadow:
+      1px 1px 0 #283040,
+      -1px -1px 0 #283040,
+      1px -1px 0 #283040,
+      -1px 1px 0 #283040;
+  }
+  .partner-reg .short {
+    display: none;
+  }
+  .partner-reg .long {
+    display: inline;
+  }
+  .partner-region .partner-cell {
+    justify-content: flex-start;
+    gap: 4px;
+    height: 56px;
+    aspect-ratio: auto;
+    padding: 0 6px 0 4px;
+  }
+  .partner-region .partner-cell-portrait {
+    flex: none;
+    width: 36px;
+    height: 40px;
+  }
+  .partner-cell-name {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .partner-cell.selected::after {
+    top: -8px;
+    left: -6px;
+  }
+  .partner-egg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  }
+  .shell-actions.partner-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'diff diff' 'bag go';
+    gap: 8px 10px;
+    padding: 8px;
+  }
+  .partner-bag {
+    grid-area: bag;
+    gap: 8px;
+  }
+  .partner-bag-label {
+    display: none;
+  }
+  .partner-diff {
+    grid-area: diff;
+    align-items: stretch;
+    margin: 0;
+  }
+  .partner-diff .shell-seg {
+    flex: 1 1 auto;
+  }
+  .partner-diff .shell-seg-option {
+    padding: 0 4px;
+  }
+  .partner-blurb-line {
+    max-width: none;
+    font-size: 16px;
+    text-align: center;
+  }
+  .partner-go {
+    grid-area: go;
+    min-height: 52px;
+    padding: 0 12px;
+  }
+  .partner-sheet-scrim {
+    align-items: flex-end;
+    padding: max(40px, var(--safe-t)) 0 0;
+  }
+  .partner-sheet {
+    width: 100%;
+    height: 100%;
+    padding: 8px 14px max(14px, var(--safe-b));
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    animation: sheet-up 0.2s steps(5) both;
+  }
+  .partner-sheet-grip {
+    display: block;
+    flex: none;
+    align-self: center;
+    width: 44px;
+    height: 5px;
+    background: #c0c6d8;
+    border-radius: 3px;
+  }
+  .partner-sheet .stat-bar {
+    grid-template-columns: 84px minmax(0, 1fr) 48px;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(30%);
+  }
+}
+
+/* Short landscape screens: roster and compact panel side by side, a one-line bar. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .screen.shell.partner-screen {
+    gap: 6px;
+    padding-top: max(6px, var(--safe-t));
+    padding-bottom: max(6px, var(--safe-b));
+  }
+  .partner-screen .shell-top {
+    min-height: 44px;
+  }
+  .partner-screen .shell-body {
+    padding: 2px 2px 4px;
+  }
+  .partner-layout {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 250px);
+    gap: 10px;
+  }
+  .partner-roster {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .partner-tab {
+    min-height: 32px;
+    font-size: 9px;
+  }
+  .partner-tab small {
+    font-size: 16px;
+  }
+  .partner-pane {
+    overflow-y: auto;
+  }
+  .partner-grid {
+    grid-template-columns: 8px repeat(9, minmax(0, 52px));
+    gap: 3px;
+    padding: 8px 6px 2px;
+  }
+  .partner-teaser {
+    display: none;
+  }
+  .partner-egg-grid {
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 4px;
+  }
+  .partner-eggs {
+    gap: 6px;
+  }
+  .partner-eggs .incubator-entry {
+    min-height: 40px;
+    padding: 2px 10px;
+  }
+  .partner-eggs .incubator-entry img {
+    width: 24px;
+    height: 24px;
+  }
+  .partner-hero {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .partner-hero-top {
+    gap: 8px;
+  }
+  .partner-pedestal {
+    width: 80px;
+    height: 84px;
+    padding-bottom: 2px;
+  }
+  .partner-sprite {
+    width: 72px;
+    height: 72px;
+  }
+  .partner-name {
+    font-size: 11px;
+  }
+  .partner-blurb {
+    font-size: 17px;
+  }
+  .partner-stats,
+  .partner-evo,
+  .partner-more {
+    display: none;
+  }
+  .partner-more.compact {
+    display: flex;
+  }
+  .partner-hero-actions {
+    align-self: stretch;
+  }
+  .partner-intro {
+    font-size: 16px;
+  }
+  .shell-actions.partner-bar {
+    gap: 10px;
+    padding: 5px 10px;
+  }
+  .partner-bag-label,
+  .partner-blurb-line {
+    display: none;
+  }
+  .partner-slot {
+    width: 42px;
+    height: 42px;
+  }
+  .partner-diff .shell-seg-option {
+    min-height: 38px;
+    padding: 0 10px;
+  }
+  .partner-go {
+    min-height: 46px;
+    padding: 0 16px;
+    font-size: 12px;
+  }
+  .partner-sheet-scrim {
+    padding: max(8px, var(--safe-t)) max(16px, var(--safe-r)) max(8px, var(--safe-b)) max(16px, var(--safe-l));
+  }
+  .partner-sheet {
+    height: 100%;
+    gap: 6px;
+    padding: 8px 12px 10px;
+  }
+  .partner-sheet .shell-tab {
+    min-height: 36px;
+  }
+  .partner-sheet .partner-go {
+    min-height: 44px;
+  }
+}
+
+/* The compact panel (phones, short landscape): the shiny pick and Detalhes get a full-width row under the sprite. */
+@media (orientation: portrait) and (max-width: 700px), (max-height: 500px) and (orientation: landscape) {
+  .partner-hero-top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    row-gap: 6px;
+  }
+  .partner-pedestal {
+    grid-row: span 5;
+  }
+  .partner-id {
+    display: contents;
+  }
+  .partner-id > * {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .partner-id > .partner-hero-actions {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+  .partner-hero-actions .shiny-option {
+    min-height: 36px;
+  }
+}
+
+/* Short phones: a smaller pedestal and a one-line blurb, so the roster keeps a few rows. */
+@media (orientation: portrait) and (max-width: 700px) and (max-height: 700px) {
+  .partner-pedestal {
+    width: 84px;
+    height: 92px;
+  }
+  .partner-sprite {
+    width: 72px;
+    height: 72px;
+  }
+  .partner-blurb-line {
+    min-height: 0;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* ---------- Partner details: stat bars, evolution line, moves (also the Pokédex) ---------- */
 
 .inspect-sprite {
   width: 144px;
@@ -423,19 +1470,17 @@ button {
   margin-bottom: 4px;
 }
 
-.inspect-blurb {
-  font-size: 20px;
-  line-height: 1;
-}
-
 .inspect-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 4px;
   padding-bottom: 4px;
+  gap: 8px;
   font-family: var(--title);
   font-size: 9px;
+  /* Long headers ("Habilidades (vienen de la evolución elegida)") wrap on a phone. */
+  line-height: 1.4;
   color: #6878a8;
   border-bottom: 2px solid #d8d8e8;
 }
@@ -604,136 +1649,7 @@ button {
   padding: 3px 4px 2px;
 }
 
-.select-footer {
-  grid-area: footer;
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-}
-
 /* ---------- Difficulty picker (starter select footer) ---------- */
-
-.difficulty-picker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  max-width: 100%;
-  padding: 4px 8px 6px;
-  background: rgba(16, 24, 48, 0.92);
-  border: 2px solid #6878a8;
-  border-radius: 6px;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.difficulty-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.difficulty-label {
-  font-family: var(--title);
-  font-size: 8px;
-  color: #a8b0d0;
-  text-transform: uppercase;
-}
-
-.difficulty-options {
-  display: flex;
-  gap: 4px;
-}
-
-.difficulty-option {
-  --level: #58b858;
-  font-family: var(--title);
-  font-size: 9px;
-  min-height: 34px;
-  padding: 4px 10px;
-  color: #c8d0e8;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 4px;
-}
-
-.difficulty-option.hard {
-  --level: #f08030;
-}
-
-.difficulty-option.nightmare {
-  --level: #a040c8;
-}
-
-.difficulty-option:hover,
-.difficulty-option:focus-visible {
-  border-color: var(--level);
-}
-
-.difficulty-option.selected {
-  color: #fff;
-  background: var(--level);
-  border-color: #fff;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.difficulty-blurb {
-  margin: 0;
-  max-width: 380px;
-  font-size: 17px;
-  line-height: 1;
-  text-align: center;
-  color: #e8e8f8;
-}
-
-/* Bag items armed for the next run (Lure, Incense), under the difficulty. */
-.bag-options {
-  display: flex;
-  gap: 4px;
-}
-
-.bag-option {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--title);
-  font-size: 8px;
-  min-height: 34px;
-  padding: 3px 8px;
-  color: #c8d0e8;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 4px;
-}
-
-.bag-option img {
-  width: 22px;
-  height: 22px;
-}
-
-.bag-option b {
-  font-weight: normal;
-  color: #a8b0d0;
-}
-
-.bag-option:hover,
-.bag-option:focus-visible {
-  border-color: #f070b0;
-}
-
-.bag-option.selected {
-  color: #fff;
-  background: #c04890;
-  border-color: #fff;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
-}
-
-.bag-option.selected b {
-  color: #fff;
-}
 
 /* The level a run is played on: a chip in the pause menu and on the results. */
 .difficulty-tag {
@@ -754,35 +1670,6 @@ button {
   background: #a040c8;
 }
 
-@media (max-width: 520px) {
-  .difficulty-label {
-    display: none;
-  }
-  .difficulty-option {
-    font-size: 8px;
-    padding: 4px 8px;
-  }
-  /* The footer sticks over the inspect panel here: keep it to one line. */
-  .difficulty-blurb {
-    display: none;
-  }
-  .difficulty-picker {
-    padding: 2px 6px;
-  }
-}
-
-/* Phones in landscape: the footer shares the left column with the cards, so it stays one line. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .select-footer {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .difficulty-blurb {
-    display: none;
-  }
-}
-
 .btn.confirm {
   color: var(--ink);
   font-size: 12px;
@@ -790,98 +1677,13 @@ button {
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
 }
 
-@media (max-width: 960px) {
-  .select-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'main' 'inspect' 'footer';
-    grid-template-rows: none;
-    width: min(600px, 100%);
-  }
-  .inspect {
-    max-height: none;
-    overflow: visible;
-  }
-}
-
-/* Phones in landscape: keep cards and inspect side by side, scroll the panel. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .select-screen {
-    gap: 6px;
-    padding: 8px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left));
-  }
-  .select-screen .subtitle {
-    display: none;
-  }
-  .select-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: 'main inspect' 'footer inspect';
-    grid-template-rows: auto 1fr;
-    gap: 12px;
-    width: 100%;
-  }
-  .select-main {
-    gap: 6px;
-  }
-  .starter-card {
-    padding: 6px 4px 8px;
-    gap: 3px;
-  }
-  .starter-sprite {
-    width: 72px;
-  }
-  .starter-name {
-    font-size: 8px;
-  }
-  .starter-card .type-badge {
-    font-size: 6px;
-    padding: 3px 4px 2px;
-  }
-  .inspect {
-    max-height: calc(100dvh - 96px);
-    overflow-y: auto;
-    padding: 10px 12px 12px;
-  }
-  .select-footer {
-    position: static;
-  }
-}
-
-@media (pointer: coarse) {
-  .select-screen .hint {
-    display: none;
-  }
-}
-
 @media (max-width: 520px) {
-  .select-screen {
-    gap: 8px;
-    padding: 10px 8px 6px;
-  }
-  .select-screen .subtitle {
-    display: none;
-  }
-  .starters {
-    gap: 8px;
-  }
-  .starter-name {
-    font-size: 9px;
-  }
-  .starter-card .type-badge {
-    font-size: 6px;
-    padding: 3px 4px 2px;
-  }
-  .inspect {
-    padding: 12px 12px 14px;
-  }
   .inspect-sprite {
     width: 96px;
     height: 96px;
   }
   .inspect-name {
     font-size: 11px;
-  }
-  .inspect-blurb {
-    font-size: 18px;
   }
   .stat-bar {
     grid-template-columns: 76px 1fr 44px;
@@ -989,8 +1791,14 @@ button {
   font-family: var(--title);
   font-size: 11px;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   align-items: center;
+}
+
+/* A name with several tags (Nv 2, ✦ Ivysaur, RARO! +2 Nv) wraps whole tags onto the next line instead of squeezing each one. */
+.offer-name .tag {
+  white-space: nowrap;
 }
 
 .offer-desc {
@@ -1393,6 +2201,16 @@ button {
   border-color: #e83838;
 }
 
+/* A level-up for an evolved move: gold like an evolution, without the blinking. */
+.offer-star {
+  background: linear-gradient(180deg, #fffbe8, #f8ecc0);
+  border-color: #e0a020;
+}
+
+.offer-star .offer-icon {
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
 .offer-evo .offer-icon {
   background: #503010;
   box-shadow: 0 0 0 2px #f8d030;
@@ -1473,6 +2291,22 @@ button {
   line-height: 1;
   text-align: center;
   color: #6878a8;
+}
+
+/* A phone on its side with a full loadout: the pause scrolls, its buttons stay pinned at the bottom. */
+@media (max-height: 500px) {
+  .pause-box .evo-legend {
+    display: none;
+  }
+  .pause-box > .buttons {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 0 -16px -12px;
+    padding: 8px 16px 12px;
+    background: var(--paper);
+    border-radius: 0 0 8px 8px;
+  }
 }
 
 .slot.evo-ready {
@@ -1780,6 +2614,75 @@ button {
   pointer-events: none;
 }
 
+/*
+ * Mouse and keyboard have no stick to place: the fixed mode puts the WASD keys
+ * (ui/movePad.ts) in its corner instead, lit while held. Same query as
+ * `finePointer` in main.ts, which stops the canvas drawing the stick there.
+ */
+.move-pad {
+  display: none;
+  position: absolute;
+  left: var(--stick-left);
+  bottom: var(--stick-bottom);
+  width: var(--stick-size);
+  height: var(--stick-size);
+  grid-template: 1fr 1fr / repeat(3, 1fr);
+  align-content: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-stick='fixed'] .move-pad {
+    display: grid;
+  }
+}
+
+.hud.menu-open .move-pad {
+  display: none;
+}
+
+.move-key {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(248, 248, 248, 0.85);
+  background: rgba(16, 24, 48, 0.3);
+  border: 2px solid rgba(16, 24, 48, 0.55);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 2px rgba(248, 248, 248, 0.35),
+    0 3px 0 rgba(16, 24, 48, 0.45);
+}
+
+.move-key.up {
+  grid-area: 1 / 2;
+}
+
+.move-key.left {
+  grid-area: 2 / 1;
+}
+
+.move-key.down {
+  grid-area: 2 / 2;
+}
+
+.move-key.right {
+  grid-area: 2 / 3;
+}
+
+.move-key.held {
+  color: var(--ink);
+  text-shadow: none;
+  background: rgba(248, 248, 248, 0.85);
+  box-shadow:
+    inset 0 0 0 2px #fff,
+    0 1px 0 rgba(16, 24, 48, 0.45);
+  transform: translateY(2px);
+}
+
 /* Portrait and desktop: the status box goes above the stick. */
 [data-stick='fixed'] .status {
   bottom: calc(var(--stick-bottom) + var(--stick-size) + 16px);
@@ -1906,149 +2809,6 @@ button {
   line-height: 1;
 }
 
-.mart-entry {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 8px;
-  pointer-events: auto;
-}
-
-.mart-entry img {
-  width: 28px;
-  height: 28px;
-}
-
-.mart-entry-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.mart-entry-text b {
-  font-family: var(--title);
-  font-size: 9px;
-}
-
-.mart-entry:hover,
-.mart-entry:focus-visible {
-  --frame: #e83838;
-}
-
-/* Language switch: top-left twin of the Poké Mart entry. */
-.lang-switch {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
-  pointer-events: auto;
-}
-
-.lang-option {
-  font-family: var(--title);
-  font-size: 9px;
-  min-width: 36px;
-  min-height: 32px;
-  padding: 4px 6px;
-  color: #8890a8;
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 4px;
-}
-
-.lang-option:hover,
-.lang-option:focus-visible {
-  color: var(--ink);
-}
-
-.lang-option.selected {
-  color: #fff;
-  background: #e83838;
-  border-color: #a02028;
-}
-
-/* Account chip: top-right twin of the language switch, on the title screen. */
-.account-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 8px 6px 10px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: var(--ink);
-  pointer-events: auto;
-}
-
-.account-chip:hover,
-.account-chip:focus-visible {
-  --frame: #e83838;
-}
-
-/* Top-right corner (`topRight` in `ui/dom.ts`): the account chip or the Poké Mart, with the support chip on their left. */
-.top-right {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.support-chip {
-  order: -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px 6px 8px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: #a02858;
-  text-decoration: none;
-  pointer-events: auto;
-}
-
-.support-chip img {
-  width: 21px;
-  height: 21px;
-}
-
-.support-chip:hover,
-.support-chip:focus-visible {
-  --frame: #f878a8;
-}
-
-/* Phones and tablets: just the heart, so the corner clears the centered logo. */
-@media (max-width: 960px), (max-height: 500px) {
-  .support-chip {
-    padding: 6px 8px;
-  }
-  .support-chip span {
-    display: none;
-  }
-}
-
-/* Phones in landscape put the title menu right of the logo: the heart goes under the account chip, clear of it. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .top-right:has(.account-chip) {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .top-right:has(.account-chip) .support-chip {
-    order: 0;
-  }
-}
-
 /* Sync status: green when saved, yellow while syncing, grey offline, hollow for guests. */
 .sync-dot {
   width: 8px;
@@ -2089,12 +2849,6 @@ button {
   color: #e83838;
 }
 
-.account-sync .sync-dot {
-  display: inline-block;
-  margin-right: 10px;
-  vertical-align: 2px;
-}
-
 .account-note {
   font-size: 17px;
   color: #6878a8;
@@ -2119,11 +2873,11 @@ button {
   }
 }
 
-/* ---------- Title screen ---------- */
+/* ---------- Title screen: the "press start" intro and the lobby (ui/title.ts) ---------- */
 
-.title-home {
-  gap: clamp(16px, 5vh, 40px);
-  padding-bottom: max(48px, var(--safe-b));
+/* The intro: logo and "press start", centered. */
+.title-home .shell-body {
+  gap: clamp(12px, 3vh, 32px);
 }
 
 /* Sized in whole device pixels per logo pixel by `fitLogo` (ui/title.ts). */
@@ -2154,63 +2908,851 @@ button {
   text-shadow: 2px 2px 0 #101020;
 }
 
-.title-menu {
+/*
+ * The lobby. Wide screens are the base: Hoje on the left rail, the Hall da
+ * Fama on the right, the partner in the middle under the logo, and JOGAR in
+ * the middle of the dock. The two media queries further down (narrow screens,
+ * phones in landscape) must match `NARROW` and `LANDSCAPE` in ui/title.ts.
+ */
+.lobby {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 250px) minmax(0, 1fr) minmax(220px, 290px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'today logo side'
+    'today stage side'
+    'bottom bottom bottom';
+  gap: 10px 16px;
+}
+
+.lobby-logo {
+  grid-area: logo;
+  display: flex;
+  justify-content: center;
+}
+
+.lobby-today {
+  grid-area: today;
+  align-self: start;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 240px;
-  padding: 12px 10px;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 24px;
 }
 
-.title-item {
-  position: relative;
-  min-height: 44px;
-  padding: 8px 14px 8px 32px;
+.lobby-rail-label {
+  margin: 0 0 0 2px;
   font-family: var(--title);
-  font-size: 12px;
+  font-size: 9px;
+  font-weight: 400;
+  color: #fff;
+  text-shadow: 2px 2px 0 #283040;
+}
+
+.lobby-side {
+  grid-area: side;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding-top: 24px;
+}
+
+.lobby-side .invite-banner {
+  max-width: none;
+}
+
+.lobby-stage {
+  grid-area: stage;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.lobby-bottom {
+  grid-area: bottom;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
+}
+
+/* The dock's halves either side of JOGAR, which stays centered however many tiles each has. On phones they're `display: contents`: the tiles join the tab bar's grid. */
+.lobby-dock {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.lobby-dock.left {
+  justify-content: flex-end;
+}
+
+/* Highlighted by the arrows (or under the mouse). */
+.lobby-card:hover,
+.lobby-card.selected,
+.lobby-tile:hover,
+.lobby-tile.selected,
+.title-home .shell-btn.selected,
+.title-home .trainer-chip.selected,
+.title-home .invite-banner.selected {
+  --frame: #e83838;
+}
+
+/* Hoje: a card per daily thing, a colored label over one line of live state. */
+.lobby-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px 11px;
   text-align: left;
-  color: var(--ink);
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
+  pointer-events: auto;
 }
 
-.title-item.selected {
-  background: #e4e8f4;
-}
-
-.title-item.selected::before {
-  content: '▶';
-  position: absolute;
-  left: 12px;
-  color: #e83838;
-}
-
-.title-footer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: max(8px, var(--safe-b));
-  padding: 0 12px;
+.lobby-card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   font-family: var(--title);
   font-size: 8px;
-  line-height: 1.6;
-  text-align: center;
-  color: #e8e8f8;
-  text-shadow: 2px 2px 0 #101020;
-  opacity: 0.75;
+  line-height: 1.3;
 }
 
-.title-footer a {
-  display: inline-block;
-  padding: 8px 2px;
-  color: inherit;
-  text-underline-offset: 3px;
+.lobby-card.outbreak .lobby-card-label {
+  color: #c03878;
 }
 
-.title-footer a:hover,
-.title-footer a:focus-visible {
-  color: #ffcb05;
+.lobby-card.challenge .lobby-card-label {
+  color: #3868c0;
+}
+
+.lobby-card.missions .lobby-card-label {
+  color: #389048;
+}
+
+.lobby-card-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+}
+
+.lobby-card-row b {
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The outbreak's walkers: sized in whole device pixels by `outbreakCard`. */
+.lobby-walker {
+  display: block;
+  flex: none;
+  margin: -6px -2px -4px;
+}
+
+.lobby-sparkle {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.lobby-icon {
+  flex: none;
+  width: 22px;
+  height: 28px;
+}
+
+.lobby-progress {
+  flex: 1 1 auto;
+  min-width: 24px;
+  height: 12px;
+  overflow: hidden;
+  background: #d8dce8;
+  border: 2px solid #283040;
+  border-radius: 3px;
+}
+
+.lobby-card.missions .lobby-card-row b {
+  flex: none;
+}
+
+.lobby-progress span {
+  display: block;
+  height: 100%;
+  background: #58b858;
+}
+
+.lobby-badge {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1;
+  color: #fff;
+  background: #e83030;
+  border: 2px solid #fff;
+  border-radius: 9px;
+}
+
+.lobby-badge.done {
+  background: #389048;
+}
+
+.lobby-card .key-hint {
+  margin-left: auto;
+  font-size: 6px;
+  padding: 2px 3px;
+}
+
+/* Hall da Fama: gold frame, slowly turning rays, the first supporters' faces and the newest one. */
+.lobby-hall {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  font: inherit;
+  color: #fff;
+  text-align: left;
+  text-decoration: none;
+  background: linear-gradient(160deg, #3a2470, #1c1440 70%);
+  border: 3px solid #f8d030;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 2px #7a5a10,
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(248, 208, 48, 0.45);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.lobby-hall:hover,
+.lobby-hall.selected {
+  box-shadow:
+    inset 0 0 0 2px #7a5a10,
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 3px #fff,
+    0 0 24px rgba(248, 208, 48, 0.7);
+}
+
+/* A shiny ticket waits for its pick. */
+.lobby-hall.waiting {
+  animation: share-glow 1.4s steps(2, start) infinite;
+}
+
+/*
+ * A square centered on the card, its side twice the card's width (margins in %
+ * resolve against the width too), so its rotation always covers the corners.
+ */
+.hall-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  aspect-ratio: 1;
+  margin: -100% 0 0 -100%;
+  background: repeating-conic-gradient(from 0deg, rgba(248, 208, 48, 0.16) 0 10deg, transparent 10deg 20deg);
+  animation: hall-spin 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes hall-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-rays {
+    animation: none;
+  }
+}
+
+.hall-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 10px;
+  line-height: 1.3;
+  color: #f8d030;
+  text-shadow: 2px 2px 0 #4a3008;
+}
+
+.hall-top b {
+  min-width: 0;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hall-top img {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.lobby-hall.waiting .hall-sparkle {
+  animation: blink 0.7s steps(2, start) infinite;
+}
+
+.hall-stack {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lobby-hall:not(.filled) .hall-stack {
+  display: none;
+}
+
+.hall-face {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-right: -8px;
+  font-family: var(--title);
+  font-size: 11px;
+  color: #ffd8ec;
+  background: #2c2050;
+  border: 2px solid #f0a0c8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #1c1440;
+}
+
+.hall-face.gold {
+  color: #f8d030;
+  border-color: #f8d030;
+}
+
+/* A portrait is 40 px: shown 1:1, cropped to the circle. */
+.hall-face.portrait {
+  overflow: hidden;
+  background: #3a2878;
+}
+
+.hall-face img {
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+
+.hall-face img.ball {
+  width: 16px;
+  height: 16px;
+}
+
+.hall-stack em {
+  margin-left: 16px;
+  font-family: var(--title);
+  font-size: 9px;
+  font-style: normal;
+  color: #f8d030;
+}
+
+.hall-ticker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 19px;
+  line-height: 1;
+  color: #ffd8ec;
+}
+
+.hall-ticker img {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.hall-ticker span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lobby-hall .key-hint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 6px;
+  padding: 2px 3px;
+}
+
+/* The partner on stage, over its name plate (canvas sized by `partnerStage`). */
+.lobby-partner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  pointer-events: auto;
+}
+
+.lobby-partner-sprite {
+  display: block;
+}
+
+/* Drags on the lobby's grass walk the partner (ui/title.ts), so they don't scroll it. */
+.title-home.screen {
+  touch-action: none;
+}
+
+/* Out for a walk, the meadow draws the partner (render/titleScene.ts) and its spot waits empty. */
+.lobby-partner.out .lobby-partner-sprite {
+  visibility: hidden;
+}
+
+/* Back from its walk, it hops onto the stage. */
+.lobby-partner.landed .lobby-partner-sprite {
+  animation: land 0.3s steps(3);
+}
+
+@keyframes land {
+  33% {
+    transform: translateY(calc(var(--px) * -3));
+  }
+  66% {
+    transform: translateY(calc(var(--px) * -2));
+  }
+}
+
+/* Over the partner's head until its first walk: the movement keys, or "tap the grass" on touch screens. */
+.lobby-stroll-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: max-content;
+  margin: 0 auto;
+  padding: 5px 8px;
+  font-size: 16px;
+  color: #fff;
+  white-space: nowrap;
+  background: rgba(40, 48, 64, 0.85);
+  border-radius: 10px;
+  pointer-events: none;
+  animation: bob 1.2s steps(1) infinite;
+}
+
+.lobby-stroll-hint .keys-only {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.lobby-stroll-hint b {
+  margin-left: 5px;
+  font-weight: 400;
+}
+
+.lobby-partner {
+  position: relative;
+}
+
+/* Only the partner's body and its plate take taps: the rest of the stage is grass to walk on. */
+.title-home .lobby-partner {
+  pointer-events: none;
+}
+
+.lobby-partner-hit,
+.lobby-plate {
+  pointer-events: auto;
+}
+
+.lobby-partner-hit {
+  position: absolute;
+}
+
+.lobby-partner.out .lobby-partner-hit {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .lobby-stroll-hint .keys-only {
+    display: none;
+  }
+}
+
+.lobby-plate {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #fff;
+  white-space: nowrap;
+  background: rgba(40, 48, 64, 0.85);
+  border-radius: 12px;
+}
+
+.lobby-plate b {
+  font-weight: 400;
+}
+
+.lobby-plate small {
+  font-family: var(--body);
+  font-size: 17px;
+  color: #c8d0ff;
+}
+
+.lobby-partner:hover .lobby-plate {
+  background: rgba(200, 48, 48, 0.9);
+}
+
+/* JOGAR: one chunky red button with a ledge under it. */
+.lobby-play {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 280px;
+  height: 78px;
+  padding: 0 24px 4px;
+  font-family: var(--title);
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 3px 3px 0 #801010;
+  background: linear-gradient(#ff5a4a, #e02a2a);
+  border: 3px solid #283040;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 -6px 0 #a81818,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+}
+
+.lobby-play:hover,
+.lobby-play.selected {
+  background: linear-gradient(#ff6e5e, #ea3434);
+  box-shadow:
+    inset 0 -6px 0 #a81818,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 3px #fff;
+}
+
+.lobby-play:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 -3px 0 #a81818,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.lobby-play .key-hint {
+  font-size: 7px;
+  text-shadow: none;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* The collection dock: Pokédex, Ovos, Loja, Ranking, Ideias. */
+.lobby-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 88px;
+  height: 68px;
+  padding: 4px;
+  pointer-events: auto;
+}
+
+.lobby-tile img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.lobby-tile > span:not(.key-hint) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--title);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.lobby-tile .lobby-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+}
+
+.lobby-tile .key-hint {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 6px;
+  padding: 2px 3px;
+}
+
+/* Narrow screens (phones in portrait): one column, the Hoje cards in a row, JOGAR right above a tab bar. */
+@media (max-width: 759px) and (min-height: 501px), (max-width: 759px) and (orientation: portrait) {
+  .lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lobby-rail-label {
+    display: none;
+  }
+  .lobby-today {
+    flex-direction: row;
+    gap: 6px;
+    padding: 0;
+  }
+  .lobby-card {
+    flex: 1 1 0;
+    gap: 4px;
+    padding: 7px 7px 6px;
+  }
+  .lobby-card-label {
+    font-size: 6px;
+    letter-spacing: 0;
+  }
+  .lobby-card-row {
+    gap: 4px;
+    min-height: 26px;
+  }
+  .lobby-card-row b {
+    font-size: 16px;
+  }
+  .lobby-card.challenge .lobby-card-row b {
+    white-space: normal;
+  }
+  .lobby-walker.shiny,
+  .lobby-card .key-hint {
+    display: none;
+  }
+  .lobby-icon {
+    width: 16px;
+    height: 20px;
+  }
+  .lobby-today,
+  .lobby-side {
+    align-self: stretch;
+  }
+  .lobby-side {
+    padding: 0;
+  }
+  .lobby-stage {
+    flex: 1 1 0;
+  }
+  .lobby-bottom {
+    display: grid;
+    grid-template-columns: repeat(var(--tiles), minmax(0, 1fr));
+    gap: 8px;
+  }
+  .lobby-dock {
+    display: contents;
+  }
+  .lobby-play {
+    grid-row: 1;
+    grid-column: 1 / -1;
+    min-width: 0;
+    height: 68px;
+    margin-bottom: 8px;
+  }
+  .lobby-tile {
+    grid-row: 2;
+    width: auto;
+    height: 60px;
+  }
+  /* Five tiles share a phone's width: the labels take a step down to fit (Pokédex, Ranking). */
+  .lobby-tile > span:not(.key-hint) {
+    font-size: 7px;
+  }
+  .lobby-tile {
+    padding: 4px 1px;
+  }
+  /* The tab bar's strip, from edge to edge under the tiles. */
+  .lobby-bottom::before {
+    content: '';
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin: -8px calc(-1 * max(10px, var(--safe-r))) calc(-1 * max(10px, var(--safe-b))) calc(-1 * max(10px, var(--safe-l)));
+    background: rgba(24, 30, 48, 0.82);
+    border-top: 2px solid #283040;
+  }
+}
+
+/* The Hall da Fama as a strip (narrow screens and landscape): title and ticker on the left, the faces on the right. */
+@media (max-width: 759px), (max-height: 500px) and (orientation: landscape) {
+  .lobby-hall {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'top stack'
+      'tick stack';
+    align-items: center;
+    gap: 4px 10px;
+    padding: 8px 12px;
+  }
+  .hall-top {
+    grid-area: top;
+    gap: 6px;
+    font-size: 8px;
+  }
+  /* The sparkle only shows for a waiting shiny ticket: the title needs the room. */
+  .lobby-hall:not(.waiting) .hall-sparkle {
+    display: none;
+  }
+  .hall-stack {
+    grid-area: stack;
+  }
+  .hall-ticker {
+    grid-area: tick;
+    font-size: 16px;
+  }
+  .hall-face {
+    width: 26px;
+    height: 26px;
+    font-size: 9px;
+  }
+  .lobby-tile.pokedex {
+    grid-column: 1;
+  }
+  .lobby-tile.eggs {
+    grid-column: 2;
+  }
+  .lobby-tile.mart {
+    grid-column: 3;
+  }
+  .lobby-tile.ranking {
+    grid-column: 4;
+  }
+  .lobby-tile.ideas {
+    grid-column: 5;
+  }
+}
+
+/* Phones in landscape: two columns. Logo, partner and dock on the left; Hoje, the Hall and JOGAR on the right. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .title-home.screen.shell {
+    gap: 6px;
+  }
+  .title-home .shell-top {
+    min-height: 44px;
+  }
+  .lobby {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 5.5fr);
+    /* The second row is `1fr` (not `minmax(0, 1fr)`) so it grows to fit Hoje, which spans it. */
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-areas:
+      'logo logo logo logo logo today'
+      'stage stage stage stage stage today'
+      'stage stage stage stage stage side'
+      'd1 d2 d3 d4 d5 play';
+    gap: 6px 12px;
+  }
+  .lobby-rail-label,
+  .lobby-card .key-hint {
+    display: none;
+  }
+  .lobby-today,
+  .lobby-side {
+    gap: 6px;
+    padding: 0;
+  }
+  .lobby-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 10px;
+    min-height: 38px;
+  }
+  .lobby-card-row {
+    justify-content: flex-end;
+    min-height: 0;
+  }
+  .lobby-card-row b {
+    font-size: 18px;
+  }
+  .lobby-card .lobby-progress {
+    flex: 0 1 80px;
+  }
+  .lobby-icon {
+    width: 16px;
+    height: 20px;
+  }
+  .lobby-bottom,
+  .lobby-dock {
+    display: contents;
+  }
+  .lobby-tile {
+    width: auto;
+    height: 54px;
+    align-self: end;
+  }
+  .lobby-tile.pokedex {
+    grid-area: d1;
+  }
+  .lobby-tile.eggs {
+    grid-area: d2;
+  }
+  .lobby-tile.mart {
+    grid-area: d3;
+  }
+  .lobby-tile.ranking {
+    grid-area: d4;
+  }
+  .lobby-tile.ideas {
+    grid-area: d5;
+  }
+  .lobby-play {
+    grid-area: play;
+    align-self: end;
+    min-width: 0;
+    height: 58px;
+    font-size: 20px;
+  }
+  .lobby-side .invite-banner {
+    padding: 5px 10px 5px 8px;
+  }
+  .lobby-side .invite-banner img {
+    width: 20px;
+    height: 23px;
+  }
+  .lobby-side .invite-blurb {
+    display: none;
+  }
 }
 
 /* Support page link under a victory's buttons. */
@@ -2231,52 +3773,9 @@ button {
   color: #e83838;
 }
 
-/* Starter select's way back to the title: top-left twin of the Poké Mart entry. */
-.back-entry {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px;
-  font-family: var(--title);
-  font-size: 9px;
-  pointer-events: auto;
-}
-
+/* The shell's ◀ (backButton). */
 .back-arrow {
   color: #e83838;
-}
-
-.back-entry:hover,
-.back-entry:focus-visible {
-  --frame: #e83838;
-}
-
-@media (max-width: 480px) {
-  .back-entry {
-    top: 6px;
-    left: 6px;
-    gap: 6px;
-    padding: 6px 8px;
-  }
-}
-
-/* Phones in landscape: logo beside the menu, so neither has to shrink. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .title-home {
-    flex-direction: row;
-    gap: clamp(16px, 5vw, 48px);
-    padding-bottom: max(36px, var(--safe-b));
-  }
-  .title-item {
-    min-height: 40px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
 }
 
 .mart-screen {
@@ -2541,38 +4040,6 @@ button {
   .mart-buy {
     width: 100%;
   }
-  /* Compact corner so it clears the centered logo on phones. */
-  .top-right {
-    top: 6px;
-    right: 6px;
-    gap: 6px;
-  }
-  .mart-entry {
-    flex-direction: column;
-    gap: 2px;
-    padding: 6px 8px;
-  }
-  .mart-entry-text b {
-    display: none;
-  }
-  .mart-entry-text span {
-    font-size: 16px;
-  }
-  /* Stays a row: it fits left of the logo, while a column would cover the region tabs. */
-  .lang-switch {
-    top: 6px;
-    left: 6px;
-    gap: 2px;
-    padding: 4px;
-  }
-  .lang-option {
-    min-width: 32px;
-    min-height: 28px;
-  }
-  .account-chip {
-    min-height: 36px;
-    padding: 4px 8px;
-  }
 }
 
 /* ---------- Small screens ---------- */
@@ -2588,18 +4055,10 @@ button {
   .screen {
     gap: 12px;
   }
-  .logo-top {
-    font-size: 30px;
-  }
-  .logo-bottom {
-    margin-top: 14px;
-    font-size: 15px;
-  }
   .credits {
     position: static;
     font-size: 6px;
   }
-
   .dialog,
   .dialog.wide {
     width: 100%;
@@ -2667,7 +4126,6 @@ button {
   .damage-row b {
     font-size: 8px;
   }
-
   .xp {
     height: 14px;
   }
@@ -2743,21 +4201,6 @@ button {
 @media (max-height: 500px) {
   .screen {
     gap: 8px;
-  }
-  .logo-top {
-    font-size: 26px;
-    text-shadow:
-      -3px 0 0 #2a5aa8, 3px 0 0 #2a5aa8, 0 -3px 0 #2a5aa8, 0 3px 0 #2a5aa8,
-      -3px -3px 0 #2a5aa8, 3px 3px 0 #2a5aa8, -3px 3px 0 #2a5aa8, 3px -3px 0 #2a5aa8,
-      0 7px 0 #101830;
-  }
-  .logo-bottom {
-    margin-top: 12px;
-    font-size: 13px;
-  }
-  .subtitle {
-    margin: 0;
-    font-size: 10px;
   }
   .credits {
     display: none;
@@ -2863,6 +4306,12 @@ button {
 .item-toast img {
   width: 28px;
   height: 28px;
+}
+
+/* The toast's second line ("Surto de Gastly!" / "Ele aparece muito mais hoje…"), not glued to the first. */
+.item-toast small {
+  display: block;
+  margin-top: 2px;
 }
 
 @media (max-width: 720px) and (min-height: 501px) {
@@ -3021,21 +4470,626 @@ button {
   flex-shrink: 0;
 }
 
-/* ---------- Settings ---------- */
+/* ---------- Shell: top bar, body and action bar of the menus before a run (ui/shell.ts) ---------- */
 
-.dialog.settings {
-  width: min(460px, 94vw);
+/* A column inside the safe areas: the bars are flex children, so nothing ever sits under them; only the body scrolls. */
+.screen.shell {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 10px;
+  overflow: hidden;
+  padding: max(10px, var(--safe-t)) max(10px, var(--safe-r)) max(10px, var(--safe-b)) max(10px, var(--safe-l));
 }
 
-.settings-list,
-.settings-group {
+/* Over a paused run the HUD stays behind: a darker veil keeps it from reading as part of the bar. */
+.screen.shell.dim {
+  background: rgba(8, 8, 24, 0.72);
+}
+
+.shell-top {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.shell-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shell-slot.right {
+  justify-content: flex-end;
+}
+
+/* No title: the left slot (the Trainer chip) takes what the right one leaves. */
+.shell-top:has(> .shell-spacer) .shell-slot.right {
+  flex: none;
+}
+
+.shell-slot > * {
+  flex: none;
+}
+
+.shell-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--title);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow:
+    2px 2px 0 #283040,
+    -1px -1px 0 #283040,
+    1px -1px 0 #283040,
+    -1px 1px 0 #283040;
+}
+
+.shell-body {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  gap: 16px;
+  /* Room for the boxes' drop shadows and focus rings at the scroll edges. */
+  padding: 4px 2px 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.shell-body > * {
+  flex-shrink: 0;
+}
+
+.shell-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(24, 30, 48, 0.86);
+  border: 2px solid #283040;
+  border-radius: 10px;
+}
+
+.shell-btn,
+.shell-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  pointer-events: auto;
+}
+
+.shell-btn {
+  padding: 0 7px;
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.shell-btn:hover,
+.shell-btn:focus-visible,
+.trainer-chip:hover,
+.trainer-chip:focus-visible {
+  --frame: #e83838;
+}
+
+.shell-back .back-arrow {
+  font-size: 12px;
+}
+
+.shell-icon img {
+  width: 24px;
+  height: 24px;
+}
+
+.shell-chip {
+  gap: 8px;
+  padding: 4px 12px 4px 8px;
+}
+
+.shell-wallet img {
+  width: 24px;
+  height: 24px;
+}
+
+.shell-wallet b {
+  font-family: var(--title);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* Narrow phones: the ₽ sign says it's money, so the coin goes; the narrowest keep just the trainer's face. */
+@media (max-width: 400px) {
+  .shell-wallet img {
+    display: none;
+  }
+  .shell-wallet {
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 370px) {
+  .trainer-chip .trainer-chip-who {
+    display: none;
+  }
+  .trainer-chip {
+    min-width: 0;
+  }
+}
+
+/* Pill tabs (Settings). Press Start 2P: keep labels short and unaccented in capitals. */
+.shell-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(24, 30, 48, 0.78);
+  border-radius: 10px;
+  pointer-events: auto;
+}
+
+.shell-tabs.selected {
+  box-shadow: 0 0 0 3px var(--paper);
+}
+
+.shell-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #c8d0ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.shell-tab.on {
+  color: #283040;
+  background: var(--paper);
+}
+
+@media (max-width: 480px) {
+  .shell-tab {
+    font-size: 8px;
+  }
+}
+
+/* Segmented control (PT / EN / ES). */
+.shell-seg {
+  display: flex;
+  overflow: hidden;
+  background: #e3e7f2;
+  border: 2px solid #283040;
+  border-radius: 8px;
+}
+
+.shell-seg-option {
+  flex: 1 1 0;
+  min-height: 44px;
+  font-family: var(--title);
+  font-size: 10px;
+  color: #6878a8;
+  background: transparent;
+  border: 0;
+}
+
+.shell-seg-option.on {
+  color: #fff;
+  background: #283040;
+}
+
+/* ---------- Trainer chip and Trainer Card (ui/trainer.ts) ---------- */
+
+/* On a crowded bar the name gives way first: the chip never gets narrower than the avatar and the sync dot. */
+.trainer-chip {
+  flex: 0 1 auto;
+  min-width: 84px;
+  max-width: 300px;
+  overflow: hidden;
+  justify-content: flex-start;
+  padding: 4px 10px 4px 5px;
+  color: var(--ink);
+  text-align: left;
+}
+
+/* Portraits are 40 px: shown at 1:1 (cropped to the circle) or 2:1, never in between. */
+.trainer-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  background: #dfe6f5;
+  border: 2px solid #283040;
+  border-radius: 50%;
+}
+
+.trainer-avatar img {
+  width: 40px;
+  height: 40px;
+}
+
+/* The guest's Poké Ball (10 px icon). */
+.trainer-avatar img.ball {
+  width: 20px;
+  height: 20px;
+}
+
+.trainer-avatar.big {
+  width: 80px;
+  height: 80px;
+  border-width: 3px;
+}
+
+.trainer-avatar.big img {
+  width: 80px;
+  height: 80px;
+}
+
+.trainer-avatar.big img.ball {
+  width: 40px;
+  height: 40px;
+}
+
+.trainer-avatar.supporter {
+  border-color: #c88a10;
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
+.trainer-chip-who {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1;
+}
+
+.trainer-chip-who b {
+  font-family: var(--title);
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-chip-sub {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  font-size: 17px;
+  color: #806010;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-chip-sub > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-chip-sub img {
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+
+.trainer-chip-sub.join {
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1.4;
+  color: #e83838;
+}
+
+.trainer-chip .sync-dot {
+  margin: 0 2px;
+}
+
+.trainer-panel {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trainer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #e8503a, #b02838 55%, #7a1838);
+  border: 3px solid #283040;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 3px #f8d030,
+    0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.trainer-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.trainer-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trainer-id h3 {
+  margin: 0;
+  font-family: var(--title);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  text-shadow: 2px 2px 0 #581020;
+}
+
+.trainer-id small {
+  font-size: 19px;
+  line-height: 1;
+  color: #ffd8d0;
+  overflow-wrap: anywhere;
+}
+
+.trainer-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 3px;
+  font-family: var(--title);
+  font-size: 8px;
+  line-height: 1.4;
+  color: #4a3008;
+  background: #f8d030;
+  border-radius: 4px;
+}
+
+.trainer-title img {
+  width: 10px;
+  height: 10px;
+}
+
+.trainer-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 
-.settings-list {
-  gap: 12px;
+.trainer-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 4px 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+}
+
+.trainer-stat b {
+  font-family: var(--title);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.trainer-stat small {
+  max-width: 100%;
+  font-size: 17px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-medals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-height: 44px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+}
+
+.trainer-medal {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trainer-medal img {
+  width: 24px;
+  height: 24px;
+}
+
+.trainer-medal b {
+  font-family: var(--title);
+  font-size: 8px;
+}
+
+.trainer-medals small {
+  font-size: 18px;
+  line-height: 1.1;
+  color: #ffe8e0;
+}
+
+.trainer-sync {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px;
+  font-size: 19px;
+  line-height: 1;
+  color: #ffe8e0;
+  text-align: left;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.trainer-sync.selected {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+}
+
+.trainer-sync-now {
+  margin-left: auto;
+  padding-left: 8px;
+  font-family: var(--title);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.trainer-note {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 19px;
+  line-height: 1.15;
+  color: #fff;
+  text-align: center;
+  text-shadow: 2px 2px 0 #101020;
+}
+
+.trainer-note.error {
+  color: #ffb0b0;
+}
+
+.trainer-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trainer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 6px 16px;
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1;
+  text-align: left;
+}
+
+.trainer-row span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.trainer-row img {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.trainer-row i {
+  font-style: normal;
+  font-size: 12px;
+  color: #6878a8;
+}
+
+.trainer-row.selected {
+  --frame: #e83838;
+  background: #fff;
+}
+
+.trainer-row.selected i {
+  color: #e83838;
+}
+
+.trainer-row.out {
+  justify-content: center;
+  color: #a03030;
+}
+
+.trainer-row.out span {
+  flex: none;
+}
+
+/* Wide screens and landscape phones: the card on the left, its rows on the right. */
+@media (min-width: 880px), (max-height: 500px) and (orientation: landscape) {
+  .trainer-panel {
+    width: min(900px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 16px;
+  }
+  .trainer-card {
+    grid-row: span 4;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .trainer-card {
+    gap: 8px;
+    padding: 12px;
+  }
+  .trainer-row {
+    min-height: 44px;
+  }
+  .trainer-panel .hint {
+    display: none;
+  }
+}
+
+/* ---------- Settings (ui/settings.ts) ---------- */
+
+/* Settings and the Trainer Card read from the top, like a phone's settings. */
+.settings-screen .shell-body,
+.trainer-screen .shell-body {
+  justify-content: flex-start;
+}
+
+.settings-panel {
+  width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 12px;
 }
 
 .setting-row {
@@ -3044,31 +5098,59 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 6px 12px;
-  min-height: 48px;
-  padding: 8px 12px;
-  font-family: var(--title);
-  font-size: 10px;
-  line-height: 1.4;
+  min-height: 56px;
+  padding: 6px 8px;
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1;
   color: var(--ink);
   text-align: left;
-  background: #e8e8f0;
-  border: 3px solid transparent;
-  border-radius: 6px;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid #e3e7f2;
+  border-radius: 0;
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
 }
 
 .setting-row.selected {
-  background: #fff;
-  border-color: #e83838;
+  background: #e4e8f4;
+  border-radius: 6px;
+  box-shadow: inset 4px 0 0 #e83838;
+}
+
+.setting-row.column {
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.setting-label {
+  flex: 1 1 auto;
+}
+
+.setting-slider .setting-label {
+  flex: 0 0 auto;
+  min-width: 80px;
 }
 
 .setting-value {
+  order: 2;
+  min-width: 44px;
+  font-family: var(--title);
   font-size: 9px;
+  text-align: right;
   color: #6878a8;
 }
 
 /* Volume bar: cells grow taller to the right, like a handheld's volume meter. */
 .slider {
-  flex-basis: 100%;
+  order: 1;
+  flex: 1 1 150px;
   display: flex;
   align-items: flex-end;
   gap: 4px;
@@ -3081,9 +5163,9 @@ button {
 .slider-cell {
   flex: 1;
   height: var(--h);
-  background: #c8c8d8;
+  background: #d8dce8;
   border-radius: 2px;
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .slider-cell.on {
@@ -3096,20 +5178,23 @@ button {
 
 .setting-pill {
   min-width: 52px;
-  padding: 6px 8px 5px;
+  padding: 8px 10px 7px;
+  font-family: var(--title);
   font-size: 9px;
   text-align: center;
   color: #fff;
-  background: #48a048;
-  border-radius: 4px;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  background: #58b858;
+  border-radius: 14px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .setting-pill.off {
-  background: #8890a8;
+  color: #6878a8;
+  background: #d8dce8;
 }
 
 .setting-choice {
+  font-family: var(--title);
   font-size: 9px;
   color: #6878a8;
 }
@@ -3118,52 +5203,176 @@ button {
   color: #e83838;
 }
 
-.settings-section {
-  padding: 0 4px 4px;
-  font-family: var(--title);
-  font-size: 9px;
-  color: #6878a8;
-  border-bottom: 2px solid #d8d8e8;
+.settings-about {
+  margin: 8px 8px 4px;
+  font-size: 19px;
+  line-height: 1.15;
 }
 
-@media (max-width: 600px) {
+.settings-about small {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+  color: #6878a8;
+}
+
+@media (max-height: 500px) {
   .setting-row {
     min-height: 44px;
-    padding: 6px 10px;
-    font-size: 9px;
-  }
-}
-
-/* Landscape phones: tighter rows, and each section in its own column, so the whole dialog fits without scrolling. */
-@media (max-height: 500px) {
-  .dialog.settings {
-    width: min(820px, 94vw);
-  }
-  /* The browser balances the sections across both columns by height. */
-  .settings-list {
-    display: block;
-    columns: 2;
-    column-gap: 12px;
-  }
-  .settings-group {
-    break-inside: avoid;
-    gap: 4px;
-    padding-bottom: 6px;
-  }
-  .setting-row {
-    min-height: 36px;
-    padding: 2px 10px;
-  }
-  .settings .hint {
-    display: none;
-  }
-  .settings-section {
+    padding-top: 2px;
     padding-bottom: 2px;
   }
   .slider {
-    flex: 1 1 160px;
-    height: 26px;
-    padding: 2px 0;
+    height: 28px;
+  }
+  .settings-panel .hint,
+  .dialog.controls .hint {
+    display: none;
+  }
+}
+
+/* ---------- Controls (remap screen) ---------- */
+
+.dialog.controls {
+  width: min(520px, 96vw);
+}
+
+.controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 56vh;
+  overflow-y: auto;
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: 1fr 88px 88px;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 6px 4px 12px;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.control-row.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+.control-head {
+  min-height: 0;
+  padding-block: 0;
+  font-size: 8px;
+  color: #6878a8;
+  text-align: center;
+  background: none;
+}
+
+.control-cell {
+  min-height: 30px;
+  padding: 6px 4px 5px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid #c8c8d8;
+  border-radius: 4px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.control-cell.focus {
+  border-color: #e83838;
+  color: #e83838;
+}
+
+/* Waiting for the new key or button. */
+.control-cell.listening {
+  color: #fff;
+  background: #e83838;
+  border-color: #e83838;
+}
+
+.controls-status {
+  min-height: 2.6em;
+  margin: 8px 0 0;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #4a5478;
+}
+
+.controls-note {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #4a5478;
+}
+
+/* The gamepads the browser shows the game, or how to make one appear. */
+.controls-pad {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #2f8a4a;
+}
+
+.controls-pad.missing {
+  color: #b8562a;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .controls-note {
+    display: block;
+  }
+  /* Touch players without a pad already have the note. */
+  .controls-pad.missing {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .control-row {
+    grid-template-columns: 1fr 64px 64px;
+    padding-left: 8px;
+    font-size: 8px;
+  }
+  .control-cell {
+    font-size: 8px;
+  }
+}
+
+/* Landscape phones: a tighter dialog, and the list scrolls between its header and buttons. */
+@media (max-height: 500px) {
+  .dialog.controls {
+    gap: 6px;
+    padding: 10px 16px;
+  }
+  .controls-note,
+  .controls-pad,
+  .controls-status {
+    min-height: 0;
+    margin: 0;
+    font-size: 15px;
+  }
+  .controls-list {
+    max-height: 34vh;
+  }
+  .control-row {
+    min-height: 32px;
+    padding-block: 2px;
+  }
+  .control-cell {
+    min-height: 26px;
+    padding-block: 4px 3px;
+  }
+  .controls .hint {
+    display: none;
   }
 }
 
@@ -3532,64 +5741,6 @@ button {
   color: #c89000;
 }
 
-.title-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-}
-
-/* "Surto de hoje": the day's outbreak under the logo. */
-.outbreak-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: min(420px, 92vw);
-  padding: 6px 12px 6px 6px;
-}
-
-.outbreak-sprites {
-  width: 114px;
-  height: 60px;
-  flex-shrink: 0;
-  image-rendering: pixelated;
-}
-
-.outbreak-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  text-align: left;
-}
-
-.outbreak-text small {
-  font-family: var(--title);
-  font-size: 7px;
-  color: #c04890;
-  text-transform: uppercase;
-}
-
-.outbreak-text b {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--title);
-  font-size: 10px;
-  font-weight: normal;
-}
-
-.outbreak-text b img {
-  width: 12px;
-  height: 12px;
-}
-
-.outbreak-text span {
-  font-size: 17px;
-  line-height: 1;
-  color: #505870;
-}
-
 /* A guest who came by a friend's link: who invited them and what signing up brings. */
 .invite-banner {
   display: flex;
@@ -3634,12 +5785,6 @@ button {
   font-size: 17px;
   line-height: 1;
   color: #505870;
-}
-
-.title-head .player-title {
-  font-size: 10px;
-  color: #ffcb05;
-  text-shadow: 2px 2px 0 #101020;
 }
 
 .mission-report {
@@ -3779,88 +5924,12 @@ button {
 }
 
 @media (max-height: 500px) {
-  .title-head {
-    gap: 6px;
-  }
   .mission-row {
     padding: 4px 8px;
   }
 }
 
 /* ---------- Eggs: the box in the Pokémon select, the incubator and hatching ---------- */
-
-/* The egg box sits apart from the regions, after a divider. */
-.egg-tab {
-  position: relative;
-  margin-left: 10px;
-}
-
-.egg-tab::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 6px;
-  bottom: 6px;
-  border-left: 2px dashed #6878a8;
-}
-
-.egg-box-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding-top: 6px;
-}
-
-/* A scrolling box: with dozens of families the select stays one screen tall. ↑/↓ read the column count from here. */
-.egg-box {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-  max-height: min(44vh, 400px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-  padding: 4px;
-  scrollbar-width: thin;
-}
-
-.egg-cell {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  min-width: 0;
-  padding: 4px 2px;
-  background: #f8f8f8;
-  border: 2px solid #283040;
-  border-radius: 6px;
-}
-
-.egg-cell.locked {
-  background: #c8d0e0;
-}
-
-.egg-cell.selected {
-  background: #fff;
-  border-color: #ffcb05;
-  box-shadow: 0 0 0 2px #fff, 0 3px 0 #2a5aa8;
-}
-
-.egg-cell-sprite {
-  width: 72px;
-  max-width: 100%;
-  aspect-ratio: 48 / 40;
-}
-
-.egg-cell-tag {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 16px;
-  height: 16px;
-  image-rendering: pixelated;
-}
 
 .incubator-entry {
   display: flex;
@@ -3884,11 +5953,6 @@ button {
 .incubator-entry:hover,
 .incubator-entry:focus-visible {
   --frame: #58b858;
-}
-
-.btn.confirm.locked {
-  color: #707088;
-  background: #d8d8e0;
 }
 
 .locked-blurb {
@@ -4036,15 +6100,6 @@ button {
 }
 
 @media (max-width: 520px) {
-  .egg-box {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 4px;
-    max-height: 34vh;
-  }
-  .egg-cell-tag {
-    width: 12px;
-    height: 12px;
-  }
   .egg-slots {
     gap: 6px;
   }
@@ -4069,15 +6124,6 @@ button {
   .hatch-canvas {
     width: 224px;
     height: 192px;
-  }
-  .egg-box {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 4px;
-    max-height: calc(100dvh - 210px);
-  }
-  .egg-box-wrap {
-    gap: 6px;
-    padding-top: 0;
   }
 }
 
@@ -4876,18 +6922,6 @@ a.btn.dex-site {
 
 /* ---------- Shiny starters: the Normal/Shiny pick ---------- */
 
-.starter-card {
-  position: relative;
-}
-
-.starter-shiny {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 18px;
-  height: 18px;
-}
-
 .shiny-picker {
   display: flex;
   align-items: center;
@@ -5542,34 +7576,9 @@ a.btn.dex-site {
 
 /* ---------- Apoiadores (supporters) ---------- */
 
-.support-chip {
-  cursor: pointer;
-  font-family: var(--title);
-}
-
 .dialog.supporters {
   width: min(520px, 94vw);
   gap: 10px;
-}
-
-.dialog-title .title-heart {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  vertical-align: -2px;
-}
-
-.supporter-since {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.supporter-since img {
-  width: 18px;
-  height: 18px;
-  flex: none;
 }
 
 .pick-label {
@@ -5581,55 +7590,6 @@ a.btn.dex-site {
 
 .pick-label:empty {
   display: none;
-}
-
-.supporter-perks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 4px;
-  font-size: 18px;
-  line-height: 1.1;
-}
-
-.supporter-perks li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.supporter-perks img {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  object-fit: contain;
-}
-
-.supporter-perks b {
-  color: #e83838;
-}
-
-/* Two columns of buttons, so the dialog fits a phone held upright. */
-.supporter-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.supporter-buttons .btn:first-child,
-.supporter-buttons .btn:last-child:nth-child(even) {
-  grid-column: 1 / -1;
-}
-
-.supporter-buttons .btn.glow {
-  background: #fff4c0;
-  border-color: #f0b800;
-  animation: share-glow 1.4s steps(2, start) infinite;
-}
-
-.supporter-buttons .btn.glow.selected {
-  border-color: #e83838;
 }
 
 /* Pickers: a scrolling grid of portraits over the footer's buttons. */
@@ -5703,8 +7663,7 @@ a.btn.dex-site {
 }
 
 /* The poll: one row per option, with its share of the votes. */
-.poll-rows,
-.wall-rows {
+.poll-rows {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -5717,8 +7676,7 @@ a.btn.dex-site {
   border-radius: 6px;
 }
 
-.poll-row,
-.wall-row {
+.poll-row {
   display: grid;
   align-items: center;
   gap: 8px;
@@ -5735,12 +7693,7 @@ a.btn.dex-site {
   grid-template-columns: 32px minmax(0, 1fr) minmax(60px, 1.2fr) auto;
 }
 
-.wall-row {
-  grid-template-columns: 18px auto 1fr;
-}
-
-.poll-row.selected,
-.wall-row.selected {
+.poll-row.selected {
   background: rgba(255, 255, 255, 0.16);
   border-color: #e83838;
 }
@@ -5767,26 +7720,9 @@ a.btn.dex-site {
   font-size: 20px;
 }
 
-.poll-row small,
-.wall-row small {
+.poll-row small {
   font-size: 17px;
   color: #a8b0d0;
-}
-
-.wall-row img {
-  width: 18px;
-  height: 18px;
-}
-
-.wall-row b {
-  font-weight: normal;
-  font-size: 20px;
-}
-
-.wall-row small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* The heart by a supporter's name on the boards and profiles. */
@@ -5837,23 +7773,3230 @@ a.btn.dex-site {
   flex-basis: 100%;
 }
 
-.support-chip.waiting {
-  --frame: #f8d030;
+/* ---------- Hall da Fama (ui/supporters.ts) ---------- */
+
+/*
+ * A night sky over the shell: slowly turning gold rays (centered high, like a
+ * stage light) and a field of stars, both behind the content. Phones and
+ * portrait: everything scrolls in the body and the call to action is the
+ * footer. Landscape: the call to action becomes a column on the right; tall
+ * enough, the Lendas span the width and only the supporters scroll.
+ */
+.screen.shell.hall-screen {
+  isolation: isolate;
+  color: #fff;
+  background: radial-gradient(ellipse at 50% -10%, #6a4ab0 0, #2a1a5a 40%, #120c2c 80%);
+}
+
+.hall-screen::before {
+  content: '';
+  position: absolute;
+  top: calc(30% - 120vmax);
+  left: calc(50% - 120vmax);
+  width: 240vmax;
+  height: 240vmax;
+  z-index: -1;
+  background: repeating-conic-gradient(rgba(248, 208, 48, 0.07) 0 6deg, transparent 6deg 14deg);
+  animation: hall-spin 90s linear infinite;
+  pointer-events: none;
+}
+
+.hall-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* Hard 2 px stars: the top-left quadrant of each tile's conic gradient, two offset grids. */
+  background:
+    conic-gradient(from 270deg at 2px 2px, #fff 90deg, transparent 0) 11px 7px / 46px 46px,
+    conic-gradient(from 270deg at 2px 2px, #fff 90deg, transparent 0) 34px 30px / 62px 62px;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+@keyframes hall-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.hall-screen .shell-title {
+  color: #f8d030;
+  text-shadow:
+    2px 2px 0 #6a3a08,
+    -1px -1px 0 #4a2808,
+    1px -1px 0 #4a2808,
+    -1px 1px 0 #4a2808;
+}
+
+/* ✦ HALL DA FAMA ✦ where there's room. */
+@media (min-width: 600px) {
+  .hall-screen .shell-title::before,
+  .hall-screen .shell-title::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin: 0 10px;
+    vertical-align: -5px;
+    background: var(--sparkle) center / 20px 20px no-repeat;
+    image-rendering: pixelated;
+  }
+}
+
+/* "Você é Apoiador(a)": phones keep the heart. */
+.hall-you {
+  max-width: 100%;
+  padding: 4px 14px 4px 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a02860;
+  background: #ffe0ef;
+  border: 2px solid #f0a0c8;
+  border-radius: 22px;
+}
+
+.hall-you.gold {
+  color: #6a4008;
+  background: #fff4c0;
+  border-color: #f8d030;
+}
+
+.hall-you img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.hall-you span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 760px) {
+  .hall-you span {
+    display: none;
+  }
+  .hall-you {
+    padding: 4px 10px;
+  }
+}
+
+.hall-screen .shell-body {
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.hall-lead {
+  margin: 0;
+  text-align: center;
+  font-size: 19px;
+  line-height: 1.1;
+  color: #e8dcff;
+}
+
+.hall-note {
+  margin: 12px 0;
+  text-align: center;
+  font-size: 19px;
+  color: #c8b8ff;
+}
+
+.hall-legends,
+.hall-fans {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hall-label {
+  flex: none;
+  margin: 0 0 6px;
+  font-family: var(--title);
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hall-label.gold {
+  color: #f8d030;
+}
+
+.hall-label.pink {
+  color: #ffb0d8;
+}
+
+/* The Lendas: a row that scrolls sideways, snapping a card to the middle. */
+.legend-strip {
+  display: flex;
+  gap: 14px;
+  padding: 4px 6px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.legend-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.legend-card {
+  position: relative;
+  flex: none;
+  width: 208px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 10px 12px;
+  scroll-snap-align: center;
+  font: inherit;
+  color: #fff;
+  background: linear-gradient(#3a2878, #1e1448);
+  border: 3px solid #f8d030;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 0 2px #8a6010,
+    0 0 22px rgba(248, 208, 48, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+/* Centered while they fit; scrolled from the start once they don't. */
+.legend-card:first-child {
+  margin-left: auto;
+}
+
+.legend-card:last-child {
+  margin-right: auto;
+}
+
+.legend-card.selected,
+.legend-card:hover {
+  border-color: #fff;
+  box-shadow:
+    inset 0 0 0 2px #e83838,
+    0 0 26px rgba(255, 255, 255, 0.4),
+    0 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.legend-card.empty {
+  cursor: default;
+  border-style: dashed;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+.legend-beam {
+  position: absolute;
+  top: -10px;
+  left: calc(50% - 70px);
+  width: 140px;
+  height: 190px;
+  background: linear-gradient(rgba(255, 240, 170, 0.5), rgba(255, 240, 170, 0));
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  animation: hall-beam 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes hall-beam {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.legend-spark {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 20px;
+  height: 20px;
+  animation: hall-twinkle 1.6s steps(2) infinite;
+}
+
+.legend-spark.two {
+  top: 52px;
+  left: auto;
+  right: 20px;
+  width: 10px;
+  height: 10px;
+  animation-delay: 0.8s;
+}
+
+@keyframes hall-twinkle {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* The Pokémon on its pedestal: an 88 × 80 canvas at 2× (1× on short screens). */
+.legend-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 166px;
+}
+
+.legend-sprite {
+  width: 176px;
+  height: 160px;
+}
+
+.legend-ball {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 40px;
+}
+
+.legend-pedestal {
+  width: 120px;
+  height: 18px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: linear-gradient(#f8d030, #a86e10);
+  border: 2px solid #4a3008;
+}
+
+.legend-name,
+.legend-handle,
+.legend-title {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-name {
+  margin-top: 6px;
+  font-family: var(--title);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.legend-card.empty .legend-name {
+  white-space: normal;
+  text-align: center;
+  color: #f8d030;
+}
+
+.legend-handle {
+  font-size: 17px;
+  line-height: 1;
+  color: #c8b8ff;
+}
+
+.legend-title {
+  margin-top: 4px;
+  padding: 3px 6px;
+  font-family: var(--title);
+  font-size: 7px;
+  font-style: normal;
+  line-height: 1.4;
+  color: #4a3008;
+  background: #f8d030;
+  border-radius: 4px;
+}
+
+.hall-dots {
+  display: none;
+  justify-content: center;
+  gap: 8px;
+}
+
+.hall-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #5a4a90;
+}
+
+.hall-dots i.on {
+  background: #f8d030;
+}
+
+/* Supporters: three columns of chips. */
+.fan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding: 2px;
+}
+
+.fan-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 6px 8px;
+  text-align: left;
+  font: inherit;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 176, 216, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.fan-chip.selected,
+.fan-chip:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #f8d030;
+}
+
+.fan-avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #3a2878;
+  border: 2px solid #ffb0d8;
+}
+
+.fan-avatar img {
+  width: 40px;
+  height: 40px;
+}
+
+.fan-avatar img.ball {
+  width: 20px;
+  height: 20px;
+}
+
+/* A portrait or sprite still downloading: its Poké Ball wobbles like one about to open. */
+.wobble {
+  transform-origin: 50% 85%;
+  animation: ball-wobble 1.2s steps(1) infinite;
+}
+
+@keyframes ball-wobble {
+  0%,
+  50% {
+    transform: none;
+  }
+  60% {
+    transform: rotate(-20deg);
+  }
+  70% {
+    transform: rotate(20deg);
+  }
+  80% {
+    transform: rotate(-10deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wobble {
+    animation: blink 1.1s steps(2, start) infinite;
+  }
+}
+
+.fan-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fan-who b,
+.fan-who small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fan-who b {
+  font-family: var(--title);
+  font-size: 8px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.fan-who small {
+  font-size: 16px;
+  line-height: 1;
+  color: #c8b8ff;
+}
+
+.fan-heart {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+/* The call to action: a pink panel (the footer on phones). */
+.shell-actions.hall-cta {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  color: #4a1030;
+  background: linear-gradient(#ffe8f3, #ffd0e6);
+  border: 3px solid #283040;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.hall-cta-title,
+.hall-cta-note,
+.hall-cta-line,
+.hall-cta-gold {
+  display: none;
+  margin: 0;
+}
+
+.hall-cta-title {
+  font-family: var(--title);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.hall-cta-note,
+.hall-cta-line,
+.hall-cta-gold {
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.hall-cta-note.since {
+  align-items: center;
+  gap: 8px;
+}
+
+.hall-cta-note.since img {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.hall-cta b {
+  color: #c02870;
+}
+
+.hall-tiles {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.hall-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px;
+  font: inherit;
+  color: inherit;
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+button.hall-tile {
+  min-height: 52px;
+  background: rgba(255, 255, 255, 0.6);
+  border-color: #f0a0c8;
+  cursor: pointer;
+}
+
+button.hall-tile.selected,
+button.hall-tile:hover {
+  border-color: #e83838;
+}
+
+.hall-tile.glow {
+  background: #fff4c0;
+  border-color: #f0b800;
   animation: share-glow 1.4s steps(2, start) infinite;
 }
 
-.support-chip .support-sparkle {
-  width: 14px;
-  height: 14px;
-  margin-left: -4px;
+.hall-tile img {
+  width: 24px;
+  height: 24px;
 }
 
-@media (max-width: 420px) {
-  .supporter-buttons .btn {
-    padding: 8px 6px;
+.hall-tile small {
+  max-width: 100%;
+  font-size: 15px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hall-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+}
+
+.hall-link {
+  min-height: 32px;
+  padding: 2px 12px;
+  font-family: var(--body);
+  font-size: 17px;
+  color: #a02860;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid #f0a0c8;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+.hall-link.selected,
+.hall-link:hover {
+  border-color: #e83838;
+}
+
+.hall-support {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 16px 4px;
+  font-family: var(--title);
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 2px 2px 0 #801040;
+  background: linear-gradient(#ff7ab8, #e8408c);
+  border: 3px solid #283040;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 -6px 0 #a81c5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.hall-support img {
+  width: 20px;
+  height: 20px;
+}
+
+.hall-support.selected,
+.hall-support:hover {
+  outline: 3px solid #e83838;
+  outline-offset: 2px;
+}
+
+/* Narrow: supporters become small tiles, avatar over name. */
+@media (orientation: portrait), (max-width: 760px) {
+  .fan-chip {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    text-align: center;
   }
-  .supporter-perks {
+  .fan-who {
+    width: 100%;
+    align-items: center;
+  }
+  .fan-who small,
+  .fan-heart {
+    display: none;
+  }
+}
+
+/* Phones held upright: the Lendas become a carousel (the side ones dim). */
+@media (orientation: portrait), (max-width: 639px) {
+  .legend-strip {
+    padding-inline: calc(50% - 104px);
+  }
+  .legend-card:not(.centered):not(.empty) {
+    opacity: 0.55;
+  }
+  .hall-dots {
+    display: flex;
+  }
+}
+
+/* Landscape: the call to action moves to a column on the right, and says more. */
+@media (orientation: landscape) and (min-width: 640px) {
+  .screen.shell.hall-screen {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(230px, 30vw, 330px);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 8px;
+  }
+  .hall-screen .shell-top {
+    grid-column: 1 / -1;
+  }
+  .shell-actions.hall-cta {
+    align-self: end;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px;
+  }
+  .hall-cta-title,
+  .hall-cta-line,
+  .hall-cta-gold {
+    display: block;
+  }
+  .hall-cta-note {
+    display: flex;
+  }
+  /* A narrow column: the five perks (or actions) in rows of three. */
+  .hall-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Tall enough: the Lendas stand in a row under the title, and only the supporters scroll; the call to action keeps its column. */
+@media (orientation: landscape) and (min-width: 900px) and (min-height: 600px) {
+  .screen.shell.hall-screen {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: 'top top' 'lead lead' 'legends cta' 'fans cta';
+  }
+  .hall-screen .shell-body {
+    display: contents;
+  }
+  .hall-screen .shell-top {
+    grid-area: top;
+  }
+  .hall-lead {
+    grid-area: lead;
+  }
+  .hall-legends,
+  .hall-screen .shell-body > .hall-note {
+    grid-area: legends;
+  }
+  .hall-fans {
+    grid-area: fans;
+    min-height: 0;
+  }
+  .hall-fans .fan-grid {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .shell-actions.hall-cta {
+    grid-area: cta;
+  }
+}
+
+/* Short screens (phones in landscape, small phones upright): the Pokémon at 1×, less copy. */
+@media (max-height: 500px), (orientation: portrait) and (max-height: 700px) {
+  .hall-lead,
+  .hall-cta-gold,
+  .hall-cta-note,
+  .hall-cta-line {
+    display: none;
+  }
+  .legend-card {
+    width: 168px;
+  }
+  .legend-stage {
+    min-height: 86px;
+  }
+  .legend-sprite {
+    width: 88px;
+    height: 80px;
+  }
+  .legend-ball {
+    margin-bottom: 20px;
+  }
+  .legend-beam {
+    height: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-screen::before,
+  .legend-beam,
+  .legend-spark,
+  .hall-tile.glow {
+    animation: none;
+  }
+}
+
+/* ---------- Admin gift desk (ui/admin.ts) ---------- */
+
+.dialog.admin {
+  width: min(520px, 100%);
+  gap: 10px;
+}
+
+.admin-select {
+  appearance: none;
+  font-size: 18px;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%236878a8'/%3E%3C/svg%3E") no-repeat right 10px center;
+  padding-right: 28px;
+}
+
+.admin-results {
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.admin-results:empty {
+  display: none;
+}
+
+.admin-user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  text-align: left;
+}
+
+.admin-user b {
+  font-family: var(--body);
+  font-size: 19px;
+}
+
+.admin-user span,
+.admin-user small {
+  font-family: var(--body);
+  font-size: 17px;
+}
+
+.admin-user small {
+  flex-basis: 100%;
+  color: #6878a8;
+  overflow-wrap: anywhere;
+}
+
+.admin-gift {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-target {
+  margin: 0;
+  font-size: 19px;
+  overflow-wrap: anywhere;
+}
+
+.admin-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.admin-preview-title {
+  font-family: var(--title);
+  font-size: 9px;
+}
+
+.admin-preview small,
+.admin-recent small {
+  font-size: 16px;
+  color: #6878a8;
+}
+
+.admin-recent ul {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.admin-recent li {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-recent small.claimed {
+  color: #30a050;
+}
+
+/* ---------- Ideias: the idea board ---------- */
+
+/* A list reads from the top, in one column as wide as a phone's or a comfortable line. */
+.ideas-screen .shell-body {
+  justify-content: flex-start;
+}
+
+.ideas-screen .shell-body > * {
+  width: min(680px, 100%);
+}
+
+.ideas-lead {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.1;
+  text-align: center;
+  color: #fff;
+  text-shadow: 2px 2px 0 #283040;
+}
+
+.idea-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ideas-status {
+  margin: 0;
+  padding: 16px;
+  font-size: 22px;
+  line-height: 1.2;
+  text-align: center;
+  color: #e8e8f8;
+}
+
+.ideas-retry {
+  align-self: center;
+}
+
+.idea {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 10px 6px;
+  text-align: left;
+}
+
+.idea.mine {
+  --frame: #2a5aa8;
+}
+
+.idea.shipped {
+  --frame: #30a050;
+}
+
+/* ▲ score ▼, thumb-sized. */
+.idea-votes {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+}
+
+.idea-vote {
+  width: 46px;
+  height: 38px;
+  font-size: 18px;
+  line-height: 1;
+  color: #a0a8c0;
+  background: transparent;
+  border: 3px solid transparent;
+  border-radius: 6px;
+}
+
+.idea-vote.up.on {
+  color: #30a050;
+}
+
+.idea-vote.down.on {
+  color: #e83838;
+}
+
+.idea-vote.selected {
+  background: #fff;
+  border-color: #e83838;
+}
+
+@media (hover: hover) {
+  .idea-vote:hover {
+    background: #fff;
+  }
+}
+
+.idea-score {
+  padding: 2px 0;
+  font-family: var(--title);
+  font-size: 10px;
+}
+
+.idea.shipped .idea-score {
+  color: #30a050;
+}
+
+.idea-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.idea-title {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+/* Details: three lines until tapped. */
+.idea-body {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 19px;
+  line-height: 1.05;
+  color: #485070;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  cursor: pointer;
+}
+
+.idea-body.open {
+  display: block;
+}
+
+.idea-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 17px;
+  color: #6878a8;
+}
+
+.idea-you,
+.idea-tag {
+  padding: 3px 5px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: #2a5aa8;
+  border-radius: 4px;
+}
+
+.idea-tag {
+  background: #30a050;
+}
+
+.idea-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 17px;
+  color: #308048;
+}
+
+.idea-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.idea-admin .btn {
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 8px;
+}
+
+.ideas-post {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(420px, 100%);
+}
+
+.ideas-post img {
+  width: 22px;
+  height: 26px;
+}
+
+.ideas-post .key-hint {
+  font-size: 7px;
+}
+
+/* The new idea's form. */
+.dialog.idea-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, 100%);
+}
+
+.field-input.field-area {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1;
+}
+
+.field-count {
+  align-self: flex-end;
+  font-size: 16px;
+  color: #6878a8;
+}
+
+/* ---------- Evolution picks: branching evolutions and abilities (ui/abilityPick.ts) ---------- */
+
+.evo-pick,
+.ability-pick {
+  gap: 14px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 52%, rgba(120, 140, 255, 0.22), transparent 70%),
+    rgba(8, 8, 24, 0.72);
+}
+
+.evo-pick-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: min(640px, 94vw);
+  color: #f8f8f8;
+  text-align: center;
+  text-shadow: 2px 2px 0 #101020;
+  animation: pop 0.2s steps(4) both;
+}
+
+.ability-pick .evo-pick-head {
+  flex-direction: row;
+  text-align: left;
+}
+
+.evo-pick-title {
+  font-family: var(--title);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.evo-pick-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+  color: #d0d4f0;
+}
+
+.ability-pick-portrait {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 3px solid #f8f8f8;
+  border-radius: 6px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #283040, 0 0 18px rgba(248, 216, 96, 0.6);
+}
+
+.evo-cards,
+.ability-cards {
+  display: grid;
+  grid-template-columns: repeat(var(--count, 3), minmax(0, 210px));
+  justify-content: center;
+  gap: 14px;
+  width: min(700px, 96vw);
+  padding-top: 12px;
+}
+
+.evo-card,
+.ability-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 10px 12px;
+  color: var(--ink);
+  text-align: center;
+  border: 3px solid #283040;
+  border-radius: 8px;
+  transition: transform 0.12s steps(3), opacity 0.2s steps(3);
+}
+
+.evo-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--type) 34%, #fff), #fff 58%);
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px color-mix(in srgb, var(--type) 75%, #283040),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: card-land 0.36s steps(6) both;
+  animation-delay: calc(var(--i, 0) * 0.12s + 0.1s);
+}
+
+.evo-card .offer-key,
+.ability-card .offer-key {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+.evo-card.selected,
+.ability-card.selected {
+  transform: translateY(-6px);
+  border-color: #e83838;
+}
+
+.evo-card.selected {
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px var(--type),
+    0 10px 0 rgba(0, 0, 0, 0.3),
+    0 0 22px color-mix(in srgb, var(--type) 80%, transparent);
+}
+
+.evo-card.selected .offer-key,
+.ability-card.selected .offer-key {
+  background: #e83838;
+}
+
+/* The pick: the card flashes and grows, the others step back. */
+.evo-card.picked,
+.ability-card.picked {
+  animation: card-pick 0.38s steps(5) both;
+}
+
+.evo-card.passed,
+.ability-card.passed {
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+@keyframes card-land {
+  from {
+    transform: translateY(26px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes card-pick {
+  40% {
+    transform: translateY(-10px) scale(1.08);
+    filter: brightness(1.8);
+  }
+  to {
+    transform: translateY(-8px) scale(1.05);
+    filter: brightness(1.15);
+  }
+}
+
+.evo-card-art {
+  display: grid;
+  place-items: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  position: relative;
+  isolation: isolate;
+  background: radial-gradient(circle, color-mix(in srgb, var(--type) 45%, #fff) 0 44%, color-mix(in srgb, var(--type2) 70%, #283040) 45% 50%, transparent 51%);
+}
+
+/* Slow light rays turning behind the portrait. */
+.evo-card-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 8%, color-mix(in srgb, var(--type) 45%, transparent) 8% 12%, transparent 12% 33%, color-mix(in srgb, var(--type2) 45%, transparent) 33% 37%, transparent 37% 58%, color-mix(in srgb, var(--type) 45%, transparent) 58% 62%, transparent 62% 83%, color-mix(in srgb, var(--type2) 45%, transparent) 83% 87%, transparent 87%);
+  animation: rays 6s steps(48) infinite;
+}
+
+/* The portrait opens out of a flash of light. */
+.evo-card-portrait {
+  width: 80px;
+  height: 80px;
+  border: 3px solid #283040;
+  border-radius: 6px;
+  background: #f8f8f8;
+  animation: silhouette 1s steps(5) both;
+  animation-delay: calc(var(--i, 0) * 0.15s + 0.45s);
+}
+
+@keyframes rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes silhouette {
+  0% {
+    clip-path: inset(50% round 50%);
+    filter: brightness(3);
+  }
+  55% {
+    clip-path: inset(0 round 6px);
+    filter: brightness(2.2);
+  }
+  to {
+    clip-path: inset(0 round 6px);
+    filter: none;
+  }
+}
+
+.evo-card-name {
+  font-family: var(--title);
+  font-size: 12px;
+}
+
+.evo-card-favor {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 96%;
+  padding: 4px 7px 3px;
+  font-family: var(--title);
+  font-size: 7px;
+  white-space: nowrap;
+  color: #503800;
+  background: linear-gradient(#fff0a0, #f8c838);
+  border: 2px solid #283040;
+  border-radius: 4px;
+  transform: translateX(-50%);
+  animation: favor-bob 1.2s steps(2) infinite;
+}
+
+.evo-card-favor img {
+  width: 10px;
+  height: 10px;
+}
+
+@keyframes favor-bob {
+  50% {
+    transform: translate(-50%, -2px);
+  }
+}
+
+.evo-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 8px;
+  font-size: 18px;
+  line-height: 1;
+  color: #405070;
+}
+
+.evo-card-facts {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  margin: 2px 0 0;
+  text-align: left;
+}
+
+.evo-card-facts dt {
+  font-family: var(--title);
+  font-size: 6px;
+  color: #6878a8;
+  text-transform: uppercase;
+}
+
+.evo-card-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.evo-card-facts dd img {
+  width: 20px;
+  height: 20px;
+}
+
+.ability-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.ability-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px 1px 2px;
+  font-size: 15px;
+  line-height: 1;
+  background: #e8e8f0;
+  border-radius: 3px;
+}
+
+.ability-chip img {
+  width: 14px;
+  height: 14px;
+}
+
+.ability-chip.hidden-ability {
+  color: #503800;
+  background: linear-gradient(#fff0b0, #f8d870);
+  box-shadow: inset 0 0 0 1px #c89020;
+}
+
+/* Ability cards flip over one after the other. */
+.ability-card {
+  gap: 8px;
+  padding: 24px 12px 14px;
+  background: linear-gradient(180deg, #ffffff, #e8ecf8);
+  box-shadow:
+    inset 0 0 0 3px #fff,
+    inset 0 0 0 5px var(--frame),
+    0 6px 0 rgba(0, 0, 0, 0.35);
+  animation: card-flip 0.5s steps(8) both;
+  animation-delay: calc(var(--i, 0) * 0.16s + 0.15s);
+}
+
+@keyframes card-flip {
+  from {
+    transform: perspective(600px) rotateY(90deg);
+    filter: brightness(2.4);
+  }
+  60% {
+    filter: brightness(1.4);
+  }
+  to {
+    transform: perspective(600px) rotateY(0deg);
+    filter: none;
+  }
+}
+
+.ability-card-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  background: linear-gradient(#384060, #283048);
+  border-radius: 8px;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ability-card-icon img {
+  width: 48px;
+  height: 48px;
+}
+
+.ability-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ability-card-name {
+  font-family: var(--title);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ability-card-desc {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* The Hidden Ability: a golden frame, a ribbon and a shine running across it. */
+.ability-card.hidden-ability {
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff8d8, #f8e0a0);
+  box-shadow:
+    inset 0 0 0 3px #fff8e0,
+    inset 0 0 0 5px #c89020,
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    0 0 20px rgba(248, 208, 48, 0.55);
+}
+
+.ability-card.hidden-ability::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.6) 48%, transparent 58%);
+  background-size: 260% 100%;
+  animation: shine 2.6s steps(16) infinite;
+}
+
+@keyframes shine {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -130% 0;
+  }
+}
+
+.ability-card.hidden-ability .ability-card-icon {
+  background: linear-gradient(#684098, #382058);
+  box-shadow: 0 0 0 2px #f8d030, inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ability-card-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px 3px;
+  font-family: var(--title);
+  font-size: 6px;
+  color: #fff;
+  background: linear-gradient(#a070f0, #6040b0);
+  border-bottom-left-radius: 6px;
+  text-shadow: 1px 1px 0 #301860;
+}
+
+.ability-card-ribbon img {
+  width: 9px;
+  height: 9px;
+}
+
+.tag-hidden {
+  color: #a07000;
+}
+
+/* A legendary's move in the pause loadout. */
+.tag-legendary {
+  color: #c88a10;
+}
+
+/* In-run toasts and the HUD chip. */
+.ability-toast img {
+  width: 20px;
+  height: 20px;
+}
+
+.status-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ability-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 120px;
+  padding: 1px 4px 1px 2px;
+  font-family: var(--title);
+  font-size: 6px;
+  white-space: nowrap;
+  color: #404858;
+  background: #e0e4f0;
+  border-radius: 3px;
+}
+
+.ability-tag img {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.ability-tag-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ability-tag-count {
+  color: #c83838;
+}
+
+.ability-tag.lit {
+  color: #503800;
+  background: linear-gradient(#fff0a0, #f8c838);
+  animation: tag-glow 0.9s steps(2) infinite;
+}
+
+.ability-tag.mega {
+  color: #fff;
+  background: linear-gradient(90deg, #f85858, #f8a838, #68d868, #58a8f8, #a878f8);
+  text-shadow: 1px 1px 0 #303040;
+}
+
+@keyframes tag-glow {
+  50% {
+    box-shadow: 0 0 0 1px #f8d030, 0 0 6px #f8d030;
+  }
+}
+
+/* The pause menu's ability. */
+.pause-ability {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #eeeef4;
+  border-radius: 6px;
+}
+
+.pause-ability > img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 3px;
+  background: #283048;
+  border-radius: 5px;
+}
+
+.pause-ability b {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: var(--title);
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.pause-ability b small {
+  font-size: 7px;
+  color: #6878a8;
+}
+
+.pause-ability > div > span {
+  display: block;
+  margin-top: 3px;
+  font-size: 18px;
+  line-height: 1;
+  color: #505068;
+}
+
+.pause-ability.hidden-ability {
+  background: linear-gradient(90deg, #fff4c8, #f8f0e0);
+  box-shadow: inset 0 0 0 2px #c89020;
+}
+
+.pause-ability.mega > img {
+  background: #f8f8f8;
+}
+
+/* The partner details: the abilities, and a branching evolution in the line. */
+.ability-row {
+  grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.ability-row.hidden-ability {
+  background: linear-gradient(90deg, #fff4c8, #fff);
+  box-shadow: inset 0 0 0 2px #e0b040;
+}
+
+.branch-abilities {
+  display: grid;
+  grid-template-columns: 24px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  grid-column: 1 / -1;
+  padding: 3px 6px;
+  background: #eeeef4;
+  border-radius: 4px;
+  font-size: 18px;
+}
+
+.branch-abilities > img {
+  width: 24px;
+  height: 24px;
+}
+
+.branch-abilities b {
+  font-family: var(--title);
+  font-size: 7px;
+  font-weight: normal;
+}
+
+.ability-note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.evo-branch-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 2), 24px);
+  gap: 2px;
+}
+
+.evo-stage .evo-branch-grid img {
+  width: 24px;
+  height: 24px;
+  border-width: 1px;
+  border-radius: 3px;
+}
+
+/* Phones held upright: one card per row, the art beside the words. */
+@media (max-width: 600px) {
+  .evo-pick,
+  .ability-pick {
+    gap: 10px;
+  }
+  .evo-pick-title {
+    font-size: 11px;
+  }
+  .evo-pick-sub {
+    font-size: 17px;
+  }
+  .evo-cards,
+  .ability-cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .evo-card {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas: 'art name' 'art types' 'art stats' 'facts facts';
+    align-items: center;
+    justify-items: start;
+    gap: 4px 10px;
+    padding: 10px 10px 8px;
+    text-align: left;
+  }
+  .evo-card-art {
+    grid-area: art;
+    width: 76px;
+    height: 76px;
+  }
+  .evo-card-portrait {
+    width: 58px;
+    height: 58px;
+  }
+  .evo-card-name {
+    grid-area: name;
+    font-size: 11px;
+  }
+  .evo-card .types {
+    grid-area: types;
+  }
+  .evo-card-stats {
+    grid-area: stats;
+    justify-content: flex-start;
     font-size: 16px;
+  }
+  .evo-card-facts {
+    grid-area: facts;
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+  }
+  .evo-card-facts > div:last-child:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+  .evo-card-facts dd {
+    font-size: 16px;
+  }
+  .ability-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px 10px;
+    text-align: left;
+  }
+  .ability-card-icon {
+    width: 48px;
+    height: 48px;
+  }
+  .ability-card-icon img {
+    width: 36px;
+    height: 36px;
+  }
+  .ability-card-name {
+    font-size: 9px;
+  }
+  .ability-card-desc {
+    font-size: 18px;
+  }
+  .ability-card .offer-key {
+    display: none;
+  }
+}
+
+/* Phones on their side: three short cards in a row. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .evo-pick,
+  .ability-pick {
+    gap: 8px;
+    padding-top: max(8px, var(--safe-t));
+    padding-bottom: max(8px, var(--safe-b));
+    /* The title sits over the HUD's clock and coins here: a darker veil keeps it readable. */
+    background: rgba(8, 8, 24, 0.86);
+  }
+  .evo-pick-title {
+    font-size: 10px;
+  }
+  .evo-pick-sub {
+    font-size: 16px;
+  }
+  .ability-pick-portrait {
+    width: 40px;
+    height: 40px;
+  }
+  .evo-cards,
+  .ability-cards {
+    gap: 10px;
+    padding-top: 10px;
+  }
+  .evo-card {
+    gap: 3px;
+    padding: 8px 8px 6px;
+  }
+  .evo-card-art {
+    width: 64px;
+    height: 64px;
+  }
+  .evo-card-portrait {
+    width: 48px;
+    height: 48px;
+  }
+  .evo-card-name {
+    font-size: 10px;
+  }
+  /* "Tormenta de arena la favorece" must fit a third of a phone on its side. */
+  .evo-card-favor {
+    max-width: none;
+    padding: 3px 5px 2px;
+    font-size: 6px;
+  }
+  .evo-card-stats,
+  .evo-card-facts dd {
+    font-size: 15px;
+  }
+  .ability-card {
+    gap: 4px;
+    padding: 20px 8px 8px;
+  }
+  .ability-card-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .ability-card-icon img {
+    width: 32px;
+    height: 32px;
+  }
+  .ability-card-desc {
+    font-size: 16px;
+  }
+  .evo-pick .hint,
+  .ability-pick .hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evo-card,
+  .ability-card,
+  .evo-card-art::before,
+  .evo-card-portrait,
+  .evo-card-favor,
+  .ability-card.hidden-ability::before,
+  .ability-tag.lit {
+    animation: none;
+  }
+}
+
+.pause-ability b > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* The shine passes under the card's words. */
+.ability-card.hidden-ability > :not(.offer-key, .ability-card-ribbon) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Level-up cards: entrance, forks, rarity, Esquecer (ui/screens.ts) ---------- */
+
+.levelup .offers {
+  position: relative;
+}
+
+.levelup .offer {
+  position: relative;
+  overflow: hidden;
+  animation: offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms);
+}
+
+@keyframes offer-in {
+  from {
+    transform: translateY(18px) scale(0.94);
+    opacity: 0;
+  }
+}
+
+/* A move card that reaches a fork: a dashed purple frame and its "2 paths" tag. */
+.tag-fork {
+  color: #fff;
+  background: #8048d0;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+.offer-fork:not(.selected) {
+  border-color: #a078e8;
+  border-style: dashed;
+}
+
+/* Rare cards: a blue frame and a shine that sweeps across now and then. */
+.offer-rare {
+  background: linear-gradient(180deg, #e8f0ff, #c8d8f8);
+  border-color: #4878e0;
+  box-shadow: 0 0 0 2px #a8c8f8;
+}
+
+.offer-rare.selected {
+  background: linear-gradient(180deg, #f4f8ff, #dce8ff);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4878e0, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tag-rare {
+  color: #fff;
+  background: #3060d0;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+/* Shiny cards: a gold frame that pulses, twinkles all over and the same shine, warmer. */
+.levelup .offer-shiny {
+  background: linear-gradient(180deg, #fffbe0, #f8e8a0);
+  border-color: #e0a020;
+  animation:
+    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    shiny-frame 0.9s steps(2) infinite;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
+}
+
+.levelup .offer-shiny.selected {
+  background: linear-gradient(180deg, #fffdf0, #fbefc0);
+}
+
+@keyframes shiny-frame {
+  50% {
+    box-shadow: 0 0 0 2px #fff8c0, 0 0 12px 3px #f8d030;
+  }
+}
+
+.tag-shiny {
+  color: #604000;
+  background: linear-gradient(90deg, #f8d030, #fff4a8, #f8d030);
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+}
+
+.offer-note {
+  font-family: var(--title);
+  font-size: 7px;
+  line-height: 1.4;
+  color: #a06800;
+  margin-top: 4px;
+}
+
+.offer-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.85) 46%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
+  transform: translateX(-110%);
+  animation: offer-shine 2.6s ease-in-out 0.5s infinite;
+}
+
+.offer-shiny .offer-shine {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
+  animation-duration: 1.9s;
+}
+
+@keyframes offer-shine {
+  55%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+.offer-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.offer-sparkles img {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%) scale(0);
+  animation: offer-twinkle 2s steps(4) infinite;
+}
+
+@keyframes offer-twinkle {
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  40%,
+  100% {
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+/* A fork's branch card: the mods it adds sit as badges on the move's icon. */
+.levelup .offer-icon {
+  position: relative;
+  overflow: visible;
+}
+
+.offer-mods {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  gap: 1px;
+}
+
+.offer-mods img {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+  background: #8048d0;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  padding: 1px;
+}
+
+/* The fork screen: the two branches split apart from where the move card was. */
+.levelup.fork .dialog-title {
+  color: #6038b0;
+}
+
+.offers.branches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.offers.branches::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  margin-left: -2px;
+  background: #fff;
+  box-shadow: 0 0 8px 2px #d0b8ff;
+  pointer-events: none;
+  animation: fork-seam 0.5s ease-out both;
+}
+
+@keyframes fork-seam {
+  from {
+    transform: scaleY(0.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0;
+  }
+}
+
+.levelup .offer-branch {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 14px 12px 12px;
+  border-color: #b8a0e8;
+  background: linear-gradient(180deg, #f4f0ff, #e4dcf8);
+  animation: branch-in-a 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+.levelup .offer-branch.branch-b {
+  animation-name: branch-in-b;
+}
+
+.levelup .offer-branch.selected {
+  background: linear-gradient(180deg, #fff, #f0eaff);
+  border-color: #e83838;
+}
+
+.offer-branch .offer-key {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+.offer-branch .offer-name {
+  justify-content: center;
+  color: #4a2890;
+}
+
+.offer-branch .type-badge {
+  display: none;
+}
+
+.offer-branch .offer-icon {
+  width: 52px;
+  height: 52px;
+  background: #3a2868;
+  box-shadow: 0 0 0 2px #a078e8;
+}
+
+.offer-branch .offer-icon > img {
+  width: 40px;
+  height: 40px;
+}
+
+@keyframes branch-in-a {
+  from {
+    transform: translateX(52%) scaleX(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes branch-in-b {
+  from {
+    transform: translateX(-52%) scaleX(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+/* Esquecer: the cards turn red and the next pick forgets one, which flies off. */
+.btn-banish {
+  color: #b02020;
+}
+
+.btn-banish.active {
+  color: #fff;
+  background: #d83030;
+}
+
+.levelup .offers.banishing .offer {
+  background: linear-gradient(180deg, #ffe8e4, #f8c8c0);
+  border-color: #e05040;
+}
+
+.levelup .offers.banishing .offer.selected {
+  background: linear-gradient(180deg, #fff0ee, #ffd8d0);
+  border-color: #b01818;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e83838;
+}
+
+.offers.banishing .offer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(-45deg, rgba(216, 48, 48, 0.12) 0 6px, transparent 6px 12px);
+  background-size: 17px 17px;
+  animation: banish-stripes 0.6s steps(6) infinite;
+}
+
+.levelup .offers.banishing .offer.offer-keep {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.offers.banishing .offer.offer-keep::after {
+  display: none;
+}
+
+@keyframes banish-stripes {
+  to {
+    background-position: 17px 0;
+  }
+}
+
+.levelup .offers .offer.offer-ghost {
+  position: absolute;
+  margin: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(180deg, #ffe8e4, #f8c0b8);
+  border-color: #e05040;
+  animation: offer-toss 0.55s cubic-bezier(0.5, 0, 0.9, 0.6) forwards;
+}
+
+@keyframes offer-toss {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-3%, -6px) rotate(-3deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(70%, 60px) rotate(14deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.levelup .offers .offer.offer-redrawn {
+  animation: offer-redraw 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.12s both;
+}
+
+.levelup .offers .offer.offer-redrawn.offer-shiny {
+  animation:
+    offer-redraw 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.12s both,
+    shiny-frame 0.9s steps(2) infinite;
+}
+
+@keyframes offer-redraw {
+  from {
+    transform: rotateX(80deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* The pause menu's loadout: a badge per mod of the fork branches taken. */
+.loadout-row img.loadout-mod {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  background: #8048d0;
+  border-radius: 3px;
+  padding: 1px;
+}
+
+/* Phones in portrait: the branches stack and split up and down instead. */
+@media (max-width: 600px) {
+  .offers.branches {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .offers.branches::after {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 4px;
+    margin: -2px 0 0;
+    animation-name: fork-seam-across;
+  }
+  .levelup .offer-branch {
+    flex-direction: row;
+    text-align: left;
+    padding: 10px;
+    animation-name: branch-in-up;
+  }
+  .levelup .offer-branch.branch-b {
+    animation-name: branch-in-down;
+  }
+  .offer-branch .offer-key {
+    position: static;
+  }
+  .offer-branch .offer-name {
+    justify-content: flex-start;
+  }
+  .offer-branch .offer-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .offer-branch .offer-icon > img {
+    width: 34px;
+    height: 34px;
+  }
+  .offer-mods img {
+    width: 16px;
+    height: 16px;
+  }
+  .offer-note {
+    font-size: 6px;
+  }
+}
+
+@keyframes fork-seam-across {
+  from {
+    transform: scaleX(0.2);
+    opacity: 1;
+  }
+  40% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@keyframes branch-in-up {
+  from {
+    transform: translateY(52%) scaleY(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+@keyframes branch-in-down {
+  from {
+    transform: translateY(-52%) scaleY(0.6);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+/* Low landscape phones (~360 px tall): tighter cards, no hint, smaller buttons. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .levelup.dialog {
+    gap: 6px;
+    padding: 10px 14px;
+  }
+  .levelup .dialog-title {
+    font-size: 10px;
+  }
+  .levelup .offers {
+    gap: 5px;
+  }
+  .levelup .offer {
+    padding: 5px 10px;
+    gap: 10px;
+  }
+  .levelup .offer-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .levelup .offer-icon > img {
+    width: 28px;
+    height: 28px;
+  }
+  .levelup .offer-name {
+    font-size: 9px;
+  }
+  .levelup .offer-desc {
+    font-size: 17px;
+    margin-top: 2px;
+  }
+  .levelup .offer-note {
+    display: none;
+  }
+  .levelup .evo-recipes {
+    margin-top: 2px;
+  }
+  .levelup .buttons .btn {
+    min-height: 34px;
+    padding: 6px 12px;
+    font-size: 9px;
+  }
+  .levelup .hint-slot {
+    display: none;
+  }
+  .levelup .offer-branch {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelup .offer,
+  .levelup .offer-branch,
+  .levelup .offers .offer.offer-redrawn,
+  .offers.banishing .offer::after,
+  .offer-shine,
+  .offers.branches::after {
+    animation: none;
+  }
+  .offer-shine {
+    display: none;
+  }
+}
+
+/* ---------- Duo moves (game/duoRules.ts) ---------- */
+
+/* The duo card: gold like an evolution, with both ingredients' type colors running across its top. */
+.levelup .offer.offer-duo {
+  background:
+    linear-gradient(90deg, var(--duo-a, #f8d030) 0 50%, var(--duo-b, #f8d030) 50%) top / 100% 4px no-repeat,
+    linear-gradient(180deg, #fffbe0, #f8e0a0);
+  border-color: #e0a020;
+  animation:
+    offer-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    duo-frame 1.1s steps(2) infinite;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms), 0s;
+}
+
+.levelup .offer.offer-duo.selected {
+  background:
+    linear-gradient(90deg, var(--duo-a, #f8d030) 0 50%, var(--duo-b, #f8d030) 50%) top / 100% 4px no-repeat,
+    linear-gradient(180deg, #fffdf0, #fbecc0);
+  border-color: #e83838;
+}
+
+@keyframes duo-frame {
+  50% {
+    box-shadow: 0 0 0 2px #fff8c0, -4px 0 12px 1px var(--duo-a, #f8d030), 4px 0 12px 1px var(--duo-b, #f8d030);
+  }
+}
+
+.offer-duo .offer-icon {
+  background: linear-gradient(135deg, var(--duo-a, #503010) 0 50%, var(--duo-b, #503010) 50%);
+  box-shadow: 0 0 0 2px #f8d030;
+}
+
+.offer-duo .offer-shine {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 252, 220, 0.95) 46%, rgba(255, 255, 255, 0.95) 50%, transparent 58%);
+  animation-duration: 2.2s;
+}
+
+.offer-duo .tag {
+  color: #fff;
+  background: linear-gradient(90deg, var(--duo-a, #e0a020), var(--duo-b, #e0a020));
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  /* A drop shadow, not a 4-way outline: the outline filled in the 8 px letters ("DÚO!" read as a blot). */
+  text-shadow: 1px 1px 0 #301000;
+}
+
+.duo-note {
+  color: #a05800;
+}
+
+.evo-recipe.duo-recipe.ready {
+  color: #a05800;
+  background: linear-gradient(90deg, #f8e090, #fff4c0, #f8e090);
+}
+
+.tag.tag-duo {
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: linear-gradient(90deg, #e05818, #8048d0);
+}
+
+.slot.duo {
+  border-color: #f8d030;
+  box-shadow: 0 0 0 1px #a06800, 0 0 6px rgba(248, 208, 48, 0.6);
+}
+
+.slot.duo-ready {
+  animation: duo-slot 0.5s steps(2) infinite;
+}
+
+@keyframes duo-slot {
+  50% {
+    border-color: #fff;
+    box-shadow: 0 0 6px #f8d030, 0 0 0 2px #e05818;
+  }
+}
+
+/* The pause screen's duo recipes, by type. */
+.duo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.duo-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--title);
+  font-size: 8px;
+  color: #a05800;
+}
+
+.duo-panel-title img {
+  width: 12px;
+  height: 12px;
+  image-rendering: pixelated;
+}
+
+.duo-recipes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.duo-type-recipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 2px 3px;
+  font-size: 16px;
+  line-height: 1;
+  color: #6878a8;
+  background: rgba(104, 120, 168, 0.12);
+  border-radius: 4px;
+  opacity: 0.75;
+}
+
+.duo-type-recipe .type-badge {
+  font-size: 6px;
+  padding: 3px 3px 2px;
+}
+
+.duo-type-recipe img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+.duo-type-name {
+  font-size: 16px;
+}
+
+.duo-type-recipe b {
+  font-family: var(--title);
+  font-size: 7px;
+  color: #e83838;
+  margin-left: 2px;
+}
+
+.duo-type-recipe.ready,
+.duo-type-recipe.done {
+  opacity: 1;
+  color: #a05800;
+  background: #f8e090;
+  box-shadow: 0 0 0 2px #e0a020;
+}
+
+.duo-type-recipe.ready {
+  animation: evo-glow 0.8s steps(2) infinite;
+}
+
+.duo-legend {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1;
+  text-align: center;
+  color: #8890b0;
+}
+
+.duo-legend.near {
+  color: #a05800;
+}
+
+.toast-duo b {
+  color: #e07000;
+}
+
+/* ---------- Cursed items (data/curses.ts) ---------- */
+
+.buff.cursed {
+  border-color: #a050e0;
+  background: rgba(42, 8, 64, 0.7);
+  box-shadow: 0 0 4px rgba(160, 80, 224, 0.7);
+}
+
+.buff.cursed img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.loadout-row.cursed {
+  color: #7030a0;
+}
+
+.tag.tag-curse {
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  color: #fff;
+  background: #7030b0;
+  margin-left: auto;
+}
+
+.toast-curse b {
+  color: #b060f0;
+}
+
+.toast-curse em,
+.toast-curse i {
+  color: #e0b0ff;
+}
+
+/* The chest's choice: the item floats in a purple aura over a dark violet box. */
+.curse-pick .curse-box {
+  max-width: min(360px, 92vw);
+  text-align: center;
+  background: linear-gradient(180deg, #f4ecfa, #e4d4f2);
+  border-color: #7030b0;
+  box-shadow: 0 0 0 2px #2a0840, 0 0 24px rgba(160, 80, 224, 0.55);
+}
+
+.curse-label {
+  align-self: center;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: #7030b0;
+  padding: 3px 6px 2px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.curse-box .dialog-title {
+  color: #501880;
+}
+
+.curse-sub {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.05;
+  color: #604878;
+}
+
+.curse-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 96px;
+}
+
+.curse-art img {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  animation: curse-float 1.6s ease-in-out infinite;
+}
+
+.curse-aura {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192, 112, 248, 0.55), rgba(112, 48, 176, 0.25) 55%, transparent 70%);
+  animation: curse-aura 1.2s steps(3) infinite;
+}
+
+@keyframes curse-float {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes curse-aura {
+  50% {
+    transform: scale(1.12);
+    opacity: 0.7;
+  }
+}
+
+.curse-name {
+  font-family: var(--title);
+  font-size: 12px;
+  color: #2a0840;
+}
+
+.curse-line {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: center;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.curse-line b {
+  font-family: var(--title);
+  font-size: 8px;
+}
+
+.curse-line.up {
+  color: #207830;
+}
+
+.curse-line.down {
+  color: #b02838;
+}
+
+.curse-note {
+  margin: 0;
+  font-size: 16px;
+  color: #806898;
+}
+
+.curse-pick .btn.curse-take {
+  background: #7030b0;
+  color: #fff;
+  border-color: #2a0840;
+}
+
+.curse-pick .btn.curse-take.selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 12px #c070f8;
+}
+
+.curse-pick .btn.picked {
+  transform: scale(1.08);
+}
+
+.curse-pick.taking .curse-art img {
+  animation: curse-grab 0.32s ease-in forwards;
+}
+
+.curse-pick.leaving .curse-art img {
+  animation: curse-drop 0.32s ease-in forwards;
+}
+
+@keyframes curse-grab {
+  to {
+    transform: translateY(40px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes curse-drop {
+  to {
+    transform: translateY(-20px);
+    opacity: 0;
+    filter: grayscale(1);
+  }
+}
+
+@media (max-height: 480px) {
+  .curse-art {
+    height: 60px;
+  }
+
+  .curse-art img {
+    width: 48px;
+    height: 48px;
+  }
+
+  .curse-aura {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* A phone on its side: the item on the left, what it does on the right, so the buttons stay on screen. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .curse-pick .curse-box {
+    max-width: min(600px, 94vw);
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    grid-template-areas: 'label label' 'title title' 'art up' 'art down' 'name note' 'buttons buttons';
+    gap: 6px 16px;
+    align-items: center;
+    padding: 12px 18px;
+  }
+  .curse-label {
+    grid-area: label;
+    justify-self: center;
+  }
+  .curse-box .dialog-title {
+    grid-area: title;
+  }
+  .curse-sub,
+  .curse-box .hint {
+    display: none;
+  }
+  .curse-art {
+    grid-area: art;
+  }
+  .curse-name {
+    grid-area: name;
+  }
+  .curse-line {
+    justify-content: flex-start;
+    font-size: 18px;
+  }
+  .curse-line.up {
+    grid-area: up;
+  }
+  .curse-line.down {
+    grid-area: down;
+  }
+  .curse-note {
+    grid-area: note;
+    text-align: left;
+    font-size: 14px;
+  }
+  .curse-box .buttons {
+    grid-area: buttons;
+  }
+}
+
+/* ---------- Learnsets by stage ---------- */
+
+/* The details sheet's moves tab: a header per stage (portrait, name, the level it comes at) over its moves. */
+.learn-note {
+  margin: 2px 0 0;
+  font-size: 16px;
+  line-height: 1;
+  color: #707088;
+}
+
+.learn-stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 2px 4px 2px 2px;
+  background: #e2e2ee;
+  border-radius: 4px;
+  box-shadow: inset 4px 0 0 var(--accent, #6878a8);
+}
+
+.learn-stage b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #404058;
+}
+
+.learn-when {
+  margin-left: auto;
+  padding: 3px 4px 2px;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #fff;
+  background: var(--accent, #6878a8);
+  border-radius: 3px;
+}
+
+.learn-portraits {
+  display: flex;
+  padding-left: 4px;
+}
+
+.learn-portraits img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.learn-portraits img + img {
+  margin-left: -10px;
+}
+
+/* A branch's own moves, under the stage that branches. */
+.learn-stage.learn-branch {
+  margin: 4px 0 0 12px;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--accent, #6878a8);
+}
+
+.learn-branch .learn-when {
+  display: none;
+}
+
+/* A level-up card for a move the evolution just unlocked: a green frame and the form's tag. */
+.levelup .offer-fresh:not(.selected) {
+  border-color: #38b070;
+  box-shadow: 0 0 0 2px #b8ecc8;
+}
+
+.tag-fresh {
+  color: #fff;
+  background: #30a060;
+  padding: 3px 4px 2px;
+  border-radius: 3px;
+  animation: fresh-tag 1.2s steps(2) infinite;
+}
+
+@keyframes fresh-tag {
+  50% {
+    background: #48c078;
+  }
+}
+
+/* After an evolution: "Charmeleon can now learn:" over a chip per move. */
+.learn-toast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.learn-moves {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+}
+
+.learn-move {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px 1px 2px;
+  font-size: 20px;
+  background: #eeeef4;
+  border-left: 4px solid var(--type);
+  border-radius: 2px;
+  animation: learn-pop 0.3s steps(3) both;
+}
+
+.learn-move:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.learn-move:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.learn-move:nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+.learn-move img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+@keyframes learn-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* ---------- TMs and the Move Tutor (`ui/tmPick.ts`) ---------- */
+
+.tm-pick {
+  border-color: var(--type);
+  box-shadow: 0 0 0 3px #181828, 0 0 0 6px var(--type), 0 10px 0 rgba(0, 0, 0, 0.3);
+}
+
+.tm-pick.tm-legendary {
+  --type: #f8d030;
+  background: linear-gradient(180deg, #fffbe8, #f8f0d0);
+  box-shadow: 0 0 0 3px #3a2600, 0 0 0 6px #f8d030, 0 0 24px 6px rgba(248, 208, 48, 0.45);
+}
+
+.tm-pick.tm-tutor {
+  --type: #3868b8;
+}
+
+.tm-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tm-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tm-head .dialog-title {
+  text-align: left;
+}
+
+.tm-head-disc {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  animation: tm-spin 1.4s steps(1) infinite;
+}
+
+/* The disc turning over, coin-like, in whole steps. */
+@keyframes tm-spin {
+  0% { transform: scaleX(1); }
+  20% { transform: scaleX(0.66); }
+  30% { transform: scaleX(0.33); }
+  40% { transform: scaleX(-0.33); }
+  50% { transform: scaleX(-0.66); }
+  60% { transform: scaleX(-1); }
+  75% { transform: scaleX(-0.33); }
+  85% { transform: scaleX(0.33); }
+  92% { transform: scaleX(0.66); }
+}
+
+.tm-forgetting .tm-head-disc {
+  animation: none;
+}
+
+.tm-sub {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tm-wallet {
+  margin: -4px 0 0;
+  font-size: 20px;
+  text-align: right;
+  color: #806010;
+}
+
+.tm-card {
+  position: relative;
+  border-left: 6px solid var(--type);
+  animation: pop 0.25s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+
+.tm-card .tm-icon {
+  box-shadow: 0 0 0 2px var(--type);
+}
+
+.tm-card.tm-gold {
+  background: linear-gradient(180deg, #fff8d0, #f8e090);
+  border-color: #e0a020;
+  border-left-color: #f8d030;
+}
+
+.tm-card.tm-broke {
+  opacity: 0.6;
+}
+
+.tag-tm {
+  color: #fff;
+  background: var(--type);
+  border-radius: 3px;
+  padding: 2px 3px 1px;
+}
+
+.tm-price {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  font-family: var(--title);
+  font-size: 8px;
+  padding: 4px 6px 3px;
+  color: #382800;
+  background: #f8d030;
+  border-radius: 4px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.tm-price.broke {
+  color: #fff;
+  background: #c83030;
+}
+
+.tm-forget {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tm-forget-move {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 8px;
+  text-align: left;
+  background: #e8e8f0;
+  border: 3px solid transparent;
+  border-left: 5px solid var(--type);
+  border-radius: 6px;
+  animation: pop 0.2s steps(3) backwards;
+  animation-delay: calc(var(--i) * 0.05s);
+}
+
+.tm-forget-move.selected {
+  background: #fff;
+  border-color: #e83838;
+  box-shadow: 0 0 0 2px #fff, 0 4px 0 rgba(0, 0, 0, 0.15);
+}
+
+.tm-forget-move.selected .offer-key {
+  background: #e83838;
+}
+
+.tm-forget-move img {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.tm-forget-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.tm-forget-name small {
+  display: block;
+  font-family: var(--body);
+  font-size: 18px;
+  color: #6878a8;
+}
+
+.tm-pass {
+  min-width: 60%;
+}
+
+/* "1, 2 and… Poof!": the move's chip shrinks into a puff of pixel smoke, then the new one pops in. */
+.tm-poof {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  min-height: 200px;
+  padding: 16px 0;
+}
+
+.tm-poof-line {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+}
+
+.tm-poof-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-family: var(--title);
+  font-size: 11px;
+  background: #e8e8f0;
+  border: 3px solid #303040;
+  border-radius: 6px;
+}
+
+.tm-poof-chip img {
+  width: 40px;
+  height: 40px;
+}
+
+.tm-poof-chip.gone {
+  animation: tm-gone 0.3s steps(3) forwards;
+}
+
+.tm-poof-chip.learned {
+  background: #fff8d0;
+  border-color: #e0a020;
+  animation: tm-learned 0.4s steps(4);
+}
+
+@keyframes tm-gone {
+  to {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes tm-learned {
+  0% { transform: scale(0.3); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.tm-poof-smoke {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.tm-poof-smoke i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4px;
+  background: #e8e8f0;
+  box-shadow: 0 0 0 3px #a8a8c0;
+  opacity: 0;
+}
+
+.tm-poof-smoke.on i {
+  animation: tm-smoke 0.55s steps(5) forwards;
+}
+
+@keyframes tm-smoke {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(4px) scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(var(--d)) scale(0.4);
+  }
+}
+
+@media (max-width: 520px) {
+  .tm-forget {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .tm-forget-move {
+    min-height: 42px;
+    padding: 4px 8px;
+  }
+  .tm-head-disc {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .tm-pick {
+    padding: 12px 16px;
+  }
+  .tm-stage {
+    gap: 8px;
+  }
+  .tm-forget-move {
+    min-height: 38px;
+    padding: 3px 8px;
+  }
+  .tm-forget-move .type-badge,
+  .tm-pick .hint {
+    display: none;
+  }
+  .tm-poof {
+    min-height: 140px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-head-disc,
+  .tm-card,
+  .tm-forget-move {
+    animation: none;
   }
 }
 

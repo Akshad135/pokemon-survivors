@@ -43,6 +43,17 @@ describe('mergeSaves', () => {
     expect(mergeSaves(m, before)).toEqual({ ...m, style: { ...m.style, equipped: before.style.equipped }, bag: { ...m.bag, armed: before.bag.armed } })
   })
 
+  it("takes the incoming side's partner and difficulty: the device that played last picked them", () => {
+    const m = mergeSaves(save({ partner: 'squirtle', difficulty: 'hard' }), save({ partner: 'gible', difficulty: 'normal' }))
+    expect(m.partner).toBe('gible')
+    expect(m.difficulty).toBe('normal')
+  })
+
+  it("keeps every family's branch, the incoming side's where both evolved it", () => {
+    const m = mergeSaves(save({ branches: { eevee: 'espeon', ralts: 'gallade' } }), save({ branches: { eevee: 'umbreon', scyther: 'scizor' } }))
+    expect(m.branches).toEqual({ eevee: 'umbreon', ralts: 'gallade', scyther: 'scizor' })
+  })
+
   it('joins the collection and keeps the larger upgrades and records', () => {
     const m = mergeSaves(account, guest)
     expect(m.ranks).toMatchObject({ hpUp: 3, protein: 2, iron: 0 })

@@ -2,289 +2,64 @@ import { blitCentered, context2d } from '../engine/pixelart'
 import { playCry, playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from '../data/hatchlings'
-import { REGIONS, type PlayableDef, type Region } from '../data/starters'
+import { REGIONS, type StarterId } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
+import { megasOf } from '../data/megas'
+import { bodyOf } from '../data/bodies'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { EGGS, isReady, isUnlocked } from '../game/eggs'
-import { armItem, BAG_ITEM_IDS, BAG_ITEMS, bagCount, type Bag, type BagItem } from '../game/bag'
+import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
 import { pickShinyStarter, type ShinyStarters } from '../game/shinyStarters'
-import { starterStats } from '../game/leveling'
-import { MOVES, type MoveDef, type MoveId } from '../game/moves'
-import { resolveSpecial } from '../game/special'
-import { MEGA, MEGAS, megasOf, type MegaId } from '../data/megas'
-import { megaIcon } from '../render/megaFx'
-import { bagIcon, eggIcon, moveIcon, PICKUPS, sparkleIcon } from '../render/art'
-import { specialIcon } from '../render/specialFx'
-import { cryUrl, drawPokemon, loadAll, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
+import { bagIcon, eggIcon, PICKUPS, sparkleIcon } from '../render/art'
+import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
 import { loadSave, updateSave } from './save'
-import { STAT_BARS, statRatio } from './statBars'
-import { hint, typeBadge, type Screen } from './screens'
-
-const moveRow = (id: MoveId, signature: boolean) => {
-  const def: MoveDef = MOVES[id]
-  return h(
-    'div',
-    { class: signature ? 'move-row signature' : 'move-row' },
-    h('img', { src: moveIcon(id), alt: '' }),
-    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, def.name, signature && h('span', { class: 'tag tag-new' }, t().title.signature)), h('div', { class: 'move-desc' }, t().moves[id].description)),
-    typeBadge(def.type),
-  )
-}
-
-/** The manual special (Space / round button): base move, upgraded (or swapped, for Aegislash) at the final stage. */
-const specialRow = (id: PlayableId) => {
-  const first = resolveSpecial(id, 0)
-  const last = resolveSpecial(id, PLAYABLE[id].line.length - 1)
-  const desc = first.id === last.id ? t().specials[first.id] : `${t().specials[first.id]} ${last.tier.name}: ${t().specials[last.id]}`
-  return h(
-    'div',
-    { class: 'move-row signature' },
-    h('img', { src: specialIcon(first.id), alt: '' }),
-    h('div', { class: 'move-text' }, h('div', { class: 'move-name' }, `${first.tier.name} → ${last.tier.name}`), h('div', { class: 'move-desc' }, desc)),
-    typeBadge(first.def.type),
-  )
-}
-
-/** One of a line's Mega Evolutions: how it's earned, how long it lasts, its ability and what it does. */
-const megaRow = (id: MegaId) => {
-  const def = MEGAS[id]
-  return h(
-    'div',
-    { class: 'move-row signature' },
-    h('img', { src: megaIcon(), alt: '' }),
-    h(
-      'div',
-      { class: 'move-text' },
-      h('div', { class: 'move-name' }, `${def.name} · ${def.ability}`),
-      h('div', { class: 'move-desc' }, `${t().mega.how(def.stone, MEGA.duration, MEGA.recharge)} ${t().mega.effects[id]}`),
-    ),
-  )
-}
+import { typeBadge, type Screen } from './screens'
+import { actionBar, backButton, gearButton, segmented, shellScreen, topBar, walletChip } from './shell'
+import { detailsSheet, evoLine, shinyPicker, statBars } from './partnerDetails'
+import { stepGrid, type Step } from './gridNav'
 
 /**
- * Normal / Shiny, for a Pokémon whose shiny the player rolled once (`Z`
- * flips it). The pick is saved right away, so the next run plays it.
+ * Phones held upright get the transposed roster (a row per region, three
+ * named cells each). Keep in sync with the partner select's media queries
+ * in style.css: arrows read it to know which way is a row.
  */
-const shinyPicker = (shiny: boolean, set: (shiny: boolean) => void) => {
-  const m = t().title
-  const option = (value: boolean, label: Node | string) =>
-    h('button', { class: value === shiny ? 'shiny-option selected' : 'shiny-option', role: 'radio', 'aria-checked': String(value === shiny), onclick: () => set(value) }, label)
-  return h(
-    'div',
-    { class: 'shiny-picker', role: 'radiogroup', 'aria-label': m.shinyPick },
-    option(false, m.normal),
-    option(true, h('span', {}, h('img', { src: sparkleIcon(), alt: '' }), m.shiny)),
-    h('span', { class: 'key-hint' }, 'Z'),
-  )
-}
+const PHONE = '(orientation: portrait) and (max-width: 700px)'
 
-/** Detailed sheet of a playable Pokémon: sprite, types, stat bars, evolution line and every move it can learn. `picker`: its Normal/Shiny pick, when unlocked. */
-const inspectPanel = (id: PlayableId, stage: number, onStage: (stage: number) => void, sprite: HTMLCanvasElement, picker: HTMLElement | null) => {
-  const m = t()
-  const s: PlayableDef = PLAYABLE[id]
-  const form = s.line[stage]!
-  const base = starterStats(id, 0)
-  const final = starterStats(id, s.line.length - 1)
+/** The 27 starters, region by region (Grass, Fire, Water each): the roster's DOM order. */
+const STARTER_IDS: readonly StarterId[] = REGIONS.flatMap((r) => r.starters)
 
-  const bars = STAT_BARS.map((b) =>
-    h(
-      'div',
-      { class: 'stat-bar' },
-      h('span', { class: 'stat-label' }, m.stats[b.label]),
-      h(
-        'div',
-        { class: 'bar' },
-        h('div', { class: 'bar-final', style: `width:${statRatio(b.get(final), b.min, b.max) * 100}%` }),
-        h('div', { class: 'bar-base', style: `width:${statRatio(b.get(base), b.min, b.max) * 100}%` }),
-      ),
-      h('b', {}, b.fmt(b.get(base))),
-    ),
-  )
+/** The three types a region's trio covers, in roster order (the desktop rows). */
+const ROW_TYPES = STARTER_IDS.slice(0, 3).map((id) => PLAYABLE[id].line[0].types[0]!)
 
-  const megas = megasOf(id)
-  const evo = s.line.flatMap((st, i) => [
-    i > 0 && h('span', { class: 'evo-arrow' }, m.level(s.line[i - 1]!.evolveAt!), h('br'), '▶'),
-    h(
-      'button',
-      { class: i === stage ? 'evo-stage selected' : 'evo-stage', onclick: () => onStage(i), title: st.name },
-      h('img', { src: portraitUrl(st.dex), alt: st.name }),
-      h('span', { class: 'evo-name' }, st.name),
-      h('span', { class: 'evo-types' }, ...st.types.map((t) => h('i', { style: `--type:${TYPE_COLORS[t]}`, title: t }))),
-    ),
-  ])
-
-  return h(
-    'div',
-    { class: 'inspect-body' },
-    h(
-      'div',
-      { class: 'inspect-head' },
-      sprite,
-      h(
-        'div',
-        { class: 'inspect-id' },
-        h('div', { class: 'inspect-name' }, h('small', {}, `#${String(form.dex).padStart(3, '0')}`), form.name),
-        h('div', { class: 'types' }, ...form.types.map(typeBadge)),
-        picker,
-        h('div', { class: 'inspect-blurb' }, m.blurbs[id]),
-      ),
-    ),
-    h('div', { class: 'inspect-section' }, m.title.statsSection, h('span', { class: 'legend' }, h('i', { class: 'legend-base' }), `${m.title.legendBase} `, h('i', { class: 'legend-final' }), m.title.legendFinal)),
-    h('div', { class: 'stat-bars' }, ...bars),
-    h('div', { class: 'inspect-section' }, m.title.evolution),
-    h('div', { class: 'evo-line' }, ...evo),
-    h('div', { class: 'inspect-section' }, m.title.special, h('span', { class: 'legend' }, m.spaceKey)),
-    specialRow(id),
-    ...(megas.length > 0 ? [h('div', { class: 'inspect-section' }, megas.length > 1 ? m.mega.sectionTwo : m.mega.section, h('span', { class: 'legend' }, m.mega.key)), ...megas.map(megaRow)] : []),
-    h('div', { class: 'inspect-section' }, m.title.moves),
-    h('div', { class: 'move-list' }, ...s.learnset.map((m) => moveRow(m, m === s.signature))),
-  )
-}
-
-/** A family still in its egg: a silhouette, "???" and the egg it hatches from (the Friendship Egg says how to get one). */
-const lockedPanel = (id: HatchlingId, sprite: HTMLCanvasElement) => {
-  const m = t()
-  const tier = HATCHLINGS[id].egg
-  return h(
-    'div',
-    { class: 'inspect-body' },
-    h(
-      'div',
-      { class: 'inspect-head' },
-      sprite,
-      h(
-        'div',
-        { class: 'inspect-id' },
-        h('div', { class: 'inspect-name' }, m.eggs.locked),
-        h('div', { class: 'inspect-blurb locked-blurb' }, h('img', { src: eggIcon(tier), alt: '' }), rich(tier === 'friend' ? m.eggs.friendBlurb : m.eggs.lockedBlurb(m.eggs.tiers[tier]))),
-      ),
-    ),
-    h('p', { class: 'inspect-blurb' }, m.eggs.intro),
-  )
-}
-
-/**
- * Normal / Hard / Nightmare, with a line on what the picked one does. Every
- * level is open from the start; a pick is saved right away, so the next run
- * (and the next visit) plays it.
- */
-const difficultyPicker = (initial: Difficulty) => {
-  const m = t().difficulty
-  let current = initial
-  const options = DIFFICULTY_IDS.map((id) =>
-    h('button', { class: `difficulty-option ${id}`, role: 'radio', onclick: () => set(id) }, m.names[id]),
-  )
-  const blurb = h('p', { class: 'difficulty-blurb' })
-  const render = () => {
-    options.forEach((o, i) => {
-      const on = DIFFICULTY_IDS[i] === current
-      o.classList.toggle('selected', on)
-      o.setAttribute('aria-checked', String(on))
-    })
-    blurb.textContent = m.blurbs[current]
-  }
-  const set = (id: Difficulty) => {
-    if (id === current) return
-    current = id
-    playSfx('move')
-    updateSave((save) => ({ ...save, difficulty: id }))
-    render()
-  }
-  /** The next level, wrapping around (the `X` key). */
-  const cycle = () => set(DIFFICULTY_IDS[(DIFFICULTY_IDS.indexOf(current) + 1) % DIFFICULTY_IDS.length]!)
-  render()
-  const el = h(
-    'div',
-    { class: 'difficulty-picker' },
-    h(
-      'div',
-      { class: 'difficulty-row' },
-      h('span', { class: 'difficulty-label' }, m.label),
-      h('div', { class: 'difficulty-options', role: 'radiogroup', 'aria-label': m.label }, ...options),
-      h('span', { class: 'key-hint' }, 'X'),
-    ),
-    blurb,
-  )
-  return { el, cycle }
-}
-
-/** Keys that flip each bag item on the select screen. */
+/** Keys that flip each bag item. */
 const BAG_KEYS = { lure: 'KeyC', incense: 'KeyV' } as const satisfies Record<BagItem, string>
 
-/**
- * The bag's items for the next run: a toggle per item the player has (`C`
- * Lure, `V` Incense), saved right away; the run uses them up as it starts.
- * Hidden while the bag is empty.
- */
-const bagPicker = (initial: Bag) => {
-  const m = t().bag
-  let bag = initial
-  const counts = Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, h('b', {})])) as Record<BagItem, HTMLElement>
-  const options = BAG_ITEM_IDS.map((id) =>
-    h(
-      'button',
-      { class: 'bag-option', role: 'switch', title: m.descriptions[id], onclick: () => toggle(id) },
-      h('img', { src: bagIcon(id), alt: '' }),
-      h('span', {}, BAG_ITEMS[id].name),
-      counts[id],
-      h('span', { class: 'key-hint' }, BAG_KEYS[id].slice(3)),
-    ),
-  )
-  const blurb = h('p', { class: 'difficulty-blurb' })
-  const render = () => {
-    BAG_ITEM_IDS.forEach((id, i) => {
-      const n = bagCount(bag, id)
-      options[i]!.classList.toggle('hidden', n === 0)
-      options[i]!.classList.toggle('selected', bag.armed[id])
-      options[i]!.setAttribute('aria-checked', String(bag.armed[id]))
-      counts[id].textContent = `×${n}`
-    })
-    const armed = BAG_ITEM_IDS.filter((id) => bag.armed[id])
-    blurb.textContent = armed.length > 0 ? armed.map((id) => m.descriptions[id]).join(' ') : m.pickHint
-    el.classList.toggle('hidden', BAG_ITEM_IDS.every((id) => bagCount(bag, id) === 0))
-  }
-  const toggle = (id: BagItem) => {
-    if (bagCount(bag, id) === 0) return
-    const on = !bag.armed[id]
-    bag = armItem(bag, id, on)
-    updateSave((save) => ({ ...save, bag: armItem(save.bag, id, on) }))
-    playSfx(on ? 'shiny' : 'move')
-    render()
-  }
-  const el = h(
-    'div',
-    { class: 'difficulty-picker bag-picker' },
-    h('div', { class: 'difficulty-row' }, h('span', { class: 'difficulty-label' }, m.label), h('div', { class: 'bag-options' }, ...options)),
-    blurb,
-  )
-  render()
-  /** A key press: flips the item it belongs to. */
-  const onKey = (key: string) => {
-    const id = BAG_ITEM_IDS.find((i) => BAG_KEYS[i] === key)
-    if (id) toggle(id)
-  }
-  return { el, onKey }
+/** How many hatched families the desktop's "Hatched" teaser row shows before "+n". */
+const TEASER = 7
+
+type Tab = 'starters' | 'eggs'
+
+type SelectActions = {
+  pick: (id: PlayableId) => void
+  back: () => void
+  mart: () => void
+  settings: () => void
+  incubator: () => void
 }
 
-/** A tab of the select: a region's starter trio, or the box of egg families. */
-type Group = { kind: 'region'; region: Region; ids: readonly PlayableId[] } | { kind: 'eggs'; ids: readonly PlayableId[] }
-
-const GROUPS: readonly Group[] = [...REGIONS.map((region) => ({ kind: 'region', region, ids: region.starters }) as const), { kind: 'eggs', ids: HATCHLING_IDS }]
-
-type Cursor = { group: number; slot: number }
-
-type SelectActions = { pick: (id: PlayableId) => void; incubator: () => void }
-
 /**
- * Region-tabbed Pokémon selector with an always-visible inspect panel. After
- * the 9 regions comes the egg box: hatched families to pick, the rest as
- * silhouettes, and the way into the incubator (`O`).
- * Keyboard: ←/→ Pokémon (wraps across tabs), ↑/↓ or Q/E tab (rows in the egg box), 1-9 jump to region,
- * X cycles the difficulty, Z flips Normal/Shiny (once its shiny is unlocked), C and V arm a Lure and an Incense, Enter confirms.
- * Pointer: hover/tap highlights, clicking the highlighted card (or the button) confirms.
- * `selected` reads the highlighted Pokémon, so a rebuilt screen (language switch) keeps it.
+ * The partner select: the roster (Starters: 9 regions × Grass/Fire/Water, or
+ * Eggs: the hatched families, the rest still in their egg), the selected
+ * partner's panel, the details sheet behind its button, and one action bar
+ * (Bag, difficulty, Start, colored by the difficulty).
+ *
+ * Keyboard: arrows move in the grid (↓ past the starters' last row reaches the eggs), Tab/Q/E switch tabs,
+ * 1-9 jump to a region, I opens the details, Z flips Normal/Shiny, X cycles the difficulty, C and V arm a
+ * Lure and an Incense, O opens the incubator, L the Poké Mart, Enter starts, Esc/Backspace go back.
+ * Pointer: a tap selects, a tap on the selected cell (or Start) starts.
+ * `selected` reads the selected Pokémon, so a rebuilt screen (language switch, back from a sub-screen) keeps it.
  */
 export const starterSelect = (root: HTMLElement, input: Input, actions: SelectActions, initial: PlayableId = 'charmander'): Screen & { selected: () => PlayableId } => {
   const m = t()
@@ -295,66 +70,107 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   let picks: ShinyStarters = save.shinyStarters
   const canPick = (id: PlayableId) => id in picks && !hatchedShiny(id)
   const shinyOf = (id: PlayableId) => hatchedShiny(id) || picks[id] === true
-  const start = Math.max(0, GROUPS.findIndex((g) => g.ids.includes(initial)))
-  const cursor: Cursor = { group: start, slot: Math.max(0, GROUPS[start]!.ids.indexOf(initial)) }
+
+  let tab: Tab = isHatchling(initial) ? 'eggs' : 'starters'
+  /** Each tab remembers its own cursor, so switching back lands where it was. */
+  const firstHatched = HATCHLING_IDS.find((id) => save.hatched[id]) ?? HATCHLING_IDS[0]!
+  const cursor: { starters: StarterId; eggs: HatchlingId } = isHatchling(initial) ? { starters: 'charmander', eggs: initial } : { starters: initial, eggs: firstHatched }
+  const current = (): PlayableId => cursor[tab]
   let stage = 0
   let picked = false
   let cryTimer = 0
+  let difficulty: Difficulty = save.difficulty
+  let bag = save.bag
+  let sheet: ReturnType<typeof detailsSheet> | null = null
 
-  const group = () => GROUPS[cursor.group]!
-  const current = (): PlayableId => group().ids[cursor.slot]!
+  /* ---------- Roster ---------- */
 
-  const owned = HATCHLING_IDS.filter((id) => save.hatched[id]).length
-  const tabs = GROUPS.map((g, i) =>
-    h(
+  /** Taps a cell: selects it, or starts if it was already selected. */
+  const tapCell = (id: PlayableId) => (id === current() ? confirm() : select(id))
+
+  const cellPortrait = (id: PlayableId) => h('img', { class: 'partner-cell-portrait', src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })
+  /** A family still in its egg: its first stage's silhouette at 2×, centered on the body (`bodyOf`) and cropped by the cell like a portrait. */
+  const cellSilhouette = (id: HatchlingId) => {
+    const dex = PLAYABLE[id].line[0].dex
+    const sheet = walkSheet(dex)
+    if (!sheet) return h('img', { class: 'partner-cell-egg', src: eggIcon(HATCHLINGS[id].egg), alt: '' })
+    const { bodyH, footY } = bodyOf(dex)
+    return h(
+      'span',
+      { class: 'partner-cell-silhouette' },
+      h('i', { style: `width:${sheet.fw}px;height:${sheet.fh}px;background-image:url(${sheet.url});transform:translateY(${bodyH - 2 * footY}px) scale(2)` }),
+    )
+  }
+  const shinyTag = () => h('img', { class: 'partner-cell-shiny', src: sparkleIcon(), alt: 'Shiny' })
+
+  const cells = new Map<PlayableId, HTMLElement>()
+  const starterCell = (id: StarterId) => {
+    const el = h(
       'button',
-      { class: g.kind === 'eggs' ? 'region-tab egg-tab' : 'region-tab', onclick: () => setCursor({ group: i, slot: 0 }) },
-      g.kind === 'eggs' ? h('small', {}, `${owned}/${HATCHLING_IDS.length}`) : h('small', {}, `${g.region.gen}`),
-      g.kind === 'eggs' ? m.eggs.tab : g.region.name,
-    ),
-  )
-
-  /** A card (region trio) or a cell (egg box): canvas plus click/hover wiring. */
-  const pickable = (el: HTMLElement, slot: number) => {
-    el.addEventListener('pointerenter', (e) => {
-      if (e.pointerType === 'mouse' && slot !== cursor.slot) setCursor({ group: cursor.group, slot })
-    })
-    el.addEventListener('click', () => (slot === cursor.slot ? confirm() : setCursor({ group: cursor.group, slot })))
+      { class: 'partner-cell', type: 'button', title: PLAYABLE[id].name, style: `--t:${PLAYABLE[id].color}`, onclick: () => tapCell(id) },
+      cellPortrait(id),
+      h('span', { class: 'partner-cell-name' }, PLAYABLE[id].name),
+      shinyOf(id) && shinyTag(),
+    )
+    cells.set(id, el)
+    return el
+  }
+  const eggCell = (id: HatchlingId) => {
+    const open = unlocked(id)
+    const el = h(
+      'button',
+      {
+        class: open ? 'partner-cell egg' : 'partner-cell egg locked',
+        type: 'button',
+        title: open ? PLAYABLE[id].name : m.eggs.locked,
+        style: `--t:${open ? PLAYABLE[id].color : '#8890b0'}`,
+        onclick: () => tapCell(id),
+      },
+      open ? cellPortrait(id) : cellSilhouette(id),
+      shinyOf(id) && shinyTag(),
+    )
+    cells.set(id, el)
     return el
   }
 
-  const cardCanvases = [0, 1, 2].map(() => h('canvas', { width: 64, height: 56, class: 'starter-sprite' }))
-  const cardNames = [0, 1, 2].map(() => h('div', { class: 'starter-name' }))
-  const cardTypes = [0, 1, 2].map(() => h('div', { class: 'types' }))
-  const cardShiny = [0, 1, 2].map(() => h('img', { class: 'starter-shiny hidden', src: sparkleIcon(), alt: 'Shiny' }))
-  const cards = [0, 1, 2].map((slot) => pickable(h('button', { class: 'starter-card box' }, cardCanvases[slot]!, cardShiny[slot]!, cardNames[slot]!, cardTypes[slot]!), slot))
-  const trio = h('div', { class: 'starters' }, ...cards)
+  const owned = HATCHLING_IDS.filter((id) => save.hatched[id])
+  const tabButtons = {
+    starters: h('button', { class: 'partner-tab', type: 'button', role: 'tab', onclick: () => setTab('starters') }, m.partner.starters, h('small', {}, `${STARTER_IDS.length}`)),
+    eggs: h('button', { class: 'partner-tab', type: 'button', role: 'tab', onclick: () => setTab('eggs') }, m.eggs.tab, h('small', {}, `${owned.length}/${HATCHLING_IDS.length}`)),
+  } satisfies Record<Tab, HTMLElement>
 
-  const cellCanvases = HATCHLING_IDS.map(() => h('canvas', { width: 48, height: 40, class: 'egg-cell-sprite' }))
-  const cells = HATCHLING_IDS.map((id, slot) =>
-    pickable(
-      h(
-        'button',
-        { class: unlocked(id) ? 'egg-cell' : 'egg-cell locked', title: unlocked(id) ? PLAYABLE[id].name : m.eggs.locked },
-        cellCanvases[slot]!,
-        !unlocked(id) && h('img', { class: 'egg-cell-tag', src: eggIcon(HATCHLINGS[id].egg), alt: '' }),
-        shinyOf(id) && h('img', { class: 'egg-cell-tag', src: sparkleIcon(), alt: 'Shiny' }),
-      ),
-      slot,
+  const starterGrid = h(
+    'div',
+    { class: 'partner-grid' },
+    h('div', { class: 'partner-types', 'aria-hidden': 'true' }, h('span'), ...ROW_TYPES.map((type) => h('i', { style: `--t:${TYPE_COLORS[type]}`, title: type.toUpperCase() }))),
+    ...REGIONS.map((r) =>
+      h('div', { class: 'partner-region' }, h('small', { class: 'partner-reg', title: r.name }, h('span', { class: 'short' }, r.name.slice(0, 3)), h('span', { class: 'long' }, r.name)), ...r.starters.map(starterCell)),
     ),
   )
+
+  /** Desktop only: the hatched families under the grid, a shortcut into the Eggs tab. */
+  const teaser = h(
+    'div',
+    { class: 'partner-teaser' },
+    h('small', { class: 'partner-teaser-label' }, m.partner.hatched),
+    ...(owned.length > 0
+      ? owned.slice(0, TEASER).map((id) =>
+          h('button', { class: 'partner-teaser-cell', type: 'button', title: PLAYABLE[id].name, onclick: () => (setTab('eggs'), select(id)) }, h('img', { src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })),
+        )
+      : [h('span', { class: 'partner-teaser-empty' }, m.partner.noneHatched)]),
+    h('button', { class: 'partner-teaser-more', type: 'button', onclick: () => setTab('eggs') }, owned.length > TEASER ? `+${owned.length - TEASER} ▸` : '▸'),
+  )
+
+  const eggGrid = h('div', { class: 'partner-egg-grid' }, ...HATCHLING_IDS.map(eggCell))
   const ready = save.eggs.filter(isReady).length
   const openIncubator = () => (playSfx('select'), later(actions.incubator))
-  const grid = h('div', { class: 'egg-box' }, ...cells)
-  /** Columns the egg box shows right now (CSS changes them with the screen); ↑/↓ move a row inside it. */
-  const boxCols = () => getComputedStyle(grid).gridTemplateColumns.split(' ').length || 1
-  const box = h(
+  const eggsPane = h(
     'div',
-    { class: 'egg-box-wrap hidden' },
-    grid,
+    { class: 'partner-eggs' },
+    eggGrid,
     h(
       'button',
-      { class: 'incubator-entry box', onclick: openIncubator },
+      { class: 'incubator-entry box', type: 'button', onclick: openIncubator },
       h('img', { src: eggIcon('common'), alt: '' }),
       h('span', {}, m.eggs.incubator(save.eggs.length, EGGS.slots)),
       ready > 0 && h('b', { class: 'blink' }, m.eggs.readyBadge(ready)),
@@ -362,98 +178,221 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     ),
   )
 
-  const inspectSprite = h('canvas', { width: 72, height: 72, class: 'inspect-sprite' })
-  const inspect = h('div', { class: 'inspect box' })
-  const confirmBtn = h('button', { class: 'btn confirm selected', onclick: () => confirm() })
-  const difficulty = difficultyPicker(save.difficulty)
-  const bag = bagPicker(save.bag)
+  const roster = h(
+    'section',
+    { class: 'partner-roster box' },
+    h('div', { class: 'partner-tabs', role: 'tablist' }, tabButtons.starters, tabButtons.eggs, h('span', { class: 'key-hint' }, 'TAB')),
+    h('div', { class: 'partner-pane starters' }, starterGrid, teaser),
+    eggsPane,
+  )
 
-  const renderGroup = () => {
-    const g = group()
-    tabs.forEach((t, i) => t.classList.toggle('selected', i === cursor.group))
-    tabs[cursor.group]!.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-    trio.classList.toggle('hidden', g.kind !== 'region')
-    box.classList.toggle('hidden', g.kind !== 'eggs')
-    if (g.kind === 'eggs') {
-      cells.forEach((c, i) => c.classList.toggle('selected', i === cursor.slot))
-      // The box scrolls on its own: keep the highlighted cell in it.
-      cells[cursor.slot]!.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-      // Silhouettes need the sprites too.
-      void loadAll(HATCHLING_IDS.map((id) => PLAYABLE[id].line[0].dex)).catch(() => {})
-      for (const id of HATCHLING_IDS) if (shinyOf(id)) void loadSpecies(PLAYABLE[id].line[0].dex, true).catch(() => {})
-      return
-    }
-    g.ids.forEach((id, slot) => {
-      const s = PLAYABLE[id]
-      cards[slot]!.style.setProperty('--accent', s.color)
-      cards[slot]!.classList.toggle('selected', slot === cursor.slot)
-      cardNames[slot]!.textContent = s.name
-      cardTypes[slot]!.replaceChildren(...s.line[0].types.map(typeBadge))
-      cardShiny[slot]!.classList.toggle('hidden', !shinyOf(id))
-      if (shinyOf(id)) void loadSpecies(s.line[0].dex, true).catch(() => {})
-    })
-    // Menu sprites load on demand: the visible trio first, the rest in the background (see main.ts).
-    void loadAll(g.ids.map((id) => PLAYABLE[id].line[0].dex)).catch(() => {})
-  }
+  /* ---------- Partner panel ---------- */
 
-  const renderInspect = () => {
+  const sprite = h('canvas', { width: 72, height: 72, class: 'partner-sprite' })
+  const hero = h('section', { class: 'partner-hero box' })
+
+  const renderHero = () => {
     const id = current()
     const open = unlocked(id)
-    void loadSpecies(PLAYABLE[id].line[stage]!.dex, shinyOf(id)).catch(() => {})
-    inspect.style.setProperty('--accent', open ? PLAYABLE[id].color : '#707088')
-    inspect.replaceChildren(
-      h('div', { class: 'dialog-title' }, m.title.inspect),
-      isHatchling(id) && !open
-        ? lockedPanel(id, inspectSprite)
-        : inspectPanel(id, stage, (i) => {
-            stage = i
-            playSfx('move')
-            renderInspect()
-          }, inspectSprite, canPick(id) ? shinyPicker(shinyOf(id), setShiny) : null),
+    const form = PLAYABLE[id].line[stage]!
+    void loadSpecies(form.dex, shinyOf(id)).catch(() => {})
+    hero.style.setProperty('--accent', open ? PLAYABLE[id].color : '#8890b0')
+    const pedestal = h('div', { class: 'partner-pedestal' }, sprite)
+    if (isHatchling(id) && !open) {
+      const tier = HATCHLINGS[id].egg
+      hero.replaceChildren(
+        h(
+          'div',
+          { class: 'partner-hero-top' },
+          pedestal,
+          h(
+            'div',
+            { class: 'partner-id' },
+            h('h3', { class: 'partner-name' }, m.eggs.locked),
+            h('p', { class: 'partner-blurb locked-blurb' }, h('img', { src: eggIcon(tier), alt: '' }), rich(tier === 'friend' ? m.eggs.friendBlurb : m.eggs.lockedBlurb(m.eggs.tiers[tier]))),
+          ),
+        ),
+        h('p', { class: 'partner-blurb partner-intro' }, m.eggs.intro),
+      )
+      return
+    }
+    const onStage = (i: number) => {
+      if (i === stage) return
+      stage = i
+      playSfx('move')
+      renderHero()
+    }
+    /** The way into the details: the wide panel's button at the bottom, and the compact panel's (phones, landscape) beside the shiny pick. */
+    const more = (compact: boolean) =>
+      h(
+        'button',
+        { class: compact ? 'partner-more compact' : 'partner-more', type: 'button', onclick: () => openDetails() },
+        compact ? m.partner.detailsShort : m.partner.details(megasOf(id).length > 0),
+        ' ▸',
+        !compact && h('span', { class: 'key-hint' }, 'I'),
+      )
+    hero.replaceChildren(
+      h(
+        'div',
+        { class: 'partner-hero-top' },
+        pedestal,
+        h(
+          'div',
+          { class: 'partner-id' },
+          h('small', { class: 'partner-dex' }, `#${String(form.dex).padStart(3, '0')}`),
+          h('h3', { class: 'partner-name' }, form.name),
+          h('div', { class: 'types' }, ...form.types.map(typeBadge)),
+          h('p', { class: 'partner-blurb' }, m.blurbs[id]),
+          h('div', { class: 'partner-hero-actions' }, canPick(id) && shinyPicker(shinyOf(id), setShiny), more(true)),
+        ),
+      ),
+      h('div', { class: 'partner-stats' }, statBars(id, 4)),
+      h('div', { class: 'partner-evo' }, evoLine(id, stage, onStage)),
+      more(false),
     )
-    confirmBtn.textContent = open ? m.title.choose(PLAYABLE[id].name) : m.eggs.lockedButton
-    confirmBtn.classList.toggle('locked', !open)
   }
 
-  /** Picks Normal or Shiny for the highlighted Pokémon, saved for its next run. */
+  /* ---------- Action bar ---------- */
+
+  const blurb = h('p', { class: 'partner-blurb-line' })
+  const go = h('button', { class: 'partner-go', type: 'button', onclick: () => confirm() }, h('span', { class: 'partner-go-label' }), h('span', { class: 'key-hint' }, 'ENTER'))
+  /** Start buttons on screen (the bar's, and the open sheet's): they follow the difficulty's color. */
+  const goButtons = () => [go, ...(sheet ? [sheet.go] : [])]
+  const paintGo = () =>
+    goButtons().forEach((b) => {
+      DIFFICULTY_IDS.forEach((d) => b.classList.toggle(d, d === difficulty))
+      b.classList.toggle('locked', !unlocked(current()))
+    })
+
+  const seg = segmented(
+    DIFFICULTY_IDS.map((id) => ({ id, label: m.difficulty.names[id] })),
+    difficulty,
+    (id) => setDifficulty(id),
+  )
+  DIFFICULTY_IDS.forEach((id, i) => seg.el.children[i]!.classList.add(id))
+  seg.el.setAttribute('role', 'radiogroup')
+  seg.el.setAttribute('aria-label', m.difficulty.label)
+
+  /** Picks a level, saved right away so the next run (and the next visit) plays it. */
+  const setDifficulty = (id: Difficulty) => {
+    if (id === difficulty) return
+    difficulty = id
+    playSfx('move')
+    updateSave((s) => ({ ...s, difficulty: id }))
+    seg.set(id)
+    blurb.textContent = m.difficulty.blurbs[id]
+    paintGo()
+  }
+
+  const slots = BAG_ITEM_IDS.map((id) =>
+    h(
+      'button',
+      { class: 'partner-slot', type: 'button', role: 'switch', title: m.bag.descriptions[id], onclick: () => toggleBag(id) },
+      h('img', { src: bagIcon(id), alt: '' }),
+      h('em', {}),
+      h('span', { class: 'key-hint' }, BAG_KEYS[id].slice(3)),
+    ),
+  )
+  const renderBag = () =>
+    BAG_ITEM_IDS.forEach((id, i) => {
+      const n = bagCount(bag, id)
+      const slot = slots[i]!
+      slot.classList.toggle('empty', n === 0)
+      slot.classList.toggle('on', bag.armed[id])
+      slot.setAttribute('aria-checked', String(bag.armed[id]))
+      slot.setAttribute('aria-label', m.bag.toggle(m.bag.descriptions[id], n))
+      slot.querySelector('em')!.textContent = `${n}`
+    })
+  /** Arms or disarms a bag item for the next run (the run uses it up as it starts); the line under the difficulty says what it does. */
+  const toggleBag = (id: BagItem) => {
+    if (bagCount(bag, id) === 0) return playSfx('denied')
+    const on = !bag.armed[id]
+    bag = armItem(bag, id, on)
+    updateSave((s) => ({ ...s, bag: armItem(s.bag, id, on) }))
+    playSfx(on ? 'shiny' : 'move')
+    blurb.textContent = on ? m.bag.descriptions[id] : m.difficulty.blurbs[difficulty]
+    renderBag()
+  }
+
+  const bar = actionBar(
+    h('div', { class: 'partner-bag' }, h('small', { class: 'partner-bag-label' }, m.bag.label), ...slots),
+    h('div', { class: 'partner-diff' }, h('div', { class: 'partner-diff-row' }, seg.el, h('span', { class: 'key-hint' }, 'X')), blurb),
+    go,
+  )
+  bar.classList.add('partner-bar')
+
+  /* ---------- State ---------- */
+
+  const renderGo = () => {
+    const id = current()
+    go.querySelector('.partner-go-label')!.textContent = unlocked(id) ? `${m.partner.start} ▶` : m.eggs.lockedButton
+    paintGo()
+  }
+
+  const render = () => {
+    for (const k of ['starters', 'eggs'] as const) {
+      tabButtons[k].classList.toggle('on', k === tab)
+      tabButtons[k].setAttribute('aria-selected', String(k === tab))
+    }
+    roster.classList.toggle('eggs', tab === 'eggs')
+    cells.forEach((c, id) => c.classList.toggle('selected', id === current()))
+    renderHero()
+    renderGo()
+  }
+
+  /** Keeps the selected cell in sight inside its scrolling roster. */
+  const reveal = () => cells.get(current())?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+
+  /** Selects a Pokémon (switching to its tab), with a step sound and, once it settles, its cry. */
+  const select = (id: PlayableId) => {
+    if (id === current()) return
+    if (isHatchling(id)) cursor.eggs = id
+    else cursor.starters = id as StarterId
+    tab = isHatchling(id) ? 'eggs' : 'starters'
+    stage = 0
+    render()
+    reveal()
+    playSfx('move')
+    clearTimeout(cryTimer)
+    if (!unlocked(id)) return
+    cryTimer = window.setTimeout(() => playCry(cryUrl(PLAYABLE[id].line[0].dex), 0.25), 260)
+  }
+
+  const setTab = (next: Tab) => {
+    if (next === tab) return
+    select(cursor[next])
+  }
+
+  /** Picks Normal or Shiny for the selected Pokémon, saved for its next run. */
   function setShiny(shiny: boolean) {
     const id = current()
     if (!canPick(id) || shinyOf(id) === shiny) return
     picks = pickShinyStarter(picks, id, shiny)
     updateSave((s) => ({ ...s, shinyStarters: pickShinyStarter(s.shinyStarters, id, shiny) }))
     playSfx(shiny ? 'shiny' : 'move')
-    renderGroup()
-    renderInspect()
+    const cell = cells.get(id)!
+    cell.querySelector<HTMLImageElement>('.partner-cell-portrait')!.src = portraitUrl(PLAYABLE[id].line[0].dex, shiny)
+    cell.querySelector('.partner-cell-shiny')?.remove()
+    if (shiny) cell.append(shinyTag())
+    renderHero()
   }
 
-  const setCursor = (next: Cursor, sound = true) => {
-    const changed = next.group !== cursor.group || next.slot !== cursor.slot
-    cursor.group = (next.group + GROUPS.length) % GROUPS.length
-    cursor.slot = Math.min(next.slot, group().ids.length - 1)
-    stage = 0
-    renderGroup()
-    renderInspect()
-    if (!sound || !changed) return
-    playSfx('move')
-    clearTimeout(cryTimer)
-    const id = current()
-    if (!unlocked(id)) return
-    cryTimer = window.setTimeout(() => playCry(cryUrl(PLAYABLE[id].line[0].dex), 0.25), 260)
-  }
-
-  /** ←/→ walk through every Pokémon, spilling over into the neighbouring tab. */
-  const stepSlot = (delta: number) => {
-    const slot = cursor.slot + delta
-    if (slot < 0) return setCursor({ group: cursor.group - 1, slot: GROUPS.at((cursor.group - 1) % GROUPS.length)!.ids.length - 1 })
-    if (slot >= group().ids.length) return setCursor({ group: cursor.group + 1, slot: 0 })
-    setCursor({ group: cursor.group, slot })
-  }
-
-  /** ↑/↓: the next tab, or a row up/down inside the egg box. */
-  const stepRow = (delta: number) => {
-    const slot = cursor.slot + delta * boxCols()
-    if (group().kind === 'eggs' && slot >= 0 && slot < group().ids.length) return setCursor({ group: cursor.group, slot })
-    setCursor({ group: cursor.group + delta, slot: cursor.slot })
+  /** An arrow: a step in the shown grid (the starters' columns are regions on wide screens, rows on phones). */
+  const step = (dir: Step) => {
+    if (tab === 'eggs') {
+      const cols = getComputedStyle(eggGrid).gridTemplateColumns.split(' ').length || 1
+      const next = stepGrid(HATCHLING_IDS.indexOf(cursor.eggs), dir, cols, HATCHLING_IDS.length)
+      if (next === 'above') return setTab('starters')
+      if (next !== 'below') select(HATCHLING_IDS[next]!)
+      return
+    }
+    const i = STARTER_IDS.indexOf(cursor.starters)
+    const [region, type] = [Math.floor(i / 3), i % 3]
+    const phone = matchMedia(PHONE).matches
+    const next = phone ? stepGrid(i, dir, 3, STARTER_IDS.length) : stepGrid(type * REGIONS.length + region, dir, REGIONS.length, STARTER_IDS.length)
+    if (next === 'below') return setTab('eggs')
+    if (next === 'above') return
+    select(phone ? STARTER_IDS[next]! : STARTER_IDS[(next % REGIONS.length) * 3 + Math.floor(next / REGIONS.length)]!)
   }
 
   const confirm = () => {
@@ -467,58 +406,83 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     actions.pick(id)
   }
 
-  const off = input.onKey((key) => {
-    if (key === 'ArrowLeft' || key === 'KeyA') stepSlot(-1)
-    else if (key === 'ArrowRight' || key === 'KeyD') stepSlot(1)
-    else if (key === 'ArrowUp' || key === 'KeyW') stepRow(-1)
-    else if (key === 'ArrowDown' || key === 'KeyS') stepRow(1)
-    else if (key === 'KeyQ' || key === 'PageUp') setCursor({ group: cursor.group - 1, slot: cursor.slot })
-    else if (key === 'KeyE' || key === 'PageDown') setCursor({ group: cursor.group + 1, slot: cursor.slot })
-    else if (key === 'KeyO') openIncubator()
-    else if (key === 'KeyX') difficulty.cycle()
-    else if (key === 'KeyZ') setShiny(!shinyOf(current()))
-    else if (key === 'Enter' || key === 'Space') confirm()
-    else if (/^Digit[1-9]$/.test(key)) setCursor({ group: Number(key.slice(5)) - 1, slot: cursor.slot })
-    else bag.onKey(key)
-  })
-
-  const el = h(
-    'div',
-    { class: 'screen title-screen select-screen' },
-    h('h1', { class: 'logo' }, h('span', { class: 'logo-top' }, 'POKéMON'), h('span', { class: 'logo-bottom' }, 'SURVIVORS')),
-    h('p', { class: 'subtitle blink' }, m.title.subtitle),
-    h(
-      'div',
-      { class: 'select-layout' },
-      h('div', { class: 'select-main' }, h('div', { class: 'region-tabs', role: 'tablist' }, ...tabs), trio, box, hint(m.title.hintKeys, m.title.hintTouch)),
-      inspect,
-      h('div', { class: 'select-footer' }, difficulty.el, bag.el, confirmBtn),
-    ),
-    h('p', { class: 'credits' }, m.title.credits),
-  )
-  root.append(el)
-  setCursor(cursor, false)
-
-  /** Draws a Pokémon on a menu canvas; still loading shows a bobbing Poké Ball, `locked` a dark silhouette. */
-  const draw = (canvas: HTMLCanvasElement, dex: number, t: number, opts: { walking: boolean; shiny?: boolean; locked?: boolean }) => {
-    const ctx = context2d(canvas)
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    const s = (opts.shiny && loadedSprites(dex, true)) || loadedSprites(dex)
-    const tint = opts.locked ? { color: '#283048', amount: 1 } : undefined
-    if (s) drawPokemon(ctx, s, opts.walking && !opts.locked ? 'Walk' : 'Idle', 0, opts.locked ? 0 : t, canvas.width / 2, canvas.height - 6, { tint })
-    else blitCentered(ctx, PICKUPS.pokeball(), canvas.width / 2, canvas.height / 2 + Math.round(Math.sin(t * 6) * 2))
+  const closeDetails = () => {
+    if (!sheet) return
+    sheet.el.remove()
+    sheet = null
+    playSfx('move')
   }
 
-  const tick = (t: number) => {
-    const g = group()
-    if (g.kind === 'eggs')
-      HATCHLING_IDS.forEach((id, slot) =>
-        draw(cellCanvases[slot]!, PLAYABLE[id].line[0].dex, t, { walking: slot === cursor.slot, shiny: shinyOf(id), locked: !unlocked(id) }),
-      )
-    else g.ids.forEach((id, slot) => draw(cardCanvases[slot]!, PLAYABLE[id].line[0].dex, t, { walking: slot === cursor.slot, shiny: shinyOf(id) }))
+  function openDetails() {
     const id = current()
-    draw(inspectSprite, PLAYABLE[id].line[stage]!.dex, t, { walking: true, shiny: shinyOf(id), locked: !unlocked(id) })
+    if (sheet || !unlocked(id)) return
+    playSfx('select')
+    sheet = detailsSheet({
+      id,
+      stage,
+      shiny: shinyOf(id),
+      go: h('button', { class: 'partner-go', type: 'button', onclick: () => confirm() }, m.partner.startWith(PLAYABLE[id].name)),
+      onStage: (i) => ((stage = i), renderHero()),
+      onClose: closeDetails,
+    })
+    el.append(sheet.el)
+    paintGo()
   }
 
-  return { el, tick, selected: current, dispose: () => (off(), clearTimeout(cryTimer), el.remove()) }
+  /** Leaves for another screen after this press is done. */
+  const leave = (fn: () => void) => (playSfx('select'), later(fn))
+  const back = () => (playSfx('move'), later(actions.back))
+
+  const off = input.onKey((key) => {
+    if (sheet?.onKey(key)) return
+    if (key === 'KeyX') return setDifficulty(DIFFICULTY_IDS[(DIFFICULTY_IDS.indexOf(difficulty) + 1) % DIFFICULTY_IDS.length]!)
+    if (key === 'KeyZ') return setShiny(!shinyOf(current()))
+    const item = BAG_ITEM_IDS.find((i) => BAG_KEYS[i] === key)
+    if (item) return toggleBag(item)
+    if (sheet) return
+    if (key === 'ArrowLeft' || key === 'KeyA') step('left')
+    else if (key === 'ArrowRight' || key === 'KeyD') step('right')
+    else if (key === 'ArrowUp' || key === 'KeyW') step('up')
+    else if (key === 'ArrowDown' || key === 'KeyS') step('down')
+    else if (key === 'Tab' || key === 'KeyQ' || key === 'KeyE' || key === 'PageUp' || key === 'PageDown') setTab(tab === 'starters' ? 'eggs' : 'starters')
+    else if (/^Digit[1-9]$/.test(key)) select(STARTER_IDS[(Number(key.slice(5)) - 1) * 3 + (STARTER_IDS.indexOf(cursor.starters) % 3)]!)
+    else if (key === 'KeyI') openDetails()
+    else if (key === 'KeyO') openIncubator()
+    else if (key === 'KeyL') leave(actions.mart)
+    else if (key === 'Escape' || key === 'Backspace') back()
+    else if (key === 'Enter' || key === 'Space') confirm()
+  })
+  /** Tab switches the roster's tabs here, not the browser's focus. */
+  const holdTab = (e: KeyboardEvent) => e.code === 'Tab' && e.preventDefault()
+  window.addEventListener('keydown', holdTab)
+
+  const el = shellScreen({
+    class: 'partner-screen',
+    top: topBar({
+      left: backButton(back),
+      title: h('span', {}, h('span', { class: 'partner-title-long' }, m.partner.title), h('span', { class: 'partner-title-short' }, m.partner.titleShort)),
+      right: [walletChip(save.wallet, { label: m.mart.open, onClick: () => leave(actions.mart), key: 'L' }), gearButton(() => leave(actions.settings))],
+    }),
+    body: [h('div', { class: 'partner-layout' }, hero, roster)],
+    bottom: bar,
+  })
+  root.append(el)
+  blurb.textContent = m.difficulty.blurbs[difficulty]
+  renderBag()
+  render()
+  requestAnimationFrame(reveal)
+
+  /** Draws the selected Pokémon idling on its pedestal: a bobbing Poké Ball while it loads, a dark silhouette while still in its egg. */
+  const tick = (time: number) => {
+    const id = current()
+    const dex = PLAYABLE[id].line[stage]!.dex
+    const locked = !unlocked(id)
+    const ctx = context2d(sprite)
+    ctx.clearRect(0, 0, sprite.width, sprite.height)
+    const s = (shinyOf(id) && loadedSprites(dex, true)) || loadedSprites(dex)
+    if (s) drawPokemon(ctx, s, 'Idle', 0, locked ? 0 : time, sprite.width / 2, sprite.height - 6, { tint: locked ? { color: '#283048', amount: 1 } : undefined })
+    else blitCentered(ctx, PICKUPS.pokeball(), sprite.width / 2, sprite.height / 2 + Math.round(Math.sin(time * 6) * 2))
+  }
+
+  return { el, tick, selected: current, dispose: () => (off(), clearTimeout(cryTimer), window.removeEventListener('keydown', holdTab), el.remove()) }
 }
