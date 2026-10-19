@@ -5,7 +5,8 @@ import { parseSave } from './meta'
 
 describe('difficulty levels', () => {
   it('Normal is the base run: every multiplier is 1', () => {
-    expect(Object.values(DIFFICULTIES.normal).every((v) => v === 1)).toBe(true)
+    const { iframes: _, ...multipliers } = DIFFICULTIES.normal
+    expect(Object.values(multipliers).every((v) => v === 1)).toBe(true)
   })
 
   it('never gets easier from one level to the next in any multiplier', () => {
@@ -18,6 +19,7 @@ describe('difficulty levels', () => {
       expect(next.enemySpeed).toBeGreaterThanOrEqual(prev.enemySpeed)
       expect(next.ramp).toBeGreaterThanOrEqual(prev.ramp)
       expect(next.healing).toBeLessThanOrEqual(prev.healing)
+      expect(next.iframes).toBeLessThanOrEqual(prev.iframes)
     })
   })
 

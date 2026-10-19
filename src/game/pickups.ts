@@ -5,6 +5,7 @@ import { burst, floatText } from './effects'
 import { useConsumable } from './consumables'
 import { rollEgg, type EggSource } from './eggs'
 import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
+import { openAlphaPrize } from './alphas'
 import { grantStone } from './mega'
 import { collectTm } from './tms'
 import type { Game, Pickup } from './types'
@@ -95,6 +96,9 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     case 'tm':
       collectTm(g, pickup)
+      break
+    case 'alphaPrize':
+      openAlphaPrize(g)
       break
   }
 }

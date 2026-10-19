@@ -24,6 +24,8 @@ import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../.
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
 import { TUTOR } from '../../game/tmRules'
+import { clearOfBosses, FIELD, FIELD_TUNING } from '../../game/fieldMissionRules'
+import { formatTime } from '../../engine/math'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
 import { MAX_ITEMS, MAX_MOVES, OFFER_RARITY } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
@@ -392,7 +394,9 @@ const eggs = (locale: Locale, m: SiteMessages) => {
     const odds: Partial<Record<(typeof EGG_TIER_IDS)[number], number>> = EGG_SOURCES[source].odds
     const total = EGG_TIER_IDS.reduce((sum, tier) => sum + (odds[tier] ?? 0), 0)
     const rarity = EGG_TIER_IDS.flatMap((tier) => (odds[tier] ? [`${tiers[tier]} ${pct(odds[tier] / total)}`] : [])).join(' · ')
-    return [e.sources[source], pct(EGG_SOURCES[source].chance), rarity]
+    // The field mission rolls its own odds per difficulty before the egg's.
+    const chance = source === 'mission' ? DIFFICULTY_IDS.map((d) => pct(FIELD_TUNING[d].reward.egg)).join(' / ') : pct(EGG_SOURCES[source].chance)
+    return [e.sources[source], chance, rarity]
   })
   return html`${paragraphs(e.paragraphs(STARTER_IDS.length, HATCHLING_IDS.length, EGGS.slots, EGGS.perRun, EGGS.stepPx, Math.round(1 / EGGS.shinyOdds), EGGS.newWeight))}
     ${table([e.sourceHead, e.chanceHead, e.oddsHead], sourceRows)}
@@ -424,6 +428,7 @@ const mapEvents = (m: SiteMessages) => {
     [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
     [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
     [e.tutor.name, e.tutor.how(Math.round(TUTOR.first.from / 60), Math.round(TUTOR.first.until / 60)), e.tutor.reward(money([TUTOR.price]))],
+    [e.field.name, e.field.how(formatTime(clearOfBosses(FIELD.first)), Math.round((FIELD.gap[0] + FIELD.gap[1]) / 120 * 2) / 2), e.field.reward],
   ]
   const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
   return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>

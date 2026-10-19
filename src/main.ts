@@ -30,9 +30,12 @@ import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, 
 import { setBiome } from './game/biomes'
 import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
+import { pickAlpha, spawnAlpha } from './game/alphas'
+import { stageIndexAt } from './data/waves'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
+import { FIELD, FIELD_MISSION_KINDS, TOGEPI_DEX, type FieldMissionKind } from './game/fieldMissionRules'
 import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rerollOffers, skipLevelUp, step } from './game/game'
 import { formAt, playerForm } from './game/branch'
 import { unlockedAt } from './game/learnsets'
@@ -51,6 +54,8 @@ import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
 import { tmDevTools } from './game/tmDev'
 import { duoDevTools } from './game/duoDev'
+import { tensionDevTools } from './game/tensionDev'
+import { hazardDevTools } from './game/hazardDev'
 import { spitterDevTools } from './game/spitterDev'
 import { cursePick } from './ui/cursePick'
 import { CURSES } from './data/curses'
@@ -517,10 +522,11 @@ let upcoming = planRun()
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the rift legendaries and the endless mode's reaper.
+ * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper.
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
+  { dex: TOGEPI_DEX, at: FIELD.first },
   ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.firstAt })),
   { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
 ]
@@ -768,6 +774,30 @@ const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) =>
   return m.pokeballBerry
 }
 
+/** An Alpha's moments: a roar and a toast when it comes, cues for its charge and rage, a toast when it falls. */
+const alphaEvent = (e: Extract<GameEvent, { kind: 'alpha' }>) => {
+  const def = ENEMIES[e.enemy]
+  switch (e.moment) {
+    case 'spawn':
+      playSfx('boss')
+      playCry(sprites(def.dex).cry, 0.8)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().alphas.appeared(def.name))), 3600)
+    case 'aim':
+      return playSfx('growl', 200)
+    case 'charge':
+      return playSfx('charge', 150)
+    case 'shock':
+      return playSfx('quake', 150)
+    case 'enrage':
+      playSfx('boss')
+      playCry(sprites(def.dex).cry, 0.8)
+      return flashScreen(ui)
+    case 'down':
+      playSfx('evolve')
+      return toast(ui, rich(t().alphas.defeated(def.name)), 3200)
+  }
+}
+
 /** Sounds of enemy traits: the warning (fuse lit, beam aimed, leap) and the moment it goes off. */
 const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
   healer: { warn: null, fire: 'enemyPulse' },
@@ -991,6 +1021,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(def.dex).cry, 0.35)
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
     }
+    case 'hazardIntro':
+      return toast(ui, rich(t().hazards.intro), 3400)
     case 'riftOpen':
       playSfx('shiny')
       return toast(ui, rich(t().rifts.open), 3200)
@@ -1029,6 +1061,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('evolve')
       flashScreen(ui)
       return banner(ui, rich(t().rifts.reaperDown))
+    case 'alpha':
+      return alphaEvent(e)
+    case 'alphaPrize':
+      return toast(ui, rich(t().alphas.prize), 2600)
     case 'egg': {
       const m = t().eggs
       playSfx('unlock')
@@ -1285,6 +1321,13 @@ const devEvent = (kind: MapEventKind, dx = 70, dy = 0) => {
   return spawnMapEvent(run.game, kind, Math.round(p.x + dx), Math.round(p.y + dy))
 }
 
+/** Dev: starts a field mission of `kind` about `dx` px to the right of the player, e.g. `ps.field('defense')`. */
+const devField = (kind: FieldMissionKind = 'defense', dx = 120) => {
+  if (!run || !FIELD_MISSION_KINDS.includes(kind)) return `Kinds: ${FIELD_MISSION_KINDS.join(', ')}`
+  const p = run.game.player
+  return spawnMapEvent(run.game, kind, Math.round(p.x + dx), Math.round(p.y))
+}
+
 // Dev-only handle for poking at the running game from the console.
 /** Dev: spawns `count` of an enemy in a small arc ahead of the player (staging trait screenshots); `shiny` makes them shiny elites. */
 const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
@@ -1300,6 +1343,16 @@ const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
       makeShiny(g, e)
     }
   }
+}
+
+/** Dev: an Alpha 120 px ahead (`ps.alpha('golem')`; the stage's own pick without an argument). */
+const devAlpha = (kind?: EnemyId) => {
+  const g = run?.game
+  if (!g) return 'ps: start a run first'
+  const id = kind ?? pickAlpha(g.rng, g.roster.stages[stageIndexAt(g.time)] ?? [])
+  if (!id) return 'ps: no species for an Alpha in this stage'
+  const p = g.player
+  return spawnAlpha(g, id, p.x + p.facing.x * 120, p.y + p.facing.y * 120)
 }
 
 /**
@@ -1475,10 +1528,12 @@ if (import.meta.env.DEV) {
       showMenu,
       theme: currentTheme,
       spawn: devSpawn,
+      alpha: devAlpha,
       mega: devMega,
       evolve: devEvolve,
       ability: devAbility,
       event: devEvent,
+      field: devField,
       challenge: devChallenge,
       dex: () => loadSave().dex,
       /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */
@@ -1496,6 +1551,8 @@ if (import.meta.env.DEV) {
       ...learnDevTools(() => run?.game),
       ...tmDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
+      ...tensionDevTools(() => run?.game),
+      ...hazardDevTools(() => run?.game),
       ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),

@@ -442,6 +442,7 @@ export const siteEs: SiteMessages = {
         rift: 'Legendario de una grieta',
         final: 'Mewtwo y el mítico raro (Mew, Celebi o Jirachi)',
         reaper: 'Arceus, en el modo infinito',
+        mission: 'Misión de campo: el nido defendido (Normal / Difícil / Pesadilla)',
       },
     },
     items: {
@@ -509,6 +510,12 @@ export const siteEs: SiteMessages = {
         name: 'Tutor de Movimientos',
         how: (from: number, until: number) => `Arma su carpa una vez entre los minutos ${from} y ${until} (a veces una más). Quédate en su círculo.`,
         reward: (price: string) => `Enseña 1 de 2 movimientos que van con el tipo de tu Pokémon y que no aprende por su cuenta (nunca uno de Agua para Grovyle). La primera clase es gratis; la siguiente cuesta ${price} de la partida.`,
+      },
+      field: {
+        name: 'Misiones de campo',
+        how: (first, gap) =>
+          `Desde ${first}, una a la vez, cada ${gap} min más o menos, lejos de ti y contra reloj: defender un huevo en su nido de una invasión (quédate en el anillo), encontrar Poké Balls perdidas o llevar a un Togepi perdido a su nido. Ignorarlas no cuesta nada.`,
+        reward: 'Un nivel de cartas raras (en Pesadilla la primera es shiny), ₽ y el premio de la misión: una chance de huevo, un objeto y curación.',
       },
     },
     mart: {

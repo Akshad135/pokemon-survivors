@@ -159,9 +159,12 @@ export const stageAt = (time: number) => STAGES[stageIndexAt(time)]!
  * Regular enemies get tougher every minute; bosses keep their base stats.
  * HP climbs faster after 8:00, when evolved moves sweep the screen, but only
  * so far that a horde sized for the minute still dies to them: late pressure
- * comes from spawn density, not sponges. `ramp` steepens the slope (the difficulty's `ramp`).
+ * comes from spawn density, not sponges. Damage steepens after 8:00 too, so
+ * late contact (and every trait hit, which scale off it) still hurts a
+ * built-up player. `ramp` steepens both slopes (the difficulty's `ramp`).
  */
 export const scaling = (time: number, ramp = 1) => {
   const minutes = time / 60
-  return { hp: 1 + (minutes * 0.24 + Math.max(0, minutes - 8) * 0.6) * ramp, damage: 1 + minutes * 0.07 * ramp }
+  const late = Math.max(0, minutes - 8)
+  return { hp: 1 + (minutes * 0.24 + late * 0.6) * ramp, damage: 1 + (minutes * 0.07 + late * 0.12) * ramp }
 }

@@ -20,6 +20,7 @@ const enemy = (over: Partial<Enemy> = {}): Enemy => ({
   dying: -1,
   fled: false,
   thrown: null,
+  alpha: null,
   ...over,
 })
 

@@ -20,7 +20,7 @@ import { learnable } from './kitRules'
 import { forkAt, isManual, maxMoveLevel, MOVES, withBranch, type MoveId } from './moves'
 import { stanceStats } from './stance'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
-import type { Game, Offer, OwnedItem, OwnedMove, Rarity } from './types'
+import type { Game, Offer, OwnedItem, OwnedMove, PrizeSource, Rarity } from './types'
 
 export const MAX_MOVES = 6
 export const MAX_ITEMS = 6
@@ -148,6 +148,19 @@ export const withRarity = (offer: Offer, roll: number, shinyOdds: number): Offer
   if (roll < shinyOdds) return { ...offer, rarity: 'shiny' }
   const level = roll < shinyOdds + OFFER_RARITY.rare ? rareLevel(offer) : null
   return level === null ? offer : { ...offer, level, rarity: 'rare' }
+}
+
+/**
+ * A prize level-up opens at once (an Alpha's gem, a field mission): every card
+ * that can be rare is (two levels; never a fork, that one is the player's
+ * call) and, with `shinyFirst`, the first card is shiny (a free pick).
+ */
+export const openPrizeLevelUp = (g: Game, source: PrizeSource, shinyFirst = false) => {
+  g.offers = rollOffers(loadout(g), g.rng, 3, { forks: false }).map((o, i) => withRarity(o, 0, shinyFirst && i === 0 ? 1 : 0))
+  g.pendingLevelUps++
+  g.phase = 'levelup'
+  g.prize = source
+  g.events.push({ kind: 'levelup' })
 }
 
 /**

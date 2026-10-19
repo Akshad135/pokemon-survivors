@@ -4,6 +4,8 @@ import type { EnemyId } from './enemies'
 /** How an enemy hazard looks (and sounds when it lands). */
 export type HazardVisual =
   | 'rock' | 'slam' | 'thunder' | 'ice' | 'fire' | 'psychic' | 'water' | 'dragon' | 'steel' | 'aero' | 'grass' | 'judgment'
+  /** Toxic Spikes and the like, thrown by the world (`game/hazards.ts`). */
+  | 'poison'
   /** The horde's spit shots (`game/spitters.ts`), one look per flavor; `sludge` also names its puddle. */
   | SpitVisual
 
@@ -92,8 +94,8 @@ export const MIN_TELEGRAPH = 0.8
  */
 export const BOSS_DIFFICULTY = {
   normal: { pace: 1, more: 1, telegraph: 1, aim: 0.75, chain: BOSS_RAGE.chain },
-  hard: { pace: 0.88, more: 1.25, telegraph: 0.92, aim: 0.85, chain: 0.5 },
-  nightmare: { pace: 0.78, more: 1.4, telegraph: 0.86, aim: 1, chain: 0.65 },
+  hard: { pace: 0.92, more: 1.15, telegraph: 0.95, aim: 0.85, chain: 0.5 },
+  nightmare: { pace: 0.84, more: 1.25, telegraph: 0.9, aim: 1, chain: 0.65 },
 } as const satisfies Record<Difficulty, { pace: number; more: number; telegraph: number; aim: number; chain: number }>
 
 /**
