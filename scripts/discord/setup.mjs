@@ -324,6 +324,15 @@ const findChannel = (names, type, parentId) =>
   allChannels.find((c) => names.includes(c.name) && sameType(c.type, type))
 const pendingNews = []
 
+/** A channel where only Trainers talk: the gate's on, everyone sees it and nothing else opens it up. */
+const gated = (group, channel) => GATE && !group.access && !channel.readOnly && !channel.open && channel.type !== 'voice'
+
+/** Its topic, with the way in for a newcomer who can't type there yet (the composer only says "no permission"). */
+const topicOf = (group, channel) =>
+  [channel.topic, gated(group, channel) && channelId['introductions'] && `New here? Say hi in <#${channelId['introductions']}> to unlock chatting.`]
+    .filter(Boolean)
+    .join(' · ')
+
 let position = 0
 for (const group of LAYOUT) {
   const catBody = { name: group.category, type: TYPE.category, position: position++, permission_overwrites: overwritesFor(group.access) }
@@ -339,7 +348,7 @@ for (const group of LAYOUT) {
       parent_id: category.id,
       position: position++,
       permission_overwrites: overwritesFor(group.access, channel),
-      ...(type !== TYPE.voice && channel.topic ? { topic: channel.topic } : {}),
+      ...(type !== TYPE.voice && (channel.topic || gated(group, channel)) ? { topic: topicOf(group, channel) } : {}),
       ...(channel.slowmode ? { rate_limit_per_user: channel.slowmode } : {}),
     }
     const found = findChannel([channel.name, ...(channel.aliases ?? [])], type, category.id)

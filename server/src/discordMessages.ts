@@ -69,6 +69,12 @@ export const introDecision = (m: { bot: boolean; trainer: boolean; content: stri
 
 const replyTo = (messageId: string) => ({ message_id: messageId, fail_if_not_exists: false }) as const
 
+/** Pings a newcomer in #introductions as they join: only Trainers talk elsewhere, and the ping takes them where they can. */
+export const greetMessage = (userId: string): OutgoingMessage => ({
+  content: `Welcome to the server, <@${userId}>! 👋 Introduce yourself right here (your name or nick, where you're from, your favorite Pokémon...) to unlock chatting in every channel.`,
+  allowed_mentions: { parse: [], users: [userId] },
+})
+
 export const welcomeMessage = (userId: string, messageId: string): OutgoingMessage => ({
   content: `Welcome, <@${userId}>! 🎉 You're a **Trainer** now and the whole server is open. Say hi in the other channels, and play anytime at ${PLAY_URL}`,
   allowed_mentions: { parse: [], users: [userId] },

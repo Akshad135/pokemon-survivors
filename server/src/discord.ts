@@ -6,6 +6,7 @@ import { CHANGELOG } from '../../src/site/changelog'
 import type { Sql } from './db'
 import {
   challengeMessage,
+  greetMessage,
   introDecision,
   outbreakMessage,
   patchMessage,
@@ -19,8 +20,9 @@ import type { RankingStore } from './ranking'
 
 /**
  * The community Discord's bot (`scripts/discord/setup.mjs` builds the server):
- * - the introduction gate: a real introduction in #introductions earns the
- *   Trainer role (only Trainers talk elsewhere), with a welcome;
+ * - the introduction gate: a newcomer is pinged in #introductions as they
+ *   join, and a real introduction there earns the Trainer role (only
+ *   Trainers talk elsewhere), with a welcome;
  * - #patch-notes gets each new changelog update when the API boots;
  * - #daily-challenge and #daily-outbreak get the day's challenge and outbreak
  *   when the Brasília day starts, and the challenge's podium once its day
@@ -32,8 +34,8 @@ import type { RankingStore } from './ranking'
 const API = 'https://discord.com/api/v10'
 const GATEWAY = 'wss://gateway.discord.gg/?v=10&encoding=json'
 
-/** GUILDS, GUILD_MESSAGES and MESSAGE_CONTENT (privileged: on in the Developer Portal). */
-const INTENTS = (1 << 0) | (1 << 9) | (1 << 15)
+/** GUILDS, GUILD_MEMBERS, GUILD_MESSAGES and MESSAGE_CONTENT (both privileged: on in the Developer Portal). */
+const INTENTS = (1 << 0) | (1 << 1) | (1 << 9) | (1 << 15)
 
 /** Close codes that retrying won't fix: a bad token, a bad intent. */
 const FATAL_CLOSES = new Set([4004, 4010, 4011, 4012, 4013, 4014])
@@ -281,6 +283,10 @@ export const startDiscord = (config: DiscordConfig, deps: { store: DiscordStore;
 
     connectGateway(config.token, (type, data) => {
       if (type === 'READY') void sweep().catch((err) => console.error('discord sweep failed', err))
+      if (type === 'GUILD_MEMBER_ADD' && isRecord(data) && data.guild_id === config.guildId && isRecord(data.user) && data.user.bot !== true) {
+        const userId = str(data.user.id)
+        if (userId) void post(`greet:${userId}`, intro, greetMessage(userId)).catch((err) => console.error('discord greet failed', err))
+      }
       if (type !== 'MESSAGE_CREATE' || !isRecord(data) || data.channel_id !== intro || data.guild_id !== config.guildId) return
       const m = introMessage(data)
       if (m) void gate(m, true).catch((err) => console.error('discord gate failed', err))
