@@ -376,6 +376,8 @@ export type Hazard = {
   ttl: number
   /** Projectiles vanish on hit; zones linger. */
   vanishOnHit: boolean
+  /** Id of the boss that lands with this strike (a `leap`), or -1. A shot with an `armAt` hovers until then (a volley's windup). */
+  leaper: number
 }
 
 export type Pickup = {

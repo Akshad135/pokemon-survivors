@@ -136,6 +136,14 @@ export const siteEs: SiteMessages = {
     ring: (count: number, every: number, damage: number) => `Anillo de ${count} proyectiles cada ${n(every)}s (${damage} de daño)`,
     trail: (ttl: number, damage: number) => `Deja un rastro que daña durante ${n(ttl)}s (${damage} de daño)`,
     stance: { close: 'De cerca', ranged: 'A distancia' },
+    path: (count: number, every: number, damage: number) =>
+      `${count} impactos marcados en tu camino, desde donde estás hasta donde vas, cada ${n(every)}s (${damage} de daño)`,
+    leap: (every: number, damage: number) => `Salta sobre ti, con un círculo que marca dónde va a caer, cada ${n(every)}s (${damage} de daño)`,
+    volley: (count: number, every: number, damage: number) =>
+      `Ráfaga de ${count} ${s(count, 'proyectil apuntado', 'proyectiles apuntados')} a ti, con líneas de mira antes del disparo, cada ${n(every)}s (${damage} de daño)`,
+    far: 'si te mantienes lejos',
+    below: (percent: number) => `por debajo del ${n(percent)}% de HP`,
+    from: { normal: 'en todas las dificultades', hard: 'en Difícil y Pesadilla', nightmare: 'solo en Pesadilla' },
   },
 
   /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
@@ -378,6 +386,7 @@ export const siteEs: SiteMessages = {
       paragraphs: (r) => [
         'Los jefes llegan en horarios fijos. Los legendarios entran con un destello en la pantalla, su grito y un aviso. Todos tienen una barra de HP arriba y ataques propios: los círculos marcados en el suelo avisan dónde va a caer el golpe, así que sal de ellos.',
         `Cada jefe alterna entre dos formas de pelear cada ${r.stance[0]} a ${r.stance[1]} segundos: de cerca, avanza rápido y golpea en área a su alrededor; a distancia, se detiene a unos pasos y te apunta. Por debajo del ${n(r.below * 100)}% del HP se enfurece (contorno rojo, grito y destello en la pantalla): ${n(Math.round((r.speed - 1) * 100))}% más rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% más seguido y, el ${n(r.chain * 100)}% de las veces, encadena un segundo ataque justo después del primero.`,
+        `Quedarse quieto no funciona: cada jefe apunta a donde estás o al camino por el que vas, y quien huye lejos se gana un salto o una ráfaga apuntada. La furia también libera un ataque nuevo. En Difícil los jefes atacan ${n(Math.round((1 - r.press.hard.pace) * 100))}% más seguido, con ${n(Math.round((r.press.hard.more - 1) * 100))}% más proyectiles y avisos un poco más cortos, y furiosos encadenan el ${n(r.press.hard.chain * 100)}% de las veces; en Pesadilla, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% más seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% más proyectiles, ${n(r.press.nightmare.chain * 100)}% de encadenes y un ataque más cada uno. De Difícil para arriba, Mewtwo tiene una segunda fase por debajo del 40% de HP.`,
         'Los jefes no se vuelven más fuertes con el tiempo, pero cada uno suelta una Poké Ball y una lluvia de Poké Dollars.',
         `En los primeros ${r.window}s de cada jefe, mientras esté cerca, solo aparece el ${n(r.fight * 100)}% de los enemigos comunes, así que la pelea es con él; después vuelve la horda. Cada jefe tiene hasta que llegue el siguiente: si sigue en pie cuando aparece el próximo, huye y no deja nada. Mewtwo es el último: al llegar, aleja a la horda y, mientras siga en pie, solo aparece el ${n(r.finale * 100)}% de los enemigos comunes, así que la pelea se trata de esquivar sus ataques.`,
       ],

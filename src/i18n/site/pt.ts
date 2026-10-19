@@ -5,6 +5,7 @@ import type { TrioId } from '../../data/waves'
 import type { PokeType } from '../../data/types'
 import type { EggSource } from '../../game/eggs'
 import type { StatusKind } from '../../game/status'
+import type { Difficulty } from '../../game/difficulty'
 
 /** Number in Brazilian format (`1.250`, `0,75`). */
 const n = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
@@ -14,8 +15,10 @@ const list = (items: readonly string[]) => (items.length < 2 ? items.join('') : 
 /** `a, b ou c` */
 const either = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} ou ${items.at(-1)}`)
 
-/** The boss rules the guide quotes (`BOSS_RAGE`, and the spawn share of `BOSS_FIGHT` and `FINALE`). */
-type BossRules = { stance: readonly [number, number]; below: number; speed: number; wait: number; chain: number; fight: number; window: number; finale: number }
+/** How a harder difficulty presses the wave bosses (`BOSS_DIFFICULTY`). */
+type BossPress = { pace: number; more: number; chain: number }
+/** The boss rules the guide quotes (`BOSS_RAGE`, `BOSS_DIFFICULTY`, and the spawn share of `BOSS_FIGHT` and `FINALE`). */
+type BossRules = { stance: readonly [number, number]; below: number; speed: number; wait: number; chain: number; fight: number; window: number; finale: number; press: { hard: BossPress; nightmare: BossPress } }
 /** Elites and runners as the guide quotes them (`ELITE`, `RUNNER`; `from` is a clock like `1:00`). */
 type HordeRules = { fill: number; share: number; hp: number; damage: number; from: string; speed: number; frail: number; lead: number }
 
@@ -153,6 +156,15 @@ export const sitePt = {
     ring: (count: number, every: number, damage: number) => `Anel de ${count} projéteis a cada ${n(every)}s (${damage} de dano)`,
     trail: (ttl: number, damage: number) => `Deixa um rastro que fere por ${n(ttl)}s (${damage} de dano)`,
     stance: { close: 'De perto', ranged: 'De longe' } satisfies Record<BossStance, string>,
+    // The wave bosses' aimed attacks (`lead`, `leap`, `volley`) and their gates (`PatternGate`).
+    path: (count: number, every: number, damage: number) =>
+      `${count} impactos marcados no seu caminho, de onde você está até onde vai estar, a cada ${n(every)}s (${damage} de dano)`,
+    leap: (every: number, damage: number) => `Salta em cima de você, com um círculo marcando onde vai cair, a cada ${n(every)}s (${damage} de dano)`,
+    volley: (count: number, every: number, damage: number) =>
+      `Rajada de ${count} ${s(count, 'projétil mirado', 'projéteis mirados')} em você, com linhas de mira antes do disparo, a cada ${n(every)}s (${damage} de dano)`,
+    far: 'se você ficar longe',
+    below: (percent: number) => `abaixo de ${n(percent)}% do HP`,
+    from: { normal: 'em todas as dificuldades', hard: 'no Difícil e no Pesadelo', nightmare: 'só no Pesadelo' } satisfies Record<Difficulty, string>,
   },
 
   /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
@@ -395,6 +407,7 @@ export const sitePt = {
       paragraphs: (r: BossRules) => [
         'Os chefes chegam em horários fixos. Os lendários entram com flash na tela, cry e um aviso. Todos têm uma barra de HP no topo e ataques próprios: os círculos marcados no chão avisam onde o golpe vai cair, então saia de dentro deles.',
         `Cada chefe alterna entre dois jeitos de lutar a cada ${r.stance[0]} a ${r.stance[1]} segundos: de perto, ele avança rápido e bate em área ao redor de si; de longe, para a alguns passos e mira em você. Abaixo de ${n(r.below * 100)}% do HP ele fica furioso (contorno vermelho, cry e flash na tela): ${n(Math.round((r.speed - 1) * 100))}% mais rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% mais seguido e, ${n(r.chain * 100)}% das vezes, emenda um segundo ataque logo depois do primeiro.`,
+        `Ficar parado não funciona: cada chefe mira onde você está ou no caminho por onde você vai, e quem foge para longe leva um salto ou uma rajada mirada. A fúria também libera um ataque novo. No Difícil os chefes atacam ${n(Math.round((1 - r.press.hard.pace) * 100))}% mais seguido, com ${n(Math.round((r.press.hard.more - 1) * 100))}% mais projéteis e avisos um pouco mais curtos, e furiosos emendam ${n(r.press.hard.chain * 100)}% das vezes; no Pesadelo, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% mais seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% mais projéteis, ${n(r.press.nightmare.chain * 100)}% de emendas e um ataque a mais cada um. Do Difícil para cima, Mewtwo tem uma segunda fase abaixo de 40% do HP.`,
         'Chefes não ficam mais fortes com o tempo, mas cada um solta uma Poké Ball e uma chuva de Poké Dollars.',
         `Nos primeiros ${r.window}s de cada chefe, com ele por perto, nascem só ${n(r.fight * 100)}% dos inimigos comuns, então a luta é com ele; depois a horda volta. Cada chefe tem até o próximo chegar: se ainda estiver de pé quando o seguinte aparecer, ele foge e não deixa nada. Mewtwo é o último: ao chegar, empurra a horda para longe e, enquanto ele estiver de pé, nascem só ${n(r.finale * 100)}% dos inimigos comuns, então a luta é desviar dos ataques dele.`,
       ],

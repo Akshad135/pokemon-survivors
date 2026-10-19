@@ -5,6 +5,7 @@ import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
+import { spawnWaveBoss } from './spawner'
 import type { Game } from './types'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
@@ -125,6 +126,20 @@ describe('replays', () => {
     const staged = startGame(start)
     quickAttack(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it("re-simulate a Nightmare Mewtwo in its second phase: leaps, aimed volleys and path strikes", () => {
+    const phaseTwo = (g: Game) => {
+      const boss = spawnWaveBoss(g, 'mewtwo', g.time)
+      boss.hp = boss.maxHp * 0.35
+    }
+    const start: ReplayStart = { ...START, difficulty: 'nightmare' }
+    const { g, replay } = play(30, start, 300, phaseTwo)
+    const staged = startGame(start)
+    phaseTwo(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    const mewtwo = (r: Game) => r.enemies.find((e) => e.kind === 'mewtwo')!
+    expect([staged.player.hp, mewtwo(staged).x, mewtwo(staged).y]).toEqual([g.player.hp, mewtwo(g).x, mewtwo(g).y])
   })
 
   it("re-simulate a run of the day's outbreak with a Lure and an Incense, which change how it plays", () => {

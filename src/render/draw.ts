@@ -355,7 +355,24 @@ const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
 }
 
-/** Ground layer: telegraph circles, landed shockwaves and lingering fire. */
+/** How far a volley's aim line reaches, px, and the step between its dashes. */
+const AIM_LENGTH = 110
+const AIM_STEP = 6
+
+/** A volley shot's windup: a dashed line where it will fly, growing out and blinking faster as it's about to fire. */
+const drawAimLine = (ctx: Ctx, h: Hazard, color: string) => {
+  const k = h.age / h.armAt
+  if (Math.floor(h.age * (5 + k * 15)) % 3 === 2) return
+  const speed = Math.hypot(h.vx, h.vy) || 1
+  const dx = h.vx / speed
+  const dy = h.vy / speed
+  ctx.fillStyle = color
+  for (let d = AIM_STEP; d < AIM_LENGTH * Math.min(1, k * 2); d += AIM_STEP) {
+    ctx.fillRect(Math.round(h.x + dx * d), Math.round(h.y + dy * d), 2, 2)
+  }
+}
+
+/** Ground layer: telegraph circles, landed shockwaves, volley aim lines and lingering fire. */
 const drawHazardGround = (ctx: Ctx, h: Hazard) => {
   const [line, fill] = HAZARD_COLORS[h.visual]
   const r = Math.round(h.r)
@@ -375,6 +392,7 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
     ctx.globalAlpha = 1
     return
   }
+  if (h.kind === 'shot' && h.age < h.armAt) return drawAimLine(ctx, h, line)
   if (h.kind === 'zone') {
     ctx.globalAlpha = Math.min(1, h.age / 0.15, (h.ttl - h.age) / 0.4)
     blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), fill), h.x, h.y)
