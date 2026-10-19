@@ -47,6 +47,8 @@ export const EGG_SOURCES = {
   rift: { chance: 0.4, odds: { rare: 65, ultra: 35 } },
   final: { chance: 1, odds: { rare: 70, ultra: 30 } },
   reaper: { chance: 1, odds: { ultra: 1 } },
+  /** A defended nest (`fieldMissions.ts`): the mission rolls its own odds per difficulty first. */
+  mission: { chance: 1, odds: { common: 60, rare: 35, ultra: 5 } },
 } as const satisfies Record<string, DropRule>
 
 export type EggSource = keyof typeof EGG_SOURCES

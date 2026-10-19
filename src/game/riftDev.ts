@@ -11,7 +11,7 @@ import type { Game } from './types'
 
 /**
  * Dev-console shortcuts for staging bosses, rifts and the endless mode
- * (`ps.trio()`, `ps.boss()`, `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
+ * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
  * Wired in `main.ts` for dev builds only.
  */
 export const riftDevTools = (game: () => Game | undefined) => {
@@ -34,6 +34,12 @@ export const riftDevTools = (game: () => Game | undefined) => {
     },
     /** Brings a boss in now, with its wave entrance (`ps.boss('entei')`); an earlier wave's boss flees as it would. */
     boss: (enemy: EnemyId) => playing((g) => spawnWaveBoss(g, enemy, bossWaveAt(enemy) ?? g.time))(),
+    /** Sets the boss with the HP bar to `share` of its HP (`ps.bossHp(0.35)`): its enrage and later phases unlock at once. */
+    bossHp: (share: number) =>
+      playing((g) => {
+        const boss = g.enemies.find((e) => e.id === g.bossId)
+        if (boss) boss.hp = Math.max(1, boss.maxHp * share)
+      })(),
     /** Steps straight into a rift arena (a random legendary, or the one given). */
     rift: (legend?: RiftLegend) => playing((g) => enterArena(g, legend ?? pickLegend(g.rng, g.rift.met), g.player.x, g.player.y))(),
     /** Opens a portal right next to the player. */

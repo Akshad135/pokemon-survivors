@@ -181,16 +181,28 @@ export const traitText = (trait: TraitId, id: keyof typeof ENEMIES, m: SiteMessa
 const attackText = (p: BossPattern, m: SiteMessages) => {
   switch (p.kind) {
     case 'strikes':
-      return p.target === 'player' ? m.patterns.strikesPlayer(p.count, p.every, p.damage) : m.patterns.strikesSelf(p.every, p.damage)
+      if (p.target === 'self') return m.patterns.strikesSelf(p.every, p.damage)
+      if (p.leap) return m.patterns.leap(p.every, p.damage)
+      return p.lead !== undefined ? m.patterns.path(p.count, p.every, p.damage) : m.patterns.strikesPlayer(p.count, p.every, p.damage)
     case 'ring':
       return m.patterns.ring(p.count, p.every, p.damage)
     case 'trail':
       return m.patterns.trail(p.ttl, p.damage)
+    case 'volley':
+      return m.patterns.volley(p.count, p.every, p.damage)
   }
 }
 
-/** One boss attack, led by its stance when it only fires in one (`BossStance`). */
-export const patternText = (p: BossPattern, m: SiteMessages) => (p.stance ? `${m.patterns.stance[p.stance]}: ${attackText(p, m)}` : attackText(p, m))
+/** When a gated attack fires (`PatternGate`): keeping away, under some HP, on harder difficulties. */
+const gateText = (p: BossPattern, m: SiteMessages) =>
+  [p.far !== undefined && m.patterns.far, p.below !== undefined && m.patterns.below(Math.round(p.below * 100)), p.from !== undefined && m.patterns.from[p.from]].filter((s) => s !== false)
+
+/** One boss attack, led by its stance when it only fires in one (`BossStance`) and followed by its gates. */
+export const patternText = (p: BossPattern, m: SiteMessages) => {
+  const gates = gateText(p, m)
+  const text = gates.length > 0 ? `${attackText(p, m)}, ${gates.join(', ')}` : attackText(p, m)
+  return p.stance ? `${m.patterns.stance[p.stance]}: ${text}` : text
+}
 
 const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessages) => {
   const e: EnemyDef = ENEMIES[entry.source.id]

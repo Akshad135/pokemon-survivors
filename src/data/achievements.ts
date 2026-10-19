@@ -24,7 +24,7 @@ export type AchievementStat =
   | 'shinyKills' | 'shinyStarters' | 'shinyLegends'
   | 'rifts' | 'legends' | 'overtimeMinutes' | 'reaperDefeats'
   | 'bossKills' | 'chests' | 'meowths' | 'altars' | 'coins' | 'moveEvolutions' | 'missions'
-  | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches' | 'megas'
+  | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches' | 'megas' | 'alphaKills'
 
 export type AchievementDef = {
   medal: Medal
@@ -75,6 +75,9 @@ export const ACHIEVEMENTS = {
   rift25: { medal: 'silver', stat: 'rifts', target: 25 },
   mega1: { medal: 'bronze', stat: 'megas', target: 1 },
   mega25: { medal: 'silver', stat: 'megas', target: 25 },
+  alpha1: { medal: 'bronze', stat: 'alphaKills', target: 1 },
+  alpha25: { medal: 'silver', stat: 'alphaKills', target: 25 },
+  alpha100: { medal: 'gold', stat: 'alphaKills', target: 100, title: true },
   /** Every rift legendary beaten at least once (unlocked ones stay unlocked when the list grows). */
   legends: { medal: 'gold', stat: 'legends', target: RIFT_LEGENDS.length, title: true },
   shinyLegend: { medal: 'gold', stat: 'shinyLegends', target: 1 },

@@ -29,6 +29,8 @@ export type RunTally = {
   traitKills: number
   /** Pokémon of the day's outbreak. */
   outbreakKills: number
+  /** Alpha Pokémon (`alphas.ts`), which aren't bosses here. */
+  alphaKills: number
   /** Map event notices heard, by kind (`chestOpen`, `payDay`, `altar`…). */
   notices: Partial<Record<MapEventNotice['kind'], number>>
 }
@@ -42,6 +44,7 @@ export const createTally = (): RunTally => ({
   shinyBossKills: 0,
   traitKills: 0,
   outbreakKills: 0,
+  alphaKills: 0,
   notices: {},
 })
 
@@ -55,7 +58,9 @@ export const countKill = (tally: RunTally, e: Enemy, weather: WeatherId, biome: 
   bump(tally.killsByWeather, weather)
   bump(tally.killsByBiome, biome)
   if (e.shiny) tally.shinyKills++
-  if (e.boss) tally.bossKills++
+  // An Alpha is a boss to the combat rules only.
+  if (e.boss && !e.alpha) tally.bossKills++
+  if (e.alpha) tally.alphaKills++
   if (e.boss && e.shiny) tally.shinyBossKills++
   if (e.trait.act) tally.traitKills++
   if (e.kind === outbreak) tally.outbreakKills++
@@ -97,6 +102,8 @@ export type RunSummary = {
   moveEvolutions: number
   /** Times the player Mega Evolved. */
   megas: number
+  /** Alpha Pokémon defeated. */
+  alphaKills: number
   /** Steps walked (`toSteps`). */
   steps: number
   /** Different species seen (the run's Pokédex log). */
@@ -131,6 +138,7 @@ export const summarizeRun = (g: Game): RunSummary => {
     reaperDefeats: g.endless?.reaperDefeats ?? 0,
     moveEvolutions: g.player.moves.filter((m) => evolvedFrom(m.id)).length,
     megas: g.mega.count,
+    alphaKills: t.alphaKills,
     steps: toSteps(g.player.walked),
     species: g.dexLog.seen.size,
     killsByType: { ...t.killsByType },
