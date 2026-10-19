@@ -830,6 +830,44 @@ const DISCORD = [
 
 export const discordIcon = () => toIconUrl('discord', () => art(DISCORD, { 1: '#283070', 2: '#5865f2', 3: '#ffffff' }))
 
+/** iOS's Share: an arrow leaving an open tray, in iOS blue (the install how-to, `ui/install.ts`). 1 outline, 2 blue. */
+const SHARE = [
+  '.....1.....',
+  '....121....',
+  '...12221...',
+  '..1222221..',
+  '..1112111..',
+  '....121....',
+  '111.121.111',
+  '121.121.121',
+  '121.111.121',
+  '121.....121',
+  '12111111121',
+  '12222222221',
+  '11111111111',
+]
+
+/** iOS's "Add to Home Screen": a white plus on a blue tile. 1 outline, 2 blue, 3 white. */
+const ADD_HOME = [
+  '.11111111111.',
+  '1222222222221',
+  '1222223222221',
+  '1222223222221',
+  '1222223222221',
+  '1222223222221',
+  '1233333333321',
+  '1222223222221',
+  '1222223222221',
+  '1222223222221',
+  '1222223222221',
+  '1222222222221',
+  '.11111111111.',
+]
+
+const IOS_BLUE = { 1: '#303040', 2: '#3878f0', 3: '#ffffff' } as const
+export const shareIcon = () => toIconUrl('share', () => art(SHARE, IOS_BLUE))
+export const addHomeIcon = () => toIconUrl('addHome', () => art(ADD_HOME, IOS_BLUE))
+
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>
   tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()

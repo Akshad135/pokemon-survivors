@@ -227,6 +227,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Instale o jogo como app', en: 'Install the game as an app', es: 'Instala el juego como app' },
+        notes: [
+          {
+            pt: 'Ajustes → Sobre agora tem Instalar o app: no Android e no computador (Chrome, Edge) o jogo vira um ícone que abre em tela cheia, sem a barra do navegador. No iPhone e no iPad, o botão mostra como fazer pelo Safari: Compartilhar → Adicionar à Tela de Início.',
+            en: "Settings → About now has Install the app: on Android and on computers (Chrome, Edge) the game becomes an icon that opens fullscreen, without the browser bar. On iPhone and iPad, the button shows how to do it in Safari: Share → Add to Home Screen.",
+            es: 'Ajustes → Acerca de ahora tiene Instalar la app: en Android y en la computadora (Chrome, Edge) el juego se vuelve un ícono que abre en pantalla completa, sin la barra del navegador. En iPhone y iPad, el botón muestra cómo hacerlo en Safari: Compartir → Agregar a pantalla de inicio.',
+          },
+        ],
+      },
     ],
   },
   {

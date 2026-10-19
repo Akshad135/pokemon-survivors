@@ -310,6 +310,7 @@ export const pt = {
     legal: 'Legal e créditos',
     github: 'Código no GitHub',
     guide: 'Como jogar',
+    install: 'Instalar o app',
     hintKeys: '↑ ↓ escolher · ← → ajustar ou trocar de aba · ESC voltar',
     hintTouch: 'Toque ou arraste para ajustar',
   },
@@ -382,6 +383,16 @@ export const pt = {
     failed: 'Não deu para conectar o Discord. Tente de novo.',
     busy: 'Conectando…',
     back: 'Voltar',
+  },
+
+  /** Installing the game as an app on iOS (Ajustes → Sobre), whose Safari has no install prompt. `*bold*` marks Safari's own labels. */
+  install: {
+    title: 'INSTALAR O APP',
+    pitch: 'Jogue em tela cheia, direto de um ícone na Tela de Início.',
+    share: 'Toque em *Compartilhar*, na barra do Safari (ou no menu de três pontos).',
+    addHome: 'Escolha *Adicionar à Tela de Início* e toque em *Adicionar*.',
+    iosStorage: 'O app guarda o progresso separado do Safari: entre na sua conta para levar tudo junto.',
+    ok: 'Entendi',
   },
 
   /** Boards (title menu, end of a run). Day and week follow Brasília's clock. */
