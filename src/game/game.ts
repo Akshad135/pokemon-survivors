@@ -9,6 +9,7 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS } from './bag'
 import { branchContext, drawBranches, playerForm } from './branch'
+import { createAlphaClock, updateAlphas } from './alphas'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
 import { healPlayer } from './combat'
@@ -16,6 +17,7 @@ import { createDexLog } from './dex'
 import { FRESH_LEVELUPS } from './learnsets'
 import { DEFAULT_DIFFICULTY, type Difficulty } from './difficulty'
 import { updateBosses, updateHazards } from './bosses'
+import { createWorldHazards, updateWorldHazards } from './hazards'
 import { updateConsumables } from './consumables'
 import { updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
@@ -183,6 +185,8 @@ export const createGame = (
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
     tension: createTension(),
+    alphas: createAlphaClock(options.difficulty ?? DEFAULT_DIFFICULTY),
+    worldHazards: createWorldHazards(),
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -464,8 +468,10 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateSpecial(g, input.special, dt)
   if (!inArena) updateSpawner(g, dt)
   rebuildGrid(g)
+  updateAlphas(g, dt)
   updateEnemies(g, dt)
   updateBosses(g, dt)
+  updateWorldHazards(g, dt)
   updateHazards(g, dt)
   updateStatuses(g, dt)
   updateRiftPortal(g, dt)

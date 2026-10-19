@@ -30,6 +30,8 @@ import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, 
 import { setBiome } from './game/biomes'
 import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
+import { pickAlpha, spawnAlpha } from './game/alphas'
+import { stageIndexAt } from './data/waves'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
@@ -52,6 +54,8 @@ import { learnDevTools } from './game/learnDev'
 import { tmDevTools } from './game/tmDev'
 import { duoDevTools } from './game/duoDev'
 import { tensionDevTools } from './game/tensionDev'
+import { hazardDevTools } from './game/hazardDev'
+import { spitterDevTools } from './game/spitterDev'
 import { cursePick } from './ui/cursePick'
 import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
@@ -768,6 +772,30 @@ const offerLabel = (offer: Extract<GameEvent, { kind: 'pokeball' }>['offer']) =>
   return m.pokeballBerry
 }
 
+/** An Alpha's moments: a roar and a toast when it comes, cues for its charge and rage, a toast when it falls. */
+const alphaEvent = (e: Extract<GameEvent, { kind: 'alpha' }>) => {
+  const def = ENEMIES[e.enemy]
+  switch (e.moment) {
+    case 'spawn':
+      playSfx('boss')
+      playCry(sprites(def.dex).cry, 0.8)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().alphas.appeared(def.name))), 3600)
+    case 'aim':
+      return playSfx('growl', 200)
+    case 'charge':
+      return playSfx('charge', 150)
+    case 'shock':
+      return playSfx('quake', 150)
+    case 'enrage':
+      playSfx('boss')
+      playCry(sprites(def.dex).cry, 0.8)
+      return flashScreen(ui)
+    case 'down':
+      playSfx('evolve')
+      return toast(ui, rich(t().alphas.defeated(def.name)), 3200)
+  }
+}
+
 /** Sounds of enemy traits: the warning (fuse lit, beam aimed, leap) and the moment it goes off. */
 const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
   healer: { warn: null, fire: 'enemyPulse' },
@@ -776,6 +804,7 @@ const TRAIT_SFX: Record<TraitId, Record<'warn' | 'fire', Sfx | null>> = {
   kamikaze: { warn: 'selfDestruct', fire: 'blast' },
   beam: { warn: 'beamCharge', fire: 'beam' },
   leaper: { warn: 'leap', fire: 'quake' },
+  spitter: { warn: null, fire: 'spit' },
 }
 
 const handleEvent = (r: Run, e: GameEvent) => {
@@ -990,6 +1019,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(def.dex).cry, 0.35)
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().traits[e.trait](def.name))), 3400)
     }
+    case 'hazardIntro':
+      return toast(ui, rich(t().hazards.intro), 3400)
     case 'riftOpen':
       playSfx('shiny')
       return toast(ui, rich(t().rifts.open), 3200)
@@ -1028,6 +1059,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('evolve')
       flashScreen(ui)
       return banner(ui, rich(t().rifts.reaperDown))
+    case 'alpha':
+      return alphaEvent(e)
+    case 'alphaPrize':
+      return toast(ui, rich(t().alphas.prize), 2600)
     case 'egg': {
       const m = t().eggs
       playSfx('unlock')
@@ -1301,6 +1336,16 @@ const devSpawn = (kind: EnemyId, count = 1, shiny = false) => {
   }
 }
 
+/** Dev: an Alpha 120 px ahead (`ps.alpha('golem')`; the stage's own pick without an argument). */
+const devAlpha = (kind?: EnemyId) => {
+  const g = run?.game
+  if (!g) return 'ps: start a run first'
+  const id = kind ?? pickAlpha(g.rng, g.roster.stages[stageIndexAt(g.time)] ?? [])
+  if (!id) return 'ps: no species for an Alpha in this stage'
+  const p = g.player
+  return spawnAlpha(g, id, p.x + p.facing.x * 120, p.y + p.facing.y * 120)
+}
+
 /**
  * Dev: stages the run's Mega Evolution. `now` (default) jumps to the final stage with
  * the stone of `mega` (the line's first Mega by default) and presses the Mega button;
@@ -1474,6 +1519,7 @@ if (import.meta.env.DEV) {
       showMenu,
       theme: currentTheme,
       spawn: devSpawn,
+      alpha: devAlpha,
       mega: devMega,
       evolve: devEvolve,
       ability: devAbility,
@@ -1496,6 +1542,8 @@ if (import.meta.env.DEV) {
       ...tmDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
       ...tensionDevTools(() => run?.game),
+      ...hazardDevTools(() => run?.game),
+      ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),
       ...devEggs,

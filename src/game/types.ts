@@ -2,6 +2,7 @@ import type { Dir8 } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
+import type { WorldHazardState } from './hazards'
 import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
 import type { RiftLegend } from '../data/rifts'
@@ -46,6 +47,7 @@ import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
 import type { TensionState } from './tension'
+import type { AlphaClock, AlphaState } from './alphas'
 
 export type OwnedMove = {
   id: MoveId
@@ -162,6 +164,8 @@ export type Enemy = {
   fled: boolean
   /** Hurled by a move (Circle Throw): while its knockback is fast it hurts the foes it hits, once each. */
   thrown: Thrown | null
+  /** An Alpha's charge cycle (`alphas.ts`); null for everyone else. An Alpha is also `boss` to the combat rules. */
+  alpha: AlphaState | null
 }
 
 export type Thrown = { damage: number; move: DamageSource; hit: Set<number> }
@@ -377,6 +381,10 @@ export type Hazard = {
   ttl: number
   /** Projectiles vanish on hit; zones linger. */
   vanishOnHit: boolean
+  /** Thrown by the world rather than a boss (`game/hazards.ts`): its strikes also hurt the foes they land on. */
+  world: boolean
+  /** Id of the boss that lands with this strike (a `leap`), or -1. A shot with an `armAt` hovers until then (a volley's windup). */
+  leaper: number
 }
 
 export type Pickup = {
@@ -388,7 +396,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' })
 
 export type Particle = {
   x: number
@@ -545,6 +553,12 @@ export type GameEvent =
   | { kind: 'tmLearned'; move: MoveId; level: number; forgot: MoveId | null; source: TmSource }
   /** A TM disc's move was already mastered: it turned into ₽. */
   | { kind: 'tmMastered'; move: MoveId; coins: number }
+  /** An Alpha (`alphas.ts`) came, aimed or started a charge, landed its shockwave, enraged or fell. */
+  | { kind: 'alpha'; enemy: EnemyId; moment: 'spawn' | 'aim' | 'charge' | 'shock' | 'enrage' | 'down' }
+  /** The Alpha's prize was picked up: a level-up of rare cards opens. */
+  | { kind: 'alphaPrize' }
+  /** The world struck at the player for the first time this run (`game/hazards.ts`): a one-time explainer toast. */
+  | { kind: 'hazardIntro' }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -645,4 +659,8 @@ export type Game = {
   events: GameEvent[]
   /** The pressure director (`tension.ts`): a dominant player gets a faster, closer, nastier horde. */
   tension: TensionState
+  /** When the next Alpha is due (`alphas.ts`). */
+  alphas: AlphaClock
+  /** The world's own attacks on the player (`game/hazards.ts`). */
+  worldHazards: WorldHazardState
 }

@@ -3737,7 +3737,19 @@ export const pt = {
     kamikaze: (name: string) => `*${name}* pisca e _explode_! Saia do círculo vermelho.`,
     beam: (name: string) => `*${name}* mira um _raio_: saia da linha no chão!`,
     leaper: (name: string) => `*${name}* salta sobre a horda: fuja da _sombra_!`,
+    spitter: (name: string) => `*${name}* cospe de longe, e o disparo passa pela sua aura: _ande_ para desviar!`,
   } satisfies Record<TraitId, (name: string) => string>,
+  /** Alpha Pokémon (`game/alphas.ts`): the tag over it and its toasts. */
+  alphas: {
+    tag: 'ALFA',
+    appeared: (name: string) => `Um *${name} Alfa* apareceu! Saia da _linha vermelha_ quando ele mirar.`,
+    defeated: (name: string) => `Você derrotou o *${name} Alfa*! Pegue o _prêmio_.`,
+    prize: '*Prêmio do Alfa*: cartas _raras_!',
+  },
+  /** Explainer toast the first time the world strikes at the player in a run (`game/hazards.ts`). */
+  hazards: {
+    intro: '*O mundo ataca!* O chão marca onde você está e cai em seguida: _não fique parado_.',
+  },
 } satisfies ContentTexts & Record<string, unknown>
 
 export type Messages = typeof pt

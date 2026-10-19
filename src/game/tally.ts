@@ -55,7 +55,8 @@ export const countKill = (tally: RunTally, e: Enemy, weather: WeatherId, biome: 
   bump(tally.killsByWeather, weather)
   bump(tally.killsByBiome, biome)
   if (e.shiny) tally.shinyKills++
-  if (e.boss) tally.bossKills++
+  // An Alpha is a boss to the combat rules only.
+  if (e.boss && !e.alpha) tally.bossKills++
   if (e.boss && e.shiny) tally.shinyBossKills++
   if (e.trait.act) tally.traitKills++
   if (e.kind === outbreak) tally.outbreakKills++

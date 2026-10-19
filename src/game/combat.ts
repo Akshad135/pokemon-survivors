@@ -21,6 +21,8 @@ import { fallInArena } from './riftArena'
 import { countKill } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
+import { alphaDown } from './alphas'
+import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
 import * as dm from '../engine/dmath'
@@ -43,7 +45,8 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   // Vines push sideways; everything else pushes away from the hitbox center.
   const p = g.player
   const away = attack.shape.kind === 'rect' ? { x: Math.sign(e.x - p.x) || 1, y: 0 } : dirTo(attack.x, attack.y, e.x, e.y, p.facing)
-  const kb = attack.knockback / e.mass
+  // The regular horde stiffens with the minutes (`hordeGrit`), so late crowds press through an aura.
+  const kb = attack.knockback / (e.boss ? e.mass : e.mass * hordeGrit(g.time, g.difficulty))
   e.kx += away.x * kb
   e.ky += away.y * kb
 
@@ -158,7 +161,9 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp * share)
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
-  if (e.boss) {
+  if (e.alpha) {
+    alphaDown(g, e)
+  } else if (e.boss) {
     // Every boss defeated earns an Esquecer charge (`banishOffer`).
     g.banishes++
     dropPickup(g, e.x, e.y, 'pokeball')
