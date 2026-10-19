@@ -282,6 +282,18 @@ export const rankingStore = (sql: Sql) => {
         from runs r join users u on u.id = r.user_id
         where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null`,
 
+    /** A day's top `n` official attempts like `ribbonPlaces` ranks them (ties share a place), for the Discord podium, and how many took part. */
+    podium: async (day: DayKey, n = 3) => {
+      const rows = await sql<{ rank: number; total: number; handle: string; name: string | null; survived: number }[]>`
+        select * from (
+          select (rank() over (order by r.survived desc))::int as rank, (count(*) over ())::int as total, u.handle, u.name, r.survived, r.started_at
+          from runs r join users u on u.id = r.user_id
+          where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null
+        ) p
+        where rank <= ${n} order by rank, started_at limit ${n}`
+      return { places: rows.map((r) => ({ rank: r.rank, handle: r.handle, name: r.name ?? r.handle, survived: r.survived })), total: rows[0]?.total ?? 0 }
+    },
+
     /** The top of a board, and the viewer's own line wherever they are. */
     board: async (query: BoardQuery): Promise<Board> => {
       const rows = await sql<EntryRow[]>`

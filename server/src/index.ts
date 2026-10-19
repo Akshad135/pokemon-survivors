@@ -6,6 +6,7 @@ import { clerkVerifier } from './auth'
 import { connect, migrate, saveStore } from './db'
 import { createChecks } from './checks'
 import { createRibbons } from './challenge'
+import { discordStore, startDiscord } from './discord'
 import { abacatePay } from './donations'
 import { giftStore } from './gifts'
 import { rankingStore } from './ranking'
@@ -26,6 +27,8 @@ void checks.resume()
 void gifts.settle().catch((err) => console.error('invites settle failed', err))
 // The Desafio do dia's ribbons, once a day closes (safe on every instance: each gift has a key per day).
 createRibbons(ranking, gifts).start()
+// The community Discord's bot: introduction gate, patch notes, daily posts (only with its env).
+if (env.discord) startDiscord(env.discord, { store: discordStore(sql), ranking })
 
 const app = createApp({
   store: saveStore(sql),
