@@ -3833,6 +3833,8 @@ export const pt = {
     itemSlot: (used: number, max: number) => `Ocupa um espaço de item (${used}/${max} em uso).`,
     note: 'Se deixar, ela some. Melhorias do que você já tem entram sozinhas.',
     left: (name: string) => `Você deixou *${name}* para trás.`,
+    /** Touch hint when the prize is a held item (a move's card says to hold it for the move card). */
+    itemHintTouch: 'Toque para escolher',
   },
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {

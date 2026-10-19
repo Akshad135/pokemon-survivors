@@ -3693,6 +3693,7 @@ export const es: Messages = {
     itemSlot: (used: number, max: number) => `Ocupa un espacio de objeto (${used}/${max} en uso).`,
     note: 'Si lo dejas, desaparece. Las mejoras de lo que ya tienes entran solas.',
     left: (name: string) => `Dejaste *${name}* atrás.`,
+    itemHintTouch: 'Toca para elegir',
   },
   traits: {
     healer: (name: string) => `*${name}* cura a los aliados cercanos. ¡Derríbalo primero!`,

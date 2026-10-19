@@ -55,7 +55,8 @@ export const pokeballPick = (root: HTMLElement, input: Input, g: Game, onChoose:
       h('p', { class: 'ball-slot' }, slot),
       h('p', { class: 'ball-note' }, m.note),
       h('div', { class: 'buttons' }, ...buttons),
-      hint(t().levelUp.pairHintKeys, t().levelUp.hintTouch),
+      // Only a move's card opens the move card when held, so an item's hint just says tap.
+      hint(t().levelUp.pairHintKeys, prize?.kind === 'item' ? m.itemHintTouch : t().levelUp.hintTouch),
     ),
   )
   root.append(el)
