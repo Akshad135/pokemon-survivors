@@ -122,8 +122,8 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
   let anchor: Vec | null = null
 
   window.addEventListener('keydown', (e) => {
-    // Typing in a text field (the profile editor) is not playing: the field keeps its keys.
-    if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select')) return
+    // Typing in a text field (the profile editor) or a Clerk modal (reverification) is not playing: they keep their keys.
+    if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, .cl-modalBackdrop')) return
     activePad = null
     if (capturing) {
       e.preventDefault()
