@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChangelogUpdate } from '../../src/site/changelog'
-import { INTRO_MIN_CHARS, introDecision, meaningfulLength, patchMessage, patchPlan, podiumMessage } from './discordMessages'
+import { greetMessage, INTRO_MIN_CHARS, introDecision, meaningfulLength, patchMessage, patchPlan, podiumMessage } from './discordMessages'
 
 const update = (date: string): ChangelogUpdate => {
   const text = { pt: date, en: date, es: date }
@@ -19,6 +19,12 @@ describe('the introduction gate', () => {
     expect(meaningfulLength(intro)).toBeGreaterThanOrEqual(INTRO_MIN_CHARS)
     expect(introDecision({ bot: false, trainer: false, content: intro })).toBe('welcome')
     expect(introDecision({ bot: false, trainer: false, content: 'hi everyone!!' })).toBe('tooShort')
+  })
+
+  it('pings only the newcomer it greets', () => {
+    const m = greetMessage('42')
+    expect(m.content).toContain('<@42>')
+    expect(m.allowed_mentions).toEqual({ parse: [], users: ['42'] })
   })
 
   it('leaves bots and Trainers alone', () => {
