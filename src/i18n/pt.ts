@@ -19,6 +19,7 @@ import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
 import type { SpecialId } from '../game/special'
 import type { Stance } from '../game/stance'
+import type { SheetStat } from '../game/statSheet'
 import type { StatusKind } from '../game/status'
 import type { Action } from '../engine/bindings'
 
@@ -229,6 +230,33 @@ export const pt = {
     quit: 'Desistir',
     settings: 'Ajustes',
     evoLegend: 'Golpe no nível máximo + o item indicado = evolução na próxima Poké Ball ou subida de nível!',
+    statsTitle: 'Status',
+    movesTitle: 'Golpes',
+    itemsTitle: 'Itens',
+    cards: 'Cartas',
+    cardsHint: 'Cartas de upgrade pegas para este status',
+    noItems: 'Nenhum item ainda',
+    typeDamage: 'Dano',
+    stats: {
+      maxHp: 'Vida máx.',
+      might: 'Dano',
+      cooldown: 'Recarga',
+      area: 'Área',
+      duration: 'Duração',
+      amount: 'Projéteis',
+      speed: 'Velocidade',
+      armor: 'Defesa',
+      regen: 'Regeneração',
+      magnet: 'Alcance de coleta',
+      growth: 'EXP',
+      greed: 'Dinheiro (₽)',
+      projectileSpeed: 'Vel. dos projéteis',
+      statusChance: 'Chance de status',
+      statusDamage: 'Dano de status',
+      damageTaken: 'Dano recebido',
+      comboMoves: 'Golpes em combo',
+      specialRecharge: 'Recarga do especial',
+    } satisfies Record<SheetStat, string>,
     cardHintKeys: 'Passe o mouse num golpe para ver a ficha dele',
     cardHintTouch: 'Segure um golpe para ver a ficha dele',
   },
