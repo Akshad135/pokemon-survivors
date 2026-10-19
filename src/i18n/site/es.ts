@@ -414,7 +414,7 @@ export const siteEs: SiteMessages = {
         `Los jefes, los cofres con candado y las grietas a veces dejan un huevo, como máximo ${perRun} por partida. Va a la incubadora, que tiene ${slots} espacios. Cada ${stepPx} px recorridos en una partida cuentan como un paso, y todos los huevos de la incubadora avanzan juntos. El huevo encontrado a mitad de partida ya cuenta los pasos dados después de encontrarlo.`,
         `Cuando un huevo está listo, eclosiona al salir de la partida o en la incubadora (en el menú principal y en la pestaña Huevos de la selección de compañero). Las familias que todavía no tienes salen ${weight}x más. La cría tiene 1 probabilidad entre ${shiny} de ser shiny, y entonces es shiny en todas las partidas.`,
         'Un repetido, o un huevo encontrado con la incubadora llena, se convierte en Poké Dollars. El jugador que nunca tuvo un huevo recibe el primero con seguridad.',
-        'El Huevo de la Amistad no cae en las partidas: llega como Regalo Misterioso cuando creas tu cuenta con la invitación de alguien, y cuando un amigo al que invitaste juega 3 partidas verificadas. Solo sale Munchlax de él. Con 3 amigos ganas el título Embajador(a) y un marco exclusivo, y con 10, un Munchlax shiny.',
+        'El Huevo de la Amistad no cae en las partidas: llega como Regalo Misterioso cuando creas tu cuenta con la invitación de alguien, y cuando un amigo al que invitaste termina 3 partidas. Solo sale Munchlax de él. Con 3 amigos ganas el título Embajador(a) y un marco exclusivo, con 5, un Huevo ultra raro, y con 10, un Munchlax shiny. Tu link y el progreso de cada amigo están en la tarjeta Invita amigos, en la pantalla de inicio.',
       ],
       tierHead: 'Huevo',
       stepsHead: 'Pasos',

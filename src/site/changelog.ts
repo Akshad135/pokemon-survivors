@@ -19,6 +19,27 @@ export type ChangelogEntry = {
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: '2026-10-19',
+    title: { pt: 'Convide amigos', en: 'Invite friends', es: 'Invita amigos' },
+    notes: [
+      {
+        pt: 'A tela inicial ganhou o card Convide amigos: ele mostra o seu link de convite, as recompensas (1 amigo: Ovo da Amizade; 3: título e moldura Embaixador(a); 5: Ovo ultra raro, novo; 10: Munchlax shiny) e cada amigo que entrou pelo seu link, com quantas partidas ele já jogou.',
+        en: 'The home screen has a new Invite friends card: it shows your invite link, the rewards (1 friend: Friendship Egg; 3: Ambassador title and frame; 5: Ultra rare egg, new; 10: shiny Munchlax) and every friend who joined through your link, with how many runs they have played.',
+        es: 'La pantalla de inicio tiene la nueva tarjeta Invita amigos: muestra tu link de invitación, las recompensas (1 amigo: Huevo de la Amistad; 3: título y marco Embajador(a); 5: Huevo ultra raro, nuevo; 10: Munchlax shiny) y cada amigo que entró por tu link, con cuántas partidas lleva.',
+      },
+      {
+        pt: 'Um convite agora conta assim que o seu amigo termina 3 partidas, sem esperar a verificação delas, que podia levar horas. Convites que já tinham chegado lá contam sozinhos, e quem já passou de 5 amigos recebe o novo Ovo ultra raro.',
+        en: "An invite now counts as soon as your friend finishes 3 runs, without waiting for their check, which could take hours. Invites that already got there count on their own, and anyone past 5 friends gets the new Ultra rare egg.",
+        es: 'Una invitación ahora cuenta en cuanto tu amigo termina 3 partidas, sin esperar su verificación, que podía tardar horas. Las invitaciones que ya habían llegado cuentan solas, y quien ya pasó de 5 amigos recibe el nuevo Huevo ultra raro.',
+      },
+      {
+        pt: 'O link de convite continua valendo quando o seu amigo o abre dentro do X ou do Instagram e passa para o navegador para entrar com o Google.',
+        en: 'The invite link keeps working when your friend opens it inside X or Instagram and moves to the browser to sign in with Google.',
+        es: 'El link de invitación sigue valiendo cuando tu amigo lo abre dentro de X o Instagram y pasa al navegador para entrar con Google.',
+      },
+    ],
+  },
+  {
+    date: '2026-10-19',
     pr: 119,
     title: { pt: 'Tutor de Golpes que combina com você', en: 'A Move Tutor that suits you', es: 'Un Tutor de Movimientos a tu medida' },
     notes: [

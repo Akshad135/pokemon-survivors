@@ -19,9 +19,11 @@ await migrate(sql, new URL('../migrations/', import.meta.url))
 
 const ranking = rankingStore(sql)
 const gifts = giftStore(sql)
-const checks = createChecks(ranking, gifts.credit)
+const checks = createChecks(ranking)
 // Runs that were waiting for a check when the last instance stopped.
 void checks.resume()
+// Invites that came due, and milestones reached, while no instance was counting.
+void gifts.settle().catch((err) => console.error('invites settle failed', err))
 // The Desafio do dia's ribbons, once a day closes (safe on every instance: each gift has a key per day).
 createRibbons(ranking, gifts).start()
 

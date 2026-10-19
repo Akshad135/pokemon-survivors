@@ -29,7 +29,7 @@ import { abacateDonation, ABACATE_REF, stripeDonation, verifyAbacate, verifyStan
 export type AppDeps = {
   store: SaveStore
   ranking: RankingStore
-  gifts: Pick<GiftStore, 'inbox' | 'claim' | 'refer'>
+  gifts: Pick<GiftStore, 'inbox' | 'claim' | 'refer' | 'credit' | 'invites'>
   /** Re-simulates finished runs after the answer went out. */
   checks: Pick<Checks, 'schedule'>
   verify: Verify
@@ -86,7 +86,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   that day's challenge isn't open (`challengeOpen`).
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
  *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
- *   replay is re-simulated afterwards (`checks.ts`). A challenge run's replay must
+ *   replay is re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
  *   400 for an implausible result or a replay of another run, 404 for an
  *   unknown token, 409 when it contradicts what the run already recorded, 422
@@ -101,6 +101,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /gifts/claim` (auth) `{ ids }`: marks those gifts claimed (the game applied them). `{ claimed }`.
  * - `POST /referral` (auth) `{ ref }`: the inviter's handle a new account came with. `{ referred }`:
  *   whether it counted (only a new account, never oneself: `canRefer`).
+ * - `GET /invites` (auth): `{ friends }` (`InvitedFriend[]`), who signed up with the player's link, newest first.
  * - `POST /donations` `{ amount, page, handle? }`: `{ url }`, an AbacatePay checkout (Pix or a
  *   Brazilian card) for `amount` whole reais (`parseDonation`), for the account of `handle`
  *   (400 when nobody has it). The donor comes back to `page` on the site, with
@@ -201,6 +202,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const finished = await ranking.finishRun(c.var.userId, token, result, replay)
     if (!finished.ok) return c.json({ error: finished.error }, FINISH_ERRORS[finished.error])
     if (replay) checks.schedule(token)
+    void gifts.credit(c.var.userId).catch((err) => console.error('invite credit failed', err))
     const [ranks, challenge] = await Promise.all([
       ranking.runRanks(c.var.userId, result.difficulty),
       finished.challenge ? ranking.challengePlace(c.var.userId, finished.challenge, finished.official === true) : null,
@@ -248,6 +250,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     if (!ids) return c.json({ error: 'expected { ids }' }, 400)
     return c.json({ claimed: await gifts.claim(c.var.userId, ids) })
   })
+
+  app.get('/invites', auth, async (c) => c.json({ friends: await gifts.invites(c.var.userId) }))
 
   app.post('/referral', auth, smallBody, async (c) => {
     const body = await json(c)

@@ -3392,6 +3392,76 @@ button {
   padding: 2px 3px;
 }
 
+/* Convide amigos, under the Hall: the Friendship Egg, the way to the next milestone and what it pays. */
+.lobby-invites {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 9px 12px 9px 10px;
+  border-color: #581830;
+  --frame: #e05888;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.lobby-invites:hover,
+.lobby-invites.selected {
+  --frame: #e83838;
+}
+
+.lobby-invites-icon {
+  width: 28px;
+  height: 32px;
+  flex: none;
+}
+
+.lobby-invites-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lobby-invites-text b {
+  font-family: var(--title);
+  font-size: 9px;
+  font-weight: normal;
+  color: #c04890;
+}
+
+.lobby-invites-row {
+  font-size: 18px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lobby-invites-prize {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  object-fit: contain;
+  animation: invite-bob 1.2s steps(2, start) infinite;
+}
+
+@keyframes invite-bob {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-invites-prize {
+    animation: none;
+  }
+}
+
 /* The partner on stage, over its name plate (canvas sized by `partnerStage`). */
 .lobby-partner {
   display: flex;
@@ -3828,6 +3898,23 @@ button {
     min-width: 0;
     height: 58px;
     font-size: 20px;
+  }
+  .lobby-invites {
+    padding: 4px 10px 4px 8px;
+    gap: 8px;
+  }
+  .lobby-invites-icon {
+    width: 20px;
+    height: 23px;
+  }
+  .lobby-invites-text {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .lobby-invites-text b {
+    font-size: 8px;
   }
   .lobby-side .invite-banner {
     padding: 5px 10px 5px 8px;
@@ -6526,6 +6613,171 @@ a.btn.dex-site {
 .rank-screen,
 .profile-screen {
   padding: max(8px, var(--safe-t)) max(8px, var(--safe-r)) max(8px, var(--safe-b)) max(8px, var(--safe-l));
+}
+
+/* Convide amigos: the link, the reward ladder, how it works and the friends, scrolling between the title and the buttons. */
+.dialog.invites {
+  max-height: 100%;
+}
+
+.invite-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.invite-section h3 {
+  margin: 0 0 6px;
+  font-family: var(--title);
+  font-size: 9px;
+  color: #c04890;
+}
+
+.invite-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 20px;
+  color: var(--ink);
+  text-align: left;
+  background: #fff4f8;
+  border: 2px dashed #e05888;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.invite-link img,
+.invite-gate img {
+  width: 26px;
+  height: 30px;
+  flex: none;
+}
+
+.invite-link b {
+  min-width: 0;
+  font-weight: normal;
+  overflow-wrap: anywhere;
+}
+
+.invite-gate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.invite-ladder,
+.invite-how,
+.invite-friends {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.invite-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #eef0f8;
+}
+
+.invite-step.reached {
+  background: #fde8f0;
+}
+
+.invite-step img {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  object-fit: contain;
+}
+
+.invite-step-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.invite-step-text b {
+  font-family: var(--title);
+  font-size: 7px;
+  font-weight: normal;
+  line-height: 1.6;
+  color: #6878a8;
+}
+
+.invite-step em,
+.invite-friend em {
+  font-style: normal;
+  font-size: 18px;
+  color: #6878a8;
+  white-space: nowrap;
+}
+
+.invite-step.reached em,
+.invite-friend.counted em {
+  color: #c04890;
+}
+
+.invite-how {
+  counter-reset: step;
+  gap: 2px;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.invite-how li {
+  counter-increment: step;
+}
+
+.invite-how li::before {
+  content: counter(step) '. ';
+  color: #c04890;
+}
+
+.invite-tip,
+.invite-note {
+  margin: 6px 0 0;
+  font-size: 16px;
+  line-height: 1.15;
+  color: #6878a8;
+}
+
+.invite-friend {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.invite-friend-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invite-friend-name small {
+  font-size: 16px;
+  color: #6878a8;
 }
 
 /* Fixed height so the board scrolls inside the dialog, like the Pokédex. */

@@ -5,7 +5,7 @@ import type { Difficulty } from './game/difficulty'
 import { isRecord } from './game/parse'
 import type { DayKey } from './game/day'
 import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
-import { firstTouch, landingRef, REF_PARAM } from './game/referral'
+import { firstTouch, landingRef, parseInvites, REF_PARAM } from './game/referral'
 import type { Replay } from './game/replay'
 import { ROUTES, SITE_URL } from './site/routes'
 import { locale } from './i18n'
@@ -220,6 +220,13 @@ export const gameUrl = (handle: string | null) => `${SITE_URL}${ROUTES.play[loca
 
 /* ---------------- Invites ---------------- */
 
+/** The friends who signed up with the player's link (`InvitedFriend[]`), or null offline or signed out. */
+export const fetchInvites = async () => {
+  const token = await sessionToken()
+  if (!token) return null
+  return parseInvites((await read('/invites', token)).body)
+}
+
 const inviters = new Map<string, Promise<string | null>>()
 
 /**
@@ -243,7 +250,9 @@ export const stageInvite = (handle: string, name: string = handle) => {
 /**
  * On boot: a link with `?ref=` (or a profile's `?u=`) keeps its handle as the
  * device's inviter, first touch only and never the player's own, and counts
- * the landing. `?ref=` then leaves the address bar, so a reload isn't counted again.
+ * the landing when it's news to this device. `?ref=` stays in the address bar:
+ * a friend who opened the link inside an app (X, Instagram) and moves to the
+ * browser to sign in with Google still brings it along.
  */
 export const captureRef = () => {
   const params = new URLSearchParams(location.search)
@@ -253,10 +262,5 @@ export const captureRef = () => {
   const stored = storedRef()
   const keep = firstTouch(stored, landed, own)
   if (keep !== stored && keep !== null) storeRef(keep)
-  if (landed !== own) track('ref_land', { ref: landed, via: params.has(REF_PARAM) ? 'ref' : 'profile', first: stored === null ? 1 : 0 })
-  if (params.has(REF_PARAM)) {
-    params.delete(REF_PARAM)
-    const query = params.toString()
-    history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`)
-  }
+  if (landed !== own && landed !== stored) track('ref_land', { ref: landed, via: params.has(REF_PARAM) ? 'ref' : 'profile', first: stored === null ? 1 : 0 })
 }

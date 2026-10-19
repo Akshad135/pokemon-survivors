@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canRefer, creditDue, firstTouch, landingRef, milestoneGifts, REFERRAL } from './referral'
+import { canRefer, creditDue, firstTouch, landingRef, milestonesReached, nextMilestone, parseInvites, REFERRAL } from './referral'
 
 describe('landingRef', () => {
   it('reads ?ref= first, then the profile link, and drops invalid handles', () => {
@@ -35,16 +35,33 @@ describe('canRefer', () => {
 })
 
 describe('invite rewards', () => {
-  it('count once the friend has enough verified runs', () => {
-    expect(creditDue(REFERRAL.verifiedRuns - 1, false)).toBe(false)
-    expect(creditDue(REFERRAL.verifiedRuns, false)).toBe(true)
-    expect(creditDue(REFERRAL.verifiedRuns + 5, true)).toBe(false)
+  it('count once the friend has finished enough runs', () => {
+    expect(creditDue(REFERRAL.runs - 1, false)).toBe(false)
+    expect(creditDue(REFERRAL.runs, false)).toBe(true)
+    expect(creditDue(REFERRAL.runs + 5, true)).toBe(false)
   })
 
-  it('pay at 1, 3 and 10 friends', () => {
-    expect(milestoneGifts(1)).toEqual([{ kind: 'egg', tier: 'friend' }])
-    expect(milestoneGifts(2)).toEqual([])
-    expect(milestoneGifts(3).map((g) => g.kind)).toEqual(['title', 'style'])
-    expect(milestoneGifts(10)).toEqual([{ kind: 'shinyHatch', family: 'munchlax' }])
+  it('reach every milestone up to the count, so a later one pays whoever already passed it', () => {
+    expect(milestonesReached(0)).toEqual([])
+    expect(milestonesReached(1).map((m) => m.friends)).toEqual([1])
+    expect(milestonesReached(6).map((m) => m.friends)).toEqual([1, 3, 5])
+    expect(milestonesReached(10).at(-1)?.gifts).toEqual([{ kind: 'shinyHatch', family: 'munchlax' }])
+  })
+
+  it('point at the next milestone, none past the last', () => {
+    expect(nextMilestone(0)?.friends).toBe(1)
+    expect(nextMilestone(3)?.friends).toBe(5)
+    expect(nextMilestone(10)).toBeNull()
+  })
+})
+
+describe('parseInvites', () => {
+  it('keeps well-formed friends and clamps their runs', () => {
+    const friends = parseInvites({ friends: [{ handle: 'Misty', name: 'Misty', runs: 9, counted: true }, { handle: null, name: '', runs: 1 }, 'x'] })
+    expect(friends).toEqual([
+      { handle: 'misty', name: 'Misty', runs: REFERRAL.runs, counted: true },
+      { handle: null, name: '', runs: 1, counted: false },
+    ])
+    expect(parseInvites({ friends: 'no' })).toBeNull()
   })
 })

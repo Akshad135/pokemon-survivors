@@ -431,7 +431,7 @@ export const sitePt = {
         `Chefes, baús trancados e fendas às vezes deixam um ovo, no máximo ${perRun} por partida. Ele vai para a incubadora, que tem ${slots} vagas. Cada ${stepPx} px andados numa partida contam um passo, e todos os ovos da incubadora andam juntos. O ovo achado no meio da partida já conta os passos dados depois dele.`,
         `Quando um ovo fica pronto, ele choca ao sair da partida ou na incubadora (no menu inicial e na aba Ovos da escolha de parceiro). Famílias que você ainda não tem saem ${weight}x mais. O filhote tem 1 chance em ${shiny} de ser shiny, e aí fica shiny em todas as partidas.`,
         'Um repetido, ou um ovo achado com a incubadora cheia, vira Poké Dollars. O jogador que nunca teve um ovo ganha o primeiro com certeza.',
-        'O Ovo da Amizade não cai em partidas: ele chega como Presente Misterioso quando você cria a conta pelo convite de alguém, e quando um amigo que você convidou joga 3 partidas verificadas. Só sai Munchlax dele. Com 3 amigos você ganha o título Embaixador(a) e uma moldura exclusiva, e com 10, um Munchlax shiny.',
+        'O Ovo da Amizade não cai em partidas: ele chega como Presente Misterioso quando você cria a conta pelo convite de alguém, e quando um amigo que você convidou termina 3 partidas. Só sai Munchlax dele. Com 3 amigos você ganha o título Embaixador(a) e uma moldura exclusiva, com 5, um Ovo ultra raro, e com 10, um Munchlax shiny. O seu link e o progresso de cada amigo ficam no card Convide amigos, na tela inicial.',
       ],
       tierHead: 'Ovo',
       stepsHead: 'Passos',

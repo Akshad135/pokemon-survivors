@@ -7,6 +7,7 @@ import { blitCentered, context2d, ellipse } from '../engine/pixelart'
 import { ENEMIES } from '../data/enemies'
 import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { isReady } from '../game/eggs'
+import { nextMilestone } from '../game/referral'
 import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
@@ -20,6 +21,8 @@ import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
 import { boundKey } from './inputLabels'
 import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
+import { contentLine } from './gifts'
+import { countedFriends, loadInvites } from './invites'
 import { hallFace, hallPortrait } from './supporters'
 import type { Screen } from './screens'
 import { gearButton, helpButton, shellBody, topBar, walletChip } from './shell'
@@ -37,6 +40,7 @@ export type LobbyFocus =
   | 'missions'
   | 'hall'
   | 'invite'
+  | 'friends'
   | 'pokedex'
   | 'eggs'
   | 'mart'
@@ -86,6 +90,8 @@ export type TitleActions = {
   ideas?: (focus: LobbyFocus) => Screen
   /** Opens Apoiadores over the title (the Hall da Fama card), like `settings`; `pick` goes straight to the shiny picker. */
   supporters: (focus: LobbyFocus, open: 'pick' | null) => Screen
+  /** Opens Convide amigos over the title (its card under the Hall), like `settings`. */
+  invites: (focus: LobbyFocus) => Screen
   meadow: Meadow
 }
 
@@ -275,6 +281,34 @@ const inviteBanner = (slot: HTMLElement, open: () => void, ready: (el: HTMLEleme
   })
 }
 
+/**
+ * Convide amigos, under the Hall: the Friendship Egg the first friend brings,
+ * then how many friends counted toward the next milestone and what it pays.
+ */
+const invitesCard = () => {
+  const m = t().invites
+  const row = h('span', { class: 'lobby-invites-row' }, m.cardFirst)
+  const prize = h('img', { class: 'lobby-invites-prize', src: eggIcon('friend'), alt: '' })
+  const el = h(
+    'button',
+    { class: 'lobby-invites box', type: 'button', 'aria-label': `${m.title}: ${m.cardFirst}` },
+    h('img', { class: 'lobby-invites-icon', src: eggIcon('friend'), alt: '' }),
+    h('span', { class: 'lobby-invites-text' }, h('b', {}, m.title), row),
+    prize,
+  )
+  void loadInvites().then((list) => {
+    const friends = countedFriends(list)
+    if (friends === 0) return
+    const next = nextMilestone(friends)
+    const text = next ? m.cardNext(friends, next.friends) : m.cardAll(friends)
+    row.textContent = text
+    el.setAttribute('aria-label', `${m.title}: ${text}`)
+    if (next) prize.src = contentLine({ content: next.gifts[0] }).src
+    else prize.remove()
+  })
+  return el
+}
+
 /* ---------------- The partner on stage ---------------- */
 
 /** Art px of the stage canvas, and where the partner's feet stand in it. */
@@ -397,7 +431,7 @@ const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: '
  * Title screen over the live meadow: the pixel logo and a blinking "press
  * start", then the lobby. The top bar holds the Trainer chip, the wallet, `?`
  * (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
- * Missões), the Hall da Fama card sits beside them, the saved partner stands
+ * Missões), the Hall da Fama card sits beside them (Convide amigos under it), the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
  * Loja, Ranking, Ideias). Arrows move between all of them by where they are on
  * screen; Enter presses the highlighted one, JOGAR at first. The movement
@@ -479,6 +513,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     challenge: actions.challenge,
     missions: actions.missions,
     invite: () => openOver(actions.trainer),
+    friends: () => openOver(actions.invites),
     pokedex: () => openOver(actions.pokedex),
     eggs: actions.incubator,
     mart: () => openOver(actions.mart),
@@ -508,7 +543,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
     const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
-    const side = h('div', { class: 'lobby-side' }, hall)
+    const side = h('div', { class: 'lobby-side' }, hall, ...(accountsEnabled ? [pressable(invitesCard(), 'friends')] : []))
     inviteBanner(side, press('invite'), (banner) => navigable(banner, 'invite'))
 
     const ready = save.eggs.filter(isReady).length
