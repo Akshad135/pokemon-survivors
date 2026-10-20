@@ -725,6 +725,7 @@ export const es: Messages = {
     codeErrors: { format: 'El código tiene el formato PS-XXXX-XXXX.', unknown: 'Ese código no existe.', used: 'Ese código ya se usó.', offline: 'Sin conexión. Inténtalo de nuevo.' },
 
     wallEmpty: 'Todavía no hay nadie. ¡Tu nombre puede ser el primero!',
+    offWall: (total) => `${total} patrocinadores en total. Algunos prefieren quedar fuera del muro.`,
 
     credits: 'Gracias a los entrenadores que mantienen el juego en línea',
     banner: '¡Tu shiny te espera!',

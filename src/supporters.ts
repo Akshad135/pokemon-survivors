@@ -1,7 +1,7 @@
 import { apiCall } from './api'
 import type { PollOptionId } from './data/supporters'
 import { isRecord } from './game/parse'
-import { parsePoll, parseSupporterStatus, parseWall, type Poll, type SupporterStatus, type SupporterTier, type WallEntry } from './game/supporters'
+import { parseHidden, parsePoll, parseSupporterStatus, parseWall, type Poll, type SupporterStatus, type SupporterTier, type Wall } from './game/supporters'
 
 /**
  * The supporters' side of the API (`server/`): the player's own standing,
@@ -33,16 +33,16 @@ export const redeemCode = async (code: string): Promise<Redeemed> => {
   return { ok: false, reason: 'offline' }
 }
 
-let wall: Promise<WallEntry[] | null> | null = null
+let wall: Promise<Wall | null> | null = null
 
-/** The wall, asked once per page (a failure asks again next time). Null when the API can't be reached. */
+/** The wall and the hidden supporters' counts, asked once per page (a failure asks again next time). Null when the API can't be reached. */
 export const fetchWall = () =>
   (wall ??= apiCall('/supporters').then(({ status, body }) => {
     if (status !== 200 || !isRecord(body)) {
       wall = null
       return null
     }
-    return parseWall(body.supporters)
+    return { entries: parseWall(body.supporters), hidden: parseHidden(body.hidden) }
   }))
 
 /** The current poll, or null when the API can't be reached. */

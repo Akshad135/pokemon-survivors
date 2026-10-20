@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SUPPORTER } from '../data/supporters'
 import { EMPTY_SAVE } from './meta'
-import { canWalkWith, donationPoints, hallOf, newCode, parseCode, parseWall, supporterTier, tiersReached } from './supporters'
+import { canWalkWith, donationPoints, hallOf, newCode, parseCode, parseHidden, parseWall, supporterCount, supporterTier, tiersReached } from './supporters'
 
 describe('supporter tiers', () => {
   it('counts reais and dollars on one scale', () => {
@@ -62,6 +62,12 @@ describe('the wall', () => {
     expect(parseWall([{ ...entry, title: 'supporter', pokemon: { id: 'gible', shiny: true } }])[0]).toMatchObject({ title: 'supporter', pokemon: { id: 'gible', shiny: true } })
     expect(parseWall([{ ...entry, title: 'emperor', pokemon: { id: 'mewtwo' } }])[0]).toMatchObject({ title: null, pokemon: null })
     expect(parseWall([{ ...entry, tier: 'platinum' }, { ...entry, since: 'soon' }, 'ash'])).toEqual([])
+  })
+
+  it('counts the supporters off the wall, and none from an API that does not send them', () => {
+    expect(parseHidden(undefined)).toEqual({ supporter: 0, gold: 0 })
+    const hidden = parseHidden({ supporter: 2, gold: 1, platinum: 9 })
+    expect(supporterCount({ entries: parseWall([entry]), hidden })).toBe(4)
   })
 
   it('splits the Hall into Lendas (gold) and supporters, newest first', () => {
