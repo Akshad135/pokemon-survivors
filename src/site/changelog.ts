@@ -85,6 +85,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             en: 'Daily Challenge ribbons go out for every official attempt, without waiting for the check.',
             es: 'Las cintas del Desafío del día salen para todos los intentos oficiales, sin esperar la revisión.',
           },
+          {
+            pt: 'Num computador com o relógio atrasado, o fim da partida dizia "Sem conexão" e ela não entrava no ranking, e o save também não sincronizava. Agora funciona com qualquer relógio, e as partidas que ficaram esperando entram no ranking na próxima vez que você abrir o jogo naquele navegador.',
+            en: 'On a computer whose clock runs behind, the end of a run said "Offline" and the run never made the ranking, and the save didn\'t sync either. Now it works whatever the clock says, and runs left waiting make the ranking the next time you open the game in that browser.',
+            es: 'En una computadora con el reloj atrasado, el final de la partida decía "Sin conexión" y no entraba al ranking, y la partida guardada tampoco se sincronizaba. Ahora funciona con cualquier reloj, y las partidas que quedaron esperando entran al ranking la próxima vez que abras el juego en ese navegador.',
+          },
         ],
       },
       {
