@@ -4251,7 +4251,7 @@ export const pt = {
     clone: (name: string) => `${name} Clone`,
     /* Capturing legends (`game/capture.ts`, `ui/capture.ts`): the toasts as one falls, and the partner select's Lendários tab. */
     escaped: (name: string, wins: number, need: number) => `*${name}* escapou… _${wins}/${need}_`,
-    escapedHint: (left: number) => (left === 1 ? 'Vença mais 1 vez para capturá-lo.' : `Vença mais ${left} vezes para capturá-lo.`),
+    escapedHint: (left: number) => (left === 1 ? 'Falta 1 vitória para a captura.' : `Faltam ${left} vitórias para a captura.`),
     /** Arceus before it can count: the endless mode, after the other legends (`left` still to capture). */
     arceusHint: (left: number) => (left > 0 ? `Só se deixa capturar no modo sem fim, depois dos outros lendários (faltam ${left}).` : 'Só se deixa capturar no modo sem fim.'),
     caught: (name: string) => `*${name}* capturado! Jogável no _Modo Lendário_.`,
@@ -4269,7 +4269,7 @@ export const pt = {
       finale: 'É o chefe final: vença uma partida.',
       endless: 'O último troféu: depois de capturar os outros 22, vença-o no _modo sem fim_.',
     },
-    rule: (need: number) => (need === 1 ? 'Vença-o 1 vez como chefe, em qualquer modo, para capturá-lo.' : `Vença-o ${need} vezes como chefe, em qualquer modo, para capturá-lo.`),
+    rule: (need: number) => (need === 1 ? 'Para capturar, vença este lendário 1 vez como chefe, em qualquer modo.' : `Para capturar, vença este lendário ${need} vezes como chefe, em qualquer modo.`),
     shinyRule: 'Vencer um shiny na vitória da captura, ou depois, libera a forma shiny.',
     selectNote: 'Lendários jogam o *Modo Lendário*: ranking próprio, horda mais forte, despertares no Nv 12 e 28.',
   },

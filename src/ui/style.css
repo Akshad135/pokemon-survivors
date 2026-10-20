@@ -12532,11 +12532,11 @@ button.hall-tile:hover {
   }
 }
 
-/* A legendary's ultimate: its move's name, big. */
+/* A legendary's ultimate: its move's name, big, in a deep red that reads on the toast's light box. */
 .toast-ultimate {
   font-family: var(--title);
   font-size: 14px;
-  color: #f8e070;
+  color: #c82810;
   letter-spacing: 0.06em;
 }
 
