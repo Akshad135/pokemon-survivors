@@ -211,6 +211,7 @@ export const siteEs: SiteMessages = {
       traits: 'Enemigos especiales',
       rifts: 'Grietas legendarias y modo infinito',
       places: 'Lugares: cueva, cementerio y cielo',
+      landmarks: 'Puntos de interés del mapa',
       megas: 'Megaevolución',
       shinies: 'Shinies',
       eggs: 'Huevos e incubadora',
@@ -389,6 +390,29 @@ export const siteEs: SiteMessages = {
         `A las ${e.reaper}, Arceus desciende para cazarte. Se vuelve más rápido cuanto más tiempo caza, hasta que nadie puede escapar, y nunca te pierde: si te alejas, reaparece en el borde de la pantalla. Se le puede derrotar, pero tiene ${e.hp} de HP; si cae, vuelve ${e.returns} minutos después, más fuerte.`,
         `El tiempo sobrevivido es la métrica principal: cada minuto después de las 15:00 paga ₽${n(e.perMinute)} en la bonificación, y cada Arceus derrotado, ₽${e.reaperBonus} más.`,
       ],
+    },
+    landmarks: {
+      paragraphs: (p) => [
+        `El mapa tiene puntos de interés fijos, colocados por la semilla de la partida como las montañas y los lagos: como máximo uno cada ${p.block}×${p.block} tramos del mapa (${p.odds}% de ellos tienen uno), siempre con el aspecto del bioma en que está la partida. Al acercarte, un cartel de madera muestra el nombre del lugar en la esquina de la pantalla.`,
+        `Cuatro de ellos guardan un tesoro: quédate ${p.open}s junto a él para abrirlo. Cada tesoro se abre una sola vez por partida, y un destello marca los que siguen cerrados. El túnel no tiene tesoro, pero es un atajo: quédate ${p.tunnel}s en una de sus bocas y sales por la otra, del otro lado de la montaña, mientras la horda te pierde el rastro.`,
+        `Entre ellos, arbustos, troncos caídos y rocas y árboles sueltos. Todo eso bloquea a quien camina (también a la horda), pero los Pokémon voladores, los fantasmas y los jefes pasan por encima.`,
+      ],
+      names: { cottage: 'Casa Abandonada', tunnel: 'Túnel de la Mina', maze: 'Laberinto de Setos', ruins: 'Ruinas Unown', camp: 'Campamento Abandonado' },
+      placeHead: 'Lugar',
+      whatHead: 'Qué hay',
+      lootHead: 'Tesoro',
+      what: {
+        cottage: 'Una casa de piedra sin techo: entra por la puerta. Ventanas, chimenea, una cama vieja y una caja en el rincón, y un pozo en el patio.',
+        tunnel: 'Una sierra larga con una boca de mina en cada punta, rieles y un carrito de mineral.',
+        maze: 'Setos altos con un único camino hasta el cofre del centro. Quien camina se pierde en los callejones; tú no tienes por qué.',
+        ruins: 'Piedras con glifos Unown en ronda, un altar en el medio y columnas caídas.',
+        camp: 'Una carpa, troncos alrededor de la fogata todavía encendida y una mochila olvidada.',
+      },
+      noLoot: 'Atajo: entra por una boca, sal por la otra',
+      loot: (l) =>
+        [l.coins, l.items > 0 ? (l.items === 1 ? 'un objeto' : `${l.items} objetos`) : '', l.berries > 0 ? `${l.berries} Oran Berries` : '', l.xp > 0 ? `Exp. Candy (cerca del ${l.xp}% de un nivel)` : '', l.egg > 0 ? `${l.egg}% de probabilidad de un huevo` : '']
+          .filter(Boolean)
+          .join(', '),
     },
     places: {
       paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string; rescue: number }) => [

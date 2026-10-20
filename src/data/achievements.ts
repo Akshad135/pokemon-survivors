@@ -26,7 +26,7 @@ export type AchievementStat =
   | 'rifts' | 'legends' | 'overtimeMinutes' | 'reaperDefeats'
   | 'bossKills' | 'chests' | 'meowths' | 'altars' | 'coins' | 'moveEvolutions' | 'missions'
   | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches' | 'megas' | 'alphaKills'
-  | 'placeClears' | 'places'
+  | 'placeClears' | 'places' | 'landmarks'
 
 export type AchievementDef = {
   medal: Medal
@@ -77,6 +77,9 @@ export const ACHIEVEMENTS = {
   rift25: { medal: 'silver', stat: 'rifts', target: 25 },
   place1: { medal: 'bronze', stat: 'placeClears', target: 1 },
   place25: { medal: 'silver', stat: 'placeClears', target: 25 },
+  /** Treasures of the map's landmarks: the cottage's crate, the maze's chest, the ruins' altar, the camp's backpack. */
+  landmark1: { medal: 'bronze', stat: 'landmarks', target: 1 },
+  landmark50: { medal: 'silver', stat: 'landmarks', target: 50 },
   mega1: { medal: 'bronze', stat: 'megas', target: 1 },
   mega25: { medal: 'silver', stat: 'megas', target: 25 },
   alpha1: { medal: 'bronze', stat: 'alphaKills', target: 1 },

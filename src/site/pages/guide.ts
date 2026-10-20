@@ -36,6 +36,7 @@ import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_F
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
 import { placeBossScale, wingAmount } from '../../game/place'
+import { LANDMARK, LANDMARK_IDS, LANDMARK_LOOT, TUNNEL, type LandmarkLoot, type TreasureLandmark } from '../../data/landmarks'
 import { BURN_ATTACK, FREEZE_SHATTER, SEED_HEAL, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { SEED_JUMPS } from '../../game/kitRules'
 import { LOCALES, type Locale } from '../../i18n'
@@ -382,6 +383,24 @@ const places = (locale: Locale, m: SiteMessages) => {
     ${table([p.wingHead, p.effectHead], WING_IDS.map((id) => [WINGS[id].name, p.wings[id](wingAmount(id))]))}`
 }
 
+/** The map's landmarks: how often they stand, what each one is and what its treasure holds (`data/landmarks.ts`). */
+const landmarks = (_locale: Locale, m: SiteMessages) => {
+  const l = m.guide.landmarks
+  const coins = (n: number) => `₽${(n * COIN_VALUES[1]).toLocaleString(m.lang.tag)}+`
+  const rows = LANDMARK_IDS.map((id) => {
+    const loot: LandmarkLoot | null = id in LANDMARK_LOOT ? LANDMARK_LOOT[id as TreasureLandmark] : null
+    return [
+      html`<b>${l.names[id]}</b>`,
+      l.what[id],
+      loot
+        ? l.loot({ coins: coins(loot.coins), items: loot.drops.length, berries: loot.berries ?? 0, xp: Math.round((loot.xp ?? 0) * 100), egg: loot.egg ? Math.round(EGG_SOURCES.chest.chance * 100) : 0 })
+        : l.noLoot,
+    ]
+  })
+  return html`${paragraphs(l.paragraphs({ block: LANDMARK.block, odds: Math.round(LANDMARK.odds * 100), open: LANDMARK.openTime.toLocaleString(m.lang.tag), tunnel: TUNNEL.enterTime.toLocaleString(m.lang.tag) }))}
+    ${table([l.placeHead, l.whatHead, l.lootHead], rows)}`
+}
+
 const megas = (locale: Locale, m: SiteMessages) => {
   const g = m.guide.megas
   const game = LOCALES[locale].messages
@@ -537,6 +556,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   traits,
   rifts,
   places,
+  landmarks,
   megas,
   shinies,
   eggs,

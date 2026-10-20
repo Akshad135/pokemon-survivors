@@ -1,5 +1,6 @@
 import type { BossStance } from '../../data/bosses'
 import type { PlaceId, WingId } from '../../data/places'
+import type { LandmarkId } from '../../data/landmarks'
 import type { Drop } from '../../data/consumables'
 import type { TraitId } from '../../data/traits'
 import type { TrioId } from '../../data/waves'
@@ -234,6 +235,7 @@ export const sitePt = {
       traits: 'Inimigos especiais',
       rifts: 'Fendas lendárias e modo sem fim',
       places: 'Lugares: caverna, cemitério e céu',
+      landmarks: 'Pontos de interesse do mapa',
       megas: 'Mega Evolução',
       shinies: 'Shinies',
       eggs: 'Ovos e incubadora',
@@ -412,6 +414,29 @@ export const sitePt = {
         `Às ${e.reaper}, Arceus desce para caçar você. Ele fica mais rápido quanto mais tempo caça, até ninguém conseguir fugir, e nunca se perde: se você se afastar, ele reaparece na borda da tela. Dá para derrotá-lo, mas ele tem ${e.hp} de HP; se cair, volta ${e.returns} minutos depois, mais forte.`,
         `O tempo sobrevivido é a métrica principal: cada minuto depois de 15:00 paga ₽${n(e.perMinute)} no bônus, e cada Arceus derrotado mais ₽${e.reaperBonus}.`,
       ],
+    },
+    landmarks: {
+      paragraphs: (p: { block: number; odds: number; open: string; tunnel: string }) => [
+        `O mapa tem pontos de interesse fixos, colocados pela semente da partida como as montanhas e os lagos: no máximo um a cada ${p.block}×${p.block} trechos do mapa (${p.odds}% deles têm um), sempre com a cara do bioma em que a partida está. Ao chegar perto, uma placa de madeira mostra o nome do lugar no canto da tela.`,
+        `Quatro deles guardam um tesouro: fique ${p.open}s perto dele para abrir. Cada tesouro abre uma vez só por partida, e um brilho mostra os que ainda estão fechados. O túnel não tem tesouro, mas é um atalho: fique ${p.tunnel}s numa das bocas e você sai pela outra, do outro lado da montanha, enquanto a horda perde o seu rastro.`,
+        `Entre eles, moitas, troncos caídos e pedras e árvores soltas. Tudo isso bloqueia quem anda (inclusive a horda), mas Pokémon voadores, fantasmas e chefes passam por cima.`,
+      ],
+      names: { cottage: 'Casa Abandonada', tunnel: 'Túnel da Mina', maze: 'Labirinto de Sebes', ruins: 'Ruínas Unown', camp: 'Acampamento Abandonado' } satisfies Record<LandmarkId, string>,
+      placeHead: 'Lugar',
+      whatHead: 'O que tem',
+      lootHead: 'Tesouro',
+      what: {
+        cottage: 'Uma casa de pedra sem telhado: entre pela porta. Janelas, lareira, uma cama velha e um caixote no canto, além do poço no quintal.',
+        tunnel: 'Uma serra comprida com uma boca de mina em cada ponta, trilhos e um carrinho de minério.',
+        maze: 'Sebes altas com um único caminho até o baú no centro. Quem anda se perde nos becos; você não precisa.',
+        ruins: 'Pedras com glifos Unown em roda, um altar no meio e colunas caídas.',
+        camp: 'Uma barraca, troncos em volta da fogueira ainda acesa e uma mochila esquecida.',
+      } satisfies Record<LandmarkId, string>,
+      noLoot: 'Atalho: entre por uma boca, saia pela outra',
+      loot: (l: { coins: string; items: number; berries: number; xp: number; egg: number }) =>
+        [l.coins, l.items > 0 ? `${l.items === 1 ? 'um item' : `${l.items} itens`}` : '', l.berries > 0 ? `${l.berries} Oran Berries` : '', l.xp > 0 ? `Exp. Candy (cerca de ${l.xp}% de um nível)` : '', l.egg > 0 ? `${l.egg}% de chance de um ovo` : '']
+          .filter(Boolean)
+          .join(', '),
     },
     places: {
       paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string; rescue: number }) => [

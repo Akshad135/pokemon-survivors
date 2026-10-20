@@ -27,6 +27,83 @@ export type ChangelogUpdate = {
  */
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
+    date: '2026-10-20',
+    title: { pt: 'Um mapa para explorar', en: 'A map to explore', es: 'Un mapa para explorar' },
+    highlights: [
+      { pt: 'Pontos de interesse pelo mapa: casa abandonada, túnel na montanha, labirinto de sebes, ruínas Unown e acampamento.', en: 'Landmarks all over the map: an abandoned cottage, a mountain tunnel, a hedge maze, Unown ruins and a camp.', es: 'Puntos de interés por el mapa: casa abandonada, túnel en la montaña, laberinto de setos, ruinas Unown y campamento.' },
+      { pt: 'Lugares para entrar: uma Mystery Dungeon no escuro, um cemitério com Spiritomb e o céu, só para quem voa.', en: 'Places to step into: a Mystery Dungeon in the dark, a graveyard with Spiritomb and the sky, for flyers only.', es: 'Lugares para entrar: un Mundo Misterioso a oscuras, un cementerio con Spiritomb y el cielo, solo para voladores.' },
+      { pt: 'Tesouros escondidos no mapa e cinco conquistas novas, uma com o título Explorador(a).', en: 'Treasures hidden on the map and five new achievements, one with the Explorer title.', es: 'Tesoros escondidos en el mapa y cinco logros nuevos, uno con el título Explorador(a).' },
+      { pt: 'Um mapa mais vivo: moitas, troncos caídos, pedras e árvores por todo canto, em todos os biomas.', en: 'A livelier map: bushes, fallen logs, rocks and trees everywhere, in every biome.', es: 'Un mapa más vivo: arbustos, troncos caídos, rocas y árboles por todas partes, en cada bioma.' },
+    ],
+    changes: [
+      {
+        title: { pt: 'Pontos de interesse no mapa', en: 'Landmarks on the map', es: 'Puntos de interés en el mapa' },
+        notes: [
+          {
+            pt: 'Ideia do @samael no mural de ideias, a mais votada: o mapa agora tem lugares fixos para descobrir, com a cara de cada bioma. Ao chegar perto, uma placa mostra o nome do lugar, como nos jogos.',
+            en: 'An idea from @samael on the ideas board, the most voted one: the map now has fixed places to discover, dressed for each biome. As you come close, a sign shows the place’s name, like in the games.',
+            es: 'Idea de @samael en el muro de ideas, la más votada: el mapa ahora tiene lugares fijos para descubrir, con el aspecto de cada bioma. Al acercarte, un cartel muestra el nombre del lugar, como en los juegos.',
+          },
+          {
+            pt: 'Casa Abandonada: uma casa de pedra sem telhado, com janelas, lareira e um caixote esquecido lá dentro. Labirinto de Sebes: um baú no coração do labirinto. Ruínas Unown: um altar que acende os glifos e solta Exp. Candy. Acampamento Abandonado: a fogueira ainda acesa e uma mochila com Oran Berries.',
+            en: 'Abandoned Cottage: a stone cottage without its roof, with windows, a fireplace and a crate left inside. Hedge Maze: a chest at its heart. Unown Ruins: an altar that lights up the glyphs and spills Exp. Candy. Abandoned Camp: the fire still burning and a backpack with Oran Berries.',
+            es: 'Casa Abandonada: una casa de piedra sin techo, con ventanas, chimenea y una caja olvidada adentro. Laberinto de Setos: un cofre en su corazón. Ruinas Unown: un altar que enciende los glifos y suelta Exp. Candy. Campamento Abandonado: la fogata todavía encendida y una mochila con Oran Berries.',
+          },
+          {
+            pt: 'Túnel da Mina: entre por uma boca e saia pela outra, do outro lado da montanha. A horda perde o seu rastro enquanto você está lá embaixo.',
+            en: 'Mine Tunnel: go in one mouth and come out the other, on the far side of the ridge. The horde loses track of you while you’re down there.',
+            es: 'Túnel de la Mina: entra por una boca y sal por la otra, del otro lado de la montaña. La horda te pierde el rastro mientras estás allá abajo.',
+          },
+          {
+            pt: 'Cada tesouro abre uma vez por partida, ficando um instante perto dele. Duas conquistas novas contam os tesouros abertos.',
+            en: 'Each treasure opens once per run, by standing next to it for a moment. Two new achievements count the treasures opened.',
+            es: 'Cada tesoro se abre una vez por partida, quedándote un instante junto a él. Dos logros nuevos cuentan los tesoros abiertos.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Lugares para entrar', en: 'Places to step into', es: 'Lugares para entrar' },
+        notes: [
+          {
+            pt: 'Algumas vezes por partida, a entrada de um lugar aparece no mapa, com uma seta apontando para ela. Fique na porta para entrar: lá dentro o mundo espera e o lugar tem seus próprios Pokémon, um objetivo e um limite de tempo.',
+            en: 'A few times a run, the entrance to a place shows up on the map, with an arrow pointing at it. Stand in the doorway to go in: inside, the world waits and the place has its own Pokémon, a goal and a time limit.',
+            es: 'Algunas veces por partida, la entrada de un lugar aparece en el mapa, con una flecha que apunta hacia ella. Quédate en la entrada para pasar: adentro el mundo espera y el lugar tiene sus propios Pokémon, un objetivo y un límite de tiempo.',
+          },
+          {
+            pt: 'Caverna Escura, uma Mystery Dungeon: andares no escuro com escadas para achar, uma Casa de Monstros e um baú no fundo. Pokémon de Fogo e Elétricos iluminam mais longe, e o vento avisa antes de soprar você para fora.',
+            en: 'Dark Cave, a Mystery Dungeon: floors in the dark with stairs to find, a Monster House and a chest at the bottom. Fire and Electric types light up farther, and the wind warns before it blows you out.',
+            es: 'Cueva Oscura, un Mundo Misterioso: pisos a oscuras con escaleras que encontrar, una Casa de Monstruos y un cofre al fondo. Los Pokémon de Fuego y Eléctricos iluminan más lejos, y el viento avisa antes de sacarte de la cueva.',
+          },
+          {
+            pt: 'Cemitério Assombrado: só fantasmas, saindo das covas. Os espíritos deles despertam a Pedra Peculiar e, dela, Spiritomb, um chefe novo (que pode ser shiny). Vença antes do amanhecer.',
+            en: 'Haunted Graveyard: ghosts only, rising from the graves. Their spirits stir the Odd Keystone, and out of it comes Spiritomb, a new boss (who can be shiny). Beat it before dawn.',
+            es: 'Cementerio Embrujado: solo fantasmas, saliendo de las tumbas. Sus espíritus despiertan a la Piedra Espíritu y, de ella, a Spiritomb, un jefe nuevo (que puede ser shiny). Véncelo antes del amanecer.',
+          },
+          {
+            pt: 'Acima das Nuvens, só para quem voa: com um Pokémon do tipo Voador, uma corrente de ar leva você ao céu, onde só aparecem voadores, todos batendo as asas, e asas chegam com o vento. Cada asa melhora um atributo até o fim da partida.',
+            en: 'Above the Clouds, for flyers only: with a Flying-type Pokémon, an updraft takes you up to the sky, where only flying Pokémon come, all flapping their wings, and wings drift in on the wind. Each wing raises a stat for the rest of the run.',
+            es: 'Sobre las Nubes, solo para quien vuela: con un Pokémon de tipo Volador, una corriente de aire te lleva al cielo, donde solo aparecen voladores, todos batiendo las alas, y el viento trae plumas. Cada pluma mejora una estadística hasta el final de la partida.',
+          },
+          {
+            pt: 'Três conquistas novas, uma delas com o título Explorador(a), para quem concluir os três lugares.',
+            en: 'Three new achievements, one with the Explorer title, for clearing all three places.',
+            es: 'Tres logros nuevos, uno con el título Explorador(a), para quien complete los tres lugares.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Um mapa mais vivo', en: 'A livelier map', es: 'Un mapa más vivo' },
+        notes: [
+          {
+            pt: 'Moitas (com flores ou frutinhas), troncos caídos e pedras e árvores soltas entre os bosques e as montanhas, cada bioma com o seu jeito: cogumelos que brilham na caverna, arbustos com neve na montanha e espinheiros no cemitério.',
+            en: 'Bushes (with flowers or berries), fallen logs and lone rocks and trees between the groves and the mountains, each biome in its own way: glowing mushrooms in the cave, snowy shrubs on the mountain and thorns in the graveyard.',
+            es: 'Arbustos (con flores o bayas), troncos caídos y rocas y árboles sueltos entre los bosques y las montañas, cada bioma a su manera: hongos que brillan en la cueva, arbustos nevados en la montaña y espinos en el cementerio.',
+          },
+        ],
+      },
+    ],
+  },
+  {
     date: '2026-10-19',
     title: { pt: 'Modo difícil e convites', en: 'Hard mode and invites', es: 'Modo difícil e invitaciones' },
     highlights: [
