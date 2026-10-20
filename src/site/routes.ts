@@ -5,6 +5,19 @@ export const SITE_URL = 'https://www.pokemonsurvivors.com'
 export const REPO_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
 /**
+ * The game's official profiles: the lobby's follow cards, Ajustes → Sobre and
+ * the site's footer list them in this order. A new network (Instagram,
+ * YouTube) is a row here, an icon in `render/art.ts` and a line in the static HTML.
+ */
+export const SOCIALS = {
+  tiktok: { name: 'TikTok', handle: '@pokemonsurvivors', url: 'https://www.tiktok.com/@pokemonsurvivors' },
+} as const satisfies Record<string, { name: string; handle: string; url: string }>
+
+export type SocialId = keyof typeof SOCIALS
+
+export const SOCIAL_IDS = Object.keys(SOCIALS) as SocialId[]
+
+/**
  * Stripe Payment Link for donations from outside Brazil (cards, Apple Pay and
  * Google Pay, in US$; the donor picks the amount there). Linked from the support
  * page with the account's handle as `client_reference_id`; once paid it redirects to

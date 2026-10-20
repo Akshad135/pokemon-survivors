@@ -279,6 +279,10 @@ export const en: Messages = {
     gateGuestNote: "As a guest, your progress stays on this device only and your runs don't count for the ranking.",
   },
 
+  socials: {
+    follow: (name: string) => `Follow us on ${name}`,
+  },
+
   discord: {
     title: 'DISCORD',
     open: 'Discord',

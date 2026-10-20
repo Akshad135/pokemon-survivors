@@ -16,6 +16,7 @@ import { TM_ICONS } from './tmArt'
 import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
 import { cursedIcon, DUO_ICONS } from './duoArt'
 import type { CurseId } from '../data/curses'
+import type { SocialId } from '../site/routes'
 import { LEGENDARY_ICONS } from './legendaryArt'
 import * as TE from './typeEvolvedArt'
 
@@ -829,6 +830,33 @@ const DISCORD = [
 ]
 
 export const discordIcon = () => toIconUrl('discord', () => art(DISCORD, { 1: '#283070', 2: '#5865f2', 3: '#ffffff' }))
+
+/** TikTok's app icon: the white note on a black rounded square, with its cyan and red echoes. 1 outline, 2 black, 3 white, 4 cyan, 5 red. */
+const TIKTOK = [
+  '..111111111111..',
+  '.12222222222221.',
+  '1222222444222221',
+  '1222222433322221',
+  '1222222433332221',
+  '1222222433533221',
+  '1222222433523521',
+  '1222222433522521',
+  '1222444433522221',
+  '1224433333522221',
+  '1224333333522221',
+  '1222333335522221',
+  '1222233355222221',
+  '1222225552222221',
+  '.12222222222221.',
+  '..111111111111..',
+]
+
+const SOCIAL_ART = {
+  tiktok: () => art(TIKTOK, { 1: '#000000', 2: '#161823', 3: '#ffffff', 4: '#25f4ee', 5: '#fe2c55' }),
+} as const satisfies Record<SocialId, () => PixelSprite>
+
+/** Each official profile's icon (`SOCIALS` in `site/routes.ts`). */
+export const socialIcon = (id: SocialId) => toIconUrl(`social:${id}`, SOCIAL_ART[id])
 
 /** iOS's Share: an arrow leaving an open tray, in iOS blue (the install how-to, `ui/install.ts`). 1 outline, 2 blue. */
 const SHARE = [

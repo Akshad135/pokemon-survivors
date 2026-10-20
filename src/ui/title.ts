@@ -14,11 +14,11 @@ import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks, playsShiny } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
-import { ROUTES } from '../site/routes'
+import { ROUTES, SOCIAL_IDS, SOCIALS, type SocialId } from '../site/routes'
 import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
 import { boundKey } from './inputLabels'
@@ -54,6 +54,7 @@ export type LobbyFocus =
   | 'ranking'
   | 'ideas'
   | 'play'
+  | SocialId
 
 /**
  * The meadow behind the lobby (`render/titleScene.ts`), where the partner
@@ -269,6 +270,23 @@ const discordCard = () => {
   })
   return el
 }
+
+/** An official profile (`SOCIALS`) in the top bar, beside Discord (landscape phones). */
+const socialButton = (id: SocialId, onClick: () => void) => iconButton(socialIcon(id), t().socials.follow(SOCIALS[id].name), onClick)
+
+/** An official profile under Discord (wide screens) with its name and handle, or just its icon beside Discord (portrait phones). */
+const socialCard = (id: SocialId) => {
+  const s = SOCIALS[id]
+  return h(
+    'button',
+    { class: `lobby-invites lobby-social ${id} box`, type: 'button', 'aria-label': t().socials.follow(s.name), title: t().socials.follow(s.name) },
+    h('img', { class: 'lobby-social-icon', src: socialIcon(id), alt: '' }),
+    h('span', { class: 'lobby-invites-text' }, h('b', {}, s.name), h('span', { class: 'lobby-invites-row' }, s.handle)),
+  )
+}
+
+/** Opens an official profile in a new tab (or its app). */
+const openSocial = (id: SocialId) => window.open(SOCIALS[id].url, '_blank', 'noopener')
 
 /**
  * Presente!: a wrapped box on the partner's stage, hopping and sparkling,
@@ -523,7 +541,8 @@ const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyG: 'gifts', KeyN: 'ne
  * Title screen over the live meadow: the pixel logo and a blinking "press
  * start", then the lobby. The top bar holds the Trainer chip, the wallet,
  * Novidades, `?` (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
- * Missões), the Hall da Fama card sits beside them (Convide amigos under it), the saved partner stands
+ * Missões), the Hall da Fama card sits beside them (Convide amigos, Discord and the official profiles
+ * under it; on landscape phones Discord and the profiles move to the top bar), the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
  * Loja, Ranking, Ideias). Arrows move between all of them by where they are on
  * screen; Enter presses the highlighted one, JOGAR at first. The movement
@@ -617,6 +636,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     ranking: () => ranking && openOver(ranking),
     ideas: () => ideas && openOver(ideas),
     play: actions.play,
+    tiktok: () => openSocial('tiktok'),
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
   // JOGAR isn't counted: `run_start` already says it, and it's a third of the lobby's presses.
@@ -635,7 +655,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
         left: chip.el,
         right: [
           walletChip(save.wallet),
-          ...(landscape ? [navigable(discordButton(press('discord')), 'discord')] : []),
+          ...(landscape ? [navigable(discordButton(press('discord')), 'discord'), ...SOCIAL_IDS.map((id) => navigable(socialButton(id, press(id)), id))] : []),
           navigable(newsButton(press('news')), 'news'),
           navigable(helpButton(press('help')), 'help'),
           navigable(gearButton(press('settings')), 'settings'),
@@ -654,7 +674,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       { class: 'lobby-side' },
       hall,
       ...(accountsEnabled ? [pressable(invitesCard(), 'friends')] : []),
-      ...(landscape ? [] : [pressable(discordCard(), 'discord')]),
+      ...(landscape ? [] : [h('div', { class: 'lobby-community' }, pressable(discordCard(), 'discord'), ...SOCIAL_IDS.map((id) => pressable(socialCard(id), id)))]),
     )
     inviteBanner(side, press('invite'), (banner) => navigable(banner, 'invite'))
 

@@ -11,7 +11,7 @@ import { FLASH_MODES } from '../render/flashes'
 import { loadSettings, writeSettings, type Settings } from './save'
 import { hint, menu, type Screen } from './screens'
 import { backButton, shellBody, tabStrip, topBar, segmented } from './shell'
-import { REPO_URL, ROUTES } from '../site/routes'
+import { REPO_URL, ROUTES, SOCIAL_IDS, SOCIALS } from '../site/routes'
 import { applyUiScale, maxUiZoom, UI_SCALES, uiZoom, type UiScale } from './uiScale'
 import { currentInstallOffer, installHelpScreen, onInstallChange, promptInstall } from './install'
 
@@ -202,7 +202,7 @@ let lastTab: Tab = 'sound'
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
  * (language, damage numbers, screen shake, flashes, UI size), Controles (touch joystick and the
  * remap screen) and Sobre (installing the app, what the game is, legal and
- * credits, GitHub, and the bug report form when there's an API to send it to).
+ * credits, GitHub, the official profiles, and the bug report form when there's an API to send it to).
  * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
@@ -263,7 +263,8 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
       case 'about':
         return [
           ...(bugReportsEnabled ? [openRow(m.reportBug, () => showSub(bugReportForm))] : []),
-          ...installRows(m.install, () => showSub(installHelpScreen)), linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
+          ...installRows(m.install, () => showSub(installHelpScreen)), linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true),
+          ...SOCIAL_IDS.map((id) => linkRow(t().socials.follow(SOCIALS[id].name), SOCIALS[id].url, true))]
     }
   }
 

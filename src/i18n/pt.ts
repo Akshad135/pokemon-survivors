@@ -369,6 +369,11 @@ export const pt = {
     gateGuestNote: 'Como convidado, o progresso fica só neste aparelho e suas partidas não entram no ranking.',
   },
 
+  /** The game's official profiles (`SOCIALS`): the lobby's cards and Ajustes → Sobre. Network names stay as they are. */
+  socials: {
+    follow: (name: string) => `Siga no ${name}`,
+  },
+
   /** The community Discord: its screen (the lobby's Discord button, the Trainer Card's row) and linking a Discord account. */
   discord: {
     title: 'DISCORD',
