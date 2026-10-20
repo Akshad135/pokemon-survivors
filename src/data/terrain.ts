@@ -85,7 +85,13 @@ export const TERRAIN = {
   /** No terrain within this distance of where the run starts. */
   clearStart: 320,
   /** Relative odds of what a cell holds (a landmark, `data/landmarks.ts`, takes its cell first). */
-  weights: { none: 28, rocks: 16, grove: 17, bushes: 10, log: 6, cliff: 11, lake: 9, tower: 4 } satisfies Record<FeatureKind, number>,
+  weights: { none: 20, rocks: 15, grove: 18, bushes: 12, log: 7, cliff: 11, lake: 9, tower: 4 } satisfies Record<FeatureKind, number>,
+  /**
+   * Single bushes, rocks and trees strewn around a cell's feature (none
+   * around a landmark): up to `max`, kept `clear` px from the feature and
+   * from each other, picked by `weights`.
+   */
+  scatter: { max: 3, clear: 22, spacing: 40, weights: { bush: 5, rock: 3, tree: 3 } satisfies Partial<Record<SolidKind, number>> },
   /** Walking speed in water (Water types and flyers swim or fly over it). */
   waterPace: 0.62,
   /** How fast the player's speed follows the stick on ice (per second): low means sliding. */

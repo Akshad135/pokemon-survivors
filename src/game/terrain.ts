@@ -11,6 +11,7 @@ import { burst } from './effects'
 import { roomOf } from './room'
 import { isAirborne } from './traits'
 import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
 
 /**
  * Terrain on the map: each world cell deterministically holds at most one
@@ -57,6 +58,8 @@ export type TerrainState = { seed: number; cells: Map<number, Feature | null> }
 export const createTerrain = (seed: number): TerrainState => ({ seed: Math.imul(seed | 0, 2654435761) >>> 0, cells: new Map() })
 
 const KINDS = Object.entries(TERRAIN.weights) as Array<[FeatureKind, number]>
+const SCATTER_KINDS = Object.entries(TERRAIN.scatter.weights) as Array<['bush' | 'rock' | 'tree', number]>
+const SCATTER_VARIANTS = { bush: TERRAIN.bushVariants, rock: TERRAIN.rockVariants, tree: TERRAIN.treeVariants } as const
 const LANDMARK_KINDS = LANDMARK_IDS.map((id) => [id, LANDMARK.weights[id]] as const)
 
 const at = (e: Ellipse, x: number, y: number): Ellipse => ({ x: e.x + x, y: e.y + y, rx: e.rx, ry: e.ry })
@@ -66,9 +69,9 @@ type Draft = { solids: Array<Omit<Solid, 'foot' | 'loot'> & { foot: readonly Ell
 
 /** A cluster's single pieces and how many of them (rocks, a grove, bushes). */
 const CLUSTERS = {
-  rocks: { solid: 'rock', min: 1, spread: 3, variants: TERRAIN.rockVariants },
-  grove: { solid: 'tree', min: 2, spread: 3, variants: TERRAIN.treeVariants },
-  bushes: { solid: 'bush', min: 2, spread: 3, variants: TERRAIN.bushVariants },
+  rocks: { solid: 'rock', min: 2, spread: 2, variants: TERRAIN.rockVariants },
+  grove: { solid: 'tree', min: 3, spread: 3, variants: TERRAIN.treeVariants },
+  bushes: { solid: 'bush', min: 2, spread: 4, variants: TERRAIN.bushVariants },
 } as const
 
 const draft = (kind: Exclude<FeatureKind, 'none'>, h: (salt: number) => number): Draft => {
@@ -134,6 +137,27 @@ const draftLandmark = (h: (salt: number) => number): Draft & { id: LandmarkId; v
   return { id, variant, lake: null, solids: plan.pieces.map((p) => ({ kind: p.kind, x: p.x, y: p.y, variant: p.variant, foot: p.foot, loot: p.loot })) }
 }
 
+/**
+ * Single pieces strewn about cell (cx, cy) around its feature's footprint
+ * `feet` (world px): each candidate spot is dropped if it comes near the
+ * feature or another piece, so they never close a passage.
+ */
+const scatter = (h: (salt: number) => number, ox: number, oy: number, feet: readonly Ellipse[]): Solid[] => {
+  const { max, clear, spacing } = TERRAIN.scatter
+  const C = TERRAIN.cell
+  const edge = TERRAIN.margin + 14
+  const out: Solid[] = []
+  const count = Math.floor(h(80) * (max + 1))
+  for (let i = 0; i < count; i++) {
+    const x = Math.round(ox + edge + h(81 + i * 4) * (C - 2 * edge))
+    const y = Math.round(oy + edge + h(82 + i * 4) * (C - 2 * edge))
+    if (feet.some((e) => depth(e, x, y, clear) < 1) || out.some((s) => dm.sq(s.x - x) + dm.sq(s.y - y) < spacing * spacing)) continue
+    const kind = weightedPick(() => h(83 + i * 4), SCATTER_KINDS)
+    out.push({ kind, x, y, variant: Math.floor(h(84 + i * 4) * SCATTER_VARIANTS[kind]), foot: [at(SOLID_FOOT[kind], x, y)] })
+  }
+  return out
+}
+
 /** The feature living in world cell (cx, cy), if any. Pure: same seed, same map. */
 export const featureAt = (seed: number, cx: number, cy: number): Feature | null => {
   const C = TERRAIN.cell
@@ -146,7 +170,10 @@ export const featureAt = (seed: number, cx: number, cy: number): Feature | null 
   const h = (salt: number) => hash2(cx, cy, seed + salt)
   const mark = landmarkCell(seed, cx, cy) ? draftLandmark(h) : null
   const kind = mark ? null : weightedPick(() => h(0), KINDS)
-  if (kind === 'none') return null
+  if (kind === 'none') {
+    const strewn = scatter(h, ox, oy, [])
+    return strewn.length > 0 ? { solids: strewn, lake: null } : null
+  }
   const d = mark ?? draft(kind!, h)
   const feet = [...d.solids.flatMap((s) => s.foot), ...(d.lake?.foot ?? [])]
   const minX = Math.min(...feet.map((e) => e.x - e.rx))
@@ -159,8 +186,10 @@ export const featureAt = (seed: number, cx: number, cy: number): Feature | null 
   const cell = cellKey(cx, cy)
   const shift = (p: Pos) => ({ x: ax + p.x, y: ay + p.y })
   const plan = mark && landmarkPlan(mark.id, mark.variant)
+  const solids: Solid[] = d.solids.map((s) => ({ kind: s.kind, x: ax + s.x, y: ay + s.y, variant: s.variant, foot: s.foot.map((e) => at(e, ax, ay)), ...(s.loot ? { loot: cell } : {}) }))
+  const placed = [...solids.flatMap((s) => s.foot), ...(d.lake?.foot.map((e) => at(e, ax, ay)) ?? [])]
   return {
-    solids: d.solids.map((s) => ({ kind: s.kind, x: ax + s.x, y: ay + s.y, variant: s.variant, foot: s.foot.map((e) => at(e, ax, ay)), ...(s.loot ? { loot: cell } : {}) })),
+    solids: mark ? solids : [...solids, ...scatter(h, ox, oy, placed)],
     lake: d.lake && { x: ax, y: ay, variant: d.lake.variant, foot: d.lake.foot.map((e) => at(e, ax, ay)) },
     ...(mark && plan
       ? {

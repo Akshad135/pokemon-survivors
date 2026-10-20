@@ -895,6 +895,70 @@ export const solidsInView = (g: Game, camX: number, camY: number, w: number, h: 
   for (const f of featuresNear(g, camX + w / 2, camY + h / 2 + 60, w / 2 + 90, h / 2 + 150)) for (const s of f.solids) out.push(s)
 }
 
+/* ---------------- Skirts ---------------- */
+
+type Tuft = { rows: readonly string[]; palette: Readonly<Record<string, string>> }
+
+/** What grows at the foot of scenery in each biome: grass and flowers, ferns and mushrooms, pebbles, drifts, dead tufts. */
+const SKIRT_TUFTS: Record<BiomeId, readonly Tuft[]> = {
+  meadow: [
+    { rows: ['1.1.1', '12121'], palette: { 1: '#2f7a3a', 2: '#4f9e48' } },
+    { rows: ['1.1', '.1.'], palette: { 1: '#5a9a40' } },
+    { rows: ['.1.', '121', '.1.'], palette: { 1: '#f87890', 2: '#f8e048' } },
+    { rows: ['.1.', '121', '.1.'], palette: { 1: '#ffffff', 2: '#f8b030' } },
+  ],
+  forest: [
+    { rows: ['1...1', '.1.1.', '..1..'], palette: { 1: '#2a6a30' } },
+    { rows: ['1.1.1', '12121'], palette: { 1: '#1c4a24', 2: '#2f7032' } },
+    { rows: ['.11.', '1221', '.33.'], palette: { 1: '#902820', 2: '#e04838', 3: '#e8d8c0' } },
+    { rows: ['1..', '.2.', '..1'], palette: { 1: '#c87830', 2: '#e8a040' } },
+  ],
+  cave: [
+    { rows: ['1..', '..2', '.1.'], palette: { 1: '#4a3e40', 2: '#a89a98' } },
+    { rows: ['.1', '12'], palette: { 1: '#3c3234', 2: '#867878' } },
+    { rows: ['.1.', '121'], palette: { 1: '#283878', 2: '#88b0f8' } },
+  ],
+  snow: [
+    { rows: ['.111.', '12221'], palette: { 1: '#f8fcff', 2: '#ffffff' } },
+    { rows: ['1.1', '.1.', '1.1'], palette: { 1: '#90b0d0' } },
+    { rows: ['.11.', '1221'], palette: { 1: '#d8e6f6', 2: '#b8c8e0' } },
+  ],
+  tower: [
+    { rows: ['1...1', '.1.1.', '.121.'], palette: { 1: '#4c4060', 2: '#6c6080' } },
+    { rows: ['1.1', '.2.', '1.1'], palette: { 1: '#b070c8', 2: '#f0d0ff' } },
+    { rows: ['1..', '..2', '.1.'], palette: { 1: '#3c3448', 2: '#8a80a0' } },
+  ],
+}
+
+const SKIRT_LOOKS = 4
+
+/** A ring of tufts around a footprint's edge (`look` picks one of a few arrangements). Anchored at the foot's center. */
+const skirt = (biome: BiomeId, look: number): Piece => {
+  const g = grid(48, 18)
+  const tufts = SKIRT_TUFTS[biome]
+  for (let i = 0; i < 7; i++) {
+    const a = noise(i, look, 3) * Math.PI * 2
+    const r = 0.85 + noise(i, look, 4) * 0.35
+    const tuft = tufts[Math.floor(noise(i, look, 5) * tufts.length)]!
+    // Mostly in front and to the sides, where the foot meets the ground in sight.
+    const x = 24 + Math.cos(a) * 17 * r
+    const y = 9 + Math.abs(Math.sin(a)) * 5 * r * (noise(i, look, 6) < 0.75 ? 1 : -1)
+    stamp(g, tuft.rows, tuft.palette, x - (tuft.rows[0]!.length >> 1), y - tuft.rows.length + 1)
+  }
+  return piece(g, 24, 9)
+}
+
+const skirts = canvasCache<string, Piece>()
+
+const skirtOf = (biome: BiomeId, look: number) => {
+  const key = `${biome}:${look}`
+  let p = skirts.get(key)
+  if (!p) skirts.set(key, (p = skirt(biome, look)))
+  return p
+}
+
+const SKIRTED: ReadonlySet<string> = new Set<SolidKind>(['rock', 'tree', 'bush', 'log'])
+
 const SHADOW = 'rgba(16,40,16,0.3)'
 const SHADOW_RX: Record<Exclude<SolidKind, 'cliff'>, number> = { rock: 10, tree: 9, bush: 10, log: 15, tower: 17 }
 
@@ -916,6 +980,7 @@ export const drawTerrainGround = (ctx: CanvasRenderingContext2D, g: Game, biome:
       } else {
         const rx = shadowOf(s.kind)
         if (rx > 0) ctx.drawImage(ellipse(rx, Math.round(rx * 0.4), SHADOW), Math.round(s.x + 2 - rx), Math.round(s.y - rx * 0.4))
+        if (SKIRTED.has(s.kind)) blit(ctx, skirtOf(biome, (s.x * 7 + s.y * 13) & (SKIRT_LOOKS - 1)), s.x, s.y + 1)
       }
     }
   }
