@@ -96,6 +96,12 @@ export const siteEs: SiteMessages = {
     shinyNote: 'Puede aparecer shiny (1 de cada 450): élite con 8x de HP.',
     summoned: (by: string) => `Invocado por ${by}`,
     behavior: 'Comportamiento',
+    legendMode: 'Modo Legendario',
+    capture: (need: number) => (need === 1 ? 'Véncelo 1 vez como jefe, en cualquier modo, y se vuelve jugable en el Modo Legendario (ranking propio, horda más dura, despertares en el Nv 12 y 28).' : `Véncelo ${need} veces como jefe, en cualquier modo, y se vuelve jugable en el Modo Legendario (ranking propio, horda más dura, despertares en el Nv 12 y 28).`),
+    captureLast: 'El último trofeo: solo se deja capturar en el modo infinito, después de capturar a los otros 22 legendarios.',
+    captureShiny: 'Vencer a uno shiny en la victoria de la captura, o después, desbloquea su forma shiny.',
+    innate: (name: string) => `Innata (siempre activa): ${name}`,
+    opens: (move: string) => `Empieza con ${move}`,
   },
 
   /** Enemy traits, built from `data/traits.ts`. */
@@ -213,6 +219,7 @@ export const siteEs: SiteMessages = {
       places: 'Lugares: cueva, cementerio y cielo',
       landmarks: 'Puntos de interés del mapa',
       megas: 'Megaevolución',
+      legends: 'Modo Legendario',
       shinies: 'Shinies',
       eggs: 'Huevos e incubadora',
       items: 'Objetos en el mapa',
@@ -360,6 +367,17 @@ export const siteEs: SiteMessages = {
       },
       flute: 'Poké Flute (objeto del mapa)',
       itemsNote: 'King\'s Rock aumenta la probabilidad de estado, Toxic Orb aumenta el daño de quemadura y veneno, y Light Clay hace que los estados duren más.',
+    },
+    legends: {
+      paragraphs: (m: { count: number; awaken: readonly number[] }) => [
+        `Los ${m.count} legendarios del juego se pueden capturar y jugar en el Modo Legendario. Para capturar uno, véncelo como jefe, en cualquier modo: en cada victoria antes de la captura se escapa de la Poké Ball y el juego lleva la cuenta (Kyogre se escapó… 2/3); en la victoria que la completa, queda capturado y aparece en la pestaña Legendarios de la selección de compañero. Vencer a uno shiny en la victoria de la captura, o en cualquier victoria después, desbloquea su forma shiny.`,
+        `En el Modo Legendario el legendario no evoluciona: despierta en el Nv ${m.awaken[0]} y en el Nv ${m.awaken[1]} (Habilidad, fuerza y una carga de Olvidar; Kyogre y Groudon se vuelven Primal, Rayquaza se vuelve Mega), empieza con su movimiento legendario y una habilidad innata siempre activa, y la horda viene más dura (Presión). La partida dura lo mismo de siempre, las tres dificultades siguen valiendo y el modo tiene su propio ranking, separado por dificultad.`,
+      ],
+      legendHead: 'Legendario',
+      whereHead: 'Dónde vencerlo',
+      winsHead: 'Victorias',
+      innateHead: 'Innata',
+      where: { rift: 'Grieta legendaria', trio: 'Trío legendario', mythical: 'Junto a Mewtwo (1 de cada 10)', finale: 'Jefe final', endless: 'Modo infinito, al final' },
     },
     megas: {
       paragraphs: (m) => [

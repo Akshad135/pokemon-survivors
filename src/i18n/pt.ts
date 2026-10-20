@@ -426,7 +426,7 @@ export const pt = {
     myProfile: 'Meu perfil',
     back: 'Voltar',
     resets: 'Hoje e Semana viram à meia-noite de Brasília (a semana começa na segunda).',
-    hintKeys: '↑ ↓ jogador · ← → período · Q E dificuldade · F amigos · ENTER perfil · ESC voltar',
+    hintKeys: '↑ ↓ jogador · ← → período · Q E dificuldade · M modo · F amigos · ENTER perfil · ESC voltar',
     hintTouch: 'Toque num treinador para ver o perfil',
     outcomes: { victory: 'Venceu', death: 'Desmaiou', quit: 'Desistiu' },
     /** End of a run: where the player stands now. */
@@ -451,6 +451,9 @@ export const pt = {
     challengePractice: 'Treino: sua tentativa oficial de hoje já foi.',
     challengePracticePlace: (rank: number, total: number) => `Treino · sua tentativa oficial: #${rank} de ${total}`,
     challengeGuest: 'Treino local: entre com uma conta para entrar no ranking do desafio.',
+    /** The boards' two sides (`RunMode`): the regular runs and the Legend mode's (a legend played). */
+    modes: { standard: 'Padrão', legend: 'Lendário' },
+    legendGroup: 'Lendários',
   },
 
   /** Public profiles and the profile editor. */
@@ -463,6 +466,8 @@ export const pt = {
     brought: (n: number) => (n === 1 ? '1 amigo trazido' : `${n} amigos trazidos`),
     followGuest: 'Entre com uma conta para seguir treinadores.',
     records: 'Recordes',
+    /** The Legend mode's records, under the regular ones (only when there's one). */
+    legendRecords: 'Recordes no Modo Lendário',
     noRecord: '—',
     dex: 'Pokédex',
     dexLine: (caught: number, seen: number, total: number) => `${caught}/${total} capturados · ${seen} vistos`,
@@ -4063,6 +4068,29 @@ export const pt = {
     } satisfies Partial<Record<LegendId, string>>,
     /** A boss of the player's own species (Mewtwo's finale for a Mewtwo). */
     clone: (name: string) => `${name} Clone`,
+    /* Capturing legends (`game/capture.ts`, `ui/capture.ts`): the toasts as one falls, and the partner select's Lendários tab. */
+    escaped: (name: string, wins: number, need: number) => `*${name}* escapou… _${wins}/${need}_`,
+    escapedHint: (left: number) => (left === 1 ? 'Vença mais 1 vez para capturá-lo.' : `Vença mais ${left} vezes para capturá-lo.`),
+    /** Arceus before it can count: the endless mode, after the other legends (`left` still to capture). */
+    arceusHint: (left: number) => (left > 0 ? `Só se deixa capturar no modo sem fim, depois dos outros lendários (faltam ${left}).` : 'Só se deixa capturar no modo sem fim.'),
+    caught: (name: string) => `*${name}* capturado! Jogável no _Modo Lendário_.`,
+    caughtShiny: (name: string) => `*${name}* _shiny_ capturado! Jogável no _Modo Lendário_.`,
+    shinyUnlocked: (name: string) => `*${name}* _shiny_ liberado no _Modo Lendário_!`,
+    caughtHint: 'Escolha-o na aba Lendários da seleção de parceiro.',
+    tab: 'LENDÁRIOS',
+    wins: (n: string) => `Vitórias: ${n}`,
+    lockedButton: 'Não capturado',
+    /** Where each legend is beaten (`LegendSource`). */
+    where: {
+      rift: 'Espera numa _fenda lendária_: entre no portal e vença-o lá dentro.',
+      trio: 'Vem como chefe com o _trio lendário_ sorteado na partida.',
+      mythical: 'Às vezes (1 partida em 10) aparece junto do *Mewtwo* no final.',
+      finale: 'É o chefe final: vença uma partida.',
+      endless: 'O último troféu: depois de capturar os outros 22, vença-o no _modo sem fim_.',
+    },
+    rule: (need: number) => (need === 1 ? 'Vença-o 1 vez como chefe, em qualquer modo, para capturá-lo.' : `Vença-o ${need} vezes como chefe, em qualquer modo, para capturá-lo.`),
+    shinyRule: 'Vencer um shiny na vitória da captura, ou depois, libera a forma shiny.',
+    selectNote: 'Lendários jogam o *Modo Lendário*: ranking próprio, horda mais forte, despertares no Nv 12 e 28.',
   },
 } satisfies ContentTexts & Record<string, unknown>
 

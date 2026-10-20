@@ -119,6 +119,13 @@ export const sitePt = {
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
     summoned: (by: string) => `Chamado por ${by}`,
     behavior: 'Comportamento',
+    /** A legendary's card: how to capture it for the Legend mode (`game/capture.ts`). */
+    legendMode: 'Modo Lendário',
+    capture: (need: number) => (need === 1 ? 'Vença-o 1 vez como chefe, em qualquer modo, e ele fica jogável no Modo Lendário (ranking próprio, horda mais forte, despertares no Nv 12 e 28).' : `Vença-o ${need} vezes como chefe, em qualquer modo, e ele fica jogável no Modo Lendário (ranking próprio, horda mais forte, despertares no Nv 12 e 28).`),
+    captureLast: 'O último troféu: só se deixa capturar no modo sem fim, depois que os outros 22 lendários forem capturados.',
+    captureShiny: 'Vencer um shiny na vitória da captura, ou depois, libera a forma shiny.',
+    innate: (name: string) => `Inata (sempre ativa): ${name}`,
+    opens: (move: string) => `Começa com ${move}`,
   },
 
   /** Enemy traits, built from `data/traits.ts`. */
@@ -237,6 +244,7 @@ export const sitePt = {
       places: 'Lugares: caverna, cemitério e céu',
       landmarks: 'Pontos de interesse do mapa',
       megas: 'Mega Evolução',
+      legends: 'Modo Lendário',
       shinies: 'Shinies',
       eggs: 'Ovos e incubadora',
       items: 'Itens no mapa',
@@ -384,6 +392,18 @@ export const sitePt = {
       } satisfies Record<StatusKind, unknown>,
       flute: 'Poké Flute (item do mapa)',
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
+    },
+    /** The Legend mode: capturing legends and playing them (`game/capture.ts`, `game/legend.ts`). */
+    legends: {
+      paragraphs: (m: { count: number; awaken: readonly number[] }) => [
+        `Os ${m.count} lendários do jogo podem ser capturados e jogados no Modo Lendário. Para capturar um, vença-o como chefe, em qualquer modo: a cada vitória antes da captura ele escapa da Poké Ball e o jogo conta (Kyogre escapou… 2/3); na vitória que fecha a conta, ele é capturado e aparece na aba Lendários da seleção de parceiro. Vencer um shiny na vitória da captura, ou em qualquer vitória depois, libera a forma shiny.`,
+        `No Modo Lendário o lendário não evolui: ele desperta no Nv ${m.awaken[0]} e no Nv ${m.awaken[1]} (Habilidade, força e uma carga de Esquecer; Kyogre e Groudon viram Primal, Rayquaza vira Mega), começa com o golpe lendário e uma habilidade inata sempre ativa, e a horda vem mais forte (Pressão). A partida tem o mesmo tempo de sempre, as três dificuldades continuam valendo e o modo tem um ranking só dele, separado por dificuldade.`,
+      ],
+      legendHead: 'Lendário',
+      whereHead: 'Onde vencer',
+      winsHead: 'Vitórias',
+      innateHead: 'Inata',
+      where: { rift: 'Fenda lendária', trio: 'Trio lendário', mythical: 'Junto do Mewtwo (1 em 10)', finale: 'Chefe final', endless: 'Modo sem fim, por último' },
     },
     megas: {
       paragraphs: (m: { lines: number; twins: string; duration: number; recharge: number; intro: string }) => [

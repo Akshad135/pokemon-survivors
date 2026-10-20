@@ -402,7 +402,9 @@ button {
 }
 
 .partner-roster.eggs .partner-pane,
-.partner-roster:not(.eggs) .partner-eggs {
+.partner-roster.legends .partner-pane,
+.partner-roster:not(.eggs) .partner-eggs,
+.partner-roster:not(.legends) .partner-legends {
   display: none;
 }
 
@@ -635,6 +637,52 @@ button {
   flex: none;
   align-self: center;
   min-height: 44px;
+}
+
+/* Lendários: the legends' grid (the eggs' grid rules) and a line on what the mode is. */
+.partner-legends {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.partner-legend-note {
+  flex: none;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.1;
+  color: #505068;
+  text-align: center;
+}
+
+/* A legend not captured yet: its wins so far in the corner. */
+.partner-cell-count {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  padding: 0 3px;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1;
+  color: #fff;
+  background: #283040;
+  border-radius: 3px;
+}
+
+.partner-legend-wins,
+.partner-legend-mode {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: #505068;
+}
+
+.partner-legend-wins {
+  font-size: 20px;
+  color: #283040;
 }
 
 /* The partner: Idle sprite on a pedestal tinted by its type, role, stats and evolution line. */
@@ -1169,6 +1217,26 @@ button {
     background: var(--paper);
     border-color: var(--paper);
   }
+  /* Three tabs on a narrow phone: label and count closer together. */
+  .partner-tab {
+    gap: 5px;
+    padding: 0 4px;
+    font-size: 8px;
+  }
+  .partner-tab small {
+    font-size: 16px;
+  }
+  /* The roster has no paper here: the Legend mode's line gets the tabs' dark plate. */
+  .partner-legend-note {
+    padding: 4px 8px;
+    font-size: 16px;
+    color: #c8d0ff;
+    background: rgba(24, 30, 48, 0.78);
+    border-radius: 8px;
+  }
+  .partner-legend-note b {
+    color: #fff;
+  }
   .partner-pane {
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1357,6 +1425,10 @@ button {
   .partner-eggs .incubator-entry img {
     width: 24px;
     height: 24px;
+  }
+  /* Short landscape screens keep the height for the legends themselves. */
+  .partner-legend-note {
+    display: none;
   }
   .partner-hero {
     gap: 8px;

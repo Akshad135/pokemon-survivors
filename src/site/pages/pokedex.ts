@@ -7,6 +7,7 @@ import { HATCHLINGS, isHatchling, PLAYABLE } from '../../data/hatchlings'
 import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
+import { isLegend, LEGENDS, type LegendId, type LegendUnlock } from '../../data/legends'
 import { BRANCHES, branchesAt, branchStage, familyDex } from '../../data/branches'
 import { ABILITIES, isHidden, type AbilitySet } from '../../data/abilities'
 import { abilitySet } from '../../game/abilities'
@@ -206,6 +207,20 @@ export const patternText = (p: BossPattern, m: SiteMessages) => {
   return p.stance ? `${m.patterns.stance[p.stance]}: ${text}` : text
 }
 
+/** A legendary's card: how it's captured for the Legend mode, its innate and the move it opens with (`data/legends.ts`). */
+const legendSection = (id: LegendId, m: SiteMessages) => {
+  const def = LEGENDS[id]
+  const unlock: LegendUnlock = def.unlock
+  const opener = MOVES[def.learnset[0][0]!]
+  return html`<h3>${m.pokedex.legendMode}</h3>
+    <ul class="list">
+      <li>${unlock.last ? m.pokedex.captureLast : m.pokedex.capture(unlock.wins)}</li>
+      <li>${m.pokedex.innate(ABILITIES[def.innate.ability].name)}</li>
+      <li>${m.pokedex.opens(opener.name)} ${typeBadge(opener.type, m)}</li>
+    </ul>
+    <p class="note">★ ${m.pokedex.captureShiny}</p>`
+}
+
 const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessages) => {
   const e: EnemyDef = ENEMIES[entry.source.id]
   const patterns = BOSS_PATTERNS[entry.source.id] ?? []
@@ -222,6 +237,7 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
     <h3>${m.pokedex.appears}</h3>
     <ul class="list">${appearances(entry.source.id).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>
     ${patterns.length > 0 && html`<h3>${m.pokedex.attacks}</h3><ul class="list">${patterns.map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`}
+    ${isLegend(entry.source.id) && legendSection(entry.source.id, m)}
     ${entry.sprites.shiny && html`<p class="note">★ ${m.pokedex.shinyNote}</p>`}`
 }
 

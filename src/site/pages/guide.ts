@@ -14,6 +14,9 @@ import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../../data/megas'
 import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
+import { ABILITIES } from '../../data/abilities'
+import { AWAKEN_AT, LEGEND_IDS, LEGENDS } from '../../data/legends'
+import { legendSource } from '../../game/capture'
 import { CAVE, GRAVEYARD, PLACE, PLACE_IDS, PLACES, SKY, WING_IDS, WINGS } from '../../data/places'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { BOSS_FIGHT, bossCandidates, ELITE, EVENTS, FINALE, MYTHICALS, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart, TRIO_IDS, TRIOS, type BossEvent } from '../../data/waves'
@@ -341,6 +344,14 @@ const rifts = (locale: Locale, m: SiteMessages) => {
     )}`
 }
 
+/** The Legend mode: how each legend is captured (`game/capture.ts`) and what it plays with. */
+const legends = (locale: Locale, m: SiteMessages) => {
+  const g = m.guide.legends
+  const rows = LEGEND_IDS.map((id) => [bossName(locale, id), g.where[legendSource(id)], String(LEGENDS[id].unlock.wins), ABILITIES[LEGENDS[id].innate.ability].name])
+  return html`${paragraphs(g.paragraphs({ count: LEGEND_IDS.length, awaken: AWAKEN_AT }))}
+    ${table([g.legendHead, g.whereHead, g.winsHead, g.innateHead], rows)}`
+}
+
 const places = (locale: Locale, m: SiteMessages) => {
   const p = m.guide.places
   const num = (v: number) => v.toLocaleString(m.lang.tag)
@@ -555,6 +566,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   bosses,
   traits,
   rifts,
+  legends,
   places,
   landmarks,
   megas,

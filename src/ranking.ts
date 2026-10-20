@@ -4,7 +4,7 @@ import type { PlayableId } from './data/hatchlings'
 import type { Difficulty } from './game/difficulty'
 import { isRecord } from './game/parse'
 import type { DayKey } from './game/day'
-import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunRanks, type RunResult } from './game/ranking'
+import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunMode, type RunRanks, type RunResult } from './game/ranking'
 import { firstTouch, landingRef, parseInvites, REF_PARAM } from './game/referral'
 import type { Replay } from './game/replay'
 import { ROUTES, SITE_URL } from './site/routes'
@@ -167,12 +167,12 @@ export const startRanked = (challenge: DayKey | null = null): RankedRun | null =
 
 /* ---------------- Boards, profiles, follows ---------------- */
 
-/** Which board to show (see `BoardQuery` on the server). */
-export type BoardFilter = { difficulty: Difficulty; period: BoardPeriod; starter: PlayableId | null; friends: boolean }
+/** Which board to show (see `BoardQuery` on the server): the regular runs' or the Legend mode's (`mode`), by difficulty. */
+export type BoardFilter = { mode: RunMode; difficulty: Difficulty; period: BoardPeriod; starter: PlayableId | null; friends: boolean }
 
 /** A board, or null when the API can't be reached. Friends boards need an account. */
 export const fetchBoard = async (f: BoardFilter): Promise<Board | null> => {
-  const params = new URLSearchParams({ period: f.period, ...(f.starter ? { starter: f.starter } : {}), ...(f.friends ? { friends: '1' } : {}) })
+  const params = new URLSearchParams({ period: f.period, ...(f.mode === 'legend' ? { mode: f.mode } : {}), ...(f.starter ? { starter: f.starter } : {}), ...(f.friends ? { friends: '1' } : {}) })
   const { body } = await read(`/boards/${f.difficulty}?${params}`, await sessionToken())
   // Our own API: a quick look at the shape is enough, the screens only show text.
   return isRecord(body) && Array.isArray(body.entries) ? (body as Board) : null
