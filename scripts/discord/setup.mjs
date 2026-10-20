@@ -31,7 +31,10 @@ const API = 'https://discord.com/api/v10'
 const P = {
   kick: 1n << 1n,
   ban: 1n << 2n,
+  manageChannels: 1n << 4n,
+  manageGuild: 1n << 5n,
   addReactions: 1n << 6n,
+  viewAuditLog: 1n << 7n,
   stream: 1n << 9n,
   viewChannel: 1n << 10n,
   sendMessages: 1n << 11n,
@@ -43,6 +46,9 @@ const P = {
   muteMembers: 1n << 22n,
   moveMembers: 1n << 24n,
   manageNicknames: 1n << 27n,
+  manageRoles: 1n << 28n,
+  manageWebhooks: 1n << 29n,
+  manageEvents: 1n << 33n,
   manageThreads: 1n << 34n,
   createPublicThreads: 1n << 35n,
   createPrivateThreads: 1n << 36n,
@@ -52,6 +58,10 @@ const P = {
 }
 const MODERATE =
   P.kick | P.ban | P.manageMessages | P.mentionEveryone | P.muteMembers | P.moveMembers | P.manageNicknames | P.manageThreads | P.moderateMembers
+// Staff also run the server by hand: channels, roles below theirs, Onboarding, AutoMod, events.
+// This script still owns what it sets up, so a rerun reverts hand edits to those.
+const MANAGE =
+  P.manageChannels | P.manageGuild | P.viewAuditLog | P.manageRoles | P.manageWebhooks | P.manageEmojis | P.manageEvents
 const TALK = P.sendMessages | P.createPublicThreads | P.createPrivateThreads | P.sendMessagesInThreads
 
 // Behind the gate a newcomer only listens: no camera, screen share or soundboard either.
@@ -299,7 +309,7 @@ for (const role of ROLES) {
     hoist: !!role.hoist,
     mentionable: role.name.endsWith('Ping'),
     // Staff talk without needing the Trainer role on top.
-    permissions: (role.staff ? MODERATE | TALK | VOICE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
+    permissions: (role.staff ? MODERATE | MANAGE | TALK | VOICE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
   }
   const found = existingRoles.find((r) => r.name === role.name)
   roleId[role.name] = (found
