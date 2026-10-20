@@ -106,6 +106,7 @@ const LAYOUT = [
         slowmode: 30,
         topic: 'Say hi! Your name or nick, where you’re from, your favorite Pokémon and how you found the game.',
       },
+      { name: 'arrivals', readOnly: true, topic: 'Who just landed. Join messages live here so the chat stays clean.' },
       { name: 'announcements', type: 'news', readOnly: true, topic: 'Big news, events and giveaways.' },
       { name: 'patch-notes', type: 'news', readOnly: true, topic: `Every update, posted automatically. Full history: ${SITE}/en/changelog/` },
     ],
@@ -397,6 +398,8 @@ await discord('PATCH', `/guilds/${GUILD}`, {
   explicit_content_filter: 2,
   default_message_notifications: 1,
   rules_channel_id: channelId['rules'],
+  // Join, boost and setup-tip messages go to #arrivals instead of the chat.
+  system_channel_id: channelId['arrivals'],
   public_updates_channel_id: channelId['mod-log'],
   preferred_locale: 'en-US',
   description: 'A free browser survivors-like with Pokémon. Play at pokemonsurvivors.com',
