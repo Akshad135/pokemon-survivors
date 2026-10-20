@@ -279,6 +279,10 @@ export const es: Messages = {
     gateGuestNote: 'Como invitado, el progreso queda solo en este dispositivo y tus partidas no entran al ranking.',
   },
 
+  socials: {
+    follow: (name: string) => `Síguenos en ${name}`,
+  },
+
   discord: {
     title: 'DISCORD',
     open: 'Discord',

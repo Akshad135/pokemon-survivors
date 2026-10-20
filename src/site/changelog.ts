@@ -168,6 +168,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'TikTok oficial', en: 'Official TikTok', es: 'TikTok oficial' },
+        notes: [
+          {
+            pt: 'O jogo tem um TikTok oficial, @pokemonsurvivors. Ele fica embaixo do Discord no lobby (no topo, com o celular deitado) e em Ajustes → Sobre.',
+            en: "The game has an official TikTok, @pokemonsurvivors. It sits under Discord in the lobby (at the top with your phone sideways) and in Settings → About.",
+            es: 'El juego tiene un TikTok oficial, @pokemonsurvivors. Está debajo de Discord en el lobby (arriba con el celular acostado) y en Ajustes → Acerca de.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Normal ou Shiny, você escolhe', en: 'Normal or Shiny, your call', es: 'Normal o Shiny, tú eliges' },
         notes: [
           {
