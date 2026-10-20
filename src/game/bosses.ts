@@ -5,7 +5,7 @@ import type { RetinueRole } from '../data/domains'
 import type { EnemyId } from '../data/enemies'
 import { FINALE, fleesFrom } from '../data/waves'
 import {
-  attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, holdFloor, leadTime, patternLive, patternsOf, phaseAt, phasesOf,
+  attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, hasteOf, holdFloor, leadTime, nextPhase, patternLive, patternsOf, phasesOf,
   shouldEnrage, telegraph, tickStance, ultimateLength, waitsOnUltimate, type BossBlast, type BossFight,
 } from './bossFight'
 import { hurtPlayer } from './combat'
@@ -24,7 +24,7 @@ type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 
 
 /** Adds an enemy hazard (boss attacks, the horde's spit, an Alpha's shockwave). */
 export const spawnHazard = (g: Game, init: HazardInit) => {
-  g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, leaper: -1, world: false, angle: 0, len: 0, spin: 0, ...init })
+  g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, leaper: -1, world: false, angle: 0, len: 0, spin: 0, pull: 0, pullReach: 0, cover: 0, ...init })
 }
 
 /** How long a strike keeps hurting after it lands. */
@@ -163,7 +163,48 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | nul
       fight.blast = { left: windup, total: windup, x: boss.x, y: boss.y, damage: pattern.damage, safe: pattern.safe, radius: pattern.radius ?? 90, visual: pattern.visual }
       return
     }
+    case 'whirlpool': {
+      const center = pattern.target === 'player' ? p : boss
+      const count = attackCount(pattern.count, fight)
+      const windup = telegraph(pattern.windup, fight)
+      for (let i = 0; i < count; i++) {
+        const a = range(g.rng, 0, TAU)
+        const d = i === 0 ? 0 : range(g.rng, pattern.radius * 2, pattern.spread)
+        spawnHazard(g, {
+          kind: 'zone', visual: pattern.visual, x: center.x + dm.cos(a) * d, y: center.y + dm.sin(a) * d * 0.8, r: pattern.radius, damage: pattern.damage,
+          armAt: windup, disarmAt: windup + pattern.ttl, ttl: windup + pattern.ttl + 0.4, pull: pattern.pull, pullReach: pattern.reach,
+        })
+      }
+      return
+    }
+    case 'gust': {
+      const count = attackCount(pattern.count, fight)
+      const windup = telegraph(pattern.windup, fight)
+      const aim = dm.atan2(p.y - boss.y, p.x - boss.x)
+      for (let i = 0; i < count; i++) {
+        const a = count > 1 ? aim - pattern.arc / 2 + (pattern.arc * i) / (count - 1) : aim
+        spawnHazard(g, {
+          kind: 'shot', visual: pattern.visual, x: boss.x + dm.cos(a) * boss.radius, y: boss.y + dm.sin(a) * boss.radius,
+          vx: dm.cos(a) * pattern.speed, vy: dm.sin(a) * pattern.speed, r: pattern.radius, damage: pattern.damage,
+          armAt: windup, ttl: windup + 4, pull: -pattern.push, pullReach: pattern.reach,
+        })
+      }
+      return
+    }
+    case 'timeStop': {
+      if (!fight) return
+      fight.timeStop = { wait: telegraph(pattern.windup, fight), left: pattern.duration, total: pattern.duration }
+      return
+    }
   }
+}
+
+/** Counts a time stop down: its wait, then the seconds it holds the player's shots. */
+const updateTimeStop = (fight: BossFight, dt: number) => {
+  const s = fight.timeStop
+  if (!s) return
+  if (s.wait > 0) s.wait -= dt
+  else if ((s.left -= dt) <= 0) fight.timeStop = null
 }
 
 /** A hidden boss waits this far north of its home, out of everyone's reach, until its script lands it. */
@@ -259,10 +300,12 @@ const fireBeams = (g: Game, boss: Enemy, pattern: Extract<BossPattern, { kind: '
   const turn = range(g.rng, 0, 1) < 0.5 ? -1 : 1
   for (let i = 0; i < count; i++) {
     const a = aim + (i - (count - 1) / 2) * pattern.spread - (sweep / 2) * turn
-    const len = pattern.blocked && sweep === 0 ? rayToCover(g, boss.x, boss.y, dm.cos(a), dm.sin(a), pattern.length) : pattern.length
+    // A blocked beam stops at the first cover in its way; a sweeping one finds it again every tick (`cover`).
+    const len = pattern.blocked ? rayToCover(g, boss.x, boss.y, dm.cos(a), dm.sin(a), pattern.length) : pattern.length
     spawnHazard(g, {
       kind: 'beam', visual: pattern.visual, x: boss.x, y: boss.y - 6, r: pattern.width / 2, damage: pattern.damage, angle: a, len,
       spin: sweep === 0 ? 0 : (sweep * turn) / pattern.duration,
+      cover: pattern.blocked && sweep !== 0 ? pattern.length : 0,
       ...timing,
     })
   }
@@ -402,6 +445,8 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   const phase = phases[next]!
   const after = phases[next + 1]
   if (after && e.hp < after.below * e.maxHp) e.hp = Math.ceil(after.below * e.maxHp) + 1
+  // Before a rebirth (whose threshold is 0) a skipping hit still leaves a little of the phase to fight.
+  if (after?.rebirth !== undefined) e.hp = Math.max(e.hp, Math.ceil(e.maxHp * REBIRTH_FLOOR))
   if (offstage(e)) {
     e.x = fight.home.x
     e.y = fight.home.y
@@ -414,6 +459,9 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   fight.ultLeft = phase.ultimate ? phase.ultimate.first + fight.shift : Infinity
   fight.motion = null
   fight.blast = null
+  fight.timeStop = null
+  // Reborn (`BossPhase.rebirth`): it comes back from its last HP with a share of it.
+  if (phase.rebirth !== undefined) e.hp = Math.round(e.maxHp * phase.rebirth)
   e.cooldowns = phase.patterns.map((pt) => pt.every * 0.5 + fight.shift)
   // The last phase's attacks go with it.
   retain(g.hazards, (h) => h.world)
@@ -422,6 +470,9 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   g.flash = Math.max(g.flash, 0.5)
   g.events.push({ kind: 'bossPhase', enemy: e.kind, phase: next })
 }
+
+/** The least share of its HP a boss enters the phase before its rebirth with, however hard the hit that took it there. */
+const REBIRTH_FLOOR = 0.12
 
 /** Plays a phase's ultimate: announced as it begins, then its steps fire in turn. True while it plays (the other patterns wait). */
 const updateUltimate = (g: Game, e: Enemy, fight: BossFight, dt: number) => {
@@ -499,7 +550,7 @@ const enrage = (g: Game, e: Enemy) => {
  * chain a second attack. A `far` pattern that comes due waits, ready, until
  * the player keeps away.
  */
-export const updateBosses = (g: Game, dt: number) => {
+export const updateBosses = (g: Game, tick: number) => {
   const reach = bossReach(g)
   for (const e of g.enemies) {
     if (e.dying >= 0) continue
@@ -512,9 +563,12 @@ export const updateBosses = (g: Game, dt: number) => {
     const fight = e.fight
     // A `hold` phase doesn't give way before its ultimate has played.
     if (phases && fight && waitsOnUltimate(phases, fight)) e.hp = Math.max(e.hp, Math.min(e.maxHp, holdFloor(phases, fight, e.maxHp)))
+    // A hasted phase (`BossPhase.haste`) runs the boss's whole script faster.
+    const dt = tick * hasteOf(e.kind, fight)
     if (fight) fight.share = e.hp / e.maxHp
     if (phases && fight) {
-      const next = phaseAt(phases, fight.share)
+      // A rebirth waits for the phase before it to open first.
+      const next = fight.shift > 0 ? fight.phase : nextPhase(phases, fight.phase, e.hp, e.maxHp)
       if (next > fight.phase) enterPhase(g, e, fight, fight.phase + 1)
       fight.phaseAge += dt
       if (fight.shift > 0) {
@@ -530,6 +584,7 @@ export const updateBosses = (g: Game, dt: number) => {
     if (fight) {
       updateMotion(g, e, fight, dt)
       updateBlast(g, e, fight, dt)
+      updateTimeStop(fight, dt)
     }
     // Stunned, asleep or frozen bosses hold their attacks (paralysis and the Poké Flute pay off here); so does one mid-script.
     if (e.status.stun > 0 || isHeld(e.status) || bossAway(fight)) continue
@@ -597,9 +652,37 @@ export const beamDistance = (h: Pick<Hazard, 'x' | 'y' | 'angle' | 'len'>, x: nu
   return dm.hypot(x - (h.x + dx * along), y - (h.y + dy * along))
 }
 
-/** Moves enemy hazards, plays impacts as telegraphs land and hurts the player on contact. */
-export const updateHazards = (g: Game, dt: number) => {
+/** How many times as fast the fight's hazards run: a hasted phase's boss (`BossPhase.haste`) speeds them all. */
+const hazardHaste = (g: Game) => {
+  if (g.bossId === null) return 1
+  const boss = g.enemies.find((e) => e.id === g.bossId)
+  return boss && boss.dying < 0 ? hasteOf(boss.kind, boss.fight) : 1
+}
+
+/** Wind on the player: a whirlpool draws them to its eye, a gust shoves them along its flight (`Hazard.pull`). */
+const blowPlayer = (g: Game, h: Hazard, dt: number) => {
   const p = g.player
+  if (p.hidden) return
+  const dx = h.x - p.x
+  const dy = h.y - p.y
+  const d = dm.hypot(dx, dy)
+  if (d > h.pullReach) return
+  const speed = dm.hypot(h.vx, h.vy)
+  if (h.pull < 0 && speed > 0) {
+    p.x += (h.vx / speed) * -h.pull * dt
+    p.y += (h.vy / speed) * -h.pull * dt
+  } else if (d > 0.5) {
+    // A whirlpool pulls hardest by its eye, with 40% of it at the edge of its reach.
+    const step = h.pull > 0 ? Math.min(d, h.pull * (1 - (0.6 * d) / h.pullReach) * dt) : h.pull * dt
+    p.x += (dx / d) * step
+    p.y += (dy / d) * step
+  }
+}
+
+/** Moves enemy hazards, plays impacts as telegraphs land and hurts the player on contact. */
+export const updateHazards = (g: Game, tick: number) => {
+  const p = g.player
+  const dt = tick * hazardHaste(g)
   for (const h of g.hazards) {
     const before = h.age
     h.age += dt
@@ -618,7 +701,10 @@ export const updateHazards = (g: Game, dt: number) => {
     }
     if (h.leaper >= 0 && before < h.armAt && h.age >= h.armAt) land(g, h)
 
-    if (h.age < h.armAt || h.age > h.disarmAt || h.damage <= 0) continue
+    if (h.age < h.armAt || h.age > h.disarmAt) continue
+    if (h.cover > 0) h.len = rayToCover(g, h.x, h.y + 6, dm.cos(h.angle), dm.sin(h.angle), h.cover)
+    if (h.pull !== 0) blowPlayer(g, h, dt)
+    if (h.damage <= 0) continue
     // Air Lock: the world's attacks (the weather's and the biome's) can't touch the player.
     if (h.world && abilityImmune(g, 'weather')) continue
     if (h.kind === 'beam') {

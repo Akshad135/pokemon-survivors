@@ -7,6 +7,7 @@ import { onFloor } from '../game/arenaFloor'
 import { parked, safeAt } from '../game/bosses'
 import { phasesOf } from '../game/bossFight'
 import { arenaPoint, domainHere } from '../game/domain'
+import { groundAt, playerTypes } from '../game/terrain'
 import { encounterBeat, REVEAL_AT } from '../game/domainRules'
 import type { Enemy, Game, Hazard } from '../game/types'
 import type { RiftLegend } from '../data/rifts'
@@ -186,11 +187,13 @@ export const drawBlasts = (ctx: Ctx, g: Game, camX: number, camY: number, t: num
     const floor = room ? room.layout.floor : []
     const ox = room?.x ?? 0
     const oy = room?.y ?? 0
+    // Burning ground spares no one but Fire types: no dots there.
+    const burns = !playerTypes(g).includes('fire')
     const x0 = Math.floor(camX / SAFE_STEP) * SAFE_STEP
     const y0 = Math.floor(camY / SAFE_STEP) * SAFE_STEP
     for (let y = y0; y < camY + h; y += SAFE_STEP) {
       for (let x = x0; x < camX + w; x += SAFE_STEP) {
-        if ((!room || onFloor(floor, x - ox, y - oy)) && safeAt(g, b, x, y, g.player.radius)) ctx.fillRect(x - camX, y - camY, 2, 2)
+        if ((!room || onFloor(floor, x - ox, y - oy)) && safeAt(g, b, x, y, g.player.radius) && !(burns && groundAt(g, x, y) === 'lava')) ctx.fillRect(x - camX, y - camY, 2, 2)
       }
     }
     const [line] = HAZARD_COLORS[b.visual]

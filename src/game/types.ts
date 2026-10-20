@@ -400,6 +400,14 @@ export type Hazard = {
   angle: number
   len: number
   spin: number
+  /**
+   * Wind (whirlpools, gusts): while it can hurt, a player within `pullReach`
+   * px is drawn toward its center at `pull` px/s (negative: blown away). 0 for the rest.
+   */
+  pull: number
+  pullReach: number
+  /** A sweeping beam that stops at the first cover each tick: its full length (`len` follows the cover). 0 for the rest. */
+  cover: number
 }
 
 export type Pickup = {
@@ -593,6 +601,8 @@ export type GameEvent =
   | { kind: 'riftOmen'; enemy: RiftLegend }
   | { kind: 'riftTitle'; enemy: RiftLegend; shiny: boolean }
   | { kind: 'riftCapture'; enemy: RiftLegend; shiny: boolean }
+  /** A moment of a domain's own mechanics the shell calls out (Dialga's time skips): `rifts.domains[enemy].cues[cue]` in `src/i18n`. */
+  | { kind: 'domainCue'; enemy: RiftLegend; cue: string }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }

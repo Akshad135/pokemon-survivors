@@ -12,6 +12,7 @@ import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
 import { enterPlace } from './placeInterior'
 import { enterDomain } from './domain'
+import { DOMAINS } from '../data/domains'
 import { GRAVEYARD, PLACE_IDS } from '../data/places'
 import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
@@ -431,6 +432,54 @@ describe('replays', () => {
       expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
       expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
     }, 60_000)
+  }
+
+  for (const legend of ['lugia', 'hoOh', 'dialga'] as const) {
+    it(`re-simulate a whole rift into ${legend}'s domain, its own mechanics included`, () => {
+      const strong = (g: Game) => {
+        g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'earthquake', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+        enterDomain(g, legend, g.player.x, g.player.y)
+      }
+      const def = DOMAINS[legend]!
+      // Through the middle of each stretch of the crossing, north, then circling in the arena.
+      const way = [
+        ...def.crossing.floor.map((s) => (s.kind === 'circle' ? [s.x, s.y] : [s.pts.reduce((a, q) => a + q[0], 0) / s.pts.length, s.pts.reduce((a, q) => a + q[1], 0) / s.pts.length])).sort((a, b) => b[1]! - a[1]!),
+        [def.arena.at[0], def.crossing.gate - 60],
+      ]
+      const view = { ...START.view }
+      const g = startGame(START, view)
+      strong(g)
+      const rec = startRecording(START)
+      const origin = { x: g.player.x, y: g.player.y }
+      let w = 0
+      while (g.rift.arena && rec.tick < 60 * 150) {
+        if (g.phase !== 'playing') {
+          recordEvent(rec, ['offer', 0])
+          chooseOffer(g, g.offers[0]!)
+          continue
+        }
+        const p = g.player
+        const [tx, ty] = way[w]!
+        const dx = origin.x + tx! - p.x
+        const dy = origin.y + ty! - p.y
+        const len = Math.hypot(dx, dy) || 1
+        if (len < 30 && w < way.length - 1) w++
+        // In the arena, circling close around its middle (the rim may burn).
+        const a = rec.tick / 90
+        const cx = origin.x + def.arena.at[0] + Math.cos(a) * 50 - p.x
+        const cy = origin.y + def.arena.at[1] + Math.sin(a) * 50 - p.y
+        const cl = Math.hypot(cx, cy) || 1
+        const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: cx / cl, y: cy / cl }
+        step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+      }
+      expect(g.rift.cleared).toEqual([legend])
+      expect(g.events.filter((e) => e.kind === 'bossPhase').length).toBe(2)
+      const staged = startGame(START)
+      strong(staged)
+      const out = resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)
+      expect(out).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+      expect([staged.player.x, staged.player.y, staged.now]).toEqual([g.player.x, g.player.y, g.now])
+    })
   }
 
   it('give a run played on another seed away', () => {

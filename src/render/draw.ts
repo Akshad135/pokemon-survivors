@@ -5,6 +5,7 @@ import { drawCapture } from './capture'
 import { drawDomainFloor, drawTear, warmDomain } from './domain'
 import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance } from './legendFx'
 import { drawLegendSky, drawOmenGround } from './legendSky'
+import { bossLook, drawDomainAir, drawDomainGround, drawDomainScreen, drawVortexAir, drawVortexGround } from './domainLooks'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { BIOME_ORDER, BIOMES, biomeAt } from '../data/biomes'
@@ -561,8 +562,9 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, calm: boolean, a
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: calm ? 0 : 0.6 + k * 0.4, tint: calm ? HURT_TINT : undefined, loop: false, scale })
     return
   }
-  // Leapers are drawn lifted mid-jump; their shadow stays on the ground.
-  const y = e.y - traitLift(e)
+  // Leapers are drawn lifted mid-jump, and a boss aloft or reborn as its phase says (`bossLook`); their shadow stays on the ground.
+  const look = e.fight ? bossLook(e, t) : null
+  const y = e.y - traitLift(e) - (look?.lift ?? 0)
   const size = Math.max(s.bodyW, s.bodyH) * scale
   const rage = e.fight?.enraged === true
   const anim = enemyAnim(e, s, aloft)
@@ -570,7 +572,8 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, calm: boolean, a
   if (rage) RAGE_TINT.amount = 0.15 + 0.15 * pulse(t, 3)
   const hit = e.flash > 0.08
   const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (calm && hit ? HURT_TINT : rage ? RAGE_TINT : clone ? CLONE_TINT : undefined)
-  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: hit && !calm ? 0.85 : 0, tint, scale, outline: outlineOf(e, t, calm) ?? (clone ? CLONE_OUTLINE : undefined) })
+  if (look?.alpha === 0) return
+  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: Math.max(look?.flash ?? 0, hit && !calm ? 0.85 : 0), tint: look?.tint ?? tint, scale, outline: outlineOf(e, t, calm) ?? (clone ? CLONE_OUTLINE : undefined), alpha: look?.alpha })
   if (e.shiny) drawSparkles(ctx, e.x, y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
   if (rage) drawRageEmbers(ctx, e.x, y - (s.bodyH * scale) / 2, size, t, e.id)
 }
@@ -859,9 +862,11 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawLegendaryGround(ctx, g, t)
   drawLegendary2Ground(ctx, g, t)
   for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamGround(ctx, hz)
+    else if (hz.pull !== 0) drawVortexGround(ctx, hz, t)
     else if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   drawBossGround(ctx, g, t)
   drawOmenGround(ctx, g)
+  drawDomainGround(ctx, g)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
   // Map events wait outside with the rest of the world while the player is in a room.
@@ -941,6 +946,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawRiftFallAir(ctx, g, t)
   drawEntrance(ctx, g, t)
   drawCapture(ctx, g, t)
+  drawDomainAir(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)
@@ -951,6 +957,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawLegendary2Air(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamAir(ctx, hz, t, g)
+    else if (hz.pull !== 0) drawVortexAir(ctx, hz, t)
     else if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {
@@ -968,6 +975,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawWeather(ctx, g, camX, camY, t)
   drawLegendSky(ctx, g, camX, camY, t)
   drawBlasts(ctx, g, camX, camY, t)
+  drawDomainScreen(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)
   // Two passes: super-effective and critical numbers (`12!`) land on top of the rest.

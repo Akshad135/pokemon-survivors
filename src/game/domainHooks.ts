@@ -3,12 +3,16 @@ import type { DomainState } from './domain'
 import type { Enemy, Game } from './types'
 import { GROUDON_HOOKS } from './domains/groudon'
 import { RAYQUAZA_HOOKS } from './domains/rayquaza'
+import { DIALGA_HOOKS } from './dialgaDomain'
+import { HO_OH_HOOKS } from './hoOhDomain'
+import { LUGIA_HOOKS } from './lugiaDomain'
 
 /**
  * Mechanics a legendary's domain needs beyond its data (`data/domains.ts`):
- * Dialga freezing shots, Ho-Oh's rebirth, Latias and Latios fighting
- * together. Each hook runs inside the simulation, so it must stay
- * deterministic (seeded rng, `engine/dmath`) and never touch the DOM.
+ * Dialga's time skips, Lugia's channel whirlpools, Ho-Oh's falling beams and
+ * the flames of its rebirth, Latias and Latios fighting together. Each hook
+ * runs inside the simulation, so it must stay deterministic (seeded rng,
+ * `engine/dmath`) and never touch the DOM.
  * A legendary's hooks live in their own module, added to `DOMAIN_HOOKS`.
  */
 export type DomainHooks = {
@@ -30,4 +34,7 @@ export type DomainHooks = {
 export const DOMAIN_HOOKS: Partial<Record<RiftLegend, DomainHooks>> = {
   groudon: GROUDON_HOOKS,
   rayquaza: RAYQUAZA_HOOKS,
+  lugia: LUGIA_HOOKS,
+  hoOh: HO_OH_HOOKS,
+  dialga: DIALGA_HOOKS,
 }

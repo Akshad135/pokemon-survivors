@@ -1211,6 +1211,28 @@ export const en: Messages = {
         crossing: 'The floors are crumbling behind you! Climb the Pillar!',
         phases: ['The roof breaks and falls into the sky! Mind the edges.', 'Rayquaza *Mega Evolves*! Watch out for Dragon Ascent!'],
       },
+      lugia: {
+        place: 'Whirl Islands',
+        epithet: 'Guardian of the Seas',
+        omen: 'A storm gathers on the horizon…',
+        crossing: 'The storm is coming! Cross the islands and keep clear of the whirlpools!',
+        phases: ['The sea rises! Get out of the whirlpools and watch out for Hurricane.', 'Lugia takes to the sky! Dodge the gusts raining down.'],
+      },
+      hoOh: {
+        place: 'Bell Tower',
+        epithet: 'Rainbow Phoenix',
+        omen: 'A rainbow splits the sky and embers start to fall…',
+        crossing: 'The tower is on fire! Climb it floor by floor!',
+        phases: ['Ho-Oh takes to the air! Dodge its burning trails and Brave Bird.', 'Ho-Oh *rises from its ashes*! The edge of the roof is ablaze.'],
+      },
+      dialga: {
+        place: 'Spear Pillar',
+        epithet: 'Lord of Time',
+        omen: 'Time begins to stumble…',
+        crossing: 'Time is coming apart! Push on through Spear Pillar!',
+        phases: ['Time warps! During Roar of Time your attacks freeze in mid-air.', 'Time speeds up! Dialga keeps getting faster.'],
+        cues: { stop: 'Time stopped!', forward: 'Time skipped ahead!', rewind: 'Time rewound!' },
+      },
     },
   },
 

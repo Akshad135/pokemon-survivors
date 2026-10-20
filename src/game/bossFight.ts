@@ -24,14 +24,18 @@ export type BossMotion =
 /** A blast charging (`left` of `total` s) from (x, y): when it lands it hurts the player unless they stand somewhere `safe`. */
 export type BossBlast = { left: number; total: number; x: number; y: number; damage: number; safe: BlastSafe; radius: number; visual: HazardVisual }
 
+/** A time stop (`timeStop` pattern): `wait` s until it takes hold, then the player's shots hold still for `left` of `total` s. */
+export type TimeStop = { wait: number; left: number; total: number }
+
 /**
  * A boss's fight state: the stance it's in (`BossStance`), seconds until
  * it swaps, whether it has enraged, the share of HP it has left (`share`, kept
  * fresh by `updateBosses`) and the run's difficulty. Bosses with phases
  * (`BOSS_PHASES`) also keep the phase they're in (`phase`, `phaseAge`, the
  * `shift` left on its opening), their ultimate (`ult` while it plays,
- * `ultLeft` until the next), their scripted `motion`, a charging `blast` and
- * `home`, where they appeared. Pure rules; `updateBosses` drives them.
+ * `ultLeft` until the next), their scripted `motion`, a charging `blast`,
+ * a `timeStop` holding the player's shots, and `home`, where they appeared.
+ * Pure rules; `updateBosses` drives them.
  */
 export type BossFight = {
   stance: BossStance
@@ -49,17 +53,28 @@ export type BossFight = {
   motion: BossMotion | null
   blast: BossBlast | null
   home: { x: number; y: number }
+  timeStop: TimeStop | null
 }
 
 /** The phases of a boss that fights in phases, or null. */
 export const phasesOf = (kind: EnemyId): readonly BossPhase[] | null => BOSS_PHASES[kind] ?? null
 
-/** The phase a boss with `share` of its HP left is in: the last one whose threshold it fell under. */
+/** The phase a boss with `share` of its HP left is in: the last one whose threshold it fell under (a `rebirth` phase is never reached this way). */
 export const phaseAt = (phases: readonly BossPhase[], share: number) => {
   let at = 0
-  for (let i = 1; i < phases.length; i++) if (share < phases[i]!.below) at = i
+  for (let i = 1; i < phases.length && phases[i]!.rebirth === undefined; i++) if (share < phases[i]!.below) at = i
   return at
 }
+
+/** The phase a boss moves on to now: the next one if it's a rebirth and the boss is down to its last HP (`holdsOn` kept it at 1), else by HP. */
+export const nextPhase = (phases: readonly BossPhase[], current: number, hp: number, maxHp: number) =>
+  phases[current + 1]?.rebirth !== undefined ? (hp <= 1 ? current + 1 : current) : phaseAt(phases, hp / maxHp)
+
+/** How many times as fast time runs for a boss in its phase (`BossPhase.haste`): 1 for the rest. */
+export const hasteOf = (kind: EnemyId, fight: BossFight | null) => (fight ? (phasesOf(kind)?.[fight.phase]?.haste ?? 1) : 1)
+
+/** Whether a boss's time stop holds the player's shots still now. */
+export const holdsShots = (fight: BossFight | null) => fight?.timeStop != null && fight.timeStop.wait <= 0
 
 /** The patterns a boss fights with now: its phase's, or its flat list. */
 export const patternsOf = (kind: EnemyId, fight: BossFight | null): readonly BossPattern[] | undefined => {
@@ -86,7 +101,7 @@ export const warningOf = (p: BossPattern) => {
     case 'dash': return p.windup * p.count + 1
     case 'swoop': return (p.windup + (p.reach * 2) / p.speed) * p.count
     case 'dive': return p.hide + p.windup
-    case 'teleport': case 'blast': return p.windup
+    case 'teleport': case 'blast': case 'whirlpool': case 'gust': case 'timeStop': return p.windup
     default: return 0
   }
 }
@@ -117,6 +132,7 @@ export const createFight = (rng: Rng, difficulty: Difficulty, home = { x: 0, y: 
   motion: null,
   blast: null,
   home,
+  timeStop: null,
 })
 
 /** Counts the stance down; returns true on the tick it swaps (with a fresh seeded duration). */
@@ -189,7 +205,7 @@ export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: nu
   if (!steer) return false
   out.x = p.x
   out.y = p.y
-  out.pace = fight.shift > 0 || fight.motion !== null ? 0 : (steer.pace ?? 1)
+  out.pace = fight.shift > 0 || fight.motion !== null ? 0 : (steer.pace ?? 1) * hasteOf(kind, fight)
   switch (steer.kind) {
     case 'chase':
       return true
@@ -206,6 +222,15 @@ export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: nu
       const a = dm.atan2(e.y - fight.home.y, e.x - fight.home.x) + 0.6
       out.x = fight.home.x + dm.cos(a) * steer.radius
       out.y = fight.home.y + dm.sin(a) * steer.radius
+      return true
+    }
+    case 'pass': {
+      // Each pass heads for the far side of its home on a fresh heading (a golden-angle turn), so it crosses the arena every time.
+      const pass = Math.floor(now / steer.every)
+      const a = pass * 2.4 + e.id
+      const side = pass % 2 === 0 ? 1 : -1
+      out.x = fight.home.x + dm.cos(a) * steer.reach * side
+      out.y = fight.home.y + dm.sin(a) * steer.reach * side * 0.8
       return true
     }
   }
