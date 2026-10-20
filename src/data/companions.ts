@@ -1,3 +1,5 @@
+import type { PokeType } from './types'
+
 /**
  * Companions that aren't playable (`game/supporters.ts`): a Mystery Gift's
  * alone, they only walk along. `sparkles: 'candy'` leaves candy sparkles
@@ -5,8 +7,8 @@
  */
 export const SPECIAL_COMPANIONS = {
   /** The Noite das Bruxas supporters' (`game/halloween.ts`). */
-  pumpkaboo: { name: 'Pumpkaboo', dex: 710, sparkles: 'candy' },
-} as const satisfies Record<string, { name: string; dex: number; sparkles?: 'candy' }>
+  pumpkaboo: { name: 'Pumpkaboo', dex: 710, types: ['ghost', 'grass'], sparkles: 'candy' },
+} as const satisfies Record<string, { name: string; dex: number; types: readonly PokeType[]; sparkles?: 'candy' }>
 
 export type SpecialCompanionId = keyof typeof SPECIAL_COMPANIONS
 

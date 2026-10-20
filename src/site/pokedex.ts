@@ -9,6 +9,7 @@ import { SUMMONS } from '../data/traits'
 import { bossCandidates, EVENTS, RUN_LENGTH, STAGES, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
 import { ENDLESS, REAPER } from '../game/endless'
 import { MEOWTH_DEX } from '../game/mapEventRules'
+import { SPECIAL_COMPANION_IDS, SPECIAL_COMPANIONS, type SpecialCompanionId } from '../data/companions'
 
 /**
  * The site's Pokédex model: every species the game uses, derived from
@@ -44,8 +45,13 @@ export type DexEntry = {
    * `starter`: playable, a starter or an egg family (`role: 'egg'`); `wild` set when the species also roams the horde,
    * `branch` when it's a stage a branching evolution can go to (`data/branches.ts`).
    * `event`: met at a map event (the fleeing Meowth), not in the horde.
+   * `companion`: a gift-only companion (`data/companions.ts`), listed as an event Pokémon.
    */
-  source: { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId; branch?: BranchId } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
+  source:
+    | { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId; branch?: BranchId }
+    | { kind: 'wild'; id: EnemyId }
+    | { kind: 'event' }
+    | { kind: 'companion'; id: SpecialCompanionId }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -114,12 +120,17 @@ const wildEntry = (id: EnemyId): DexEntry => {
 
 const eventEntry = (): DexEntry => ({ ...base(MEOWTH_DEX, 'Meowth', ['normal']), role: 'event', source: { kind: 'event' } })
 
+const companionEntry = (id: SpecialCompanionId): DexEntry => {
+  const c = SPECIAL_COMPANIONS[id]
+  return { ...base(c.dex, c.name, c.types), role: 'event', source: { kind: 'companion', id } }
+}
+
 /** Every Pokémon in the game, in national dex order. Egg families that also roam the horde get one card, the playable one. */
 export const pokedex = (): DexEntry[] => {
   const playable = [...STARTER_IDS.flatMap((id) => playableEntries(id, 'starter')), ...HATCHLING_IDS.flatMap((id) => playableEntries(id, 'egg'))]
   const listed = new Set(playable.map((e) => e.dex))
   const wild = (Object.keys(ENEMIES) as EnemyId[]).filter((id) => !listed.has(ENEMIES[id].dex)).map(wildEntry)
-  return [...playable, ...wild, eventEntry()].sort((a, b) => a.dex - b.dex)
+  return [...playable, ...wild, eventEntry(), ...SPECIAL_COMPANION_IDS.map(companionEntry)].sort((a, b) => a.dex - b.dex)
 }
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
