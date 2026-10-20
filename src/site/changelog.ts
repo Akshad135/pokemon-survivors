@@ -103,6 +103,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Os Exp. Candy não somem mais', en: 'Exp. Candies no longer vanish', es: 'Los Exp. Candy ya no desaparecen' },
+        notes: [
+          {
+            pt: 'Com muitos Exp. Candy esquecidos pelo mapa, os Pokémon derrotados paravam de soltar doces novos: a EXP ia para um doce antigo, longe de você. Agora todo Pokémon derrotado solta o seu doce, e o doce mais antigo do chão se junta a ele, sem perder EXP.',
+            en: 'With lots of Exp. Candies left around the map, fainted Pokémon stopped dropping new ones: the EXP went into an old candy, far from you. Now every fainted Pokémon drops its candy, and the oldest candy on the ground joins it, with no EXP lost.',
+            es: 'Con muchos Exp. Candy olvidados por el mapa, los Pokémon derrotados dejaban de soltar caramelos nuevos: la EXP iba a un caramelo antiguo, lejos de ti. Ahora todo Pokémon derrotado suelta su caramelo, y el caramelo más antiguo del suelo se une a él, sin perder EXP.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Convide amigos', en: 'Invite friends', es: 'Invita amigos' },
         notes: [
           {
