@@ -3,7 +3,7 @@ import { chance, range, weightedPick } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { BOSS_FIGHT, bossCandidates, bossWaveAt, ELITE, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
 import { bossReach, chaseOffBosses, finaleEntrance } from './bosses'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { endlessPressure } from './endless'
 import { despawnEnemy, spawnEnemy } from './enemies'
 import { eliteSpawn, makeElite, makeRunner } from './horde'
@@ -145,7 +145,7 @@ export const updateSpawner = (g: Game, dt: number) => {
   const spit = SPITTERS[g.difficulty]
   const spitter = g.roster.spitters[index] ?? null
   const reach = bossReach(g)
-  const more = DIFFICULTIES[g.difficulty].spawnRate
+  const more = runMods(g).spawnRate
   let regular = 0
   let traitsAlive = 0
   let elites = 0

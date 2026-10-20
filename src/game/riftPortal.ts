@@ -18,7 +18,7 @@ import * as dm from '../engine/dmath'
 const PORTAL_COLORS = ['#7850c8', '#c8a8f8', '#ffffff'] as const
 
 /** Opens a portal for `legend` at (x, y), or just past the screen edge in a random direction. */
-export const openPortal = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rift.met), at?: { x: number; y: number }) => {
+export const openPortal = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rift.met, g.legend?.id), at?: { x: number; y: number }) => {
   const p = g.player
   const a = range(g.rng, 0, TAU)
   const d = dm.hypot(g.view.w, g.view.h) / 2 + 60

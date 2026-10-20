@@ -5,6 +5,7 @@ import { ABILITIES } from '../data/abilities'
 import { abilityLit, abilityStacks } from '../game/abilities'
 import { playerDex } from '../game/game'
 import { playerForm } from '../game/branch'
+import { innateAbility, isClone } from '../game/legend'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import { heldMega } from '../game/mega'
 import type { Game } from '../game/types'
@@ -215,13 +216,15 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
 
     const dex = playerDex(g)
     const megaName = g.mega.active > 0 ? heldMega(g)?.name : undefined
-    if (`${dex}${p.shiny}${megaName}` !== portraitKey) {
-      portraitKey = `${dex}${p.shiny}${megaName}`
+    // A legend's awakened form (Primal Kyogre) renames it on the same dex.
+    const formName = playerForm(g).name
+    if (`${dex}${p.shiny}${megaName}${formName}` !== portraitKey) {
+      portraitKey = `${dex}${p.shiny}${megaName}${formName}`
       portrait.setAttribute('src', portraitUrl(dex, p.shiny))
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
       name.classList.toggle('mega-name', megaName !== undefined)
-      setText(name, megaName ?? playerForm(g).name)
+      setText(name, megaName ?? formName)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
@@ -231,7 +234,8 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     setText(hpText, `${Math.ceil(p.hp)}/${Math.round(p.stats.maxHp)}`)
 
     const megaDef = g.mega.active > 0 ? heldMega(g) : null
-    const id = g.ability.id
+    // A legend shows its innate until it picks an Ability at its first awakening.
+    const id = g.ability.id ?? innateAbility(g.starter)
     const stacks = megaDef || !id ? 0 : abilityStacks(g)
     const lit = !megaDef && id !== null && abilityLit(g)
     const akey = `${id}|${megaDef?.ability}|${lit}|${stacks}`
@@ -250,7 +254,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
     boss.classList.toggle('hidden', !b)
     if (b) {
-      setText(bossName, ENEMIES[b.kind].name)
+      setText(bossName, isClone(g, b) ? t().legend.clone(ENEMIES[b.kind].name) : ENEMIES[b.kind].name)
       setStyle(bossFill, 'width', `${((b.hp / b.maxHp) * 100).toFixed(1)}%`)
     }
   }

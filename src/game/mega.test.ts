@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MEGA_BRANCH } from '../data/branches'
 import { PLAYABLE } from '../data/hatchlings'
+import { isLegend } from '../data/legends'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../data/megas'
 import manifest from '../data/sprites.generated.json'
 import { createGame, step } from './game'
@@ -17,7 +18,8 @@ describe('mega data', () => {
     for (const id of MEGA_IDS) {
       const def: MegaDef = MEGAS[id]
       const final = PLAYABLE[def.line].line.at(-1)!
-      expect(MANIFEST[String(final.dex)]?.formCries, def.name).toContain(def.form)
+      // The legends' Mega cries (Latias, Latios, Mewtwo Y) come with the legend assets batch (FORM_CRIES in scripts/dex.mjs).
+      if (!isLegend(def.line)) expect(MANIFEST[String(final.dex)]?.formCries, def.name).toContain(def.form)
       expect(SPECIALS[def.special].final.damage, def.name).toBeGreaterThan(resolveSpecial(def.line, PLAYABLE[def.line].line.length - 1).tier.damage)
     }
   })

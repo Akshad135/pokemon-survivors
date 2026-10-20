@@ -53,6 +53,8 @@ import type { LegendaryVisual } from './legendaryMoves'
 import type { LegendaryVisual2 } from './legendaryMoves2'
 import type { TensionState } from './tension'
 import type { AlphaClock, AlphaState } from './alphas'
+import type { LegendForm, LegendId } from '../data/legends'
+import type { LegendState } from './legend'
 
 export type OwnedMove = {
   id: MoveId
@@ -575,11 +577,17 @@ export type GameEvent =
   | { kind: 'alphaPrize' }
   /** The world struck at the player for the first time this run (`game/hazards.ts`): a one-time explainer toast. */
   | { kind: 'hazardIntro' }
+  /** Legend mode (`legend.ts`): an awakening (`n`, 1 or 2) started, or landed, maybe in its `form` (Primal Kyogre). */
+  | { kind: 'awaken'; legend: LegendId; n: number }
+  | { kind: 'awakened'; legend: LegendId; n: number; form: LegendForm | null }
+  /** A legendary boss fell (rift, trio, mythical, Mewtwo, Arceus), once per defeat: the save counts it toward capturing it. */
+  | { kind: 'legendBeaten'; legend: EnemyId; shiny: boolean }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
 
-export type Evolution = { from: number; to: number; t: number }
+/** An evolution's scene: dex `from` → `to`. A legend's awakening (`awakening`: 1 or 2) plays it too, landing in its `form` where it takes one. */
+export type Evolution = { from: number; to: number; t: number; awakening?: number; form?: LegendForm }
 
 export type Game = {
   /** The Pokémon this run plays: a starter or a hatched family. */
@@ -685,6 +693,8 @@ export type Game = {
   worldHazards: WorldHazardState
   /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
   prize: PrizeSource | null
+  /** The Legend mode's state (`legend.ts`): the legend played and its awakenings; null in every other run. */
+  legend: LegendState | null
 }
 
 /** Where a prize level-up came from: an Alpha's gem or a field mission. */

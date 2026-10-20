@@ -2,6 +2,7 @@ import { pick, range, type Rng } from '../engine/rng'
 import { RIFT, RIFT_ITEMS, RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
 import type { ArenaLayout } from '../data/arenas'
+import type { EnemyId } from '../data/enemies'
 import type { Room, Stash } from './room'
 
 /**
@@ -61,10 +62,11 @@ export const riftDue = (s: { time: number; nextAt: number; busy: boolean; bossAl
   (!s.bossAlive || (!s.endless && s.time >= s.nextAt + RIFT.bossWait)) &&
   (s.endless || s.time + RIFT.portalTime + RIFT.arenaTime < RUN_LENGTH)
 
-/** A legendary not met yet this run; once all were met, any of them. */
-export const pickLegend = (rng: Rng, met: readonly RiftLegend[]): RiftLegend => {
-  const fresh = RIFT_LEGENDS.filter((l) => !met.includes(l))
-  return pick(rng, fresh.length > 0 ? fresh : RIFT_LEGENDS)
+/** A legendary not met yet this run; once all were met, any of them. Never `self`, the legend the player plays (Legend mode). */
+export const pickLegend = (rng: Rng, met: readonly RiftLegend[], self: EnemyId | null = null): RiftLegend => {
+  const open = RIFT_LEGENDS.filter((l) => l !== self)
+  const fresh = open.filter((l) => !met.includes(l))
+  return pick(rng, fresh.length > 0 ? fresh : open)
 }
 
 /** Standing in the portal fills it; stepping out drains it twice as fast. */

@@ -50,6 +50,7 @@ import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
+import { legendDevTools } from './game/legendDev'
 import { riftDevTools } from './game/riftDev'
 import { placeDevTools } from './game/placeDev'
 import { placeFeedback } from './ui/places'
@@ -679,7 +680,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
   const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
-  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
+  // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
+  const later = [...rosterSchedule(game.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
@@ -965,7 +967,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
         playSfx('legendary')
         playCry(sprites(def.dex).cry, 0.7)
         flashScreen(ui)
-        return banner(ui, rich(t().toast.legendary(def.name)))
+        // A legend meets its dark Clone (`isClone`), never itself.
+        return banner(ui, rich(t().toast.legendary(g.legend?.id === e.enemy ? t().legend.clone(def.name) : def.name)))
       }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
@@ -1003,6 +1006,23 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return
     case 'ability':
       return abilityFeedback(g, e.id, e.moment)
+    case 'awaken': {
+      playCry(playerCry(g))
+      r.closeText?.()
+      r.closeText = textBox(ui, t().legend.awakening(playerForm(g).name))
+      return
+    }
+    case 'awakened': {
+      playSfx('evolve')
+      playCry(cryUrl(playerDex(g), e.form ?? undefined))
+      r.closeText?.()
+      r.closeText = null
+      const name = PLAYABLE[g.starter].name
+      return toast(ui, rich(e.form ? t().legend.awakenedForm(name, playerForm(g).name) : t().legend.awakened(name)), 3500)
+    }
+    // Counted by the save when the run is banked (`RunSummary.legendWins`).
+    case 'legendBeaten':
+      return
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
@@ -1726,6 +1746,12 @@ if (import.meta.env.DEV) {
       ...duoDevTools(() => run?.game),
       ...tensionDevTools(() => run?.game),
       ...hazardDevTools(() => run?.game),
+      // A Legend-mode run leaves the save's partner as it was.
+      ...legendDevTools(() => run?.game, (id) => {
+        const partner = loadSave().partner
+        void startRun(id)
+        updateSave((s) => ({ ...s, partner }))
+      }),
       ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),

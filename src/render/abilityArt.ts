@@ -98,6 +98,8 @@ const look = (e: AbilityEffect | undefined): string | readonly [Glyph, string] =
       return ['arrow', COLORS.reach]
     case 'moody':
       return ['star', COLORS.status]
+    case 'luck':
+      return ['star', COLORS.gold]
     case 'lowHp':
     case 'fullHp':
       return e.stats.might ? ['arrow', COLORS.offense] : e.stats.speed ? ['arrow', COLORS.speed] : ['shield', COLORS.defense]
