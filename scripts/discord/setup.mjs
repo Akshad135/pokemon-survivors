@@ -1,16 +1,21 @@
-// Builds the community Discord server from the spec below, through the bot.
-// Idempotent: roles, channels and the bot's own pinned texts are matched by
-// name and updated in place, so editing the spec and running it again is safe.
+// Keeps the community Discord server in line with the spec below, through the
+// bot, one step at a time and only what each step owns. Staff edit names, order
+// and looks by hand; the script never touches those on what already exists.
+// Things are found by the ids in ids.json, so a rename doesn't break a run.
 //
-//   node --env-file=.env.local scripts/discord/setup.mjs
+//   node --env-file=.env.local scripts/discord/pull.mjs                     # snapshot first
+//   node --env-file=.env.local scripts/discord/setup.mjs roles channels     # dry run: prints the diff
+//   node --env-file=.env.local scripts/discord/setup.mjs roles --apply      # makes the changes
 //
-// Needs DISCORD_BOT_TOKEN and DISCORD_GUILD_ID. The bot must be in the server
-// with Administrator (the invite link is printed when it isn't), and ffmpeg
-// (for the starter emojis).
+// Run it without a step to list them. Needs DISCORD_BOT_TOKEN and
+// DISCORD_GUILD_ID. The bot must be in the server with Administrator (the
+// invite link is printed when it isn't), and ffmpeg (for the starter emojis).
 
 import { execFileSync } from 'node:child_process'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { REGIONS, STARTERS } from '../../src/data/starters.ts'
 import { TYPE_COLORS } from '../../src/data/types.ts'
+import { discord, GUILD } from './api.mjs'
 
 /**
  * The introduction gate: when on, only Trainers talk, and a newcomer earns the
@@ -20,12 +25,7 @@ import { TYPE_COLORS } from '../../src/data/types.ts'
  */
 const GATE = true
 
-const TOKEN = process.env.DISCORD_BOT_TOKEN
-const GUILD = process.env.DISCORD_GUILD_ID
-if (!TOKEN || !GUILD) throw new Error('Set DISCORD_BOT_TOKEN and DISCORD_GUILD_ID')
-
 const SITE = 'https://www.pokemonsurvivors.com'
-const API = 'https://discord.com/api/v10'
 
 // Permission bits (https://discord.com/developers/docs/topics/permissions).
 const P = {
@@ -59,7 +59,6 @@ const P = {
 const MODERATE =
   P.kick | P.ban | P.manageMessages | P.mentionEveryone | P.muteMembers | P.moveMembers | P.manageNicknames | P.manageThreads | P.moderateMembers
 // Staff also run the server by hand: channels, roles below theirs, Onboarding, AutoMod, events.
-// This script still owns what it sets up, so a rerun reverts hand edits to those.
 const MANAGE =
   P.manageChannels | P.manageGuild | P.viewAuditLog | P.manageRoles | P.manageWebhooks | P.manageEmojis | P.manageEvents
 const TALK = P.sendMessages | P.createPublicThreads | P.createPrivateThreads | P.sendMessagesInThreads
@@ -103,7 +102,7 @@ const ROLES = [
 
 // `readOnly`: only staff and the bot post. `access`: who can see it (default everyone).
 // `optIn`: hidden from the sidebar until picked in Onboarding (the language rooms).
-// `aliases`: old names to rename from.
+// `aliases`: other names to find it by the first time, before ids.json has it.
 const LAYOUT = [
   {
     category: '👋 Start Here',
@@ -273,23 +272,81 @@ const RULES = {
   ].join('\n'),
 }
 
-/** Calls the Discord API as the bot, waiting out rate limits. */
-const discord = async (method, path, body) => {
-  for (;;) {
-    const res = await fetch(`${API}${path}`, {
-      method,
-      headers: { Authorization: `Bot ${TOKEN}`, 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-    if (res.status === 429) {
-      const { retry_after } = await res.json()
-      await new Promise((r) => setTimeout(r, Math.ceil(retry_after * 1000) + 50))
-      continue
-    }
-    if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${await res.text()}`)
-    return res.status === 204 ? null : res.json()
-  }
+const STEPS = {
+  roles: 'role permissions, @everyone, the owner’s Dev role',
+  channels: 'channel and category permissions, slowmode, forum tags; creates the missing ones',
+  topics: 'channel topics, with the gate’s hint',
+  community: 'Community settings, system and rules channels, the server description',
+  messages: 'the bot’s welcome, rules and TikTok reward texts',
+  welcome: 'the welcome screen',
+  emojis: 'the starter emojis (creates the missing ones)',
+  onboarding: 'Onboarding: default channels, team, languages and pings',
+  automod: 'AutoMod rules',
 }
+const args = process.argv.slice(2)
+const APPLY = args.includes('--apply')
+const steps = args.filter((a) => !a.startsWith('--'))
+if (!steps.length || steps.some((s) => !(s in STEPS))) {
+  console.log('Usage: setup.mjs <step...> [--apply]   (dry run without --apply)\n')
+  for (const [step, what] of Object.entries(STEPS)) console.log(`  ${step.padEnd(11)} ${what}`)
+  process.exit(steps.length ? 1 : 0)
+}
+const running = (step) => steps.includes(step)
+
+// Spec keys → Discord ids. Things are found by id first, so renaming one by hand
+// doesn't make the next run create it again; by name only the first time.
+const IDS_FILE = new URL('./ids.json', import.meta.url)
+const ids = existsSync(IDS_FILE) ? JSON.parse(readFileSync(IDS_FILE, 'utf8')) : {}
+const saveIds = () => writeFileSync(IDS_FILE, `${JSON.stringify(ids, null, 2)}\n`)
+
+/** A name without the emojis and separators staff put in front ("💬》off-topic" → "off-topic"). */
+const bare = (name) => name.replace(/^[^\p{L}\p{N}]+/u, '').toLowerCase()
+
+/** The live thing a spec key points to: by its saved id, else by name (and the id is saved). */
+const resolve = (kind, key, live, byName) => {
+  ids[kind] ??= {}
+  const found = live.find((x) => x.id === ids[kind][key]) ?? live.find(byName)
+  if (found) ids[kind][key] = found.id
+  return found
+}
+const remember = (kind, key, id) => {
+  if (APPLY) ids[kind][key] = id
+}
+
+/** Whether `current` already has everything in `desired`: extra fields are ignored, id lists are sets. */
+const matches = (desired, current) => {
+  if (Array.isArray(desired)) {
+    if (!Array.isArray(current) || current.length !== desired.length) return false
+    if (desired.every((d) => typeof d !== 'object')) return [...desired].map(String).sort().join() === [...current].map(String).sort().join()
+    if (desired.every((d) => d?.id !== undefined)) return desired.every((d) => matches(d, current.find((c) => c.id === d.id)))
+    return desired.every((d, i) => matches(d, current[i]))
+  }
+  if (desired && typeof desired === 'object') return !!current && Object.keys(desired).every((k) => matches(desired[k], current[k]))
+  // Discord reads some empty fields back as "" and others as null.
+  return String(desired ?? '') === String(current ?? '')
+}
+
+const short = (value) => {
+  const text = JSON.stringify(value) ?? 'none'
+  return text.length > 70 ? `${text.slice(0, 67)}...` : text
+}
+
+/** Writes with --apply; a dry run only prints what it would do and returns null. */
+const write = async (label, method, path, body) => {
+  console.log(`  ${APPLY ? '' : '(dry run) '}${label}`)
+  return APPLY ? discord(method, path, body) : null
+}
+
+/** Patches only the fields of `body` that differ from `current`, listing each change. */
+const patch = async (label, path, current, body) => {
+  const changed = Object.keys(body).filter((k) => !matches(body[k], current?.[k]))
+  if (!changed.length) return current
+  const detail = changed.map((k) => `\n      ${k}: ${short(current?.[k])} → ${short(body[k])}`).join('')
+  return (await write(`${label}${detail}`, 'PATCH', path, Object.fromEntries(changed.map((k) => [k, body[k]])))) ?? current
+}
+
+/** Creates a thing the spec has and the server doesn't; a dry run hands back a placeholder. */
+const create = async (label, path, body) => (await write(`create ${label}`, 'POST', path, body)) ?? { id: `(new ${label})`, ...body }
 
 const me = await discord('GET', '/users/@me')
 const guild = await discord('GET', `/guilds/${GUILD}`).catch(() => {
@@ -297,36 +354,46 @@ const guild = await discord('GET', `/guilds/${GUILD}`).catch(() => {
   console.error(`The bot is not in the server yet. Invite it: ${invite}`)
   process.exit(1)
 })
-console.log(`Setting up "${guild.name}" as ${me.username}`)
+console.log(`${APPLY ? 'Applying' : 'Dry run'} on "${guild.name}" as ${me.username}: ${steps.join(', ')}`)
 
-// Roles: create or update, then order them under the bot's own role.
-const existingRoles = await discord('GET', `/guilds/${GUILD}/roles`)
+/** Fails a step that needs something only another step creates. */
+const need = (id, what, step) => {
+  if (!id) throw new Error(`${what} doesn't exist yet: run the ${step} step first`)
+  return id
+}
+
+// Roles. Staff own their names, colors, order and display by hand; the script
+// owns permissions and mentionability. New roles land at the bottom of the list.
+const liveRoles = await discord('GET', `/guilds/${GUILD}/roles`)
 const roleId = {}
+if (running('roles')) console.log('roles')
 for (const role of ROLES) {
-  const body = {
-    name: role.name,
-    color: role.color,
-    hoist: !!role.hoist,
-    mentionable: role.name.endsWith('Ping'),
+  const found = resolve('roles', role.name, liveRoles, (r) => bare(r.name) === bare(role.name))
+  roleId[role.name] = found?.id
+  if (!running('roles')) continue
+  const owned = {
     // Staff talk without needing the Trainer role on top.
     permissions: (role.staff ? MODERATE | MANAGE | TALK | VOICE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
+    mentionable: role.name.endsWith('Ping'),
   }
-  const found = existingRoles.find((r) => r.name === role.name)
-  roleId[role.name] = (found
-    ? await discord('PATCH', `/guilds/${GUILD}/roles/${found.id}`, body)
-    : await discord('POST', `/guilds/${GUILD}/roles`, body)
-  ).id
+  if (found) await patch(`role ${found.name}`, `/guilds/${GUILD}/roles/${found.id}`, found, owned)
+  else {
+    roleId[role.name] = (await create(`role ${role.name}`, `/guilds/${GUILD}/roles`, { ...owned, name: role.name, color: role.color, hoist: !!role.hoist })).id
+    remember('roles', role.name, roleId[role.name])
+  }
 }
-// New roles land at the bottom and push the bot's role up, so read positions again.
-const botTop = Math.max(...(await discord('GET', `/guilds/${GUILD}/roles`)).filter((r) => r.tags?.bot_id === me.id).map((r) => r.position), 1)
-await discord('PATCH', `/guilds/${GUILD}/roles`, ROLES.map((r, i) => ({ id: roleId[r.name], position: botTop - 1 - i })).filter((r) => r.position > 0))
-
-// Nobody but staff pings @everyone; behind the gate only Trainers talk.
-const everyone = existingRoles.find((r) => r.id === GUILD)
-const base = BigInt(everyone.permissions) & ~P.mentionEveryone
-await discord('PATCH', `/guilds/${GUILD}/roles/${GUILD}`, {
-  permissions: (GATE ? base & ~(TALK | VOICE) : base | TALK | VOICE).toString(),
-})
+if (running('roles')) {
+  // Nobody but staff pings @everyone; behind the gate only Trainers talk.
+  const everyone = liveRoles.find((r) => r.id === GUILD)
+  const base = BigInt(everyone.permissions) & ~P.mentionEveryone
+  await patch('role @everyone', `/guilds/${GUILD}/roles/${GUILD}`, everyone, {
+    permissions: (GATE ? base & ~(TALK | VOICE) : base | TALK | VOICE).toString(),
+  })
+  // The owner gets the Dev role.
+  const owner = await discord('GET', `/guilds/${GUILD}/members/${guild.owner_id}`)
+  if (!owner.roles.includes(roleId['Dev']))
+    await write('give the owner the Dev role', 'PUT', `/guilds/${GUILD}/members/${guild.owner_id}/roles/${need(roleId['Dev'], 'Dev', 'roles')}`)
+}
 
 const staff = ROLES.filter((r) => r.staff).map((r) => roleId[r.name])
 const supporters = ROLES.filter((r) => r.supporter).map((r) => roleId[r.name])
@@ -346,17 +413,15 @@ const overwritesFor = (access, channel) => {
   return []
 }
 
-// Channels: categories first, then their channels in order. News channels need
-// Community, which needs the rules channel, so on the first run they start as
-// text and are converted once Community is on.
+// Channels. Staff own names, order and categories by hand; the script owns who
+// can see and talk where, slowmode and forum tags (and topics, in their own step).
+// A missing channel is created at the end of its category for staff to place.
+// News channels need Community, which needs the rules channel, so a brand-new
+// server gets them as text and the next channels run converts them.
 const community = guild.features.includes('COMMUNITY')
-const allChannels = await discord('GET', `/guilds/${GUILD}/channels`)
+const liveChannels = await discord('GET', `/guilds/${GUILD}/channels`)
 const channelId = {}
 const sameType = (a, b) => a === b || (b === TYPE.news && a === TYPE.text)
-const findChannel = (names, type, parentId) =>
-  allChannels.find((c) => names.includes(c.name) && sameType(c.type, type) && (parentId === undefined || c.parent_id === parentId)) ??
-  allChannels.find((c) => names.includes(c.name) && sameType(c.type, type))
-const pendingNews = []
 
 /** A channel where only Trainers talk: the gate's on, everyone sees it and nothing else opens it up. */
 const gated = (group, channel) => GATE && !group.access && !channel.readOnly && !channel.open && channel.type !== 'voice'
@@ -367,54 +432,71 @@ const topicOf = (group, channel) =>
     .filter(Boolean)
     .join(' · ')
 
-let position = 0
-for (const group of LAYOUT) {
-  const catBody = { name: group.category, type: TYPE.category, position: position++, permission_overwrites: overwritesFor(group.access) }
-  const cat = findChannel([group.category], TYPE.category)
-  const category = cat
-    ? await discord('PATCH', `/channels/${cat.id}`, { name: catBody.name, position: catBody.position, permission_overwrites: catBody.permission_overwrites })
-    : await discord('POST', `/guilds/${GUILD}/channels`, catBody)
-
-  for (const channel of group.channels) {
+if (running('channels')) console.log('channels')
+// Resolve every channel first: topics point at #introductions wherever it sits.
+const placed = LAYOUT.map((group) => ({
+  group,
+  category: resolve('channels', group.category, liveChannels, (c) => bare(c.name) === bare(group.category) && c.type === TYPE.category),
+  channels: group.channels.map((channel) => {
     const type = TYPE[channel.type ?? 'text']
-    const body = {
-      name: channel.name,
-      parent_id: category.id,
-      position: position++,
-      permission_overwrites: overwritesFor(group.access, channel),
-      ...(type !== TYPE.voice && (channel.topic || gated(group, channel)) ? { topic: topicOf(group, channel) } : {}),
-      ...(channel.slowmode ? { rate_limit_per_user: channel.slowmode } : {}),
+    const names = [channel.name, ...(channel.aliases ?? [])]
+    const found = resolve('channels', channel.name, liveChannels, (c) => names.some((n) => bare(n) === bare(c.name)) && sameType(c.type, type))
+    channelId[channel.name] = found?.id
+    return { channel, type, found }
+  }),
+}))
+for (const { group, category: cat, channels } of placed) {
+  let category = cat
+  if (running('channels')) {
+    const overwrites = overwritesFor(group.access)
+    if (category) await patch(`category ${category.name}`, `/channels/${category.id}`, category, { permission_overwrites: overwrites })
+    else {
+      category = await create(`category ${group.category}`, `/guilds/${GUILD}/channels`, { name: group.category, type: TYPE.category, permission_overwrites: overwrites })
+      remember('channels', group.category, category.id)
     }
-    const found = findChannel([channel.name, ...(channel.aliases ?? [])], type, category.id)
-    // Tags are matched by name so posts keep theirs when the list changes.
-    if (channel.tags) {
-      const current = found?.available_tags ?? []
-      body.available_tags = channel.tags.map((name) => ({ ...current.find((t) => t.name === name), name }))
+  }
+  for (const { channel, type, found } of channels) {
+    if (running('channels')) {
+      const owned = {
+        permission_overwrites: overwritesFor(group.access, channel),
+        ...(channel.slowmode ? { rate_limit_per_user: channel.slowmode } : {}),
+        ...(type === TYPE.news && community ? { type } : {}),
+      }
+      // Tags are matched by name so posts keep theirs when the list changes.
+      if (channel.tags) {
+        const current = found?.available_tags ?? []
+        owned.available_tags = channel.tags.map((name) => ({ ...current.find((t) => t.name === name), name }))
+      }
+      if (found) await patch(`#${found.name}`, `/channels/${found.id}`, found, owned)
+      else {
+        const body = { ...owned, name: channel.name, parent_id: category.id, type: type === TYPE.news && !community ? TYPE.text : type }
+        if (type !== TYPE.voice && (channel.topic || gated(group, channel))) body.topic = topicOf(group, channel)
+        channelId[channel.name] = (await create(`#${channel.name} in ${group.category}`, `/guilds/${GUILD}/channels`, body)).id
+        remember('channels', channel.name, channelId[channel.name])
+      }
     }
-    const createAs = type === TYPE.news && !community ? TYPE.text : type
-    const saved = found
-      ? await discord('PATCH', `/channels/${found.id}`, body)
-      : await discord('POST', `/guilds/${GUILD}/channels`, { ...body, type: createAs })
-    channelId[channel.name] = saved.id
-    if (type === TYPE.news && saved.type !== TYPE.news) pendingNews.push(saved.id)
-    console.log(`  ${found ? 'updated' : 'created'} ${group.category} / ${channel.name}`)
+    if (running('topics') && found && type !== TYPE.voice && (channel.topic || gated(group, channel)))
+      await patch(`#${found.name}`, `/channels/${found.id}`, found, { topic: topicOf(group, channel) })
   }
 }
+if (running('topics') && !running('channels')) console.log('topics')
 
-// Community: needed for news channels, forums' discovery, Onboarding and the welcome screen.
-await discord('PATCH', `/guilds/${GUILD}`, {
-  features: [...new Set([...guild.features, 'COMMUNITY'])],
-  verification_level: Math.max(guild.verification_level, 1),
-  explicit_content_filter: 2,
-  default_message_notifications: 1,
-  rules_channel_id: channelId['rules'],
-  // Join, boost and setup-tip messages go to #arrivals instead of the chat.
-  system_channel_id: channelId['arrivals'],
-  public_updates_channel_id: channelId['mod-log'],
-  preferred_locale: 'en-US',
-  description: 'A free browser survivors-like with Pokémon. Play at pokemonsurvivors.com',
-})
-for (const id of pendingNews) await discord('PATCH', `/channels/${id}`, { type: TYPE.news })
+if (running('community')) {
+  // Community: needed for news channels, forums' discovery, Onboarding and the welcome screen.
+  console.log('community')
+  await patch('server', `/guilds/${GUILD}`, guild, {
+    ...(community ? {} : { features: [...guild.features, 'COMMUNITY'] }),
+    verification_level: Math.max(guild.verification_level, 1),
+    explicit_content_filter: 2,
+    default_message_notifications: 1,
+    rules_channel_id: need(channelId['rules'], '#rules', 'channels'),
+    // Join, boost and setup-tip messages go to #arrivals instead of the chat.
+    system_channel_id: need(channelId['arrivals'], '#arrivals', 'channels'),
+    public_updates_channel_id: need(channelId['mod-log'], '#mod-log', 'channels'),
+    preferred_locale: 'en-US',
+    description: 'A free browser survivors-like with Pokémon. Play at pokemonsurvivors.com',
+  })
+}
 
 /** `<#name>` in the bot's texts, as the channel's real mention. */
 const mentions = (text) => text.replace(/<#([\w-]+)>/g, (tag, name) => (channelId[name] ? `<#${channelId[name]}>` : tag))
@@ -424,139 +506,152 @@ const mentions = (text) => text.replace(/<#([\w-]+)>/g, (tag, name) => (channelI
  * `pin` keeps it pinned, so it's found again however much the channel talks.
  */
 const upsertMessage = async (channel, embed, pin = false) => {
-  const id = channelId[channel]
+  const id = need(channelId[channel], `#${channel}`, 'channels')
   const seen = [...(pin ? await discord('GET', `/channels/${id}/pins`) : []), ...(await discord('GET', `/channels/${id}/messages?limit=50`))]
   const mine = seen.find((m) => m.author.id === me.id)
   const body = { content: '', embeds: [{ ...embed, description: mentions(embed.description) }] }
-  const saved = mine ? await discord('PATCH', `/channels/${id}/messages/${mine.id}`, body) : await discord('POST', `/channels/${id}/messages`, body)
-  if (pin && !saved.pinned) await discord('PUT', `/channels/${id}/pins/${saved.id}`)
+  const saved = mine
+    ? await patch(`message in #${channel}`, `/channels/${id}/messages/${mine.id}`, mine, body)
+    : await write(`post the message in #${channel}`, 'POST', `/channels/${id}/messages`, body)
+  if (pin && saved && !saved.pinned) await write(`pin the message in #${channel}`, 'PUT', `/channels/${id}/pins/${saved.id}`)
 }
-await upsertMessage('welcome', WELCOME)
-await upsertMessage('rules', RULES)
-await upsertMessage('tiktok-reward', TIKTOK_REWARD, true)
+if (running('messages')) {
+  console.log('messages')
+  await upsertMessage('welcome', WELCOME)
+  await upsertMessage('rules', RULES)
+  await upsertMessage('tiktok-reward', TIKTOK_REWARD, true)
+}
 
-await discord('PATCH', `/guilds/${GUILD}/welcome-screen`, {
-  enabled: true,
-  description: 'Survive the horde, evolve, and catch ’em all.',
-  welcome_channels: [
-    { channel_id: channelId['welcome'], description: 'What the game is and where to start', emoji_name: '👋' },
-    { channel_id: channelId['rules'], description: 'Read before posting', emoji_name: '📜' },
-    { channel_id: channelId['introductions'], description: GATE ? 'Say hi to unlock the server' : 'Say hi', emoji_name: '👋' },
-    { channel_id: channelId['general'], description: 'Hang out with other trainers', emoji_name: '💬' },
-    { channel_id: channelId['daily-challenge'], description: 'Post your Daily Challenge time', emoji_name: '🏆' },
-  ],
-})
+if (running('welcome')) {
+  console.log('welcome')
+  const screen = await discord('GET', `/guilds/${GUILD}/welcome-screen`)
+  const channel = (name, description, emoji_name) => ({ channel_id: need(channelId[name], `#${name}`, 'channels'), description, emoji_name, emoji_id: null })
+  await patch('welcome screen', `/guilds/${GUILD}/welcome-screen`, { ...screen, enabled: guild.features.includes('WELCOME_SCREEN_ENABLED') }, {
+    enabled: true,
+    description: 'Survive the horde, evolve, and catch ’em all.',
+    welcome_channels: [
+      channel('welcome', 'What the game is and where to start', '👋'),
+      channel('rules', 'Read before posting', '📜'),
+      channel('introductions', GATE ? 'Say hi to unlock the server' : 'Say hi', '👋'),
+      channel('general', 'Hang out with other trainers', '💬'),
+      channel('daily-challenge', 'Post your Daily Challenge time', '🏆'),
+    ],
+  })
+}
 
 // Starter emojis from the game's portraits (40 px, scaled 3x without smoothing):
 // the teams' faces in Onboarding, and free for everyone in chat.
-const emojis = await discord('GET', `/guilds/${GUILD}/emojis`)
+const liveEmojis = await discord('GET', `/guilds/${GUILD}/emojis`)
 const emojiId = {}
+if (running('emojis')) console.log('emojis')
 for (const starter of STARTER_PICKS) {
-  const found = emojis.find((e) => e.name === starter.id)
-  if (found) {
-    emojiId[starter.id] = found.id
-    continue
-  }
-  const png = execFileSync('ffmpeg', [
-    '-loglevel', 'error', '-i', `public/assets/pokemon/${starter.dex}/portrait.png`,
-    '-vf', 'scale=120:120:flags=neighbor', '-f', 'image2pipe', '-vcodec', 'png', '-',
-  ])
-  emojiId[starter.id] = (await discord('POST', `/guilds/${GUILD}/emojis`, { name: starter.id, image: `data:image/png;base64,${png.toString('base64')}` })).id
+  emojiId[starter.id] = resolve('emojis', starter.id, liveEmojis, (e) => e.name === starter.id)?.id
+  if (emojiId[starter.id] || !running('emojis')) continue
+  const png = APPLY
+    ? execFileSync('ffmpeg', [
+        '-loglevel', 'error', '-i', `public/assets/pokemon/${starter.dex}/portrait.png`,
+        '-vf', 'scale=120:120:flags=neighbor', '-f', 'image2pipe', '-vcodec', 'png', '-',
+      ])
+    : Buffer.alloc(0)
+  emojiId[starter.id] = (await create(`emoji :${starter.id}:`, `/guilds/${GUILD}/emojis`, { name: starter.id, image: `data:image/png;base64,${png.toString('base64')}` })).id
+  remember('emojis', starter.id, emojiId[starter.id])
 }
 
-/** A fresh snowflake: Onboarding wants one per prompt and option. */
-let seq = 0n
-const snowflake = () => (((BigInt(Date.now()) - 1420070400000n) << 22n) | seq++).toString()
-
-// Onboarding: everyone sees the core channels; languages and pings are picked.
-const defaults = LAYOUT.filter((g) => !g.access)
-  .flatMap((g) => g.channels)
-  .filter((c) => !c.optIn)
-  .map((c) => channelId[c.name])
-await discord('PUT', `/guilds/${GUILD}/onboarding`, {
-  enabled: true,
-  mode: 0,
-  default_channel_ids: defaults,
-  prompts: [
-    {
-      id: snowflake(),
+if (running('onboarding')) {
+  // Onboarding: everyone sees the core channels; languages and pings are picked.
+  // Prompts and options keep their ids (matched by title), so members' picks stay.
+  console.log('onboarding')
+  const live = await discord('GET', `/guilds/${GUILD}/onboarding`)
+  let seq = 0n
+  /** A fresh snowflake: Onboarding wants one per new prompt and option. */
+  const snowflake = () => (((BigInt(Date.now()) - 1420070400000n) << 22n) | seq++).toString()
+  const prompt = (title, single_select, required, options) => {
+    const current = live.prompts.find((p) => p.title === title)
+    return {
+      id: current?.id ?? snowflake(),
       type: 0,
-      title: 'Pick your team!',
-      single_select: true,
-      required: true,
+      title,
+      single_select,
+      required,
       in_onboarding: true,
-      options: TEAMS.map((t) => ({
-        id: snowflake(),
+      options: options.map((o) => ({
+        id: current?.options.find((c) => c.title === o.title)?.id ?? snowflake(),
+        description: null,
+        emoji_id: null,
+        channel_ids: [],
+        role_ids: [],
+        ...o,
+      })),
+    }
+  }
+  const body = {
+    enabled: true,
+    mode: 0,
+    default_channel_ids: LAYOUT.filter((g) => !g.access)
+      .flatMap((g) => g.channels)
+      .filter((c) => !c.optIn)
+      .map((c) => need(channelId[c.name], `#${c.name}`, 'channels')),
+    prompts: [
+      prompt('Pick your team!', true, true, TEAMS.map((t) => ({
         title: t.title,
         description: t.description,
-        emoji_id: emojiId[t.face],
+        emoji_id: need(emojiId[t.face], `:${t.face}:`, 'emojis'),
         emoji_name: t.face,
-        channel_ids: [],
-        role_ids: [roleId[t.role]],
-      })),
-    },
-    {
-      id: snowflake(),
-      type: 0,
-      title: 'Which languages do you speak? (the main channels are in English)',
-      single_select: false,
-      required: false,
-      in_onboarding: true,
-      options: LANGUAGES.map(([channel, title, emoji]) => ({
-        id: snowflake(),
+        role_ids: [need(roleId[t.role], t.role, 'roles')],
+      }))),
+      prompt('Which languages do you speak? (the main channels are in English)', false, false, LANGUAGES.map(([channel, title, emoji]) => ({
         title,
         emoji_name: emoji,
-        channel_ids: [channelId[channel]],
-        role_ids: [],
-      })),
-    },
-    {
-      id: snowflake(),
-      type: 0,
-      title: 'What should we ping you about?',
-      single_select: false,
-      required: false,
-      in_onboarding: true,
-      options: PINGS.map(([role, title, description, emoji]) => ({
-        id: snowflake(),
+        channel_ids: [need(channelId[channel], `#${channel}`, 'channels')],
+      }))),
+      prompt('What should we ping you about?', false, false, PINGS.map(([role, title, description, emoji]) => ({
         title,
         description,
         emoji_name: emoji,
-        channel_ids: [],
-        role_ids: [roleId[role]],
-      })),
-    },
-  ],
-})
-
-// AutoMod (free, native): blocks slurs/sexual content, spam, mass mentions and
-// other servers' invites; staff are exempt and alerts land in #mod-log.
-const BLOCK = (custom_message) => [
-  { type: 1, metadata: { custom_message } },
-  { type: 2, metadata: { channel_id: channelId['mod-log'] } },
-]
-const AUTOMOD = [
-  { name: 'Slurs and sexual content', trigger_type: 4, trigger_metadata: { presets: [2, 3] }, actions: BLOCK('Let’s keep it friendly — check #rules.') },
-  { name: 'Spam', trigger_type: 3, actions: [{ type: 1, metadata: { custom_message: 'That looks like spam.' } }] },
-  { name: 'Mass mentions', trigger_type: 5, trigger_metadata: { mention_total_limit: 5, mention_raid_protection_enabled: true }, actions: BLOCK('Too many mentions at once.') },
-  {
-    name: 'Invite links',
-    trigger_type: 1,
-    trigger_metadata: { regex_patterns: ['(discord\\.gg|discord(app)?\\.com/invite)/\\S+'] },
-    actions: BLOCK('Invite links to other servers aren’t allowed.'),
-  },
-]
-const rules = await discord('GET', `/guilds/${GUILD}/auto-moderation/rules`)
-for (const rule of AUTOMOD) {
-  const body = { ...rule, event_type: 1, enabled: true, exempt_roles: staff }
-  const found = rules.find((r) => r.name === rule.name)
-  if (found) {
-    const { trigger_type, ...patch } = body
-    await discord('PATCH', `/guilds/${GUILD}/auto-moderation/rules/${found.id}`, patch)
-  } else await discord('POST', `/guilds/${GUILD}/auto-moderation/rules`, body)
+        role_ids: [need(roleId[role], role, 'roles')],
+      }))),
+    ],
+  }
+  // Discord reads options' emojis back as one `emoji` object.
+  const current = {
+    ...live,
+    prompts: live.prompts.map((p) => ({
+      ...p,
+      options: p.options.map(({ emoji, ...o }) => ({ ...o, emoji_id: emoji?.id ?? null, emoji_name: emoji?.name ?? null })),
+    })),
+  }
+  const changed = Object.keys(body).filter((k) => !matches(body[k], current[k]))
+  if (changed.length) await write(`Onboarding: ${changed.join(', ')}`, 'PUT', `/guilds/${GUILD}/onboarding`, body)
 }
 
-// The owner gets the Dev role.
-await discord('PUT', `/guilds/${GUILD}/members/${guild.owner_id}/roles/${roleId['Dev']}`)
+if (running('automod')) {
+  // AutoMod (free, native): blocks slurs/sexual content, spam, mass mentions and
+  // other servers' invites; staff are exempt and alerts land in #mod-log.
+  console.log('automod')
+  const modLog = need(channelId['mod-log'], '#mod-log', 'channels')
+  const BLOCK = (custom_message) => [
+    { type: 1, metadata: { custom_message } },
+    { type: 2, metadata: { channel_id: modLog } },
+  ]
+  const AUTOMOD = [
+    { name: 'Slurs and sexual content', trigger_type: 4, trigger_metadata: { presets: [2, 3] }, actions: BLOCK('Let’s keep it friendly — check #rules.') },
+    { name: 'Spam', trigger_type: 3, actions: [{ type: 1, metadata: { custom_message: 'That looks like spam.' } }] },
+    { name: 'Mass mentions', trigger_type: 5, trigger_metadata: { mention_total_limit: 5, mention_raid_protection_enabled: true }, actions: BLOCK('Too many mentions at once.') },
+    {
+      name: 'Invite links',
+      trigger_type: 1,
+      trigger_metadata: { regex_patterns: ['(discord\\.gg|discord(app)?\\.com/invite)/\\S+'] },
+      actions: BLOCK('Invite links to other servers aren’t allowed.'),
+    },
+  ]
+  const liveRules = await discord('GET', `/guilds/${GUILD}/auto-moderation/rules`)
+  for (const rule of AUTOMOD) {
+    const { name, trigger_type, ...owned } = { ...rule, event_type: 1, enabled: true, exempt_roles: staff.map((id) => need(id, 'a staff role', 'roles')) }
+    const found = resolve('automod', name, liveRules, (r) => r.name === name)
+    if (found) await patch(`AutoMod ${found.name}`, `/guilds/${GUILD}/auto-moderation/rules/${found.id}`, found, owned)
+    else remember('automod', name, (await create(`AutoMod ${name}`, `/guilds/${GUILD}/auto-moderation/rules`, { ...owned, name, trigger_type })).id)
+  }
+}
 
-console.log('Done.')
+saveIds()
+console.log(APPLY ? 'Done. Run pull.mjs and commit the snapshot.' : 'Dry run: nothing changed. Add --apply to make these changes.')

@@ -27,7 +27,8 @@ npm run roster     # rebuild the wild horde (curated list in scripts/roster.mjs)
 npm run assets     # fetch sprites (add new dex numbers in scripts/dex.mjs; the horde comes from the roster)
 npm run credits    # regenerate CREDITS.md (SpriteCollab artists) after adding species
 npm run bodies     # re-measure sprite bodies (hitboxes) into sprites.generated.json; `npm run assets` does it too
-node --env-file=.env.local scripts/discord/setup.mjs   # (re)build the community Discord: roles, channels, Onboarding, AutoMod (idempotent; DISCORD_BOT_TOKEN, DISCORD_GUILD_ID)
+node --env-file=.env.local scripts/discord/pull.mjs    # snapshot the community Discord into scripts/discord/snapshot.json (read-only; commit it before and after any setup run)
+node --env-file=.env.local scripts/discord/setup.mjs <step...> [--apply]   # pointed changes to the Discord (roles, channels, topics, community, messages, welcome, emojis, onboarding, automod); dry run by default. Staff edit names, order and looks by hand: the script only owns permissions and behavior, and finds things by id (ids.json). DISCORD_BOT_TOKEN, DISCORD_GUILD_ID
 npm run typecheck --prefix server   # the accounts API (server/), typechecked with the shared game code
 ```
 
