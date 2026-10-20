@@ -183,6 +183,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'YouTube oficial', en: 'Official YouTube', es: 'YouTube oficial' },
+        notes: [
+          {
+            pt: 'O canal oficial do jogo no YouTube é o @PokemonSurvivors, com o trailer, Shorts todo dia e um vídeo para cada atualização. Ele fica ao lado do TikTok no lobby e em Ajustes → Sobre.',
+            en: "The game's official YouTube channel is @PokemonSurvivors, with the trailer, daily Shorts and a video for each update. It sits beside TikTok in the lobby and in Settings → About.",
+            es: 'El canal oficial del juego en YouTube es @PokemonSurvivors, con el tráiler, Shorts todos los días y un video por cada actualización. Está junto al TikTok en el lobby y en Ajustes → Acerca de.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Normal ou Shiny, você escolhe', en: 'Normal or Shiny, your call', es: 'Normal o Shiny, tú eliges' },
         notes: [
           {

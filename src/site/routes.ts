@@ -6,11 +6,12 @@ export const REPO_URL = 'https://github.com/pedrobarretto/pokemon-survivors'
 
 /**
  * The game's official profiles: the lobby's follow cards, Ajustes → Sobre and
- * the site's footer list them in this order. A new network (Instagram,
- * YouTube) is a row here, an icon in `render/art.ts` and a line in the static HTML.
+ * the site's footer list them in this order. A new network (Instagram, say) is
+ * a row here, an icon in `render/art.ts` and a line in the static HTML.
  */
 export const SOCIALS = {
   tiktok: { name: 'TikTok', handle: '@pokemonsurvivors', url: 'https://www.tiktok.com/@pokemonsurvivors' },
+  youtube: { name: 'YouTube', handle: '@PokemonSurvivors', url: 'https://www.youtube.com/@PokemonSurvivors' },
 } as const satisfies Record<string, { name: string; handle: string; url: string }>
 
 export type SocialId = keyof typeof SOCIALS

@@ -851,8 +851,29 @@ const TIKTOK = [
   '..111111111111..',
 ]
 
+/** YouTube's play button: a white triangle on a red rounded rectangle. 1 outline, 2 red, 3 white. */
+const YOUTUBE = [
+  '................',
+  '................',
+  '..111111111111..',
+  '.12222222222221.',
+  '1222222222222221',
+  '1222223222222221',
+  '1222223332222221',
+  '1222223333322221',
+  '1222223333322221',
+  '1222223332222221',
+  '1222223222222221',
+  '1222222222222221',
+  '.12222222222221.',
+  '..111111111111..',
+  '................',
+  '................',
+]
+
 const SOCIAL_ART = {
   tiktok: () => art(TIKTOK, { 1: '#000000', 2: '#161823', 3: '#ffffff', 4: '#25f4ee', 5: '#fe2c55' }),
+  youtube: () => art(YOUTUBE, { 1: '#7a0012', 2: '#ff0033', 3: '#ffffff' }),
 } as const satisfies Record<SocialId, () => PixelSprite>
 
 /** Each official profile's icon (`SOCIALS` in `site/routes.ts`). */
