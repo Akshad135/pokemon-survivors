@@ -1,6 +1,7 @@
 import { retain } from '../engine/math'
 import { ARENA_FEET, ARENA_LAYOUTS, type Pt } from '../data/arenas'
-import { RIFT, type RiftLegend } from '../data/rifts'
+import { isRiftLegend, RIFT, type RiftLegend } from '../data/rifts'
+import { partnerOf } from '../data/domains'
 import { floorAt, holesAt, onFloor, stepsAt } from './arenaFloor'
 import { healPlayer, hurtPlayer } from './combat'
 import { dropItem } from './consumables'
@@ -126,9 +127,13 @@ export const riftWin = (g: Game, arena: RiftArena, x: number, y: number) => {
   const heal = Math.round(healPlayer(g, p.stats.maxHp * loot.heal))
   floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
   g.hazards.length = 0
-  g.rift.cleared.push(arena.legend)
   arena.loot = RIFT.lootTime
-  g.events.push({ kind: 'riftCleared', enemy: arena.legend, shiny: arena.shiny })
+  // A pair (Latias and Latios) clears both.
+  const partner = partnerOf(arena.legend)
+  for (const legend of partner && isRiftLegend(partner) ? [arena.legend, partner] : [arena.legend]) {
+    g.rift.cleared.push(legend)
+    g.events.push({ kind: 'riftCleared', enemy: legend, shiny: arena.shiny })
+  }
 }
 
 /**

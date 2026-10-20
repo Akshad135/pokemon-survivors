@@ -95,6 +95,7 @@ export const siteEs: SiteMessages = {
     attacks: 'Ataques',
     shinyNote: 'Puede aparecer shiny (1 de cada 450): élite con 8x de HP.',
     summoned: (by: string) => `Invocado por ${by}`,
+    retinue: (by: string) => `En el dominio de ${by}, tras una grieta legendaria`,
     behavior: 'Comportamiento',
   },
 

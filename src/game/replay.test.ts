@@ -11,6 +11,7 @@ import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
 import { enterPlace } from './placeInterior'
 import { enterDomain } from './domain'
+import { domainOf } from '../data/domains'
 import { GRAVEYARD, PLACE_IDS } from '../data/places'
 import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
@@ -355,6 +356,52 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
   })
+
+  for (const legend of ['latias', 'deoxys'] as const) {
+    it(`re-simulate a whole rift into ${legend}'s domain, its partner and barrier included`, () => {
+      const def = domainOf(legend)!
+      /** A player strong enough to get through every phase, stepping into the domain at once. */
+      const strong = (g: Game) => {
+        g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'earthquake', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+        enterDomain(g, legend, g.player.x, g.player.y)
+      }
+      const view = { ...START.view }
+      const g = startGame(START, view)
+      strong(g)
+      const rec = startRecording(START)
+      const origin = { x: g.player.x, y: g.player.y }
+      // Up through the crossing's glades or rocks, then circling in the arena.
+      const way = [...def.crossing.floor.flatMap((f) => (f.kind === 'circle' ? [[f.x, f.y] as const] : [])).slice(1), [def.arena.at[0], def.arena.at[1] + 120] as const]
+      let w = 0
+      while (g.rift.arena && rec.tick < 60 * 150) {
+        if (g.phase !== 'playing') {
+          recordEvent(rec, ['offer', 0])
+          chooseOffer(g, g.offers[0]!)
+          continue
+        }
+        // Keep the player standing: this checks the replay, not the balance.
+        g.player.hp = g.player.stats.maxHp
+        const p = g.player
+        const [tx, ty] = way[w]!
+        const dx = origin.x + tx - p.x
+        const dy = origin.y + ty - p.y
+        const len = Math.hypot(dx, dy) || 1
+        if (len < 30 && w < way.length - 1) w++
+        const a = rec.tick / 120
+        const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: Math.cos(a), y: Math.sin(a) }
+        step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+      }
+      // The duo clears both and throws a ball at each.
+      const both = def.partner ? [legend, def.partner.id] : [legend]
+      expect(g.rift.cleared).toEqual(both)
+      expect(g.events.filter((e) => e.kind === 'riftCapture').map((e) => e.kind === 'riftCapture' && e.enemy)).toEqual(both)
+      expect(g.events.filter((e) => e.kind === 'bossPhase' && e.enemy === legend).length).toBe(def.phases.length - 1)
+      expect(g.time).toBe(0)
+      const staged = startGame(START)
+      strong(staged)
+      expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    })
+  }
 
   it('give a run played on another seed away', () => {
     const { g, replay } = play(40)

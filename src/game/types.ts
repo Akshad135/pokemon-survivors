@@ -395,6 +395,8 @@ export type Hazard = {
   angle: number
   len: number
   spin: number
+  /** A phantom (`swoop`): the dex of the Pokémon whose see-through copy rides this shot, or 0. */
+  phantom: number
 }
 
 export type Pickup = {
@@ -583,6 +585,11 @@ export type GameEvent =
   | { kind: 'riftOmen'; enemy: RiftLegend }
   | { kind: 'riftTitle'; enemy: RiftLegend; shiny: boolean }
   | { kind: 'riftCapture'; enemy: RiftLegend; shiny: boolean }
+  /** A boss raised its barrier (`guard`), or its last keeper broke (`up: false`). */
+  | { kind: 'bossGuard'; enemy: EnemyId; up: boolean }
+  /** A linked pair (`game/domainPair.ts`): `enemy` was knocked out and `partner` fights on enraged, or `enemy` revived `partner`. */
+  | { kind: 'pairDown'; enemy: EnemyId; partner: EnemyId }
+  | { kind: 'pairRevive'; enemy: EnemyId; partner: EnemyId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }

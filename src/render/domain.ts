@@ -124,7 +124,10 @@ const bakeChunk = (p: Painter, cx: number, cy: number) => {
         let k = 0
         for (let d = 1; d <= FACE && !k; d++) if (at(mx, my - d)) k = d
         if (k) color = shade(faces, 0.9 - k / FACE + (k % 4 === 0 ? -0.25 : 0) + (hash2(Math.floor(x) >> 2, k, 3) - 0.5) * 0.2, Math.floor(x), Math.floor(y))
-        else if (holes.some((h) => fits(h, x, y, 0))) {
+        else if (holes.some((h) => fits(h, x, y, 0)) && p.domain.backdrop === 'space') {
+          // Over open space a hole goes straight through: the void, with a star or two.
+          color = hash2(Math.floor(x), Math.floor(y), 8) > 0.992 ? p.theme.motes : p.theme.void
+        } else if (holes.some((h) => fits(h, x, y, 0))) {
           const wave = Math.abs(((y + Math.sin(x / 9) * 2.5 + 4000) % 10) - 5) < 0.6 && hash2(Math.floor(x / 14), Math.floor(y / 10), 1) < 0.7
           color = wave ? '#3890c0' : hash2(Math.floor(x), Math.floor(y), 2) < 0.5 ? '#0c3450' : '#0e3a58'
         }
@@ -292,6 +295,7 @@ const THREATS: Record<ThreatKind, { body: string; edge: string; foam: string }> 
   collapse: { body: 'rgba(12,8,6,0.94)', edge: '#5a4030', foam: '#a08060' },
   fire: { body: 'rgba(160,40,8,0.86)', edge: '#f86818', foam: '#f8e060' },
   void: { body: 'rgba(8,4,24,0.94)', edge: '#7850c8', foam: '#c8a8f8' },
+  mist: { body: 'rgba(236,224,244,0.9)', edge: '#f8c8e0', foam: '#ffffff' },
 }
 
 const drawThreat = (ctx: Ctx, kind: ThreatKind, sy: number, w: number, h: number, t: number) => {

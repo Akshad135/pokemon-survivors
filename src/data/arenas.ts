@@ -35,7 +35,7 @@ export const ARENA_FEET: Record<ArenaPiece, Ellipse> = {
 /** Every few seconds a rule steps the arena (the tide rises, the edge falls), with a warning before. */
 export type ArenaStepRule = { every: number; warn: number; max: number; px: number }
 
-export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs' | 'sand' | 'craters'
+export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs' | 'sand' | 'craters' | 'garden'
 
 /**
  * The ground of a closed space (a rift's arena, a place's interior): the floor

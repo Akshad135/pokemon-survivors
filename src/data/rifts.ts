@@ -11,6 +11,9 @@ export const RIFT_LEGENDS = ['lugia', 'hoOh', 'kyogre', 'groudon', 'rayquaza', '
 
 export type RiftLegend = (typeof RIFT_LEGENDS)[number]
 
+/** The legendaries a rift draws: Latios never comes alone, he fights beside Latias in her domain (`partner`, `data/domains/latis.ts`). */
+export const RIFT_DRAWS = RIFT_LEGENDS.filter((l): l is Exclude<RiftLegend, 'latios'> => l !== 'latios')
+
 /** How an arena looks: floor tiles (base, alternate, grout), the wall ring (light, dark), the void past it and its floating motes. */
 export type ArenaTheme = {
   floor: readonly [string, string, string]

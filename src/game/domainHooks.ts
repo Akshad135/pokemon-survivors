@@ -1,11 +1,13 @@
 import type { RiftLegend } from '../data/rifts'
 import type { DomainState } from './domain'
 import type { Enemy, Game } from './types'
+import { LATIS_HOOKS } from './latisHooks'
+import { DEOXYS_HOOKS } from './deoxysHooks'
 
 /**
  * Mechanics a legendary's domain needs beyond its data (`data/domains.ts`):
- * Dialga freezing shots, Ho-Oh's rebirth, Latias and Latios fighting
- * together. Each hook runs inside the simulation, so it must stay
+ * Dialga freezing shots, Ho-Oh's rebirth, Latis's mirages, Deoxys's meteor
+ * shower. Each hook runs inside the simulation, so it must stay
  * deterministic (seeded rng, `engine/dmath`) and never touch the DOM.
  * A legendary's hooks live in their own module, added to `DOMAIN_HOOKS`.
  */
@@ -25,4 +27,7 @@ export type DomainHooks = {
   fallen?: (g: Game, d: DomainState, boss: Enemy) => boolean
 }
 
-export const DOMAIN_HOOKS: Partial<Record<RiftLegend, DomainHooks>> = {}
+export const DOMAIN_HOOKS: Partial<Record<RiftLegend, DomainHooks>> = {
+  latias: LATIS_HOOKS,
+  deoxys: DEOXYS_HOOKS,
+}

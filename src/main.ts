@@ -18,6 +18,7 @@ import { bodyOf } from './data/bodies'
 import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
 import { isRiftLegend, RIFT, RIFT_LEGENDS } from './data/rifts'
 import { domainTheme } from './game/domain'
+import { partnerOf } from './data/domains'
 import { captureOutcome } from './render/capture'
 import { domainLines } from './ui/riftTitle'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
@@ -1137,7 +1138,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       const lines = domainLines(e.enemy)
       // A domain's legendary shows itself later, in its own forms: have them ready.
       if (lines) {
-        void preloadForms([def.dex], e.shiny)
+        const partner = partnerOf(e.enemy)
+        void preloadForms(partner ? [def.dex, ENEMIES[partner].dex] : [def.dex], e.shiny)
         toast(ui, rich(lines.crossing), 3600)
         return banner(ui, rich(t().rifts.enterDomain(lines.place)))
       }
@@ -1159,7 +1161,9 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playSfx('legendary')
       return toast(ui, h('span', { class: 'toast-ultimate' }, `${e.move}!`), 2400, 'ultimate')
     case 'riftCapture': {
-      const capture = g.rift.arena?.domain?.capture
+      // A pair's capture throws a ball at each: the toast follows the one this event is for.
+      const both = g.rift.arena?.domain?.capture
+      const capture = both?.kind === e.enemy ? both : both?.partner?.kind === e.enemy ? both.partner : null
       const name = ENEMIES[e.enemy].name
       if (capture && captureOutcome(capture) === 'caught') {
         playSfx('unlock')
@@ -1169,6 +1173,17 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
       return toast(ui, rich(t().rifts.escaped(name)), 3200)
     }
+    case 'pairDown':
+      playSfx('quake')
+      playCry(sprites(ENEMIES[e.partner].dex).cry, 0.9)
+      return toast(ui, rich(t().rifts.pairDown(ENEMIES[e.enemy].name, ENEMIES[e.partner].name)), 3600)
+    case 'pairRevive':
+      playSfx('evolve')
+      playCry(sprites(ENEMIES[e.partner].dex).cry, 0.8)
+      return toast(ui, rich(t().rifts.pairRevive(ENEMIES[e.enemy].name, ENEMIES[e.partner].name)), 3200)
+    case 'bossGuard':
+      playSfx(e.up ? 'legendary' : 'break')
+      return toast(ui, rich(e.up ? t().rifts.guardUp(ENEMIES[e.enemy].name) : t().rifts.guardDown), e.up ? 3400 : 2200)
     case 'riftCleared':
       playSfx('evolve')
       return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)

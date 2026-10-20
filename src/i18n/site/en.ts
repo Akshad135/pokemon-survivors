@@ -95,6 +95,7 @@ export const siteEn: SiteMessages = {
     attacks: 'Attacks',
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
     summoned: (by: string) => `Called in by ${by}`,
+    retinue: (by: string) => `In ${by}'s domain, behind a legendary rift`,
     behavior: 'Behavior',
   },
 

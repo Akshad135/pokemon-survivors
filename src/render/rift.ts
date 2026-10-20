@@ -139,7 +139,18 @@ const craters: Pattern = (x, y, t) => {
   return hash2(Math.floor((x + 400) / 9), Math.floor((y + 400) / 7), 1) > 0.6 ? alt : base
 }
 
-export const PATTERNS: Record<FloorPattern, Pattern> = { rings, planks, slabs, basalt, wetRock, jade, sand, craters }
+/** A dreamed meadow (the Eon duo's Southern Island): soft grass in mown bands, scattered with red, blue and white flowers. */
+const garden: Pattern = (x, y) => {
+  const h = hash2(Math.floor(x), Math.floor(y), 6)
+  // Flowers grow in little clumps: a cell decides the color, a pixel whether one stands there.
+  const cell = hash2(Math.floor(x / 5), Math.floor(y / 5), 7)
+  if (h > 0.985 && cell > 0.55) return cell > 0.85 ? '#f87890' : cell > 0.7 ? '#88b0f8' : '#f8f0f8'
+  if (h < 0.025) return '#3c7c40'
+  const band = (y + Math.sin(x / 17) * 4 + 4000) % 22 < 11
+  return band ? '#5ca450' : '#66ae58'
+}
+
+export const PATTERNS: Record<FloorPattern, Pattern> = { rings, planks, slabs, basalt, wetRock, jade, sand, craters, garden }
 
 /** Inlays drawn over the pattern: the Bell Tower's gold band and the Spear Pillar's clock. */
 const INLAYS: Partial<Record<RiftLegend, (x: number, y: number, t: ArenaTheme) => string | null>> = {

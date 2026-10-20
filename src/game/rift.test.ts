@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { RIFT, RIFT_LEGENDS } from '../data/rifts'
+import { RIFT, RIFT_DRAWS, type RiftLegend } from '../data/rifts'
 import { EVENTS, RUN_LENGTH } from '../data/waves'
 import { chargePortal, createRiftState, endlessRiftAt, pickLegend, riftAt, riftDue, riftLoot, riftScale } from './rift'
 
@@ -76,10 +76,13 @@ describe('rift portal', () => {
 
   it('brings a different legendary each time until all were met', () => {
     const rng = createRng(4)
-    const seen: (typeof RIFT_LEGENDS)[number][] = []
-    for (let i = 0; i < RIFT_LEGENDS.length; i++) seen.push(pickLegend(rng, seen))
-    expect(new Set(seen).size).toBe(RIFT_LEGENDS.length)
-    expect(RIFT_LEGENDS).toContain(pickLegend(rng, seen))
+    const seen: RiftLegend[] = []
+    for (let i = 0; i < RIFT_DRAWS.length; i++) seen.push(pickLegend(rng, seen))
+    expect(new Set(seen).size).toBe(RIFT_DRAWS.length)
+    const next = pickLegend(rng, seen)
+    expect(RIFT_DRAWS.some((l) => l === next)).toBe(true)
+    // Latios only ever comes along with Latias.
+    expect(seen).not.toContain('latios')
   })
 })
 

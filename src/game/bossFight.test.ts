@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, MIN_TELEGRAPH, STANCES, type BossPattern } from '../data/bosses'
-import { attackCount, attackWait, chainTarget, createFight, fightPace, fightsInStances, holdsOn, patternLive, phaseAt, shouldEnrage, telegraph, tickStance, ultimateLength } from './bossFight'
+import { attackCount, attackWait, chainTarget, createFight, fightPace, fightsInStances, holdsOn, patternLive, phaseAt, phaseTaken, pooledShare, shouldEnrage, steerBoss, telegraph, tickStance, ultimateLength, type Steering } from './bossFight'
 
 describe('boss fights', () => {
   it('only wave bosses fight in stances', () => {
@@ -126,5 +126,45 @@ describe('bosses with phases', () => {
     const ultimate = phases[2]!.ultimate!
     const last = ultimate.steps.at(-1)!
     expect(ultimateLength(ultimate.steps)).toBeGreaterThan(last.at)
+  })
+})
+
+describe('a linked pair (Latias and Latios)', () => {
+  it('share one pool of HP, so they move through the phases together', () => {
+    const a = { hp: 300, maxHp: 1000 }
+    expect(pooledShare(a, { hp: 1000, maxHp: 1000 })).toBeCloseTo(0.65)
+    expect(pooledShare(a, { hp: -40, maxHp: 1000 })).toBeCloseTo(0.15)
+    expect(pooledShare(a, undefined)).toBeCloseTo(0.3)
+  })
+
+  it('never faint alone while linked, even in their last phase', () => {
+    const fight = createFight(createRng(1), 'normal')
+    fight.phase = (BOSS_PHASES.latios?.length ?? 1) - 1
+    fight.link = 7
+    expect(holdsOn({ kind: 'latios', fight })).toBe(true)
+    fight.link = -1
+    expect(holdsOn({ kind: 'latios', fight })).toBe(false)
+  })
+
+  it('fly across their home from each other, and circle once alone', () => {
+    const fight = createFight(createRng(1), 'normal', { x: 100, y: 100 })
+    const out: Steering = { x: 0, y: 0, pace: 0 }
+    steerBoss(fight, 'latios', { x: 200, y: 100, id: 2 }, { x: 0, y: 0 }, 0, out, { x: 40, y: 60 })
+    expect([out.x, out.y]).toEqual([160, 140])
+    steerBoss(fight, 'latios', { x: 200, y: 100, id: 2 }, { x: 0, y: 0 }, 0, out, null)
+    const steer = BOSS_PHASES.latios![0]!.steer
+    if (steer?.kind !== 'mirror') throw new Error('Latios mirrors Latias')
+    expect(Math.hypot(out.x - 100, out.y - 100)).toBeCloseTo(steer.radius)
+  })
+})
+
+describe('Deoxys', () => {
+  it('takes more damage in its frail Attack Forme only', () => {
+    const fight = createFight(createRng(1), 'normal')
+    expect(phaseTaken({ kind: 'deoxys', fight })).toBe(1)
+    fight.phase = 1
+    expect(phaseTaken({ kind: 'deoxys', fight })).toBeGreaterThan(1)
+    fight.phase = 2
+    expect(phaseTaken({ kind: 'deoxys', fight })).toBe(1)
   })
 })

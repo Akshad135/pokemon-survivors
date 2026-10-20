@@ -9,6 +9,8 @@ export type HazardVisual =
   | 'poison'
   /** The horde's spit shots (`game/spitters.ts`), one look per flavor; `sludge` also names its puddle. */
   | SpitVisual
+  /** The Eon duo's colors: Latias's red Mist Ball, Latios's blue Luster Purge (both Psychic). */
+  | 'mist' | 'luster'
 
 export type SpitVisual = 'fireball' | 'bubble' | 'sludge' | 'spark' | 'seed' | 'orb'
 
@@ -60,9 +62,11 @@ export type BossPattern = PatternGate &
      * burn (0 or absent: static; a static one stops at the first cover in its way
      * when `blocked`). `source: 'edge'`: parallel lances from past the screen's
      * edge at a random angle, `spread` px apart, the middle one through the
-     * player; the gaps between them are the safe lanes.
+     * player; the gaps between them are the safe lanes. `source: 'lattice'`: two
+     * such sets at right angles (the second in `cross`'s look), crossing on the
+     * player; the pockets where their gaps meet are the safe spots.
      */
-    | { kind: 'beam'; every: number; source: 'boss' | 'edge'; count: number; spread: number; sweep?: number; windup: number; duration: number; width: number; length: number; damage: number; visual: HazardVisual; blocked?: true }
+    | { kind: 'beam'; every: number; source: 'boss' | 'edge' | 'lattice'; count: number; spread: number; sweep?: number; windup: number; duration: number; width: number; length: number; damage: number; visual: HazardVisual; blocked?: true; cross?: HazardVisual }
     /** Adds: `count` of `enemies` (taken in turn) come out `radius` px around the boss, while fewer than `max` of them stand; `role` as in a domain's retinue. */
     | { kind: 'summon'; every: number; enemies: readonly EnemyId[]; count: number; max: number; radius: number; role?: RetinueRole }
     /** A charge: the boss marks a lane through the player for `windup` s, then rushes down it at `speed` px/s, `count` times in a row, hurting on contact. */
@@ -76,6 +80,20 @@ export type BossPattern = PatternGate &
      * spots glow) that only spares those in a `safe` spot (`BlastSafe`).
      */
     | { kind: 'blast'; every: number; windup: number; damage: number; safe: BlastSafe; radius?: number; visual: HazardVisual }
+    /**
+     * Phantoms (see-through copies of the boss, Double Team, Latias's mirages)
+     * streak along lanes through where the player stands: `count` of them, `gap`
+     * s apart, each lane marked `windup` s before it rushes at `speed` px/s. They
+     * start at the boss (`origin: 'boss'`) or on a ring `radius` px around the player.
+     */
+    | { kind: 'swoop'; every: number; origin: 'boss' | 'ring'; count: number; gap: number; windup: number; speed: number; width: number; radius: number; damage: number; visual: HazardVisual }
+    /**
+     * A barrier (Deoxys's Defense Forme): `count` of `enemies` (taken in turn)
+     * stand on posts `radius` px around the boss's home with `hp` times their HP,
+     * linked to it; while one stands the boss takes no damage. Raised again
+     * `every` s after the last one breaks.
+     */
+    | { kind: 'guard'; every: number; enemies: readonly EnemyId[]; count: number; radius: number; hp: number }
   )
 
 /**
@@ -88,14 +106,18 @@ export type BlastSafe = 'cover' | 'dry' | 'near' | 'far'
 /**
  * How a boss with phases walks (`BossPhase.steer`): `chase` at the player (the
  * default), `hold` about `range` px away, `anchor` near its home (where it
- * appeared) plus (x, y), wandering `drift` px, or `orbit` its home at
- * `radius`. `pace` multiplies its speed.
+ * appeared) plus (x, y), wandering `drift` px, `orbit` its home at
+ * `radius`, or `mirror` its linked partner across its home (in tandem, Latios
+ * opposite Latias; circling at `radius` while the partner is out); a circling
+ * one with `keep` veers off a player closer than that (px), so hugging it doesn't
+ * pay. `pace` multiplies its speed.
  */
 export type BossSteer =
   | { kind: 'chase'; pace?: number }
   | { kind: 'hold'; range: number; pace?: number }
   | { kind: 'anchor'; x: number; y: number; drift: number; pace?: number }
-  | { kind: 'orbit'; radius: number; pace?: number }
+  | { kind: 'orbit'; radius: number; pace?: number; keep?: number }
+  | { kind: 'mirror'; radius: number; pace?: number; keep?: number }
 
 /** A step of an ultimate: `pattern` fires `at` seconds after the ultimate begins. */
 export type UltimateStep = { at: number; pattern: BossPattern }
@@ -113,7 +135,8 @@ export type BossUltimate = { move: string; first: number; every: number; steps: 
  * HP is in: a phase starts once it drops under `below` of its HP (the first
  * one's is 1). As one begins the boss roars and holds still, untouchable, for
  * `shift` s (`PHASE_SHIFT` when absent); `form` swaps its sprite (a form key of
- * its species in the sprite manifest, e.g. `primal`); `steer` says how it moves.
+ * its species in the sprite manifest, e.g. `primal`); `steer` says how it moves;
+ * `taken` scales the damage it takes.
  * The HUD ticks the thresholds on its HP bar.
  */
 export type BossPhase = {
@@ -123,6 +146,8 @@ export type BossPhase = {
   steer?: BossSteer
   form?: string
   shift?: number
+  /** Multiplies the damage it takes in this phase (Deoxys's frail Attack Forme). */
+  taken?: number
 }
 
 /** Seconds a boss holds still and untouchable as a new phase begins. */

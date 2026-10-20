@@ -3,11 +3,12 @@ import { weightedPick } from '../engine/rng'
 import { ARENA_FEET, type FloorPlan, type Pt } from '../data/arenas'
 import { domainOf, type ArenaTransform, type LegendDomain } from '../data/domains'
 import { ENEMIES } from '../data/enemies'
-import { RIFT, type RiftLegend } from '../data/rifts'
+import { isRiftLegend, RIFT, type RiftLegend } from '../data/rifts'
 import { onFloor } from './arenaFloor'
 import { joinAs, parked } from './bosses'
 import { hurtPlayer, killEnemy } from './combat'
 import { DOMAIN_HOOKS } from './domainHooks'
+import { pairFighter, revealPartner, updatePair, type PairState } from './domainPair'
 import {
   advanceFront, CAPTURE, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, transformStage, waterBelow,
 } from './domainRules'
@@ -53,8 +54,10 @@ export type DomainState = {
   landed: ArenaTransform[]
   /** Seconds into the encounter or capture scene, which hold the world still. */
   scene: number
-  /** The fallen legendary the capture scene plays on, and whether its ball has settled. */
-  capture: { kind: Enemy['kind']; x: number; y: number; shiny: boolean; settled: boolean } | null
+  /** The fallen legendary the capture scene plays on (and its partner, which gets a ball too), and whether its ball has settled. */
+  capture: { kind: Enemy['kind']; x: number; y: number; shiny: boolean; settled: boolean; partner: { kind: Enemy['kind']; x: number; y: number; shiny: boolean } | null } | null
+  /** The partner fighting beside the legendary (`LegendDomain.partner`), once it shows. */
+  pair: PairState | null
 }
 
 const defOf = (d: DomainState): LegendDomain => domainOf(d.legend)!
@@ -105,6 +108,7 @@ export const enterDomain = (g: Game, legend: RiftLegend, x: number, y: number) =
     landed: [],
     scene: 0,
     capture: null,
+    pair: null,
   }
   const p = g.player
   p.x = x + crossing.start[0]
@@ -225,6 +229,10 @@ const reveal = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) =>
   g.flash = 1
   g.shake = 12
   burst(g, at.x, at.y - 10, { colors: ['#ffffff', '#c8e8f8', '#58a8f8'], count: 90, speed: 220, ttl: 0.7, size: 2, gravity: 160 })
+  if (def.partner) {
+    const spot = arenaPoint(arena, d, def.partner.at)
+    d.pair = revealPartner(g, def, boss, spot.x, spot.y, arenaPoint(arena, d, [0, 0]))
+  }
   g.events.push({ kind: 'riftTitle', enemy: d.legend, shiny: arena.shiny })
   DOMAIN_HOOKS[d.legend]?.reveal?.(g, d, boss)
 }
@@ -247,7 +255,9 @@ export const updateDomainScene = (g: Game, dt: number) => {
   if (d.act === 'encounter') {
     if (before < REVEAL_AT && d.scene >= REVEAL_AT) reveal(g, arena, d, def)
     const beat = encounterBeat(d.scene)
-    const at = arenaPoint(arena, d, def.arena.boss)
+    // A pair is framed between its two spots.
+    const [bx, by] = def.arena.boss
+    const at = arenaPoint(arena, d, def.partner ? [(bx + def.partner.at[0]) / 2, (by + def.partner.at[1]) / 2] : def.arena.boss)
     // The ground rumbles harder as the legendary comes in.
     if (beat.entrance > 0 && beat.entrance < 1) g.shake = Math.max(g.shake, 2 + beat.entrance * 5)
     centerOn(g, p.x + (at.x - p.x) * beat.camera, p.y + (at.y - p.y) * beat.camera)
@@ -259,10 +269,11 @@ export const updateDomainScene = (g: Game, dt: number) => {
   }
   const c = d.capture!
   // On the legendary, a little low on screen so the news at the top doesn't cover it; the throw comes in from the player's side.
-  centerOn(g, c.x, c.y - 50)
+  centerOn(g, c.partner ? (c.x + c.partner.x) / 2 : c.x, (c.partner ? (c.y + c.partner.y) / 2 : c.y) - 50)
   if (before < CAPTURE.settle && d.scene >= CAPTURE.settle) {
     c.settled = true
     g.events.push({ kind: 'riftCapture', enemy: d.legend, shiny: c.shiny })
+    if (c.partner && isRiftLegend(c.partner.kind)) g.events.push({ kind: 'riftCapture', enemy: c.partner.kind, shiny: c.partner.shiny })
   }
   if (d.scene < CAPTURE.length) return true
   d.act = 'after'
@@ -275,7 +286,9 @@ export const updateDomainScene = (g: Game, dt: number) => {
 const startCapture = (g: Game, arena: RiftArena, d: DomainState, boss: Enemy | undefined) => {
   const x = boss?.x ?? arenaPoint(arena, d, defOf(d).arena.boss).x
   const y = boss?.y ?? arenaPoint(arena, d, defOf(d).arena.boss).y
-  d.capture = { kind: d.legend, x, y, shiny: arena.shiny, settled: false }
+  const mate = d.pair ? g.enemies.find((e) => e.id === d.pair!.partnerId) : undefined
+  const partner = mate ? { kind: mate.kind, x: mate.x, y: mate.y, shiny: mate.shiny } : null
+  d.capture = { kind: d.legend, x, y, shiny: arena.shiny, settled: false, partner }
   d.act = 'capture'
   d.scene = 0
   g.hazards.length = 0
@@ -301,7 +314,13 @@ const battleTick = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain
   }
   arena.left -= dt
   if (arena.left <= 0) return exitArena(g, 'collapse')
-  const phase = boss.fight?.phase ?? 0
+  if (d.pair) {
+    updatePair(g, d.pair, def, d.bossId, dt)
+    if (boss.dying >= 0) return
+  }
+  // A pair's arena follows whichever of the two got furthest (a knocked-out one waits where it was).
+  const mate = d.pair ? g.enemies.find((e) => e.id === d.pair!.partnerId) : undefined
+  const phase = Math.max(boss.fight?.phase ?? 0, mate?.fight?.phase ?? 0)
   if (phase !== d.phase) followPhase(g, d, def, boss, phase)
   d.phaseAge += dt
   for (const t of d.pending) {
@@ -340,7 +359,7 @@ const keepInDomain = (g: Game, plan: FloorPlan, arena: RiftArena) => {
   const p = g.player
   keepOnFloor(p, arena, plan.floor, plan.holes ?? [], p.radius)
   for (const e of g.enemies) if (e.dying < 0 && !parked(e)) keepOnFloor(e, arena, plan.floor, [], e.boss ? e.radius * 0.5 : e.radius * 0.8)
-  retain(g.hazards, (h) => h.kind !== 'shot' || onFloor(plan.floor, h.x - arena.x, h.y - arena.y, 6))
+  retain(g.hazards, (h) => h.kind !== 'shot' || h.phantom > 0 || onFloor(plan.floor, h.x - arena.x, h.y - arena.y, 6))
 }
 
 /* ---------------- Camera ---------------- */
@@ -363,7 +382,7 @@ export const domainCamera = (g: Game, dt: number) => {
   const { w, h } = g.view
   let x = p.x - w / 2
   let y = p.y - 10 - h / 2 - (d.act === 'crossing' ? h * LOOK_AHEAD : 0)
-  const boss = d.act === 'battle' ? g.enemies.find((e) => e.id === d.bossId) : undefined
+  const boss = d.act === 'battle' ? pairFighter(g, d.pair, d.bossId) : undefined
   if (boss && !parked(boss)) {
     x = Math.max(p.x - (w - FRAME.side), Math.min(p.x - FRAME.side, (p.x + boss.x) / 2 - w / 2))
     y = Math.max(p.y - (h - FRAME.bottom), Math.min(p.y - FRAME.top, (p.y + boss.y) / 2 - h / 2 - 24))
@@ -394,12 +413,17 @@ export const jumpToAct = (g: Game, act: 'crossing' | 'encounter' | 'battle' | 'c
   d.age = 0
   const boss = g.enemies.find((e) => e.id === d.bossId)
   if (!boss) return
+  const pair = d.pair ? g.enemies.filter((e) => e.id === d.bossId || e.id === d.pair!.partnerId) : [boss]
   if (act === 'capture') {
-    if (boss.fight) Object.assign(boss.fight, { phase: def.phases.length - 1, shift: 0 })
-    return killEnemy(g, boss)
+    for (const e of pair) {
+      if (e.fight?.down && d.pair) Object.assign(e, { x: d.pair.x, y: d.pair.y })
+      if (e.fight) Object.assign(e.fight, { phase: def.phases.length - 1, shift: 0, link: -1, down: false })
+    }
+    for (const e of [...pair].reverse()) killEnemy(g, e)
+    return
   }
   const below = def.phases[phase - 1]?.below ?? 1
-  boss.hp = Math.max(1, Math.min(boss.maxHp, boss.maxHp * below - 1))
+  for (const e of pair) e.hp = Math.max(1, Math.min(e.maxHp, e.maxHp * below - 1))
 }
 
 /** What a domain plays: its crossing's theme until the legendary shows itself, then its own (`LegendDomain.music`). */

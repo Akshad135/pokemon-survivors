@@ -54,6 +54,9 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   spark: ['electric'],
   seed: ['grass'],
   orb: ['normal'],
+  // The Eon duo's Mist Ball and Luster Purge.
+  mist: ['psychic'],
+  luster: ['psychic'],
 }
 
 /** Rolls the next weather spell from the biome's odds, never repeating `current`. */

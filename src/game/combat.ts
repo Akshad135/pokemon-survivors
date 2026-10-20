@@ -23,7 +23,7 @@ import { countKill } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
 import { alphaDown } from './alphas'
-import { holdsOn } from './bossFight'
+import { holdsOn, phaseTaken } from './bossFight'
 import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
@@ -35,7 +35,7 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   // A sure hit (Sacred Sword) lands resisted matchups as neutral and cuts through wards.
   const eff = attack.sure ? Math.max(1, effectiveness(attack.type, e.types)) : effectiveness(attack.type, e.types)
   // Conditional bonuses (Hex), a mark and a freeze multiply the hit; without them it's exactly ×1.
-  const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status))
+  const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status) * phaseTaken(e))
   const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
   // A Bronzong ward soaks the hit first, unless the move or the ability (Infiltrator) goes through wards.
   const dmg = attack.sure || attack.ignoreWards || abilityImmune(g, 'wards') ? raw : absorb(e.trait, raw)

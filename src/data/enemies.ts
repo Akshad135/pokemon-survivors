@@ -87,6 +87,9 @@ export const ENEMIES = {
   latias: { dex: 380, name: 'Latias', types: ['dragon', 'psychic'], hp: 3200, speed: 64, damage: 28, xp: 0, mass: 40, boss: true, legendary: true },
   latios: { dex: 381, name: 'Latios', types: ['dragon', 'psychic'], hp: 3200, speed: 66, damage: 30, xp: 0, mass: 40, boss: true, legendary: true },
   deoxys: { dex: 386, name: 'Deoxys', types: ['psychic'], hp: 2800, speed: 70, damage: 32, xp: 0, mass: 40, boss: true, legendary: true },
+  // Deoxys's retinue in its domain (`data/domains/deoxys.ts`), never in the horde (no tier).
+  beldum: { dex: 374, name: 'Beldum', types: ['steel', 'psychic'], hp: 20, speed: 44, damage: 10, xp: 2, mass: 1.8 },
+  metang: { dex: 375, name: 'Metang', types: ['steel', 'psychic'], hp: 60, speed: 40, damage: 13, xp: 5, mass: 2.6 },
   // A place's boss (`data/places.ts`): HP and contact damage are its 1:30 values, scaled by `placeBossScale`.
   spiritomb: { dex: 442, name: 'Spiritomb', types: ['ghost', 'dark'], hp: 1100, speed: 34, damage: 18, xp: 0, mass: 30, boss: true },
   // The endless mode's reaper (`game/endless.ts`): it hunts the player from 20:00.

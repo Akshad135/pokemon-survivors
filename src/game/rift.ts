@@ -1,5 +1,5 @@
 import { pick, range, type Rng } from '../engine/rng'
-import { RIFT, RIFT_ITEMS, RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
+import { RIFT, RIFT_DRAWS, RIFT_ITEMS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
 import type { FloorPlan } from '../data/arenas'
 import type { DomainState } from './domain'
@@ -78,10 +78,10 @@ export const riftDue = (s: { time: number; nextAt: number; busy: boolean; bossAl
 /** Whether the run clock runs: it stops while the player is inside a rift. */
 export const clockRuns = (g: Pick<Game, 'rift'>) => g.rift.arena === null
 
-/** A legendary not met yet this run; once all were met, any of them. */
+/** A legendary not met yet this run; once all were met, any of them. Latias brings Latios along (`RIFT_DRAWS`). */
 export const pickLegend = (rng: Rng, met: readonly RiftLegend[]): RiftLegend => {
-  const fresh = RIFT_LEGENDS.filter((l) => !met.includes(l))
-  return pick(rng, fresh.length > 0 ? fresh : RIFT_LEGENDS)
+  const fresh = RIFT_DRAWS.filter((l) => !met.includes(l))
+  return pick(rng, fresh.length > 0 ? fresh : RIFT_DRAWS)
 }
 
 /** Standing in the portal fills it; stepping out drains it twice as fast. */

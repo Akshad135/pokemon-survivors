@@ -22,4 +22,6 @@ export const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
   spark: ['#f8e030', 'rgba(248,224,48,0.22)'],
   seed: ['#78d850', 'rgba(112,208,72,0.28)'],
   orb: ['#e8e8f0', 'rgba(200,200,216,0.3)'],
+  mist: ['#f86078', 'rgba(248,176,200,0.42)'],
+  luster: ['#58a0f8', 'rgba(72,136,248,0.32)'],
 }

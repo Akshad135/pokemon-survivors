@@ -121,6 +121,14 @@ export const despawnEnemy = (e: Enemy) => {
   e.dying = FAINT_TIME
 }
 
+/** A linked boss's partner while it's in play (`BossFight.link`), for steering in tandem. */
+const mateOf = (g: Game, e: Enemy) => {
+  const link = e.fight?.link ?? -1
+  if (link < 0) return null
+  const mate = g.enemies.find((k) => k.id === link)
+  return mate && mate.dying < 0 && !mate.fight?.down ? mate : null
+}
+
 /** Where a walker heads instead of the player (a dungeon's corridor), reused every tick. */
 const waypoint = { x: 0, y: 0 }
 /** Where a boss with phases heads (`steerBoss`), reused every tick. */
@@ -168,7 +176,7 @@ export const updateEnemies = (g: Game, dt: number) => {
         const t = leadTime(dm.hypot(p.x - e.x, p.y - e.y), pace)
         tx += p.vx * t
         ty += p.vy * t
-      } else if (e.fight && steerBoss(e.fight, e.kind, e, p, g.now, steering)) {
+      } else if (e.fight && steerBoss(e.fight, e.kind, e, p, g.now, steering, mateOf(g, e))) {
         // A boss with phases moves as its phase says (`BossSteer`), or holds still through its scripts.
         tx = steering.x
         ty = steering.y
