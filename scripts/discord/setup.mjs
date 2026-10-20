@@ -32,6 +32,7 @@ const P = {
   kick: 1n << 1n,
   ban: 1n << 2n,
   addReactions: 1n << 6n,
+  stream: 1n << 9n,
   viewChannel: 1n << 10n,
   sendMessages: 1n << 11n,
   manageEmojis: 1n << 30n,
@@ -47,12 +48,14 @@ const P = {
   createPrivateThreads: 1n << 36n,
   sendMessagesInThreads: 1n << 38n,
   moderateMembers: 1n << 40n,
+  useSoundboard: 1n << 42n,
 }
 const MODERATE =
   P.kick | P.ban | P.manageMessages | P.mentionEveryone | P.muteMembers | P.moveMembers | P.manageNicknames | P.manageThreads | P.moderateMembers
 const TALK = P.sendMessages | P.createPublicThreads | P.createPrivateThreads | P.sendMessagesInThreads
 
-const VOICE = P.connect | P.speak
+// Behind the gate a newcomer only listens: no camera, screen share or soundboard either.
+const VOICE = P.connect | P.speak | P.stream | P.useSoundboard
 
 const TYPE = { text: 0, voice: 2, category: 4, news: 5, forum: 15 }
 
@@ -103,6 +106,7 @@ const LAYOUT = [
         slowmode: 30,
         topic: 'Say hi! Your name or nick, where you’re from, your favorite Pokémon and how you found the game.',
       },
+      { name: 'arrivals', readOnly: true, topic: 'Who just landed. Join messages live here so the chat stays clean.' },
       { name: 'announcements', type: 'news', readOnly: true, topic: 'Big news, events and giveaways.' },
       { name: 'patch-notes', type: 'news', readOnly: true, topic: `Every update, posted automatically. Full history: ${SITE}/en/changelog/` },
     ],
@@ -275,7 +279,8 @@ for (const role of ROLES) {
     color: role.color,
     hoist: !!role.hoist,
     mentionable: role.name.endsWith('Ping'),
-    permissions: (role.staff ? MODERATE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
+    // Staff talk without needing the Trainer role on top.
+    permissions: (role.staff ? MODERATE | TALK | VOICE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
   }
   const found = existingRoles.find((r) => r.name === role.name)
   roleId[role.name] = (found
@@ -374,6 +379,8 @@ await discord('PATCH', `/guilds/${GUILD}`, {
   explicit_content_filter: 2,
   default_message_notifications: 1,
   rules_channel_id: channelId['rules'],
+  // Join, boost and setup-tip messages go to #arrivals instead of the chat.
+  system_channel_id: channelId['arrivals'],
   public_updates_channel_id: channelId['mod-log'],
   preferred_locale: 'en-US',
   description: 'A free browser survivors-like with Pokémon. Play at pokemonsurvivors.com',
