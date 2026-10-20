@@ -1,4 +1,5 @@
 import { ENEMIES } from '../data/enemies'
+import { partnerOf } from '../data/domains'
 import type { RiftLegend } from '../data/rifts'
 import { ENCOUNTER, REVEAL_AT } from '../game/domainRules'
 import type { Game } from '../game/types'
@@ -26,7 +27,9 @@ export const createRiftTitle = () => {
     const d = g.rift.arena?.domain
     const show = d?.act === 'encounter' && d.scene >= REVEAL_AT && d.scene < REVEAL_AT + ENCOUNTER.hold + 0.4
     if (show && d) {
-      setText(name, `${g.rift.arena?.shiny ? '★ ' : ''}${ENEMIES[d.legend].name}`)
+      const partner = partnerOf(d.legend)
+      const names = partner ? t().rifts.pairName(ENEMIES[d.legend].name, ENEMIES[partner].name) : ENEMIES[d.legend].name
+      setText(name, `${g.rift.arena?.shiny ? '★ ' : ''}${names}`)
       setText(epithet, domainLines(d.legend)?.epithet ?? '')
     }
     if (show === shown) return

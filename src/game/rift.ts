@@ -1,7 +1,8 @@
 import { pick, range, type Rng } from '../engine/rng'
-import { RIFT, RIFT_ITEMS, RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
+import { RIFT, RIFT_DRAWS, RIFT_ITEMS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
 import type { EnemyId } from '../data/enemies'
+import { domainOf } from '../data/domains'
 import type { FloorPlan } from '../data/arenas'
 import type { DomainState } from './domain'
 import type { Room, Stash } from './room'
@@ -79,9 +80,13 @@ export const riftDue = (s: { time: number; nextAt: number; busy: boolean; bossAl
 /** Whether the run clock runs: it stops while the player is inside a rift. */
 export const clockRuns = (g: Pick<Game, 'rift'>) => g.rift.arena === null
 
-/** A legendary not met yet this run; once all were met, any of them. Never `self`, the legend the player plays (Legend mode). */
+/**
+ * A legendary not met yet this run; once all were met, any of them. Latias
+ * brings Latios along (`RIFT_DRAWS`). Never `self`, the legend the player plays
+ * (Legend mode), nor a domain fighting alongside it (no Eon duo for a Latios).
+ */
 export const pickLegend = (rng: Rng, met: readonly RiftLegend[], self: EnemyId | null = null): RiftLegend => {
-  const open = RIFT_LEGENDS.filter((l) => l !== self)
+  const open = RIFT_DRAWS.filter((l) => l !== self && domainOf(l)?.partner?.id !== self)
   const fresh = open.filter((l) => !met.includes(l))
   return pick(rng, fresh.length > 0 ? fresh : open)
 }

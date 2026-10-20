@@ -12539,3 +12539,38 @@ button.hall-tile:hover {
   color: #f8e070;
   letter-spacing: 0.06em;
 }
+
+/* A linked pair (Latias and Latios): under the shared bar, each one's own HP, red and blue; a knocked-out one blinks. */
+.boss-pair {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+  margin-top: -3px;
+}
+
+.boss-pair-bar {
+  flex: 1;
+  height: 5px;
+  background: #201018;
+  border: 2px solid #101018;
+}
+
+.boss-pair-fill {
+  display: block;
+  height: 100%;
+  background: #f86078;
+}
+
+.boss-pair-fill[data-kind='latios'] {
+  background: #58a0f8;
+}
+
+.boss-pair-fill.down {
+  animation: boss-pair-down 0.5s steps(2) infinite;
+}
+
+@keyframes boss-pair-down {
+  50% {
+    opacity: 0.25;
+  }
+}

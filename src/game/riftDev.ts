@@ -58,6 +58,12 @@ export const riftDevTools = (game: () => Game | undefined) => {
       const boss = g.enemies.find((e) => e.id === g.bossId)
       if (boss?.fight && !boss.fight.ult) boss.fight.ultLeft = 0
     }),
+    /** In a pair's battle (Latias and Latios), knocks one out now (`ps.knockOut('latios')`; Latias without an argument): the other enrages and counts down to its revival. */
+    knockOut: (who?: EnemyId) =>
+      playing((g) => {
+        const e = g.enemies.find((k) => k.fight && k.fight.link >= 0 && (who === undefined || k.kind === who))
+        if (e) e.hp = 1
+      })(),
     /** Opens a portal right next to the player. */
     portal: (legend?: RiftLegend) => playing((g) => openPortal(g, legend ?? pickLegend(g.rng, g.rift.met, g.legend?.id), { x: g.player.x + 48, y: g.player.y }))(),
     /** Ends the run as if Mewtwo just fell: the victory screen with the endless offer. */

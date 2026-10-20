@@ -36,6 +36,14 @@ export type TimeStop = { wait: number; left: number; total: number }
  * `ultLeft` until the next), their scripted `motion`, a charging `blast`,
  * a `timeStop` holding the player's shots, and `home`, where they appeared.
  * Pure rules; `updateBosses` drives them.
+ *
+ * Two legendaries fighting as one (a domain's `partner`, Latias and Latios)
+ * are `link`ed (each holds the other's id): they share one pool of HP, so they
+ * move through their phases together, and neither faints alone (`holdsOn`);
+ * one knocked out is `down`, out of play until its partner revives it or falls
+ * too (`game/domainPair.ts`). `held` is the HP a linked boss holds through its
+ * phase's opening. `guards` are the ids of the barrier keepers (`guard`) that
+ * stand for it now.
  */
 export type BossFight = {
   stance: BossStance
@@ -54,6 +62,10 @@ export type BossFight = {
   blast: BossBlast | null
   home: { x: number; y: number }
   timeStop: TimeStop | null
+  link: number
+  down: boolean
+  held: number
+  guards: number[]
 }
 
 /** The phases of a boss that fights in phases, or null. */
@@ -102,6 +114,7 @@ export const warningOf = (p: BossPattern) => {
     case 'swoop': return (p.windup + (p.reach * 2) / p.speed) * p.count
     case 'dive': return p.hide + p.windup
     case 'teleport': case 'blast': case 'whirlpool': case 'gust': case 'timeStop': return p.windup
+    case 'phantoms': return p.windup + p.gap * (p.count - 1) + (p.radius * 2) / p.speed
     default: return 0
   }
 }
@@ -133,6 +146,10 @@ export const createFight = (rng: Rng, difficulty: Difficulty, home = { x: 0, y: 
   blast: null,
   home,
   timeStop: null,
+  link: -1,
+  down: false,
+  held: 0,
+  guards: [],
 })
 
 /** Counts the stance down; returns true on the tick it swaps (with a fresh seeded duration). */
@@ -197,10 +214,19 @@ export type Steering = { x: number; y: number; pace: number }
 /**
  * Where a boss in a fight with phases walks (`BossSteer`): nowhere during a
  * phase's opening or a scripted motion; otherwise at the player, holding a
- * range, wandering around its anchor, or circling its home. `now` drives the
- * wandering, so it stays deterministic. False when its phase doesn't steer.
+ * range, wandering around its anchor, circling its home, or across it from
+ * its linked partner (`mate`, null while that one is out of play). `now`
+ * drives the wandering, so it stays deterministic. False when its phase doesn't steer.
  */
-export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: number; id: number }, p: { x: number; y: number }, now: number, out: Steering) => {
+export const steerBoss = (
+  fight: BossFight,
+  kind: EnemyId,
+  e: { x: number; y: number; id: number },
+  p: { x: number; y: number },
+  now: number,
+  out: Steering,
+  mate: { x: number; y: number } | null = null,
+) => {
   const steer = phasesOf(kind)?.[fight.phase]?.steer
   if (!steer) return false
   out.x = p.x
@@ -218,11 +244,18 @@ export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: nu
       out.y = fight.home.y + steer.y + dm.sin(a * 1.3) * steer.drift * 0.7
       return true
     }
+    case 'mirror':
     case 'orbit': {
+      if (steer.kind === 'mirror' && mate) {
+        out.x = fight.home.x * 2 - mate.x
+        out.y = fight.home.y * 2 - mate.y
+        return veer(steer.keep, e, p, out)
+      }
+      // Alone, a mirroring boss circles too.
       const a = dm.atan2(e.y - fight.home.y, e.x - fight.home.x) + 0.6
       out.x = fight.home.x + dm.cos(a) * steer.radius
       out.y = fight.home.y + dm.sin(a) * steer.radius
-      return true
+      return veer(steer.keep, e, p, out)
     }
     case 'pass': {
       // Each pass heads for the far side of its home on a fresh heading (a golden-angle turn), so it crosses the arena every time.
@@ -236,14 +269,27 @@ export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: nu
   }
 }
 
+/** A circling boss that comes within `keep` px of the player heads straight away from them instead. True, for `steerBoss`. */
+const veer = (keep: number | undefined, e: { x: number; y: number }, p: { x: number; y: number }, out: Steering) => {
+  if (keep === undefined) return true
+  const dx = e.x - p.x
+  const dy = e.y - p.y
+  const d = dm.hypot(dx, dy)
+  if (d >= keep || d === 0) return true
+  out.x = e.x + (dx / d) * 40
+  out.y = e.y + (dy / d) * 40
+  return true
+}
+
 /**
  * Whether a boss's faint waits: one with phases still to go (or in a phase's
  * opening, or owing its `hold` phase the ultimate) stays up at 1 HP and moves
- * on to its next phase instead (`killEnemy`).
+ * on to its next phase instead (`killEnemy`); so does a linked one, whose
+ * partner decides when they fall (`domainPair.ts`).
  */
 export const holdsOn = (e: { kind: EnemyId; fight: BossFight | null }) => {
   const phases = phasesOf(e.kind)
-  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0 || waitsOnUltimate(phases, e.fight))
+  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0 || e.fight.link >= 0 || waitsOnUltimate(phases, e.fight))
 }
 
 /** Whether a boss in a `hold` phase still owes it its ultimate (it holds on until it has played once). */
@@ -254,3 +300,10 @@ export const holdFloor = (phases: readonly BossPhase[], fight: BossFight, maxHp:
   const next = phases[fight.phase + 1]
   return next ? Math.ceil(next.below * maxHp) + 1 : 1
 }
+
+/** How much more (or less) damage a boss with phases takes in the phase it's in (`BossPhase.taken`). */
+export const phaseTaken = (e: { kind: EnemyId; fight: BossFight | null }) => (e.fight ? (phasesOf(e.kind)?.[e.fight.phase]?.taken ?? 1) : 1)
+
+/** The share of HP a pair of linked bosses has left together (one pool). */
+export const pooledShare = (a: { hp: number; maxHp: number }, b: { hp: number; maxHp: number } | undefined) =>
+  b ? (Math.max(0, a.hp) + Math.max(0, b.hp)) / (a.maxHp + b.maxHp) : a.hp / a.maxHp

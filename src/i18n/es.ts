@@ -1234,7 +1234,26 @@ export const es: Messages = {
         phases: ['¡El tiempo se distorsiona! Con el Roar of Time tus ataques se congelan en el aire.', '¡El tiempo se acelera! Dialga es cada vez más rápido.'],
         cues: { stop: '¡El tiempo se detuvo!', forward: '¡El tiempo saltó hacia adelante!', rewind: '¡El tiempo retrocedió!' },
       },
+      latias: {
+        place: 'Isla Sur',
+        epithet: 'El Dúo Eón',
+        omen: 'Una neblina de ensueño lo cubre todo…',
+        crossing: '¡El sueño se desvanece! ¡Cruza el jardín antes de que la neblina te trague!',
+        phases: ['¡El sueño se rompe y el mar inunda la isla! Cuidado con los espejismos.', '¡Latias y Latios *megaevolucionan*! ¡Refúgiate en la neblina de Latias cuando caiga el Draco Meteor!'],
+      },
+      deoxys: {
+        place: 'El Meteoroide a la Deriva',
+        epithet: 'Visitante de las Estrellas',
+        omen: 'Una lluvia de meteoros cruza el cielo…',
+        crossing: '¡El meteoroide se está partiendo! ¡Avanza antes de que el vacío te alcance!',
+        phases: ['¡Deoxys cambia a su *Forma Ataque*! Frágil, pero letal.', '¡Deoxys cambia a su *Forma Defensa*! Derriba a los guardianes para romper su barrera.', '¡Deoxys cambia a su *Forma Velocidad*! No dejes de moverte.'],
+      },
     },
+    pairName: (a: string, b: string) => `${a} y ${b}`,
+    pairDown: (down: string, survivor: string) => `¡*${down}* cayó! *${survivor}* está furioso: ¡derríbalo antes de que cure a su pareja!`,
+    pairRevive: (healer: string, revived: string) => `¡*${healer}* trajo de vuelta a *${revived}*!`,
+    guardUp: (name: string) => `¡*${name}* levantó una barrera! Derriba a los guardianes para romperla.`,
+    guardDown: '¡La barrera se rompió!',
   },
 
   landmarks: {

@@ -23,7 +23,7 @@ import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
 import { createPlaceCard } from './placeCard'
 import { createRiftTitle } from './riftTitle'
-import { phasesOf } from '../game/bossFight'
+import { phasesOf, pooledShare } from '../game/bossFight'
 import { createFieldMissionHud } from './fieldMissionHud'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
@@ -62,7 +62,10 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const bossName = h('div', { class: 'boss-name' })
   const bossFill = h('div', { class: 'boss-fill' })
   const bossBar = h('div', { class: 'boss-bar' }, bossFill)
-  const boss = h('div', { class: 'boss hidden' }, bossName, bossBar)
+  // A linked pair (Latias and Latios) shares the bar; under it, each one's own HP in its color.
+  const pairFills = [h('i', { class: 'boss-pair-fill' }), h('i', { class: 'boss-pair-fill' })] as const
+  const pairBars = h('div', { class: 'boss-pair hidden' }, h('span', { class: 'boss-pair-bar' }, pairFills[0]), h('span', { class: 'boss-pair-bar' }, pairFills[1]))
+  const boss = h('div', { class: 'boss hidden' }, bossName, bossBar, pairBars)
   /** The boss whose phase ticks the bar shows (`BOSS_PHASES`), so they're laid once per boss. */
   let ticked: string | null = null
   const portrait = h('img', { class: 'status-portrait', alt: '' })
@@ -261,9 +264,22 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
 
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
     boss.classList.toggle('hidden', !b)
-    if (b) {
+    const mate = b?.fight && b.fight.link >= 0 ? g.enemies.find((e) => e.id === b.fight!.link) : undefined
+    pairBars.classList.toggle('hidden', !mate)
+    if (b && mate) {
+      setText(bossName, t().rifts.pairName(ENEMIES[b.kind].name, ENEMIES[mate.kind].name))
+      setStyle(bossFill, 'width', `${(pooledShare(b, mate) * 100).toFixed(1)}%`)
+      setStyle(pairFills[0], 'width', `${((Math.max(0, b.hp) / b.maxHp) * 100).toFixed(1)}%`)
+      setStyle(pairFills[1], 'width', `${((Math.max(0, mate.hp) / mate.maxHp) * 100).toFixed(1)}%`)
+      pairFills[0].classList.toggle('down', b.fight?.down === true)
+      pairFills[1].classList.toggle('down', mate.fight?.down === true)
+      pairFills[0].dataset.kind = b.kind
+      pairFills[1].dataset.kind = mate.kind
+    } else if (b) {
       setText(bossName, isClone(g, b) ? t().legend.clone(ENEMIES[b.kind].name) : ENEMIES[b.kind].name)
       setStyle(bossFill, 'width', `${((b.hp / b.maxHp) * 100).toFixed(1)}%`)
+    }
+    if (b) {
       if (ticked !== b.kind) {
         ticked = b.kind
         bossBar.replaceChildren(bossFill, ...(phasesOf(b.kind) ?? []).slice(1).filter((ph) => ph.rebirth === undefined).map((ph) => h('i', { class: 'boss-tick', style: `left:${(ph.below * 100).toFixed(1)}%` })))

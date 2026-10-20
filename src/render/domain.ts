@@ -152,7 +152,9 @@ const bakeChunk = (p: Painter, cx: number, cy: number) => {
         if (k) color = shade(faces, 0.9 - k / FACE + (k % 4 === 0 ? -0.25 : 0) + (hash2(Math.floor(x) >> 2, k, 3) - 0.5) * 0.2, Math.floor(x), Math.floor(y))
         else {
           const depth = holeDepth(holes, x, y)
-          if (depth >= 0) color = (HOLES[p.legend] ?? waterHole)(x, y, depth)
+          // Over open space a hole goes straight through: the void, with a star or two.
+          if (depth >= 0 && p.domain.backdrop === 'space') color = hash2(Math.floor(x), Math.floor(y), 8) > 0.992 ? p.theme.motes : p.theme.void
+          else if (depth >= 0) color = (HOLES[p.legend] ?? waterHole)(x, y, depth)
         }
       } else {
         let near = 0
@@ -412,6 +414,7 @@ const THREATS: Record<ThreatKind, { body: string; edge: string; foam: string }> 
   time: { body: 'rgba(36,44,84,0.88)', edge: '#a8f0f8', foam: '#ffffff' },
   magma: { body: 'rgba(176,44,8,0.9)', edge: '#f8a030', foam: '#fff0a0' },
   crumble: { body: 'rgba(44,84,152,0.94)', edge: '#2c4c34', foam: '#f8e070' },
+  mist: { body: 'rgba(236,224,244,0.9)', edge: '#f8c8e0', foam: '#ffffff' },
 }
 
 /** What rides a threat's band besides its bubbles: crust and rubble on the magma, tiles tumbling into the sky. */

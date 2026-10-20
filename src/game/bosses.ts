@@ -6,8 +6,9 @@ import type { EnemyId } from '../data/enemies'
 import { FINALE, fleesFrom } from '../data/waves'
 import {
   attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, hasteOf, holdFloor, leadTime, nextPhase, patternLive, patternsOf, phasesOf,
-  shouldEnrage, telegraph, tickStance, ultimateLength, waitsOnUltimate, type BossBlast, type BossFight,
+  pooledShare, shouldEnrage, telegraph, tickStance, ultimateLength, waitsOnUltimate, type BossBlast, type BossFight,
 } from './bossFight'
+import { ENEMIES } from '../data/enemies'
 import { hurtPlayer } from './combat'
 import { abilityImmune } from './abilities'
 import { burst } from './effects'
@@ -24,7 +25,7 @@ type HazardInit = Pick<Hazard, 'kind' | 'visual' | 'x' | 'y' | 'r' | 'damage' | 
 
 /** Adds an enemy hazard (boss attacks, the horde's spit, an Alpha's shockwave). */
 export const spawnHazard = (g: Game, init: HazardInit) => {
-  g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, leaper: -1, world: false, angle: 0, len: 0, spin: 0, pull: 0, pullReach: 0, cover: 0, ...init })
+  g.hazards.push({ id: g.nextId++, vx: 0, vy: 0, age: 0, armAt: 0, disarmAt: Infinity, vanishOnHit: false, leaper: -1, world: false, angle: 0, len: 0, spin: 0, pull: 0, pullReach: 0, cover: 0, phantom: 0, ...init })
 }
 
 /** How long a strike keeps hurting after it lands. */
@@ -196,7 +197,81 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | nul
       fight.timeStop = { wait: telegraph(pattern.windup, fight), left: pattern.duration, total: pattern.duration }
       return
     }
+    case 'phantoms':
+      return phantoms(g, boss, pattern, fight)
+    case 'guard':
+      return raiseGuard(g, boss, pattern, fight)
   }
+}
+
+/** Fires `phantoms`: phantoms of the boss streak one after another along marked lanes through where the player stands. */
+const phantoms = (g: Game, boss: Enemy, pattern: Extract<BossPattern, { kind: 'phantoms' }>, fight: BossFight | null) => {
+  const p = g.player
+  const count = attackCount(pattern.count, fight)
+  const windup = telegraph(pattern.windup, fight)
+  const offset = range(g.rng, 0, TAU)
+  const aim = dm.atan2(p.y - boss.y, p.x - boss.x)
+  const dex = ENEMIES[boss.kind].dex
+  for (let i = 0; i < count; i++) {
+    const ring = pattern.origin === 'ring'
+    const around = offset + (i / count) * TAU
+    const a = ring ? around + Math.PI : aim + (i - (count - 1) / 2) * 0.32
+    const x = ring ? p.x + dm.cos(around) * pattern.radius : boss.x
+    const y = ring ? p.y + dm.sin(around) * pattern.radius : boss.y
+    const len = ring ? pattern.radius * 2 : dm.hypot(p.x - boss.x, p.y - boss.y) + pattern.radius
+    const at = windup + i * pattern.gap
+    spawnHazard(g, { kind: 'beam', visual: pattern.visual, x, y, r: pattern.width / 2, damage: 0, angle: a, len, armAt: at, disarmAt: at, ttl: at })
+    spawnHazard(g, {
+      kind: 'shot', visual: pattern.visual, x, y, vx: dm.cos(a) * pattern.speed, vy: dm.sin(a) * pattern.speed,
+      r: pattern.width / 2, damage: pattern.damage, armAt: at, ttl: at + len / pattern.speed, phantom: dex,
+    })
+  }
+}
+
+/** Raises a `guard`: its keepers come out on their posts around the boss's home, and while one stands the boss is warded. */
+const raiseGuard = (g: Game, boss: Enemy, pattern: Extract<BossPattern, { kind: 'guard' }>, fight: BossFight | null) => {
+  if (!fight || fight.guards.length > 0) return
+  const offset = range(g.rng, 0, TAU)
+  for (let i = 0; i < pattern.count; i++) {
+    const a = offset + (i / pattern.count) * TAU
+    const x = fight.home.x + dm.cos(a) * pattern.radius
+    const y = fight.home.y + dm.sin(a) * pattern.radius * 0.8
+    const keeper = spawnEnemy(g, pattern.enemies[i % pattern.enemies.length]!, x, y, { kind: 'raid', mission: -1, x, y, aggro: 0 })
+    keeper.hp = keeper.maxHp = Math.round(keeper.maxHp * pattern.hp)
+    keeper.xp = 0
+    fight.guards.push(keeper.id)
+    burst(g, x, y - 6, { colors: ['#ffffff', '#f8b070', '#c8e0f8'], count: 18, speed: 90, ttl: 0.45 })
+  }
+  g.events.push({ kind: 'bossGuard', enemy: boss.kind, up: true })
+}
+
+/** Keeps a boss's barrier: its fallen keepers drop off, it's warded while one stands, and it breaks with the last. */
+const keepGuard = (g: Game, e: Enemy, fight: BossFight) => {
+  if (fight.guards.length === 0) return
+  retain(fight.guards, (id) => g.enemies.some((k) => k.id === id && k.dying < 0))
+  if (fight.guards.length > 0) {
+    e.trait.ward = e.maxHp
+    e.trait.wardTime = 1
+    return
+  }
+  e.trait.ward = 0
+  e.trait.wardTime = 0
+  burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8b070', '#c8e0f8'], count: 60, speed: 220, ttl: 0.6, size: 2 })
+  g.shake = Math.max(g.shake, 7)
+  g.events.push({ kind: 'bossGuard', enemy: e.kind, up: false })
+}
+
+/** A barrier's keepers leave as its phase ends: they fade out of play, with no reward. */
+const dismissGuard = (g: Game, e: Enemy, fight: BossFight) => {
+  for (const k of g.enemies) {
+    if (!fight.guards.includes(k.id) || k.dying >= 0) continue
+    k.dying = 0
+    k.fled = true
+    burst(g, k.x, k.y - 6, { colors: ['#ffffff', '#c8e0f8'], count: 14, speed: 80, ttl: 0.4 })
+  }
+  fight.guards.length = 0
+  e.trait.ward = 0
+  e.trait.wardTime = 0
 }
 
 /** Counts a time stop down: its wait, then the seconds it holds the player's shots. */
@@ -211,7 +286,7 @@ const updateTimeStop = (fight: BossFight, dt: number) => {
 const PARK = 8000
 
 /** Hides a boss (a dive, a teleport): it waits far out of play until its strike lands it (`land`). */
-const park = (boss: Enemy, fight: BossFight) => {
+export const park = (boss: Enemy, fight: BossFight) => {
   boss.x = fight.home.x
   boss.y = fight.home.y - PARK
   boss.kx = 0
@@ -280,18 +355,23 @@ const fireBeams = (g: Game, boss: Enemy, pattern: Extract<BossPattern, { kind: '
   const count = attackCount(pattern.count, fight)
   const windup = telegraph(pattern.windup, fight)
   const timing = { armAt: windup, disarmAt: windup + pattern.duration, ttl: windup + pattern.duration + 0.25 }
-  if (pattern.source === 'edge') {
+  if (pattern.source === 'edge' || pattern.source === 'lattice') {
     const a = range(g.rng, 0, TAU)
-    const dx = dm.cos(a)
-    const dy = dm.sin(a)
-    for (let i = 0; i < count; i++) {
-      const off = (i - (count - 1) / 2) * pattern.spread
-      spawnHazard(g, {
-        kind: 'beam', visual: pattern.visual, r: pattern.width / 2, damage: pattern.damage, angle: a, len: pattern.length,
-        x: p.x - dx * (pattern.length / 2) - dy * off,
-        y: p.y - dy * (pattern.length / 2) + dx * off,
-        ...timing,
-      })
+    const sets = pattern.source === 'lattice' ? 2 : 1
+    for (let set = 0; set < sets; set++) {
+      const angle = a + set * (Math.PI / 2)
+      const dx = dm.cos(angle)
+      const dy = dm.sin(angle)
+      const visual = set === 1 ? (pattern.cross ?? pattern.visual) : pattern.visual
+      for (let i = 0; i < count; i++) {
+        const off = (i - (count - 1) / 2) * pattern.spread
+        spawnHazard(g, {
+          kind: 'beam', visual, r: pattern.width / 2, damage: pattern.damage, angle, len: pattern.length,
+          x: p.x - dx * (pattern.length / 2) - dy * off,
+          y: p.y - dy * (pattern.length / 2) + dx * off,
+          ...timing,
+        })
+      }
     }
     return
   }
@@ -444,9 +524,12 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   const phases = phasesOf(e.kind)!
   const phase = phases[next]!
   const after = phases[next + 1]
-  if (after && e.hp < after.below * e.maxHp) e.hp = Math.ceil(after.below * e.maxHp) + 1
+  // A linked pair shares one pool: each holds the HP it came in with instead.
+  if (fight.link < 0 && after && e.hp < after.below * e.maxHp) e.hp = Math.ceil(after.below * e.maxHp) + 1
   // Before a rebirth (whose threshold is 0) a skipping hit still leaves a little of the phase to fight.
   if (after?.rebirth !== undefined) e.hp = Math.max(e.hp, Math.ceil(e.maxHp * REBIRTH_FLOOR))
+  fight.held = e.hp
+  dismissGuard(g, e, fight)
   if (offstage(e)) {
     e.x = fight.home.x
     e.y = fight.home.y
@@ -565,7 +648,9 @@ export const updateBosses = (g: Game, tick: number) => {
     if (phases && fight && waitsOnUltimate(phases, fight)) e.hp = Math.max(e.hp, Math.min(e.maxHp, holdFloor(phases, fight, e.maxHp)))
     // A hasted phase (`BossPhase.haste`) runs the boss's whole script faster.
     const dt = tick * hasteOf(e.kind, fight)
-    if (fight) fight.share = e.hp / e.maxHp
+    if (fight) fight.share = fight.link >= 0 ? pooledShare(e, g.enemies.find((k) => k.id === fight.link)) : e.hp / e.maxHp
+    // Knocked out beside its partner: out of play until revived (`domainPair.ts`).
+    if (fight?.down) continue
     if (phases && fight) {
       // A rebirth waits for the phase before it to open first.
       const next = fight.shift > 0 ? fight.phase : nextPhase(phases, fight.phase, e.hp, e.maxHp)
@@ -574,7 +659,7 @@ export const updateBosses = (g: Game, tick: number) => {
       if (fight.shift > 0) {
         // Untouchable while the phase opens: it holds the HP it came in with.
         fight.shift = Math.max(0, fight.shift - dt)
-        e.hp = Math.max(e.hp, Math.min(e.maxHp, phases[fight.phase]!.below * e.maxHp) - 1)
+        e.hp = fight.link >= 0 ? Math.max(e.hp, fight.held) : Math.max(e.hp, Math.min(e.maxHp, phases[fight.phase]!.below * e.maxHp) - 1)
         continue
       }
     }
@@ -585,6 +670,7 @@ export const updateBosses = (g: Game, tick: number) => {
       updateMotion(g, e, fight, dt)
       updateBlast(g, e, fight, dt)
       updateTimeStop(fight, dt)
+      keepGuard(g, e, fight)
     }
     // Stunned, asleep or frozen bosses hold their attacks (paralysis and the Poké Flute pay off here); so does one mid-script.
     if (e.status.stun > 0 || isHeld(e.status) || bossAway(fight)) continue
@@ -600,6 +686,11 @@ export const updateBosses = (g: Game, tick: number) => {
     const near = dist < reach
     patterns.forEach((pattern, i) => {
       if (fight && !patternLive(pattern, fight)) return
+      // A barrier is raised again only `every` s after its last keeper broke.
+      if (pattern.kind === 'guard' && fight && fight.guards.length > 0) {
+        e.cooldowns[i] = Math.max(e.cooldowns[i]!, pattern.every)
+        return
+      }
       e.cooldowns[i]! -= dt
       if (e.cooldowns[i]! > 0 || !near) return
       if (fight && pattern.far !== undefined && dist < pattern.far) {
@@ -642,6 +733,8 @@ const IMPACT: Partial<Record<HazardVisual, { colors: readonly string[]; event: '
   grass: { colors: ['#70d048', '#e0f8a0', '#286820'], event: 'quake' },
   shadow: { colors: ['#302040', '#7860a8', '#d8c8f8'], event: 'quake' },
   judgment: { colors: ['#fff0a0', '#f8d030', '#ffffff'], event: 'thunder' },
+  mist: { colors: ['#f86078', '#f8c0c8', '#ffffff'], event: 'quake' },
+  luster: { colors: ['#58a0f8', '#c0d8f8', '#ffffff'], event: 'quake' },
 }
 
 /** How far (x, y) is from a beam's line. */

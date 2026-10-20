@@ -118,6 +118,7 @@ export const sitePt = {
     attacks: 'Ataques',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
     summoned: (by: string) => `Chamado por ${by}`,
+    retinue: (by: string) => `No domínio de ${by}, atrás de uma fenda lendária`,
     behavior: 'Comportamento',
     /** A legendary's card: how to capture it for the Legend mode (`game/capture.ts`). */
     legendMode: 'Modo Lendário',

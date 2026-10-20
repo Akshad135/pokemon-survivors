@@ -95,6 +95,7 @@ export const siteEn: SiteMessages = {
     attacks: 'Attacks',
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
     summoned: (by: string) => `Called in by ${by}`,
+    retinue: (by: string) => `In ${by}'s domain, behind a legendary rift`,
     behavior: 'Behavior',
     legendMode: 'Legend Mode',
     capture: (need: number) => (need === 1 ? 'Beat it once as a boss, in any mode, and it becomes playable in Legend Mode (its own ranking, a tougher horde, awakenings at Lv 12 and 28).' : `Beat it ${need} times as a boss, in any mode, and it becomes playable in Legend Mode (its own ranking, a tougher horde, awakenings at Lv 12 and 28).`),

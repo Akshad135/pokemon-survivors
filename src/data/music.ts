@@ -679,6 +679,75 @@ const groudon: Score = {
   },
 }
 
+/** The Eon duo's domain (Southern Island): a dreamy duet in E major, Latias's lead over Latios's glittering arpeggios. */
+const latis: Score = {
+  bpm: 126,
+  duty: { lead: 0.25, harmony: 0.125 },
+  tracks: {
+    // | E | C#m | A | B | E | G#m | A | B |  then  | C#m | A | E | B | C#m | F#m | A B | E |
+    lead: [
+      'B4:4 E5:2 F#5 G#5:6 B5:2',
+      'C#6:6 B5:2 G#5:8',
+      'A5:4 G#5:2 F#5 E5:4 C#5',
+      'D#5:6 E5:2 F#5:8',
+      'B4:2 E5 G#5 B5 E6:6 D#6:2',
+      'D#6:4 B5:2 G#5 D#5:8',
+      'C#5:4 E5 A5 C#6',
+      'B5:12 r:4',
+      'G#5:3 A5:1 G#5:4 E5 C#5',
+      'A5:3 B5:1 C#6:4 B5 A5',
+      'G#5:2 F#5 E5 F#5 G#5:8',
+      'F#5:6 D#5:2 B4:8',
+      'E5:4 G#5 C#6 E6',
+      'C#6:6 B5:2 A5:4 F#5',
+      'A5:4 C#6 B5 D#6',
+      'E6:12 r:4',
+    ],
+    harmony: [
+      sparkle('E4', 'G#4', 'B4', 'G#4'),
+      sparkle('C#4', 'E4', 'G#4', 'E4'),
+      sparkle('A3', 'C#4', 'E4', 'C#4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+      sparkle('E4', 'G#4', 'B4', 'G#4'),
+      sparkle('G#3', 'B3', 'D#4', 'B3'),
+      sparkle('A3', 'C#4', 'E4', 'C#4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+      sparkle('C#4', 'E4', 'G#4', 'E4'),
+      sparkle('A3', 'C#4', 'E4', 'C#4'),
+      sparkle('E4', 'G#4', 'B4', 'G#4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+      sparkle('C#4', 'E4', 'G#4', 'E4'),
+      sparkle('F#3', 'A3', 'C#4', 'A3'),
+      'A3:1 C#4 E4 C#4 A3 C#4 E4 C#4 B3 D#4 F#4 D#4 B3 D#4 F#4 D#4',
+      sparkle('E4', 'G#4', 'B4', 'G#4'),
+    ],
+    bass: [
+      sway('E2', 'B2'),
+      sway('C#2', 'G#2'),
+      sway('A1', 'E2'),
+      sway('B1', 'F#2'),
+      sway('E2', 'B2'),
+      sway('G#1', 'D#2'),
+      sway('A1', 'E2'),
+      sway('B1', 'F#2'),
+      sway('C#2', 'G#2'),
+      sway('A1', 'E2'),
+      sway('E2', 'B2'),
+      sway('B1', 'F#2'),
+      sway('C#2', 'G#2'),
+      sway('F#1', 'C#2'),
+      'A1:8 B1:8',
+      sway('E2', 'B2'),
+    ],
+    drums: [
+      ...times(7, 'k:4 h:2 h s:4 h:2 h'),
+      's:2 s s s k:4 o:4',
+      ...times(7, 'k:4 h:2 h s:4 h:2 h'),
+      's:2 s s s k:4 o:4',
+    ],
+  },
+}
+
 /** Lugia's domain (the Whirl Islands in a storm): a soaring E minor over driving octaves, wind arpeggios in the harmony. */
 const lugia: Score = {
   bpm: 150,
@@ -898,6 +967,75 @@ const rayquaza: Score = {
   },
 }
 
-export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre, groudon, rayquaza, lugia, hoOh, dialga } as const satisfies Record<string, Score>
+/** Deoxys's domain (a meteoroid in space): a cold gallop in B minor, the lead leaning on tritones like a signal from far off. */
+const deoxys: Score = {
+  bpm: 152,
+  duty: { lead: 0.125, harmony: 0.25 },
+  tracks: {
+    // | Bm | Bm | G | F# | Bm | C | F# | F# |  then  | Em | F | Bm | G | Em | C | F# | F# |
+    lead: [
+      'B4:2 r F#5 r B5:4 A5:2 F5',
+      'F#5:6 E5:2 D5:4 C#5',
+      'D5:2 G5 B5 D6 C#6:8',
+      'A#5:6 G5:2 F#5:8',
+      'B5:2 r B5 D6 F6:4 E6:2 D6',
+      'E6:4 C6:2 G5 E5:8',
+      'F#5:3 A#5:1 C#6:4 E6 A#5',
+      'F#5:12 r:4',
+      'G5:4 E5:2 G5 B5:4 G5',
+      'A5:4 F5:2 A5 C6:8',
+      'D6:2 C#6 B5 A#5 B5:8',
+      'G5:6 A5:2 B5:4 D6',
+      'E6:4 D6:2 B5 G5:4 E5',
+      'F5:6 E5:2 C5:8',
+      'A#4:4 C#5 E5 F#5',
+      'A#5:12 r:4',
+    ],
+    harmony: [
+      tremolo('D4', 'F#4'),
+      tremolo('D4', 'F#4'),
+      tremolo('D4', 'B3'),
+      tremolo('C#4', 'A#3'),
+      tremolo('D4', 'F#4'),
+      tremolo('E4', 'G4'),
+      tremolo('C#4', 'A#3'),
+      tremolo('C#4', 'A#3'),
+      tremolo('E4', 'G4'),
+      tremolo('F4', 'A4'),
+      tremolo('D4', 'F#4'),
+      tremolo('D4', 'B3'),
+      tremolo('E4', 'G4'),
+      tremolo('E4', 'G4'),
+      tremolo('C#4', 'A#3'),
+      tremolo('C#4', 'A#3'),
+    ],
+    bass: [
+      gallop('B1', 'B2'),
+      gallop('B1', 'B2'),
+      gallop('G1', 'G2'),
+      gallop('F#1', 'F#2'),
+      gallop('B1', 'B2'),
+      gallop('C2', 'C3'),
+      gallop('F#1', 'F#2'),
+      gallop('F#1', 'F#2'),
+      gallop('E1', 'E2'),
+      gallop('F1', 'F2'),
+      gallop('B1', 'B2'),
+      gallop('G1', 'G2'),
+      gallop('E1', 'E2'),
+      gallop('C2', 'C3'),
+      gallop('F#1', 'F#2'),
+      gallop('F#1', 'F#2'),
+    ],
+    drums: [
+      ...times(7, 'k:2 h k h s h k s'),
+      's:1 s s s s s s s k:2 s k o',
+      ...times(7, 'k:2 h k h s h k s'),
+      's:1 s s s s s s s k:2 s k o',
+    ],
+  },
+}
+
+export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre, groudon, rayquaza, lugia, hoOh, dialga, latis, deoxys } as const satisfies Record<string, Score>
 
 export type ThemeId = keyof typeof THEMES

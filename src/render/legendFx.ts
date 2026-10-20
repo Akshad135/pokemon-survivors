@@ -1,5 +1,5 @@
 import { blitCentered, blitRotated, ellipse, ring } from '../engine/pixelart'
-import { TAU } from '../engine/math'
+import { dir8, TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
 import { domainOf } from '../data/domains'
@@ -8,6 +8,7 @@ import { parked, safeAt } from '../game/bosses'
 import { phasesOf } from '../game/bossFight'
 import { arenaPoint, domainHere } from '../game/domain'
 import { groundAt, playerTypes } from '../game/terrain'
+import { pairFighter } from '../game/domainPair'
 import { encounterBeat, REVEAL_AT } from '../game/domainRules'
 import type { Enemy, Game, Hazard } from '../game/types'
 import type { RiftLegend } from '../data/rifts'
@@ -155,6 +156,7 @@ export const drawBossGround = (ctx: Ctx, g: Game, t: number) => {
       ctx.globalAlpha = 1
       blitCentered(ctx, ellipse(6, 3, fill), x, y)
     }
+    if (f.guards.length > 0) drawGuardLinks(ctx, g, e, t)
     if (f.shift > 0 && !parked(e)) {
       const k = (t * 2) % 1
       ctx.globalAlpha = 1 - k
@@ -208,7 +210,7 @@ const ARROW = lazy(() => art(['11.....', '1221...', '122221.', '1222221', '12222
 export const drawBossMarker = (ctx: Ctx, g: Game, camX: number, camY: number, t: number) => {
   const here = domainHere(g)
   if (!here || here.d.act !== 'battle') return
-  const boss = g.enemies.find((e) => e.id === here.d.bossId)
+  const boss = pairFighter(g, here.d.pair, here.d.bossId)
   if (!boss) return
   const m = boss.fight?.motion
   const tx = m?.kind === 'dive' ? m.x : boss.x
@@ -269,7 +271,15 @@ export const drawEntrance = (ctx: Ctx, g: Game, t: number) => {
   if (k <= 0) return
   const s = sprites(ENEMIES[d.legend].dex, arena.shiny)
   const body = s.bodyH
-  if (def.entrance === 'rise') {
+  if (def.entrance === 'swoop') {
+    swoopIn(ctx, s, x, y, k, t, -1)
+    if (def.partner) {
+      const mate = arenaPoint(arena, d, def.partner.at)
+      swoopIn(ctx, sprites(ENEMIES[def.partner.id].dex, arena.shiny), Math.round(mate.x), Math.round(mate.y), Math.max(0, k - 0.08), t, 1)
+    }
+  } else if (def.entrance === 'meteor') {
+    meteorIn(ctx, s, x, y, k, t)
+  } else if (def.entrance === 'rise') {
     const lift = Math.round((1 - k) * (body + 8))
     ctx.save()
     ctx.beginPath()
@@ -289,5 +299,145 @@ export const drawEntrance = (ctx: Ctx, g: Game, t: number) => {
     drawPokemon(ctx, s, 'Idle', 0, t, x, y - Math.round((1 - k) * 220))
   } else {
     drawPokemon(ctx, s, 'Idle', 0, t, x, y, { alpha: k, flash: 1 - k })
+  }
+}
+
+/** Streaking in out of invisibility from one side (`side`): a see-through shimmer gliding in on an arc, then taking color as it stops. */
+const swoopIn = (ctx: Ctx, s: ReturnType<typeof sprites>, x: number, y: number, k: number, t: number, side: number) => {
+  if (k <= 0) return
+  const q = Math.min(1, k / 0.75)
+  const ease = 1 - (1 - q) * (1 - q) * (1 - q)
+  const px = Math.round(x + side * 230 * (1 - ease))
+  const py = Math.round(y - 90 * (1 - ease) - Math.sin(q * Math.PI) * 18)
+  const shown = k < 0.75 ? 0.2 + 0.1 * Math.sin(t * 30) : 0.2 + ((k - 0.75) / 0.25) * 0.8
+  const color = side < 0 ? '#f86078' : '#58a0f8'
+  // A trail of glints behind the shimmer.
+  ctx.fillStyle = color
+  for (let i = 1; i < 8 && q < 1; i++) ctx.fillRect(Math.round(px + side * i * 9), Math.round(py - 10 + Math.sin(i + t * 9) * 2), 2, 1)
+  drawPokemon(ctx, s, 'Walk', side < 0 ? 2 : 6, t, px, py, { alpha: Math.min(1, shown), flash: k < 0.75 ? 0.6 : 1 - (k - 0.75) / 0.25, tint: { color, amount: 0.3 * (1 - k) } })
+}
+
+const CRYSTAL = lazy(() =>
+  art(['...1...', '..121..', '.12321.', '1233321', '1234321', '1233321', '.12321.', '..121..', '...1...'], { 1: '#5c2810', 2: '#f89850', 3: '#f8d0a0', 4: '#ffffff' }),
+)
+
+/**
+ * Deoxys's entrance: a crystal meteor streaks down to its spot with a fiery
+ * tail, crashes (a ring of light), then cracks as Deoxys reforms out of it,
+ * motes converging on its body.
+ */
+const meteorIn = (ctx: Ctx, s: ReturnType<typeof sprites>, x: number, y: number, k: number, t: number) => {
+  const fall = Math.min(1, k / 0.45)
+  if (k < 0.45) {
+    const mx = Math.round(x + 170 * (1 - fall))
+    const my = Math.round(y - 8 - 260 * (1 - fall))
+    blitCentered(ctx, ellipse(Math.round(3 + fall * 9), Math.round(2 + fall * 4), 'rgba(16,8,32,0.45)'), x, y)
+    for (let i = 1; i < 14; i++) {
+      ctx.globalAlpha = 1 - i / 14
+      ctx.fillStyle = i < 5 ? '#f8d070' : '#f86830'
+      ctx.fillRect(mx + i * 4, my - i * 6, 3, 3)
+    }
+    ctx.globalAlpha = 1
+    blitRotated(ctx, CRYSTAL(), mx, my, t * 6, 2)
+    return
+  }
+  // The crash: a ring of light spreading.
+  const crash = (k - 0.45) / 0.2
+  if (crash < 1) {
+    ctx.globalAlpha = 1 - crash
+    blitCentered(ctx, ring(Math.round(8 + crash * 50), 2, '#f8d0a0'), x, y)
+    ctx.globalAlpha = 1
+  }
+  const form = Math.min(1, (k - 0.5) / 0.5)
+  // The crystal shrinks into the new body while the motes come together.
+  if (form < 1) {
+    blitCentered(ctx, CRYSTAL(), x, Math.round(y - 8 - form * 6))
+    ctx.fillStyle = '#f89850'
+    for (let i = 0; i < 14; i++) {
+      const a = hash2(i, 1, 71) * TAU + t
+      const r = (1 - form) * (30 + hash2(i, 2, 71) * 20)
+      ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y - 14 + Math.sin(a) * r * 0.7), 2, 2)
+    }
+  }
+  if (form > 0) drawPokemon(ctx, s, 'Idle', 0, t, x, y, { alpha: form, flash: 1 - form, tint: { color: '#f89850', amount: 0.5 * (1 - form) } })
+}
+
+/** A boss's barrier (`guard`): a dotted link from each keeper to it, its dots running inward, and a shield ring blinking around it. */
+const drawGuardLinks = (ctx: Ctx, g: Game, e: Enemy, t: number) => {
+  for (const k of g.enemies) {
+    if (!e.fight!.guards.includes(k.id) || k.dying >= 0) continue
+    const dx = e.x - k.x
+    const dy = e.y - k.y
+    const d = Math.hypot(dx, dy) || 1
+    for (let s = (t * 30) % 8; s < d; s += 8) {
+      ctx.fillStyle = Math.floor(s / 8) % 2 === 0 ? '#f8b070' : '#c8e0f8'
+      ctx.fillRect(Math.round(k.x + (dx / d) * s), Math.round(k.y - 8 + (dy / d) * s), 2, 2)
+    }
+  }
+  if (Math.floor(t * 6) % 3 !== 0) blitCentered(ctx, ring(Math.round(e.radius + 8), 1, '#c8e0f8'), Math.round(e.x), Math.round(e.y - e.radius * 0.6))
+}
+
+/**
+ * A linked pair's knocked-out one (`game/domainPair.ts`), kneeling where it
+ * fell with stars over its head, a ring filling up to its partner's revival,
+ * and while the revival is cast, a pulsing beam between the two.
+ */
+export const drawPairDown = (ctx: Ctx, g: Game, t: number) => {
+  const here = domainHere(g)
+  const pair = here?.d.pair
+  if (!here || !pair || pair.down < 0 || here.d.act !== 'battle') return
+  const e = g.enemies.find((k) => k.id === pair.down)
+  const rule = here.def.partner?.revive
+  if (!e || !rule) return
+  const x = Math.round(pair.x)
+  const y = Math.round(pair.y)
+  const s = sprites(ENEMIES[e.kind].dex, e.shiny, bossForm(e))
+  drawPokemon(ctx, s, 'Hurt', 0, 0.3, x, y, { loop: false, alpha: 0.75, tint: { color: '#302040', amount: 0.35 } })
+  for (let i = 0; i < 3; i++) {
+    const a = t * 4 + (i / 3) * TAU
+    ctx.fillStyle = '#f8d030'
+    ctx.fillRect(Math.round(x + Math.cos(a) * 12), Math.round(y - s.bodyH - 3 + Math.sin(a) * 3), 2, 2)
+  }
+  if (pair.revived) return
+  // The revival's countdown: dots filling a ring around it.
+  const k = Math.min(1, pair.age / rule.after)
+  const r = 18
+  const steps = Math.ceil(r * TAU * k)
+  ctx.fillStyle = pair.casting >= 0 && Math.floor(t * 10) % 2 === 0 ? '#ffffff' : '#98f8b0'
+  for (let i = 0; i < steps; i++) {
+    const a = -Math.PI / 2 + i / r
+    ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y - 8 + Math.sin(a) * r * 0.6), 2, 1)
+  }
+  if (pair.casting < 0) return
+  const healer = g.enemies.find((k2) => k2.id !== e.id && k2.fight?.link === e.id)
+  if (!healer || parked(healer)) return
+  ctx.fillStyle = Math.floor(t * 12) % 2 === 0 ? '#98f8b0' : '#ffffff'
+  const dx = x - healer.x
+  const dy = y - healer.y
+  const d = Math.hypot(dx, dy) || 1
+  for (let q = (t * 60) % 6; q < d; q += 6) ctx.fillRect(Math.round(healer.x + (dx / d) * q), Math.round(healer.y - 12 + (dy / d) * q), 2, 2)
+}
+
+/**
+ * Phantoms (`swoop`): see-through copies of their Pokémon (the boss's form and
+ * shininess when it's in play) fading in at the start of their lane, then
+ * streaking down it with afterimages.
+ */
+export const drawPhantoms = (ctx: Ctx, g: Game, t: number) => {
+  for (const h of g.hazards) {
+    if (h.phantom <= 0 || h.kind !== 'shot') continue
+    const e = g.enemies.find((k) => k.boss && ENEMIES[k.kind].dex === h.phantom)
+    const s = sprites(h.phantom, e?.shiny ?? g.rift.arena?.shiny ?? false, e ? bossForm(e) : undefined)
+    const [color] = HAZARD_COLORS[h.visual]
+    const dir = dir8(h.vx, h.vy)
+    const moving = h.age >= h.armAt
+    const alpha = moving ? 0.55 + 0.1 * Math.sin(t * 40) : Math.min(0.4, (h.age / h.armAt) * 0.5)
+    if (moving) {
+      const speed = Math.hypot(h.vx, h.vy) || 1
+      for (let i = 2; i >= 1; i--) {
+        drawPokemon(ctx, s, 'Walk', dir, t, Math.round(h.x - (h.vx / speed) * i * 12), Math.round(h.y - (h.vy / speed) * i * 12), { alpha: alpha * (0.5 - i * 0.15), tint: { color, amount: 0.7 } })
+      }
+    }
+    drawPokemon(ctx, s, 'Walk', dir, t, Math.round(h.x), Math.round(h.y), { alpha, tint: { color, amount: 0.45 }, flash: moving ? 0.25 : 0.5 })
   }
 }

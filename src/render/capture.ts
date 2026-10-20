@@ -48,13 +48,19 @@ const STAR = lazy(() => art(['..1..', '.121.', '12221', '.121.', '..1..'], { 1: 
 
 const clamp01 = (k: number) => Math.min(1, Math.max(0, k))
 
-/** The capture scene in world space (after the entities): the kneeling legendary, the ball, its shakes and how it ends. */
+/** The capture scene in world space (after the entities): the kneeling legendary (and its partner, with a ball of its own), the ball, its shakes and how it ends. */
 export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
   const here = domainHere(g)
   const c = here?.d.capture
   if (!here || !c || (here.d.act !== 'capture' && here.d.act !== 'after')) return
   // Seconds since the ball left the player's hand (negative while the legendary kneels).
   const s = (here.d.act === 'after' ? CAPTURE.length + here.d.age : here.d.scene) - CAPTURE.kneel
+  drawOne(ctx, g, c, s, t)
+  if (c.partner) drawOne(ctx, g, c.partner, s, t)
+}
+
+/** One legendary's capture, `s` seconds after the throw. */
+const drawOne = (ctx: Ctx, g: Game, c: { kind: EnemyId; x: number; y: number; shiny: boolean }, s: number, t: number) => {
   const p = g.player
   const x = Math.round(c.x)
   const y = Math.round(c.y)

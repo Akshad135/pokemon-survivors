@@ -3,7 +3,7 @@ import { HAZARD_COLORS } from './hazardColors'
 import { domainOf } from '../data/domains'
 import { drawCapture } from './capture'
 import { drawDomainFloor, drawTear, warmDomain } from './domain'
-import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance } from './legendFx'
+import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance, drawPairDown, drawPhantoms } from './legendFx'
 import { drawLegendSky, drawOmenGround } from './legendSky'
 import { bossLook, drawDomainAir, drawDomainGround, drawDomainScreen, drawVortexAir, drawVortexGround } from './domainLooks'
 import { TAU } from '../engine/math'
@@ -945,6 +945,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawAlphaAir(ctx, g, t, visible)
   drawRiftFallAir(ctx, g, t)
   drawEntrance(ctx, g, t)
+  drawPairDown(ctx, g, t)
   drawCapture(ctx, g, t)
   drawDomainAir(ctx, g, t)
 
@@ -958,7 +959,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamAir(ctx, hz, t, g)
     else if (hz.pull !== 0) drawVortexAir(ctx, hz, t)
-    else if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
+    else if (hz.phantom === 0 && visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
+  drawPhantoms(ctx, g, t)
 
   for (const p of g.particles) {
     if (!visible(p.x, p.y, 8)) continue

@@ -408,6 +408,8 @@ export type Hazard = {
   pullReach: number
   /** A sweeping beam that stops at the first cover each tick: its full length (`len` follows the cover). 0 for the rest. */
   cover: number
+  /** A phantom (`swoop`): the dex of the Pokémon whose see-through copy rides this shot, or 0. */
+  phantom: number
 }
 
 export type Pickup = {
@@ -603,6 +605,11 @@ export type GameEvent =
   | { kind: 'riftCapture'; enemy: RiftLegend; shiny: boolean }
   /** A moment of a domain's own mechanics the shell calls out (Dialga's time skips): `rifts.domains[enemy].cues[cue]` in `src/i18n`. */
   | { kind: 'domainCue'; enemy: RiftLegend; cue: string }
+  /** A boss raised its barrier (`guard`), or its last keeper broke (`up: false`). */
+  | { kind: 'bossGuard'; enemy: EnemyId; up: boolean }
+  /** A linked pair (`game/domainPair.ts`): `enemy` was knocked out and `partner` fights on enraged, or `enemy` revived `partner`. */
+  | { kind: 'pairDown'; enemy: EnemyId; partner: EnemyId }
+  | { kind: 'pairRevive'; enemy: EnemyId; partner: EnemyId }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }

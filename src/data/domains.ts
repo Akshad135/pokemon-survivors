@@ -10,6 +10,8 @@ import { RAYQUAZA_DOMAIN } from './domains/rayquaza'
 import { LUGIA_DOMAIN } from './domains/lugia'
 import { HO_OH_DOMAIN } from './domains/hoOh'
 import { DIALGA_DOMAIN } from './domains/dialga'
+import { LATIS_DOMAIN } from './domains/latis'
+import { DEOXYS_DOMAIN } from './domains/deoxys'
 
 /**
  * EPIC RIFTS: a legendary's domain, as data.
@@ -54,9 +56,10 @@ import { DIALGA_DOMAIN } from './domains/dialga'
  * - Phases can also blow the player around (`whirlpool`, `gust`), hold their
  *   shots still (`timeStop`), fly over the arena (`pass` steering), speed time
  *   up (`haste`) or come back from a fall (`rebirth`): see `data/bosses.ts`.
+ * - Two legendaries at once: give the domain a `partner` (Latias's Latios).
  * - Mechanics the data can't say (Dialga's time skips in its crossing, the
- *   whirlpools set in Lugia's channels, Ho-Oh's tower raining beams, two
- *   legendaries at once) go in a hook (`DomainHooks`, `game/domainHooks.ts`).
+ *   whirlpools set in Lugia's channels, Ho-Oh's tower raining beams) go in a
+ *   hook (`DomainHooks`, `game/domainHooks.ts`).
  * - Stage it with `ps.rift('<legend>')` (the whole sequence) and
  *   `ps.riftAct('battle', 2)` (straight to a phase).
  */
@@ -65,14 +68,16 @@ import { DIALGA_DOMAIN } from './domains/dialga'
 export type LegendSky = 'downpour' | 'harshSun' | 'gale' | 'timeWarp' | 'storm' | 'embers' | 'mist' | 'meteors'
 
 /** How the threat behind the crossing looks (`render/domain.ts`); its rules are the same for every kind. `magma`: lava chasing up a collapsing tunnel; `crumble`: a floor falling away into the sky. */
-export type ThreatKind = 'tide' | 'collapse' | 'fire' | 'void' | 'magma' | 'crumble' | 'storm' | 'time'
+export type ThreatKind = 'tide' | 'collapse' | 'fire' | 'void' | 'magma' | 'crumble' | 'storm' | 'time' | 'mist'
 
 /**
  * How the legendary comes in: out of water (`rise`), down from the sky
- * (`descend`), out of thin air (`materialize`), or as time stops around it
- * (`warp`: the world greys out and clock rings close on its spot).
+ * (`descend`), out of thin air (`materialize`), as time stops around it
+ * (`warp`: the world greys out and clock rings close on its spot), streaking
+ * in out of invisibility (`swoop`, the Eon duo), or reforming out of a crystal
+ * meteor that crashes down (`meteor`, Deoxys).
  */
-export type DomainEntrance = 'rise' | 'descend' | 'materialize' | 'warp'
+export type DomainEntrance = 'rise' | 'descend' | 'materialize' | 'warp' | 'swoop' | 'meteor'
 
 /** What a retinue member (or a summoned add) does besides walking at the player: aims ahead (`runner`), shoots from a distance (`spitter`), or comes in tougher (`elite`). */
 export type RetinueRole = 'runner' | 'spitter' | 'elite'
@@ -156,6 +161,23 @@ export type DomainPhase = BossPhase & { arena?: readonly ArenaTransform[] }
 /** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, `cave` rock, dark volcanic `magma` rock, the open `sky` far above the clouds, or the open `sea`. */
 export type Backdrop = 'space' | 'cave' | 'sky' | 'magma' | 'sea'
 
+/**
+ * A second legendary fighting alongside the domain's own (Latios beside
+ * Latias): revealed with it at `at` (arena px), linked so they share one pool
+ * of HP and move through the phases together, each with its own patterns
+ * (`phases`, as many as the domain's; the arena follows the domain's). One
+ * knocked out stays down while the other fights on enraged; `revive.after` s
+ * later the survivor brings it back with `revive.hp` of its HP (`revive.move`,
+ * once, warned `revive.warn` s before), unless it falls first. Beating both is
+ * beating each, and the capture scene throws a ball at each.
+ */
+export type DomainPartner = {
+  id: EnemyId
+  at: Pt
+  phases: readonly BossPhase[]
+  revive: { after: number; warn: number; hp: number; move: string }
+}
+
 export type LegendDomain = {
   omen: { weather: WeatherId; sky: LegendSky }
   backdrop: Backdrop
@@ -173,6 +195,8 @@ export type LegendDomain = {
   touch?: number
   /** Share of max HP its lava burns per touch (`LAVA_BURN` when absent). */
   lavaBurn?: number
+  /** A second legendary fighting alongside (`DomainPartner`). */
+  partner?: DomainPartner
 }
 
 /** The legendaries whose rift is a domain. The others keep the old arena (`data/arenas.ts`) until theirs is written. */
@@ -183,10 +207,17 @@ export const DOMAINS: Partial<Record<RiftLegend, LegendDomain>> = {
   lugia: LUGIA_DOMAIN,
   hoOh: HO_OH_DOMAIN,
   dialga: DIALGA_DOMAIN,
+  latias: LATIS_DOMAIN,
+  deoxys: DEOXYS_DOMAIN,
 }
 
 /** The domain behind `legend`'s rift, if it has one. */
 export const domainOf = (legend: EnemyId): LegendDomain | undefined => (DOMAINS as Partial<Record<EnemyId, LegendDomain>>)[legend]
 
-/** The domain legendaries' phases, for `BOSS_PHASES`. */
-export const DOMAIN_PHASES: Partial<Record<EnemyId, readonly BossPhase[]>> = Object.fromEntries(Object.entries(DOMAINS).map(([id, d]) => [id, d.phases]))
+/** The domain legendaries' phases (and their partners'), for `BOSS_PHASES`. */
+export const DOMAIN_PHASES: Partial<Record<EnemyId, readonly BossPhase[]>> = Object.fromEntries(
+  Object.entries(DOMAINS).flatMap(([id, d]) => [[id, d.phases], ...(d.partner ? [[d.partner.id, d.partner.phases]] : [])]),
+)
+
+/** The legendary that fights beside `legend` in its domain, if any. */
+export const partnerOf = (legend: EnemyId) => domainOf(legend)?.partner?.id

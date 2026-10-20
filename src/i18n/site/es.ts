@@ -95,6 +95,7 @@ export const siteEs: SiteMessages = {
     attacks: 'Ataques',
     shinyNote: 'Puede aparecer shiny (1 de cada 450): élite con 8x de HP.',
     summoned: (by: string) => `Invocado por ${by}`,
+    retinue: (by: string) => `En el dominio de ${by}, tras una grieta legendaria`,
     behavior: 'Comportamiento',
     legendMode: 'Modo Legendario',
     capture: (need: number) => (need === 1 ? 'Véncelo 1 vez como jefe, en cualquier modo, y se vuelve jugable en el Modo Legendario (ranking propio, horda más dura, despertares en el Nv 12 y 28).' : `Véncelo ${need} veces como jefe, en cualquier modo, y se vuelve jugable en el Modo Legendario (ranking propio, horda más dura, despertares en el Nv 12 y 28).`),

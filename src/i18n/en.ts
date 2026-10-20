@@ -1233,7 +1233,26 @@ export const en: Messages = {
         phases: ['Time warps! During Roar of Time your attacks freeze in mid-air.', 'Time speeds up! Dialga keeps getting faster.'],
         cues: { stop: 'Time stopped!', forward: 'Time skipped ahead!', rewind: 'Time rewound!' },
       },
+      latias: {
+        place: 'Southern Island',
+        epithet: 'The Eon Duo',
+        omen: 'A dreamlike mist covers everything…',
+        crossing: 'The dream is fading! Cross the garden before the mist swallows you!',
+        phases: ['The dream breaks and the sea floods the island! Watch out for the mirages.', 'Latias and Latios *Mega Evolve*! Shelter in Latias’s mist when Draco Meteor falls!'],
+      },
+      deoxys: {
+        place: 'The Drifting Meteoroid',
+        epithet: 'Visitor from the Stars',
+        omen: 'A meteor shower streaks across the sky…',
+        crossing: 'The meteoroid is breaking apart! Push on before the void catches you!',
+        phases: ['Deoxys shifts to its *Attack Forme*! Frail, but deadly.', 'Deoxys shifts to its *Defense Forme*! Take down the guardians to break its barrier.', 'Deoxys shifts to its *Speed Forme*! Keep moving.'],
+      },
     },
+    pairName: (a: string, b: string) => `${a} & ${b}`,
+    pairDown: (down: string, survivor: string) => `*${down}* is down! *${survivor}* is enraged: take it down before it heals its partner!`,
+    pairRevive: (healer: string, revived: string) => `*${healer}* brought *${revived}* back!`,
+    guardUp: (name: string) => `*${name}* raised a barrier! Take down the guardians to break it.`,
+    guardDown: 'The barrier broke!',
   },
 
   landmarks: {

@@ -1385,7 +1385,27 @@ export const pt = {
         phases: ['O tempo se distorce! No Roar of Time, seus golpes congelam no ar.', 'O tempo acelera! Dialga fica cada vez mais rápido.'],
         cues: { stop: 'O tempo parou!', forward: 'O tempo saltou para frente!', rewind: 'O tempo voltou!' },
       },
+      latias: {
+        place: 'Ilha do Sul',
+        epithet: 'Dupla Eon',
+        omen: 'Uma névoa de sonho cobre tudo…',
+        crossing: 'O sonho está se desfazendo! Avance pelo jardim antes que a névoa te engula!',
+        phases: ['O sonho se desfaz e o mar invade a ilha! Cuidado com as miragens.', 'Latias e Latios *Mega Evoluem*! Abrigue-se na névoa de Latias quando o Draco Meteor cair!'],
+      },
+      deoxys: {
+        place: 'Meteoro à Deriva',
+        epithet: 'Visitante das Estrelas',
+        omen: 'Uma chuva de meteoros risca o céu…',
+        crossing: 'O meteoro está se partindo! Avance antes que o vazio te alcance!',
+        phases: ['Deoxys muda para a *Forma Ataque*! Frágil, mas mortal.', 'Deoxys muda para a *Forma Defesa*! Derrube os guardiões para quebrar a barreira.', 'Deoxys muda para a *Forma Velocidade*! Não pare de se mexer.'],
+      },
     } satisfies Partial<Record<RiftLegend, DomainLines>>,
+    /** A pair fighting as one (Latias and Latios), and a boss's barrier (Deoxys's Defense Forme). */
+    pairName: (a: string, b: string) => `${a} & ${b}`,
+    pairDown: (down: string, survivor: string) => `*${down}* caiu! *${survivor}* ficou furioso: derrube-o antes que ele cure o parceiro!`,
+    pairRevive: (healer: string, revived: string) => `*${healer}* trouxe *${revived}* de volta!`,
+    guardUp: (name: string) => `*${name}* ergueu uma barreira! Derrube os guardiões para quebrá-la.`,
+    guardDown: 'A barreira se quebrou!',
   },
 
   /** Places: the cave, the graveyard and the sky (`data/places.ts`), their entrances on the map and what goes on inside. */
