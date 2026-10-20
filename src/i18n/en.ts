@@ -3584,6 +3584,106 @@ export const en: Messages = {
         '0.3s faster cooldown and +6 damage',
       ],
     },
+    /* Legendary moves, second batch: the trios, Mewtwo and Arceus (`legendaryMoves2.ts`) */
+    snowscape: {
+      description: "Articuno's wings beat a snowflake of ice crystals out around you. They hang in the air chilling whatever touches them (slowed), then all shatter at once and can freeze (the next hit lands twice as hard).",
+      upgrades: [
+        '+10 damage',
+        '+2 crystal arms',
+        { fork: [{ name: 'Blizzard', desc: 'Each cast echoes at half power; +20% area and +20% freeze chance' }, { name: 'Eternal ice', desc: 'Fainted foes explode; +14 damage' }] },
+        '0.5s faster cooldown and +10 damage',
+      ],
+    },
+    electricTerrain: {
+      description: 'Zapdos electrifies the ground around you: a crackling field that moves with you, dropping a lightning bolt on a foe inside it every beat. Can paralyze.',
+      upgrades: [
+        '+7 damage',
+        '+20% area and the field lasts +0.4s',
+        { fork: [{ name: 'Thunderstorm', desc: '+1 bolt per beat; -4 damage' }, { name: 'Chain lightning', desc: 'Hits spark to nearby foes; +8 damage' }] },
+        '0.6s faster cooldown and +7 damage',
+      ],
+    },
+    overheat: {
+      description: "Moltres's heat builds up: two casts throw fans of blazing feathers, and the third overheats into a fire nova around you that burns everything it reaches.",
+      upgrades: [
+        '+8 damage',
+        '+2 feathers',
+        { fork: [{ name: 'Supernova', desc: 'Fainted foes explode; +25% area' }, { name: 'Ember trail', desc: 'Feathers leave fire on the ground; 0.2s faster cooldown' }] },
+        '0.3s faster cooldown and +6 damage',
+      ],
+    },
+    thunderclap: {
+      description: "Raikou's lightning leaps from foe to foe faster than the eye can follow, and the last one takes a thunderclap that rocks the crowd around it. Can paralyze.",
+      upgrades: [
+        '+13 damage',
+        '+2 jumps and +10% area',
+        { fork: [{ name: 'Lightning speed', desc: '+4 jumps and +4 damage' }, { name: 'Final thunder', desc: 'Fainted foes explode; +16 damage' }] },
+        '0.5s faster cooldown and +13 damage',
+      ],
+    },
+    burningBulwark: {
+      description: "Entei's volcanic shell wraps around you: it blocks the next hit and burns whatever touches it. When it breaks or runs out, it erupts in two rings of magma.",
+      upgrades: [
+        '+18 damage',
+        'Shell lasts +0.5s and +15% area',
+        { fork: [{ name: 'Volcano', desc: '+4 geysers per ring' }, { name: 'Living magma', desc: 'Fainted foes explode; +20 damage' }] },
+        '0.7s faster cooldown and +18 damage',
+      ],
+    },
+    aquaRing: {
+      description: 'Suicune spirals out from you on the north wind, sweeping foes away. The pure water it runs on becomes a ring that shoves them back and heals you a little.',
+      upgrades: [
+        '+8 damage',
+        '+15% area and the ring lasts +0.6s',
+        { fork: [{ name: 'North wind', desc: 'Each cast echoes at half power; +4 ring pieces and lasts +1s' }, { name: 'Purified water', desc: 'Hits heal more; +10 damage' }] },
+        '0.6s faster cooldown and +8 damage',
+      ],
+    },
+    rockWrecker: {
+      description: 'Regirock hurls a colossal boulder onto the densest crowd: it lands with a quake and keeps rolling right through them.',
+      upgrades: [
+        '+22 damage',
+        '+20% area',
+        { fork: [{ name: 'Rockfall', desc: '+1 boulder; -10 damage' }, { name: 'Wrecking boulder', desc: 'Fainted foes explode; +26 damage and rolls +0.4s' }] },
+        '0.5s faster cooldown and +22 damage',
+      ],
+    },
+    glaciate: {
+      description: "Regice's cold spreads into a dome of frozen air around you, slowing everything inside. Then it drops to absolute zero: everything inside shatters, regular foes on their last legs break at once, and it can freeze.",
+      upgrades: [
+        '+22 damage',
+        '+15% area',
+        { fork: [{ name: 'Absolute zero', desc: '0.6s faster cooldown and +20% freeze chance' }, { name: 'Shattered ice', desc: 'Fainted foes explode; +26 damage' }] },
+        '0.6s faster cooldown and +22 damage',
+      ],
+    },
+    metalBurst: {
+      description: "Registeel's Iron Defense hardens you (each hit you take loses 2 damage), then steel bursts out of you in a nova and a ring of shards. Every hit you took since the last one makes the burst stronger.",
+      upgrades: [
+        '+15 damage',
+        '+4 shards',
+        { fork: [{ name: 'Iron wall', desc: 'Double defense, lasts +1.2s and +2 shards' }, { name: 'Charged steel', desc: 'Hits spark to nearby foes; +16 damage' }] },
+        '0.5s faster cooldown and +15 damage',
+      ],
+    },
+    telekinesis: {
+      description: "Mewtwo's mind grips the nearest foes and lifts them off the ground, frozen in place. Then it hurls them into the crowd: they crash into whoever is in the way, and the slam lands twice as hard. Bosses don't fly, but they get crushed.",
+      upgrades: [
+        '+12 damage',
+        '+2 foes lifted',
+        { fork: [{ name: 'Boundless mind', desc: '+3 foes lifted; -8 damage' }, { name: 'Fatal throw', desc: 'Fainted foes explode; +14 damage' }] },
+        '0.4s faster cooldown and +12 damage',
+      ],
+    },
+    judgment: {
+      description: "Arceus's golden wheel turns above you and each plate fires a lance of light straight through the foes. Multitype: its type follows the land (Grass on Route 1, Bug in Viridian Forest, Rock in Mt. Moon, Ice on Mt. Silver, Ghost in Lavender Tower).",
+      upgrades: [
+        '+15 damage',
+        '+2 lances',
+        { fork: [{ name: 'Double judgment', desc: 'Each cast echoes at half power; +25% area' }, { name: 'Final judgment', desc: 'Extra damage to elites and bosses; +18 damage' }] },
+        '0.4s faster cooldown and +15 damage',
+      ],
+    },
   },
 
   items: {

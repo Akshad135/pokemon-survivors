@@ -50,6 +50,7 @@ import type { TmState } from './tms'
 import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
+import type { LegendaryVisual2 } from './legendaryMoves2'
 import type { TensionState } from './tension'
 import type { AlphaClock, AlphaState } from './alphas'
 
@@ -235,6 +236,8 @@ export type Visual =
   | DuoVisual
   /** Legendary moves (`legendaryMoves.ts`), drawn by `render/legendaryFx.ts`. */
   | LegendaryVisual
+  /** Legendary moves, second batch (`legendaryMoves2.ts`), drawn by `render/legendaryFx2.ts`. */
+  | LegendaryVisual2
 
 /** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
 export type DamageSource = MoveId | 'special' | 'ability'

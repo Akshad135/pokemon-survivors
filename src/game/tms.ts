@@ -37,10 +37,14 @@ export const dropBossTm = (g: Game, e: Enemy) => {
   else if (MYTHICALS.some((id) => id === e.kind)) dropLegendaryTm(g, e.kind, e.x - 10, e.y + 2)
 }
 
-/** A beaten legendary offers its legendary TM, until the run has learned one. Rift arenas call it when won. */
+/**
+ * A beaten legendary offers its legendary TM, until the run has learned one,
+ * and never one the player already knows (a legend played in the Legend mode
+ * starts with its own). Rift arenas call it when won.
+ */
 export const dropLegendaryTm = (g: Game, legend: RiftLegend | Enemy['kind'], x: number, y: number) => {
   const move = LEGENDARY_TMS[legend]
-  if (move && !g.tm.legendary) dropTm(g, x, y, move, 'legendary')
+  if (move && !g.tm.legendary && !g.player.moves.some((m) => m.id === move)) dropTm(g, x, y, move, 'legendary')
 }
 
 /**

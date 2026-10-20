@@ -3739,6 +3739,106 @@ export const pt = {
         'Recarga 0.3s mais rápida e +6 de dano',
       ],
     },
+    /* Legendary moves, second batch: the trios, Mewtwo and Arceus (`legendaryMoves2.ts`) */
+    snowscape: {
+      description: 'As asas de Articuno lançam um floco de neve de cristais de gelo ao seu redor. Eles ficam pairando e gelam quem encosta (fica lento), depois estilhaçam todos juntos e podem congelar (o próximo acerto dói em dobro).',
+      upgrades: [
+        '+10 de dano',
+        '+2 braços de cristais',
+        { fork: [{ name: 'Nevasca', desc: 'Cada lançamento se repete pela metade; +20% de área e +20% de chance de congelar' }, { name: 'Gelo eterno', desc: 'Quem cai explode; +14 de dano' }] },
+        'Recarga 0.5s mais rápida e +10 de dano',
+      ],
+    },
+    electricTerrain: {
+      description: 'Zapdos eletrifica o chão ao seu redor: um campo que estala e vai com você, e a cada instante um raio cai num inimigo dentro dele. Pode paralisar.',
+      upgrades: [
+        '+7 de dano',
+        '+20% de área e o campo dura +0.4s',
+        { fork: [{ name: 'Tempestade', desc: '+1 raio por vez; -4 de dano' }, { name: 'Raio em cadeia', desc: 'Acertos soltam faíscas nos vizinhos; +8 de dano' }] },
+        'Recarga 0.6s mais rápida e +7 de dano',
+      ],
+    },
+    overheat: {
+      description: 'O calor de Moltres vai subindo: dois lançamentos atiram leques de penas em chamas, e o terceiro superaquece numa explosão de fogo ao seu redor que queima tudo o que alcança.',
+      upgrades: [
+        '+8 de dano',
+        '+2 penas',
+        { fork: [{ name: 'Supernova', desc: 'Quem cai explode; +25% de área' }, { name: 'Rastro de brasas', desc: 'As penas deixam fogo no chão; recarga 0.2s mais rápida' }] },
+        'Recarga 0.3s mais rápida e +6 de dano',
+      ],
+    },
+    thunderclap: {
+      description: 'O raio de Raikou salta de inimigo em inimigo mais rápido que o olho, e o último leva um trovão que sacode a multidão ao redor. Pode paralisar.',
+      upgrades: [
+        '+13 de dano',
+        '+2 saltos e +10% de área',
+        { fork: [{ name: 'Velocidade do raio', desc: '+4 saltos e +4 de dano' }, { name: 'Trovão final', desc: 'Quem cai explode; +16 de dano' }] },
+        'Recarga 0.5s mais rápida e +13 de dano',
+      ],
+    },
+    burningBulwark: {
+      description: 'A carapaça vulcânica de Entei envolve você: bloqueia o próximo golpe e queima quem encosta. Quando quebra ou acaba, entra em erupção em dois anéis de magma.',
+      upgrades: [
+        '+18 de dano',
+        'Carapaça dura +0.5s e +15% de área',
+        { fork: [{ name: 'Vulcão', desc: '+4 gêiseres por anel' }, { name: 'Magma vivo', desc: 'Quem cai explode; +20 de dano' }] },
+        'Recarga 0.7s mais rápida e +18 de dano',
+      ],
+    },
+    aquaRing: {
+      description: 'Suicune corre em espiral para fora de você no vento norte, varrendo os inimigos. A água pura em que pisa vira um anel que os empurra para longe e cura você um pouco.',
+      upgrades: [
+        '+8 de dano',
+        '+15% de área e o anel dura +0.6s',
+        { fork: [{ name: 'Vento norte', desc: 'Cada lançamento se repete pela metade; +4 trechos de anel e dura +1s' }, { name: 'Água purificada', desc: 'Acertos curam mais; +10 de dano' }] },
+        'Recarga 0.6s mais rápida e +8 de dano',
+      ],
+    },
+    rockWrecker: {
+      description: 'Regirock arremessa uma rocha colossal sobre a maior multidão: ela cai com um tremor e segue rolando por cima deles.',
+      upgrades: [
+        '+22 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Avalanche', desc: '+1 rocha; -10 de dano' }, { name: 'Rocha demolidora', desc: 'Quem cai explode; +26 de dano e rola +0.4s' }] },
+        'Recarga 0.5s mais rápida e +22 de dano',
+      ],
+    },
+    glaciate: {
+      description: 'O frio de Regice se espalha numa cúpula de ar congelado ao seu redor, deixando lento quem está dentro. Então cai ao zero absoluto: tudo dentro estilhaça, inimigos comuns quase sem vida se partem na hora, e pode congelar.',
+      upgrades: [
+        '+22 de dano',
+        '+15% de área',
+        { fork: [{ name: 'Zero absoluto', desc: 'Recarga 0.6s mais rápida e +20% de chance de congelar' }, { name: 'Gelo estilhaçado', desc: 'Quem cai explode; +26 de dano' }] },
+        'Recarga 0.6s mais rápida e +22 de dano',
+      ],
+    },
+    metalBurst: {
+      description: 'A Iron Defense de Registeel endurece você (cada golpe que leva perde 2 de dano), e o aço explode de você numa onda e num anel de estilhaços. Cada golpe que você levou desde o último deixa a explosão mais forte.',
+      upgrades: [
+        '+15 de dano',
+        '+4 estilhaços',
+        { fork: [{ name: 'Muralha de ferro', desc: 'Defesa dobrada, dura +1.2s e +2 estilhaços' }, { name: 'Aço carregado', desc: 'Acertos soltam faíscas nos vizinhos; +16 de dano' }] },
+        'Recarga 0.5s mais rápida e +15 de dano',
+      ],
+    },
+    telekinesis: {
+      description: 'A mente de Mewtwo agarra os inimigos mais próximos e os ergue do chão, parados. Depois os arremessa contra a multidão: batem em quem estiver no caminho, e o golpe dói em dobro. Chefes não voam, mas são esmagados.',
+      upgrades: [
+        '+12 de dano',
+        '+2 inimigos erguidos',
+        { fork: [{ name: 'Mente sem limites', desc: '+3 inimigos erguidos; -8 de dano' }, { name: 'Arremesso fatal', desc: 'Quem cai explode; +14 de dano' }] },
+        'Recarga 0.4s mais rápida e +12 de dano',
+      ],
+    },
+    judgment: {
+      description: 'A roda dourada de Arceus gira sobre você e cada placa dispara uma lança de luz que atravessa os inimigos. Multitype: o tipo segue a terra (Planta na Rota 1, Inseto na Floresta de Viridian, Pedra no Monte Moon, Gelo no Monte Prateado, Fantasma na Torre de Lavender).',
+      upgrades: [
+        '+15 de dano',
+        '+2 lanças',
+        { fork: [{ name: 'Juízo duplo', desc: 'Cada lançamento se repete pela metade; +25% de área' }, { name: 'Juízo final', desc: 'Dano extra em elites e chefes; +18 de dano' }] },
+        'Recarga 0.4s mais rápida e +15 de dano',
+      ],
+    },
   },
 
   items: {

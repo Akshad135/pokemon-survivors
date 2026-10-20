@@ -3585,6 +3585,106 @@ export const es: Messages = {
         'Recarga 0.3s más rápida y +6 de daño',
       ],
     },
+    /* Legendary moves, second batch: the trios, Mewtwo and Arceus (`legendaryMoves2.ts`) */
+    snowscape: {
+      description: 'Las alas de Articuno lanzan un copo de nieve de cristales de hielo a tu alrededor. Quedan flotando y enfrían a quien los toca (lo ralentizan), luego estallan todos juntos y pueden congelar (el siguiente golpe duele el doble).',
+      upgrades: [
+        '+10 de daño',
+        '+2 brazos de cristales',
+        { fork: [{ name: 'Ventisca', desc: 'Cada lanzamiento se repite a la mitad; +20% de área y +20% de probabilidad de congelar' }, { name: 'Hielo eterno', desc: 'Los que caen explotan; +14 de daño' }] },
+        'Recarga 0.5s más rápida y +10 de daño',
+      ],
+    },
+    electricTerrain: {
+      description: 'Zapdos electrifica el suelo a tu alrededor: un campo que chisporrotea y va contigo, y a cada instante cae un rayo sobre un enemigo dentro de él. Puede paralizar.',
+      upgrades: [
+        '+7 de daño',
+        '+20% de área y el campo dura +0.4s',
+        { fork: [{ name: 'Tormenta', desc: '+1 rayo a la vez; -4 de daño' }, { name: 'Rayo en cadena', desc: 'Los golpes sueltan chispas a los vecinos; +8 de daño' }] },
+        'Recarga 0.6s más rápida y +7 de daño',
+      ],
+    },
+    overheat: {
+      description: 'El calor de Moltres va subiendo: dos lanzamientos disparan abanicos de plumas en llamas, y el tercero se sobrecalienta en una explosión de fuego a tu alrededor que quema todo lo que alcanza.',
+      upgrades: [
+        '+8 de daño',
+        '+2 plumas',
+        { fork: [{ name: 'Supernova', desc: 'Los que caen explotan; +25% de área' }, { name: 'Rastro de brasas', desc: 'Las plumas dejan fuego en el suelo; recarga 0.2s más rápida' }] },
+        'Recarga 0.3s más rápida y +6 de daño',
+      ],
+    },
+    thunderclap: {
+      description: 'El rayo de Raikou salta de enemigo en enemigo más rápido que la vista, y el último recibe un trueno que sacude a la multitud a su alrededor. Puede paralizar.',
+      upgrades: [
+        '+13 de daño',
+        '+2 saltos y +10% de área',
+        { fork: [{ name: 'Velocidad del rayo', desc: '+4 saltos y +4 de daño' }, { name: 'Trueno final', desc: 'Los que caen explotan; +16 de daño' }] },
+        'Recarga 0.5s más rápida y +13 de daño',
+      ],
+    },
+    burningBulwark: {
+      description: 'El caparazón volcánico de Entei te envuelve: bloquea el siguiente golpe y quema a quien lo toca. Cuando se rompe o se acaba, entra en erupción en dos anillos de magma.',
+      upgrades: [
+        '+18 de daño',
+        'El caparazón dura +0.5s y +15% de área',
+        { fork: [{ name: 'Volcán', desc: '+4 géiseres por anillo' }, { name: 'Magma vivo', desc: 'Los que caen explotan; +20 de daño' }] },
+        'Recarga 0.7s más rápida y +18 de daño',
+      ],
+    },
+    aquaRing: {
+      description: 'Suicune corre en espiral hacia afuera desde ti con el viento del norte, barriendo a los enemigos. El agua pura que pisa se vuelve un anillo que los empuja lejos y te cura un poco.',
+      upgrades: [
+        '+8 de daño',
+        '+15% de área y el anillo dura +0.6s',
+        { fork: [{ name: 'Viento del norte', desc: 'Cada lanzamiento se repite a la mitad; +4 tramos de anillo y dura +1s' }, { name: 'Agua purificada', desc: 'Los golpes curan más; +10 de daño' }] },
+        'Recarga 0.6s más rápida y +8 de daño',
+      ],
+    },
+    rockWrecker: {
+      description: 'Regirock lanza una roca colosal sobre la multitud más densa: cae con un temblor y sigue rodando por encima de ellos.',
+      upgrades: [
+        '+22 de daño',
+        '+20% de área',
+        { fork: [{ name: 'Avalancha', desc: '+1 roca; -10 de daño' }, { name: 'Roca demoledora', desc: 'Los que caen explotan; +26 de daño y rueda +0.4s' }] },
+        'Recarga 0.5s más rápida y +22 de daño',
+      ],
+    },
+    glaciate: {
+      description: 'El frío de Regice se extiende en una cúpula de aire congelado a tu alrededor, ralentizando a todos dentro. Luego cae al cero absoluto: todo dentro estalla, los enemigos comunes casi sin vida se quiebran al instante, y puede congelar.',
+      upgrades: [
+        '+22 de daño',
+        '+15% de área',
+        { fork: [{ name: 'Cero absoluto', desc: 'Recarga 0.6s más rápida y +20% de probabilidad de congelar' }, { name: 'Hielo quebrado', desc: 'Los que caen explotan; +26 de daño' }] },
+        'Recarga 0.6s más rápida y +22 de daño',
+      ],
+    },
+    metalBurst: {
+      description: 'El Iron Defense de Registeel te endurece (cada golpe que recibes pierde 2 de daño), y el acero estalla desde ti en una onda y un anillo de esquirlas. Cada golpe que recibiste desde el último hace la explosión más fuerte.',
+      upgrades: [
+        '+15 de daño',
+        '+4 esquirlas',
+        { fork: [{ name: 'Muralla de hierro', desc: 'Defensa doble, dura +1.2s y +2 esquirlas' }, { name: 'Acero cargado', desc: 'Los golpes sueltan chispas a los vecinos; +16 de daño' }] },
+        'Recarga 0.5s más rápida y +15 de daño',
+      ],
+    },
+    telekinesis: {
+      description: 'La mente de Mewtwo atrapa a los enemigos más cercanos y los levanta del suelo, inmóviles. Luego los arroja contra la multitud: chocan con quien esté en el camino, y el golpe duele el doble. Los jefes no vuelan, pero quedan aplastados.',
+      upgrades: [
+        '+12 de daño',
+        '+2 enemigos levantados',
+        { fork: [{ name: 'Mente sin límites', desc: '+3 enemigos levantados; -8 de daño' }, { name: 'Lanzamiento fatal', desc: 'Los que caen explotan; +14 de daño' }] },
+        'Recarga 0.4s más rápida y +12 de daño',
+      ],
+    },
+    judgment: {
+      description: 'La rueda dorada de Arceus gira sobre ti y cada tabla dispara una lanza de luz que atraviesa a los enemigos. Multitype: el tipo sigue a la tierra (Planta en la Ruta 1, Bicho en el Bosque Verde, Roca en Mt. Moon, Hielo en el Monte Plateado, Fantasma en la Torre Lavanda).',
+      upgrades: [
+        '+15 de daño',
+        '+2 lanzas',
+        { fork: [{ name: 'Juicio doble', desc: 'Cada lanzamiento se repite a la mitad; +25% de área' }, { name: 'Juicio final', desc: 'Daño extra a élites y jefes; +18 de daño' }] },
+        'Recarga 0.4s más rápida y +15 de daño',
+      ],
+    },
   },
 
   items: {

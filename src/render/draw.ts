@@ -40,6 +40,7 @@ import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
 import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
 import { drawDuoAir, drawDuoGround } from './duoFx'
 import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
+import { drawLegendary2Air, drawLegendary2Ground } from './legendaryFx2'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
@@ -866,6 +867,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawVerbEvolvedGround(ctx, g, t)
   drawDuoGround(ctx, g, t)
   drawLegendaryGround(ctx, g, t)
+  drawLegendary2Ground(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
@@ -949,6 +951,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawVerbEvolvedAir(ctx, g, t, visible)
   drawDuoAir(ctx, g, t, visible)
   drawLegendaryAir(ctx, g, t, visible)
+  drawLegendary2Air(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
   for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 

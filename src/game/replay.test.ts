@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { chooseOffer, step, takeBerryLevelUps } from './game'
 import { ITEM_IDS, ITEMS } from '../data/items'
-import { maxMoveLevel } from './moves'
+import { maxMoveLevel, type MoveId } from './moves'
+import { LEGENDARY_MOVES_2 } from './legendaryMoves2'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { spawnMapEvent } from './mapEvents'
@@ -19,6 +20,8 @@ import { featureAt, type Landmark } from './terrain'
 import { LANDMARK } from '../data/landmarks'
 import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
+
+const LEGENDARY_IDS_2 = Object.keys(LEGENDARY_MOVES_2) as MoveId[]
 
 const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
 
@@ -125,6 +128,18 @@ describe('replays', () => {
     expect(g.mega.count).toBe(1)
     const staged = startGame(start)
     megaReady(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate the capstones of the trios, Mewtwo and Arceus: crystals, fields, shells, lifts and throws', () => {
+    // Four minutes in, so the horde is thick enough for every one of them to land.
+    const capstones = (g: Game) => {
+      g.time = 240
+      for (const id of LEGENDARY_IDS_2) g.player.moves.push({ id, level: 5, cooldown: 0, path: id.length % 2 ? 4 : 0 })
+    }
+    const { g, replay } = play(260, START, 300, capstones)
+    const staged = startGame(START)
+    capstones(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 

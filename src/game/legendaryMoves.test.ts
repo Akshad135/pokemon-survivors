@@ -4,16 +4,18 @@ import { EVOLUTIONS } from '../data/evolutions'
 import { PLAYABLE_IDS } from '../data/hatchlings'
 import { LEGENDARY_MOVE_OF } from '../data/legendaryMoves'
 import { RIFT_LEGENDS } from '../data/rifts'
-import { MYTHICALS } from '../data/waves'
-import { LEGENDARY_MOVES, type LegendaryMoveId } from './legendaryMoves'
+import { MYTHICALS, TRIOS } from '../data/waves'
+import { LEGENDARY_MOVES } from './legendaryMoves'
+import { LEGENDARY_MOVES_2 } from './legendaryMoves2'
 import { forkAt, isLegendary, maxMoveLevel, MOVE_IDS, MOVES, type MoveId } from './moves'
 import { SPECIALS } from './special'
 
-const LEGENDARY = Object.keys(LEGENDARY_MOVES) as LegendaryMoveId[]
+const LEGENDARY = Object.keys({ ...LEGENDARY_MOVES, ...LEGENDARY_MOVES_2 }) as MoveId[]
 
 describe('legendary moves', () => {
-  it('are taught one each by every rift legendary and every mythical of the finale', () => {
-    expect(Object.keys(LEGENDARY_MOVE_OF).sort()).toEqual([...RIFT_LEGENDS, ...MYTHICALS].sort())
+  it('are taught one each by every legendary: rift, trio, Mewtwo, mythical and Arceus', () => {
+    const legends = [...RIFT_LEGENDS, ...Object.values(TRIOS).flat(), 'mewtwo', ...MYTHICALS, 'arceus']
+    expect(Object.keys(LEGENDARY_MOVE_OF).sort()).toEqual(legends.sort())
     expect([...new Set(Object.values(LEGENDARY_MOVE_OF))].sort()).toEqual([...LEGENDARY].sort())
   })
 
