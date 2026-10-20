@@ -1,7 +1,7 @@
 import { LOCALE_IDS, type Locale } from '../i18n'
 import { SITE_MESSAGES } from '../i18n/site'
 import { html, jsonLd, raw, type Html } from './html'
-import { absolute, alternates, HREFLANG, REPO_URL, ROUTES, type PageId, type RouteId } from './routes'
+import { absolute, alternates, HREFLANG, REPO_URL, ROUTES, SOCIAL_IDS, SOCIALS, type PageId, type RouteId } from './routes'
 
 export type PageMeta = {
   id: PageId
@@ -99,6 +99,7 @@ const footer = (locale: Locale) => {
       <a href="${ROUTES.legal[locale]}">${m.footer.legal}</a>
       <a href="${REPO_URL}/blob/main/CREDITS.md">${m.footer.credits}</a>
       <a href="${REPO_URL}">${m.footer.source}</a>
+      ${SOCIAL_IDS.map((id) => html`<a href="${SOCIALS[id].url}" rel="me">${SOCIALS[id].name}</a>`)}
       <a class="support-link" href="${ROUTES.support[locale]}">♥ ${m.footer.support}</a>
     </p>
   </footer>`

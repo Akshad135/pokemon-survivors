@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { logger } from 'hono/logger'
 import { parseAdminGift, parseAdminQuery } from '../../src/game/admin'
+import { parseBugReport } from '../../src/game/bugReport'
 import { challengeOpen } from '../../src/game/challenge'
 import { parseDonation } from '../../src/data/donations'
 import { isPollOption } from '../../src/data/supporters'
@@ -17,8 +18,11 @@ import { parseCode } from '../../src/game/supporters'
 import { isSuggestionSort, isSuggestionStatus, isVote, parseSuggestionDraft } from '../../src/game/suggestions'
 import type { AdminStore } from './admin'
 import type { Verify } from './auth'
+import type { BugReports } from './bugReports'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
+import type { DiscordLink } from './discordLink'
+import type { Report } from './errors'
 import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
 import type { RankingStore } from './ranking'
@@ -29,7 +33,7 @@ import { abacateDonation, ABACATE_REF, stripeDonation, verifyAbacate, verifyStan
 export type AppDeps = {
   store: SaveStore
   ranking: RankingStore
-  gifts: Pick<GiftStore, 'inbox' | 'claim' | 'refer'>
+  gifts: Pick<GiftStore, 'inbox' | 'claim' | 'refer' | 'credit' | 'invites'>
   /** Re-simulates finished runs after the answer went out. */
   checks: Pick<Checks, 'schedule'>
   verify: Verify
@@ -38,6 +42,10 @@ export type AppDeps = {
   supporters: SupporterStore
   /** The idea board. */
   suggestions: SuggestionStore
+  /** Bug reports: stored, then posted to the community Discord's #bug-reports. */
+  bugReports: Pick<BugReports, 'submit'>
+  /** The player's Discord account: the community server and its supporter role. */
+  discord: Pick<DiscordLink, 'link' | 'unlink'>
   /** The gift desk: who is admin (asked of Clerk), finding players and sending them gifts. */
   admin: Pick<AdminStore, 'isAdmin' | 'search' | 'send' | 'recent'>
   /** Webhook secrets: Stripe's signing secret and Payment Link, AbacatePay's URL secret. Unset ones answer 503. */
@@ -45,6 +53,8 @@ export type AppDeps = {
   allowedOrigin: (origin: string) => boolean
   /** Whether the database answers, for `/health`. */
   ping: () => Promise<boolean>
+  /** Error tracking for the 500s (`errors.ts`). */
+  report: Report
 }
 
 type Auth = { Variables: { userId: string } }
@@ -59,6 +69,14 @@ const SITE_PATH = /^\/[a-z0-9/-]{0,40}$/
 
 /** A donation's `ref`: our uuid (AbacatePay) or a Stripe Checkout Session id. */
 const DONATION_REF = /^(?:[0-9a-f-]{36}|cs_(?:test|live)_[A-Za-z0-9]{10,200})$/
+
+/**
+ * Who's asking, for a rate limit: the address the proxy (Traefik) saw. It
+ * sets `X-Real-IP` itself and adds the address to the end of
+ * `X-Forwarded-For`, so a client can't pick its own by sending either.
+ */
+export const clientIp = (realIp: string | undefined, forwarded: string | undefined) =>
+  realIp?.trim() || forwarded?.split(',').at(-1)?.trim() || 'unknown'
 
 /** What a hand-sent gift answers when it doesn't go, by `SendOutcome`. */
 const SEND_ERRORS = { unknown: 404, 'bad request': 400 } as const
@@ -86,7 +104,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   that day's challenge isn't open (`challengeOpen`).
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
  *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
- *   replay is re-simulated afterwards (`checks.ts`). A challenge run's replay must
+ *   replay may be re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
  *   400 for an implausible result or a replay of another run, 404 for an
  *   unknown token, 409 when it contradicts what the run already recorded, 422
@@ -101,6 +119,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /gifts/claim` (auth) `{ ids }`: marks those gifts claimed (the game applied them). `{ claimed }`.
  * - `POST /referral` (auth) `{ ref }`: the inviter's handle a new account came with. `{ referred }`:
  *   whether it counted (only a new account, never oneself: `canRefer`).
+ * - `GET /invites` (auth): `{ friends }` (`InvitedFriend[]`), who signed up with the player's link, newest first.
  * - `POST /donations` `{ amount, page, handle? }`: `{ url }`, an AbacatePay checkout (Pix or a
  *   Brazilian card) for `amount` whole reais (`parseDonation`), for the account of `handle`
  *   (400 when nobody has it). The donor comes back to `page` on the site, with
@@ -118,6 +137,13 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /suggestions` (auth) `{ title, body }`: posts an idea (`parseSuggestionDraft`), 201 `{ suggestion }`.
  *   400 invalid, 403 before the player has a handle, 429 past `SUGGESTION.perDay` in 24 hours.
  * - `PUT /suggestions/:id/vote` (auth) `{ vote }` (1, -1, or 0 to take it back): `{ score, vote }`. 404 unknown, 409 shipped.
+ * - `POST /bug-reports` `{ text, tech? }`: a bug report (`parseBugReport`), from a guest or (with a token)
+ *   a player. 201 `{ id }`, stored and on its way to Discord. 400 invalid, 429 past `BUG_REPORT.perHour`
+ *   for the IP or the account.
+ * - `POST /discord/link` (auth): links the Discord account the player connected in Clerk, joins them
+ *   to the community server and gives them their supporter role. `{ username, joined }`; 404 when
+ *   Clerk has no verified Discord account for them, 503 when Clerk can't answer.
+ * - `DELETE /discord/link` (auth): forgets it (the player unlinked Discord). `{ unlinked: true }`.
  * - `/admin…` (admin): the gift desk, 403 for anyone whose verified email isn't in `ADMIN_EMAILS`.
  *   `GET /admin`: `{ admin: true }`. `GET /admin/users?q=`: `{ users }` (`AdminUser[]`) by handle or email.
  *   `POST /admin/gifts` `{ userId, content, request }`: sends a gift (`parseAdminGift`), `{ sent }`
@@ -125,8 +151,9 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (`AdminSent[]`), the latest sent by hand. `PUT /admin/suggestions/:id` `{ status }`: marks an idea
  *   `done` (shipped), `open` again or `hidden` (off the board). `{ status }`, 404 for an unknown idea.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, admin, webhooks, allowedOrigin, ping }: AppDeps) => {
-  const app = new Hono()
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, webhooks, allowedOrigin, ping, report }: AppDeps) => {
+  // `userId` is set by `auth` or `maybeAuth` on the routes that ask who's calling; `onError` reports it.
+  const app = new Hono<MaybeAuth>()
 
   app.use(logger())
   app.use(cors({ origin: (origin) => (allowedOrigin(origin) ? origin : null), allowMethods: ['GET', 'PUT', 'POST', 'DELETE'], allowHeaders: ['Authorization', 'Content-Type'], maxAge: 86400 }))
@@ -201,6 +228,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const finished = await ranking.finishRun(c.var.userId, token, result, replay)
     if (!finished.ok) return c.json({ error: finished.error }, FINISH_ERRORS[finished.error])
     if (replay) checks.schedule(token)
+    void gifts.credit(c.var.userId).catch((err) => console.error('invite credit failed', err))
     const [ranks, challenge] = await Promise.all([
       ranking.runRanks(c.var.userId, result.difficulty),
       finished.challenge ? ranking.challengePlace(c.var.userId, finished.challenge, finished.official === true) : null,
@@ -248,6 +276,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     if (!ids) return c.json({ error: 'expected { ids }' }, 400)
     return c.json({ claimed: await gifts.claim(c.var.userId, ids) })
   })
+
+  app.get('/invites', auth, async (c) => c.json({ friends: await gifts.invites(c.var.userId) }))
 
   app.post('/referral', auth, smallBody, async (c) => {
     const body = await json(c)
@@ -318,6 +348,18 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     return c.json({ received: true })
   })
 
+  app.post('/discord/link', auth, async (c) => {
+    const linked = await discord.link(c.var.userId).catch((err: unknown) => (console.error('discord link failed', err), null))
+    if (!linked) return c.json({ error: 'clerk unavailable' }, 503)
+    if (!linked.linked) return c.json({ error: 'no discord account' }, 404)
+    return c.json({ username: linked.username, joined: linked.joined })
+  })
+
+  app.delete('/discord/link', auth, async (c) => {
+    await discord.unlink(c.var.userId)
+    return c.json({ unlinked: true })
+  })
+
   app.get('/me/supporter', auth, async (c) => c.json(await supporters.mine(c.var.userId)))
 
   app.put('/me/supporter', auth, smallBody, async (c) => {
@@ -367,6 +409,13 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     return c.json({ score: voted.score, vote: voted.vote })
   })
 
+  app.post('/bug-reports', maybeAuth, bodyLimit({ maxSize: 32 * 1024 }), async (c) => {
+    const report = parseBugReport(await json(c))
+    if (!report) return c.json({ error: 'expected { text, tech? }' }, 400)
+    const submitted = await bugReports.submit(report, { userId: c.var.userId, ip: clientIp(c.req.header('X-Real-IP'), c.req.header('X-Forwarded-For')) })
+    return submitted.ok ? c.json({ id: submitted.id }, 201) : c.json({ error: 'too many reports' }, 429)
+  })
+
   /** The desk's routes, all behind a valid token whose user Clerk says is admin. Everyone else gets 403, whatever they send. */
   const desk = new Hono<Auth>()
 
@@ -410,6 +459,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
 
   app.onError((err, c) => {
     console.error(err)
+    report(err, { userId: c.var.userId, method: c.req.method, route: c.req.routePath })
     return c.json({ error: 'internal error' }, 500)
   })
 

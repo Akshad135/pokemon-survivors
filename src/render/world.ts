@@ -266,30 +266,75 @@ const isMortar = (wx: number, wy: number) => {
 
 const pathAt = (wx: number, wy: number, width: number) => Math.abs(noise(wx, wy, 220, SEED + 7) - 0.5) < width
 
+/**
+ * `noise` at the `out.length` pixels of world row `wy` starting at `wx0`, hashing
+ * each lattice corner once per cell instead of once per pixel. Same arithmetic as
+ * `noise`, so the same values to the last bit.
+ */
+const noiseRow = (out: Float64Array, wx0: number, wy: number, scale: number, seed: number) => {
+  const gy = wy / scale
+  const y0 = Math.floor(gy)
+  const ty = smooth(gy - y0)
+  let cell = NaN
+  let a = 0
+  let b = 0
+  let c = 0
+  let d = 0
+  for (let x = 0; x < out.length; x++) {
+    const gx = (wx0 + x) / scale
+    const x0 = Math.floor(gx)
+    if (x0 !== cell) {
+      cell = x0
+      a = hash2(x0, y0, seed)
+      b = hash2(x0 + 1, y0, seed)
+      c = hash2(x0, y0 + 1, seed)
+      d = hash2(x0 + 1, y0 + 1, seed)
+    }
+    const tx = smooth(gx - x0)
+    out[x] = a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty
+  }
+}
+
+/** Rows of noise `buildChunk` reuses: the paths, the dense zones and the spots. */
+const pathRow = new Float64Array(CHUNK)
+const altRow = new Float64Array(CHUNK)
+const spotRow = new Float64Array(CHUNK)
+
 const buildChunk = (biome: BiomeId, cx: number, cy: number) => {
   const style = STYLES[biome]
   const canvas = createCanvas(CHUNK, CHUNK)
   const ctx = context2d(canvas)
   const img = ctx.createImageData(CHUNK, CHUNK)
+  const data = img.data
   const ox = cx * CHUNK
   const oy = cy * CHUNK
 
+  // The ground's shades flattened once (base, alt, path, spots; 3 shades of RGB each), out of the pixel loop.
+  const { tiles, spots } = style
+  const rgb = [style.base, style.alt, style.path, spots ?? style.base].flatMap((shades) => shades.flat())
   for (let y = 0; y < CHUNK; y++) {
+    const wy = oy + y
+    noiseRow(pathRow, ox, wy, 220, SEED + 7)
+    noiseRow(altRow, ox, wy, 96, SEED)
+    if (spots) noiseRow(spotRow, ox, wy, 20, SEED + 9)
     for (let x = 0; x < CHUNK; x++) {
       const wx = ox + x
-      const wy = oy + y
-      const path = pathAt(wx, wy, 0.025)
+      const path = Math.abs(pathRow[x]! - 0.5) < 0.025
       const r = hash2(wx, wy, SEED + 1)
-      let palette = path ? style.path : noise(wx, wy, 96, SEED) > 0.55 ? style.alt : style.base
-      if (!path && style.spots && noise(wx, wy, 20, SEED + 9) > 0.76) palette = style.spots
+      const palette = path ? 2 : spots && spotRow[x]! > 0.76 ? 3 : altRow[x]! > 0.55 ? 1 : 0
       // Ordered-ish dither: mostly the base shade with sparse lighter/darker pixels.
-      let [cr, cg, cb] = palette[r < 0.7 ? 0 : r < 0.9 ? 1 : 2]
-      if (path && style.tiles && isMortar(wx, wy)) [cr, cg, cb] = MORTAR
       const i = (y * CHUNK + x) * 4
-      img.data[i] = cr
-      img.data[i + 1] = cg
-      img.data[i + 2] = cb
-      img.data[i + 3] = 255
+      if (path && tiles && isMortar(wx, wy)) {
+        data[i] = MORTAR[0]
+        data[i + 1] = MORTAR[1]
+        data[i + 2] = MORTAR[2]
+      } else {
+        const c = palette * 9 + (r < 0.7 ? 0 : r < 0.9 ? 3 : 6)
+        data[i] = rgb[c]!
+        data[i + 1] = rgb[c + 1]!
+        data[i + 2] = rgb[c + 2]!
+      }
+      data[i + 3] = 255
     }
   }
   ctx.putImageData(img, 0, 0)
@@ -406,16 +451,19 @@ export const drawGround = (
 }
 
 /**
- * Builds at most one missing chunk of `biome` under the view, so an upcoming
- * biome is ready before its dissolve starts and the switch never stalls a frame.
+ * Builds at most one missing chunk of `biome` under the view grown by `margin`
+ * px on every side, so chunks are ready before they scroll in (and an upcoming
+ * biome before its dissolve starts) and never stall the frame that shows them.
+ * True if it built one.
  */
-export const warmGround = (biome: BiomeId, camX: number, camY: number, w: number, h: number) => {
-  const { x0, y0, x1, y1 } = chunkSpan(camX, camY, w, h)
+export const warmGround = (biome: BiomeId, camX: number, camY: number, w: number, h: number, margin = 0) => {
+  const { x0, y0, x1, y1 } = chunkSpan(camX - margin, camY - margin, w + margin * 2, h + margin * 2)
   for (let cy = y0; cy <= y1; cy++) {
     for (let cx = x0; cx <= x1; cx++) {
       if (chunks.has(chunkKey(biome, cx, cy))) continue
       chunkAt(biome, cx, cy)
-      return
+      return true
     }
   }
+  return false
 }

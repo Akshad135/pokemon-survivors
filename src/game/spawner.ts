@@ -1,25 +1,26 @@
 import { TAU } from '../engine/math'
-import { chance, range } from '../engine/rng'
+import { chance, range, weightedPick } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { BOSS_FIGHT, bossCandidates, bossWaveAt, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
+import { BOSS_FIGHT, bossCandidates, bossWaveAt, ELITE, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
 import { bossReach, chaseOffBosses, finaleEntrance } from './bosses'
 import { DIFFICULTIES } from './difficulty'
 import { endlessPressure } from './endless'
 import { despawnEnemy, spawnEnemy } from './enemies'
 import { eliteSpawn, makeElite, makeRunner } from './horde'
 import { oldestRenewable, RENEWAL } from './renewal'
-import { hasTrait, pickSpawn } from './roster'
+import { hasTrait, pickSpawn, type StagePool } from './roster'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
+import { surgeSize, TENSION_PEAK, tensionMods } from './tension'
+import { spawnPoint, updateTension } from './tensionSystem'
+import { isSpitter, makeSpitter, SPITTERS } from './spitters'
 import type { Game } from './types'
 import * as dm from '../engine/dmath'
 
 /** Just outside the visible area, in a random direction around the player. */
 const ringDistance = (g: Game) => dm.hypot(g.view.w, g.view.h) / 2 + 12
 
-const offscreen = (g: Game, angle = range(g.rng, 0, TAU)) => {
-  const d = ringDistance(g)
-  return { x: g.player.x + dm.cos(angle) * d, y: g.player.y + dm.sin(angle) * d }
-}
+/** Off screen in a random direction: on the far ring, or `near` of the way to just past the screen edge (tension). */
+const offscreen = (g: Game, near = 0) => spawnPoint(g, range(g.rng, 0, TAU), ringDistance(g), near)
 
 /** A closing circle of `count` × `species` around the player. The endless mode reuses it. */
 export const spawnRing = (g: Game, species: EnemyId, count: number) => {
@@ -87,7 +88,7 @@ const runEvent = (g: Game, event: WaveEvent, index: number) => {
 }
 
 /** The finale boss (Mewtwo) is alive in the regular run. It's the last boss to arrive, so while it lives `bossId` points at it. */
-const finaleAlive = (g: Game) => {
+export const finaleAlive = (g: Game) => {
   if (g.endless || g.bossId === null) return false
   const boss = g.enemies.find((e) => e.id === g.bossId)
   return boss !== undefined && EVENTS.some((e) => e.kind === 'boss' && e.finale && bossCandidates(e).includes(boss.kind))
@@ -103,6 +104,18 @@ const CALM = { rate: 1, max: 1 } as const
 const pressureOf = (g: Game, finale: boolean, bossNear: boolean) =>
   g.endless ? endlessPressure(g.time) : finale ? FINALE : bossNear ? BOSS_FIGHT : CALM
 
+/**
+ * A surge of the pressure director: a ring or a swarm (alternating) of a
+ * species of the stage's pool, without traits, as big as the tension asks.
+ */
+const surge = (g: Game, pool: StagePool, level: number) => {
+  const open = pool.filter(([id]) => !hasTrait(id))
+  if (open.length === 0) return
+  const s = g.tension
+  ;(s.surges % 2 === 0 ? spawnRing : spawnSwarm)(g, weightedPick(g.rng, open), surgeSize(level))
+  s.surges++
+}
+
 /** Retires one long-lived off-screen enemy per tick (`RENEWAL.maxAge`), cap or not; the spawner refills the room. */
 const retireOld = (g: Game) => {
   const old = oldestRenewable(g.enemies, g.camera, g.view, g.time)
@@ -110,22 +123,33 @@ const retireOld = (g: Game) => {
 }
 
 /**
- * Regular spawns: the stage's rate and cap times the difficulty and the
- * pressure. At the cap the oldest off-screen enemy makes room (renewal); past
- * `ELITE.fill` of the cap new spawns come in as elites (never while the finale
- * boss lives, so the last fight stays a duel), and the stage's runner species
- * as runners. Shinies are neither.
+ * Regular spawns: the stage's rate and cap times the difficulty, the
+ * pressure and the tension (`tension.ts`, held still while the finale boss
+ * lives). At the cap the oldest off-screen enemy makes room (renewal); past
+ * `ELITE.fill` of the cap new spawns come in as elites, and with tension some
+ * spawns do anyway (never while the finale boss lives, so the last fight
+ * stays a duel), and the stage's runner species as runners. From
+ * `SPITTERS.from` a `share` of the spawns are the stage's spitter species
+ * instead, up to `alive` of them (none while the finale boss lives either).
+ * Shinies are none of these. Tension also brings spawns closer and faster,
+ * splits the loot of every regular faint by its rate multiplier
+ * (`TensionState.share`, so a dominant build doesn't snowball) and banks
+ * toward surges, which wait out a wave boss's first minute and the endless
+ * mode (it has its own).
  */
 export const updateSpawner = (g: Game, dt: number) => {
   const stage = stageAt(g.time)
   const index = stageIndexAt(g.time)
   const pool = g.roster.stages[index] ?? []
   const runner = g.roster.runners[index] ?? null
+  const spit = SPITTERS[g.difficulty]
+  const spitter = g.roster.spitters[index] ?? null
   const reach = bossReach(g)
   const more = DIFFICULTIES[g.difficulty].spawnRate
   let regular = 0
   let traitsAlive = 0
   let elites = 0
+  let spitters = 0
   let bossNear = false
   for (const e of g.enemies) {
     if (e.dying >= 0) continue
@@ -138,12 +162,28 @@ export const updateSpawner = (g: Game, dt: number) => {
     if (e.behavior.kind === 'chase') regular++
     if (e.elite) elites++
     if (hasTrait(e.kind)) traitsAlive++
+    if (isSpitter(e)) spitters++
   }
   const finale = finaleAlive(g)
   const pressure = pressureOf(g, finale, bossNear)
-  const cap = stage.max * pressure.max * more
+  if (!finale) updateTension(g, dt)
+  const level = finale ? 0 : g.tension.level
+  const peak = TENSION_PEAK[g.difficulty]
+  const tension = tensionMods(level, peak, g.endless !== null)
+  const cap = stage.max * pressure.max * more * tension.cap
+  // Tension brings pressure, not power: the faster horde splits the same loot.
+  g.tension.share = 1 / tension.rate
+  const spitting = spitter !== null && !finale && g.time >= spit.from
 
-  g.spawnBudget += stage.rate * pressure.rate * more * dt
+  if (!finale && !bossNear && !g.endless) {
+    g.tension.surge += level * dt
+    if (g.tension.surge >= peak.surgeEvery) {
+      g.tension.surge -= peak.surgeEvery
+      surge(g, pool, level)
+    }
+  }
+
+  g.spawnBudget += stage.rate * pressure.rate * more * tension.rate * dt
   while (g.spawnBudget >= 1) {
     g.spawnBudget--
     if (regular >= cap) {
@@ -153,10 +193,12 @@ export const updateSpawner = (g: Game, dt: number) => {
       const gone = g.enemies[old]!
       if (hasTrait(gone.kind)) traitsAlive--
       if (gone.elite) elites--
+      if (isSpitter(gone)) spitters--
       despawnEnemy(gone)
       regular--
     }
-    const kind = pickSpawn(g.rng, pool, traitsAlive)
+    const spits = spitting && spitters < spit.alive && chance(g.rng, spit.share)
+    const kind = spits ? spitter : pickSpawn(g.rng, pool, traitsAlive)
     if (!kind) continue
     if (hasTrait(kind)) traitsAlive++
     if (rollShiny(g.rng, SHINY_ODDS.enemy * g.shinyBoost)) {
@@ -165,13 +207,19 @@ export const updateSpawner = (g: Game, dt: number) => {
       const d = Math.min(g.view.w, g.view.h) / 2 - 16
       makeShiny(g, spawnEnemy(g, kind, g.player.x + dm.cos(a) * d, g.player.y + dm.sin(a) * d))
     } else {
-      const pos = offscreen(g)
+      const pos = offscreen(g, tension.near)
       const e = spawnEnemy(g, kind, pos.x, pos.y)
-      if (!finale && eliteSpawn(regular, elites, cap)) {
+      e.speed *= tension.speed
+      const tense = tension.elite > 0 && elites < cap * ELITE.share && chance(g.rng, tension.elite)
+      if (!finale && (eliteSpawn(regular, elites, cap) || tense)) {
         makeElite(e)
         elites++
       }
       if (kind === runner) makeRunner(e)
+      if (spits) {
+        makeSpitter(e, g.rng())
+        spitters++
+      }
     }
     regular++
   }

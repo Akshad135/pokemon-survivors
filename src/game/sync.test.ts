@@ -49,6 +49,11 @@ describe('mergeSaves', () => {
     expect(m.difficulty).toBe('normal')
   })
 
+  it("keeps every family's branch, the incoming side's where both evolved it", () => {
+    const m = mergeSaves(save({ branches: { eevee: 'espeon', ralts: 'gallade' } }), save({ branches: { eevee: 'umbreon', scyther: 'scizor' } }))
+    expect(m.branches).toEqual({ eevee: 'umbreon', ralts: 'gallade', scyther: 'scizor' })
+  })
+
   it('joins the collection and keeps the larger upgrades and records', () => {
     const m = mergeSaves(account, guest)
     expect(m.ranks).toMatchObject({ hpUp: 3, protein: 2, iron: 0 })
@@ -61,6 +66,14 @@ describe('mergeSaves', () => {
     expect(m.achievements.lifetime.legends).toEqual(expect.arrayContaining(['kyogre', 'lugia']))
     expect(m.titles).toEqual(['ambassador'])
     expect(m.gifts).toEqual(['gift-a', 'gift-b'])
+  })
+
+  it("keeps a shiny hatch's Normal pick against a device that never picked, and the incoming pick when both did", () => {
+    const hatched = save({ hatched: { gible: { shiny: true } } })
+    const normal = save({ hatched: { gible: { shiny: true } }, shinyStarters: { gible: false } })
+    expect(mergeSaves(normal, hatched).shinyStarters).toEqual({ gible: false })
+    expect(mergeSaves(hatched, normal).shinyStarters).toEqual({ gible: false })
+    expect(mergeSaves(normal, save({ shinyStarters: { gible: true } })).shinyStarters).toEqual({ gible: true })
   })
 
   it('keeps the current day of missions, and the most progress on the same week', () => {

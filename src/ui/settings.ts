@@ -2,24 +2,37 @@ import { playSfx, setMix } from '../engine/audio'
 import { STICK_MODES, type Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALE_IDS, LOCALES, setLocale, t, type Locale } from '../i18n'
+import { bugReportsEnabled } from '../bugReport'
+import { bugReportForm } from './bugReport'
 import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
+import { FLASH_MODES } from '../render/flashes'
 import { loadSettings, writeSettings, type Settings } from './save'
 import { hint, menu, type Screen } from './screens'
 import { backButton, shellBody, tabStrip, topBar, segmented } from './shell'
-import { REPO_URL, ROUTES } from '../site/routes'
+import { REPO_URL, ROUTES, SOCIAL_IDS, SOCIALS } from '../site/routes'
+import { applyUiScale, maxUiZoom, UI_SCALES, uiZoom, type UiScale } from './uiScale'
+import { currentInstallOffer, installHelpScreen, onInstallChange, promptInstall } from './install'
 
 /* ---------------- Live settings ---------------- */
 
-/** Pushes settings out to where they act: the audio mix, and `data-stick` for the HUD's CSS (the status box moves off the fixed stick). */
+/**
+ * Pushes settings out to where they act: the audio mix, `data-stick` for the
+ * HUD's CSS (the status box moves off the fixed stick) and `data-flashes`
+ * (reduced hides the shell's white screen flash), and the UI size.
+ */
 const apply = (s: Settings) => {
   setMix(s)
   document.documentElement.dataset.stick = s.joystick
+  document.documentElement.dataset.flashes = s.flashes
+  applyUiScale(s.uiScale)
 }
 
 let current = loadSettings()
 apply(current)
+// The UI size depends on the viewport too (`auto`, and the room it leaves).
+window.addEventListener('resize', () => applyUiScale(current.uiScale))
 
 /** Redraws the open settings screen when a change comes from elsewhere (the M key). */
 let refresh: (() => void) | null = null
@@ -122,6 +135,20 @@ const choiceRow = <K extends keyof Settings>(label: string, key: K, options: rea
   }
 }
 
+const percent = (zoom: number) => `${Math.round(zoom * 100)}%`
+
+/**
+ * `◀ Auto (125%) ▶`: the UI size steps that fit this viewport (`maxUiZoom`), or
+ * no row where only 100% does (phones, small windows). Shows the zoom in use,
+ * so a stored size the window can't fit reads as what it got.
+ */
+const uiScaleRows = (label: string, auto: string): Row[] => {
+  const room = maxUiZoom(window.innerWidth, window.innerHeight)
+  if (room <= 1) return []
+  const options = UI_SCALES.filter((s) => s === 'auto' || s <= room)
+  return [choiceRow(label, 'uiScale', options, (s: UiScale) => (s === 'auto' ? `${auto} (${percent(uiZoom())})` : percent(uiZoom())))]
+}
+
 /** PT / EN / ES, picked on a tap or ← →. `pick` switches the language and must rebuild the screen. */
 const languageRow = (pick: (next: Locale) => void): Row => {
   const seg = segmented(
@@ -134,9 +161,9 @@ const languageRow = (pick: (next: Locale) => void): Row => {
   return { el, adjust: step, activate: () => step(1), sync: () => seg.set(locale()) }
 }
 
-/** Opens the remap screen (keyboard keys and gamepad buttons). */
-const controlsRow = (open: () => void): Row => {
-  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().controls.open), h('b', { class: 'setting-choice' }, '▶'))
+/** Opens a screen on top (the remap screen, the bug report form): Enter, a tap or →. */
+const openRow = (label: string, open: () => void): Row => {
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, label), h('b', { class: 'setting-choice' }, '▶'))
   return { el, adjust: (dir) => dir > 0 && open(), activate: open, sync: () => {} }
 }
 
@@ -151,6 +178,19 @@ const linkRow = (label: string, href: string, external = false): Row => {
   return { el, adjust: () => {}, activate: () => (external ? window.open(href, '_blank', 'noopener') : location.assign(href)), sync: () => {} }
 }
 
+/**
+ * Instalar o app (Sobre), only while the game can be installed and isn't
+ * running installed: Chromium's own prompt, or on iOS the Share → "Add to
+ * Home Screen" how-to (`openHelp`).
+ */
+const installRows = (label: string, openHelp: () => void): Row[] => {
+  const offer = currentInstallOffer()
+  if (!offer) return []
+  const go = () => (offer === 'prompt' ? (playSfx('select'), void promptInstall()) : openHelp())
+  const el = h('button', { class: 'setting-row install-row' }, h('span', { class: 'setting-label' }, label), h('b', { class: 'setting-choice' }, '▶'))
+  return [{ el, adjust: (dir) => dir > 0 && go(), activate: go, sync: () => {} }]
+}
+
 const TABS = ['sound', 'game', 'controls', 'about'] as const
 
 type Tab = (typeof TABS)[number]
@@ -160,8 +200,9 @@ let lastTab: Tab = 'sound'
 
 /**
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
- * (language, damage numbers, screen shake), Controles (touch joystick and the
- * remap screen) and Sobre (what the game is, legal and credits, GitHub).
+ * (language, damage numbers, screen shake, flashes, UI size), Controles (touch joystick and the
+ * remap screen) and Sobre (installing the app, what the game is, legal and
+ * credits, GitHub, the official profiles, and the bug report form when there's an API to send it to).
  * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
@@ -214,11 +255,16 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           languageRow(pickLanguage),
           choiceRow(m.damageNumbers, 'damageNumbers', DAMAGE_NUMBERS, (mode) => m.damageModes[mode]),
           toggle(m.screenShake, (s) => s.screenShake, (on) => ({ screenShake: on })),
+          choiceRow(m.flashes, 'flashes', FLASH_MODES, (mode) => m.flashModes[mode]),
+          ...uiScaleRows(m.uiScale, m.uiScaleAuto),
         ]
       case 'controls':
-        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(showControls)]
+        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), openRow(t().controls.open, () => showSub(openControls))]
       case 'about':
-        return [linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
+        return [
+          ...(bugReportsEnabled ? [openRow(m.reportBug, () => showSub(bugReportForm))] : []),
+          ...installRows(m.install, () => showSub(installHelpScreen)), linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true),
+          ...SOCIAL_IDS.map((id) => linkRow(t().socials.follow(SOCIALS[id].name), SOCIALS[id].url, true))]
     }
   }
 
@@ -257,7 +303,8 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     sync()
   }
 
-  const showControls = () => {
+  /** Opens a screen on top (the remap screen, the iOS install how-to); this one comes back when it closes. */
+  const showSub = (open: (root: HTMLElement, input: Input, onClose: () => void) => Screen) => {
     playSfx('select')
     nav?.off()
     away = true
@@ -265,7 +312,7 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     // Open after this key dispatch, or the new screen would receive the same press.
     later(() => {
       if (!el.isConnected) return
-      sub = openControls(root, input, () => {
+      sub = open(root, input, () => {
         sub = null
         away = false
         el.classList.remove('hidden')
@@ -282,10 +329,14 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
     else if (key === 'Escape' || key === 'Backspace') close() // Backspace is also the gamepad's B
   })
 
+  // A prompt arriving or the app getting installed while Sobre is open shows or hides its row.
+  const offInstall = onInstallChange(() => !away && tab === 'about' && build(nav?.index ?? 0, false))
+
   const dispose = () => {
     sub?.dispose()
     nav?.off()
     offKeys()
+    offInstall()
     el.remove()
     if (refresh === sync) refresh = null
   }

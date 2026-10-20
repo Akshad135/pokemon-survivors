@@ -1,5 +1,7 @@
 import { MEGA, MEGAS, megasOf, type MegaDef, type MegaId } from '../data/megas'
+import { MEGA_BRANCH } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { formAt } from './branch'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
 import { isAlive } from './queries'
@@ -63,8 +65,27 @@ export const tickMega = (s: Pick<MegaState, 'active' | 'charge'>, dt: number): '
   return s.charge <= 0 ? 'ready' : null
 }
 
-/** The Mega the run holds the stone of, or null. */
-export const heldMega = (g: Game): MegaDef | null => (g.mega.stone ? MEGAS[g.mega.stone] : null)
+/** Whether a Mega fits the run's branch: a branch's own Mega (Gallade's) only once the run took that branch. */
+const fitsBranch = (g: Game, mega: MegaId) => {
+  const branch = MEGA_BRANCH[mega]
+  return !branch || g.branch === null || g.branch === branch
+}
+
+/** The Megas the run can still reach: the line's, less those of a branch it didn't take. */
+export const runMegas = (g: Game) => megasOf(g.starter).filter((id) => fitsBranch(g, id))
+
+/**
+ * The Mega the run holds the stone of, or null. A stone of the branch the run
+ * didn't take (a Glalitite for a Froslass) is dead weight: the next rift drops a fitting one, if any.
+ */
+export const heldMega = (g: Game): MegaDef | null => (g.mega.stone && fitsBranch(g, g.mega.stone) ? MEGAS[g.mega.stone] : null)
+
+/** The final stage the held Mega Evolves from: the branch's own for a branch's Mega (Gallade), else the run's. */
+export const megaBaseName = (g: Game) => {
+  const stone = g.mega.stone
+  const line = PLAYABLE[g.starter].line
+  return formAt(g.starter, (stone && MEGA_BRANCH[stone]) || g.branch, line.length - 1).name
+}
 
 /** Gap between the two stones of a line with two Megas, so the player can walk to just one. */
 const STONE_GAP = 40
@@ -74,7 +95,7 @@ const STONE_GAP = 40
  * from. A choice isn't pulled by the magnet (`updatePickups`), it waits to be touched.
  */
 export const dropMegaStones = (g: Game, x: number, y: number) => {
-  const ids = megasOf(g.starter)
+  const ids = runMegas(g)
   ids.forEach((mega, i) => {
     const dx = ids.length > 1 ? (i - (ids.length - 1) / 2) * STONE_GAP : 0
     g.pickups.push({ id: g.nextId++, x: x + dx, y, vx: 0, vy: 0, attracted: false, age: 0, kind: 'megaStone', mega })
@@ -84,7 +105,7 @@ export const dropMegaStones = (g: Game, x: number, y: number) => {
 
 /** A Mega Stone was picked up: it picks the Mega, the others on the ground crumble, and Mega Evolution is ready from the final stage on. */
 export const grantStone = (g: Game, mega: MegaId) => {
-  if (g.mega.stone || MEGAS[mega].line !== g.starter) return
+  if (heldMega(g) || MEGAS[mega].line !== g.starter) return
   g.mega.stone = mega
   g.mega.charge = 0
   for (const k of g.pickups) {

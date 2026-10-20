@@ -1,5 +1,6 @@
 import { hash2, weightedPick } from '../engine/rng'
-import { PLAYABLE } from '../data/hatchlings'
+import { abilityImmune } from './abilities'
+import { playerForm } from './branch'
 import type { ArenaPiece } from '../data/arenas'
 import { CLIFFS, CLUSTER_SLOTS, LAKES, SOLID_FOOT, TERRAIN, type Ellipse, type FeatureKind, type SolidKind } from '../data/terrain'
 import type { PlacePiece } from '../data/places'
@@ -95,7 +96,13 @@ export const featureAt = (seed: number, cx: number, cy: number): Feature | null 
   }
 }
 
-const cellKey = (cx: number, cy: number) => (cx + 32768) * 65536 + (cy + 32768)
+/**
+ * A cell's key, kept a small integer (15 bits per axis, wrapping every 32768 cells)
+ * so the lookups the walkers make every tick don't box a number. `cellOfKey` reads it back.
+ */
+const cellKey = (cx: number, cy: number) => ((cx & 0x7fff) << 15) | (cy & 0x7fff)
+/** The signed 15-bit cell coordinate stored in the low bits of `v`. */
+const unwrap = (v: number) => ((v & 0x7fff) << 17) >> 17
 
 const cell = (g: Game, cx: number, cy: number) => {
   const key = cellKey(cx, cy)
@@ -111,21 +118,22 @@ const ENTRANCE_REACH = 96
 
 /** Features whose cells overlap the box around (x, y). Reuses one array: copy it if you keep it. */
 export const featuresNear = (g: Game, x: number, y: number, rx: number, ry = rx): readonly Feature[] => {
-  NEAR.length = 0
+  // Filled by index and cut to size, never emptied first (that would drop its storage every call).
+  let n = 0
   const room = roomOf(g)
-  if (room) {
-    NEAR.push(room.terrain)
-    return NEAR
-  }
-  const door = g.place.entrance
-  if (door && Math.abs(door.x - x) < rx + ENTRANCE_REACH && Math.abs(door.y - y) < ry + ENTRANCE_REACH) NEAR.push(door.terrain)
-  const C = TERRAIN.cell
-  for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
-    for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
-      const f = cell(g, cx, cy)
-      if (f) NEAR.push(f)
+  if (room) NEAR[n++] = room.terrain
+  else {
+    const door = g.place.entrance
+    if (door && Math.abs(door.x - x) < rx + ENTRANCE_REACH && Math.abs(door.y - y) < ry + ENTRANCE_REACH) NEAR[n++] = door.terrain
+    const C = TERRAIN.cell
+    for (let cy = Math.floor((y - ry) / C); cy <= Math.floor((y + ry) / C); cy++) {
+      for (let cx = Math.floor((x - rx) / C); cx <= Math.floor((x + rx) / C); cx++) {
+        const f = cell(g, cx, cy)
+        if (f) NEAR[n++] = f
+      }
     }
   }
+  NEAR.length = n
   return NEAR
 }
 
@@ -201,10 +209,10 @@ export const overTerrain = (e: Enemy) =>
 export const enemyGroundPace = (g: Game, e: Enemy) =>
   overTerrain(e) || e.types.includes('water') || groundAt(g, e.x, e.y) !== 'water' ? 1 : TERRAIN.waterPace
 
-export const playerTypes = (g: Game) => PLAYABLE[g.starter].line[g.player.stage]!.types
+export const playerTypes = (g: Game) => playerForm(g).types
 
-/** The player's pace in water: Water types swim at full speed. */
-export const playerWaterPace = (g: Game) => (playerTypes(g).includes('water') ? 1 : TERRAIN.waterPace)
+/** The player's pace in water: Water types swim at full speed, and so does an ability that ignores terrain (Levitate). */
+export const playerWaterPace = (g: Game) => (playerTypes(g).includes('water') || abilityImmune(g, 'terrain') ? 1 : TERRAIN.waterPace)
 
 /**
  * Nudges an enemy pressed against a solid along its edge, toward the player's
@@ -237,8 +245,8 @@ export const updateTerrain = (g: Game, dt: number) => {
     const pcx = Math.floor(p.x / C)
     const pcy = Math.floor(p.y / C)
     for (const key of g.terrain.cells.keys()) {
-      const cx = Math.floor(key / 65536) - 32768
-      const cy = (key % 65536) - 32768
+      const cx = unwrap(key >> 15)
+      const cy = unwrap(key)
       if (Math.abs(cx - pcx) > 5 || Math.abs(cy - pcy) > 5) g.terrain.cells.delete(key)
     }
   }

@@ -154,11 +154,9 @@ describe('egg families', () => {
     expect(gens.size).toBe(9)
   })
 
-  it('evolve mid-run, grow stronger and start with a move from a duplicate-free learnset', () => {
+  it('evolve mid-run and grow stronger', () => {
     for (const id of HATCHLING_IDS) {
       const s = PLAYABLE[id]
-      expect(s.learnset).toContain(s.signature)
-      expect(new Set(s.learnset).size).toBe(s.learnset.length)
       expect(s.line[0].evolveAt).toBeLessThanOrEqual(20)
       expect(starterStats(id, s.line.length - 1).maxHp).toBeGreaterThan(starterStats(id, 0).maxHp)
     }

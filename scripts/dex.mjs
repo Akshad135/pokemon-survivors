@@ -27,15 +27,18 @@ export const HATCHLINGS = [
   371, 372, 373, 287, 288, 289, 349, 350, // ultra rare
   633, 634, 635, // Deino's line (ultra rare)
   524, 525, 526, // Roggenrola's line (common)
+  403, 404, 405, // Shinx's line (common)
   446, 143, // Friendship Egg (invites)
+  // Branching evolutions (src/data/branches.ts): the eeveelutions, Gallade, Froslass, Politoed, Kleavor and Ceruledge
+  134, 135, 136, 196, 470, 471, 700, 475, 478, 186, 900, 937,
 ]
 export const HORDE = Object.values(roster).map((s) => s.dex)
 /** Horde species with a behavior trait (`src/data/enemies.ts`), plus Nidoqueen's summons. */
 export const TRAITS = [29, 31, 32, 81, 100, 101, 106, 113, 437]
 /** Wave bosses: Onix, Snorlax, the three legendary trios (one drawn per run), Mewtwo and the rare mythicals. */
 export const BOSSES = [95, 143, 144, 145, 146, 243, 244, 245, 377, 378, 379, 150, 151, 251, 385]
-/** Map event Pokémon (the fleeing Meowth). Keep in sync with MEOWTH_DEX in src/game/mapEventRules.ts */
-export const CRITTERS = [52]
+/** Map event Pokémon (the fleeing Meowth, the escort mission's Togepi). Keep in sync with MEOWTH_DEX and TOGEPI_DEX in src/game/. */
+export const CRITTERS = [52, 175]
 /** Rift legendaries (src/data/rifts.ts), which can also roll shiny. */
 export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483, 380, 381, 386]
 /** Arceus, the endless mode's reaper. */
@@ -74,6 +77,7 @@ export const FORMS = {
   354: { mega: '0001' },
   362: { mega: '0001' },
   448: { mega: '0001' },
+  475: { mega: '0001' },
 }
 
 /**
@@ -111,6 +115,7 @@ export const FORM_CRIES = {
   398: { mega: 'staraptor-mega' },
   445: { mega: 'garchomp-mega', megaZ: 'garchomp-mega-z' },
   448: { mega: 'lucario-mega', megaZ: 'lucario-mega-z' },
+  475: { mega: 'gallade-mega' },
   500: { mega: 'emboar-mega' },
   652: { mega: 'chesnaught-mega' },
   655: { mega: 'delphox-mega' },

@@ -2,9 +2,9 @@ import { accountRealName, accountState, saveProfile } from '../account'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { formatTime } from '../engine/math'
-import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { formAt } from '../game/branch'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
-import { handleProblem, normalizeHandle, parseDisplayName, suggestHandle, type ProfileRun, type PublicProfile } from '../game/ranking'
+import { handleProblem, normalizeHandle, parseDisplayName, runBranch, suggestHandle, type ProfileRun, type PublicProfile } from '../game/ranking'
 import { RIBBON_TIERS, type RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
 import { pokeballIcon, ribbonIcon, supporterIcon } from '../render/art'
@@ -18,13 +18,13 @@ import { sharePreview, trainerShare } from './share'
 import { difficultyTag, hint, menu, type Screen } from './screens'
 import { toast } from './toasts'
 
-/** The form a run's Pokémon ended in. */
-export const runForm = (starter: PlayableId, stage: number) => {
-  const line = PLAYABLE[starter].line
-  return line[Math.min(stage, line.length - 1)]!
-}
+/** What the boards say about a run's Pokémon. `branch` is missing from an older API, and null on runs before branches were stored. */
+type RunPokemon = Pick<ProfileRun, 'starter' | 'stage' | 'branch'>
 
-export const runPortrait = (starter: PlayableId, stage: number) => portraitUrl(runForm(starter, stage).dex)
+/** The form a run's Pokémon ended in: its line's stage, or the branch it took (Espeon, not Umbreon). */
+export const runForm = (run: RunPokemon) => formAt(run.starter, runBranch(run.starter, run.stage, run.branch), run.stage)
+
+export const runPortrait = (run: RunPokemon) => portraitUrl(runForm(run).dex)
 
 /** Day and month of a run, in the current language (`14/10`, `10/14`), with the year for `long`. */
 const runDay = (iso: string, long = false) => new Date(iso).toLocaleDateString(LOCALES[locale()].tag, { day: '2-digit', month: '2-digit', ...(long ? { year: 'numeric' } : {}) })
@@ -45,7 +45,7 @@ const recordCell = (d: Difficulty, run: ProfileRun | undefined) =>
     'div',
     { class: run ? 'profile-record' : 'profile-record empty' },
     difficultyTag(d),
-    run ? h('img', { src: runPortrait(run.starter, run.stage), alt: runForm(run.starter, run.stage).name, title: runForm(run.starter, run.stage).name }) : null,
+    run ? h('img', { src: runPortrait(run), alt: runForm(run).name, title: runForm(run).name }) : null,
     h('b', {}, run ? formatTime(run.time) : t().profile.noRecord),
   )
 
@@ -53,11 +53,11 @@ const recentRow = (run: ProfileRun) =>
   h(
     'div',
     { class: `profile-run ${run.outcome}` },
-    h('img', { src: runPortrait(run.starter, run.stage), alt: '' }),
-    h('span', { class: 'profile-run-name' }, runForm(run.starter, run.stage).name),
+    h('img', { src: runPortrait(run), alt: '' }),
+    h('span', { class: 'profile-run-name' }, runForm(run).name),
     difficultyTag(run.difficulty),
     h('b', {}, formatTime(run.time)),
-    h('small', {}, `${run.verified === null ? t().ranking.pending : t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
+    h('small', {}, `${t().ranking.outcomes[run.outcome]} · ${runDay(run.at)}`),
   )
 
 /** The Desafio do dia ribbons won, gold first, or null before the first one (or from an older API). */
@@ -79,7 +79,7 @@ const ribbonRow = (ribbons: Record<RibbonTier, number> | undefined) => {
 /** The profile's face: the Pokémon of its longest record, or a Poké Ball before any. */
 const headPortrait = (p: PublicProfile) => {
   const best = Object.values(p.records).sort((a, b) => b.time - a.time)[0]
-  return best ? runPortrait(best.starter, best.stage) : pokeballIcon()
+  return best ? runPortrait(best) : pokeballIcon()
 }
 
 /** Shares a profile link: the share sheet on phones, the clipboard elsewhere. */

@@ -28,6 +28,21 @@ export const statusTint = (st: EnemyStatus, t: number, seed: number) => {
     case 'sleep':
       tint.amount = 0.22 + Math.sin(t * 2 + seed) * 0.08
       break
+    case 'freeze':
+      tint.amount = 0.62
+      break
+    case 'confuse':
+      tint.amount = 0.2 + Math.sin(t * 7 + seed) * 0.1
+      break
+    case 'seed':
+      tint.amount = 0.24 + Math.sin(t * 4 + seed) * 0.08
+      break
+    case 'mark':
+      tint.amount = 0.12
+      break
+    case 'weaken':
+      tint.amount = 0.34
+      break
   }
   return tint
 }
@@ -37,11 +52,19 @@ export const statusTint = (st: EnemyStatus, t: number, seed: number) => {
 const LETTERS: Record<string, readonly string[]> = {
   A: ['010', '101', '111', '101', '101'],
   B: ['110', '101', '110', '101', '110'],
+  C: ['011', '100', '100', '100', '011'],
+  D: ['110', '101', '101', '101', '110'],
+  U: ['101', '101', '101', '101', '111'],
+  E: ['111', '100', '110', '100', '111'],
+  F: ['111', '100', '110', '100', '100'],
+  K: ['101', '101', '110', '101', '101'],
+  M: ['101', '111', '111', '101', '101'],
   L: ['100', '100', '100', '100', '111'],
   N: ['101', '111', '111', '111', '101'],
   P: ['110', '101', '110', '100', '100'],
   R: ['110', '101', '110', '101', '101'],
   S: ['011', '100', '010', '001', '110'],
+  Z: ['111', '001', '010', '100', '111'],
 }
 
 const BADGES = {
@@ -49,7 +72,12 @@ const BADGES = {
   poison: { text: 'PSN', bg: '#a050b0' },
   paralysis: { text: 'PAR', bg: '#c8a000' },
   sleep: { text: 'SLP', bg: '#6878a8' },
-} as const
+  freeze: { text: 'FRZ', bg: '#58a8d0' },
+  confuse: { text: 'CNF', bg: '#c05898' },
+  seed: { text: 'SED', bg: '#489838' },
+  mark: { text: 'MRK', bg: '#c83848' },
+  weaken: { text: 'MUD', bg: '#886030' },
+} as const satisfies Record<Exclude<StatusKind, 'slow'>, { text: string; bg: string }>
 
 const badgeCache = canvasCache<StatusKind, PixelSprite>()
 

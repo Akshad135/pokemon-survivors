@@ -1,4 +1,4 @@
-import { accountState, accountsEnabled, onAccountChange, onGifts, signIn, syncSave } from '../account'
+import { accountState, accountsEnabled, onAccountChange, signIn, syncSave } from '../account'
 import { playCry, playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { HATCHLINGS, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
@@ -682,8 +682,6 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
   }
 
   const offState = onAccountChange(() => (loadStatus(), build()))
-  // A redeemed code's gifts land on the next sync: the shiny ticket and the companion show up then.
-  const offGifts = onGifts(() => build())
   const offKeys = input.onKey((key) => !sub && (key === 'Escape' || key === 'Backspace') && close())
 
   function dispose() {
@@ -691,7 +689,6 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
     sub?.dispose()
     nav?.off()
     offState()
-    offGifts()
     offKeys()
     el.remove()
   }

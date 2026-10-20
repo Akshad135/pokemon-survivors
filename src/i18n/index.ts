@@ -58,8 +58,21 @@ export const setLocale = (next: Locale) => {
 /** The language after `l`, wrapping around: the menus cycle through them. */
 export const nextLocale = (l: Locale) => LOCALE_IDS[(LOCALE_IDS.indexOf(l) + 1) % LOCALE_IDS.length]!
 
-/** Whole number with the current language's thousands separator (`1.250`, `1,250`). */
-export const formatNumber = (n: number) => Math.round(n).toLocaleString(LOCALES[current].tag)
+const numberFormats = new Map<string, Intl.NumberFormat>()
+
+/**
+ * Whole number with the current language's thousands separator (`1.250`, `1,250`).
+ * The HUD formats the run's ₽ every frame, so each language's formatter is built once.
+ */
+export const formatNumber = (n: number) => {
+  const tag = LOCALES[current].tag
+  let format = numberFormats.get(tag)
+  if (!format) numberFormats.set(tag, (format = new Intl.NumberFormat(tag, { maximumFractionDigits: 0 })))
+  return format.format(Math.round(n))
+}
+
+/** A number with up to `digits` decimals in the current language (`1,25` in pt and es, `1.25` in English). */
+export const formatDecimal = (n: number, digits = 1) => n.toLocaleString(LOCALES[current].tag, { maximumFractionDigits: digits })
 
 /** A `YYYY-MM-DD` day as day and month in the current language (`15/10`, `10/15`). */
 export const formatDay = (day: string) => {

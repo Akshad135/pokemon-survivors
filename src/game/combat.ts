@@ -3,43 +3,58 @@ import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS, type PokeType } from '../data/types'
 import { ENEMY_BERRY_CHANCE } from '../data/consumables'
 import { ENEMIES } from '../data/enemies'
+import type { HitKind } from '../data/abilities'
+import { abilityHolds, abilityHurt, abilityImmune, abilityKill, abilityTakes, strikeBonus } from './abilities'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { logDefeat } from './dex'
 import { DIFFICULTIES } from './difficulty'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
+import { dropBossTm } from './tms'
 import { coinDrops } from './meta'
+import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
-import { applyStatus, STATUS_RULES, type StatusKind } from './status'
+import { applyStatus, breakOnHit, hitTakenMult, STATUS_RULES, type StatusKind } from './status'
+import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY, SEED_JUMPS, SEED_MIN_TIME, SEED_REACH } from './kitRules'
+import { guardHit, moveEvent, moveHit } from './moveHooks'
 import { fallInArena } from './riftArena'
 import { fallInPlace } from './placeKit'
 import { countKill } from './tally'
+import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
+import { alphaDown } from './alphas'
+import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
+import * as dm from '../engine/dmath'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8', warded: '#88b8f8' } as const
 
 export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
-  const eff = effectiveness(attack.type, e.types)
-  const raw = Math.max(1, Math.round(attack.damage * eff * weatherBoost(weatherHere(g), attack.type) * range(g.rng, 0.9, 1.1)))
-  // A Bronzong ward soaks the hit first.
-  const dmg = absorb(e.trait, raw)
+  // A sure hit (Sacred Sword) lands resisted matchups as neutral and cuts through wards.
+  const eff = attack.sure ? Math.max(1, effectiveness(attack.type, e.types)) : effectiveness(attack.type, e.types)
+  // Conditional bonuses (Hex), a mark and a freeze multiply the hit; without them it's exactly ×1.
+  const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status))
+  const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
+  // A Bronzong ward soaks the hit first, unless the move or the ability (Infiltrator) goes through wards.
+  const dmg = attack.sure || attack.ignoreWards || abilityImmune(g, 'wards') ? raw : absorb(e.trait, raw)
   e.hp -= dmg
   e.flash = 0.16
   g.damageByMove[attack.move] = (g.damageByMove[attack.move] ?? 0) + dmg
+  if (breakOnHit(e.status)) shatter(g, e, 'freeze')
 
   // Vines push sideways; everything else pushes away from the hitbox center.
   const p = g.player
   const away = attack.shape.kind === 'rect' ? { x: Math.sign(e.x - p.x) || 1, y: 0 } : dirTo(attack.x, attack.y, e.x, e.y, p.facing)
-  const kb = attack.knockback / e.mass
+  // The regular horde stiffens with the minutes (`hordeGrit`), so late crowds press through an aura.
+  const kb = attack.knockback / (e.boss ? e.mass : e.mass * hordeGrit(g.time, g.difficulty))
   e.kx += away.x * kb
   e.ky += away.y * kb
 
   const status = attack.status
   if (status && chance(g.rng, status.chance)) {
     const fresh = e.status[status.kind].time <= 0
-    applyStatus(e.status, status, attack.damage, e.boss, attack.move)
+    applyStatus(e.status, status, base, e.boss, attack.move)
     if (fresh && status.kind !== 'slow') burst(g, e.x, e.y - e.radius, { colors: [STATUS_RULES[status.kind].color, '#ffffff'], count: 5, speed: 50, ttl: 0.3 })
   }
 
@@ -47,8 +62,70 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   damageText(g, e, dmg, color, eff > 1)
   burst(g, e.x, e.y - e.radius, { colors: [TYPE_COLORS[attack.type], '#ffffff'], count: eff > 1 ? 6 : 3, speed: 70, ttl: 0.25 })
   g.events.push({ kind: 'hit', effective: eff })
+  if (attack.drain > 0) drainHeal(g, dmg, attack.drain)
+  if (attack.move !== 'special' && attack.move !== 'ability') {
+    moveEvent(g, attack.move, 'hit')
+    moveHit(g, attack, e)
+  }
 
-  if (e.hp <= 0) killEnemy(g, e, attack.move)
+  if (e.hp > 0 && executes(attack.execute, e.hp, e.maxHp, e.boss)) {
+    shatter(g, e, 'execute')
+    e.hp = 0
+  }
+  if (e.hp <= 0) {
+    killEnemy(g, e, attack.move)
+    if (attack.mod) modKill(g, e, attack)
+  }
+}
+
+/** Ice shards flying off a foe: a frozen foe's ice broken, or an execute. */
+const shatter = (g: Game, e: Enemy, cause: 'execute' | 'freeze') => {
+  const colors = cause === 'freeze' ? ['#ffffff', '#c8f0f8', '#78c8f0'] : ['#ffffff', '#f8f8c8', '#f85868']
+  burst(g, e.x, e.y - e.radius, { colors, count: 14, speed: 120, ttl: 0.4, gravity: 160, size: 2 })
+  g.events.push({ kind: 'shatter', cause })
+}
+
+/** Heals `fraction` of `damage` through the drain budget (`kitRules.ts`). Returns the HP restored. */
+export const drainHeal = (g: Game, damage: number, fraction: number) => {
+  const p = g.player
+  const d = p.drain
+  d.left = drainRefill(d.left, g.time - d.at, p.stats.maxHp)
+  d.at = g.time
+  const amount = drainAmount(damage, fraction, d.left)
+  if (amount <= 0) return 0
+  d.left -= amount
+  const healed = healPlayer(g, amount)
+  if (healed >= 1 && chance(g.rng, 0.35)) burst(g, p.x, p.y - 12, { colors: ['#78f878', '#d8f8c8'], count: 2, speed: 25, ttl: 0.45, gravity: -50 })
+  return healed
+}
+
+/**
+ * A body blow from the world rather than a hitbox (a thrown foe, a confused
+ * one bumping a neighbor): flash, white number, a hit sound, kill credit to `move`.
+ */
+export const bumpDamage = (g: Game, e: Enemy, amount: number, move: DamageSource | null) => {
+  const dmg = Math.max(1, Math.round(amount))
+  e.hp -= dmg
+  e.flash = 0.16
+  if (move) g.damageByMove[move] = (g.damageByMove[move] ?? 0) + dmg
+  damageText(g, e, dmg, TEXT_COLORS.normal)
+  g.events.push({ kind: 'hit', effective: 1 })
+  if (e.hp <= 0) killEnemy(g, e, move)
+}
+
+/** A fainting seeded foe passes its seed to its nearest neighbors, a little weaker, with a hop of green specks. */
+const spreadSeed = (g: Game, e: Enemy) => {
+  const seed = e.status.seed
+  const spec = { kind: 'seed', chance: 1, duration: Math.max(seed.time, SEED_MIN_TIME), power: seed.power * SEED_DECAY } as const
+  for (const o of nearestFoes(g.enemies, e, SEED_JUMPS, SEED_REACH, (f) => f.status.seed.time > 0)) {
+    applyStatus(o.status, spec, 1, o.boss, seed.move)
+    const dx = o.x - e.x
+    const dy = o.y - o.radius - (e.y - e.radius)
+    for (let i = 0; i < 3; i++) {
+      const k = 2.2 - i * 0.35
+      g.particles.push({ x: e.x, y: e.y - e.radius, vx: dx * k, vy: dy * k - 40, life: 0, ttl: 0.45, color: i ? '#78c850' : '#e0f8a0', size: i ? 1 : 2, gravity: 180, drag: 0 })
+    }
+  }
 }
 
 /** Damage-over-time tick: no knockback or hit sound, number in the status color. */
@@ -62,11 +139,14 @@ export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource 
 
 /** Faints an enemy. `source` (when known) lets a kill by the special, or any kill mid-chain, feed Power Herb. */
 export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
+  if (e.status.seed.time > 0) spreadSeed(g, e)
   e.dying = 0
   e.hp = 0
   g.kills++
+  noteKill(g, e)
   if (source === 'special' || g.special.chaining) g.special.kills++
   countKill(g.tally, e, weatherHere(g), g.biome.id, g.outbreak)
+  abilityKill(g, e)
   const big = e.boss || e.shiny
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f8c8', '#c8d8f8'], count: big ? 60 : 8, speed: big ? 160 : 70, ttl: 0.45 })
   g.events.push({ kind: 'kill', boss: e.boss })
@@ -77,40 +157,62 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   logDefeat(g.dexLog, dex, e.shiny)
   if (fresh) g.events.push({ kind: 'caught', enemy: e.kind })
 
-  if (e.xp > 0) dropXp(g, e.x, e.y, e.xp)
+  // Under tension a regular's faint gives a share of its loot (`tension.ts`); a boss's never shrinks.
+  const share = e.boss ? 1 : g.tension.share
+  if (e.xp > 0) dropXp(g, e.x, e.y, e.xp * share)
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
-  if (e.boss) {
+  if (e.alpha) {
+    alphaDown(g, e)
+  } else if (e.boss) {
+    // Every boss defeated earns an Esquecer charge (`banishOffer`).
+    g.banishes++
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
+    dropBossTm(g, e)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
     if (e.kind === 'mewtwo') {
       g.phase = 'victory'
       g.events.push({ kind: 'victory' })
     }
-  } else if (chance(g.rng, ENEMY_BERRY_CHANCE)) {
+  } else if (chance(g.rng, ENEMY_BERRY_CHANCE * share)) {
     dropPickup(g, e.x + 6, e.y, 'berry')
   } else {
-    enemyDrop(g, e)
+    enemyDrop(g, e, share)
   }
 }
 
+/** The most of a hit armor takes off: past it, more armor stops paying, so late hits never shrink to 1. */
+export const ARMOR_CAP = 0.5
+
+/** A `raw` hit on the player after `armor`: each point takes 1 off (a negative one adds 1), up to `ARMOR_CAP` of the hit. At least 1. */
+export const armored = (raw: number, armor: number) => Math.max(1, Math.round(raw - Math.min(armor, raw * ARMOR_CAP)))
+
 /**
  * Damages the player. `from` (a body that touched them) gets shoved back; hazards pass none.
- * `types` is the attack's typing for the weather (a body attacks with its own types).
+ * `types` is the attack's typing for the weather (a body attacks with its own types), and
+ * `hit` what kind of harm it is, for the abilities (`abilityTakes`): a body, a boss's strike, lava…
  */
-export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? []) => {
+export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonly PokeType[] = from?.types ?? [], hit: HitKind = from ? 'body' : 'hazard') => {
   const p = g.player
-  if (p.iframes > 0 || isRepelled(g) || g.phase !== 'playing') return
-  const dmg = Math.max(1, Math.round(amount * DIFFICULTIES[g.difficulty].enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken - p.stats.armor))
+  if (p.iframes > 0 || p.hidden || isRepelled(g) || g.phase !== 'playing') return
+  if (p.guard) return guardHit(g, p.guard, from)
+  if (from && blinded(g, from)) return
+  const taken = abilityTakes(g, amount, types, hit, from)
+  if (taken === null) return
+  const mods = DIFFICULTIES[g.difficulty]
+  const dmg = armored(taken * mods.enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken, p.stats.armor)
   p.hp -= dmg
-  p.iframes = 0.5
+  p.iframes = mods.iframes
+  noteHarm(g, dmg)
   p.hurt = 0.3
   g.shake = Math.max(g.shake, 3)
   floatText(g, p.x, p.y - 28, String(dmg), '#ff5040', true)
   burst(g, p.x, p.y - 10, { colors: ['#ff5040', '#ffffff'], count: 6, speed: 80, ttl: 0.3 })
   g.events.push({ kind: 'hurt' })
+  abilityHurt(g)
+  moveEvent(g, null, 'hurt')
   // A small shove keeps the player from being body-blocked into a death spiral.
   if (from) {
     const away = dirTo(from.x, from.y, p.x, p.y)
@@ -122,12 +224,34 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   // Falling in a rift arena or a place isn't the end: the rift throws the player back out, a rescue brings them back.
   if (g.rift.arena) return fallInArena(g)
   if (g.place.inside) return fallInPlace(g)
-  if (!tryRevive(g)) {
+  // Sturdy holds before a Revive is spent.
+  if (!abilityHolds(g) && !tryRevive(g)) {
     p.hp = 0
     g.phase = 'gameover'
-    g.events.push({ kind: 'gameover' })
+    g.events.push({ kind: 'gameover', foe: from?.kind ?? null, hit })
   }
 }
+
+/**
+ * Whether `from`'s contact hit misses: it stands in a hitbox with `blind`
+ * (Sand Tomb) and the seeded roll says so. A puff of sand marks the miss and
+ * a short i-frame keeps the same crowd from rolling again every tick.
+ */
+const blinded = (g: Game, from: Enemy) => {
+  for (const a of g.attacks) {
+    if (a.blind <= 0 || a.age < 0 || a.shape.kind !== 'circle') continue
+    if (dm.sq(a.x - from.x) + dm.sq(a.y - (from.y - from.radius)) > dm.sq(a.shape.r + from.radius)) continue
+    if (!chance(g.rng, a.blind)) return false
+    const p = g.player
+    p.iframes = Math.max(p.iframes, BLIND_IFRAMES)
+    burst(g, (p.x + from.x) / 2, p.y - 8, { colors: ['#e8d098', '#c0a060', '#ffffff'], count: 6, speed: 50, ttl: 0.35, gravity: 40 })
+    return true
+  }
+  return false
+}
+
+/** I-frames after a foe's blinded contact misses, so a crowd in the sand rolls once in a while, not every tick. */
+const BLIND_IFRAMES = 0.4
 
 /** Heals the player by `amount`, cut or not by the difficulty, up to max HP. Returns the HP actually restored. */
 export const healPlayer = (g: Game, amount: number) => {

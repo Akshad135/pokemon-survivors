@@ -1,48 +1,60 @@
-import { accountState, accountsEnabled } from '../account'
+import { accountState, accountsEnabled, giftInbox, onAccountChange, onInbox, type AccountState } from '../account'
+import { track } from '../analytics'
 import { playSfx } from '../engine/audio'
 import { ACTIONS } from '../engine/bindings'
 import { joystick, type Input, type Stick } from '../engine/input'
 import { formatTime, type Vec } from '../engine/math'
 import { blitCentered, context2d, ellipse } from '../engine/pixelart'
 import { ENEMIES } from '../data/enemies'
-import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { HATCHLINGS, PLAYABLE } from '../data/hatchlings'
 import { isReady } from '../game/eggs'
+import { DISCORD_GIFT } from '../game/gifts'
+import { nextMilestone } from '../game/referral'
 import { dayKey, missionStatus } from '../game/missions'
-import { pendingPicks } from '../game/shinyPicks'
+import { pendingPicks, playsShiny } from '../game/shinyPicks'
 import type { WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { bulbIcon, coinIcon, eggIcon, heartIcon, medalIcon, pokeballIcon, ribbonIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import { inviterName } from '../ranking'
-import { ROUTES } from '../site/routes'
+import { ROUTES, SOCIAL_IDS, SOCIALS, type SocialId } from '../site/routes'
 import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
 import { boundKey } from './inputLabels'
 import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
+import { contentLine } from './gifts'
+import { countedFriends, loadInvites } from './invites'
+import { isUnread, latestUpdate } from './news'
 import { hallFace, hallPortrait } from './supporters'
 import type { Screen } from './screens'
-import { gearButton, helpButton, shellBody, topBar, walletChip } from './shell'
+import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } from './shell'
 import { nearestInDirection, type Direction } from './spatial'
 import { toast } from './toasts'
 import { trainerChip } from './trainer'
+import { uiDpr, uiViewport } from './uiScale'
 
 /** What the lobby can highlight. A screen opened over it gets the one it came from, to come back to it. */
 export type LobbyFocus =
   | 'trainer'
+  | 'news'
+  | 'discord'
   | 'help'
   | 'settings'
   | 'outbreak'
   | 'challenge'
   | 'missions'
   | 'hall'
+  | 'gifts'
   | 'invite'
+  | 'friends'
   | 'pokedex'
   | 'eggs'
   | 'mart'
   | 'ranking'
   | 'ideas'
   | 'play'
+  | SocialId
 
 /**
  * The meadow behind the lobby (`render/titleScene.ts`), where the partner
@@ -67,6 +79,8 @@ export type TitleActions = {
   missions: () => void
   /** Opens the egg incubator. */
   incubator: () => void
+  /** Opens the waiting Mystery Gifts (the gift box on the partner's stage). */
+  gifts: () => void
   /** The lobby is up: after the "press start" gesture, so the browser lets audio play. */
   ready: () => void
   /**
@@ -74,6 +88,10 @@ export type TitleActions = {
    * title (the language may have changed), highlighting `focus`.
    */
   settings: (focus: LobbyFocus) => Screen
+  /** Opens Novidades (the newest update's highlights) over the title, like `settings`. */
+  news: (focus: LobbyFocus) => Screen
+  /** Opens the Discord screen (the community server, linking a Discord account) over the title, like `settings`. */
+  discord: (focus: LobbyFocus) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: LobbyFocus) => Screen
   /** Opens the Poké Mart over the title, like `settings`. */
@@ -86,6 +104,8 @@ export type TitleActions = {
   ideas?: (focus: LobbyFocus) => Screen
   /** Opens Apoiadores over the title (the Hall da Fama card), like `settings`; `pick` goes straight to the shiny picker. */
   supporters: (focus: LobbyFocus, open: 'pick' | null) => Screen
+  /** Opens Convide amigos over the title (its card under the Hall), like `settings`. */
+  invites: (focus: LobbyFocus) => Screen
   meadow: Meadow
 }
 
@@ -98,9 +118,9 @@ const LANDSCAPE = '(max-height: 500px) and (orientation: landscape)'
 const NARROW = '(max-width: 759px) and (min-height: 501px), (max-width: 759px) and (orientation: portrait)'
 const layout = () => (matchMedia(LANDSCAPE).matches ? 'landscape' : matchMedia(NARROW).matches ? 'narrow' : 'wide')
 
-/** Sizes a pixel-art canvas to `k` device px per art px, so its pixels stay square. Touches the style only when it changes. */
+/** Sizes a pixel-art canvas in `#ui` to `k` device px per art px (UI size included), so its pixels stay square. Touches the style only when it changes. */
 const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
-  const dpr = window.devicePixelRatio || 1
+  const dpr = uiDpr()
   const width = `${(canvas.width * k) / dpr}px`
   if (canvas.style.width === width) return
   canvas.style.width = width
@@ -109,8 +129,7 @@ const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel: big for the intro, smaller in the lobby. */
 const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
-  const vw = window.innerWidth
-  const vh = window.innerHeight
+  const { w: vw, h: vh } = uiViewport()
   const mode = layout()
   // The top bar takes about 60 px off the height.
   const [maxW, maxH] = intro
@@ -120,14 +139,9 @@ const fitLogo = (canvas: HTMLCanvasElement, intro: boolean) => {
       : mode === 'narrow'
         ? [Math.min(vw * 0.8, 420), (vh - 60) * 0.11]
         : [Math.min(vw - 620, 460), (vh - 60) * 0.17]
-  pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, window.devicePixelRatio || 1))
+  pixelSize(canvas, logoScale(canvas.width, canvas.height, Math.max(maxW, 120), maxH, uiDpr()))
 }
 
-/** Whether the save plays `id` shiny (a shiny starter picked so, or a shiny hatch). */
-const playsShiny = (id: PlayableId) => {
-  const save = loadSave()
-  return save.shinyStarters[id] === true || (isHatchling(id) && save.hatched[id]?.shiny === true)
-}
 
 /* ---------------- Hoje: the day's cards ---------------- */
 
@@ -151,7 +165,7 @@ const outbreakCard = () => {
   void Promise.allSettled([loadSpecies(def.dex), loadSpecies(def.dex, true)])
   const el = todayCard('outbreak', t().home.outbreak, null, null, ...walkers, h('b', {}, def.name), h('img', { class: 'lobby-sparkle', src: sparkleIcon(), alt: '' }))
   const tick = (time: number) => {
-    const k = Math.max(1, Math.round((window.devicePixelRatio || 1) * (layout() === 'wide' ? 1.5 : 1)))
+    const k = Math.max(1, Math.round(uiDpr() * (layout() === 'wide' ? 1.5 : 1)))
     walkers.forEach((canvas, i) => {
       pixelSize(canvas, k)
       const ctx = context2d(canvas)
@@ -196,6 +210,108 @@ const missionsCard = () => {
     h('b', {}, `${done}/${daily.length}`),
   )
   el.setAttribute('aria-label', `${m.missions}: ${m.missionsLeft(left)}`)
+  return el
+}
+
+/* ---------------- Novidades ---------------- */
+
+/** Novidades in the top bar: a page of patch notes that wiggles under a red "!" while the newest update is unread. */
+const newsButton = (onClick: () => void) => {
+  const m = t().news
+  const el = iconButton(newsIcon(), m.open, onClick, 'N')
+  el.classList.add('lobby-news')
+  void latestUpdate().then((update) => {
+    if (!isUnread(update)) return
+    el.classList.add('unread')
+    el.setAttribute('aria-label', m.unread)
+    el.title = m.unread
+    el.append(h('em', { class: 'lobby-badge' }, '!'))
+  })
+  return el
+}
+
+/** Calls `paint` now and on every account change while `el` is on the page: a link that lands with the lobby up (back from Discord, the sync finishing) shows at once. */
+const followAccount = (el: HTMLElement, paint: (s: AccountState) => void) => {
+  paint(accountState())
+  const off = onAccountChange((s) => (el.isConnected ? paint(s) : off()))
+}
+
+/** Discord in the top bar (landscape phones, whose side column is full), with a green ✓ once the player linked their Discord. */
+const discordButton = (onClick: () => void) => {
+  const el = iconButton(discordIcon(), t().discord.open, onClick)
+  el.classList.add('lobby-discord')
+  const badge = h('em', { class: 'lobby-badge done' }, '✓')
+  followAccount(el, (s) => (s.kind === 'signedIn' && s.discord ? el.append(badge) : badge.remove()))
+  return el
+}
+
+/**
+ * Discord under Convide amigos (wide screens and portrait phones): the linked
+ * @username, or, while linking can bring it, the gift it brings (`DISCORD_GIFT`,
+ * bobbing like the invites' prize); joining when this build has no accounts.
+ */
+const discordCard = () => {
+  const m = t().discord
+  const row = h('span', { class: 'lobby-invites-row' })
+  const prize = h('img', { class: 'lobby-invites-prize', src: contentLine({ content: DISCORD_GIFT }).src, alt: '' })
+  const el = h(
+    'button',
+    { class: 'lobby-invites lobby-discord-card box', type: 'button' },
+    h('img', { class: 'lobby-discord-icon', src: discordIcon(), alt: '' }),
+    h('span', { class: 'lobby-invites-text' }, h('b', {}, m.title), row),
+  )
+  followAccount(el, (s) => {
+    const linked = s.kind === 'signedIn' && s.discord
+    const text = linked ? `✓ @${s.discord}` : accountsEnabled ? m.cardGift(HATCHLINGS[DISCORD_GIFT.family].name) : m.join
+    row.textContent = text
+    if (!linked && accountsEnabled) el.append(prize)
+    else prize.remove()
+    el.setAttribute('aria-label', `${m.title}: ${text}`)
+  })
+  return el
+}
+
+/** An official profile (`SOCIALS`) in the top bar, beside Discord (landscape phones). */
+const socialButton = (id: SocialId, onClick: () => void) => iconButton(socialIcon(id), t().socials.follow(SOCIALS[id].name), onClick)
+
+/** An official profile under Discord (wide screens) with its name and handle, or just its icon beside Discord (portrait phones). */
+const socialCard = (id: SocialId) => {
+  const s = SOCIALS[id]
+  return h(
+    'button',
+    { class: `lobby-invites lobby-social ${id} box`, type: 'button', 'aria-label': t().socials.follow(s.name), title: t().socials.follow(s.name) },
+    h('img', { class: 'lobby-social-icon', src: socialIcon(id), alt: '' }),
+    h('span', { class: 'lobby-invites-text' }, h('b', {}, s.name), h('span', { class: 'lobby-invites-row' }, s.handle)),
+  )
+}
+
+/** Opens an official profile in a new tab (or its app). */
+const openSocial = (id: SocialId) => window.open(SOCIALS[id].url, '_blank', 'noopener')
+
+/**
+ * Presente!: a wrapped box on the partner's stage, hopping and sparkling,
+ * with how many Mystery Gifts wait. Hidden while none does; it follows the
+ * inbox, so a gift a sync lists shows up with the lobby already open.
+ */
+const giftButton = () => {
+  const m = t().gifts
+  const count = h('em', { class: 'lobby-badge' })
+  const el = h(
+    'button',
+    { class: 'lobby-gift box', type: 'button' },
+    h('img', { class: 'lobby-gift-box', src: giftIcon(), alt: '' }),
+    h('img', { class: 'lobby-gift-sparkle', src: sparkleIcon(), alt: '' }),
+    h('b', {}, m.button),
+    count,
+    h('span', { class: 'key-hint' }, 'G'),
+  )
+  const paint = (n: number) => {
+    el.hidden = n === 0
+    count.textContent = String(n)
+    el.setAttribute('aria-label', m.buttonLabel(n))
+  }
+  paint(giftInbox().length)
+  const off = onInbox((gifts) => (el.isConnected ? paint(gifts.length) : off()))
   return el
 }
 
@@ -275,6 +391,34 @@ const inviteBanner = (slot: HTMLElement, open: () => void, ready: (el: HTMLEleme
   })
 }
 
+/**
+ * Convide amigos, under the Hall: the Friendship Egg the first friend brings,
+ * then how many friends counted toward the next milestone and what it pays.
+ */
+const invitesCard = () => {
+  const m = t().invites
+  const row = h('span', { class: 'lobby-invites-row' }, m.cardFirst)
+  const prize = h('img', { class: 'lobby-invites-prize', src: eggIcon('friend'), alt: '' })
+  const el = h(
+    'button',
+    { class: 'lobby-invites box', type: 'button', 'aria-label': `${m.title}: ${m.cardFirst}` },
+    h('img', { class: 'lobby-invites-icon', src: eggIcon('friend'), alt: '' }),
+    h('span', { class: 'lobby-invites-text' }, h('b', {}, m.title), row),
+    prize,
+  )
+  void loadInvites().then((list) => {
+    const friends = countedFriends(list)
+    if (friends === 0) return
+    const next = nextMilestone(friends)
+    const text = next ? m.cardNext(friends, next.friends) : m.cardAll(friends)
+    row.textContent = text
+    el.setAttribute('aria-label', `${m.title}: ${text}`)
+    if (next) prize.src = contentLine({ content: next.gifts[0] }).src
+    else prize.remove()
+  })
+  return el
+}
+
 /* ---------------- The partner on stage ---------------- */
 
 /** Art px of the stage canvas, and where the partner's feet stand in it. */
@@ -308,7 +452,7 @@ const strollHint = () => {
 const partnerStage = (onPlay: () => void) => {
   const save = loadSave()
   const form = PLAYABLE[save.partner].line[0]
-  const shiny = playsShiny(save.partner)
+  const shiny = playsShiny(save, save.partner)
   void loadSpecies(form.dex, shiny).catch(() => {})
   const canvas = h('canvas', { class: 'lobby-partner-sprite', width: STAGE.w, height: STAGE.h, 'aria-hidden': 'true' })
   const plate = h('span', { class: 'lobby-plate' }, h('b', {}, form.name), h('small', {}, `${t().home.change} ▸`))
@@ -319,7 +463,7 @@ const partnerStage = (onPlay: () => void) => {
   const el = h('div', { class: 'lobby-stage' }, partner)
   const shadow = ellipse(13, 3, 'rgba(16, 24, 16, 0.3)')
   const tick = (time: number) => {
-    const dpr = window.devicePixelRatio || 1
+    const dpr = uiDpr()
     const room = el.clientHeight - plate.offsetHeight - 8
     const k = Math.min(Math.round(4 * dpr), logoScale(STAGE.w, STAGE.h, el.clientWidth, Math.max(room, 1), dpr))
     pixelSize(canvas, k)
@@ -391,13 +535,14 @@ const heldMove = (input: Input): Vec => {
 }
 
 /** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls). */
-const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
+const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyG: 'gifts', KeyN: 'news', KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
 
 /**
  * Title screen over the live meadow: the pixel logo and a blinking "press
- * start", then the lobby. The top bar holds the Trainer chip, the wallet, `?`
- * (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
- * Missões), the Hall da Fama card sits beside them, the saved partner stands
+ * start", then the lobby. The top bar holds the Trainer chip, the wallet,
+ * Novidades, `?` (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
+ * Missões), the Hall da Fama card sits beside them (Convide amigos, Discord and the official profiles
+ * under it; on landscape phones Discord and the profiles move to the top bar), the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
  * Loja, Ranking, Ideias). Arrows move between all of them by where they are on
  * screen; Enter presses the highlighted one, JOGAR at first. The movement
@@ -441,7 +586,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   /** Everything the arrows reach, wherever the layout puts it. */
   let navs: { el: HTMLElement; key: LobbyFocus }[] = []
-  const itemOf = (key: LobbyFocus) => navs.find((n) => n.key === key)?.el
+  /** The element of `key`, while it shows (the gift box hides with nothing to open). */
+  const itemOf = (key: LobbyFocus) => navs.find((n) => n.key === key && !n.el.hidden)?.el
 
   const select = (key: LobbyFocus, sound = true) => {
     if (key !== current && sound) playSfx('move')
@@ -457,7 +603,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   }
 
   const move = (dir: Direction) => {
-    const next = navs[nearestInDirection(navs.map((n) => n.el.getBoundingClientRect()), navs.findIndex((n) => n.key === current), dir)]
+    const shown = navs.filter((n) => !n.el.hidden)
+    const next = shown[nearestInDirection(shown.map((n) => n.el.getBoundingClientRect()), shown.findIndex((n) => n.key === current), dir)]
     if (next) select(next.key)
   }
 
@@ -475,40 +622,60 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const runs: Record<Exclude<LobbyFocus, 'trainer' | 'hall'>, () => void> = {
     help: () => location.assign(ROUTES.guide[lang]),
     settings: () => openOver(actions.settings),
+    news: () => openOver(actions.news),
+    discord: () => openOver(actions.discord),
     outbreak: () => toast(root, rich(`*${ENEMIES[outbreakToday()].name}*: ${t().outbreak.blurb}`), 3600, 'outbreak'),
     challenge: actions.challenge,
     missions: actions.missions,
+    gifts: actions.gifts,
     invite: () => openOver(actions.trainer),
+    friends: () => openOver(actions.invites),
     pokedex: () => openOver(actions.pokedex),
     eggs: actions.incubator,
     mart: () => openOver(actions.mart),
     ranking: () => ranking && openOver(ranking),
     ideas: () => ideas && openOver(ideas),
     play: actions.play,
+    tiktok: () => openSocial('tiktok'),
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
-  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), later(runs[key]))
+  // JOGAR isn't counted: `run_start` already says it, and it's a third of the lobby's presses.
+  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), key !== 'play' && track('lobby_press', { entry: key }), later(runs[key]))
   const pressable = <T extends HTMLElement>(node: T, key: keyof typeof runs) => (node.addEventListener('click', press(key)), navigable(node, key))
 
   const buildLobby = () => {
     const save = loadSave()
+    const landscape = layout() === 'landscape'
     navs = []
-    const chip = trainerChip(input, { onOpen: () => openOver(actions.trainer) })
+    const chip = trainerChip(input, { onOpen: () => (track('lobby_press', { entry: 'trainer' }), openOver(actions.trainer)) })
     closeChip = chip.dispose
     navigable(chip.el, 'trainer')
     bar.replaceWith(
       topBar({
         left: chip.el,
-        right: [walletChip(save.wallet), navigable(helpButton(press('help')), 'help'), navigable(gearButton(press('settings')), 'settings')],
+        right: [
+          walletChip(save.wallet),
+          ...(landscape ? [navigable(discordButton(press('discord')), 'discord'), ...SOCIAL_IDS.map((id) => navigable(socialButton(id, press(id)), id))] : []),
+          navigable(newsButton(press('news')), 'news'),
+          navigable(helpButton(press('help')), 'help'),
+          navigable(gearButton(press('settings')), 'settings'),
+        ],
       }),
     )
 
     const outbreak = outbreakCard()
     stage = partnerStage(press('play'))
+    stage.el.append(pressable(giftButton(), 'gifts'))
     actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
-    const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
-    const side = h('div', { class: 'lobby-side' }, hall)
+    const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), track('lobby_press', { entry: 'hall' }), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
+    const side = h(
+      'div',
+      { class: 'lobby-side' },
+      hall,
+      ...(accountsEnabled ? [pressable(invitesCard(), 'friends')] : []),
+      ...(landscape ? [] : [h('div', { class: 'lobby-community' }, pressable(discordCard(), 'discord'), ...SOCIAL_IDS.map((id) => pressable(socialCard(id), id)))]),
+    )
     inviteBanner(side, press('invite'), (banner) => navigable(banner, 'invite'))
 
     const ready = save.eggs.filter(isReady).length

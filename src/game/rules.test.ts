@@ -4,9 +4,9 @@ import { createGrid, insert, query } from '../engine/spatial'
 import { effectiveness } from '../data/types'
 import { ITEMS } from '../data/items'
 import manifest from '../data/sprites.generated.json'
-import { REGIONS, STARTER_IDS, STARTERS, type StarterDef } from '../data/starters'
+import { REGIONS, STARTER_IDS, STARTERS } from '../data/starters'
 import { maxMoveLevel, moveStats } from './moves'
-import { MAX_MOVES, offerPool, rollOffers, starterStats } from './leveling'
+import { MAX_MOVES, nothingToChoose, offerPool, rollOffers, starterStats } from './leveling'
 import { BASE_STATS } from './stats'
 import type { OwnedMove } from './types'
 
@@ -39,14 +39,6 @@ describe('starter roster', () => {
     expect(listed.toSorted()).toEqual(STARTER_IDS.toSorted())
   })
 
-  it('starts each run with a move from a duplicate-free learnset', () => {
-    for (const id of STARTER_IDS) {
-      const s: StarterDef = STARTERS[id]
-      expect(s.learnset).toContain(s.signature)
-      expect(new Set(s.learnset).size).toBe(s.learnset.length)
-    }
-  })
-
   it('has walk/idle/hurt sheets for every evolution stage', () => {
     const sheets: Record<string, { anims: Record<string, unknown> }> = manifest
     for (const id of STARTER_IDS)
@@ -72,8 +64,9 @@ describe('level-up offers', () => {
     expect(moves).not.toContain('ember')
   })
 
+  // No two of these make a duo recipe, so nothing is left to offer.
   it('stops offering new moves when slots are full and falls back to a berry when maxed', () => {
-    const full: OwnedMove[] = (['ember', 'fireSpin', 'swift', 'thunder', 'sludgeBomb', 'gust'] as const).map((id) => ({
+    const full: OwnedMove[] = (['ember', 'fireSpin', 'swift', 'iceShard', 'sludgeBomb', 'gust'] as const).map((id) => ({
       id,
       level: maxMoveLevel(id),
       cooldown: 0,
@@ -81,6 +74,12 @@ describe('level-up offers', () => {
     expect(full).toHaveLength(MAX_MOVES)
     const items = (Object.keys(ITEMS) as (keyof typeof ITEMS)[]).slice(0, 6).map((id) => ({ id, level: ITEMS[id].levels.length }))
     expect(rollOffers({ starter: 'charmander', moves: full, items }, createRng(2))).toEqual([{ kind: 'berry' }])
+  })
+
+  it('has nothing to choose only when every card is the berry', () => {
+    expect(nothingToChoose([{ kind: 'berry' }])).toBe(true)
+    expect(nothingToChoose([{ kind: 'berry' }, { kind: 'move', id: 'ember', level: 2 }])).toBe(false)
+    expect(nothingToChoose([])).toBe(false)
   })
 })
 

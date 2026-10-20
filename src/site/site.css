@@ -320,6 +320,8 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  /* A fieldset is min-content wide by default: on a phone its row must scroll, not widen the page. */
+  min-inline-size: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -724,6 +726,27 @@ h3 {
   font-size: 19px;
 }
 
+/* The learnset by stage: the stage's name and level over its move chips. */
+.learn {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.learn dt {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.learn dt small {
+  font-size: inherit;
+  opacity: 0.8;
+}
+
+.learn dd {
+  margin: 0 0 4px;
+}
+
 .list {
   margin: 0;
   padding-left: 18px;
@@ -731,8 +754,10 @@ h3 {
 
 /* ---------- Documents (guide, changelog, legal) ---------- */
 
+/* minmax(0, …) tracks: a wide table scrolls in its .table-wrap instead of widening the page on a phone. */
 .doc {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -753,7 +778,7 @@ h3 {
 
 @media (min-width: 980px) {
   .doc {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     align-items: start;
   }
   .toc {
@@ -767,6 +792,8 @@ h3 {
 
 .doc-body {
   display: grid;
+  /* minmax(0, …): a wide table scrolls in its wrap instead of widening the page on phones. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
   min-width: 0;
 }
@@ -867,27 +894,52 @@ td small {
   text-align: center;
 }
 
-.changelog-day h2 {
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: var(--yellow);
-}
-
-.changelog-day {
-  display: grid;
-  gap: 14px;
-}
-
-.changelog-day h3 {
+/* Changelog: one card per update, its highlights up top and every change folded below. */
+.changelog-date {
   margin: 0 0 8px;
-  font-size: 11px;
-  color: var(--ink);
+  font-family: var(--title);
+  font-size: 9px;
+  color: var(--muted);
 }
 
-.pr {
-  font-family: var(--body);
-  font-size: 20px;
-  white-space: nowrap;
+.doc-section .changelog-highlights {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  list-style: none;
+  background: var(--paper-2);
+  border-left: 4px solid var(--yellow);
+}
+
+.changelog-highlights li {
+  position: relative;
+  padding-left: 18px;
+}
+
+/* A pixel ▶, like a game menu's cursor. */
+.changelog-highlights li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 8px;
+  height: 10px;
+  background: var(--red);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.changelog-update summary {
+  width: fit-content;
+  font-family: var(--title);
+  font-size: 10px;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.changelog-update summary:hover,
+.changelog-update summary:focus-visible {
+  text-decoration: underline;
 }
 
 .defs {

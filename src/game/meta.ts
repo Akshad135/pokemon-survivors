@@ -1,6 +1,7 @@
 import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type GiftTitleId, type TitleId } from '../data/achievements'
 import { NO_ACHIEVEMENTS, parseAchievements, parseGiftTitles, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
+import { addClear, parseClears, pastClears, type Clears } from './clears'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
 import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficulty'
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
@@ -16,6 +17,7 @@ import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shi
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
 import { parseCompanion, type Companion } from './supporters'
+import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { StatDelta } from './stats'
 import type { RunSummary } from './tally'
@@ -86,8 +88,8 @@ export const rankDeltas = (ranks: Ranks): StatDelta[] =>
     return 'stat' in effect ? Array.from({ length: ranks[id] }, () => effect.stat) : []
   })
 
-/** Level-up rerolls and skips a run starts with. */
-export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, skips: ranks.escapeRope })
+/** Level-up rerolls, skips and Esquecer charges a run starts with (an Escape Rope rank gives a skip and an Esquecer). */
+export const runCharges = (ranks: Ranks) => ({ rerolls: ranks.abilityCapsule, skips: ranks.escapeRope, banishes: ranks.escapeRope })
 
 /* ---------------- Save ---------------- */
 
@@ -137,7 +139,22 @@ export type Save = {
   shinyPicks: readonly ShinyPick[]
   /** The supporter's companion, drawn after the player in runs (`game/supporters.ts`). */
   companion: Companion | null
+  /** Where each branching family evolved last (`data/branches.ts`): the Trainer Card shows that form. */
+  branches: Branches
+  /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
+  clears: Clears
 }
+
+/** The branch each branching family took in its latest run that got there. */
+export type Branches = Partial<Record<PlayableId, BranchId>>
+
+/** Saved branches, keeping only branches of the family they're saved under. */
+export const parseBranches = (raw: unknown): Branches =>
+  isRecord(raw)
+    ? Object.fromEntries(
+        Object.entries(raw).filter(([id, branch]) => isPlayable(id) && isBranch(branch) && BRANCHES[branch].line === id),
+      )
+    : {}
 
 /** The partner of a save that never started a run. */
 export const DEFAULT_PARTNER: PlayableId = 'charmander'
@@ -164,6 +181,8 @@ export const EMPTY_SAVE: Save = {
   ribbons: [],
   shinyPicks: [],
   companion: null,
+  branches: {},
+  clears: {},
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -222,6 +241,9 @@ export const parseSaveData = (json: unknown): Save => {
     ribbons: parseRibbons(data.ribbons),
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
+    branches: parseBranches(data.branches),
+    // Saves from before clears were tracked get the ones their records prove.
+    clears: data.clears === undefined ? pastClears(achievements.lifetime) : parseClears(data.clears),
   }
 }
 
@@ -319,13 +341,13 @@ const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
 
 /**
  * Records a run (or what changed since `before`, the snapshot already recorded
- * for it) into the missions and lifetime records, and pays the rewards. `save`
+ * for it) into the missions, lifetime records and clears, and pays the rewards. `save`
  * already has the run's Pokédex log; `eggRoom` is how many reward eggs the run
  * can still take (`EGGS.perRun` minus the eggs it found or got already).
  */
 export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date, eggRoom: number = EGGS.perRun) => {
   const m = recordMissions(save.missions, summary, before, date)
-  return settle(save, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
+  return settle({ ...save, clears: addClear(save.clears, summary) }, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
 }
 
 /** Records a hatched egg (`save` already has it hatched) into the missions and records, and pays the rewards. */

@@ -1,21 +1,27 @@
 import type { Clerk } from '@clerk/clerk-js'
+import { loadClerkUIScript } from '@clerk/shared/loadClerkJsScript'
+import type { ClerkUIConstructor } from '@clerk/shared/types'
 import { track } from './analytics'
-import type { Hatch } from './game/eggs'
-import { applyGift, parseGift, type Gift } from './game/gifts'
+import { readToken } from './clerkClock'
+import { applyGift, giftToOpen, parseGift, type Gift, type GiftOutcome } from './game/gifts'
 import { parseSaveData } from './game/meta'
 import { isRecord } from './game/parse'
 import type { ProfileName } from './game/ranking'
 import { loadSave, writeSave } from './ui/save'
 
 /**
- * Optional player accounts (Google through Clerk). Playing as a guest stays
+ * Optional player accounts (Google or Discord through Clerk). Playing as a guest stays
  * the default: the save lives in `localStorage` either way, and an account
  * only mirrors it to the API (`server/`), merging saves with `applyPush`
  * (`game/sync.ts`). Clerk is loaded only when the player signs in, or on
  * boot for a device that already did, so guests never download it.
  *
- * Each sync also brings the Mystery Gifts waiting in the account (`GET /gifts`)
+ * Each sync also lists the Mystery Gifts waiting in the account (`GET /gifts`,
+ * opened from the lobby: `openGift`)
  * and, on a device's first sync, the invite it landed with (`POST /referral`).
+ * A Discord account connected to the player's (`linkDiscord`, or signing in
+ * with Discord) is reported to the API (`POST /discord/link`), which puts
+ * them in the community server with their supporter role.
  *
  * Nothing here may block the game: offline, a missing API or a Clerk outage
  * just leave the save local and the sync status `offline`.
@@ -28,21 +34,30 @@ export const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '')
 /** Without both keys the account button doesn't show and the game is guest only. */
 export const accountsEnabled = Boolean(PUBLISHABLE_KEY && API_URL)
 
-/** Query parameter of the page Google sends the player back to. */
+/** Query parameter of the page Google (or Discord) sends the player back to after signing in. */
 const CALLBACK = 'login'
+
+/** Query parameter of the page Discord sends the player back to after connecting it to their account. */
+const DISCORD_CALLBACK = 'discord'
 
 const TIMEOUT_MS = 12_000
 
-/** True while the page is the one Google sent the player back to: boot skips the "press start" intro. */
-export const backFromSignIn = () => accountsEnabled && new URLSearchParams(location.search).has(CALLBACK)
+/** True while the page is the one Google or Discord sent the player back to: boot skips the "press start" intro. */
+export const backFromSignIn = () => accountsEnabled && (new URLSearchParams(location.search).has(CALLBACK) || new URLSearchParams(location.search).has(DISCORD_CALLBACK))
 
 export type SyncStatus = 'syncing' | 'synced' | 'offline'
 
 /**
  * `failed`: the last sign in didn't go through. `handle`: the player's public
  * handle, null before they pick one, undefined until the API said.
+ * `discord`: the username of the Discord account connected to theirs, null
+ * when none is, undefined until Clerk said; `discordFailed`: connecting one
+ * just didn't go through (cancelled, or it belongs to another account).
  */
-export type AccountState = { kind: 'guest'; failed?: boolean } | { kind: 'busy' } | { kind: 'signedIn'; name: string; sync: SyncStatus; handle: string | null | undefined }
+export type AccountState =
+  | { kind: 'guest'; failed?: boolean }
+  | { kind: 'busy' }
+  | { kind: 'signedIn'; name: string; sync: SyncStatus; handle: string | null | undefined; discord: string | null | undefined; discordFailed?: boolean }
 
 /* ---------------- Device link ---------------- */
 
@@ -50,10 +65,13 @@ const LINK_KEY = 'ps:account'
 
 /**
  * This device's account: who signed in, the revision of the account's save it
- * last got (null until its first sync), which pushes build on, and the public
- * handle (see `AccountState`). `name` is the profile's display name once there is one.
+ * last got (null until its first sync), which pushes build on, the public
+ * handle and the Discord username the API last heard of (see `AccountState`).
+ * `name` is the profile's display name once there is one. `discordAccount`:
+ * the id of the Clerk connection that username came from, which tells a
+ * Discord account connected or removed since (Clerk may leave its username empty).
  */
-type Link = { userId: string; name: string; revision: number | null; handle?: string | null }
+type Link = { userId: string; name: string; revision: number | null; handle?: string | null; discord?: string | null; discordAccount?: string | null }
 
 const readLink = (): Link | null => {
   try {
@@ -64,6 +82,8 @@ const readLink = (): Link | null => {
       name: typeof data.name === 'string' ? data.name : '',
       revision: typeof data.revision === 'number' ? data.revision : null,
       handle: typeof data.handle === 'string' || data.handle === null ? data.handle : undefined,
+      discord: typeof data.discord === 'string' || data.discord === null ? data.discord : undefined,
+      discordAccount: typeof data.discordAccount === 'string' || data.discordAccount === null ? data.discordAccount : undefined,
     }
   } catch {
     return null
@@ -136,12 +156,27 @@ const withTimeout = <T>(promise: Promise<T>) =>
 
 let clerk: Promise<Clerk> | null = null
 
+declare global {
+  interface Window {
+    /** Set by Clerk's UI script (`loadClerkUIScript`). */
+    __internal_ClerkUICtor?: ClerkUIConstructor
+  }
+}
+
+/**
+ * Clerk's prebuilt UI, from Clerk's CDN like their React SDK does. The game
+ * draws its own screens; it's here for the modals Clerk opens itself, such as
+ * the reverification before linking Discord. It loads beside Clerk, never blocking it.
+ */
+const loadClerkUI = (): Promise<ClerkUIConstructor> =>
+  loadClerkUIScript({ publishableKey: PUBLISHABLE_KEY! }).then(() => window.__internal_ClerkUICtor ?? Promise.reject(new Error('no Clerk UI')))
+
 /** Clerk, loaded on first use (its own chunk). A failed load can be retried. */
 const loadClerk = () =>
   (clerk ??= withTimeout(
     import('@clerk/clerk-js').then(async ({ Clerk }) => {
       const instance = new Clerk(PUBLISHABLE_KEY!)
-      await instance.load()
+      await instance.load({ ui: { ClerkUI: loadClerkUI() } })
       return instance
     }),
   ).catch((err: unknown) => {
@@ -157,11 +192,36 @@ const pageUrl = () => `${location.origin}${location.pathname}`
 /** Dev builds: `localStorage['ps:devToken']` stands in for Clerk's token, against a local API that accepts it. */
 const devToken = () => (import.meta.env.DEV ? localStorage.getItem('ps:devToken') : null)
 
+/** How far Clerk's clock runs ahead of this device's (seconds), as the tokens tell (`readToken`). */
+let clerkOffset: number | null = null
+
+/** Whether a token is spent by Clerk's clock, learning that clock from it. */
+const spent = (token: string) => {
+  const read = readToken(token, clerkOffset, Date.now() / 1000)
+  clerkOffset = read.offset
+  return read.spent
+}
+
+/**
+ * The session's token for the API (dev builds: `devToken`). Clerk's cache is
+ * fooled by a device clock running behind (`clerkClock.ts`), so a token spent
+ * by Clerk's clock is fetched again, past the cache.
+ */
+const apiToken = async (c: Clerk) => {
+  const dev = devToken()
+  if (dev) return dev
+  const cached = await c.session?.getToken()
+  if (!cached || !spent(cached)) return cached ?? null
+  const fresh = await c.session?.getToken({ skipCache: true })
+  if (fresh) spent(fresh)
+  return fresh ?? null
+}
+
 /** The signed-in player's session token for the API, or null for guests and when Clerk can't load. Never throws. */
 export const sessionToken = async () => {
   if (!accountsEnabled || !readLink()) return null
   try {
-    return devToken() ?? (await (await loadClerk()).session?.getToken()) ?? null
+    return await apiToken(await loadClerk())
   } catch {
     return null
   }
@@ -182,7 +242,7 @@ const parsePushed = (body: unknown) =>
  * was sent when the account took it as is, and otherwise the next push merges.
  */
 const push = async (c: Clerk, link: Link) => {
-  const token = await c.session?.getToken()
+  const token = await apiToken(c)
   if (!token) throw new Error('no session')
   const sent = JSON.stringify(loadSave())
   const res = await fetch(`${API_URL}/save`, {
@@ -203,8 +263,9 @@ const relink = (c: Clerk, user: NonNullable<Clerk['user']>) => {
   const was = readLink()
   const same = was?.userId === user.id
   const name = same && was.handle ? was.name : displayName(c)
-  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined })
-  setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined })
+  if (!same) setInbox([])
+  writeLink({ userId: user.id, name, revision: same ? was.revision : null, handle: same ? was.handle : undefined, discord: same ? was.discord : undefined, discordAccount: same ? was.discordAccount : undefined })
+  setState({ kind: 'signedIn', name, sync: 'syncing', handle: same ? was.handle : undefined, discord: same ? was.discord : undefined })
 }
 
 /** Keeps a profile (or its absence) in the link and the state; a profile's name replaces Google's. */
@@ -294,59 +355,184 @@ const sendReferral = async (token: string) => {
   }
 }
 
+/* ---------------- Discord ---------------- */
+
+/** The Discord account connected to the Clerk user, once its connection finished, or null. */
+const discordOf = (user: NonNullable<Clerk['user']>) =>
+  user.externalAccounts.find((a) => a.provider === 'discord' && a.verification?.status === 'verified') ?? null
+
+/** Keeps the Discord username (or its absence) and the Clerk connection it came from in the link and the state. */
+const setDiscord = (discord: string | null, account: string | null, failed = false) => {
+  const saved = readLink()
+  if (saved) writeLink({ ...saved, discord, discordAccount: account })
+  if (state.kind === 'signedIn') setState({ ...state, discord, discordFailed: failed })
+}
+
+/**
+ * Tells the API about a change of the player's Discord account (connected in
+ * the game, by signing in with Discord, or removed in Clerk's account page):
+ * a new one gets linked (`POST`, which joins the server and answers the
+ * username, asked of Discord itself), a removed one forgotten (`DELETE`).
+ * A failure leaves the link as it was, to try again next sync.
+ */
+const syncDiscord = async (c: Clerk, token: string) => {
+  if (!c.user) return
+  const account = discordOf(c.user)
+  const known = readLink()?.discordAccount
+  if ((account?.id ?? null) === known) return
+  if (!account && known === undefined) return setDiscord(null, null)
+  try {
+    const res = await fetch(`${API_URL}/discord/link`, { method: account ? 'POST' : 'DELETE', headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!res.ok) throw new Error(`discord link failed: ${res.status}`)
+    const body: unknown = await res.json()
+    const username = isRecord(body) && typeof body.username === 'string' && body.username ? body.username : account ? account.username || 'Discord' : null
+    setDiscord(username, account?.id ?? null)
+  } catch (err) {
+    console.warn('discord link failed', err)
+  }
+}
+
+/**
+ * "Link Discord": connects a Discord account to the signed-in player's
+ * (Clerk's `createExternalAccount`) and leaves for Discord, which sends them
+ * back to `?discord`, where the next sync links it. A guest signs in with
+ * Discord instead, which creates the account and connects it at once.
+ * Resolves false when it couldn't leave.
+ */
+export const linkDiscord = async (): Promise<boolean> => {
+  const failed = () => {
+    if (state.kind === 'signedIn') setState({ ...state, discordFailed: true })
+    return false
+  }
+  try {
+    const c = await loadClerk()
+    if (!c.user) {
+      await signIn('discord')
+      return true
+    }
+    // Connected already (the API didn't take it yet): linking is a sync away.
+    if (discordOf(c.user)) {
+      const token = await apiToken(c)
+      if (token) await syncDiscord(c, token)
+      return state.kind === 'signedIn' && state.discord ? true : failed()
+    }
+    const redirectUrl = `${pageUrl()}?${DISCORD_CALLBACK}`
+    // A connection left halfway (cancelled on Discord) is retried rather than added again.
+    const unfinished = c.user.externalAccounts.find((a) => a.provider === 'discord' && a.verification?.status !== 'verified')
+    const account = await (unfinished ? unfinished.reauthorize({ redirectUrl }) : c.user.createExternalAccount({ strategy: 'oauth_discord', redirectUrl })).catch(
+      (err: unknown) => {
+        if (!needsReverification(err)) throw err
+        // Connecting an account is a sensitive action: Clerk's own modal confirms it's them (a code by email), then it goes on.
+        c.__internal_openReverification({ afterVerification: () => void linkDiscord(), afterVerificationCancelled: failed })
+        return null
+      },
+    )
+    if (!account) return true
+    const to = account.verification?.externalVerificationRedirectURL
+    if (!to) throw new Error('no redirect')
+    location.assign(to.href)
+    return true
+  } catch (err) {
+    console.warn('discord link failed', err)
+    return failed()
+  }
+}
+
+/** Whether Clerk refused an action until the player proves it's them again (`session_reverification_required`). */
+const needsReverification = (err: unknown) =>
+  isRecord(err) && Array.isArray(err.errors) && err.errors.some((e: unknown) => isRecord(e) && e.code === 'session_reverification_required')
+
+/** Back from Discord (`?discord`): cleans the URL and syncs now, which links the account; a connection that didn't finish says so. */
+const finishDiscord = async () => {
+  history.replaceState(null, '', pageUrl())
+  await syncSave()
+  try {
+    const c = await loadClerk()
+    if (c.user && !discordOf(c.user) && c.user.externalAccounts.some((a) => a.provider === 'discord')) setDiscord(null, null, true)
+  } catch {
+    // Offline: the next sync tries again.
+  }
+}
+
 /* ---------------- Mystery Gifts ---------------- */
 
-/** A gift that landed in the save, with the hatch to play for a shiny hatch. */
-export type GiftArrival = { gift: Gift; hatch: Hatch | null }
-
-const giftListeners = new Set<(arrived: readonly GiftArrival[], waiting: number) => void>()
-
-/** Calls `fn` whenever gifts land in the save (and with how many wait for room in the incubator). Returns the unsubscribe. */
-export const onGifts = (fn: (arrived: readonly GiftArrival[], waiting: number) => void) => {
-  giftListeners.add(fn)
-  return () => void giftListeners.delete(fn)
-}
-
 /**
- * Applies gifts to the local save, one by one (`applyGift`), and tells the
- * listeners what landed. Returns the ids the account may mark claimed: the
- * ones that landed now or before. (Dev helpers stage gifts through it too.)
+ * The account's unopened gifts, oldest first, as the last sync listed them.
+ * They wait in the API's inbox until the player opens them from the lobby's
+ * gift box (`openGift`), so a gift that arrives mid-run waits for the lobby
+ * and a reload loses nothing.
  */
-export const receiveGifts = (gifts: readonly Gift[]) => {
-  const arrived: GiftArrival[] = []
-  const claim: string[] = []
-  let waiting = 0
-  for (const gift of gifts) {
-    const out = applyGift(loadSave(), gift)
-    if (out.status === 'wait') waiting++
-    else claim.push(gift.id)
-    if (out.status === 'applied') {
-      writeSave(out.save)
-      arrived.push({ gift, hatch: out.hatch })
-    }
-  }
-  if (arrived.length > 0 || waiting > 0) giftListeners.forEach((fn) => fn(arrived, waiting))
-  return { claim, landed: arrived.length > 0 }
+let inbox: Gift[] = []
+
+const inboxListeners = new Set<(gifts: readonly Gift[]) => void>()
+
+const setInbox = (gifts: Gift[]) => {
+  inbox = gifts
+  inboxListeners.forEach((fn) => fn(inbox))
+}
+
+/** The gifts waiting to be opened. */
+export const giftInbox = (): readonly Gift[] => inbox
+
+/** The gift to open next (`giftToOpen`). */
+export const nextGift = () => giftToOpen(loadSave(), inbox)
+
+/** Calls `fn` whenever the gifts waiting to be opened change. Returns the unsubscribe. */
+export const onInbox = (fn: (gifts: readonly Gift[]) => void) => {
+  inboxListeners.add(fn)
+  return () => void inboxListeners.delete(fn)
+}
+
+/** Marks gifts claimed in the API. Failing is harmless: the save keeps their ids, and the next sync claims them again. */
+const claimGifts = async (ids: readonly string[], token?: string | null) => {
+  const auth = token ?? (await sessionToken())
+  if (!auth || ids.length === 0) return
+  await fetch(`${API_URL}/gifts/claim`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch(() => {})
 }
 
 /**
- * Fetches the account's unclaimed gifts, applies them and marks them
- * claimed. A gift this build doesn't know stays unclaimed for a newer one.
- * True when the save changed (it needs another push). Never throws.
+ * Opens the waiting gift `id`: applies it to the save (`applyGift`), takes it
+ * out of the inbox and marks it claimed. A gift the save already has just
+ * leaves; one that can't land yet (an egg with the incubator full) stays.
+ * Null for an id that isn't waiting.
+ */
+export const openGift = (id: string): GiftOutcome | null => {
+  const gift = inbox.find((g) => g.id === id)
+  if (!gift) return null
+  const out = applyGift(loadSave(), gift)
+  if (out.status === 'wait') return out
+  if (out.status === 'applied') writeSave(out.save)
+  setInbox(inbox.filter((g) => g.id !== id))
+  void claimGifts([id])
+  if (out.status === 'applied') void syncSave()
+  return out
+}
+
+/** Puts gifts in the inbox as if a sync listed them (the dev helpers stage gifts with it). */
+export const stageGifts = (gifts: readonly Gift[]) => setInbox([...inbox.filter((g) => !gifts.some((n) => n.id === g.id)), ...gifts])
+
+/**
+ * Lists the account's unclaimed gifts into the inbox. The ones the save
+ * already applied (their claim failed) are claimed again instead; a kind
+ * this build doesn't know stays in the API for a newer one. Never throws.
  */
 const fetchGifts = async (token: string) => {
   try {
-    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    const res = await fetch(`${API_URL}/gifts`, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) })
+    const res = await fetch(`${API_URL}/gifts`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
     const body: unknown = res.ok ? await res.json() : null
-    if (!isRecord(body) || !Array.isArray(body.gifts)) return false
-    const { claim, landed } = receiveGifts(body.gifts.flatMap((g: unknown) => parseGift(g) ?? []))
-    // The save already holds what landed, so a failed claim just lists those gifts again next time.
-    if (claim.length > 0) await fetch(`${API_URL}/gifts/claim`, { method: 'POST', headers, body: JSON.stringify({ ids: claim }), signal: AbortSignal.timeout(TIMEOUT_MS) })
-    return landed
+    if (!isRecord(body) || !Array.isArray(body.gifts)) return
+    const gifts = body.gifts.flatMap((g: unknown) => parseGift(g) ?? [])
+    const applied = loadSave().gifts
+    await claimGifts(gifts.filter((g) => applied.includes(g.id)).map((g) => g.id), token)
+    // Staged ones (dev) stay; the API's list replaces the rest.
+    setInbox([...gifts.filter((g) => !applied.includes(g.id)), ...inbox.filter((g) => g.id.startsWith('dev-'))])
   } catch (err) {
     console.warn('gifts failed', err)
-    return false
   }
 }
 
@@ -370,18 +556,19 @@ export const syncSave = async () => {
       // Clerk's session rules: signed out elsewhere goes back to guest, another user takes the device.
       if (!c.user) {
         writeLink(null)
+        setInbox([])
         setState({ kind: 'guest' })
         break
       }
       if (c.user.id !== saved.userId) relink(c, c.user)
-      const token = devToken() ?? (await c.session?.getToken())
+      const token = await apiToken(c)
       if (token) await sendReferral(token)
       await push(c, readLink() ?? saved)
       setSync('synced')
       if (token) {
         await loadProfile(token)
-        // Gifts that landed changed the save: push it again.
-        if (await fetchGifts(token)) again = true
+        await syncDiscord(c, token)
+        await fetchGifts(token)
       }
     } catch (err) {
       console.warn('account sync failed', err)
@@ -394,11 +581,11 @@ export const syncSave = async () => {
 /* ---------------- Sign in and out ---------------- */
 
 /**
- * "Sign in with Google": leaves for Google and comes back to this page
- * (`?login`), where `startAccount` finishes it. Already signed in to Clerk
- * (another tab), it just links this device.
+ * "Sign in with Google" (or Discord): leaves for the provider and comes back
+ * to this page (`?login`), where `startAccount` finishes it. Already signed
+ * in to Clerk (another tab), it just links this device.
  */
-export const signIn = async () => {
+export const signIn = async (provider: 'google' | 'discord' = 'google') => {
   setState({ kind: 'busy' })
   try {
     const c = await loadClerk()
@@ -406,7 +593,7 @@ export const signIn = async () => {
     if (!c.client) throw new Error('no client')
     // Both back to `?login`, so the device always gets linked, however Clerk finishes.
     const back = `${pageUrl()}?${CALLBACK}`
-    await c.client.signIn.authenticateWithRedirect({ strategy: 'oauth_google', redirectUrl: back, redirectUrlComplete: back })
+    await c.client.signIn.authenticateWithRedirect({ strategy: `oauth_${provider}`, redirectUrl: back, redirectUrlComplete: back })
   } catch (err) {
     console.warn('sign in failed', err)
     setState({ kind: 'guest', failed: true })
@@ -417,6 +604,7 @@ export const signIn = async () => {
 export const signOut = async () => {
   setState({ kind: 'busy' })
   writeLink(null)
+  setInbox([])
   try {
     await (await loadClerk()).signOut()
   } catch (err) {
@@ -499,15 +687,17 @@ const finishSignIn = async () => {
 }
 
 /**
- * Boot: finishes a sign in coming back from Google, or, on a device that
- * signed in before, shows the account right away and syncs once Clerk has
- * loaded in the background (after the game's own assets).
+ * Boot: finishes a sign in coming back from Google or Discord, or, on a
+ * device that signed in before, shows the account right away and syncs once
+ * Clerk has loaded in the background (after the game's own assets). Back
+ * from connecting Discord, it syncs at once.
  */
 export const startAccount = () => {
   if (!accountsEnabled) return
-  if (backFromSignIn()) return void finishSignIn()
+  if (new URLSearchParams(location.search).has(CALLBACK)) return void finishSignIn()
   const saved = readLink()
   if (!saved) return
-  setState({ kind: 'signedIn', name: saved.name, sync: 'syncing', handle: saved.handle })
+  setState({ kind: 'signedIn', name: saved.name, sync: 'syncing', handle: saved.handle, discord: saved.discord })
+  if (new URLSearchParams(location.search).has(DISCORD_CALLBACK)) return void finishDiscord()
   setTimeout(() => void syncSave(), 3000)
 }

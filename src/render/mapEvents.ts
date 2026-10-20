@@ -8,9 +8,14 @@ import { art, lazy, PICKUPS, SPARKLE, toIconUrl } from './art'
 import { consumableSprite } from './props'
 import { drawPokemon, loadedSprites } from './sprites'
 import { dashedRing } from './strokes'
+import { tmDisc, TM_FX } from './tmArt'
+import { TUTOR } from '../game/tmRules'
+import { isMission } from '../game/fieldMissions'
+import { drawFieldMission, missionIcon, missionSpot } from './fieldMissions'
+import { HURT_TINT } from './flashes'
 
 /**
- * Map events on the ground (altar, fountain, chest, traps, Meowth) and the
+ * Map events on the ground (altar, fountain, chest, traps, Meowth, the Move Tutor) and the
  * arrows that point at the important ones from the screen edge.
  */
 
@@ -43,7 +48,8 @@ const ART = lazy(() => ({
   bomb: art(BOMB_ART, { 1: '#383848', 2: '#a0a8c8', 3: '#a08060' }, '#101018'),
   bombLit: art(BOMB_ART, { 1: '#c03028', 2: '#ffb0a0', 3: '#a08060' }, '#101018'),
   drop: art(DROP, { 1: '#2860b0', 2: '#78c0f8', 3: '#ffffff' }, '#101830'),
-  arrows: ['#f8e8a0', '#78c0f8', '#f8c830', '#f8d030'].map((c) => art(ARROW, { 1: '#181818', 2: c })),
+  // The last one (pink) is the field missions'.
+  arrows: ['#f8e8a0', '#78c0f8', '#f8c830', '#f8d030', '#f878a8'].map((c) => art(ARROW, { 1: '#181818', 2: c })),
 }))
 
 export const fountainIcon = () => toIconUrl('fountain', () => ART().drop)
@@ -181,42 +187,70 @@ const drawBomb = (ctx: Ctx, ev: MapEventOf<'bomb'>, t: number) => {
   ctx.fillRect(tipX, tipY, lit ? 2 : 1, lit ? 2 : 1)
 }
 
-const drawMeowth = (ctx: Ctx, ev: MapEventOf<'meowth'>, t: number) => {
+/** `calm` (Flashes: reduced): a hit tints it dim red instead of white, and it fades instead of blinking as it leaves. */
+const drawMeowth = (ctx: Ctx, ev: MapEventOf<'meowth'>, t: number, calm: boolean) => {
   const s = loadedSprites(MEOWTH_DEX)
   if (!s) return
   const fainted = ev.gone >= 0 && ev.state.hp <= 0
   // Blinks in its last seconds, before it escapes.
-  const leaving = ev.gone < 0 && ev.ttl - ev.age < 3 && Math.floor(t * 10) % 2 === 0
+  const leaving = ev.gone < 0 && ev.ttl - ev.age < 3 && (calm || Math.floor(t * 10) % 2 === 0)
   groundShadow(ctx, ev.x, ev.y, Math.max(4, Math.round(s.bodyW * 0.36)))
   drawPokemon(ctx, s, fainted || ev.state.flash > 0 ? 'Hurt' : 'Walk', ev.state.dir, ev.age * 1.6, ev.x, ev.y, {
-    flash: ev.state.flash > 0.1 ? 0.8 : 0,
-    alpha: leaving ? 0.5 : 1,
+    flash: ev.state.flash > 0.1 && !calm ? 0.8 : 0,
+    tint: ev.state.flash > 0.1 && calm ? HURT_TINT : undefined,
+    alpha: leaving ? (calm ? 0.7 : 0.5) : 1,
   })
   if (ev.gone < 0 && (t + ev.id * 0.2) % 0.9 < 0.15) blitCentered(ctx, PICKUPS.coins()[0]!, ev.x + 7, ev.y - s.bodyH - 4)
+}
+
+/**
+ * The Move Tutor's striped tent with the old tutor beside it, waving a TM.
+ * Standing in the ring fills it; the disc above the tent spins faster as it does.
+ */
+const drawTutor = (ctx: Ctx, ev: MapEventOf<'tutor'>, t: number) => {
+  const k = ev.state.stand / TUTOR.stand
+  dashedRing(ctx, ev.x, ev.y - 2, TUTOR.radius, t * 1.5, ['#78c0f8', '#3868b0'], 0.35)
+  if (k > 0) progressArc(ctx, ev.x, ev.y - 2, TUTOR.radius, k, '#d8f0ff')
+  groundShadow(ctx, ev.x, ev.y + 1, 17)
+  const tent = TM_FX.tent()
+  ctx.drawImage(tent, Math.round(ev.x - tent.width / 2), Math.round(ev.y - tent.height + 1))
+  const tutor = TM_FX.tutor()
+  const hop = Math.floor(t * 2 + ev.id) % 4 === 0 ? 1 : 0
+  groundShadow(ctx, ev.x - 21, ev.y + 2, 4)
+  ctx.drawImage(tutor, Math.round(ev.x - 21 - tutor.width / 2), Math.round(ev.y - tutor.height + 2 - hop))
+  // A TM disc bobbing over the tent, in a color that cycles through the types it can teach.
+  const colors = ['#f08030', '#6890f0', '#f8d030', '#98d8d8', '#b8a038', '#f85888', '#705898', '#a8a878']
+  const color = colors[Math.floor(t * 1.2 + ev.id) % colors.length]!
+  const bob = Math.round(Math.sin(t * 3 + ev.id) * 2)
+  blitCentered(ctx, tmDisc(color), ev.x, ev.y - tent.height - 6 + bob - Math.round(k * 4))
+  if (ev.gone < 0 && (t + ev.id * 0.3) % 1.6 < 0.2) blitCentered(ctx, SPARKLE()[1]!, ev.x + 7, ev.y - tent.height - 10)
 }
 
 const near = (g: Game, x: number, y: number, m = 60) =>
   x > g.camera.x - m && x < g.camera.x + g.view.w + m && y > g.camera.y - m && y < g.camera.y + g.view.h + m
 
-const drawEvent = (ctx: Ctx, ev: MapEvent, t: number) => {
+const drawEvent = (ctx: Ctx, g: Game, ev: MapEvent, t: number, calm: boolean) => {
+  if (isMission(ev)) return drawFieldMission(ctx, g, ev, t, calm)
   switch (ev.kind) {
     case 'altar': return drawAltar(ctx, ev, t)
     case 'fountain': return drawFountain(ctx, ev, t)
     case 'chest': return drawChest(ctx, ev, t)
     case 'spikes': return drawSpikes(ctx, ev, t)
     case 'bomb': return drawBomb(ctx, ev, t)
-    case 'meowth': return drawMeowth(ctx, ev, t)
+    case 'meowth': return drawMeowth(ctx, ev, t, calm)
+    case 'tutor': return drawTutor(ctx, ev, t)
   }
 }
 
-/** Ground layer: every map event near the screen, fading out once spent. */
-export const drawMapEvents = (ctx: Ctx, g: Game, t: number) => {
+/** Ground layer: every map event near the screen, fading out once spent. `calm`: Flashes reduced (`render/flashes.ts`). */
+export const drawMapEvents = (ctx: Ctx, g: Game, t: number, calm: boolean) => {
   for (const ev of g.mapEvents.list) {
-    if (!near(g, ev.x, ev.y)) continue
+    // A collect mission's balls spread far from its center.
+    if (!near(g, ev.x, ev.y, ev.kind === 'collect' || ev.kind === 'escort' ? 400 : 60)) continue
     // A popped bomb leaves nothing behind; the rest fade out.
     if (ev.gone >= 0 && ev.kind === 'bomb') continue
     ctx.globalAlpha = ev.gone >= 0 ? Math.max(0, 1 - ev.gone / FADE) : 1
-    drawEvent(ctx, ev, t)
+    drawEvent(ctx, g, ev, t, calm)
   }
   ctx.globalAlpha = 1
 }
@@ -229,6 +263,10 @@ const MARKER: Partial<Record<MapEventKind, { arrow: number; icon: () => PixelSpr
   fountain: { arrow: 1, icon: () => ART().drop },
   chest: { arrow: 2, icon: () => ART().chest },
   meowth: { arrow: 3, icon: () => PICKUPS.coins()[0]! },
+  tutor: { arrow: 1, icon: () => tmDisc('#78c0f8') },
+  defense: { arrow: 4, icon: () => missionIcon('defense') },
+  collect: { arrow: 4, icon: () => missionIcon('collect') },
+  escort: { arrow: 4, icon: () => missionIcon('escort') },
 }
 
 export type MarkerInsets = { top: number; bottom: number; side: number }
@@ -239,6 +277,9 @@ let inset: MarkerInsets = { top: 30, bottom: 24, side: 14 }
 export const setMarkerInsets = (next: MarkerInsets) => {
   inset = next
 }
+
+/** The margins edge arrows keep (the Alphas' too, `render/alphas.ts`). */
+export const markerInsets = () => inset
 
 /**
  * Screen layer: an arrow on the screen edge for every important event that's
@@ -251,8 +292,10 @@ export const drawMapEventMarkers = (ctx: Ctx, g: Game, t: number) => {
   for (const ev of g.mapEvents.list) {
     const marker = MARKER[ev.kind]
     if (ev.gone >= 0 || !marker || !MAP_EVENTS[ev.kind].marker) continue
-    const sx = ev.x - g.camera.x
-    const sy = ev.y - 8 - g.camera.y
+    // A mission points at where to go next (the nearest ball, Togepi's nest).
+    const at = isMission(ev) ? missionSpot(g, ev) : ev
+    const sx = at.x - g.camera.x
+    const sy = at.y - 8 - g.camera.y
     if (sx > 4 && sx < w - 4 && sy > 4 && sy < h - 4) continue
     const dx = sx - cx
     const dy = sy - cy

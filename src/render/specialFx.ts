@@ -481,7 +481,8 @@ export const drawSpecialAura = (ctx: Ctx, g: Game, t: number) => {
   const p = g.player
   const r = gameSpecial(g)
   const { def } = r
-  const k = s.charge / def.charge
+  // Capped: a special with no wind-up (a chain) would make it Infinity, and the ring's loop endless.
+  const k = Math.min(1, s.charge / def.charge)
   const color = TYPE_COLORS[def.type]
   pixelRing(ctx, p.x, p.y - 10, Math.round(8 + k * 20), 2, Math.floor(t * 24) % 2 ? color : '#ffffff')
   const reach = specialReach(g, r) * (1 - k * 0.5)

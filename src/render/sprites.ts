@@ -63,13 +63,16 @@ const manifestVariant = (dex: Dex, shiny: boolean, form?: FormKey) => {
 
 export const hasShiny = (dex: Dex) => MANIFEST[String(dex)]?.shiny !== undefined
 
-const loadImage = (src: string) =>
-  new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`Failed to load ${src}`))
-    img.src = src
-  })
+/** Loads an image and decodes it off the main thread, so its first draw (the silhouette, mid-run) doesn't stall a frame. */
+const loadImage = (src: string) => {
+  const img = new Image()
+  img.src = src
+  // A browser that can't decode ahead (a rejected `decode` on an image that did load) still gets the image.
+  return img.decode().then(
+    () => img,
+    () => (img.complete && img.naturalWidth > 0 ? img : Promise.reject(new Error(`Failed to load ${src}`))),
+  )
+}
 
 /** Solid white silhouette used for hit flashes and the evolution sequence. */
 const silhouette = (img: HTMLImageElement | HTMLCanvasElement) => {

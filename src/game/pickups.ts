@@ -4,9 +4,11 @@ import { healPlayer } from './combat'
 import { burst, floatText } from './effects'
 import { useConsumable } from './consumables'
 import { rollEgg, type EggSource } from './eggs'
-import { applyOffer, gainXp, loadout, rollOffers } from './leveling'
+import { applyOffer, gainXp, loadout, rollOffers, type Loadout } from './leveling'
+import { openAlphaPrize } from './alphas'
 import { grantStone } from './mega'
-import type { Game, Pickup } from './types'
+import { collectTm } from './tms'
+import type { Game, Offer, Pickup } from './types'
 import * as dm from '../engine/dmath'
 
 const MAX_XP_PICKUPS = 260
@@ -15,7 +17,7 @@ const PULL_SPEED = 420
 /** How fast (1/s) a pulled pickup's velocity turns toward the player. */
 const PULL_STEER = 7
 
-type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone'>
+type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone' | 'tm'>
 
 export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
@@ -56,6 +58,46 @@ export const awardEgg = (g: Game, source: EggSource, x: number, y: number) => {
 /** Exp. Candy size tier, used for rendering. */
 export const xpTier = (value: number) => (value >= 40 ? 3 : value >= 10 ? 2 : value >= 3 ? 1 : 0)
 
+/**
+ * Whether a Poké Ball's prize waits on the player: a move or held item they
+ * don't own yet takes a slot for the rest of the run, so it's their call.
+ * Upgrades, move evolutions and berries go in on their own.
+ */
+export const pokeballAsks = (offer: Offer, { moves, items }: Pick<Loadout, 'moves' | 'items'>) =>
+  offer.kind === 'move' ? !moves.some((m) => m.id === offer.id) : offer.kind === 'item' ? !items.some((i) => i.id === offer.id) : false
+
+/**
+ * A Poké Ball pops open with a burst and a few rising sparkles. It picks on
+ * its own (so never a fork or a duo fusion, the player's calls, and always
+ * common); a new move or item waits on the player (phase `pokeball`: the
+ * prize or `pass`, picked like a level-up, so the replay records it).
+ */
+const openPokeball = (g: Game) => {
+  const p = g.player
+  const [offer] = rollOffers(loadout(g), g.rng, 1, { forks: false, duos: false })
+  burst(g, p.x, p.y - 10, { colors: ['#f83838', '#ffffff', '#ffd830'], count: 30, speed: 120, ttl: 0.6 })
+  burst(g, p.x, p.y - 14, { colors: ['#ffffff', '#fff8c0', '#ffd830'], count: 12, speed: 45, ttl: 0.9, gravity: -60 })
+  g.shake = Math.max(g.shake, 2)
+  if (offer && pokeballAsks(offer, p)) {
+    g.phase = 'pokeball'
+    g.offers = [offer, { kind: 'pass' }]
+    g.events.push({ kind: 'pokeball', offer, moment: 'found' })
+    return
+  }
+  if (offer) applyOffer(g, offer)
+  // Evolutions celebrate with their own event instead of the Poké Ball toast.
+  if (offer?.kind !== 'evolution') g.events.push({ kind: 'pokeball', offer: offer ?? null, moment: 'auto' })
+}
+
+/** The player's call on a Poké Ball's new move or item: `pass` leaves it, anything else takes it. */
+export const decidePokeball = (g: Game, picked: Offer) => {
+  const [found] = g.offers
+  if (!found || found.kind === 'pass') return
+  const take = picked.kind !== 'pass'
+  if (take) applyOffer(g, found)
+  g.events.push({ kind: 'pokeball', offer: found, moment: take ? 'taken' : 'left' })
+}
+
 const collect = (g: Game, pickup: Pickup) => {
   const p = g.player
   switch (pickup.kind) {
@@ -77,22 +119,26 @@ const collect = (g: Game, pickup: Pickup) => {
       g.events.push({ kind: 'heal' })
       break
     }
-    case 'pokeball': {
-      const [offer] = rollOffers(loadout(g), g.rng, 1)
-      if (offer) applyOffer(g, offer)
-      burst(g, p.x, p.y - 10, { colors: ['#f83838', '#ffffff', '#ffd830'], count: 30, speed: 120, ttl: 0.6 })
-      // Evolutions celebrate with their own event instead of the Poké Ball toast.
-      if (offer?.kind !== 'evolution') g.events.push({ kind: 'pokeball', offer: offer ?? null })
+    case 'pokeball':
+      openPokeball(g)
       break
-    }
     case 'megaStone':
       grantStone(g, pickup.mega)
       break
     case 'consumable':
       useConsumable(g, pickup.item)
       break
+    case 'tm':
+      collectTm(g, pickup)
+      break
+    case 'alphaPrize':
+      openAlphaPrize(g)
+      break
   }
 }
+
+/** Pickups that can open a screen (and set the run waiting), so they never land while another one is up. */
+const OPENS_SCREEN: ReadonlySet<Pickup['kind']> = new Set(['tm', 'pokeball', 'alphaPrize'])
 
 /** Mega Stones on the ground: two or more means the player is choosing one, so the magnet leaves them be. */
 const megaStones = (g: Game) => {
@@ -137,6 +183,8 @@ export const updatePickups = (g: Game, dt: number) => {
     k.y += k.vy * dt
     // Checked after the move and with this frame's step as slack, so a fast candy can't hop over the player.
     const reach = p.radius + 5 + dm.hypot(k.vx, k.vy) * dt
+    // A TM, a Poké Ball or an Alpha's prize may open a screen: one at a time, the next one waits on the ground.
+    if (OPENS_SCREEN.has(k.kind) && g.phase !== 'playing') continue
     if (k.attracted && dm.sq(k.x - p.x) + dm.sq(k.y - (p.y - 6)) < dm.sq(reach)) {
       collect(g, k)
       k.age = -1

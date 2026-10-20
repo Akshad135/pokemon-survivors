@@ -1,11 +1,12 @@
 import { dir8, dirTo, fromAngle, TAU } from '../engine/math'
 import { chance, pick, range } from '../engine/rng'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { BRANCHES, type BranchDef, type BranchId } from '../data/branches'
 import { MEGAS, type MegaId } from '../data/megas'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { burst } from './effects'
 import { recomputeStats } from './leveling'
-import { MOVES, moveStats } from './moves'
+import { MOVES, moveStats, type MoveDef } from './moves'
 import { enemiesInView, inView, isAlive } from './queries'
 import { spawnAttack } from './spawn'
 import { FIRST_STANCE, otherStance, STANCES, type Stance } from './stance'
@@ -444,10 +445,14 @@ export const specialIdFor = (species: PlayableId, types: readonly PokeType[], st
   return typeof own === 'string' ? own : (own[Math.min(stage, own.length - 1)] ?? fallback)
 }
 
-/** The special at an evolution stage; in Mega form (`mega`), the Mega's own. */
-export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId | null = null) => {
+/**
+ * The special at an evolution stage; in Mega form (`mega`), the Mega's own.
+ * From a branch's stage on (`branch`), the branch's: its own, or its first type's (Vaporeon's Hydro Cannon).
+ */
+export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId | null = null, branch: BranchId | null = null) => {
   const species = PLAYABLE[starter]
-  const own = mega ? MEGAS[mega].special : undefined
+  const b: BranchDef | null = branch && BRANCHES[branch].line === starter && stage >= BRANCHES[branch].stage ? BRANCHES[branch] : null
+  const own = mega ? MEGAS[mega].special : b ? (b.special ?? specialOfType(b.types[0] ?? 'normal')) : undefined
   const id: SpecialId = own ?? specialIdFor(starter, species.line[0].types, stage)
   const def: SpecialDef = SPECIALS[id]
   const final = stage >= species.line.length - 1
@@ -457,7 +462,7 @@ export const resolveSpecial = (starter: PlayableId, stage: number, mega: MegaId 
 export type ResolvedSpecial = ReturnType<typeof resolveSpecial>
 
 /** The special the player has right now: its stage's, or its Mega form's while that lasts. */
-export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0 ? g.mega.stone : null)
+export const gameSpecial = (g: Game) => resolveSpecial(g.starter, g.player.stage, g.mega.active > 0 ? g.mega.stone : null, g.branch)
 
 /* ---------------- Timers (pure) ---------------- */
 
@@ -899,7 +904,8 @@ const arrivalCombo = (g: Game, casts = g.player.stats.comboMoves) => {
   const pool = [...p.moves]
   for (let i = 0; i < n; i++) {
     const [owned] = pool.splice(Math.floor(g.rng() * pool.length), 1)
-    if (owned) MOVES[owned.id].fire(g, moveStats(owned.id, owned.level, p.stats))
+    const def: MoveDef | null = owned ? MOVES[owned.id] : null
+    if (owned && def) def.fire(g, moveStats(owned.id, owned.level, p.stats, owned.path), owned)
   }
   burst(g, p.x, p.y - 10, { colors: ['#ffffff', '#f8d030', '#f878a8'], count: 10, speed: 90, ttl: 0.3 })
 }
@@ -1018,6 +1024,8 @@ const orbBurst = (g: Game, r: ResolvedSpecial, count: number) => {
  */
 const updateChain = (g: Game, r: ResolvedSpecial, pressed: boolean, dt: number) => {
   const s = g.special
+  // A chain never charges: drop the wind-up of a charged special swapped out mid-charge (Mega Evolving during Hydro Cannon's).
+  s.charge = 0
   const cooldown = specialCooldown(r.def, g.player.stats)
   if (s.active <= 0) tickChain(s, dt, cooldown)
   if (triggerSpecial(s, pressed, dt)) startJump(g, r)

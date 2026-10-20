@@ -6,6 +6,7 @@ import type { TrioId } from '../../data/waves'
 import type { PokeType } from '../../data/types'
 import type { EggSource } from '../../game/eggs'
 import type { StatusKind } from '../../game/status'
+import type { Difficulty } from '../../game/difficulty'
 
 /** Number in Brazilian format (`1.250`, `0,75`). */
 const n = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
@@ -15,8 +16,10 @@ const list = (items: readonly string[]) => (items.length < 2 ? items.join('') : 
 /** `a, b ou c` */
 const either = (items: readonly string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} ou ${items.at(-1)}`)
 
-/** The boss rules the guide quotes (`BOSS_RAGE`, and the spawn share of `BOSS_FIGHT` and `FINALE`). */
-type BossRules = { stance: readonly [number, number]; below: number; speed: number; wait: number; chain: number; fight: number; window: number; finale: number }
+/** How a harder difficulty presses the wave bosses (`BOSS_DIFFICULTY`). */
+type BossPress = { pace: number; more: number; chain: number }
+/** The boss rules the guide quotes (`BOSS_RAGE`, `BOSS_DIFFICULTY`, and the spawn share of `BOSS_FIGHT` and `FINALE`). */
+type BossRules = { stance: readonly [number, number]; below: number; speed: number; wait: number; chain: number; fight: number; window: number; finale: number; press: { hard: BossPress; nightmare: BossPress } }
 /** Elites and runners as the guide quotes them (`ELITE`, `RUNNER`; `from` is a clock like `1:00`). */
 type HordeRules = { fill: number; share: number; hp: number; damage: number; from: string; speed: number; frail: number; lead: number }
 
@@ -59,7 +62,7 @@ export const sitePt = {
   pokedex: {
     title: 'Pokédex do Pokémon Survivors: iniciais, inimigos, chefes e lendários',
     description:
-      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 54 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
+      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 55 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Os ${count} Pokémon que existem no Pokémon Survivors, com os números do jogo: iniciais de todas as regiões, as famílias que saem dos ovos e suas evoluções, a horda selvagem, os chefes e os lendários. Passe o mouse (ou toque) para ver o sprite andando e use ★ para ver o shiny.`,
@@ -91,6 +94,8 @@ export const sitePt = {
     special: 'Ataque especial',
     specialFinal: 'Na evolução final',
     learnset: 'Golpes que aprende',
+    /** The learnset's first row: what the family starts with (later rows say the level each evolution unlocks its moves at). */
+    learnStart: 'desde o início',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
     eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
@@ -124,6 +129,7 @@ export const sitePt = {
       kamikaze: 'Kamikaze',
       beam: 'Raio',
       leaper: 'Saltador',
+      spitter: 'Cuspidor',
     } satisfies Record<TraitId, string>,
     effects: {
       healer: (every: number, percent: number) =>
@@ -137,6 +143,8 @@ export const sitePt = {
       beam: (aim: number, damage: number) => `Para, desenha no chão a linha do raio por ${n(aim)}s e dispara: ${n(damage)}x o dano de contato.`,
       leaper: (warn: number, damage: number) =>
         `Salta sobre a horda até onde você estava. A sombra no chão marca a queda ${n(warn)}s antes, e o impacto causa ${n(damage)}x o dano de contato.`,
+      spitter: (charge: number, damage: number) =>
+        `Fica a distância, brilha por ${n(charge)}s e cospe um disparo lento onde você está: ${n(damage)}x o dano de contato. O tipo muda o disparo: bola de fogo, bolha, lodo que deixa uma poça, faísca rápida ou três sementes.`,
     } satisfies Record<TraitId, unknown>,
     tips: {
       healer: 'Derrube primeiro, senão a horda volta a encher a vida.',
@@ -145,6 +153,7 @@ export const sitePt = {
       kamikaze: 'Saia do círculo vermelho, ou atraia para o meio da horda: a explosão fere os inimigos também.',
       beam: 'A mira trava quando a linha aparece: um passo para o lado basta.',
       leaper: 'Saia de cima da sombra antes da queda.',
+      spitter: 'O disparo é lento: um passo para o lado basta. Ficar parado é o que ele quer.',
     } satisfies Record<TraitId, string>,
   },
 
@@ -156,6 +165,15 @@ export const sitePt = {
     ring: (count: number, every: number, damage: number) => `Anel de ${count} projéteis a cada ${n(every)}s (${damage} de dano)`,
     trail: (ttl: number, damage: number) => `Deixa um rastro que fere por ${n(ttl)}s (${damage} de dano)`,
     stance: { close: 'De perto', ranged: 'De longe' } satisfies Record<BossStance, string>,
+    // The wave bosses' aimed attacks (`lead`, `leap`, `volley`) and their gates (`PatternGate`).
+    path: (count: number, every: number, damage: number) =>
+      `${count} impactos marcados no seu caminho, de onde você está até onde vai estar, a cada ${n(every)}s (${damage} de dano)`,
+    leap: (every: number, damage: number) => `Salta em cima de você, com um círculo marcando onde vai cair, a cada ${n(every)}s (${damage} de dano)`,
+    volley: (count: number, every: number, damage: number) =>
+      `Rajada de ${count} ${s(count, 'projétil mirado', 'projéteis mirados')} em você, com linhas de mira antes do disparo, a cada ${n(every)}s (${damage} de dano)`,
+    far: 'se você ficar longe',
+    below: (percent: number) => `abaixo de ${n(percent)}% do HP`,
+    from: { normal: 'em todas as dificuldades', hard: 'no Difícil e no Pesadelo', nightmare: 'só no Pesadelo' } satisfies Record<Difficulty, string>,
   },
 
   /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
@@ -290,6 +308,15 @@ export const sitePt = {
         'Itens de tipo (Charcoal, Mystic Water…) só aparecem se o seu Pokémon aprende golpes daquele tipo. Quando não sobra nada para oferecer, vem uma Oran Berry (+40 HP).',
         'Trocar (sortear outras ofertas) e Pular (dispensar a subida de nível sem escolher nada, útil quando nenhuma oferta serve) são cargas compradas no Poké Mart.',
       ],
+      choices: (rarePercent: number, shinyOneIn: number) => [
+        'A partida começa com um draft: com o relógio parado, você escolhe o 2º golpe entre 3 da lista do seu Pokémon.',
+        'Todo golpe base se divide em dois caminhos no Nv 4 e no Nv 7: o card mostra "2 caminhos" e, ao ser escolhido, se abre nos dois. Cada caminho muda como o golpe joga (ricochetear, explodir, deixar rastro, ecoar…), não só os números.',
+        `Cada card sorteia a raridade: o raro (${n(rarePercent)}% de chance, moldura azul) sobe 2 níveis de uma vez, e o shiny (1 em ${shinyOneIn}, o dobro com o Shiny Charm) é uma escolha grátis, seguida de outra.`,
+        'Esquecer tira uma oferta da partida: o card sai voando, o espaço é sorteado de novo e aquele golpe ou item não volta mais. As cargas vêm do Escape Rope do Poké Mart, de cada chefe derrotado e de cada evolução.',
+        'A lista de golpes cresce com o Pokémon: cada evolução libera golpes novos (um aviso mostra quais), que aparecem com mais frequência nas 3 subidas de nível seguintes. São mais golpes do que espaços, então cada partida deixa alguns de fora.',
+        'Chefes derrotados deixam um TM com um golpe de fora do repertório, o Tutor de Golpes ensina golpes que combinam com o seu tipo, e vencer uma fenda oferece o golpe lendário do próprio lendário (um por partida). Com os espaços cheios, aprender pede para esquecer um golpe.',
+      ],
+      abilities: 'Na primeira evolução, o Pokémon desperta uma Habilidade: escolha 1 de 3 (a terceira é a Habilidade Oculta), que vale até o fim da partida. Eevee, Snorunt, Scyther, Charcadet, Kirlia e Poliwhirl ainda perguntam em quem evoluir, e cada forma tem tipo, especial, golpes e Habilidades próprios.',
       evolution: (first: number, second: number) =>
         `Seu Pokémon evolui no Nv ${first} e no Nv ${second}, como nos jogos. Cada evolução dá mais HP e status, e a evolução final fortalece o ataque especial.`,
       itemsTitle: 'Held items',
@@ -306,6 +333,20 @@ export const sitePt = {
       itemHead: 'Item',
       resultHead: 'Evolução',
       noEvolution: (moves: string) => `Ainda sem evolução: ${moves}.`,
+      neverEvolves: 'Golpes assinatura, de TM, lendários e em dupla não evoluem: eles já são o golpe final e crescem pelos próprios caminhos.',
+      duoTitle: 'Golpes em dupla',
+      duoParagraphs: [
+        'Leve dois golpes ao nível máximo (ou evolua-os) e, se os tipos deles formarem uma das receitas abaixo, um card dourado oferece uni-los num golpe em dupla: ele toma o espaço do primeiro, libera o do segundo e sobe até o Nv 5. Os dois golpes usados não voltam mais.',
+        'As receitas vão por tipo, então funcionam com qualquer Pokémon. Só cabe 1 golpe em dupla por partida, e a Poké Ball nunca une golpes sozinha.',
+      ],
+      duoTypesHead: 'Tipos',
+      duoHead: 'Golpe em dupla',
+      cursedTitle: 'Itens amaldiçoados',
+      cursedParagraphs: (minutes: number, chance: number, max: number) => [
+        `A partir de ${minutes.toLocaleString('pt-BR')} min, um baú trancado tem ${Math.round(chance * 100)}% de chance de esconder um item amaldiçoado: muito forte, mas com um preço. Você escolhe pegar ou deixar. Ele não ocupa espaço de item, fica até o fim da partida, e cabem até ${max}.`,
+      ],
+      cursedUpHead: 'Vantagem',
+      cursedDownHead: 'Preço',
     },
     special: {
       paragraphs: (min: number) => [
@@ -326,13 +367,18 @@ export const sitePt = {
       statusHead: 'Status',
       movesHead: 'Causado por',
       effectHead: 'Efeito',
-      names: { burn: 'Queimadura', poison: 'Veneno', paralysis: 'Paralisia', slow: 'Lentidão', sleep: 'Sono' } satisfies Record<StatusKind, string>,
+      names: { burn: 'Queimadura', poison: 'Veneno', paralysis: 'Paralisia', slow: 'Lentidão', sleep: 'Sono', freeze: 'Congelamento', mark: 'Marca', confuse: 'Confusão', seed: 'Semente', weaken: 'Enfraquecido' } satisfies Record<StatusKind, string>,
       effects: {
         burn: (attack: number) => `Dano por segundo. O inimigo queimado causa só ${n(attack * 100)}% do dano de contato.`,
         poison: (stacks: number) => `Dano por segundo que acumula até ${stacks}x.`,
         paralysis: (boss: number) => `Trava o inimigo por um instante e depois ele engasga de vez em quando. Em chefes dura ${n(boss * 100)}% do tempo.`,
         slow: (boss: number) => `Desacelera quem está perto. Em chefes dura ${n(boss * 100)}% do tempo.`,
         sleep: (seconds: number, boss: number) => `Os inimigos na tela dormem por ${seconds}s. Em chefes dura ${n(boss * 100)}% do tempo.`,
+        freeze: (shatter: number, boss: number) => `Congela o inimigo no lugar. O próximo golpe causa ${shatter}x de dano e quebra o gelo. Em chefes dura ${n(boss * 100)}% do tempo.`,
+        mark: (stacks: number) => `O inimigo marcado recebe mais dano de cada golpe, acumulando até ${stacks}x.`,
+        confuse: () => 'O inimigo anda sem rumo e machuca os outros inimigos em que esbarra. Chefes são imunes.',
+        seed: (heal: number, jumps: number) => `Dano por segundo que cura você em ${n(heal * 100)}% do dano. Quando o inimigo cai, a semente pula para ${jumps} vizinhos.`,
+        weaken: (boss: number) => `Lama nos olhos: o inimigo causa menos dano de contato. Em chefes dura ${n(boss * 100)}% do tempo.`,
       } satisfies Record<StatusKind, unknown>,
       flute: 'Poké Flute (item do mapa)',
       itemsNote: 'King\'s Rock aumenta a chance de status, Toxic Orb aumenta o dano de queimadura e veneno, e Light Clay faz os status durarem mais.',
@@ -404,6 +450,7 @@ export const sitePt = {
       paragraphs: (r: BossRules) => [
         'Os chefes chegam em horários fixos. Os lendários entram com flash na tela, cry e um aviso. Todos têm uma barra de HP no topo e ataques próprios: os círculos marcados no chão avisam onde o golpe vai cair, então saia de dentro deles.',
         `Cada chefe alterna entre dois jeitos de lutar a cada ${r.stance[0]} a ${r.stance[1]} segundos: de perto, ele avança rápido e bate em área ao redor de si; de longe, para a alguns passos e mira em você. Abaixo de ${n(r.below * 100)}% do HP ele fica furioso (contorno vermelho, cry e flash na tela): ${n(Math.round((r.speed - 1) * 100))}% mais rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% mais seguido e, ${n(r.chain * 100)}% das vezes, emenda um segundo ataque logo depois do primeiro.`,
+        `Ficar parado não funciona: cada chefe mira onde você está ou no caminho por onde você vai, e quem foge para longe leva um salto ou uma rajada mirada. A fúria também libera um ataque novo. No Difícil os chefes atacam ${n(Math.round((1 - r.press.hard.pace) * 100))}% mais seguido, com ${n(Math.round((r.press.hard.more - 1) * 100))}% mais projéteis e avisos um pouco mais curtos, e furiosos emendam ${n(r.press.hard.chain * 100)}% das vezes; no Pesadelo, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% mais seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% mais projéteis, ${n(r.press.nightmare.chain * 100)}% de emendas e um ataque a mais cada um. Do Difícil para cima, Mewtwo tem uma segunda fase abaixo de 40% do HP.`,
         'Chefes não ficam mais fortes com o tempo, mas cada um solta uma Poké Ball e uma chuva de Poké Dollars.',
         `Nos primeiros ${r.window}s de cada chefe, com ele por perto, nascem só ${n(r.fight * 100)}% dos inimigos comuns, então a luta é com ele; depois a horda volta. Cada chefe tem até o próximo chegar: se ainda estiver de pé quando o seguinte aparecer, ele foge e não deixa nada. Mewtwo é o último: ao chegar, empurra a horda para longe e, enquanto ele estiver de pé, nascem só ${n(r.finale * 100)}% dos inimigos comuns, então a luta é desviar dos ataques dele.`,
       ],
@@ -440,7 +487,7 @@ export const sitePt = {
         `Chefes, baús trancados e fendas às vezes deixam um ovo, no máximo ${perRun} por partida. Ele vai para a incubadora, que tem ${slots} vagas. Cada ${stepPx} px andados numa partida contam um passo, e todos os ovos da incubadora andam juntos. O ovo achado no meio da partida já conta os passos dados depois dele.`,
         `Quando um ovo fica pronto, ele choca ao sair da partida ou na incubadora (no menu inicial e na aba Ovos da escolha de parceiro). Famílias que você ainda não tem saem ${weight}x mais. O filhote tem 1 chance em ${shiny} de ser shiny, e aí fica shiny em todas as partidas.`,
         'Um repetido, ou um ovo achado com a incubadora cheia, vira Poké Dollars. O jogador que nunca teve um ovo ganha o primeiro com certeza.',
-        'O Ovo da Amizade não cai em partidas: ele chega como Presente Misterioso quando você cria a conta pelo convite de alguém, e quando um amigo que você convidou joga 3 partidas verificadas. Só sai Munchlax dele. Com 3 amigos você ganha o título Embaixador(a) e uma moldura exclusiva, e com 10, um Munchlax shiny.',
+        'O Ovo da Amizade não cai em partidas: ele chega como Presente Misterioso quando você cria a conta pelo convite de alguém, e quando um amigo que você convidou termina 3 partidas. Só sai Munchlax dele. Com 3 amigos você ganha o título Embaixador(a) e uma moldura exclusiva, com 5, um Ovo ultra raro, e com 10, um Dratini shiny. O seu link e o progresso de cada amigo ficam no card Convide amigos, na tela inicial.',
       ],
       tierHead: 'Ovo',
       stepsHead: 'Passos',
@@ -456,6 +503,7 @@ export const sitePt = {
         place: 'Baú da caverna e Spiritomb, no cemitério',
         final: 'Mewtwo e o mítico raro (Mew, Celebi ou Jirachi)',
         reaper: 'Arceus, no modo sem fim',
+        mission: 'Missão de campo: o ninho defendido (Normal / Difícil / Pesadelo)',
       } satisfies Record<EggSource, string>,
     },
     items: {
@@ -519,6 +567,17 @@ export const sitePt = {
         how: (ttl: number) => `Corre de você e escapa em ${ttl}s. Seus golpes acertam ele.`,
         reward: (jackpot: string) => `Uma moeda a cada golpe e o Pay Day (${jackpot}) se ele desmaiar.`,
       },
+      tutor: {
+        name: 'Tutor de Golpes',
+        how: (from: number, until: number) => `Arma a tenda uma vez entre ${from} e ${until} min (às vezes mais uma). Fique no círculo dela.`,
+        reward: (price: string) => `Ensina 1 de 2 golpes que combinam com o tipo do seu Pokémon e que ele não aprende sozinho (nunca um golpe de Água para o Grovyle). A primeira aula é grátis; a próxima custa ${price} da partida.`,
+      },
+      field: {
+        name: 'Missões de campo',
+        how: (first: string, gap: number) =>
+          `A partir de ${first}, uma por vez, a cada ${gap} min mais ou menos, longe de você e contra o relógio: defender um ovo no ninho de uma invasão (fique no anel), achar Poké Balls perdidas espalhadas ou levar um Togepi perdido até o ninho. Ignorar não custa nada.`,
+        reward: 'Um nível com cartas raras (no Pesadelo a primeira é shiny), ₽ e o prêmio da missão: uma chance de ovo, um item e cura.',
+      },
     },
     mart: {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
@@ -566,8 +625,8 @@ export const sitePt = {
     description:
       'Tudo o que mudou no Pokémon Survivors, atualização por atualização: iniciais, chefes lendários, shinies, evolução de golpes, Poké Mart, versão mobile e mais.',
     h1: 'Novidades',
-    intro: 'O histórico de atualizações do jogo, da mais nova para a mais antiga. Cada entrada leva ao pull request com os detalhes no GitHub.',
-    pr: (n: number) => `PR #${n}`,
+    intro: 'Tudo o que mudou no jogo, atualização por atualização, da mais nova para a mais antiga. Cada uma abre com os destaques.',
+    changes: (n: number) => `Todas as mudanças (${n})`,
   },
 
   support: {
@@ -668,8 +727,8 @@ export const sitePt = {
       nonCommercial: 'Como os sprites são CC BY-NC, o jogo como um todo não pode ser usado comercialmente.',
     },
     privacy: [
-      'Jogar como convidado é o padrão e não exige cadastro: assim o jogo não usa cookies, anúncios nem rastreadores, e não coleta dados pessoais.',
-      'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho. Como convidado, nada disso é enviado para nenhum servidor:',
+      'Jogar como convidado é o padrão e não exige cadastro: o jogo não usa cookies nem anúncios e não pede nenhum dado pessoal, como nome ou e-mail.',
+      'Tudo o que o jogo lembra fica no localStorage do seu navegador, no seu aparelho. Como convidado, nada disso é enviado para nenhum servidor, a não ser o identificador aleatório do ph_ps, que vai junto com as estatísticas de uso (abaixo):',
     ],
     storage: {
       'ps:save': 'Poké Dollars, melhorias compradas no Poké Mart, a Pokédex do jogo (espécies vistas, quantas você derrotou e quais capturou), os ovos da incubadora (eggs), os Pokémon chocados (hatched), progresso das missões, conquistas, recordes (como Pokémon derrotados e o maior tempo sobrevivido) e o título escolhido.',
@@ -678,11 +737,12 @@ export const sitePt = {
       'ps:muted': 'Só em quem jogou versões antigas: o som desligado de antes dos Ajustes. O jogo apenas lê essa chave, não grava mais.',
       'ps:account': 'Só se você entrar com uma conta: qual conta está conectada neste aparelho (o id dela, seu nome e seu nome de usuário) e a última versão do progresso que ele sincronizou.',
       'ps:runs': 'Só com uma conta: resultados de partidas que ainda não chegaram ao ranking (por exemplo, sem internet). Saem daqui assim que o servidor recebe.',
+      ph_ps: 'Um identificador aleatório deste aparelho, que o PostHog usa para contar partidas e erros (abaixo). Ele não diz quem você é.',
     },
     account: [
       'Contas são opcionais e servem para guardar o progresso na nuvem e continuar em outro aparelho. O login é com o Google, feito pelo Clerk (clerk.com), que recebe do Google seu nome, e-mail e foto e usa cookies próprios para manter você conectado. O jogo nunca vê sua senha.',
       'Com uma conta, uma cópia do ps:save fica no nosso servidor, ligada ao id da sua conta. Ela é enviada quando você entra, quando abre o jogo e no fim de cada partida. No nosso servidor ficam o id da conta, o progresso, as datas de criação e de uso e o que o ranking precisa (abaixo), sem seu e-mail.',
-      'Com uma conta, cada partida também vai para o ranking: o Pokémon, a dificuldade, o tempo sobrevivido, o nível, quantos inimigos você derrotou, se venceu e a versão do jogo, com a hora em que a partida começou e terminou, ligados ao id da sua conta. Partidas de convidado não vão para o ranking. Junto vai o replay da partida (a semente e os comandos que você deu, sem nada pessoal), que o servidor joga de novo para conferir o resultado e apaga depois de conferir.',
+      'Com uma conta, cada partida também vai para o ranking: o Pokémon, a dificuldade, o tempo sobrevivido, o nível, quantos inimigos você derrotou, se venceu e a versão do jogo, com a hora em que a partida começou e terminou, ligados ao id da sua conta. Partidas de convidado não vão para o ranking. Junto vai o replay da partida (a semente e os comandos que você deu, sem nada pessoal), que o servidor pode jogar de novo para conferir o resultado. Ele é apagado depois da conferência, ou logo que o servidor decide não conferir a partida.',
       'Seu perfil é público. Ao entrar, você escolhe um nome de exibição e um nome de usuário único, que vai no link do perfil. Qualquer pessoa, com ou sem conta, pode ver no ranking e no perfil: esses dois nomes, o título equipado, os recordes por dificuldade, o progresso da Pokédex, as partidas recentes e quantos seguidores você tem e quantos segue. Seu e-mail e sua foto nunca aparecem. Quem você segue e quem segue você fica guardado no servidor; o perfil mostra só as contagens.',
       'Ao sair da conta, o progresso continua neste aparelho. Para apagar a conta, o perfil, as partidas do ranking e o progresso guardado nela, peça pelo contato abaixo.',
     ],
@@ -690,6 +750,7 @@ export const sitePt = {
       'Para apagar esses dados, limpe os dados do site nas configurações do navegador.',
       'Sprites, sons e fontes vêm do próprio site, sem chamadas a serviços de terceiros. O site é hospedado na Vercel, que, como qualquer servidor, pode registrar dados técnicos de acesso (como endereço IP) para operar e proteger o serviço.',
       'Para saber quantas pessoas visitam o site e jogam, usamos o Vercel Web Analytics e uma instância própria do Umami, num servidor nosso. Eles contam visitas de forma anônima e agregada (página, país, navegador, dispositivo e site de origem) e, no caso do Umami, também o resumo de cada partida (Pokémon inicial, até que minuto e nível você chegou e se venceu), sem cookies e sem identificar ou seguir você entre sites.',
+      'No jogo, usamos também o PostHog (posthog.com, com os dados guardados nos Estados Unidos) para entender como ele é jogado e corrigir erros. Ele recebe o resumo de cada partida (Pokémon, dificuldade, golpes, itens, até que minuto e nível você chegou e como ela terminou), quais telas você abre no menu e, quando o jogo dá erro, a mensagem do erro e o replay da partida em andamento (a semente e os comandos, sem nada pessoal). Tudo isso vai ligado ao identificador aleatório do ph_ps e, se você entrou com uma conta, ao id dela e ao seu nome de usuário, nunca ao seu e-mail ou nome. O PostHog não usa cookies aqui e não segue você entre sites.',
       'Doações são pagas nas páginas da AbacatePay (abacatepay.com: Pix e cartões brasileiros) ou do Stripe (stripe.com: cartões de outros países, Apple Pay e Google Pay). Os dados de pagamento vão direto para eles, e o jogo nunca vê seu cartão. Eles nos mostram o valor e, como a qualquer recebedor, dados de quem pagou (como nome e e-mail), que não usamos para nada além de registrar a doação. Se você der um @ (ou resgatar o código da doação), ela fica ligada a essa conta do jogo para as recompensas chegarem; o valor nunca aparece em público, só o selo de apoiador, que dá para esconder.',
     ],
     contact: [

@@ -1,10 +1,13 @@
 import { ACHIEVEMENT_IDS, ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, MEDALS, TITLE_IDS, type AchievementDef, type AchievementId } from '../../data/achievements'
 import { DAILY_POOL, MISSION_SLOTS, WEEKLY_POOL, type MissionTemplate } from '../../data/missions'
 import { BIOME_LENGTH, BIOME_ORDER, BIOMES, WEATHER_IDS, type WeatherId } from '../../data/biomes'
-import { BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
+import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_RAGE } from '../../data/bosses'
 import { DROP_TABLES, ENEMY_BERRY_CHANCE, ENEMY_DROP_CHANCE, FLUTE_SLEEP, PROPS, type Drop, type DropSource } from '../../data/consumables'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
-import { EVOLUTIONS } from '../../data/evolutions'
+import { EVOLUTIONS, neverEvolves } from '../../data/evolutions'
+import { CURSE_IDS, CURSES } from '../../data/curses'
+import { CURSE } from '../../game/curses'
+import { DUO_RECIPES } from '../../game/duoRules'
 import { ITEM_IDS, ITEMS } from '../../data/items'
 import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
@@ -21,8 +24,11 @@ import { CONSUMABLES } from '../../game/consumables'
 import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
+import { TUTOR } from '../../game/tmRules'
+import { clearOfBosses, FIELD, FIELD_TUNING } from '../../game/fieldMissionRules'
+import { formatTime } from '../../engine/math'
 import { ALTAR, BOMB, CHEST, chestCoins, DIRECTOR, FOUNTAIN, MEOWTH } from '../../game/mapEventRules'
-import { MAX_ITEMS, MAX_MOVES } from '../../game/leveling'
+import { MAX_ITEMS, MAX_MOVES, OFFER_RARITY } from '../../game/leveling'
 import { COIN_VALUES, runBonus, UPGRADE_IDS, UPGRADES, upgradePrice } from '../../game/meta'
 import { maxMoveLevel, MOVE_IDS, MOVES, type MoveDef, type MoveId } from '../../game/moves'
 import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
@@ -30,7 +36,8 @@ import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_F
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
 import { placeBossScale, wingAmount } from '../../game/place'
-import { BURN_ATTACK, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
+import { BURN_ATTACK, FREEZE_SHATTER, SEED_HEAL, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
+import { SEED_JUMPS } from '../../game/kitRules'
 import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
 import { html, type Child, type Html } from '../html'
@@ -171,7 +178,9 @@ const levels = (locale: Locale, m: SiteMessages) => {
   const baseMove = MOVE_IDS.find((id) => MOVES[id].upgrades.length > 0) ?? 'ember'
   const items = ITEM_IDS.map((id) => [ITEMS[id].name, game.items[id], ITEMS[id].levels.length])
   return html`${paragraphs(l.paragraphs(MAX_MOVES, MAX_ITEMS, maxMoveLevel(baseMove)))}
+    ${paragraphs(l.choices(OFFER_RARITY.rare * 100, Math.round(1 / OFFER_RARITY.shiny)))}
     <p>${l.evolution(first.evolveAt, second.evolveAt)}</p>
+    <p>${l.abilities}</p>
     <h3>${l.itemsTitle}</h3>
     ${table([l.itemHead, l.effectHead, l.levelsHead], items)}`
 }
@@ -185,10 +194,26 @@ const moveEvolutions = (locale: Locale, m: SiteMessages) => {
     html`<b>${MOVES[evo.to].name}</b> ${typeBadge(MOVES[evo.to].type, m)}<br /><small>${game.moves[evo.to].description}</small>`,
   ])
   const evolving = new Set<MoveId>(EVOLUTIONS.flatMap((evo) => [evo.from, evo.to]))
-  const without = MOVE_IDS.filter((id) => !evolving.has(id)).map((id) => MOVES[id].name)
+  // Signature, TM, legendary and duo moves never evolve by design (`neverEvolves`; duos listed below).
+  const without = MOVE_IDS.filter((id) => !evolving.has(id) && !neverEvolves(id)).map((id) => MOVES[id].name)
+  const duos = DUO_RECIPES.map((r) => {
+    const made = 'alt' in r ? [r.to, r.alt] : [r.to]
+    return [
+      html`${typeBadge(r.types[0], m)} + ${typeBadge(r.types[1], m)}`,
+      html`${made.map((id, i) => html`${i > 0 ? html`<br />` : ''}<b>${MOVES[id].name}</b> ${typeBadge(MOVES[id].type, m)}<br /><small>${game.moves[id].description}</small>`)}`,
+    ]
+  })
+  const curses = CURSE_IDS.map((id) => [html`<b>${CURSES[id].name}</b>`, game.curses[id].upside, game.curses[id].downside])
   return html`${paragraphs(e.paragraphs)}
     ${table([e.moveHead, e.itemHead, e.resultHead], rows)}
-    <p class="note">${e.noEvolution(without.join(', '))}</p>`
+    ${without.length > 0 ? html`<p class="note">${e.noEvolution(without.join(', '))}</p>` : ''}
+    <p class="note">${e.neverEvolves}</p>
+    <h3>${e.duoTitle}</h3>
+    ${paragraphs(e.duoParagraphs)}
+    ${table([e.duoTypesHead, e.duoHead], duos)}
+    <h3>${e.cursedTitle}</h3>
+    ${paragraphs(e.cursedParagraphs(CURSE.from / 60, CURSE.chance, CURSE.max))}
+    ${table([e.itemHead, e.cursedUpHead, e.cursedDownHead], curses)}`
 }
 
 const special = (locale: Locale, m: SiteMessages) => {
@@ -241,11 +266,23 @@ const types = (m: SiteMessages) => {
         return t.effects.slow(STATUS_RULES.slow.boss)
       case 'sleep':
         return t.effects.sleep(FLUTE_SLEEP, STATUS_RULES.sleep.boss)
+      case 'freeze':
+        return t.effects.freeze(FREEZE_SHATTER, STATUS_RULES.freeze.boss)
+      case 'mark':
+        return t.effects.mark(STATUS_RULES.mark.maxStacks)
+      case 'confuse':
+        return t.effects.confuse()
+      case 'seed':
+        return t.effects.seed(SEED_HEAL, SEED_JUMPS)
+      case 'weaken':
+        return t.effects.weaken(STATUS_RULES.weaken.boss)
     }
   }
-  const rows = STATUS_KINDS.map((kind) => {
+  // Only conditions something inflicts: a move, or the Poké Flute for sleep.
+  const rows = STATUS_KINDS.flatMap((kind) => {
     const moves = movesBy(kind)
-    return [t.names[kind], moves.length > 0 ? moves.join(', ') : t.flute, effect(kind)]
+    if (moves.length === 0 && kind !== 'sleep') return []
+    return [[t.names[kind], moves.length > 0 ? moves.join(', ') : t.flute, effect(kind)]]
   })
   return html`<p>${chart}</p>
     <p>${t.statusIntro}</p>
@@ -267,7 +304,7 @@ const bosses = (locale: Locale, m: SiteMessages) => {
     ])
   }
   const rows = EVENTS.flatMap((e) => (e.kind === 'boss' ? rowsOf(e) : []))
-  const rules = { ...BOSS_RAGE, fight: BOSS_FIGHT.rate, window: BOSS_FIGHT.duration, finale: FINALE.rate }
+  const rules = { ...BOSS_RAGE, fight: BOSS_FIGHT.rate, window: BOSS_FIGHT.duration, finale: FINALE.rate, press: BOSS_DIFFICULTY }
   const trioTimes = EVENTS.flatMap((e) => (e.kind === 'boss' && 'trio' in e ? [clock(e.at)] : []))
   const rare = EVENTS.find((e): e is BossEvent => e.kind === 'boss' && 'mythical' in e)
   const trios = TRIO_IDS.map((id) => `${m.trios.names[id]} (${TRIOS[id].map((enemy) => ENEMIES[enemy].name).join(', ')})`)
@@ -401,7 +438,9 @@ const eggs = (locale: Locale, m: SiteMessages) => {
     const odds: Partial<Record<(typeof EGG_TIER_IDS)[number], number>> = EGG_SOURCES[source].odds
     const total = EGG_TIER_IDS.reduce((sum, tier) => sum + (odds[tier] ?? 0), 0)
     const rarity = EGG_TIER_IDS.flatMap((tier) => (odds[tier] ? [`${tiers[tier]} ${pct(odds[tier] / total)}`] : [])).join(' · ')
-    return [e.sources[source], pct(EGG_SOURCES[source].chance), rarity]
+    // The field mission rolls its own odds per difficulty before the egg's.
+    const chance = source === 'mission' ? DIFFICULTY_IDS.map((d) => pct(FIELD_TUNING[d].reward.egg)).join(' / ') : pct(EGG_SOURCES[source].chance)
+    return [e.sources[source], chance, rarity]
   })
   return html`${paragraphs(e.paragraphs(STARTER_IDS.length, HATCHLING_IDS.length, EGGS.slots, EGGS.perRun, EGGS.stepPx, Math.round(1 / EGGS.shinyOdds), EGGS.newWeight))}
     ${table([e.sourceHead, e.chanceHead, e.oddsHead], sourceRows)}
@@ -432,6 +471,8 @@ const mapEvents = (m: SiteMessages) => {
     [e.spikes.name, e.spikes.how, e.spikes.reward],
     [e.bomb.name, e.bomb.how(BOMB.fuse), e.bomb.reward],
     [e.meowth.name, e.meowth.how(MAP_EVENTS.meowth.spawn.lifetime), e.meowth.reward(money(MEOWTH.jackpot))],
+    [e.tutor.name, e.tutor.how(Math.round(TUTOR.first.from / 60), Math.round(TUTOR.first.until / 60)), e.tutor.reward(money([TUTOR.price]))],
+    [e.field.name, e.field.how(formatTime(clearOfBosses(FIELD.first)), Math.round((FIELD.gap[0] + FIELD.gap[1]) / 120 * 2) / 2), e.field.reward],
   ]
   const gap = Math.round((DIRECTOR.gap[0] + DIRECTOR.gap[1]) / 2)
   return html`<p>${e.intro(DIRECTOR.first, gap, DIRECTOR.maxAlive)}</p>

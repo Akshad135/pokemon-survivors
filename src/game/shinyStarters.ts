@@ -5,7 +5,9 @@ import { isRecord } from './parse'
  * Shiny starters for good: rolling the 1/64 shiny on a Pokémon unlocks its
  * shiny form forever, and the select screen then offers Normal or Shiny.
  * Saved as `{ [id]: picked }`: a key means unlocked, its value whether the
- * next run plays it shiny. Pure; shared with the API through the save.
+ * next run plays it shiny. A family hatched shiny owns its shiny through
+ * `hatched` and keeps its Normal/Shiny pick here too (`pickShinyForm` in
+ * `shinyPicks.ts`). Pure; shared with the API through the save.
  */
 export type ShinyStarters = Readonly<Partial<Record<PlayableId, boolean>>>
 
@@ -14,10 +16,7 @@ export const NO_SHINY_STARTERS: ShinyStarters = {}
 /** Unlocks `id`'s shiny (picked, since the player just met it shiny). Already unlocked: the pick stays. */
 export const unlockShinyStarter = (owned: ShinyStarters, id: PlayableId): ShinyStarters => (id in owned ? owned : { ...owned, [id]: true })
 
-/** Picks Normal or Shiny for an unlocked starter; a locked one stays locked. */
-export const pickShinyStarter = (owned: ShinyStarters, id: PlayableId, shiny: boolean): ShinyStarters => (id in owned ? { ...owned, [id]: shiny } : owned)
-
-/** Both in one: every starter either unlocked, with `incoming`'s pick when it has one (a setting, like the difficulty). */
+/** Both in one: every key on either side, with `incoming`'s pick when it has one (a setting, like the difficulty), so a shiny hatch switched to Normal stays Normal. */
 export const mergeShinyStarters = (base: ShinyStarters, incoming: ShinyStarters): ShinyStarters =>
   Object.fromEntries(PLAYABLE_IDS.flatMap((id) => (id in incoming ? [[id, incoming[id] === true]] : id in base ? [[id, base[id] === true]] : [])))
 

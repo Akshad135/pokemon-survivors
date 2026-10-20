@@ -22,9 +22,17 @@ describe('site pages', () => {
 })
 
 describe('changelog', () => {
-  it('is newest first with ISO dates', () => {
-    const dates = CHANGELOG.map((e) => e.date)
+  it('is one update per day, newest first, with ISO dates', () => {
+    const dates = CHANGELOG.map((u) => u.date)
     for (const d of dates) expect(d).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    expect([...dates].sort().reverse()).toEqual(dates)
+    expect([...new Set(dates)].sort().reverse()).toEqual(dates)
+  })
+
+  it('gives every update 3 to 5 highlights and at least one change', () => {
+    for (const u of CHANGELOG) {
+      expect(u.highlights.length, u.date).toBeGreaterThanOrEqual(3)
+      expect(u.highlights.length, u.date).toBeLessThanOrEqual(5)
+      expect(u.changes.length, u.date).toBeGreaterThan(0)
+    }
   })
 })

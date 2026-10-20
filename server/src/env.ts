@@ -29,6 +29,18 @@ export const loadEnv = () => {
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,
     /** Optional: the donation Payment Link's id (`plink_…`); set, other Checkout Sessions of the account are ignored. */
     stripePaymentLink: process.env.STRIPE_PAYMENT_LINK || null,
+    /**
+     * Optional: the community Discord's bot (`src/discord.ts`), its token and the server's id. Without both
+     * there's no bot: no introduction gate, patch notes or daily posts.
+     */
+    discord:
+      process.env.DISCORD_BOT_TOKEN && process.env.DISCORD_GUILD_ID
+        ? { token: process.env.DISCORD_BOT_TOKEN, guildId: process.env.DISCORD_GUILD_ID }
+        : null,
+    /** Optional: the game's PostHog project token (`phc_…`, the client's `VITE_POSTHOG_KEY`). Without it errors only go to the log. */
+    posthogKey: process.env.POSTHOG_KEY || undefined,
+    /** Optional: the #bug-reports forum's channel id, where the bot posts bug reports. Unset, it's found by name. */
+    discordBugForumId: process.env.DISCORD_BUG_FORUM_ID || null,
     /** Emails (comma separated, `ADMIN_EMAILS`) whose verified owners run the gift desk (`admin.ts`). Empty: nobody is admin. */
     adminEmails: (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
     /** Whether the game at `origin` may call the API (CORS) and own its tokens (`azp`). */

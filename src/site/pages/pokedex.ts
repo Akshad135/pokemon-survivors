@@ -2,10 +2,16 @@ import { BOSS_PATTERNS, type BossPattern } from '../../data/bosses'
 import { ENEMIES, type EnemyDef } from '../../data/enemies'
 import { TIERS } from '../../data/roster'
 import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
+import { SPIT_FLAVORS } from '../../game/spitters'
 import { HATCHLINGS, isHatchling, PLAYABLE } from '../../data/hatchlings'
 import { REGIONS, type PlayableDef } from '../../data/starters'
 import { POKE_TYPES, TYPE_COLORS, type PokeType } from '../../data/types'
 import { RUN_LENGTH } from '../../data/waves'
+import { BRANCHES, branchesAt, branchStage, familyDex } from '../../data/branches'
+import { ABILITIES, isHidden, type AbilitySet } from '../../data/abilities'
+import { abilitySet } from '../../game/abilities'
+import { formLine } from '../../game/branch'
+import { unlockedAt } from '../../game/learnsets'
 import { starterStats } from '../../game/leveling'
 import { MOVES, type MoveId } from '../../game/moves'
 import { resolveSpecial } from '../../game/special'
@@ -36,7 +42,7 @@ const sheetsOf = (dex: number) => {
 }
 
 /** Species drawn at the same zoom: a whole evolution line, so Charmeleon never looks smaller than Charmander. */
-const family = (entry: DexEntry) => (entry.source.kind === 'starter' ? PLAYABLE[entry.source.id].line.map((s) => s.dex) : [entry.dex])
+const family = (entry: DexEntry) => (entry.source.kind === 'starter' ? familyDex(entry.source.id) : [entry.dex])
 
 /**
  * Up to four stacked sheets (idle/walk × normal/shiny); CSS shows one at a time.
@@ -52,7 +58,7 @@ const stage = (entry: DexEntry, css: SpriteCss, m: SiteMessages) => {
 }
 
 const statBars = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
-  const stats = starterStats(entry.source.id, entry.source.stage)
+  const stats = starterStats(entry.source.id, entry.source.stage, entry.source.branch ?? null)
   const labels = LOCALES[locale].messages.stats
   return html`<dl class="bars">${STAT_BARS.map(
     (b) =>
@@ -62,18 +68,53 @@ const statBars = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Loc
 
 const moveChip = (id: MoveId, m: SiteMessages) => html`<li style="--type:${TYPE_COLORS[MOVES[id].type]}" title="${m.types[MOVES[id].type]}">${MOVES[id].name}</li>`
 
+/**
+ * The learnset by stage: what the family starts with, then what each
+ * evolution unlocks. At a branching stage the branch taken shows its own
+ * moves; before one is taken, every branch gets a row.
+ */
+const learnRows = (source: DexEntry['source'] & { kind: 'starter' }, locale: Locale) => {
+  const m = SITE_MESSAGES[locale]
+  const s: PlayableDef = PLAYABLE[source.id]
+  const branch = source.branch ?? null
+  const row = (name: string, when: string, moves: readonly MoveId[]) =>
+    moves.length > 0 && html`<dt>${name} <small>${when}</small></dt><dd><ul class="chips">${moves.map((mv) => moveChip(mv, m))}</ul></dd>`
+  return html`<dl class="learn">${formLine(source.id, branch).map((st, k) => {
+    const when = k === 0 ? m.pokedex.learnStart : m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)
+    const options = branch === null ? branchesAt(source.id, k) : []
+    if (options.length === 0) return row(st.name, when, unlockedAt(source.id, branch, k))
+    const shared = unlockedAt(source.id, null, k)
+    return [
+      row(options.length > 2 ? LOCALES[locale].messages.branch.choose(options.length) : options.map((b) => BRANCHES[b].name).join(' / '), when, shared),
+      options.map((b) => row(BRANCHES[b].name, when, unlockedAt(source.id, b, k).filter((mv) => !shared.includes(mv)))),
+    ]
+  })}</dl>`
+}
+
+/** A family's (or branch's) abilities, the Hidden one marked, with what each does in a run. */
+const abilityList = (set: AbilitySet, locale: Locale) => {
+  const a = LOCALES[locale].messages
+  return html`<ul class="list">${set.map((id, i) => html`<li><b>${ABILITIES[id].name}</b>${isHidden(set, i) && html` <small>(${a.ability.hiddenLong})</small>`}: ${a.abilities[id]}</li>`)}</ul>
+    <p class="note">${a.ability.note}</p>`
+}
+
 const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: Locale) => {
   const m = SITE_MESSAGES[locale]
   const game = LOCALES[locale].messages
-  const { id, stage: i, wild } = entry.source
+  const { id, stage: i, wild, branch = null } = entry.source
   const s: PlayableDef = PLAYABLE[id]
   const signature = MOVES[s.signature]
-  const special = resolveSpecial(id, i)
+  const special = resolveSpecial(id, i, null, branch)
   const final = special.final
-  const last = resolveSpecial(id, s.line.length - 1)
-  const line = s.line.map(
-    (st, k) => html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li><a href="#${slugOf(st.name)}"${k === i ? html` aria-current="true"` : ''}><img src="${asset(st.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${st.name}</a></li>`,
-  )
+  const last = resolveSpecial(id, s.line.length - 1, null, branch)
+  // A stage a branching evolution decides shows every branch it can take.
+  const line = formLine(id, branch).map((st, k) => {
+    const options = branchesAt(id, k)
+    const forms = options.length > 0 ? options.map(branchStage) : [st]
+    return html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li>${forms.map(
+      (f) => html`<a href="#${slugOf(f.name)}"${f.dex === entry.dex ? html` aria-current="true"` : ''}><img src="${asset(f.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${f.name}</a>`,
+    )}</li>`
+  })
   // A 2-stage line's second stage is already the final one.
   const stageName = m.pokedex.stageOf(i > 0 && i === s.line.length - 1 ? 2 : i)
   return html`<p class="blurb">${stageName} · ${game.blurbs[id]}</p>
@@ -87,7 +128,9 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
     <h3>${m.pokedex.special}</h3>
     <p class="move"><b>${special.tier.name}</b> ${typeBadge(special.def.type, m)}${!final && html` <small>(${m.pokedex.specialFinal}: ${last.tier.name})</small>`}<br />${game.specials[special.id]}</p>
     <h3>${m.pokedex.learnset}</h3>
-    <ul class="chips">${s.learnset.map((mv) => moveChip(mv, m))}</ul>
+    ${learnRows(entry.source, locale)}
+    <h3>${game.ability.section}</h3>
+    ${abilityList(abilitySet(id, branch), locale)}
     ${wild && html`<h3>${m.pokedex.appears}</h3><ul class="list">${appearances(wild).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>`}`
 }
 
@@ -132,22 +175,36 @@ export const traitText = (trait: TraitId, id: keyof typeof ENEMIES, m: SiteMessa
       return e.beam(TRAITS.beam.aim, TRAITS.beam.damage)
     case 'leaper':
       return e.leaper(TRAITS.leaper.crouch + TRAITS.leaper.air, TRAITS.leaper.damage)
+    case 'spitter':
+      return e.spitter(SPIT_FLAVORS.orb.charge, TRAITS.spitter.damage)
   }
 }
 
 const attackText = (p: BossPattern, m: SiteMessages) => {
   switch (p.kind) {
     case 'strikes':
-      return p.target === 'player' ? m.patterns.strikesPlayer(p.count, p.every, p.damage) : m.patterns.strikesSelf(p.every, p.damage)
+      if (p.target === 'self') return m.patterns.strikesSelf(p.every, p.damage)
+      if (p.leap) return m.patterns.leap(p.every, p.damage)
+      return p.lead !== undefined ? m.patterns.path(p.count, p.every, p.damage) : m.patterns.strikesPlayer(p.count, p.every, p.damage)
     case 'ring':
       return m.patterns.ring(p.count, p.every, p.damage)
     case 'trail':
       return m.patterns.trail(p.ttl, p.damage)
+    case 'volley':
+      return m.patterns.volley(p.count, p.every, p.damage)
   }
 }
 
-/** One boss attack, led by its stance when it only fires in one (`BossStance`). */
-export const patternText = (p: BossPattern, m: SiteMessages) => (p.stance ? `${m.patterns.stance[p.stance]}: ${attackText(p, m)}` : attackText(p, m))
+/** When a gated attack fires (`PatternGate`): keeping away, under some HP, on harder difficulties. */
+const gateText = (p: BossPattern, m: SiteMessages) =>
+  [p.far !== undefined && m.patterns.far, p.below !== undefined && m.patterns.below(Math.round(p.below * 100)), p.from !== undefined && m.patterns.from[p.from]].filter((s) => s !== false)
+
+/** One boss attack, led by its stance when it only fires in one (`BossStance`) and followed by its gates. */
+export const patternText = (p: BossPattern, m: SiteMessages) => {
+  const gates = gateText(p, m)
+  const text = gates.length > 0 ? `${attackText(p, m)}, ${gates.join(', ')}` : attackText(p, m)
+  return p.stance ? `${m.patterns.stance[p.stance]}: ${text}` : text
+}
 
 const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessages) => {
   const e: EnemyDef = ENEMIES[entry.source.id]

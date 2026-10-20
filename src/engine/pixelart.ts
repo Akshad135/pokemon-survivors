@@ -68,21 +68,47 @@ export const lazy = <T>(build: () => T) => {
   return () => (value ??= build())
 }
 
-/** Caches `fn` per arguments. Past `max` entries the oldest goes, for keys that rarely repeat. */
-const memo = <A extends readonly unknown[], R>(fn: (...args: A) => R, max = Infinity) => {
-  const cache = canvasCache<string, R>()
-  return (...args: A) => {
-    const k = args.join('|')
-    let v = cache.get(k)
-    if (v !== undefined) return v
-    if (cache.size >= max) cache.delete(cache.keys().next().value!)
-    cache.set(k, (v = fn(...args)))
+type Memo3<A, B, C, R> = Map<A, Map<B, Map<C, R>>>
+
+/**
+ * Caches a three-argument `fn` in nested Maps, so a hit (hundreds per frame:
+ * every shadow, every damage number) allocates nothing. Past `max` entries the
+ * cache starts a new generation and keeps the last one around for a while:
+ * what's still drawn moves over on its next use, the rest goes with it.
+ */
+const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity) => {
+  let fresh: Memo3<A, B, C, R> = new Map()
+  let old: Memo3<A, B, C, R> = new Map()
+  let size = 0
+  onCanvasReset(() => {
+    fresh = new Map()
+    old = new Map()
+    size = 0
+  })
+  const store = (a: A, b: B, c: C, v: R) => {
+    let byB = fresh.get(a)
+    if (!byB) fresh.set(a, (byB = new Map()))
+    let byC = byB.get(b)
+    if (!byC) byB.set(b, (byC = new Map()))
+    byC.set(c, v)
+  }
+  return (a: A, b: B, c: C): R => {
+    const hit = fresh.get(a)?.get(b)?.get(c)
+    if (hit !== undefined) return hit
+    const v = old.get(a)?.get(b)?.get(c) ?? fn(a, b, c)
+    if (size >= max) {
+      old = fresh
+      fresh = new Map()
+      size = 0
+    }
+    store(a, b, c, v)
+    size++
     return v
   }
 }
 
 /** Hard-edged filled ellipse (no antialiasing). Cached per size/color. */
-export const ellipse = memo((rx: number, ry: number, color: string): PixelSprite => {
+export const ellipse = memo3((rx: number, ry: number, color: string): PixelSprite => {
   const w = Math.round(rx) * 2 + 1
   const h = Math.round(ry) * 2 + 1
   const canvas = createCanvas(w, h)
@@ -101,7 +127,7 @@ export const ellipse = memo((rx: number, ry: number, color: string): PixelSprite
 })
 
 /** Hard-edged ring (circle outline) of a given thickness. Cached. */
-export const ring = memo((radius: number, thickness: number, color: string): PixelSprite => {
+export const ring = memo3((radius: number, thickness: number, color: string): PixelSprite => {
   const r = Math.round(radius)
   const size = r * 2 + 1
   const canvas = createCanvas(size, size)
@@ -146,13 +172,23 @@ const GLYPHS: Record<string, readonly string[]> = {
   '!': ['1', '1', '1', '0', '1'],
   '+': ['000', '010', '111', '010', '000'],
   '₽': ['0110', '0101', '0110', '1110', '0100'],
+  // Capitals, for short in-world tags (an Alpha's "ALFA").
+  A: ['010', '101', '111', '101', '101'], B: ['110', '101', '110', '101', '110'], C: ['011', '100', '100', '100', '011'],
+  D: ['110', '101', '101', '101', '110'], E: ['111', '100', '110', '100', '111'], F: ['111', '100', '110', '100', '100'],
+  G: ['011', '100', '101', '101', '011'], H: ['101', '101', '111', '101', '101'], I: ['111', '010', '010', '010', '111'],
+  J: ['001', '001', '001', '101', '010'], K: ['101', '101', '110', '101', '101'], L: ['100', '100', '100', '100', '111'],
+  M: ['10001', '11011', '10101', '10001', '10001'], N: ['1001', '1101', '1011', '1001', '1001'], O: ['010', '101', '101', '101', '010'],
+  P: ['110', '101', '110', '100', '100'], Q: ['010', '101', '101', '110', '011'], R: ['110', '101', '110', '101', '101'],
+  S: ['011', '100', '010', '001', '110'], T: ['111', '010', '010', '010', '010'], U: ['101', '101', '101', '101', '111'],
+  V: ['101', '101', '101', '101', '010'], W: ['10001', '10001', '10101', '11011', '10001'], X: ['101', '101', '010', '101', '101'],
+  Y: ['101', '101', '010', '010', '010'], Z: ['111', '001', '010', '100', '111'],
 }
 
 /**
  * Renders text with a 1px dark outline into a cached sprite. Bounded: a damage total changes
  * with every merged hit, so a long run would otherwise pile up tens of thousands of canvases.
  */
-export const textSprite = memo((text: string, color: string, outline: string = '#181010'): PixelSprite => {
+const outlinedText = memo3((text: string, color: string, outline: string): PixelSprite => {
   const chars = [...text].map((c) => GLYPHS[c] ?? GLYPHS['0']!)
   const width = chars.reduce((w, g) => w + g[0]!.length + 1, 1)
   const canvas = createCanvas(width + 1, 7)
@@ -171,3 +207,6 @@ export const textSprite = memo((text: string, color: string, outline: string = '
   plot(color, 0, 0)
   return canvas
 }, 1024)
+
+/** A number or short word in the in-world font, with the usual dark outline unless told otherwise. */
+export const textSprite = (text: string, color: string, outline = '#181010') => outlinedText(text, color, outline)

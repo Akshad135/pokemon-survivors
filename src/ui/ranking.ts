@@ -23,9 +23,9 @@ const entryRow = (e: BoardEntry, me: boolean) =>
     'button',
     { class: `rank-row${me ? ' me' : ''}${e.rank <= 3 ? ` top${e.rank}` : ''}` },
     h('span', { class: 'rank-pos' }, `#${e.rank}`),
-    h('img', { src: runPortrait(e.starter, e.stage), alt: runForm(e.starter, e.stage).name, title: runForm(e.starter, e.stage).name }),
+    h('img', { src: runPortrait(e), alt: runForm(e).name, title: runForm(e).name }),
     h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
-    h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), e.verified === null ? h('small', { class: 'pending' }, t().ranking.pending) : h('small', {}, t().ranking.outcomes[e.outcome])),
+    h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), h('small', {}, t().ranking.outcomes[e.outcome])),
   )
 
 /** The Pokémon filter: every starter by region, then the egg families. */
@@ -170,7 +170,7 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
           h(
             'p',
             { class: 'rank-challenge' },
-            h('img', { src: runPortrait(shown.starter, 0), alt: '' }),
+            h('img', { src: runPortrait({ starter: shown.starter, stage: 0 }), alt: '' }),
             m.challengeHead(formatDay(shown.day), PLAYABLE[shown.starter].name, t().difficulty.names[shown.difficulty], total),
           ),
         h('div', { class: 'rank-list' }, ...list),

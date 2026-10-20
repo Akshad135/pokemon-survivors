@@ -2,6 +2,7 @@ import type { Dir8 } from '../engine/math'
 import type { Rng } from '../engine/rng'
 import type { Grid } from '../engine/spatial'
 import type { HazardVisual } from '../data/bosses'
+import type { WorldHazardState } from './hazards'
 import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
 import type { RiftLegend } from '../data/rifts'
@@ -11,6 +12,10 @@ import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { AbilityId, HitKind } from '../data/abilities'
+import type { BranchId } from '../data/branches'
+import type { AbilityState } from './abilities'
+import type { BranchFavor } from './branch'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
 import type { ConsumableId } from './consumables'
@@ -30,13 +35,40 @@ import type { PlaceId } from '../data/places'
 import type { SpecialState } from './special'
 import type { Stance } from './stance'
 import type { RunTally } from './tally'
-import type { PlayerStats } from './stats'
+import type { PlayerStats, StatDelta } from './stats'
 import type { EnemyStatus, StatusSpec } from './status'
 import type { WeatherState } from './weather'
 import type { TraitState } from './traits'
 import type { BossFight } from './bossFight'
+import type { ModState } from './mods'
+import type { DamageBonus } from './kitRules'
+import type { MoveSound } from './moveVerbs'
+import type { TmSource } from './tmRules'
+import type { TmState } from './tms'
+import type { CurseId } from '../data/curses'
+import type { CurseState } from './curses'
+import type { LegendaryVisual } from './legendaryMoves'
+import type { TensionState } from './tension'
+import type { AlphaClock, AlphaState } from './alphas'
 
-export type OwnedMove = { id: MoveId; level: number; cooldown: number }
+export type OwnedMove = {
+  id: MoveId
+  level: number
+  cooldown: number
+  /** The branch picked at each fork of its upgrades (bit `i` set: the second branch of step `i`; absent means 0, see `moveStats`). */
+  path?: number
+  /** Counts down to an Echo re-cast (`mods.ts`; absent or ≤ 0: none due). */
+  echo?: number
+  /** The move's own counter (`MoveDef.stacks` grows and resets it; `fire` reads it). Absent = 0. */
+  stacks?: number
+  /** `Player.walked` when it last fired, for `walkedSince`. */
+  walkedAt?: number
+}
+
+/** A move's window on the player (guard, burrow): `left` seconds, and the move whose hook it calls. */
+export type MoveWindow = { left: number; move: MoveId }
+/** A move's timed effect on the player's stats (Rapid Spin's guard, Petal Dance's dizziness): `recomputeStats` adds `stats` while `left` lasts. */
+export type MoveBuff = { move: MoveId; left: number; stats: StatDelta; applied: boolean }
 export type OwnedItem = { id: ItemId; level: number }
 
 export type Player = {
@@ -69,12 +101,26 @@ export type Player = {
   luckyShiny: boolean
   /** Distance walked this run, in world px. Hatches the incubator's eggs (`eggs.ts`). */
   walked: number
+  /** Seconds standing still (0 while walking). */
+  still: number
+  /** Guard window (Counter, Protect): the next hit is negated and calls the move's `onGuard` (`hurtPlayer`). */
+  guard: MoveWindow | null
+  /** Burrowed or out of sight (Dig, Fly): invulnerable, foes lose track; the move's `emerge` runs when it ends. */
+  hidden: MoveWindow | null
+  /** Drain heal budget (`drainRefill`) and the game time it was last spent. */
+  drain: { left: number; at: number }
+  /** Seconds the player can't walk (Giga Impact's recharge); moves still carry them. */
+  rooted: number
+  /** Moves' timed stat effects on the player (`signatures.ts`). */
+  moveBuffs: MoveBuff[]
 }
 
 export type EnemyBehavior =
   | { kind: 'chase' }
   /** Flies in a straight line and despawns after `ttl` (swarm events). */
   | { kind: 'flyby'; vx: number; vy: number; ttl: number }
+  /** Walks to a field mission's nest at (x, y) and bites the egg there, turning on the player within `aggro` px (`fieldMissions.ts`). */
+  | { kind: 'raid'; mission: number; x: number; y: number; aggro: number }
 
 export type Enemy = {
   id: number
@@ -120,7 +166,13 @@ export type Enemy = {
    * play like a fainted one, gliding away along its knockback, with no reward.
    */
   fled: boolean
+  /** Hurled by a move (Circle Throw): while its knockback is fast it hurts the foes it hits, once each. */
+  thrown: Thrown | null
+  /** An Alpha's charge cycle (`alphas.ts`); null for everyone else. An Alpha is also `boss` to the combat rules. */
+  alpha: AlphaState | null
 }
+
+export type Thrown = { damage: number; move: DamageSource; hit: Set<number> }
 
 export type Shape = { kind: 'circle'; r: number } | { kind: 'rect'; w: number; h: number }
 
@@ -137,6 +189,22 @@ export type Motion =
   | { kind: 'lunge'; vx: number; vy: number; left: number }
   /** Flies along (vx, vy) losing `drag` of its speed per second until it stops and stays put (Ice Shard). */
   | { kind: 'drift'; vx: number; vy: number; drag: number }
+  /**
+   * Flies along (vx, vy) for `out` more seconds, then homes back to the
+   * player's current position at `speed` and vanishes on arrival. Its hit list
+   * clears at the turn, so it hits on both legs.
+   */
+  | { kind: 'return'; vx: number; vy: number; out: number; speed: number }
+  /** Seeded random walk at `speed`, turning up to `turn` rad/s, steered back when farther than `leash` px from the player. */
+  | { kind: 'wander'; heading: number; speed: number; turn: number; leash: number }
+  /** Rolls the player along their facing at `speed` px/s on top of their walk (the stick steers), the hitbox on their body (Rollout). */
+  | { kind: 'roll'; speed: number }
+  /**
+   * Rides on `target`'s body and hits only it, every `every` s from `next`
+   * seconds of age on (Curse, Foul Play); gone when the target faints.
+   * Its attack stays out of the regular collision (`activeFrom: Infinity`).
+   */
+  | { kind: 'tether'; target: Enemy; every: number; next: number }
 
 export type Visual =
   | 'ember' | 'flame' | 'water' | 'leaf' | 'star' | 'thunder' | 'whirlpool' | 'vine' | 'sludge' | 'gust'
@@ -148,17 +216,41 @@ export type Visual =
   | 'streak' | 'slash' | 'afterimage'
   /** The rainbow burst that ends a Mega Evolution (`mega.ts`), drawn by `render/megaFx.ts`. */
   | 'megaWave'
+  /** Lingering ground of a Trail mod, the blast of a Burst mod and the sparks of an Arc mod (`mods.ts`), drawn by `render/modFx.ts`. */
+  | 'modTrail' | 'modBurst' | 'modArc'
+  /** A delayed strike's warning on the ground (`moveKit.ts`), drawn by `render/kitFx.ts`. */
+  | 'telegraph'
   | EvolvedVisual
   | TacticVisual
+  | EggMoveVisual
+  | EggMove3Visual
+  | VerbVisual
+  | SignatureVisual
+  | TypeEvolvedVisual
+  | TmVisual
+  | VerbEvolvedVisual
+  | EggMove2Visual
+  | DuoVisual
+  /** Legendary moves (`legendaryMoves.ts`), drawn by `render/legendaryFx.ts`. */
+  | LegendaryVisual
 
-/** What dealt the damage, for the results screen. */
-export type DamageSource = MoveId | 'special'
+/** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
+export type DamageSource = MoveId | 'special' | 'ability'
 
-/** Visuals of evolved moves, drawn by `render/evolved.ts`. */
+/** Visuals of evolved moves, drawn by `render/evolved.ts` (casts in `game/evolvedMoves.ts`). */
 export type EvolvedVisual =
-  | 'flamethrower' | 'fireBlast' | 'hydroPump' | 'surf' | 'leafStorm'
-  | 'powerWhip' | 'triAttack' | 'wildbolt' | 'gunk' | 'hurricane'
-  | 'blizzard' | 'stoneEdge' | 'megahorn' | 'outrage'
+  | 'flamethrower' | 'flameField' | 'fireBlast' | 'starFlame' | 'hydroPump' | 'pumpSplash' | 'surf' | 'leafStorm'
+  | 'powerWhip' | 'triFire' | 'triIce' | 'triBolt' | 'triPrism' | 'wildbolt' | 'wildFork' | 'stormCloud'
+  | 'gunkBomb' | 'gunk' | 'toxicCloud' | 'hurricane' | 'infernoRing' | 'icicleFall' | 'blizzard' | 'snowSwirl'
+  | 'stoneEdge' | 'megahorn' | 'outrage' | 'outrageRoar' | 'boltStrike'
+  /** A bare hit segment that draws nothing (the inner part of Power Whip's vine). */
+  | 'hitbox'
+
+/** Moves evolved by the newer type items and generic ones (`typeEvolutions.ts`), drawn by `render/typeEvolved.ts`. */
+export type TypeEvolvedVisual =
+  | 'jawLock' | 'jawBite' | 'superFist' | 'superJab' | 'fissure' | 'psyVortex' | 'psyBurst' | 'steelBeam'
+  | 'parade' | 'phantomVolley' | 'phantomFall' | 'phantomArrow' | 'aquaCutter' | 'searing' | 'searingEmber'
+  | 'gigaDrain' | 'jealousySong' | 'jealousy' | 'trailblaze' | 'liquidation' | 'alluring'
 
 /** Lunges, chains, mines and turrets (`moveRules.ts`), drawn by `render/moveFx.ts`. */
 export type TacticVisual =
@@ -166,8 +258,56 @@ export type TacticVisual =
   | 'spikes' | 'barbs' | 'spikesBlast' | 'barbsBlast'
   | 'wisp' | 'wispShot' | 'inferno' | 'infernoShot'
 
+/** The egg families' signature moves (`eggMoves.ts`), drawn by `render/eggMoveFx.ts`. */
+export type EggMoveVisual =
+  | 'hypnosis' | 'dreamBite' | 'forcePalm' | 'auraWave' | 'digMound' | 'digBurst' | 'twister' | 'sandTomb'
+  | 'meteorMash' | 'zenHeadbutt' | 'foulPlay' | 'bodySlam' | 'slamWave' | 'dynamicPunch' | 'rollout' | 'iceBall'
+  | 'furyCutter' | 'sacredSword' | 'sacredEdge' | 'dragonDart' | 'snarl' | 'gigaImpact' | 'gigaWave' | 'flail'
+  | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse'
+/** The third batch of egg signatures (`eggMoves3.ts`), drawn by `render/eggMove3Fx.ts`. */
+export type EggMove3Visual =
+  | 'fieryDance' | 'overdrive' | 'gigatonHammer' | 'hammerTap' | 'hammerQuake' | 'bitterBlade' | 'leechLife' | 'fireFang'
+  | 'furySwipes' | 'heavySlam' | 'heavyQuake' | 'bulldoze' | 'perishWave' | 'perishMark' | 'chargeBeam' | 'moonblast'
+  | 'moonBurst' | 'frostBreath' | 'avalanche'
+/** The second batch of egg-family signature moves (`eggMoves2.ts`), drawn by `render/eggMove2Fx.ts`. */
+export type EggMove2Visual =
+  | 'braveBird' | 'weatherBall' | 'accelerock' | 'zapCannon' | 'aerialAce' | 'crossPoison' | 'bubbleBeam' | 'rockBlast'
+  | 'cottonSpore' | 'wildCharge' | 'playRough' | 'spore' | 'waterfall' | 'lastResort'
+/** The verb moves (`moveVerbs.ts`), drawn by `render/verbFx.ts`. */
+export type VerbVisual =
+  | 'flameWheel' | 'flameTrail' | 'solarCharge' | 'solarBeam' | 'brine' | 'electroBall' | 'venoshock' | 'selfDestruct'
+  | 'roostGust' | 'focusPunch' | 'focusShock' | 'gyroBall' | 'suckerPunch' | 'futureSight' | 'bone' | 'stealthRock'
+  | 'uTurn' | 'dragonTail' | 'sheerCold'
+/** The verb moves' evolutions (`verbEvolutions.ts`), drawn by `render/verbEvolvedFx.ts`. */
+export type VerbEvolvedVisual =
+  | 'ragingFury' | 'furyBlaze' | 'furyNova' | 'seedSun' | 'seedFlare' | 'seedBloom' | 'waterSpout' | 'spoutDrop'
+  | 'electroDrift' | 'driftLink' | 'sludgeWave' | 'sludgeGeyser' | 'explosion' | 'explosionChain' | 'oblivionWing'
+  | 'oblivionBeam' | 'skyUppercut' | 'uppercutShock' | 'gearGrind' | 'kowtowCleave' | 'hyperspaceHole' | 'hyperspaceBurst'
+  | 'thousandArrows' | 'stoneAxe' | 'axeSplinter' | 'firstImpression' | 'impressionBurst' | 'breakingSwipe'
+  | 'glacialLance' | 'lanceBurst'
+/** Starter signature moves (`signatureMoves.ts`), drawn by `render/signatureFx.ts`. */
+export type SignatureVisual =
+  | 'leechSeed' | 'rapidSpin' | 'petal' | 'eruptionFall' | 'eruption' | 'thrash' | 'thrashBite' | 'kick'
+  | 'mudWave' | 'hammer' | 'drill' | 'leafTornado' | 'tornadoLeaf' | 'flameCharge' | 'flameLanding'
+  | 'needleArm' | 'needle' | 'psybeam' | 'lariat' | 'bubble' | 'bubblePop' | 'snipeSight' | 'snipeShot'
+  | 'flowerTrick' | 'aquaStep' | 'pinShadow' | 'pyroBounce' | 'sonicJab'
+
+/** TM moves (`tmMoves.ts`), drawn by `render/tmFx.ts`. */
+export type TmVisual =
+  | 'rockSlide' | 'yawn' | 'iceBeam' | 'discharge' | 'heatWave' | 'thunderFang' | 'lavaPlume' | 'lavaPool' | 'auroraBeam'
+  | 'meteorRise' | 'meteor' | 'icyWind' | 'ironHead' | 'ironShard' | 'psystrike' | 'psyHover'
+/** Duo moves (`duoMoves.ts`), drawn by `render/duoFx.ts`. */
+export type DuoVisual =
+  | 'pledgePillar' | 'seaOfFire' | 'swamp' | 'comet' | 'cometScorch' | 'ionPuddle' | 'freezeDry' | 'nightmare' | 'nightmareSkull'
+
 /** A static attack that shoots at the nearest foe every `every` seconds (Will-O-Wisp). Its shots copy its damage and status. */
 export type Turret = { every: number; left: number; amount: number; speed: number; shot: Visual }
+
+/**
+ * Drops a lingering patch every `every` px the player walks (`moveKit.trailer`).
+ * Patches copy the carrier's move, type and status, at `share` of its damage.
+ */
+export type Trailer = { every: number; acc: number; walked: number; visual: Visual; r: number; ttl: number; hitInterval: number; share: number }
 
 /** Any damaging hitbox: projectiles, auras, strikes, zones. */
 export type Attack = {
@@ -203,6 +343,27 @@ export type Attack = {
   /** Blast visual of a mine. */
   blastVisual: Visual
   turret: Turret | null
+  /** Behavior mods of the fork branch it was cast with (`mods.ts`), or null. */
+  mod: ModState | null
+  /** Damage bonuses against some foes (`kitRules.ts`), e.g. Hex's ×1.7 on afflicted ones. */
+  bonus: readonly DamageBonus[]
+  /** Regular foes left at or under this HP share faint outright (0 = never). */
+  execute: number
+  /** Share of the damage dealt that heals the player, within the drain budget (0 = none). */
+  drain: number
+  /** Px/s it pulls the foes it touches toward its center, divided by their mass (bosses resist more). */
+  pull: number
+  trailer: Trailer | null
+  /** Ignores Bronzong wards and resisted matchups (a resisted hit lands as neutral): Sacred Sword, Curse. */
+  sure: boolean
+  /** Chance that a foe touching it misses its contact hit on the player (Sand Tomb's sand in their eyes). */
+  blind: number
+  /** A free intensity counter for the move's rules and look (Rollout's streak, Echoed Voice's echo); 0 by default. */
+  tier: number
+  /** Goes through a Bronzong ward instead of being soaked by it (Darkest Lariat, Snipe Shot). */
+  ignoreWards: boolean
+  /** A number the move keeps on its hitbox (Thrash's bite timer, Snipe Shot's base damage…), read by `signatures.ts` and the renderer. */
+  memo: number
 }
 
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
@@ -224,6 +385,10 @@ export type Hazard = {
   ttl: number
   /** Projectiles vanish on hit; zones linger. */
   vanishOnHit: boolean
+  /** Thrown by the world rather than a boss (`game/hazards.ts`): its strikes also hurt the foes they land on. */
+  world: boolean
+  /** Id of the boss that lands with this strike (a `leap`), or -1. A shot with an `armAt` hovers until then (a volley's windup). */
+  leaper: number
 }
 
 export type Pickup = {
@@ -235,7 +400,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' })
 
 export type Particle = {
   x: number
@@ -268,14 +433,43 @@ export type FloatText = {
   slot: number
 }
 
+/**
+ * How lucky a level-up card came out (`rollOffers`): a rare one gives two
+ * levels at once, a shiny one doesn't use the level-up up (the player picks again).
+ */
+export type Rarity = 'rare' | 'shiny'
+
 export type Offer =
-  | { kind: 'move'; id: MoveId; level: number }
-  | { kind: 'item'; id: ItemId; level: number }
+  | { kind: 'move'; id: MoveId; level: number; rarity?: Rarity }
+  | { kind: 'item'; id: ItemId; level: number; rarity?: Rarity }
   | { kind: 'berry' }
   /** Max level move + its paired held item: the move evolves in place. */
   | { kind: 'evolution'; from: MoveId; to: MoveId }
+  /** Where a branching evolution goes (`game/branch.ts`); `favor` says what of the run nudged it forward. */
+  | { kind: 'form'; id: BranchId; favor: BranchFavor }
+  /** An ability to keep for the run, picked when the first evolution lands (`game/abilities.ts`). */
+  | { kind: 'ability'; id: AbilityId; hidden: boolean }
+  /** One way of a fork (`moveStats`): raises the move to `level` taking `branch` (0 or 1). */
+  | { kind: 'branch'; id: MoveId; level: number; branch: 0 | 1; rarity?: Rarity }
+  | TmOffer
+  /** The move to forget so a TM's move takes its slot (`game/tms.ts`). */
+  | { kind: 'forget'; id: MoveId; tm: TmOffer }
+  /** Walks away from a TM (the disc, the lesson or the forgetting) or from a Poké Ball's new move or item. */
+  | { kind: 'pass' }
+  /** Two maxed moves of a recipe's types fuse into a duo move (`duoRules.ts`): `from[0]`'s slot takes it, `from[1]`'s frees up. */
+  | { kind: 'duo'; to: MoveId; from: readonly [MoveId, MoveId] }
+  /** A locked chest's cursed item (`curses.ts`): take it, or leave it there. */
+  | { kind: 'curse'; id: CurseId; take: boolean }
 
-export type Phase = 'playing' | 'levelup' | 'evolving' | 'paused' | 'gameover' | 'victory'
+/** A TM's move to learn (or raise to `level` if owned), from a disc, a Move Tutor (for `price` run ₽) or a rift legendary. */
+export type TmOffer = { kind: 'tm'; id: MoveId; level: number; source: TmSource; price: number }
+
+/**
+ * `branch`, `ability`, `curse`, `tm` and `pokeball` wait on a pick from `offers`, like `levelup`: where an evolution goes,
+ * the ability after the first, whether to take a locked chest's cursed item, a TM's move to learn (and which to forget
+ * for it), and whether to take a Poké Ball's new move or item.
+ */
+export type Phase = 'playing' | 'levelup' | 'branch' | 'evolving' | 'ability' | 'curse' | 'tm' | 'pokeball' | 'paused' | 'gameover' | 'victory'
 
 /** Fire-and-forget notifications for audio/UI. Drained by the shell every frame. */
 export type GameEvent =
@@ -309,10 +503,24 @@ export type GameEvent =
   | { kind: 'megaEnd' }
   | { kind: 'megaReady' }
   | { kind: 'evolve'; from: number; to: number }
+  /** A branching evolution waits on the player's pick. */
+  | { kind: 'branchChoice' }
+  /** The ability was picked, or did something worth a word (Sturdy held, a guard blocked, a weather called). */
+  | { kind: 'ability'; id: AbilityId; moment: 'picked' | 'proc' }
   | { kind: 'evolved'; to: number }
-  | { kind: 'pokeball'; offer: Offer | null }
+  /** A Poké Ball opened: its prize went in on its own (`auto`), or a new move or item was `found` and then `taken` or `left`. */
+  | { kind: 'pokeball'; offer: Offer | null; moment: 'auto' | 'found' | 'taken' | 'left' }
+  /** A shiny level-up card was picked: the player picks again. */
+  | { kind: 'shinyOffer' }
+  /** A level-up card was forgotten (Esquecer) and its slot drawn again. */
+  | { kind: 'banish' }
   | { kind: 'moveEvolved'; from: MoveId; to: MoveId }
-  | { kind: 'gameover' }
+  /** Two moves fused into a duo move. */
+  | { kind: 'duoFused'; from: readonly [MoveId, MoveId]; to: MoveId }
+  /** A cursed item turned up in a chest, was taken or left, or bit back (Life Orb's recoil, Flame Orb's burn). */
+  | { kind: 'curse'; id: CurseId; moment: 'found' | 'taken' | 'left' | 'recoil' }
+  /** The run is over: what landed the last hit (the foe's species, none for a hazard, and the kind of hit), for analytics. */
+  | { kind: 'gameover'; foe: EnemyId | null; hit: HitKind }
   | { kind: 'consumable'; item: ConsumableId }
   | { kind: 'propBreak' }
   | { kind: 'revive' }
@@ -340,6 +548,26 @@ export type GameEvent =
   | { kind: 'egg'; tier: EggTier }
   /** Something happened at a place: its entrance, the way in and out, what goes on inside (`place.ts`). */
   | { kind: 'place'; place: PlaceId; notice: PlaceNotice }
+  /** A foe shattered: an execute, or a frozen foe's ice broken by a hit. */
+  | { kind: 'shatter'; cause: 'execute' | 'freeze' }
+  /** A guard window negated a hit. */
+  | { kind: 'guard' }
+  /** A verb move asks for its sound (`moveVerbs.ts`). */
+  | { kind: 'moveSound'; sound: MoveSound }
+  /** A move with a cast sound fired, or its big moment landed (`ui/castSounds.ts`, then `ui/castSfx.ts`, pick the sound). */
+  | { kind: 'cast'; move: MoveId }
+  /** A TM's choice opened (a disc touched, a Move Tutor's lesson). */
+  | { kind: 'tm'; source: TmSource }
+  /** A TM's move was learned (`level` 1) or raised, maybe in place of the move `forgot`. */
+  | { kind: 'tmLearned'; move: MoveId; level: number; forgot: MoveId | null; source: TmSource }
+  /** A TM disc's move was already mastered: it turned into ₽. */
+  | { kind: 'tmMastered'; move: MoveId; coins: number }
+  /** An Alpha (`alphas.ts`) came, aimed or started a charge, landed its shockwave, enraged or fell. */
+  | { kind: 'alpha'; enemy: EnemyId; moment: 'spawn' | 'aim' | 'charge' | 'shock' | 'enrage' | 'down' }
+  /** The Alpha's prize was picked up: a level-up of rare cards opens. */
+  | { kind: 'alphaPrize' }
+  /** The world struck at the player for the first time this run (`game/hazards.ts`): a one-time explainer toast. */
+  | { kind: 'hazardIntro' }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -379,10 +607,22 @@ export type Game = {
   /** Level-up rerolls/skips left this run. */
   rerolls: number
   skips: number
+  /** Esquecer charges left (`banishOffer`): from the Poké Mart, plus one per boss defeated and per evolution. */
+  banishes: number
+  /** Moves and items forgotten this run: they never come back as offers. */
+  banished: Set<MoveId | ItemId>
+  /** Mods of the move being cast right now (`updateMoves`), stamped on every hitbox it spawns; 0 otherwise. */
+  castMods: number
   damageByMove: Partial<Record<DamageSource, number>>
   pendingLevelUps: number
+  /** Level-ups left in which the moves the last evolution unlocked weigh double (`FRESH_LEVELUPS` in `learnsets.ts`). */
+  freshMoves: number
   offers: Offer[]
   evolution: Evolution | null
+  /** Where a branching evolution went (`game/branch.ts`); null until it does, and for the lines that don't branch. */
+  branch: BranchId | null
+  /** The ability picked at the first evolution and its running state (`game/abilities.ts`). */
+  ability: AbilityState
   /** This run's wild cast, drawn at the start (`game/roster.ts`), with the day's outbreak in every stage. */
   roster: Roster
   /** The day's outbreak species, or null (`game/outbreak.ts`): its kills count toward missions (`countKill`). */
@@ -401,6 +641,8 @@ export type Game = {
   buffs: Buff[]
   /** Points of interest placed by the event director (`mapEvents.ts`). */
   mapEvents: MapEventsState
+  /** Cursed items taken from locked chests and their clocks (`curses.ts`). */
+  curses: CurseState
   /** Revives held (0 or 1). Auto-used on fainting. */
   revives: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
@@ -415,6 +657,8 @@ export type Game = {
   rift: RiftState
   /** Places (`place.ts`): the entrance on the map, the inside the player is in and the wings picked up. */
   place: PlaceState
+  /** TMs and Move Tutors this run (`game/tms.ts`): tutors met, lessons taken, the legendary TM. */
+  tm: TmState
   /** Set once the player goes on past Mewtwo (endless mode). */
   endless: EndlessState | null
   /** Species seen, defeated and caught this run, for the Pokédex (`game/dex.ts`). */
@@ -424,4 +668,15 @@ export type Game = {
   /** Counters for missions and achievements (`game/tally.ts`). */
   tally: RunTally
   events: GameEvent[]
+  /** The pressure director (`tension.ts`): a dominant player gets a faster, closer, nastier horde. */
+  tension: TensionState
+  /** When the next Alpha is due (`alphas.ts`). */
+  alphas: AlphaClock
+  /** The world's own attacks on the player (`game/hazards.ts`). */
+  worldHazards: WorldHazardState
+  /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
+  prize: PrizeSource | null
 }
+
+/** Where a prize level-up came from: an Alpha's gem or a field mission. */
+export type PrizeSource = 'alpha' | 'mission'

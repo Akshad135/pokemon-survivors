@@ -1,5 +1,6 @@
 import { mergeAchievements, mergeGiftTitles } from './achievements'
 import { mergeClaimedGifts } from './gifts'
+import { mergeClears } from './clears'
 import { mergeBag } from './bag'
 import { mergeCounter } from './mart'
 import { mergeStyle } from './style'
@@ -37,7 +38,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  *   spending, so ₽ spent on one side and kept on the other isn't counted twice.
  * - The title: `incoming`'s, if it shows one.
  * - The difficulty and the partner picked last: `incoming`'s, settings rather than progress.
- * - Shiny starters: a union; each Normal/Shiny pick is `incoming`'s when it has one.
+ * - Shiny starters: a union; each Normal/Shiny pick (a shiny hatch's too) is
+ *   `incoming`'s when it has one, else `base`'s, so a hatch switched to Normal stays so.
  * - The bag: each item's got and used counters keep the larger side; what's
  *   armed is `incoming`'s. The daily counter: the most recent day, the most
  *   bought of each item on the same day. Styles: a union, worn as `incoming`.
@@ -46,6 +48,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - Ribbons: a union, one per day (the better one if both sides had that day).
  * - Shiny picks: a union by ticket; a pick made on either side stays made.
  * - The companion: `incoming`'s, if it has one (like the title).
+ * - Branches taken: per family, `incoming`'s when it has one (like the partner).
+ * - Clears: a union, each Pokémon at the harder difficulty of the two.
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -72,6 +76,8 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     ribbons: mergeRibbons(base.ribbons, incoming.ribbons),
     shinyPicks: mergeShinyPicks(base.shinyPicks, incoming.shinyPicks),
     companion: incoming.companion ?? base.companion,
+    branches: { ...base.branches, ...incoming.branches },
+    clears: mergeClears(base.clears, incoming.clears),
   }
 }
 

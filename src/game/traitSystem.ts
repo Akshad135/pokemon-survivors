@@ -2,11 +2,14 @@ import { dir8, dirTo, lerp, TAU } from '../engine/math'
 import { range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { isSummoner, SUMMONS, TRAITS } from '../data/traits'
+import { spawnHazard } from './bosses'
 import { hurtPlayer, killEnemy } from './combat'
 import { spawnEnemy } from './enemies'
 import { burst, damageText } from './effects'
 import { inView } from './queries'
-import { isAsleep } from './status'
+import { finaleAlive } from './spawner'
+import { fanOffset, flavorOf, isSpit, SPITTERS, volleySize, type SpitFlavor } from './spitters'
+import { isHeld } from './status'
 import {
   absorb,
   blastDamage,
@@ -26,7 +29,7 @@ import * as dm from '../engine/dmath'
 
 /**
  * Runs every enemy trait each tick (heal and ward pulses, summons, fuses,
- * beams, leaps). Must run right after a grid rebuild: it queries the grid by
+ * beams, leaps, spit). Must run right after a grid rebuild: it queries the grid by
  * index and only appends to `g.enemies`, so indices stay valid all tick.
  */
 
@@ -106,7 +109,7 @@ const explode = (g: Game, e: Enemy) => {
   const r = blastRadius(e.radius)
   const dmg = e.damage * k.damage
   const p = g.player
-  if (inBlast(e.x, e.y, r, p.x, p.y, p.radius * 0.7)) hurtPlayer(g, dmg)
+  if (inBlast(e.x, e.y, r, p.x, p.y, p.radius * 0.7)) hurtPlayer(g, dmg, undefined, [], 'blast')
   // Self-destruct: it faints without EXP, but whatever the blast takes down drops as usual.
   e.dying = 0
   e.hp = 0
@@ -159,7 +162,7 @@ const beam = (g: Game, e: Enemy, act: Act<'beam'>, dt: number) => {
     act.t = 0
     g.events.push({ kind: 'trait', trait: 'beam', phase: 'fire' })
   }
-  if (onBeam(act.ox, act.oy, act.dx, act.dy, b.length, b.width / 2, p.x, p.y - p.radius, p.radius * 0.7)) hurtPlayer(g, e.damage * b.damage)
+  if (onBeam(act.ox, act.oy, act.dx, act.dy, b.length, b.width / 2, p.x, p.y - p.radius, p.radius * 0.7)) hurtPlayer(g, e.damage * b.damage, undefined, [], 'beam')
   if (act.t >= b.fire) {
     act.phase = 'idle'
     act.cooldown = b.every
@@ -210,6 +213,81 @@ const leap = (g: Game, e: Enemy, act: Act<'leaper'>, dt: number) => {
   if (k >= 1) land(g, e, act)
 }
 
+/** Spit shots alive now, against `TRAITS.spitter.shots`. */
+const spitShots = (g: Game) => {
+  let n = 0
+  for (const h of g.hazards) if (h.kind === 'shot' && isSpit(h)) n++
+  return n
+}
+
+/**
+ * A spitter's volley, aimed at where the player stands: shots fanned around
+ * the aim that fly `TRAITS.spitter.range`, or, with a puddle (sludge), lobbed
+ * to that spot, where each leaves a puddle as it lands.
+ */
+const volley = (g: Game, e: Enemy, flavor: SpitFlavor) => {
+  const s = TRAITS.spitter
+  if (spitShots(g) >= s.shots) return
+  const p = g.player
+  const tune = SPITTERS[g.difficulty]
+  const aim = dm.atan2(p.y - e.y, p.x - e.x)
+  const dist = Math.min(dm.hypot(p.x - e.x, p.y - e.y), s.range)
+  const damage = e.damage * s.damage * tune.damage * flavor.damage
+  const n = volleySize(flavor, tune.volley, g.rng())
+  for (let i = 0; i < n; i++) {
+    const a = aim + fanOffset(i, n, flavor.spread)
+    const cos = dm.cos(a)
+    const sin = dm.sin(a)
+    const flight = (flavor.puddle ? dist : s.range) / flavor.speed
+    spawnHazard(g, {
+      kind: 'shot',
+      visual: flavor.visual,
+      x: e.x + cos * e.radius,
+      y: e.y + sin * e.radius,
+      vx: cos * flavor.speed,
+      vy: sin * flavor.speed,
+      r: flavor.radius,
+      damage,
+      ttl: flight,
+      vanishOnHit: true,
+    })
+    if (!flavor.puddle) continue
+    const ttl = flight + flavor.puddle.ttl
+    spawnHazard(g, {
+      kind: 'zone',
+      visual: flavor.visual,
+      x: e.x + cos * dist,
+      y: e.y + sin * dist,
+      r: flavor.puddle.radius,
+      damage: damage * flavor.puddle.damage,
+      armAt: flight,
+      disarmAt: ttl - 0.3,
+      ttl,
+    })
+  }
+  g.events.push({ kind: 'trait', trait: 'spitter', phase: 'fire' })
+}
+
+/** Glows for its flavor's `charge` once the player is on screen and in reach, then spits. Holds fire during the finale's duel. */
+const spit = (g: Game, e: Enemy, act: Act<'spitter'>, dt: number, duel: boolean) => {
+  const p = g.player
+  if (act.phase === 'idle') {
+    act.cooldown -= dt
+    if (act.cooldown > 0 || duel || !onScreen(g, e) || dm.sq(p.x - e.x) + dm.sq(p.y - e.y) > dm.sq(TRAITS.spitter.reach)) return
+    act.phase = 'charge'
+    act.t = 0
+    e.dir = dir8(p.x - e.x, p.y - e.y)
+    g.events.push({ kind: 'trait', trait: 'spitter', phase: 'warn' })
+    return
+  }
+  act.t += dt
+  const flavor = flavorOf(e.types)
+  if (act.t < flavor.charge) return
+  volley(g, e, flavor)
+  act.phase = 'idle'
+  act.cooldown = SPITTERS[g.difficulty].every * (0.85 + g.rng() * 0.3)
+}
+
 const pulse = (g: Game, e: Enemy, act: Act<'healer' | 'shield' | 'summoner'>, dt: number) => {
   act.cast += dt
   act.cooldown -= dt
@@ -233,6 +311,7 @@ const introduce = (g: Game, e: Enemy, act: TraitAct) => {
 export const updateTraits = (g: Game, dt: number) => {
   // Summons appended this tick start acting next tick.
   const count = g.enemies.length
+  const duel = finaleAlive(g)
   for (let i = 0; i < count; i++) {
     const e = g.enemies[i]!
     const st = e.trait
@@ -242,8 +321,8 @@ export const updateTraits = (g: Game, dt: number) => {
     const act = st.act
     if (!act || e.dying >= 0) continue
     introduce(g, e, act)
-    // Stunned or asleep enemies hold their trait, fuses included (paralysis and the Poké Flute pay off).
-    if (e.status.stun > 0 || isAsleep(e.status)) continue
+    // Stunned, asleep or frozen enemies hold their trait, fuses included (paralysis and the Poké Flute pay off).
+    if (e.status.stun > 0 || isHeld(e.status)) continue
     switch (act.kind) {
       case 'healer':
       case 'shield':
@@ -258,6 +337,9 @@ export const updateTraits = (g: Game, dt: number) => {
         break
       case 'leaper':
         leap(g, e, act, dt)
+        break
+      case 'spitter':
+        spit(g, e, act, dt, duel)
         break
     }
   }

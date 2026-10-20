@@ -8,6 +8,7 @@ import { cryUrl, drawPokemon, loadedSprites, loadSpecies } from '../render/sprit
 import { formatNumber, formatPokeDollars, t } from '../i18n'
 import { h, later, rich } from './dom'
 import { loadSave } from './save'
+import { settings } from './settings'
 import { hint, menu, type Screen } from './screens'
 
 /** One incubator slot: the egg, its tier, a progress bar and the steps left (or "Ready!"). */
@@ -178,9 +179,9 @@ export const hatchScene = (root: HTMLElement, input: Input, hatch: Hatch, action
     blitCentered(ctx, ellipse(14, 3, 'rgba(16,40,16,0.3)'), cx, floor)
     if (k < HATCH.burst) drawEgg(k)
     else drawNewborn(k)
-    // The burst: white flash in, then out over the newborn.
+    // The burst: white flash in, then out over the newborn (none with Flashes reduced).
     const flash = k < HATCH.burst - 0.2 ? 0 : k < HATCH.burst ? (k - HATCH.burst + 0.2) / 0.2 : Math.max(0, 1 - (k - HATCH.burst) / 0.5)
-    if (flash > 0) {
+    if (flash > 0 && settings().flashes === 'normal') {
       ctx.fillStyle = `rgba(255,255,255,${flash})`
       ctx.fillRect(0, 0, W, H)
     }

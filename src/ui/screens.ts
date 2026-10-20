@@ -6,22 +6,38 @@ import { ENEMIES } from '../data/enemies'
 import { ITEMS } from '../data/items'
 import { PLAYABLE } from '../data/hatchlings'
 import { TYPE_COLORS, type PokeType } from '../data/types'
-import { maxMoveLevel, MOVES, type MoveDef, type MoveId } from '../game/moves'
-import { playerDex } from '../game/game'
+import { forkAt, isLegendary, maxMoveLevel, MOVES, moveStats, withBranch, type MoveDef, type MoveId } from '../game/moves'
+import { canBanish, drafting, playerDex } from '../game/game'
+import { rarityOf } from '../game/leveling'
+import { fusable, isDuo, reachableDuos, readyDuos, type DuoRecipe } from '../game/duoRules'
+import { CURSES } from '../data/curses'
+import { modsOf, type ModId } from '../game/mods'
+import { playerForm } from '../game/branch'
+import { runLearnset, unlockedAt } from '../game/learnsets'
+import { ABILITIES, isHidden } from '../data/abilities'
+import { abilitySet } from '../game/abilities'
+import { heldMega } from '../game/mega'
+import { megaIcon } from '../render/megaFx'
+import { BRANCHES } from '../data/branches'
+import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
 import { toSteps } from '../game/eggs'
 import { overtime } from '../game/endless'
 import { runEarnings } from '../game/meta'
 import { resolveSpecial } from '../game/special'
+import { statSheet, type SheetStat } from '../game/statSheet'
 import type { DamageSource, Game, Offer } from '../game/types'
-import { berryIcon, coinIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { berryIcon, coinIcon, curseIcon, eggIcon, itemIcon, moveIcon, sparkleIcon } from '../render/art'
+import { modIcon } from '../render/modFx'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
 import { placeIcon } from '../render/places'
-import { formatNumber, formatPokeDollars, locale, t, type Messages } from '../i18n'
+import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
 import { h, later } from './dom'
 import { boundPadHint, glyphText } from './inputLabels'
+import { pressGuard } from './pressGuard'
+import { holdMoveCard, hoverMoveCard, moveCard, withMoveCard } from './moveCard'
 
 export type Screen = {
   el: HTMLElement
@@ -56,10 +72,15 @@ export const hint = (keys: string, touch: string) =>
 /**
  * Shared keyboard/pointer navigation for a list of buttons.
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
+ * `guard` (ms) makes a menu that opens mid-fight ignore picks at first:
+ * taps and clicks for that long, keys and pad buttons until they pause
+ * (`pressGuard`).
  */
-export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number } = {}) => {
+export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number; guard?: number } = {}) => {
   let index = opts.initial ?? 0
   const openedAt = performance.now()
+  const takes = pressGuard(opts.guard ?? 0)
+  const tapGuard = Math.max(TAP_GUARD_MS, opts.guard ?? 0)
   const focus = (i: number, sound = true) => {
     index = (i + buttons.length) % buttons.length
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
@@ -67,7 +88,7 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
   }
   buttons.forEach((b, i) => {
     b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => performance.now() - openedAt > TAP_GUARD_MS && activate(i))
+    b.addEventListener('click', () => performance.now() - openedAt > tapGuard && activate(i))
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
@@ -75,10 +96,11 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
   const off = input.onKey((key) => {
     if (prev.includes(key)) focus(index - 1)
     else if (next.includes(key)) focus(index + 1)
-    else if (key === 'Enter' || key === 'Space') activate(index)
-    else if (/^Digit[1-9]$/.test(key)) {
+    else if (key === 'Enter' || key === 'Space') {
+      if (takes(performance.now() - openedAt)) activate(index)
+    } else if (/^Digit[1-9]$/.test(key)) {
       const i = Number(key.slice(5)) - 1
-      if (i < buttons.length) activate(i)
+      if (i < buttons.length && takes(performance.now() - openedAt)) activate(i)
     }
   })
   return { off, focus, get index() { return index } }
@@ -99,16 +121,52 @@ const evoRecipe = (evo: MoveEvolution, ready: boolean) =>
     ready && h('b', {}, t().levelUp.ready),
   )
 
+/** "Ember + Razor Leaf → Fire Pledge" chip of a fusion on the table. */
+const duoChip = (from: readonly [MoveId, MoveId], to: MoveId) =>
+  h(
+    'span',
+    { class: 'evo-recipe duo-recipe ready', title: `${MOVES[from[0]].name} + ${MOVES[from[1]].name} → ${MOVES[to].name}` },
+    h('img', { src: moveIcon(from[0]), alt: '' }),
+    '+',
+    h('img', { src: moveIcon(from[1]), alt: '' }),
+    '→',
+    h('img', { src: moveIcon(to), alt: '' }),
+  )
+
+/** "FIRE + GRASS → Fire Pledge" chip of a recipe, by type. `state` lights it up when ready, or marks the one fused. */
+const recipeChip = (r: DuoRecipe, state: 'ready' | 'done' | null, to: MoveId = r.to) => {
+  const m = t()
+  return h(
+    'span',
+    { class: `duo-type-recipe${state ? ` ${state}` : ''}`, title: `${m.types[r.types[0]]} + ${m.types[r.types[1]]} → ${MOVES[to].name}` },
+    typeBadge(r.types[0]),
+    '+',
+    typeBadge(r.types[1]),
+    '→',
+    h('img', { src: moveIcon(to), alt: '' }),
+    // Only the one on the table (or fused) spells its name: the rest stay compact.
+    state && h('span', { class: 'duo-type-name' }, MOVES[to].name),
+    state && h('b', {}, state === 'ready' ? m.levelUp.ready : m.duo.done),
+  )
+}
+
 /** Recipes an offer takes part in, flagged ready if picking it completes the pair. */
 const offerRecipes = (g: Game, offer: Offer) => {
   const p = g.player
   switch (offer.kind) {
     case 'move': {
       const evo = evolutionOf(offer.id)
-      return evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
+      const evos = evo ? [evoRecipe(evo, canEvolve(evo, { moves: [{ ...offer, cooldown: 0 }], items: p.items }))] : []
+      // Reaching max level makes it a duo ingredient: the fusions it would open show up.
+      if (offer.level < maxMoveLevel(offer.id) || isDuo(offer.id)) return evos
+      const moves = [...p.moves.filter((o) => o.id !== offer.id), { id: offer.id, level: offer.level, cooldown: 0 }]
+      const duos = readyDuos(moves).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves).some((r) => r.to === d.to))
+      return [...evos, ...duos.map((d) => duoChip(d.from, d.to))]
     }
+    case 'duo':
+      return [duoChip(offer.from, offer.to)]
     case 'item': {
-      const learnset: readonly MoveId[] = PLAYABLE[g.starter].learnset
+      const learnset = runLearnset(g.starter, g.branch)
       return EVOLUTIONS.filter((e) => e.item === offer.id && learnset.includes(e.from)).map((e) =>
         evoRecipe(e, canEvolve(e, { moves: p.moves, items: [offer] })),
       )
@@ -118,112 +176,343 @@ const offerRecipes = (g: Game, offer: Offer) => {
   }
 }
 
+/** The texts of the upgrade step to `level`: a line, or a fork's two branches. */
+const stepText = (id: MoveId, level: number) => t().moves[id].upgrades[level - 2]
+
+/** One line of a plain step (a fork's own line is its branches' hint). */
+const stepLine = (id: MoveId, level: number) => {
+  const text = stepText(id, level)
+  if (text === undefined) return ''
+  return typeof text === 'string' ? text : t().levelUp.forkHint(text.fork[0].name, text.fork[1].name)
+}
+
 const offerView = (g: Game, offer: Offer) => {
   const m = t()
+  const rare = rarityOf(offer) === 'rare'
   switch (offer.kind) {
     case 'move': {
       const def: MoveDef = MOVES[offer.id]
-      const text = m.moves[offer.id]
-      const isNew = offer.level === 1
+      const isNew = offer.level === 1 || (rare && offer.level === 2)
+      const first = isNew ? m.moves[offer.id].description : stepLine(offer.id, rare ? offer.level - 1 : offer.level)
       return {
         icon: moveIcon(offer.id),
         name: def.name,
-        tag: isNew ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level),
+        tag: `${evolvedFrom(offer.id) || isLegendary(offer.id) ? '★ ' : isDuo(offer.id) ? '✦ ' : ''}${isNew && !rare ? m.new : offer.level === maxMoveLevel(offer.id) ? m.max : m.level(offer.level)}`,
         isNew,
-        desc: isNew ? text.description : text.upgrades[offer.level - 2]!,
+        desc: rare ? `${first} · ${stepLine(offer.id, offer.level)}` : first,
         type: def.type,
+        fork: forkAt(offer.id, offer.level) !== null,
+        mods: NO_MODS,
       }
+    }
+    case 'branch': {
+      const def: MoveDef = MOVES[offer.id]
+      const text = stepText(offer.id, offer.level)
+      const branch = typeof text === 'object' ? text.fork[offer.branch] : null
+      const mods = forkAt(offer.id, offer.level)?.[offer.branch].mods ?? NO_MODS
+      return { icon: moveIcon(offer.id), name: branch?.name ?? def.name, tag: '', isNew: false, desc: branch?.desc ?? '', type: def.type, fork: false, mods }
     }
     case 'item': {
       const isNew = offer.level === 1
-      return { icon: itemIcon(offer.id), name: ITEMS[offer.id].name, tag: isNew ? m.new : m.level(offer.level), isNew, desc: m.items[offer.id], type: null }
+      // A rare card stacks two levels of the item.
+      const desc = rare ? `${m.items[offer.id]} x2` : m.items[offer.id]
+      return { icon: itemIcon(offer.id), name: ITEMS[offer.id].name, tag: isNew && !rare ? m.new : m.level(offer.level), isNew, desc, type: null, fork: false, mods: NO_MODS }
     }
     case 'berry':
-      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(PLAYABLE[g.starter].name), type: null }
+      return { icon: berryIcon(), name: 'Oran Berry', tag: '', isNew: false, desc: m.levelUp.berry(PLAYABLE[g.starter].name), type: null, fork: false, mods: NO_MODS }
     case 'evolution': {
       const to: MoveDef = MOVES[offer.to]
       const desc = m.levelUp.evolves(MOVES[offer.from].name, m.moves[offer.to].description)
-      return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type }
+      return { icon: moveIcon(offer.to), name: to.name, tag: m.levelUp.evolution, isNew: true, desc, type: to.type, fork: false, mods: NO_MODS }
     }
+    case 'duo': {
+      const to: MoveDef = MOVES[offer.to]
+      // The recipe chip under it shows the two moves it spends.
+      return { icon: moveIcon(offer.to), name: to.name, tag: m.duo.tag, isNew: true, desc: m.moves[offer.to].description, type: to.type, fork: false, mods: NO_MODS }
+    }
+    // Cursed items, branches and abilities have screens of their own (`ui/cursePick.ts`, `ui/abilityPick.ts`); this is their plain row.
+    case 'curse':
+      return { icon: curseIcon(offer.id), name: CURSES[offer.id].name, tag: offer.take ? m.curse.take : m.curse.leave, isNew: false, desc: m.curses[offer.id].upside, type: null, fork: false, mods: NO_MODS }
+    // Branches and abilities have screens of their own (`ui/abilityPick.ts`); this is their plain row.
+    case 'form': {
+      const b = BRANCHES[offer.id]
+      return { icon: portraitUrl(b.dex), name: b.name, tag: '', isNew: false, desc: m.branch.subtitle, type: b.types[0] ?? null, fork: false, mods: NO_MODS }
+    }
+    case 'ability':
+      return { icon: abilityIcon(offer.id), name: ABILITIES[offer.id].name, tag: offer.hidden ? m.ability.hidden : '', isNew: offer.hidden, desc: m.abilities[offer.id], type: null, fork: false, mods: NO_MODS }
+    // TM picks have their own screen too (`ui/tmPick.ts`).
+    case 'tm':
+    case 'forget': {
+      const def: MoveDef = MOVES[offer.id]
+      return { icon: moveIcon(offer.id), name: def.name, tag: m.tm.tag, isNew: offer.kind === 'tm', desc: m.moves[offer.id].description, type: def.type, fork: false, mods: NO_MODS }
+    }
+    case 'pass':
+      return { icon: berryIcon(), name: m.tm.pass, tag: '', isNew: false, desc: '', type: null, fork: false, mods: NO_MODS }
   }
 }
 
-/** Poké Mart charges offered under the level-up choices (only shown when owned). */
-type LevelUpExtras = { reroll: () => void; skip: () => void }
+/**
+ * The move card behind a level-up card: the level it grants, compared with the
+ * level the player has (along the branches taken, plus the one a fork card adds).
+ * An evolution or a duo shows the new move at level 1.
+ */
+const offerCard = (g: Game, offer: Offer) => {
+  switch (offer.kind) {
+    case 'move':
+    case 'branch': {
+      const owned = g.player.moves.find((m) => m.id === offer.id)
+      const path = offer.kind === 'branch' ? withBranch(owned?.path ?? 0, offer.level, offer.branch) : owned?.path
+      return moveCard(g, offer.id, { level: offer.level, from: owned?.level, path })
+    }
+    case 'evolution':
+    case 'duo':
+      return moveCard(g, offer.to, { level: 1 })
+    default:
+      return null
+  }
+}
 
-export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
+const NO_MODS: readonly ModId[] = []
+
+/** Twinkles scattered over a shiny card's frame, as [left %, top %, delay s] (CSS animates them). */
+const SPARKLES = [
+  [6, 12, 0],
+  [88, 8, 0.5],
+  [95, 68, 1.1],
+  [32, 82, 0.8],
+  [62, 4, 1.5],
+] as const
+
+/** Fills a level-up card (a persistent button, so a forgotten card's slot keeps its place in the menu). */
+const fillCard = (g: Game, button: HTMLElement, offer: Offer, i: number) => {
   const m = t().levelUp
-  const name = PLAYABLE[g.starter].line[g.player.stage]!.name
-  const buttons = g.offers.map((offer, i) => {
-    const v = offerView(g, offer)
-    const recipes = offerRecipes(g, offer)
-    return h(
-      'button',
-      { class: offer.kind === 'evolution' ? 'offer offer-evo' : 'offer' },
-      h('span', { class: 'offer-key' }, i + 1),
-      h('div', { class: 'offer-icon' }, h('img', { src: v.icon, alt: '' })),
+  const v = offerView(g, offer)
+  const recipes = offerRecipes(g, offer)
+  const rarity = rarityOf(offer)
+  // A move the evolution just unlocked, while it still comes up more often: tagged with the form that learns it.
+  const fresh =
+    offer.kind === 'move' && g.freshMoves > 0 && !g.player.moves.some((m) => m.id === offer.id) && unlockedAt(g.starter, g.branch, g.player.stage).includes(offer.id)
+  const classes = [
+    'offer',
+    offer.kind === 'evolution' && 'offer-evo',
+    // An evolved move's level-up shows in gold, a notch under an evolution.
+    offer.kind === 'move' && (evolvedFrom(offer.id) || isDuo(offer.id)) && 'offer-star',
+    offer.kind === 'duo' && 'offer-duo',
+    offer.kind === 'branch' && `offer-branch branch-${offer.branch === 0 ? 'a' : 'b'}`,
+    v.fork && 'offer-fork',
+    rarity && `offer-${rarity}`,
+    !canBanish(offer) && 'offer-keep',
+    fresh && 'offer-fresh',
+  ]
+  button.className = classes.filter(Boolean).join(' ')
+  button.style.setProperty('--i', String(i))
+  // A duo card wears both ingredients' type colors.
+  if (offer.kind === 'duo') {
+    button.style.setProperty('--duo-a', TYPE_COLORS[MOVES[offer.from[0]].type])
+    button.style.setProperty('--duo-b', TYPE_COLORS[MOVES[offer.from[1]].type])
+  }
+  const icon = h(
+    'div',
+    { class: 'offer-icon' },
+    h('img', { src: v.icon, alt: '' }),
+    v.mods.length > 0 && h('span', { class: 'offer-mods' }, ...v.mods.map((id) => h('img', { src: modIcon(id), alt: '' }))),
+  )
+  // The mouse opens the move card over the icon only, so it doesn't cover the other choices (a finger holds the whole card, see `levelUp`).
+  const card = offerCard(g, offer)
+  if (card) hoverMoveCard(icon, () => card)
+  // `h` drops the parts a card doesn't have; the button takes what's left.
+  const parts = h(
+    'div',
+    {},
+    h('span', { class: 'offer-key' }, offer.kind === 'branch' ? (offer.branch === 0 ? 'A' : 'B') : i + 1),
+    icon,
+    h(
+      'div',
+      { class: 'offer-body' },
       h(
         'div',
-        { class: 'offer-body' },
-        h('div', { class: 'offer-name' }, v.name, v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag)),
-        h('div', { class: 'offer-desc' }, v.desc),
-        recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
+        { class: 'offer-name' },
+        v.name,
+        v.tag && h('span', { class: v.isNew ? 'tag tag-new' : 'tag' }, v.tag),
+        v.fork && h('span', { class: 'tag tag-fork' }, m.forkTag),
+        fresh && h('span', { class: 'tag tag-fresh' }, m.freshTag(playerForm(g).name)),
+        rarity && h('span', { class: `tag tag-${rarity}` }, rarity === 'rare' ? m.rare : m.shiny),
       ),
-      v.type && typeBadge(v.type),
-    )
+      h('div', { class: 'offer-desc' }, v.desc),
+      rarity === 'shiny' && h('div', { class: 'offer-note' }, m.shinyNote),
+      offer.kind === 'duo' && h('div', { class: 'offer-note duo-note' }, t().duo.frees),
+      recipes.length > 0 && h('div', { class: 'evo-recipes' }, ...recipes),
+    ),
+    v.type && typeBadge(v.type),
+    (rarity || offer.kind === 'duo') && h('span', { class: 'offer-shine', 'aria-hidden': 'true' }),
+    rarity === 'shiny' &&
+      h(
+        'span',
+        { class: 'offer-sparkles', 'aria-hidden': 'true' },
+        ...SPARKLES.map(([x, y, delay]) => h('img', { src: sparkleIcon(), alt: '', style: `left:${x}%;top:${y}%;animation-delay:${delay}s` })),
+      ),
+  )
+  button.replaceChildren(...parts.childNodes)
+}
+
+/** A level-up card on its own, shown rather than picked (a Poké Ball's new move or item); holding it opens the move card. */
+export const offerTile = (g: Game, offer: Offer) => {
+  const tile = h('div', {})
+  fillCard(g, tile, offer, 0)
+  holdMoveCard(tile, () => offerCard(g, offer))
+  return tile
+}
+
+/**
+ * What the level-up screen can do besides picking: the Poké Mart charges and
+ * Esquecer (`banish` forgets the card at an index; the run redraws that slot in place).
+ */
+type LevelUpExtras = { reroll: () => void; skip: () => void; banish: (index: number) => void }
+
+/**
+ * The level-up screen, in three guises: the opening draft (the move after the
+ * signature), a fork (a move card split into its two branches, A and B) and a
+ * regular level-up, where Esquecer turns the next pick into forgetting a card:
+ * it flies off and its slot is drawn again.
+ */
+export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (offer: Offer) => void, extras?: LevelUpExtras): Screen => {
+  const m = t().levelUp
+  const name = playerForm(g).name
+  const fork = g.offers.find((o) => o.kind === 'branch')
+  const buttons = g.offers.map((offer, i) => {
+    const button = h('button', {})
+    fillCard(g, button, offer, i)
+    // Read at hold time: Esquecer redraws a slot with another offer.
+    holdMoveCard(button, () => offerCard(g, g.offers[i]!))
+    return button
   })
 
-  const actions = extras
-    ? [
-        g.rerolls > 0 && ([h('button', { class: 'btn' }, m.reroll(g.rerolls)), extras.reroll] as const),
-        g.skips > 0 && ([h('button', { class: 'btn' }, m.skip(g.skips)), extras.skip] as const),
-      ].filter((a) => a !== false)
-    : []
+  const charge = (left: number, label: string, cls = 'btn') => (extras && !fork && left > 0 ? h('button', { class: cls }, label) : null)
+  const reroll = charge(g.rerolls, m.reroll(g.rerolls))
+  const skip = charge(g.skips, m.skip(g.skips))
+  const banish = charge(g.banishes, m.banish(g.banishes), 'btn btn-banish')
+  const actions = [reroll, skip, banish].filter((b) => b !== null)
+
+  const offersEl = h('div', { class: fork ? 'offers branches' : 'offers' }, ...buttons)
+  const hintEl = h('div', { class: 'hint-slot' }, hint(fork ? m.pairHintKeys : m.hintKeys, m.hintTouch))
+  let banishing = false
+  const setBanishing = (on: boolean) => {
+    banishing = on
+    offersEl.classList.toggle('banishing', on)
+    banish?.classList.toggle('active', on)
+    if (banish) banish.textContent = on ? m.banishCancel : m.banish(g.banishes)
+    hintEl.replaceChildren(on ? hint(m.banishHintKeys, m.banishHintTouch) : hint(m.hintKeys, m.hintTouch))
+  }
+
+  /** The card at `i` flies off as a ghost while its slot fills with the card drawn in its place. */
+  const forget = (i: number) => {
+    const button = buttons[i]!
+    const ghost = button.cloneNode(true) as HTMLElement
+    ghost.classList.add('offer-ghost')
+    ghost.classList.remove('selected')
+    Object.assign(ghost.style, { top: `${button.offsetTop}px`, left: `${button.offsetLeft}px`, width: `${button.offsetWidth}px`, height: `${button.offsetHeight}px` })
+    offersEl.append(ghost)
+    ghost.addEventListener('animationend', () => ghost.remove())
+    extras?.banish(i)
+    fillCard(g, button, g.offers[i]!, i)
+    button.classList.add('offer-redrawn', 'selected')
+    playSfx('escaped')
+    setBanishing(false)
+    if (g.banishes <= 0) banish?.remove()
+  }
 
   let done = false
   // Space also fires the special attack: ignore presses that were meant for the fight.
   const openedAt = performance.now()
-  const nav = menu(input, [...buttons, ...actions.map(([b]) => b)], (i) => {
+  const nav = menu(input, [...buttons, ...actions], (i) => {
     if (done || performance.now() - openedAt < 400) return
+    const offer = g.offers[i]
+    const action = actions[i - buttons.length]
+    if (banishing && offer) return canBanish(offer) ? forget(i) : playSfx('denied')
+    if (action && action === banish) {
+      playSfx('move')
+      return setBanishing(!banishing)
+    }
     done = true
     playSfx('select')
-    const offer = g.offers[i]
     if (offer) onChoose(offer)
-    else actions[i - buttons.length]?.[1]()
+    else if (action === reroll) extras?.reroll()
+    else if (action === skip) extras?.skip()
+  })
+  const offEscape = input.onKey((key) => {
+    if (key === 'Escape' && banishing) setBanishing(false)
+    // A fork's two paths sit side by side (stacked only on a phone held upright): left and right move too.
+    else if (fork && (key === 'ArrowLeft' || key === 'KeyA')) nav.focus(nav.index - 1)
+    else if (fork && (key === 'ArrowRight' || key === 'KeyD')) nav.focus(nav.index + 1)
   })
 
+  const title = fork ? m.forkTitle(MOVES[fork.id].name, fork.level) : drafting(g) ? m.draftTitle(name) : g.prize ? m.prize[g.prize] : m.title(name, g.player.level - g.pendingLevelUps + 1)
   const el = h(
     'div',
     { class: 'screen dim' },
     h(
       'div',
-      { class: 'dialog box pop' },
-      h('div', { class: 'dialog-title' }, m.title(name, g.player.level - g.pendingLevelUps + 1)),
-      h('div', { class: 'offers' }, ...buttons),
-      actions.length > 0 && h('div', { class: 'buttons' }, ...actions.map(([b]) => b)),
-      hint(m.hintKeys, m.hintTouch),
+      { class: fork ? 'dialog box pop levelup fork' : 'dialog box pop levelup' },
+      h('div', { class: 'dialog-title' }, title),
+      offersEl,
+      actions.length > 0 && h('div', { class: 'buttons' }, ...actions),
+      hintEl,
     ),
   )
   root.append(el)
-  return { el, dispose: () => (nav.off(), el.remove()) }
+  return { el, dispose: () => (nav.off(), offEscape(), el.remove()) }
 }
 
 /* ---------------- Pause ---------------- */
 
-const STAT_ROWS = [
-  ['damage', (s: Game['player']['stats']) => `x${s.might.toFixed(2)}`],
-  ['area', (s) => `x${s.area.toFixed(2)}`],
-  ['cooldown', (s) => `x${s.cooldown.toFixed(2)}`],
-  ['duration', (s) => `x${s.duration.toFixed(2)}`],
-  ['amount', (s) => `+${s.amount}`],
-  ['speed', (s) => `${Math.round(s.speed)}`],
-  ['defense', (s) => `${s.armor}`],
-  ['regen', (s) => `${s.regen.toFixed(1)}/s`],
-] as const satisfies ReadonlyArray<readonly [keyof Messages['stats'], (s: Game['player']['stats']) => string]>
+const mult = (v: number) => `x${v.toFixed(2)}`
+const pct = (v: number) => `${v < 0 ? '' : '+'}${Math.round(v * 100)}%`
+const plus = (v: number) => `+${v}`
+const whole = (v: number) => `${Math.round(v)}`
+
+/** How each stat reads on the pause sheet. */
+const SHEET_FORMAT = {
+  maxHp: whole,
+  might: mult,
+  cooldown: mult,
+  area: mult,
+  duration: mult,
+  amount: plus,
+  speed: whole,
+  armor: (v) => `${Number(v.toFixed(1))}`,
+  regen: (v) => `${v.toFixed(1)}/s`,
+  magnet: whole,
+  growth: mult,
+  greed: mult,
+  projectileSpeed: mult,
+  statusChance: pct,
+  statusDamage: pct,
+  damageTaken: mult,
+  comboMoves: plus,
+  specialRecharge: (v) => `${v.toFixed(2)}s`,
+} satisfies Record<SheetStat, (v: number) => string>
+
+/** The stat table: name, current value and how many upgrade cards fed it. */
+const statTable = (g: Game) => {
+  const m = t().pause
+  return h(
+    'div',
+    { class: 'stat-table' },
+    h('span', { class: 'stat-cards-head', title: m.cardsHint }, m.cards),
+    ...statSheet(g.player.stats, g.player.items).flatMap((r) => [
+      r.stat === 'typeDamage' ? h('span', { class: 'stat-name' }, m.typeDamage, typeBadge(r.type)) : h('span', { class: 'stat-name' }, m.stats[r.stat]),
+      h('b', {}, r.stat === 'typeDamage' ? pct(r.value) : SHEET_FORMAT[r.stat](r.value)),
+      r.cards > 0 ? h('span', { class: 'stat-cards', title: m.cardsHint }, `×${r.cards}`) : h('span', { class: 'stat-cards none' }, '·'),
+    ]),
+  )
+}
 
 /** Paired item hint for a loadout move: shows what it needs and whether it is ready. */
 const loadoutHint = (g: Game, id: MoveId) => {
   if (evolvedFrom(id)) return h('span', { class: 'tag tag-new' }, '★ EVO')
+  if (isDuo(id)) return h('span', { class: 'tag tag-duo' }, '✦ DUO')
+  // A legendary's move never evolves: a gold star says where it came from.
+  if (isLegendary(id)) return h('span', { class: 'tag tag-legendary' }, '★')
   const evo = evolutionOf(id)
   if (!evo) return null
   const ready = canEvolve(evo, g.player)
@@ -235,45 +524,106 @@ const loadoutHint = (g: Game, id: MoveId) => {
   )
 }
 
-const loadoutList = (g: Game) =>
+const levelTag = (level: number, max: number) => h('span', { class: level >= max ? 'tag tag-max' : 'tag' }, level >= max ? t().max : t().level(level))
+
+const moveList = (g: Game) =>
   h(
     'div',
     { class: 'loadout-list' },
-    ...g.player.moves.map((m) =>
-      h(
+    ...g.player.moves.map((m) => {
+      const row = h(
         'div',
         { class: 'loadout-row' },
         h('img', { src: moveIcon(m.id), alt: '' }),
         MOVES[m.id].name,
+        // The mods of the fork branches taken.
+        ...modsOf(moveStats(m.id, m.level, g.player.stats, m.path).mods).map((id) => h('img', { class: 'loadout-mod', src: modIcon(id), alt: '' })),
         loadoutHint(g, m.id),
-        !evolvedFrom(m.id) && h('span', { class: 'tag' }, t().level(m.level)),
-      ),
-    ),
-    ...g.player.items.map((i) =>
-      h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, h('span', { class: 'tag' }, t().level(i.level))),
-    ),
+        levelTag(m.level, maxMoveLevel(m.id)),
+      )
+      withMoveCard(row, () => moveCard(g, m.id, { level: m.level, path: m.path, describe: true }))
+      return row
+    }),
   )
 
+const itemList = (g: Game) =>
+  h(
+    'div',
+    { class: 'loadout-list' },
+    ...g.player.items.map((i) =>
+      h('div', { class: 'loadout-row' }, h('img', { src: itemIcon(i.id), alt: '' }), ITEMS[i.id].name, levelTag(i.level, ITEMS[i.id].levels.length)),
+    ),
+    ...g.curses.held.map((id) =>
+      h('div', { class: 'loadout-row cursed', title: t().curses[id].downside }, h('img', { src: curseIcon(id), alt: '' }), CURSES[id].name, h('span', { class: 'tag tag-curse' }, t().curse.label)),
+    ),
+    g.player.items.length === 0 && g.curses.held.length === 0 && h('p', { class: 'loadout-empty' }, t().pause.noItems),
+  )
+
+const pauseSection = (title: string, body: HTMLElement) => h('section', { class: 'pause-section' }, h('h3', { class: 'pause-head' }, title), body)
+
 /**
- * `settings` opens the settings screen on top (see `openSettings`) and must
- * call `back` once it closes; the pause menu hides meanwhile, then redraws
+ * The duo recipes this run can make (both types among the moves it can learn
+ * or holds), lit when ready; once one is fused, just that one, marked done.
+ */
+const duoPanel = (g: Game) => {
+  const m = t().duo
+  const p = g.player
+  const owned = p.moves.find((o) => isDuo(o.id))
+  const types = new Set<PokeType>([...runLearnset(g.starter, g.branch), ...p.moves.map((o) => o.id)].map((id) => MOVES[id].type))
+  const ready = readyDuos(p.moves)
+  const recipes = reachableDuos(types)
+  if (recipes.length === 0 && !owned) return null
+  const chips = owned
+    ? recipes.filter((r) => r.to === owned.id || ('alt' in r && r.alt === owned.id)).map((r) => recipeChip(r, 'done', owned.id))
+    : recipes.map((r) => {
+        const fused = ready.find((d) => d.to === r.to || ('alt' in r && d.to === r.alt))
+        return recipeChip(r, fused ? 'ready' : null, fused?.to)
+      })
+  const half = p.moves.filter(fusable).length > 0
+  return h(
+    'div',
+    { class: 'duo-panel' },
+    h('div', { class: 'duo-recipes' }, h('span', { class: 'duo-panel-title' }, h('img', { src: sparkleIcon(), alt: '' }), m.title), ...chips),
+    !owned && h('p', { class: half ? 'duo-legend near' : 'duo-legend' }, m.legend),
+  )
+}
+
+/** The ability in play for the pause menu: the one picked (its Hidden tag too), the Mega's while that lasts, or when it comes. */
+const abilityPanel = (g: Game) => {
+  const m = t().ability
+  const mega = g.mega.active > 0 ? heldMega(g) : null
+  const id = g.ability.id
+  const row = (cls: string, icon: string, name: Node | string, text: string) =>
+    h('div', { class: `pause-ability ${cls}` }, h('img', { src: icon, alt: '' }), h('div', {}, h('b', {}, h('small', {}, m.label), name), h('span', {}, text)))
+  if (mega) return row('mega', megaIcon(), mega.ability, m.megaNote)
+  if (!id) return row('pending', sparkleIcon(), '—', m.pending)
+  const set = abilitySet(g.starter, g.branch)
+  const hidden = isHidden(set, set.indexOf(id))
+  return row(hidden ? 'hidden-ability' : '', abilityIcon(id), h('span', {}, ABILITIES[id].name, hidden && h('span', { class: 'tag tag-hidden' }, m.hidden)), t().abilities[id])
+}
+
+/**
+ * `settings` opens the settings screen on top (see `openSettings`) and
+ * `report` the bug report form (null: no API to send it to); each must call
+ * `back` once it closes. The pause menu hides meanwhile, then redraws
  * itself, in the new language if it changed.
  */
-type PauseActions = { resume: () => void; quit: () => void; settings: (back: () => void) => Screen }
+type PauseActions = { resume: () => void; quit: () => void; settings: (back: () => void) => Screen; report: ((back: () => void) => Screen) | null }
 
 export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: PauseActions): Screen => {
-  const el = h('div', { class: 'screen dim' })
+  const el = h('div', { class: 'screen dim pause-screen' })
   let nav: ReturnType<typeof menu> | null = null
-  let settings: Screen | null = null
+  /** The screen open on top (settings, the bug report). */
+  let sub: Screen | null = null
 
-  const openSettings = () => {
-    if (settings) return
+  const openSub = (open: (back: () => void) => Screen, focus: number) => {
+    if (sub) return
     nav?.off()
     el.classList.add('hidden')
-    settings = actions.settings(() => {
-      settings = null
+    sub = open(() => {
+      sub = null
       el.classList.remove('hidden')
-      render(1, false)
+      render(focus, false)
     })
   }
 
@@ -282,46 +632,65 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
     const m = t().pause
     const resume = h('button', { class: 'btn' }, m.resume)
     const settingsButton = h('button', { class: 'btn' }, m.settings)
+    const report = actions.report
+    const reportButton = report && h('button', { class: 'btn' }, m.reportBug)
     const quit = h('button', { class: 'btn' }, m.quit)
+    const buttons = [resume, settingsButton, ...(reportButton ? [reportButton] : []), quit]
     nav?.off()
-    nav = menu(input, [resume, settingsButton, quit], (i) => {
-      if (i === 0) actions.resume()
-      // Open after this key dispatch, or the settings would receive the same Enter.
-      if (i === 1) later(openSettings)
-      if (i === 2) actions.quit()
+    nav = menu(input, buttons, (i) => {
+      const pressed = buttons[i]
+      if (pressed === resume) actions.resume()
+      // Open after this key dispatch, or the new screen would receive the same Enter.
+      if (pressed === settingsButton) later(() => openSub(actions.settings, i))
+      if (pressed === reportButton && report) later(() => openSub(report, i))
+      if (pressed === quit) actions.quit()
     }, { initial: focus })
-    const s = g.player.stats
     el.replaceChildren(
       h(
         'div',
-        { class: opening ? 'dialog box pop wide' : 'dialog box wide' },
+        { class: opening ? 'dialog box pop wide pause' : 'dialog box wide pause' },
         h('div', { class: 'dialog-title' }, m.title),
         difficultyTag(g.difficulty),
+        abilityPanel(g),
         h(
           'div',
-          { class: 'pause-grid' },
-          loadoutList(g),
-          h('div', { class: 'stat-list' }, ...STAT_ROWS.map(([key, fmt]) => h('div', { class: 'stat-row' }, h('span', {}, t().stats[key]), h('b', {}, fmt(s))))),
+          { class: 'pause-body' },
+          h(
+            'div',
+            { class: 'pause-grid' },
+            pauseSection(m.statsTitle, statTable(g)),
+            h('div', { class: 'pause-column' }, pauseSection(m.movesTitle, moveList(g)), pauseSection(m.itemsTitle, itemList(g))),
+          ),
+          duoPanel(g),
+          h('p', { class: 'evo-legend' }, m.evoLegend),
+          hint(m.cardHintKeys, m.cardHintTouch),
         ),
-        h('p', { class: 'evo-legend' }, m.evoLegend),
-        h('div', { class: 'buttons' }, resume, settingsButton, quit),
+        h('div', { class: 'buttons' }, ...buttons),
       ),
     )
   }
 
   render(0, true)
-  // Esc inside the settings only closes them.
-  const offEsc = input.onKey((k) => k === 'Escape' && !settings && actions.resume())
+  // Esc inside the settings (or the report) only closes them.
+  const offEsc = input.onKey((k) => k === 'Escape' && !sub && actions.resume())
   root.append(el)
-  return { el, dispose: () => (settings?.dispose(), nav?.off(), offEsc(), el.remove()) }
+  return { el, dispose: () => (sub?.dispose(), nav?.off(), offEsc(), el.remove()) }
 }
 
 /* ---------------- Results ---------------- */
 
+/** How long the results ignore confirms after a faint or a victory (`menu`'s `guard`). */
+const RESULTS_GUARD_MS = 900
+
 /** Icon, name and type for a results-screen damage row (and the run's share card). */
 export const damageSource = (g: Game, id: DamageSource) => {
+  if (id === 'ability') {
+    const ability = g.ability.id
+    const type = playerForm(g).types[0] ?? 'normal'
+    return ability ? { icon: abilityIcon(ability), name: ABILITIES[ability].name, type } : { icon: sparkleIcon(), name: t().ability.results, type }
+  }
   if (id !== 'special') return { icon: moveIcon(id), name: MOVES[id].name, type: MOVES[id].type }
-  const r = resolveSpecial(g.starter, g.player.stage)
+  const r = resolveSpecial(g.starter, g.player.stage, null, g.branch)
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
@@ -399,7 +768,7 @@ export const results = (
   const e = t().eggs
   const r = t().rifts
   const victory = g.phase === 'victory'
-  const name = PLAYABLE[g.starter].line[g.player.stage]!.name
+  const name = playerForm(g).name
   const entries = (Object.entries(g.damageByMove) as Array<[DamageSource, number]>).sort((a, b) => b[1] - a[1])
   const top = entries[0]?.[1] ?? 1
   const earned = runEarnings(g)
@@ -433,8 +802,9 @@ export const results = (
     share && (() => later(() => openSub(extras.share?.open, share))),
     boards && (() => later(() => openSub(ranking?.open, boards))),
   ].filter((a) => typeof a === 'function')
-  const bindNav = (initial = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial })
-  let nav = bindNav()
+  const bindNav = (initial = 0, guard = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial, guard })
+  // The run ends mid-fight: A and Space, still being pressed for the special, would pick the focused button (Retry).
+  let nav = bindNav(0, RESULTS_GUARD_MS)
 
   const el = h(
     'div',

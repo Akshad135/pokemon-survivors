@@ -6,12 +6,15 @@ import { STANCES } from '../data/bosses'
 import { DIFFICULTIES } from './difficulty'
 import { bodyOf } from '../data/bodies'
 import { fightPace } from './bossFight'
-import { hurtPlayer } from './combat'
+import { bumpDamage, hurtPlayer } from './combat'
 import { leadTime } from './horde'
-import { createStatus, statusAttack, statusPace } from './status'
+import { inView } from './queries'
+import { isSpitter, spitBand, spitterStride } from './spitters'
+import { CONFUSE_BUMP, CONFUSE_CONTACT, createStatus, isFrozen, statusAttack, statusPace } from './status'
 import { enemyGroundPace } from './terrain'
 import { createTraitState, isAirborne, traitPace } from './traits'
 import { dungeonNav } from './dungeon'
+import { TRAITS } from '../data/traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
 import * as dm from '../engine/dmath'
 
@@ -62,6 +65,8 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     trait: createTraitState(def.trait, g.rng()),
     dying: -1,
     fled: false,
+    thrown: null,
+    alpha: null,
   }
   g.enemies.push(enemy)
   return enemy
@@ -85,6 +90,26 @@ export const rebuildGrid = (g: Game) => {
   })
 }
 
+/** Pace of a foe that lost track of the player. */
+const LOST_PACE = 0.55
+/** A thrown foe stops hurting others once its knockback drops under this speed (px/s). */
+const THROWN_MIN = 90
+
+/** A thrown foe crashing into `o` (once per throw, passing some of its momentum), or a confused one bumping it. */
+const bodyBlow = (g: Game, e: Enemy, o: Enemy) => {
+  const t = e.thrown
+  if (t) {
+    if (t.hit.has(o.id)) return
+    t.hit.add(o.id)
+    o.kx += e.kx * 0.5 / o.mass
+    o.ky += e.ky * 0.5 / o.mass
+    return bumpDamage(g, o, t.damage, t.move)
+  }
+  if (e.status.bump > 0) return
+  e.status.bump = CONFUSE_BUMP
+  bumpDamage(g, o, e.damage * CONFUSE_CONTACT, e.status.confuse.move)
+}
+
 const FAINT_TIME = 0.4
 
 /** Seconds a fleeing boss takes to glide off and fade out (`chaseOffBosses`). */
@@ -105,6 +130,7 @@ export const updateEnemies = (g: Game, dt: number) => {
   const inside = g.place.inside
   const cave = inside?.id === 'cave' && inside.state.plan ? inside : null
   const nav = cave?.state.plan ? dungeonNav(cave.state.plan, p.x - cave.x, p.y - cave.y) : null
+  const band = spitBand(g.view)
 
   for (const e of g.enemies) {
     if (e.dying >= 0) {
@@ -115,15 +141,22 @@ export const updateEnemies = (g: Game, dt: number) => {
       }
       continue
     }
-    const frozen = e.status.stun > 0
+    const frozen = e.status.stun > 0 || isFrozen(e.status)
     if (!frozen) e.animTime += dt
     e.flash = Math.max(0, e.flash - dt)
     const pace = e.speed * statusPace(e.status) * traitPace(e) * (e.flash > 0 ? 0.35 : 1) * enemyGroundPace(g, e)
 
     let vx = 0
     let vy = 0
-    if (e.behavior.kind === 'chase') {
-      // Runners head where the player is going; a boss in a fight walks at its stance's pace and a ranged one holds its distance.
+    const confused = e.status.confuse.time > 0
+    if (e.behavior.kind === 'chase' && (confused || p.hidden)) {
+      // Lost track of the player (confused, or the player burrowed): amble about.
+      const h = e.status.heading + e.id * 2.4 + (confused ? 0 : g.time * 0.6)
+      vx = dm.cos(h) * pace * LOST_PACE
+      vy = dm.sin(h) * pace * LOST_PACE
+    } else if (e.behavior.kind === 'chase') {
+      // Runners head where the player is going; a boss in a fight walks at its stance's pace and a ranged one holds its distance;
+      // a spitter walks into sight and holds its band, backing off from a player who comes close.
       let tx = p.x
       let ty = p.y
       let speed = pace
@@ -134,6 +167,8 @@ export const updateEnemies = (g: Game, dt: number) => {
       } else if (e.fight) {
         const hold = STANCES[e.fight.stance].hold
         speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+      } else if (isSpitter(e)) {
+        speed = pace * spitterStride(dm.hypot(p.x - e.x, p.y - e.y), inView(g, e.x, e.y, -TRAITS.spitter.inset), band)
       }
       if (nav && cave && nav(e.x - cave.x, e.y - cave.y, waypoint)) {
         tx = cave.x + waypoint.x
@@ -142,6 +177,16 @@ export const updateEnemies = (g: Game, dt: number) => {
       const d = dirTo(e.x, e.y, tx, ty)
       vx = d.x * speed
       vy = d.y * speed
+    } else if (e.behavior.kind === 'raid') {
+      // A raider walks to the nest and stays at the egg, unless the player comes close.
+      const b = e.behavior
+      const onPlayer = dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < b.aggro * b.aggro && !p.hidden
+      const tx = onPlayer ? p.x : b.x
+      const ty = onPlayer ? p.y : b.y
+      const atEgg = !onPlayer && dm.sq(b.x - e.x) + dm.sq(b.y - e.y) < dm.sq(e.radius + 4)
+      const d = dirTo(e.x, e.y, tx, ty)
+      vx = atEgg ? 0 : d.x * pace
+      vy = atEgg ? 0 : d.y * pace
     } else {
       vx = frozen ? 0 : e.behavior.vx
       vy = frozen ? 0 : e.behavior.vy
@@ -154,7 +199,9 @@ export const updateEnemies = (g: Game, dt: number) => {
     const damp = dm.exp(-9 * dt)
     e.kx *= damp
     e.ky *= damp
-    if (Math.abs(vx) + Math.abs(vy) > 1) e.dir = dir8(vx, vy)
+    if (e.thrown && dm.sq(e.kx) + dm.sq(e.ky) < THROWN_MIN * THROWN_MIN) e.thrown = null
+    // A spitter backing off keeps facing the player.
+    if (Math.abs(vx) + Math.abs(vy) > 1) e.dir = isSpitter(e) && e.behavior.kind === 'chase' ? dir8(p.x - e.x, p.y - e.y) : dir8(vx, vy)
 
     // Wrap stragglers back in front of the player instead of letting them get lost.
     if (e.behavior.kind === 'chase' && !e.boss && Math.abs(e.x - p.x) + Math.abs(e.y - p.y) > recycleDist * 1.3) {
@@ -174,6 +221,7 @@ export const updateEnemies = (g: Game, dt: number) => {
       const dy = e.y - o.y
       const min = (e.radius + o.radius) * 0.8
       const d2 = dx * dx + dy * dy
+      if (d2 < min * min && (e.thrown || e.status.confuse.time > 0)) bodyBlow(g, e, o)
       if (d2 >= min * min || d2 === 0) continue
       const d = Math.sqrt(d2)
       const push = ((min - d) / d) * (o.mass / (e.mass + o.mass)) * 0.5
