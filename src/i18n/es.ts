@@ -336,7 +336,7 @@ export const es: Messages = {
     place: { day: 'hoy', week: 'esta semana', all: 'en total' },
     queued: 'Sin conexión: la partida entra al ranking cuando vuelva la conexión.',
     rejected: 'Esta partida no entró al ranking.',
-    unranked: 'Esta partida quedó fuera del ranking porque empezó sin conexión.',
+    unranked: 'Esta partida quedó fuera del ranking: empezó sin conexión o con el juego abierto en otra pestaña o dispositivo.',
     guest: 'Entra con una cuenta para aparecer en el ranking.',
     noHandle: 'Crea tu perfil en la pantalla de cuenta para aparecer en el ranking.',
     open: 'Ranking',

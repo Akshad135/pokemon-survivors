@@ -432,7 +432,7 @@ export const pt = {
     place: { day: 'hoje', week: 'na semana', all: 'no total' },
     queued: 'Sem conexão: a partida entra no ranking quando a conexão voltar.',
     rejected: 'Esta partida não entrou no ranking.',
-    unranked: 'Esta partida ficou fora do ranking porque começou sem conexão.',
+    unranked: 'Esta partida ficou fora do ranking: começou sem conexão ou com o jogo aberto em outra aba ou aparelho.',
     guest: 'Entre com uma conta para aparecer no ranking.',
     noHandle: 'Crie seu perfil na tela da conta para aparecer no ranking.',
     open: 'Ranking',

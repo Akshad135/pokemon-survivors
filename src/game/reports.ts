@@ -58,7 +58,7 @@ export const parseReport = (v: unknown): ReportDraft | null => {
  * `:x` stands for one path segment. Reads stay open, and the game keeps
  * playing as a guest would.
  */
-export const BAN_GATED = ['POST /runs', 'PUT /runs/:token', 'PUT /save', 'POST /reports', 'POST /suggestions', 'PUT /suggestions/:id/vote', 'PUT /poll'] as const
+export const BAN_GATED = ['POST /runs', 'POST /runs/:token/start', 'PUT /runs/:token', 'PUT /save', 'POST /reports', 'POST /suggestions', 'PUT /suggestions/:id/vote', 'PUT /poll'] as const
 
 const GATES = BAN_GATED.map((route) => {
   const [method, path] = route.split(' ') as [string, string]

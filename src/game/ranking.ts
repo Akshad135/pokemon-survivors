@@ -67,6 +67,8 @@ export const RANKED = {
   window: 10 * 60,
   /** Start tokens never used are dropped after this many days. */
   tokenDays: 7,
+  /** Seeds the server deals are in [0, seedSpan): the 32 bits the simulation reads (`createRng`). */
+  seedSpan: 2 ** 32,
 } as const
 
 export const isPlayable = (v: unknown): v is PlayableId => typeof v === 'string' && Object.hasOwn(PLAYABLE, v)
@@ -105,6 +107,25 @@ export const parseRunResult = (raw: unknown): RunResult | null => {
 
 /** Whether `time` seconds of play fit in `elapsed` seconds of wall clock since the start token. */
 export const clockAllows = (elapsed: number, time: number) => time <= elapsed + RANKED.slack
+
+/** What a start token's row holds when its run reports: the seed dealt with it (null on rows from before the server dealt seeds) and what the run reported before, if it did. */
+export type IssuedRun = { seed: number | null; reported: Pick<RunResult, 'starter' | 'difficulty' | 'time' | 'outcome'> | null }
+
+/**
+ * Why a run's report doesn't fit its start token's row, or null when it does.
+ * `seed`: the replay played another seed than the one dealt (a row without
+ * one takes any). `mismatch`: the run reported before and this isn't it
+ * grown: another Pokémon or difficulty, a shorter run, or a longer one after
+ * anything but a victory (only endless mode goes on). So a short run can't
+ * keep its seed on hold to grow later.
+ */
+export const reportProblem = (row: IssuedRun, result: RunResult, seed: number): 'seed' | 'mismatch' | null => {
+  if (row.seed !== null && row.seed !== seed) return 'seed'
+  const before = row.reported
+  if (!before) return null
+  if (before.starter !== result.starter || before.difficulty !== result.difficulty || before.time > result.time) return 'mismatch'
+  return before.time < result.time && before.outcome !== 'victory' ? 'mismatch' : null
+}
 
 /** Quits in the first minute stay off the ranking: they'd only crowd the profile's recent runs. */
 export const rankable = (r: RunResult) => r.outcome !== 'quit' || r.time >= 60

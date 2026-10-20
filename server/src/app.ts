@@ -92,7 +92,7 @@ const SUGGESTION_ERRORS = { profile: 403, limit: 429, unknown: 404, closed: 409 
 const REPORT_ERRORS = { self: 400, limit: 429 } as const
 
 /** What a run's end answers when it's refused, by `FinishError`. */
-const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
+const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, clock: 422, challenge: 400 } as const
 
 /**
  * The HTTP API. Routes marked (auth) need a Clerk session token
@@ -109,16 +109,22 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   what is stored now, for the device to keep (see `applyPush`).
  * - `GET /me` (auth): `{ profile }`, the player's handle and name, null before they pick them.
  * - `PUT /me` (auth) `{ handle, name }`: sets them. 409 `{ suggestion }` when the handle is taken.
- * - `POST /runs` (auth) `{ challenge? }`: `{ token }` for a run that just started. 429 past the start rate limit.
- *   With `challenge` (a `YYYY-MM-DD` Brasília day) it's that day's Desafio do dia, 400 when
- *   that day's challenge isn't open (`challengeOpen`).
+ * - `POST /runs` (auth) `{ challenge? }`: `{ token, seed }` for the player's next run: the start
+ *   token and the seed the run must play (random, from `crypto`). It replaces the player's other
+ *   unfinished token of the same kind, so only one regular and one challenge token are live at a
+ *   time. 429 past the start rate limit. With `challenge` (a `YYYY-MM-DD` Brasília day) it's that
+ *   day's Desafio do dia, whose seed is the day's (`dailyChallenge`); 400 when that day's challenge
+ *   isn't open (`challengeOpen`).
+ * - `POST /runs/:token/start` (auth): the run of a token asked for ahead really starts now: its
+ *   clock restarts (`stampRun`). 204, 404 for an unknown or finished token, 409 for a replaced one.
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
  *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
  *   replay may be re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
  *   400 for an implausible result, a missing replay or a replay of another run,
- *   404 for an unknown token, 409 when it contradicts what the run already
- *   recorded, 422 when the clock can't fit it. The replay must play by this
+ *   `seed` for a replay of another seed than the token's (`reportProblem`; a token from before the
+ *   server dealt seeds takes any), 404 for an unknown token, 409 for a replaced one or when it
+ *   contradicts what the run already recorded, 422 when the clock can't fit it. The replay must play by this
  *   server's rules (`RULES_VERSION`), so every run on the boards can be
  *   re-simulated: 400 `outdated` for older ones (the run straddled a deploy),
  *   503 for newer ones (the API isn't deployed yet: the game keeps the result
@@ -233,8 +239,13 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const body = await json(c)
     const challenge = isRecord(body) && body.challenge !== undefined ? body.challenge : null
     if (challenge !== null && (!isDayKey(challenge) || !challengeOpen(challenge, new Date()))) return c.json({ error: 'not an open challenge' }, 400)
-    const token = await ranking.startRun(c.var.userId, challenge)
-    return token ? c.json({ token }, 201) : c.json({ error: 'too many runs' }, 429)
+    const started = await ranking.startRun(c.var.userId, challenge)
+    return started ? c.json(started, 201) : c.json({ error: 'too many runs' }, 429)
+  })
+
+  app.post('/runs/:token/start', auth, async (c) => {
+    const stamped = await ranking.stampRun(c.var.userId, c.req.param('token'))
+    return stamped === 'ok' ? c.body(null, 204) : c.json({ error: stamped }, stamped === 'replaced' ? 409 : 404)
   })
 
   // A 30-minute replay is ~60 KB of JSON.
