@@ -96,7 +96,7 @@ const fire = (g: Game, boss: Enemy, written: BossPattern, fight: BossFight | nul
       const offset = range(g.rng, 0, TAU)
       const count = attackCount(pattern.count, fight)
       const gap = pattern.gap ?? 0
-      const open = range(g.rng, 0, TAU)
+      const open = gap > 0 ? range(g.rng, 0, TAU) : 0
       // Closing on the player from `around` px, or out of the boss.
       const around = pattern.around
       const windup = around === undefined ? 0 : telegraph(pattern.windup ?? MIN_TELEGRAPH, fight)
