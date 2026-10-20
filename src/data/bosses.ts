@@ -141,6 +141,8 @@ export type BossPhase = {
   steer?: BossSteer
   form?: string
   shift?: number
+  /** After the shift, each pattern waits this share of its `every` before it first fires (0.5 when absent). */
+  open?: number
 }
 
 /** Seconds a boss holds still and untouchable as a new phase begins. */

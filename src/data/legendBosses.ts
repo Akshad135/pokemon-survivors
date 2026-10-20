@@ -76,6 +76,9 @@ export const WAVE_LEGEND_HP = 0.85
 /** Seconds a wave legendary holds still and untouchable as a phase begins (shorter than a rift's: the horde keeps coming, and the fight shouldn't last longer than it did in one phase). */
 const SHIFT = 1.2
 
+/** Share of each pattern's pause it waits after a phase's opening: soon, so a fight that ends fast still sees its phases attack. */
+const OPEN = 0.2
+
 /** Thresholds of the three phases (share of HP left). */
 const TRIO = [1, 0.66, 0.33] as const
 
@@ -114,6 +117,7 @@ const articuno: readonly BossPhase[] = [
     // It takes to the sky: Fly (its shadow hunts the player) and a sweeping Ice Beam.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('ice', 18),
       dive('aero', 8.5, 20),
@@ -122,12 +126,13 @@ const articuno: readonly BossPhase[] = [
       { stance: 'close', kind: 'strikes', every: 4, target: 'self', count: 1, spread: 0, radius: 42, delay: 1.2, damage: 20, visual: 'ice' },
       { below: 0.5, kind: 'volley', every: 4, count: 5, arc: 0.8, speed: 100, windup: 0.9, radius: 5, damage: 18, visual: 'ice' },
     ],
-    ultimate: { move: 'Sheer Cold', first: 1.5, every: 16, steps: [{ at: 0, pattern: closing('ice', 20, 18, 1) }, { at: 1.7, pattern: closing('ice', 20, 18, 0.9) }] },
+    ultimate: { move: 'Sheer Cold', first: 1.5, every: 18, steps: [{ at: 0, pattern: closing('ice', 20, 18, 1) }, { at: 1.7, pattern: closing('ice', 20, 18, 0.9) }] },
   },
   {
     // A blizzard over everything: only the snow shelters it marks keep the player safe.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('ice', 18),
       dive('aero', 10, 20),
@@ -139,7 +144,7 @@ const articuno: readonly BossPhase[] = [
     ultimate: {
       move: 'Snowscape',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 26, safe: 'spots', spots: 3, visual: 'ice' } },
         { at: 2.6, pattern: { kind: 'ring', every: 0, count: 14, speed: 70, radius: 5, damage: 16, visual: 'ice' } },
@@ -162,6 +167,7 @@ const zapdos: readonly BossPhase[] = [
     // Drill Peck charges and Thunder lances across the field.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('thunder', 22),
       { kind: 'dash', every: 7, windup: 0.9, speed: 260, width: 20, damage: 22, count: 2 },
@@ -173,7 +179,7 @@ const zapdos: readonly BossPhase[] = [
     ultimate: {
       move: 'Zap Cannon',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 1, spread: 0, windup: 1.3, duration: 0.5, width: 22, length: 380, damage: 26, visual: 'thunder' } },
         { at: 1.9, pattern: { kind: 'beam', every: 0, source: 'boss', count: 2, spread: 0.5, windup: 1.1, duration: 0.5, width: 18, length: 380, damage: 24, visual: 'thunder' } },
@@ -184,6 +190,7 @@ const zapdos: readonly BossPhase[] = [
     // The ground around Zapdos charges: get out of the field, then through the lances.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('thunder', 22),
       { kind: 'dash', every: 8, windup: 0.9, speed: 270, width: 20, damage: 22, count: 2 },
@@ -195,7 +202,7 @@ const zapdos: readonly BossPhase[] = [
     ultimate: {
       move: 'Electric Terrain',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 30, safe: 'far', radius: 116, visual: 'thunder' } },
         { at: 2.6, pattern: lances('thunder', 5, 1.2, 22) },
@@ -220,6 +227,7 @@ const moltres: readonly BossPhase[] = [
     // Fly with a burning shadow, and Flamethrower sweeping the field.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('fire', 22),
       { kind: 'trail', every: 0.2, ttl: 3, radius: 7, damage: 14, visual: 'fire' },
@@ -231,7 +239,7 @@ const moltres: readonly BossPhase[] = [
     ultimate: {
       move: 'Heat Wave',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'volley', every: 0, count: 9, arc: 1.6, speed: 100, windup: 1, radius: 5, damage: 20, visual: 'fire' } },
         { at: 1.4, pattern: { kind: 'volley', every: 0, count: 9, arc: 1.6, speed: 110, windup: 0.9, radius: 5, damage: 20, visual: 'fire' } },
@@ -242,6 +250,7 @@ const moltres: readonly BossPhase[] = [
     // Overheat: the air burns everywhere but under Moltres's own wings.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('fire', 22),
       { kind: 'trail', every: 0.16, ttl: 3.2, radius: 7, damage: 14, visual: 'fire' },
@@ -254,7 +263,7 @@ const moltres: readonly BossPhase[] = [
     ultimate: {
       move: 'Overheat',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.6, damage: 34, safe: 'near', radius: 62, visual: 'fire' } }],
     },
   },
@@ -277,6 +286,7 @@ const raikou: readonly BossPhase[] = [
     // Extreme Speed: three charges in a row down marked lanes.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('thunder', 18),
       { kind: 'dash', every: 7, windup: 0.8, speed: 300, width: 18, damage: 18, count: 3 },
@@ -287,7 +297,7 @@ const raikou: readonly BossPhase[] = [
     ultimate: {
       move: 'Discharge',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'self', count: 1, spread: 0, radius: 66, delay: 1.4, damage: 20, visual: 'thunder' } },
         { at: 1.4, pattern: { kind: 'ring', every: 0, count: 14, speed: 95, radius: 5, damage: 16, visual: 'thunder' } },
@@ -298,6 +308,7 @@ const raikou: readonly BossPhase[] = [
     // Thunderclap: lightning strikes first, three waves of lances in a breath and a last charge.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('thunder', 18),
       { kind: 'dash', every: 8, windup: 0.8, speed: 300, width: 18, damage: 18, count: 2 },
@@ -309,7 +320,7 @@ const raikou: readonly BossPhase[] = [
     ultimate: {
       move: 'Thunderclap',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: lances('thunder', 4, 1.1, 18) },
         { at: 1.2, pattern: lances('thunder', 4, 1, 18) },
@@ -335,6 +346,7 @@ const entei: readonly BossPhase[] = [
     // Flame Charge: it rushes through, leaving fire behind.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('fire', 22),
       { kind: 'dash', every: 7.5, windup: 0.9, speed: 240, width: 22, damage: 24, count: 2 },
@@ -346,7 +358,7 @@ const entei: readonly BossPhase[] = [
     ultimate: {
       move: 'Eruption',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 9, spread: 110, radius: 15, delay: 1.3, damage: 22, visual: 'fire' } },
         { at: 1.5, pattern: { kind: 'strikes', every: 0, target: 'player', count: 6, spread: 0, radius: 14, delay: 1.1, damage: 22, visual: 'fire', lead: 1 } },
@@ -357,6 +369,7 @@ const entei: readonly BossPhase[] = [
     // Burning Bulwark: a wall of fire shuts the player in while fire rains inside.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('fire', 22),
       { kind: 'dash', every: 8, windup: 0.9, speed: 240, width: 22, damage: 24, count: 2 },
@@ -368,12 +381,12 @@ const entei: readonly BossPhase[] = [
     ultimate: {
       move: 'Burning Bulwark',
       first: 1.5,
-      every: 17,
+      every: 18,
       steps: [
-        { at: 0, pattern: { kind: 'cage', every: 0, radius: 76, count: 26, size: 8, windup: 1, ttl: 5.4, damage: 14, visual: 'fire' } },
-        { at: 1.2, pattern: { kind: 'strikes', every: 0, target: 'player', count: 4, spread: 0, radius: 14, delay: 1.1, damage: 20, visual: 'fire', lead: 1 } },
-        { at: 2.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 24, visual: 'fire' } },
-        { at: 3.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 5, spread: 56, radius: 13, delay: 1.1, damage: 20, visual: 'fire' } },
+        { at: 0, pattern: { kind: 'cage', every: 0, radius: 76, count: 26, size: 8, windup: 1, ttl: 5.4, damage: 12, visual: 'fire' } },
+        { at: 1.2, pattern: { kind: 'strikes', every: 0, target: 'player', count: 3, spread: 0, radius: 14, delay: 1.1, damage: 20, visual: 'fire', lead: 1 } },
+        { at: 2.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 22, visual: 'fire' } },
+        { at: 3.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 4, spread: 56, radius: 13, delay: 1.1, damage: 20, visual: 'fire' } },
       ],
     },
   },
@@ -395,6 +408,7 @@ const suicune: readonly BossPhase[] = [
     // It glides over the field (Surf charges) and sweeps it with Aurora Beam.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('water', 22),
       { kind: 'dash', every: 7.5, windup: 0.9, speed: 230, width: 24, damage: 22, count: 2 },
@@ -406,10 +420,10 @@ const suicune: readonly BossPhase[] = [
     ultimate: {
       move: 'Hydro Pump',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
-        { at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 3, spread: 0.36, windup: 1.2, duration: 0.6, width: 14, length: 340, damage: 22, visual: 'water' } },
-        { at: 2, pattern: { kind: 'beam', every: 0, source: 'boss', count: 3, spread: 0.36, windup: 1.1, duration: 0.6, width: 14, length: 340, damage: 22, visual: 'water' } },
+        { at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 2, spread: 0.4, windup: 1.2, duration: 0.6, width: 14, length: 340, damage: 20, visual: 'water' } },
+        { at: 2, pattern: { kind: 'beam', every: 0, source: 'boss', count: 2, spread: 0.4, windup: 1.1, duration: 0.6, width: 14, length: 340, damage: 20, visual: 'water' } },
       ],
     },
   },
@@ -417,6 +431,7 @@ const suicune: readonly BossPhase[] = [
     // Aqua Ring: rings of water close in, each with one way out.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('water', 22),
       { kind: 'dash', every: 8, windup: 0.9, speed: 230, width: 24, damage: 22, count: 2 },
@@ -429,11 +444,10 @@ const suicune: readonly BossPhase[] = [
     ultimate: {
       move: 'Aqua Ring',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
-        { at: 0, pattern: closing('water', 24, 20, 1) },
-        { at: 2.1, pattern: closing('water', 24, 20, 0.9) },
-        { at: 4.2, pattern: closing('water', 20, 20, 0.85, 0, 100) },
+        { at: 0, pattern: closing('water', 22, 18, 1) },
+        { at: 2.2, pattern: closing('water', 20, 18, 0.95, 0, 104) },
       ],
     },
   },
@@ -456,6 +470,7 @@ const regirock: readonly BossPhase[] = [
     // Rock Tomb shuts the player in; Rock Slide lances cut across.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('rock', 18),
       { kind: 'cage', every: 11, radius: 70, count: 20, size: 9, windup: 1.1, ttl: 3.6, damage: 14, visual: 'rock' },
@@ -467,7 +482,7 @@ const regirock: readonly BossPhase[] = [
     ultimate: {
       move: 'Stone Edge',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 9, spread: 100, radius: 14, delay: 1.2, damage: 18, visual: 'rock' } },
         { at: 1.4, pattern: { kind: 'strikes', every: 0, target: 'player', count: 9, spread: 100, radius: 14, delay: 1.2, damage: 18, visual: 'rock' } },
@@ -478,6 +493,7 @@ const regirock: readonly BossPhase[] = [
     // Rock Wrecker: three huge boulders, each aimed with a line first.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('rock', 18),
       { kind: 'cage', every: 12, radius: 70, count: 20, size: 9, windup: 1.1, ttl: 3.6, damage: 14, visual: 'rock' },
@@ -489,7 +505,7 @@ const regirock: readonly BossPhase[] = [
     ultimate: {
       move: 'Rock Wrecker',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'volley', every: 0, count: 1, arc: 0, speed: 170, windup: 1.2, radius: 14, damage: 28, visual: 'rock' } },
         { at: 1.5, pattern: { kind: 'volley', every: 0, count: 1, arc: 0, speed: 180, windup: 1.1, radius: 14, damage: 28, visual: 'rock' } },
@@ -515,6 +531,7 @@ const regice: readonly BossPhase[] = [
     // Ice Beams fan out from its body, and Icy Wind closes in around the player.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('ice', 22),
       { stance: 'ranged', kind: 'beam', every: 6, source: 'boss', count: 3, spread: 0.5, windup: 1.1, duration: 0.5, width: 10, length: 320, damage: 20, visual: 'ice' },
@@ -527,7 +544,7 @@ const regice: readonly BossPhase[] = [
     ultimate: {
       move: 'Blizzard',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: lances('ice', 5, 1.2, 20) },
         { at: 1.3, pattern: lances('ice', 5, 1.1, 20) },
@@ -538,6 +555,7 @@ const regice: readonly BossPhase[] = [
     // Glaciate: the ground freezes around Regice (get out), then everywhere else (get back in).
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('ice', 22),
       { stance: 'ranged', kind: 'beam', every: 6.5, source: 'boss', count: 3, spread: 0.5, windup: 1.1, duration: 0.5, width: 10, length: 320, damage: 20, visual: 'ice' },
@@ -549,7 +567,7 @@ const regice: readonly BossPhase[] = [
     ultimate: {
       move: 'Glaciate',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'blast', every: 0, windup: 2.2, damage: 26, safe: 'far', radius: 74, visual: 'ice' } },
         { at: 2.5, pattern: { kind: 'blast', every: 0, windup: 2, damage: 26, safe: 'near', radius: 74, visual: 'ice' } },
@@ -573,10 +591,11 @@ const registeel: readonly BossPhase[] = [
     // Flash Cannon beams and an Iron Head charge.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('steel', 22),
       { kind: 'dash', every: 8, windup: 1, speed: 220, width: 26, damage: 26, count: 1 },
-      { stance: 'ranged', kind: 'beam', every: 6.5, source: 'boss', count: 3, spread: 0.4, windup: 1.1, duration: 0.5, width: 12, length: 320, damage: 22, visual: 'steel' },
+      { stance: 'ranged', kind: 'beam', every: 6.5, source: 'boss', count: 2, spread: 0.5, windup: 1.1, duration: 0.5, width: 12, length: 320, damage: 22, visual: 'steel' },
       { stance: 'ranged', kind: 'ring', every: 4.4, count: 16, speed: 56, radius: 5, damage: 20, visual: 'steel' },
       { stance: 'close', kind: 'strikes', every: 4.6, target: 'self', count: 1, spread: 0, radius: 56, delay: 1.4, damage: 26, visual: 'slam' },
       { far: 120, kind: 'volley', every: 5, count: 3, arc: 0.35, speed: 120, windup: 1, radius: 5, damage: 24, visual: 'steel' },
@@ -585,7 +604,7 @@ const registeel: readonly BossPhase[] = [
     ultimate: {
       move: 'Heavy Slam',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 1, spread: 0, radius: 46, delay: 1.6, damage: 28, visual: 'slam', leap: true } },
         { at: 1.7, pattern: { kind: 'ring', every: 0, count: 18, speed: 70, radius: 5, damage: 20, visual: 'steel' } },
@@ -596,6 +615,7 @@ const registeel: readonly BossPhase[] = [
     // Metal Burst: it braces, then throws everything back, crossing lances and a wall of steel.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('steel', 22),
       { kind: 'dash', every: 8.5, windup: 1, speed: 220, width: 26, damage: 26, count: 1 },
@@ -607,12 +627,12 @@ const registeel: readonly BossPhase[] = [
     ultimate: {
       move: 'Metal Burst',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'self', count: 1, spread: 0, radius: 34, delay: 1, damage: 24, visual: 'steel' } },
-        { at: 1, pattern: lances('steel', 4, 1.2, 22) },
-        { at: 1.9, pattern: lances('steel', 4, 1.1, 22) },
-        { at: 3.3, pattern: { kind: 'ring', every: 0, count: 22, speed: 48, radius: 5, damage: 20, visual: 'steel' } },
+        { at: 1, pattern: lances('steel', 3, 1.2, 22) },
+        { at: 1.9, pattern: lances('steel', 3, 1.1, 22) },
+        { at: 3.3, pattern: { kind: 'ring', every: 0, count: 18, speed: 48, radius: 5, damage: 20, visual: 'steel' } },
       ],
     },
   },
@@ -635,6 +655,7 @@ const mew: readonly BossPhase[] = [
     // It blinks onto the player and plays with psychic volleys.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('psychic', 22),
       { kind: 'teleport', every: 8, to: 'player', windup: 0.9, radius: 30, damage: 22, visual: 'psychic' },
@@ -642,12 +663,13 @@ const mew: readonly BossPhase[] = [
       { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 38, delay: 1.1, damage: 22, visual: 'psychic' },
       { below: 0.5, kind: 'volley', every: 3.6, count: 5, arc: 0.9, speed: 110, windup: 0.9, radius: 5, damage: 20, visual: 'psychic' },
     ],
-    ultimate: { move: 'Psychic', first: 1.5, every: 15, steps: [{ at: 0, pattern: lances('psychic', 4, 1.2, 20) }, { at: 1.3, pattern: lances('psychic', 4, 1.1, 20) }] },
+    ultimate: { move: 'Psychic', first: 1.5, every: 18, steps: [{ at: 0, pattern: lances('psychic', 3, 1.2, 20) }, { at: 1.3, pattern: lances('psychic', 3, 1.1, 20) }] },
   },
   {
     // Ancient Power: stones rise all around and close in, each ring with a way out.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('psychic', 22),
       { kind: 'teleport', every: 8.5, to: 'player', windup: 0.9, radius: 30, damage: 22, visual: 'psychic' },
@@ -659,11 +681,11 @@ const mew: readonly BossPhase[] = [
     ultimate: {
       move: 'Ancient Power',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
-        { at: 0, pattern: closing('rock', 18, 22, 1) },
-        { at: 2, pattern: closing('rock', 18, 22, 0.9) },
-        { at: 3.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 5, spread: 60, radius: 14, delay: 1.1, damage: 20, visual: 'rock' } },
+        { at: 0, pattern: closing('rock', 16, 18, 1) },
+        { at: 2, pattern: closing('rock', 16, 18, 0.95) },
+        { at: 3.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 4, spread: 60, radius: 14, delay: 1.1, damage: 18, visual: 'rock' } },
       ],
     },
   },
@@ -684,6 +706,7 @@ const celebi: readonly BossPhase[] = [
     // It slips through time, away from the player, leaving leaves behind.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('grass', 22),
       { kind: 'teleport', every: 9, to: 'far', windup: 0.9, radius: 26, damage: 20, visual: 'grass' },
@@ -696,10 +719,10 @@ const celebi: readonly BossPhase[] = [
     ultimate: {
       move: 'Future Sight',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
-        { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 6, spread: 0, radius: 16, delay: 1.6, damage: 22, visual: 'psychic', lead: 1 } },
-        { at: 1.8, pattern: { kind: 'strikes', every: 0, target: 'player', count: 6, spread: 0, radius: 16, delay: 1.5, damage: 22, visual: 'psychic', lead: 1 } },
+        { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 5, spread: 0, radius: 16, delay: 1.6, damage: 20, visual: 'psychic', lead: 1 } },
+        { at: 1.8, pattern: { kind: 'strikes', every: 0, target: 'player', count: 5, spread: 0, radius: 16, delay: 1.5, damage: 20, visual: 'psychic', lead: 1 } },
       ],
     },
   },
@@ -707,6 +730,7 @@ const celebi: readonly BossPhase[] = [
     // Magical Leaf: fans of leaves that follow the player, then a ring of them closing in.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('grass', 22),
       { kind: 'teleport', every: 9.5, to: 'far', windup: 0.9, radius: 26, damage: 20, visual: 'grass' },
@@ -718,12 +742,11 @@ const celebi: readonly BossPhase[] = [
     ultimate: {
       move: 'Magical Leaf',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
-        { at: 0, pattern: { kind: 'volley', every: 0, count: 7, arc: 1.4, speed: 110, windup: 1, radius: 5, damage: 20, visual: 'grass' } },
-        { at: 0.9, pattern: { kind: 'volley', every: 0, count: 7, arc: 1.4, speed: 110, windup: 0.9, radius: 5, damage: 20, visual: 'grass' } },
-        { at: 1.8, pattern: { kind: 'volley', every: 0, count: 7, arc: 1.4, speed: 115, windup: 0.9, radius: 5, damage: 20, visual: 'grass' } },
-        { at: 3, pattern: closing('grass', 20, 20, 1) },
+        { at: 0, pattern: { kind: 'volley', every: 0, count: 5, arc: 1.2, speed: 110, windup: 1, radius: 5, damage: 18, visual: 'grass' } },
+        { at: 1, pattern: { kind: 'volley', every: 0, count: 5, arc: 1.2, speed: 115, windup: 0.9, radius: 5, damage: 18, visual: 'grass' } },
+        { at: 2.2, pattern: closing('grass', 18, 18, 1) },
       ],
     },
   },
@@ -744,6 +767,7 @@ const jirachi: readonly BossPhase[] = [
     // It blinks onto the player between Meteor Mash and steel rings.
     below: TRIO[1],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('steel', 22),
       { kind: 'teleport', every: 8.5, to: 'player', windup: 0.9, radius: 28, damage: 22, visual: 'steel' },
@@ -754,7 +778,7 @@ const jirachi: readonly BossPhase[] = [
     ultimate: {
       move: 'Doom Desire',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 1, spread: 0, radius: 54, delay: 2.2, damage: 30, visual: 'steel' } },
         { at: 1.2, pattern: { kind: 'strikes', every: 0, target: 'player', count: 4, spread: 0, radius: 14, delay: 1.2, damage: 20, visual: 'steel', lead: 1 } },
@@ -765,6 +789,7 @@ const jirachi: readonly BossPhase[] = [
     // Wish: a shower of falling stars over the whole field, in three waves.
     below: TRIO[2],
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('steel', 22),
       { kind: 'teleport', every: 9, to: 'player', windup: 0.9, radius: 28, damage: 22, visual: 'steel' },
@@ -776,7 +801,7 @@ const jirachi: readonly BossPhase[] = [
     ultimate: {
       move: 'Wish',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'strikes', every: 0, target: 'player', count: 12, spread: 130, radius: 14, delay: 1.4, damage: 22, visual: 'judgment' } },
         { at: 1.1, pattern: { kind: 'strikes', every: 0, target: 'player', count: 12, spread: 130, radius: 14, delay: 1.3, damage: 22, visual: 'judgment' } },
@@ -806,6 +831,7 @@ const mewtwo: readonly BossPhase[] = [
   {
     below: 0.7,
     shift: SHIFT,
+    open: OPEN,
     patterns: [
       pin('psychic', 28),
       { kind: 'teleport', every: 8, to: 'player', windup: 0.9, radius: 32, damage: 28, visual: 'psychic' },
@@ -817,7 +843,7 @@ const mewtwo: readonly BossPhase[] = [
     ultimate: {
       move: 'Telekinesis',
       first: 1.5,
-      every: 15,
+      every: 18,
       steps: [
         { at: 0, pattern: closing('psychic', 22, 26, 0.85) },
         { at: 1.7, pattern: { kind: 'volley', every: 0, count: 5, arc: 0.9, speed: 125, windup: 0.9, radius: 5, damage: 26, visual: 'psychic' } },
@@ -827,6 +853,7 @@ const mewtwo: readonly BossPhase[] = [
   {
     below: 0.4,
     shift: 1.5,
+    open: OPEN,
     patterns: [
       pin('psychic', 28),
       { kind: 'teleport', every: 7.5, to: 'player', windup: 0.9, radius: 32, damage: 28, visual: 'psychic' },
@@ -840,7 +867,7 @@ const mewtwo: readonly BossPhase[] = [
     ultimate: {
       move: 'Psystrike',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: lances('psychic', 5, 1.2, 26) },
         { at: 1.5, pattern: lances('psychic', 5, 1.1, 26) },
@@ -866,6 +893,7 @@ const arceus: readonly BossPhase[] = [
   {
     below: 0.6,
     shift: SHIFT,
+    open: OPEN,
     steer: HUNT,
     patterns: [
       { kind: 'strikes', every: 3.2, target: 'player', count: 7, spread: 100, radius: 16, delay: 1, damage: 45, visual: 'judgment', plate: true },
@@ -875,13 +903,14 @@ const arceus: readonly BossPhase[] = [
     ultimate: {
       move: 'Hyper Beam',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [{ at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 1, spread: 0, sweep: 2, windup: 1.3, duration: 1.6, width: 18, length: 360, damage: 40, visual: 'judgment' } }],
     },
   },
   {
     below: 0.3,
     shift: SHIFT,
+    open: OPEN,
     steer: HUNT,
     patterns: [
       { kind: 'strikes', every: 3, target: 'player', count: 7, spread: 100, radius: 16, delay: 1, damage: 45, visual: 'judgment', plate: true },
@@ -892,7 +921,7 @@ const arceus: readonly BossPhase[] = [
     ultimate: {
       move: 'Judgment',
       first: 1.5,
-      every: 16,
+      every: 18,
       steps: [
         { at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 60, safe: 'spots', spots: 3, visual: 'judgment', plate: true } },
         { at: 2.6, pattern: { kind: 'strikes', every: 0, target: 'player', count: 9, spread: 110, radius: 16, delay: 1.1, damage: 45, visual: 'judgment', plate: true } },

@@ -435,7 +435,7 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   fight.ultLeft = phase.ultimate ? phase.ultimate.first + fight.shift : Infinity
   fight.motion = null
   fight.blast = null
-  e.cooldowns = phase.patterns.map((pt) => pt.every * 0.5 + fight.shift)
+  e.cooldowns = phase.patterns.map((pt) => pt.every * (phase.open ?? 0.5) + fight.shift)
   // The last phase's attacks go with it.
   retain(g.hazards, (h) => h.world)
   burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8e070', '#f85030'], count: 70, speed: 200, ttl: 0.7, size: 2, drag: 3 })
