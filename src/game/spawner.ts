@@ -6,6 +6,7 @@ import { bossReach, chaseOffBosses, finaleEntrance } from './bosses'
 import { DIFFICULTIES } from './difficulty'
 import { endlessPressure } from './endless'
 import { despawnEnemy, spawnEnemy } from './enemies'
+import { legendEntrance } from './legendScene'
 import { eliteSpawn, makeElite, makeRunner } from './horde'
 import { oldestRenewable, RENEWAL } from './renewal'
 import { hasTrait, pickSpawn, type StagePool } from './roster'
@@ -55,8 +56,8 @@ export const spawnSwarm = (g: Game, species: EnemyId, count: number) => {
 
 /**
  * A wave boss arrives off screen: the earlier wave's boss flees (`at` is the
- * wave's time), it takes the HP bar and the shell gets its entrance. The dev
- * console's `ps.boss` calls it too.
+ * wave's time), it takes the HP bar and the shell gets its entrance (a
+ * legendary's plays on the map, `legendEntrance`). The dev console's `ps.boss` calls it too.
  */
 export const spawnWaveBoss = (g: Game, enemy: EnemyId, at: number, finale = false) => {
   chaseOffBosses(g, at)
@@ -67,6 +68,7 @@ export const spawnWaveBoss = (g: Game, enemy: EnemyId, at: number, finale = fals
   g.shake = def.legendary ? 9 : 5
   if (finale) finaleEntrance(g)
   g.events.push({ kind: 'boss', enemy })
+  legendEntrance(g, boss)
   return boss
 }
 

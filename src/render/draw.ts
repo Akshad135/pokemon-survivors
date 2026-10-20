@@ -3,7 +3,8 @@ import { HAZARD_COLORS } from './hazardColors'
 import { domainOf } from '../data/domains'
 import { drawCapture } from './capture'
 import { drawDomainFloor, drawTear, warmDomain } from './domain'
-import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance } from './legendFx'
+import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance, drawLegendScene } from './legendFx'
+import { sceneHides } from '../game/legendScene'
 import { drawLegendSky } from './legendSky'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
@@ -869,7 +870,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawPickups(ctx, g, t)
 
   drawables.length = 0
-  for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
+  // A wave legendary's scene draws it itself (its arrival, its capture).
+  const hiddenBoss = sceneHides(g)
+  for (const e of g.enemies) if (visible(e.x, e.y) && e.id !== hiddenBoss) drawables.push(e)
   drawables.push('player')
   const companion = opts.companion
   if (companion) drawables.push('companion')
@@ -931,6 +934,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawRiftFallAir(ctx, g, t)
   drawEntrance(ctx, g, t)
   drawCapture(ctx, g, t)
+  drawLegendScene(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)

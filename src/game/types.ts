@@ -32,6 +32,7 @@ import type { Prop } from './props'
 import type { TerrainState } from './terrain'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
+import type { LegendScene } from './legendScene'
 import type { PlaceNotice, PlaceState } from './place'
 import type { PlaceId } from '../data/places'
 import type { SpecialState } from './special'
@@ -583,6 +584,9 @@ export type GameEvent =
   | { kind: 'riftOmen'; enemy: RiftLegend }
   | { kind: 'riftTitle'; enemy: RiftLegend; shiny: boolean }
   | { kind: 'riftCapture'; enemy: RiftLegend; shiny: boolean }
+  /** A wave legendary on the map (`legendScene.ts`) showed itself (its title card), or its capture's ball settled. */
+  | { kind: 'legendTitle'; enemy: EnemyId; shiny: boolean }
+  | { kind: 'bossCapture'; enemy: EnemyId; shiny: boolean }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -699,6 +703,8 @@ export type Game = {
    * clock, which stops inside a rift; hit cooldowns, ages and animation phases use `now`.
    */
   now: number
+  /** A wave legendary's entrance or capture playing on the map, with the world held still (`legendScene.ts`). */
+  legendScene: LegendScene | null
 }
 
 /** Where a prize level-up came from: an Alpha's gem or a field mission. */

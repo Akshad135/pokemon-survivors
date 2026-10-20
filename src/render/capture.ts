@@ -48,25 +48,36 @@ const STAR = lazy(() => art(['..1..', '.121.', '12221', '.121.', '..1..'], { 1: 
 
 const clamp01 = (k: number) => Math.min(1, Math.max(0, k))
 
+/** A capture scene's beats, in seconds (`CAPTURE` for a domain's, `LIGHT_CAPTURE` for a legendary falling on the map). */
+export type CaptureTiming = { kneel: number; throw: number; absorb: number; drop: number; shake: number; settle: number }
+
 /** The capture scene in world space (after the entities): the kneeling legendary, the ball, its shakes and how it ends. */
 export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
   const here = domainHere(g)
   const c = here?.d.capture
   if (!here || !c || (here.d.act !== 'capture' && here.d.act !== 'after')) return
+  drawCaptureScene(ctx, g, c, here.d.act === 'after' ? CAPTURE.length + here.d.age : here.d.scene, CAPTURE, t)
+}
+
+/**
+ * Draws capture `c`, `scene` s into it on `timing`'s beats: the legendary kneels,
+ * the ball flies from the player, takes it in, drops, shakes and settles.
+ */
+export const drawCaptureScene = (ctx: Ctx, g: Game, c: { kind: EnemyId; x: number; y: number; shiny: boolean }, scene: number, timing: CaptureTiming, t: number) => {
   // Seconds since the ball left the player's hand (negative while the legendary kneels).
-  const s = (here.d.act === 'after' ? CAPTURE.length + here.d.age : here.d.scene) - CAPTURE.kneel
+  const s = scene - timing.kneel
   const p = g.player
   const x = Math.round(c.x)
   const y = Math.round(c.y)
   const sp = sprites(ENEMIES[c.kind].dex, c.shiny)
   const ground = y - 4
-  const absorbEnd = CAPTURE.throw + CAPTURE.absorb
-  const dropEnd = absorbEnd + CAPTURE.drop
-  const settle = CAPTURE.settle - CAPTURE.kneel
+  const absorbEnd = timing.throw + timing.absorb
+  const dropEnd = absorbEnd + timing.drop
+  const settle = timing.settle - timing.kneel
   const out = s >= settle ? captureOutcome(c) : null
   // The legendary kneels until the ball takes it in: shrinking into a red glow.
   if (s < absorbEnd) {
-    const k = clamp01((s - CAPTURE.throw) / CAPTURE.absorb)
+    const k = clamp01((s - timing.throw) / timing.absorb)
     drawPokemon(ctx, sp, 'Hurt', 0, 0.2, x, y, { loop: false, scale: 1 - k * 0.9, tint: { color: '#f83030', amount: k * 0.8 }, flash: k > 0 ? 0.3 + k * 0.6 : 0, alpha: 1 - k * 0.5 })
   }
   if (s < 0) {
@@ -77,9 +88,9 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
     }
     return
   }
-  if (s < CAPTURE.throw) {
+  if (s < timing.throw) {
     // The throw: an arc from the player up and over to the legendary.
-    const k = s / CAPTURE.throw
+    const k = s / timing.throw
     const bx = p.x + (x - p.x) * k
     const by = p.y - 14 + (y - 40 - (p.y - 14)) * k - Math.sin(k * Math.PI) * 50
     blitRotated(ctx, BALL(), Math.round(bx), Math.round(by), k * TAU * 2)
@@ -98,11 +109,11 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
   let by = ground
   let angle = 0
   if (s < dropEnd) {
-    const k = (s - absorbEnd) / CAPTURE.drop
+    const k = (s - absorbEnd) / timing.drop
     by = Math.round(y - 40 + (ground - (y - 40)) * k * k)
   } else if (s < settle) {
     // Each shake: a wobble left and right, then still.
-    const k = ((s - dropEnd) % CAPTURE.shake) / CAPTURE.shake
+    const k = ((s - dropEnd) % timing.shake) / timing.shake
     angle = k < 0.5 ? Math.sin(k * 2 * TAU) * 0.45 : 0
     bx = x + Math.round(angle * 3)
   }

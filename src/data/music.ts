@@ -607,6 +607,172 @@ const kyogre: Score = {
   },
 }
 
-export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre } as const satisfies Record<string, Score>
+/* ---------------- The wave legendaries (`data/legendBosses.ts`) ---------------- */
+
+/** The Kanto birds: a soaring E minor over bouncing octaves, glittering chord arpeggios on top. */
+const birds: Score = {
+  bpm: 150,
+  duty: { lead: 0.5, harmony: 0.125 },
+  tracks: {
+    // | Em | C | D | B | Em | C | Am | B7 |
+    lead: [
+      'E5:6 F#5:2 G5:4 B5:4',
+      'C6:6 B5:2 G5:8',
+      'A5:4 F#5 D5 A5',
+      'B5:12 D#5:4',
+      'E5:2 G5 B5 E6:6 D6:2 B5:2',
+      'C6:4 E6 G5:2 A5 B5 C6',
+      'A5:6 C6:2 B5:4 A5',
+      'F#5:4 A5 B5:8',
+    ],
+    harmony: [
+      sparkle('E4', 'G4', 'B4', 'G4'),
+      sparkle('C4', 'E4', 'G4', 'E4'),
+      sparkle('D4', 'F#4', 'A4', 'F#4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+      sparkle('E4', 'G4', 'B4', 'G4'),
+      sparkle('C4', 'E4', 'G4', 'E4'),
+      sparkle('A3', 'C4', 'E4', 'C4'),
+      sparkle('A3', 'B3', 'D#4', 'F#4'),
+    ],
+    bass: [pump('E2', 'E3'), pump('C2', 'C3'), pump('D2', 'D3'), pump('B1', 'B2'), pump('E2', 'E3'), pump('C2', 'C3'), pump('A1', 'A2'), pump('B1', 'B2')],
+    drums: [...times(7, 'k:2 h s h k k s h'), 's:2 s s s k:2 s s o'],
+  },
+}
+
+/** Johto's beasts: a G minor chase on a galloping bass. */
+const beasts: Score = {
+  bpm: 160,
+  duty: { lead: 0.25, harmony: 0.125 },
+  tracks: {
+    // | Gm | Gm | Eb | F | Gm | Bb | Cm | D |
+    lead: [
+      'G5:3 G5:1 Bb5:4 D6:4 C6:2 Bb5:2',
+      'A5:4 G5:2 F5:2 G5:8',
+      'Eb5:3 G5:1 Bb5:4 Eb6:8',
+      'D6:4 C6 A5 F5',
+      'G5:2 Bb5 D6 G6:6 F6:2 D6:2',
+      'F6:4 D6:2 Bb5 F5:8',
+      'Eb6:4 D6 C6 G5',
+      'F#5:8 A5:4 D6',
+    ],
+    harmony: [
+      tremolo('Bb4', 'D5'),
+      tremolo('Bb4', 'D5'),
+      tremolo('G4', 'Bb4'),
+      tremolo('A4', 'C5'),
+      tremolo('Bb4', 'D5'),
+      tremolo('D5', 'F5'),
+      tremolo('Eb5', 'G4'),
+      tremolo('F#4', 'A4'),
+    ],
+    bass: [gallop('G1', 'G2'), gallop('G1', 'G2'), gallop('Eb2', 'Eb3'), gallop('F1', 'F2'), gallop('G1', 'G2'), gallop('Bb1', 'Bb2'), gallop('C2', 'C3'), gallop('D2', 'D3')],
+    drums: [...times(7, 'k:2 h s h k:1 k h:2 s h'), 's:1 s s s s:2 s k:4 o'],
+  },
+}
+
+/** Hoenn's Regis: slow and heavy, C minor leaning on the flat second, with the braille's beeping figure. */
+const regis: Score = {
+  bpm: 104,
+  duty: { lead: 0.125, harmony: 0.25 },
+  tracks: {
+    // | Cm | Db | Cm | Bb | Ab | Db | G | G |
+    lead: [
+      'C5:2 r Eb5 r G5:4 C6:4',
+      'Db6:6 C6:2 Ab5:8',
+      'G5:2 r Eb5 r C5:8',
+      'D5:4 F5 Bb5 D6',
+      'C6:6 Bb5:2 Ab5:4 Eb5',
+      'F5:4 Ab5 Db6 F6',
+      'G5:2 B5 D6 G6 F6:4 D6',
+      'B5:12 r:4',
+    ],
+    harmony: [
+      creep('C4', 'Eb4', 'G4'),
+      creep('Db4', 'F4', 'Ab4'),
+      creep('C4', 'Eb4', 'G4'),
+      creep('Bb3', 'D4', 'F4'),
+      creep('Ab3', 'C4', 'Eb4'),
+      creep('Db4', 'F4', 'Ab4'),
+      creep('G3', 'B3', 'D4'),
+      creep('G3', 'B3', 'D4'),
+    ],
+    bass: [sway('C2', 'G2'), sway('Db2', 'Ab2'), sway('C2', 'G2'), sway('Bb1', 'F2'), sway('Ab1', 'Eb2'), sway('Db2', 'Ab2'), sway('G1', 'D2'), sway('G1', 'D2')],
+    drums: [...times(7, 'k:4 h:2 h s:4 k:2 h'), 'k:4 s:2 s s s k:2 o'],
+  },
+}
+
+/** Mewtwo's finale (the mythicals join it): a fast A minor storm with a Neapolitan turn. */
+const mewtwo: Score = {
+  bpm: 168,
+  duty: { lead: 0.5, harmony: 0.125 },
+  tracks: {
+    // | Am | F | Dm | E | Am | Bb | Dm E | E |
+    lead: [
+      'A5:2 C6 E6 A6:6 G#6:2 E6:2',
+      'F6:4 E6:2 C6 A5:8',
+      'D6:3 E6:1 F6:4 A6:4 F6',
+      'E6:6 D6:2 B5:4 G#5',
+      'A5:2 B5 C6 E6 A6:8',
+      'Bb6:4 A6:2 F6 D6:8',
+      'F6:4 D6 E6 G#6',
+      'B6:8 G#6:4 E6',
+    ],
+    harmony: [
+      sparkle('A4', 'C5', 'E5', 'C5'),
+      sparkle('F4', 'A4', 'C5', 'A4'),
+      sparkle('D4', 'F4', 'A4', 'F4'),
+      sparkle('E4', 'G#4', 'B4', 'G#4'),
+      sparkle('A4', 'C5', 'E5', 'C5'),
+      sparkle('Bb4', 'D5', 'F5', 'D5'),
+      sparkle('D4', 'F4', 'E4', 'G#4'),
+      sparkle('E4', 'G#4', 'B4', 'G#4'),
+    ],
+    bass: [gallop('A1', 'A2'), gallop('F1', 'F2'), gallop('D2', 'D3'), gallop('E1', 'E2'), gallop('A1', 'A2'), gallop('Bb1', 'Bb2'), gallop('D2', 'E2'), gallop('E1', 'E2')],
+    drums: [...times(7, 'k:2 h s h k h s s'), 's:1 s s s s s s s k:2 s k s'],
+  },
+}
+
+/** Arceus, the reaper: a stately D major with a Lydian lift (the E major chord), like an organ in a temple. */
+const arceus: Score = {
+  bpm: 112,
+  duty: { lead: 0.25, harmony: 0.5 },
+  tracks: {
+    // | D | E/D | Bm | G | D | E | A | A7 |
+    lead: [
+      'D5:8 F#5:4 A5',
+      'G#5:8 B5:4 E6',
+      'D6:6 C#6:2 B5:4 F#5',
+      'G5:4 B5 D6 G6',
+      'F#6:8 E6:4 D6',
+      'E6:6 F#6:2 G#6:4 B5',
+      'C#6:4 E6 A6 G6',
+      'A6:12 r:4',
+    ],
+    harmony: [
+      tremolo('F#4', 'A4'),
+      tremolo('G#4', 'B4'),
+      tremolo('D4', 'F#4'),
+      tremolo('B4', 'D5'),
+      tremolo('F#4', 'A4'),
+      tremolo('G#4', 'B4'),
+      tremolo('C#5', 'E5'),
+      tremolo('C#5', 'G4'),
+    ],
+    bass: [
+      ostinato('D2', 'A2', 'D3'),
+      ostinato('D2', 'B2', 'D3'),
+      ostinato('B1', 'F#2', 'B2'),
+      ostinato('G1', 'D2', 'G2'),
+      ostinato('D2', 'A2', 'D3'),
+      ostinato('E2', 'B2', 'E3'),
+      ostinato('A1', 'E2', 'A2'),
+      ostinato('A1', 'E2', 'A2'),
+    ],
+    drums: [...times(7, 'k:4 h s:4 h'), 'k:2 k s:4 k:2 k s:2 o'],
+  },
+}
+
+export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre, birds, beasts, regis, mewtwo, arceus } as const satisfies Record<string, Score>
 
 export type ThemeId = keyof typeof THEMES

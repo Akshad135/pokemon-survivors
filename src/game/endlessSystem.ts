@@ -11,6 +11,7 @@ import { spawnRing, spawnSwarm } from './spawner'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
 import { roomOf } from './room'
+import { legendEntrance } from './legendScene'
 
 /** Extra Poké Balls and ₽ dropped by a defeated Arceus, on top of a boss's usual drop. */
 const REAPER_LOOT = { pokeballs: 3, coins: [250, 250, 250, 250, 250, 250, 250, 250] } as const
@@ -34,6 +35,7 @@ const summonReaper = (g: Game, s: EndlessState) => {
   g.flash = 1
   g.shake = 12
   g.events.push({ kind: 'reaper', defeats: s.reaperDefeats })
+  legendEntrance(g, reaper)
 }
 
 const reaperDown = (g: Game, s: EndlessState, reaper: Enemy | undefined) => {

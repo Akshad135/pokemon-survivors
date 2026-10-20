@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, MIN_TELEGRAPH, STANCES, type BossPattern } from '../data/bosses'
+import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, bossKit, MIN_TELEGRAPH, STANCES, type BossPattern } from '../data/bosses'
+import { WAVE_LEGENDS } from '../data/legendBosses'
 import { attackCount, attackWait, chainTarget, createFight, fightPace, fightsInStances, holdsOn, patternLive, phaseAt, shouldEnrage, telegraph, tickStance, ultimateLength } from './bossFight'
 
 describe('boss fights', () => {
@@ -30,8 +31,8 @@ describe('boss fights', () => {
   })
 
   it('gates patterns by stance, HP left and difficulty', () => {
-    // Mewtwo's second phase: under 40%, from Hard.
-    const phase2 = BOSS_PATTERNS.mewtwo!.find((p) => p.below === 0.4 && p.from === 'hard')!
+    // Mewtwo's old Hard phase: under 40%, from Hard.
+    const phase2: BossPattern = { ...BOSS_PHASES.mewtwo![2]!.patterns.find((p) => p.from === 'hard')!, below: 0.4 }
     const fight = { ...createFight(createRng(1), 'hard'), share: 0.45 }
     expect(patternLive(phase2, fight)).toBe(false)
     fight.share = 0.39
@@ -66,8 +67,8 @@ describe('boss fights', () => {
   })
 
   it('chains another live attack, else the same one, never a trail', () => {
-    // Mewtwo: [ring (both stances), ranged strikes, close slam, ...].
-    const mewtwo = BOSS_PATTERNS.mewtwo!
+    // Mewtwo's first phase: [ring (both stances), ranged strikes, close slam, ...].
+    const mewtwo = BOSS_PHASES.mewtwo![0]!.patterns
     const fight = createFight(createRng(1), 'normal')
     expect(chainTarget(mewtwo, fight, 2)).toBe(0)
     expect(chainTarget(mewtwo, { ...fight, stance: 'ranged' }, 0)).toBe(1)
@@ -82,11 +83,11 @@ describe('boss fights', () => {
 
 describe('wave boss patterns', () => {
   /** Every wave boss (everything that fights in stances) on the schedule. */
-  const waveBosses = Object.keys(BOSS_PATTERNS).filter((id) => fightsInStances(id as keyof typeof BOSS_PATTERNS))
+  const waveBosses = [...Object.keys(BOSS_PATTERNS), ...WAVE_LEGENDS].filter((id) => fightsInStances(id as keyof typeof BOSS_PATTERNS)) as (keyof typeof BOSS_PATTERNS)[]
 
   it('each one aims at the player, punishes keeping away, unlocks an attack when enraged and adds one on Nightmare', () => {
     for (const id of waveBosses) {
-      const patterns = BOSS_PATTERNS[id as keyof typeof BOSS_PATTERNS]!
+      const patterns = bossKit(id)
       expect(patterns.some((p) => (p.kind === 'strikes' && p.target === 'player') || p.kind === 'volley'), id).toBe(true)
       expect(patterns.some((p) => p.far !== undefined), id).toBe(true)
       expect(patterns.some((p) => p.below === BOSS_RAGE.below), id).toBe(true)
@@ -97,7 +98,7 @@ describe('wave boss patterns', () => {
   it('every warning reads: strikes and volleys show for at least the floor on Nightmare', () => {
     const nightmare = createFight(createRng(1), 'nightmare')
     for (const id of waveBosses) {
-      for (const p of BOSS_PATTERNS[id as keyof typeof BOSS_PATTERNS]!) {
+      for (const p of bossKit(id)) {
         if (p.kind === 'strikes') expect(telegraph(p.delay, nightmare), id).toBeGreaterThanOrEqual(MIN_TELEGRAPH)
         if (p.kind === 'volley') expect(telegraph(p.windup, nightmare), id).toBeGreaterThanOrEqual(MIN_TELEGRAPH)
       }

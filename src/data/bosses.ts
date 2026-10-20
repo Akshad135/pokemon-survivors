@@ -1,5 +1,6 @@
 import type { Difficulty } from '../game/difficulty'
 import { DOMAIN_PHASES, type RetinueRole } from './domains'
+import { WAVE_LEGEND_PHASES } from './legendBosses'
 import type { EnemyId } from './enemies'
 
 /** How an enemy hazard looks (and sounds when it lands). */
@@ -43,8 +44,13 @@ export type BossPattern = PatternGate &
      * `leap` (one circle on the player): the boss lands there itself as it hits.
      */
     | { kind: 'strikes'; every: number; target: 'player' | 'self'; count: number; spread: number; radius: number; delay: number; damage: number; visual: HazardVisual; lead?: number; leap?: true }
-    /** A ring of projectiles fired outward from the boss. */
-    | { kind: 'ring'; every: number; count: number; speed: number; radius: number; damage: number; visual: HazardVisual }
+    /**
+     * A ring of projectiles fired outward from the boss. `around` (px) instead
+     * closes it on the player: the shots show on a circle that far around them,
+     * hover for `windup` s, then fly inward. `gap` (rad) leaves an arc of the
+     * ring open at a random angle, the way out.
+     */
+    | { kind: 'ring'; every: number; count: number; speed: number; radius: number; damage: number; visual: HazardVisual; around?: number; windup?: number; gap?: number }
     /** Lingering zones dropped at the boss's feet as it moves. */
     | { kind: 'trail'; every: number; ttl: number; radius: number; damage: number; visual: HazardVisual }
     /**
@@ -73,17 +79,29 @@ export type BossPattern = PatternGate &
     | { kind: 'teleport'; every: number; to: 'player' | 'far'; windup: number; radius: number; damage: number; visual: HazardVisual }
     /**
      * A blast over everything after `windup` s (the screen dims and the safe
-     * spots glow) that only spares those in a `safe` spot (`BlastSafe`).
+     * spots glow) that only spares those in a `safe` spot (`BlastSafe`);
+     * `spots` shelters for `safe: 'spots'` (3 when absent).
      */
-    | { kind: 'blast'; every: number; windup: number; damage: number; safe: BlastSafe; radius?: number; visual: HazardVisual }
-  )
+    | { kind: 'blast'; every: number; windup: number; damage: number; safe: BlastSafe; radius?: number; visual: HazardVisual; spots?: number }
+    /**
+     * A cage (Rock Tomb, a wall of fire): `count` lingering zones of `size` px on
+     * a circle of `radius` px around the player, shown for `windup` s, then
+     * burning until `ttl`: the player is shut in with whatever falls inside.
+     */
+    | { kind: 'cage'; every: number; radius: number; count: number; size: number; windup: number; ttl: number; damage: number; visual: HazardVisual }
+  ) & {
+    /** Judgment: the attack takes the type (and look) of the biome's plate instead of its `visual` (`JUDGMENT_PLATE`). */
+    plate?: true
+  }
 
 /**
  * What a blast spares: `cover`, a player with scenery between them and the
  * boss; `dry`, one out of flood water (an island); `near`/`far`, within or
- * beyond its `radius` of the boss.
+ * beyond its `radius` of the boss; `spots`, one inside any of the blast's
+ * `spots` shelters, circles of `radius` px marked around the player as it
+ * charges (the overworld has no arena to hide in).
  */
-export type BlastSafe = 'cover' | 'dry' | 'near' | 'far'
+export type BlastSafe = 'cover' | 'dry' | 'near' | 'far' | 'spots'
 
 /**
  * How a boss with phases walks (`BossPhase.steer`): `chase` at the player (the
@@ -135,6 +153,14 @@ export const PHASE_SHIFT = 1.8
  */
 export const BOSS_PHASES: Partial<Record<EnemyId, readonly BossPhase[]>> = {
   ...DOMAIN_PHASES,
+  ...WAVE_LEGEND_PHASES,
+}
+
+/** Every attack a boss has, across its phases (ultimates' steps included), for the guide and the Pokédex. */
+export const bossKit = (id: EnemyId): readonly BossPattern[] => {
+  const phases = BOSS_PHASES[id]
+  if (!phases) return BOSS_PATTERNS[id] ?? []
+  return [...new Set(phases.flatMap((ph) => [...ph.patterns, ...(ph.ultimate?.steps.map((s) => s.pattern) ?? [])]))]
 }
 
 /** How each stance walks: a pace multiplier, and how close `ranged` comes before it stops walking in (px). */
@@ -167,14 +193,15 @@ export const BOSS_RAGE = {
 export const MIN_TELEGRAPH = 0.8
 
 /**
- * How each difficulty presses the wave bosses (rift legendaries and Arceus keep
- * their patterns as written): `pace` times the pause between attacks, `more`
- * times the projectiles and circles of a pattern that fires several, `telegraph`
+ * How each difficulty presses the bosses that fight (in stances or phases; a
+ * rift legendary in the old arena keeps its patterns as written): `pace` times
+ * the pause between attacks, `more` times the projectiles and circles of a
+ * pattern that fires several, `telegraph`
  * times its warning (never under `MIN_TELEGRAPH`), `aim` times how far ahead
  * on the player's path a `lead` pattern lands, and the enrage's `chain`
  * chance. Patterns gated `from` add the rest: one more attack per boss on
- * Nightmare, Mewtwo's second phase from Hard. HP stays out of it, so a harder
- * boss hits more often instead of lasting longer.
+ * Nightmare, Mewtwo's leaps and volleys in its last phase from Hard. HP stays
+ * out of it, so a harder boss hits more often instead of lasting longer.
  */
 export const BOSS_DIFFICULTY = {
   normal: { pace: 1, more: 1, telegraph: 1, aim: 0.75, chain: BOSS_RAGE.chain },
@@ -184,7 +211,8 @@ export const BOSS_DIFFICULTY = {
 
 /**
  * Add a legendary by giving it an entry in `ENEMIES`, a place on the schedule
- * (a boss event, a trio in `TRIOS`, `MYTHICALS` or `RIFT_LEGENDS`) and its patterns here.
+ * (a boss event, a trio in `TRIOS`, `MYTHICALS` or `RIFT_LEGENDS`) and its patterns here,
+ * or its phases in `data/legendBosses.ts` (on the map) or `data/domains` (a rift's domain).
  * Trio members share their slot's stats, so their patterns stay close to the
  * slot's damage and pace and differ in shape.
  *
@@ -210,131 +238,7 @@ export const BOSS_PATTERNS: Partial<Record<EnemyId, readonly BossPattern[]>> = {
     { below: 0.5, stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 4, spread: 0, radius: 15, delay: 1.2, damage: 18, visual: 'slam', lead: 1 },
     { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.4, count: 10, speed: 70, radius: 5, damage: 16, visual: 'rock' },
   ],
-  // The Kanto birds dive onto a player who keeps away (Fly, Drill Peck, Sky Attack).
-  articuno: [
-    { stance: 'ranged', kind: 'ring', every: 3.2, count: 12, speed: 72, radius: 5, damage: 18, visual: 'ice' },
-    { stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 3, spread: 0, radius: 13, delay: 1.1, damage: 18, visual: 'ice', lead: 1 },
-    { stance: 'close', kind: 'strikes', every: 4, target: 'self', count: 1, spread: 0, radius: 42, delay: 1.2, damage: 20, visual: 'ice' },
-    { far: 120, kind: 'strikes', every: 7, target: 'player', count: 1, spread: 0, radius: 28, delay: 1.3, damage: 20, visual: 'aero', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 4, count: 5, arc: 0.8, speed: 100, windup: 0.9, radius: 5, damage: 18, visual: 'ice' },
-    { from: 'nightmare', stance: 'close', kind: 'trail', every: 0.25, ttl: 2.4, radius: 7, damage: 12, visual: 'ice' },
-  ],
-  zapdos: [
-    { stance: 'ranged', kind: 'strikes', every: 2.6, target: 'player', count: 4, spread: 64, radius: 15, delay: 1, damage: 24, visual: 'thunder', lead: 1 },
-    { stance: 'close', kind: 'strikes', every: 3.6, target: 'self', count: 1, spread: 0, radius: 44, delay: 1.1, damage: 24, visual: 'thunder' },
-    { far: 120, kind: 'strikes', every: 6.5, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 22, visual: 'thunder', lead: 1, leap: true },
-    { below: 0.5, kind: 'ring', every: 4, count: 12, speed: 90, radius: 5, damage: 20, visual: 'aero' },
-    { from: 'nightmare', stance: 'ranged', kind: 'volley', every: 4.4, count: 4, arc: 0.6, speed: 130, windup: 0.9, radius: 5, damage: 20, visual: 'aero' },
-  ],
-  moltres: [
-    { kind: 'trail', every: 0.16, ttl: 3.2, radius: 7, damage: 14, visual: 'fire' },
-    { stance: 'ranged', kind: 'ring', every: 4.5, count: 8, speed: 60, radius: 5, damage: 20, visual: 'fire' },
-    { stance: 'ranged', kind: 'strikes', every: 3.8, target: 'player', count: 3, spread: 0, radius: 13, delay: 1.1, damage: 20, visual: 'fire', lead: 1 },
-    { stance: 'close', kind: 'strikes', every: 4.2, target: 'self', count: 1, spread: 0, radius: 44, delay: 1.2, damage: 22, visual: 'fire' },
-    { far: 120, kind: 'strikes', every: 6.5, target: 'player', count: 1, spread: 0, radius: 30, delay: 1.3, damage: 24, visual: 'fire', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 4, count: 7, arc: 1.2, speed: 100, windup: 0.9, radius: 5, damage: 20, visual: 'fire' },
-    { from: 'nightmare', stance: 'close', kind: 'strikes', every: 4.6, target: 'self', count: 3, spread: 70, radius: 20, delay: 1.2, damage: 22, visual: 'fire' },
-  ],
-  // Johto's legendary beasts: they bound onto a player who keeps away.
-  /** Raikou, the fast one: quick-landing Thunder along your path, static where it dashes, Extreme Speed from afar. */
-  raikou: [
-    { stance: 'ranged', kind: 'strikes', every: 3, target: 'player', count: 3, spread: 46, radius: 13, delay: 0.9, damage: 18, visual: 'thunder', lead: 1 },
-    { stance: 'close', kind: 'trail', every: 0.22, ttl: 1.6, radius: 6, damage: 10, visual: 'thunder' },
-    { stance: 'close', kind: 'strikes', every: 3.8, target: 'self', count: 1, spread: 0, radius: 40, delay: 1.1, damage: 20, visual: 'thunder' },
-    { far: 120, kind: 'strikes', every: 6.5, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.1, damage: 20, visual: 'thunder', lead: 1, leap: true },
-    { below: 0.5, stance: 'ranged', kind: 'strikes', every: 3.2, target: 'player', count: 5, spread: 70, radius: 12, delay: 1, damage: 16, visual: 'thunder' },
-    { from: 'nightmare', kind: 'ring', every: 4.4, count: 10, speed: 90, radius: 5, damage: 16, visual: 'aero' },
-  ],
-  /** Entei, the eruption: fire raining along your path, Flame Charge, a wide burst, and Eruption volleys once enraged. */
-  entei: [
-    { stance: 'ranged', kind: 'strikes', every: 3.4, target: 'player', count: 5, spread: 72, radius: 13, delay: 1.1, damage: 22, visual: 'fire', lead: 1 },
-    { stance: 'close', kind: 'trail', every: 0.2, ttl: 2.4, radius: 7, damage: 14, visual: 'fire' },
-    { stance: 'close', kind: 'strikes', every: 4.4, target: 'self', count: 1, spread: 0, radius: 50, delay: 1.3, damage: 26, visual: 'fire' },
-    { far: 120, kind: 'strikes', every: 6.5, target: 'player', count: 1, spread: 0, radius: 30, delay: 1.3, damage: 24, visual: 'fire', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 4, count: 5, arc: 1, speed: 100, windup: 1, radius: 5, damage: 20, visual: 'fire' },
-    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.4, count: 10, speed: 70, radius: 5, damage: 20, visual: 'fire' },
-  ],
-  /** Suicune, the tide: dense slow water rings and Hydro Pump from afar, Aurora Beam up close, Surf onto you. */
-  suicune: [
-    { stance: 'ranged', kind: 'ring', every: 3.6, count: 16, speed: 62, radius: 5, damage: 20, visual: 'water' },
-    { stance: 'ranged', kind: 'strikes', every: 4.4, target: 'player', count: 2, spread: 44, radius: 18, delay: 1.1, damage: 22, visual: 'water', lead: 1 },
-    { stance: 'close', kind: 'ring', every: 3.2, count: 10, speed: 96, radius: 5, damage: 18, visual: 'ice' },
-    { stance: 'close', kind: 'strikes', every: 4.2, target: 'self', count: 1, spread: 0, radius: 44, delay: 1.2, damage: 22, visual: 'water' },
-    { far: 120, kind: 'strikes', every: 6.5, target: 'player', count: 1, spread: 0, radius: 30, delay: 1.3, damage: 24, visual: 'water', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 3.8, count: 3, arc: 0.25, speed: 140, windup: 1, radius: 5, damage: 22, visual: 'water' },
-    { from: 'nightmare', stance: 'close', kind: 'trail', every: 0.25, ttl: 2.4, radius: 7, damage: 14, visual: 'water' },
-  ],
-  // Hoenn's Regis: slow golems that fill the ground with telegraphs and shoot a player who keeps away.
-  /** Regirock: Stone Edge falling around the player, Hammer Arm and Ancient Power up close, Rock Tomb from afar. */
-  regirock: [
-    { stance: 'ranged', kind: 'strikes', every: 3.4, target: 'player', count: 4, spread: 56, radius: 12, delay: 1.1, damage: 18, visual: 'rock' },
-    { stance: 'close', kind: 'strikes', every: 4.2, target: 'self', count: 1, spread: 0, radius: 46, delay: 1.3, damage: 20, visual: 'slam' },
-    { stance: 'close', kind: 'ring', every: 3.8, count: 8, speed: 64, radius: 5, damage: 18, visual: 'rock' },
-    { far: 120, kind: 'volley', every: 5, count: 3, arc: 0.4, speed: 120, windup: 1, radius: 5, damage: 18, visual: 'rock' },
-    { below: 0.5, stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 3, spread: 0, radius: 14, delay: 1.1, damage: 18, visual: 'rock', lead: 1 },
-    { from: 'nightmare', stance: 'close', kind: 'strikes', every: 4.6, target: 'self', count: 3, spread: 60, radius: 18, delay: 1.2, damage: 20, visual: 'slam' },
-  ],
-  /** Regice: Icy Wind rings and a Blizzard along your path, frozen ground where it walks in close, Ice Beam from afar. */
-  regice: [
-    { stance: 'ranged', kind: 'ring', every: 3.4, count: 14, speed: 66, radius: 5, damage: 20, visual: 'ice' },
-    { stance: 'ranged', kind: 'strikes', every: 4.2, target: 'player', count: 2, spread: 40, radius: 18, delay: 1.1, damage: 24, visual: 'ice', lead: 1 },
-    { stance: 'close', kind: 'trail', every: 0.3, ttl: 2.8, radius: 8, damage: 12, visual: 'ice' },
-    { stance: 'close', kind: 'strikes', every: 4, target: 'self', count: 1, spread: 0, radius: 48, delay: 1.3, damage: 24, visual: 'ice' },
-    { far: 120, kind: 'volley', every: 5, count: 3, arc: 0.3, speed: 130, windup: 1, radius: 5, damage: 22, visual: 'ice' },
-    { below: 0.5, stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 4, spread: 0, radius: 14, delay: 1.1, damage: 20, visual: 'ice', lead: 1 },
-    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4, count: 10, speed: 90, radius: 5, damage: 18, visual: 'ice' },
-  ],
-  /** Registeel: a slow wall of Flash Cannon shots, Iron Head drops, a wide Heavy Slam, and Flash Cannon volleys from afar. */
-  registeel: [
-    { stance: 'ranged', kind: 'ring', every: 4, count: 18, speed: 56, radius: 5, damage: 20, visual: 'steel' },
-    { stance: 'ranged', kind: 'strikes', every: 3.8, target: 'player', count: 4, spread: 70, radius: 15, delay: 1.1, damage: 24, visual: 'steel' },
-    { stance: 'close', kind: 'strikes', every: 4.6, target: 'self', count: 1, spread: 0, radius: 56, delay: 1.4, damage: 26, visual: 'slam' },
-    { far: 120, kind: 'volley', every: 5, count: 3, arc: 0.35, speed: 120, windup: 1, radius: 5, damage: 24, visual: 'steel' },
-    { below: 0.5, stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 4, spread: 0, radius: 15, delay: 1.1, damage: 22, visual: 'steel', lead: 1 },
-    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.2, count: 12, speed: 60, radius: 5, damage: 20, visual: 'steel' },
-  ],
-  // The finale's rare mythicals: Mew's stats, each with its own signature, all teleporting onto a player who keeps away.
-  mew: [
-    { stance: 'ranged', kind: 'ring', every: 2.4, count: 8, speed: 90, radius: 5, damage: 22, visual: 'psychic' },
-    { stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 3, spread: 0, radius: 13, delay: 1.1, damage: 20, visual: 'psychic', lead: 1 },
-    { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 38, delay: 1.1, damage: 22, visual: 'psychic' },
-    { far: 120, kind: 'strikes', every: 6, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 22, visual: 'psychic', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 3.6, count: 5, arc: 0.9, speed: 110, windup: 0.9, radius: 5, damage: 20, visual: 'psychic' },
-    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4, count: 10, speed: 80, radius: 5, damage: 20, visual: 'psychic' },
-  ],
-  /** Celebi: Leaf Storm rings and Future Sight along your path; a burst of leaves up close. */
-  celebi: [
-    { stance: 'ranged', kind: 'ring', every: 2.6, count: 10, speed: 86, radius: 5, damage: 22, visual: 'grass' },
-    { stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 3, spread: 50, radius: 14, delay: 1.1, damage: 20, visual: 'psychic', lead: 1 },
-    { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 40, delay: 1.1, damage: 22, visual: 'grass' },
-    { far: 120, kind: 'strikes', every: 6, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 22, visual: 'grass', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 3.6, count: 5, arc: 1, speed: 105, windup: 0.9, radius: 5, damage: 20, visual: 'grass' },
-    { from: 'nightmare', stance: 'close', kind: 'trail', every: 0.25, ttl: 2.4, radius: 7, damage: 14, visual: 'grass' },
-  ],
-  /** Jirachi: Doom Desire, one big star falling on the player, plus steel rings; Psychic up close, Meteor Mash once enraged. */
-  jirachi: [
-    { stance: 'ranged', kind: 'strikes', every: 3.4, target: 'player', count: 1, spread: 0, radius: 28, delay: 1.5, damage: 30, visual: 'steel' },
-    { stance: 'ranged', kind: 'ring', every: 3, count: 8, speed: 84, radius: 5, damage: 20, visual: 'steel' },
-    { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 38, delay: 1.1, damage: 22, visual: 'psychic' },
-    { far: 120, kind: 'strikes', every: 6, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 22, visual: 'steel', lead: 1, leap: true },
-    { below: 0.5, stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 4, spread: 0, radius: 14, delay: 1.1, damage: 20, visual: 'steel', lead: 1 },
-    { from: 'nightmare', stance: 'ranged', kind: 'volley', every: 4.2, count: 4, arc: 0.7, speed: 115, windup: 0.9, radius: 5, damage: 20, visual: 'steel' },
-  ],
-  /**
-   * Mewtwo: psychic rings, Future Sight along your path, a slam up close and Teleport onto a player
-   * who keeps away; Psystrike volleys once enraged. From Hard, a second phase under 40%: it
-   * teleports onto you every few seconds between wide Psystrike volleys (on Nightmare, slow rings too).
-   */
-  mewtwo: [
-    { kind: 'ring', every: 3, count: 16, speed: 80, radius: 5, damage: 26, visual: 'psychic' },
-    { stance: 'ranged', kind: 'strikes', every: 4.5, target: 'player', count: 5, spread: 80, radius: 18, delay: 1.1, damage: 30, visual: 'psychic', lead: 1 },
-    { stance: 'close', kind: 'strikes', every: 4.5, target: 'self', count: 1, spread: 0, radius: 52, delay: 1.2, damage: 30, visual: 'psychic' },
-    { far: 130, kind: 'strikes', every: 6, target: 'player', count: 1, spread: 0, radius: 30, delay: 1.2, damage: 28, visual: 'psychic', lead: 1, leap: true },
-    { below: 0.5, kind: 'volley', every: 4, count: 3, arc: 0.5, speed: 120, windup: 1, radius: 5, damage: 26, visual: 'psychic' },
-    { below: 0.4, from: 'hard', kind: 'strikes', every: 3.8, target: 'player', count: 1, spread: 0, radius: 28, delay: 1.1, damage: 28, visual: 'psychic', lead: 1, leap: true },
-    { below: 0.4, from: 'hard', kind: 'volley', every: 2.6, count: 5, arc: 0.9, speed: 130, windup: 0.9, radius: 5, damage: 26, visual: 'psychic' },
-    { below: 0.4, from: 'nightmare', kind: 'ring', every: 4.5, count: 12, speed: 52, radius: 5, damage: 24, visual: 'psychic' },
-  ],
+  // The trios, the mythicals and Mewtwo fight in phases: `data/legendBosses.ts`.
   // Rift legendaries: each leans on its signature move and types.
   /** Aeroblast rings and a Hurricane around itself. */
   lugia: [
@@ -392,9 +296,5 @@ export const BOSS_PATTERNS: Partial<Record<EnemyId, readonly BossPattern[]>> = {
     { kind: 'strikes', every: 4, target: 'player', count: 3, spread: 46, radius: 14, delay: 1.1, damage: 18, visual: 'shadow' },
     { kind: 'strikes', every: 6, target: 'self', count: 1, spread: 0, radius: 46, delay: 1.3, damage: 20, visual: 'shadow' },
   ],
-  /** The reaper's Judgment: a storm of light on the player and wide rings. */
-  arceus: [
-    { kind: 'strikes', every: 3, target: 'player', count: 7, spread: 100, radius: 16, delay: 1, damage: 45, visual: 'judgment' },
-    { kind: 'ring', every: 4.5, count: 24, speed: 80, radius: 5, damage: 40, visual: 'judgment' },
-  ],
+  // Arceus, the reaper, fights in phases too (`data/legendBosses.ts`).
 }

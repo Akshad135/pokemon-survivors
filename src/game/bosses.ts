@@ -1,6 +1,7 @@
 import { dir8, dirTo, retain, TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
-import { BOSS_RAGE, PHASE_SHIFT, type BossPattern, type HazardVisual } from '../data/bosses'
+import { BOSS_RAGE, MIN_TELEGRAPH, PHASE_SHIFT, type BossPattern, type HazardVisual } from '../data/bosses'
+import { JUDGMENT_PLATE } from '../data/legendBosses'
 import type { RetinueRole } from '../data/domains'
 import type { EnemyId } from '../data/enemies'
 import { FINALE, fleesFrom } from '../data/waves'
@@ -29,9 +30,11 @@ export const spawnHazard = (g: Game, init: HazardInit) => {
 /** How long a strike keeps hurting after it lands. */
 const STRIKE_WINDOW = 0.15
 
-/** A boss's attack, pressed by its fight's difficulty (`attackCount`, `telegraph`); rift legendaries and Arceus pass no fight. */
-const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | null) => {
+/** A boss's attack, pressed by its fight's difficulty (`attackCount`, `telegraph`); a rift legendary in the old arena passes no fight. */
+const fire = (g: Game, boss: Enemy, written: BossPattern, fight: BossFight | null) => {
   const p = g.player
+  // Judgment takes the biome's plate.
+  const pattern = written.plate && 'visual' in written ? { ...written, visual: JUDGMENT_PLATE[g.biome.id] } : written
   switch (pattern.kind) {
     case 'strikes': {
       const center = pattern.target === 'player' ? p : boss
@@ -92,18 +95,29 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | nul
     case 'ring': {
       const offset = range(g.rng, 0, TAU)
       const count = attackCount(pattern.count, fight)
+      const gap = pattern.gap ?? 0
+      const open = range(g.rng, 0, TAU)
+      // Closing on the player from `around` px, or out of the boss.
+      const around = pattern.around
+      const windup = around === undefined ? 0 : telegraph(pattern.windup ?? MIN_TELEGRAPH, fight)
+      const cx = around === undefined ? boss.x : p.x
+      const cy = around === undefined ? boss.y : p.y
+      const out = around ?? boss.radius
+      const sign = around === undefined ? 1 : -1
       for (let i = 0; i < count; i++) {
         const a = offset + (i / count) * TAU
+        if (gap > 0 && Math.abs(angleGap(a, open)) < gap / 2) continue
         spawnHazard(g, {
           kind: 'shot',
           visual: pattern.visual,
-          x: boss.x + dm.cos(a) * boss.radius,
-          y: boss.y + dm.sin(a) * boss.radius,
-          vx: dm.cos(a) * pattern.speed,
-          vy: dm.sin(a) * pattern.speed,
+          x: cx + dm.cos(a) * out,
+          y: cy + dm.sin(a) * out,
+          vx: dm.cos(a) * pattern.speed * sign,
+          vy: dm.sin(a) * pattern.speed * sign,
           r: pattern.radius,
           damage: pattern.damage,
-          ttl: 5,
+          armAt: windup,
+          ttl: around === undefined ? 5 : windup + (around * 2) / pattern.speed,
           vanishOnHit: true,
         })
       }
@@ -153,10 +167,43 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | nul
     case 'blast': {
       if (!fight) return
       const windup = telegraph(pattern.windup, fight)
-      fight.blast = { left: windup, total: windup, x: boss.x, y: boss.y, damage: pattern.damage, safe: pattern.safe, radius: pattern.radius ?? 90, visual: pattern.visual }
+      const spots = pattern.safe === 'spots' ? shelters(g, pattern.spots ?? 3) : []
+      const radius = pattern.radius ?? (pattern.safe === 'spots' ? SHELTER.radius : 90)
+      fight.blast = { left: windup, total: windup, x: boss.x, y: boss.y, damage: pattern.damage, safe: pattern.safe, radius, visual: pattern.visual, spots }
+      return
+    }
+    case 'cage': {
+      const windup = telegraph(pattern.windup, fight)
+      const offset = range(g.rng, 0, TAU)
+      for (let i = 0; i < pattern.count; i++) {
+        const a = offset + (i / pattern.count) * TAU
+        spawnHazard(g, {
+          kind: 'zone', visual: pattern.visual, x: p.x + dm.cos(a) * pattern.radius, y: p.y + dm.sin(a) * pattern.radius * 0.85,
+          r: pattern.size, damage: pattern.damage, armAt: windup, disarmAt: pattern.ttl - 0.3, ttl: pattern.ttl,
+        })
+      }
       return
     }
   }
+}
+
+/** The signed angle (rad, -π..π) from `b` to `a`. */
+const angleGap = (a: number, b: number) => {
+  const d = (a - b) % TAU
+  return d > Math.PI ? d - TAU : d < -Math.PI ? d + TAU : d
+}
+
+/** A `spots` blast's shelters: `radius` px circles `near`..`far` px around the player, evenly spread at a random turn (always one within reach of its warning). */
+export const SHELTER = { radius: 16, near: 52, far: 92 } as const
+
+const shelters = (g: Game, count: number) => {
+  const p = g.player
+  const offset = range(g.rng, 0, TAU)
+  return Array.from({ length: count }, (_, i) => {
+    const a = offset + (i / count) * TAU
+    const d = range(g.rng, SHELTER.near, SHELTER.far)
+    return { x: p.x + dm.cos(a) * d, y: p.y + dm.sin(a) * d * 0.8 }
+  })
 }
 
 /** A hidden boss waits this far north of its home, out of everyone's reach, until its script lands it. */
@@ -204,7 +251,7 @@ export const rayToCover = (g: Game, x: number, y: number, dx: number, dy: number
 }
 
 /** Whether a body of radius `r` at (x, y) stands where a blast spares it (`BlastSafe`). */
-export const safeAt = (g: Game, blast: Pick<BossBlast, 'x' | 'y' | 'safe' | 'radius'>, x: number, y: number, r: number) => {
+export const safeAt = (g: Game, blast: Pick<BossBlast, 'x' | 'y' | 'safe' | 'radius' | 'spots'>, x: number, y: number, r: number) => {
   const dx = x - blast.x
   const dy = y - blast.y
   const d = dm.hypot(dx, dy)
@@ -217,11 +264,13 @@ export const safeAt = (g: Game, blast: Pick<BossBlast, 'x' | 'y' | 'safe' | 'rad
       return d <= blast.radius
     case 'far':
       return d >= blast.radius
+    case 'spots':
+      return blast.spots.some((s) => dm.sq(s.x - x) + dm.sq(s.y - y) <= dm.sq(blast.radius - r * 0.5))
   }
 }
 
 /** Whether the player stands where a blast spares them. */
-export const blastSpares = (g: Game, blast: Pick<BossBlast, 'x' | 'y' | 'safe' | 'radius'>) => safeAt(g, blast, g.player.x, g.player.y, g.player.radius)
+export const blastSpares = (g: Game, blast: Pick<BossBlast, 'x' | 'y' | 'safe' | 'radius' | 'spots'>) => safeAt(g, blast, g.player.x, g.player.y, g.player.radius)
 
 /** Fires a beam pattern: out of the boss (aimed, maybe sweeping or stopped by cover) or parallel lances from past the screen's edge. */
 const fireBeams = (g: Game, boss: Enemy, pattern: Extract<BossPattern, { kind: 'beam' }>, fight: BossFight | null) => {
@@ -495,10 +544,18 @@ export const updateBosses = (g: Game, dt: number) => {
     if (fight) {
       updateMotion(g, e, fight, dt)
       updateBlast(g, e, fight, dt)
+      // On the map a boss's home goes with it: its teleports and dives start from where it stands.
+      if (!g.rift.arena && !fight.motion && !parked(e)) {
+        fight.home.x = e.x
+        fight.home.y = e.y
+      }
     }
     // Stunned, asleep or frozen bosses hold their attacks (paralysis and the Poké Flute pay off here); so does one mid-script.
     if (e.status.stun > 0 || isHeld(e.status) || bossAway(fight)) continue
-    if (fight && phases && updateUltimate(g, e, fight, dt)) continue
+    const dist = dm.hypot(e.x - g.player.x, e.y - g.player.y)
+    const near = dist < reach
+    // An ultimate only comes due while the boss is close enough to be seen (always, in an arena).
+    if (fight && phases && (near || fight.ult) && updateUltimate(g, e, fight, dt)) continue
     if (fight?.motion || fight?.blast) continue
     if (e.cooldowns.length !== patterns.length) e.cooldowns = patterns.map((pt) => pt.every * 0.5)
     if (fight && tickStance(fight, dt, g.rng)) {
@@ -506,8 +563,6 @@ export const updateBosses = (g: Game, dt: number) => {
         if (pt.stance === fight.stance) e.cooldowns[i] = Math.max(e.cooldowns[i]!, BOSS_RAGE.open)
       })
     }
-    const dist = dm.hypot(e.x - g.player.x, e.y - g.player.y)
-    const near = dist < reach
     patterns.forEach((pattern, i) => {
       if (fight && !patternLive(pattern, fight)) return
       e.cooldowns[i]! -= dt

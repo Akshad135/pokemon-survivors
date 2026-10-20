@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BOSS_PATTERNS, type BossStance } from './bosses'
+import { bossKit, type BossStance } from './bosses'
 import { ENEMIES, type EnemyDef, type EnemyId } from './enemies'
 import { RIFT_LEGENDS } from './rifts'
 import { bossWaveAt, fleesFrom, MYTHICALS, TRIO_IDS, TRIOS } from './waves'
@@ -35,7 +35,7 @@ describe('legendary trios', () => {
     const { hp, damage, speed, xp }: EnemyDef = ENEMIES[id]
     return { hp, damage, speed, xp }
   }
-  const stances = (id: EnemyId) => new Set((BOSS_PATTERNS[id] ?? []).flatMap((p): BossStance[] => (p.stance ? [p.stance] : [])))
+  const stances = (id: EnemyId) => new Set(bossKit(id).flatMap((p): BossStance[] => (p.stance ? [p.stance] : [])))
 
   it('every trio takes the same slots, and a slot has the same stats whichever trio comes', () => {
     for (const slot of [0, 1, 2] as const) {
