@@ -11,8 +11,15 @@ const SEEN = 'ps:newsSeen'
 
 let newest: Promise<ChangelogUpdate> | null = null
 
-/** The newest update. The changelog is its own chunk, loaded on the first ask: the game's bundle doesn't carry it. */
-export const latestUpdate = () => (newest ??= import('../site/changelog').then((m) => m.CHANGELOG[0]!))
+/** The newest update. The changelog is its own chunk, loaded on the first ask: the game's bundle doesn't carry it. A failed load is asked again next time. */
+export const latestUpdate = () =>
+  (newest ??= import('../site/changelog').then(
+    (m) => m.CHANGELOG[0]!,
+    (err: unknown) => {
+      newest = null
+      throw err
+    },
+  ))
 
 /** Whether `update` came out after the last one opened here (always, the first time). */
 export const isUnread = (update: ChangelogUpdate) => {

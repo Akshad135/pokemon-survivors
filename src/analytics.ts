@@ -89,19 +89,21 @@ export const track = <E extends keyof AnalyticsEvents>(event: E, data: Analytics
   withPosthog((ph) => ph.capture(event, data))
 }
 
-let identity: string | null = null
+let identity: { userId: string | null; handle: string | null } | null = null
 
 /**
  * Ties this device's events to an account (its Clerk user id and public handle),
- * or back to a fresh anonymous id after signing out. Repeats are skipped.
+ * or back to a fresh anonymous id after signing out. Each call can cost an event,
+ * so a device already tied to the account only sends a handle picked since the page loaded.
  */
 export const identify = (userId: string | null, handle: string | null) => {
-  const next = `${userId}|${handle}`
-  if (next === identity) return
-  identity = next
+  const before = identity
+  if (before?.userId === userId && before.handle === handle) return
+  identity = { userId, handle }
   withPosthog((ph) => {
-    if (userId) ph.identify(userId, handle ? { handle } : undefined)
-    else if (ph.get_property('$user_state') === 'identified') ph.reset()
+    if (!userId) return void (ph.get_property('$user_state') === 'identified' && ph.reset())
+    if (ph.get_distinct_id() !== userId) ph.identify(userId, handle ? { handle } : undefined)
+    else if (handle && before?.userId === userId) ph.setPersonProperties({ handle })
   })
 }
 

@@ -309,6 +309,8 @@ let pressedStart = false
  */
 const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
   endRun()
+  // A newer build went live during the run (see `watchDeploys`): back in the lobby, with the run banked, ranked and its crash watch cleared, is the moment to load it.
+  if (reloadForDeploy) return location.reload()
   setScreen(
     titleScreen(ui, input, {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
@@ -1377,6 +1379,31 @@ const promptProfile = () => {
   })
 }
 
+/** Set when a newer build is live and a run held off the reload: the next trip to the lobby reloads. */
+let reloadForDeploy = false
+
+/** Whether the site now serves another build: the page's HTML, fetched fresh, misses one of this page's scripts. False offline. */
+const newerBuild = async () => {
+  const scripts = [...document.querySelectorAll<HTMLScriptElement>('script[type="module"][src]')].map((s) => new URL(s.src).pathname)
+  const html = await fetch(location.pathname, { cache: 'no-store' }).then((r) => (r.ok ? r.text() : null), () => null)
+  return html !== null && scripts.some((path) => !html.includes(path))
+}
+
+/**
+ * Each deploy renames the chunks loaded on demand (Novidades, Clerk) and drops
+ * the old ones, so a game opened before it can't load them anymore. When a
+ * chunk fails and a newer build is live, reload into it: right away in the
+ * menus (the save is local), or once the run is over.
+ */
+const watchDeploys = () =>
+  addEventListener('vite:preloadError', () =>
+    void newerBuild().then((newer) => {
+      if (!newer) return
+      if (run) reloadForDeploy = true
+      else location.reload()
+    }),
+  )
+
 /** The game closed mid-run last time (`takeCrash`): the title asks, once, whether to report it. */
 const askAboutCrash = () => {
   const crash = takeCrash()
@@ -1386,6 +1413,7 @@ const askAboutCrash = () => {
 
 const boot = () => {
   startAnalytics(errorContext)
+  watchDeploys()
   // Events and errors tie to the account on this device, known from its link before Clerk loads.
   const identifyAccount = () => identify(accountUserId(), accountHandle())
   identifyAccount()
