@@ -7387,6 +7387,55 @@ a.btn.dex-site {
   color: #a8b0d0;
 }
 
+/* Noite das Bruxas: a jack-o'-lantern supporter's line glows like a candle (`pumpkinRow`). */
+.rank-row.pumpkin {
+  position: relative;
+  background: radial-gradient(ellipse at 18% 50%, rgba(255, 140, 40, 0.34), rgba(80, 36, 130, 0.5) 70%);
+  box-shadow: 0 0 0 2px #f08020, 0 0 12px 3px rgba(255, 140, 40, 0.5);
+  animation: rank-candle 2.6s steps(1) infinite;
+}
+
+.rank-row.pumpkin.selected {
+  box-shadow: 0 0 12px 3px rgba(255, 140, 40, 0.5);
+  animation: none;
+}
+
+.rank-row.pumpkin .rank-who b {
+  color: #ffd070;
+  text-shadow: 0 0 6px rgba(255, 150, 40, 0.8);
+}
+
+.rank-row img.rank-jack {
+  position: absolute;
+  right: 86px;
+  bottom: -4px;
+  width: 26px;
+  height: 22px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* Room for the glow between lines. */
+.rank-list:has(.rank-row.pumpkin) {
+  gap: 8px;
+  padding: 8px;
+}
+
+@keyframes rank-candle {
+  0%, 80%, 88%, 100% {
+    box-shadow: 0 0 0 2px #f08020, 0 0 12px 3px rgba(255, 140, 40, 0.5);
+  }
+  82%, 86% {
+    box-shadow: 0 0 0 2px #c86010, 0 0 7px 1px rgba(255, 140, 40, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-row.pumpkin {
+    animation: none;
+  }
+}
+
 .rank-row.top1 .rank-pos {
   color: #ffcb05;
 }

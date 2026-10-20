@@ -214,5 +214,8 @@ export const pumpkinSupporter = (since: string | null | undefined, now: Date) =>
   return Number.isFinite(at) && brasiliaDay(new Date(at)) <= HALLOWEEN.to && brasiliaDay(now) >= HALLOWEEN.from
 }
 
+/** Whether a supporter since `since` gets the candle-lit ranking row at `now`: the badge's supporters, only while the event is on. */
+export const pumpkinRow = (since: string | null | undefined, now: Date) => halloweenAt(now) && pumpkinSupporter(since, now)
+
 /** Whether becoming a supporter on `day` still earns the jack-o'-lantern: the lobby offers it from the countdown to the event's last day. */
 export const pumpkinOfferOpen = (day: DayKey) => day >= HALLOWEEN.teaser && day <= HALLOWEEN.to

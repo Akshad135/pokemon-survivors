@@ -18,6 +18,7 @@ import {
   nextHalloweenReward,
   parseHalloween,
   PUMPKABOO_GIFT,
+  pumpkinRow,
   pumpkinSupporter,
   withHaunts,
 } from './halloween'
@@ -137,6 +138,12 @@ describe("the supporters' jack-o'-lantern", () => {
     expect(pumpkinSupporter('2026-10-01T12:00:00Z', new Date('2026-10-23T15:00:00Z'))).toBe(false)
     expect(pumpkinSupporter(null, during)).toBe(false)
     expect(pumpkinSupporter('junk', during)).toBe(false)
+  })
+
+  it('lights their ranking row only while the event is on', () => {
+    expect(pumpkinRow('2026-03-01T12:00:00Z', new Date('2026-10-31T15:00:00Z'))).toBe(true)
+    expect(pumpkinRow('2026-03-01T12:00:00Z', new Date('2026-11-04T15:00:00Z'))).toBe(false)
+    expect(pumpkinRow(null, new Date('2026-10-31T15:00:00Z'))).toBe(false)
   })
 })
 
