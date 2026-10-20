@@ -151,7 +151,7 @@ export const rankingStore = (sql: Sql) => {
      * A challenge run must bring its day's challenge as its replay (`challengeProblem`);
      * the first one of the player's day to finish is their official attempt.
      */
-    finishRun: (userId: string, token: string, result: RunResult, replay: Replay | null): Promise<Finished | { ok: false; error: FinishError }> =>
+    finishRun: (userId: string, token: string, result: RunResult, replay: Replay): Promise<Finished | { ok: false; error: FinishError }> =>
       sql.begin(async (tx) => {
         if (!UUID.test(token)) return { ok: false, error: 'unknown' } as const
         const [run] = await tx<{ elapsed: number; finished: boolean; starter: string | null; difficulty: string | null; survived: number | null; challenge: DayKey | null; official: boolean | null }[]>`
@@ -163,7 +163,7 @@ export const rankingStore = (sql: Sql) => {
           return { ok: false, error: 'mismatch' } as const
         }
         if (!clockAllows(run.elapsed, result.time)) return { ok: false, error: 'clock' } as const
-        if (run.challenge && (!replay || challengeProblem(replay.start, run.challenge))) return { ok: false, error: 'challenge' } as const
+        if (run.challenge && challengeProblem(replay.start, run.challenge)) return { ok: false, error: 'challenge' } as const
         let official = run.official
         if (run.challenge && !run.finished) {
           // The player's row makes two challenge runs finishing at once take turns.
@@ -175,7 +175,7 @@ export const rankingStore = (sql: Sql) => {
         await tx`
           update runs set finished_at = now(), starter = ${result.starter}, stage = ${result.stage}, branch = ${result.branch}, difficulty = ${result.difficulty},
             survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
-            replay = ${replay ? tx.json(replay) : null}, verified = null, checked_at = null, check_ms = null, official = ${official}
+            replay = ${tx.json(replay)}, verified = null, checked_at = null, check_ms = null, official = ${official}
           where id = ${token}`
         return { ok: true, challenge: run.challenge, official } as const
       }),
