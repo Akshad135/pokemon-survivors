@@ -9,6 +9,7 @@ import { spawnMapEvent } from './mapEvents'
 import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
+import { HALLOWEEN } from '../data/halloween'
 import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
 import { makeSpitter } from './spitters'
@@ -16,7 +17,7 @@ import type { Game } from './types'
 import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
-const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
 
 /**
  * Plays `seconds` like the shell would, with a wandering stick, picks and a
@@ -186,6 +187,22 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it('re-simulate a haunted run (Noite das Bruxas): its ghosts, candies and jack-o\'-lanterns, tricks included', () => {
+    /** Jack-o'-lanterns around the player, so some crack open early (treats and tricks). */
+    const pumpkins = (g: Game) => {
+      for (let i = 0; i < 8; i++) g.props.push({ id: g.nextId++, cell: -1 - i, kind: 'pumpkin', x: g.player.x + 30 * Math.cos(i), y: g.player.y + 30 * Math.sin(i), hp: 1, hitCooldown: 0, shake: 0 })
+    }
+    const start: ReplayStart = { ...START, halloween: true }
+    const { g, replay } = play(60, start, 300, pumpkins)
+    expect(g.roster.stages.every((pool, i) => pool.some(([id]) => id === HALLOWEEN.haunts[i]))).toBe(true)
+    expect(g.events.filter((e) => e.kind === 'trickOrTreat').length).toBeGreaterThan(0)
+    expect(g.candies).toBeGreaterThan(0)
+    const staged = startGame(start)
+    pumpkins(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, halloween: 'yes' } })!.start.halloween).toBe(false)
   })
 
   it('re-simulate a Nightmare run under full tension: close spawns, tense elites and a surge', () => {

@@ -7,6 +7,7 @@ import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficul
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { parseClaimedGifts } from './gifts'
+import { NO_HALLOWEEN, parseHalloween, type HalloweenSave } from './halloween'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
 import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
@@ -143,6 +144,8 @@ export type Save = {
   branches: Branches
   /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
   clears: Clears
+  /** The Noite das Bruxas candy jar (`game/halloween.ts`): what it holds pays the event's rewards. */
+  halloween: HalloweenSave
 }
 
 /** The branch each branching family took in its latest run that got there. */
@@ -183,6 +186,7 @@ export const EMPTY_SAVE: Save = {
   companion: null,
   branches: {},
   clears: {},
+  halloween: NO_HALLOWEEN,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -244,6 +248,7 @@ export const parseSaveData = (json: unknown): Save => {
     branches: parseBranches(data.branches),
     // Plus the clears the lifetime records prove, for wins from before clears were tracked.
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
+    halloween: parseHalloween(data.halloween),
   }
 }
 

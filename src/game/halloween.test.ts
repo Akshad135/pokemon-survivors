@@ -1,0 +1,125 @@
+import { describe, expect, it } from 'vitest'
+import { createRng } from '../engine/rng'
+import { HALLOWEEN } from '../data/halloween'
+import { ENEMIES } from '../data/enemies'
+import { STAGES } from '../data/waves'
+import { challengeProblem, challengeStart, dailyChallenge } from './challenge'
+import { applyGift } from './gifts'
+import {
+  addCandies,
+  candiesOf,
+  daysToHalloween,
+  HALLOWEEN_REWARDS,
+  halloweenDaysLeft,
+  halloweenFits,
+  halloweenGifts,
+  isHalloweenDay,
+  mergeHalloween,
+  nextHalloweenReward,
+  parseHalloween,
+  withHaunts,
+} from './halloween'
+import { EMPTY_SAVE, type Save } from './meta'
+import { OUTBREAK_SPECIES, outbreakOf } from './outbreak'
+import { drawRoster } from './roster'
+
+const withCandies = (candies: number, gifts: string[] = []): Save => ({ ...EMPTY_SAVE, halloween: { candies }, gifts })
+
+describe('the Noite das Bruxas calendar', () => {
+  it('runs from its first day to its last, both included, counting down from the teaser', () => {
+    expect(isHalloweenDay(HALLOWEEN.from)).toBe(true)
+    expect(isHalloweenDay(HALLOWEEN.to)).toBe(true)
+    expect(isHalloweenDay('2026-10-23')).toBe(false)
+    expect(isHalloweenDay('2026-11-03')).toBe(false)
+    expect(daysToHalloween(HALLOWEEN.teaser)).toBe(3)
+    expect(daysToHalloween('2026-10-23')).toBe(1)
+    expect(daysToHalloween('2026-10-20')).toBeNull()
+    expect(daysToHalloween(HALLOWEEN.from)).toBeNull()
+    expect(halloweenDaysLeft(HALLOWEEN.from)).toBe(10)
+    expect(halloweenDaysLeft(HALLOWEEN.to)).toBe(1)
+    expect(halloweenDaysLeft('2026-11-03')).toBeNull()
+  })
+
+  it("puts a ghost in each event day's outbreak, an outbreak species, and leaves the other days to the draw", () => {
+    for (const [day, id] of Object.entries(HALLOWEEN.outbreaks)) {
+      expect(isHalloweenDay(day)).toBe(true)
+      expect(OUTBREAK_SPECIES).toContain(id)
+      expect(outbreakOf(day)).toBe(id)
+    }
+    expect(outbreakOf('2026-10-31')).toBe('gastly')
+    expect(Object.keys(HALLOWEEN.outbreaks)).not.toContain('2026-10-20')
+  })
+
+  it('takes a haunted run started on an event day or just after one, and any run that is not haunted', () => {
+    // 2026-10-24 12:00 in Brasília is 15:00 UTC; 2026-11-03 00:30 is 03:30 UTC.
+    expect(halloweenFits(true, new Date('2026-10-24T15:00:00Z'))).toBe(true)
+    expect(halloweenFits(true, new Date('2026-11-03T03:30:00Z'))).toBe(true)
+    expect(halloweenFits(true, new Date('2026-10-23T15:00:00Z'))).toBe(false)
+    expect(halloweenFits(true, new Date('2026-11-04T15:00:00Z'))).toBe(false)
+    expect(halloweenFits(false, new Date('2026-10-31T15:00:00Z'))).toBe(true)
+  })
+
+  it("haunts the Desafio do dia on the event's days, and a start that skips it isn't the challenge", () => {
+    const c = dailyChallenge('2026-10-31')
+    expect(c.halloween).toBe(true)
+    expect(dailyChallenge('2026-10-20').halloween).toBe(false)
+    const start = challengeStart(c, { w: 480, h: 270 }, false)
+    expect(challengeProblem(start, c.day)).toBeNull()
+    expect(challengeProblem({ ...start, halloween: false }, c.day)).toBe('halloween')
+  })
+})
+
+describe('the haunted run', () => {
+  it('adds the stage ghost to every stage of the cast, of a tier the stage draws, keeping the rest', () => {
+    expect(HALLOWEEN.haunts.length).toBe(STAGES.length)
+    HALLOWEEN.haunts.forEach((id, i) => {
+      expect(ENEMIES[id].types).toContain('ghost')
+      expect(STAGES[i]!.cast).toContain(ENEMIES[id].tier)
+    })
+    const roster = drawRoster(createRng(5))
+    expect(withHaunts(roster, false)).toBe(roster)
+    const haunted = withHaunts(roster, true)
+    haunted.stages.forEach((pool, i) => {
+      expect(pool.some(([id]) => id === HALLOWEEN.haunts[i])).toBe(true)
+      expect(pool.filter(([id]) => id !== HALLOWEEN.haunts[i])).toEqual(roster.stages[i]!.filter(([id]) => id !== HALLOWEEN.haunts[i]))
+    })
+  })
+
+  it('gives candies for bosses and Alphas always, Ghost types now and then, and nothing for the rest', () => {
+    const foe = { types: ['normal'] as const, boss: false, alpha: null, elite: false, shiny: false }
+    const ghost = { ...foe, types: ['ghost'] as const }
+    const always = () => 0
+    expect(candiesOf(always, { ...foe, boss: true })).toBe(HALLOWEEN.candy.boss)
+    expect(candiesOf(always, foe)).toBe(0)
+    expect(candiesOf(always, { ...ghost, shiny: true })).toBe(HALLOWEEN.candy.shiny)
+    expect(candiesOf(always, { ...ghost, elite: true })).toBe(HALLOWEEN.candy.elite)
+    expect(candiesOf(always, ghost)).toBe(1)
+    expect(candiesOf(() => 0.99, ghost)).toBe(0)
+  })
+})
+
+describe('the candy jar', () => {
+  it('pays the frame for showing up during the event, then each reward its candies reach, once', () => {
+    expect(halloweenGifts(withCandies(0), '2026-10-20')).toEqual([])
+    expect(halloweenGifts(withCandies(0), '2026-10-31').map((g) => g.content)).toEqual([HALLOWEEN_REWARDS[0]!.content])
+    const reached = halloweenGifts(withCandies(320), '2026-11-10')
+    expect(reached.map((g) => g.content)).toEqual(HALLOWEEN_REWARDS.slice(0, 4).map((r) => r.content))
+    expect(reached.every((g) => g.reason?.kind === 'halloween')).toBe(true)
+    // Applied on any device, a reward never comes again.
+    const out = applyGift(withCandies(320), reached[1]!)
+    expect(out.status).toBe('applied')
+    if (out.status !== 'applied') return
+    expect(out.save.style.owned.background).toContain('halloween')
+    expect(halloweenGifts(out.save, '2026-11-10').map((g) => g.id)).not.toContain(reached[1]!.id)
+  })
+
+  it('banks candies, keeps the fuller jar when two saves merge and parses junk to empty', () => {
+    expect(addCandies(withCandies(10), 5).halloween.candies).toBe(15)
+    expect(addCandies(withCandies(10), 0).halloween.candies).toBe(10)
+    expect(mergeHalloween({ candies: 40 }, { candies: 90 })).toEqual({ candies: 90 })
+    expect(parseHalloween({ candies: -3 })).toEqual({ candies: 0 })
+    expect(parseHalloween('nope')).toEqual({ candies: 0 })
+    expect(nextHalloweenReward(0)).toBe(HALLOWEEN_REWARDS[1])
+    expect(nextHalloweenReward(10_000)).toBeNull()
+  })
+})

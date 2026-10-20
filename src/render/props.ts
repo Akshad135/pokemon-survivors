@@ -6,6 +6,7 @@ import { isAsleep } from '../game/status'
 import type { Prop } from '../game/props'
 import type { Game } from '../game/types'
 import { art, lazy, toIconUrl } from './art'
+import { drawJack } from './halloweenArt'
 
 /**
  * Pixel art and drawing for item sources (props), consumables on the floor,
@@ -119,6 +120,8 @@ const drawProp = (ctx: Ctx, prop: Prop, t: number, skin: PropSkin) => {
       const s = skin.grass[rustling && Math.floor(t * 10) % 2 ? 1 : 0]
       return ctx.drawImage(s, Math.round(x - s.width / 2), Math.round(prop.y - s.height + 1))
     }
+    case 'pumpkin':
+      return drawJack(ctx, x, prop.y, prop.id, t)
   }
 }
 

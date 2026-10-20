@@ -410,7 +410,8 @@ const items = (m: SiteMessages) => {
   const nameOf = (drop: Drop) => (drop === 'oranBerry' ? 'Oran Berry' : CONSUMABLES[drop].name)
   const where = (drop: Drop) =>
     sources.filter((src) => DROP_TABLES[src].some((e) => e.drop === drop && Math.max(e.early, e.late) > 0)).map((src) => i.sources[src])
-  const props = (Object.keys(PROPS) as Array<keyof typeof PROPS>).map((id) => [i.sources[id], PROPS[id].hp])
+  // The jack-o'-lantern only stands in for a breakable during the Noite das Bruxas.
+  const props = (Object.keys(PROPS) as Array<keyof typeof PROPS>).flatMap((id) => (id === 'pumpkin' ? [] : [[i.sources[id], PROPS[id].hp]]))
   return html`<p>${i.intro}</p>
     ${table([i.sourceHead, i.hitsHead], props)}
     <p class="note">${i.enemyNote(ENEMY_BERRY_CHANCE * 100, ENEMY_DROP_CHANCE * 100)}</p>

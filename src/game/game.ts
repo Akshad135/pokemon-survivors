@@ -44,6 +44,7 @@ import { decidePokeball, updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
 import { withOutbreak } from './outbreak'
+import { withHaunts } from './halloween'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
 import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
@@ -75,6 +76,8 @@ export type RunOptions = {
   luckyEgg?: boolean
   /** The day's outbreak species (`game/outbreak.ts`), put in every stage of the roster (`withOutbreak`, which a roster drawn ahead may already have). */
   outbreak?: EnemyId | null
+  /** Noite das Bruxas (`game/halloween.ts`): a ghost in every stage of the roster (`withHaunts`, which a roster drawn ahead may already have), candies and jack-o'-lanterns. */
+  halloween?: boolean
   /** Bag items the run uses (`game/bag.ts`): a Lure doubles wild shinies, an Incense egg drops. */
   lure?: boolean
   incense?: boolean
@@ -159,7 +162,7 @@ export const createGame = (
     evolution: null,
     branch: null,
     ability: createAbilityState(),
-    roster: withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null),
+    roster: withOutbreak(withHaunts(roster ?? drawRoster(rng), options.halloween === true), options.outbreak ?? null),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
@@ -180,6 +183,8 @@ export const createGame = (
     tally: createTally(),
     eggs: { found: [], lucky: options.luckyEgg === true, boost: options.incense ? BAG_ITEMS.incense.boost : 1 },
     outbreak: options.outbreak ?? null,
+    halloween: options.halloween === true,
+    candies: 0,
     shinyBoost: shinyBoost(ranks.shinyCharm, options.lure === true),
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.

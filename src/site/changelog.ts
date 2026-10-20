@@ -27,6 +27,38 @@ export type ChangelogUpdate = {
  */
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
+    date: '2026-10-21',
+    title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+    highlights: [
+      { pt: 'Noite das Bruxas de 24/10 a 2/11: toda partida é assombrada, à noite, com fantasmas e abóboras pelo mapa.', en: 'Halloween Night from Oct 24 to Nov 2: every run is haunted, at night, with ghosts and jack-o\'-lanterns all over the map.', es: 'Noche de Brujas del 24/10 al 2/11: cada partida está embrujada, de noche, con fantasmas y calabazas por el mapa.' },
+      { pt: 'Um surto assombrado por dia, com o Gastly no dia 31.', en: 'A haunted outbreak every day, with Gastly on the 31st.', es: 'Un brote embrujado cada día, con Gastly el 31.' },
+      { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
+      { pt: 'Quebre as abóboras: doces ou travessuras?', en: 'Smash the jack-o\'-lanterns: trick or treat?', es: 'Rompe las calabazas: ¿dulce o truco?' },
+    ],
+    changes: [
+      {
+        title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+        notes: [
+          {
+            pt: 'De 24 de outubro a 2 de novembro (horário de Brasília), toda partida é assombrada: cai a noite, um fantasma a mais entra em cada fase (do Shedinja ao Gengar) e abóboras iluminadas aparecem entre os itens do mapa. O lobby também se veste para a noite, com abóboras, morcegos e fantasmas passeando.',
+            en: 'From October 24 to November 2 (Brasília time), every run is haunted: night falls, an extra ghost joins each stage (from Shedinja to Gengar) and lit jack-o\'-lanterns stand among the breakables. The lobby dresses for the night too, with jack-o\'-lanterns, bats and ghosts wandering around.',
+            es: 'Del 24 de octubre al 2 de noviembre (hora de Brasilia), cada partida está embrujada: cae la noche, un fantasma más se une a cada fase (de Shedinja a Gengar) y calabazas iluminadas aparecen entre los objetos del mapa. El lobby también se viste para la noche, con calabazas, murciélagos y fantasmas paseando.',
+          },
+          {
+            pt: 'Surtos assombrados: cada dia do evento tem o seu fantasma (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), o Gastly no dia 31, as velas do Litwick no Día de Muertos e o Duskull no Dia de Finados. O Desafio do dia também fica assombrado.',
+            en: 'Haunted outbreaks: each event day has its ghost (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), Gastly on the 31st, Litwick\'s candles for the Día de Muertos and Duskull for All Souls\' Day. The Daily Challenge gets haunted too.',
+            es: 'Brotes embrujados: cada día del evento tiene su fantasma (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), Gastly el 31, las velas de Litwick en el Día de Muertos y Duskull en el Día de los Fieles Difuntos. El Desafío del día también se embruja.',
+          },
+          {
+            pt: 'Doces: Pokémon do tipo Fantasma deixam cair doces, chefes e Alfas sempre trazem 10, e as abóboras são doces ou travessuras (às vezes uma roda de fantasmas aparece em volta de você). Os doces enchem um pote que dá prêmios no Presente do lobby: a moldura Abóbora só por participar, o fundo Noite das Bruxas, um Ovo Raro, o papel de parede Casa Assombrada, o título Rei das Abóboras e um Gastly shiny.',
+            en: 'Candies: Ghost-type Pokémon drop candies, bosses and Alphas always bring 10, and jack-o\'-lanterns are trick or treat (sometimes a ring of ghosts shows up around you). Candies fill a jar that pays prizes in the lobby\'s Gift box: the Pumpkin frame just for joining in, the Halloween Night background, a Rare Egg, the Haunted House wallpaper, the Pumpkin King title and a shiny Gastly.',
+            es: 'Dulces: los Pokémon de tipo Fantasma sueltan dulces, los jefes y los Alfas siempre traen 10, y las calabazas son dulce o truco (a veces aparece una ronda de fantasmas a tu alrededor). Los dulces llenan un frasco que da premios en el Regalo del lobby: el marco Calabaza solo por participar, el fondo Noche de Brujas, un Huevo Raro, el fondo de pantalla Casa Embrujada, el título Rey Calabaza y un Gastly shiny.',
+          },
+        ],
+      },
+    ],
+  },
+  {
     date: '2026-10-19',
     title: { pt: 'Modo difícil e convites', en: 'Hard mode and invites', es: 'Modo difícil e invitaciones' },
     highlights: [

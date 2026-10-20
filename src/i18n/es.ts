@@ -533,9 +533,9 @@ export const es: Messages = {
       wallpaper: 'Fondo de pantalla de la Caja del PC.',
     },
     styles: {
-      frame: { classic: 'Clásico', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embajador(a)', supporter: 'Apoyo' },
-      background: { night: 'Noche estrellada', meadow: 'Ruta 1', forest: 'Bosque Verde', cave: 'Mt. Moon', snow: 'Monte Plateado', tower: 'Torre Lavanda', supporter: 'Cielo dorado' },
-      wallpaper: { classic: 'Clásico', forest: 'Hojas', cave: 'Piedritas', snow: 'Copos de nieve', tower: 'Fantasmitas', supporter: 'Estrellas doradas' },
+      frame: { classic: 'Clásico', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embajador(a)', supporter: 'Apoyo', pumpkin: 'Calabaza' },
+      background: { night: 'Noche estrellada', meadow: 'Ruta 1', forest: 'Bosque Verde', cave: 'Mt. Moon', snow: 'Monte Plateado', tower: 'Torre Lavanda', supporter: 'Cielo dorado', halloween: 'Noche de Brujas' },
+      wallpaper: { classic: 'Clásico', forest: 'Hojas', cave: 'Piedritas', snow: 'Copos de nieve', tower: 'Fantasmitas', supporter: 'Estrellas doradas', haunted: 'Casa Embrujada' },
     },
   },
 
@@ -544,6 +544,38 @@ export const es: Messages = {
     blurb: 'Aparece en todas las partidas de hoy: unos 2 shinies suyos por partida.',
     started: (name) => `¡Brote de *${name}*!`,
     hint: 'Aparece mucho más hoy, y su shiny también.',
+  },
+
+  halloween: {
+    name: 'Noche de Brujas',
+    card: 'NOCHE DE BRUJAS',
+    countdown: (days) => (days === 1 ? '¡Empieza mañana!' : `Empieza en ${days} días`),
+    daysLeft: (days) => (days === 1 ? '¡Último día!' : `Quedan ${days} días`),
+    daysLeftShort: (days) => (days === 1 ? 'ÚLTIMO DÍA' : `${days} DÍAS`),
+    over: 'La noche terminó. ¡Hasta el año que viene!',
+    dates: (from, to) => `Del ${from} al ${to}`,
+    blurb: '¡Los fantasmas tomaron el control! Cada partida está embrujada: un fantasma más en cada fase, un brote embrujado por día y calabazas por el mapa. Junta dulces y llena el frasco para ganar los premios.',
+    howGhosts: 'Los Pokémon de tipo *Fantasma* sueltan dulces',
+    howBosses: 'Los *jefes* y los *Alfas* siempre traen 10 dulces',
+    howPumpkins: 'Rompe las *calabazas*: ¿dulce o truco?',
+    jarCount: (n) => `Frasco de dulces: *${n}*`,
+    jarNext: (n) => `${n} más para el próximo premio`,
+    received: 'recibido',
+    inGiftBox: '¡en Regalo!',
+    forJoining: 'por participar',
+    shinyOf: (name) => `${name} shiny`,
+    at: (n) => `${n} dulces`,
+    calendar: 'BROTES EMBRUJADOS',
+    today: 'HOY',
+    openGifts: (n) => (n === 1 ? 'Abrir regalo' : `Abrir regalos (${n})`),
+    close: 'Cerrar',
+    hintKeys: '← → elegir · ENTER confirmar · ESC volver',
+    hintTouch: 'Toca para elegir',
+    started: '*¡Noche de Brujas!*',
+    startedHint: 'Fantasmas, jefes y Alfas traen dulces. ¡Rompe las calabazas!',
+    treat: '*¡Dulce!* La calabaza estaba llena de dulces.',
+    trick: (name) => `*¡Truco!* ¡Apareció una ronda de ${name}!`,
+    candies: 'Dulces',
   },
 
   challenge: {
@@ -652,6 +684,7 @@ export const es: Messages = {
     support: (tier) => (tier === 'gold' ? 'Por llegar a Patrocinador(a) Oro ♥' : 'Por apoyar el proyecto ♥'),
     staff: (from) => (from ? `Un regalo de @${from}, que hace el juego ♥` : 'Un regalo de quien hace el juego ♥'),
     discord: 'Por unirte a nuestro Discord ♥',
+    halloween: 'Del frasco de dulces de la Noche de Brujas',
   },
 
   supporters: {
@@ -1247,7 +1280,7 @@ export const es: Messages = {
     noTitle: 'ninguno',
     titleTag: 'TÍTULO',
     equipped: 'EN USO',
-    giftTitles: { ambassador: 'Trajo 3 amigos al juego', supporter: 'Apoyó el proyecto con una donación' },
+    giftTitles: { ambassador: 'Trajo 3 amigos al juego', supporter: 'Apoyó el proyecto con una donación', pumpkinKing: 'Llenó el frasco de dulces de la Noche de Brujas' },
     newMedals: 'Nuevas medallas',
     names: {
       firstRun: 'Primeros pasos',
@@ -1326,6 +1359,7 @@ export const es: Messages = {
       alpha100: 'Cazador de Alfas',
       ambassador: 'Embajador(a)',
       supporter: 'Patrocinador(a)',
+      pumpkinKing: 'Rey Calabaza',
     },
     goals: {
       runs: (n) => (n === '1' ? 'Juega una partida' : `Juega ${n} partidas`),

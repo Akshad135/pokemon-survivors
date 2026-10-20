@@ -7,6 +7,7 @@ import { EMOTES, type Emote } from './art'
 import { drawSparkles, shadow } from './draw'
 import { drawPokemon, hasShiny, loadedSprites, loadSpecies, type Dex } from './sprites'
 import { drawGround } from './world'
+import { drawMeadowJacks, drawMeadowNight } from './halloweenArt'
 
 /**
  * Attract-mode backdrop behind the menus: the meadow under a slowly drifting
@@ -97,6 +98,8 @@ export type TitleScene = {
   quietUntil: number
   /** Dust where the partner landed, by scene time. */
   puffs: { x: number; y: number; at: number }[]
+  /** The Noite das Bruxas (set by the shell): night falls, jack-o'-lanterns light the meadow and ghosts roam it. */
+  haunted: boolean
 }
 
 /** Every species that may roam: wild Pokémon and the starter lines (evolutions show up once a run has loaded them). */
@@ -104,6 +107,11 @@ const POOL: readonly Dex[] = [
   ...Object.values(ENEMIES).flatMap((e) => ('boss' in e ? [] : [e.dex])),
   ...STARTER_IDS.flatMap(starterDex),
 ]
+
+/** The ghosts among them, who take over the meadow on the Noite das Bruxas. */
+const GHOSTS: readonly Dex[] = Object.values(ENEMIES).flatMap((e) => (!('boss' in e) && e.types.some((t) => t === 'ghost') ? [e.dex] : []))
+/** Share of a haunted meadow's newcomers that are ghosts, when any is loaded. */
+const HAUNTED_SHARE = 0.65
 
 const CAMERA_SPEED = 9
 /** Off-screen band (world px) where wanderers enter; past it they're recycled. */
@@ -154,6 +162,7 @@ export const createTitleScene = (seed: number): TitleScene => {
     cries: [],
     quietUntil: 0,
     puffs: [],
+    haunted: false,
   }
 }
 
@@ -218,7 +227,8 @@ const pickSpecies = (s: TitleScene) => {
     s.nextShiny = null
     return { dex, shiny: true }
   }
-  return { dex: pick(s.rng, ready), shiny: false }
+  const ghosts = s.haunted ? ready.filter((dex) => GHOSTS.includes(dex)) : []
+  return { dex: pick(s.rng, ghosts.length > 0 && chance(s.rng, HAUNTED_SHARE) ? ghosts : ready), shiny: false }
 }
 
 const spawn = (s: TitleScene, w: number, h: number) => {
@@ -451,6 +461,7 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
   const camX = Math.round(s.cam.x)
   const camY = Math.round(s.cam.y)
   drawGround(ctx, camX, camY, w, h)
+  if (s.haunted) drawMeadowJacks(ctx, camX, camY, w, h, s.time)
   drawPuffs(ctx, s, camX, camY)
   const p = s.partner?.state === 'home' ? null : s.partner
   const drawPartner = () => {
@@ -479,6 +490,7 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     if (wd.shiny) drawSparkles(ctx, x, y - sprite.bodyH / 2, Math.max(sprite.bodyW, sprite.bodyH), s.time - wd.bornAt, wd.id)
   }
   if (!partnerDrawn) drawPartner()
+  if (s.haunted) drawMeadowNight(ctx, camX, camY, w, h, s.time)
   // Emotes over everyone's heads, bobbing a pixel.
   const bubbles = EMOTES()
   for (const wd of s.wanderers) {

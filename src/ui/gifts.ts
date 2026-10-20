@@ -3,13 +3,27 @@ import { giftInbox, nextGift, openGift } from '../account'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import type { Hatch } from '../game/eggs'
-import type { Gift } from '../game/gifts'
+import type { Gift, StyleRef } from '../game/gifts'
 import { formatDay, formatPokeDollars, t } from '../i18n'
 import { coinIcon, eggIcon, giftIcon, medalIcon, ribbonIcon, sparkleIcon } from '../render/art'
-import { frameIcon } from '../render/cosmetics'
+import { styleThumb } from '../render/card'
+import { frameIcon, wallpaperUrl } from '../render/cosmetics'
 import { portraitUrl } from '../render/sprites'
 import { h, later, rich } from './dom'
 import { hint, menu, type Screen } from './screens'
+
+const styleIcons = new Map<string, string>()
+
+/** A style as a small picture: the frame's ball (or rings), a corner of the sky, the wallpaper's tile. */
+export const styleIcon = (style: StyleRef) => {
+  const key = `${style.slot}:${style.id}`
+  let url = styleIcons.get(key)
+  if (!url) {
+    url = style.slot === 'frame' ? frameIcon(style.id) : style.slot === 'background' ? styleThumb(null, style.id, 14, 14).toDataURL() : wallpaperUrl(style.id)
+    styleIcons.set(key, url)
+  }
+  return url
+}
 
 /** What a gift brought: an icon and a line of light markup. The admin's desk previews gifts with it too. */
 export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: string } => {
@@ -24,7 +38,7 @@ export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: s
       return { src: medalIcon('gold'), text: m.newTitle(t().achievements.titles[c.title]) }
     case 'style': {
       const names: Readonly<Record<string, string>> = t().mart.styles[c.style.slot]
-      return { src: c.style.slot === 'frame' ? frameIcon(c.style.id) : giftIcon(), text: m.style(names[c.style.id] ?? c.style.id) }
+      return { src: styleIcon(c.style), text: m.style(names[c.style.id] ?? c.style.id) }
     }
     case 'shinyHatch':
       return { src: portraitUrl(HATCHLINGS[c.family].line[0].dex, true), text: m.shinyHatch(HATCHLINGS[c.family].name) }
@@ -35,7 +49,7 @@ export const contentLine = (gift: Pick<Gift, 'content'>): { src: string; text: s
   }
 }
 
-/** Why it came: an invite, friends brought, a donation, the admin's present, joining the Discord, or a day of the challenge (the place is in the ribbon). */
+/** Why it came: an invite, friends brought, a donation, the admin's present, joining the Discord, the Noite das Bruxas candy jar, or a day of the challenge (the place is in the ribbon). */
 export const reasonLine = (gift: Gift) => {
   const c = gift.content
   if (c.kind === 'ribbon') return t().gifts.ribbonWhy(formatDay(c.ribbon.day), c.ribbon.rank, c.ribbon.total)
@@ -52,6 +66,8 @@ export const reasonLine = (gift: Gift) => {
       return t().gifts.staff(r.from)
     case 'discord':
       return t().gifts.discord
+    case 'halloween':
+      return t().gifts.halloween
   }
 }
 

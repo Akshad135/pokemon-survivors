@@ -15,6 +15,7 @@ import { CURSES } from '../data/curses'
 import { isDuo, readyDuos } from '../game/duoRules'
 import { consumableIcon } from '../render/props'
 import { weatherIcon } from '../render/weather'
+import { treatIcon } from '../render/halloweenArt'
 import { portraitUrl } from '../render/sprites'
 import { abilityIcon } from '../render/abilityArt'
 import { megaIcon } from '../render/megaFx'
@@ -50,6 +51,9 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const timer = h('div', { class: 'timer' }, weather, clock)
   const kills = h('span')
   const coins = h('span')
+  const candies = h('span')
+  // Noite das Bruxas: the candies of a haunted run, beside the ₽.
+  const candyCounter = h('div', { class: 'kills treats hidden' }, h('img', { src: treatIcon(), alt: t().halloween.candies }), candies)
   const moveSlots = h('div', { class: 'slots' })
   const itemSlots = h('div', { class: 'slots' })
   const buffs = h('div', { class: 'buffs' })
@@ -91,6 +95,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
           { class: 'counters' },
           h('div', { class: 'kills' }, h('img', { src: pokeballIcon(), alt: '' }), kills),
           h('div', { class: 'kills coins' }, h('img', { src: coinIcon(0), alt: '' }), coins),
+          candyCounter,
         ),
         pause,
       ),
@@ -184,6 +189,10 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     }
     setText(kills, String(g.kills))
     setText(coins, formatPokeDollars(g.coins))
+    if (g.halloween) {
+      candyCounter.classList.remove('hidden')
+      setText(candies, String(g.candies))
+    }
     movePad.update()
     special.update(g)
     mega.update(g)

@@ -9,6 +9,7 @@ import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step }
 import { UPGRADE_IDS, UPGRADES, type Ranks } from './meta'
 import { isRecord, wholeNumber } from './parse'
 import { OUTBREAK_SPECIES, withOutbreak } from './outbreak'
+import { withHaunts } from './halloween'
 import { biomeWeight, drawRoster } from './roster'
 import type { Game } from './types'
 
@@ -30,7 +31,7 @@ export const TICK = 1 / 60
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
  * Replays from before the field existed are rules 1.
  */
-export const RULES_VERSION = 21
+export const RULES_VERSION = 22
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -54,6 +55,8 @@ export type ReplayStart = {
   luckyEgg: boolean
   /** The day's outbreak species (`game/outbreak.ts`); the server checks it against the day the run started. */
   outbreak: EnemyId | null
+  /** Noite das Bruxas (`game/halloween.ts`): the run is haunted; the server checks it against the day the run started (`halloweenFits`). */
+  halloween: boolean
   /** Bag items used up as the run started (`game/bag.ts`): a Lure and an Incense. */
   lure: boolean
   incense: boolean
@@ -177,6 +180,7 @@ export const parseReplay = (raw: unknown): Replay | null => {
       shiny: s.shiny === true,
       luckyEgg: s.luckyEgg === true,
       outbreak: isOutbreakSpecies(s.outbreak) ? s.outbreak : null,
+      halloween: s.halloween === true,
       lure: s.lure === true,
       incense: s.incense === true,
       view: { w: view.w, h: view.h },
@@ -188,17 +192,19 @@ export const parseReplay = (raw: unknown): Replay | null => {
 
 /* ---------------- Re-simulation ---------------- */
 
-/** The wild cast a run draws from its seed, with the day's outbreak (the shell draws it ahead to preload its sprites). */
-export const runRoster = (seed: number, outbreak: EnemyId | null) => withOutbreak(drawRoster(createRng(seed), { weight: biomeWeight }), outbreak)
+/** The wild cast a run draws from its seed, with the event's ghosts and the day's outbreak (the shell draws it ahead to preload its sprites). */
+export const runRoster = (seed: number, outbreak: EnemyId | null, halloween: boolean) =>
+  withOutbreak(withHaunts(drawRoster(createRng(seed), { weight: biomeWeight }), halloween), outbreak)
 
 /** A fresh run from a replay's start, exactly as the shell creates it: it opens on the opening draft. */
 export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.view }) =>
-  createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed, start.outbreak), {
+  createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed, start.outbreak, start.halloween), {
     draft: true,
     shiny: start.shiny,
     luckyEgg: start.luckyEgg,
     difficulty: start.difficulty,
     outbreak: start.outbreak,
+    halloween: start.halloween,
     lure: start.lure,
     incense: start.incense,
   })

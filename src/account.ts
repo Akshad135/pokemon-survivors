@@ -7,7 +7,9 @@ import { applyGift, giftToOpen, parseGift, type Gift, type GiftOutcome } from '.
 import { parseSaveData } from './game/meta'
 import { isRecord } from './game/parse'
 import type { ProfileName } from './game/ranking'
-import { loadSave, writeSave } from './ui/save'
+import { brasiliaDay } from './game/day'
+import { halloweenGifts, isHalloweenGift } from './game/halloween'
+import { loadSave, today, writeSave } from './ui/save'
 
 /**
  * Optional player accounts (Google or Discord through Clerk). Playing as a guest stays
@@ -466,16 +468,24 @@ let inbox: Gift[] = []
 
 const inboxListeners = new Set<(gifts: readonly Gift[]) => void>()
 
+/**
+ * Gifts the game makes itself, for guests too: the Noite das Bruxas candy
+ * jar's rewards (`halloweenGifts`), worked out from the save, so they never
+ * touch the API.
+ */
+const gameGifts = () => halloweenGifts(loadSave(), brasiliaDay(today()))
+
+/** The gifts waiting to be opened: the account's, then the game's own. */
+export const giftInbox = (): readonly Gift[] => [...inbox, ...gameGifts()]
+
 const setInbox = (gifts: Gift[]) => {
   inbox = gifts
-  inboxListeners.forEach((fn) => fn(inbox))
+  const waiting = giftInbox()
+  inboxListeners.forEach((fn) => fn(waiting))
 }
 
-/** The gifts waiting to be opened. */
-export const giftInbox = (): readonly Gift[] => inbox
-
 /** The gift to open next (`giftToOpen`). */
-export const nextGift = () => giftToOpen(loadSave(), inbox)
+export const nextGift = () => giftToOpen(loadSave(), giftInbox())
 
 /** Calls `fn` whenever the gifts waiting to be opened change. Returns the unsubscribe. */
 export const onInbox = (fn: (gifts: readonly Gift[]) => void) => {
@@ -497,18 +507,19 @@ const claimGifts = async (ids: readonly string[], token?: string | null) => {
 
 /**
  * Opens the waiting gift `id`: applies it to the save (`applyGift`), takes it
- * out of the inbox and marks it claimed. A gift the save already has just
- * leaves; one that can't land yet (an egg with the incubator full) stays.
- * Null for an id that isn't waiting.
+ * out of the inbox and marks it claimed (an API gift). A gift the save
+ * already has just leaves; one that can't land yet (an egg with the
+ * incubator full) stays. Null for an id that isn't waiting.
  */
 export const openGift = (id: string): GiftOutcome | null => {
-  const gift = inbox.find((g) => g.id === id)
+  const gift = giftInbox().find((g) => g.id === id)
   if (!gift) return null
   const out = applyGift(loadSave(), gift)
   if (out.status === 'wait') return out
   if (out.status === 'applied') writeSave(out.save)
   setInbox(inbox.filter((g) => g.id !== id))
-  void claimGifts([id])
+  // The game's own gifts aren't the API's to claim.
+  if (!isHalloweenGift(id)) void claimGifts([id])
   if (out.status === 'applied') void syncSave()
   return out
 }

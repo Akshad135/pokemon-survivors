@@ -8,6 +8,7 @@ import { applyOffer, gainXp, loadout, rollOffers, type Loadout } from './levelin
 import { openAlphaPrize } from './alphas'
 import { grantStone } from './mega'
 import { collectTm } from './tms'
+import { collectCandy } from './halloween'
 import type { Game, Offer, Pickup } from './types'
 import * as dm from '../engine/dmath'
 
@@ -17,7 +18,7 @@ const PULL_SPEED = 420
 /** How fast (1/s) a pulled pickup's velocity turns toward the player. */
 const PULL_STEER = 7
 
-type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone' | 'tm'>
+type PickupKind = Exclude<Pickup['kind'], 'xp' | 'coin' | 'consumable' | 'megaStone' | 'tm' | 'treat'>
 
 export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
@@ -133,6 +134,9 @@ const collect = (g: Game, pickup: Pickup) => {
       break
     case 'alphaPrize':
       openAlphaPrize(g)
+      break
+    case 'treat':
+      collectCandy(g)
       break
   }
 }

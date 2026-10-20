@@ -40,6 +40,8 @@ type AnalyticsEvents = {
     foe: EnemyId | null
     hit: HitKind | null
     challenge?: 'official' | 'practice'
+    /** A haunted run's (Noite das Bruxas) candies, to tune the candy jar. */
+    candies?: number
   }
   /** An entry pressed in the lobby: what players open. */
   lobby_press: { entry: LobbyFocus }

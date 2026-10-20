@@ -40,8 +40,9 @@ export type GiftKind = GiftContent['kind']
 /**
  * Why it came: an invite's welcome (from the inviter's handle), friends
  * brought, a donation (`game/supporters.ts`), a present from the game's
- * admin (`game/admin.ts`, from their handle), or joining the community
- * Discord with the account linked (`DISCORD_GIFT`).
+ * admin (`game/admin.ts`, from their handle), joining the community
+ * Discord with the account linked (`DISCORD_GIFT`), or the Noite das Bruxas
+ * candy jar.
  */
 export type GiftReason =
   | { kind: 'welcome'; from: string | null }
@@ -49,6 +50,8 @@ export type GiftReason =
   | { kind: 'support'; tier: SupporterTier }
   | { kind: 'staff'; from: string | null }
   | { kind: 'discord' }
+  /** The Noite das Bruxas candy jar (`game/halloween.ts`): made by the game, never listed by the API. */
+  | { kind: 'halloween' }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
 
@@ -112,6 +115,7 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (v.kind === 'support' && isSupporterTier(v.tier)) return { kind: 'support', tier: v.tier }
   if (v.kind === 'staff') return { kind: 'staff', from: parseHandle(v.from) }
   if (v.kind === 'discord') return { kind: 'discord' }
+  if (v.kind === 'halloween') return { kind: 'halloween' }
   return null
 }
 

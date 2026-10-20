@@ -14,6 +14,7 @@ import { dropBossTm } from './tms'
 import { coinDrops } from './meta'
 import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
+import { faintCandies } from './halloween'
 import { applyStatus, breakOnHit, hitTakenMult, STATUS_RULES, type StatusKind } from './status'
 import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY, SEED_JUMPS, SEED_MIN_TIME, SEED_REACH } from './kitRules'
 import { guardHit, moveEvent, moveHit } from './moveHooks'
@@ -160,6 +161,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   const share = e.boss ? 1 : g.tension.share
   if (e.xp > 0) dropXp(g, e.x, e.y, e.xp * share)
   dropCoins(g, e.x, e.y, coinDrops(g.rng, e))
+  faintCandies(g, e, share)
   if (e.shiny) dropPickup(g, e.x + 6, e.y, 'pokeball')
   if (e.alpha) {
     alphaDown(g, e)

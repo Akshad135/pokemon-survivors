@@ -2,6 +2,7 @@ import { createRng, seedFrom } from '../engine/rng'
 import { hasShinySprite } from '../data/bodies'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { brasiliaDay, dayNumber, previousDay, type DayKey } from './day'
+import { halloweenOutbreak } from './halloween'
 import type { Roster } from './roster'
 
 /**
@@ -40,8 +41,14 @@ const cycleOrder = (cycle: number) => {
   return order
 }
 
-/** The outbreak of a Brasília day. Days walk through seeded cycles of every species, so none repeats within a cycle. */
+/**
+ * The outbreak of a Brasília day: the event's ghost on a Noite das Bruxas day
+ * (`HALLOWEEN.outbreaks`), else the draw. Days walk through seeded cycles of
+ * every species, so none repeats within a cycle.
+ */
 export const outbreakOf = (day: DayKey): EnemyId => {
+  const event = halloweenOutbreak(day)
+  if (event) return event
   const n = dayNumber(day)
   const size = OUTBREAK_SPECIES.length
   return cycleOrder(Math.floor(n / size))[((n % size) + size) % size]!
