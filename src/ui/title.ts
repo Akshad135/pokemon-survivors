@@ -638,6 +638,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     play: actions.play,
     tiktok: () => openSocial('tiktok'),
     youtube: () => openSocial('youtube'),
+    instagram: () => openSocial('instagram'),
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
   // JOGAR isn't counted: `run_start` already says it, and it's a third of the lobby's presses.
