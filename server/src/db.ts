@@ -42,13 +42,15 @@ export const saveStore = (sql: Sql) => ({
    * wins (not failed by their check) add their clears, so wins from before
    * clears were tracked, or from a device that lost its save, still count.
    * Gift-only rewards stay only if the player's gifts brought them (`keepGiven`):
-   * an edited save can't give itself the Supporter title or a ribbon.
+   * an edited save can't give itself the Supporter title or a ribbon. After a
+   * reset (`users.save_reset_revision`), devices that haven't seen it get the reset save back.
    */
   push: (userId: string, push: Push) =>
     sql.begin(async (tx) => {
-      await tx`insert into users (id) values (${userId}) on conflict (id) do update set seen_at = now()`
+      const [user] = await tx<{ reset: number | null }[]>`
+        insert into users (id) values (${userId}) on conflict (id) do update set seen_at = now() returning save_reset_revision as reset`
       const stored = toStored((await tx<SaveRow[]>`select data, revision from saves where user_id = ${userId} for update`)[0])
-      const applied = applyPush(stored, push)
+      const applied = applyPush(stored, push, user?.reset ?? null)
       const won = await tx<{ starter: string; difficulty: string }[]>`
         select distinct starter, difficulty from runs
         where user_id = ${userId} and outcome = 'victory' and verified is not false`

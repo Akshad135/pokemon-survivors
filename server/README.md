@@ -10,7 +10,7 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | --- | --- |
 | `GET /health` | 200 while Postgres answers, else 503 |
 | `GET /save` | The player's `{ save, revision }`, 404 before the first push |
-| `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Either way the player's ranked wins add their clears (`wonClears`), and gift-only rewards (gift titles, ribbons, shiny tickets, styles never sold, the companion) stay only if the player's gifts brought them (`keepGiven`). Returns `{ save, revision, merged }` |
+| `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Either way the player's ranked wins add their clears (`wonClears`), and gift-only rewards (gift titles, ribbons, shiny tickets, styles never sold, the companion) stay only if the player's gifts brought them (`keepGiven`). After a [reset](#resetting-a-save), a push from a device that hasn't seen it stores nothing and gets the reset save back. Returns `{ save, revision, merged }` |
 | `GET /me` | `{ profile }`: the player's `{ handle, name }`, `null` before they pick them |
 | `PUT /me` | Body `{ handle, name }`. 400 when invalid, 409 `{ suggestion }` when the handle is taken |
 | `POST /runs` | Body `{ challenge? }`. `{ token }` for a run that just started (the id of a new `runs` row). 429 past 30 starts in 10 minutes. With `challenge` (a Brasília day, `YYYY-MM-DD`) it's that day's Desafio do dia; 400 when that challenge isn't open (its day, or 10 minutes past it) |
@@ -115,6 +115,22 @@ The game's "Reportar bug" (Settings → About, the pause menu, and the prompt af
 
 The bot's application has **Message Content** and **Server Members** on (Developer Portal → Bot → Privileged Gateway Intents), which needs no review under 100 servers.
 
+### Resetting a save
+
+For a player whose save was edited (a Pokédex full of species they never met, a fortune no run paid): the account goes back to an empty save, and their runs leave the boards. There's no route for it; run this in a transaction, with the player's handle:
+
+```sql
+begin;
+with u as (select id from users where handle = 'HANDLE')
+insert into save_resets (user_id, data, revision, reason) select s.user_id, s.data, s.revision, 'edited save' from saves s join u on u.id = s.user_id;
+update saves set data = '{"version": 1}', version = 1, revision = revision + 1, updated_at = now() where user_id = (select id from users where handle = 'HANDLE');
+update users set save_reset_revision = (select revision from saves where user_id = users.id) where handle = 'HANDLE';
+update runs set verified = false where user_id = (select id from users where handle = 'HANDLE') and finished_at is not null;
+commit;
+```
+
+The player's device still holds the edited save. Its next push comes on top of an older revision than the reset (`users.save_reset_revision`), so `applyPush` stores nothing and answers with the empty save, which the device takes over its own. `save_resets` keeps what was wiped.
+
 ## Environment
 
 | Variable | |
@@ -150,6 +166,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `suggestions`: the idea board (`status` `open`, `done` or `hidden`, `score` recounted from the votes on every vote, `done_at`). `suggestion_votes`: one vote per player per idea (1 or -1; taking it back deletes the row).
 - `users.discord_id`, `discord_name`: the Discord account a player linked (one game account per Discord account).
 - `bug_reports`: each bug report (`user_id`, null for a guest; `text`; `tech`, the `BugTech` JSON or null; `thread_id`, the forum thread once posted).
+- `users.save_reset_revision`, `save_resets`: the revision a reset stored (see [Resetting a save](#resetting-a-save)), and what each reset wiped.
 - `discord_posts`: what the Discord bot already did, by key (`patch:<date>`, `challenge:<day>`, `podium:<day>`, `outbreak:<day>`, `welcome:<user>`, `short:<message>`), with the message a patch note became so it can be edited.
 
 ## Local development

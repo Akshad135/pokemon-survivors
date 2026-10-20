@@ -122,4 +122,11 @@ describe('applyPush', () => {
     const out = applyPush({ save: account, revision: 4 }, { save: guest, base: 2 })
     expect(out).toEqual({ save: mergeSaves(account, guest), revision: 5, merged: true })
   })
+
+  it("hands a reset save to devices that haven't seen the reset, and takes pushes from those that have", () => {
+    const wiped = { save: EMPTY_SAVE, revision: 7 }
+    expect(applyPush(wiped, { save: account, base: 6 }, 7)).toEqual({ ...wiped, merged: true })
+    expect(applyPush(wiped, { save: account, base: null }, 7)).toEqual({ ...wiped, merged: true })
+    expect(applyPush(wiped, { save: account, base: 7 }, 7)).toEqual({ save: account, revision: 8, merged: false })
+  })
 })
