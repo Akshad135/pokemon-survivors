@@ -102,7 +102,7 @@ const harshSun: Painter = (ctx, w, h, camX, camY, t, g) => {
 }
 
 /** Period of the green streak crossing the sky in Rayquaza's omen, and how long a pass takes, in seconds. */
-const STREAK = { every: 6.5, pass: 3.2, length: 30 } as const
+const STREAK = { every: 5, pass: 3, length: 30 } as const
 
 /**
  * Rayquaza's Air Lock: a gale that blows every other weather away. Streaks of
@@ -111,15 +111,15 @@ const STREAK = { every: 6.5, pass: 3.2, length: 30 } as const
  */
 const gale: Painter = (ctx, w, h, camX, camY, t, g) => {
   const mega = phaseOf(g) >= 2
-  ctx.fillStyle = 'rgba(200,232,216,0.1)'
+  ctx.fillStyle = 'rgba(200,236,224,0.14)'
   ctx.fillRect(0, 0, w, h)
-  const n = Math.round((w * h) / (mega ? 1200 : 2000))
+  const n = Math.round((w * h) / (mega ? 900 : 1400))
   for (let i = 0; i < n; i++) {
     const speed = 260 + hash2(i, 3, 71) * 180
     const len = 6 + Math.floor(hash2(i, 4, 71) * 14)
     const x = Math.round(mod(hash2(i, 1, 71) * 4096 - camX * 0.5 - t * speed, w + len + 20) - len - 10)
     const y = Math.round(mod(hash2(i, 2, 71) * 4096 - camY * 0.5 + Math.sin(t * 2 + i) * 2, h + 10) - 5)
-    ctx.fillStyle = i % 5 === 0 ? 'rgba(255,255,255,0.7)' : 'rgba(232,248,240,0.38)'
+    ctx.fillStyle = i % 4 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(232,248,240,0.5)'
     ctx.fillRect(x, y, len, 1)
   }
   for (let i = 0; i < 10; i++) {

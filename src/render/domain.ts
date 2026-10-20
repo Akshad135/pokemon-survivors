@@ -191,7 +191,8 @@ const FRAME_BUDGET = 2
 
 /* ---------------- Transforms ---------------- */
 
-type Baked = { canvas: HTMLCanvasElement; x: number; y: number }
+/** A baked transform; a crumble over the open sky also keeps `sky`, a mask of where the floor is gone (the sky shows through it). */
+type Baked = { canvas: HTMLCanvasElement; x: number; y: number; sky?: HTMLCanvasElement }
 /** Baked transforms; dropped with every other canvas on a GPU reset. */
 let transforms = new WeakMap<ArenaTransform, Baked>()
 onCanvasReset(() => (transforms = new WeakMap()))
@@ -208,6 +209,8 @@ const bakeTransform = (p: Painter, t: ArenaTransform): Baked => {
   const canvas = createCanvas(w, h)
   const ctx = context2d(canvas)
   const img = ctx.createImageData(w, h)
+  const open = t.kind === 'crumble' && p.domain.backdrop === 'sky'
+  const mask = open ? new Uint8ClampedArray(w * h * 4) : null
   const islandSide = mix(p.theme.wall[1], '#000000', 0.35)
   for (let py = 0; py < h; py++) {
     for (let px = 0; px < w; px++) {
@@ -216,7 +219,10 @@ const bakeTransform = (p: Painter, t: ArenaTransform): Baked => {
       if (!floor.some((s) => fits(s, x, y, 0))) continue
       let color: string | null = null
       if (t.kind === 'crumble') {
-        if (t.spare.some((s) => fits(s, x, y, 0))) color = crumbleColor(p, t.spare, x, y)
+        if (t.spare.some((s) => fits(s, x, y, 0))) {
+          color = crumbleColor(p, t.spare, x, y)
+          if (color === null && mask) mask.fill(255, (py * w + px) * 4, (py * w + px) * 4 + 4)
+        }
       } else if (t.area.some((s) => fits(s, x, y, 0))) {
         const spared = t.spare.some((s) => fits(s, x, y, 0))
         if (t.kind === 'flood') {
@@ -242,18 +248,20 @@ const bakeTransform = (p: Painter, t: ArenaTransform): Baked => {
     }
   }
   ctx.putImageData(img, 0, 0)
-  return { canvas, x: x0, y: y0 }
+  if (!mask) return { canvas, x: x0, y: y0 }
+  const sky = createCanvas(w, h)
+  context2d(sky).putImageData(new ImageData(mask, w, h), 0, 0)
+  return { canvas, x: x0, y: y0, sky }
 }
 
 /** Where the floor fell away: the platform's broken side under the north rim, then what lies below (the sky's blue and clouds, or the void). */
-const crumbleColor = (p: Painter, spare: readonly Circle[], x: number, y: number) => {
+const crumbleColor = (p: Painter, spare: readonly Circle[], x: number, y: number): string | null => {
   for (let k = 1; k <= 8; k++) {
     if (spare.some((s) => fits(s, x, y - k, 0))) continue
     return shade(FACES[p.legend], 0.9 - k / 8 + (hash2(Math.floor(x) >> 2, k, 3) - 0.5) * 0.25, Math.floor(x), Math.floor(y))
   }
-  if (p.domain.backdrop !== 'sky') return p.theme.void
-  const cloud = hash2(Math.floor((x + 400) / 12), Math.floor((y + 400) / 7), 21) > 0.72
-  return cloud ? SKY.cloud : hash2(Math.floor(x), Math.floor(y), 22) < 0.5 ? SKY.deep : SKY.blue
+  // Over the open sky the hole stays clear: the sky is drawn through its mask (`drawTransform`).
+  return p.domain.backdrop === 'sky' ? null : p.theme.void
 }
 
 const transformOf = (p: Painter, t: ArenaTransform) => {
@@ -297,8 +305,11 @@ const rockTile = (theme: ArenaTheme) => {
 
 const rockTiles = canvasCache<RiftLegend, HTMLCanvasElement>()
 
+/** Volcanic rock past a magma domain's floor: dark and calm, with a rare ember glinting in it. */
+const MAGMA_ROCK: ArenaTheme = { floor: ['#3c1e14', '#2c140c', '#2a140e'], wall: ['#f89038', '#a03810'], void: '#140604', motes: '#f86820' }
+
 /** The open sky under the Sky Pillar: its blues and its clouds. */
-const SKY = { deep: '#2c5498', blue: '#3a64a8', cloud: '#c8d8f0', light: '#f0f8ff', shadow: '#8ca8d8' } as const
+const SKY = { blue: '#3a64a8', cloud: '#c8d8f0', light: '#f0f8ff', shadow: '#8ca8d8' } as const
 
 const CLOUD_TILE = 192
 
@@ -328,15 +339,15 @@ const cloudTile = (seed: number) => {
 
 const cloudTiles = canvasCache<number, HTMLCanvasElement>()
 
-/** Two layers of clouds drifting far below at their own parallax, over the sky's blue. */
-const drawSky = (ctx: Ctx, camX: number, camY: number, w: number, h: number, t: number) => {
+/** Two layers of clouds drifting far below at their own parallax, over the sky's blue; (sx, sy) is where on screen the target's corner sits. */
+const drawSky = (ctx: Ctx, camX: number, camY: number, w: number, h: number, t: number, sx = 0, sy = 0) => {
   ctx.fillStyle = SKY.blue
   ctx.fillRect(0, 0, w, h)
   for (const [seed, depth, drift] of [[31, 0.3, 4], [37, 0.55, 9]] as const) {
     let tile = cloudTiles.get(seed)
     if (!tile) cloudTiles.set(seed, (tile = cloudTile(seed)))
-    const x0 = -((((Math.round(camX * depth + t * drift)) % CLOUD_TILE) + CLOUD_TILE) % CLOUD_TILE)
-    const y0 = -(((Math.round(camY * depth) % CLOUD_TILE) + CLOUD_TILE) % CLOUD_TILE)
+    const x0 = -((((Math.round(camX * depth + t * drift) + sx) % CLOUD_TILE) + CLOUD_TILE) % CLOUD_TILE)
+    const y0 = -((((Math.round(camY * depth) + sy) % CLOUD_TILE) + CLOUD_TILE) % CLOUD_TILE)
     ctx.globalAlpha = depth < 0.5 ? 0.55 : 0.9
     for (let y = y0; y < h; y += CLOUD_TILE) for (let x = x0; x < w; x += CLOUD_TILE) ctx.drawImage(tile, x, y)
   }
@@ -347,9 +358,9 @@ const drawSky = (ctx: Ctx, camX: number, camY: number, w: number, h: number, t: 
 const drawVoid = (ctx: Ctx, p: Painter, camX: number, camY: number, w: number, h: number, t: number) => {
   const theme = p.theme
   if (p.domain.backdrop === 'sky') return drawSky(ctx, camX, camY, w, h, t)
-  if (p.domain.backdrop === 'cave') {
+  if (p.domain.backdrop === 'cave' || p.domain.backdrop === 'magma') {
     let tile = rockTiles.get(p.legend)
-    if (!tile) rockTiles.set(p.legend, (tile = rockTile(theme)))
+    if (!tile) rockTiles.set(p.legend, (tile = rockTile(p.domain.backdrop === 'magma' ? MAGMA_ROCK : theme)))
     const x0 = -(((Math.round(camX) % ROCK_TILE) + ROCK_TILE) % ROCK_TILE)
     const y0 = -(((Math.round(camY) % ROCK_TILE) + ROCK_TILE) % ROCK_TILE)
     for (let y = y0; y < h; y += ROCK_TILE) for (let x = x0; x < w; x += ROCK_TILE) ctx.drawImage(tile, x, y)
@@ -466,15 +477,38 @@ const drawSeal = (ctx: Ctx, p: Painter, ox: number, oy: number) => {
 }
 
 /** A transform's look: hidden, blinking through its warning, or there. */
-const drawTransform = (ctx: Ctx, p: Painter, t: ArenaTransform, stage: ReturnType<typeof transformStage>, ox: number, oy: number, time: number) => {
+/** A canvas reused to cut the sky to a crumbled hole's shape. */
+let scratch: HTMLCanvasElement | null = null
+onCanvasReset(() => (scratch = null))
+
+/** The open sky seen through a crumbled hole: the sky drawn on a scratch canvas, kept only inside the hole's mask. */
+const drawSkyThrough = (ctx: Ctx, mask: HTMLCanvasElement, sx: number, sy: number, camX: number, camY: number, t: number) => {
+  if (!scratch || scratch.width < mask.width || scratch.height < mask.height) scratch = createCanvas(Math.max(mask.width, scratch?.width ?? 0), Math.max(mask.height, scratch?.height ?? 0))
+  const sctx = context2d(scratch)
+  sctx.globalCompositeOperation = 'source-over'
+  sctx.clearRect(0, 0, scratch.width, scratch.height)
+  drawSky(sctx, camX, camY, mask.width, mask.height, t, sx, sy)
+  sctx.globalCompositeOperation = 'destination-in'
+  sctx.drawImage(mask, 0, 0)
+  sctx.globalCompositeOperation = 'source-over'
+  ctx.drawImage(scratch, 0, 0, mask.width, mask.height, sx, sy, mask.width, mask.height)
+}
+
+const drawTransform = (ctx: Ctx, p: Painter, t: ArenaTransform, stage: ReturnType<typeof transformStage>, ox: number, oy: number, time: number, camX: number, camY: number) => {
   if (stage === 'hidden') return
   const baked = transformOf(p, t)
   const [ax, ay] = p.domain.arena.at
+  const sx = Math.round(ox + ax + baked.x)
+  const sy = Math.round(oy + ay + baked.y)
   if (stage === 'warn') {
     if (Math.floor(time * 6) % 2 === 1) return
     ctx.globalAlpha = 0.5
-  } else ctx.globalAlpha = 0.92
-  ctx.drawImage(baked.canvas, Math.round(ox + ax + baked.x), Math.round(oy + ay + baked.y))
+  } else ctx.globalAlpha = baked.sky ? 1 : 0.92
+  if (baked.sky) {
+    if (stage === 'landed') drawSkyThrough(ctx, baked.sky, sx, sy, camX, camY, time)
+    else ctx.drawImage(baked.sky, sx, sy)
+  }
+  ctx.drawImage(baked.canvas, sx, sy)
   ctx.globalAlpha = 1
 }
 
@@ -498,8 +532,8 @@ export const drawDomainFloor = (ctx: Ctx, arena: RiftArena, d: DomainState, camX
       if (c) ctx.drawImage(c, Math.round(ox + cx * CHUNK), Math.round(oy + cy * CHUNK))
     }
   }
-  for (const done of d.landed) if (!d.pending.some((q) => q.def === done)) drawTransform(ctx, p, done, 'landed', ox, oy, t)
-  for (const q of d.pending) drawTransform(ctx, p, q.def, q.landed ? 'landed' : transformStage(q.def, d.phaseAge), ox, oy, t)
+  for (const done of d.landed) if (!d.pending.some((q) => q.def === done)) drawTransform(ctx, p, done, 'landed', ox, oy, t, camX, camY)
+  for (const q of d.pending) drawTransform(ctx, p, q.def, q.landed ? 'landed' : transformStage(q.def, d.phaseAge), ox, oy, t, camX, camY)
   if (d.act !== 'crossing') drawSeal(ctx, p, ox, oy)
   else drawThreat(ctx, p.domain.crossing.threat.kind, oy + d.front, w, h, t)
 }

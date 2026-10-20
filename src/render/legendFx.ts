@@ -61,13 +61,17 @@ export const drawBeamGround = (ctx: Ctx, h: Hazard) => {
     along({ ...h, angle: end, len }, 4, (x, y, i) => {
       if (i % 2 === 0) ctx.fillRect(x - 1, y - 1, 2, 2)
     })
-    const steps = Math.ceil(Math.abs(end - h.angle) * 24)
-    for (const r of [len * 0.35, len * 0.65]) {
-      for (let i = 0; i <= steps; i += 2) {
-        const a = h.angle + ((end - h.angle) * i) / steps
+    // The whole wedge it burns through, dotted every few px (sparser near the tip, where it's narrow).
+    const arc = Math.abs(end - h.angle)
+    ctx.globalAlpha = 0.55
+    for (let r = 16; r <= len; r += 9) {
+      const n = Math.max(1, Math.round((arc * r) / 9))
+      for (let i = 0; i <= n; i++) {
+        const a = h.angle + ((end - h.angle) * i) / n
         ctx.fillRect(Math.round(h.x + Math.cos(a) * r), Math.round(h.y + Math.sin(a) * r), 2, 2)
       }
     }
+    ctx.globalAlpha = 1
   }
   // The beam's width, faint, so the player sees how far to step.
   ctx.fillStyle = 'rgba(255,255,255,0.35)'
@@ -78,15 +82,18 @@ export const drawBeamGround = (ctx: Ctx, h: Hazard) => {
 }
 
 /** Stone blades bursting out of the ground along a rock beam (Precipice Blades): they shoot up, stand, then sink as it ends. */
-const drawBlades = (ctx: Ctx, h: Hazard) => {
+const drawBlades = (ctx: Ctx, h: Hazard, g: Game) => {
   const rise = Math.min(1, (h.age - h.armAt) / 0.1)
   const sink = h.age > h.disarmAt ? Math.max(0, 1 - (h.age - h.disarmAt) / 0.25) : 1
-  const tall = Math.round((h.r * 1.4 + 4) * rise * sink)
+  const tall = Math.round((h.r * 1.6 + 5) * rise * sink)
   if (tall <= 0) return
-  along(h, 6, (x, y, i) => {
-    const t = tall - (i % 3 === 1 ? 3 : 0)
+  const room = g.rift.arena ?? g.place.inside
+  along(h, 7, (x, y, i) => {
+    // Blades only burst out of the ground, never over the void past it.
+    if (room && !onFloor(room.layout.floor, x - room.x, y - room.y)) return
+    const t = tall - (i % 3 === 1 ? 4 : 0)
     for (let row = 0; row < t; row++) {
-      const half = Math.max(0, Math.round(((t - row) / t) * 3))
+      const half = Math.max(0, Math.round(((t - row) / t) * 4))
       ctx.fillStyle = row === t - 1 ? '#f0d8a0' : '#5a3a20'
       ctx.fillRect(x - half - 1, y - row, half * 2 + 2, 1)
       if (half > 0) {
@@ -100,9 +107,9 @@ const drawBlades = (ctx: Ctx, h: Hazard) => {
 }
 
 /** Air layer of a beam once it burns: a colored band with a white core, flickering, fading as it ends (a rock one erupts in stone blades). */
-export const drawBeamAir = (ctx: Ctx, h: Hazard, t: number) => {
+export const drawBeamAir = (ctx: Ctx, h: Hazard, t: number, g: Game) => {
   if (h.age < h.armAt || h.damage <= 0) return
-  if (h.visual === 'rock') return drawBlades(ctx, h)
+  if (h.visual === 'rock') return drawBlades(ctx, h, g)
   const [line] = HAZARD_COLORS[h.visual]
   const fade = h.age > h.disarmAt ? Math.max(0, 1 - (h.age - h.disarmAt) / 0.25) : 1
   if (fade <= 0) return

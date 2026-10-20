@@ -22,6 +22,9 @@ import type { ArenaTransform, LegendDomain } from '../domains'
 /** A square floor of the pillar, `half` px around (x, y). */
 const storey = ([x, y]: Pt, half: number) => poly([x - half, y - half], [x + half, y - half], [x + half, y + half], [x - half, y + half])
 
+/** Stairs from `a` to `b`, `w` px wide, with a landing at each end so they join the floors without a corner to snag on. */
+const stairs = (a: Pt, b: Pt, w: number) => [lane(a, b, w), circle(a[0], a[1], w / 2 + 3), circle(b[0], b[1], w / 2 + 3)]
+
 /** The roof: an octagon open to the sky. */
 const ROOF = 196
 
@@ -39,6 +42,9 @@ const airSlash = (count: number, every: number): BossPattern => ({
   kind: 'beam', every, source: 'boss', count, spread: 0.48, windup: 1, duration: 0.35, width: 10, length: 320, damage: 14, visual: 'aero',
 })
 
+/** Twister: a vortex spinning up right under the player; it only ever hits one who stands still. */
+const vortex: BossPattern = { kind: 'strikes', every: 2.6, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage: 14, visual: 'aero' }
+
 /** Draco Meteor: meteors scattered over the roof around Rayquaza. */
 const meteors = (count: number, delay: number): BossPattern => ({ kind: 'strikes', every: 0, target: 'self', count, spread: 200, radius: 20, delay, damage: 18, visual: 'dragon' })
 
@@ -47,23 +53,24 @@ export const RAYQUAZA_DOMAIN: LegendDomain = {
   backdrop: 'sky',
   entrance: 'descend',
   music: 'rayquaza',
-  hp: 1.5,
+  hp: 1.1,
   battleTime: 180,
+  touch: 0.5,
   crossing: {
     // Six floors up the pillar, joined by narrow stairs that switch sides; some floors already gave way in places.
     floor: [
       storey([0, -10], 72),
-      lane([50, -60], [70, -270], 38),
+      ...stairs([50, -60], [70, -270], 44),
       storey([40, -330], 76),
-      lane([-10, -390], [-60, -600], 38),
+      ...stairs([-10, -390], [-60, -600], 44),
       storey([-50, -660], 78),
-      lane([0, -720], [50, -930], 38),
+      ...stairs([0, -720], [50, -930], 44),
       storey([40, -990], 76),
-      lane([-10, -1050], [-50, -1260], 36),
+      ...stairs([-10, -1050], [-50, -1260], 42),
       storey([-40, -1320], 80),
-      lane([0, -1384], [20, -1590], 38),
+      ...stairs([0, -1384], [20, -1590], 44),
       storey([20, -1650], 72),
-      lane([20, -1706], [0, -1880], 40),
+      ...stairs([20, -1706], [0, -1880], 46),
     ],
     holes: [circle(-50, -660, 24), circle(0, -1012, 16), circle(82, -962, 14), circle(-76, -1346, 18), circle(36, -1296, 12)],
     pattern: 'jade',
@@ -81,7 +88,7 @@ export const RAYQUAZA_DOMAIN: LegendDomain = {
     ],
     start: [0, 30],
     gate: -1862,
-    threat: { kind: 'crumble', start: 140, stop: -1800, delay: 2.5, speed: 34, rush: 2.4, gap: 160, damage: 0.05, every: 0.5, push: 40, ground: 'none' },
+    threat: { kind: 'crumble', start: 140, stop: -1800, delay: 2.5, speed: 30, rush: 2.4, gap: 160, damage: 0.05, every: 0.5, push: 40, ground: 'none' },
     retinue: {
       first: 1.5,
       every: 3.2,
@@ -113,40 +120,44 @@ export const RAYQUAZA_DOMAIN: LegendDomain = {
   phases: [
     {
       below: 1,
+      hold: true,
       steer: { kind: 'orbit', radius: 118, pace: 0.7 },
       patterns: [
         // Twister.
-        { kind: 'ring', every: 4.6, count: 10, speed: 66, radius: 5, damage: 11, visual: 'aero' },
+        { kind: 'ring', every: 4.6, count: 10, speed: 66, radius: 5, damage: 9, visual: 'aero' },
         // Dragon Pulse.
         { kind: 'volley', every: 4.2, count: 3, arc: 0.35, speed: 120, windup: 0.9, radius: 5, damage: 13, visual: 'dragon' },
         airSlash(2, 6.2),
+        vortex,
         // Extreme Speed: one pass from off the roof.
-        { kind: 'swoop', every: 9.5, windup: 1.1, speed: 380, width: 24, damage: 18, count: 1, reach: 260 },
-        { kind: 'summon', every: 12, enemies: ['swablu', 'bagon'], count: 2, max: 3, radius: 60, role: 'runner' },
+        { kind: 'swoop', every: 9.5, windup: 1.1, speed: 380, width: 24, damage: 13, count: 1, reach: 260 },
+        { kind: 'summon', every: 13, enemies: ['swablu', 'bagon'], count: 1, max: 2, radius: 60, role: 'runner' },
       ],
       ultimate: {
         move: 'Hyper Beam',
-        first: 8,
+        first: 6,
         every: 22,
         // One huge beam sweeping across the roof: its arc shows, behind Rayquaza is safe.
-        steps: [{ at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 1, spread: 0, sweep: 2, windup: 1.8, duration: 2, width: 22, length: 420, damage: 24, visual: 'dragon' } }],
+        steps: [{ at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 1, spread: 0, sweep: 2, windup: 1.8, duration: 2, width: 22, length: 420, damage: 20, visual: 'dragon' } }],
       },
     },
     {
       below: 0.68,
+      hold: true,
       shift: 2.4,
       steer: { kind: 'orbit', radius: 140, pace: 0.85 },
       arena: [CORNERS],
       patterns: [
-        { kind: 'swoop', every: 8, windup: 1, speed: 400, width: 24, damage: 18, count: 2, reach: 260 },
+        { kind: 'swoop', every: 8.5, windup: 1.05, speed: 400, width: 24, damage: 13, count: 2, reach: 260 },
         { kind: 'strikes', every: 5.2, target: 'player', count: 4, spread: 0, radius: 16, delay: 1.2, damage: 15, visual: 'dragon', lead: 1 },
-        { kind: 'ring', every: 5, count: 12, speed: 66, radius: 5, damage: 11, visual: 'aero' },
+        { kind: 'ring', every: 5, count: 12, speed: 66, radius: 5, damage: 9, visual: 'aero' },
         airSlash(3, 6.5),
-        { kind: 'summon', every: 16, enemies: ['altaria', 'salamence'], count: 2, max: 2, radius: 70, role: 'runner' },
+        vortex,
+        { kind: 'summon', every: 16, enemies: ['altaria', 'salamence'], count: 1, max: 2, radius: 70, role: 'runner' },
       ],
       ultimate: {
         move: 'Draco Meteor',
-        first: 7,
+        first: 5,
         every: 21,
         steps: [
           { at: 0, pattern: meteors(9, 1.4) },
@@ -158,6 +169,7 @@ export const RAYQUAZA_DOMAIN: LegendDomain = {
     },
     {
       below: 0.34,
+      hold: true,
       shift: 3,
       form: 'mega',
       steer: { kind: 'orbit', radius: 125, pace: 1 },
@@ -166,13 +178,14 @@ export const RAYQUAZA_DOMAIN: LegendDomain = {
         { kind: 'swoop', every: 7.5, windup: 0.95, speed: 420, width: 26, damage: 20, count: 2, reach: 270 },
         // It flies up out of sight and crashes down where its shadow stops.
         { kind: 'dive', every: 10, hide: 1.4, windup: 0.9, radius: 30, damage: 22, visual: 'dragon' },
-        { kind: 'beam', every: 13, source: 'boss', count: 1, spread: 0, sweep: 1.6, windup: 1.6, duration: 1.6, width: 20, length: 380, damage: 20, visual: 'dragon' },
+        { kind: 'beam', every: 13, source: 'boss', count: 1, spread: 0, sweep: 1.6, windup: 1.6, duration: 1.6, width: 20, length: 380, damage: 18, visual: 'dragon' },
         { kind: 'ring', every: 4.6, count: 16, speed: 70, radius: 5, damage: 12, visual: 'aero' },
+        vortex,
         { kind: 'strikes', every: 5.5, target: 'player', count: 4, spread: 0, radius: 16, delay: 1.2, damage: 15, visual: 'dragon', lead: 1 },
       ],
       ultimate: {
         move: 'Dragon Ascent',
-        first: 6,
+        first: 5,
         every: 20,
         steps: [
           { at: 0, pattern: { kind: 'dive', every: 0, hide: 1.6, windup: 1, radius: 36, damage: 26, visual: 'dragon' } },

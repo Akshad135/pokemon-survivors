@@ -26,7 +26,7 @@ import type { ArenaTransform, LegendDomain } from '../domains'
 const LAKE: Pt = [0, -40]
 
 /** A lava channel from the lake out past the chamber's edge at `deg` degrees (0 east, 90 south). */
-const spoke = (deg: number, w = 22) => {
+const spoke = (deg: number, w = 20) => {
   const a = (deg * Math.PI) / 180
   return lane(LAKE, [LAKE[0] + Math.round(dm.cos(a) * 260), LAKE[1] + Math.round(dm.sin(a) * 260)], w)
 }
@@ -34,7 +34,7 @@ const spoke = (deg: number, w = 22) => {
 /** Cool stones across a channel at `deg`, at each distance from the lake: where it's crossed without burning. */
 const stones = (deg: number, at: readonly number[]): Circle[] => {
   const a = (deg * Math.PI) / 180
-  return at.map((d) => circle(LAKE[0] + Math.round(dm.cos(a) * d), LAKE[1] + Math.round(dm.sin(a) * d), 13))
+  return at.map((d) => circle(LAKE[0] + Math.round(dm.cos(a) * d), LAKE[1] + Math.round(dm.sin(a) * d), 15))
 }
 
 /** Phase 2: three channels (south, north-west, north-east) and the lake spreading around Groudon. */
@@ -55,6 +55,9 @@ const SWELLING: ArenaTransform = {
   spare: [...RISING.spare, ...stones(30, [136]), ...stones(150, [136]), ...stones(270, [136])],
 }
 
+/** Earth Power: the ground bursts right under the player; it only ever hits one who stands still. */
+const earthPower: BossPattern = { kind: 'strikes', every: 2.6, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage: 14, visual: 'rock' }
+
 /** Precipice Blades: lines of stone blades erupting out of Groudon, `spread` rad apart around the aim (a full circle of spokes for the ultimate). */
 const blades = (count: number, spread: number, windup: number, length: number, damage: number, every = 0): BossPattern => ({
   kind: 'beam', every, source: 'boss', count, spread, windup, duration: 0.4, width: 14, length, damage, visual: 'rock', blocked: true,
@@ -62,11 +65,13 @@ const blades = (count: number, spread: number, windup: number, length: number, d
 
 export const GROUDON_DOMAIN: LegendDomain = {
   omen: { weather: 'sun', sky: 'harshSun' },
-  backdrop: 'cave',
+  backdrop: 'magma',
   entrance: 'rise',
   music: 'groudon',
-  hp: 1.15,
+  hp: 1.8,
   battleTime: 180,
+  touch: 0.6,
+  lavaBurn: 0.03,
   crossing: {
     // Five chambers up a narrow, winding tunnel; rivers of lava cut across the second, fourth and the passage between.
     floor: [
@@ -147,24 +152,26 @@ export const GROUDON_DOMAIN: LegendDomain = {
   phases: [
     {
       below: 1,
-      steer: { kind: 'chase', pace: 0.55 },
+      hold: true,
+      steer: { kind: 'chase', pace: 0.45 },
       patterns: [
-        blades(3, 0.42, 1.2, 300, 16, 5.2),
+        blades(3, 0.42, 1.3, 300, 13, 5.4),
+        earthPower,
         // Bulldoze: a stomp around itself.
         { kind: 'strikes', every: 5.8, target: 'self', count: 1, spread: 0, radius: 46, delay: 1.25, damage: 16, visual: 'slam' },
         // Magma where it steps.
         { kind: 'trail', every: 0.32, ttl: 2.4, radius: 7, damage: 7, visual: 'fire' },
         // Lava Plume.
         { kind: 'ring', every: 6, count: 10, speed: 58, radius: 5, damage: 9, visual: 'fire' },
-        { kind: 'summon', every: 12, enemies: ['numel', 'slugma'], count: 2, max: 3, radius: 60, role: 'runner' },
+        { kind: 'summon', every: 14, enemies: ['numel', 'slugma'], count: 1, max: 2, radius: 60, role: 'runner' },
       ],
       ultimate: {
         move: 'Eruption',
-        first: 9,
+        first: 6,
         every: 24,
         steps: [
           // The magma falls all over the chamber but right around Groudon: hug it.
-          { at: 0, pattern: { kind: 'blast', every: 0, windup: 3.2, damage: 20, safe: 'near', radius: 74, visual: 'fire' } },
+          { at: 0, pattern: { kind: 'blast', every: 0, windup: 3.2, damage: 22, safe: 'near', radius: 74, visual: 'fire' } },
           { at: 0.3, pattern: { kind: 'strikes', every: 0, target: 'player', count: 3, spread: 0, radius: 15, delay: 1.1, damage: 12, visual: 'fire', lead: 1 } },
           { at: 1.6, pattern: { kind: 'strikes', every: 0, target: 'self', count: 7, spread: 210, radius: 16, delay: 1.2, damage: 12, visual: 'fire' } },
         ],
@@ -172,11 +179,13 @@ export const GROUDON_DOMAIN: LegendDomain = {
     },
     {
       below: 0.68,
+      hold: true,
       shift: 2.4,
       steer: { kind: 'anchor', x: 0, y: 0, drift: 18, pace: 0.5 },
       arena: [RISING],
       patterns: [
-        blades(5, 0.36, 1.2, 320, 16, 5),
+        blades(5, 0.36, 1.25, 320, 14, 5.2),
+        earthPower,
         // Fire Blast.
         { kind: 'volley', every: 4.6, count: 5, arc: 0.8, speed: 100, windup: 0.9, radius: 5, damage: 10, visual: 'fire' },
         // It leaps out of its lake onto the player, then wades back.
@@ -186,23 +195,25 @@ export const GROUDON_DOMAIN: LegendDomain = {
       ],
       ultimate: {
         move: 'Scorching Sands',
-        first: 7,
+        first: 5,
         every: 22,
         steps: [
           // A storm of burning sand around Groudon: only the far islands are out of it.
-          { at: 0, pattern: { kind: 'blast', every: 0, windup: 2.8, damage: 24, safe: 'far', radius: 118, visual: 'rock' } },
+          { at: 0, pattern: { kind: 'blast', every: 0, windup: 2.8, damage: 26, safe: 'far', radius: 118, visual: 'rock' } },
           { at: 0.4, pattern: { kind: 'ring', every: 0, count: 14, speed: 50, radius: 5, damage: 9, visual: 'rock' } },
         ],
       },
     },
     {
       below: 0.34,
+      hold: true,
       shift: 2.8,
       form: 'primal',
-      steer: { kind: 'chase', pace: 0.75 },
+      steer: { kind: 'chase', pace: 0.65 },
       arena: [SWELLING],
       patterns: [
-        blades(6, Math.PI / 3, 1.2, 260, 17, 6),
+        blades(6, Math.PI / 3, 1.25, 260, 15, 6),
+        earthPower,
         { kind: 'strikes', every: 6.5, target: 'self', count: 1, spread: 0, radius: 52, delay: 1.2, damage: 18, visual: 'slam' },
         { kind: 'trail', every: 0.28, ttl: 2.4, radius: 7, damage: 8, visual: 'fire' },
         { kind: 'strikes', every: 5, target: 'player', count: 4, spread: 0, radius: 15, delay: 1.1, damage: 12, visual: 'fire', lead: 1 },
@@ -210,7 +221,7 @@ export const GROUDON_DOMAIN: LegendDomain = {
       ],
       ultimate: {
         move: 'Precipice Blades',
-        first: 6,
+        first: 5,
         every: 20,
         steps: [
           // Waves of spokes all around it, each aimed anew: step into a gap, then away before it slams.

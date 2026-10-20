@@ -44,6 +44,8 @@ export type BossFight = {
   shift: number
   ult: { t: number; step: number } | null
   ultLeft: number
+  /** Whether this phase's ultimate has played yet (a `hold` phase waits on it). */
+  ultDone: boolean
   motion: BossMotion | null
   blast: BossBlast | null
   home: { x: number; y: number }
@@ -111,6 +113,7 @@ export const createFight = (rng: Rng, difficulty: Difficulty, home = { x: 0, y: 
   shift: 0,
   ult: null,
   ultLeft: Infinity,
+  ultDone: false,
   motion: null,
   blast: null,
   home,
@@ -210,9 +213,19 @@ export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: nu
 
 /**
  * Whether a boss's faint waits: one with phases still to go (or in a phase's
- * opening) stays up at 1 HP and moves on to its next phase instead (`killEnemy`).
+ * opening, or owing its `hold` phase the ultimate) stays up at 1 HP and moves
+ * on to its next phase instead (`killEnemy`).
  */
 export const holdsOn = (e: { kind: EnemyId; fight: BossFight | null }) => {
   const phases = phasesOf(e.kind)
-  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0)
+  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0 || waitsOnUltimate(phases, e.fight))
+}
+
+/** Whether a boss in a `hold` phase still owes it its ultimate (it holds on until it has played once). */
+export const waitsOnUltimate = (phases: readonly BossPhase[], fight: BossFight) => phases[fight.phase]?.hold === true && !fight.ultDone
+
+/** The least HP a boss keeps while its phase waits on its ultimate: the next phase's threshold, or 1 in the last. */
+export const holdFloor = (phases: readonly BossPhase[], fight: BossFight, maxHp: number) => {
+  const next = phases[fight.phase + 1]
+  return next ? Math.ceil(next.below * maxHp) + 1 : 1
 }

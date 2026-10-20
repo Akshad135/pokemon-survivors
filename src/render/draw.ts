@@ -940,7 +940,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawDuoAir(ctx, g, t, visible)
   drawLegendaryAir(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
-  for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamAir(ctx, hz, t)
+  for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamAir(ctx, hz, t, g)
     else if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
 
   for (const p of g.particles) {

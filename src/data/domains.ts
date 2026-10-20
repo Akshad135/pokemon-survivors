@@ -142,8 +142,8 @@ export type ArenaTransform = {
 /** A phase of the battle: the boss's side (`BossPhase`) and what it does to the arena. */
 export type DomainPhase = BossPhase & { arena?: readonly ArenaTransform[] }
 
-/** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, `cave` rock, or the open `sky` far above the clouds. */
-export type Backdrop = 'space' | 'cave' | 'sky'
+/** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, `cave` rock, dark volcanic `magma` rock, or the open `sky` far above the clouds. */
+export type Backdrop = 'space' | 'cave' | 'sky' | 'magma'
 
 export type LegendDomain = {
   omen: { weather: WeatherId; sky: LegendSky }
@@ -158,6 +158,10 @@ export type LegendDomain = {
   hp: number
   /** Seconds the battle may last before the domain collapses and throws the player out. */
   battleTime: number
+  /** Multiplies the legendary's contact damage (a flyer brushing past hurts less than its attacks); 1 when absent. */
+  touch?: number
+  /** Share of max HP its lava burns per touch (`LAVA_BURN` when absent). */
+  lavaBurn?: number
 }
 
 /** The legendaries whose rift is a domain. The others keep the old arena (`data/arenas.ts`) until theirs is written. */

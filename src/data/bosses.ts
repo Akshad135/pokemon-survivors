@@ -131,6 +131,8 @@ export type BossPhase = {
   steer?: BossSteer
   form?: string
   shift?: number
+  /** The boss holds on at the phase's end (and can't fall in the last one) until its ultimate has played once: every phase shows its signature, however fast it's hit. */
+  hold?: true
 }
 
 /** Seconds a boss holds still and untouchable as a new phase begins. */

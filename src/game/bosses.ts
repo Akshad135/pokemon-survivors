@@ -5,8 +5,8 @@ import type { RetinueRole } from '../data/domains'
 import type { EnemyId } from '../data/enemies'
 import { FINALE, fleesFrom } from '../data/waves'
 import {
-  attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, leadTime, patternLive, patternsOf, phaseAt, phasesOf,
-  shouldEnrage, telegraph, tickStance, ultimateLength, type BossBlast, type BossFight,
+  attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, holdFloor, leadTime, patternLive, patternsOf, phaseAt, phasesOf,
+  shouldEnrage, telegraph, tickStance, ultimateLength, waitsOnUltimate, type BossBlast, type BossFight,
 } from './bossFight'
 import { hurtPlayer } from './combat'
 import { burst } from './effects'
@@ -409,6 +409,7 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   fight.phaseAge = 0
   fight.shift = phase.shift ?? PHASE_SHIFT
   fight.ult = null
+  fight.ultDone = false
   fight.ultLeft = phase.ultimate ? phase.ultimate.first + fight.shift : Infinity
   fight.motion = null
   fight.blast = null
@@ -430,6 +431,7 @@ const updateUltimate = (g: Game, e: Enemy, fight: BossFight, dt: number) => {
     fight.ultLeft -= dt
     if (fight.ultLeft > 0) return false
     fight.ult = { t: 0, step: 0 }
+    fight.ultDone = true
     g.events.push({ kind: 'bossUltimate', enemy: e.kind, move: ultimate.move })
     burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f0a0'], count: 40, speed: 150, ttl: 0.5, size: 2 })
   }
@@ -501,8 +503,14 @@ export const updateBosses = (g: Game, dt: number) => {
   for (const e of g.enemies) {
     if (e.dying >= 0) continue
     const phases = phasesOf(e.kind)
-    if (e.fight === null && (phases || fightsInStances(e.kind))) e.fight = createFight(g.rng, g.difficulty, { x: e.x, y: e.y })
+    if (e.fight === null && (phases || fightsInStances(e.kind))) {
+      e.fight = createFight(g.rng, g.difficulty, { x: e.x, y: e.y })
+      // The first phase is never entered (`enterPhase`), so its ultimate's clock starts here.
+      if (phases?.[0]?.ultimate) e.fight.ultLeft = phases[0].ultimate.first
+    }
     const fight = e.fight
+    // A `hold` phase doesn't give way before its ultimate has played.
+    if (phases && fight && waitsOnUltimate(phases, fight)) e.hp = Math.max(e.hp, Math.min(e.maxHp, holdFloor(phases, fight, e.maxHp)))
     if (fight) fight.share = e.hp / e.maxHp
     if (phases && fight) {
       const next = phaseAt(phases, fight.share)

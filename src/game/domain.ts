@@ -227,7 +227,7 @@ const reveal = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) =>
   const scale = riftScale(g.time)
   // The difficulty presses a legendary with its patterns (pace, telegraphs, damage), not with more HP: a domain's battle lasts as long on any.
   boss.hp = boss.maxHp = Math.round(ENEMIES[d.legend].hp * scale.hp * def.hp)
-  boss.damage *= scale.damage
+  boss.damage *= scale.damage * (def.touch ?? 1)
   boss.xp = riftLoot(g.time, arena.shiny).xp
   boss.shiny = arena.shiny
   d.bossId = arena.bossId = boss.id
@@ -339,7 +339,7 @@ export const updateDomain = (g: Game, arena: RiftArena, d: DomainState, dt: numb
   if (g.rift.arena !== arena || arena.fall !== null) return
   keepInDomain(g, arena.layout, arena)
   const p = g.player
-  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'], 'lava')
+  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * (def.lavaBurn ?? LAVA_BURN), undefined, ['fire'], 'lava')
   if (d.act !== 'after' || arena.loot === null) return
   for (const k of g.pickups) k.attracted = true
   arena.loot -= dt
@@ -405,11 +405,15 @@ export const jumpToAct = (g: Game, act: 'crossing' | 'encounter' | 'battle' | 'c
   d.age = 0
   const boss = g.enemies.find((e) => e.id === d.bossId)
   if (!boss) return
+  // A jump skips the wait on the phase's ultimate (`BossPhase.hold`).
+  if (boss.fight) boss.fight.ultDone = true
   if (act === 'capture') {
     if (boss.fight) Object.assign(boss.fight, { phase: def.phases.length - 1, shift: 0 })
     return killEnemy(g, boss)
   }
   const below = def.phases[phase - 1]?.below ?? 1
+  // From the phase before it, so the next tick enters `phase` with its opening.
+  if (boss.fight && phase >= 2) boss.fight.phase = Math.max(boss.fight.phase, phase - 2)
   boss.hp = Math.max(1, Math.min(boss.maxHp, boss.maxHp * below - 1))
 }
 

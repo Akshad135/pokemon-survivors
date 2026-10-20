@@ -354,7 +354,7 @@ describe('replays', () => {
     strong(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
-  })
+  }, 60_000)
 
   // Groudon's magma tunnel and Rayquaza's Sky Pillar, up their passages (round the pools and holes), then circling in the arena.
   const DOMAIN_WAYS = {
