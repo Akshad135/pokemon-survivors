@@ -607,6 +607,147 @@ const kyogre: Score = {
   },
 }
 
-export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre } as const satisfies Record<string, Score>
+/** A heavy stomp on the root with a kick up the octave, under Groudon. */
+const stomp = (low: string, high: string) => `${low}:3 ${low}:1 r:2 ${low}:2 ${high}:3 ${low}:1 ${low}:2 ${high}:2`
+
+/** Groudon's domain (Desolate Land): a pounding C minor march over stomping bass, leaning on the Phrygian Db. */
+const groudon: Score = {
+  bpm: 120,
+  duty: { lead: 0.25, harmony: 0.125 },
+  tracks: {
+    // | Cm | Cm | Db | Db | Cm | Ab | Bb | G |  then  | Ab | Bb | Cm | Db | Fm | G | Cm | G |
+    lead: [
+      'C5:4 Eb5:2 F5 G5:6 Ab5:2',
+      'G5:4 F5:2 Eb5 C5:8',
+      'Db5:4 F5 Ab5 Db6',
+      'C6:6 Bb5:2 Ab5:8',
+      'G5:2 Ab5 G5 F5 Eb5:4 G5',
+      'Ab5:6 G5:2 Eb5:4 C5',
+      'D5:4 F5 Bb5:6 Ab5:2',
+      'B4:4 D5 G5:8',
+      'C6:3 Bb5:1 Ab5:4 Eb5 C5',
+      'D6:3 C6:1 Bb5:4 F5 D5',
+      'Eb6:6 D6:2 C6:8',
+      'Db6:4 C6 Bb5 Ab5',
+      'Ab5:2 C6 F6:4 Eb6:2 Db6 C6:4',
+      'B5:6 D6:2 G6:8',
+      'G6:4 Eb6:2 C6 G5:4 Eb5',
+      'D5:4 F5 G5:2 Ab5 B5:4',
+    ],
+    harmony: [
+      tremolo('Eb4', 'G4'),
+      tremolo('Eb4', 'G4'),
+      tremolo('F4', 'Ab4'),
+      tremolo('F4', 'Ab4'),
+      tremolo('Eb4', 'G4'),
+      tremolo('Eb4', 'C5'),
+      tremolo('D4', 'F4'),
+      tremolo('B3', 'D4'),
+      tremolo('Eb4', 'C5'),
+      tremolo('D4', 'F4'),
+      tremolo('Eb4', 'G4'),
+      tremolo('F4', 'Ab4'),
+      tremolo('Ab4', 'C5'),
+      tremolo('B3', 'D4'),
+      tremolo('Eb4', 'G4'),
+      tremolo('B3', 'D4'),
+    ],
+    bass: [
+      stomp('C2', 'C3'),
+      stomp('C2', 'C3'),
+      stomp('Db2', 'Db3'),
+      stomp('Db2', 'Db3'),
+      stomp('C2', 'C3'),
+      stomp('Ab1', 'Ab2'),
+      stomp('Bb1', 'Bb2'),
+      stomp('G1', 'G2'),
+      stomp('Ab1', 'Ab2'),
+      stomp('Bb1', 'Bb2'),
+      stomp('C2', 'C3'),
+      stomp('Db2', 'Db3'),
+      stomp('F1', 'F2'),
+      stomp('G1', 'G2'),
+      stomp('C2', 'C3'),
+      stomp('G1', 'G2'),
+    ],
+    drums: [
+      ...times(7, 'k:2 k k:4 s:4 k:2 k'),
+      'k:2 k s s k:1 k k k s:4',
+      ...times(7, 'k:2 k k:4 s:4 k:2 k'),
+      'k:2 k s s k:1 k k k o:4',
+    ],
+  },
+}
+
+/** Rayquaza's domain (the Sky Pillar's roof): a fast, soaring G mixolydian anthem over glittering arpeggios. */
+const rayquaza: Score = {
+  bpm: 156,
+  duty: { lead: 0.25, harmony: 0.125 },
+  tracks: {
+    // | G | F | C | G | Em | C | D | D |  then  | C | D | Bm | Em | C | F | D | D |
+    lead: [
+      'G5:6 A5:2 B5:4 D6',
+      'C6:6 A5:2 F5:8',
+      'E5:2 G5 C6:4 B5:2 A5 G5:4',
+      'D6:12 B5:4',
+      'B5:4 G5:2 A5 B5:4 E6',
+      'E6:6 D6:2 C6:4 G5',
+      'F#5:2 A5 D6:4 C6:2 B5 A5:4',
+      'A5:12 r:4',
+      'G5:3 A5:1 C6:4 E6 C6',
+      'F#6:6 E6:2 D6:8',
+      'D6:4 B5:2 D6 F#6:4 D6',
+      'E6:6 G6:2 E6:4 B5',
+      'C6:2 E6 G6:4 E6:2 C6 G5:4',
+      'F6:6 E6:2 C6:4 A5',
+      'D6:4 F#6 A6:8',
+      'G6:2 F#6 E6 D6 C6:4 A5',
+    ],
+    harmony: [
+      sparkle('G4', 'B4', 'D5', 'G5'),
+      sparkle('F4', 'A4', 'C5', 'F5'),
+      sparkle('E4', 'G4', 'C5', 'E5'),
+      sparkle('G4', 'B4', 'D5', 'G5'),
+      sparkle('E4', 'G4', 'B4', 'E5'),
+      sparkle('E4', 'G4', 'C5', 'E5'),
+      sparkle('D4', 'F#4', 'A4', 'D5'),
+      sparkle('D4', 'F#4', 'A4', 'D5'),
+      sparkle('E4', 'G4', 'C5', 'E5'),
+      sparkle('D4', 'F#4', 'A4', 'D5'),
+      sparkle('D4', 'F#4', 'B4', 'D5'),
+      sparkle('E4', 'G4', 'B4', 'E5'),
+      sparkle('E4', 'G4', 'C5', 'E5'),
+      sparkle('F4', 'A4', 'C5', 'F5'),
+      sparkle('D4', 'F#4', 'A4', 'D5'),
+      sparkle('D4', 'F#4', 'A4', 'C5'),
+    ],
+    bass: [
+      pump('G2', 'G3'),
+      pump('F2', 'F3'),
+      pump('C2', 'C3'),
+      pump('G2', 'G3'),
+      pump('E2', 'E3'),
+      pump('C2', 'C3'),
+      pump('D2', 'D3'),
+      pump('D2', 'D3'),
+      pump('C2', 'C3'),
+      pump('D2', 'D3'),
+      pump('B1', 'B2'),
+      pump('E2', 'E3'),
+      pump('C2', 'C3'),
+      pump('F2', 'F3'),
+      pump('D2', 'D3'),
+      pump('D2', 'D3'),
+    ],
+    drums: [
+      ...times(7, 'k:2 h s h k h s h'),
+      's:2 s s:1 s s:2 s s:1 s s:2 s',
+      ...times(7, 'k:2 h s h k h s h'),
+      's:2 s s:1 s s:2 s s:1 s k:2 o',
+    ],
+  },
+}
+
+export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre, groudon, rayquaza } as const satisfies Record<string, Score>
 
 export type ThemeId = keyof typeof THEMES

@@ -1,7 +1,7 @@
 import { blitCentered, blitRotated, canvasCache, context2d, createCanvas, ellipse } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
-import { ARENA_LAYOUTS, type ArenaLayout, type FloorPattern } from '../data/arenas'
+import { ARENA_LAYOUTS, type ArenaLayout, type FloorPattern, type FloorPlan } from '../data/arenas'
 import { ARENAS, RIFT, type ArenaTheme, type RiftLegend } from '../data/rifts'
 import { fits, floorAt, holesAt, lavaDepth, onBridge, stepsAt, stepWarning } from '../game/arenaFloor'
 import type { RiftArena, RiftPortal } from '../game/rift'
@@ -157,6 +157,23 @@ const INLAYS: Partial<Record<RiftLegend, (x: number, y: number, t: ArenaTheme) =
   },
 }
 
+/** The color at (x, y) with a floor plan's lava rivers over it: the bridges' planks, the flowing lava, its glow on the banks. */
+export const lavaColor = (layout: FloorPlan, x: number, y: number, color: string) => {
+  const d = lavaDepth(layout, x, y)
+  if (d <= -4) return color
+  const b = layout.bridges?.find((r) => Math.abs(x - r.x) <= r.w / 2 && Math.abs(y - r.y) <= r.h / 2)
+  if (d > 0 && b && onBridge(layout, x, y)) {
+    const along = b.w > b.h ? x : y
+    const rail = b.w > b.h ? Math.abs(y - b.y) > b.h / 2 - 2 : Math.abs(x - b.x) > b.w / 2 - 2
+    return rail ? '#1c0c08' : Math.floor(along + 400) % 5 === 0 ? '#2a1610' : hash2(Math.floor(along / 5), 0, 2) < 0.5 ? '#5a3a28' : '#684430'
+  }
+  if (d > 0) {
+    const flow = hash2(Math.floor((x + y * 0.3) / 6), Math.floor(y / 4), 6)
+    return d < 2 ? '#a02808' : d < 4 ? '#e85818' : flow < 0.35 ? '#f8e060' : '#f89830'
+  }
+  return mix(color, '#e05818', 0.45 + d * 0.1)
+}
+
 /** The platform's side under each floor's south edges. */
 export const FACES: Record<RiftLegend, Ramp> = {
   lugia: ['#0c1428', '#1c2c4c', '#2c3c5c', '#40547a'],
@@ -238,20 +255,7 @@ const buildFloor = (legend: RiftLegend, look: FloorLook) => {
         const ripple = Math.abs(((Math.sqrt(x * x + y * y) + hash2(Math.floor(x / 16), Math.floor(y / 16), 4) * 9) % 13) - 6) < 0.5 && hash2(px >> 3, py >> 3, 5) < 0.5
         color = side ? mix(theme.wall[1], '#000000', 0.35) : shore ? '#d8f0f8' : rim ? '#1c5070' : ripple ? '#88c8e8' : mix(color, '#2878b0', 0.62)
       }
-      if (layout.lava) {
-        const d = lavaDepth(layout, x, y)
-        const b = layout.bridges?.find((r) => Math.abs(x - r.x) <= r.w / 2 && Math.abs(y - r.y) <= r.h / 2)
-        if (d > 0 && b && onBridge(layout, x, y)) {
-          const along = b.w > b.h ? x : y
-          const rail = b.w > b.h ? Math.abs(y - b.y) > b.h / 2 - 2 : Math.abs(x - b.x) > b.w / 2 - 2
-          color = rail ? '#1c0c08' : Math.floor(along + 400) % 5 === 0 ? '#2a1610' : hash2(Math.floor(along / 5), 0, 2) < 0.5 ? '#5a3a28' : '#684430'
-        } else if (d > 0) {
-          const flow = hash2(Math.floor((x + y * 0.3) / 6), Math.floor(y / 4), 6)
-          color = d < 2 ? '#a02808' : d < 4 ? '#e85818' : flow < 0.35 ? '#f8e060' : '#f89830'
-        } else if (d > -4) {
-          color = mix(color, '#e05818', 0.45 + d * 0.1)
-        }
-      }
+      if (layout.lava) color = lavaColor(layout, x, y, color)
       // What falls or floods next shows up during the warning.
       if (look.warn) {
         if (layout.crumble && !nextFloor.some((s) => fits(s, x, y, 0))) color = mix(color, '#f83838', 0.45)

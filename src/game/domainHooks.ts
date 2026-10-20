@@ -1,6 +1,8 @@
 import type { RiftLegend } from '../data/rifts'
 import type { DomainState } from './domain'
 import type { Enemy, Game } from './types'
+import { GROUDON_HOOKS } from './domains/groudon'
+import { RAYQUAZA_HOOKS } from './domains/rayquaza'
 
 /**
  * Mechanics a legendary's domain needs beyond its data (`data/domains.ts`):
@@ -25,4 +27,7 @@ export type DomainHooks = {
   fallen?: (g: Game, d: DomainState, boss: Enemy) => boolean
 }
 
-export const DOMAIN_HOOKS: Partial<Record<RiftLegend, DomainHooks>> = {}
+export const DOMAIN_HOOKS: Partial<Record<RiftLegend, DomainHooks>> = {
+  groudon: GROUDON_HOOKS,
+  rayquaza: RAYQUAZA_HOOKS,
+}

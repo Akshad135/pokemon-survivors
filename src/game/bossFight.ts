@@ -11,12 +11,13 @@ import * as dm from '../engine/dmath'
 /**
  * A boss moving on its own script instead of walking (`game/bosses.ts`):
  * a `dash` marks its lane for `wait` s then rushes (vx, vy) for `left` s,
- * `more` times again; a `dive` is under, untouchable, for `left` s, its wake at
+ * `more` times again (a `swoop` one, `reach` > 0, comes in from that far off
+ * on a new side each time); a `dive` is under, untouchable, for `left` s, its wake at
  * (x, y) following the player until `lock` s are left (then its strike shows);
  * `away` is a teleport waiting for its landing.
  */
 export type BossMotion =
-  | { kind: 'dash'; wait: number; left: number; vx: number; vy: number; more: number; speed: number; width: number; damage: number; windup: number; hit: boolean }
+  | { kind: 'dash'; wait: number; left: number; vx: number; vy: number; more: number; speed: number; width: number; damage: number; windup: number; hit: boolean; reach: number }
   | { kind: 'dive'; left: number; lock: number; x: number; y: number; windup: number; radius: number; damage: number; visual: HazardVisual }
   | { kind: 'away'; left: number }
 
@@ -43,6 +44,8 @@ export type BossFight = {
   shift: number
   ult: { t: number; step: number } | null
   ultLeft: number
+  /** Whether this phase's ultimate has played yet (a `hold` phase waits on it). */
+  ultDone: boolean
   motion: BossMotion | null
   blast: BossBlast | null
   home: { x: number; y: number }
@@ -81,6 +84,7 @@ export const warningOf = (p: BossPattern) => {
     case 'volley': return p.windup
     case 'beam': return p.windup + p.duration
     case 'dash': return p.windup * p.count + 1
+    case 'swoop': return (p.windup + (p.reach * 2) / p.speed) * p.count
     case 'dive': return p.hide + p.windup
     case 'teleport': case 'blast': return p.windup
     default: return 0
@@ -109,6 +113,7 @@ export const createFight = (rng: Rng, difficulty: Difficulty, home = { x: 0, y: 
   shift: 0,
   ult: null,
   ultLeft: Infinity,
+  ultDone: false,
   motion: null,
   blast: null,
   home,
@@ -208,9 +213,19 @@ export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: nu
 
 /**
  * Whether a boss's faint waits: one with phases still to go (or in a phase's
- * opening) stays up at 1 HP and moves on to its next phase instead (`killEnemy`).
+ * opening, or owing its `hold` phase the ultimate) stays up at 1 HP and moves
+ * on to its next phase instead (`killEnemy`).
  */
 export const holdsOn = (e: { kind: EnemyId; fight: BossFight | null }) => {
   const phases = phasesOf(e.kind)
-  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0)
+  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0 || waitsOnUltimate(phases, e.fight))
+}
+
+/** Whether a boss in a `hold` phase still owes it its ultimate (it holds on until it has played once). */
+export const waitsOnUltimate = (phases: readonly BossPhase[], fight: BossFight) => phases[fight.phase]?.hold === true && !fight.ultDone
+
+/** The least HP a boss keeps while its phase waits on its ultimate: the next phase's threshold, or 1 in the last. */
+export const holdFloor = (phases: readonly BossPhase[], fight: BossFight, maxHp: number) => {
+  const next = phases[fight.phase + 1]
+  return next ? Math.ceil(next.below * maxHp) + 1 : 1
 }

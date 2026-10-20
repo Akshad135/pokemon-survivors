@@ -1188,6 +1188,7 @@ export const en: Messages = {
     hudCrossing: 'Keep going!',
     escaped: (name) => `*${name}* broke free from the Poké Ball!`,
     caught: (name) => `*${name}* was caught!`,
+    calms: (name) => `The wind silences what was left of *${name}*'s fury.`,
     domains: {
       kyogre: {
         place: 'Seafloor Cavern',
@@ -1195,6 +1196,20 @@ export const en: Messages = {
         omen: 'A torrential rain pours out of nowhere…',
         crossing: 'The tide is rising! Push on through the cavern!',
         phases: ['The cavern floods! Stand on the islands to ride out Surf.', 'Kyogre returns to its *Primal form*! Watch out for Origin Pulse!'],
+      },
+      groudon: {
+        place: 'Magma Cavern',
+        epithet: 'Lord of the Land',
+        omen: 'The sun blazes without mercy and the earth cracks…',
+        crossing: 'The tunnel is caving in and the lava is coming! Run!',
+        phases: ['Lava rises and splits the chamber! Cross on the cool stones.', 'Groudon returns to its *Primal form*! Watch out for Precipice Blades!'],
+      },
+      rayquaza: {
+        place: 'Sky Pillar',
+        epithet: 'Lord of the Skies',
+        omen: 'A gale sweeps the sky and calms every weather…',
+        crossing: 'The floors are crumbling behind you! Climb the Pillar!',
+        phases: ['The roof breaks and falls into the sky! Mind the edges.', 'Rayquaza *Mega Evolves*! Watch out for Dragon Ascent!'],
       },
     },
   },

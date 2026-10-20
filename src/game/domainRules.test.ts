@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DOMAINS } from '../data/domains'
 import { arenaGround, onFloor } from './arenaFloor'
-import { advanceFront, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, transformStage, waterBelow } from './domainRules'
+import { advanceFront, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, threatGround, transformStage, waterBelow } from './domainRules'
 
 const kyogre = DOMAINS.kyogre!
 const threat = kyogre.crossing.threat
@@ -58,5 +58,46 @@ describe('the encounter', () => {
     expect(encounterBeat(REVEAL_AT).camera).toBe(1)
     expect(encounterBeat(REVEAL_AT).entrance).toBe(1)
     expect(encounterBeat(ENCOUNTER_LENGTH).camera).toBe(0)
+  })
+})
+
+describe("Groudon's and Rayquaza's domains", () => {
+  const groudon = DOMAINS.groudon!
+  const rayquaza = DOMAINS.rayquaza!
+
+  it("carry the crossing's lava rivers and bridges until the way seals", () => {
+    const open = composePlan(groudon, false, [])
+    // The passage between the second and third chambers: a river across it, one bridge over.
+    const bridge = groudon.crossing.bridges![2]!
+    expect(onFloor(open.floor, bridge.x + 20, bridge.y)).toBe(true)
+    expect(arenaGround(open, bridge.x + 20, bridge.y)).toBe('lava')
+    expect(arenaGround(open, bridge.x, bridge.y)).toBe('land')
+    expect(composePlan(groudon, true, []).lava).toEqual([])
+  })
+
+  it('leave the ground as it is behind a lava or crumbling front, which hurts on its own', () => {
+    expect(threatGround(groudon.crossing.threat, -200)).toBeUndefined()
+    expect(threatGround(rayquaza.crossing.threat, -200)).toBeUndefined()
+    expect(threatGround(kyogre.crossing.threat, -200)).toEqual(waterBelow(-200))
+  })
+
+  it("burn the chamber but its cool stones once Groudon's lava rises, the later rise keeping the first one's stones", () => {
+    const [ax, ay] = groudon.arena.at
+    const rising = groudon.phases[1]!.arena![0]!
+    const swelling = groudon.phases[2]!.arena![0]!
+    const stone = rising.spare[0]!
+    const plan = composePlan(groudon, true, [rising, swelling])
+    expect(arenaGround(plan, ax + stone.x, ay + stone.y)).toBe('land')
+    expect(arenaGround(plan, ax + stone.x, ay + stone.y + stone.r + 6)).toBe('lava')
+  })
+
+  it("cut Rayquaza's roof where it crumbles, every fall adding up", () => {
+    const [ax, ay] = rayquaza.arena.at
+    const corners = rayquaza.phases[1]!.arena![0]!
+    const edges = rayquaza.phases[2]!.arena![0]!
+    const plan = composePlan(rayquaza, true, [corners, edges])
+    const holes = plan.holes ?? []
+    expect(holes.length).toBe(corners.spare.length + edges.spare.length)
+    expect(onFloor(plan.floor, ax, ay)).toBe(true)
   })
 })

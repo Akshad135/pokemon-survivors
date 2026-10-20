@@ -5,8 +5,8 @@ import type { RetinueRole } from '../data/domains'
 import type { EnemyId } from '../data/enemies'
 import { FINALE, fleesFrom } from '../data/waves'
 import {
-  attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, leadTime, patternLive, patternsOf, phaseAt, phasesOf,
-  shouldEnrage, telegraph, tickStance, ultimateLength, type BossBlast, type BossFight,
+  attackCount, attackWait, bossAway, chainChance, chainTarget, createFight, fightsInStances, holdFloor, leadTime, patternLive, patternsOf, phaseAt, phasesOf,
+  shouldEnrage, telegraph, tickStance, ultimateLength, waitsOnUltimate, type BossBlast, type BossFight,
 } from './bossFight'
 import { hurtPlayer } from './combat'
 import { abilityImmune } from './abilities'
@@ -130,7 +130,13 @@ const fire = (g: Game, boss: Enemy, pattern: BossPattern, fight: BossFight | nul
       return summon(g, boss, pattern)
     case 'dash': {
       if (!fight) return
-      fight.motion = { kind: 'dash', wait: 0, left: 0, vx: 0, vy: 0, more: pattern.count, speed: pattern.speed, width: pattern.width, damage: pattern.damage, windup: telegraph(pattern.windup, fight), hit: false }
+      fight.motion = { kind: 'dash', wait: 0, left: 0, vx: 0, vy: 0, more: pattern.count, speed: pattern.speed, width: pattern.width, damage: pattern.damage, windup: telegraph(pattern.windup, fight), hit: false, reach: 0 }
+      return aimDash(g, boss, fight)
+    }
+    case 'swoop': {
+      if (!fight) return
+      burst(g, boss.x, boss.y - boss.radius, { colors: IMPACT.dragon!.colors, count: 30, speed: 160, ttl: 0.45, size: 2 })
+      fight.motion = { kind: 'dash', wait: 0, left: 0, vx: 0, vy: 0, more: pattern.count, speed: pattern.speed, width: pattern.width, damage: pattern.damage, windup: telegraph(pattern.windup, fight), hit: false, reach: pattern.reach }
       return aimDash(g, boss, fight)
     }
     case 'dive': {
@@ -173,6 +179,9 @@ const park = (boss: Enemy, fight: BossFight) => {
 
 /** Whether a boss is parked out of play (`park`). */
 export const parked = (boss: Enemy) => boss.fight !== null && boss.y < boss.fight.home.y - PARK / 2
+
+/** Whether a boss is off the arena's floor on its script: parked, or out on a swoop's pass (floors and the camera let it be). */
+export const offstage = (boss: Enemy) => parked(boss) || (boss.fight?.motion?.kind === 'dash' && boss.fight.motion.reach > 0)
 
 /** As far from the player as a teleport goes: across the boss's home from them, at most 150 px out. */
 const farFrom = (home: { x: number; y: number }, p: { x: number; y: number }) => {
@@ -283,13 +292,24 @@ const summon = (g: Game, boss: Enemy, pattern: Extract<BossPattern, { kind: 'sum
   }
 }
 
-/** Marks a dash's lane through where the player stands now (a telegraph beam that never burns) and starts its windup. */
+/**
+ * Marks a dash's lane through where the player stands now (a telegraph beam
+ * that never burns) and starts its windup. A swoop's pass first puts the boss
+ * `reach` px from the player on a random side, and its lane runs as far past them.
+ */
 const aimDash = (g: Game, boss: Enemy, fight: BossFight) => {
   const m = fight.motion
   if (m?.kind !== 'dash') return
   const p = g.player
+  if (m.reach > 0) {
+    const side = range(g.rng, 0, TAU)
+    boss.x = p.x + dm.cos(side) * m.reach
+    boss.y = p.y + dm.sin(side) * m.reach
+    boss.kx = 0
+    boss.ky = 0
+  }
   const a = dm.atan2(p.y - boss.y, p.x - boss.x)
-  const len = dm.hypot(p.x - boss.x, p.y - boss.y) + 70
+  const len = dm.hypot(p.x - boss.x, p.y - boss.y) + (m.reach > 0 ? m.reach : 70)
   m.vx = dm.cos(a) * m.speed
   m.vy = dm.sin(a) * m.speed
   m.wait = m.windup
@@ -320,6 +340,12 @@ const updateMotion = (g: Game, boss: Enemy, fight: BossFight, dt: number) => {
     if (m.left > 0) return
     if (m.more > 0) return aimDash(g, boss, fight)
     fight.motion = null
+    // A swoop's last pass ends off the arena: the boss lands back at its home.
+    if (m.reach > 0) {
+      boss.x = fight.home.x
+      boss.y = fight.home.y
+      burst(g, boss.x, boss.y - boss.radius, { colors: IMPACT.dragon!.colors, count: 30, speed: 160, ttl: 0.45, size: 2 })
+    }
     return
   }
   m.left -= dt
@@ -376,7 +402,7 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   const phase = phases[next]!
   const after = phases[next + 1]
   if (after && e.hp < after.below * e.maxHp) e.hp = Math.ceil(after.below * e.maxHp) + 1
-  if (parked(e)) {
+  if (offstage(e)) {
     e.x = fight.home.x
     e.y = fight.home.y
   }
@@ -384,6 +410,7 @@ const enterPhase = (g: Game, e: Enemy, fight: BossFight, next: number) => {
   fight.phaseAge = 0
   fight.shift = phase.shift ?? PHASE_SHIFT
   fight.ult = null
+  fight.ultDone = false
   fight.ultLeft = phase.ultimate ? phase.ultimate.first + fight.shift : Infinity
   fight.motion = null
   fight.blast = null
@@ -405,6 +432,7 @@ const updateUltimate = (g: Game, e: Enemy, fight: BossFight, dt: number) => {
     fight.ultLeft -= dt
     if (fight.ultLeft > 0) return false
     fight.ult = { t: 0, step: 0 }
+    fight.ultDone = true
     g.events.push({ kind: 'bossUltimate', enemy: e.kind, move: ultimate.move })
     burst(g, e.x, e.y - e.radius, { colors: ['#ffffff', '#f8f0a0'], count: 40, speed: 150, ttl: 0.5, size: 2 })
   }
@@ -476,8 +504,14 @@ export const updateBosses = (g: Game, dt: number) => {
   for (const e of g.enemies) {
     if (e.dying >= 0) continue
     const phases = phasesOf(e.kind)
-    if (e.fight === null && (phases || fightsInStances(e.kind))) e.fight = createFight(g.rng, g.difficulty, { x: e.x, y: e.y })
+    if (e.fight === null && (phases || fightsInStances(e.kind))) {
+      e.fight = createFight(g.rng, g.difficulty, { x: e.x, y: e.y })
+      // The first phase is never entered (`enterPhase`), so its ultimate's clock starts here.
+      if (phases?.[0]?.ultimate) e.fight.ultLeft = phases[0].ultimate.first
+    }
     const fight = e.fight
+    // A `hold` phase doesn't give way before its ultimate has played.
+    if (phases && fight && waitsOnUltimate(phases, fight)) e.hp = Math.max(e.hp, Math.min(e.maxHp, holdFloor(phases, fight, e.maxHp)))
     if (fight) fight.share = e.hp / e.maxHp
     if (phases && fight) {
       const next = phaseAt(phases, fight.share)

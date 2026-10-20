@@ -5,6 +5,8 @@ import type { EnemyId } from './enemies'
 import type { ThemeId } from './music'
 import type { RiftLegend } from './rifts'
 import { KYOGRE_DOMAIN } from './domains/kyogre'
+import { GROUDON_DOMAIN } from './domains/groudon'
+import { RAYQUAZA_DOMAIN } from './domains/rayquaza'
 
 /**
  * EPIC RIFTS: a legendary's domain, as data.
@@ -55,8 +57,8 @@ import { KYOGRE_DOMAIN } from './domains/kyogre'
 /** How a legendary's sky looks over the map in its omen and over its domain (`render/legendSky.ts`). */
 export type LegendSky = 'downpour' | 'harshSun' | 'gale' | 'timeWarp' | 'storm' | 'embers' | 'mist' | 'meteors'
 
-/** How the threat behind the crossing looks (`render/domain.ts`); its rules are the same for every kind. */
-export type ThreatKind = 'tide' | 'collapse' | 'fire' | 'void'
+/** How the threat behind the crossing looks (`render/domain.ts`); its rules are the same for every kind. `magma`: lava chasing up a collapsing tunnel; `crumble`: a floor falling away into the sky. */
+export type ThreatKind = 'tide' | 'collapse' | 'fire' | 'void' | 'magma' | 'crumble'
 
 /** How the legendary comes in: out of water (`rise`), down from the sky (`descend`), or out of thin air (`materialize`). */
 export type DomainEntrance = 'rise' | 'descend' | 'materialize'
@@ -68,8 +70,9 @@ export type RetinueRole = 'runner' | 'spitter' | 'elite'
  * The front that pushes the player through the crossing: it starts at domain
  * y `start`, waits `delay` s, then rises `speed` px/s (`rush` times that while
  * it trails the player by more than `gap` px) and never passes `stop`. Behind
- * it the ground is water (slow), the player loses `damage` of their max HP
- * every `every` s and is carried `push` px/s north.
+ * it the ground is water (slow; `ground: 'none'` leaves it as it is), the
+ * player loses `damage` of their max HP every `every` s and is carried
+ * `push` px/s north.
  */
 export type Threat = {
   kind: ThreatKind
@@ -82,6 +85,8 @@ export type Threat = {
   damage: number
   every: number
   push: number
+  /** What the ground behind the front turns into: shallow water (the default) or nothing (lava and crumbling floors hurt through `damage` alone). */
+  ground?: 'water' | 'none'
 }
 
 /** Who comes at the player in the crossing: `count` every `every` s from `first` on, at most `max` up at once, drawn by `weight`. */
@@ -137,8 +142,8 @@ export type ArenaTransform = {
 /** A phase of the battle: the boss's side (`BossPhase`) and what it does to the arena. */
 export type DomainPhase = BossPhase & { arena?: readonly ArenaTransform[] }
 
-/** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, or `cave` rock. */
-export type Backdrop = 'space' | 'cave'
+/** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, `cave` rock, dark volcanic `magma` rock, or the open `sky` far above the clouds. */
+export type Backdrop = 'space' | 'cave' | 'sky' | 'magma'
 
 export type LegendDomain = {
   omen: { weather: WeatherId; sky: LegendSky }
@@ -153,11 +158,17 @@ export type LegendDomain = {
   hp: number
   /** Seconds the battle may last before the domain collapses and throws the player out. */
   battleTime: number
+  /** Multiplies the legendary's contact damage (a flyer brushing past hurts less than its attacks); 1 when absent. */
+  touch?: number
+  /** Share of max HP its lava burns per touch (`LAVA_BURN` when absent). */
+  lavaBurn?: number
 }
 
 /** The legendaries whose rift is a domain. The others keep the old arena (`data/arenas.ts`) until theirs is written. */
 export const DOMAINS: Partial<Record<RiftLegend, LegendDomain>> = {
   kyogre: KYOGRE_DOMAIN,
+  groudon: GROUDON_DOMAIN,
+  rayquaza: RAYQUAZA_DOMAIN,
 }
 
 /** The domain behind `legend`'s rift, if it has one. */

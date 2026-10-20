@@ -1338,6 +1338,8 @@ export const pt = {
     hudCrossing: 'Avance!',
     escaped: (name: string) => `*${name}* escapou da Poké Ball!`,
     caught: (name: string) => `*${name}* foi capturado!`,
+    /** Rayquaza's omen after Kyogre's or Groudon's rift this run: its Air Lock ends their weather. */
+    calms: (name: string) => `O vento silencia o que restava da fúria de *${name}*.`,
     /** Per legendary: its domain's name, its epithet on the title card, its omen, the crossing's warning and a line per phase after the first. */
     domains: {
       kyogre: {
@@ -1346,6 +1348,20 @@ export const pt = {
         omen: 'Uma chuva torrencial cai do nada…',
         crossing: 'A maré está subindo! Avance pela caverna!',
         phases: ['A caverna inunda! Fique nas ilhas para escapar do Surf.', 'Kyogre volta à *forma Primal*! Cuidado com o Origin Pulse!'],
+      },
+      groudon: {
+        place: 'Caverna de Magma',
+        epithet: 'Senhor da Terra',
+        omen: 'O sol arde sem piedade e a terra racha…',
+        crossing: 'O túnel está desabando e a lava vem atrás! Corra!',
+        phases: ['A lava sobe e divide a câmara! Atravesse pelas pedras frias.', 'Groudon volta à *forma Primal*! Cuidado com as Precipice Blades!'],
+      },
+      rayquaza: {
+        place: 'Pilar Celeste',
+        epithet: 'Senhor dos Céus',
+        omen: 'Um vendaval varre o céu e acalma todo o clima…',
+        crossing: 'Os andares desabam atrás de você! Suba o Pilar!',
+        phases: ['O teto se parte e cai no céu! Cuidado com as bordas.', 'Rayquaza *Mega Evolui*! Cuidado com o Dragon Ascent!'],
       },
     } satisfies Partial<Record<RiftLegend, DomainLines>>,
   },
