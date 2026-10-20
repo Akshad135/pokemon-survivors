@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyId } from '../data/enemies'
+import { GAME_SPECIES } from '../data/species'
 import { RUN_LENGTH } from '../data/waves'
 import { appearances, clock, pokedex, regionOf } from './pokedex'
 
 describe('pokedex', () => {
+  it("lists exactly the species the save may hold (`GAME_SPECIES`)", () => {
+    expect(new Set(pokedex().map((e) => e.dex))).toEqual(GAME_SPECIES)
+  })
+
   const entries = pokedex()
 
   it('lists every species the game loads exactly once, with unique anchors', () => {

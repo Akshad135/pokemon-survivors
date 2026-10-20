@@ -1,3 +1,5 @@
+import { GAME_SPECIES, OWNABLE_SPECIES } from '../data/species'
+
 /**
  * Pokédex progress: per species (national dex number), whether the player has
  * seen it, how many they defeated, and whether they caught it (and shiny).
@@ -119,16 +121,25 @@ export const mergeDex = (a: Pokedex, b: Pokedex): Pokedex =>
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0)
 
 /**
- * Parses the saved Pokédex entry by entry: bad dex numbers or malformed marks
- * are dropped, counts are clamped and unknown flag bits cleared. Never throws.
+ * Whether a species can be caught with `defeated` of it fainted: the forms the
+ * player plays are theirs (`OWNABLE_SPECIES`), any other only by defeating a shiny.
+ */
+const catchable = (n: number, defeated: number) => defeated > 0 || OWNABLE_SPECIES.has(n)
+
+/**
+ * Parses the saved Pokédex entry by entry: species the game doesn't have and
+ * malformed marks are dropped, counts are clamped and unknown flag bits
+ * cleared. A species caught the game gives no way to catch (a wild one never
+ * defeated) is only seen: that mark came from editing the save. Never throws.
  */
 export const parseDex = (raw: unknown): Pokedex => {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return EMPTY_DEX
   return Object.fromEntries(
     Object.entries(raw).flatMap(([key, mark]): Array<[number, DexMark]> => {
       const n = Number(key)
-      if (!Number.isInteger(n) || n <= 0 || !Array.isArray(mark)) return []
-      return [[n, [count(mark[0]), count(mark[1]) & ALL_FLAGS]]]
+      if (!GAME_SPECIES.has(n) || !Array.isArray(mark)) return []
+      const defeated = count(mark[0])
+      return [[n, [defeated, catchable(n, defeated) ? count(mark[1]) & ALL_FLAGS : 0]]]
     }),
   )
 }

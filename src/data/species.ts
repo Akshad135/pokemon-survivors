@@ -1,0 +1,19 @@
+import { BRANCHES } from './branches'
+import { ENEMIES } from './enemies'
+import { PLAYABLE } from './hatchlings'
+
+/** The Pokémon of the map event that flees with coins (`game/mapEvents.ts`), also listed in `scripts/dex.mjs` (CRITTERS). */
+export const MEOWTH_DEX = 52
+
+/**
+ * Species a player can own without defeating one: the forms they play (each
+ * starter's and egg family's line, and the branches their evolutions take).
+ * Every other species is caught only by defeating a shiny.
+ */
+export const OWNABLE_SPECIES: ReadonlySet<number> = new Set([
+  ...Object.values(PLAYABLE).flatMap((p) => p.line.map((stage) => stage.dex)),
+  ...Object.values(BRANCHES).map((b) => b.dex),
+])
+
+/** Every species the game has, by national dex number: the ones the in-game Pokédex lists (`site/pokedex.ts`). */
+export const GAME_SPECIES: ReadonlySet<number> = new Set([...OWNABLE_SPECIES, ...Object.values(ENEMIES).map((e) => e.dex), MEOWTH_DEX])
