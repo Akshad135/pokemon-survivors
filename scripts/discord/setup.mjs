@@ -32,6 +32,7 @@ const P = {
   kick: 1n << 1n,
   ban: 1n << 2n,
   addReactions: 1n << 6n,
+  stream: 1n << 9n,
   viewChannel: 1n << 10n,
   sendMessages: 1n << 11n,
   manageEmojis: 1n << 30n,
@@ -47,12 +48,14 @@ const P = {
   createPrivateThreads: 1n << 36n,
   sendMessagesInThreads: 1n << 38n,
   moderateMembers: 1n << 40n,
+  useSoundboard: 1n << 42n,
 }
 const MODERATE =
   P.kick | P.ban | P.manageMessages | P.mentionEveryone | P.muteMembers | P.moveMembers | P.manageNicknames | P.manageThreads | P.moderateMembers
 const TALK = P.sendMessages | P.createPublicThreads | P.createPrivateThreads | P.sendMessagesInThreads
 
-const VOICE = P.connect | P.speak
+// Behind the gate a newcomer only listens: no camera, screen share or soundboard either.
+const VOICE = P.connect | P.speak | P.stream | P.useSoundboard
 
 const TYPE = { text: 0, voice: 2, category: 4, news: 5, forum: 15 }
 
@@ -122,6 +125,11 @@ const LAYOUT = [
       { name: 'daily-challenge', topic: 'Same seed for everyone, one official try a day. Post your time and build. Yesterday’s podium lands here.' },
       { name: 'daily-outbreak', topic: 'Today’s outbreak: which Pokémon is everywhere and how to farm it.' },
       { name: 'shiny-showcase', topic: 'Show off your shinies ✨' },
+      {
+        name: 'tiktok-reward',
+        slowmode: 60,
+        topic: 'Follow us on TikTok (@pokemonsurvivors), post a screenshot that shows it with your in-game @handle, and a Dev sends you a rare egg.',
+      },
       {
         name: 'builds-and-strategy',
         type: 'forum',
@@ -215,11 +223,25 @@ const WELCOME = {
     GATE ? '👋 Introduce yourself in <#introductions> to unlock chatting everywhere' : '👋 Say hi in <#introductions>',
     '🗣️ Change your starter, languages and pings in **Channels & Roles** (top of the channel list)',
     '💬 Hang out in <#general>',
+    '🎁 Follow us on TikTok for a free rare egg: <#tiktok-reward>',
     '🏆 Post your Daily Challenge time in <#daily-challenge>',
     '🐛 Found a bug? <#bug-reports>',
     '💡 Have an idea? <#suggestions>',
     '',
     'This server speaks **English**. Other languages have their own rooms under 🌎 International.',
+  ].join('\n'),
+}
+
+// The TikTok reward is checked and sent by hand from the game's admin panel (Painel admin: egg, rare).
+const TIKTOK_REWARD = {
+  title: '🎁 A rare egg for following us on TikTok',
+  color: 0xfe2c55,
+  description: [
+    '**1.** Follow **@pokemonsurvivors** on TikTok: https://www.tiktok.com/@pokemonsurvivors',
+    '**2.** Post a screenshot here that shows you follow us, with your in-game **@handle** (it’s on your Trainer Card).',
+    '**3.** A Dev sends you a **rare egg** as a Mystery Gift. Open it from the gift box in the lobby.',
+    '',
+    'You need a game account: sign in from the lobby (guests can’t get gifts). One egg per account. Gifts go out by hand, so give us a little time.',
   ].join('\n'),
 }
 
@@ -275,7 +297,8 @@ for (const role of ROLES) {
     color: role.color,
     hoist: !!role.hoist,
     mentionable: role.name.endsWith('Ping'),
-    permissions: (role.staff ? MODERATE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
+    // Staff talk without needing the Trainer role on top.
+    permissions: (role.staff ? MODERATE | TALK | VOICE : role.trainer && GATE ? TALK | VOICE : 0n).toString(),
   }
   const found = existingRoles.find((r) => r.name === role.name)
   roleId[role.name] = (found
@@ -380,16 +403,24 @@ await discord('PATCH', `/guilds/${GUILD}`, {
 })
 for (const id of pendingNews) await discord('PATCH', `/channels/${id}`, { type: TYPE.news })
 
-/** Posts the bot's message in a channel, or edits the one it already posted. */
-const upsertMessage = async (channel, embed) => {
-  const messages = await discord('GET', `/channels/${channelId[channel]}/messages?limit=50`)
-  const mine = messages.find((m) => m.author.id === me.id)
-  const body = { content: '', embeds: [embed] }
-  if (mine) await discord('PATCH', `/channels/${channelId[channel]}/messages/${mine.id}`, body)
-  else await discord('POST', `/channels/${channelId[channel]}/messages`, body)
+/** `<#name>` in the bot's texts, as the channel's real mention. */
+const mentions = (text) => text.replace(/<#([\w-]+)>/g, (tag, name) => (channelId[name] ? `<#${channelId[name]}>` : tag))
+
+/**
+ * Posts the bot's message in a channel, or edits the one it already posted.
+ * `pin` keeps it pinned, so it's found again however much the channel talks.
+ */
+const upsertMessage = async (channel, embed, pin = false) => {
+  const id = channelId[channel]
+  const seen = [...(pin ? await discord('GET', `/channels/${id}/pins`) : []), ...(await discord('GET', `/channels/${id}/messages?limit=50`))]
+  const mine = seen.find((m) => m.author.id === me.id)
+  const body = { content: '', embeds: [{ ...embed, description: mentions(embed.description) }] }
+  const saved = mine ? await discord('PATCH', `/channels/${id}/messages/${mine.id}`, body) : await discord('POST', `/channels/${id}/messages`, body)
+  if (pin && !saved.pinned) await discord('PUT', `/channels/${id}/pins/${saved.id}`)
 }
 await upsertMessage('welcome', WELCOME)
 await upsertMessage('rules', RULES)
+await upsertMessage('tiktok-reward', TIKTOK_REWARD, true)
 
 await discord('PATCH', `/guilds/${GUILD}/welcome-screen`, {
   enabled: true,
