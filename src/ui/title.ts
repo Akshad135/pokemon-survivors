@@ -619,7 +619,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     play: actions.play,
   }
   /** A press on `key`: the select sound, then its action after this dispatch (or the next screen would get the same press). */
-  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), track('lobby_press', { entry: key }), later(runs[key]))
+  // JOGAR isn't counted: `run_start` already says it, and it's a third of the lobby's presses.
+  const press = (key: keyof typeof runs) => () => (select(key, false), playSfx('select'), key !== 'play' && track('lobby_press', { entry: key }), later(runs[key]))
   const pressable = <T extends HTMLElement>(node: T, key: keyof typeof runs) => (node.addEventListener('click', press(key)), navigable(node, key))
 
   const buildLobby = () => {

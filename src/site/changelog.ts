@@ -252,6 +252,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Sempre na versão nova', en: 'Always on the latest version', es: 'Siempre en la versión nueva' },
+        notes: [
+          {
+            pt: 'Quem deixava o jogo aberto enquanto saía uma atualização podia ficar sem abrir as Novidades. Agora o jogo percebe a versão nova e recarrega sozinho no menu, ou ao fim da partida se você estiver jogando. Seu progresso fica salvo.',
+            en: "If the game stayed open while an update came out, What's new could fail to open. Now the game notices the new version and reloads on its own in the menus, or at the end of the run if you're playing. Your progress stays saved.",
+            es: 'Si el juego quedaba abierto mientras salía una actualización, las Novedades podían no abrir. Ahora el juego detecta la versión nueva y se recarga solo en el menú, o al final de la partida si estás jugando. Tu progreso queda guardado.',
+          },
+        ],
+      },
     ],
   },
   {
