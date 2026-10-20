@@ -2,6 +2,7 @@ import type { Clerk } from '@clerk/clerk-js'
 import { loadClerkUIScript } from '@clerk/shared/loadClerkJsScript'
 import type { ClerkUIConstructor } from '@clerk/shared/types'
 import { track } from './analytics'
+import { readToken } from './clerkClock'
 import { applyGift, giftToOpen, parseGift, type Gift, type GiftOutcome } from './game/gifts'
 import { parseSaveData } from './game/meta'
 import { isRecord } from './game/parse'
@@ -191,11 +192,36 @@ const pageUrl = () => `${location.origin}${location.pathname}`
 /** Dev builds: `localStorage['ps:devToken']` stands in for Clerk's token, against a local API that accepts it. */
 const devToken = () => (import.meta.env.DEV ? localStorage.getItem('ps:devToken') : null)
 
+/** How far Clerk's clock runs ahead of this device's (seconds), as the tokens tell (`readToken`). */
+let clerkOffset: number | null = null
+
+/** Whether a token is spent by Clerk's clock, learning that clock from it. */
+const spent = (token: string) => {
+  const read = readToken(token, clerkOffset, Date.now() / 1000)
+  clerkOffset = read.offset
+  return read.spent
+}
+
+/**
+ * The session's token for the API (dev builds: `devToken`). Clerk's cache is
+ * fooled by a device clock running behind (`clerkClock.ts`), so a token spent
+ * by Clerk's clock is fetched again, past the cache.
+ */
+const apiToken = async (c: Clerk) => {
+  const dev = devToken()
+  if (dev) return dev
+  const cached = await c.session?.getToken()
+  if (!cached || !spent(cached)) return cached ?? null
+  const fresh = await c.session?.getToken({ skipCache: true })
+  if (fresh) spent(fresh)
+  return fresh ?? null
+}
+
 /** The signed-in player's session token for the API, or null for guests and when Clerk can't load. Never throws. */
 export const sessionToken = async () => {
   if (!accountsEnabled || !readLink()) return null
   try {
-    return devToken() ?? (await (await loadClerk()).session?.getToken()) ?? null
+    return await apiToken(await loadClerk())
   } catch {
     return null
   }
@@ -216,7 +242,7 @@ const parsePushed = (body: unknown) =>
  * was sent when the account took it as is, and otherwise the next push merges.
  */
 const push = async (c: Clerk, link: Link) => {
-  const token = await c.session?.getToken()
+  const token = await apiToken(c)
   if (!token) throw new Error('no session')
   const sent = JSON.stringify(loadSave())
   const res = await fetch(`${API_URL}/save`, {
@@ -386,7 +412,7 @@ export const linkDiscord = async (): Promise<boolean> => {
     }
     // Connected already (the API didn't take it yet): linking is a sync away.
     if (discordOf(c.user)) {
-      const token = devToken() ?? (await c.session?.getToken())
+      const token = await apiToken(c)
       if (token) await syncDiscord(c, token)
       return state.kind === 'signedIn' && state.discord ? true : failed()
     }
@@ -535,7 +561,7 @@ export const syncSave = async () => {
         break
       }
       if (c.user.id !== saved.userId) relink(c, c.user)
-      const token = devToken() ?? (await c.session?.getToken())
+      const token = await apiToken(c)
       if (token) await sendReferral(token)
       await push(c, readLink() ?? saved)
       setSync('synced')
