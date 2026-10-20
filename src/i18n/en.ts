@@ -4111,7 +4111,7 @@ export const en: Messages = {
     },
     phases: {
       articuno: ['*Articuno* takes flight! Run from its _shadow_.', 'A blizzard! Get to a _snow shelter_ before Snowscape.'],
-      zapdos: ['*Zapdos* charges with Drill Peck: step off the _marked lane_!', 'The ground charges! _Get away_ from Zapdos before Electric Terrain.'],
+      zapdos: ['*Zapdos* charges with Drill Peck: step off the _marked lane_!', 'The ground is electrified! _Get away_ from Zapdos before Electric Terrain.'],
       moltres: ['*Moltres* takes flight! Its _shadow_ burns.', 'The air boils! Only _right next to Moltres_ is safe from Overheat.'],
       raikou: ['*Raikou* bolts with Extreme Speed: step off the _lanes_!', 'Thunderclap! Find the _gap between the lances_.'],
       entei: ['*Entei* charges in flames: step off the _lane_!', 'Burning Bulwark! Shut in by fire, _dodge inside the circle_.'],

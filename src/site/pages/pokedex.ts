@@ -1,5 +1,6 @@
 import { BOSS_PATTERNS, BOSS_PHASES, bossKit, type BossPattern } from '../../data/bosses'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
+import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
 import { TIERS } from '../../data/roster'
 import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
 import { SPIT_FLAVORS } from '../../game/spitters'
@@ -209,6 +210,18 @@ const attackText = (p: BossPattern, m: SiteMessages) => {
       return m.patterns.cage(p.every, p.damage)
     case 'summon':
       return m.patterns.summon(p.every)
+    case 'swoop':
+      return m.patterns.swoop(p.count, p.every, p.damage)
+    case 'whirlpool':
+      return m.patterns.whirlpool(p.count, p.every, p.damage)
+    case 'gust':
+      return m.patterns.gust(p.count, p.every, p.damage)
+    case 'timeStop':
+      return m.patterns.timeStop(p.every, p.duration)
+    case 'phantoms':
+      return m.patterns.phantoms(p.count, p.every, p.damage)
+    case 'guard':
+      return m.patterns.guard(new Intl.ListFormat(m.lang.tag, { type: 'conjunction' }).format(p.enemies.map((id) => ENEMIES[id].name)), p.every)
   }
 }
 
@@ -221,7 +234,7 @@ export const bossAttacks = (id: EnemyId, m: SiteMessages) => {
   const phases = BOSS_PHASES[id]
   if (!phases) return html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
   return html`<ul class="list">${phases.map(
-    (ph, i) => html`<li><b>${m.patterns.phase(i, Math.round(ph.below * 100))}</b><ul class="list">
+    (ph, i) => html`<li><b>${ph.rebirth !== undefined ? m.patterns.reborn(i, Math.round(ph.rebirth * 100)) : m.patterns.phase(i, Math.round(ph.below * 100))}</b><ul class="list">
       ${ph.patterns.map((p) => html`<li>${patternText(p, m)}</li>`)}
       ${ph.ultimate && html`<li>${m.patterns.ultimate(ph.ultimate.move, ph.ultimate.every)} ${ph.ultimate.steps.map((s) => patternText({ ...s.pattern, every: ph.ultimate!.every }, m)).join('; ')}</li>`}
     </ul></li>`,
@@ -257,6 +270,7 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
   const e: EnemyDef = ENEMIES[entry.source.id]
   const kit = bossKit(entry.source.id)
   const s = m.pokedex.wildStats
+  const shiny = entry.sprites.shiny ? shinyNote(entry.source.id, kit.length > 0, m) : null
   return html`<dl class="facts">
       ${e.tier !== undefined && html`<div><dt>${m.roster.tier}</dt><dd>${e.tier}</dd></div>`}
       <div><dt>${s.hp}</dt><dd>${e.hp}</dd></div>
@@ -270,8 +284,12 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
     <ul class="list">${appearances(entry.source.id).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>
     ${kit.length > 0 && html`<h3>${m.pokedex.attacks}</h3>${bossAttacks(entry.source.id, m)}`}
     ${isLegend(entry.source.id) && legendSection(entry.source.id, m)}
-    ${entry.sprites.shiny && html`<p class="note">★ ${m.pokedex.shinyNote}</p>`}`
+    ${shiny && html`<p class="note">★ ${shiny}</p>`}`
 }
+
+/** How a wild card's shiny shows up: a rift legendary by the rift's odds, the map's bosses never, the horde at the wild odds. */
+const shinyNote = (id: EnemyId, boss: boolean, m: SiteMessages) =>
+  (RIFT_LEGENDS as readonly EnemyId[]).includes(id) ? m.pokedex.riftShinyNote(Math.round(1 / RIFT.shinyOdds)) : boss ? null : m.pokedex.shinyNote
 
 /** Horde tier of a wild card, for the tier filter. */
 const tierOf = (entry: DexEntry) => {

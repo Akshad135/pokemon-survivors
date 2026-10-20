@@ -109,7 +109,7 @@ export const sitePt = {
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
     trio: (at: string, trio: string) => `Chefe em ${at} nas partidas que sorteiam o trio ${trio} (1 em 3)`,
-    rift: (from: string) => `Atrás de uma fenda lendária, a partir de ${from} (arena opcional)`,
+    rift: (from: string) => `No seu domínio, atrás de uma fenda lendária, a partir de ${from} (opcional)`,
     /** `name` comes with its preposition (`places`). */
     place: (name: string, from: string) => `Vive ${name}, a partir de ${from} (lugar opcional)`,
     placeBoss: (name: string, from: string) => `Desperta da Pedra Peculiar ${name}, a partir de ${from}`,
@@ -117,6 +117,8 @@ export const sitePt = {
     reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
+    /** A rift legendary's shiny odds (`RIFT.shinyOdds`); the map's bosses are never shiny. */
+    riftShinyNote: (odds: number) => `Pode aparecer shiny em 1 de ${n(odds)} fendas: paga o dobro de ₽ e mais uma Poké Ball.`,
     summoned: (by: string) => `Chamado por ${by}`,
     retinue: (by: string) => `No domínio de ${by}, atrás de uma fenda lendária`,
     behavior: 'Comportamento',
@@ -196,6 +198,14 @@ export const sitePt = {
     summon: (every: number) => `Chama ajudantes a cada ${n(every)}s`,
     phase: (i: number, percent: number) => (i === 0 ? 'Fase 1' : `Fase ${i + 1} (abaixo de ${n(percent)}% do HP)`),
     ultimate: (move: string, every: number) => `Golpe supremo ${move}, a cada ${n(every)}s:`,
+    /** Ho-Oh's last phase: reached by falling once, not by HP (`BossPhase.rebirth`). */
+    reborn: (i: number, percent: number) => `Fase ${i + 1} (renasce das cinzas com ${n(percent)}% do HP)`,
+    swoop: (count: number, every: number, damage: number) => `Passa rasante por uma faixa marcada${count > 1 ? `, ${count} vezes` : ''}, a cada ${n(every)}s (${damage} de dano)`,
+    whirlpool: (count: number, every: number, damage: number) => `${count > 1 ? `${count} redemoinhos puxam` : 'Um redemoinho puxa'} você para o olho, a cada ${n(every)}s (${damage} de dano no olho)`,
+    gust: (count: number, every: number, damage: number) => `Leque de ${count} rajadas que empurram você, a cada ${n(every)}s (${damage} de dano)`,
+    timeStop: (every: number, duration: number) => `Para o tempo: seus golpes congelam no ar por ${n(duration)}s, a cada ${n(every)}s`,
+    phantoms: (count: number, every: number, damage: number) => `${count} ${s(count, 'cópia risca', 'cópias riscam')} uma faixa marcada pelo seu lugar, uma depois da outra, a cada ${n(every)}s (${damage} de dano)`,
+    guard: (names: string, every: number) => `Ergue uma barreira ligada a ${names}: enquanto um estiver de pé, ele não toma dano (volta ${n(every)}s depois que o último cai)`,
   },
 
   /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
@@ -411,12 +421,16 @@ export const sitePt = {
     legends: {
       paragraphs: (m: { count: number; awaken: readonly number[] }) => [
         `Os ${m.count} lendários do jogo podem ser capturados e jogados no Modo Lendário. Para capturar um, vença-o como chefe, em qualquer modo: a cada vitória antes da captura ele escapa da Poké Ball e o jogo conta (Kyogre escapou… 2/3); na vitória que fecha a conta, ele é capturado e aparece na aba Lendários da seleção de parceiro. Vencer um shiny na vitória da captura, ou em qualquer vitória depois, libera a forma shiny.`,
-        `No Modo Lendário o lendário não evolui: ele desperta no Nv ${m.awaken[0]} e no Nv ${m.awaken[1]} (Habilidade, força e uma carga de Esquecer; Kyogre e Groudon viram Primal, Rayquaza vira Mega), começa com o golpe lendário e uma habilidade inata sempre ativa, e a horda vem mais forte (Pressão). A partida tem o mesmo tempo de sempre, as três dificuldades continuam valendo e o modo tem um ranking só dele, separado por dificuldade.`,
+        `No Modo Lendário o lendário não evolui: ele desperta no Nv ${m.awaken[0]} e no Nv ${m.awaken[1]} (Habilidade, força e uma carga de Esquecer; Kyogre e Groudon viram Primal, Rayquaza vira Mega), começa com o golpe lendário e uma habilidade inata sempre ativa, e a horda vem mais forte (Pressão). Latias, Latios e Mewtwo Mega Evoluem com a Mega Stone e o botão MEGA, como os outros, e o especial do Deoxys troca de Forma (Normal, Ataque, Defesa, Velocidade). A partida tem o mesmo tempo de sempre, as três dificuldades continuam valendo e o modo tem um ranking só dele, separado por dificuldade: no ranking, a linha Padrão | Lendário troca de quadro.`,
+        'Os lendários do mapa (o trio sorteado da partida, o mítico raro junto do Mewtwo, o Mewtwo no final e o Arceus no modo sem fim) chegam com uma entrada e um card de título e lutam em três fases, até um golpe supremo com um lugar seguro marcado. Quando caem, a captura acontece ali mesmo, numa cena rápida; os das fendas, no fim do domínio. Um lendário nunca enfrenta a si mesmo: as fendas, o trio e o mítico pulam quem você joga, e um Mewtwo enfrenta o Mewtwo Clone no final.',
       ],
       legendHead: 'Lendário',
       whereHead: 'Onde vencer',
       winsHead: 'Vitórias',
       innateHead: 'Inata',
+      opensHead: 'Golpe lendário',
+      pressureTitle: 'Dificuldades no Modo Lendário',
+      pressure: 'A Pressão soma-se a cada dificuldade: os multiplicadores do Modo Lendário ficam assim.',
       where: { rift: 'Fenda lendária', trio: 'Trio lendário', mythical: 'Junto do Mewtwo (1 em 10)', finale: 'Chefe final', endless: 'Modo sem fim, por último' },
     },
     megas: {
@@ -430,12 +444,14 @@ export const sitePt = {
       specialHead: 'Especial Mega',
     },
     rifts: {
-      paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; fallHp: number; shiny: number }) => [
-        `Toda partida tem 2 fendas lendárias: uma por volta de ${r.first} e outra ${n(r.every)} minutos depois. Antes de cada uma, o lendário avisa que vem (o clima dele toma o céu) e a fenda se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então as duas fendas vêm mesmo que os chefes demorem.`,
-        `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa. Cair na arena também não encerra a partida: a fenda expulsa você para o mapa com ${r.fallHp}% do HP, sem recompensa, e o seu Revive fica guardado.`,
-        'Alguns lendários, como o Kyogre, têm um domínio inteiro em vez de uma arena: você atravessa um lugar maior que a tela fugindo da ameaça que sobe atrás de você e dos Pokémon que o servem, o lendário aparece e a batalha tem três fases, cada uma muda o terreno e termina num golpe supremo com um lugar seguro (atrás de uma rocha, numa ilha, no vão entre os raios). No fim ele se ajoelha e você tenta capturá-lo. O relógio da partida para lá dentro; a horda lá fora fica congelada e nada novo nasce até você voltar.',
+      paragraphs: (r: { first: string; second: string; bossWait: number; portal: number; enter: number; battle: number; fallHp: number; shiny: number }) => [
+        `Toda partida tem 2 fendas lendárias: uma por volta de ${r.first} e outra por volta de ${r.second}. Antes de cada uma vem o presságio: o clima do lendário toma o céu (chuva torrencial, sol abrasador, vendaval, tempestade, arco-íris, chuva de meteoros, o tempo tropeçando) e um rasgo enorme se abre no ar, fora da tela, com uma seta roxa na borda apontando para ele. Ele fica aberto por ${r.portal}s. Se um chefe estiver vivo na hora, a fenda espera ele cair por até ${r.bossWait}s, então as duas fendas vêm mesmo que os chefes demorem.`,
+        `Entrar é opcional: fique ${n(r.enter)}s dentro do rasgo. Cada lendário tem o seu domínio (tabela abaixo), e a primeira parte é a travessia: um lugar maior que a tela, subindo para o norte, com os Pokémon que servem o lendário vindo pela frente e uma ameaça que avança atrás de você (a maré, uma parede de lava, os andares desabando, o tempo se desfazendo) e machuca quem fica para trás. No fim, o caminho de volta se fecha, a câmera viaja até o lendário e ele chega com um card de título e o seu próprio tema.`,
+        `A batalha tem três fases, marcadas na barra de HP. Cada fase transforma a arena (a caverna inunda e vira ilhas, a lava sobe em canais, o topo do Pilar Celeste cai no céu) e termina num golpe supremo, sempre avisado e com um lugar seguro marcado: atrás de uma rocha, numa ilha, no vão entre os raios, embaixo das asas do Ho-Oh. Ficar parado não funciona: golpes caem onde você está. Latias e Latios lutam juntos, e o Deoxys troca de Forma a cada fase. Se a batalha passar de uns ${n(r.battle)} minutos, o domínio colapsa e joga você de volta sem recompensa.`,
+        `Vencido, o lendário se ajoelha e você joga a Poké Ball: cada vitória conta para capturá-lo (veja o Modo Lendário). Cair lá dentro não encerra a partida: a fenda expulsa você para o mapa com ${r.fallHp}% do HP, sem recompensa, e o seu Revive fica guardado. O relógio da partida para lá dentro; a horda lá fora fica congelada e nada novo nasce até você voltar.`,
         `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
       ],
+      domainHead: 'Domínio',
       legendHead: 'Lendário',
       typesHead: 'Tipos',
       hpHead: 'HP base',
