@@ -171,7 +171,8 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
     dropBossTm(g, e)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
-    if (e.kind === 'mewtwo') {
+    // A faint earlier in the tick stands: the run is over, not won.
+    if (e.kind === 'mewtwo' && g.phase !== 'gameover') {
       g.phase = 'victory'
       g.events.push({ kind: 'victory' })
     }

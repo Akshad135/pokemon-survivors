@@ -76,7 +76,7 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  22: {
+  23: {
     levelUps: '2998·49·12·f1e37ab0',
     mega: '1900·34·2·3fb873eb',
     riftFall: '736·0·1·19ea3057',
