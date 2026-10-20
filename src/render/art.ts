@@ -938,6 +938,11 @@ const IOS_BLUE = { 1: '#303040', 2: '#3878f0', 3: '#ffffff' } as const
 export const shareIcon = () => toIconUrl('share', () => art(SHARE, IOS_BLUE))
 export const addHomeIcon = () => toIconUrl('addHome', () => art(ADD_HOME, IOS_BLUE))
 
+/** A report's flag (`ui/report.ts`): a red flag on a pale pole. 1 outline, 2 red, 3 light red, 4 pole. */
+const FLAG = ['11........', '141111111.', '1432222221', '1432222221', '1432222221', '141111111.', '141.......', '141.......', '141.......', '.1........']
+
+export const flagIcon = () => toIconUrl('flag', () => art(FLAG, { 1: '#402030', 2: '#e83838', 3: '#f88878', 4: '#c8d0e0' }))
+
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>
   tier === 'gold' ? toIconUrl('heart:gold', () => art(HEART, { 1: '#c88a10', 2: '#f8d030', 3: '#fffbe0' }, '#4a3008')) : heartIcon()

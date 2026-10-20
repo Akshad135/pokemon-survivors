@@ -239,6 +239,8 @@ export type BoardEntry = ProfileName & {
   at: string
   /** The player's supporter badge (`game/supporters.ts`), null when they have none or hide it. Missing from an older API. */
   supporter?: SupporterTier | null
+  /** The run's id, to report it (`game/reports.ts`). Missing from an older API. */
+  run?: string
 }
 
 /** The top of a board, plus the asking player's own line (null if they're not on it). */

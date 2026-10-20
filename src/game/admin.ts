@@ -9,8 +9,15 @@ import { normalizeHandle } from './ranking'
  * the game just asks. Pure; shared with the API.
  */
 
-/** A player as the admin's search lists them. `joined` is null for an account that never reached the API (only Clerk knows it). */
-export type AdminUser = { id: string; handle: string | null; name: string | null; email: string | null; joined: string | null; seen: string | null }
+/** A player's ban: since when and why. */
+export type Ban = { at: string; reason: string | null }
+
+/**
+ * A player as the admin's search lists them. `joined` is null for an account
+ * that never reached the API (only Clerk knows it); `banned` is null unless
+ * they're banned (`game/reports.ts`).
+ */
+export type AdminUser = { id: string; handle: string | null; name: string | null; email: string | null; joined: string | null; seen: string | null; banned: Ban | null }
 
 /** A gift an admin sent, for the desk's recent list. `claimed` once the player's game applied it. */
 export type AdminSent = { id: string; handle: string | null; name: string | null; content: GiftContent; at: string; claimed: string | null }
@@ -36,9 +43,12 @@ export const parseAdminGift = (v: unknown): GiftContent | null => {
 
 const text = (v: unknown) => (typeof v === 'string' ? v : null)
 
+/** A ban as the API sends it, or null. */
+export const parseBan = (v: unknown): Ban | null => (isRecord(v) && typeof v.at === 'string' ? { at: v.at, reason: text(v.reason) } : null)
+
 const parseUser = (v: unknown): AdminUser | null =>
   isRecord(v) && typeof v.id === 'string'
-    ? { id: v.id, handle: text(v.handle), name: text(v.name), email: text(v.email), joined: text(v.joined), seen: text(v.seen) }
+    ? { id: v.id, handle: text(v.handle), name: text(v.name), email: text(v.email), joined: text(v.joined), seen: text(v.seen), banned: parseBan(v.banned) }
     : null
 
 const parseSent = (v: unknown): AdminSent | null => {

@@ -1,26 +1,32 @@
 import { accountHandle } from '../account'
-import { findPlayers, sendGift, sentGifts } from '../admin'
+import { fetchReports, findPlayers, moderate, sendGift, sentGifts } from '../admin'
 import { HATCHLING_IDS, HATCHLINGS } from '../data/hatchlings'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
-import type { AdminSent, AdminUser } from '../game/admin'
+import { formatTime } from '../engine/math'
+import type { AdminSent, AdminUser, Ban } from '../game/admin'
 import { EGG_TIER_IDS, type EggTier } from '../game/eggs'
 import type { GiftContent } from '../game/gifts'
-import { t } from '../i18n'
+import { REPORT_REASONS, type Moderation, type ReportGroup, type ReportedRun, type ReportReason } from '../game/reports'
+import { formatNumber, locale, t } from '../i18n'
+import { PROFILE_PARAM } from '../ranking'
+import { ROUTES } from '../site/routes'
 import { contentLine } from './gifts'
 import { h, later, rich } from './dom'
+import { runForm, runPortrait } from './profile'
 import type { Screen } from './screens'
 
 /*
- * The admin's gift desk. Only the admin ever sees it (the API answers 403 to
- * anyone else, whatever the page shows), so its own words are in Portuguese
- * only; what the player will read comes from `t()`, as on their side.
+ * The admin's panel: the gift desk, and the reports with what to do about
+ * them. Only the admin ever sees it (the API answers 403 to anyone else,
+ * whatever the page shows), so its own words are in Portuguese only; what
+ * the player will read comes from `t()`, as on their side.
  */
 
 /** Waits this long after the last key before searching. */
 const SEARCH_MS = 350
 
-/** A second tap on "Enviar" within this long sends; after it, the button asks again. */
+/** A second tap on a button that asks within this long acts; after it, the button asks again. */
 const CONFIRM_MS = 4000
 
 const KINDS = { egg: 'Ovo', coins: 'Pokédólares (₽)', shinyHatch: 'Shiny de uma família', shinyPick: 'Shiny à escolha (ticket)' } as const
@@ -29,11 +35,20 @@ type Kind = keyof typeof KINDS
 
 const isKind = (v: string): v is Kind => v in KINDS
 
+const REASONS = { cheating: 'Trapaça', name: 'Nome ofensivo', other: 'Outro' } as const satisfies Record<ReportReason, string>
+
+const VERDICT = { true: '✓ verificada', false: '✗ fora do ranking', null: '? não checada' } as const
+
 const option = (value: string, label: string) => h('option', { value }, label)
 
 const when = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
 const who = (u: { handle: string | null; name: string | null }) => (u.handle ? `@${u.handle}` : (u.name ?? 'sem @'))
+
+const banLine = (ban: Ban) => `⛔ Banido desde ${when(ban.at)}${ban.reason ? ` · ${ban.reason}` : ''}`
+
+/** The game's own link to a profile, without crediting the admin as an inviter. */
+const profileHref = (handle: string) => `${location.origin}${ROUTES.play[locale()]}?${PROFILE_PARAM}=${encodeURIComponent(handle)}`
 
 /** One gift as a line with its icon, in the words the player gets. */
 const giftLine = (content: GiftContent, ...after: (Node | string)[]) => {
@@ -42,10 +57,59 @@ const giftLine = (content: GiftContent, ...after: (Node | string)[]) => {
 }
 
 /**
- * The desk: search a player by handle or email, pick one, choose a gift
- * (an egg, ₽, a family's shiny or a shiny ticket), see it as the player will
- * and send it with a second tap. Below, the latest gifts sent by hand and
- * whether they were claimed. Back or Esc close it and call `onClose`.
+ * A button that asks before acting: the first tap arms it (its label turns
+ * into `ask`), a second one within `CONFIRM_MS` runs `act`, which says how
+ * it went. `cls` adds to `btn`.
+ */
+const askingButton = (label: string, ask: string, act: () => Promise<void>, cls = '') => {
+  const b = h('button', { class: `btn ${cls}`, type: 'button' }, label)
+  let armed = 0
+  let busy = false
+  b.addEventListener('click', async () => {
+    if (busy) return
+    if (performance.now() - armed > CONFIRM_MS) {
+      playSfx('move')
+      armed = performance.now()
+      b.textContent = ask
+      window.setTimeout(() => !busy && performance.now() - armed >= CONFIRM_MS && (b.textContent = label), CONFIRM_MS)
+      return
+    }
+    busy = true
+    armed = 0
+    b.textContent = 'Enviando…'
+    await act()
+    busy = false
+    b.textContent = label
+  })
+  return b
+}
+
+/** What a moderation came to, in a line for the admin. */
+const moderated = (out: number | 'unknown' | null, done: string) =>
+  out === null ? 'Não foi. Tente de novo.' : out === 'unknown' ? 'Esse jogador (ou essa run) não existe mais.' : `${done}${out > 0 ? ` ${out} denúncia(s) resolvida(s).` : ''}`
+
+/** A reported run's numbers in one line: Pokémon, time, difficulty, KOs, level, outcome and whether it verified. */
+const runLine = (run: ReportedRun) =>
+  [
+    runForm(run).name,
+    formatTime(run.time),
+    t().difficulty.names[run.difficulty],
+    `${formatNumber(run.kills)} KOs`,
+    `Nv ${run.level}`,
+    t().ranking.outcomes[run.outcome],
+    VERDICT[`${run.verified}`],
+    when(run.at),
+  ].join(' · ')
+
+/**
+ * The panel, in two tabs. Presentes: search a player by handle or email,
+ * pick one, then ban, unban or wipe their save, or choose a gift (an egg,
+ * ₽, a family's shiny or a shiny ticket), see it as the player will and send
+ * it with a second tap; below, the latest gifts sent by hand. Denúncias
+ * (with how many are open): the open reports grouped by run or player, each
+ * with its numbers, notes, a link to the profile and its actions (take the
+ * run off, wipe the save, ban or unban, dismiss), every destructive one
+ * asking a second tap. Back or Esc close it and call `onClose`.
  */
 export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void): Screen => {
   let target: AdminUser | null = null
@@ -55,6 +119,7 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
   let armed = 0
   let busy = false
   let closed = false
+  let tab: 'gifts' | 'reports' = 'gifts'
 
   const query = h('input', { class: 'field-input', type: 'search', maxlength: 100, autocapitalize: 'none', autocorrect: 'off', autocomplete: 'off', spellcheck: 'false', placeholder: '@handle ou e-mail', enterkeyhint: 'search' })
   const results = h('div', { class: 'admin-results' })
@@ -68,10 +133,12 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
   const preview = h('div', { class: 'admin-preview box' })
   const message = h('p', { class: 'field-message' })
   const send = h('button', { class: 'btn confirm', type: 'button' }, 'Enviar presente')
+  const modPart = h('div', { class: 'admin-mod' })
   const giftPart = h(
     'div',
     { class: 'admin-gift hidden' },
     h('p', { class: 'admin-target' }),
+    modPart,
     h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'PRESENTE'), h('span', { class: 'field-box' }, kind)),
     h('label', { class: 'field' }, detail),
     h('span', { class: 'field-label' }, 'O QUE O JOGADOR VAI VER'),
@@ -80,12 +147,38 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
     send,
   )
   const recent = h('div', { class: 'admin-recent' })
+  const reportsList = h('div', { class: 'admin-reports' })
+  const reportsSummary = h('p', { class: 'field-message' }, 'Carregando…')
+  /** How the last action on a group went (the list redraws after it). */
+  const reportsStatus = h('p', { class: 'field-message' })
   const back = h('button', { class: 'btn', type: 'button' }, 'Voltar')
 
   const say = (el: HTMLElement, text: string, error = false) => {
     el.textContent = text
     el.classList.toggle('error', error)
   }
+
+  /* ---------------- Tabs ---------------- */
+
+  const giftsTab = h('button', { class: 'region-tab rank-tab selected', type: 'button' }, 'Presentes')
+  const reportsTab = h('button', { class: 'region-tab rank-tab', type: 'button' }, 'Denúncias')
+  const giftsSection = h('div', { class: 'admin-section' })
+  const reportsSection = h('div', { class: 'admin-section hidden' }, reportsSummary, reportsStatus, reportsList)
+
+  const setTab = (next: typeof tab) => {
+    if (next === tab) return
+    playSfx('move')
+    tab = next
+    giftsTab.classList.toggle('selected', tab === 'gifts')
+    reportsTab.classList.toggle('selected', tab === 'reports')
+    giftsSection.classList.toggle('hidden', tab !== 'gifts')
+    reportsSection.classList.toggle('hidden', tab !== 'reports')
+    if (tab === 'reports') void loadReports()
+  }
+  giftsTab.addEventListener('click', () => setTab('gifts'))
+  reportsTab.addEventListener('click', () => setTab('reports'))
+
+  /* ---------------- Gifts ---------------- */
 
   /** The gift the controls describe now, or null while ₽ isn't a valid amount. */
   const content = (): GiftContent | null => {
@@ -118,6 +211,55 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
     send.toggleAttribute('disabled', !c || !target)
   }
 
+  /* ---------------- Moderation ---------------- */
+
+  /**
+   * Ban (or unban) and wipe a player, with a reason field (prefilled with
+   * `opts.reason`) and `opts.extra` buttons first. How it went goes to
+   * `opts.note` (else a line of its own); `opts.after` hears the new ban state, to redraw.
+   */
+  const modControls = (u: { id: string; banned: Ban | null }, opts: { after?: (banned: Ban | null) => void; extra?: HTMLElement[]; reason?: string; note?: HTMLElement } = {}) => {
+    const reason = h('input', { class: 'field-input', type: 'text', maxlength: 200, placeholder: 'Motivo (obrigatório para banir)', value: opts.reason ?? '' })
+    const line = h('p', { class: 'field-message' }, u.banned ? banLine(u.banned) : '')
+    const note = opts.note ?? line
+    const act = async (m: Moderation, done: string, ban?: Ban | null) => {
+      const out = await moderate(m)
+      if (closed) return
+      const ok = typeof out === 'number'
+      playSfx(ok ? 'unlock' : 'hurt')
+      say(note, moderated(out, done), !ok)
+      if (ok && ban !== undefined) opts.after?.(ban)
+      if (ok) void loadReports()
+    }
+    const ban = u.banned
+      ? askingButton('Desbanir', 'Confirmar: desbanir?', () => act({ action: 'unban', userId: u.id, reason: reason.value.trim() || null }, 'Desbanido.', null))
+      : askingButton(
+          'Banir',
+          'Confirmar: banir?',
+          async () => {
+            const why = reason.value.trim()
+            if (!why) return (playSfx('denied'), say(note, 'Escreva o motivo do ban.', true), reason.focus())
+            await act({ action: 'ban', userId: u.id, reason: why }, 'Banido.', { at: new Date().toISOString(), reason: why })
+          },
+          'danger',
+        )
+    const reset = askingButton('Zerar o save', 'Confirmar: zerar o save?', () => act({ action: 'reset', userId: u.id, reason: reason.value.trim() || null }, 'Save zerado e runs fora do ranking.'), 'danger')
+    return h('div', { class: 'admin-actions' }, h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'MOTIVO (BAN OU SAVE ZERADO)'), h('span', { class: 'field-box' }, reason)), h('div', { class: 'buttons' }, ...(opts.extra ?? []), reset, ban), line)
+  }
+
+  /** The search pick's moderation box, redrawn after a ban or an unban. */
+  const drawMod = (u: AdminUser) =>
+    modPart.replaceChildren(
+      h('span', { class: 'field-label' }, 'MODERAÇÃO'),
+      modControls(u, {
+        after: (banned) => {
+          if (target?.id !== u.id) return
+          target = { ...u, banned }
+          drawMod(target)
+        },
+      }),
+    )
+
   const pick = (u: AdminUser, button: HTMLElement) => {
     playSfx('select')
     target = u
@@ -125,6 +267,7 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
     results.querySelectorAll('.btn').forEach((b) => b.classList.toggle('selected', b === button))
     giftPart.querySelector('.admin-target')!.replaceChildren(rich(`Para *${who(u)}*${u.email ? ` · ${u.email}` : ''}`))
     giftPart.classList.remove('hidden')
+    drawMod(u)
     say(message, '')
     refresh()
   }
@@ -136,6 +279,7 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
       { class: 'btn admin-user', type: 'button' },
       h('b', {}, who(u)),
       u.name && u.handle ? h('span', {}, u.name) : null,
+      u.banned ? h('span', { class: 'admin-banned' }, 'BANIDO') : null,
       h('small', {}, [u.email, seen].filter(Boolean).join(' · ')),
     )
     b.addEventListener('click', () => pick(u, b))
@@ -205,18 +349,83 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
     timer = window.setTimeout(() => void search(), SEARCH_MS)
   })
 
-  const form = h(
+  /* ---------------- Reports ---------------- */
+
+  /** One group of reports: who, the run, the count and reasons, the notes, and what to do. */
+  const groupCard = (g: ReportGroup) => {
+    const reasons = REPORT_REASONS.filter((r) => g.reasons[r] > 0).map((r) => `${REASONS[r]} ×${g.reasons[r]}`)
+    const top = REPORT_REASONS.reduce((a, b) => (g.reasons[b] > g.reasons[a] ? b : a))
+    const run = g.run
+    const actions = [
+      ...(run && run.verified !== false
+        ? [askingButton('Tirar a run', 'Confirmar: tirar do ranking?', async () => {
+            const out = await moderate({ action: 'remove', userId: g.target.id, run: run.id })
+            if (closed) return
+            playSfx(typeof out === 'number' ? 'unlock' : 'hurt')
+            say(reportsStatus, moderated(out, 'Run fora do ranking.'), typeof out !== 'number')
+            void loadReports()
+          })]
+        : []),
+    ]
+    const dismiss = h('button', { class: 'btn', type: 'button' }, 'Descartar')
+    dismiss.addEventListener('click', async () => {
+      dismiss.textContent = 'Enviando…'
+      const out = await moderate({ action: 'dismiss', userId: g.target.id, run: run?.id ?? null })
+      if (closed) return
+      say(reportsStatus, moderated(out, 'Descartado.'), typeof out !== 'number')
+      void loadReports()
+    })
+    return h(
+      'article',
+      { class: 'admin-report box' },
+      h(
+        'div',
+        { class: 'admin-report-head' },
+        run ? h('img', { src: runPortrait(run), alt: '' }) : null,
+        h('span', {}, h('b', {}, who(g.target)), g.target.name && g.target.handle ? h('small', {}, g.target.name) : null),
+        g.target.banned ? h('span', { class: 'admin-banned' }, 'BANIDO') : null,
+        h('b', { class: 'admin-report-count' }, `${g.count}×`),
+      ),
+      h('p', { class: 'admin-report-line' }, run ? `Run: ${runLine(run)}` : 'Sobre o jogador (sem run)'),
+      h('p', { class: 'admin-report-line' }, `${reasons.join(' · ')} · ${g.count === 1 ? `em ${when(g.first)}` : `de ${when(g.first)} a ${when(g.last)}`}`),
+      g.notes.length > 0 ? h('ul', { class: 'admin-report-notes' }, ...g.notes.map((n) => h('li', {}, `“${n.text}”`, h('small', {}, ` ${n.by ? `@${n.by}` : 'sem @'} · ${when(n.at)}`)))) : null,
+      g.target.handle ? h('a', { class: 'admin-report-link', href: profileHref(g.target.handle), target: '_blank', rel: 'noopener' }, `Ver perfil de @${g.target.handle} ↗`) : null,
+      modControls(g.target, { extra: [...actions, dismiss], reason: g.target.banned ? '' : REASONS[top], note: reportsStatus }),
+    )
+  }
+
+  let reportsId = 0
+
+  /** Loads the open reports into the tab, and their count into its label. */
+  const loadReports = async () => {
+    const id = ++reportsId
+    const got = await fetchReports()
+    if (id !== reportsId || closed) return
+    if (!got) return say(reportsSummary, 'Não deu para carregar as denúncias.', true)
+    reportsTab.textContent = got.open > 0 ? `Denúncias (${got.open})` : 'Denúncias'
+    say(reportsSummary, got.open === 0 ? 'Nenhuma denúncia aberta.' : `${got.open} denúncia(s) aberta(s) em ${got.groups.length} grupo(s), as mais denunciadas primeiro.`)
+    reportsList.replaceChildren(...got.groups.map(groupCard))
+  }
+
+  /* ---------------- The dialog ---------------- */
+
+  const searchForm = h(
     'form',
-    { class: 'dialog box pop admin', novalidate: true, onsubmit: (e: Event) => (e.preventDefault(), void search()) },
-    h('div', { class: 'dialog-title' }, 'PRESENTES · ADMIN'),
+    { class: 'admin-search', novalidate: true, onsubmit: (e: Event) => (e.preventDefault(), void search()) },
     h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'JOGADOR'), h('span', { class: 'field-box' }, query)),
-    status,
-    results,
-    giftPart,
-    recent,
+  )
+  giftsSection.append(searchForm, status, results, giftPart, recent)
+
+  const dialog = h(
+    'div',
+    { class: 'dialog box pop admin' },
+    h('div', { class: 'dialog-title' }, 'PAINEL ADMIN'),
+    h('div', { class: 'region-tabs rank-tabs', role: 'tablist' }, giftsTab, reportsTab),
+    giftsSection,
+    reportsSection,
     back,
   )
-  const el = h('div', { class: 'screen dim' }, form)
+  const el = h('div', { class: 'screen dim' }, dialog)
 
   const dispose = () => {
     closed = true
@@ -232,11 +441,12 @@ export const adminScreen = (root: HTMLElement, input: Input, onClose: () => void
   }
   back.addEventListener('click', close)
   // Inside the fields the game's keys are off (see `createInput`), so Esc is caught here.
-  form.addEventListener('keydown', (e) => e.key === 'Escape' && close())
+  dialog.addEventListener('keydown', (e) => e.key === 'Escape' && close())
   const offKeys = input.onKey((key) => key === 'Escape' && close())
 
   refresh()
   void loadRecent()
+  void loadReports()
   root.append(el)
   if (matchMedia('(hover: hover) and (pointer: fine)').matches) query.focus()
   return { el, dispose, dim: 0.5 }

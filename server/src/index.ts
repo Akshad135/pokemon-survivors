@@ -11,6 +11,7 @@ import { discordStore, startDiscord } from './discord'
 import { discordLink } from './discordLink'
 import { abacatePay } from './donations'
 import { giftStore } from './gifts'
+import { moderationStore } from './moderation'
 import { rankingStore } from './ranking'
 import { supporterStore } from './supporters'
 import { suggestionStore } from './suggestions'
@@ -55,6 +56,7 @@ const app = createApp({
     handleOf: async (userId) => (await ranking.profileName(userId))?.handle ?? null,
   }),
   admin: adminStore(sql, clerk, env.adminEmails),
+  moderation: moderationStore(sql),
   webhooks: { stripeSecret: env.stripeWebhookSecret, stripePaymentLink: env.stripePaymentLink, abacatePaySecret: env.abacatePayWebhookSecret },
   allowedOrigin: env.allowedOrigin,
   ping: () => sql`select 1`.then(() => true, () => false),

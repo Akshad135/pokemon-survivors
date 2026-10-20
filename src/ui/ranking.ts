@@ -10,9 +10,11 @@ import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { BOARD_PERIODS, isPlayable, type Board, type BoardEntry, type BoardPeriod } from '../game/ranking'
 import { fetchBoard, fetchChallengeBoard, type BoardFilter, type RankOutcome } from '../ranking'
 import { formatDay, t } from '../i18n'
+import { flagIcon } from '../render/art'
 import { today } from './save'
 import { h, later, rich } from './dom'
 import { profileScreen, runForm, runPortrait, supporterBadge } from './profile'
+import { reportDialog } from './report'
 import { hint, menu, type Screen } from './screens'
 
 const step = <T>(list: readonly T[], at: T, by: number) => list[(list.indexOf(at) + by + list.length) % list.length]!
@@ -27,6 +29,17 @@ const entryRow = (e: BoardEntry, me: boolean) =>
     h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
     h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), h('small', {}, t().ranking.outcomes[e.outcome])),
   )
+
+/** A row with its report flag beside it (signed in, someone else's run), or the row alone. */
+const entryLine = (row: HTMLElement, e: BoardEntry, report: ((e: BoardEntry) => void) | null) =>
+  report
+    ? h(
+        'div',
+        { class: 'rank-line' },
+        row,
+        h('button', { class: 'rank-flag', type: 'button', 'aria-label': t().report.flag(e.handle), title: t().report.flag(e.handle), onclick: () => (playSfx('select'), report(e)) }, h('img', { src: flagIcon(), alt: '' })),
+      )
+    : row
 
 /** The Pokémon filter: every starter by region, then the egg families. */
 const pokemonSelect = (value: PlayableId | null, onPick: (id: PlayableId | null) => void) => {
@@ -68,7 +81,8 @@ const challengeDay = (d: ChallengeDay): DayKey => {
  * every player once with their official attempt. Filters by Pokémon (not the
  * challenge's: it's one Pokémon) and by friends (who the player follows, plus
  * them). The player's own line stays in sight below the top when they're
- * further down. A row opens that trainer's profile over the board.
+ * further down. A row opens that trainer's profile over the board; signed
+ * in, the flag beside someone else's row reports that run (`reportDialog`).
  *
  * Keys: ↑/↓ rows and buttons, ←/→ period (or day), Q/E board, F friends, Enter
  * opens, Esc goes back. `onClose` runs after the key dispatch.
@@ -102,6 +116,19 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
     })
   }
 
+  /** The report dialog over the board, about `e`'s run on the board shown. */
+  const openReport = (e: BoardEntry) => {
+    nav?.off()
+    el.classList.add('hidden')
+    const difficulty = tab === 'challenge' ? dailyChallenge(challengeDay(day)).difficulty : filter.difficulty
+    const run = e.run ? { id: e.run, pokemon: runForm(e).name, time: e.time, difficulty } : null
+    sub = reportDialog(root, input, { handle: e.handle, name: e.name, run }, () => {
+      sub = null
+      el.classList.remove('hidden')
+      render()
+    })
+  }
+
   const myHandle = () => {
     const s = accountState()
     return s.kind === 'signedIn' ? s.handle : null
@@ -126,13 +153,18 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
     else if (board === 'offline') list = [status(m.offline)]
     else {
       const mine = board.me
-      const top = board.entries.map((e) => ({ el: entryRow(e, e.handle === mine?.handle), handle: e.handle }))
+      const report = signedIn() ? openReport : null
+      const top = board.entries.map((e) => {
+        const me = e.handle === mine?.handle || e.handle === myHandle()
+        const row = entryRow(e, me)
+        return { el: row, line: entryLine(row, e, me ? null : report), handle: e.handle }
+      })
       const below = mine && !board.entries.some((e) => e.handle === mine.handle) ? [{ el: entryRow(mine, true), handle: mine.handle }] : []
       rows.push(...top, ...below)
       list =
         rows.length === 0
           ? [status(filter.friends ? m.emptyFriends : onChallenge ? m.challengeEmpty : m.empty)]
-          : [...top.map((r) => r.el), ...(below.length > 0 ? [h('div', { class: 'rank-gap', 'aria-hidden': 'true' }, '⋮'), below[0]!.el] : [])]
+          : [...top.map((r) => r.line), ...(below.length > 0 ? [h('div', { class: 'rank-gap', 'aria-hidden': 'true' }, '⋮'), below[0]!.el] : [])]
     }
 
     const handle = myHandle()

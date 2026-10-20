@@ -59,9 +59,9 @@ type SupporterRow = { supporter_points: number; supporter_public: boolean }
 /** A player's supporter badge, if they donated and show it. */
 const badgeOf = (r: SupporterRow) => (r.supporter_public ? supporterTier(r.supporter_points) : null)
 
-type EntryRow = RunRow & SupporterRow & { user_id: string; handle: string; name: string; rank: number }
+type EntryRow = RunRow & SupporterRow & { id: string; user_id: string; handle: string; name: string; rank: number }
 
-const toEntry = (r: EntryRow): BoardEntry => ({ ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter: badgeOf(r) })
+const toEntry = (r: EntryRow): BoardEntry => ({ ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter: badgeOf(r), run: r.id })
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -71,8 +71,8 @@ const isUniqueViolation = (err: unknown) => typeof err === 'object' && err !== n
 /**
  * Ranked runs, boards, profiles and follows. Boards rank each player once, by
  * their best run (ties go to who did it first), and only list players with a
- * handle. A run counts as soon as it's reported: only one whose re-simulation
- * failed (`checks.ts`) counts nowhere. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
+ * handle and never a banned one. A run counts as soon as it's reported: only one whose re-simulation
+ * failed (`checks.ts`), or that an admin took off (`moderation.ts`), counts nowhere. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
  * and a run counts for the period it started in.
  */
 export const rankingStore = (sql: Sql) => {
@@ -81,7 +81,7 @@ export const rankingStore = (sql: Sql) => {
   /** Every player's best run on a board, ranked, as a fragment to select from. */
   const ranked = ({ difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
     with best as (
-      select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
+      select distinct on (r.user_id) r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
       from runs r
       where r.finished_at is not null and r.verified is not false and r.difficulty = ${difficulty}
         ${period === 'all' ? sql`` : sql`and r.started_at >= (date_trunc(${period}, now() at time zone ${BOARD_TIME_ZONE}) at time zone ${BOARD_TIME_ZONE})`}
@@ -91,7 +91,7 @@ export const rankingStore = (sql: Sql) => {
     )
     select b.*, u.handle, u.name, u.supporter_points, u.supporter_public, (row_number() over (order by b.survived desc, b.started_at))::int as rank
     from best b join users u on u.id = b.user_id
-    where u.handle is not null`
+    where u.handle is not null and u.banned_at is null`
 
   /**
    * A day's challenge board as a fragment: every player's official attempt
@@ -99,11 +99,11 @@ export const rankingStore = (sql: Sql) => {
    * how many are on it.
    */
   const challengeRanked = (day: DayKey, friends: boolean, viewer: string | null) => sql`
-    select r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
+    select r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
       (row_number() over (order by r.survived desc, r.started_at))::int as rank,
       (count(*) over ())::int as total
     from runs r join users u on u.id = r.user_id
-    where r.challenge = ${day}::date and r.official and r.finished_at is not null and r.verified is not false and u.handle is not null
+    where r.challenge = ${day}::date and r.official and r.finished_at is not null and r.verified is not false and u.handle is not null and u.banned_at is null
       ${friends && viewer ? sql`and (r.user_id = ${viewer} or r.user_id in (select followee_id from follows where follower_id = ${viewer}))` : sql``}`
 
   const rankOf = async (query: BoardQuery, userId: string) => {
@@ -321,14 +321,14 @@ export const rankingStore = (sql: Sql) => {
 
     /**
      * Places for `day`'s ribbons: each official attempt on the board (by a
-     * player with a handle, not failed), with a competition rank (ties share
+     * player with a handle, not banned, not failed), with a competition rank (ties share
      * the better place) and how many there are.
      */
     ribbonPlaces: (day: DayKey) =>
       sql<{ user_id: string; rank: number; total: number }[]>`
         select r.user_id, (rank() over (order by r.survived desc))::int as rank, (count(*) over ())::int as total
         from runs r join users u on u.id = r.user_id
-        where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null`,
+        where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null and u.banned_at is null`,
 
     /** A day's top `n` official attempts like `ribbonPlaces` ranks them (ties share a place), for the Discord podium, and how many took part. */
     podium: async (day: DayKey, n = 3) => {
@@ -336,7 +336,7 @@ export const rankingStore = (sql: Sql) => {
         select * from (
           select (rank() over (order by r.survived desc))::int as rank, (count(*) over ())::int as total, u.handle, u.name, r.survived, r.started_at
           from runs r join users u on u.id = r.user_id
-          where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null
+          where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null and u.banned_at is null
         ) p
         where rank <= ${n} order by rank, started_at limit ${n}`
       return { places: rows.map((r) => ({ rank: r.rank, handle: r.handle, name: r.name ?? r.handle, survived: r.survived })), total: rows[0]?.total ?? 0 }
@@ -353,12 +353,12 @@ export const rankingStore = (sql: Sql) => {
     },
 
     /**
-     * A public profile by handle, as `viewer` sees it, or null. The title and
-     * the Pokédex come from the player's synced save.
+     * A public profile by handle, as `viewer` sees it, or null (also for a
+     * banned player). The title and the Pokédex come from the player's synced save.
      */
     profile: async (handle: string, viewer: string | null): Promise<PublicProfile | null> => {
       const [user] = await sql<(SupporterRow & { id: string; handle: string; name: string | null; supporter_since: Date | null })[]>`
-        select id, handle, name, supporter_points, supporter_public, supporter_since from users where handle = ${handle}`
+        select id, handle, name, supporter_points, supporter_public, supporter_since from users where handle = ${handle} and banned_at is null`
       if (!user) return null
       const self = viewer === user.id
       // One's own badge shows even when hidden from others, so the profile says what they see.

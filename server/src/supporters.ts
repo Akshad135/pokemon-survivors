@@ -119,7 +119,7 @@ export const supporterStore = (sql: Sql, hooks: { onTierUp?: (userId: string) =>
     },
 
     /**
-     * Supporters who show themselves and have a handle, oldest first, with
+     * Supporters who show themselves and have a handle (never a banned one), oldest first, with
      * their title and Pokémon for the Hall da Fama. Only the save fields
      * those read come out of Postgres, never the whole save.
      */
@@ -132,7 +132,7 @@ export const supporterStore = (sql: Sql, hooks: { onTierUp?: (userId: string) =>
             'title', s.data->'title', 'titles', s.data->'titles', 'achievements', jsonb_build_object('unlocked', s.data->'achievements'->'unlocked')
           ) end as save
         from users u left join saves s on s.user_id = u.id
-        where u.supporter_points > 0 and u.supporter_public and u.handle is not null
+        where u.supporter_points > 0 and u.supporter_public and u.handle is not null and u.banned_at is null
         order by u.supporter_since, u.id limit ${WALL_SIZE}`
       return rows.flatMap((r) => {
         const tier = supporterTier(r.points)
