@@ -10,7 +10,7 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | --- | --- |
 | `GET /health` | 200 while Postgres answers, else 503 |
 | `GET /save` | The player's `{ save, revision }`, 404 before the first push |
-| `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Returns `{ save, revision, merged }` |
+| `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Either way the player's ranked wins add their clears (`wonClears`). Returns `{ save, revision, merged }` |
 | `GET /me` | `{ profile }`: the player's `{ handle, name }`, `null` before they pick them |
 | `PUT /me` | Body `{ handle, name }`. 400 when invalid, 409 `{ suggestion }` when the handle is taken |
 | `POST /runs` | Body `{ challenge? }`. `{ token }` for a run that just started (the id of a new `runs` row). 429 past 30 starts in 10 minutes. With `challenge` (a Brasília day, `YYYY-MM-DD`) it's that day's Desafio do dia; 400 when that challenge isn't open (its day, or 10 minutes past it) |
