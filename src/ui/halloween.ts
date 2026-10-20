@@ -1,4 +1,4 @@
-import { giftInbox } from '../account'
+import { accountState, giftInbox } from '../account'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { HALLOWEEN } from '../data/halloween'
@@ -6,9 +6,10 @@ import { ENEMIES } from '../data/enemies'
 import { HATCHLINGS } from '../data/hatchlings'
 import type { GiftContent } from '../game/gifts'
 import { brasiliaDay } from '../game/day'
-import { daysToHalloween, HALLOWEEN_CALENDAR, HALLOWEEN_REWARDS, halloweenDaysLeft, halloweenGiftId, isHalloweenGift, nextHalloweenReward } from '../game/halloween'
+import { daysToHalloween, HALLOWEEN_CALENDAR, HALLOWEEN_REWARDS, halloweenDaysLeft, halloweenGiftId, isHalloweenGift, nextHalloweenReward, pumpkinOfferOpen } from '../game/halloween'
+import { savedSupporterTier } from '../game/trainer'
 import { formatDay, formatNumber, t } from '../i18n'
-import { jackIcon, treatIcon } from '../render/halloweenArt'
+import { jackIcon, pumpkinHeartIcon, treatIcon } from '../render/halloweenArt'
 import { portraitUrl } from '../render/sprites'
 import { h, later, rich } from './dom'
 import { contentLine } from './gifts'
@@ -106,6 +107,8 @@ const rewardTile = (index: number, waiting: readonly string[], applied: readonly
 export type HalloweenScreenActions = {
   /** Opens the gift box (the jar's rewards wait there). */
   gifts: () => void
+  /** Opens the Hall da Fama, to become a supporter (and earn the jack-o'-lantern badge). */
+  support: () => void
   /** Back to the lobby. */
   close: () => void
 }
@@ -113,8 +116,10 @@ export type HalloweenScreenActions = {
 /**
  * The event screen, over the lobby: dates and days left (or the countdown),
  * what the night does to runs, the candy jar with its rewards, and the
- * haunted outbreaks day by day. Abrir presentes goes to the gift box when
- * a reward waits there. Esc or Backspace close it.
+ * haunted outbreaks day by day, and the supporters' jack-o'-lantern badge
+ * while becoming one still earns it. Abrir presentes goes to the gift box
+ * when a reward waits there; Apoiar to the Hall da Fama. Esc or Backspace
+ * close it.
  */
 export const halloweenScreen = (root: HTMLElement, input: Input, actions: HalloweenScreenActions): Screen => {
   const m = t().halloween
@@ -141,8 +146,25 @@ export const halloweenScreen = (root: HTMLElement, input: Input, actions: Hallow
     [jackIcon(), m.howPumpkins],
   ] as const
 
-  const buttons = [...(waiting.length > 0 ? [h('button', { class: 'btn confirm' }, m.openGifts(waiting.length))] : []), h('button', { class: 'btn' }, m.close)]
-  const runs = [...(waiting.length > 0 ? [() => (dispose(), later(actions.gifts))] : []), close]
+  // A supporter already wears the badge (from the first day on); anyone else is offered it.
+  const supporter = accountState().kind === 'signedIn' && savedSupporterTier(save) !== null
+  const offer = pumpkinOfferOpen(s.day)
+  const pitch = offer && !supporter
+  const badge =
+    offer &&
+    h(
+      'p',
+      { class: 'halloween-supporter' },
+      h('img', { src: pumpkinHeartIcon(supporter ? (savedSupporterTier(save) ?? 'supporter') : 'supporter'), alt: '' }),
+      rich(supporter ? m.supportYes : m.supportNo(formatDay(HALLOWEEN.to))),
+    )
+
+  const buttons = [
+    ...(waiting.length > 0 ? [h('button', { class: 'btn confirm' }, m.openGifts(waiting.length))] : []),
+    ...(pitch ? [h('button', { class: 'btn' }, m.support)] : []),
+    h('button', { class: 'btn' }, m.close),
+  ]
+  const runs = [...(waiting.length > 0 ? [() => (dispose(), later(actions.gifts))] : []), ...(pitch ? [() => (dispose(), later(actions.support))] : []), close]
   const nav = menu(input, buttons, (i) => (playSfx('select'), later(runs[i]!)), { horizontal: true })
 
   const el = h(
@@ -169,6 +191,7 @@ export const halloweenScreen = (root: HTMLElement, input: Input, actions: Hallow
         h('ul', { class: 'halloween-rewards' }, ...HALLOWEEN_REWARDS.map((_, i) => rewardTile(i, waiting, save.gifts))),
       ),
       h('section', { class: 'halloween-calendar-box' }, h('small', { class: 'halloween-section' }, m.calendar), h('ul', { class: 'halloween-calendar' }, ...calendar)),
+      badge,
       h('div', { class: 'buttons' }, ...buttons),
       hint(m.hintKeys, m.hintTouch),
     ),

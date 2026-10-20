@@ -685,6 +685,12 @@ export const pt = {
     treat: '*Doce!* A abóbora estava cheia de doces.',
     trick: (name: string) => `*Travessura!* Uma roda de ${name} apareceu!`,
     candies: 'Doces',
+    supporterBadge: (tier: SupporterTier): string => (tier === 'gold' ? 'Apoiador(a) Ouro · Noite das Bruxas 2026' : 'Apoiador(a) · Noite das Bruxas 2026'),
+    perk: 'Abóbora',
+    perkTitle: (date: string) => `Apoie até ${date}: seu coração de apoiador vira esta abóbora, para sempre`,
+    supportYes: 'Obrigado por apoiar! Seu selo virou uma *abóbora* no ranking, no perfil e no Hall da Fama, e fica assim para sempre.',
+    supportNo: (date: string) => `Quem *apoiar* o jogo até ${date} ganha esta *abóbora* no lugar do coração, no ranking, no perfil e no Hall da Fama. Para sempre.`,
+    support: 'Apoiar',
   },
 
   /** Desafio do dia: one run the same for everyone, the first finished one counting. */

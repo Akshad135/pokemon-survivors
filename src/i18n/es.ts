@@ -576,6 +576,12 @@ export const es: Messages = {
     treat: '*¡Dulce!* La calabaza estaba llena de dulces.',
     trick: (name) => `*¡Truco!* ¡Apareció una ronda de ${name}!`,
     candies: 'Dulces',
+    supporterBadge: (tier) => (tier === 'gold' ? 'Patrocinador(a) Oro · Noche de Brujas 2026' : 'Patrocinador(a) · Noche de Brujas 2026'),
+    perk: 'Calabaza',
+    perkTitle: (date) => `Apoya antes del ${date}: tu corazón de patrocinador se vuelve esta calabaza, para siempre`,
+    supportYes: '¡Gracias por tu apoyo! Tu insignia ahora es una *calabaza* en el ranking, tu perfil y el Salón de la Fama, y se queda así para siempre.',
+    supportNo: (date) => `Quien *apoye* el juego hasta el ${date} gana esta *calabaza* en lugar del corazón, en el ranking, su perfil y el Salón de la Fama. Para siempre.`,
+    support: 'Apoyar',
   },
 
   challenge: {

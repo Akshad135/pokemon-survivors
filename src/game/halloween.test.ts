@@ -17,6 +17,7 @@ import {
   mergeHalloween,
   nextHalloweenReward,
   parseHalloween,
+  pumpkinSupporter,
   withHaunts,
 } from './halloween'
 import { EMPTY_SAVE, type Save } from './meta'
@@ -121,5 +122,18 @@ describe('the candy jar', () => {
     expect(parseHalloween('nope')).toEqual({ candies: 0 })
     expect(nextHalloweenReward(0)).toBe(HALLOWEEN_REWARDS[1])
     expect(nextHalloweenReward(10_000)).toBeNull()
+  })
+})
+
+describe("the supporters' jack-o'-lantern", () => {
+  it('goes to anyone who supported by the last day, from the first day on and for good', () => {
+    const during = new Date('2026-10-31T15:00:00Z')
+    expect(pumpkinSupporter('2026-03-01T12:00:00Z', during)).toBe(true)
+    // 2026-11-02 23:30 in Brasília is 02:30 UTC on the 3rd: still the event's last day.
+    expect(pumpkinSupporter('2026-11-03T02:30:00Z', new Date('2027-05-01T12:00:00Z'))).toBe(true)
+    expect(pumpkinSupporter('2026-11-03T12:00:00Z', new Date('2027-05-01T12:00:00Z'))).toBe(false)
+    expect(pumpkinSupporter('2026-10-01T12:00:00Z', new Date('2026-10-23T15:00:00Z'))).toBe(false)
+    expect(pumpkinSupporter(null, during)).toBe(false)
+    expect(pumpkinSupporter('junk', during)).toBe(false)
   })
 })

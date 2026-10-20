@@ -6,13 +6,16 @@ import { formAt } from '../game/branch'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { handleProblem, normalizeHandle, parseDisplayName, runBranch, suggestHandle, type ProfileRun, type PublicProfile } from '../game/ranking'
 import { RIBBON_TIERS, type RibbonTier } from '../game/ribbons'
+import { pumpkinSupporter } from '../game/halloween'
 import type { SupporterTier } from '../game/supporters'
 import { pokeballIcon, ribbonIcon, supporterIcon } from '../render/art'
+import { pumpkinHeartIcon } from '../render/halloweenArt'
 import { portraitUrl } from '../render/sprites'
 import { fetchProfile, profileUrl, setFollow } from '../ranking'
 import { pokedex } from '../site/pokedex'
 import { LOCALES, locale, t } from '../i18n'
 import { h, later } from './dom'
+import { today } from './save'
 import { titleBadge } from './missions'
 import { sharePreview, trainerShare } from './share'
 import { difficultyTag, hint, menu, type Screen } from './screens'
@@ -29,9 +32,19 @@ export const runPortrait = (run: RunPokemon) => portraitUrl(runForm(run).dex)
 /** Day and month of a run, in the current language (`14/10`, `10/14`), with the year for `long`. */
 const runDay = (iso: string, long = false) => new Date(iso).toLocaleDateString(LOCALES[locale()].tag, { day: '2-digit', month: '2-digit', ...(long ? { year: 'numeric' } : {}) })
 
-/** The supporter's heart by a name (rose, or gold for the gold tier), or nothing. */
-export const supporterBadge = (tier: SupporterTier | null | undefined) =>
-  tier ? h('img', { class: 'supporter-badge', src: supporterIcon(tier), alt: t().supporters.badge(tier), title: t().supporters.badge(tier) }) : null
+/**
+ * A supporter's badge icon: the heart (rose, or gold for the gold tier), or
+ * the Noite das Bruxas jack-o'-lantern for whoever supported by its last day
+ * (`pumpkinSupporter`). `since` is when they became one (ISO).
+ */
+export const supporterBadgeIcon = (tier: SupporterTier, since?: string | null) => (pumpkinSupporter(since, today()) ? pumpkinHeartIcon(tier) : supporterIcon(tier))
+
+/** The supporter's badge by a name, or nothing. */
+export const supporterBadge = (tier: SupporterTier | null | undefined, since?: string | null) => {
+  if (!tier) return null
+  const name = pumpkinSupporter(since, today()) ? t().halloween.supporterBadge(tier) : t().supporters.badge(tier)
+  return h('img', { class: 'supporter-badge', src: supporterBadgeIcon(tier, since), alt: name, title: name })
+}
 
 type Action = { label: string; run: () => void }
 
@@ -156,7 +169,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
           h(
             'div',
             { class: 'profile-id' },
-            h('b', { class: 'profile-name' }, p.name, supporterBadge(p.supporter)),
+            h('b', { class: 'profile-name' }, p.name, supporterBadge(p.supporter, p.supporterSince)),
             h('span', { class: 'profile-handle' }, `@${p.handle}`),
             titleBadge(p.title),
             p.supporter && p.supporterSince ? h('small', { class: 'profile-supporter' }, t().supporters.profileSince(runDay(p.supporterSince, true))) : null,

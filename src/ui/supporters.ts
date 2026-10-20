@@ -2,20 +2,24 @@ import { accountState, accountsEnabled, onAccountChange, signIn, syncSave } from
 import { playCry, playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { HATCHLINGS, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
+import { HALLOWEEN } from '../data/halloween'
 import { POLL, SUPPORTER, type PollOptionId } from '../data/supporters'
 import { pendingPicks, pickShiny, ownsShiny, shinyChoices } from '../game/shinyPicks'
 import { canWalkWith, hallOf, isSupporter, parseCode, type Companion, type SupporterStatus, type WallEntry } from '../game/supporters'
 import { savedSupporterTier } from '../game/trainer'
-import { LOCALES, locale, t } from '../i18n'
+import { brasiliaDay } from '../game/day'
+import { pumpkinOfferOpen } from '../game/halloween'
+import { formatDay, LOCALES, locale, t } from '../i18n'
 import { context2d } from '../engine/pixelart'
 import { eggIcon, giftIcon, heartIcon, medalIcon, pokeballIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { pumpkinHeartIcon } from '../render/halloweenArt'
 import { cryUrl, drawPokemon, hasShiny, loadSpecies, portraitUrl, type SpeciesSprites } from '../render/sprites'
 import { ROUTES } from '../site/routes'
 import { fetchPoll, fetchSupporterStatus, fetchWall, redeemCode, setSupporterPublic, vote } from '../supporters'
 import { h, later, rich } from './dom'
 import { hatchScene } from './incubator'
-import { profileEditor, profileScreen } from './profile'
-import { loadSave, updateSave } from './save'
+import { profileEditor, profileScreen, supporterBadgeIcon } from './profile'
+import { loadSave, today, updateSave } from './save'
 import { hint, menu, type Screen } from './screens'
 import { actionBar, backButton, shellBody, topBar } from './shell'
 import { toast } from './toasts'
@@ -466,7 +470,7 @@ const fanChip = (e: WallEntry) => {
     { class: 'fan-chip', type: 'button', 'aria-label': `${e.name} @${e.handle}` },
     h('span', { class: 'fan-avatar' }, face ? hallPortrait(face) : h('img', { src: pokeballIcon(), class: 'ball', alt: '' })),
     h('span', { class: 'fan-who' }, h('b', {}, e.name), h('small', {}, `@${e.handle}`)),
-    h('img', { class: 'fan-heart', src: heartIcon(), alt: '' }),
+    h('img', { class: 'fan-heart', src: supporterBadgeIcon(e.tier, e.since), alt: '' }),
   )
 }
 
@@ -597,6 +601,7 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
           },
         ]
       : [
+          ...(pumpkinOfferOpen(brasiliaDay(today())) ? [{ icon: pumpkinHeartIcon('supporter'), label: t().halloween.perk, title: t().halloween.perkTitle(formatDay(HALLOWEEN.to)) }] : []),
           { icon: supporterIcon('gold'), label: m.perks.title },
           { icon: medalIcon('gold'), label: m.perks.frame },
           { icon: sparkleIcon(), label: m.perks.shiny },
@@ -614,7 +619,7 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
     const tileEls = tiles.map(tileEl)
     const linkEls = links.map((a) => h('button', { class: 'hall-link', type: 'button' }, a.label))
     const support = h('button', { class: 'hall-support', type: 'button' }, h('span', {}, m.donate), h('img', { src: heartIcon(), alt: '' }))
-    const note = tier && status?.since ? h('p', { class: 'hall-cta-note since' }, h('img', { src: supporterIcon(tier), alt: '' }), rich(m.since(tier, longDay(status.since)))) : null
+    const note = tier && status?.since ? h('p', { class: 'hall-cta-note since' }, h('img', { src: supporterBadgeIcon(tier, status.since), alt: '' }), rich(m.since(tier, longDay(status.since)))) : null
     const line = tier ? null : standing()
     const el = actionBar(
       h('h3', { class: 'hall-cta-title' }, tier ? m.yours : m.join),
@@ -677,7 +682,7 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
     // The highlight starts on "Apoiar", or on the shiny while a ticket waits.
     const start = call.buttons.findIndex((b) => b.el.classList.contains('glow'))
     nav = spatialNav(input, all.map((b) => b.el), (i) => (playSfx('select'), later(all[i]!.run)), at ?? body.buttons.length + (start >= 0 ? start : call.buttons.length - 1))
-    const you = tier && h('span', { class: `shell-chip hall-you ${tier}`, title: m.you(tier) }, h('img', { src: supporterIcon(tier), alt: '' }), h('span', {}, m.you(tier)))
+    const you = tier && h('span', { class: `shell-chip hall-you ${tier}`, title: m.you(tier) }, h('img', { src: supporterBadgeIcon(tier, status?.since), alt: '' }), h('span', {}, m.you(tier)))
     el.replaceChildren(topBar({ left: backButton(close), title: m.title, right: [you] }), shellBody(...body.sections), call.el)
   }
 

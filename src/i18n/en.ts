@@ -576,6 +576,12 @@ export const en: Messages = {
     treat: '*Treat!* The jack-o\'-lantern was full of candies.',
     trick: (name) => `*Trick!* A ring of ${name} showed up!`,
     candies: 'Candies',
+    supporterBadge: (tier) => (tier === 'gold' ? 'Gold Supporter · Halloween Night 2026' : 'Supporter · Halloween Night 2026'),
+    perk: 'Pumpkin',
+    perkTitle: (date) => `Support by ${date}: your supporter heart becomes this jack-o'-lantern, forever`,
+    supportYes: 'Thanks for your support! Your badge is a *jack-o\'-lantern* now on the ranking, your profile and the Hall of Fame, and it stays that way forever.',
+    supportNo: (date) => `*Support* the game by ${date} and this *jack-o'-lantern* replaces your heart on the ranking, your profile and the Hall of Fame. Forever.`,
+    support: 'Support',
   },
 
   challenge: {

@@ -1,5 +1,6 @@
 import { blitCentered, context2d, createCanvas, ellipse, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
+import type { SupporterTier } from '../game/supporters'
 import type { Game } from '../game/types'
 import { art, lazy, toIconUrl } from './art'
 
@@ -43,6 +44,13 @@ const BAT = [
   ['.........', '...1.1...', '.1121211.', '111111111', '1..1.1..1'],
 ] as const
 
+/** The Noite das Bruxas supporters' badge: a jack-o'-lantern with a heart carved in. 1 the ridges, 2 the pumpkin, 3 its shine, 4 the heart's glow, 5 the stem. */
+const PUMPKIN_HEART = ['....5....', '..11511..', '.1221221.', '132424221', '124444421', '122444221', '122242221', '.1222221.', '..11111..']
+const PUMPKIN_HEART_COLORS = {
+  supporter: { 1: '#b04808', 2: '#f08020', 3: '#ffb860', 4: '#ff5878', 5: '#407028' },
+  gold: { 1: '#a86808', 2: '#f0b018', 3: '#fff0a0', 4: '#fffbe0', 5: '#407028' },
+} as const
+
 export const HALLOWEEN_ART = {
   treats: lazy(() => TREAT_COLORS.map((pal) => art(TREAT, pal, '#181818'))),
   /** Lit, and the candle flickering low. */
@@ -55,6 +63,10 @@ export const treatIcon = () => toIconUrl('halloween:treat', () => HALLOWEEN_ART.
 
 /** The jack-o'-lantern icon (the lobby's card, the event screen). */
 export const jackIcon = () => toIconUrl('halloween:jack', () => HALLOWEEN_ART.jack()[0])
+
+/** The supporters' jack-o'-lantern badge, golden for the gold tier (`game/halloween.ts`, `pumpkinSupporter`). */
+export const pumpkinHeartIcon = (tier: SupporterTier) =>
+  toIconUrl(`halloween:heart:${tier}`, () => art(PUMPKIN_HEART, PUMPKIN_HEART_COLORS[tier], tier === 'gold' ? '#4a3008' : '#2a1008'))
 
 /** A candy on the ground, bobbing; its color comes from its id. */
 export const drawTreat = (ctx: Ctx, id: number, x: number, y: number) => {

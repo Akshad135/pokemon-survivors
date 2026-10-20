@@ -327,7 +327,12 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       news: (focus) => newsScreen(ui, input, () => showTitle({ focus })),
-      halloween: (focus) => halloweenScreen(ui, input, { gifts: showGifts, close: () => showTitle({ focus }) }),
+      halloween: (focus) =>
+        halloweenScreen(ui, input, {
+          gifts: showGifts,
+          support: () => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, null)),
+          close: () => showTitle({ focus }),
+        }),
       discord: (focus) => discordScreen(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       mart: (focus) => shop(ui, input, () => showTitle({ focus })),

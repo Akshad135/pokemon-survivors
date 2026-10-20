@@ -34,6 +34,7 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
       { pt: 'Um surto assombrado por dia, com o Gastly no dia 31.', en: 'A haunted outbreak every day, with Gastly on the 31st.', es: 'Un brote embrujado cada día, con Gastly el 31.' },
       { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
       { pt: 'Quebre as abóboras: doces ou travessuras?', en: 'Smash the jack-o\'-lanterns: trick or treat?', es: 'Rompe las calabazas: ¿dulce o truco?' },
+      { pt: 'Apoiadores até 2/11 trocam o coração por uma abóbora, para sempre.', en: 'Supporters by Nov 2 swap their heart for a jack-o\'-lantern, forever.', es: 'Quien apoye hasta el 2/11 cambia el corazón por una calabaza, para siempre.' },
     ],
     changes: [
       {
@@ -53,6 +54,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'Doces: Pokémon do tipo Fantasma deixam cair doces, chefes e Alfas sempre trazem 10, e as abóboras são doces ou travessuras (às vezes uma roda de fantasmas aparece em volta de você). Os doces enchem um pote que dá prêmios no Presente do lobby: a moldura Abóbora só por participar, o fundo Noite das Bruxas, um Ovo Raro, o papel de parede Casa Assombrada, o título Rei das Abóboras e um Gastly shiny.',
             en: 'Candies: Ghost-type Pokémon drop candies, bosses and Alphas always bring 10, and jack-o\'-lanterns are trick or treat (sometimes a ring of ghosts shows up around you). Candies fill a jar that pays prizes in the lobby\'s Gift box: the Pumpkin frame just for joining in, the Halloween Night background, a Rare Egg, the Haunted House wallpaper, the Pumpkin King title and a shiny Gastly.',
             es: 'Dulces: los Pokémon de tipo Fantasma sueltan dulces, los jefes y los Alfas siempre traen 10, y las calabazas son dulce o truco (a veces aparece una ronda de fantasmas a tu alrededor). Los dulces llenan un frasco que da premios en el Regalo del lobby: el marco Calabaza solo por participar, el fondo Noche de Brujas, un Huevo Raro, el fondo de pantalla Casa Embrujada, el título Rey Calabaza y un Gastly shiny.',
+          },
+          {
+            pt: 'Apoiadores da Noite das Bruxas: quem já apoia o jogo ou apoiar até 2 de novembro troca o coração por uma abóbora com um coração entalhado (dourada no Ouro), no ranking, no perfil e no Hall da Fama. Ela fica para sempre.',
+            en: 'Halloween Night supporters: anyone who already supports the game or does by November 2 swaps their heart for a jack-o\'-lantern with a heart carved in (golden for Gold), on the ranking, their profile and the Hall of Fame. It stays forever.',
+            es: 'Patrocinadores de la Noche de Brujas: quien ya apoya el juego o lo apoye hasta el 2 de noviembre cambia el corazón por una calabaza con un corazón tallado (dorada en Oro), en el ranking, su perfil y el Salón de la Fama. Se queda para siempre.',
           },
         ],
       },

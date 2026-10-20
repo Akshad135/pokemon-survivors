@@ -193,3 +193,19 @@ export const halloweenGifts = (save: Save, day: DayKey): Gift[] =>
 
 /** The next reward the jar fills toward, or null once every one is reached. */
 export const nextHalloweenReward = (candies: number) => HALLOWEEN_REWARDS.find((r) => r.candies > candies) ?? null
+
+/* ---------------- The supporters' jack-o'-lantern ---------------- */
+
+/**
+ * Whether a supporter since `since` (ISO, as the API sends it) wears the
+ * Noite das Bruxas badge at `now`: a jack-o'-lantern with a heart carved in,
+ * instead of the heart. Anyone who supported the game by the event's last
+ * day, from its first day on and for good.
+ */
+export const pumpkinSupporter = (since: string | null | undefined, now: Date) => {
+  const at = since ? Date.parse(since) : Number.NaN
+  return Number.isFinite(at) && brasiliaDay(new Date(at)) <= HALLOWEEN.to && brasiliaDay(now) >= HALLOWEEN.from
+}
+
+/** Whether becoming a supporter on `day` still earns the jack-o'-lantern: the lobby offers it from the countdown to the event's last day. */
+export const pumpkinOfferOpen = (day: DayKey) => day >= HALLOWEEN.teaser && day <= HALLOWEEN.to

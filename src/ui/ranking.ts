@@ -24,7 +24,7 @@ const entryRow = (e: BoardEntry, me: boolean) =>
     { class: `rank-row${me ? ' me' : ''}${e.rank <= 3 ? ` top${e.rank}` : ''}` },
     h('span', { class: 'rank-pos' }, `#${e.rank}`),
     h('img', { src: runPortrait(e), alt: runForm(e).name, title: runForm(e).name }),
-    h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
+    h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter, e.supporterSince)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
     h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), h('small', {}, t().ranking.outcomes[e.outcome])),
   )
 

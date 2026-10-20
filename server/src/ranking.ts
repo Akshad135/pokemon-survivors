@@ -49,14 +49,17 @@ const toRun = (r: RunRow): ProfileRun => ({
   at: r.started_at.toISOString(),
 })
 
-type SupporterRow = { supporter_points: number; supporter_public: boolean }
+type SupporterRow = { supporter_points: number; supporter_public: boolean; supporter_since: Date | null }
 
 /** A player's supporter badge, if they donated and show it. */
 const badgeOf = (r: SupporterRow) => (r.supporter_public ? supporterTier(r.supporter_points) : null)
 
 type EntryRow = RunRow & SupporterRow & { user_id: string; handle: string; name: string; rank: number }
 
-const toEntry = (r: EntryRow): BoardEntry => ({ ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter: badgeOf(r) })
+const toEntry = (r: EntryRow): BoardEntry => {
+  const supporter = badgeOf(r)
+  return { ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter, supporterSince: supporter ? (r.supporter_since?.toISOString() ?? null) : null }
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -84,7 +87,7 @@ export const rankingStore = (sql: Sql) => {
         ${friends && viewer ? sql`and (r.user_id = ${viewer} or r.user_id in (select followee_id from follows where follower_id = ${viewer}))` : sql``}
       order by r.user_id, r.survived desc, r.started_at
     )
-    select b.*, u.handle, u.name, u.supporter_points, u.supporter_public, (row_number() over (order by b.survived desc, b.started_at))::int as rank
+    select b.*, u.handle, u.name, u.supporter_points, u.supporter_public, u.supporter_since, (row_number() over (order by b.survived desc, b.started_at))::int as rank
     from best b join users u on u.id = b.user_id
     where u.handle is not null`
 
@@ -94,7 +97,7 @@ export const rankingStore = (sql: Sql) => {
    * how many are on it.
    */
   const challengeRanked = (day: DayKey, friends: boolean, viewer: string | null) => sql`
-    select r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
+    select r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public, u.supporter_since,
       (row_number() over (order by r.survived desc, r.started_at))::int as rank,
       (count(*) over ())::int as total
     from runs r join users u on u.id = r.user_id
@@ -309,7 +312,7 @@ export const rankingStore = (sql: Sql) => {
      * the Pokédex come from the player's synced save.
      */
     profile: async (handle: string, viewer: string | null): Promise<PublicProfile | null> => {
-      const [user] = await sql<(SupporterRow & { id: string; handle: string; name: string | null; supporter_since: Date | null })[]>`
+      const [user] = await sql<(SupporterRow & { id: string; handle: string; name: string | null })[]>`
         select id, handle, name, supporter_points, supporter_public, supporter_since from users where handle = ${handle}`
       if (!user) return null
       const self = viewer === user.id
