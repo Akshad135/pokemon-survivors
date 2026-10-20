@@ -45,11 +45,11 @@ export const movePower = (m: OwnedMove) => {
   return (s.damage * s.amount) / s.cooldown
 }
 
-/** The weakest fusable move of `type`, so a fusion spends the lesser move of the pair (ties to the earlier slot). */
-const ingredient = (moves: readonly OwnedMove[], type: PokeType) => {
+/** The weakest fusable move of `type` other than `keep`, so a fusion spends the lesser move of the pair (ties to the earlier slot). */
+const ingredient = (moves: readonly OwnedMove[], type: PokeType, keep: MoveId | null) => {
   let best: OwnedMove | null = null
   for (const m of moves) {
-    if (MOVES[m.id].type !== type || !fusable(m)) continue
+    if (MOVES[m.id].type !== type || m.id === keep || !fusable(m)) continue
     if (!best || movePower(m) < movePower(best)) best = m
   }
   return best
@@ -57,12 +57,15 @@ const ingredient = (moves: readonly OwnedMove[], type: PokeType) => {
 
 export type ReadyDuo = { from: readonly [MoveId, MoveId]; to: DuoMoveId }
 
-/** Fusions the loadout can make right now, in recipe order: none once it holds a duo move. */
-export const readyDuos = (moves: readonly OwnedMove[]): ReadyDuo[] => {
+/**
+ * Fusions the loadout can make right now, in recipe order: none once it holds
+ * a duo move. `keep` never goes in (a legend's own legendary move, `legendSignature`).
+ */
+export const readyDuos = (moves: readonly OwnedMove[], keep: MoveId | null = null): ReadyDuo[] => {
   if (moves.some((m) => isDuo(m.id))) return []
   return DUO_RECIPES.flatMap((recipe: DuoRecipe): ReadyDuo[] => {
-    const a = ingredient(moves, recipe.types[0])
-    const b = ingredient(moves, recipe.types[1])
+    const a = ingredient(moves, recipe.types[0], keep)
+    const b = ingredient(moves, recipe.types[1], keep)
     if (!a || !b) return []
     const to = recipe.alt && movePower(b) > movePower(a) ? recipe.alt : recipe.to
     return [{ from: [a.id, b.id], to }]

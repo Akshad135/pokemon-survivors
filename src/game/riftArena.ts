@@ -128,12 +128,11 @@ export const riftWin = (g: Game, arena: RiftArena, x: number, y: number) => {
   floatText(g, p.x, p.y - 30, `+${heal}`, '#58e858')
   g.hazards.length = 0
   arena.loot = RIFT.lootTime
-  // A pair (Latias and Latios) clears both.
+  // A pair (Latias and Latios) is one rift: one toast, both beaten.
   const partner = partnerOf(arena.legend)
-  for (const legend of partner && isRiftLegend(partner) ? [arena.legend, partner] : [arena.legend]) {
-    g.rift.cleared.push(legend)
-    g.events.push({ kind: 'riftCleared', enemy: legend, shiny: arena.shiny })
-  }
+  g.rift.cleared.push(arena.legend)
+  if (partner && isRiftLegend(partner)) g.rift.cleared.push(partner)
+  g.events.push({ kind: 'riftCleared', enemy: arena.legend, shiny: arena.shiny })
 }
 
 /**

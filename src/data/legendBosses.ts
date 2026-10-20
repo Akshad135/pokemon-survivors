@@ -29,10 +29,9 @@ export type WaveLegend = (typeof WAVE_LEGENDS)[number]
 export const isWaveLegend = (id: EnemyId): id is WaveLegend => (WAVE_LEGENDS as readonly EnemyId[]).includes(id)
 
 /**
- * Judgment's plate in each biome, as the look (and type) its attacks take.
- * Mirrors `JUDGMENT_PLATES` (`data/legendaryMoves.ts`, agent B's PR #165, types
- * per biome) for the hazards: the forest's Insect Plate shows as grass, since
- * hazards have no bug look. The integrator can derive this from that table.
+ * Judgment's plate in each biome, as the look (and type) its attacks take:
+ * `JUDGMENT_PLATES` (`data/legendaryMoves.ts`) in hazard looks. Hazards have no
+ * bug or ghost look, so the Insect Plate shows as grass and the Spooky Plate as shadow.
  */
 export const JUDGMENT_PLATE = {
   meadow: 'grass',

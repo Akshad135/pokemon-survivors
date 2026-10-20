@@ -1165,6 +1165,7 @@ export const en: Messages = {
     enter: (name) => `The rift takes you to *${name}*!`,
     enterShiny: (name) => `The rift takes you to a _shiny_ *${name}*!`,
     cleared: (name) => `*${name}* defeated! The rift leaves a treasure.`,
+    pairCleared: (a, b) => `*${a}* and *${b}* defeated! The rift leaves a treasure.`,
     collapse: 'The rift collapsed! You were thrown back.',
     fall: (name: string) => `*${name}* defeated you! The rift is casting you out…`,
     fallen: 'You are back in the *normal dimension*. The run goes on!',

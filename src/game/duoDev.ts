@@ -1,6 +1,7 @@
 import { CURSE_IDS, type CurseId } from '../data/curses'
 import { evolvedFrom } from '../data/evolutions'
 import type { PokeType } from '../data/types'
+import { legendSignature } from '../data/legends'
 import { DUO_MOVES, type DuoMoveId } from './duoMoves'
 import { DUO_RECIPES, isDuo, readyDuos } from './duoRules'
 import { decideCurse } from './curseSystem'
@@ -38,7 +39,7 @@ export const duoDevTools = (game: () => Game | undefined) => ({
       if (owned) owned.level = Math.max(owned.level, maxMoveLevel(move))
       else p.moves.push({ id: move, level: maxMoveLevel(move), cooldown: 0 })
     }
-    const ready = readyDuos(p.moves).find((d) => d.to === id) ?? readyDuos(p.moves)[0]
+    const ready = readyDuos(p.moves, legendSignature(g.starter)).find((d) => d.to === id) ?? readyDuos(p.moves, legendSignature(g.starter))[0]
     if (!ready) return console.warn('ps: no fusion ready (one duo per run: already fused one?)')
     // Fused on the spot, it's the duo asked for even when the recipe would make its twin (Flare and Bolt).
     if (when === 'now') applyOffer(g, { kind: 'duo', from: ready.from, to: id })

@@ -16,6 +16,11 @@ describe('duo recipes', () => {
     expect(readyDuos([maxed('ember'), maxed('swift')])).toEqual([])
   })
 
+  it('never spend the move kept back (a legend’s own legendary move)', () => {
+    expect(readyDuos([maxed('sacredFire'), maxed('razorLeaf')], 'sacredFire')).toEqual([])
+    expect(readyDuos([maxed('sacredFire'), maxed('ember'), maxed('razorLeaf')], 'sacredFire').map((d) => d.from)).toEqual([['ember', 'razorLeaf']])
+  })
+
   it('take an evolved move at any level', () => {
     expect(fusable(at('flamethrower', 1))).toBe(true)
     expect(readyDuos([at('flamethrower', 1), maxed('vineWhip')]).map((d) => d.from)).toEqual([['flamethrower', 'vineWhip']])

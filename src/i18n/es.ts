@@ -1166,6 +1166,7 @@ export const es: Messages = {
     enter: (name) => `¡La grieta te lleva hasta *${name}*!`,
     enterShiny: (name) => `¡La grieta te lleva hasta un *${name}* _shiny_!`,
     cleared: (name) => `¡*${name}* derrotado! La grieta deja un tesoro.`,
+    pairCleared: (a, b) => `¡*${a}* y *${b}* derrotados! La grieta deja un tesoro.`,
     collapse: '¡La grieta colapsó! Te lanzó de vuelta.',
     fall: (name: string) => `¡*${name}* te derrotó! La grieta te está expulsando…`,
     fallen: 'Volviste a la *dimensión normal*. ¡La partida sigue!',

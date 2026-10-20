@@ -5,6 +5,7 @@ import { BOSS_TMS, LEGENDARY_TMS } from '../data/tms'
 import { MYTHICALS } from '../data/waves'
 import type { RiftLegend } from '../data/rifts'
 import { playerForm } from './branch'
+import { dropItem } from './consumables'
 import { burst, floatText } from './effects'
 import { applyOffer, branchOffers, recomputeStats } from './leveling'
 import { forkAt, MOVES, type MoveId } from './moves'
@@ -38,13 +39,16 @@ export const dropBossTm = (g: Game, e: Enemy) => {
 }
 
 /**
- * A beaten legendary offers its legendary TM, until the run has learned one,
- * and never one the player already knows (a legend played in the Legend mode
- * starts with its own). Rift arenas call it when won.
+ * A beaten legendary offers its legendary TM, until the run has learned one.
+ * One the player already knows (a legend played in the Legend mode starts with
+ * its own, so its clone teaches nothing) leaves a Rare Candy instead. Rift
+ * arenas call it when won.
  */
 export const dropLegendaryTm = (g: Game, legend: RiftLegend | Enemy['kind'], x: number, y: number) => {
   const move = LEGENDARY_TMS[legend]
-  if (move && !g.tm.legendary && !g.player.moves.some((m) => m.id === move)) dropTm(g, x, y, move, 'legendary')
+  if (!move || g.tm.legendary) return
+  if (g.player.moves.some((m) => m.id === move)) dropItem(g, x, y, 'rareCandy')
+  else dropTm(g, x, y, move, 'legendary')
 }
 
 /**

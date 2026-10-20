@@ -13,6 +13,7 @@ import { weatherHere } from '../game/weather'
 import { formatPokeDollars, t } from '../i18n'
 import { coinIcon, curseIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { CURSES } from '../data/curses'
+import { legendSignature } from '../data/legends'
 import { isDuo, readyDuos } from '../game/duoRules'
 import { consumableIcon } from '../render/props'
 import { weatherIcon } from '../render/weather'
@@ -157,7 +158,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const renderSlots = (g: Game) => {
     const p = g.player
     // Moves a fusion on the table would use blink in the duo's colors.
-    const fusing = new Set(readyDuos(p.moves).flatMap((d) => d.from))
+    const fusing = new Set(readyDuos(p.moves, legendSignature(g.starter)).flatMap((d) => d.from))
     moveSlots.replaceChildren(
       ...Array.from({ length: MAX_MOVES }, (_, i) => {
         const m = p.moves[i]

@@ -1315,6 +1315,7 @@ export const pt = {
     enter: (name: string) => `A fenda leva você até *${name}*!`,
     enterShiny: (name: string) => `A fenda leva você até um *${name}* _shiny_!`,
     cleared: (name: string) => `*${name}* derrotado! A fenda deixa um tesouro.`,
+    pairCleared: (a: string, b: string) => `*${a}* e *${b}* derrotados! A fenda deixa um tesouro.`,
     collapse: 'A fenda colapsou! Você foi jogado de volta.',
     fall: (name: string) => `*${name}* derrotou você! A fenda está te expulsando…`,
     fallen: 'Você voltou à *dimensão normal*. A corrida continua!',

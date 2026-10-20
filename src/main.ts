@@ -19,7 +19,8 @@ import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
 import { isRiftLegend, RIFT, RIFT_LEGENDS } from './data/rifts'
 import { domainTheme } from './game/domain'
 import { partnerOf } from './data/domains'
-import { captureOutcome } from './render/capture'
+import { captureOutcome, setCaptureOutcome } from './render/capture'
+import { captureOutcome as savedCapture } from './game/capture'
 import { domainLines } from './ui/riftTitle'
 import { isWaveLegend, LEGEND_THEME } from './data/legendBosses'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
@@ -56,7 +57,7 @@ import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { legendDevTools } from './game/legendDev'
-import { bankCapture, captureDevTools } from './ui/capture'
+import { bankCapture, captureDevTools, showCapture } from './ui/capture'
 import { riftDevTools } from './game/riftDev'
 import { placeDevTools } from './game/placeDev'
 import { placeFeedback } from './ui/places'
@@ -145,6 +146,8 @@ const STEP = TICK
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!
 const ui = document.querySelector<HTMLDivElement>('#ui')!
+// A capture scene's ball clicks shut once the save holds the legend captured (its win is banked the frame it falls).
+setCaptureOutcome((legend) => savedCapture(loadSave(), legend))
 const ctx = context2d(canvas)
 /** Invisible box CSS puts where the fixed joystick sits (corner, safe area); the stick is centered on it. */
 const stickAnchor = h('div', { class: 'stick-anchor', 'aria-hidden': 'true' })
@@ -1031,7 +1034,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     // Banked toward capturing it right away (`ui/capture.ts`), so the capture scene reads it.
     case 'legendBeaten':
-      return bankCapture(ui, e.legend, e.shiny, g.endless !== null)
+      return bankCapture(e.legend, e.shiny, g.endless !== null)
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
@@ -1193,6 +1196,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       const both = g.rift.arena?.domain?.capture
       const capture = both?.kind === e.enemy ? both : both?.partner?.kind === e.enemy ? both.partner : null
       const name = ENEMIES[e.enemy].name
+      if (showCapture(ui, e.enemy)) return
       if (capture && captureOutcome(capture) === 'caught') {
         playSfx('unlock')
         return toast(ui, rich(t().rifts.caught(name), { class: 'toast-evo' }), 3600)
@@ -1223,6 +1227,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'bossCapture': {
       const capture = g.legendScene?.capture
       const name = ENEMIES[e.enemy].name
+      if (showCapture(ui, e.enemy)) return
       if (capture && captureOutcome(capture) === 'caught') {
         playSfx('unlock')
         return toast(ui, rich(t().rifts.caught(name), { class: 'toast-evo' }), 3200)
@@ -1231,9 +1236,12 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
       return toast(ui, rich(t().rifts.escaped(name)), 2800)
     }
-    case 'riftCleared':
+    case 'riftCleared': {
       playSfx('evolve')
-      return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)
+      const partner = partnerOf(e.enemy)
+      const text = partner ? t().rifts.pairCleared(ENEMIES[e.enemy].name, ENEMIES[partner].name) : t().rifts.cleared(ENEMIES[e.enemy].name)
+      return toast(ui, rich(text, { class: 'toast-evo' }), 3500)
+    }
     case 'riftFall':
       playSfx('riftFall')
       playCry(playerCry(g))
