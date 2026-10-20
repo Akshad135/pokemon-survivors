@@ -101,7 +101,8 @@ const parseRanks = (body: unknown): RunRanks | null => {
 
 /**
  * Sends the queued results of the signed-in player, oldest first. An answer
- * takes a result off the queue, whatever it says; no connection, an expired
+ * takes a result off the queue, whatever it says (a banned account's 403
+ * too: it's `rejected`, never sent again); no connection, an expired
  * session or the rate limit keep it (and the rest) for next time. Returns
  * what the API said, by token.
  */

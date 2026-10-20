@@ -14,6 +14,7 @@ import { parseSaveData } from '../../src/game/meta'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, parseDisplayName, parseHandle, parseRunResult } from '../../src/game/ranking'
 import { parseReplay, rulesStanding } from '../../src/game/replay'
+import { banGated, parseModeration, parseReport } from '../../src/game/reports'
 import { parseCode } from '../../src/game/supporters'
 import { isSuggestionSort, isSuggestionStatus, isVote, parseSuggestionDraft } from '../../src/game/suggestions'
 import type { AdminStore } from './admin'
@@ -25,6 +26,7 @@ import type { DiscordLink } from './discordLink'
 import type { Report } from './errors'
 import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
+import type { ModerationStore } from './moderation'
 import type { RankingStore } from './ranking'
 import type { SupporterStore } from './supporters'
 import { SUGGESTION_ID, type SuggestionStore } from './suggestions'
@@ -48,6 +50,8 @@ export type AppDeps = {
   discord: Pick<DiscordLink, 'link' | 'unlink'>
   /** The gift desk: who is admin (asked of Clerk), finding players and sending them gifts. */
   admin: Pick<AdminStore, 'isAdmin' | 'search' | 'send' | 'recent'>
+  /** Reports and bans: the write gate asks who is banned, players report, the admin acts. */
+  moderation: Pick<ModerationStore, 'banned' | 'report' | 'open' | 'act'>
   /** Webhook secrets: Stripe's signing secret and Payment Link, AbacatePay's URL secret. Unset ones answer 503. */
   webhooks: { stripeSecret?: string; stripePaymentLink: string | null; abacatePaySecret?: string }
   allowedOrigin: (origin: string) => boolean
@@ -84,13 +88,19 @@ const SEND_ERRORS = { unknown: 404, 'bad request': 400 } as const
 /** What posting or voting on an idea answers when it doesn't go. */
 const SUGGESTION_ERRORS = { profile: 403, limit: 429, unknown: 404, closed: 409 } as const
 
+/** What a report answers when it's refused, by `Reported`: only what's about the reporter. */
+const REPORT_ERRORS = { self: 400, limit: 429 } as const
+
 /** What a run's end answers when it's refused, by `FinishError`. */
 const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
 
 /**
  * The HTTP API. Routes marked (auth) need a Clerk session token
  * (`Authorization: Bearer …`) and act on that player; the public ones read it
- * when present (to answer "me" and "following").
+ * when present (to answer "me" and "following"). A banned account's writes
+ * (`BAN_GATED`: run starts and ends, save pushes, reports, ideas and votes)
+ * get 403 `{ error: 'banned' }`, and banned players are left off every board,
+ * profile and list.
  *
  * - `GET /health`: 200 while the database answers, else 503.
  * - `GET /save` (auth): the stored save and its revision, 404 before the first push.
@@ -143,6 +153,9 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /bug-reports` `{ text, tech? }`: a bug report (`parseBugReport`), from a guest or (with a token)
  *   a player. 201 `{ id }`, stored and on its way to Discord. 400 invalid, 429 past `BUG_REPORT.perHour`
  *   for the IP or the account.
+ * - `POST /reports` (auth) `{ target, run?, reason, note? }` (`parseReport`): reports a player by handle, or one
+ *   of their runs on the boards. 202 `{ received: true }` whatever becomes of it (nothing about the target
+ *   comes back). 400 invalid or reporting oneself, 429 past `REPORT.perDay` in 24 hours.
  * - `POST /discord/link` (auth): links the Discord account the player connected in Clerk, joins them
  *   to the community server and gives them their supporter role. `{ username, joined }`; 404 when
  *   Clerk has no verified Discord account for them, 503 when Clerk can't answer.
@@ -153,8 +166,12 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (false when that `request` already went); 404 for an unknown player. `GET /admin/gifts`: `{ gifts }`
  *   (`AdminSent[]`), the latest sent by hand. `PUT /admin/suggestions/:id` `{ status }`: marks an idea
  *   `done` (shipped), `open` again or `hidden` (off the board). `{ status }`, 404 for an unknown idea.
+ *   `GET /admin/reports`: `{ groups, open }`, the open reports grouped by run or player (`ReportGroup[]`)
+ *   and how many are open. `POST /admin/moderation` (`parseModeration`) `{ userId, action, run?, reason? }`:
+ *   `remove` a run from the boards, `reset` the save, `ban` (with a reason) or `unban`, or `dismiss`,
+ *   resolving the reports it answers. `{ resolved }`, 404 for an unknown player or run.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, webhooks, allowedOrigin, ping, report }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, moderation, webhooks, allowedOrigin, ping, report }: AppDeps) => {
   // `userId` is set by `auth` or `maybeAuth` on the routes that ask who's calling; `onError` reports it.
   const app = new Hono<MaybeAuth>()
 
@@ -170,6 +187,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const userId = token ? await verify(token) : null
     if (!userId) return c.json({ error: 'unauthorized' }, 401)
     c.set('userId', userId)
+    // Only the writes ask: a banned account still reads its save, boards and gifts.
+    if (banGated(c.req.method, c.req.path) && (await moderation.banned(userId))) return c.json({ error: 'banned' }, 403)
     await next()
   })
 
@@ -416,6 +435,14 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     return c.json({ score: voted.score, vote: voted.vote })
   })
 
+  app.post('/reports', auth, smallBody, async (c) => {
+    const draft = parseReport(await json(c))
+    if (!draft) return c.json({ error: 'expected { target, run?, reason, note? }' }, 400)
+    const reported = await moderation.report(c.var.userId, draft)
+    if (reported !== 'stored') return c.json({ error: reported }, REPORT_ERRORS[reported])
+    return c.json({ received: true }, 202)
+  })
+
   app.post('/bug-reports', maybeAuth, bodyLimit({ maxSize: 32 * 1024 }), async (c) => {
     const report = parseBugReport(await json(c))
     if (!report) return c.json({ error: 'expected { text, tech? }' }, 400)
@@ -460,6 +487,15 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     if (!SUGGESTION_ID.test(id) || !(await suggestions.setStatus(id, status))) return c.json({ error: 'unknown' }, 404)
     console.log(`admin ${c.var.userId} set suggestion ${id} to ${status}`)
     return c.json({ status })
+  })
+
+  desk.get('/reports', async (c) => c.json(await moderation.open()))
+
+  desk.post('/moderation', smallBody, async (c) => {
+    const m = parseModeration(await json(c))
+    if (!m) return c.json({ error: 'expected { userId, action, run?, reason? }' }, 400)
+    const done = await moderation.act(c.var.userId, m)
+    return done ? c.json(done) : c.json({ error: 'unknown' }, 404)
   })
 
   app.route('/admin', desk)

@@ -12302,3 +12302,261 @@ button.hall-tile:hover {
   align-items: center;
   gap: 4px;
 }
+
+/* ---------- Reports (ui/report.ts) and the boards' flag ---------- */
+
+.dialog.report-form {
+  width: min(500px, 100%);
+  gap: 10px;
+}
+
+.report-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.report-lead b {
+  font-weight: normal;
+}
+
+.report-lead small {
+  font-size: 17px;
+  color: #6878a8;
+}
+
+.report-reasons {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.report-reasons legend {
+  padding: 0 0 4px;
+}
+
+/* A native radio sized for a thumb, the whole line as its target. */
+.report-reason {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 2px solid #c8d0e0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.report-reason:has(input:checked) {
+  border-color: #e83838;
+  background: rgba(232, 56, 56, 0.08);
+}
+
+.report-reason input {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: #e83838;
+  /* The page is dark; this dialog is light. */
+  color-scheme: light;
+}
+
+.report-reason span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.05;
+}
+
+.report-reason b {
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.6;
+  color: #2a5aa8;
+}
+
+.report-reason small {
+  font-size: 16px;
+  color: #6878a8;
+}
+
+.report-form .field-area {
+  min-height: 72px;
+}
+
+/* A board row and its flag: the row stays the menu's button, the flag a small one beside it. */
+.rank-line {
+  display: flex;
+  gap: 4px;
+}
+
+.rank-line > .rank-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rank-flag {
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.rank-flag:hover,
+.rank-flag:focus-visible {
+  opacity: 1;
+  border-color: #e83838;
+  outline: none;
+}
+
+.rank-flag img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 520px) {
+  .rank-flag {
+    flex-basis: 30px;
+  }
+}
+
+/* Phones in landscape: the hints go, the reasons sit closer. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dialog.report-form {
+    gap: 6px;
+    padding: 10px 14px;
+  }
+  .report-reason {
+    min-height: 38px;
+  }
+  .report-reason small {
+    display: none;
+  }
+  .report-form .field-area {
+    min-height: 48px;
+  }
+}
+
+/* ---------- Admin: moderation and Denúncias (ui/admin.ts) ---------- */
+
+.admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-mod,
+.admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-actions .buttons {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.admin-actions .btn {
+  font-size: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.btn.danger {
+  color: #fff;
+  background: #c83030;
+}
+
+.admin-banned {
+  font-family: var(--title);
+  font-size: 8px;
+  padding: 3px 5px 2px;
+  color: #fff;
+  background: #c83030;
+  border-radius: 4px;
+}
+
+.admin-reports {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-report {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  font-size: 17px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.admin-report-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-report-head img {
+  width: 32px;
+  height: 32px;
+}
+
+.admin-report-head > span:not(.admin-banned) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.admin-report-head b {
+  font-size: 19px;
+  font-weight: normal;
+}
+
+.admin-report-head small {
+  font-size: 16px;
+  color: #6878a8;
+}
+
+.admin-report-count {
+  font-family: var(--title);
+  font-size: 11px !important;
+  color: #c83030;
+}
+
+.admin-report-line {
+  margin: 0;
+}
+
+.admin-report-notes {
+  margin: 0;
+  padding: 0 0 0 4px;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  border-left: 3px solid #c8d0e0;
+}
+
+.admin-report-notes small {
+  color: #6878a8;
+}
+
+.admin-report-link {
+  align-self: flex-start;
+  color: #2a5aa8;
+}

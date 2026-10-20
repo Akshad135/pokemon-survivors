@@ -27,6 +27,32 @@ export type ChangelogUpdate = {
  */
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
+    date: '2026-10-20',
+    title: { pt: 'Ranking justo', en: 'A fair ranking', es: 'Ranking justo' },
+    highlights: [
+      { pt: 'Viu uma partida impossível no ranking? Toque na bandeira ao lado dela para denunciar.', en: 'Saw an impossible run on the ranking? Tap the flag next to it to report it.', es: '¿Viste una partida imposible en el ranking? Toca la bandera a su lado para denunciarla.' },
+      { pt: 'Nome ofensivo ou save editado: denuncie o treinador direto no perfil dele.', en: 'An offensive name or an edited save: report the trainer right from their profile.', es: 'Nombre ofensivo o partida guardada editada: denuncia al entrenador desde su perfil.' },
+      { pt: 'A equipe olha cada denúncia e tira do ranking quem trapaceia.', en: 'The team looks at every report and takes cheaters off the ranking.', es: 'El equipo revisa cada denuncia y saca del ranking a quien hace trampa.' },
+    ],
+    changes: [
+      {
+        title: { pt: 'Denúncias', en: 'Reports', es: 'Denuncias' },
+        notes: [
+          {
+            pt: 'Com uma conta, cada linha do ranking (e do Desafio do dia) tem uma bandeira para denunciar aquela partida, e o perfil de outro treinador tem o botão Denunciar. Escolha o motivo (trapaça, nome ofensivo ou outro), deixe um comentário se quiser e pronto: ninguém fica sabendo quem denunciou.',
+            en: "With an account, every line of the ranking (and of the Daily Challenge) has a flag to report that run, and another trainer's profile has a Report button. Pick the reason (cheating, offensive name or something else), leave a comment if you like and that's it: nobody finds out who reported.",
+            es: 'Con una cuenta, cada línea del ranking (y del Desafío del día) tiene una bandera para denunciar esa partida, y el perfil de otro entrenador tiene el botón Denunciar. Elige el motivo (trampa, nombre ofensivo u otro), deja un comentario si quieres y listo: nadie se entera de quién denunció.',
+          },
+          {
+            pt: 'As partidas continuam entrando no ranking na hora. Só uma denúncia faz a equipe olhar: uma partida trapaceada sai do ranking, um save editado volta ao zero e uma conta banida não entra mais no ranking nem nos perfis (ela ainda pode jogar no aparelho, sem conta).',
+            en: "Runs still join the ranking right away. Only a report gets the team to look: a cheated run leaves the ranking, an edited save goes back to zero, and a banned account no longer shows on the ranking or in profiles (it can still play on the device, without an account).",
+            es: 'Las partidas siguen entrando al ranking al instante. Solo una denuncia hace que el equipo revise: una partida con trampa sale del ranking, una partida guardada editada vuelve a cero y una cuenta baneada ya no aparece en el ranking ni en los perfiles (aún puede jugar en el dispositivo, sin cuenta).',
+          },
+        ],
+      },
+    ],
+  },
+  {
     date: '2026-10-19',
     title: { pt: 'Modo difícil e convites', en: 'Hard mode and invites', es: 'Modo difícil e invitaciones' },
     highlights: [

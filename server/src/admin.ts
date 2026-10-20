@@ -26,7 +26,9 @@ const emailsOf = (u: ClerkUser): EmailRef[] => u.emailAddresses.map((e) => ({ ad
 
 const primaryEmail = (u: ClerkUser) => (u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId) ?? u.emailAddresses[0])?.emailAddress ?? null
 
-type Row = { id: string; handle: string | null; name: string | null; created_at: Date; seen_at: Date }
+type Row = { id: string; handle: string | null; name: string | null; created_at: Date; seen_at: Date; banned_at: Date | null; banned_reason: string | null }
+
+const banOf = (r: Row | undefined) => (r?.banned_at ? { at: r.banned_at.toISOString(), reason: r.banned_reason } : null)
 
 /** A request id the desk made for one send (a uuid): retrying it sends nothing twice. */
 const REQUEST = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -61,24 +63,24 @@ export const adminStore = (sql: Sql, clerk: ClerkClient, allowlist: readonly str
   /** Our rows for these Clerk users, with their emails, in Clerk's order. */
   const join = async (users: readonly ClerkUser[]): Promise<AdminUser[]> => {
     const ids = users.map((u) => u.id)
-    const rows = ids.length ? await sql<Row[]>`select id, handle, name, created_at, seen_at from users where id = any(${ids}::text[])` : []
+    const rows = ids.length ? await sql<Row[]>`select id, handle, name, created_at, seen_at, banned_at, banned_reason from users where id = any(${ids}::text[])` : []
     const byId = new Map(rows.map((r) => [r.id, r]))
     return users.map((u) => {
       const r = byId.get(u.id)
-      return { id: u.id, handle: r?.handle ?? null, name: r?.name ?? null, email: primaryEmail(u), joined: r?.created_at.toISOString() ?? null, seen: r?.seen_at.toISOString() ?? null }
+      return { id: u.id, handle: r?.handle ?? null, name: r?.name ?? null, email: primaryEmail(u), joined: r?.created_at.toISOString() ?? null, seen: r?.seen_at.toISOString() ?? null, banned: banOf(r) }
     })
   }
 
   const byHandle = async (handle: string): Promise<AdminUser[]> => {
     const rows = await sql<Row[]>`
-      select id, handle, name, created_at, seen_at from users
+      select id, handle, name, created_at, seen_at, banned_at, banned_reason from users
       where position(${handle} in handle) > 0
       order by handle = ${handle} desc, starts_with(handle, ${handle}) desc, seen_at desc
       limit ${RESULTS}`
     if (rows.length === 0) return []
     const { data } = await clerk.users.getUserList({ userId: rows.map((r) => r.id), limit: RESULTS })
     const emails = new Map(data.map((u) => [u.id, primaryEmail(u)]))
-    return rows.map((r) => ({ id: r.id, handle: r.handle, name: r.name, email: emails.get(r.id) ?? null, joined: r.created_at.toISOString(), seen: r.seen_at.toISOString() }))
+    return rows.map((r) => ({ id: r.id, handle: r.handle, name: r.name, email: emails.get(r.id) ?? null, joined: r.created_at.toISOString(), seen: r.seen_at.toISOString(), banned: banOf(r) }))
   }
 
   const byEmail = async (text: string) => join((await clerk.users.getUserList({ query: text, limit: RESULTS })).data)
