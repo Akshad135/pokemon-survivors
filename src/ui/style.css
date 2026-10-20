@@ -9694,6 +9694,103 @@ button.hall-tile:hover {
   color: #6878a8;
 }
 
+/* ---------- Bug reports (ui/bugReport.ts) ---------- */
+
+.dialog.bug-form {
+  width: min(540px, 100%);
+  gap: 12px;
+}
+
+.bug-lead {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+/* The technical info switch: a native checkbox, sized for a thumb. */
+.bug-include {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.bug-include input {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 2px 0 0;
+  accent-color: #e83838;
+}
+
+.bug-include span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bug-include b {
+  font-family: var(--title);
+  font-size: 9px;
+  line-height: 1.6;
+  color: #2a5aa8;
+}
+
+.bug-include small {
+  font-size: 16px;
+  line-height: 1.1;
+  color: #6878a8;
+}
+
+.bug-details summary {
+  font-size: 18px;
+  color: #2a5aa8;
+  cursor: pointer;
+}
+
+.bug-details pre {
+  max-height: 28vh;
+  margin: 6px 0 0;
+  padding: 8px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #fff;
+  border: 2px solid #c8d0e0;
+  border-radius: 4px;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* The title's question after the game closed mid-run: over the logo, clear of the top bar and the dock. */
+.crash-prompt {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: calc(72px + var(--safe-t));
+  transform: translateX(-50%);
+  width: min(440px, calc(100 * var(--vw) - 32px));
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.crash-prompt p {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.crash-prompt .btn {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
 /* ---------- Evolution picks: branching evolutions and abilities (ui/abilityPick.ts) ---------- */
 
 .evo-pick,

@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { createMiddleware } from 'hono/factory'
 import { logger } from 'hono/logger'
 import { parseAdminGift, parseAdminQuery } from '../../src/game/admin'
+import { parseBugReport } from '../../src/game/bugReport'
 import { challengeOpen } from '../../src/game/challenge'
 import { parseDonation } from '../../src/data/donations'
 import { isPollOption } from '../../src/data/supporters'
@@ -17,6 +18,7 @@ import { parseCode } from '../../src/game/supporters'
 import { isSuggestionSort, isSuggestionStatus, isVote, parseSuggestionDraft } from '../../src/game/suggestions'
 import type { AdminStore } from './admin'
 import type { Verify } from './auth'
+import type { BugReports } from './bugReports'
 import type { Checks } from './checks'
 import type { SaveStore } from './db'
 import type { DiscordLink } from './discordLink'
@@ -40,6 +42,8 @@ export type AppDeps = {
   supporters: SupporterStore
   /** The idea board. */
   suggestions: SuggestionStore
+  /** Bug reports: stored, then posted to the community Discord's #bug-reports. */
+  bugReports: Pick<BugReports, 'submit'>
   /** The player's Discord account: the community server and its supporter role. */
   discord: Pick<DiscordLink, 'link' | 'unlink'>
   /** The gift desk: who is admin (asked of Clerk), finding players and sending them gifts. */
@@ -65,6 +69,14 @@ const SITE_PATH = /^\/[a-z0-9/-]{0,40}$/
 
 /** A donation's `ref`: our uuid (AbacatePay) or a Stripe Checkout Session id. */
 const DONATION_REF = /^(?:[0-9a-f-]{36}|cs_(?:test|live)_[A-Za-z0-9]{10,200})$/
+
+/**
+ * Who's asking, for a rate limit: the address the proxy (Traefik) saw. It
+ * sets `X-Real-IP` itself and adds the address to the end of
+ * `X-Forwarded-For`, so a client can't pick its own by sending either.
+ */
+export const clientIp = (realIp: string | undefined, forwarded: string | undefined) =>
+  realIp?.trim() || forwarded?.split(',').at(-1)?.trim() || 'unknown'
 
 /** What a hand-sent gift answers when it doesn't go, by `SendOutcome`. */
 const SEND_ERRORS = { unknown: 404, 'bad request': 400 } as const
@@ -125,6 +137,9 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /suggestions` (auth) `{ title, body }`: posts an idea (`parseSuggestionDraft`), 201 `{ suggestion }`.
  *   400 invalid, 403 before the player has a handle, 429 past `SUGGESTION.perDay` in 24 hours.
  * - `PUT /suggestions/:id/vote` (auth) `{ vote }` (1, -1, or 0 to take it back): `{ score, vote }`. 404 unknown, 409 shipped.
+ * - `POST /bug-reports` `{ text, tech? }`: a bug report (`parseBugReport`), from a guest or (with a token)
+ *   a player. 201 `{ id }`, stored and on its way to Discord. 400 invalid, 429 past `BUG_REPORT.perHour`
+ *   for the IP or the account.
  * - `POST /discord/link` (auth): links the Discord account the player connected in Clerk, joins them
  *   to the community server and gives them their supporter role. `{ username, joined }`; 404 when
  *   Clerk has no verified Discord account for them, 503 when Clerk can't answer.
@@ -136,7 +151,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (`AdminSent[]`), the latest sent by hand. `PUT /admin/suggestions/:id` `{ status }`: marks an idea
  *   `done` (shipped), `open` again or `hidden` (off the board). `{ status }`, 404 for an unknown idea.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, discord, admin, webhooks, allowedOrigin, ping, report }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, webhooks, allowedOrigin, ping, report }: AppDeps) => {
   // `userId` is set by `auth` or `maybeAuth` on the routes that ask who's calling; `onError` reports it.
   const app = new Hono<MaybeAuth>()
 
@@ -392,6 +407,13 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const voted = await suggestions.vote(c.var.userId, id, vote)
     if (!voted.ok) return c.json({ error: voted.error }, SUGGESTION_ERRORS[voted.error])
     return c.json({ score: voted.score, vote: voted.vote })
+  })
+
+  app.post('/bug-reports', maybeAuth, bodyLimit({ maxSize: 32 * 1024 }), async (c) => {
+    const report = parseBugReport(await json(c))
+    if (!report) return c.json({ error: 'expected { text, tech? }' }, 400)
+    const submitted = await bugReports.submit(report, { userId: c.var.userId, ip: clientIp(c.req.header('X-Real-IP'), c.req.header('X-Forwarded-For')) })
+    return submitted.ok ? c.json({ id: submitted.id }, 201) : c.json({ error: 'too many reports' }, 429)
   })
 
   /** The desk's routes, all behind a valid token whose user Clerk says is admin. Everyone else gets 403, whatever they send. */

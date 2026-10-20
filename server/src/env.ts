@@ -39,6 +39,8 @@ export const loadEnv = () => {
         : null,
     /** Optional: the game's PostHog project token (`phc_…`, the client's `VITE_POSTHOG_KEY`). Without it errors only go to the log. */
     posthogKey: process.env.POSTHOG_KEY || undefined,
+    /** Optional: the #bug-reports forum's channel id, where the bot posts bug reports. Unset, it's found by name. */
+    discordBugForumId: process.env.DISCORD_BUG_FORUM_ID || null,
     /** Emails (comma separated, `ADMIN_EMAILS`) whose verified owners run the gift desk (`admin.ts`). Empty: nobody is admin. */
     adminEmails: (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
     /** Whether the game at `origin` may call the API (CORS) and own its tokens (`azp`). */
