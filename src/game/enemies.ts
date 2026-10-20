@@ -5,7 +5,7 @@ import { scaling } from '../data/waves'
 import { STANCES } from '../data/bosses'
 import { DIFFICULTIES } from './difficulty'
 import { bodyOf } from '../data/bodies'
-import { fightPace } from './bossFight'
+import { fightPace, steerBoss, type Steering } from './bossFight'
 import { bumpDamage, hurtPlayer } from './combat'
 import { leadTime } from './horde'
 import { inView } from './queries'
@@ -56,7 +56,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     elite: false,
     runner: false,
     fight: null,
-    bornAt: g.time,
+    bornAt: g.now,
     cooldowns: [],
     behavior,
     dir: 0,
@@ -123,6 +123,8 @@ export const despawnEnemy = (e: Enemy) => {
 
 /** Where a walker heads instead of the player (a dungeon's corridor), reused every tick. */
 const waypoint = { x: 0, y: 0 }
+/** Where a boss with phases heads (`steerBoss`), reused every tick. */
+const steering: Steering = { x: 0, y: 0, pace: 1 }
 
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
@@ -153,7 +155,7 @@ export const updateEnemies = (g: Game, dt: number) => {
     const confused = e.status.confuse.time > 0
     if (e.behavior.kind === 'chase' && (confused || p.hidden || lost)) {
       // Lost track of the player (confused, or the player burrowed or went into a tunnel): amble about.
-      const h = e.status.heading + e.id * 2.4 + (confused ? 0 : g.time * 0.6)
+      const h = e.status.heading + e.id * 2.4 + (confused ? 0 : g.now * 0.6)
       vx = dm.cos(h) * pace * LOST_PACE
       vy = dm.sin(h) * pace * LOST_PACE
     } else if (e.behavior.kind === 'chase') {
@@ -166,6 +168,11 @@ export const updateEnemies = (g: Game, dt: number) => {
         const t = leadTime(dm.hypot(p.x - e.x, p.y - e.y), pace)
         tx += p.vx * t
         ty += p.vy * t
+      } else if (e.fight && steerBoss(e.fight, e.kind, e, p, g.now, steering)) {
+        // A boss with phases moves as its phase says (`BossSteer`), or holds still through its scripts.
+        tx = steering.x
+        ty = steering.y
+        speed = pace * steering.pace
       } else if (e.fight) {
         const hold = STANCES[e.fight.stance].hold
         speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)

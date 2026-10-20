@@ -31,6 +31,13 @@ const pillFor = (g: Game): Pill => {
   const m = t().rifts
   const { portal, arena } = g.rift
   if (g.place.inside) return insidePill(g)
+  if (arena?.domain) {
+    const d = arena.domain
+    if (arena.fall !== null) return null
+    if (d.act === 'crossing') return { text: m.hudCrossing, kind: 'arena', urgent: d.front - (g.player.y - arena.y) < 70 }
+    if (d.act !== 'battle') return null
+    return { text: m.hudArena(formatTime(Math.ceil(arena.left))), kind: 'arena', urgent: arena.left < 15 }
+  }
   if (arena) {
     if (arena.loot !== null || arena.fall !== null) return null
     return { text: m.hudArena(formatTime(Math.ceil(arena.left))), kind: 'arena', urgent: arena.left < 10 }

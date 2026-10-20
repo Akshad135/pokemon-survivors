@@ -4,7 +4,7 @@ import { BRANCHES, branchesOf, branchStage, type BranchId } from '../data/branch
 import { HATCHLING_IDS, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { REGIONS, STARTER_IDS, type Region } from '../data/starters'
 import type { PokeType } from '../data/types'
-import { RIFT, RIFT_LEGENDS } from '../data/rifts'
+import { isRiftLegend, RIFT } from '../data/rifts'
 import { GRAVEYARD, PLACE, PLACE_IDS, PLACES, type PlaceId } from '../data/places'
 import { SUMMONS } from '../data/traits'
 import { bossCandidates, EVENTS, RUN_LENGTH, STAGES, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
@@ -144,8 +144,6 @@ export type Appearance =
   /** Called in by a summoner (Nidoqueen's Nidoran). */
   | { kind: 'summoned'; by: EnemyId }
 
-const isRiftLegend = (id: EnemyId): boolean => RIFT_LEGENDS.some((l) => l === id)
-
 /**
  * When an enemy can show up: the spawn-pool windows of the stages with a slot
  * of its tier (contiguous stages merged), the swarms (flyers only) and rings of
@@ -173,7 +171,7 @@ export const appearances = (id: EnemyId): Appearance[] => {
     if (e.tier !== def.tier || (e.kind === 'swarm' && !def.types.includes('flying'))) return []
     return [{ kind: e.kind, at: e.at, count: e.count }]
   })
-  const rift: Appearance[] = isRiftLegend(id) ? [{ kind: 'rift', from: RIFT.firstAt }] : []
+  const rift: Appearance[] = isRiftLegend(id) ? [{ kind: 'rift', from: RIFT.slots[0] }] : []
   const reaper: Appearance[] = id === REAPER ? [{ kind: 'reaper', at: ENDLESS.reaperAt }] : []
   // A place's dwellers come out once the run's stage has their tier (never before the first entrance).
   const placed = PLACE_IDS.flatMap((place): Appearance[] => {

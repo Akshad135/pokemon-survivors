@@ -1,54 +1,95 @@
 import { TAU } from '../engine/math'
 import { range } from '../engine/rng'
+import { domainOf } from '../data/domains'
 import { RIFT, type RiftLegend } from '../data/rifts'
+import { enterDomain } from './domain'
 import { burst } from './effects'
-import { chargePortal, nextRiftAt, pickLegend, riftDue } from './rift'
+import { chargePortal, endlessRiftAt, pickLegend, riftAt, riftDue } from './rift'
 import { enterArena } from './riftArena'
 import { clearSpot } from './terrain'
 import type { Game } from './types'
+import { setWeather } from './weather'
 import * as dm from '../engine/dmath'
 
 /**
- * The map side of a rift: a portal opens past the screen edge, waits a while
- * and sends the player to the arena once they stand in it for `RIFT.enterTime`.
- * Everything arena-related goes through `enterArena`, so any other map
- * system can open the same door.
+ * The map side of a rift: when one is due its omen plays (a legendary with a
+ * domain takes the sky with its weather), then a portal opens past the screen
+ * edge, waits a while and sends the player in once they stand in it for
+ * `RIFT.enterTime`: into the legendary's domain (`enterDomain`) or its old
+ * arena (`enterArena`). Any other map system can open the same door.
  */
 
 const PORTAL_COLORS = ['#7850c8', '#c8a8f8', '#ffffff'] as const
 
-/** Opens a portal for `legend` at (x, y), or just past the screen edge in a random direction. */
-export const openPortal = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rift.met), at?: { x: number; y: number }) => {
+/** How far a portal's step-in reaches: a domain's huge tear takes the player in from farther. */
+export const portalReach = (legend: RiftLegend) => (domainOf(legend) ? RIFT.tearRadius : RIFT.portalRadius)
+
+/** Opens `legend`'s portal at (x, y), or just past the screen edge in a random direction. */
+export const openPortal = (g: Game, legend: RiftLegend, at?: { x: number; y: number }) => {
   const p = g.player
   const a = range(g.rng, 0, TAU)
   const d = dm.hypot(g.view.w, g.view.h) / 2 + 60
-  const { x, y } = at ?? clearSpot(g, { x: p.x + dm.cos(a) * d, y: p.y + dm.sin(a) * d }, RIFT.portalRadius + 4)
+  const { x, y } = at ?? clearSpot(g, { x: p.x + dm.cos(a) * d, y: p.y + dm.sin(a) * d }, portalReach(legend) + 4)
   g.rift.portal = { x, y, left: RIFT.portalTime, charge: 0, legend }
-  g.rift.met.push(legend)
-  g.rift.nextAt = nextRiftAt(g.rift.nextAt, g.time, g.rng)
   g.events.push({ kind: 'riftOpen' })
 }
 
-/** Opens portals on schedule, ticks the open one and steps the player in. */
+/**
+ * The next rift begins: its legendary is drawn (one not met yet this run), its
+ * weather takes the sky and holds until the rift is over (`setWeather`, with
+ * no next change due), and the one after it is scheduled.
+ */
+export const startOmen = (g: Game, legend: RiftLegend = pickLegend(g.rng, g.rift.met)) => {
+  const rift = g.rift
+  rift.omen = { legend, left: RIFT.omenTime }
+  rift.met.push(legend)
+  rift.slot++
+  rift.nextAt = g.endless ? endlessRiftAt(g.time, g.rng) : riftAt(rift.slot, g.rng)
+  const domain = domainOf(legend)
+  if (domain) {
+    if (g.weather.id !== domain.omen.weather) setWeather(g, domain.omen.weather)
+    g.weather.next = Infinity
+  }
+  g.events.push({ kind: 'riftOmen', enemy: legend })
+}
+
+/** The rift is over without the player going in: a held omen weather moves on soon. */
+const releaseSky = (g: Game) => {
+  if (g.weather.next === Infinity) g.weather.next = g.time + 4
+}
+
+/** Starts omens on schedule, opens their portals, ticks the open one and steps the player in. */
 export const updateRiftPortal = (g: Game, dt: number) => {
   // An open portal waits on the map, like the rest of the world, while the player is inside a place.
   if (g.place.inside) return
   const rift = g.rift
+  const omen = rift.omen
+  if (omen) {
+    omen.left -= dt
+    if (omen.left > 0) return
+    rift.omen = null
+    openPortal(g, omen.legend)
+    return
+  }
   const portal = rift.portal
   if (!portal) {
+    // The endless mode picks up its own cadence once the run's slots are used.
+    if (g.endless && rift.nextAt === Infinity) rift.nextAt = g.time + RIFT.endlessFirst
     const due = riftDue({ time: g.time, nextAt: rift.nextAt, busy: rift.arena !== null, bossAlive: g.bossId !== null, endless: g.endless !== null })
-    if (due) openPortal(g)
+    if (due) startOmen(g)
     return
   }
   portal.left -= dt
   if (portal.left <= 0) {
     rift.portal = null
     burst(g, portal.x, portal.y - 8, { colors: PORTAL_COLORS, count: 24, speed: 60, ttl: 0.5 })
+    releaseSky(g)
     g.events.push({ kind: 'riftClosed' })
     return
   }
   const p = g.player
-  const inside = dm.sq(p.x - portal.x) + dm.sq(p.y - portal.y) < dm.sq(RIFT.portalRadius)
+  const reach = portalReach(portal.legend)
+  const inside = dm.sq(p.x - portal.x) + dm.sq(p.y - portal.y) < dm.sq(reach)
   portal.charge = chargePortal(portal.charge, inside, dt)
   // Motes drift up out of the portal; denser while it charges.
   if (g.rng() < (inside ? 0.6 : 0.2)) {
@@ -56,5 +97,6 @@ export const updateRiftPortal = (g: Game, dt: number) => {
   }
   if (portal.charge < RIFT.enterTime) return
   rift.portal = null
-  enterArena(g, portal.legend, portal.x, portal.y)
+  if (domainOf(portal.legend)) enterDomain(g, portal.legend, portal.x, portal.y)
+  else enterArena(g, portal.legend, portal.x, portal.y)
 }

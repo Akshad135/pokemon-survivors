@@ -55,7 +55,9 @@ export const FLYERS = new Set([
   6, 41, 42, 123, 130, 149, 169, 176, 373, 468, 714, 715, 722, 723, // player forms
 ])
 /** Species that can roll shiny: the player lines, regular enemies, rift legendaries and places' bosses. */
-export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS, ...PLACE_BOSSES])
+/** Legendaries that can also roll shiny as wave bosses (the trios, Mewtwo, the mythicals) and Arceus, for the Legend mode's captures. */
+export const SHINY_LEGENDS = [144, 145, 146, 150, 151, 243, 244, 245, 251, 377, 378, 379, 385, 493]
+export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS, ...PLACE_BOSSES, ...SHINY_LEGENDS])
 
 /**
  * Alternate formes the game draws, by key, mapped to their SpriteCollab form id
@@ -78,6 +80,14 @@ export const FORMS = {
   362: { mega: '0001' },
   448: { mega: '0001' },
   475: { mega: '0001' },
+  // Legend mode's forms: Primal Reversion, Mega Rayquaza, the Latis' and Mewtwo Y's Megas, Deoxys' formes.
+  150: { megaY: '0002' },
+  380: { mega: '0001' },
+  381: { mega: '0001' },
+  382: { primal: '0001' },
+  383: { primal: '0001' },
+  384: { mega: '0001' },
+  386: { attack: '0001', defense: '0002', speed: '0003' },
 }
 
 /**
@@ -116,6 +126,13 @@ export const FORM_CRIES = {
   445: { mega: 'garchomp-mega', megaZ: 'garchomp-mega-z' },
   448: { mega: 'lucario-mega', megaZ: 'lucario-mega-z' },
   475: { mega: 'gallade-mega' },
+  150: { megaY: 'mewtwo-mega-y' },
+  380: { mega: 'latias-mega' },
+  381: { mega: 'latios-mega' },
+  382: { primal: 'kyogre-primal' },
+  383: { primal: 'groudon-primal' },
+  384: { mega: 'rayquaza-mega' },
+  386: { attack: 'deoxys-attack', defense: 'deoxys-defense', speed: 'deoxys-speed' },
   500: { mega: 'emboar-mega' },
   652: { mega: 'chesnaught-mega' },
   655: { mega: 'delphox-mega' },

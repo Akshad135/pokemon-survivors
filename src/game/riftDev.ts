@@ -3,15 +3,17 @@ import type { RiftLegend } from '../data/rifts'
 import { bossWaveAt, EVENTS, RUN_LENGTH, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
 import { startEndless } from './endless'
 import { pickLegend } from './rift'
+import { domainOf } from '../data/domains'
+import { enterDomain, jumpToAct } from './domain'
 import { enterArena } from './riftArena'
-import { openPortal } from './riftPortal'
+import { openPortal, startOmen } from './riftPortal'
 import { withTrio } from './roster'
 import { spawnWaveBoss } from './spawner'
 import type { Game } from './types'
 
 /**
  * Dev-console shortcuts for staging bosses, rifts and the endless mode
- * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.rift()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
+ * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.rift()`, `ps.omen()`, `ps.riftAct()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
  * Wired in `main.ts` for dev builds only.
  */
 export const riftDevTools = (game: () => Game | undefined) => {
@@ -40,10 +42,19 @@ export const riftDevTools = (game: () => Game | undefined) => {
         const boss = g.enemies.find((e) => e.id === g.bossId)
         if (boss) boss.hp = Math.max(1, boss.maxHp * share)
       })(),
-    /** Steps straight into a rift arena (a random legendary, or the one given). */
-    rift: (legend?: RiftLegend) => playing((g) => enterArena(g, legend ?? pickLegend(g.rng, g.rift.met), g.player.x, g.player.y))(),
+    /** Steps straight into a rift (a random legendary, or the one given): a domain's crossing, or the old arena. */
+    rift: (legend?: RiftLegend) =>
+      playing((g) => {
+        const id = legend ?? pickLegend(g.rng, g.rift.met)
+        if (domainOf(id)) enterDomain(g, id, g.player.x, g.player.y)
+        else enterArena(g, id, g.player.x, g.player.y)
+      })(),
+    /** Starts a rift's omen now (its weather, then its portal 20 s later). */
+    omen: (legend?: RiftLegend) => playing((g) => startOmen(g, legend))(),
+    /** In a domain, jumps to an act: `ps.riftAct('encounter')`, or `ps.riftAct('battle', 2)` for the top of phase 2. */
+    riftAct: (act: 'encounter' | 'battle', phase?: number) => playing((g) => jumpToAct(g, act, phase))(),
     /** Opens a portal right next to the player. */
-    portal: (legend?: RiftLegend) => playing((g) => openPortal(g, legend, { x: g.player.x + 48, y: g.player.y }))(),
+    portal: (legend?: RiftLegend) => playing((g) => openPortal(g, legend ?? pickLegend(g.rng, g.rift.met), { x: g.player.x + 48, y: g.player.y }))(),
     /** Ends the run as if Mewtwo just fell: the victory screen with the endless offer. */
     victory: playing((g) => {
       skipTo(g, RUN_LENGTH / 60)

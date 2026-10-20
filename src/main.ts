@@ -16,7 +16,10 @@ import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
 import { bodyOf } from './data/bodies'
 import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
-import { RIFT, RIFT_LEGENDS } from './data/rifts'
+import { isRiftLegend, RIFT, RIFT_LEGENDS } from './data/rifts'
+import { domainTheme } from './game/domain'
+import { captureOutcome } from './render/capture'
+import { domainLines } from './ui/riftTitle'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
 import type { AchievementId } from './data/achievements'
@@ -593,7 +596,7 @@ let upcoming = planRun()
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
   { dex: TOGEPI_DEX, at: FIELD.first },
-  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.firstAt })),
+  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.slots[0] - RIFT.omenTime })),
   { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
 ]
 
@@ -1122,12 +1125,49 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, rich(t().rifts.open), 3200)
     case 'riftClosed':
       return toast(ui, t().rifts.closed, 2000)
+    case 'riftOmen': {
+      const lines = domainLines(e.enemy)
+      playSfx('thunder')
+      return toast(ui, rich(lines ? `${lines.omen} ${t().rifts.omen(ENEMIES[e.enemy].name)}` : t().rifts.omenFaint), 4200)
+    }
     case 'riftEnter': {
       const def = ENEMIES[e.enemy]
       playSfx('legendary')
-      playCry(sprites(def.dex).cry, 0.7)
       flashScreen(ui)
+      const lines = domainLines(e.enemy)
+      // A domain's legendary shows itself later, in its own forms: have them ready.
+      if (lines) {
+        void preloadForms([def.dex], e.shiny)
+        toast(ui, rich(lines.crossing), 3600)
+        return banner(ui, rich(t().rifts.enterDomain(lines.place)))
+      }
+      playCry(sprites(def.dex).cry, 0.7)
       return banner(ui, rich(e.shiny ? t().rifts.enterShiny(def.name) : t().rifts.enter(def.name)))
+    }
+    case 'riftTitle':
+      playSfx('legendary')
+      playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.9)
+      return flashScreen(ui)
+    case 'bossPhase': {
+      const def = ENEMIES[e.enemy]
+      playSfx('quake')
+      playCry(sprites(def.dex).cry, 0.7)
+      const line = isRiftLegend(e.enemy) ? domainLines(e.enemy)?.phases[e.phase - 1] : undefined
+      return line ? toast(ui, rich(line), 3600) : undefined
+    }
+    case 'bossUltimate':
+      playSfx('legendary')
+      return toast(ui, h('span', { class: 'toast-ultimate' }, `${e.move}!`), 2400, 'ultimate')
+    case 'riftCapture': {
+      const capture = g.rift.arena?.domain?.capture
+      const name = ENEMIES[e.enemy].name
+      if (capture && captureOutcome(capture) === 'caught') {
+        playSfx('unlock')
+        return toast(ui, rich(t().rifts.caught(name), { class: 'toast-evo' }), 3600)
+      }
+      playSfx('break')
+      playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
+      return toast(ui, rich(t().rifts.escaped(name)), 3200)
     }
     case 'riftCleared':
       playSfx('evolve')
@@ -1189,6 +1229,9 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
+  // A legendary's domain plays its crossing's theme, then its own from the moment it shows itself.
+  const domain = r.game.rift.arena?.domain
+  if (domain) return domainTheme(domain)
   // A rift arena keeps the boss theme until the player is back, loot window included; a place plays its own.
   const inside = r.game.place.inside
   return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : inside ? PLACES[inside.id].theme : BIOMES[r.game.biome.id].theme

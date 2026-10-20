@@ -1,28 +1,118 @@
 import { range, type Rng } from '../engine/rng'
-import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_RAGE, MIN_TELEGRAPH, STANCES, type BossPattern, type BossStance } from '../data/bosses'
+import {
+  BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, MIN_TELEGRAPH, STANCES,
+  type BlastSafe, type BossPattern, type BossPhase, type BossStance, type HazardVisual,
+} from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
 import { bossWaveAt } from '../data/waves'
 import { DIFFICULTY_IDS, type Difficulty } from './difficulty'
+import * as dm from '../engine/dmath'
 
 /**
- * A wave boss's fight state: the stance it's in (`BossStance`), seconds until
- * it swaps, whether it has enraged, the share of HP it has left (`share`, kept
- * fresh by `updateBosses`) and the run's difficulty. Pure rules; `updateBosses`
- * drives them.
+ * A boss moving on its own script instead of walking (`game/bosses.ts`):
+ * a `dash` marks its lane for `wait` s then rushes (vx, vy) for `left` s,
+ * `more` times again; a `dive` is under, untouchable, for `left` s, its wake at
+ * (x, y) following the player until `lock` s are left (then its strike shows);
+ * `away` is a teleport waiting for its landing.
  */
-export type BossFight = { stance: BossStance; stanceLeft: number; enraged: boolean; share: number; difficulty: Difficulty }
+export type BossMotion =
+  | { kind: 'dash'; wait: number; left: number; vx: number; vy: number; more: number; speed: number; width: number; damage: number; windup: number; hit: boolean }
+  | { kind: 'dive'; left: number; lock: number; x: number; y: number; windup: number; radius: number; damage: number; visual: HazardVisual }
+  | { kind: 'away'; left: number }
+
+/** A blast charging (`left` of `total` s) from (x, y): when it lands it hurts the player unless they stand somewhere `safe`. */
+export type BossBlast = { left: number; total: number; x: number; y: number; damage: number; safe: BlastSafe; radius: number; visual: HazardVisual }
+
+/**
+ * A boss's fight state: the stance it's in (`BossStance`), seconds until
+ * it swaps, whether it has enraged, the share of HP it has left (`share`, kept
+ * fresh by `updateBosses`) and the run's difficulty. Bosses with phases
+ * (`BOSS_PHASES`) also keep the phase they're in (`phase`, `phaseAge`, the
+ * `shift` left on its opening), their ultimate (`ult` while it plays,
+ * `ultLeft` until the next), their scripted `motion`, a charging `blast` and
+ * `home`, where they appeared. Pure rules; `updateBosses` drives them.
+ */
+export type BossFight = {
+  stance: BossStance
+  stanceLeft: number
+  enraged: boolean
+  share: number
+  difficulty: Difficulty
+  phase: number
+  phaseAge: number
+  shift: number
+  ult: { t: number; step: number } | null
+  ultLeft: number
+  motion: BossMotion | null
+  blast: BossBlast | null
+  home: { x: number; y: number }
+}
+
+/** The phases of a boss that fights in phases, or null. */
+export const phasesOf = (kind: EnemyId): readonly BossPhase[] | null => BOSS_PHASES[kind] ?? null
+
+/** The phase a boss with `share` of its HP left is in: the last one whose threshold it fell under. */
+export const phaseAt = (phases: readonly BossPhase[], share: number) => {
+  let at = 0
+  for (let i = 1; i < phases.length; i++) if (share < phases[i]!.below) at = i
+  return at
+}
+
+/** The patterns a boss fights with now: its phase's, or its flat list. */
+export const patternsOf = (kind: EnemyId, fight: BossFight | null): readonly BossPattern[] | undefined => {
+  const phases = phasesOf(kind)
+  return phases ? phases[fight?.phase ?? 0]!.patterns : BOSS_PATTERNS[kind]
+}
+
+/** Whether a boss's script holds it still and untouchable for now: a phase's opening, a dive or a teleport. */
+export const bossAway = (fight: BossFight | null) => fight !== null && (fight.motion?.kind === 'dive' || fight.motion?.kind === 'away')
+
+/**
+ * The seconds an ultimate keeps the rest of the phase's patterns waiting: its
+ * last step's time plus that step's warning and a beat to breathe.
+ */
+export const ultimateLength = (steps: readonly { at: number; pattern: BossPattern }[]) =>
+  steps.reduce((end, s) => Math.max(end, s.at + warningOf(s.pattern)), 0) + 0.8
+
+/** How long a pattern warns before it lands (0 for the ones that land at once). */
+export const warningOf = (p: BossPattern) => {
+  switch (p.kind) {
+    case 'strikes': return p.delay
+    case 'volley': return p.windup
+    case 'beam': return p.windup + p.duration
+    case 'dash': return p.windup * p.count + 1
+    case 'dive': return p.hide + p.windup
+    case 'teleport': case 'blast': return p.windup
+    default: return 0
+  }
+}
 
 /**
  * Wave bosses fight in stances and enrage. Rift legendaries and Arceus keep
  * their flat patterns: a rift is already a timed duel and the reaper is meant
  * to be outlasted, not read.
  */
-export const fightsInStances = (kind: EnemyId) => bossWaveAt(kind) !== null && (BOSS_PATTERNS[kind]?.some((p) => p.stance !== undefined) ?? false)
+export const fightsInStances = (kind: EnemyId) =>
+  bossWaveAt(kind) !== null && (BOSS_PATTERNS[kind] ?? BOSS_PHASES[kind]?.flatMap((ph) => ph.patterns) ?? []).some((p) => p.stance !== undefined)
 
 const stanceTime = (rng: Rng) => range(rng, BOSS_RAGE.stance[0], BOSS_RAGE.stance[1])
 
 /** Bosses arrive rushing in (`close`), so the first stance shows up on screen soon. */
-export const createFight = (rng: Rng, difficulty: Difficulty): BossFight => ({ stance: 'close', stanceLeft: stanceTime(rng), enraged: false, share: 1, difficulty })
+export const createFight = (rng: Rng, difficulty: Difficulty, home = { x: 0, y: 0 }): BossFight => ({
+  stance: 'close',
+  stanceLeft: stanceTime(rng),
+  enraged: false,
+  share: 1,
+  difficulty,
+  phase: 0,
+  phaseAge: 0,
+  shift: 0,
+  ult: null,
+  ultLeft: Infinity,
+  motion: null,
+  blast: null,
+  home,
+})
 
 /** Counts the stance down; returns true on the tick it swaps (with a fresh seeded duration). */
 export const tickStance = (fight: BossFight, dt: number, rng: Rng) => {
@@ -78,4 +168,49 @@ export const chainTarget = (patterns: readonly BossPattern[], fight: BossFight, 
     self = i
   }
   return self
+}
+
+/** Where a boss with phases heads this tick and at what share of its pace (0: it stays put). */
+export type Steering = { x: number; y: number; pace: number }
+
+/**
+ * Where a boss in a fight with phases walks (`BossSteer`): nowhere during a
+ * phase's opening or a scripted motion; otherwise at the player, holding a
+ * range, wandering around its anchor, or circling its home. `now` drives the
+ * wandering, so it stays deterministic. False when its phase doesn't steer.
+ */
+export const steerBoss = (fight: BossFight, kind: EnemyId, e: { x: number; y: number; id: number }, p: { x: number; y: number }, now: number, out: Steering) => {
+  const steer = phasesOf(kind)?.[fight.phase]?.steer
+  if (!steer) return false
+  out.x = p.x
+  out.y = p.y
+  out.pace = fight.shift > 0 || fight.motion !== null ? 0 : (steer.pace ?? 1)
+  switch (steer.kind) {
+    case 'chase':
+      return true
+    case 'hold':
+      if ((p.x - e.x) * (p.x - e.x) + (p.y - e.y) * (p.y - e.y) < steer.range * steer.range) out.pace = 0
+      return true
+    case 'anchor': {
+      const a = now * 0.5 + e.id
+      out.x = fight.home.x + steer.x + dm.cos(a) * steer.drift
+      out.y = fight.home.y + steer.y + dm.sin(a * 1.3) * steer.drift * 0.7
+      return true
+    }
+    case 'orbit': {
+      const a = dm.atan2(e.y - fight.home.y, e.x - fight.home.x) + 0.6
+      out.x = fight.home.x + dm.cos(a) * steer.radius
+      out.y = fight.home.y + dm.sin(a) * steer.radius
+      return true
+    }
+  }
+}
+
+/**
+ * Whether a boss's faint waits: one with phases still to go (or in a phase's
+ * opening) stays up at 1 HP and moves on to its next phase instead (`killEnemy`).
+ */
+export const holdsOn = (e: { kind: EnemyId; fight: BossFight | null }) => {
+  const phases = phasesOf(e.kind)
+  return phases !== null && e.fight !== null && (e.fight.phase < phases.length - 1 || e.fight.shift > 0)
 }

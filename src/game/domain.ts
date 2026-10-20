@@ -1,0 +1,398 @@
+import { retain } from '../engine/math'
+import { weightedPick } from '../engine/rng'
+import { ARENA_FEET, type FloorPlan, type Pt } from '../data/arenas'
+import { domainOf, type ArenaTransform, type LegendDomain } from '../data/domains'
+import { RIFT, type RiftLegend } from '../data/rifts'
+import { onFloor } from './arenaFloor'
+import { joinAs, parked } from './bosses'
+import { hurtPlayer } from './combat'
+import { DOMAIN_HOOKS } from './domainHooks'
+import {
+  advanceFront, CAPTURE, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, transformStage, waterBelow,
+} from './domainRules'
+import { burst, updateEffects } from './effects'
+import { despawnEnemy, spawnEnemy } from './enemies'
+import { riftLoot, riftScale, type RiftArena } from './rift'
+import { exitArena, LAVA_BURN, riftWin } from './riftArena'
+import { keepOnFloor, setAside } from './room'
+import { rollShiny } from './shiny'
+import { groundAt, inSolid, playerTypes, type Solid } from './terrain'
+import type { Enemy, Game } from './types'
+import * as dm from '../engine/dmath'
+
+/**
+ * A legendary's domain (`data/domains.ts`), played inside a rift: the
+ * crossing with its threat and retinue, the encounter scene, the battle in
+ * phases with its arena transforms, and the capture scene before the loot.
+ * The domain is a rift arena (`RiftArena.domain`), so the room rules (the
+ * world set aside, falling out, the stopped clock) are the arena's.
+ */
+
+export type DomainAct = 'crossing' | 'encounter' | 'battle' | 'capture' | 'after'
+
+/** A transform of the current phase (`ArenaTransform`) and whether it has landed. */
+type Pending = { def: ArenaTransform; landed: boolean }
+
+export type DomainState = {
+  legend: RiftLegend
+  act: DomainAct
+  /** Seconds into the current act. */
+  age: number
+  /** The threat's front (domain y) and the front the floor was last laid with. */
+  front: number
+  laidFront: number
+  /** Seconds until the threat bites again, and until the next retinue wave. */
+  sting: number
+  spawn: number
+  /** The legendary (and its id once it shows), the phase the arena follows and seconds into it. */
+  bossId: number
+  phase: number
+  phaseAge: number
+  pending: Pending[]
+  landed: ArenaTransform[]
+  /** Seconds into the encounter or capture scene, which hold the world still. */
+  scene: number
+  /** The fallen legendary the capture scene plays on, and whether its ball has settled. */
+  capture: { kind: Enemy['kind']; x: number; y: number; shiny: boolean; settled: boolean } | null
+}
+
+const defOf = (d: DomainState): LegendDomain => domainOf(d.legend)!
+
+/** A point of the arena (arena px) in world px. */
+export const arenaPoint = (arena: RiftArena, d: DomainState, [x, y]: Pt) => {
+  const at = defOf(d).arena.at
+  return { x: arena.x + at[0] + x, y: arena.y + at[1] + y }
+}
+
+/** The domain the player is in, if any. */
+export const domainHere = (g: Game) => {
+  const arena = g.rift.arena
+  return arena?.domain ? { arena, d: arena.domain, def: defOf(arena.domain) } : null
+}
+
+const solidsOf = (def: LegendDomain, x: number, y: number): Solid[] => {
+  const at = def.arena.at
+  const all = [...def.crossing.solids, ...def.arena.solids.map((s) => ({ ...s, x: s.x + at[0], y: s.y + at[1] }))]
+  return all.map((s, i) => {
+    const foot = ARENA_FEET[s.piece]
+    return { kind: s.piece, x: x + s.x, y: y + s.y, variant: i, foot: [{ ...foot, x: x + s.x + foot.x, y: y + s.y + foot.y }] }
+  })
+}
+
+/** How far ahead (north) the camera looks in the crossing, as a share of the view's height. */
+const LOOK_AHEAD = 0.16
+
+/** Sends the player into `legend`'s domain, its origin where the portal stood, at the crossing's start. */
+export const enterDomain = (g: Game, legend: RiftLegend, x: number, y: number) => {
+  const def = domainOf(legend)
+  if (!def) return
+  const shiny = rollShiny(g.rng, RIFT.shinyOdds)
+  const stash = setAside(g)
+  const { crossing } = def
+  const d: DomainState = {
+    legend,
+    act: 'crossing',
+    age: 0,
+    front: crossing.threat.start,
+    laidFront: crossing.threat.start,
+    sting: 0,
+    spawn: crossing.retinue.first,
+    bossId: -1,
+    phase: -1,
+    phaseAge: 0,
+    pending: [],
+    landed: [],
+    scene: 0,
+    capture: null,
+  }
+  const p = g.player
+  p.x = x + crossing.start[0]
+  p.y = y + crossing.start[1]
+  p.vx = 0
+  p.vy = 0
+  g.camera.x = p.x - g.view.w / 2
+  g.camera.y = p.y - 10 - g.view.h * (0.5 + LOOK_AHEAD)
+  g.rift.arena = {
+    legend,
+    shiny,
+    x,
+    y,
+    layout: composePlan(def, false, [], waterBelow(d.front)),
+    terrain: { lake: null, solids: solidsOf(def, x, y) },
+    weather: def.omen.weather,
+    left: def.battleTime,
+    age: 0,
+    bossId: -1,
+    loot: null,
+    fall: null,
+    stash,
+    domain: d,
+  }
+  g.flash = 0.9
+  g.shake = 9
+  g.events.push({ kind: 'riftEnter', enemy: legend, shiny })
+}
+
+/* ---------------- Crossing ---------------- */
+
+/** Brings in a retinue wave just past the top of the screen, on floor clear of scenery. */
+const spawnRetinue = (g: Game, arena: RiftArena, def: LegendDomain) => {
+  const r = def.crossing.retinue
+  let alive = 0
+  for (const e of g.enemies) if (e.dying < 0 && !e.boss) alive++
+  const n = Math.min(r.count, r.max - alive)
+  const row = g.camera.y - 18
+  for (let i = 0; i < n; i++) {
+    for (let tries = 0; tries < 8; tries++) {
+      const x = g.camera.x + 12 + g.rng() * (g.view.w - 24)
+      const y = row - g.rng() * 30
+      if (!onFloor(arena.layout.floor, x - arena.x, y - arena.y, -10) || inSolid(g, x, y, 10)) continue
+      const member = weightedPick(g.rng, r.members.map((m) => [m, m.weight] as const))
+      const e = spawnEnemy(g, member.id, x, y)
+      joinAs(g, e, member.role)
+      break
+    }
+  }
+}
+
+const crossingTick = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain, dt: number) => {
+  const p = g.player
+  const { threat, retinue } = def.crossing
+  d.front = advanceFront(d.front, p.y - arena.y, d.age, dt, threat)
+  if (Math.abs(d.front - d.laidFront) >= 1) {
+    d.laidFront = d.front
+    arena.layout = composePlan(def, false, [], waterBelow(d.front))
+  }
+  // Behind the front the threat bites and carries the player on.
+  if (p.y - arena.y > d.front) {
+    p.y -= threat.push * dt
+    d.sting -= dt
+    if (d.sting <= 0) {
+      d.sting = threat.every
+      hurtPlayer(g, p.stats.maxHp * threat.damage, undefined, [], 'hazard')
+      burst(g, p.x, p.y - 4, { colors: ['#c8e8f8', '#58a8f8', '#ffffff'], count: 8, speed: 70, ttl: 0.4, gravity: 120 })
+    }
+  } else d.sting = 0
+  d.spawn -= dt
+  if (d.spawn <= 0) {
+    d.spawn += retinue.every
+    spawnRetinue(g, arena, def)
+  }
+  DOMAIN_HOOKS[d.legend]?.crossing?.(g, d, dt)
+  if (p.y - arena.y < def.crossing.gate && arena.fall === null) startEncounter(g, arena, d, def)
+}
+
+/** The player reached the arena: the way back seals, the retinue is left behind, and the encounter scene begins. */
+const startEncounter = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) => {
+  d.act = 'encounter'
+  d.age = 0
+  d.scene = 0
+  for (const e of g.enemies) despawnEnemy(e)
+  g.hazards.length = 0
+  arena.layout = composePlan(def, true, [])
+  const p = g.player
+  const start = arenaPoint(arena, d, def.arena.player)
+  p.x = start.x
+  p.y = start.y
+  p.vx = 0
+  p.vy = 0
+  g.shake = Math.max(g.shake, 7)
+  g.events.push({ kind: 'quake' })
+}
+
+/* ---------------- Encounter and capture scenes ---------------- */
+
+/** The camera centered on (x, y) (the player's framing: 10 px above their feet). */
+const centerOn = (g: Game, x: number, y: number) => {
+  g.camera.x = x - g.view.w / 2
+  g.camera.y = y - 10 - g.view.h / 2
+}
+
+/** The legendary shows itself: it's brought in at its spot, with a flash, a jolt and its title card. */
+const reveal = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) => {
+  const at = arenaPoint(arena, d, def.arena.boss)
+  const boss = spawnEnemy(g, d.legend, at.x, at.y)
+  const scale = riftScale(g.time)
+  boss.hp = boss.maxHp = Math.round(boss.maxHp * scale.hp * def.hp)
+  boss.damage *= scale.damage
+  boss.xp = riftLoot(g.time, arena.shiny).xp
+  boss.shiny = arena.shiny
+  d.bossId = arena.bossId = boss.id
+  g.bossId = boss.id
+  g.flash = 1
+  g.shake = 12
+  burst(g, at.x, at.y - 10, { colors: ['#ffffff', '#c8e8f8', '#58a8f8'], count: 90, speed: 220, ttl: 0.7, size: 2, gravity: 160 })
+  g.events.push({ kind: 'riftTitle', enemy: d.legend, shiny: arena.shiny })
+  DOMAIN_HOOKS[d.legend]?.reveal?.(g, d, boss)
+}
+
+/**
+ * Plays the encounter or capture scene with the world held still (the step
+ * waits on it, like a Mega's transformation): it moves the camera itself.
+ * True while one plays.
+ */
+export const updateDomainScene = (g: Game, dt: number) => {
+  const here = domainHere(g)
+  if (!here || here.arena.fall !== null) return false
+  const { arena, d, def } = here
+  if (d.act !== 'encounter' && d.act !== 'capture') return false
+  const before = d.scene
+  d.scene += dt
+  updateEffects(g, dt)
+  g.flash = Math.max(0, g.flash - dt * 1.5)
+  const p = g.player
+  if (d.act === 'encounter') {
+    if (before < REVEAL_AT && d.scene >= REVEAL_AT) reveal(g, arena, d, def)
+    const beat = encounterBeat(d.scene)
+    const at = arenaPoint(arena, d, def.arena.boss)
+    // The ground rumbles harder as the legendary comes in.
+    if (beat.entrance > 0 && beat.entrance < 1) g.shake = Math.max(g.shake, 2 + beat.entrance * 5)
+    centerOn(g, p.x + (at.x - p.x) * beat.camera, p.y + (at.y - p.y) * beat.camera)
+    if (d.scene >= ENCOUNTER_LENGTH) {
+      d.act = 'battle'
+      d.age = 0
+    }
+    return true
+  }
+  const c = d.capture!
+  centerOn(g, (p.x + c.x) / 2, (p.y + c.y) / 2)
+  if (before < CAPTURE.settle && d.scene >= CAPTURE.settle) {
+    c.settled = true
+    g.events.push({ kind: 'riftCapture', enemy: d.legend, shiny: c.shiny })
+  }
+  if (d.scene < CAPTURE.length) return true
+  d.act = 'after'
+  d.age = 0
+  riftWin(g, arena, c.x, c.y)
+  return true
+}
+
+/** The legendary fell for good: its adds go, and the capture scene plays where it knelt. */
+const startCapture = (g: Game, arena: RiftArena, d: DomainState, boss: Enemy | undefined) => {
+  const x = boss?.x ?? arenaPoint(arena, d, defOf(d).arena.boss).x
+  const y = boss?.y ?? arenaPoint(arena, d, defOf(d).arena.boss).y
+  d.capture = { kind: d.legend, x, y, shiny: arena.shiny, settled: false }
+  d.act = 'capture'
+  d.scene = 0
+  g.hazards.length = 0
+  for (const e of g.enemies) if (e.dying < 0) despawnEnemy(e)
+}
+
+/* ---------------- Battle ---------------- */
+
+/** The boss moved on to phase `phase`: its arena transforms are scheduled from now. */
+const followPhase = (g: Game, d: DomainState, def: LegendDomain, boss: Enemy, phase: number) => {
+  d.phase = phase
+  d.phaseAge = 0
+  d.pending = (def.phases[phase]?.arena ?? []).map((t) => ({ def: t, landed: false }))
+  DOMAIN_HOOKS[d.legend]?.phase?.(g, d, boss, phase)
+}
+
+const battleTick = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain, dt: number) => {
+  const boss = g.enemies.find((e) => e.id === d.bossId)
+  if (!boss || boss.dying >= 0) {
+    if (boss && DOMAIN_HOOKS[d.legend]?.fallen?.(g, d, boss)) return
+    return startCapture(g, arena, d, boss)
+  }
+  arena.left -= dt
+  if (arena.left <= 0) return exitArena(g, 'collapse')
+  const phase = boss.fight?.phase ?? 0
+  if (phase !== d.phase) followPhase(g, d, def, boss, phase)
+  d.phaseAge += dt
+  for (const t of d.pending) {
+    if (t.landed || transformStage(t.def, d.phaseAge) !== 'landed') continue
+    t.landed = true
+    d.landed.push(t.def)
+    arena.layout = composePlan(def, true, d.landed)
+    g.shake = Math.max(g.shake, 7)
+    g.events.push({ kind: 'quake' })
+  }
+  DOMAIN_HOOKS[d.legend]?.battle?.(g, d, boss, dt)
+}
+
+/**
+ * One tick of the domain outside its scenes: the crossing's threat and
+ * retinue, the battle's phases and transforms, everyone kept on the floor,
+ * lava burning, and the loot window once the legendary is captured.
+ */
+export const updateDomain = (g: Game, arena: RiftArena, d: DomainState, dt: number) => {
+  const def = defOf(d)
+  d.age += dt
+  if (d.act === 'crossing') crossingTick(g, arena, d, def, dt)
+  else if (d.act === 'battle') battleTick(g, arena, d, def, dt)
+  if (g.rift.arena !== arena || arena.fall !== null) return
+  keepInDomain(g, arena.layout, arena)
+  const p = g.player
+  if (groundAt(g, p.x, p.y) === 'lava' && !playerTypes(g).includes('fire')) hurtPlayer(g, p.stats.maxHp * LAVA_BURN, undefined, ['fire'], 'lava')
+  if (d.act !== 'after' || arena.loot === null) return
+  for (const k of g.pickups) k.attracted = true
+  arena.loot -= dt
+  if (arena.loot <= 0) exitArena(g, 'won')
+}
+
+/** Keeps the player on the floor and out of its holes, walkers on the floor (the legendary and the retinue swim the holes), and breaks shots past its edge. */
+const keepInDomain = (g: Game, plan: FloorPlan, arena: RiftArena) => {
+  const p = g.player
+  keepOnFloor(p, arena, plan.floor, plan.holes ?? [], p.radius)
+  for (const e of g.enemies) if (e.dying < 0 && !parked(e)) keepOnFloor(e, arena, plan.floor, [], e.boss ? e.radius * 0.5 : e.radius * 0.8)
+  retain(g.hazards, (h) => h.kind !== 'shot' || onFloor(plan.floor, h.x - arena.x, h.y - arena.y, 6))
+}
+
+/* ---------------- Camera ---------------- */
+
+/** How far from the view's edges the player always stays while the camera frames the legendary too, px (the HUD sits on top). */
+const FRAME = { side: 44, top: 100, bottom: 70 } as const
+
+/**
+ * The camera in a domain (outside its scenes): ahead of the player in the
+ * crossing, and in the battle on the middle of the player and the
+ * legendary, a little low so the HUD doesn't cover the legendary, but never
+ * so far the player leaves the frame. It eases there; positions become whole
+ * pixels only on screen (`render`).
+ */
+export const domainCamera = (g: Game, dt: number) => {
+  const here = domainHere(g)
+  if (!here) return false
+  const { d } = here
+  const p = g.player
+  const { w, h } = g.view
+  let x = p.x - w / 2
+  let y = p.y - 10 - h / 2 - (d.act === 'crossing' ? h * LOOK_AHEAD : 0)
+  const boss = d.act === 'battle' ? g.enemies.find((e) => e.id === d.bossId) : undefined
+  if (boss && !parked(boss)) {
+    x = Math.max(p.x - (w - FRAME.side), Math.min(p.x - FRAME.side, (p.x + boss.x) / 2 - w / 2))
+    y = Math.max(p.y - (h - FRAME.bottom), Math.min(p.y - FRAME.top, (p.y + boss.y) / 2 - h / 2 - 24))
+  }
+  const k = 1 - dm.exp(-5 * dt)
+  g.camera.x += (x - g.camera.x) * k
+  g.camera.y += (y - g.camera.y) * k
+  return true
+}
+
+/* ---------------- Dev ---------------- */
+
+/**
+ * Jumps the domain the player is in to an act (the dev console's
+ * `ps.riftAct`): `encounter` seals the way and plays the scene, `battle`
+ * skips it with the legendary already in, at the top of `phase` (from 1).
+ */
+export const jumpToAct = (g: Game, act: 'crossing' | 'encounter' | 'battle', phase = 1) => {
+  const here = domainHere(g)
+  if (!here) return
+  const { arena, d, def } = here
+  if (act === 'crossing') return
+  if (d.act === 'crossing') startEncounter(g, arena, d, def)
+  if (act === 'encounter') return
+  if (d.bossId < 0) reveal(g, arena, d, def)
+  d.act = 'battle'
+  d.age = 0
+  const boss = g.enemies.find((e) => e.id === d.bossId)
+  const below = def.phases[phase - 1]?.below ?? 1
+  if (boss) boss.hp = Math.max(1, Math.min(boss.maxHp, boss.maxHp * below - 1))
+}
+
+/** What a domain plays: its crossing's theme until the legendary shows itself, then its own (`LegendDomain.music`). */
+export const domainTheme = (d: DomainState) => {
+  const def = defOf(d)
+  return d.act === 'crossing' || (d.act === 'encounter' && d.scene < REVEAL_AT) ? def.crossing.theme : def.music
+}

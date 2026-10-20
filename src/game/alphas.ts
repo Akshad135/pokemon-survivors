@@ -187,7 +187,7 @@ export const spawnAlpha = (g: Game, kind: EnemyId, x: number, y: number) => {
 
 /** A wave boss in its first `quiet` seconds: a due Alpha waits for it. */
 const bossFighting = (g: Game, quiet: number) =>
-  quiet > 0 && g.enemies.some((e) => e.boss && !e.alpha && e.dying < 0 && g.time - e.bornAt < quiet && bossWaveAt(e.kind) !== null)
+  quiet > 0 && g.enemies.some((e) => e.boss && !e.alpha && e.dying < 0 && g.now - e.bornAt < quiet && bossWaveAt(e.kind) !== null)
 
 /** Brings an Alpha in, off screen, when one is due and there's room for it. */
 const direct = (g: Game) => {

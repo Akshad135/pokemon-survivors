@@ -47,13 +47,14 @@ import { withOutbreak } from './outbreak'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
 import { createLandmarkState, updateLandmarks, updateTunnel } from './landmarks'
 import { drawRoster, type Roster } from './roster'
-import { createRiftState } from './rift'
+import { clockRuns, createRiftState } from './rift'
 import { createPlaceState } from './place'
 import { updatePlaceEntrance } from './placeEntrance'
 import { updatePlace, updatePlaceFall, updatePlaceIntro } from './placeInterior'
 import { roomOf } from './room'
 import { SKY } from '../data/places'
 import { updateArena, updateArenaFall } from './riftArena'
+import { domainCamera, updateDomainScene } from './domain'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
@@ -196,6 +197,7 @@ export const createGame = (
     alphas: createAlphaClock(options.difficulty ?? DEFAULT_DIFFICULTY),
     worldHazards: createWorldHazards(),
     prize: null,
+    now: 0,
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -478,15 +480,18 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   // The Mega Evolution plays with the world held still, and so does a dungeon floor's title card.
   if (updateMegaIntro(g, dt)) return
   if (updatePlaceIntro(g, dt)) return
-  // So does the rift throwing a fainted player back out, or a rescue out of a place.
+  // So does the rift throwing a fainted player back out, or a rescue out of a place, and a domain's encounter and capture scenes.
   if (updateArenaFall(g, dt)) return
+  if (updateDomainScene(g, dt)) return
   if (updatePlaceFall(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
     return
   }
 
-  g.time += dt
+  // The run clock stops inside a rift (`clockRuns`); `now` never does.
+  g.now += dt
+  if (clockRuns(g)) g.time += dt
   // Inside a room (a rift arena, a place) the horde and the map wait outside:
   // no regular spawns, props, map events, weather or biome changes. A biome
   // change that came due meanwhile plays on the way out.
@@ -534,8 +539,11 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateConsumables(g, dt)
   updateEffects(g, dt)
 
-  g.camera.x = g.player.x - g.view.w / 2
-  g.camera.y = g.player.y - 10 - g.view.h / 2
+  // In a legendary's domain the camera looks ahead and frames the fight (`domainCamera`); elsewhere it sits on the player.
+  if (!domainCamera(g, dt)) {
+    g.camera.x = g.player.x - g.view.w / 2
+    g.camera.y = g.player.y - 10 - g.view.h / 2
+  }
   updateSightings(g, dt)
 
   if (g.phase === 'playing' && g.pendingLevelUps > 0) advancePhase(g)

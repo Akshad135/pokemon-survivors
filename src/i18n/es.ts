@@ -1172,6 +1172,21 @@ export const es: Messages = {
     overtime: 'Tiempo extra',
     legends: 'Legendarios',
     reaperDefeated: (n) => (n === 1 ? '¡Arceus derrotado!' : `¡Arceus derrotado ${n}x!`),
+    omen: (name) => `¡*${name}* está despertando! Una grieta va a abrirse.`,
+    omenFaint: 'Una energía *legendaria* se agita… Una grieta va a abrirse.',
+    enterDomain: (place) => `¡Entraste en *${place}*!`,
+    hudCrossing: '¡Avanza!',
+    escaped: (name) => `¡*${name}* escapó de la Poké Ball!`,
+    caught: (name) => `¡*${name}* fue capturado!`,
+    domains: {
+      kyogre: {
+        place: 'Cueva Fondo Marino',
+        epithet: 'Señor de los Mares',
+        omen: 'Una lluvia torrencial cae de la nada…',
+        crossing: '¡La marea sube! ¡Avanza por la cueva!',
+        phases: ['¡La cueva se inunda! Quédate en las islas para resistir el Surf.', '¡Kyogre vuelve a su *forma Primigenia*! ¡Cuidado con el Origin Pulse!'],
+      },
+    },
   },
 
   landmarks: {

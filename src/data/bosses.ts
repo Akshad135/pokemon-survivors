@@ -1,4 +1,5 @@
 import type { Difficulty } from '../game/difficulty'
+import { DOMAIN_PHASES, type RetinueRole } from './domains'
 import type { EnemyId } from './enemies'
 
 /** How an enemy hazard looks (and sounds when it lands). */
@@ -51,7 +52,90 @@ export type BossPattern = PatternGate &
      * stands: they hover by the boss for `windup` seconds, aim lines showing, then fly.
      */
     | { kind: 'volley'; every: number; count: number; arc: number; speed: number; windup: number; radius: number; damage: number; visual: HazardVisual }
+    /**
+     * Beams (Hydro Pump, Aeroblast, Origin Pulse's lances): `count` lines `width`
+     * px wide and `length` long, shown as blinking telegraphs for `windup` s, then
+     * burning for `duration` s. `source: 'boss'`: out of the boss, `spread` rad
+     * apart around the aim at the player, each sweeping `sweep` rad across its
+     * burn (0 or absent: static; a static one stops at the first cover in its way
+     * when `blocked`). `source: 'edge'`: parallel lances from past the screen's
+     * edge at a random angle, `spread` px apart, the middle one through the
+     * player; the gaps between them are the safe lanes.
+     */
+    | { kind: 'beam'; every: number; source: 'boss' | 'edge'; count: number; spread: number; sweep?: number; windup: number; duration: number; width: number; length: number; damage: number; visual: HazardVisual; blocked?: true }
+    /** Adds: `count` of `enemies` (taken in turn) come out `radius` px around the boss, while fewer than `max` of them stand; `role` as in a domain's retinue. */
+    | { kind: 'summon'; every: number; enemies: readonly EnemyId[]; count: number; max: number; radius: number; role?: RetinueRole }
+    /** A charge: the boss marks a lane through the player for `windup` s, then rushes down it at `speed` px/s, `count` times in a row, hurting on contact. */
+    | { kind: 'dash'; every: number; windup: number; speed: number; width: number; damage: number; count: number }
+    /** The boss goes under (untouchable) for `hide` s while its wake follows the player, then the wake stops and it bursts out there `windup` s later. */
+    | { kind: 'dive'; every: number; hide: number; windup: number; radius: number; damage: number; visual: HazardVisual }
+    /** The boss vanishes and lands `windup` s later on the spot it marked: on the player, or as far from them as its arena allows, striking around itself. */
+    | { kind: 'teleport'; every: number; to: 'player' | 'far'; windup: number; radius: number; damage: number; visual: HazardVisual }
+    /**
+     * A blast over everything after `windup` s (the screen dims and the safe
+     * spots glow) that only spares those in a `safe` spot (`BlastSafe`).
+     */
+    | { kind: 'blast'; every: number; windup: number; damage: number; safe: BlastSafe; radius?: number; visual: HazardVisual }
   )
+
+/**
+ * What a blast spares: `cover`, a player with scenery between them and the
+ * boss; `dry`, one out of flood water (an island); `near`/`far`, within or
+ * beyond its `radius` of the boss.
+ */
+export type BlastSafe = 'cover' | 'dry' | 'near' | 'far'
+
+/**
+ * How a boss with phases walks (`BossPhase.steer`): `chase` at the player (the
+ * default), `hold` about `range` px away, `anchor` near its home (where it
+ * appeared) plus (x, y), wandering `drift` px, or `orbit` its home at
+ * `radius`. `pace` multiplies its speed.
+ */
+export type BossSteer =
+  | { kind: 'chase'; pace?: number }
+  | { kind: 'hold'; range: number; pace?: number }
+  | { kind: 'anchor'; x: number; y: number; drift: number; pace?: number }
+  | { kind: 'orbit'; radius: number; pace?: number }
+
+/** A step of an ultimate: `pattern` fires `at` seconds after the ultimate begins. */
+export type UltimateStep = { at: number; pattern: BossPattern }
+
+/**
+ * A phase's signature attack (Origin Pulse, Precipice Blades): first `first` s
+ * into the phase, then every `every` s. Its name (`move`, the official English
+ * name) is announced as it begins, its steps fire in turn, and the phase's
+ * other patterns hold until the last step's warning has landed.
+ */
+export type BossUltimate = { move: string; first: number; every: number; steps: readonly UltimateStep[] }
+
+/**
+ * A boss with phases (`BOSS_PHASES`) fights with the patterns of the phase its
+ * HP is in: a phase starts once it drops under `below` of its HP (the first
+ * one's is 1). As one begins the boss roars and holds still, untouchable, for
+ * `shift` s (`PHASE_SHIFT` when absent); `form` swaps its sprite (a form key of
+ * its species in the sprite manifest, e.g. `primal`); `steer` says how it moves.
+ * The HUD ticks the thresholds on its HP bar.
+ */
+export type BossPhase = {
+  below: number
+  patterns: readonly BossPattern[]
+  ultimate?: BossUltimate
+  steer?: BossSteer
+  form?: string
+  shift?: number
+}
+
+/** Seconds a boss holds still and untouchable as a new phase begins. */
+export const PHASE_SHIFT = 1.8
+
+/**
+ * Bosses that fight in phases, each with its own patterns, ultimate and look:
+ * the rift legendaries with a domain (`data/domains.ts`), and any wave boss
+ * given phases here.
+ */
+export const BOSS_PHASES: Partial<Record<EnemyId, readonly BossPhase[]>> = {
+  ...DOMAIN_PHASES,
+}
 
 /** How each stance walks: a pace multiplier, and how close `ranged` comes before it stops walking in (px). */
 export const STANCES = {

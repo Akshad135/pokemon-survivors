@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_RAGE, MIN_TELEGRAPH, STANCES, type BossPattern } from '../data/bosses'
-import { attackCount, attackWait, chainTarget, createFight, fightPace, fightsInStances, patternLive, shouldEnrage, telegraph, tickStance } from './bossFight'
+import { BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, MIN_TELEGRAPH, STANCES, type BossPattern } from '../data/bosses'
+import { attackCount, attackWait, chainTarget, createFight, fightPace, fightsInStances, holdsOn, patternLive, phaseAt, shouldEnrage, telegraph, tickStance, ultimateLength } from './bossFight'
 
 describe('boss fights', () => {
   it('only wave bosses fight in stances', () => {
@@ -102,5 +102,29 @@ describe('wave boss patterns', () => {
         if (p.kind === 'volley') expect(telegraph(p.windup, nightmare), id).toBeGreaterThanOrEqual(MIN_TELEGRAPH)
       }
     }
+  })
+})
+
+describe('bosses with phases', () => {
+  const phases = BOSS_PHASES.kyogre!
+
+  it('move on as their HP falls under each threshold', () => {
+    expect([phaseAt(phases, 1), phaseAt(phases, 0.69), phaseAt(phases, 0.67), phaseAt(phases, 0.2)]).toEqual([0, 0, 1, 2])
+  })
+
+  it('hold on at 1 HP until their last phase, and through a phase opening', () => {
+    const fight = createFight(createRng(1), 'normal')
+    expect(holdsOn({ kind: 'kyogre', fight })).toBe(true)
+    fight.phase = phases.length - 1
+    expect(holdsOn({ kind: 'kyogre', fight })).toBe(false)
+    fight.shift = 1
+    expect(holdsOn({ kind: 'kyogre', fight })).toBe(true)
+    expect(holdsOn({ kind: 'onix', fight })).toBe(false)
+  })
+
+  it("keep the rest of the phase waiting until an ultimate's last warning has landed", () => {
+    const ultimate = phases[2]!.ultimate!
+    const last = ultimate.steps.at(-1)!
+    expect(ultimateLength(ultimate.steps)).toBeGreaterThan(last.at)
   })
 })

@@ -1171,6 +1171,21 @@ export const en: Messages = {
     overtime: 'Overtime',
     legends: 'Legendaries',
     reaperDefeated: (n) => (n === 1 ? 'Arceus defeated!' : `Arceus defeated ${n}x!`),
+    omen: (name) => `*${name}* is awakening! A rift is about to open.`,
+    omenFaint: 'A *legendary* energy stirs… A rift is about to open.',
+    enterDomain: (place) => `You entered *${place}*!`,
+    hudCrossing: 'Keep going!',
+    escaped: (name) => `*${name}* broke free from the Poké Ball!`,
+    caught: (name) => `*${name}* was caught!`,
+    domains: {
+      kyogre: {
+        place: 'Seafloor Cavern',
+        epithet: 'Lord of the Seas',
+        omen: 'A torrential rain pours out of nowhere…',
+        crossing: 'The tide is rising! Push on through the cavern!',
+        phases: ['The cavern floods! Stand on the islands to ride out Surf.', 'Kyogre returns to its *Primal form*! Watch out for Origin Pulse!'],
+      },
+    },
   },
 
   landmarks: {

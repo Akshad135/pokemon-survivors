@@ -47,8 +47,8 @@ const bite = (g: Game, id: CurseId, share: number) => {
 /** Life Orb: a move went off, and that costs HP (at most once every `CURSE.lifeOrb.gap` seconds). */
 export const curseCast = (g: Game) => {
   const c = g.curses
-  if (!c.held.includes('lifeOrb') || g.time < c.recoilAt) return
-  c.recoilAt = g.time + CURSE.lifeOrb.gap
+  if (!c.held.includes('lifeOrb') || g.now < c.recoilAt) return
+  c.recoilAt = g.now + CURSE.lifeOrb.gap
   bite(g, 'lifeOrb', CURSE.lifeOrb.cost)
   const p = g.player
   burst(g, p.x, p.y - 12, { colors: ['#f05878', '#a050e0'], count: 4, speed: 40, ttl: 0.35 })
@@ -57,8 +57,8 @@ export const curseCast = (g: Game) => {
 /** Flame Orb's burn, every tick of it: some HP and a few embers off the player. */
 export const updateCurses = (g: Game) => {
   const c = g.curses
-  if (!c.held.includes('flameOrb') || g.time < c.burnAt) return
-  c.burnAt = g.time + CURSE.flameOrb.tick
+  if (!c.held.includes('flameOrb') || g.now < c.burnAt) return
+  c.burnAt = g.now + CURSE.flameOrb.tick
   bite(g, 'flameOrb', CURSE.flameOrb.perSecond * CURSE.flameOrb.tick)
   const p = g.player
   burst(g, p.x, p.y - 8, { colors: ['#f8a030', '#f85818', '#fff0a0'], count: 3, speed: 25, ttl: 0.5, gravity: -70 })

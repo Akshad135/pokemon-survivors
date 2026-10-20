@@ -245,9 +245,9 @@ const driftTick = (g: Game, link: Attack) => {
     const a = orbs[i]!
     const b = orbs[j]!
     for (const e of g.enemies) {
-      if (e.dying >= 0 || (link.hits.get(e.id) ?? -1) > g.time) continue
+      if (e.dying >= 0 || (link.hits.get(e.id) ?? -1) > g.now) continue
       if (segmentDistance({ x: e.x, y: e.y - e.radius }, a, b) > half + e.radius) continue
-      link.hits.set(e.id, g.time + link.hitInterval)
+      link.hits.set(e.id, g.now + link.hitInterval)
       link.x = e.x
       link.y = e.y - e.radius
       damageEnemy(g, e, link)

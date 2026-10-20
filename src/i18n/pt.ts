@@ -3,6 +3,7 @@ import type { BiomeId } from '../data/biomes'
 import type { PlaceId, WingId } from '../data/places'
 import type { LandmarkId, TreasureLandmark } from '../data/landmarks'
 import type { PokeType } from '../data/types'
+import type { RiftLegend } from '../data/rifts'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
 import type { AbilityId } from '../data/abilities'
@@ -59,6 +60,9 @@ const typeBoost = (type: string) => `+10% de dano em golpes do tipo ${type}.`
  * so every other locale must match it key for key. Toast strings use light
  * markup rendered by `rich`: `*bold*` and `_accent_`.
  */
+/** A legendary's domain in words (`rifts.domains`): its place, epithet, omen, the crossing's warning, a line per phase after the first. */
+export type DomainLines = { place: string; epithet: string; omen: string; crossing: string; phases: readonly string[] }
+
 export const pt = {
   loading: 'Carregando…',
   level: (n: number) => `Nv ${n}`,
@@ -1313,6 +1317,23 @@ export const pt = {
     overtime: 'Tempo extra',
     legends: 'Lendários',
     reaperDefeated: (n: number) => (n === 1 ? 'Arceus derrotado!' : `Arceus derrotado ${n}x!`),
+    /** Epic rifts (`data/domains.ts`): the omen, the way through a domain, its legendary's phases and the capture. */
+    omen: (name: string) => `*${name}* está despertando! Uma fenda vai se abrir.`,
+    omenFaint: 'Uma energia *lendária* se agita… Uma fenda vai se abrir.',
+    enterDomain: (place: string) => `Você entrou em *${place}*!`,
+    hudCrossing: 'Avance!',
+    escaped: (name: string) => `*${name}* escapou da Poké Ball!`,
+    caught: (name: string) => `*${name}* foi capturado!`,
+    /** Per legendary: its domain's name, its epithet on the title card, its omen, the crossing's warning and a line per phase after the first. */
+    domains: {
+      kyogre: {
+        place: 'Caverna do Fundo do Mar',
+        epithet: 'Senhor dos Mares',
+        omen: 'Uma chuva torrencial cai do nada…',
+        crossing: 'A maré está subindo! Avance pela caverna!',
+        phases: ['A caverna inunda! Fique nas ilhas para escapar do Surf.', 'Kyogre volta à *forma Primal*! Cuidado com o Origin Pulse!'],
+      },
+    } satisfies Partial<Record<RiftLegend, DomainLines>>,
   },
 
   /** Places: the cave, the graveyard and the sky (`data/places.ts`), their entrances on the map and what goes on inside. */

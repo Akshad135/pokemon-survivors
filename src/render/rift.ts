@@ -14,8 +14,8 @@ type Ctx = CanvasRenderingContext2D
 
 /* ---------------- Arena ---------------- */
 
-const rgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as const
-const mix = (a: string, b: string, k: number) => {
+export const rgb = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as const
+export const mix = (a: string, b: string, k: number) => {
   const [r1, g1, b1] = rgb(a)
   const [r2, g2, b2] = rgb(b)
   const c = (u: number, v: number) => Math.round(u + (v - u) * k).toString(16).padStart(2, '0')
@@ -24,7 +24,7 @@ const mix = (a: string, b: string, k: number) => {
 
 /* Floor patterns, in arena coordinates. */
 
-type Pattern = (x: number, y: number, t: ArenaTheme) => string
+export type Pattern = (x: number, y: number, t: ArenaTheme) => string
 
 /** Concentric temple rings split into sectors. */
 const rings: Pattern = (x, y, t) => {
@@ -139,7 +139,7 @@ const craters: Pattern = (x, y, t) => {
   return hash2(Math.floor((x + 400) / 9), Math.floor((y + 400) / 7), 1) > 0.6 ? alt : base
 }
 
-const PATTERNS: Record<FloorPattern, Pattern> = { rings, planks, slabs, basalt, wetRock, jade, sand, craters }
+export const PATTERNS: Record<FloorPattern, Pattern> = { rings, planks, slabs, basalt, wetRock, jade, sand, craters }
 
 /** Inlays drawn over the pattern: the Bell Tower's gold band and the Spear Pillar's clock. */
 const INLAYS: Partial<Record<RiftLegend, (x: number, y: number, t: ArenaTheme) => string | null>> = {
@@ -158,7 +158,7 @@ const INLAYS: Partial<Record<RiftLegend, (x: number, y: number, t: ArenaTheme) =
 }
 
 /** The platform's side under each floor's south edges. */
-const FACES: Record<RiftLegend, Ramp> = {
+export const FACES: Record<RiftLegend, Ramp> = {
   lugia: ['#0c1428', '#1c2c4c', '#2c3c5c', '#40547a'],
   hoOh: ['#200c08', '#401810', '#5c2418', '#7c3420'],
   kyogre: ['#04141c', '#0c2830', '#143c48', '#205060'],
@@ -234,7 +234,7 @@ const buildFloor = (legend: RiftLegend, look: FloorLook) => {
         const shore = layout.islands?.some((s) => fits(s, x, y, -2))
         // Islands rise a few px out of the water: their side shows under the south shore.
         const side = layout.islands?.some((s) => fits(s, x, y - 5, 0) && y > s.y)
-        const rim = layout.shallow.some((s) => s.r < 150 && fits(s, x, y, 0) && !fits(s, x, y, 2))
+        const rim = layout.shallow.some((s) => s.kind === 'circle' && s.r < 150 && fits(s, x, y, 0) && !fits(s, x, y, 2))
         const ripple = Math.abs(((Math.sqrt(x * x + y * y) + hash2(Math.floor(x / 16), Math.floor(y / 16), 4) * 9) % 13) - 6) < 0.5 && hash2(px >> 3, py >> 3, 5) < 0.5
         color = side ? mix(theme.wall[1], '#000000', 0.35) : shore ? '#d8f0f8' : rim ? '#1c5070' : ripple ? '#88c8e8' : mix(color, '#2878b0', 0.62)
       }
