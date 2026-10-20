@@ -576,23 +576,22 @@ type RunPlan = { seed: number; outbreak: EnemyId; roster: Roster }
 /** A Desafio do dia run, as `startRun` takes it: the challenge, and whether the screen called it official. */
 type ChallengeRun = { challenge: Challenge; official: boolean }
 
-/** A run's plan from `seed`: the API's for a ranked run, else one of the game's own. */
-const planRun = (seed = Date.now()): RunPlan => {
-  const outbreak = outbreakToday()
-  return { seed, outbreak, roster: runRoster(seed, outbreak) }
-}
+/** A run's plan from `seed` and `outbreak`: the API's for a ranked run, else the game's own and the device's day. */
+const planRun = (seed = Date.now(), outbreak = outbreakToday()): RunPlan => ({ seed, outbreak, roster: runRoster(seed, outbreak) })
 
 let upcoming = planRun()
 
 /**
  * Asks ahead for the next ranked run's ticket (`day`: a Desafio do dia's), so
  * Play never waits on it. Only between runs: a new token replaces the one a
- * run in progress plays. A regular ticket's seed becomes the next plan, so the
- * menus warm up the cast it draws.
+ * run in progress plays. A regular ticket's seed and outbreak become the next
+ * plan, so the menus warm up the cast it draws.
  */
 const prefetchRun = (day: DayKey | null = null) =>
-  void prefetchRanked(day).then((seed) => {
-    if (seed !== null && !day && upcoming.seed !== seed) upcoming = planRun(seed)
+  void prefetchRanked(day).then((ticket) => {
+    if (!ticket || ticket.seed === null || day) return
+    const outbreak = outbreakToday(ticket.outbreak)
+    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak) upcoming = planRun(ticket.seed, outbreak)
   })
 
 /**
@@ -629,8 +628,10 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   const ranked = startRanked(c?.day ?? null)
   // A ranked run plays the seed the API dealt (a challenge's is the day's); the replay starts from it and the cast is drawn from it.
   const seed = c ? c.seed : (ranked?.seed ?? upcoming.seed)
+  // And the outbreak it dealt with the ticket (the API checks it by its own clock); without one, the device's day.
+  const outbreak = outbreakToday(ranked?.outbreak ?? null)
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
-  const plan = c ? { seed, outbreak: c.outbreak, roster: runRoster(seed, c.outbreak) } : upcoming.seed === seed && upcoming.outbreak === outbreakToday() ? upcoming : planRun(seed)
+  const plan = c ? { seed, outbreak: c.outbreak, roster: runRoster(seed, c.outbreak) } : upcoming.seed === seed && upcoming.outbreak === outbreak ? upcoming : planRun(seed, outbreak)
   if (!c) upcoming = planRun()
   // The whole family, branches included: the evolution scene can land on any of them.
   await loadAll([...familyDex(starter), ...openingDex(plan)])
@@ -780,8 +781,9 @@ const syncOverlay = (r: Run) => {
       break
     case 'paused':
       r.overlay = pauseMenu(ui, input, g, {
-        resume: () => (g.phase = 'playing'),
-        quit: () => afterRun(() => showMenu()),
+        // Only from the pause: a late press must never flip a level-up to playing (unrecorded) or end the run under it.
+        resume: () => g.phase === 'paused' && (g.phase = 'playing'),
+        quit: () => g.phase === 'paused' && afterRun(() => showMenu()),
         settings: (back) => runSettings(r, back),
         report: bugReportsEnabled ? (back) => bugReportForm(ui, input, back) : null,
       })

@@ -13,7 +13,8 @@ import type { Roster } from './roster'
  * them come shiny (1 to 3 in most runs), where any other species meets a
  * fraction of one. Odds per spawn above the regular ones would overshoot.
  * It's a run input (`ReplayStart.outbreak`): the server checks it against
- * the day the run started (`outbreakFits`). Pure.
+ * the day the run started (`outbreakFits`), and deals a ranked run's with its
+ * token (`POST /runs`), so a wrong device clock can't pick another. Pure.
  */
 
 export const OUTBREAK = {
@@ -28,6 +29,9 @@ export const OUTBREAK_SPECIES: readonly EnemyId[] = (Object.keys(ENEMIES) as Ene
     return def.tier === OUTBREAK.tier && def.trait === undefined && def.boss !== true && hasShinySprite(def.dex)
   })
   .sort((a, b) => ENEMIES[a].dex - ENEMIES[b].dex)
+
+/** Whether an untrusted value (a replay, the API's answer) names a species that can break out. */
+export const isOutbreakSpecies = (v: unknown): v is EnemyId => OUTBREAK_SPECIES.some((id) => id === v)
 
 /** A seeded shuffle of the outbreak species: one cycle of days gives each one its day. */
 const cycleOrder = (cycle: number) => {

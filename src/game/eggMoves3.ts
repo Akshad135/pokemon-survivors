@@ -171,7 +171,7 @@ export const EGG_MOVES_3 = {
         spawnAttack(g, {
           ...look('gigatonHammer', 'steel', 'hammerTap'), x: p.x + off.ox, y: p.y + off.oy,
           shape: { kind: 'circle', r: 12 * s.area }, motion: { kind: 'follow', ...off },
-          damage: s.damage * HAMMER_TAP, knockback: s.knockback * 0.3, ttl: 0.24, activeUntil: 0.1, flip: Math.cos(angle) < 0,
+          damage: s.damage * HAMMER_TAP, knockback: s.knockback * 0.3, ttl: 0.24, activeUntil: 0.1, flip: dm.cos(angle) < 0,
         })
         return
       }
@@ -181,7 +181,7 @@ export const EGG_MOVES_3 = {
         ...look('gigatonHammer', 'steel', 'gigatonHammer'), x: p.x + d.x, y: p.y + d.y,
         shape: { kind: 'circle', r: HAMMER_R * s.area }, motion: { kind: 'static' },
         damage: s.damage, knockback: s.knockback, ttl: HAMMER_WINDUP + 0.5, activeFrom: HAMMER_WINDUP, activeUntil: HAMMER_WINDUP + 0.08,
-        flip: Math.cos(angle) < 0,
+        flip: dm.cos(angle) < 0,
       })
     },
     // The clang plays when the hammer lands on someone.
