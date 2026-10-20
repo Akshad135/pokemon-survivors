@@ -13,7 +13,7 @@ import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, parseDisplayName, parseHandle, parseRunResult } from '../../src/game/ranking'
-import { parseReplay } from '../../src/game/replay'
+import { parseReplay, rulesStanding } from '../../src/game/replay'
 import { parseCode } from '../../src/game/supporters'
 import { isSuggestionSort, isSuggestionStatus, isVote, parseSuggestionDraft } from '../../src/game/suggestions'
 import type { AdminStore } from './admin'
@@ -106,10 +106,13 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
  *   replay may be re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
- *   400 for an implausible result or a replay of another run, 404 for an
- *   unknown token, 409 when it contradicts what the run already recorded, 422
- *   when the clock can't fit it. A body without a replay (an older game) is
- *   taken and stays unverified.
+ *   400 for an implausible result, a missing replay or a replay of another run,
+ *   404 for an unknown token, 409 when it contradicts what the run already
+ *   recorded, 422 when the clock can't fit it. The replay must play by this
+ *   server's rules (`RULES_VERSION`), so every run on the boards can be
+ *   re-simulated: 400 `outdated` for older ones (the run straddled a deploy),
+ *   503 for newer ones (the API isn't deployed yet: the game keeps the result
+ *   and sends it again later).
  * - `GET /boards/:difficulty?period=day|week|all&starter=&friends=1`: `Board`.
  *   `friends` needs a token.
  * - `GET /challenge/:day?friends=1`: `ChallengeBoard`, the day's official attempts. `friends` needs a token.
@@ -220,14 +223,18 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const body = await json(c)
     const result = parseRunResult(body)
     if (!result) return c.json({ error: 'implausible result' }, 400)
-    const replay = isRecord(body) && body.replay !== undefined ? parseReplay(body.replay) : null
-    if (isRecord(body) && body.replay !== undefined && (!replay || replay.start.starter !== result.starter || replay.start.difficulty !== result.difficulty)) {
+    // A run without a replay, or with one this server can't judge, could claim anything: none counts.
+    const replay = isRecord(body) ? parseReplay(body.replay) : null
+    if (!replay || replay.start.starter !== result.starter || replay.start.difficulty !== result.difficulty) {
       return c.json({ error: 'replay of another run' }, 400)
     }
+    const standing = rulesStanding(replay.rules)
+    if (standing === 'older') return c.json({ error: 'outdated' }, 400)
+    if (standing === 'newer') return c.json({ error: 'api behind' }, 503)
     const token = c.req.param('token')
     const finished = await ranking.finishRun(c.var.userId, token, result, replay)
     if (!finished.ok) return c.json({ error: finished.error }, FINISH_ERRORS[finished.error])
-    if (replay) checks.schedule(token)
+    checks.schedule(token)
     void gifts.credit(c.var.userId).catch((err) => console.error('invite credit failed', err))
     const [ranks, challenge] = await Promise.all([
       ranking.runRanks(c.var.userId, result.difficulty),

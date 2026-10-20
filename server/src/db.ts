@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import postgres from 'postgres'
 import { mergeClears, wonClears } from '../../src/game/clears'
+import { keepGiven, parseGiftContent } from '../../src/game/gifts'
 import { parseSaveData } from '../../src/game/meta'
 import { applyPush, type Push, type Stored } from '../../src/game/sync'
 
@@ -40,6 +41,8 @@ export const saveStore = (sql: Sql) => ({
    * player's row makes pushes from two devices take turns. The player's ranked
    * wins (not failed by their check) add their clears, so wins from before
    * clears were tracked, or from a device that lost its save, still count.
+   * Gift-only rewards stay only if the player's gifts brought them (`keepGiven`):
+   * an edited save can't give itself the Supporter title or a ribbon.
    */
   push: (userId: string, push: Push) =>
     sql.begin(async (tx) => {
@@ -49,7 +52,12 @@ export const saveStore = (sql: Sql) => ({
       const won = await tx<{ starter: string; difficulty: string }[]>`
         select distinct starter, difficulty from runs
         where user_id = ${userId} and outcome = 'victory' and verified is not false`
-      const next = { ...applied, save: { ...applied.save, clears: mergeClears(applied.save.clears, wonClears(won)) } }
+      const gifts = await tx<{ id: string; payload: unknown }[]>`select id, payload from gifts where user_id = ${userId}`
+      const given = gifts.flatMap((g) => {
+        const content = parseGiftContent(g.payload)
+        return content ? [{ id: g.id, content }] : []
+      })
+      const next = { ...applied, save: keepGiven({ ...applied.save, clears: mergeClears(applied.save.clears, wonClears(won)) }, given) }
       await tx`
         insert into saves (user_id, version, revision, data)
         values (${userId}, ${next.save.version}, ${next.revision}, ${tx.json(next.save)})
