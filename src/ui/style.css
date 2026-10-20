@@ -3700,6 +3700,22 @@ button {
   text-shadow: -1px -1px 0 #25f4ee, 1px 1px 0 #fe2c55;
 }
 
+/* YouTube: its red on the name, its near-black on the frame (red there would hide the lobby's red selection). */
+.lobby-social.youtube {
+  border-color: #0f0f0f;
+  --frame: #282828;
+}
+
+.lobby-social.youtube:hover,
+.lobby-social.youtube.selected {
+  --frame: #e83838;
+}
+
+.lobby-social.youtube .lobby-invites-text b {
+  color: #ff0033;
+  text-transform: uppercase;
+}
+
 /* The partner on stage, over its name plate (canvas sized by `partnerStage`). */
 .lobby-partner {
   display: flex;
@@ -4099,6 +4115,27 @@ button {
     margin: -8px calc(-1 * max(10px, var(--safe-r))) calc(-1 * max(10px, var(--safe-b))) calc(-1 * max(10px, var(--safe-l)));
     background: rgba(24, 30, 48, 0.82);
     border-top: 2px solid #283040;
+  }
+}
+
+/* The narrowest phones: tighter profile icons, so Discord's "Join the server" still fits beside them. */
+@media (max-width: 340px) {
+  .lobby-community {
+    gap: 6px;
+  }
+  .lobby-social {
+    padding: 6px;
+  }
+}
+
+/* Small phones in landscape hold Discord and the profiles in the top bar: the wallet drops its coin (₽ says it) and the buttons sit closer. */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 620px) {
+  .title-home .shell-top,
+  .title-home .shell-slot {
+    gap: 6px;
+  }
+  .title-home .shell-wallet img {
+    display: none;
   }
 }
 
