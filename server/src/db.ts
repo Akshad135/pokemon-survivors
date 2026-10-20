@@ -1,5 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises'
 import postgres from 'postgres'
+import { mergeClears, wonClears } from '../../src/game/clears'
 import { parseSaveData } from '../../src/game/meta'
 import { applyPush, type Push, type Stored } from '../../src/game/sync'
 
@@ -36,13 +37,19 @@ export const saveStore = (sql: Sql) => ({
 
   /**
    * Applies a push (`applyPush`) and returns what was stored. Locking the
-   * player's row makes pushes from two devices take turns.
+   * player's row makes pushes from two devices take turns. The player's ranked
+   * wins (not failed by their check) add their clears, so wins from before
+   * clears were tracked, or from a device that lost its save, still count.
    */
   push: (userId: string, push: Push) =>
     sql.begin(async (tx) => {
       await tx`insert into users (id) values (${userId}) on conflict (id) do update set seen_at = now()`
       const stored = toStored((await tx<SaveRow[]>`select data, revision from saves where user_id = ${userId} for update`)[0])
-      const next = applyPush(stored, push)
+      const applied = applyPush(stored, push)
+      const won = await tx<{ starter: string; difficulty: string }[]>`
+        select distinct starter, difficulty from runs
+        where user_id = ${userId} and outcome = 'victory' and verified is not false`
+      const next = { ...applied, save: { ...applied.save, clears: mergeClears(applied.save.clears, wonClears(won)) } }
       await tx`
         insert into saves (user_id, version, revision, data)
         values (${userId}, ${next.save.version}, ${next.revision}, ${tx.json(next.save)})

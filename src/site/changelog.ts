@@ -241,9 +241,9 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             es: '¿Venciste a Mewtwo con un Pokémon? Su línea evolutiva gana un trofeo en la Pokédex y en la elección de compañero: bronce en Normal, plata en Difícil y oro en Pesadilla. La Pokédex cuenta cuántos superaste, para intentar superarlo con todos. Idea de @havenlad en el Muro de ideas.',
           },
           {
-            pt: 'Vitórias de antes também contam quando o seu histórico mostra com quem foram (por exemplo, se todas foram com iniciais de uma mesma região).',
-            en: 'Earlier wins count too when your records show who won them (for example, if they were all with starters from one region).',
-            es: 'Las victorias de antes también cuentan cuando tu historial muestra con quién fueron (por ejemplo, si todas fueron con iniciales de una misma región).',
+            pt: 'Vitórias de antes dos troféus também contam. Com conta, toda vitória que está no ranking ganha o troféu na próxima vez que o jogo sincronizar. Sem conta, valem as que o seu histórico prova (por exemplo, um inicial que é o único que você jogou da região). Antes, quem tinha vencido com vários Pokémon ficava sem troféu por essas vitórias; obrigado a @justwex pelo aviso.',
+            en: "Wins from before trophies existed count too. With an account, every win on the ranking gets its trophy the next time the game syncs. Without one, the ones your records prove do (for example, a starter that's the only one you played from its region). Before, if you had won with several Pokémon, those wins got no trophy; thanks to @justwex for the report.",
+            es: 'Las victorias de antes de los trofeos también cuentan. Con cuenta, toda victoria que está en el ranking gana su trofeo la próxima vez que el juego sincronice. Sin cuenta, valen las que tu historial prueba (por ejemplo, un inicial que es el único que jugaste de su región). Antes, si habías ganado con varios Pokémon, esas victorias no daban trofeo; gracias a @justwex por el aviso.',
           },
         ],
       },
