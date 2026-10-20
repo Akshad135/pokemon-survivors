@@ -13,7 +13,8 @@ export type Dex = number
 
 type Sheet = {
   img: HTMLImageElement | HTMLCanvasElement
-  white: HTMLCanvasElement
+  /** The sheet's white silhouette, made on first use (`whiteOf`). */
+  white: HTMLCanvasElement | null
   fw: number
   fh: number
   durations: readonly number[]
@@ -62,7 +63,7 @@ const manifestVariant = (dex: Dex, shiny: boolean, form?: FormKey) => {
 
 export const hasShiny = (dex: Dex) => MANIFEST[String(dex)]?.shiny !== undefined
 
-/** Loads an image and decodes it off the main thread, so its first draw (the silhouette, mid-run) doesn't stall a frame. */
+/** Loads an image and decodes it off the main thread, so its first draw (mid-run) doesn't stall a frame. */
 const loadImage = (src: string) => {
   const img = new Image()
   img.src = src
@@ -83,6 +84,13 @@ const silhouette = (img: HTMLImageElement | HTMLCanvasElement) => {
   ctx.fillRect(0, 0, img.width, img.height)
   return canvas
 }
+
+/**
+ * The sheet's silhouette, made the first time a hit flash, tint or outline draws it. Made up front,
+ * every loaded sheet kept one: the run's whole horde, the menus' starters, shinies and forms, over
+ * 100 MB of canvases seconds into a run, past what iOS lets a page hold (`getContext` then fails).
+ */
+const whiteOf = (sheet: Sheet) => (sheet.white ??= silhouette(sheet.img))
 
 const tints = new WeakMap<HTMLCanvasElement, Map<string, HTMLCanvasElement>>()
 
@@ -128,7 +136,7 @@ const fetchSpecies = async (dex: Dex, shiny: boolean, form?: FormKey): Promise<S
     const img = await loadImage(`${dir}/${anims[name] ? name : 'Walk'}.png`)
     return {
       img,
-      white: silhouette(img),
+      white: null,
       fw: meta.frameWidth,
       fh: meta.frameHeight,
       durations: meta.durations,
@@ -189,9 +197,9 @@ let puff: Sheet | null = null
 const standIns = new Map<Dex, SpeciesSprites>()
 
 // A GPU reset blanks the silhouettes (and their tints, keyed by them) and the puff, all canvases.
-// The sheets are images and survive, so the silhouettes are redrawn from them.
+// The sheets are images and survive, so the silhouettes are redrawn from them when next drawn.
 onCanvasReset(() => {
-  for (const s of cache.values()) for (const sheet of Object.values(s.anims)) sheet.white = silhouette(sheet.img)
+  for (const s of cache.values()) for (const sheet of Object.values(s.anims)) sheet.white = null
   puff = null
   standIns.clear()
 })
@@ -211,7 +219,7 @@ const pendingSprites = (dex: Dex): SpeciesSprites => {
       const frame = fromStrings(PUFF, { 1: '#6c7058', 2: '#b0b098', 3: '#e0e0c8' })
       const img = createCanvas(frame.width, frame.height * 8)
       for (let row = 0; row < 8; row++) context2d(img).drawImage(frame, 0, row * frame.height)
-      puff = { img, white: silhouette(img), fw: frame.width, fh: frame.height, durations: [60], totalTicks: 60 }
+      puff = { img, white: null, fw: frame.width, fh: frame.height, durations: [60], totalTicks: 60 }
     }
     // The puff stands where the Pokémon will: same feet and body as its real sprite.
     s = { dex, anims: { Walk: puff, Idle: puff, Hurt: puff }, portrait: new Image(), cry: cryUrl(dex), ...bodyOf(dex) }
@@ -319,7 +327,7 @@ export const drawPokemon = (
   const flash = opts.flash ?? 0
   if (alpha !== 1) ctx.globalAlpha = alpha
   if (opts.outline) {
-    const edge = tinted(sheet.white, opts.outline)
+    const edge = tinted(whiteOf(sheet), opts.outline)
     ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx - 1, dy, dw, dh)
     ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx + 1, dy, dw, dh)
     ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx, dy - 1, dw, dh)
@@ -329,11 +337,11 @@ export const drawPokemon = (
   const tint = opts.tint
   if (tint && tint.amount > 0 && flash < 1) {
     ctx.globalAlpha = alpha * Math.min(1, tint.amount)
-    ctx.drawImage(tinted(sheet.white, tint.color), sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+    ctx.drawImage(tinted(whiteOf(sheet), tint.color), sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
   }
   if (flash > 0) {
     ctx.globalAlpha = alpha * Math.min(1, flash)
-    ctx.drawImage(sheet.white, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+    ctx.drawImage(whiteOf(sheet), sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
   }
   ctx.globalAlpha = 1
 }
