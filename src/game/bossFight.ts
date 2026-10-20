@@ -11,12 +11,13 @@ import * as dm from '../engine/dmath'
 /**
  * A boss moving on its own script instead of walking (`game/bosses.ts`):
  * a `dash` marks its lane for `wait` s then rushes (vx, vy) for `left` s,
- * `more` times again; a `dive` is under, untouchable, for `left` s, its wake at
+ * `more` times again (a `swoop` one, `reach` > 0, comes in from that far off
+ * on a new side each time); a `dive` is under, untouchable, for `left` s, its wake at
  * (x, y) following the player until `lock` s are left (then its strike shows);
  * `away` is a teleport waiting for its landing.
  */
 export type BossMotion =
-  | { kind: 'dash'; wait: number; left: number; vx: number; vy: number; more: number; speed: number; width: number; damage: number; windup: number; hit: boolean }
+  | { kind: 'dash'; wait: number; left: number; vx: number; vy: number; more: number; speed: number; width: number; damage: number; windup: number; hit: boolean; reach: number }
   | { kind: 'dive'; left: number; lock: number; x: number; y: number; windup: number; radius: number; damage: number; visual: HazardVisual }
   | { kind: 'away'; left: number }
 
@@ -81,6 +82,7 @@ export const warningOf = (p: BossPattern) => {
     case 'volley': return p.windup
     case 'beam': return p.windup + p.duration
     case 'dash': return p.windup * p.count + 1
+    case 'swoop': return (p.windup + (p.reach * 2) / p.speed) * p.count
     case 'dive': return p.hide + p.windup
     case 'teleport': case 'blast': return p.windup
     default: return 0

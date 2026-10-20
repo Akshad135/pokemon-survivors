@@ -4,7 +4,7 @@ import { domainOf } from '../data/domains'
 import { drawCapture } from './capture'
 import { drawDomainFloor, drawTear, warmDomain } from './domain'
 import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance } from './legendFx'
-import { drawLegendSky } from './legendSky'
+import { drawLegendSky, drawOmenGround } from './legendSky'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { BIOME_ORDER, BIOMES, biomeAt } from '../data/biomes'
@@ -854,6 +854,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamGround(ctx, hz)
     else if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
   drawBossGround(ctx, g, t)
+  drawOmenGround(ctx, g)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
   // Map events wait outside with the rest of the world while the player is in a room.

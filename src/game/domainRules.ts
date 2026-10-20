@@ -62,8 +62,9 @@ const shiftAll = <S extends ArenaShape>(list: readonly S[] | undefined, [dx, dy]
  * The domain's floor, in domain px: while the way is open, the crossing and
  * the arena; once sealed, the arena alone with the transforms that landed (a
  * flood's water and islands, lava and its cool spots, crumbled holes; a later
- * transform of a kind replaces the earlier one's spare spots). `water` adds a
- * stretch of shallow water (the tide behind its front).
+ * transform of a kind replaces the earlier one's spare spots). Lava rivers
+ * and their bridges come along like the floor. `water` adds a stretch of
+ * shallow water (the tide behind its front).
  */
 export const composePlan = (domain: LegendDomain, sealed: boolean, landed: readonly ArenaTransform[], water?: ArenaShape): FloorPlan => {
   const { arena, crossing } = domain
@@ -82,9 +83,14 @@ export const composePlan = (domain: LegendDomain, sealed: boolean, landed: reado
     islands: [...(sealed ? [] : (crossing.islands ?? [])), ...islands],
     lavaFields,
     cool: lava ? shiftAll(lava.spare, at) : [],
+    lava: [...(sealed ? [] : (crossing.lava ?? [])), ...(arena.lava ?? []).map((r) => ({ ...r, pts: r.pts.map(([x, y]): Pt => [x + at[0], y + at[1]]) }))],
+    bridges: [...(sealed ? [] : (crossing.bridges ?? [])), ...(arena.bridges ?? []).map((b) => ({ ...b, x: b.x + at[0], y: b.y + at[1] }))],
   }
   return plan
 }
 
 /** The tide behind a front at domain y `front`: a band as wide as the domain, down past its south end. */
 export const waterBelow = (front: number): ArenaShape => ({ kind: 'poly', pts: [[-2000, front], [2000, front], [2000, front + 4000], [-2000, front + 4000]] })
+
+/** What a threat leaves behind its front at domain y `front`: the tide's water (`waterBelow`), or nothing when its `ground` is `none`. */
+export const threatGround = (t: Threat, front: number) => (t.ground === 'none' ? undefined : waterBelow(front))

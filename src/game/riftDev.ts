@@ -13,7 +13,7 @@ import type { Game } from './types'
 
 /**
  * Dev-console shortcuts for staging bosses, rifts and the endless mode
- * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.rift()`, `ps.omen()`, `ps.riftAct()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
+ * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.rift()`, `ps.omen()`, `ps.riftAct()`, `ps.ult()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
  * Wired in `main.ts` for dev builds only.
  */
 export const riftDevTools = (game: () => Game | undefined) => {
@@ -53,6 +53,11 @@ export const riftDevTools = (game: () => Game | undefined) => {
     omen: (legend?: RiftLegend) => playing((g) => startOmen(g, legend))(),
     /** In a domain, jumps to an act: `ps.riftAct('encounter')`, `ps.riftAct('battle', 2)` for the top of phase 2, or `ps.riftAct('capture')`. */
     riftAct: (act: 'encounter' | 'battle' | 'capture', phase?: number) => playing((g) => jumpToAct(g, act, phase))(),
+    /** Fires the legendary's ultimate now (its phase's signature attack): `ps.ult()`. */
+    ult: playing((g) => {
+      const boss = g.enemies.find((e) => e.id === g.bossId)
+      if (boss?.fight) boss.fight.ultLeft = 0
+    }),
     /** Opens a portal right next to the player. */
     portal: (legend?: RiftLegend) => playing((g) => openPortal(g, legend ?? pickLegend(g.rng, g.rift.met), { x: g.player.x + 48, y: g.player.y }))(),
     /** Ends the run as if Mewtwo just fell: the victory screen with the endless offer. */

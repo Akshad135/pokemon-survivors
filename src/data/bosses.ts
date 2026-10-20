@@ -67,6 +67,14 @@ export type BossPattern = PatternGate &
     | { kind: 'summon'; every: number; enemies: readonly EnemyId[]; count: number; max: number; radius: number; role?: RetinueRole }
     /** A charge: the boss marks a lane through the player for `windup` s, then rushes down it at `speed` px/s, `count` times in a row, hurting on contact. */
     | { kind: 'dash'; every: number; windup: number; speed: number; width: number; damage: number; count: number }
+    /**
+     * A flyer's pass (Extreme Speed, Dragon Ascent): the boss leaves the arena,
+     * comes back `reach` px from the player on a random side, marks a lane
+     * through them across the arena for `windup` s, then streaks down it at
+     * `speed` px/s, `count` times from new sides, hurting on contact; it lands
+     * back home after the last.
+     */
+    | { kind: 'swoop'; every: number; windup: number; speed: number; width: number; damage: number; count: number; reach: number }
     /** The boss goes under (untouchable) for `hide` s while its wake follows the player, then the wake stops and it bursts out there `windup` s later. */
     | { kind: 'dive'; every: number; hide: number; windup: number; radius: number; damage: number; visual: HazardVisual }
     /** The boss vanishes and lands `windup` s later on the spot it marked: on the player, or as far from them as its arena allows, striking around itself. */

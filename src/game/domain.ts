@@ -1,15 +1,15 @@
 import { retain } from '../engine/math'
 import { weightedPick } from '../engine/rng'
 import { ARENA_FEET, type FloorPlan, type Pt } from '../data/arenas'
-import { domainOf, type ArenaTransform, type LegendDomain } from '../data/domains'
+import { domainOf, type ArenaTransform, type LegendDomain, type ThreatKind } from '../data/domains'
 import { ENEMIES } from '../data/enemies'
-import { RIFT, type RiftLegend } from '../data/rifts'
+import { ARENAS, RIFT, type RiftLegend } from '../data/rifts'
 import { onFloor } from './arenaFloor'
-import { joinAs, parked } from './bosses'
+import { joinAs, offstage } from './bosses'
 import { hurtPlayer, killEnemy } from './combat'
 import { DOMAIN_HOOKS } from './domainHooks'
 import {
-  advanceFront, CAPTURE, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, transformStage, waterBelow,
+  advanceFront, CAPTURE, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, threatGround, transformStage,
 } from './domainRules'
 import { burst, updateEffects } from './effects'
 import { spawnEnemy } from './enemies'
@@ -118,7 +118,7 @@ export const enterDomain = (g: Game, legend: RiftLegend, x: number, y: number) =
     shiny,
     x,
     y,
-    layout: composePlan(def, false, [], waterBelow(d.front)),
+    layout: composePlan(def, false, [], threatGround(crossing.threat, d.front)),
     terrain: { lake: null, solids: solidsOf(def, x, y) },
     weather: def.omen.weather,
     left: def.battleTime,
@@ -156,13 +156,23 @@ const spawnRetinue = (g: Game, arena: RiftArena, def: LegendDomain) => {
   }
 }
 
+/** The splash of the threat biting the player, by its look. */
+const STING: Record<ThreatKind, readonly string[]> = {
+  tide: ['#c8e8f8', '#58a8f8', '#ffffff'],
+  collapse: ['#a08060', '#5a4030', '#ffffff'],
+  fire: ['#f86818', '#f8e060', '#ffffff'],
+  void: ['#c8a8f8', '#7850c8', '#ffffff'],
+  magma: ['#f86818', '#f8e060', '#a02808'],
+  crumble: ['#78b088', '#f8e070', '#ffffff'],
+}
+
 const crossingTick = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain, dt: number) => {
   const p = g.player
   const { threat, retinue } = def.crossing
   d.front = advanceFront(d.front, p.y - arena.y, d.age, dt, threat)
   if (Math.abs(d.front - d.laidFront) >= 1) {
     d.laidFront = d.front
-    arena.layout = composePlan(def, false, [], waterBelow(d.front))
+    arena.layout = composePlan(def, false, [], threatGround(threat, d.front))
   }
   // Behind the front the threat bites and carries the player on.
   if (p.y - arena.y > d.front) {
@@ -171,7 +181,7 @@ const crossingTick = (g: Game, arena: RiftArena, d: DomainState, def: LegendDoma
     if (d.sting <= 0) {
       d.sting = threat.every
       hurtPlayer(g, p.stats.maxHp * threat.damage, undefined, [], 'hazard')
-      burst(g, p.x, p.y - 4, { colors: ['#c8e8f8', '#58a8f8', '#ffffff'], count: 8, speed: 70, ttl: 0.4, gravity: 120 })
+      burst(g, p.x, p.y - 4, { colors: STING[threat.kind], count: 8, speed: 70, ttl: 0.4, gravity: 120 })
     }
   } else d.sting = 0
   d.spawn -= dt
@@ -224,7 +234,8 @@ const reveal = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) =>
   g.bossId = boss.id
   g.flash = 1
   g.shake = 12
-  burst(g, at.x, at.y - 10, { colors: ['#ffffff', '#c8e8f8', '#58a8f8'], count: 90, speed: 220, ttl: 0.7, size: 2, gravity: 160 })
+  const theme = ARENAS[d.legend]
+  burst(g, at.x, at.y - 10, { colors: ['#ffffff', theme.wall[0], theme.motes], count: 90, speed: 220, ttl: 0.7, size: 2, gravity: 160 })
   g.events.push({ kind: 'riftTitle', enemy: d.legend, shiny: arena.shiny })
   DOMAIN_HOOKS[d.legend]?.reveal?.(g, d, boss)
 }
@@ -339,7 +350,7 @@ export const updateDomain = (g: Game, arena: RiftArena, d: DomainState, dt: numb
 const keepInDomain = (g: Game, plan: FloorPlan, arena: RiftArena) => {
   const p = g.player
   keepOnFloor(p, arena, plan.floor, plan.holes ?? [], p.radius)
-  for (const e of g.enemies) if (e.dying < 0 && !parked(e)) keepOnFloor(e, arena, plan.floor, [], e.boss ? e.radius * 0.5 : e.radius * 0.8)
+  for (const e of g.enemies) if (e.dying < 0 && !offstage(e)) keepOnFloor(e, arena, plan.floor, [], e.boss ? e.radius * 0.5 : e.radius * 0.8)
   retain(g.hazards, (h) => h.kind !== 'shot' || onFloor(plan.floor, h.x - arena.x, h.y - arena.y, 6))
 }
 
@@ -364,7 +375,7 @@ export const domainCamera = (g: Game, dt: number) => {
   let x = p.x - w / 2
   let y = p.y - 10 - h / 2 - (d.act === 'crossing' ? h * LOOK_AHEAD : 0)
   const boss = d.act === 'battle' ? g.enemies.find((e) => e.id === d.bossId) : undefined
-  if (boss && !parked(boss)) {
+  if (boss && !offstage(boss)) {
     x = Math.max(p.x - (w - FRAME.side), Math.min(p.x - FRAME.side, (p.x + boss.x) / 2 - w / 2))
     y = Math.max(p.y - (h - FRAME.bottom), Math.min(p.y - FRAME.top, (p.y + boss.y) / 2 - h / 2 - 24))
   }

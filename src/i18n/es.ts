@@ -1178,6 +1178,7 @@ export const es: Messages = {
     hudCrossing: '¡Avanza!',
     escaped: (name) => `¡*${name}* escapó de la Poké Ball!`,
     caught: (name) => `¡*${name}* fue capturado!`,
+    calms: (name) => `El viento silencia lo que quedaba de la furia de *${name}*.`,
     domains: {
       kyogre: {
         place: 'Cueva Fondo Marino',
@@ -1185,6 +1186,20 @@ export const es: Messages = {
         omen: 'Una lluvia torrencial cae de la nada…',
         crossing: '¡La marea sube! ¡Avanza por la cueva!',
         phases: ['¡La cueva se inunda! Quédate en las islas para resistir el Surf.', '¡Kyogre vuelve a su *forma Primigenia*! ¡Cuidado con el Origin Pulse!'],
+      },
+      groudon: {
+        place: 'Caverna de Magma',
+        epithet: 'Señor de la Tierra',
+        omen: 'El sol arde sin piedad y la tierra se agrieta…',
+        crossing: '¡El túnel se derrumba y la lava viene detrás! ¡Corre!',
+        phases: ['¡La lava sube y divide la cámara! Cruza por las piedras frías.', '¡Groudon vuelve a su *forma Primigenia*! ¡Cuidado con las Precipice Blades!'],
+      },
+      rayquaza: {
+        place: 'Pilar Celeste',
+        epithet: 'Señor de los Cielos',
+        omen: 'Un vendaval barre el cielo y calma todo el clima…',
+        crossing: '¡Los pisos se derrumban detrás de ti! ¡Sube el Pilar!',
+        phases: ['¡El techo se parte y cae al cielo! Cuidado con los bordes.', '¡Rayquaza *megaevoluciona*! ¡Cuidado con el Dragon Ascent!'],
       },
     },
   },

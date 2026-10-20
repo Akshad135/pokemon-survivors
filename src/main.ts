@@ -1128,7 +1128,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'riftOmen': {
       const lines = domainLines(e.enemy)
       playSfx('thunder')
-      return toast(ui, rich(lines ? `${lines.omen} ${t().rifts.omen(ENEMIES[e.enemy].name)}` : t().rifts.omenFaint), 4200)
+      // Rayquaza's Air Lock ends what Kyogre or Groudon stirred up earlier in the run.
+      const calmed = e.enemy === 'rayquaza' ? g.rift.met.find((l) => l === 'kyogre' || l === 'groudon') : undefined
+      const nod = calmed ? ` ${t().rifts.calms(ENEMIES[calmed].name)}` : ''
+      return toast(ui, rich(lines ? `${lines.omen}${nod} ${t().rifts.omen(ENEMIES[e.enemy].name)}` : t().rifts.omenFaint), 4200)
     }
     case 'riftEnter': {
       const def = ENEMIES[e.enemy]
