@@ -146,11 +146,12 @@ const isWhole = (v: unknown): v is number => typeof v === 'number' && Number.isI
 /**
  * The largest screen a replay may declare, in world px. Spawns, despawns and
  * a boss's reach scale with the view's diagonal, so a made-up giant screen
- * would keep the horde out of reach and still re-simulate faithfully.
- * `fitView` (`engine/viewport.ts`) never shows more than ~375 px across the
- * short side; the long side leaves room for ultrawide and stretched windows.
+ * would keep the horde out of reach and still re-simulate faithfully. The
+ * largest seen in play is 960 × 439 (`fitView` in `engine/viewport.ts`, under a
+ * browser's zoom and visual viewport); the limits leave room above it, and the
+ * long side for ultrawide and stretched windows.
  */
-export const VIEW_LIMIT = { short: 400, long: 2048 } as const
+export const VIEW_LIMIT = { short: 600, long: 2048 } as const
 
 /** A declared screen of `w` × `h` world px, or null when the game couldn't show it. */
 export const parseView = (w: unknown, h: unknown) =>

@@ -290,6 +290,7 @@ describe('parseReplay', () => {
   it('takes the screens the game shows, ultrawide included', () => {
     expect(parseReplay(raw({ w: 480, h: 270 }))?.start.view).toEqual({ w: 480, h: 270 })
     expect(parseReplay(raw({ w: 1024, h: 288 }))?.start.view).toEqual({ w: 1024, h: 288 })
+    expect(parseReplay(raw({ w: 960, h: 439 }))?.start.view).toEqual({ w: 960, h: 439 })
     expect(parseReplay(raw({ w: 160, h: 300 }, [[60, 'view', 300, 160]]))?.events).toEqual([[60, 'view', 300, 160]])
   })
 
