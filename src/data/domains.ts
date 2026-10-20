@@ -195,6 +195,8 @@ export type LegendDomain = {
   touch?: number
   /** Share of max HP its lava burns per touch (`LAVA_BURN` when absent). */
   lavaBurn?: number
+  /** Share of the weather's edge the player's attacks keep in here (Groudon's own sun only half-feeds a Fire player); 1 when absent. */
+  weatherShare?: number
   /** A second legendary fighting alongside (`DomainPartner`). */
   partner?: DomainPartner
 }

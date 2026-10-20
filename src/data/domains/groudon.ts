@@ -72,6 +72,7 @@ export const GROUDON_DOMAIN: LegendDomain = {
   battleTime: 180,
   touch: 0.6,
   lavaBurn: 0.03,
+  weatherShare: 0.5,
   crossing: {
     // Five chambers up a narrow, winding tunnel; rivers of lava cut across the second, fourth and the passage between.
     floor: [

@@ -27,7 +27,7 @@ import { holdsOn, phaseTaken } from './bossFight'
 import { legendFell } from './legendScene'
 import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
-import { weatherBoost, weatherHere, weatherPower } from './weather'
+import { playerWeatherBoost, weatherHere, weatherPower } from './weather'
 import * as dm from '../engine/dmath'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8', warded: '#88b8f8' } as const
@@ -37,7 +37,7 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   const eff = attack.sure ? Math.max(1, effectiveness(attack.type, e.types)) : effectiveness(attack.type, e.types)
   // Conditional bonuses (Hex), a mark and a freeze multiply the hit; without them it's exactly ×1.
   const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status) * phaseTaken(e))
-  const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
+  const raw = Math.max(1, Math.round(base * eff * playerWeatherBoost(g, attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
   // A Bronzong ward soaks the hit first, unless the move or the ability (Infiltrator) goes through wards.
   const dmg = attack.sure || attack.ignoreWards || abilityImmune(g, 'wards') ? raw : absorb(e.trait, raw)
   e.hp -= dmg

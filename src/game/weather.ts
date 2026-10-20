@@ -2,6 +2,7 @@ import { range, weightedPick, type Rng } from '../engine/rng'
 import { BIOMES, FIRST_WEATHER, WEATHER_IDS, WEATHER_SPELL, type BiomeId, type WeatherId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import { WEATHER, WEATHER_CHIP } from '../data/weather'
+import { domainOf } from '../data/domains'
 import type { HazardVisual } from '../data/bosses'
 import { abilityImmune } from './abilities'
 import { playerForm } from './branch'
@@ -20,6 +21,14 @@ export const createWeather = (): WeatherState => ({ id: 'clear', prev: 'clear', 
 
 /** Damage multiplier the weather gives an attack of one type (1 when it doesn't care). */
 export const weatherBoost = (weather: WeatherId, type: PokeType) => WEATHER[weather].power?.[type] ?? 1
+
+/** The weather's edge on the player's attacks: whole, or the share a legendary's domain leaves it (`LegendDomain.weatherShare`). */
+export const playerWeatherBoost = (g: Game, type: PokeType) => {
+  const boost = weatherBoost(weatherHere(g), type)
+  const legend = g.rift.arena?.domain?.legend
+  const share = (legend && domainOf(legend)?.weatherShare) ?? 1
+  return 1 + (boost - 1) * share
+}
 
 /** Same for an attacker of several types (an enemy body hits with all of its types). */
 export const weatherPower = (weather: WeatherId, types: readonly PokeType[]) =>
