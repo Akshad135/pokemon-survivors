@@ -113,10 +113,13 @@ export const innateEffects = (starter: PlayableId): readonly AbilityEffect[] => 
 
 /**
  * Pressure, the Legend mode's own difficulty: multipliers on top of each
- * level's (`DIFFICULTIES`). A legend hits far harder than a starter, so the
- * horde comes thicker and faster and hits a bit harder; HP stays close, so it
- * still melts. Tuned with a headless bot so a legend at Normal wins more
- * comfortably than a starter, standing still still dies and Nightmare stays nasty.
+ * level's (`DIFFICULTIES`), and on top of the pressure director (`tension.ts`),
+ * which already leans on a build that wins too easily. A legend hits harder
+ * than a starter, so the horde comes a bit thicker and tougher. Measured with a
+ * headless bot (kiting, greedy picks, max ranks): a legend wins Normal 17/18
+ * (starters 10/12) and Hard 8/16 (5/11), Nightmare stays at 5/19 (3/12), and
+ * standing still dies by about 7:00 on every level, like a starter. Heavier
+ * Pressure (×1.3 spawns) left legends behind the starters.
  */
 export const PRESSURE = {
   normal: { spawnRate: 1.1, enemyHp: 1.05, enemyDamage: 1.05 },
