@@ -1173,6 +1173,23 @@ export const en: Messages = {
     reaperDefeated: (n) => (n === 1 ? 'Arceus defeated!' : `Arceus defeated ${n}x!`),
   },
 
+  landmarks: {
+    names: { cottage: 'Abandoned Cottage', tunnel: 'Mine Tunnel', maze: 'Hedge Maze', ruins: 'Unown Ruins', camp: 'Abandoned Camp' },
+    hints: {
+      cottage: 'Someone left a crate inside…',
+      tunnel: 'Go in one mouth, come out the other.',
+      maze: 'A chest waits at the heart of the maze.',
+      ruins: 'The altar waits in silence.',
+      camp: 'A backpack left behind by the fire.',
+    },
+    loot: {
+      cottage: 'You rummaged through the old crate!',
+      maze: 'You reached the heart of the maze!',
+      ruins: 'The Unown glyphs light up!',
+      camp: 'You opened the forgotten backpack!',
+    },
+    tunnelOut: 'You came out the other side of the tunnel!',
+  },
   places: {
     names: { cave: 'Dark Cave', graveyard: 'Haunted Graveyard', sky: 'Above the Clouds' },
     hudNames: { cave: 'Cave', graveyard: 'Graveyard', sky: 'Updraft' },

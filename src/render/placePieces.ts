@@ -26,7 +26,7 @@ const CAVE_HILL: readonly Tier[] = [
 ]
 
 /** Draws a grid over a sprite, its (0, 0) at (x, y) of the sprite. */
-const over = (sprite: PixelSprite, g: Grid, x: number, y: number) => {
+export const over = (sprite: PixelSprite, g: Grid, x: number, y: number) => {
   const canvas = createCanvas(sprite.width, sprite.height)
   const ctx = context2d(canvas)
   ctx.drawImage(sprite, 0, 0)
@@ -39,13 +39,11 @@ const over = (sprite: PixelSprite, g: Grid, x: number, y: number) => {
  * south face, mine beams around it, steps going down into the dark and a
  * signpost showing the stairs. Anchored at the arch's foot.
  */
-const caveMouth = (biome: BiomeId): Piece => {
-  const hill = cliffOf(biome, CAVE_HILL, 61)
-  // A grid the size of the hill, (0, 0) at its top-left, so the arch lines up with the face.
-  const g = grid(hill.sprite.width, hill.sprite.height)
-  const cx = hill.ax
-  const foot = hill.ay - 2
-  const half = 13
+/**
+ * A mine's mouth carved into a hill's face at (cx, foot): a dark arch fading
+ * into the rock, `steps` going down (or level ground) and timbers around it.
+ */
+export const mineArch = (g: Grid, cx: number, foot: number, half = 13, steps = true) => {
   const top = foot - 9
   for (let y = top - half; y <= foot; y++) {
     for (let x = cx - half; x <= cx + half; x++) {
@@ -53,13 +51,23 @@ const caveMouth = (biome: BiomeId): Piece => {
       const dy = y + 0.5 - top
       if (y < top && dx * dx + dy * dy > half * half) continue
       const edge = Math.min(half - Math.abs(dx), y < top ? half - Math.sqrt(dx * dx + dy * dy) : Infinity)
-      const step = y > foot - 10 && (foot - y) % 3 === 0 && Math.abs(dx) < half - 3
+      const step = steps && y > foot - 10 && (foot - y) % 3 === 0 && Math.abs(dx) < half - 3
       put(g, x, y, step ? '#3a2e28' : edge < 1.5 ? '#2a201c' : edge < 4 ? '#140e0c' : '#060404')
     }
   }
   for (const px of [cx - half - 2, cx + half + 1]) limb(g, px, foot + 1, px, top - half - 2, 1.6, 1.6, WOOD)
   limb(g, cx - half - 5, top - half - 3, cx + half + 4, top - half - 3, 1.8, 1.8, WOOD)
   for (const px of [cx - half - 2, cx + half + 1]) put(g, px, top - half - 3, '#2c1c10')
+  return top - half - 3
+}
+
+const caveMouth = (biome: BiomeId): Piece => {
+  const hill = cliffOf(biome, CAVE_HILL, 61)
+  // A grid the size of the hill, (0, 0) at its top-left, so the arch lines up with the face.
+  const g = grid(hill.sprite.width, hill.sprite.height)
+  const cx = hill.ax
+  const foot = hill.ay - 2
+  mineArch(g, cx, foot)
   // The signpost: a plank with PMD's stairs on it.
   const sx = cx - 24
   const sy = hill.ay + 12

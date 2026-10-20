@@ -1,6 +1,7 @@
 import type { AchievementId, AchievementStat, GiftTitleId, TitleId } from '../data/achievements'
 import type { BiomeId } from '../data/biomes'
 import type { PlaceId, WingId } from '../data/places'
+import type { LandmarkId, TreasureLandmark } from '../data/landmarks'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
@@ -1315,6 +1316,25 @@ export const pt = {
   },
 
   /** Places: the cave, the graveyard and the sky (`data/places.ts`), their entrances on the map and what goes on inside. */
+  landmarks: {
+    /** The sign that slides in when a landmark comes close, as the games name a place. */
+    names: { cottage: 'Casa Abandonada', tunnel: 'Túnel da Mina', maze: 'Labirinto de Sebes', ruins: 'Ruínas Unown', camp: 'Acampamento Abandonado' } satisfies Record<LandmarkId, string>,
+    /** A line under the name: what's there to do. */
+    hints: {
+      cottage: 'Alguém deixou um caixote lá dentro…',
+      tunnel: 'Entre por uma boca e saia pela outra.',
+      maze: 'Há um baú no coração do labirinto.',
+      ruins: 'O altar espera em silêncio.',
+      camp: 'Uma mochila esquecida perto da fogueira.',
+    } satisfies Record<LandmarkId, string>,
+    loot: {
+      cottage: 'Você vasculhou o caixote velho!',
+      maze: 'Você chegou ao coração do labirinto!',
+      ruins: 'Os glifos Unown brilham!',
+      camp: 'Você abriu a mochila esquecida!',
+    } satisfies Record<TreasureLandmark, string>,
+    tunnelOut: 'Você saiu do outro lado do túnel!',
+  },
   places: {
     names: { cave: 'Caverna Escura', graveyard: 'Cemitério Assombrado', sky: 'Acima das Nuvens' } satisfies Record<PlaceId, string>,
     /** Short names for the HUD's pill while an entrance is open. */

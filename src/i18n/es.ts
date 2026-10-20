@@ -1174,6 +1174,23 @@ export const es: Messages = {
     reaperDefeated: (n) => (n === 1 ? '¡Arceus derrotado!' : `¡Arceus derrotado ${n}x!`),
   },
 
+  landmarks: {
+    names: { cottage: 'Casa Abandonada', tunnel: 'Túnel de la Mina', maze: 'Laberinto de Setos', ruins: 'Ruinas Unown', camp: 'Campamento Abandonado' },
+    hints: {
+      cottage: 'Alguien dejó una caja adentro…',
+      tunnel: 'Entra por una boca y sal por la otra.',
+      maze: 'Hay un cofre en el corazón del laberinto.',
+      ruins: 'El altar espera en silencio.',
+      camp: 'Una mochila olvidada junto a la fogata.',
+    },
+    loot: {
+      cottage: '¡Revisaste la caja vieja!',
+      maze: '¡Llegaste al corazón del laberinto!',
+      ruins: '¡Los glifos Unown brillan!',
+      camp: '¡Abriste la mochila olvidada!',
+    },
+    tunnelOut: '¡Saliste del otro lado del túnel!',
+  },
   places: {
     names: { cave: 'Cueva Oscura', graveyard: 'Cementerio Embrujado', sky: 'Sobre las Nubes' },
     hudNames: { cave: 'Cueva', graveyard: 'Cementerio', sky: 'Corriente' },

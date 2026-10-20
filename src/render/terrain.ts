@@ -7,6 +7,8 @@ import type { ArenaPiece } from '../data/arenas'
 import { ARENA_PIECES, ARENA_SHADOW, ARENA_TALL } from './arenaPieces'
 import { PLACE_PIECES, PLACE_SHADOW, PLACE_TALL } from './placePieces'
 import type { PlacePiece } from '../data/places'
+import { LANDMARK_GROUNDS, LANDMARK_PIECES, LANDMARK_SHADOW, LANDMARK_TALL, LANDMARK_WARM, LOG_SKINS, logPiece } from './landmarkPieces'
+import type { LandmarkGround, LandmarkPiece } from '../data/landmarks'
 import type { Game } from '../game/types'
 import {
   cone,
@@ -201,6 +203,71 @@ export const deadTree = (skin: TreeSkin): Piece => {
   stamp(g, ['.1.', '121', '.1.'], { 1: ramp[0]!, 2: '#100818' }, cx - 2, ground - 13)
   outline(g, skin.outline)
   if (skin.fruit) stamp(g, ['.1.', '121', '.1.'], { 1: skin.fruit, 2: '#ffffff' }, cx + 9, ground - 25)
+  return piece(g, cx, ground)
+}
+
+/* ---------------- Bushes ---------------- */
+
+export type BushSkin = { leaves: Ramp; outline: string; bloom?: readonly string[]; snow?: Ramp }
+
+/**
+ * A low round bush, clumps of leaves on one dome like the trees' crowns;
+ * variant 1 flowers, variant 2 berries (where the biome has them).
+ */
+const bush = (skin: BushSkin, variant: number): Piece => {
+  const g = grid(28, 22)
+  const cx = 14
+  const ground = 19
+  const blobs: Blob[] = [
+    { x: cx - 5, y: ground - 5, rx: 6.5, ry: 5 },
+    { x: cx + 5.5, y: ground - 5, rx: 6, ry: 5 },
+    { x: cx - 1, y: ground - 10, rx: 7, ry: 6 },
+    { x: cx + 1, y: ground - 4, rx: 7.5, ry: 4.2 },
+  ]
+  const bloom = variant > 0 && skin.bloom ? skin.bloom[(variant - 1) % skin.bloom.length]! : null
+  sculpt(g, blobs, skin.leaves, {
+    tag: 10,
+    seed: variant + 3,
+    rough: 0.2,
+    paint: (x, y, n, light) => {
+      const dx = (x + 0.5 - cx) / 12
+      const dy = (y + 0.5 - (ground - 7)) / 9
+      const l = light * 0.5 + lambert(dx, dy, Math.sqrt(Math.max(0, 1 - dx * dx - dy * dy))) * 0.5
+      if (skin.snow && n.y < -0.35) return shade(skin.snow, l + 0.25, x, y)
+      if (bloom && n.z > 0.45 && noise(x >> 1, y >> 1, variant + 9) < 0.14) return bloom
+      return shade(skin.leaves, l, x, y)
+    },
+  })
+  outline(g, skin.outline)
+  return piece(g, cx, ground)
+}
+
+/** Glowing mushrooms in a clump: the cave's bushes. */
+const mushrooms = (variant: number): Piece => {
+  const g = grid(26, 20)
+  const caps: readonly Ramp[] = [['#183868', '#2c68b0', '#58a8e8', '#a8e0ff'], ['#3c1868', '#6c34b0', '#a070e8', '#d8b8ff'], ['#185838', '#2c9060', '#58d098', '#b0f8d0']]
+  const cap = caps[variant % caps.length]!
+  const stem: Ramp = ['#a8988c', '#d0c4b8', '#f0e8dc']
+  for (const [x, h, r] of [[7, 7, 4.5], [17, 10, 5.5], [12, 4, 3.5], [21, 4, 3]] as const) {
+    cylinder(g, x, 17, 1.4, h, stem, { top: null })
+    sculpt(g, [{ x, y: 17 - h - 1, rx: r, ry: r * 0.62 }], cap, { tag: 20 + x, seed: x })
+    put(g, Math.round(x - r * 0.4), Math.round(17 - h - 2), cap[3]!)
+  }
+  outline(g, '#100a0c')
+  return piece(g, 13, 17)
+}
+
+/** A thorny dead bush with a few purple berries: the graveyard's. */
+const thornBush = (skin: TreeSkin, variant: number): Piece => {
+  const g = grid(28, 22)
+  const cx = 14
+  const ground = 19
+  for (const [dx, dy] of [[-9, -7], [-4, -12], [3, -13], [9, -8], [11, -3], [-11, -2]] as const) {
+    limb(g, cx + dx * 0.2, ground, cx + dx, ground + dy, 1.1, 0.5, skin.trunk)
+    limb(g, cx + dx * 0.6, ground + dy * 0.6, cx + dx * 0.6 + (dx > 0 ? 3 : -3), ground + dy * 0.6 - 3, 0.6, 0.4, skin.trunk)
+  }
+  for (const [x, y] of [[cx - 7, ground - 9], [cx + 6, ground - 11], [cx + 10, ground - 5]] as const) if (noise(x, y, variant) < 0.8) put(g, x, y, skin.fruit ?? '#b070c8')
+  outline(g, skin.outline)
   return piece(g, cx, ground)
 }
 
@@ -564,6 +631,8 @@ const ghostTower = (): Piece => {
 type TerrainSet = {
   rock: (seed: number) => Piece
   tree: (seed: number) => Piece
+  bush: (variant: number) => Piece
+  log: (variant: number) => Piece
   cliff: (tiers: readonly Tier[], seed: number) => Piece
   lake: (foot: readonly Blob[], seed: number) => Piece
   tower: () => Piece
@@ -610,10 +679,15 @@ const SNOW_PINE: TreeSkin = {
 const TOWER_STONE: RockSkin = { stone: ['#2c2638', '#4a4258', '#6a6280', '#8e86a4', '#b0a8c4'], outline: '#120c18' }
 export const TOWER_TREE: TreeSkin = { leaves: [], trunk: ['#1c1424', '#342840', '#4c3c5c', '#6a5878'], outline: '#0c0814', fruit: '#b070c8' }
 
+/** Each biome's stone, for scenery that borrows it (landmarks' columns). */
+export const ROCK_SKINS: Record<BiomeId, RockSkin> = { meadow: MEADOW_ROCK, forest: FOREST_ROCK, cave: CAVE_ROCK, snow: SNOW_ROCK, tower: TOWER_STONE }
+
 const SKINS: Record<BiomeId, () => TerrainSet> = {
   meadow: () => ({
     rock: (seed) => boulder(MEADOW_ROCK, 14, seed),
     tree: (seed) => roundTree(MEADOW_TREE, 15, 9, seed),
+    bush: (v) => bush({ leaves: MEADOW_TREE.leaves, outline: MEADOW_TREE.outline, bloom: ['#f87890', '#d83838'] }, v),
+    log: (v) => logPiece(LOG_SKINS.meadow, 34 + v * 4, 4.5, 3 + v),
     crest: (seed) => roundTree(MEADOW_TREE, 10, 6, seed),
     cliff: (tiers, seed) =>
       cliff(tiers, { face: ['#5a3a20', '#7c5230', '#a07040', '#c08c50', '#d8a868'], top: ['#5c9c40', '#74b452', '#86c860', '#9cd874'], lip: '#c8f098', outline: '#24180c', strata: 6 }, seed),
@@ -627,6 +701,8 @@ const SKINS: Record<BiomeId, () => TerrainSet> = {
   forest: () => ({
     rock: (seed) => boulder(FOREST_ROCK, 14, seed),
     tree: (seed) => roundTree(FOREST_TREE, 17, 12, seed),
+    bush: (v) => bush({ leaves: FOREST_TREE.leaves, outline: FOREST_TREE.outline, bloom: ['#e04838', '#f8e0d0'] }, v),
+    log: (v) => logPiece(LOG_SKINS.forest, 34 + v * 4, 4.5, 3 + v),
     crest: (seed) => roundTree(FOREST_TREE, 11, 7, seed),
     cliff: (tiers, seed) =>
       cliff(tiers, { face: ['#20140c', '#382618', '#523a22', '#6c4e2e', '#86643a'], top: ['#2c5a2a', '#386c34', '#447c3c', '#548c46'], lip: '#6ca054', outline: '#100a06', strata: 7, roots: '#4a3018' }, seed),
@@ -640,6 +716,8 @@ const SKINS: Record<BiomeId, () => TerrainSet> = {
   cave: () => ({
     rock: (seed) => boulder(CAVE_ROCK, 14, seed),
     tree: (seed) => stalagmites(CAVE_ROCK, seed),
+    bush: (v) => mushrooms(v),
+    log: (v) => logPiece(LOG_SKINS.cave, 34 + v * 4, 4.5, 3 + v),
     crest: (seed) => boulder({ ...CAVE_ROCK, crystal: undefined }, 8, seed),
     cliff: (tiers, seed) =>
       cliff(tiers, { face: ['#1c1416', '#342a2c', '#4e4244', '#6a5c5c', '#88797a'], top: ['#5e5254', '#746666', '#867878', '#9a8c8a'], lip: '#b8aca8', outline: '#100a0c', strata: 5 }, seed),
@@ -653,6 +731,8 @@ const SKINS: Record<BiomeId, () => TerrainSet> = {
   snow: () => ({
     rock: (seed) => boulder(SNOW_ROCK, 14, seed),
     tree: (seed) => pine(SNOW_PINE, 40, 24, seed),
+    bush: (v) => bush({ leaves: SNOW_PINE.leaves, outline: SNOW_PINE.outline, snow: SNOW_PINE.snow }, v),
+    log: (v) => logPiece(LOG_SKINS.snow, 34 + v * 4, 4.5, 3 + v),
     crest: (seed) => pine(SNOW_PINE, 26, 16, seed),
     cliff: (tiers, seed) =>
       cliff(tiers, { face: ['#1a2436', '#2e3e56', '#465a78', '#627a9a', '#869ebe'], top: ['#c4d4ea', '#d8e4f4', '#eaf2fc', '#ffffff'], lip: '#ffffff', outline: '#0c1422', strata: 6, icicles: '#c8e8ff' }, seed),
@@ -663,6 +743,8 @@ const SKINS: Record<BiomeId, () => TerrainSet> = {
   tower: () => ({
     rock: (seed) => brokenPillar(TOWER_STONE, seed),
     tree: () => deadTree(TOWER_TREE),
+    bush: (v) => thornBush(TOWER_TREE, v),
+    log: (v) => logPiece(LOG_SKINS.tower, 34 + v * 4, 4.5, 3 + v),
     crest: (seed) => brokenPillar(TOWER_STONE, seed + 1),
     cliff: (tiers, seed) =>
       cliff(tiers, { face: ['#2c2638', '#423a52', '#5a5270', '#746c8c', '#8c84a4'], top: ['#463e56', '#524a64', '#5e5672', '#6c6482'], lip: '#a098b4', outline: '#100c18', mortar: '#1e1828' }, seed),
@@ -699,11 +781,14 @@ export const cliffOf = (biome: BiomeId, tiers: readonly Tier[], seed: number) =>
 
 const raised = (tiers: readonly Tier[], tier: number) => tiers.slice(0, tier).reduce((s, t) => s + t.h, 0)
 
-/** A mountain with what grows on its top, baked into one sprite. */
-const mountain = (set: TerrainSet, variant: number): Piece => {
-  const tiers = CLIFFS[variant]!
-  const base = set.cliff(tiers, 21 + variant)
-  const crests = CLIFF_CRESTS[variant]!.map(([x, y, tier], i) => ({ p: set.crest(30 + i), x, y: y - raised(tiers, tier) }))
+/** A mountain of any footprint in `biome`'s skin, with what grows on its top at `crests` ([x, y, tier]): the tunnel's ridge. */
+export const mountainOf = (biome: BiomeId, tiers: readonly Tier[], crests: readonly (readonly [number, number, number])[], seed: number) => mountain(setOf(biome), tiers, crests, seed)
+
+/** A mountain with what grows on its top, baked into one sprite. `crests` are [x, y, tier] spots on its tops. */
+const mountain = (set: TerrainSet, tiers: readonly Tier[], crestSpots: readonly (readonly [number, number, number])[], seed: number): Piece => {
+  // (Shared by the map's mountains and the tunnel's ridge, `mountainOf`.)
+  const base = set.cliff(tiers, seed)
+  const crests = crestSpots.map(([x, y, tier], i) => ({ p: set.crest(30 + i), x, y: y - raised(tiers, tier) }))
   const parts = [{ p: base, x: 0, y: 0 }, ...crests.sort((a, b) => a.y - b.y)]
   const x0 = Math.min(...parts.map((c) => c.x - c.p.ax))
   const y0 = Math.min(...parts.map((c) => c.y - c.p.ay))
@@ -716,11 +801,21 @@ const mountain = (set: TerrainSet, variant: number): Piece => {
 }
 
 type PieceKind = SolidKind | 'lake'
+type AnyPiece = PieceKind | ArenaPiece | PlacePiece | LandmarkPiece
 
-const isArenaPiece = (kind: PieceKind | ArenaPiece | PlacePiece): kind is ArenaPiece => kind in ARENA_PIECES
-const isPlacePiece = (kind: PieceKind | ArenaPiece | PlacePiece): kind is PlacePiece => kind in PLACE_PIECES
+const isArenaPiece = (kind: AnyPiece): kind is ArenaPiece => kind in ARENA_PIECES
+const isPlacePiece = (kind: AnyPiece): kind is PlacePiece => kind in PLACE_PIECES
+const isLandmarkPiece = (kind: AnyPiece): kind is LandmarkPiece => kind in LANDMARK_PIECES
 
-const VARIANTS: Record<PieceKind, number> = { rock: RULES.rockVariants, tree: RULES.treeVariants, tower: 1, cliff: CLIFFS.length, lake: LAKES.length }
+const VARIANTS: Record<PieceKind, number> = {
+  rock: RULES.rockVariants,
+  tree: RULES.treeVariants,
+  bush: RULES.bushVariants,
+  log: RULES.logVariants,
+  tower: 1,
+  cliff: CLIFFS.length,
+  lake: LAKES.length,
+}
 
 const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
   const set = setOf(biome)
@@ -729,10 +824,14 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
       return set.rock(variant + 1)
     case 'tree':
       return set.tree(variant + 1)
+    case 'bush':
+      return set.bush(variant)
+    case 'log':
+      return set.log(variant)
     case 'tower':
       return set.tower()
     case 'cliff':
-      return mountain(set, variant)
+      return mountain(set, CLIFFS[variant]!, CLIFF_CRESTS[variant]!, 21 + variant)
     case 'lake':
       return set.lake(LAKES[variant]!, 11 + variant)
   }
@@ -740,11 +839,31 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
 
 const pieces = canvasCache<string, Piece>()
 
-const pieceOf = (biome: BiomeId, kind: PieceKind | ArenaPiece | PlacePiece, variant: number) => {
-  // The arenas' scenery looks the same whatever the biome outside; places' entrances wear the biome's.
-  const key = isArenaPiece(kind) ? `arena:${kind}:${variant}` : `${biome}:${kind}:${variant}`
+/** A piece's sprite, built once per biome (and once more `open`, for a landmark's looted treasure). */
+const pieceOf = (biome: BiomeId, kind: AnyPiece, variant: number, open = false) => {
+  // The arenas' scenery looks the same whatever the biome outside; places' entrances and landmarks wear the biome's.
+  const key = isArenaPiece(kind) ? `arena:${kind}:${variant}` : `${biome}:${kind}:${variant}${open ? ':open' : ''}`
   let piece = pieces.get(key)
-  if (!piece) pieces.set(key, (piece = isArenaPiece(kind) ? ARENA_PIECES[kind](variant) : isPlacePiece(kind) ? PLACE_PIECES[kind](variant, biome) : build(biome, kind, variant)))
+  if (!piece) {
+    piece = isArenaPiece(kind)
+      ? ARENA_PIECES[kind](variant)
+      : isPlacePiece(kind)
+        ? PLACE_PIECES[kind](variant, biome)
+        : isLandmarkPiece(kind)
+          ? LANDMARK_PIECES[kind](variant, biome, open)
+          : build(biome, kind, variant)
+    pieces.set(key, piece)
+  }
+  return piece
+}
+
+const grounds = canvasCache<string, Piece>()
+
+/** A landmark's ground art, built once per biome. */
+const groundOf = (biome: BiomeId, kind: LandmarkGround, variant: number) => {
+  const key = `${biome}:${kind}:${variant}`
+  let piece = grounds.get(key)
+  if (!piece) grounds.set(key, (piece = LANDMARK_GROUNDS[kind](variant, biome)))
   return piece
 }
 
@@ -756,6 +875,12 @@ export const warmTerrain = (biome: BiomeId) => {
       pieceOf(biome, kind, v)
       return true
     }
+  }
+  // Landmarks' big pieces (the ridge, walls, hedges) take longer than a frame to sculpt.
+  for (const [kind, v] of LANDMARK_WARM) {
+    if (pieces.has(`${biome}:${kind}:${v}`)) continue
+    pieceOf(biome, kind, v)
+    return true
   }
   return false
 }
@@ -771,12 +896,17 @@ export const solidsInView = (g: Game, camX: number, camY: number, w: number, h: 
 }
 
 const SHADOW = 'rgba(16,40,16,0.3)'
-const SHADOW_RX: Record<Exclude<SolidKind, 'cliff'>, number> = { rock: 10, tree: 9, tower: 17 }
+const SHADOW_RX: Record<Exclude<SolidKind, 'cliff'>, number> = { rock: 10, tree: 9, bush: 10, log: 15, tower: 17 }
 
-/** Ground layer: lakes and the shadows the solids cast. */
+const shadowOf = (kind: Exclude<AnyPiece, 'cliff' | 'lake'>) =>
+  isArenaPiece(kind) ? ARENA_SHADOW[kind] : isPlacePiece(kind) ? PLACE_SHADOW[kind] : isLandmarkPiece(kind) ? LANDMARK_SHADOW[kind] : SHADOW_RX[kind]
+
+/** Ground layer: landmarks' floors and paths, lakes and the shadows the solids cast. */
 export const drawTerrainGround = (ctx: CanvasRenderingContext2D, g: Game, biome: BiomeId, camX: number, camY: number) => {
   const { w, h } = g.view
   for (const f of featuresNear(g, camX + w / 2, camY + h / 2, w / 2 + 90, h / 2 + 90)) {
+    const ground = f.landmark?.ground
+    if (ground) blit(ctx, groundOf(biome, ground.kind, ground.variant), ground.x, ground.y)
     if (f.lake) blit(ctx, pieceOf(biome, 'lake', f.lake.variant), f.lake.x, f.lake.y)
     for (const s of f.solids) {
       if (s.kind === 'cliff') {
@@ -784,7 +914,7 @@ export const drawTerrainGround = (ctx: CanvasRenderingContext2D, g: Game, biome:
         blit(ctx, mountainShadows[s.variant]!(), s.x + 5, s.y + 3)
         ctx.globalAlpha = 1
       } else {
-        const rx = isArenaPiece(s.kind) ? ARENA_SHADOW[s.kind] : isPlacePiece(s.kind) ? PLACE_SHADOW[s.kind] : SHADOW_RX[s.kind]
+        const rx = shadowOf(s.kind)
         if (rx > 0) ctx.drawImage(ellipse(rx, Math.round(rx * 0.4), SHADOW), Math.round(s.x + 2 - rx), Math.round(s.y - rx * 0.4))
       }
     }
@@ -812,18 +942,20 @@ const holes = [0, 1].map((parity) => {
 let scratch: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null = null
 onCanvasReset(() => (scratch = null))
 
-const TALL: Record<SolidKind, boolean> = { rock: false, tree: true, tower: true, cliff: true }
+const TALL: Record<SolidKind, boolean> = { rock: false, tree: true, bush: false, log: false, tower: true, cliff: true }
 
-/** Draws one solid; a tall one goes see-through around the player when they walk behind it. */
+const tallOf = (kind: AnyPiece) =>
+  isArenaPiece(kind) ? ARENA_TALL[kind] : isPlacePiece(kind) ? PLACE_TALL[kind] : isLandmarkPiece(kind) ? LANDMARK_TALL[kind] : kind !== 'lake' && TALL[kind]
+
+/** Draws one solid; a tall one goes see-through around the player when they walk behind it. A looted landmark treasure shows open. */
 export const drawSolid = (ctx: CanvasRenderingContext2D, g: Game, s: Solid, biome: BiomeId) => {
-  const piece = pieceOf(biome, s.kind, s.variant)
+  const piece = pieceOf(biome, s.kind, s.variant, s.loot !== undefined && g.landmarks.looted.has(s.loot))
   const x = Math.round(s.x - piece.ax)
   const y = Math.round(s.y - piece.ay)
   const p = g.player
   const hx = Math.round(p.x) - HOLE - x
   const hy = Math.round(p.y) - 12 - HOLE - y
-  const behind =
-    (isArenaPiece(s.kind) ? ARENA_TALL[s.kind] : isPlacePiece(s.kind) ? PLACE_TALL[s.kind] : TALL[s.kind]) && p.y < s.y && hx > -HOLE * 2 && hy > -HOLE * 2 && hx < piece.sprite.width && hy < piece.sprite.height
+  const behind = tallOf(s.kind) && p.y < s.y && hx > -HOLE * 2 && hy > -HOLE * 2 && hx < piece.sprite.width && hy < piece.sprite.height
   if (!behind) return ctx.drawImage(piece.sprite, x, y)
   if (!scratch || scratch.canvas.width < piece.sprite.width || scratch.canvas.height < piece.sprite.height) {
     const canvas = createCanvas(Math.max(piece.sprite.width, scratch?.canvas.width ?? 0), Math.max(piece.sprite.height, scratch?.canvas.height ?? 0))

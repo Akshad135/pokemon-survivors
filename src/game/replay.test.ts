@@ -15,6 +15,8 @@ import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
 import { makeSpitter } from './spitters'
 import type { Game } from './types'
+import { featureAt, type Landmark } from './terrain'
+import { LANDMARK } from '../data/landmarks'
 import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
@@ -213,6 +215,33 @@ describe('replays', () => {
     expect(g.place.offered.length).toBe(1)
     const staged = startGame(START)
     early(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it.each(['tunnel', 'maze', 'ruins'] as const)('re-simulate a run through a landmark: the %s', (id) => {
+    /** The nearest landmark of the kind, the player one tick from stepping in (or opening its treasure). */
+    const near = (g: Game) => {
+      for (let r = 2; r < 30; r++) {
+        for (let cx = -r; cx <= r; cx++) {
+          for (const cy of [-r, r]) {
+            const lm = featureAt(g.terrain.seed, cx, cy)?.landmark
+            if (lm?.id === id) return lm
+          }
+        }
+      }
+      throw new Error(`no ${id}`)
+    }
+    const stage = (g: Game) => {
+      const lm: Landmark = near(g)
+      const spot = lm.treasure ?? lm.mouths[0]!
+      Object.assign(g.player, spot)
+      if (lm.treasure) g.landmarks.opening = { cell: lm.cell, t: LANDMARK.openTime - 0.01 }
+      else g.landmarks.entering = { cell: lm.cell, mouth: 0, t: 0.39 }
+    }
+    const { g, replay } = play(12, START, 300, stage)
+    expect(g.events.some((e) => e.kind === 'landmark' && e.moment === (id === 'tunnel' ? 'tunnelOut' : 'loot'))).toBe(true)
+    const staged = startGame(START)
+    stage(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 

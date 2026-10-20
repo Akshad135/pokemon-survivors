@@ -53,6 +53,7 @@ import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
 import { placeDevTools } from './game/placeDev'
 import { placeFeedback } from './ui/places'
+import { landmarkFeedback } from './ui/landmarks'
 import { PLACES } from './data/places'
 import { placeSchedule } from './game/place'
 import { kitDevTools } from './game/kitDev'
@@ -70,6 +71,7 @@ import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
+import type { LandmarkId } from './data/landmarks'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
@@ -1075,6 +1077,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return mapEventFeedback(ui, e.notice)
     case 'place':
       return placeFeedback(ui, e.place, e.notice)
+    case 'landmark':
+      return landmarkFeedback(ui, e.landmark, e.moment)
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
@@ -1652,6 +1656,27 @@ const devTerrain = (g: Game, kind: SolidKind | 'lake' = 'cliff', dy = 70) => {
   return null
 }
 
+/** Walks the player to the nearest landmark of a kind (any without one), `dy` px south of its anchor. */
+const devLandmark = (g: Game, id?: LandmarkId, dy = 60) => {
+  const C = TERRAIN.cell
+  const pcx = Math.floor(g.player.x / C)
+  const pcy = Math.floor(g.player.y / C)
+  for (let r = 0; r < 40; r++) {
+    for (let cy = pcy - r; cy <= pcy + r; cy++) {
+      for (let cx = pcx - r; cx <= pcx + r; cx++) {
+        if (Math.max(Math.abs(cx - pcx), Math.abs(cy - pcy)) !== r) continue
+        const lm = featureAt(g.terrain.seed, cx, cy)?.landmark
+        if (!lm || (id && lm.id !== id)) continue
+        const at = clearSpot(g, { x: lm.x, y: lm.y + dy }, g.player.radius + 2)
+        g.player.x = at.x
+        g.player.y = at.y
+        return lm
+      }
+    }
+  }
+  return null
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -1686,6 +1711,8 @@ if (import.meta.env.DEV) {
       card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
+      /** `ps.landmark('maze')` walks you to the nearest maze (`cottage`, `tunnel`, `ruins`, `camp`; any without an argument), 60 px south of it. */
+      landmark: (id?: LandmarkId, dy?: number) => (run ? devLandmark(run.game, id, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       /** `ps.ball(3)` drops Poké Balls 20 px to the right of the player (inside the magnet), side by side. */
       ball: (n = 1) => withRun((g) => Array.from({ length: n }, (_, i) => dropPickup(g, g.player.x + 20 + i * 6, g.player.y, 'pokeball'))),

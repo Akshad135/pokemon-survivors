@@ -15,6 +15,8 @@ import type { MegaId } from '../data/megas'
 import type { AbilityId, HitKind } from '../data/abilities'
 import type { BranchId } from '../data/branches'
 import type { AbilityState } from './abilities'
+import type { LandmarkId } from '../data/landmarks'
+import type { LandmarkMoment, LandmarkState } from './landmarks'
 import type { BranchFavor } from './branch'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
@@ -546,6 +548,8 @@ export type GameEvent =
   | { kind: 'reaperDown'; defeats: number }
   /** A boss, chest or rift left an egg; it goes to the incubator when the run is banked. */
   | { kind: 'egg'; tier: EggTier }
+  /** A landmark was named, its treasure opened, or the player went into or out of a tunnel (`landmarks.ts`). */
+  | { kind: 'landmark'; landmark: LandmarkId; moment: LandmarkMoment }
   /** Something happened at a place: its entrance, the way in and out, what goes on inside (`place.ts`). */
   | { kind: 'place'; place: PlaceId; notice: PlaceNotice }
   /** A foe shattered: an execute, or a frozen foe's ice broken by a hit. */
@@ -636,8 +640,10 @@ export type Game = {
   props: Prop[]
   /** World cells whose prop was already broken, so it never respawns. */
   brokenProps: Set<number>
-  /** Rocks, trees, mountains, towers and lakes on the map (`game/terrain.ts`). */
+  /** Rocks, trees, mountains, towers, lakes and landmarks on the map (`game/terrain.ts`). */
   terrain: TerrainState
+  /** The landmarks' treasures taken, names shown and the tunnel being walked (`game/landmarks.ts`). */
+  landmarks: LandmarkState
   buffs: Buff[]
   /** Points of interest placed by the event director (`mapEvents.ts`). */
   mapEvents: MapEventsState

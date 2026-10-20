@@ -26,6 +26,7 @@ import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } f
 import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
 import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, placeFallLook } from './places'
 import { roomOf } from '../game/room'
+import { drawLandmarkAir, drawTunnelDark, playerUnderground } from './landmarks'
 import { drawPokemon, sprites, type AnimName, type SpeciesSprites } from './sprites'
 import { drawDrainVines, drawTypeEvolvedAttack, drawTypeEvolvedGround } from './typeEvolved'
 import { drawCompanion, type CompanionView } from './companion'
@@ -900,11 +901,13 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   depthOrder.sort(byDepth)
   for (let i = 0; i < n; i++) inDepth[i] = drawables[depthOrder[i]!]!
 
-  // Nothing casts a shadow up in the sky.
+  // Nothing casts a shadow up in the sky; under a tunnel's ridge the player isn't seen at all.
   const aloft = inSky(g)
+  const hidden = playerUnderground(g)
   for (const d of inDepth) {
     if (aloft) break
     if (d === 'player') {
+      if (hidden) continue
       shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
       drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
     }
@@ -913,7 +916,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   }
   drawAfterimages(ctx, g, calm)
   for (const d of inDepth) {
-    if (d === 'player') drawPlayer(ctx, g, calm)
+    if (d === 'player') !hidden && drawPlayer(ctx, g, calm)
     else if (d === 'companion') companion && drawCompanion(ctx, companion, t)
     else if (isSolid(d)) drawSolid(ctx, g, d, look)
     else drawEnemy(ctx, d, g.time, t, calm, aloft)
@@ -926,6 +929,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     }
   }
   drawEntranceAir(ctx, g, t)
+  drawLandmarkAir(ctx, g, t, visible)
   drawWings(ctx, g, t)
   drawPlaceOver(ctx, g, camX, camY)
   drawSleep(ctx, g, t)
@@ -959,6 +963,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
 
   // The cave's dark and the graveyard's night, then the weather, over the world but under damage numbers.
   drawPlaceDark(ctx, g, camX, camY, t)
+  drawTunnelDark(ctx, g, camX, camY)
   drawWeather(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)

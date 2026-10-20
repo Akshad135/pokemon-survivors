@@ -45,6 +45,7 @@ import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
 import { withOutbreak } from './outbreak'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
+import { createLandmarkState, updateLandmarks, updateTunnel } from './landmarks'
 import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
 import { createPlaceState } from './place'
@@ -181,6 +182,7 @@ export const createGame = (
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
     place: createPlaceState(),
+    landmarks: createLandmarkState(),
     tm: createTmState(),
     endless: null,
     tally: createTally(),
@@ -493,7 +495,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
     updateBiome(g)
     updateWeather(g, dt)
   }
-  updatePlayer(g, input.move, dt)
+  // Under a tunnel's ridge the player is carried through instead of walking.
+  if (!updateTunnel(g, dt)) updatePlayer(g, input.move, dt)
   updateCurses(g)
   updateMega(g, input.mega === true, dt)
   if (updateAbility(g, dt)) recomputeStats(g)
@@ -510,6 +513,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateArena(g, dt)
   updatePlaceEntrance(g, dt)
   updatePlace(g, dt)
+  updateLandmarks(g, dt)
   updateEndless(g)
   rebuildGrid(g)
   updateTraits(g, dt)
