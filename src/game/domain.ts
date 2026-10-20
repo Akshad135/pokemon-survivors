@@ -1,7 +1,7 @@
 import { retain } from '../engine/math'
 import { weightedPick } from '../engine/rng'
 import { ARENA_FEET, type FloorPlan, type Pt } from '../data/arenas'
-import { domainOf, type ArenaTransform, type LegendDomain, type ThreatKind } from '../data/domains'
+import { domainOf, DOMAIN_PRESS, type ArenaTransform, type LegendDomain, type ThreatKind } from '../data/domains'
 import { ENEMIES } from '../data/enemies'
 import { ARENAS, isRiftLegend, RIFT, type RiftLegend } from '../data/rifts'
 import { onFloor } from './arenaFloor'
@@ -235,8 +235,8 @@ const reveal = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) =>
   const at = arenaPoint(arena, d, def.arena.boss)
   const boss = spawnEnemy(g, d.legend, at.x, at.y)
   const scale = riftScale(g.time)
-  // The difficulty presses a legendary with its patterns (pace, telegraphs, damage), not with more HP: a domain's battle lasts as long on any.
-  boss.hp = boss.maxHp = Math.round(ENEMIES[d.legend].hp * scale.hp * def.hp)
+  // The difficulty presses a legendary with its patterns (pace, telegraphs, damage) and with `DOMAIN_PRESS`.
+  boss.hp = boss.maxHp = Math.round(ENEMIES[d.legend].hp * scale.hp * def.hp * DOMAIN_PRESS[g.difficulty].hp)
   boss.damage *= scale.damage * (def.touch ?? 1)
   boss.xp = riftLoot(g.time, arena.shiny).xp
   boss.shiny = arena.shiny

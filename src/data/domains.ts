@@ -1,3 +1,4 @@
+import type { Difficulty } from '../game/difficulty'
 import type { WeatherId } from './biomes'
 import type { ArenaPiece, ArenaShape, Circle, FloorPattern, FloorPlan, Pt } from './arenas'
 import type { BossPhase } from './bosses'
@@ -200,6 +201,19 @@ export type LegendDomain = {
   /** A second legendary fighting alongside (`DomainPartner`). */
   partner?: DomainPartner
 }
+
+/**
+ * How each difficulty presses a domain's legendary, on top of its patterns'
+ * pace and telegraphs (`BOSS_DIFFICULTY`) and the damage every foe deals
+ * (`DIFFICULTIES`): `hp` multiplies its HP, `harm` everything the domain does
+ * to the player. Normal is tuned for a player without Poké Mart upgrades and
+ * Nightmare for a maxed Mart, so a battle lasts about as long on each.
+ */
+export const DOMAIN_PRESS = {
+  normal: { hp: 0.9, harm: 0.8 },
+  hard: { hp: 1.3, harm: 1 },
+  nightmare: { hp: 1.8, harm: 0.9 },
+} as const satisfies Record<Difficulty, { hp: number; harm: number }>
 
 /** The legendaries whose rift is a domain. The others keep the old arena (`data/arenas.ts`) until theirs is written. */
 export const DOMAINS: Partial<Record<RiftLegend, LegendDomain>> = {

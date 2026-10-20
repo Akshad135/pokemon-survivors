@@ -2,6 +2,7 @@ import type { BiomeId } from './biomes'
 import type { BossPattern, BossPhase, HazardVisual } from './bosses'
 import type { EnemyId } from './enemies'
 import type { ThemeId } from './music'
+import { pin } from './domains/kit'
 
 /**
  * The legendaries that fight on the map instead of in a rift: the trio drawn
@@ -93,8 +94,6 @@ const closing = (visual: HazardVisual, count: number, damage: number, gap: numbe
   kind: 'ring', every, count, speed, radius: 5, damage, visual, around, windup: 0.9, gap,
 })
 
-/** One circle where the player stands: nothing to a player on the move, a steady toll on one who stands still. */
-const pin = (visual: HazardVisual, damage: number, every = 4.2): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage, visual })
 
 /** The boss flies or burrows under the player: its shadow or wake follows them, then stops where it lands. */
 const dive = (visual: HazardVisual, every: number, damage: number): BossPattern => ({ kind: 'dive', every, hide: 1.1, windup: 0.85, radius: 28, damage, visual })
@@ -105,6 +104,7 @@ const articuno: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('ice', 18),
       { stance: 'ranged', kind: 'ring', every: 3.2, count: 12, speed: 72, radius: 5, damage: 18, visual: 'ice' },
       { stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 3, spread: 0, radius: 13, delay: 1.1, damage: 18, visual: 'ice', lead: 1 },
       { stance: 'close', kind: 'strikes', every: 4, target: 'self', count: 1, spread: 0, radius: 42, delay: 1.2, damage: 20, visual: 'ice' },
@@ -156,6 +156,7 @@ const zapdos: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('thunder', 22),
       { stance: 'ranged', kind: 'strikes', every: 2.6, target: 'player', count: 4, spread: 64, radius: 15, delay: 1, damage: 24, visual: 'thunder', lead: 1 },
       { stance: 'close', kind: 'strikes', every: 3.6, target: 'self', count: 1, spread: 0, radius: 44, delay: 1.1, damage: 24, visual: 'thunder' },
       { far: 120, kind: 'strikes', every: 6.5, target: 'player', count: 1, spread: 0, radius: 26, delay: 1.2, damage: 22, visual: 'thunder', lead: 1, leap: true },
@@ -214,6 +215,7 @@ const moltres: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('fire', 22),
       { kind: 'trail', every: 0.16, ttl: 3.2, radius: 7, damage: 14, visual: 'fire' },
       { stance: 'ranged', kind: 'ring', every: 4.5, count: 8, speed: 60, radius: 5, damage: 20, visual: 'fire' },
       { stance: 'ranged', kind: 'strikes', every: 3.8, target: 'player', count: 3, spread: 0, radius: 13, delay: 1.1, damage: 20, visual: 'fire', lead: 1 },
@@ -274,6 +276,7 @@ const raikou: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('thunder', 18),
       { stance: 'ranged', kind: 'strikes', every: 3, target: 'player', count: 3, spread: 46, radius: 13, delay: 0.9, damage: 18, visual: 'thunder', lead: 1 },
       { stance: 'close', kind: 'trail', every: 0.22, ttl: 1.6, radius: 6, damage: 10, visual: 'thunder' },
       { stance: 'close', kind: 'strikes', every: 3.8, target: 'self', count: 1, spread: 0, radius: 40, delay: 1.1, damage: 20, visual: 'thunder' },
@@ -334,6 +337,7 @@ const entei: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('fire', 22),
       { stance: 'ranged', kind: 'strikes', every: 3.4, target: 'player', count: 5, spread: 72, radius: 13, delay: 1.1, damage: 22, visual: 'fire', lead: 1 },
       { stance: 'close', kind: 'trail', every: 0.2, ttl: 2.4, radius: 7, damage: 14, visual: 'fire' },
       { stance: 'close', kind: 'strikes', every: 4.4, target: 'self', count: 1, spread: 0, radius: 50, delay: 1.3, damage: 26, visual: 'fire' },
@@ -395,6 +399,7 @@ const suicune: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('water', 22),
       { stance: 'ranged', kind: 'ring', every: 3.6, count: 16, speed: 62, radius: 5, damage: 20, visual: 'water' },
       { stance: 'ranged', kind: 'strikes', every: 4.4, target: 'player', count: 2, spread: 44, radius: 18, delay: 1.1, damage: 22, visual: 'water', lead: 1 },
       { stance: 'close', kind: 'ring', every: 3.2, count: 10, speed: 96, radius: 5, damage: 18, visual: 'ice' },
@@ -458,6 +463,7 @@ const regirock: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('rock', 18),
       { stance: 'ranged', kind: 'strikes', every: 3.4, target: 'player', count: 4, spread: 56, radius: 12, delay: 1.1, damage: 18, visual: 'rock' },
       { stance: 'close', kind: 'strikes', every: 4.2, target: 'self', count: 1, spread: 0, radius: 46, delay: 1.3, damage: 20, visual: 'slam' },
       { stance: 'close', kind: 'ring', every: 3.8, count: 8, speed: 64, radius: 5, damage: 18, visual: 'rock' },
@@ -518,6 +524,7 @@ const regice: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('ice', 22),
       { stance: 'ranged', kind: 'ring', every: 3.4, count: 14, speed: 66, radius: 5, damage: 20, visual: 'ice' },
       { stance: 'ranged', kind: 'strikes', every: 4.2, target: 'player', count: 2, spread: 40, radius: 18, delay: 1.1, damage: 24, visual: 'ice', lead: 1 },
       { stance: 'close', kind: 'trail', every: 0.3, ttl: 2.8, radius: 8, damage: 12, visual: 'ice' },
@@ -579,6 +586,7 @@ const registeel: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('steel', 22),
       { stance: 'ranged', kind: 'ring', every: 4, count: 18, speed: 56, radius: 5, damage: 20, visual: 'steel' },
       { stance: 'ranged', kind: 'strikes', every: 3.8, target: 'player', count: 4, spread: 70, radius: 15, delay: 1.1, damage: 24, visual: 'steel' },
       { stance: 'close', kind: 'strikes', every: 4.6, target: 'self', count: 1, spread: 0, radius: 56, delay: 1.4, damage: 26, visual: 'slam' },
@@ -643,6 +651,7 @@ const mew: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('psychic', 22),
       { stance: 'ranged', kind: 'ring', every: 2.4, count: 8, speed: 90, radius: 5, damage: 22, visual: 'psychic' },
       { stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 3, spread: 0, radius: 13, delay: 1.1, damage: 20, visual: 'psychic', lead: 1 },
       { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 38, delay: 1.1, damage: 22, visual: 'psychic' },
@@ -694,6 +703,7 @@ const celebi: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('grass', 22),
       { stance: 'ranged', kind: 'ring', every: 2.6, count: 10, speed: 86, radius: 5, damage: 22, visual: 'grass' },
       { stance: 'ranged', kind: 'strikes', every: 3.6, target: 'player', count: 3, spread: 50, radius: 14, delay: 1.1, damage: 20, visual: 'psychic', lead: 1 },
       { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 40, delay: 1.1, damage: 22, visual: 'grass' },
@@ -755,6 +765,7 @@ const jirachi: readonly BossPhase[] = [
   {
     below: TRIO[0],
     patterns: [
+      pin('steel', 22),
       { stance: 'ranged', kind: 'strikes', every: 3.4, target: 'player', count: 1, spread: 0, radius: 28, delay: 1.5, damage: 30, visual: 'steel' },
       { stance: 'ranged', kind: 'ring', every: 3, count: 8, speed: 84, radius: 5, damage: 20, visual: 'steel' },
       { stance: 'close', kind: 'strikes', every: 3.5, target: 'self', count: 1, spread: 0, radius: 38, delay: 1.1, damage: 22, visual: 'psychic' },
@@ -821,6 +832,7 @@ const mewtwo: readonly BossPhase[] = [
   {
     below: 1,
     patterns: [
+      pin('psychic', 28),
       { kind: 'ring', every: 3, count: 16, speed: 80, radius: 5, damage: 26, visual: 'psychic' },
       { stance: 'ranged', kind: 'strikes', every: 4.5, target: 'player', count: 5, spread: 80, radius: 18, delay: 1.1, damage: 30, visual: 'psychic', lead: 1 },
       { stance: 'close', kind: 'strikes', every: 4.5, target: 'self', count: 1, spread: 0, radius: 52, delay: 1.2, damage: 30, visual: 'psychic' },

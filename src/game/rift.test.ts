@@ -90,7 +90,7 @@ describe('rift legendary', () => {
   it('is tuned for the first rift and grows with the run clock', () => {
     expect(riftScale(RIFT.slots[0])).toEqual({ hp: 1, damage: 1 })
     expect(riftScale(0)).toEqual({ hp: 1, damage: 1 })
-    expect(riftScale(RIFT.slots[0] + 240).hp).toBeCloseTo(3)
+    expect(riftScale(RIFT.slots[0] + 240).hp).toBeCloseTo(4)
     expect(riftScale(RIFT.slots[0] + 240).damage).toBeGreaterThan(1)
   })
 

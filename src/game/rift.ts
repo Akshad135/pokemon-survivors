@@ -2,7 +2,7 @@ import { pick, range, type Rng } from '../engine/rng'
 import { RIFT, RIFT_DRAWS, RIFT_ITEMS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
 import type { EnemyId } from '../data/enemies'
-import { domainOf } from '../data/domains'
+import { domainOf, DOMAIN_PRESS } from '../data/domains'
 import type { FloorPlan } from '../data/arenas'
 import type { DomainState } from './domain'
 import type { Room, Stash } from './room'
@@ -94,10 +94,26 @@ export const pickLegend = (rng: Rng, met: readonly RiftLegend[], self: EnemyId |
 /** Standing in the portal fills it; stepping out drains it twice as fast. */
 export const chargePortal = (charge: number, inside: boolean, dt: number) => (inside ? charge + dt : Math.max(0, charge - dt * 2))
 
-/** Rift legendaries are tuned for the first rift (4:00) and grow with the run clock, like the horde. */
+/**
+ * Rift legendaries are tuned for the first rift (4:00) and grow with the run
+ * clock, like the horde: fast enough that the second rift (10:20) is as hard
+ * for the stronger player who reaches it. `damage` scales their touch and, in
+ * a domain, their attacks (`domainHarm`).
+ */
 export const riftScale = (time: number) => {
   const late = Math.max(0, time / 60 - RIFT.slots[0] / 60)
-  return { hp: 1 + late * 0.5, damage: 1 + late * 0.06 }
+  return { hp: 1 + late * 0.75, damage: 1 + late * 0.09 }
+}
+
+/**
+ * What a domain's harm to the player is multiplied by: the difficulty's press
+ * (`DOMAIN_PRESS`), and its attacks grow with the run clock like the
+ * legendary's body does (`riftScale`), so the second rift hits a stronger
+ * player as hard as the first. 1 outside a domain. `body`: a touch, already scaled.
+ */
+export const domainHarm = (g: Game, body: boolean) => {
+  if (!g.rift.arena?.domain) return 1
+  return DOMAIN_PRESS[g.difficulty].harm * (body ? 1 : riftScale(g.time).damage)
 }
 
 /**

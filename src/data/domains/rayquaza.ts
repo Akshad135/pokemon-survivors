@@ -1,3 +1,4 @@
+import { PIN_SHARE } from './kit'
 import { around, circle, lane, poly, type Pt } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { ArenaTransform, LegendDomain } from '../domains'
@@ -43,7 +44,7 @@ const airSlash = (count: number, every: number): BossPattern => ({
 })
 
 /** Twister: a vortex spinning up right under the player; it only ever hits one who stands still. */
-const vortex: BossPattern = { kind: 'strikes', every: 2.6, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage: 14, visual: 'aero' }
+const vortex: BossPattern = { kind: 'strikes', every: 2.6, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage: 14, visual: 'aero', share: PIN_SHARE }
 
 /** Draco Meteor: meteors scattered over the roof around Rayquaza. */
 const meteors = (count: number, delay: number): BossPattern => ({ kind: 'strikes', every: 0, target: 'self', count, spread: 200, radius: 20, delay, damage: 18, visual: 'dragon' })

@@ -63,7 +63,7 @@ const fire = (g: Game, boss: Enemy, written: BossPattern, fight: BossFight | nul
           x,
           y,
           r: pattern.radius,
-          damage: pattern.damage,
+          damage: Math.max(pattern.damage, (pattern.share ?? 0) * p.stats.maxHp),
           armAt: delay,
           disarmAt: delay + STRIKE_WINDOW,
           ttl: delay + 0.45,

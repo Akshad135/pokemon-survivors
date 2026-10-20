@@ -1,3 +1,4 @@
+import { pin, PIN_EVERY } from './kit'
 import { circle, lane } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { LegendDomain } from '../domains'
@@ -40,7 +41,7 @@ export const KYOGRE_DOMAIN: LegendDomain = {
   backdrop: 'cave',
   entrance: 'rise',
   music: 'kyogre',
-  hp: 1.35,
+  hp: 1.2,
   battleTime: 180,
   crossing: {
     // Six chambers climbing north, joined by winding passages; the third holds a deep pit, the fifth a flooded hall.
@@ -108,13 +109,14 @@ export const KYOGRE_DOMAIN: LegendDomain = {
       below: 1,
       steer: { kind: 'anchor', x: 0, y: 0, drift: 24, pace: 0.5 },
       patterns: [
+        pin('water', 11, PIN_EVERY),
         { kind: 'ring', every: 4.4, count: 12, speed: 58, radius: 5, damage: 14, visual: 'water' },
         // Hydro Pump: aimed at the player, stopped by the stalagmites.
-        { kind: 'beam', every: 5.6, source: 'boss', count: 1, spread: 0, windup: 1.1, duration: 0.5, width: 12, length: 360, damage: 18, visual: 'water', blocked: true },
-        { kind: 'strikes', every: 5, target: 'player', count: 3, spread: 0, radius: 15, delay: 1.1, damage: 15, visual: 'water', lead: 1 },
-        { kind: 'summon', every: 11, enemies: ['carvanha'], count: 2, max: 3, radius: 70, role: 'runner' },
+        { kind: 'beam', every: 5.6, source: 'boss', count: 1, spread: 0, windup: 1.1, duration: 0.5, width: 12, length: 360, damage: 16, visual: 'water', blocked: true },
+        { kind: 'strikes', every: 5, target: 'player', count: 3, spread: 0, radius: 15, delay: 1.1, damage: 13, visual: 'water', lead: 1 },
+        { kind: 'summon', every: 12, enemies: ['carvanha'], count: 2, max: 2, radius: 70, role: 'runner' },
       ],
-      ultimate: { move: 'Water Spout', first: 8, every: 22, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 32, safe: 'cover', visual: 'water' } }] },
+      ultimate: { move: 'Water Spout', first: 12, every: 26, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 28, safe: 'cover', visual: 'water' } }] },
     },
     {
       below: 0.68,
@@ -122,12 +124,13 @@ export const KYOGRE_DOMAIN: LegendDomain = {
       steer: { kind: 'orbit', radius: 112, pace: 0.6 },
       arena: [{ kind: 'flood', at: 0, warn: 2.8, area: [circle(0, 0, R + 4)], spare: islands(30) }],
       patterns: [
+        pin('water', 11, PIN_EVERY),
         { kind: 'dive', every: 7.5, hide: 1.5, windup: 0.9, radius: 30, damage: 22, visual: 'water' },
         { kind: 'volley', every: 4.8, count: 5, arc: 0.9, speed: 105, windup: 0.9, radius: 5, damage: 14, visual: 'water' },
         { kind: 'beam', every: 6.4, source: 'boss', count: 2, spread: 0.55, windup: 1.1, duration: 0.5, width: 11, length: 360, damage: 18, visual: 'water', blocked: true },
         { kind: 'summon', every: 13, enemies: ['sharpedo', 'carvanha'], count: 2, max: 3, radius: 60, role: 'runner' },
       ],
-      ultimate: { move: 'Surf', first: 7, every: 20, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.6, damage: 34, safe: 'dry', visual: 'water' } }] },
+      ultimate: { move: 'Surf', first: 7, every: 20, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.6, damage: 30, safe: 'dry', visual: 'water' } }] },
     },
     {
       below: 0.34,
@@ -136,6 +139,7 @@ export const KYOGRE_DOMAIN: LegendDomain = {
       steer: { kind: 'anchor', x: 0, y: 0, drift: 34, pace: 0.7 },
       arena: [{ kind: 'flood', at: 0, warn: 2.4, area: [circle(0, 0, R + 4)], spare: islands(24) }],
       patterns: [
+        pin('water', 11, PIN_EVERY),
         lances(4, 1.3, 5.2),
         { kind: 'ring', every: 4.2, count: 16, speed: 64, radius: 5, damage: 14, visual: 'water' },
         { kind: 'dive', every: 9, hide: 1.3, windup: 0.9, radius: 32, damage: 22, visual: 'water' },
