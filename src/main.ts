@@ -1,6 +1,8 @@
 import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
+// First, so its error listeners catch what goes wrong while the rest loads.
+import { bugReportsEnabled, describeWith, syncRunWatch, takeCrash } from './bugReport'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { castSound } from './ui/castSounds'
@@ -123,6 +125,7 @@ import { titleScreen, type LobbyFocus, type Meadow } from './ui/title'
 import { creditsLine, supportersScreen } from './ui/supporters'
 import { suggestionsScreen } from './ui/suggestions'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
+import { bugReportForm, crashPrompt } from './ui/bugReport'
 
 /** Fixed simulation step: the replays the ranking re-simulates count on it. */
 const STEP = TICK
@@ -264,6 +267,20 @@ const queueMega = () => {
 
 /** The player's name right now: its stage's, or its Mega form's while that lasts. */
 const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || playerForm(g).name
+
+/** Classes every screen shares, which say nothing about which one it is. */
+const SCREEN_CLASSES = new Set(['screen', 'shell', 'dim', 'pop', 'hidden'])
+
+// A bug report says what's on screen: the screens stacked up (the form itself aside) and the run, as plain numbers.
+describeWith(() => {
+  const view = [...ui.querySelectorAll(':scope > .screen:not(.bug-screen)')].map((el) => [...el.classList].filter((c) => !SCREEN_CLASSES.has(c)).join('.')).join(' > ')
+  const g = run?.game
+  if (!g || g.phase === 'gameover' || g.phase === 'victory') return { view, run: null }
+  return {
+    view,
+    run: { partner: g.starter, form: playerName(g), difficulty: g.difficulty, time: Math.floor(g.time), level: g.player.level, phase: g.phase, biome: g.biome.id, enemies: g.enemies.length },
+  }
+})
 
 /** The player's cry right now: its Mega form's own while that lasts. */
 const playerCry = (g: Game) => cryUrl(playerDex(g), g.mega.active > 0 ? heldMega(g)?.form : undefined)
@@ -541,6 +558,7 @@ const endRun = () => {
   run.hud.dispose()
   clearToasts(ui)
   run = null
+  syncRunWatch()
 }
 
 const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, t().loading))
@@ -647,6 +665,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
     companion: runCompanion(game.player),
   }
+  // The crash watch holds the run from now on (`bugReport.ts`).
+  syncRunWatch()
   track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
   const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
@@ -739,7 +759,12 @@ const syncOverlay = (r: Run) => {
       r.overlay = pokeballPick(ui, input, g, (offer) => (recordEvent(r.recorder, ['offer', g.offers.indexOf(offer)]), chooseOffer(g, offer)))
       break
     case 'paused':
-      r.overlay = pauseMenu(ui, input, g, { resume: () => (g.phase = 'playing'), quit: () => afterRun(() => showMenu()), settings: (back) => runSettings(r, back) })
+      r.overlay = pauseMenu(ui, input, g, {
+        resume: () => (g.phase = 'playing'),
+        quit: () => afterRun(() => showMenu()),
+        settings: (back) => runSettings(r, back),
+        report: bugReportsEnabled ? (back) => bugReportForm(ui, input, back) : null,
+      })
       break
     case 'gameover':
     case 'victory':
@@ -1352,6 +1377,13 @@ const promptProfile = () => {
   })
 }
 
+/** The game closed mid-run last time (`takeCrash`): the title asks, once, whether to report it. */
+const askAboutCrash = () => {
+  const crash = takeCrash()
+  if (!crash || !bugReportsEnabled || !screen?.el.classList.contains('title-home')) return
+  crashPrompt(screen.el, () => setScreen(bugReportForm(ui, input, () => showTitle(), crash)))
+}
+
 const boot = () => {
   startAnalytics(errorContext)
   // Events and errors tie to the account on this device, known from its link before Clerk loads.
@@ -1366,6 +1398,7 @@ const boot = () => {
   else if (rankingEnabled && new URLSearchParams(location.search).has(IDEAS_PARAM)) showIdeasLink()
   // Back from signing in, the player already pressed start before leaving: straight to the menu.
   else showTitle({ intro: !backFromSignIn() })
+  askAboutCrash()
   requestAnimationFrame(frame)
   scheduleWarmUp(1000)
   void preloadInBackground()

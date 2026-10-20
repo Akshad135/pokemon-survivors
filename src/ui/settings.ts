@@ -2,6 +2,8 @@ import { playSfx, setMix } from '../engine/audio'
 import { STICK_MODES, type Input } from '../engine/input'
 import { clamp } from '../engine/math'
 import { locale, LOCALE_IDS, LOCALES, setLocale, t, type Locale } from '../i18n'
+import { bugReportsEnabled } from '../bugReport'
+import { bugReportForm } from './bugReport'
 import { openControls } from './controls'
 import { h, later } from './dom'
 import { DAMAGE_NUMBERS } from '../render/damageNumbers'
@@ -159,9 +161,9 @@ const languageRow = (pick: (next: Locale) => void): Row => {
   return { el, adjust: step, activate: () => step(1), sync: () => seg.set(locale()) }
 }
 
-/** Opens the remap screen (keyboard keys and gamepad buttons). */
-const controlsRow = (open: () => void): Row => {
-  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, t().controls.open), h('b', { class: 'setting-choice' }, '▶'))
+/** Opens a screen on top (the remap screen, the bug report form): Enter, a tap or →. */
+const openRow = (label: string, open: () => void): Row => {
+  const el = h('button', { class: 'setting-row' }, h('span', { class: 'setting-label' }, label), h('b', { class: 'setting-choice' }, '▶'))
   return { el, adjust: (dir) => dir > 0 && open(), activate: open, sync: () => {} }
 }
 
@@ -200,7 +202,7 @@ let lastTab: Tab = 'sound'
  * Settings in four tabs: Som (music and effects volume, mute), Jogo
  * (language, damage numbers, screen shake, flashes, UI size), Controles (touch joystick and the
  * remap screen) and Sobre (installing the app, what the game is, legal and
- * credits, GitHub).
+ * credits, GitHub, and the bug report form when there's an API to send it to).
  * Changes apply and persist immediately.
  *
  * Opens on top of whatever is on screen (`root` is `#ui`, `input` the shared
@@ -257,9 +259,11 @@ export const openSettings = (root: HTMLElement, input: Input, onClose: () => voi
           ...uiScaleRows(m.uiScale, m.uiScaleAuto),
         ]
       case 'controls':
-        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), controlsRow(() => showSub(openControls))]
+        return [choiceRow(m.joystick, 'joystick', STICK_MODES, (mode) => m.joystickModes[mode]), openRow(t().controls.open, () => showSub(openControls))]
       case 'about':
-        return [...installRows(m.install, () => showSub(installHelpScreen)), linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
+        return [
+          ...(bugReportsEnabled ? [openRow(m.reportBug, () => showSub(bugReportForm))] : []),
+          ...installRows(m.install, () => showSub(installHelpScreen)), linkRow(m.guide, ROUTES.guide[lang]), linkRow(m.legal, ROUTES.legal[lang]), linkRow(m.github, REPO_URL, true)]
     }
   }
 

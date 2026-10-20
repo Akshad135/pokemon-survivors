@@ -33,13 +33,14 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `GET /suggestions` | `?sort=top\|new\|done`. `{ suggestions }`: a tab of the idea board (100 at most), open ideas by score or newest first, or the shipped ones; each `Suggestion` (`src/game/suggestions.ts`) has the asker's `vote` and whether it's theirs (`mine`) |
 | `POST /suggestions` | Body `{ title, body }` (`parseSuggestionDraft`). 201 `{ suggestion }`, posted with the author's up vote. 400 invalid, 403 before the player has a handle, 429 past 3 ideas in 24 hours |
 | `PUT /suggestions/:id/vote` | Body `{ vote }`: 1, -1, or 0 to take it back. `{ score, vote }`. 404 unknown or hidden, 409 shipped |
+| `POST /bug-reports` | Body `{ text, tech? }` (`parseBugReport` in `src/game/bugReport.ts`): what the player wrote and, unless they turned it off, the technical info the game gathered. Guests too; with a token the thread shows the player's handle. 201 `{ id }`: stored, and posted to Discord in the background (see [Bug reports](#bug-reports)). 400 invalid, 429 past 5 reports in an hour from the IP or the account |
 | `GET /admin` | `{ admin: true }` for an admin (see [Admin gift desk](#admin-gift-desk)), 403 for anyone else, like every `/admin` route |
 | `GET /admin/users` | `?q=` a handle (with or without `@`, in part) or an email (in part, asked of Clerk). `{ users }`: up to 10 `AdminUser` with their email and when they were last seen |
 | `POST /admin/gifts` | Body `{ userId, content, request }`: sends a Mystery Gift (`parseAdminGift`: any `GiftContent` but a ribbon). `request` is a uuid per send, so a retry sends nothing twice: `{ sent }`, false when it already went. 404 for an unknown player |
 | `GET /admin/gifts` | `{ gifts }`: the last 30 gifts sent by hand (`AdminSent`), with when they were claimed |
 | `PUT /admin/suggestions/:id` | Body `{ status }`: `done` (shipped, stamps `done_at`), `open` again, or `hidden` (off the board). `{ status }`, 404 for an unknown idea |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles` and `GET /suggestions` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles`, `GET /suggestions` and `POST /bug-reports` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
@@ -104,6 +105,14 @@ The community Discord (built by `scripts/discord/setup.mjs`) has a bot that runs
 - **Daily posts:** every 15 minutes it looks for what's due: the day's Desafio do dia in #daily-challenge (pinging **Daily Challenge Ping**) and its outbreak in #daily-outbreak when the Brasília day starts, and yesterday's top 3 in #daily-challenge once the ribbons are due (`ribbonsDue`).
 - **Linked accounts** (`src/discordLink.ts`): a player connects Discord to their Clerk account in the game (or signs in with it); `POST /discord/link` reads that account from Clerk, stores its id in `users.discord_id`, adds the player to the server with the OAuth token Clerk keeps (`guilds.join`, a scope of Clerk's Discord connection) and gives **Supporter** or **Gold Supporter** by their tier (Gold replaces Supporter; no tier changes nothing). A donation that raises a linked player's tier updates the role. Linking never grants Trainer.
 
+### Bug reports
+
+The game's "Reportar bug" (Settings → About, the pause menu, and the prompt after the game closed mid-run) sends `POST /bug-reports` (`src/bugReports.ts`).
+
+- Every report is stored in `bug_reports` first, so none is lost when Discord is down or not set up; without the bot the API just stores them.
+- With the bot, each one becomes a thread in the **#bug-reports** forum: titled by the report's first line and the device (`Android · Chrome`, 💥 first when the game closed mid-run), opened by the quoted text and the technical info in a code block, then one message per error the game caught. Tags `Open`, `Mobile` or `Desktop`, and `Crash`, matched by name. Posts send `allowed_mentions: { parse: [] }`, so nothing in a report pings anyone. The forum is `DISCORD_BUG_FORUM_ID`, or else the forum channel named `bug-reports`.
+- Rate limit: 5 reports per hour per IP (`X-Real-IP`, set by Traefik) and per account, in memory on each instance. The answer never waits for Discord.
+
 The bot's application has **Message Content** and **Server Members** on (Developer Portal → Bot → Privileged Gateway Intents), which needs no review under 100 servers.
 
 ## Environment
@@ -120,6 +129,7 @@ The bot's application has **Message Content** and **Server Members** on (Develop
 | `STRIPE_PAYMENT_LINK` | Optional. The donation Payment Link's id (`plink_…`): set, the webhook ignores other Checkout Sessions of the account |
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Optional. The community Discord bot's token and the server's id. Without both there's no bot |
 | `POSTHOG_KEY` | Optional. The game's PostHog project token (`phc_…`, the same as the client's `VITE_POSTHOG_KEY`): 500s, uncaught exceptions and rejections go to its error tracking (`src/errors.ts`), tied to the player's id when the request had one. Without it errors only go to the log |
+| `DISCORD_BUG_FORUM_ID` | Optional. The #bug-reports forum's channel id, where bug reports go. Without it the bot finds the forum by name |
 | `PORT` | Default `3000` |
 
 ## Database
@@ -139,6 +149,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `users.supporter_points`, `supporter_since`, `supporter_public`: a supporter's total, since when, and whether they show it. `poll_votes`: the supporters' poll.
 - `suggestions`: the idea board (`status` `open`, `done` or `hidden`, `score` recounted from the votes on every vote, `done_at`). `suggestion_votes`: one vote per player per idea (1 or -1; taking it back deletes the row).
 - `users.discord_id`, `discord_name`: the Discord account a player linked (one game account per Discord account).
+- `bug_reports`: each bug report (`user_id`, null for a guest; `text`; `tech`, the `BugTech` JSON or null; `thread_id`, the forum thread once posted).
 - `discord_posts`: what the Discord bot already did, by key (`patch:<date>`, `challenge:<day>`, `podium:<day>`, `outbreak:<day>`, `welcome:<user>`, `short:<message>`), with the message a patch note became so it can be edited.
 
 ## Local development
@@ -189,6 +200,7 @@ New versions roll out with no downtime:
 | `ABACATEPAY_API_KEY` | Dokploy (`api`) | AbacatePay production key, with `CHECKOUT:CREATE`, `PRODUCT:CREATE` and `PRODUCT:READ` |
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Dokploy (`api`) | The "Pokémon Survivors" bot's token and the community server's id |
 | `POSTHOG_KEY` | Dokploy (`api`) | PostHog (US cloud) project token, public |
+| `DISCORD_BUG_FORUM_ID` | Dokploy (`api`) | The #bug-reports forum's channel id (optional: found by name without it) |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
 | `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
 | `VITE_POSTHOG_KEY` | Vercel, production only | The same PostHog project token: the game's events and errors (`src/analytics.ts`) |
