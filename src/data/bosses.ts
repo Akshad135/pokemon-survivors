@@ -44,8 +44,10 @@ export type BossPattern = PatternGate &
      * first where they stand, the last where they'd be at `lead` × `delay` if they kept going
      * (times the difficulty's `aim`); a single led circle lands at that end.
      * `leap` (one circle on the player): the boss lands there itself as it hits.
+     * `share`: each hits for at least that share of the player's max HP (a pin, which only
+     * ever finds a player standing still, keeps up with a tougher one).
      */
-    | { kind: 'strikes'; every: number; target: 'player' | 'self'; count: number; spread: number; radius: number; delay: number; damage: number; visual: HazardVisual; lead?: number; leap?: true }
+    | { kind: 'strikes'; every: number; target: 'player' | 'self'; count: number; spread: number; radius: number; delay: number; damage: number; visual: HazardVisual; lead?: number; leap?: true; share?: number }
     /**
      * A ring of projectiles fired outward from the boss. `around` (px) instead
      * closes it on the player: the shots show on a circle that far around them,

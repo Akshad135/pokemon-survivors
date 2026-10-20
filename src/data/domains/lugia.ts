@@ -1,3 +1,4 @@
+import { PIN_SHARE } from './kit'
 import { circle, lane } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { LegendDomain } from '../domains'
@@ -47,7 +48,7 @@ const gusts = (every: number, count: number, arc: number, push: number): BossPat
 })
 
 /** A strike on the spot the player stands on, landing a beat later: harmless to a moving player, deadly to one standing still (water is written lower: the rain boosts it). */
-const pin = (every: number, visual: 'water' | 'aero'): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 14, delay: 0.95, damage: visual === 'water' ? 14 : 18, visual })
+const pin = (every: number, visual: 'water' | 'aero'): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 14, delay: 0.95, damage: visual === 'water' ? 14 : 18, visual, share: PIN_SHARE })
 
 /** Sky Attack: Lugia climbs out of sight and dives onto where the player stands, its shadow growing. */
 const skyAttack: BossPattern = { kind: 'teleport', every: 0, to: 'player', windup: 1.35, radius: 32, damage: 28, visual: 'aero' }

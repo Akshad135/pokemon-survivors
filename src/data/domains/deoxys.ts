@@ -1,3 +1,4 @@
+import { pin, PIN_EVERY } from './kit'
 import { circle, lane } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { LegendDomain } from '../domains'
@@ -110,6 +111,7 @@ export const DEOXYS_DOMAIN: LegendDomain = {
       below: 1,
       steer: { kind: 'anchor', x: 0, y: 0, drift: 30, pace: 0.6 },
       patterns: [
+        pin('psychic', 16, PIN_EVERY),
         { kind: 'ring', every: 4.6, count: 12, speed: 62, radius: 5, damage: 12, visual: 'psychic' },
         { from: 'hard', kind: 'beam', every: 6.2, source: 'boss', count: 1, spread: 0, windup: 1.1, duration: 0.5, width: 12, length: 380, damage: 12, visual: 'psychic', blocked: true },
         { kind: 'strikes', every: 5, target: 'player', count: 3, spread: 0, radius: 15, delay: 1.2, damage: 13, visual: 'rock', lead: 1 },
@@ -133,6 +135,7 @@ export const DEOXYS_DOMAIN: LegendDomain = {
       taken: 1.4,
       steer: { kind: 'hold', range: 150, pace: 0.9 },
       patterns: [
+        pin('psychic', 16, PIN_EVERY),
         { kind: 'volley', every: 2.9, count: 5, arc: 0.7, speed: 125, windup: 0.85, radius: 5, damage: 12, visual: 'psychic' },
         { kind: 'beam', every: 5, source: 'boss', count: 3, spread: 0.42, windup: 1, duration: 0.45, width: 10, length: 380, damage: 15, visual: 'psychic' },
         { from: 'hard', kind: 'strikes', every: 4.2, target: 'player', count: 4, spread: 0, radius: 13, delay: 1, damage: 14, visual: 'psychic', lead: 1 },
@@ -156,6 +159,7 @@ export const DEOXYS_DOMAIN: LegendDomain = {
       form: 'defense',
       steer: { kind: 'anchor', x: 0, y: 0, drift: 10, pace: 0.3 },
       patterns: [
+        pin('psychic', 16, PIN_EVERY),
         { kind: 'guard', every: 10, enemies: ['solrock', 'lunatone'], count: 3, radius: 72, hp: 2.2 },
         // Slow, dense walls of shots with a gap to slip through.
         { kind: 'ring', every: 3.8, count: 22, speed: 44, radius: 5, damage: 12, visual: 'psychic' },
@@ -171,6 +175,7 @@ export const DEOXYS_DOMAIN: LegendDomain = {
       form: 'speed',
       steer: { kind: 'chase', pace: 1.3 },
       patterns: [
+        pin('psychic', 16, PIN_EVERY),
         { kind: 'dash', every: 4.6, windup: 0.8, speed: 340, width: 20, damage: 17, count: 2 },
         { kind: 'teleport', every: 5.6, to: 'player', windup: 0.9, radius: 24, damage: 17, visual: 'psychic' },
         { kind: 'ring', every: 4.2, count: 14, speed: 80, radius: 5, damage: 12, visual: 'psychic' },

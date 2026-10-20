@@ -1,3 +1,4 @@
+import { PIN_SHARE } from './kit'
 import { around, circle, lane, poly, type Pt } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { LegendDomain } from '../domains'
@@ -43,7 +44,7 @@ const columns = (every: number, count: number, delay = 1.15): BossPattern => ({
 })
 
 /** A Sacred Fire column on the spot the player stands on, a beat later: harmless to a moving player, deadly to one standing still. */
-const pin = (every: number): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 15, delay: 0.95, damage: 14, visual: 'fire' })
+const pin = (every: number): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 15, delay: 0.95, damage: 14, visual: 'fire', share: PIN_SHARE })
 
 const braveBird: BossPattern = { kind: 'dash', every: 0, windup: 1.1, speed: 270, width: 26, damage: 16, count: 2 }
 

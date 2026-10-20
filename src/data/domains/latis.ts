@@ -1,3 +1,4 @@
+import { pin, PIN_EVERY } from './kit'
 import { circle, lane } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { LegendDomain } from '../domains'
@@ -56,7 +57,7 @@ export const LATIS_DOMAIN: LegendDomain = {
   backdrop: 'space',
   entrance: 'swoop',
   music: 'latis',
-  hp: 0.9,
+  hp: 0.78,
   battleTime: 200,
   crossing: {
     // Six glades climbing north through the dream, joined by flowered paths; the third holds a dream pond.
@@ -123,6 +124,7 @@ export const LATIS_DOMAIN: LegendDomain = {
       below: 1,
       steer: { kind: 'orbit', radius: 124, keep: 56, pace: 0.55 },
       patterns: [
+        pin('mist', 16, PIN_EVERY),
         // Mist Ball: slow red orbs, and a ring of mist where she glides.
         { kind: 'trail', every: 0.32, ttl: 2.4, radius: 7, damage: 12, visual: 'mist' },
         { kind: 'volley', every: 5.4, count: 3, arc: 0.5, speed: 82, windup: 1, radius: 7, damage: 14, visual: 'mist' },
@@ -137,6 +139,7 @@ export const LATIS_DOMAIN: LegendDomain = {
       steer: { kind: 'orbit', radius: 140, keep: 56, pace: 0.75 },
       arena: [{ kind: 'flood', at: 0, warn: 2.8, area: [circle(0, 0, R + 4)], spare: islands(28) }],
       patterns: [
+        pin('mist', 16, PIN_EVERY),
         swoopAt(6.6, 'mist'),
         { kind: 'strikes', every: 3.8, target: 'self', count: 1, spread: 0, radius: 36, delay: 0.9, damage: 22, visual: 'dragon' },
         { from: 'hard', kind: 'volley', every: 5.2, count: 4, arc: 0.6, speed: 90, windup: 1, radius: 7, damage: 14, visual: 'mist' },
@@ -151,6 +154,7 @@ export const LATIS_DOMAIN: LegendDomain = {
       steer: { kind: 'orbit', radius: 120, keep: 56, pace: 0.85 },
       arena: [{ kind: 'flood', at: 0, warn: 2.4, area: [circle(0, 0, R + 4)], spare: islands(22) }],
       patterns: [
+        pin('mist', 16, PIN_EVERY),
         swoopAt(6, 'mist'),
         { kind: 'strikes', every: 3.8, target: 'self', count: 1, spread: 0, radius: 36, delay: 0.9, damage: 22, visual: 'dragon' },
         { from: 'hard', kind: 'ring', every: 5, count: 12, speed: 66, radius: 6, damage: 12, visual: 'mist' },

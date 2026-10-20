@@ -18,6 +18,7 @@ import { applyStatus, breakOnHit, hitTakenMult, STATUS_RULES, type StatusKind } 
 import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY, SEED_JUMPS, SEED_MIN_TIME, SEED_REACH } from './kitRules'
 import { guardHit, moveEvent, moveHit } from './moveHooks'
 import { fallInArena } from './riftArena'
+import { domainHarm } from './rift'
 import { fallInPlace } from './placeKit'
 import { countKill, countLegend } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
@@ -222,7 +223,7 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   const mods = runMods(g)
   // Air Lock: the weather boosts no foe's hit.
   const weather = abilityImmune(g, 'weather') ? 1 : weatherPower(weatherHere(g), types)
-  const dmg = armored(taken * mods.enemyDamage * weather * p.stats.damageTaken, p.stats.armor)
+  const dmg = armored(taken * mods.enemyDamage * weather * domainHarm(g, from !== undefined) * p.stats.damageTaken, p.stats.armor)
   p.hp -= dmg
   p.iframes = mods.iframes
   noteHarm(g, dmg)

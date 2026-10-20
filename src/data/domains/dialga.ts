@@ -1,3 +1,4 @@
+import { PIN_SHARE } from './kit'
 import { circle, lane, poly } from '../arenas'
 import type { BossPattern } from '../bosses'
 import type { LegendDomain } from '../domains'
@@ -42,7 +43,7 @@ const marks = (every: number, count: number, spread: number, delay = 2.6): BossP
 })
 
 /** Iron Head on the spot the player stands on, a beat later: harmless to a moving player, deadly to one standing still. */
-const pin = (every: number): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 14, delay: 0.95, damage: 15, visual: 'steel' })
+const pin = (every: number): BossPattern => ({ kind: 'strikes', every, target: 'player', count: 1, spread: 0, radius: 14, delay: 0.95, damage: 15, visual: 'steel', share: PIN_SHARE })
 
 /** Flash Cannon: a fan of steel beams that stop on the columns. */
 const cannon = (every: number, count: number, spread: number, windup = 1.1, damage = 18): BossPattern => ({
@@ -130,9 +131,9 @@ export const DIALGA_DOMAIN: LegendDomain = {
         first: 8,
         every: 22,
         steps: [
-          { at: 0, pattern: cannon(0, 5, 0.38, 1.4, 26) },
-          { at: 1.7, pattern: cannon(0, 4, 0.38, 1.3, 26) },
-          { at: 3.4, pattern: cannon(0, 5, 0.38, 1.2, 26) },
+          { at: 0, pattern: cannon(0, 5, 0.38, 1.4, 22) },
+          { at: 1.7, pattern: cannon(0, 4, 0.38, 1.3, 22) },
+          { at: 3.4, pattern: cannon(0, 5, 0.38, 1.2, 22) },
         ],
       },
     },
@@ -154,7 +155,7 @@ export const DIALGA_DOMAIN: LegendDomain = {
         steps: [
           { at: 0, pattern: { kind: 'timeStop', every: 0, windup: 1.2, duration: 3.6 } },
           { at: 0.4, pattern: marks(0, 6, 100, 3) },
-          { at: 1.2, pattern: { kind: 'blast', every: 0, windup: 2.8, damage: 32, safe: 'cover', visual: 'dragon' } },
+          { at: 1.2, pattern: { kind: 'blast', every: 0, windup: 2.8, damage: 28, safe: 'cover', visual: 'dragon' } },
         ],
       },
     },
@@ -179,7 +180,7 @@ export const DIALGA_DOMAIN: LegendDomain = {
         steps: [
           { at: 0, pattern: { kind: 'timeStop', every: 0, windup: 1, duration: 4 } },
           { at: 0.3, pattern: marks(0, 7, 110, 2.8) },
-          { at: 1, pattern: { kind: 'blast', every: 0, windup: 2.7, damage: 34, safe: 'far', radius: 110, visual: 'dragon' } },
+          { at: 1, pattern: { kind: 'blast', every: 0, windup: 2.7, damage: 30, safe: 'far', radius: 110, visual: 'dragon' } },
           { at: 4, pattern: { kind: 'ring', every: 0, count: 24, speed: 58, radius: 5, damage: 15, visual: 'steel' } },
         ],
       },

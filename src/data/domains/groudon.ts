@@ -1,3 +1,4 @@
+import { PIN_SHARE } from './kit'
 import * as dm from '../../engine/dmath'
 import { circle, lane, type Circle, type Pt } from '../arenas'
 import type { BossPattern } from '../bosses'
@@ -56,7 +57,7 @@ const SWELLING: ArenaTransform = {
 }
 
 /** Earth Power: the ground bursts right under the player; it only ever hits one who stands still. */
-const earthPower: BossPattern = { kind: 'strikes', every: 2.6, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage: 14, visual: 'rock' }
+const earthPower: BossPattern = { kind: 'strikes', every: 2.2, target: 'player', count: 1, spread: 0, radius: 20, delay: 1.1, damage: 14, visual: 'rock', share: PIN_SHARE }
 
 /** Precipice Blades: lines of stone blades erupting out of Groudon, `spread` rad apart around the aim (a full circle of spokes for the ultimate). */
 const blades = (count: number, spread: number, windup: number, length: number, damage: number, every = 0): BossPattern => ({
@@ -68,10 +69,10 @@ export const GROUDON_DOMAIN: LegendDomain = {
   backdrop: 'magma',
   entrance: 'rise',
   music: 'groudon',
-  hp: 1.8,
+  hp: 1.6,
   battleTime: 180,
   touch: 0.6,
-  lavaBurn: 0.03,
+  lavaBurn: 0.02,
   weatherShare: 0.5,
   crossing: {
     // Five chambers up a narrow, winding tunnel; rivers of lava cut across the second, fourth and the passage between.
