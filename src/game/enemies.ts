@@ -3,7 +3,7 @@ import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { STANCES } from '../data/bosses'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { bodyOf } from '../data/bodies'
 import { fightPace } from './bossFight'
 import { bumpDamage, hurtPlayer } from './combat'
@@ -29,7 +29,7 @@ export const radiusFor = (dex: number) => Math.max(5, Math.round(bodyOf(dex).bod
  * minutes played (`scaling`) and the difficulty. Bosses only take the difficulty's HP.
  */
 export const enemyScale = (g: Game) => {
-  const mods = DIFFICULTIES[g.difficulty]
+  const mods = runMods(g)
   const scale = scaling(g.time, mods.ramp)
   return { hp: scale.hp * mods.enemyHp, damage: scale.damage }
 }
@@ -37,7 +37,7 @@ export const enemyScale = (g: Game) => {
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
   const def: EnemyDef = ENEMIES[kind]
   const boss = def.boss === true
-  const mods = DIFFICULTIES[g.difficulty]
+  const mods = runMods(g)
   const scale = boss ? { hp: mods.enemyHp, damage: 1 } : enemyScale(g)
   const hp = Math.round(def.hp * scale.hp)
   const enemy: Enemy = {

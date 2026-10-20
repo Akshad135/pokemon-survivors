@@ -19,7 +19,7 @@ describe('parseRunResult', () => {
   })
 
   it('refuses unknown Pokémon, difficulties, outcomes and stages', () => {
-    for (const o of [{ starter: 'mewtwo' }, { difficulty: 'easy' }, { outcome: 'won' }, { stage: 3 }, { stage: 1.5 }]) expect(parseRunResult(run(o))).toBeNull()
+    for (const o of [{ starter: 'missingno' }, { difficulty: 'easy' }, { outcome: 'won' }, { stage: 3 }, { stage: 1.5 }]) expect(parseRunResult(run(o))).toBeNull()
   })
 
   it('refuses a victory before Mewtwo shows up', () => {

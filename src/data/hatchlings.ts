@@ -1,5 +1,6 @@
 import type { EggTier } from '../game/eggs'
 import type { StatDelta } from '../game/stats'
+import { LEGENDS, type LegendId } from './legends'
 import { STARTER_IDS, STARTERS, type EvolutionStage, type PlayableDef, type StarterId } from './starters'
 import type { PokeType } from './types'
 
@@ -646,14 +647,22 @@ export type HatchlingId = keyof typeof HATCHLINGS
 
 export const HATCHLING_IDS = Object.keys(HATCHLINGS) as HatchlingId[]
 
-/** Every Pokémon a run can start with: the starters plus the hatched families. */
-export const PLAYABLE = { ...STARTERS, ...HATCHLINGS }
+/** Every Pokémon a run can start with: the starters, the hatched families and the legends (Legend mode only). */
+export const PLAYABLE = { ...STARTERS, ...HATCHLINGS, ...LEGENDS }
 
-export type PlayableId = StarterId | HatchlingId
+export type PlayableId = StarterId | HatchlingId | LegendId
 
-export const PLAYABLE_IDS: readonly PlayableId[] = [...STARTER_IDS, ...HATCHLING_IDS]
+/**
+ * The starters and hatched families, the regular runs' cast. The legends
+ * stay out: they only play in the Legend mode, and the Desafio do dia draws
+ * its Pokémon from this list.
+ */
+export const PLAYABLE_IDS: readonly (StarterId | HatchlingId)[] = [...STARTER_IDS, ...HATCHLING_IDS]
 
 export const isHatchling = (id: PlayableId): id is HatchlingId => id in HATCHLINGS
+
+/** A starter: neither a hatched family nor a legend. */
+export const isStarter = (id: PlayableId): id is StarterId => id in STARTERS
 
 /** Dex numbers of a playable Pokémon's whole evolution line. */
 export const playableDex = (id: PlayableId) => PLAYABLE[id].line.map((s) => s.dex)

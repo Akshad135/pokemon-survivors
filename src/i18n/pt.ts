@@ -5,6 +5,7 @@ import type { LandmarkId, TreasureLandmark } from '../data/landmarks'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { LegendId } from '../data/legends'
 import type { AbilityId } from '../data/abilities'
 import type { ItemId } from '../data/items'
 import type { CurseId } from '../data/curses'
@@ -192,7 +193,7 @@ export const pt = {
     lunge: 'Bote',
     lungeTitle: (name: string) => `${name} (Shift)`,
     /** Aegislash's forme, shown on the special button (Stance Change). */
-    stances: { shield: 'Escudo', blade: 'Lâmina' } satisfies Record<Stance, string>,
+    stances: { shield: 'Escudo', blade: 'Lâmina', normal: 'Normal', attack: 'Ataque', defense: 'Defesa', speed: 'Velocidade' } satisfies Record<Stance, string>,
     /** Jumps left in a running chain dash. */
     jumps: (n: number) => `×${n}`,
   },
@@ -989,6 +990,7 @@ export const pt = {
       alakazam: 'cada especial também dispara 2 dos seus golpes (como o Metronome), recargas −15% e golpes +10%. O especial vira Psystrike.',
       gengar: 'inimigos a até 90 px perdem 45% da velocidade, golpes +25% e recargas −10%. O especial vira Poltergeist.',
       dragonite: 'recebe 25% menos dano, golpes +25% e velocidade +6. O especial vira Hurricane.',
+      mewtwoY: 'golpes +40%, recargas −15% e área +15%. O especial vira Psystrike.',
       meganium: 'HP +40, regenera 2 HP/s e golpes Planta e Fada +30%. O especial vira Solar Beam.',
       feraligatr: 'golpes Dragão +35%, golpes Água +20%, golpes +25% e defesa +1. O especial vira Wave Crash, uma investida em cadeia.',
       tyranitar: 'levanta uma tempestade de areia (fora das fendas) que desgasta a horda e não afeta o Tyranitar. HP +60, defesa +3 e golpes +20%. O especial vira Stone Edge.',
@@ -998,6 +1000,8 @@ export const pt = {
       gardevoir: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
       gallade: 'golpes +30%, golpes Lutador +25% e velocidade +8. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
       metagross: 'golpes +30%, defesa +2 e velocidade +6. O especial vira Meteor Mash.',
+      latias: 'recebe 15% menos dano, HP +30 e golpes +25%. O especial vira Scale Shot.',
+      latios: 'golpes +35%, velocidade +8 e projéteis 20% mais rápidos. O especial vira Dragon Claw.',
       staraptor: 'golpes +30% e velocidade +10. A investida em cadeia vira Sky Attack e cada pouso solta um anel de lâminas de vento.',
       garchomp: 'golpes +30%, golpes Terra, Pedra e Aço +30% e defesa +1. O especial vira Earth Power.',
       garchompZ: 'velocidade +14, recargas −15% e golpes +15%. O especial vira Scale Shot.',
@@ -1182,6 +1186,11 @@ export const pt = {
     insomnia: 'Velocidade +5 e regenera 0,3 HP/s.',
     innerFocus: 'Cada nocaute do especial adianta a recarga dele em 0,25\u00a0s.',
     stanceChange: 'O especial troca entre a Forma Escudo e a Forma Lâmina.',
+    pressure: 'Inimigos a até 64 px perdem 20% da velocidade.',
+    regenerator: 'A cada 8 s, cura 5% do HP máximo.',
+    drizzle: 'Chama a chuva ao começar e a cada bioma novo (fora das fendas): Água ×1,5.',
+    airLock: 'O clima não fortalece os inimigos nem te desgasta, e os ataques do mundo não te atingem.',
+    multitype: 'Seu tipo muda com o bioma, e golpes desse tipo causam +20%.',
   } satisfies Record<AbilityId, string>,
 
   /** Biomes and weather: banners, toasts and the HUD weather icon. */
@@ -3887,6 +3896,29 @@ export const pt = {
     feebas: 'O mais sem graça. Até virar o mais belo.',
     deino: 'Mordedor cego. Bate forte e, com três cabeças, atira mais.',
     munchlax: 'Tanque guloso. Muita vida, defesa e regeneração; puxa os itens de longe.',
+    articuno: 'Ave do gelo. Golpes amplos; o frio deixa os inimigos lentos.',
+    zapdos: 'Ave do trovão. Rápido, e quem o toca fica paralisado.',
+    moltres: 'Ave do fogo. Muito dano, e quem o toca se queima.',
+    raikou: 'Raio veloz. O mais rápido das feras.',
+    entei: 'Vulcão vivo. Forte e resistente.',
+    suicune: 'Vento do norte. Regenera e desvia com graça.',
+    regirock: 'Titã de rocha. Defesa máxima, passo lento.',
+    regice: 'Titã de gelo. Golpes largos e casca grossa.',
+    registeel: 'Titã de aço. A maior armadura de todas.',
+    mew: 'Ancestral. Aprende de tudo e cresce rápido.',
+    celebi: 'Guardião do tempo. Regenera sem parar.',
+    jirachi: 'Realiza desejos. Cartas raras e mais ₽.',
+    mewtwo: 'O mais forte. Dano psíquico devastador.',
+    lugia: 'Guardião dos mares. Quase intocável com vida cheia.',
+    hoOh: 'Arco-íris. Fogo sagrado e cura constante.',
+    kyogre: 'Senhor dos mares. Traz a chuva; vira Primal.',
+    groudon: 'Senhor da terra. Traz o sol; vira Primal.',
+    rayquaza: 'Senhor do céu. O clima não o toca; vira Mega.',
+    dialga: 'Senhor do tempo. Blindado e implacável.',
+    latias: 'Eon veloz. Flutua sobre lava e armadilhas.',
+    latios: 'Eon certeiro. Rápido e letal à distância.',
+    deoxys: 'Vírus do espaço. O especial troca de Forma.',
+    arceus: 'O deus. Seu tipo muda com cada bioma.',
   },
 
   specials: {
@@ -3914,6 +3946,7 @@ export const pt = {
     braveBird: 'Mergulha no inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
     ironHead: 'Avança com a lâmina até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
     stanceChange: 'Alterna entre a Forma Escudo (−30% de dano recebido, golpes ×0,7) e a Forma Lâmina (golpes ×1,3, +10% de dano recebido).',
+    formeChange: 'Alterna entre as Formas Normal, Ataque (golpes ×1,35, +25% de dano recebido), Defesa (−40% de dano recebido, golpes ×0,75) e Velocidade (+35% de velocidade).',
     dragonFlare: 'Investida longa em chamas azuis de dragão, com rastro de fogo e explosão no fim.',
     psystrike: 'Três ondas psíquicas enormes ao redor que empurram e desaceleram.',
     poltergeist: 'Anel de 24 projéteis sombrios para todos os lados, que podem paralisar.',
@@ -4014,6 +4047,22 @@ export const pt = {
   /** Explainer toast the first time the world strikes at the player in a run (`game/hazards.ts`). */
   hazards: {
     intro: '*O mundo ataca!* O chão marca onde você está e cai em seguida: _não fique parado_.',
+  },
+  /** The Legend mode in a run (`game/legend.ts`): awakenings, the innate, the Clone. Pokémon names stay English. */
+  legend: {
+    mode: 'Modo Lendário',
+    awakening: (name: string) => `${name} está despertando!`,
+    awakened: (name: string) => `${name} despertou! Seu poder cresceu.`,
+    awakenedForm: (from: string, to: string) => `${from} despertou como *${to}*!`,
+    /** The tag on the innate (always on, besides the Ability picked at the first awakening). */
+    innate: 'Inata',
+    /** What a legend's innate adds in this mode beyond its ability's own text (`abilities`). */
+    innateExtra: {
+      articuno: 'O frio das asas deixa lentos os inimigos por perto.',
+      jirachi: 'Cartas raras e brilhantes saem com mais frequência.',
+    } satisfies Partial<Record<LegendId, string>>,
+    /** A boss of the player's own species (Mewtwo's finale for a Mewtwo). */
+    clone: (name: string) => `${name} Clone`,
   },
 } satisfies ContentTexts & Record<string, unknown>
 

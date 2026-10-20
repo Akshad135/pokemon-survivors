@@ -24,6 +24,8 @@ export type HitKind = 'body' | 'hazard' | 'shot' | 'blast' | 'beam' | 'lava' | '
  * allies put on wild Pokémon (`wards`, which hits go through).
  */
 export type Immunity = 'lava' | 'trap' | 'blast' | 'chip' | 'terrain' | 'wards'
+  /** The weather's boost to foes' hits and the world's attacks (`game/hazards.ts`): Air Lock. */
+  | 'weather'
 
 export type AbilityEffect =
   /** Always on. */
@@ -79,6 +81,8 @@ export type AbilityEffect =
   | { kind: 'sturdy' }
   /** `stats` per empty held item slot (Unburden). */
   | { kind: 'unburden'; stats: StatDelta }
+  /** Lucky level-up cards: `rare` more odds of a rare card, shiny odds ×`shiny` (Jirachi's Serene Grace, `data/legends.ts`). */
+  | { kind: 'luck'; rare: number; shiny: number }
 
 export type AbilityDef = { name: string; effects: readonly AbilityEffect[] }
 
@@ -230,6 +234,14 @@ export const ABILITIES = {
   innerFocus: { name: 'Inner Focus', effects: [stats({ specialRecharge: 0.25 })] },
   /** Aegislash's: what it does is the special (`game/stance.ts`), so Honedge's line has nothing to pick. */
   stanceChange: { name: 'Stance Change', effects: [] },
+
+  /* ---------- The legends' innates (`data/legends.ts`) ---------- */
+  pressure: { name: 'Pressure', effects: [{ kind: 'aura', radius: 64, every: 1, status: { kind: 'slow', chance: 1, duration: 1.2, power: 0.2 } }] },
+  regenerator: { name: 'Regenerator', effects: [{ kind: 'heal', every: 8, heal: 0.05 }] },
+  drizzle: { name: 'Drizzle', effects: [{ kind: 'summon', weather: 'rain' }] },
+  airLock: { name: 'Air Lock', effects: [{ kind: 'immune', to: ['chip', 'weather'] }] },
+  /** Arceus's type follows the biome (`game/legend.ts`), and its moves of that type hit harder. */
+  multitype: { name: 'Multitype', effects: [{ kind: 'ownType', bonus: 0.2 }] },
 } as const satisfies Record<string, AbilityDef>
 
 export type AbilityId = keyof typeof ABILITIES
@@ -333,6 +345,30 @@ export const FAMILY_ABILITIES = {
   deino: ['hustle', 'levitate', 'strongJaw'],
   /* Friendship Egg */
   munchlax: ['pickup', 'thickFat', 'gluttony'],
+  /* Legends: picked at the first awakening, on top of the innate (`data/legends.ts`), never sharing its running state's kind */
+  articuno: ['iceBody', 'keenEye', 'sniper'],
+  zapdos: ['lightningRod', 'keenEye', 'sniper'],
+  moltres: ['flashFire', 'solarPower', 'infiltrator'],
+  raikou: ['voltAbsorb', 'quickFeet', 'speedBoost'],
+  entei: ['flashFire', 'intimidate', 'guts'],
+  suicune: ['waterAbsorb', 'hydration', 'marvelScale'],
+  regirock: ['sturdy', 'rockHead', 'ironFist'],
+  regice: ['iceBody', 'sturdy', 'slushRush'],
+  registeel: ['heavyMetal', 'sturdy', 'lightMetal'],
+  mew: ['protean', 'adaptability', 'magicGuard'],
+  celebi: ['leafGuard', 'grassySurge', 'magicBounce'],
+  jirachi: ['frisk', 'technician', 'magicGuard'],
+  mewtwo: ['magicGuard', 'moldBreaker', 'adaptability'],
+  lugia: ['magicBounce', 'keenEye', 'damp'],
+  hoOh: ['flashFire', 'solarPower', 'magicGuard'],
+  kyogre: ['swiftSwim', 'rainDish', 'liquidVoice'],
+  groudon: ['solarPower', 'leafGuard', 'roughSkin'],
+  rayquaza: ['moxie', 'infiltrator', 'speedBoost'],
+  dialga: ['heavyMetal', 'sniper', 'unaware'],
+  latias: ['magicBounce', 'naturalCure', 'competitive'],
+  latios: ['sniper', 'infiltrator', 'adaptability'],
+  deoxys: ['sniper', 'moxie', 'adaptability'],
+  arceus: ['moldBreaker', 'magicGuard', 'sturdy'],
 } as const satisfies Record<PlayableId, AbilitySet>
 
 /** The abilities of a branch picked at the family's first evolution (`data/branches.ts`). */

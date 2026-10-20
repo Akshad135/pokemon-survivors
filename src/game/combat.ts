@@ -2,12 +2,12 @@ import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS, type PokeType } from '../data/types'
 import { ENEMY_BERRY_CHANCE } from '../data/consumables'
-import { ENEMIES } from '../data/enemies'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HitKind } from '../data/abilities'
 import { abilityHolds, abilityHurt, abilityImmune, abilityKill, abilityTakes, strikeBonus } from './abilities'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { logDefeat } from './dex'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
 import { dropBossTm } from './tms'
@@ -19,7 +19,7 @@ import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY,
 import { guardHit, moveEvent, moveHit } from './moveHooks'
 import { fallInArena } from './riftArena'
 import { fallInPlace } from './placeKit'
-import { countKill } from './tally'
+import { countKill, countLegend } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
 import { alphaDown } from './alphas'
@@ -167,6 +167,12 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   } else if (e.boss) {
     // Every boss defeated earns an Esquecer charge (`banishOffer`).
     g.banishes++
+    // A legendary's defeat counts toward capturing it (the save's side, `legendBeaten`).
+    const def: EnemyDef = ENEMIES[e.kind]
+    if (def.legendary) {
+      countLegend(g.tally, e.kind, e.shiny)
+      g.events.push({ kind: 'legendBeaten', legend: e.kind, shiny: e.shiny })
+    }
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     dropBossTm(g, e)
@@ -201,8 +207,10 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   if (from && blinded(g, from)) return
   const taken = abilityTakes(g, amount, types, hit, from)
   if (taken === null) return
-  const mods = DIFFICULTIES[g.difficulty]
-  const dmg = armored(taken * mods.enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken, p.stats.armor)
+  const mods = runMods(g)
+  // Air Lock: the weather boosts no foe's hit.
+  const weather = abilityImmune(g, 'weather') ? 1 : weatherPower(weatherHere(g), types)
+  const dmg = armored(taken * mods.enemyDamage * weather * p.stats.damageTaken, p.stats.armor)
   p.hp -= dmg
   p.iframes = mods.iframes
   noteHarm(g, dmg)
@@ -256,7 +264,7 @@ const BLIND_IFRAMES = 0.4
 /** Heals the player by `amount`, cut or not by the difficulty, up to max HP. Returns the HP actually restored. */
 export const healPlayer = (g: Game, amount: number) => {
   const p = g.player
-  const healed = Math.max(0, Math.min(amount * DIFFICULTIES[g.difficulty].healing, p.stats.maxHp - p.hp))
+  const healed = Math.max(0, Math.min(amount * runMods(g).healing, p.stats.maxHp - p.hp))
   p.hp += healed
   return healed
 }

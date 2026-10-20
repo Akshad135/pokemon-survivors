@@ -1,7 +1,7 @@
 import { blitCentered, context2d } from '../engine/pixelart'
 import { playCry, playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from '../data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, isStarter, PLAYABLE, type HatchlingId, type PlayableId } from '../data/hatchlings'
 import { REGIONS, type StarterId } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
 import { megasOf } from '../data/megas'
@@ -73,7 +73,8 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   let tab: Tab = isHatchling(initial) ? 'eggs' : 'starters'
   /** Each tab remembers its own cursor, so switching back lands where it was. */
   const firstHatched = HATCHLING_IDS.find((id) => save.hatched[id]) ?? HATCHLING_IDS[0]!
-  const cursor: { starters: StarterId; eggs: HatchlingId } = isHatchling(initial) ? { starters: 'charmander', eggs: initial } : { starters: initial, eggs: firstHatched }
+  // A legend (Legend mode) opens on the starters until the screen has a tab for them.
+  const cursor: { starters: StarterId; eggs: HatchlingId } = { starters: isStarter(initial) ? initial : 'charmander', eggs: isHatchling(initial) ? initial : firstHatched }
   const current = (): PlayableId => cursor[tab]
   let stage = 0
   let picked = false
@@ -368,7 +369,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const select = (id: PlayableId) => {
     if (id === current()) return
     if (isHatchling(id)) cursor.eggs = id
-    else cursor.starters = id as StarterId
+    else if (isStarter(id)) cursor.starters = id
     tab = isHatchling(id) ? 'eggs' : 'starters'
     stage = 0
     render()

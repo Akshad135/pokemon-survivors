@@ -1,7 +1,7 @@
 import { weightedPick } from '../engine/rng'
 import type { Ellipse } from '../data/terrain'
 import { PLACE, PLACES, type PlaceId } from '../data/places'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { spawnEnemy } from './enemies'
 import { placePool, type PlaceInterior, type PlaceNotice } from './place'
 import { makeShiny, rollShiny, SHINY_ODDS } from './shiny'
@@ -42,7 +42,7 @@ const crowd = (g: Game) => {
  */
 export const spawnInPlace = (g: Game, inside: PlaceInterior, dt: number, spotFor: (g: Game) => { x: number; y: number } | null, rate = 1, onSpawn?: (e: Enemy) => void) => {
   const def = PLACES[inside.id].spawn
-  const more = DIFFICULTIES[g.difficulty].spawnRate
+  const more = runMods(g).spawnRate
   inside.spawnBudget += def.rate * rate * more * dt
   if (inside.spawnBudget < 1) return
   let alive = crowd(g)

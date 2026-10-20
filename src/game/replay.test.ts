@@ -128,6 +128,22 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
+  it('re-simulate Legend-mode runs: Pressure, the innates, both awakenings and Deoxys swapping Formes', () => {
+    // Fast levels, so the 40 s run reaches both awakenings (Lv 12 and 28).
+    const fast = (g: Game) => {
+      g.player.level = 11
+      gainXp(g, 4000)
+    }
+    for (const starter of ['kyogre', 'deoxys', 'jirachi'] as const) {
+      const start: ReplayStart = { ...START, starter, difficulty: 'hard' }
+      const { g, replay } = play(40, start, 120, fast)
+      expect(g.legend?.awakened).toBe(2)
+      const staged = startGame(start)
+      fast(staged)
+      expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    }
+  })
+
   it('re-simulate Quick Attack, which only lunges on a press', () => {
     const quickAttack = (g: Game) => {
       g.player.moves.push({ id: 'quickAttack', level: 1, cooldown: 0 })
@@ -326,7 +342,7 @@ describe('replays', () => {
     expect(parseReplay({ ...json, moves: [1] })).toBeNull()
     expect(parseReplay({ ...json, moves: [999, 1] })).toBeNull()
     expect(parseReplay({ ...json, events: [[5, 'special'], [2, 'special']] })).toBeNull()
-    expect(parseReplay({ ...json, start: { ...json.start, starter: 'mewtwo' } })).toBeNull()
+    expect(parseReplay({ ...json, start: { ...json.start, starter: 'missingno' } })).toBeNull()
     expect(parseReplay({ ...json, start: { ...json.start, ranks: { hpUp: 99 } } })!.start.ranks.hpUp).toBe(5)
   })
 

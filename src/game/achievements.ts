@@ -1,6 +1,6 @@
 import { ACHIEVEMENT_IDS, ACHIEVEMENTS, GIFT_TITLES, TITLE_IDS, type AchievementDef, type AchievementId, type AchievementStat, type GiftTitleId, type TitleId } from '../data/achievements'
 import { PLACE_IDS, type PlaceId } from '../data/places'
-import { isHatchling } from '../data/hatchlings'
+import { isStarter } from '../data/hatchlings'
 import { RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { REGIONS, STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
 import { POKE_TYPES, type PokeType } from '../data/types'
@@ -54,8 +54,8 @@ const regionGen = (id: StarterId) => REGIONS.find((r) => r.starters.includes(id)
 export const addRun = (l: Lifetime, s: RunSummary, before: RunSummary | null, missionsDone = 0): Lifetime => {
   const summed = Object.fromEntries(SUMMED.map((k) => [k, l[k] + s[k] - (before?.[k] ?? 0)])) as Record<(typeof SUMMED)[number], number>
   const won = s.victory && !before?.victory
-  // Starter goals (regions, the trio, starters played) skip hatched families.
-  const starter = isHatchling(s.starter) ? null : s.starter
+  // Starter goals (regions, the trio, starters played) skip hatched families and legends.
+  const starter = isStarter(s.starter) ? s.starter : null
   const starterWon = s.victory && starter !== null
   return {
     ...l,

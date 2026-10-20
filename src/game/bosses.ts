@@ -4,6 +4,7 @@ import { BOSS_PATTERNS, BOSS_RAGE, type BossPattern, type HazardVisual } from '.
 import { FINALE, fleesFrom } from '../data/waves'
 import { attackCount, attackWait, chainChance, chainTarget, createFight, fightsInStances, leadTime, patternLive, shouldEnrage, telegraph, tickStance, type BossFight } from './bossFight'
 import { hurtPlayer } from './combat'
+import { abilityImmune } from './abilities'
 import { burst } from './effects'
 import { blastHorde } from './enemies'
 import { isHeld } from './status'
@@ -254,6 +255,8 @@ export const updateHazards = (g: Game, dt: number) => {
     if (h.leaper >= 0 && before < h.armAt && h.age >= h.armAt) land(g, h)
 
     if (h.age < h.armAt || h.age > h.disarmAt) continue
+    // Air Lock: the world's attacks (the weather's and the biome's) can't touch the player.
+    if (h.world && abilityImmune(g, 'weather')) continue
     const reach = h.r + p.radius * 0.7
     if (dm.sq(h.x - p.x) + dm.sq(h.y - p.y) >= reach * reach) continue
     hurtPlayer(g, h.damage, undefined, HAZARD_TYPES[h.visual], h.kind === 'shot' ? 'shot' : 'hazard')

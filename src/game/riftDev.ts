@@ -41,7 +41,7 @@ export const riftDevTools = (game: () => Game | undefined) => {
         if (boss) boss.hp = Math.max(1, boss.maxHp * share)
       })(),
     /** Steps straight into a rift arena (a random legendary, or the one given). */
-    rift: (legend?: RiftLegend) => playing((g) => enterArena(g, legend ?? pickLegend(g.rng, g.rift.met), g.player.x, g.player.y))(),
+    rift: (legend?: RiftLegend) => playing((g) => enterArena(g, legend ?? pickLegend(g.rng, g.rift.met, g.legend?.id), g.player.x, g.player.y))(),
     /** Opens a portal right next to the player. */
     portal: (legend?: RiftLegend) => playing((g) => openPortal(g, legend, { x: g.player.x + 48, y: g.player.y }))(),
     /** Ends the run as if Mewtwo just fell: the victory screen with the endless offer. */

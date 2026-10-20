@@ -1,6 +1,6 @@
 import { chance, weightedPick, type Rng } from '../engine/rng'
 import type { EnemyId } from '../data/enemies'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, type HatchlingId, type PlayableId } from '../data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, isStarter, type HatchlingId, type PlayableId } from '../data/hatchlings'
 import { RIFT_LEGENDS } from '../data/rifts'
 import { GRAVEYARD } from '../data/places'
 import { MYTHICALS } from '../data/waves'
@@ -150,8 +150,8 @@ export const hatchEgg = (save: Save, index: number, rng: Rng): { save: Save; hat
   }
 }
 
-/** Starters are always playable; egg families once hatched. */
-export const isUnlocked = (hatched: Hatched, id: PlayableId) => !isHatchling(id) || hatched[id] !== undefined
+/** Starters are always playable; egg families once hatched. Legends aren't unlocked by eggs: the Legend mode captures them (the save's side). */
+export const isUnlocked = (hatched: Hatched, id: PlayableId) => isStarter(id) || (isHatchling(id) && hatched[id] !== undefined)
 
 /* ---------------- Save fields ---------------- */
 

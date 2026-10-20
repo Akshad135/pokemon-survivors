@@ -1,5 +1,6 @@
 import { TITLE_IDS, type TitleId } from '../data/achievements'
-import { isHatchling, type PlayableId } from '../data/hatchlings'
+import type { PlayableId } from '../data/hatchlings'
+import { isUnlocked } from './eggs'
 import { isPollOption, POLL, POLL_OPTION_IDS, SUPPORTER, type PollOptionId } from '../data/supporters'
 import type { GiftContent } from './gifts'
 import type { Save } from './meta'
@@ -75,8 +76,8 @@ export const parseCode = (raw: unknown) => {
 /** A Pokémon that walks after the player in runs, only drawn (it never touches the simulation). */
 export type Companion = { id: PlayableId; shiny: boolean }
 
-/** Pokémon the save may take along: every starter and each family hatched, shiny only if owned so. */
-export const canWalkWith = (save: Save, c: Companion) => (!isHatchling(c.id) || save.hatched[c.id] !== undefined) && (!c.shiny || ownsShiny(save, c.id))
+/** Pokémon the save may take along: every starter and each family hatched (no legend), shiny only if owned so. */
+export const canWalkWith = (save: Save, c: Companion) => isUnlocked(save.hatched, c.id) && (!c.shiny || ownsShiny(save, c.id))
 
 /** The save's `companion`, or null. */
 export const parseCompanion = (v: unknown): Companion | null =>

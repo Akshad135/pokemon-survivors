@@ -5,7 +5,7 @@ import { gameSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } fr
 import { STANCES, type Stance } from '../game/stance'
 import type { Attack, Game } from '../game/types'
 import { FX, outlined, toIconUrl } from './art'
-import type { Form } from './sprites'
+import type { FormKey } from './sprites'
 
 /** Code-drawn pixel art for the special attacks (`game/special.ts`). */
 
@@ -299,10 +299,22 @@ const drawSlash = (ctx: Ctx, a: Attack) => {
 const SHIELD = ['.1111111.', '122222221', '123343321', '123444321', '123343321', '.1233321.', '.1223221.', '..12221..', '...121...', '....1....']
 const SWORD = ['...1...', '..141..', '..131..', '..131..', '..131..', '..131..', '..131..', '..131..', '1122211', '1222221', '..151..', '..151..', '..111..']
 
-/** Aegislash's forme as a small icon: a gold shield or its sword, in the stance color. */
+/** Deoxys's core: the crystal in its chest, and a chevron for its Speed Forme. */
+const CORE = ['...1...', '..121..', '.12321.', '1234321', '.12321.', '..121..', '...1...']
+const CHEVRON = ['1.....1', '21...12', '321.123', '.32123.', '..323..', '...3...']
+
+/** Deoxys's forme in its stance color: the core, the core with a spike, the shield, the chevron. */
+const deoxysArt = (rows: readonly string[], stance: Stance) =>
+  lazy(() => outlined(fromStrings(rows, { 1: '#582818', 2: STANCES[stance].color, 3: '#f8d0a0', 4: '#ffffff', 5: '#582818' })))
+
+/** A stance special's forme as a small icon: Aegislash's gold shield or sword, Deoxys's core in its forme's color. */
 const STANCE_ART = {
   shield: lazy(() => outlined(fromStrings(SHIELD, { 1: '#584010', 2: '#f8d030', 3: STANCES.shield.color, 4: '#ffffff' }))),
   blade: lazy(() => outlined(fromStrings(SWORD, { 1: '#282838', 2: STANCES.blade.color, 3: '#c8d0e0', 4: '#ffffff', 5: '#584010' }))),
+  normal: deoxysArt(CORE, 'normal'),
+  attack: deoxysArt(SWORD, 'attack'),
+  defense: deoxysArt(SHIELD, 'defense'),
+  speed: deoxysArt(CHEVRON, 'speed'),
 } as const satisfies Record<Stance, () => PixelSprite>
 
 export const stanceIcon = (stance: Stance) => toIconUrl(`stance:${stance}`, STANCE_ART[stance])
@@ -323,8 +335,15 @@ const drawStanceRing = (ctx: Ctx, g: Game, t: number) => {
   }
 }
 
-/** The sprite form Aegislash wears in each stance, like in the games: Shield is its normal sprite. */
-export const STANCE_FORMS = { shield: undefined, blade: 'blade' } as const satisfies Record<Stance, Form | undefined>
+/** The sprite form each stance wears, like in the games: Aegislash's Shield and Deoxys's Normal Forme are their normal sprites. */
+export const STANCE_FORMS = {
+  shield: undefined,
+  blade: 'blade',
+  normal: undefined,
+  attack: 'attack',
+  defense: 'defense',
+  speed: 'speed',
+} as const satisfies Record<Stance, FormKey | undefined>
 
 /**
  * The fire dash's look: orange flames, or Mega Charizard X's blue dragon fire
@@ -519,6 +538,7 @@ const BESPOKE_ICONS: Record<Exclude<SpecialId, FormSpecial>, () => PixelSprite> 
   braveBird: () => outlined(slashSprite('flying')),
   ironHead: () => outlined(slashSprite('steel')),
   stanceChange: STANCE_ART.shield,
+  formeChange: STANCE_ART.normal,
   dragonFlare: () =>
     outlined(fromStrings(
       ['.....1.....', '.1...21..1.', '.21.1321.2.', '..1123321..', '.112344321.', '12344443211', '.123444321.', '..1234321..', '.1.12321.1.', '.2..121..2.', '.....1.....'],
