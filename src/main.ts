@@ -54,6 +54,7 @@ import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { legendDevTools } from './game/legendDev'
+import { bankCapture, captureDevTools } from './ui/capture'
 import { riftDevTools } from './game/riftDev'
 import { placeDevTools } from './game/placeDev'
 import { placeFeedback } from './ui/places'
@@ -80,7 +81,7 @@ import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/de
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
-import { parseHandle, rankable, runResult } from './game/ranking'
+import { parseHandle, rankable, runMode, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
 import { parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
@@ -338,7 +339,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
       trainer: (focus) =>
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
-      ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
+      ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty, mode: runMode(loadSave().partner) }) : undefined,
       ideas: rankingEnabled ? (focus) => suggestionsScreen(ui, input, () => showTitle({ focus })) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
       invites: (focus) => invitesScreen(ui, input, () => showTitle({ focus })),
@@ -526,6 +527,7 @@ const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | nul
   track('run_end', {
     starter: g.starter,
     difficulty: g.difficulty,
+    mode: runMode(g.starter),
     outcome: g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit',
     minute: Math.floor(g.time / 60),
     level: p.level,
@@ -680,7 +682,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   }
   // The crash watch holds the run from now on (`bugReport.ts`).
   syncRunWatch()
-  track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
+  track('run_start', { starter, difficulty: game.difficulty, mode: runMode(starter), ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
   const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
   // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
@@ -797,7 +799,7 @@ const syncOverlay = (r: Run) => {
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
           ranking: rankingEnabled
-            ? { panel: rankPanel(r.rank, r.challenge !== null), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, challenge: r.challenge !== null }) }
+            ? { panel: rankPanel(r.rank, r.challenge !== null, runMode(g.starter)), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, mode: runMode(g.starter), challenge: r.challenge !== null }) }
             : null,
           share: {
             open: (back) => sharePreview(ui, input, runShare(g, r.dexBase, r.challenge && r.rank ? r.rank.then((o) => (o.kind === 'ranked' ? o.challenge : null)) : null), back),
@@ -1023,9 +1025,9 @@ const handleEvent = (r: Run, e: GameEvent) => {
       const name = PLAYABLE[g.starter].name
       return toast(ui, rich(e.form ? t().legend.awakenedForm(name, playerForm(g).name) : t().legend.awakened(name)), 3500)
     }
-    // Counted by the save when the run is banked (`RunSummary.legendWins`).
+    // Banked toward capturing it right away (`ui/capture.ts`), so the capture scene reads it.
     case 'legendBeaten':
-      return
+      return bankCapture(ui, e.legend, e.shiny, g.endless !== null)
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
@@ -1795,6 +1797,7 @@ if (import.meta.env.DEV) {
         void startRun(id)
         updateSave((s) => ({ ...s, partner }))
       }),
+      ...captureDevTools(ui, () => Boolean(run?.game.endless)),
       ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),

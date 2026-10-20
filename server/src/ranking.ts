@@ -8,6 +8,7 @@ import {
   BOARD_SIZE,
   BOARD_TIME_ZONE,
   clockAllows,
+  runMode,
   freeHandle,
   RANKED,
   type Board,
@@ -19,6 +20,7 @@ import {
   type ProfileRun,
   type PublicProfile,
   type RunResult,
+  type RunMode,
   type RunRanks,
 } from '../../src/game/ranking'
 import type { BranchId } from '../../src/data/branches'
@@ -28,8 +30,8 @@ import type { Replay } from '../../src/game/replay'
 import { supporterTier } from '../../src/game/supporters'
 import type { Sql } from './db'
 
-/** Which board: a difficulty and a period, optionally one Pokémon or only the friends of `viewer`. */
-export type BoardQuery = { difficulty: Difficulty; period: BoardPeriod; starter: PlayableId | null; friends: boolean; viewer: string | null }
+/** Which board: a mode (regular or Legend), a difficulty and a period, optionally one Pokémon or only the friends of `viewer`. */
+export type BoardQuery = { mode: RunMode; difficulty: Difficulty; period: BoardPeriod; starter: PlayableId | null; friends: boolean; viewer: string | null }
 
 /** Why a run's end was refused. `challenge`: a challenge run whose replay isn't its day's challenge (or came without one). */
 export type FinishError = 'unknown' | 'mismatch' | 'clock' | 'challenge'
@@ -38,6 +40,12 @@ export type FinishError = 'unknown' | 'mismatch' | 'clock' | 'challenge'
 export type Finished = { ok: true; challenge: DayKey | null; official: boolean | null }
 
 type RunRow = { starter: PlayableId; stage: number; branch: BranchId | null; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date }
+
+/** A profile record: a run row and the mode of the boards it's on. */
+type RecordRow = RunRow & { mode: RunMode }
+
+/** A profile's records of one mode, by difficulty. */
+const recordsOf = (rows: readonly RecordRow[], mode: RunMode) => Object.fromEntries(rows.filter((r) => r.mode === mode).map((r) => [r.difficulty, toRun(r)]))
 
 const toRun = (r: RunRow): ProfileRun => ({
   starter: r.starter,
@@ -74,11 +82,11 @@ export const rankingStore = (sql: Sql) => {
   const touchUser = (userId: string) => sql`insert into users (id) values (${userId}) on conflict (id) do update set seen_at = now()`
 
   /** Every player's best run on a board, ranked, as a fragment to select from. */
-  const ranked = ({ difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
+  const ranked = ({ mode, difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
     with best as (
       select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
       from runs r
-      where r.finished_at is not null and r.verified is not false and r.difficulty = ${difficulty}
+      where r.finished_at is not null and r.verified is not false and r.mode = ${mode} and r.difficulty = ${difficulty}
         ${period === 'all' ? sql`` : sql`and r.started_at >= (date_trunc(${period}, now() at time zone ${BOARD_TIME_ZONE}) at time zone ${BOARD_TIME_ZONE})`}
         ${starter ? sql`and r.starter = ${starter}` : sql``}
         ${friends && viewer ? sql`and (r.user_id = ${viewer} or r.user_id in (select followee_id from follows where follower_id = ${viewer}))` : sql``}
@@ -175,7 +183,8 @@ export const rankingStore = (sql: Sql) => {
         await tx`
           update runs set finished_at = now(), starter = ${result.starter}, stage = ${result.stage}, branch = ${result.branch}, difficulty = ${result.difficulty},
             survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
-            replay = ${replay ? tx.json(replay) : null}, verified = null, checked_at = null, check_ms = null, official = ${official}
+            replay = ${replay ? tx.json(replay) : null}, verified = null, checked_at = null, check_ms = null, official = ${official},
+            mode = ${runMode(result.starter)}
           where id = ${token}`
         return { ok: true, challenge: run.challenge, official } as const
       }),
@@ -190,17 +199,17 @@ export const rankingStore = (sql: Sql) => {
     /**
      * Whether the run with `id` is on show now: a challenge's official
      * attempt (it earns a ribbon), or the player's line on a board within the
-     * top `top.global` of its difficulty or the top `top.starter` of its
+     * top `top.global` of its mode and difficulty or the top `top.starter` of its
      * Pokémon, for the day, the week or all time.
      */
     shown: async (id: string, top: { global: number; starter: number }) => {
-      const [run] = await sql<{ user_id: string; starter: PlayableId; difficulty: Difficulty; survived: number; official: boolean }[]>`
-        select user_id, starter, difficulty, survived, official is true as official from runs where id = ${id} and finished_at is not null`
+      const [run] = await sql<{ user_id: string; mode: RunMode; starter: PlayableId; difficulty: Difficulty; survived: number; official: boolean }[]>`
+        select user_id, mode, starter, difficulty, survived, official is true as official from runs where id = ${id} and finished_at is not null`
       if (!run) return false
       if (run.official) return true
       const boards = BOARD_PERIODS.flatMap((period) => [
-        { query: { difficulty: run.difficulty, period, starter: null, friends: false, viewer: null }, size: top.global },
-        { query: { difficulty: run.difficulty, period, starter: run.starter, friends: false, viewer: null }, size: top.starter },
+        { query: { mode: run.mode, difficulty: run.difficulty, period, starter: null, friends: false, viewer: null }, size: top.global },
+        { query: { mode: run.mode, difficulty: run.difficulty, period, starter: run.starter, friends: false, viewer: null }, size: top.starter },
       ])
       const lines = await Promise.all(
         boards.map(async ({ query, size }) => {
@@ -233,9 +242,9 @@ export const rankingStore = (sql: Sql) => {
     uncheckedRuns: async () =>
       (await sql<{ id: string }[]>`select id from runs where verified is null and replay is not null and finished_at is not null order by finished_at`).map((r) => r.id),
 
-    /** Where the player stands on their difficulty's day, week and total boards. */
-    runRanks: async (userId: string, difficulty: Difficulty): Promise<RunRanks> => {
-      const at = (period: BoardPeriod) => rankOf({ difficulty, period, starter: null, friends: false, viewer: null }, userId)
+    /** Where the player stands on the day, week and total boards of their run's mode and difficulty. */
+    runRanks: async (userId: string, mode: RunMode, difficulty: Difficulty): Promise<RunRanks> => {
+      const at = (period: BoardPeriod) => rankOf({ mode, difficulty, period, starter: null, friends: false, viewer: null }, userId)
       const [day, week, all] = await Promise.all([at('day'), at('week'), at('all')])
       return { day, week, all }
     },
@@ -316,10 +325,10 @@ export const rankingStore = (sql: Sql) => {
       // One's own badge shows even when hidden from others, so the profile says what they see.
       const supporter = self ? supporterTier(user.supporter_points) : badgeOf(user)
       const [records, recent, [counts], [save], ribbons] = await Promise.all([
-        sql<RunRow[]>`
-          select distinct on (difficulty) starter, stage, branch, difficulty, survived, outcome, started_at
+        sql<RecordRow[]>`
+          select distinct on (mode, difficulty) mode, starter, stage, branch, difficulty, survived, outcome, started_at
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
-          order by difficulty, survived desc, started_at`,
+          order by mode, difficulty, survived desc, started_at`,
         sql<RunRow[]>`
           select starter, stage, branch, difficulty, survived, outcome, started_at
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
@@ -342,7 +351,8 @@ export const rankingStore = (sql: Sql) => {
         name: user.name ?? user.handle,
         title: data.title,
         dex: { seen: dex.seen, caught: dex.caught },
-        records: Object.fromEntries(records.map((r) => [r.difficulty, toRun(r)])),
+        records: recordsOf(records, 'standard'),
+        legendRecords: recordsOf(records, 'legend'),
         recent: recent.map(toRun),
         followers: counts?.followers ?? 0,
         following: counts?.following ?? 0,

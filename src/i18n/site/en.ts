@@ -96,6 +96,12 @@ export const siteEn: SiteMessages = {
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
     summoned: (by: string) => `Called in by ${by}`,
     behavior: 'Behavior',
+    legendMode: 'Legend Mode',
+    capture: (need: number) => (need === 1 ? 'Beat it once as a boss, in any mode, and it becomes playable in Legend Mode (its own ranking, a tougher horde, awakenings at Lv 12 and 28).' : `Beat it ${need} times as a boss, in any mode, and it becomes playable in Legend Mode (its own ranking, a tougher horde, awakenings at Lv 12 and 28).`),
+    captureLast: 'The last trophy: it can only be caught in endless mode, once the other 22 legendaries are caught.',
+    captureShiny: 'Beating a shiny one on the catching win, or after, unlocks its shiny.',
+    innate: (name: string) => `Innate (always on): ${name}`,
+    opens: (move: string) => `Starts with ${move}`,
   },
 
   traits: {
@@ -209,6 +215,7 @@ export const siteEn: SiteMessages = {
       places: 'Places: the cave, the graveyard and the sky',
       landmarks: 'Landmarks on the map',
       megas: 'Mega Evolution',
+      legends: 'Legend Mode',
       shinies: 'Shinies',
       eggs: 'Eggs and the incubator',
       items: 'Map items',
@@ -356,6 +363,17 @@ export const siteEn: SiteMessages = {
       },
       flute: 'Poké Flute (map item)',
       itemsNote: 'King\'s Rock raises the status chance, Toxic Orb raises burn and poison damage, and Light Clay makes statuses last longer.',
+    },
+    legends: {
+      paragraphs: (m: { count: number; awaken: readonly number[] }) => [
+        `All ${m.count} legendaries in the game can be caught and played in Legend Mode. To catch one, beat it as a boss, in any mode: every win before the catch, it breaks free of the Poké Ball and the game keeps count (Kyogre broke free… 2/3); on the win that completes it, it's caught and shows up in the Legendaries tab of the partner select. Beating a shiny one on the catching win, or on any win after, unlocks its shiny.`,
+        `In Legend Mode the legendary doesn't evolve: it awakens at Lv ${m.awaken[0]} and Lv ${m.awaken[1]} (an Ability, power and a Forget charge; Kyogre and Groudon turn Primal, Rayquaza turns Mega), starts with its legendary move and an innate ability that's always on, and the horde comes tougher (Pressure). A run lasts as long as ever, all three difficulties still apply and the mode has its own ranking, split by difficulty.`,
+      ],
+      legendHead: 'Legendary',
+      whereHead: 'Where to beat it',
+      winsHead: 'Wins',
+      innateHead: 'Innate',
+      where: { rift: 'Legendary rift', trio: 'Legendary trio', mythical: 'Beside Mewtwo (1 in 10)', finale: 'Final boss', endless: 'Endless mode, last of all' },
     },
     megas: {
       paragraphs: (m) => [
