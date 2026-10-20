@@ -1,4 +1,4 @@
-import { blitCentered, canvasCache, context2d, createCanvas, ellipse } from '../engine/pixelart'
+import { blitCentered, canvasCache, context2d, createCanvas, ellipse, onCanvasReset } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { fits } from '../game/arenaFloor'
@@ -166,7 +166,9 @@ const FRAME_BUDGET = 2
 /* ---------------- Transforms ---------------- */
 
 type Baked = { canvas: HTMLCanvasElement; x: number; y: number }
-const transforms = new WeakMap<ArenaTransform, Baked>()
+/** Baked transforms; dropped with every other canvas on a GPU reset. */
+let transforms = new WeakMap<ArenaTransform, Baked>()
+onCanvasReset(() => (transforms = new WeakMap()))
 
 /** Bakes what a transform turns the arena into: flood water around its islands, lava around its cool spots, or the holes it crumbles. */
 const bakeTransform = (p: Painter, t: ArenaTransform): Baked => {

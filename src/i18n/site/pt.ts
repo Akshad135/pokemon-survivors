@@ -397,16 +397,16 @@ export const sitePt = {
     },
     rifts: {
       paragraphs: (r: { first: string; every: number; bossWait: number; portal: number; enter: number; arena: number; fallHp: number; shiny: number }) => [
-        `A partir de ${r.first}, mais ou menos a cada ${n(r.every)} minutos, uma fenda lendária se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então toda partida tem 3 fendas, mesmo que os chefes demorem.`,
+        `Toda partida tem 2 fendas lendárias: uma por volta de ${r.first} e outra ${n(r.every)} minutos depois. Antes de cada uma, o lendário avisa que vem (o clima dele toma o céu) e a fenda se abre fora da tela, com uma seta roxa na borda apontando para ela. Ela fica aberta por ${r.portal}s. Se um chefe estiver vivo na hora, ela espera ele cair por até ${r.bossWait}s, então as duas fendas vêm mesmo que os chefes demorem.`,
         `Entrar é opcional: fique ${n(r.enter)}s dentro da fenda. Ela leva você à arena de um lendário de outra geração, cada uma com seu formato e seu terreno: ilhas em água rasa, pilares para se proteger, um poço cuja maré sobe, rios de lava com pontes, uma borda que desaba, uma ilha cercada de arrebentação, um meteoro no espaço. Você tem ${r.arena}s para vencê-lo; se o tempo acabar, a fenda colapsa e joga você de volta sem recompensa. Cair na arena também não encerra a partida: a fenda expulsa você para o mapa com ${r.fallHp}% do HP, sem recompensa, e o seu Revive fica guardado.`,
-        'O relógio da partida continua correndo lá dentro, mas a horda lá fora fica congelada e nada novo nasce. Quando você volta, os inimigos ficam mais fortes porque o tempo passou, e os eventos que ficaram para trás chegam de uma vez.',
+        'Alguns lendários, como o Kyogre, têm um domínio inteiro em vez de uma arena: você atravessa um lugar maior que a tela fugindo da ameaça que sobe atrás de você e dos Pokémon que o servem, o lendário aparece e a batalha tem três fases, cada uma muda o terreno e termina num golpe supremo com um lugar seguro (atrás de uma rocha, numa ilha, no vão entre os raios). No fim ele se ajoelha e você tenta capturá-lo. O relógio da partida para lá dentro; a horda lá fora fica congelada e nada novo nasce até você voltar.',
         `A recompensa vale o risco: muita EXP, dois sacos de ₽ além da chuva de chefe, Poké Balls extras, uma Rare Candy, uma Super Potion e metade do HP de volta. Em 1 de ${r.shiny} fendas o lendário é shiny e paga o dobro de ₽ e mais uma Poké Ball.`,
       ],
       legendHead: 'Lendário',
       typesHead: 'Tipos',
       hpHead: 'HP base',
       attacksHead: 'Ataques',
-      hpNote: (percent: number) => `O HP base é o da primeira fenda, às 3:30. Depois, o HP e o dano de contato do lendário crescem com o relógio: +${n(percent)}% de HP por minuto. Cada fenda traz um lendário diferente.`,
+      hpNote: (percent: number) => `O HP base é o da primeira fenda, às 4:00. Depois, o HP e o dano de contato do lendário crescem com o relógio: +${n(percent)}% de HP por minuto. Cada fenda traz um lendário diferente.`,
       endlessTitle: 'Modo sem fim',
       endless: (e: { every: number; reaper: string; hp: string; returns: number; perMinute: number; reaperBonus: string }) => [
         'Depois de derrotar Mewtwo, a tela de vitória oferece continuar no modo sem fim. Quem não quiser sai com a vitória normal, e o bônus já é pago na hora.',

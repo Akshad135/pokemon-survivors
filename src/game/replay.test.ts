@@ -327,7 +327,7 @@ describe('replays', () => {
     const rec = startRecording(START)
     const origin = { x: g.player.x, y: g.player.y }
     // Up through the cavern's chambers, then circling in the arena.
-    const way = [[44, -282], [-46, -596], [26, -904], [0, -1220]] as const
+    const way = [[44, -282], [-46, -596], [36, -904], [-40, -1200], [30, -1504], [0, -1920]] as const
     let w = 0
     while (g.rift.arena && rec.tick < 60 * 120) {
       if (g.phase !== 'playing') {

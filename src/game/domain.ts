@@ -2,6 +2,7 @@ import { retain } from '../engine/math'
 import { weightedPick } from '../engine/rng'
 import { ARENA_FEET, type FloorPlan, type Pt } from '../data/arenas'
 import { domainOf, type ArenaTransform, type LegendDomain } from '../data/domains'
+import { ENEMIES } from '../data/enemies'
 import { RIFT, type RiftLegend } from '../data/rifts'
 import { onFloor } from './arenaFloor'
 import { joinAs, parked } from './bosses'
@@ -213,7 +214,8 @@ const reveal = (g: Game, arena: RiftArena, d: DomainState, def: LegendDomain) =>
   const at = arenaPoint(arena, d, def.arena.boss)
   const boss = spawnEnemy(g, d.legend, at.x, at.y)
   const scale = riftScale(g.time)
-  boss.hp = boss.maxHp = Math.round(boss.maxHp * scale.hp * def.hp)
+  // The difficulty presses a legendary with its patterns (pace, telegraphs, damage), not with more HP: a domain's battle lasts as long on any.
+  boss.hp = boss.maxHp = Math.round(ENEMIES[d.legend].hp * scale.hp * def.hp)
   boss.damage *= scale.damage
   boss.xp = riftLoot(g.time, arena.shiny).xp
   boss.shiny = arena.shiny
@@ -341,7 +343,7 @@ const keepInDomain = (g: Game, plan: FloorPlan, arena: RiftArena) => {
 /* ---------------- Camera ---------------- */
 
 /** How far from the view's edges the player always stays while the camera frames the legendary too, px (the HUD sits on top). */
-const FRAME = { side: 44, top: 100, bottom: 70 } as const
+const FRAME = { side: 44, top: 90, bottom: 44 } as const
 
 /**
  * The camera in a domain (outside its scenes): ahead of the player in the
