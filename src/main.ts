@@ -21,6 +21,7 @@ import { domainTheme } from './game/domain'
 import { partnerOf } from './data/domains'
 import { captureOutcome } from './render/capture'
 import { domainLines } from './ui/riftTitle'
+import { isWaveLegend, LEGEND_THEME } from './data/legendBosses'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
 import type { AchievementId } from './data/achievements'
@@ -969,6 +970,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'boss': {
       const def: EnemyDef = ENEMIES[e.enemy]
+      // A wave legendary's cry and title card come with its entrance (`legendTitle`).
+      if (isWaveLegend(e.enemy)) return
       if (def.legendary) {
         playSfx('legendary')
         playCry(sprites(def.dex).cry, 0.7)
@@ -1179,7 +1182,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       const def = ENEMIES[e.enemy]
       playSfx('quake')
       playCry(sprites(def.dex).cry, 0.7)
-      const line = isRiftLegend(e.enemy) ? domainLines(e.enemy)?.phases[e.phase - 1] : undefined
+      const line = isRiftLegend(e.enemy) ? domainLines(e.enemy)?.phases[e.phase - 1] : isWaveLegend(e.enemy) ? t().legends.phases[e.enemy][e.phase - 1] : undefined
       return line ? toast(ui, rich(line), 3600) : undefined
     }
     case 'bossUltimate':
@@ -1213,6 +1216,21 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'bossGuard':
       playSfx(e.up ? 'legendary' : 'break')
       return toast(ui, rich(e.up ? t().rifts.guardUp(ENEMIES[e.enemy].name) : t().rifts.guardDown), e.up ? 3400 : 2200)
+    case 'legendTitle':
+      playSfx('legendary')
+      playCry(sprites(ENEMIES[e.enemy].dex, e.shiny).cry, 0.9)
+      return flashScreen(ui)
+    case 'bossCapture': {
+      const capture = g.legendScene?.capture
+      const name = ENEMIES[e.enemy].name
+      if (capture && captureOutcome(capture) === 'caught') {
+        playSfx('unlock')
+        return toast(ui, rich(t().rifts.caught(name), { class: 'toast-evo' }), 3200)
+      }
+      playSfx('break')
+      playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
+      return toast(ui, rich(t().rifts.escaped(name)), 2800)
+    }
     case 'riftCleared':
       playSfx('evolve')
       return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)
@@ -1278,6 +1296,9 @@ const themeFor = (r: Run | null): ThemeId | null => {
   if (domain) return domainTheme(domain)
   // A rift arena keeps the boss theme until the player is back, loot window included; a place plays its own.
   const inside = r.game.place.inside
+  // A wave legendary plays its own theme from its entrance on.
+  const boss = r.game.bossId === null ? undefined : r.game.enemies.find((e) => e.id === r.game.bossId)
+  if (boss && isWaveLegend(boss.kind)) return LEGEND_THEME[boss.kind]
   return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : inside ? PLACES[inside.id].theme : BIOMES[r.game.biome.id].theme
 }
 

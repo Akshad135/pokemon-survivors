@@ -10,10 +10,12 @@ import { openPortal, startOmen } from './riftPortal'
 import { withTrio } from './roster'
 import { spawnWaveBoss } from './spawner'
 import type { Game } from './types'
+import { phasesOf } from './bossFight'
+import { killEnemy } from './combat'
 
 /**
  * Dev-console shortcuts for staging bosses, rifts and the endless mode
- * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.rift()`, `ps.omen()`, `ps.riftAct()`, `ps.ult()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
+ * (`ps.trio()`, `ps.boss()`, `ps.bossHp()`, `ps.ult()`, `ps.defeat()`, `ps.rift()`, `ps.omen()`, `ps.riftAct()`, `ps.portal()`, `ps.victory()`, `ps.endless()`, `ps.reaper()`).
  * Wired in `main.ts` for dev builds only.
  */
 export const riftDevTools = (game: () => Game | undefined) => {
@@ -42,6 +44,19 @@ export const riftDevTools = (game: () => Game | undefined) => {
         const boss = g.enemies.find((e) => e.id === g.bossId)
         if (boss) boss.hp = Math.max(1, boss.maxHp * share)
       })(),
+    /** Brings the HP bar boss's ultimate now (`ps.ult()`), at the top of its current phase's. */
+    ult: playing((g) => {
+      const fight = g.enemies.find((e) => e.id === g.bossId)?.fight
+      if (fight && !fight.ult) fight.ultLeft = 0
+    }),
+    /** Knocks out the boss with the HP bar (`ps.defeat()`): past its phases, so a wave legendary's capture plays. */
+    defeat: playing((g) => {
+      const boss = g.enemies.find((e) => e.id === g.bossId)
+      if (!boss) return
+      const phases = phasesOf(boss.kind)
+      if (boss.fight && phases) Object.assign(boss.fight, { phase: phases.length - 1, shift: 0 })
+      killEnemy(g, boss)
+    }),
     /** Steps straight into a rift (a random legendary, or the one given): a domain's crossing, or the old arena. */
     rift: (legend?: RiftLegend) =>
       playing((g) => {
@@ -53,11 +68,6 @@ export const riftDevTools = (game: () => Game | undefined) => {
     omen: (legend?: RiftLegend) => playing((g) => startOmen(g, legend))(),
     /** In a domain, jumps to an act: `ps.riftAct('encounter')`, `ps.riftAct('battle', 2)` for the top of phase 2, or `ps.riftAct('capture')`. */
     riftAct: (act: 'encounter' | 'battle' | 'capture', phase?: number) => playing((g) => jumpToAct(g, act, phase))(),
-    /** Starts the ultimate of the phase the boss with the HP bar is in, now (`ps.ult()`). */
-    ult: playing((g) => {
-      const boss = g.enemies.find((e) => e.id === g.bossId)
-      if (boss?.fight && !boss.fight.ult) boss.fight.ultLeft = 0
-    }),
     /** In a pair's battle (Latias and Latios), knocks one out now (`ps.knockOut('latios')`; Latias without an argument): the other enrages and counts down to its revival. */
     knockOut: (who?: EnemyId) =>
       playing((g) => {

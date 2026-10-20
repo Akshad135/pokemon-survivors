@@ -48,7 +48,7 @@ import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
 import { clock, pokedex, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
-import { patternText, traitText, typeBadge } from './pokedex'
+import { bossAttacks, patternText, traitText, typeBadge } from './pokedex'
 
 type Section = keyof SiteMessages['guide']['sections']
 
@@ -304,7 +304,7 @@ const bosses = (locale: Locale, m: SiteMessages) => {
       e.chance !== undefined ? `${clock(e.at)} (${pct(e.chance / candidates.length)}%)` : clock(e.at),
       'trio' in e ? html`${bossName(locale, id)} <small>${m.trios.names[TRIO_IDS[i]!]}</small>` : bossName(locale, id),
       ENEMIES[id].hp.toLocaleString(m.lang.tag),
-      html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`,
+      bossAttacks(id, m),
     ])
   }
   const rows = EVENTS.flatMap((e) => (e.kind === 'boss' ? rowsOf(e) : []))
@@ -319,7 +319,7 @@ const bosses = (locale: Locale, m: SiteMessages) => {
 const rifts = (locale: Locale, m: SiteMessages) => {
   const r = m.guide.rifts
   const num = (v: number) => v.toLocaleString(m.lang.tag)
-  const attacks = (id: keyof typeof ENEMIES) => html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
+  const attacks = (id: keyof typeof ENEMIES) => bossAttacks(id, m)
   const rows = [...RIFT_LEGENDS, REAPER].map((id) => [
     bossName(locale, id),
     html`${ENEMIES[id].types.map((type) => typeBadge(type, m))}`,

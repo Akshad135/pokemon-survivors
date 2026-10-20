@@ -21,8 +21,12 @@ export type BossMotion =
   | { kind: 'dive'; left: number; lock: number; x: number; y: number; windup: number; radius: number; damage: number; visual: HazardVisual }
   | { kind: 'away'; left: number }
 
-/** A blast charging (`left` of `total` s) from (x, y): when it lands it hurts the player unless they stand somewhere `safe`. */
-export type BossBlast = { left: number; total: number; x: number; y: number; damage: number; safe: BlastSafe; radius: number; visual: HazardVisual }
+/**
+ * A blast charging (`left` of `total` s) from (x, y): when it lands it hurts
+ * the player unless they stand somewhere `safe` (for `spots`, within `radius`
+ * of one of its `spots`).
+ */
+export type BossBlast = { left: number; total: number; x: number; y: number; damage: number; safe: BlastSafe; radius: number; visual: HazardVisual; spots: readonly { x: number; y: number }[] }
 
 /** A time stop (`timeStop` pattern): `wait` s until it takes hold, then the player's shots hold still for `left` of `total` s. */
 export type TimeStop = { wait: number; left: number; total: number }
@@ -115,14 +119,16 @@ export const warningOf = (p: BossPattern) => {
     case 'dive': return p.hide + p.windup
     case 'teleport': case 'blast': case 'whirlpool': case 'gust': case 'timeStop': return p.windup
     case 'phantoms': return p.windup + p.gap * (p.count - 1) + (p.radius * 2) / p.speed
+    case 'ring': return p.windup ?? 0
+    case 'cage': return p.ttl
     default: return 0
   }
 }
 
 /**
- * Wave bosses fight in stances and enrage. Rift legendaries and Arceus keep
- * their flat patterns: a rift is already a timed duel and the reaper is meant
- * to be outlasted, not read.
+ * Wave bosses fight in stances and enrage. Rift legendaries and Arceus don't:
+ * a rift is already a timed duel and the reaper is meant to be outlasted, not
+ * read (their phases carry the fight instead).
  */
 export const fightsInStances = (kind: EnemyId) =>
   bossWaveAt(kind) !== null && (BOSS_PATTERNS[kind] ?? BOSS_PHASES[kind]?.flatMap((ph) => ph.patterns) ?? []).some((p) => p.stance !== undefined)

@@ -529,6 +529,44 @@ describe('replays', () => {
     })
   }
 
+  it("re-simulate Mewtwo on the map: its entrance, three phases, its ultimates and the capture its victory waits for", () => {
+    /** A player strong enough to take Mewtwo down in a couple of minutes, with Mewtwo arriving at once. */
+    const finale = (g: Game) => {
+      g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+      g.player.items = ITEM_IDS.slice(0, 6).map((id) => ({ id, level: ITEMS[id].levels.length }))
+      gainXp(g, 60000)
+      Object.assign(g, { phase: 'playing', pendingLevelUps: 0, offers: [] })
+      recomputeStats(g)
+      g.player.hp = g.player.stats.maxHp
+      spawnWaveBoss(g, 'mewtwo', g.time, true)
+    }
+    const start: ReplayStart = START
+    const view = { ...start.view }
+    const g = startGame(start, view)
+    finale(g)
+    const rec = startRecording(start)
+    while (g.phase !== 'victory' && g.phase !== 'gameover' && rec.tick < 60 * 240) {
+      if (g.phase !== 'playing') {
+        recordEvent(rec, ['offer', 0])
+        chooseOffer(g, g.offers[0]!)
+        continue
+      }
+      const a = rec.tick / 90
+      step(g, { move: recordStep(rec, view, { x: Math.cos(a), y: Math.sin(a) }), special: false }, TICK)
+    }
+    const kinds = g.events.map((e) => e.kind)
+    expect(g.phase).toBe('victory')
+    expect(kinds.filter((k) => k === 'bossPhase').length).toBe(2)
+    expect(kinds).toContain('legendTitle')
+    expect(kinds).toContain('bossUltimate')
+    // The capture's ball settles before the victory shows.
+    expect(kinds.lastIndexOf('bossCapture')).toBeLessThan(kinds.lastIndexOf('victory'))
+    const staged = startGame(start)
+    finale(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
+  }, 30_000)
+
   it('give a run played on another seed away', () => {
     const { g, replay } = play(40)
     const other = resimulate({ ...replay, start: { ...replay.start, seed: 8 } })

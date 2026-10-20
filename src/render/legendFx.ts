@@ -15,6 +15,10 @@ import type { RiftLegend } from '../data/rifts'
 import { art, lazy } from './art'
 import { HAZARD_COLORS } from './hazardColors'
 import { drawPokemon, formOf, sprites } from './sprites'
+import { drawCaptureScene } from './capture'
+import { drawScale } from '../game/alphas'
+import { ARRIVAL, isWaveLegend, type Arrival } from '../data/legendBosses'
+import { ENTRANCE_REVEAL, entranceBeat, LIGHT_CAPTURE } from '../game/legendScene'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -199,6 +203,8 @@ export const drawBlasts = (ctx: Ctx, g: Game, camX: number, camY: number, t: num
       }
     }
     const [line] = HAZARD_COLORS[b.visual]
+    // Shelters show their edge, so the player sees how far in to step.
+    for (const spot of b.spots) blitCentered(ctx, ring(Math.round(b.radius), 1, blink ? '#f8fff0' : '#98f8b0'), Math.round(spot.x - camX), Math.round(spot.y - camY))
     const r = Math.round(10 + (1 - k) * 60)
     blitCentered(ctx, ring(r, 2, line), Math.round(b.x - camX), Math.round(b.y - 14 - camY))
   }
@@ -206,11 +212,12 @@ export const drawBlasts = (ctx: Ctx, g: Game, camX: number, camY: number, t: num
 
 const ARROW = lazy(() => art(['11.....', '1221...', '122221.', '1222221', '122221.', '1221...', '11.....'], { 1: '#f8d0d0', 2: '#d02838' }, '#300810'))
 
-/** In a domain's battle, an arrow on the screen's edge toward the legendary while it's off screen (or its wake, while it dives). */
+/** In a domain's battle or a wave legendary's fight on the map, an arrow on the screen's edge toward the legendary while it's off screen (or its wake, while it dives). */
 export const drawBossMarker = (ctx: Ctx, g: Game, camX: number, camY: number, t: number) => {
   const here = domainHere(g)
-  if (!here || here.d.act !== 'battle') return
-  const boss = pairFighter(g, here.d.pair, here.d.bossId)
+  if (here && here.d.act !== 'battle') return
+  // On the map: the wave legendary on the HP bar, outside its scenes.
+  const boss = here ? pairFighter(g, here.d.pair, here.d.bossId) : g.enemies.find((e) => e.id === (g.legendScene ? -1 : g.bossId) && e.dying < 0 && isWaveLegend(e.kind))
   if (!boss) return
   const m = boss.fight?.motion
   const tx = m?.kind === 'dive' ? m.x : boss.x
@@ -439,5 +446,66 @@ export const drawPhantoms = (ctx: Ctx, g: Game, t: number) => {
       }
     }
     drawPokemon(ctx, s, 'Walk', dir, t, Math.round(h.x), Math.round(h.y), { alpha, tint: { color, amount: 0.45 }, flash: moving ? 0.25 : 0.5 })
+  }
+}
+
+/** The colors a legendary's arrival kicks up: dust out of the ground, sparks out of thin air, wind from the sky. */
+const ARRIVAL_DUST = { descend: '#e8f0f8', bound: '#e0d0a8', rise: '#a08860', materialize: '#f8d0f0' } as const satisfies Record<Arrival, string>
+
+/**
+ * A wave legendary's scene on the map (`game/legendScene.ts`): before it shows
+ * itself, its arrival (rings where it comes, then it drops from the sky with
+ * its shadow growing, leaps in from the side, rises out of the cracking ground
+ * or fades in); the quick capture where it fell.
+ */
+export const drawLegendScene = (ctx: Ctx, g: Game, t: number) => {
+  const s = g.legendScene
+  if (!s) return
+  if (s.kind === 'capture') {
+    if (s.capture) drawCaptureScene(ctx, g, s.capture, s.t, LIGHT_CAPTURE, t)
+    return
+  }
+  if (s.t >= ENTRANCE_REVEAL || !isWaveLegend(s.enemy)) return
+  const boss = g.enemies.find((e) => e.id === s.bossId)
+  if (!boss) return
+  const k = entranceBeat(s.t).arrive
+  const x = Math.round(boss.x)
+  const y = Math.round(boss.y)
+  const arrival = ARRIVAL[s.enemy]
+  const dust = ARRIVAL_DUST[arrival]
+  for (let i = 0; i < 3; i++) {
+    const q = (t * 1.2 + i / 3) % 1
+    ctx.globalAlpha = (1 - q) * Math.min(1, k * 3 + 0.3)
+    blitCentered(ctx, ring(Math.round(8 + q * 36), 1, dust), x, y)
+  }
+  ctx.globalAlpha = 1
+  if (k <= 0) return
+  const sp = sprites(ENEMIES[s.enemy].dex, boss.shiny)
+  const scale = drawScale(boss)
+  const body = sp.bodyH * scale
+  if (arrival === 'descend') {
+    blitCentered(ctx, ellipse(Math.round(6 + k * 14), Math.round(3 + k * 6), 'rgba(16,8,32,0.45)'), x, y)
+    drawPokemon(ctx, sp, 'Idle', 0, t, x, y - Math.round((1 - k) * 200), { scale })
+  } else if (arrival === 'bound') {
+    // In from the side away from the player, in one long leap.
+    const side = boss.x >= g.player.x ? 1 : -1
+    const hop = Math.sin(k * Math.PI) * 46
+    blitCentered(ctx, ellipse(Math.round(6 + k * 10), Math.round(3 + k * 4), 'rgba(16,8,32,0.4)'), x + Math.round(side * (1 - k) * 110), y)
+    drawPokemon(ctx, sp, 'Walk', side > 0 ? 6 : 2, t, x + Math.round(side * (1 - k) * 110), y - Math.round(hop), { scale })
+  } else if (arrival === 'rise') {
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(x - 200, y - 400, 400, 400 + 2)
+    ctx.clip()
+    drawPokemon(ctx, sp, 'Idle', 0, t, x, y + Math.round((1 - k) * (body + 6)), { scale, tint: { color: '#403020', amount: 0.6 * (1 - k) } })
+    ctx.restore()
+  } else {
+    drawPokemon(ctx, sp, 'Idle', 0, t, x, y, { scale, alpha: k, flash: 1 - k })
+  }
+  ctx.fillStyle = dust
+  for (let i = 0; i < 18; i++) {
+    const a = hash2(i, 4, 7) * TAU
+    const r = arrival === 'materialize' ? (1 - k) * 60 * (0.4 + hash2(i, 5, 7)) : ((t * 50 + hash2(i, 6, 7) * 40) % 40) * k
+    ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y - 6 + Math.sin(a) * r * 0.6), 1, 1)
   }
 }

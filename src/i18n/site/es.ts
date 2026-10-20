@@ -1,3 +1,4 @@
+import type { BlastSafe } from '../../data/bosses'
 import type { SiteMessages } from './pt'
 
 /** Number in Latin American Spanish format (`1,250`, `0.75`). */
@@ -158,6 +159,18 @@ export const siteEs: SiteMessages = {
     far: 'si te mantienes lejos',
     below: (percent: number) => `por debajo del ${n(percent)}% de HP`,
     from: { normal: 'en todas las dificultades', hard: 'en Difícil y Pesadilla', nightmare: 'solo en Pesadilla' },
+    beam: (count: number, every: number, damage: number) => `${count > 1 ? `${count} rayos` : 'Rayo'} desde sí mismo, con la línea parpadeando antes, cada ${n(every)}s (${damage} de daño)`,
+    lances: (count: number, every: number, damage: number) => `${count} lanzas paralelas cruzando la pantalla, el hueco entre ellas es seguro, cada ${n(every)}s (${damage} de daño)`,
+    dash: (count: number, every: number, damage: number) => `Embestida por un carril marcado${count > 1 ? `, ${count} seguidas` : ''}, cada ${n(every)}s (${damage} de daño)`,
+    dive: (every: number, damage: number) => `Desaparece y su sombra te persigue; se detiene y cae ahí, cada ${n(every)}s (${damage} de daño)`,
+    teleport: (every: number, damage: number) => `Se teletransporta y cae en un círculo marcado, cada ${n(every)}s (${damage} de daño)`,
+    blast: (safe: BlastSafe, damage: number) =>
+      `Explosión en todo (${damage} de daño), menos ${({ cover: 'detrás de una roca', dry: 'en las islas', near: 'pegado a él', far: 'lejos de él', spots: 'en los refugios marcados' } satisfies Record<BlastSafe, string>)[safe]}`,
+    cage: (every: number, damage: number) => `Te encierra en un círculo de llamas o rocas, cada ${n(every)}s (${damage} de daño)`,
+    closing: (count: number, every: number, damage: number) => `Anillo de ${count} proyectiles cerrándose sobre ti, con una salida, cada ${n(every)}s (${damage} de daño)`,
+    summon: (every: number) => `Llama ayudantes cada ${n(every)}s`,
+    phase: (i: number, percent: number) => (i === 0 ? 'Fase 1' : `Fase ${i + 1} (bajo ${n(percent)}% de HP)`),
+    ultimate: (move: string, every: number) => `Golpe definitivo ${move}, cada ${n(every)}s:`,
   },
 
   /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
@@ -470,7 +483,7 @@ export const siteEs: SiteMessages = {
       paragraphs: (r) => [
         'Los jefes llegan en horarios fijos. Los legendarios entran con un destello en la pantalla, su grito y un aviso. Todos tienen una barra de HP arriba y ataques propios: los círculos marcados en el suelo avisan dónde va a caer el golpe, así que sal de ellos.',
         `Cada jefe alterna entre dos formas de pelear cada ${r.stance[0]} a ${r.stance[1]} segundos: de cerca, avanza rápido y golpea en área a su alrededor; a distancia, se detiene a unos pasos y te apunta. Por debajo del ${n(r.below * 100)}% del HP se enfurece (contorno rojo, grito y destello en la pantalla): ${n(Math.round((r.speed - 1) * 100))}% más rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% más seguido y, el ${n(r.chain * 100)}% de las veces, encadena un segundo ataque justo después del primero.`,
-        `Quedarse quieto no funciona: cada jefe apunta a donde estás o al camino por el que vas, y quien huye lejos se gana un salto o una ráfaga apuntada. La furia también libera un ataque nuevo. En Difícil los jefes atacan ${n(Math.round((1 - r.press.hard.pace) * 100))}% más seguido, con ${n(Math.round((r.press.hard.more - 1) * 100))}% más proyectiles y avisos un poco más cortos, y furiosos encadenan el ${n(r.press.hard.chain * 100)}% de las veces; en Pesadilla, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% más seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% más proyectiles, ${n(r.press.nightmare.chain * 100)}% de encadenes y un ataque más cada uno. De Difícil para arriba, Mewtwo tiene una segunda fase por debajo del 40% de HP.`,
+        `Quedarse quieto no funciona: cada jefe apunta a donde estás o al camino por el que vas, y quien huye lejos se gana un salto o una ráfaga apuntada. La furia también libera un ataque nuevo. En Difícil los jefes atacan ${n(Math.round((1 - r.press.hard.pace) * 100))}% más seguido, con ${n(Math.round((r.press.hard.more - 1) * 100))}% más proyectiles y avisos un poco más cortos, y furiosos encadenan el ${n(r.press.hard.chain * 100)}% de las veces; en Pesadilla, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% más seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% más proyectiles, ${n(r.press.nightmare.chain * 100)}% de encadenes y un ataque más cada uno. Los legendarios del mapa (el trío, el mítico, Mewtwo y Arceus) pelean en tres fases, marcadas en la barra de HP: cada fase trae una forma nueva de moverse (vuelo con sombra, embestidas, teletransporte, encierros) y la última, un golpe definitivo con un lugar seguro marcado (refugios, el hueco entre las lanzas, la salida de un anillo, lejos o pegado al jefe). De Difícil para arriba, la última fase de Mewtwo además salta y dispara ráfagas anchas.`,
         'Los jefes no se vuelven más fuertes con el tiempo, pero cada uno suelta una Poké Ball y una lluvia de Poké Dollars.',
         `En los primeros ${r.window}s de cada jefe, mientras esté cerca, solo aparece el ${n(r.fight * 100)}% de los enemigos comunes, así que la pelea es con él; después vuelve la horda. Cada jefe tiene hasta que llegue el siguiente: si sigue en pie cuando aparece el próximo, huye y no deja nada. Mewtwo es el último: al llegar, aleja a la horda y, mientras siga en pie, solo aparece el ${n(r.finale * 100)}% de los enemigos comunes, así que la pelea se trata de esquivar sus ataques.`,
       ],

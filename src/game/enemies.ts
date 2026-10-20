@@ -182,8 +182,10 @@ export const updateEnemies = (g: Game, dt: number) => {
         ty = steering.y
         speed = pace * steering.pace
       } else if (e.fight) {
+        // It holds still through a phase's opening and its scripts (a dash, a dive) too.
         const hold = STANCES[e.fight.stance].hold
-        speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+        const still = e.fight.shift > 0 || e.fight.motion !== null || (hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold)
+        speed = still ? 0 : pace * fightPace(e.fight)
       } else if (isSpitter(e)) {
         speed = pace * spitterStride(dm.hypot(p.x - e.x, p.y - e.y), inView(g, e.x, e.y, -TRAITS.spitter.inset), band)
       }

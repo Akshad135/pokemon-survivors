@@ -1,5 +1,5 @@
-import { BOSS_PATTERNS, type BossPattern } from '../../data/bosses'
-import { ENEMIES, type EnemyDef } from '../../data/enemies'
+import { BOSS_PATTERNS, BOSS_PHASES, bossKit, type BossPattern } from '../../data/bosses'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../../data/enemies'
 import { TIERS } from '../../data/roster'
 import { isSummoner, SUMMONS, TRAITS, type TraitId } from '../../data/traits'
 import { SPIT_FLAVORS } from '../../game/spitters'
@@ -190,12 +190,42 @@ const attackText = (p: BossPattern, m: SiteMessages) => {
       if (p.leap) return m.patterns.leap(p.every, p.damage)
       return p.lead !== undefined ? m.patterns.path(p.count, p.every, p.damage) : m.patterns.strikesPlayer(p.count, p.every, p.damage)
     case 'ring':
-      return m.patterns.ring(p.count, p.every, p.damage)
+      return p.around !== undefined ? m.patterns.closing(p.count, p.every, p.damage) : m.patterns.ring(p.count, p.every, p.damage)
     case 'trail':
       return m.patterns.trail(p.ttl, p.damage)
     case 'volley':
       return m.patterns.volley(p.count, p.every, p.damage)
+    case 'beam':
+      return p.source === 'edge' ? m.patterns.lances(p.count, p.every, p.damage) : m.patterns.beam(p.count, p.every, p.damage)
+    case 'dash':
+      return m.patterns.dash(p.count, p.every, p.damage)
+    case 'dive':
+      return m.patterns.dive(p.every, p.damage)
+    case 'teleport':
+      return m.patterns.teleport(p.every, p.damage)
+    case 'blast':
+      return m.patterns.blast(p.safe, p.damage)
+    case 'cage':
+      return m.patterns.cage(p.every, p.damage)
+    case 'summon':
+      return m.patterns.summon(p.every)
   }
+}
+
+/**
+ * A boss's attacks for the guide and the Pokédex: a flat list, or for a boss
+ * with phases (`BOSS_PHASES`) one list per phase with its ultimate's steps
+ * (which come back with the ultimate, so they show its `every`).
+ */
+export const bossAttacks = (id: EnemyId, m: SiteMessages) => {
+  const phases = BOSS_PHASES[id]
+  if (!phases) return html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
+  return html`<ul class="list">${phases.map(
+    (ph, i) => html`<li><b>${m.patterns.phase(i, Math.round(ph.below * 100))}</b><ul class="list">
+      ${ph.patterns.map((p) => html`<li>${patternText(p, m)}</li>`)}
+      ${ph.ultimate && html`<li>${m.patterns.ultimate(ph.ultimate.move, ph.ultimate.every)} ${ph.ultimate.steps.map((s) => patternText({ ...s.pattern, every: ph.ultimate!.every }, m)).join('; ')}</li>`}
+    </ul></li>`,
+  )}</ul>`
 }
 
 /** When a gated attack fires (`PatternGate`): keeping away, under some HP, on harder difficulties. */
@@ -225,7 +255,7 @@ const legendSection = (id: LegendId, m: SiteMessages) => {
 
 const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessages) => {
   const e: EnemyDef = ENEMIES[entry.source.id]
-  const patterns = BOSS_PATTERNS[entry.source.id] ?? []
+  const kit = bossKit(entry.source.id)
   const s = m.pokedex.wildStats
   return html`<dl class="facts">
       ${e.tier !== undefined && html`<div><dt>${m.roster.tier}</dt><dd>${e.tier}</dd></div>`}
@@ -238,7 +268,7 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
     ${e.trait && html`<h3>${m.pokedex.behavior}</h3><p><b>${m.traits.names[e.trait]}.</b> ${traitText(e.trait, entry.source.id, m)}</p>`}
     <h3>${m.pokedex.appears}</h3>
     <ul class="list">${appearances(entry.source.id).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>
-    ${patterns.length > 0 && html`<h3>${m.pokedex.attacks}</h3><ul class="list">${patterns.map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`}
+    ${kit.length > 0 && html`<h3>${m.pokedex.attacks}</h3>${bossAttacks(entry.source.id, m)}`}
     ${isLegend(entry.source.id) && legendSection(entry.source.id, m)}
     ${entry.sprites.shiny && html`<p class="note">★ ${m.pokedex.shinyNote}</p>`}`
 }

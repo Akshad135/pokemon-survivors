@@ -1,4 +1,4 @@
-import type { BossStance } from '../../data/bosses'
+import type { BlastSafe, BossStance } from '../../data/bosses'
 import type { PlaceId, WingId } from '../../data/places'
 import type { LandmarkId } from '../../data/landmarks'
 import type { Drop } from '../../data/consumables'
@@ -183,6 +183,19 @@ export const sitePt = {
     far: 'se você ficar longe',
     below: (percent: number) => `abaixo de ${n(percent)}% do HP`,
     from: { normal: 'em todas as dificuldades', hard: 'no Difícil e no Pesadelo', nightmare: 'só no Pesadelo' } satisfies Record<Difficulty, string>,
+    // The phased bosses' primitives (`BossPattern`), their phases and ultimates.
+    beam: (count: number, every: number, damage: number) => `${count > 1 ? `${count} raios` : 'Raio'} saindo de si, com a linha piscando antes, a cada ${n(every)}s (${damage} de dano)`,
+    lances: (count: number, every: number, damage: number) => `${count} lanças paralelas cruzando a tela, o vão entre elas é seguro, a cada ${n(every)}s (${damage} de dano)`,
+    dash: (count: number, every: number, damage: number) => `Investida por uma faixa marcada${count > 1 ? `, ${count} seguidas` : ''}, a cada ${n(every)}s (${damage} de dano)`,
+    dive: (every: number, damage: number) => `Some e a sombra persegue você; ela para e ele cai ali, a cada ${n(every)}s (${damage} de dano)`,
+    teleport: (every: number, damage: number) => `Teleporta e cai num círculo marcado, a cada ${n(every)}s (${damage} de dano)`,
+    blast: (safe: BlastSafe, damage: number) =>
+      `Explosão em tudo (${damage} de dano), menos ${({ cover: 'atrás de uma rocha', dry: 'nas ilhas', near: 'colado nele', far: 'longe dele', spots: 'nos abrigos marcados' } satisfies Record<BlastSafe, string>)[safe]}`,
+    cage: (every: number, damage: number) => `Prende você num círculo de chamas ou pedras, a cada ${n(every)}s (${damage} de dano)`,
+    closing: (count: number, every: number, damage: number) => `Anel de ${count} projéteis fechando em você, com uma saída, a cada ${n(every)}s (${damage} de dano)`,
+    summon: (every: number) => `Chama ajudantes a cada ${n(every)}s`,
+    phase: (i: number, percent: number) => (i === 0 ? 'Fase 1' : `Fase ${i + 1} (abaixo de ${n(percent)}% do HP)`),
+    ultimate: (move: string, every: number) => `Golpe supremo ${move}, a cada ${n(every)}s:`,
   },
 
   /** The legendary trios a run draws from (`TRIOS`), and `either` to name who may come. */
@@ -496,7 +509,7 @@ export const sitePt = {
       paragraphs: (r: BossRules) => [
         'Os chefes chegam em horários fixos. Os lendários entram com flash na tela, cry e um aviso. Todos têm uma barra de HP no topo e ataques próprios: os círculos marcados no chão avisam onde o golpe vai cair, então saia de dentro deles.',
         `Cada chefe alterna entre dois jeitos de lutar a cada ${r.stance[0]} a ${r.stance[1]} segundos: de perto, ele avança rápido e bate em área ao redor de si; de longe, para a alguns passos e mira em você. Abaixo de ${n(r.below * 100)}% do HP ele fica furioso (contorno vermelho, cry e flash na tela): ${n(Math.round((r.speed - 1) * 100))}% mais rápido, ataca ${n(Math.round((1 - r.wait) * 100))}% mais seguido e, ${n(r.chain * 100)}% das vezes, emenda um segundo ataque logo depois do primeiro.`,
-        `Ficar parado não funciona: cada chefe mira onde você está ou no caminho por onde você vai, e quem foge para longe leva um salto ou uma rajada mirada. A fúria também libera um ataque novo. No Difícil os chefes atacam ${n(Math.round((1 - r.press.hard.pace) * 100))}% mais seguido, com ${n(Math.round((r.press.hard.more - 1) * 100))}% mais projéteis e avisos um pouco mais curtos, e furiosos emendam ${n(r.press.hard.chain * 100)}% das vezes; no Pesadelo, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% mais seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% mais projéteis, ${n(r.press.nightmare.chain * 100)}% de emendas e um ataque a mais cada um. Do Difícil para cima, Mewtwo tem uma segunda fase abaixo de 40% do HP.`,
+        `Ficar parado não funciona: cada chefe mira onde você está ou no caminho por onde você vai, e quem foge para longe leva um salto ou uma rajada mirada. A fúria também libera um ataque novo. No Difícil os chefes atacam ${n(Math.round((1 - r.press.hard.pace) * 100))}% mais seguido, com ${n(Math.round((r.press.hard.more - 1) * 100))}% mais projéteis e avisos um pouco mais curtos, e furiosos emendam ${n(r.press.hard.chain * 100)}% das vezes; no Pesadelo, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% mais seguido, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% mais projéteis, ${n(r.press.nightmare.chain * 100)}% de emendas e um ataque a mais cada um. Os lendários do mapa (o trio, o mítico, Mewtwo e Arceus) lutam em três fases, marcadas na barra de HP: cada fase traz um jeito novo de se mover (voo com sombra, investidas, teleporte, cerco) e a última, um golpe supremo com um lugar seguro marcado (abrigos, o vão entre as lanças, a saída de um anel, longe ou colado no chefe). Do Difícil para cima, a última fase do Mewtwo ainda salta e dispara rajadas largas.`,
         'Chefes não ficam mais fortes com o tempo, mas cada um solta uma Poké Ball e uma chuva de Poké Dollars.',
         `Nos primeiros ${r.window}s de cada chefe, com ele por perto, nascem só ${n(r.fight * 100)}% dos inimigos comuns, então a luta é com ele; depois a horda volta. Cada chefe tem até o próximo chegar: se ainda estiver de pé quando o seguinte aparecer, ele foge e não deixa nada. Mewtwo é o último: ao chegar, empurra a horda para longe e, enquanto ele estiver de pé, nascem só ${n(r.finale * 100)}% dos inimigos comuns, então a luta é desviar dos ataques dele.`,
       ],

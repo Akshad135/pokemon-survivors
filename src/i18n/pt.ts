@@ -4,6 +4,7 @@ import type { PlaceId, WingId } from '../data/places'
 import type { LandmarkId, TreasureLandmark } from '../data/landmarks'
 import type { PokeType } from '../data/types'
 import type { RiftLegend } from '../data/rifts'
+import type { WaveLegend } from '../data/legendBosses'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
 import type { LegendId } from '../data/legends'
@@ -4270,6 +4271,41 @@ export const pt = {
     rule: (need: number) => (need === 1 ? 'Vença-o 1 vez como chefe, em qualquer modo, para capturá-lo.' : `Vença-o ${need} vezes como chefe, em qualquer modo, para capturá-lo.`),
     shinyRule: 'Vencer um shiny na vitória da captura, ou depois, libera a forma shiny.',
     selectNote: 'Lendários jogam o *Modo Lendário*: ranking próprio, horda mais forte, despertares no Nv 12 e 28.',
+  },
+  /** Wave legendaries on the map (`data/legendBosses.ts`): the epithet on each one's title card, and a line per phase after the first. */
+  legends: {
+    epithets: {
+      articuno: 'Ave do Gelo Eterno',
+      zapdos: 'Senhor do Trovão',
+      moltres: 'Chama Imortal',
+      raikou: 'Fera do Raio',
+      entei: 'Fera dos Vulcões',
+      suicune: 'Vento do Norte',
+      regirock: 'Colosso de Pedra',
+      regice: 'Colosso de Gelo',
+      registeel: 'Colosso de Aço',
+      mew: 'Ancestral de Todos',
+      celebi: 'Viajante do Tempo',
+      jirachi: 'Estrela dos Desejos',
+      mewtwo: 'Fúria Genética',
+      arceus: 'O Primeiro de Todos',
+    } satisfies Record<WaveLegend, string>,
+    phases: {
+      articuno: ['*Articuno* alça voo! Fuja da _sombra_ dele.', 'Uma nevasca! Corra para um _abrigo de neve_ antes do Snowscape.'],
+      zapdos: ['*Zapdos* investe com Drill Peck: saia da _faixa marcada_!', 'O chão eletrifica! _Fuja de perto_ do Zapdos no Electric Terrain.'],
+      moltres: ['*Moltres* alça voo! A _sombra_ dele queima.', 'O ar ferve! Só _colado no Moltres_ você escapa do Overheat.'],
+      raikou: ['*Raikou* dispara com Extreme Speed: saia das _faixas_!', 'Thunderclap! Ache o _vão entre as lanças_.'],
+      entei: ['*Entei* investe em chamas: saia da _faixa_!', 'Burning Bulwark! Preso no fogo, _desvie dentro do círculo_.'],
+      suicune: ['*Suicune* desliza sobre o campo: saia da _faixa_!', 'Aqua Ring! Os anéis fecham: saia pela _abertura_.'],
+      regirock: ['*Regirock* prende você em Rock Tomb!', 'Rock Wrecker! Saia da _linha de mira_ das rochas.'],
+      regice: ['*Regice* fecha anéis de Icy Wind: ache a _saída_!', 'Glaciate! _Fuja_ do gelo perto dele, depois _volte_ para perto.'],
+      registeel: ['*Registeel* investe com Iron Head: saia da _faixa_!', 'Metal Burst! Ache o _vão entre as lanças_.'],
+      mew: ['*Mew* teleporta em cima de você: fuja do _círculo_!', 'Ancient Power! As pedras fecham: saia pela _abertura_.'],
+      celebi: ['*Celebi* viaja no tempo e foge de você!', 'Magical Leaf! As folhas te seguem: _mude de direção_.'],
+      jirachi: ['*Jirachi* teleporta em cima de você: fuja do _círculo_!', 'Wish! Uma chuva de estrelas: ache os _vãos_.'],
+      mewtwo: ['*Mewtwo* libera o poder psíquico! Fuja do _círculo_ do Teleport.', 'Psystrike! Passe pelos _vãos_ e corra para um _abrigo_.'],
+      arceus: ['*Arceus* teleporta para julgar você!', 'Judgment! Só os _abrigos de luz_ te salvam.'],
+    } satisfies Record<WaveLegend, readonly [string, string]>,
   },
 } satisfies ContentTexts & Record<string, unknown>
 

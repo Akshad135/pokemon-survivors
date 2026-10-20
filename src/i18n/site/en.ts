@@ -1,3 +1,4 @@
+import type { BlastSafe } from '../../data/bosses'
 import type { SiteMessages } from './pt'
 
 /** Number in English format (`1,250`, `0.75`). */
@@ -155,6 +156,18 @@ export const siteEn: SiteMessages = {
     far: 'if you keep away',
     below: (percent: number) => `under ${n(percent)}% HP`,
     from: { normal: 'on every difficulty', hard: 'on Hard and Nightmare', nightmare: 'on Nightmare only' },
+    beam: (count: number, every: number, damage: number) => `${count > 1 ? `${count} beams` : 'A beam'} out of itself, its line blinking first, every ${n(every)}s (${damage} damage)`,
+    lances: (count: number, every: number, damage: number) => `${count} parallel lances across the screen, the gaps between them safe, every ${n(every)}s (${damage} damage)`,
+    dash: (count: number, every: number, damage: number) => `Charges down a marked lane${count > 1 ? `, ${count} in a row` : ''}, every ${n(every)}s (${damage} damage)`,
+    dive: (every: number, damage: number) => `Vanishes while its shadow chases you; it stops and it lands there, every ${n(every)}s (${damage} damage)`,
+    teleport: (every: number, damage: number) => `Teleports and lands on a marked circle, every ${n(every)}s (${damage} damage)`,
+    blast: (safe: BlastSafe, damage: number) =>
+      `A blast over everything (${damage} damage), except ${({ cover: 'behind a rock', dry: 'on the islands', near: 'right next to it', far: 'far from it', spots: 'in the marked shelters' } satisfies Record<BlastSafe, string>)[safe]}`,
+    cage: (every: number, damage: number) => `Shuts you in a circle of flames or rocks, every ${n(every)}s (${damage} damage)`,
+    closing: (count: number, every: number, damage: number) => `Ring of ${count} projectiles closing on you, with one way out, every ${n(every)}s (${damage} damage)`,
+    summon: (every: number) => `Calls helpers every ${n(every)}s`,
+    phase: (i: number, percent: number) => (i === 0 ? 'Phase 1' : `Phase ${i + 1} (under ${n(percent)}% HP)`),
+    ultimate: (move: string, every: number) => `Ultimate ${move}, every ${n(every)}s:`,
   },
 
   trios: {
@@ -466,7 +479,7 @@ export const siteEn: SiteMessages = {
       paragraphs: (r) => [
         'Bosses arrive at fixed times. Legendaries make an entrance with a screen flash, their cry and a banner. All of them get an HP bar at the top and their own attacks: marked circles on the ground show where a hit will land, so step out of them.',
         `Each boss switches between two ways of fighting every ${r.stance[0]} to ${r.stance[1]} seconds: up close, it rushes in and slams the area around itself; at range, it stops a few steps away and aims at you. Under ${n(r.below * 100)}% HP it enrages (red outline, cry and a screen flash): ${n(Math.round((r.speed - 1) * 100))}% faster, ${n(Math.round((1 - r.wait) * 100))}% less time between attacks and, ${n(r.chain * 100)}% of the time, a second attack right after the first.`,
-        `Standing still doesn't work: every boss aims where you stand or along the path you're taking, and running far away earns you a leap or an aimed volley. Enraging also unlocks a new attack. On Hard bosses attack ${n(Math.round((1 - r.press.hard.pace) * 100))}% more often, with ${n(Math.round((r.press.hard.more - 1) * 100))}% more projectiles and slightly shorter warnings, and chain ${n(r.press.hard.chain * 100)}% of the time when enraged; on Nightmare, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% more often, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% more projectiles, ${n(r.press.nightmare.chain * 100)}% chains and one extra attack each. From Hard up, Mewtwo has a second phase under 40% HP.`,
+        `Standing still doesn't work: every boss aims where you stand or along the path you're taking, and running far away earns you a leap or an aimed volley. Enraging also unlocks a new attack. On Hard bosses attack ${n(Math.round((1 - r.press.hard.pace) * 100))}% more often, with ${n(Math.round((r.press.hard.more - 1) * 100))}% more projectiles and slightly shorter warnings, and chain ${n(r.press.hard.chain * 100)}% of the time when enraged; on Nightmare, ${n(Math.round((1 - r.press.nightmare.pace) * 100))}% more often, ${n(Math.round((r.press.nightmare.more - 1) * 100))}% more projectiles, ${n(r.press.nightmare.chain * 100)}% chains and one extra attack each. The legendaries on the map (the trio, the mythical, Mewtwo and Arceus) fight in three phases, ticked on the HP bar: each phase brings a new way to move (flying with a shadow, charges, teleports, cages) and the last one an ultimate with a marked safe spot (shelters, the gap between lances, a ring's way out, far from or right next to the boss). From Hard up, Mewtwo's last phase also leaps and fires wide volleys.`,
         'Bosses don\'t get tougher over time, and each one drops a Poké Ball and a shower of Poké Dollars.',
         `For each boss's first ${r.window}s, while it's nearby, only ${n(r.fight * 100)}% of the regular enemies spawn, so the fight is with it; then the horde comes back. Each boss has until the next one arrives: if it's still standing when the next boss shows up, it flees and leaves nothing behind. Mewtwo is the last one: it blasts the horde away when it arrives and, while it stands, only ${n(r.finale * 100)}% of the regular enemies spawn, so the fight is about dodging its attacks.`,
       ],

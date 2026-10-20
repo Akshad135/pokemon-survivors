@@ -24,6 +24,7 @@ import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
 import { alphaDown } from './alphas'
 import { holdsOn, phaseTaken } from './bossFight'
+import { legendFell } from './legendScene'
 import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
@@ -184,9 +185,14 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
     dropBossTm(g, e)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
+    // A wave legendary's capture plays where it fell; Mewtwo's victory waits for it.
+    const captured = legendFell(g, e)
     if (e.kind === 'mewtwo') {
-      g.phase = 'victory'
-      g.events.push({ kind: 'victory' })
+      if (captured && g.legendScene) g.legendScene.then = 'victory'
+      else {
+        g.phase = 'victory'
+        g.events.push({ kind: 'victory' })
+      }
     }
   } else if (chance(g.rng, ENEMY_BERRY_CHANCE * share)) {
     dropPickup(g, e.x + 6, e.y, 'berry')

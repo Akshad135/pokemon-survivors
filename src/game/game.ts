@@ -57,6 +57,7 @@ import { roomOf } from './room'
 import { SKY } from '../data/places'
 import { updateArena, updateArenaFall } from './riftArena'
 import { domainCamera, updateDomainScene } from './domain'
+import { updateLegendScene } from './legendScene'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
@@ -211,6 +212,7 @@ export const createGame = (
     prize: null,
     legend: createLegendState(starter),
     now: 0,
+    legendScene: null,
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -533,9 +535,10 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   // The Mega Evolution plays with the world held still, and so does a dungeon floor's title card.
   if (updateMegaIntro(g, dt)) return
   if (updatePlaceIntro(g, dt)) return
-  // So does the rift throwing a fainted player back out, or a rescue out of a place, and a domain's encounter and capture scenes.
+  // So does the rift throwing a fainted player back out, or a rescue out of a place, a domain's encounter and capture scenes and a wave legendary's.
   if (updateArenaFall(g, dt)) return
   if (updateDomainScene(g, dt)) return
+  if (updateLegendScene(g, dt)) return
   if (updatePlaceFall(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
