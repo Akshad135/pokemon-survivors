@@ -336,7 +336,7 @@ export const en: Messages = {
     place: { day: 'today', week: 'this week', all: 'all time' },
     queued: 'Offline: the run joins the ranking once you are back online.',
     rejected: "This run didn't make it into the ranking.",
-    unranked: 'This run is off the ranking because it started offline.',
+    unranked: 'This run is off the ranking: it started offline, or with the game open in another tab or device.',
     guest: 'Sign in to show up on the ranking.',
     noHandle: 'Create your profile on the account screen to show up on the ranking.',
     open: 'Ranking',

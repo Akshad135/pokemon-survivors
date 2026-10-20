@@ -1,4 +1,5 @@
-import { challengeProblem } from '../../src/game/challenge'
+import { randomInt } from 'node:crypto'
+import { challengeProblem, dailyChallenge } from '../../src/game/challenge'
 import type { DayKey } from '../../src/game/day'
 import type { Difficulty } from '../../src/game/difficulty'
 import { dexCounts } from '../../src/game/dex'
@@ -10,6 +11,7 @@ import {
   clockAllows,
   freeHandle,
   RANKED,
+  reportProblem,
   type Board,
   type BoardEntry,
   type ChallengeBoard,
@@ -31,8 +33,11 @@ import type { Sql } from './db'
 /** Which board: a difficulty and a period, optionally one Pokémon or only the friends of `viewer`. */
 export type BoardQuery = { difficulty: Difficulty; period: BoardPeriod; starter: PlayableId | null; friends: boolean; viewer: string | null }
 
-/** Why a run's end was refused. `challenge`: a challenge run whose replay isn't its day's challenge (or came without one). */
-export type FinishError = 'unknown' | 'mismatch' | 'clock' | 'challenge'
+/**
+ * Why a run's end was refused. `challenge`: a challenge run whose replay isn't its day's challenge (or came without one).
+ * `seed`: a replay of another seed than the one dealt with the token. `replaced`: a newer start token took its place.
+ */
+export type FinishError = 'unknown' | 'replaced' | 'mismatch' | 'seed' | 'clock' | 'challenge'
 
 /** A run's end that went in, with its challenge day and whether it's the official attempt (null for any other run). */
 export type Finished = { ok: true; challenge: DayKey | null; official: boolean | null }
@@ -131,37 +136,80 @@ export const rankingStore = (sql: Sql) => {
     },
 
     /**
-     * A start token: the id of a new run row. Null when the player started too
-     * many runs lately. Old tokens that never finished are dropped on the way.
+     * A start token (the id of a new run row) and the seed its run must play:
+     * the day's challenge seed for a Desafio do dia run, else a random one.
+     * Null when the player started too many runs lately. The player's other
+     * unfinished tokens of the same kind (regular or challenge) are replaced,
+     * so nobody holds two seeds to pick from; replaced rows still count for the
+     * rate limit. Old tokens that never finished are dropped on the way.
      */
     startRun: async (userId: string, challenge: DayKey | null = null) => {
       await touchUser(userId)
-      const [recent] = await sql<{ n: number }[]>`
-        select count(*)::int as n from runs where user_id = ${userId} and started_at > now() - make_interval(secs => ${RANKED.window})`
-      if ((recent?.n ?? 0) >= RANKED.startsPerWindow) return null
-      await sql`delete from runs where user_id = ${userId} and finished_at is null and started_at < now() - make_interval(days => ${RANKED.tokenDays})`
-      const [row] = await sql<{ id: string }[]>`insert into runs (user_id, challenge) values (${userId}, ${challenge}::date) returning id`
-      return row!.id
+      return sql.begin(async (tx) => {
+        // Two starts at once take turns, so neither misses the other's token (nor the rate limit).
+        await tx`select pg_advisory_xact_lock(hashtextextended(${`runs:${userId}`}, 0))`
+        const [recent] = await tx<{ n: number }[]>`
+          select count(*)::int as n from runs where user_id = ${userId} and started_at > now() - make_interval(secs => ${RANKED.window})`
+        if ((recent?.n ?? 0) >= RANKED.startsPerWindow) return null
+        await tx`delete from runs where user_id = ${userId} and finished_at is null and started_at < now() - make_interval(days => ${RANKED.tokenDays})`
+        await tx`
+          update runs set replaced_at = now()
+          where user_id = ${userId} and finished_at is null and replaced_at is null and (challenge is null) = ${challenge === null}`
+        const seed = challenge ? dailyChallenge(challenge).seed : randomInt(0, RANKED.seedSpan)
+        const [row] = await tx<{ id: string }[]>`insert into runs (user_id, challenge, seed) values (${userId}, ${challenge}::date, ${seed}) returning id`
+        return { token: row!.id, seed }
+      })
+    },
+
+    /**
+     * Moves the clock of `token`'s run to now, as it really starts (the game
+     * asks for its token ahead, on the menus). It only ever shortens the time
+     * the run may last, so the game needn't be trusted with it. `replaced` when
+     * a newer token took its place: that run can't report.
+     */
+    stampRun: async (userId: string, token: string): Promise<'ok' | 'unknown' | 'replaced'> => {
+      if (!UUID.test(token)) return 'unknown'
+      const [row] = await sql<{ replaced: boolean }[]>`
+        update runs set started_at = case when replaced_at is null then now() else started_at end
+        where id = ${token} and user_id = ${userId} and finished_at is null
+        returning replaced_at is not null as replaced`
+      return !row ? 'unknown' : row.replaced ? 'replaced' : 'ok'
     },
 
     /**
      * Records how the run of `token` ended, if the wall clock since the token
      * allows that much play (`clockAllows`). A victory that goes on into endless
      * mode ends again later: the same run may only grow, on the same Pokémon and level.
+     * The replay must play the seed dealt with the token (`reportProblem`), and a replaced token can't report.
      * A challenge run must bring its day's challenge as its replay (`challengeProblem`);
      * the first one of the player's day to finish is their official attempt.
      */
     finishRun: (userId: string, token: string, result: RunResult, replay: Replay): Promise<Finished | { ok: false; error: FinishError }> =>
       sql.begin(async (tx) => {
         if (!UUID.test(token)) return { ok: false, error: 'unknown' } as const
-        const [run] = await tx<{ elapsed: number; finished: boolean; starter: string | null; difficulty: string | null; survived: number | null; challenge: DayKey | null; official: boolean | null }[]>`
-          select extract(epoch from now() - started_at)::float8 as elapsed, finished_at is not null as finished, starter, difficulty, survived,
-            challenge::text as challenge, official
+        const [run] = await tx<
+          {
+            elapsed: number
+            finished: boolean
+            replaced: boolean
+            seed: number | null
+            starter: PlayableId
+            difficulty: Difficulty
+            survived: number
+            outcome: RunResult['outcome']
+            challenge: DayKey | null
+            official: boolean | null
+          }[]
+        >`
+          select extract(epoch from now() - started_at)::float8 as elapsed, finished_at is not null as finished, replaced_at is not null as replaced,
+            seed::float8 as seed, starter, difficulty, survived, outcome, challenge::text as challenge, official
           from runs where id = ${token} and user_id = ${userId} for update`
         if (!run) return { ok: false, error: 'unknown' } as const
-        if (run.finished && (run.starter !== result.starter || run.difficulty !== result.difficulty || (run.survived ?? 0) > result.time)) {
-          return { ok: false, error: 'mismatch' } as const
-        }
+        if (run.replaced) return { ok: false, error: 'replaced' } as const
+        // An unfinished row has no report yet (those columns are null).
+        const reported = run.finished ? { starter: run.starter, difficulty: run.difficulty, time: run.survived, outcome: run.outcome } : null
+        const problem = reportProblem({ seed: run.seed, reported }, result, replay.start.seed)
+        if (problem) return { ok: false, error: problem } as const
         if (!clockAllows(run.elapsed, result.time)) return { ok: false, error: 'clock' } as const
         if (run.challenge && challengeProblem(replay.start, run.challenge)) return { ok: false, error: 'challenge' } as const
         let official = run.official
