@@ -93,6 +93,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'O jogo não fecha mais no iPhone', en: 'No more closing on iPhone', es: 'El juego ya no se cierra en iPhone' },
+        notes: [
+          {
+            pt: 'Em alguns iPhones o jogo fechava sozinho segundos depois de começar uma partida: ele preparava de uma vez o brilho de golpe de todos os Pokémon carregados e passava do limite de memória do aparelho. Agora cada um é preparado só quando leva o primeiro golpe, com bem menos memória.',
+            en: "On some iPhones the game closed by itself seconds into a run: it prepared the hit flash of every loaded Pokémon at once and went past the device's memory limit. Now each one is prepared only when it takes its first hit, with far less memory.",
+            es: 'En algunos iPhones el juego se cerraba solo segundos después de empezar una partida: preparaba de una vez el destello de golpe de todos los Pokémon cargados y pasaba el límite de memoria del aparato. Ahora cada uno se prepara solo cuando recibe su primer golpe, con mucha menos memoria.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Convide amigos', en: 'Invite friends', es: 'Invita amigos' },
         notes: [
           {
