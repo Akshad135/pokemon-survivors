@@ -10,8 +10,7 @@ import * as dm from '../engine/dmath'
  * state, so the guide and the tests can read them directly.
  */
 
-/** Map event Pokémon, also listed in `scripts/dex.mjs` (CRITTERS). */
-export const MEOWTH_DEX = 52
+export { MEOWTH_DEX } from '../data/species'
 
 /** Event director: first spawn, gap between spawns and how crowded the map may get. */
 export const DIRECTOR = {
