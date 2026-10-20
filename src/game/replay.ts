@@ -8,7 +8,7 @@ import { continueEndless } from './endlessSystem'
 import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
 import { UPGRADE_IDS, UPGRADES, type Ranks } from './meta'
 import { isRecord, wholeNumber } from './parse'
-import { OUTBREAK_SPECIES, withOutbreak } from './outbreak'
+import { isOutbreakSpecies, withOutbreak } from './outbreak'
 import { biomeWeight, drawRoster } from './roster'
 import type { Game } from './types'
 
@@ -28,7 +28,9 @@ export const TICK = 1 / 60
  * Version of the rules a replay plays by. Bump it with any change that makes
  * the same inputs end somewhere else (balance, spawns, boss rules, a new
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
- * Replays from before the field existed are rules 1.
+ * Replays from before the field existed are rules 1. `rulesGuard.test.ts`
+ * pins where a few scripted replays end under this version and fails when the
+ * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
 export const RULES_VERSION = 22
 
@@ -157,8 +159,6 @@ export const VIEW_LIMIT = { short: 600, long: 2048 } as const
 export const parseView = (w: unknown, h: unknown) =>
   isWhole(w) && isWhole(h) && w > 0 && h > 0 && Math.min(w, h) <= VIEW_LIMIT.short && Math.max(w, h) <= VIEW_LIMIT.long ? { w, h } : null
 
-const isOutbreakSpecies = (v: unknown): v is EnemyId => OUTBREAK_SPECIES.some((id) => id === v)
-
 const parseEvent = (raw: unknown): ReplayEvent | null => {
   if (!Array.isArray(raw) || !isWhole(raw[0])) return null
   const [tick, kind, a, b] = raw
@@ -249,7 +249,8 @@ const applyEvent = (g: Game, e: ReplayEvent) => {
 
 /**
  * How a re-simulated run ended. `stuck`: its replay ran out on a level-up,
- * waiting on a pick it doesn't make. `branch`: the branching evolution it
+ * waiting on a pick it doesn't make (a run quit there; the API only logs
+ * it, `server/src/checks.ts`). `branch`: the branching evolution it
  * took, which the boards trust over the one the game reported.
  */
 export type Resimulated = { time: number; kills: number; level: number; branch: Game['branch']; phase: Game['phase']; stuck: boolean }

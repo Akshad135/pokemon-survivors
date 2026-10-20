@@ -33,8 +33,29 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
       { pt: 'Viu uma partida impossível no ranking? Toque na bandeira ao lado dela para denunciar.', en: 'Saw an impossible run on the ranking? Tap the flag next to it to report it.', es: '¿Viste una partida imposible en el ranking? Toca la bandera a su lado para denunciarla.' },
       { pt: 'Nome ofensivo ou save editado: denuncie o treinador direto no perfil dele.', en: 'An offensive name or an edited save: report the trainer right from their profile.', es: 'Nombre ofensivo o partida guardada editada: denuncia al entrenador desde su perfil.' },
       { pt: 'A equipe olha cada denúncia e tira do ranking quem trapaceia.', en: 'The team looks at every report and takes cheaters off the ranking.', es: 'El equipo revisa cada denuncia y saca del ranking a quien hace trampa.' },
+      { pt: 'Partidas honestas não saem mais do ranking por um erro nosso na conferência.', en: 'Honest runs no longer leave the ranking over a mistake of ours in the check.', es: 'Las partidas honestas ya no salen del ranking por un error nuestro en la revisión.' },
     ],
     changes: [
+      {
+        title: { pt: 'Ranking mais confiável', en: 'A more reliable ranking', es: 'Ranking más confiable' },
+        notes: [
+          {
+            pt: 'A conferência das partidas do ranking tirava algumas partidas honestas: as jogadas numa versão anterior do jogo, depois de uma atualização que mudou as regras, e as que terminaram com a tela de level-up aberta. As duas coisas foram corrigidas, e agora o próprio jogo avisa a equipe antes que uma atualização mude as regras sem cuidado.',
+            en: 'The check of ranked runs was taking some honest runs off: the ones played on an older version of the game after an update changed the rules, and the ones that ended with the level-up screen open. Both are fixed, and the game now warns the team before an update changes the rules by accident.',
+            es: 'La revisión de las partidas del ranking sacaba algunas partidas honestas: las jugadas en una versión anterior del juego, después de una actualización que cambió las reglas, y las que terminaron con la pantalla de subida de nivel abierta. Las dos cosas están corregidas, y ahora el propio juego avisa al equipo antes de que una actualización cambie las reglas sin querer.',
+          },
+          {
+            pt: 'Com a data do aparelho errada, uma partida do ranking podia jogar o Surto de outro dia e sair do ranking. Agora o servidor diz ao jogo qual é o Surto de hoje.',
+            en: "With the device's date wrong, a ranked run could play another day's Outbreak and leave the ranking. Now the server tells the game which Outbreak is today's.",
+            es: 'Con la fecha del dispositivo mal, una partida del ranking podía jugar el Brote de otro día y salir del ranking. Ahora el servidor le dice al juego cuál es el Brote de hoy.',
+          },
+          {
+            pt: 'Tentar de novo, tocado depois de abrir o ranking ou o cartão de compartilhar nos resultados, começava duas partidas de uma vez, e a que ficava saía do ranking. Agora começa uma só.',
+            en: 'Try again, tapped after opening the ranking or the share card on the results, started two runs at once, and the one that stayed was off the ranking. Now it starts just one.',
+            es: 'Reintentar, tocado después de abrir el ranking o la tarjeta para compartir en los resultados, empezaba dos partidas a la vez, y la que quedaba salía del ranking. Ahora empieza una sola.',
+          },
+        ],
+      },
       {
         title: { pt: 'Denúncias', en: 'Reports', es: 'Denuncias' },
         notes: [
