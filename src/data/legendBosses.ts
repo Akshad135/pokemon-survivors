@@ -898,13 +898,13 @@ const arceus: readonly BossPhase[] = [
     patterns: [
       { kind: 'strikes', every: 3.2, target: 'player', count: 7, spread: 100, radius: 16, delay: 1, damage: 45, visual: 'judgment', plate: true },
       { kind: 'ring', every: 5, count: 24, speed: 80, radius: 5, damage: 40, visual: 'judgment' },
-      { kind: 'teleport', every: 9.5, to: 'player', windup: 1, radius: 34, damage: 45, visual: 'judgment' },
+      { kind: 'teleport', every: 12, to: 'player', windup: 1, radius: 34, damage: 40, visual: 'judgment' },
     ],
     ultimate: {
       move: 'Hyper Beam',
       first: 1.5,
       every: 18,
-      steps: [{ at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 1, spread: 0, sweep: 2, windup: 1.3, duration: 1.6, width: 18, length: 360, damage: 40, visual: 'judgment' } }],
+      steps: [{ at: 0, pattern: { kind: 'beam', every: 0, source: 'boss', count: 1, spread: 0, sweep: 2, windup: 1.3, duration: 1.6, width: 18, length: 360, damage: 32, visual: 'judgment' } }],
     },
   },
   {
@@ -915,8 +915,8 @@ const arceus: readonly BossPhase[] = [
     patterns: [
       { kind: 'strikes', every: 3, target: 'player', count: 7, spread: 100, radius: 16, delay: 1, damage: 45, visual: 'judgment', plate: true },
       { kind: 'ring', every: 4.5, count: 24, speed: 80, radius: 5, damage: 40, visual: 'judgment' },
-      { kind: 'teleport', every: 9.5, to: 'player', windup: 1, radius: 34, damage: 45, visual: 'judgment' },
-      { ...lances('judgment', 4, 1.2, 40, 6.5), plate: true },
+      { kind: 'teleport', every: 12, to: 'player', windup: 1, radius: 34, damage: 40, visual: 'judgment' },
+      { ...lances('judgment', 3, 1.2, 36, 8), plate: true },
     ],
     ultimate: {
       move: 'Judgment',
