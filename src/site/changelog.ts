@@ -193,6 +193,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Instagram oficial', en: 'Official Instagram', es: 'Instagram oficial' },
+        notes: [
+          {
+            pt: 'O jogo também está no Instagram, @pokemonsurvivors, com Reels e carrosséis do jogo. Ele fica ao lado do TikTok e do YouTube no lobby e em Ajustes → Sobre.',
+            en: 'The game is on Instagram too, @pokemonsurvivors, with Reels and carousels of the game. It sits beside TikTok and YouTube in the lobby and in Settings → About.',
+            es: 'El juego también está en Instagram, @pokemonsurvivors, con Reels y carruseles del juego. Está junto a TikTok y YouTube en el lobby y en Ajustes → Acerca de.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Normal ou Shiny, você escolhe', en: 'Normal or Shiny, your call', es: 'Normal o Shiny, tú eliges' },
         notes: [
           {

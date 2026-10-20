@@ -3716,6 +3716,23 @@ button {
   text-transform: uppercase;
 }
 
+/* Instagram: its purple on the frame, its pink on the name with the gradient's orange as an echo. */
+.lobby-social.instagram {
+  border-color: #4a1248;
+  --frame: #833ab4;
+}
+
+.lobby-social.instagram:hover,
+.lobby-social.instagram.selected {
+  --frame: #e83838;
+}
+
+.lobby-social.instagram .lobby-invites-text b {
+  color: #c13584;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 #fcaf45;
+}
+
 /* The partner on stage, over its name plate (canvas sized by `partnerStage`). */
 .lobby-partner {
   display: flex;
@@ -4066,13 +4083,18 @@ button {
   }
   .lobby-community {
     flex-direction: row;
+    gap: 6px;
   }
   .lobby-community .lobby-discord-card {
     flex: 1;
   }
+  /* Three profile icons leave Discord little room: its "Join the server" breaks onto a second line instead of losing its end. */
+  .lobby-community .lobby-discord-card .lobby-invites-row {
+    white-space: normal;
+  }
   .lobby-social {
     flex: none;
-    padding: 9px;
+    padding: 6px;
   }
   .lobby-social .lobby-invites-text {
     display: none;
@@ -4118,16 +4140,6 @@ button {
   }
 }
 
-/* The narrowest phones: tighter profile icons, so Discord's "Join the server" still fits beside them. */
-@media (max-width: 340px) {
-  .lobby-community {
-    gap: 6px;
-  }
-  .lobby-social {
-    padding: 6px;
-  }
-}
-
 /* Small phones in landscape hold Discord and the profiles in the top bar: the wallet drops its coin (₽ says it) and the buttons sit closer. */
 @media (max-height: 500px) and (orientation: landscape) and (max-width: 620px) {
   .title-home .shell-top,
@@ -4136,6 +4148,16 @@ button {
   }
   .title-home .shell-wallet img {
     display: none;
+  }
+}
+
+/* With Discord and three profiles in the top bar, phones up to 700 px in landscape show the Trainer chip as its avatar (as the narrowest portrait phones do), so the wallet never rides over it. */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 700px) {
+  .title-home .trainer-chip .trainer-chip-who {
+    display: none;
+  }
+  .title-home .trainer-chip {
+    min-width: 0;
   }
 }
 
