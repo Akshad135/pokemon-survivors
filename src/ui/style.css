@@ -12398,3 +12398,72 @@ button.hall-tile:hover {
     font-size: 16px;
   }
 }
+
+/* ---------------- Epic rifts ---------------- */
+
+/* A boss with phases: a notch on its HP bar at each phase's threshold. */
+.boss-bar {
+  position: relative;
+}
+
+.boss-tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  margin-left: -1px;
+  background: #f8f0c8;
+  box-shadow: 0 0 0 1px #101018;
+}
+
+/* The encounter's title card: the legendary's name and epithet over a dark band. */
+.legend-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58%;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 8px;
+  background: linear-gradient(transparent, rgba(4, 8, 24, 0.82) 25%, rgba(4, 8, 24, 0.82) 75%, transparent);
+  color: #fff;
+  font-family: var(--title);
+  text-align: center;
+  pointer-events: none;
+  animation: legend-title-in 0.5s steps(5);
+}
+
+.legend-title.hidden {
+  display: none;
+}
+
+.legend-title b {
+  font-size: clamp(20px, 6vw, 40px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f8f8ff;
+  text-shadow: 3px 3px 0 #1c3c78;
+}
+
+.legend-title span {
+  font-size: clamp(11px, 2.8vw, 18px);
+  color: #f8d878;
+}
+
+@keyframes legend-title-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+}
+
+/* A legendary's ultimate: its move's name, big. */
+.toast-ultimate {
+  font-family: var(--title);
+  font-size: 14px;
+  color: #f8e070;
+  letter-spacing: 0.06em;
+}

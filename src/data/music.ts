@@ -534,6 +534,79 @@ const tower: Score = {
   },
 }
 
-export const THEMES = { menu, run, boss, forest, cave, snow, tower } as const satisfies Record<string, Score>
+
+/** Rolling waves under Kyogre: a long swell on the root, up to the fifth and the octave, and back down. */
+const swell = (root: string, fifth: string, octave: string) => `${root}:3 ${root} ${fifth}:2 ${octave}:3 ${fifth}:3 ${root}:2`
+
+/** Kyogre's domain (Primordial Sea): a storm in D minor over rolling waves, with a Phrygian surge into A major. */
+const kyogre: Score = {
+  bpm: 138,
+  duty: { lead: 0.5, harmony: 0.125 },
+  tracks: {
+    // | Dm | Dm | Bb | C | Dm | Gm | A | A |  then  | Bb | C | Dm | Bb | Gm | A | Dm | A |
+    lead: [
+      'D5:6 E5:2 F5:4 A5:4',
+      'G5:4 F5:2 E5 D5:8',
+      'Bb4:4 D5 F5 Bb5',
+      'A5:6 G5:2 E5:8',
+      'D5:2 F5 A5 D6:6 C6:2 A5:2',
+      'Bb5:4 A5:2 G5 D5:8',
+      'E5:4 A4 C#5 E5',
+      'A5:12 r:4',
+      'F5:3 G5:1 A5:4 Bb5 A5',
+      'G5:3 A5:1 G5:4 E5 C5',
+      'D5:2 E5 F5 A5 D6:8',
+      'D6:4 C6:2 Bb5 F5:8',
+      'G5:4 Bb5 D6 G5',
+      'C#6:6 Bb5:2 A5:4 E5',
+      'F5:2 E5 D5 A4 D5:8',
+      'E5:4 C#5 A4 E4',
+    ],
+    harmony: [
+      tremolo('F4', 'A4'),
+      tremolo('F4', 'A4'),
+      tremolo('F4', 'D4'),
+      tremolo('G4', 'E4'),
+      tremolo('F4', 'A4'),
+      tremolo('G4', 'Bb4'),
+      tremolo('E4', 'C#5'),
+      tremolo('E4', 'C#5'),
+      tremolo('F4', 'D4'),
+      tremolo('G4', 'E4'),
+      tremolo('F4', 'A4'),
+      tremolo('F4', 'D4'),
+      tremolo('G4', 'Bb4'),
+      tremolo('E4', 'C#5'),
+      tremolo('F4', 'A4'),
+      tremolo('E4', 'C#5'),
+    ],
+    bass: [
+      swell('D2', 'A2', 'D3'),
+      swell('D2', 'A2', 'D3'),
+      swell('Bb1', 'F2', 'Bb2'),
+      swell('C2', 'G2', 'C3'),
+      swell('D2', 'A2', 'D3'),
+      swell('G1', 'D2', 'G2'),
+      swell('A1', 'E2', 'A2'),
+      swell('A1', 'E2', 'A2'),
+      swell('Bb1', 'F2', 'Bb2'),
+      swell('C2', 'G2', 'C3'),
+      swell('D2', 'A2', 'D3'),
+      swell('Bb1', 'F2', 'Bb2'),
+      swell('G1', 'D2', 'G2'),
+      swell('A1', 'E2', 'A2'),
+      swell('D2', 'A2', 'D3'),
+      swell('A1', 'E2', 'A2'),
+    ],
+    drums: [
+      ...times(7, 'k:3 h k:2 s:4 k:2 h:2'),
+      's:2 s s s k:2 s s o',
+      ...times(7, 'k:3 h k:2 s:4 k:2 h:2'),
+      's:2 s s s k:2 s s o',
+    ],
+  },
+}
+
+export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre } as const satisfies Record<string, Score>
 
 export type ThemeId = keyof typeof THEMES

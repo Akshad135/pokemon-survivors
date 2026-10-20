@@ -157,6 +157,7 @@ export type ArenaGround = 'land' | 'water' | 'lava'
 /** What the arena's ground is at (x, y). */
 export const arenaGround = (layout: FloorPlan, x: number, y: number): ArenaGround => {
   if (lavaDepth(layout, x, y) > 0 && !onBridge(layout, x, y)) return 'lava'
+  if (layout.lavaFields?.some((s) => fits(s, x, y, 0)) && !layout.cool?.some((s) => fits(s, x, y, 0))) return 'lava'
   const wet = layout.shallow?.some((s) => fits(s, x, y, 0)) && !layout.islands?.some((s) => fits(s, x, y, 0))
   return wet ? 'water' : 'land'
 }

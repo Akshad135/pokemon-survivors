@@ -369,16 +369,16 @@ export const siteEn: SiteMessages = {
     },
     rifts: {
       paragraphs: (r) => [
-        `From ${r.first}, roughly every ${n(r.every)} minutes, a legendary rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so every run gets 3 rifts, even when bosses take a while.`,
+        `Every run has 2 legendary rifts: one around ${r.first} and another ${n(r.every)} minutes later. Before each, the legendary announces itself (its weather takes the sky) and the rift opens off screen, with a purple arrow on the edge pointing at it. It stays open for ${r.portal}s. If a boss is alive when it's due, it waits up to ${r.bossWait}s for the boss to fall, so both rifts come even when bosses take a while.`,
         `Stepping in is optional: stand inside the rift for ${n(r.enter)}s. It takes you to the arena of a legendary from another generation, each with its own shape and terrain: islands in shallow water, pillars for cover, a pool whose tide rises, lava rivers with bridges, an edge that falls away, an island ringed by surf, a meteor in space. You have ${r.arena}s to win; if time runs out the rift collapses and throws you back with no reward. Fainting in the arena doesn’t end the run either: the rift casts you back onto the map with ${r.fallHp}% HP, no reward, and your Revive stays in the Bag.`,
-        'The run clock keeps ticking inside, but the horde outside freezes and nothing new spawns. When you come back, enemies are stronger because time passed, and any events you missed arrive at once.',
+        'Some legendaries, like Kyogre, have a whole domain instead of an arena: you cross a place bigger than the screen, running from the threat rising behind you and the Pokémon that serve it, the legendary shows itself and the battle has three phases, each changing the ground and ending in a signature move with a safe spot (behind a rock, on an island, in the gap between beams). At the end it kneels and you try to catch it. The run clock stops inside; the horde outside freezes and nothing new spawns until you come back.',
         `The reward is worth the risk: lots of EXP, two bags of ₽ on top of the boss shower, extra Poké Balls, a Rare Candy, a Super Potion and half your HP back. In 1 of ${r.shiny} rifts the legendary is shiny and pays double ₽ plus another Poké Ball.`,
       ],
       legendHead: 'Legendary',
       typesHead: 'Types',
       hpHead: 'Base HP',
       attacksHead: 'Attacks',
-      hpNote: (percent) => `Base HP is the first rift's, at 3:30. After that, the legendary's HP and contact damage grow with the clock: +${n(percent)}% HP per minute. Every rift brings a different legendary.`,
+      hpNote: (percent) => `Base HP is the first rift's, at 4:00. After that, the legendary's HP and contact damage grow with the clock: +${n(percent)}% HP per minute. Every rift brings a different legendary.`,
       endlessTitle: 'Endless mode',
       endless: (e) => [
         'After you beat Mewtwo, the victory screen offers to keep going in endless mode. If you don\'t want to, you leave with the regular victory, and the bonus is paid right away.',

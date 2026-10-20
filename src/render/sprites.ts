@@ -430,3 +430,7 @@ export const drawPokemon = (
   }
   ctx.globalAlpha = 1
 }
+
+/** `key` as one of `dex`'s alternate forms (a boss phase's `form`), if the manifest has it. */
+export const formOf = (dex: Dex, key: string | undefined): Form | undefined =>
+  key !== undefined && MANIFEST[String(dex)]?.forms?.[key] ? (key as Form) : undefined

@@ -324,8 +324,8 @@ const rifts = (locale: Locale, m: SiteMessages) => {
     attacks(id),
   ])
   const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
-  const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
-  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
+  const growth = Math.round((riftScale(RIFT.slots[0] + 60).hp - 1) * 100)
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.slots[0]), every: (RIFT.slots[1] - RIFT.slots[0]) / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
     ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
     <p class="note">${r.hpNote(growth)}</p>
     <h3>${r.endlessTitle}</h3>

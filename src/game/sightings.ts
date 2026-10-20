@@ -15,7 +15,7 @@ const onScreen = (g: Game, x: number, y: number) =>
  * theirs, like an evolution on the handhelds).
  */
 export const updateSightings = (g: Game, dt: number) => {
-  if (Math.floor(g.time * CHECKS_PER_SECOND) === Math.floor((g.time - dt) * CHECKS_PER_SECOND)) return
+  if (Math.floor(g.now * CHECKS_PER_SECOND) === Math.floor((g.now - dt) * CHECKS_PER_SECOND)) return
   const seen = g.dexLog.seen
   const form = playerForm(g).dex
   seen.add(form)

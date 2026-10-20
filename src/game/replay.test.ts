@@ -11,6 +11,7 @@ import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
 import { enterPlace } from './placeInterior'
+import { enterDomain } from './domain'
 import { GRAVEYARD, PLACE_IDS } from '../data/places'
 import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
@@ -343,6 +344,47 @@ describe('replays', () => {
     const staged = startGame(START)
     maxed(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it("re-simulate a whole rift into Kyogre's domain: the crossing, the encounter, three phases and the capture", () => {
+    /** A player strong enough to take Kyogre down in under a minute, stepping into its domain at once. */
+    const strong = (g: Game) => {
+      g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'earthquake', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+      enterDomain(g, 'kyogre', g.player.x, g.player.y)
+    }
+    const view = { ...START.view }
+    const g = startGame(START, view)
+    strong(g)
+    const rec = startRecording(START)
+    const origin = { x: g.player.x, y: g.player.y }
+    // Up through the cavern's chambers, then circling in the arena.
+    const way = [[44, -282], [-46, -596], [36, -904], [-40, -1200], [30, -1504], [0, -1920]] as const
+    let w = 0
+    while (g.rift.arena && rec.tick < 60 * 120) {
+      if (g.phase !== 'playing') {
+        recordEvent(rec, ['offer', 0])
+        chooseOffer(g, g.offers[0]!)
+        continue
+      }
+      const p = g.player
+      const [tx, ty] = way[w]!
+      const dx = origin.x + tx - p.x
+      const dy = origin.y + ty - p.y
+      const len = Math.hypot(dx, dy) || 1
+      if (len < 30 && w < way.length - 1) w++
+      const a = rec.tick / 120
+      const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: Math.cos(a), y: Math.sin(a) }
+      step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+    }
+    expect(g.rift.cleared).toEqual(['kyogre'])
+    expect(g.events.filter((e) => e.kind === 'bossPhase').length).toBe(2)
+    expect(g.events.some((e) => e.kind === 'riftCapture')).toBe(true)
+    // The run clock stayed stopped the whole way through.
+    expect(g.time).toBe(0)
+    const staged = startGame(START)
+    strong(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
   })
 
   it('give a run played on another seed away', () => {

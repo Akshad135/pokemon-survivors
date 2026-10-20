@@ -22,6 +22,8 @@ import { megaIcon } from '../render/megaFx'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
 import { createPlaceCard } from './placeCard'
+import { createRiftTitle } from './riftTitle'
+import { phasesOf } from '../game/bossFight'
 import { createFieldMissionHud } from './fieldMissionHud'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
@@ -45,6 +47,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const lunge = createLungeControls(onLunge)
   const rift = createRiftHud()
   const card = createPlaceCard()
+  const title = createRiftTitle()
   const mission = createFieldMissionHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
@@ -58,7 +61,10 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const buffs = h('div', { class: 'buffs' })
   const bossName = h('div', { class: 'boss-name' })
   const bossFill = h('div', { class: 'boss-fill' })
-  const boss = h('div', { class: 'boss hidden' }, bossName, h('div', { class: 'boss-bar' }, bossFill))
+  const bossBar = h('div', { class: 'boss-bar' }, bossFill)
+  const boss = h('div', { class: 'boss hidden' }, bossName, bossBar)
+  /** The boss whose phase ticks the bar shows (`BOSS_PHASES`), so they're laid once per boss. */
+  let ticked: string | null = null
   const portrait = h('img', { class: 'status-portrait', alt: '' })
   const shinyBadge = h('img', { class: 'shiny-badge hidden', src: sparkleIcon(), alt: 'Shiny' })
   const name = h('div', { class: 'status-name' })
@@ -101,6 +107,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     boss,
     rift.el,
     card.el,
+    title.el,
     mission.el,
     h(
       'div',
@@ -194,6 +201,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     lunge.update(g)
     rift.update(g)
     card.update(g)
+    title.update(g)
     mission.update(g, !rift.el.classList.contains('hidden'))
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
@@ -256,6 +264,10 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     if (b) {
       setText(bossName, isClone(g, b) ? t().legend.clone(ENEMIES[b.kind].name) : ENEMIES[b.kind].name)
       setStyle(bossFill, 'width', `${((b.hp / b.maxHp) * 100).toFixed(1)}%`)
+      if (ticked !== b.kind) {
+        ticked = b.kind
+        bossBar.replaceChildren(bossFill, ...(phasesOf(b.kind) ?? []).slice(1).map((ph) => h('i', { class: 'boss-tick', style: `left:${(ph.below * 100).toFixed(1)}%` })))
+      }
     }
   }
 

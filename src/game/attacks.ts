@@ -221,9 +221,9 @@ const collide = (g: Game, a: Attack) => {
   for (const i of query(g.grid, a.x, a.y, reach(a) + 40, neighbors)) {
     const e = g.enemies[i]
     if (!e || e.dying >= 0 || !overlaps(a, e)) continue
-    if ((a.hits.get(e.id) ?? -1) > g.time) continue
+    if ((a.hits.get(e.id) ?? -1) > g.now) continue
     if (a.blast > 0) return detonate(g, a, false)
-    a.hits.set(e.id, g.time + a.hitInterval)
+    a.hits.set(e.id, g.now + a.hitInterval)
     damageEnemy(g, e, a)
     if (a.mod) modHit(g, a, e)
     if (--a.pierce <= 0) return

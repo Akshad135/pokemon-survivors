@@ -373,16 +373,16 @@ export const siteEs: SiteMessages = {
     },
     rifts: {
       paragraphs: (r) => [
-        `Desde las ${r.first}, más o menos cada ${n(r.every)} minutos, se abre una grieta legendaria fuera de la pantalla, con una flecha morada en el borde que apunta hacia ella. Se queda abierta ${r.portal}s. Si hay un jefe vivo en ese momento, espera a que caiga hasta ${r.bossWait}s, así que toda partida tiene 3 grietas, aunque los jefes tarden.`,
+        `Toda partida tiene 2 grietas legendarias: una hacia las ${r.first} y otra ${n(r.every)} minutos después. Antes de cada una, el legendario avisa que viene (su clima toma el cielo) y la grieta se abre fuera de la pantalla, con una flecha morada en el borde que apunta hacia ella. Se queda abierta ${r.portal}s. Si hay un jefe vivo en ese momento, espera a que caiga hasta ${r.bossWait}s, así que las dos grietas llegan aunque los jefes tarden.`,
         `Entrar es opcional: quédate ${n(r.enter)}s dentro de la grieta. Te lleva a la arena de un legendario de otra generación, cada una con su forma y su terreno: islas en aguas poco profundas, pilares para cubrirte, un pozo cuya marea sube, ríos de lava con puentes, un borde que se derrumba, una isla rodeada de oleaje, un meteoro en el espacio. Tienes ${r.arena}s para vencerlo; si se acaba el tiempo, la grieta colapsa y te devuelve sin recompensa. Caer en la arena tampoco termina la partida: la grieta te expulsa al mapa con ${r.fallHp}% de HP, sin recompensa, y tu Revive queda guardado.`,
-        'El reloj de la partida sigue corriendo adentro, pero la horda de afuera se congela y no aparece nada nuevo. Cuando vuelves, los enemigos son más fuertes porque pasó el tiempo, y los eventos que quedaron pendientes llegan de golpe.',
+        'Algunos legendarios, como Kyogre, tienen un dominio entero en vez de una arena: cruzas un lugar más grande que la pantalla huyendo de la amenaza que sube detrás de ti y de los Pokémon que lo sirven, el legendario aparece y la batalla tiene tres fases, cada una cambia el terreno y termina en un movimiento supremo con un lugar seguro (detrás de una roca, en una isla, en el hueco entre los rayos). Al final se arrodilla e intentas capturarlo. El reloj de la partida se detiene adentro; la horda de afuera se congela y no aparece nada nuevo hasta que vuelves.',
         `La recompensa vale el riesgo: mucha EXP, dos bolsas de ₽ además de la lluvia del jefe, Poké Balls extra, un Rare Candy, una Super Potion y la mitad del HP de vuelta. En 1 de cada ${r.shiny} grietas el legendario es shiny y paga el doble de ₽ y una Poké Ball más.`,
       ],
       legendHead: 'Legendario',
       typesHead: 'Tipos',
       hpHead: 'HP base',
       attacksHead: 'Ataques',
-      hpNote: (percent) => `El HP base es el de la primera grieta, a las 3:30. Después, el HP y el daño por contacto del legendario crecen con el reloj: +${n(percent)}% de HP por minuto. Cada grieta trae un legendario distinto.`,
+      hpNote: (percent) => `El HP base es el de la primera grieta, a las 4:00. Después, el HP y el daño por contacto del legendario crecen con el reloj: +${n(percent)}% de HP por minuto. Cada grieta trae un legendario distinto.`,
       endlessTitle: 'Modo infinito',
       endless: (e) => [
         'Después de derrotar a Mewtwo, la pantalla de victoria te ofrece seguir en el modo infinito. Si no quieres, sales con la victoria normal, y la bonificación se paga en el acto.',

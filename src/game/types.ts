@@ -376,8 +376,8 @@ export type Attack = {
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
 export type Hazard = {
   id: number
-  /** strike = telegraphed impact, shot = projectile, zone = lingering patch. */
-  kind: 'strike' | 'shot' | 'zone'
+  /** strike = telegraphed impact, shot = projectile, zone = lingering patch, beam = a line from (x, y) (`angle`, `len`). */
+  kind: 'strike' | 'shot' | 'zone' | 'beam'
   visual: HazardVisual
   x: number
   y: number
@@ -396,6 +396,10 @@ export type Hazard = {
   world: boolean
   /** Id of the boss that lands with this strike (a `leap`), or -1. A shot with an `armAt` hovers until then (a volley's windup). */
   leaper: number
+  /** A beam's direction (rad), length (px) and turn while it burns (rad/s); `r` is half its width. 0 for the rest. */
+  angle: number
+  len: number
+  spin: number
 }
 
 export type Pickup = {
@@ -582,6 +586,13 @@ export type GameEvent =
   | { kind: 'awakened'; legend: LegendId; n: number; form: LegendForm | null }
   /** A legendary boss fell (rift, trio, mythical, Mewtwo, Arceus), once per defeat: the save counts it toward capturing it. */
   | { kind: 'legendBeaten'; legend: EnemyId; shiny: boolean }
+  /** A boss with phases moved on to phase `phase` (from 0), or began its ultimate (`move`, the official English name). */
+  | { kind: 'bossPhase'; enemy: EnemyId; phase: number }
+  | { kind: 'bossUltimate'; enemy: EnemyId; move: string }
+  /** Epic rifts (`game/domain.ts`): the omen took the sky, the legendary showed itself (its title card), the capture's ball settled. */
+  | { kind: 'riftOmen'; enemy: RiftLegend }
+  | { kind: 'riftTitle'; enemy: RiftLegend; shiny: boolean }
+  | { kind: 'riftCapture'; enemy: RiftLegend; shiny: boolean }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
@@ -595,6 +606,7 @@ export type Game = {
   /** Multipliers this run plays with (`difficulty.ts`). */
   difficulty: Difficulty
   rng: Rng
+  /** The run clock, in seconds: it stops inside a rift (`clockRuns`). */
   time: number
   phase: Phase
   nextId: number
@@ -695,6 +707,11 @@ export type Game = {
   prize: PrizeSource | null
   /** The Legend mode's state (`legend.ts`): the legend played and its awakenings; null in every other run. */
   legend: LegendState | null
+  /**
+   * Seconds simulated since the run began, never paused. `time` is the run
+   * clock, which stops inside a rift; hit cooldowns, ages and animation phases use `now`.
+   */
+  now: number
 }
 
 /** Where a prize level-up came from: an Alpha's gem or a field mission. */

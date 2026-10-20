@@ -73,7 +73,7 @@ const paceNow = (g: Game) => {
       fight ||= near && e.alpha.phase !== 'walk'
       continue
     }
-    if (g.time - e.bornAt < HAZARD_RULES.entrance) return 0
+    if (g.now - e.bornAt < HAZARD_RULES.entrance) return 0
     fight ||= near
   }
   const finale = finaleAlive(g) ? HAZARD_PACE[g.difficulty].finale : 1

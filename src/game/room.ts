@@ -1,4 +1,5 @@
 import type { ArenaShape, Circle, FloorPlan } from '../data/arenas'
+import type { WeatherId } from '../data/biomes'
 import { keepOn } from './arenaFloor'
 import type { Prop } from './props'
 import type { Feature } from './terrain'
@@ -9,9 +10,11 @@ import type { Enemy, Game, Hazard, Pickup } from './types'
  * place's interior (`placeInterior.ts`). Its floor plan is centered at (x, y)
  * in world px; while the player is inside, its floor and scenery take the map
  * terrain's place (`game/terrain.ts`) and the world waits outside, set aside
- * untouched (`setAside`, `bringBack`). The run clock keeps going.
+ * untouched (`setAside`, `bringBack`). The run clock keeps going in a place
+ * and stops in a rift (`clockRuns`). A room is outside the map's weather:
+ * clear skies, or its own `weather` (a legendary's domain).
  */
-export type Room = { x: number; y: number; layout: FloorPlan; terrain: Feature }
+export type Room = { x: number; y: number; layout: FloorPlan; terrain: Feature; weather?: WeatherId }
 
 /** The world outside, set aside untouched while the player is in a room. */
 export type Stash = { enemies: Enemy[]; hazards: Hazard[]; pickups: Pickup[]; props: Prop[]; bossId: number | null }

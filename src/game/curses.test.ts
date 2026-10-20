@@ -51,7 +51,7 @@ describe('cursed item rules', () => {
     curseCast(g)
     curseCast(g)
     expect(g.player.hp).toBeCloseTo(max * (1 - CURSE.lifeOrb.cost))
-    g.time += CURSE.lifeOrb.gap
+    g.now += CURSE.lifeOrb.gap
     curseCast(g)
     expect(g.player.hp).toBeCloseTo(max * (1 - 2 * CURSE.lifeOrb.cost))
   })

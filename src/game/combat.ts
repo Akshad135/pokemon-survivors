@@ -23,6 +23,7 @@ import { countKill, countLegend } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
 import { alphaDown } from './alphas'
+import { holdsOn } from './bossFight'
 import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
 import { weatherBoost, weatherHere, weatherPower } from './weather'
@@ -89,8 +90,8 @@ const shatter = (g: Game, e: Enemy, cause: 'execute' | 'freeze') => {
 export const drainHeal = (g: Game, damage: number, fraction: number) => {
   const p = g.player
   const d = p.drain
-  d.left = drainRefill(d.left, g.time - d.at, p.stats.maxHp)
-  d.at = g.time
+  d.left = drainRefill(d.left, g.now - d.at, p.stats.maxHp)
+  d.at = g.now
   const amount = drainAmount(damage, fraction, d.left)
   if (amount <= 0) return 0
   d.left -= amount
@@ -139,6 +140,11 @@ export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource 
 
 /** Faints an enemy. `source` (when known) lets a kill by the special, or any kill mid-chain, feed Power Herb. */
 export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
+  // A boss with phases still to go doesn't faint: it stays up and moves on to its next phase.
+  if (holdsOn(e)) {
+    e.hp = 1
+    return
+  }
   if (e.status.seed.time > 0) spreadSeed(g, e)
   e.dying = 0
   e.hp = 0
