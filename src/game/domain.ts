@@ -55,6 +55,8 @@ export type DomainState = {
   scene: number
   /** The fallen legendary the capture scene plays on, and whether its ball has settled. */
   capture: { kind: Enemy['kind']; x: number; y: number; shiny: boolean; settled: boolean } | null
+  /** Free numbers a legendary's hooks (`DomainHooks`) keep between ticks; each hook module names its slots. */
+  memo: number[]
 }
 
 const defOf = (d: DomainState): LegendDomain => domainOf(d.legend)!
@@ -105,6 +107,7 @@ export const enterDomain = (g: Game, legend: RiftLegend, x: number, y: number) =
     landed: [],
     scene: 0,
     capture: null,
+    memo: [],
   }
   const p = g.player
   p.x = x + crossing.start[0]
@@ -279,6 +282,10 @@ const startCapture = (g: Game, arena: RiftArena, d: DomainState, boss: Enemy | u
   d.act = 'capture'
   d.scene = 0
   g.hazards.length = 0
+  // Its hold on the arena ends with it: the flood drains, lava cools and the floor mends, so the loot can be picked up safely.
+  d.pending = []
+  d.landed = []
+  arena.layout = composePlan(defOf(d), true, [])
   // The legendary's faint and its adds go at once: the scene holds the world still, and draws the legendary itself.
   g.enemies.length = 0
 }

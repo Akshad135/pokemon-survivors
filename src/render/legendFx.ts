@@ -7,6 +7,7 @@ import { onFloor } from '../game/arenaFloor'
 import { parked, safeAt } from '../game/bosses'
 import { phasesOf } from '../game/bossFight'
 import { arenaPoint, domainHere } from '../game/domain'
+import { groundAt, playerTypes } from '../game/terrain'
 import { encounterBeat, REVEAL_AT } from '../game/domainRules'
 import type { Enemy, Game, Hazard } from '../game/types'
 import { art, lazy } from './art'
@@ -54,6 +55,17 @@ export const drawBeamGround = (ctx: Ctx, h: Hazard) => {
   along({ ...h, len }, 4, (x, y, i) => {
     if (i % 2 === 0) ctx.fillRect(x - 1, y - 1, 2, 2)
   })
+  // A sweeping beam shows the arc it will turn through, dotted out from its source.
+  if (h.spin !== 0) {
+    const turn = h.spin * (h.disarmAt - h.armAt)
+    const steps = Math.ceil(Math.abs(turn) * 12)
+    for (const r of [36, 60]) {
+      for (let i = 0; i <= steps * shown; i += 2) {
+        const a = h.angle + (turn * i) / steps
+        ctx.fillRect(Math.round(h.x + Math.cos(a) * r), Math.round(h.y + Math.sin(a) * r), 2, 2)
+      }
+    }
+  }
   // The beam's width, faint, so the player sees how far to step.
   ctx.fillStyle = 'rgba(255,255,255,0.35)'
   along({ ...h, len }, 8, (x, y) => {
@@ -130,11 +142,13 @@ export const drawBlasts = (ctx: Ctx, g: Game, camX: number, camY: number, t: num
     const floor = room ? room.layout.floor : []
     const ox = room?.x ?? 0
     const oy = room?.y ?? 0
+    // Burning ground spares no one but Fire types: no dots there.
+    const burns = !playerTypes(g).includes('fire')
     const x0 = Math.floor(camX / SAFE_STEP) * SAFE_STEP
     const y0 = Math.floor(camY / SAFE_STEP) * SAFE_STEP
     for (let y = y0; y < camY + h; y += SAFE_STEP) {
       for (let x = x0; x < camX + w; x += SAFE_STEP) {
-        if ((!room || onFloor(floor, x - ox, y - oy)) && safeAt(g, b, x, y, g.player.radius)) ctx.fillRect(x - camX, y - camY, 2, 2)
+        if ((!room || onFloor(floor, x - ox, y - oy)) && safeAt(g, b, x, y, g.player.radius) && !(burns && groundAt(g, x, y) === 'lava')) ctx.fillRect(x - camX, y - camY, 2, 2)
       }
     }
     const [line] = HAZARD_COLORS[b.visual]

@@ -1,6 +1,7 @@
 import { dir8, dirTo, fromAngle, retain, TAU } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
+import { holdsShots } from './bossFight'
 import { damageEnemy } from './combat'
 import { evolvedImpact, evolvedTick } from './evolvedMoves'
 import { inheritMods, modHit, modTick } from './mods'
@@ -270,8 +271,21 @@ const trail = (g: Game, a: Attack) => {
 /** When a hitbox lands: its damage window opens, or it shows up (visual-only ones never open it). */
 const landsAt = (a: Attack) => (a.activeFrom === Infinity ? 0 : a.activeFrom)
 
+/** Motions that fly free of the player: a boss's time stop (`timeStop`) holds these still in mid-air. */
+const FLYING: ReadonlySet<Motion['kind']> = new Set(['linear', 'homing', 'boomerang', 'drift', 'return'])
+
+/** Whether the fight's boss holds the player's shots still now (Dialga's Roar of Time). */
+const shotsHeld = (g: Game) => {
+  if (g.bossId === null) return false
+  const boss = g.enemies.find((e) => e.id === g.bossId)
+  return boss !== undefined && boss.dying < 0 && holdsShots(boss.fight)
+}
+
 export const updateAttacks = (g: Game, dt: number) => {
+  const held = shotsHeld(g)
   for (const a of g.attacks) {
+    // Held in a time stop: it neither moves, ages nor hits until time flows again.
+    if (held && a.age >= 0 && FLYING.has(a.motion.kind)) continue
     a.age += dt
     if (a.age < 0) continue
     move(g, a, a.motion, dt)

@@ -60,8 +60,8 @@ const typeBoost = (type: string) => `+10% de dano em golpes do tipo ${type}.`
  * so every other locale must match it key for key. Toast strings use light
  * markup rendered by `rich`: `*bold*` and `_accent_`.
  */
-/** A legendary's domain in words (`rifts.domains`): its place, epithet, omen, the crossing's warning, a line per phase after the first. */
-export type DomainLines = { place: string; epithet: string; omen: string; crossing: string; phases: readonly string[] }
+/** A legendary's domain in words (`rifts.domains`): its place, epithet, omen, the crossing's warning, a line per phase after the first, and the calls of its own mechanics (`domainCue`). */
+export type DomainLines = { place: string; epithet: string; omen: string; crossing: string; phases: readonly string[]; cues?: Readonly<Record<string, string>> }
 
 export const pt = {
   loading: 'Carregando…',
@@ -1332,6 +1332,28 @@ export const pt = {
         omen: 'Uma chuva torrencial cai do nada…',
         crossing: 'A maré está subindo! Avance pela caverna!',
         phases: ['A caverna inunda! Fique nas ilhas para escapar do Surf.', 'Kyogre volta à *forma Primal*! Cuidado com o Origin Pulse!'],
+      },
+      lugia: {
+        place: 'Ilhas Redemoinho',
+        epithet: 'Guardião dos Mares',
+        omen: 'Uma tempestade se forma no horizonte…',
+        crossing: 'A tempestade avança! Atravesse as ilhas e fuja dos redemoinhos!',
+        phases: ['O mar sobe! Saia dos redemoinhos e cuidado com o Hurricane.', 'Lugia levanta voo! Fuja das rajadas que caem do céu.'],
+      },
+      hoOh: {
+        place: 'Torre do Sino',
+        epithet: 'Fênix do Arco-Íris',
+        omen: 'Um arco-íris corta o céu e brasas começam a cair…',
+        crossing: 'A torre está em chamas! Suba andar por andar!',
+        phases: ['Ho-Oh levanta voo! Desvie dos rastros de fogo e do Brave Bird.', 'Ho-Oh *renasce das cinzas*! A beirada do telhado arde.'],
+      },
+      dialga: {
+        place: 'Pilar Lança',
+        epithet: 'Senhor do Tempo',
+        omen: 'O tempo começa a tropeçar…',
+        crossing: 'O tempo está se desfazendo! Avance pelo Pilar Lança!',
+        phases: ['O tempo se distorce! No Roar of Time, seus golpes congelam no ar.', 'O tempo acelera! Dialga fica cada vez mais rápido.'],
+        cues: { stop: 'O tempo parou!', forward: 'O tempo saltou para frente!', rewind: 'O tempo voltou!' },
       },
     } satisfies Partial<Record<RiftLegend, DomainLines>>,
   },

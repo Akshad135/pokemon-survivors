@@ -1169,6 +1169,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
       playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
       return toast(ui, rich(t().rifts.escaped(name)), 3200)
     }
+    case 'domainCue': {
+      const line = domainLines(e.enemy)?.cues?.[e.cue]
+      return line ? toast(ui, rich(line), 1600) : undefined
+    }
     case 'riftCleared':
       playSfx('evolve')
       return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)

@@ -262,7 +262,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
       setStyle(bossFill, 'width', `${((b.hp / b.maxHp) * 100).toFixed(1)}%`)
       if (ticked !== b.kind) {
         ticked = b.kind
-        bossBar.replaceChildren(bossFill, ...(phasesOf(b.kind) ?? []).slice(1).map((ph) => h('i', { class: 'boss-tick', style: `left:${(ph.below * 100).toFixed(1)}%` })))
+        bossBar.replaceChildren(bossFill, ...(phasesOf(b.kind) ?? []).slice(1).filter((ph) => ph.rebirth === undefined).map((ph) => h('i', { class: 'boss-tick', style: `left:${(ph.below * 100).toFixed(1)}%` })))
       }
     }
   }

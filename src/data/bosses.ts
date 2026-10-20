@@ -76,6 +76,17 @@ export type BossPattern = PatternGate &
      * spots glow) that only spares those in a `safe` spot (`BlastSafe`).
      */
     | { kind: 'blast'; every: number; windup: number; damage: number; safe: BlastSafe; radius?: number; visual: HazardVisual }
+    /**
+     * Whirlpools (Lugia's Hurricane): `count` vortices, one on the player
+     * (or the boss, `target: 'self'`) and the rest `spread` px around, each
+     * showing for `windup` s, then for `ttl` s drawing the player in from
+     * `reach` px at `pull` px/s; their eye (`radius`) hurts.
+     */
+    | { kind: 'whirlpool'; every: number; target: 'player' | 'self'; count: number; spread: number; radius: number; reach: number; pull: number; windup: number; ttl: number; damage: number; visual: HazardVisual }
+    /** Gusts (Whirlwind): a fan like a volley whose shots shove a player within `reach` px along their flight at `push` px/s. */
+    | { kind: 'gust'; every: number; count: number; arc: number; speed: number; windup: number; radius: number; reach: number; push: number; damage: number; visual: HazardVisual }
+    /** Roar of Time: `windup` s after it roars, the player's shots in flight (and those cast meanwhile) hold still for `duration` s, then fly on. */
+    | { kind: 'timeStop'; every: number; windup: number; duration: number }
   )
 
 /**
@@ -96,6 +107,8 @@ export type BossSteer =
   | { kind: 'hold'; range: number; pace?: number }
   | { kind: 'anchor'; x: number; y: number; drift: number; pace?: number }
   | { kind: 'orbit'; radius: number; pace?: number }
+  /** Flies across its arena through its home, turning `reach` px out every `every` s on a new heading; drawn aloft over its shadow. */
+  | { kind: 'pass'; reach: number; every: number; pace?: number }
 
 /** A step of an ultimate: `pattern` fires `at` seconds after the ultimate begins. */
 export type UltimateStep = { at: number; pattern: BossPattern }
@@ -115,6 +128,12 @@ export type BossUltimate = { move: string; first: number; every: number; steps: 
  * `shift` s (`PHASE_SHIFT` when absent); `form` swaps its sprite (a form key of
  * its species in the sprite manifest, e.g. `primal`); `steer` says how it moves.
  * The HUD ticks the thresholds on its HP bar.
+ *
+ * `rebirth` (Ho-Oh's): this phase isn't reached by HP. When the boss would
+ * faint in the phase before, it bursts into flames instead and comes back
+ * with `rebirth` of its HP (its `below` is ignored); it must be the last
+ * phase. `haste`: time runs that many times as fast for the boss in this
+ * phase (its walk, its attacks and its hazards; Dialga's last phase).
  */
 export type BossPhase = {
   below: number
@@ -123,6 +142,8 @@ export type BossPhase = {
   steer?: BossSteer
   form?: string
   shift?: number
+  rebirth?: number
+  haste?: number
 }
 
 /** Seconds a boss holds still and untouchable as a new phase begins. */

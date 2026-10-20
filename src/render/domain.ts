@@ -260,9 +260,30 @@ const rockTile = (theme: ArenaTheme) => {
 
 const rockTiles = canvasCache<RiftLegend, HTMLCanvasElement>()
 
-/** The void around the floor: cave rock, or open space with slow parallax motes. */
+/** Open sea past the floor (`sea`): deep water with whitecaps rolling across it, anchored to the world. */
+const drawSea = (ctx: Ctx, camX: number, camY: number, w: number, h: number, t: number) => {
+  ctx.fillStyle = '#0a1c34'
+  ctx.fillRect(0, 0, w, h)
+  const cx = Math.round(camX)
+  const cy = Math.round(camY)
+  const x0 = -(((cx % 16) + 16) % 16)
+  const y0 = -(((cy % 6) + 6) % 6)
+  for (let y = y0; y < h; y += 6) {
+    const row = Math.floor((y + cy) / 6)
+    const drift = Math.round(Math.sin(row * 0.7 + t * 1.3) * 3)
+    for (let x = x0; x < w; x += 16) {
+      const n = hash2(Math.floor((x + cx) / 16), row, 3)
+      if (n > 0.3) continue
+      ctx.fillStyle = n < 0.06 ? '#a8c8e8' : '#24507c'
+      ctx.fillRect(x + drift, y, n < 0.06 ? 3 : 6, 1)
+    }
+  }
+}
+
+/** The void around the floor: cave rock, open sea, or open space with slow parallax motes. */
 const drawVoid = (ctx: Ctx, p: Painter, camX: number, camY: number, w: number, h: number, t: number) => {
   const theme = p.theme
+  if (p.domain.backdrop === 'sea') return drawSea(ctx, camX, camY, w, h, t)
   if (p.domain.backdrop === 'cave') {
     let tile = rockTiles.get(p.legend)
     if (!tile) rockTiles.set(p.legend, (tile = rockTile(theme)))
@@ -292,6 +313,8 @@ const THREATS: Record<ThreatKind, { body: string; edge: string; foam: string }> 
   collapse: { body: 'rgba(12,8,6,0.94)', edge: '#5a4030', foam: '#a08060' },
   fire: { body: 'rgba(160,40,8,0.86)', edge: '#f86818', foam: '#f8e060' },
   void: { body: 'rgba(8,4,24,0.94)', edge: '#7850c8', foam: '#c8a8f8' },
+  storm: { body: 'rgba(52,64,84,0.92)', edge: '#c8d8e8', foam: '#ffffff' },
+  time: { body: 'rgba(36,44,84,0.88)', edge: '#a8f0f8', foam: '#ffffff' },
 }
 
 const drawThreat = (ctx: Ctx, kind: ThreatKind, sy: number, w: number, h: number, t: number) => {

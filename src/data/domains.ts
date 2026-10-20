@@ -5,6 +5,9 @@ import type { EnemyId } from './enemies'
 import type { ThemeId } from './music'
 import type { RiftLegend } from './rifts'
 import { KYOGRE_DOMAIN } from './domains/kyogre'
+import { LUGIA_DOMAIN } from './domains/lugia'
+import { HO_OH_DOMAIN } from './domains/hoOh'
+import { DIALGA_DOMAIN } from './domains/dialga'
 
 /**
  * EPIC RIFTS: a legendary's domain, as data.
@@ -46,7 +49,11 @@ import { KYOGRE_DOMAIN } from './domains/kyogre'
  * - Look: the sky (`LegendSky`, `render/legendSky.ts`), the threat
  *   (`ThreatKind`, `render/domain.ts`), new scenery (`ArenaPiece`,
  *   `render/arenaPieces.ts`), floor patterns (`FloorPattern`, `render/rift.ts`).
- * - Mechanics the data can't say (Dialga freezing shots, Ho-Oh's rebirth, two
+ * - Phases can also blow the player around (`whirlpool`, `gust`), hold their
+ *   shots still (`timeStop`), fly over the arena (`pass` steering), speed time
+ *   up (`haste`) or come back from a fall (`rebirth`): see `data/bosses.ts`.
+ * - Mechanics the data can't say (Dialga's time skips in its crossing, the
+ *   whirlpools set in Lugia's channels, Ho-Oh's tower raining beams, two
  *   legendaries at once) go in a hook (`DomainHooks`, `game/domainHooks.ts`).
  * - Stage it with `ps.rift('<legend>')` (the whole sequence) and
  *   `ps.riftAct('battle', 2)` (straight to a phase).
@@ -56,10 +63,14 @@ import { KYOGRE_DOMAIN } from './domains/kyogre'
 export type LegendSky = 'downpour' | 'harshSun' | 'gale' | 'timeWarp' | 'storm' | 'embers' | 'mist' | 'meteors'
 
 /** How the threat behind the crossing looks (`render/domain.ts`); its rules are the same for every kind. */
-export type ThreatKind = 'tide' | 'collapse' | 'fire' | 'void'
+export type ThreatKind = 'tide' | 'collapse' | 'fire' | 'void' | 'storm' | 'time'
 
-/** How the legendary comes in: out of water (`rise`), down from the sky (`descend`), or out of thin air (`materialize`). */
-export type DomainEntrance = 'rise' | 'descend' | 'materialize'
+/**
+ * How the legendary comes in: out of water (`rise`), down from the sky
+ * (`descend`), out of thin air (`materialize`), or as time stops around it
+ * (`warp`: the world greys out and clock rings close on its spot).
+ */
+export type DomainEntrance = 'rise' | 'descend' | 'materialize' | 'warp'
 
 /** What a retinue member (or a summoned add) does besides walking at the player: aims ahead (`runner`), shoots from a distance (`spitter`), or comes in tougher (`elite`). */
 export type RetinueRole = 'runner' | 'spitter' | 'elite'
@@ -137,8 +148,8 @@ export type ArenaTransform = {
 /** A phase of the battle: the boss's side (`BossPhase`) and what it does to the arena. */
 export type DomainPhase = BossPhase & { arena?: readonly ArenaTransform[] }
 
-/** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, or `cave` rock. */
-export type Backdrop = 'space' | 'cave'
+/** What lies past a domain's floor (`render/domain.ts`): open `space` with drifting motes, `cave` rock, or the open `sea`. */
+export type Backdrop = 'space' | 'cave' | 'sea'
 
 export type LegendDomain = {
   omen: { weather: WeatherId; sky: LegendSky }
@@ -158,6 +169,9 @@ export type LegendDomain = {
 /** The legendaries whose rift is a domain. The others keep the old arena (`data/arenas.ts`) until theirs is written. */
 export const DOMAINS: Partial<Record<RiftLegend, LegendDomain>> = {
   kyogre: KYOGRE_DOMAIN,
+  lugia: LUGIA_DOMAIN,
+  hoOh: HO_OH_DOMAIN,
+  dialga: DIALGA_DOMAIN,
 }
 
 /** The domain behind `legend`'s rift, if it has one. */

@@ -1186,6 +1186,28 @@ export const es: Messages = {
         crossing: '¡La marea sube! ¡Avanza por la cueva!',
         phases: ['¡La cueva se inunda! Quédate en las islas para resistir el Surf.', '¡Kyogre vuelve a su *forma Primigenia*! ¡Cuidado con el Origin Pulse!'],
       },
+      lugia: {
+        place: 'Islas Remolino',
+        epithet: 'Guardián de los Mares',
+        omen: 'Una tormenta se forma en el horizonte…',
+        crossing: '¡La tormenta avanza! ¡Cruza las islas y aléjate de los remolinos!',
+        phases: ['¡El mar sube! Sal de los remolinos y cuidado con el Hurricane.', '¡Lugia alza el vuelo! Esquiva las ráfagas que caen del cielo.'],
+      },
+      hoOh: {
+        place: 'Torre Campana',
+        epithet: 'Fénix del Arcoíris',
+        omen: 'Un arcoíris cruza el cielo y empiezan a caer brasas…',
+        crossing: '¡La torre está en llamas! ¡Sube piso por piso!',
+        phases: ['¡Ho-Oh alza el vuelo! Esquiva sus estelas de fuego y el Brave Bird.', '¡Ho-Oh *renace de sus cenizas*! El borde del techo arde.'],
+      },
+      dialga: {
+        place: 'Columna Lanza',
+        epithet: 'Señor del Tiempo',
+        omen: 'El tiempo empieza a tropezar…',
+        crossing: '¡El tiempo se deshace! ¡Avanza por la Columna Lanza!',
+        phases: ['¡El tiempo se distorsiona! Con el Roar of Time tus ataques se congelan en el aire.', '¡El tiempo se acelera! Dialga es cada vez más rápido.'],
+        cues: { stop: '¡El tiempo se detuvo!', forward: '¡El tiempo saltó hacia adelante!', rewind: '¡El tiempo retrocedió!' },
+      },
     },
   },
 

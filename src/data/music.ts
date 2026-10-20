@@ -607,6 +607,156 @@ const kyogre: Score = {
   },
 }
 
-export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre } as const satisfies Record<string, Score>
+/** Lugia's domain (the Whirl Islands in a storm): a soaring E minor over driving octaves, wind arpeggios in the harmony. */
+const lugia: Score = {
+  bpm: 150,
+  duty: { lead: 0.25, harmony: 0.125 },
+  tracks: {
+    // | Em | C | D | Bm | Em | C | Am | B |  then  | G | D | Em | C | Am | B | Em | B |
+    lead: [
+      'E5:6 F#5:2 G5:4 B5:4',
+      'C6:4 B5:2 A5 G5:8',
+      'A5:6 F#5:2 D5:4 A5',
+      'F#5:12 r:4',
+      'B4:2 E5 G5 B5 E6:6 D6:2',
+      'C6:4 B5:2 G5 E5:8',
+      'A5:4 C6 E6 C6',
+      'D#6:8 B5:4 F#5',
+      'G5:3 A5:1 B5:4 D6 B5',
+      'A5:3 B5:1 A5:4 F#5 D5',
+      'E5:2 F#5 G5 B5 E6:8',
+      'E6:4 D6:2 C6 G5:8',
+      'A5:4 C6 E6 A5',
+      'D#6:6 C6:2 B5:4 F#5',
+      'G5:2 F#5 E5 B4 E5:8',
+      'F#5:4 D#5 B4 F#4',
+    ],
+    harmony: [
+      sparkle('E4', 'G4', 'B4', 'G4'),
+      sparkle('C4', 'E4', 'G4', 'E4'),
+      sparkle('D4', 'F#4', 'A4', 'F#4'),
+      sparkle('B3', 'D4', 'F#4', 'D4'),
+      sparkle('E4', 'G4', 'B4', 'G4'),
+      sparkle('C4', 'E4', 'G4', 'E4'),
+      sparkle('A3', 'C4', 'E4', 'C4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+      sparkle('G3', 'B3', 'D4', 'B3'),
+      sparkle('D4', 'F#4', 'A4', 'F#4'),
+      sparkle('E4', 'G4', 'B4', 'G4'),
+      sparkle('C4', 'E4', 'G4', 'E4'),
+      sparkle('A3', 'C4', 'E4', 'C4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+      sparkle('E4', 'G4', 'B4', 'G4'),
+      sparkle('B3', 'D#4', 'F#4', 'D#4'),
+    ],
+    bass: [
+      pump('E2', 'E3'), pump('C2', 'C3'), pump('D2', 'D3'), pump('B1', 'B2'),
+      pump('E2', 'E3'), pump('C2', 'C3'), pump('A1', 'A2'), pump('B1', 'B2'),
+      pump('G1', 'G2'), pump('D2', 'D3'), pump('E2', 'E3'), pump('C2', 'C3'),
+      pump('A1', 'A2'), pump('B1', 'B2'), pump('E2', 'E3'), pump('B1', 'B2'),
+    ],
+    drums: [
+      ...times(7, 'k:2 h s h k k s h'),
+      's:1 s s s s s s s k:2 s k o',
+      ...times(7, 'k:2 h s h k k s h'),
+      's:1 s s s s s s s k:2 s k o',
+    ],
+  },
+}
+
+/** Ho-Oh's domain (the burning Bell Tower): a regal G minor fanfare over a galloping skip, chords in tresillo. */
+const hoOh: Score = {
+  bpm: 132,
+  duty: { lead: 0.5, harmony: 0.25 },
+  tracks: {
+    // | Gm | Eb | F | Bb | Gm | Eb | Cm | D |  then  | Eb | F | Gm | Eb | Cm | D | Gm | D |
+    lead: [
+      'G4:4 Bb4:2 D5 G5:8',
+      'G5:4 F5:2 Eb5 Bb4:8',
+      'A4:4 C5:2 F5 A5:8',
+      'Bb5:6 A5:2 F5:4 D5',
+      'D5:2 G5 Bb5 D6 Bb5:8',
+      'C6:4 Bb5:2 G5 Eb5:8',
+      'Eb5:4 G5 C6 Eb6',
+      'D6:12 r:4',
+      'Eb6:6 D6:2 Bb5:4 G5',
+      'F5:6 G5:2 A5:4 C6',
+      'D6:2 C6 Bb5 A5 G5:8',
+      'Bb5:4 C6:2 Bb5 G5:8',
+      'C5:2 Eb5 G5 C6 Eb6:8',
+      'F#5:4 A5 D6 C6',
+      'Bb5:2 A5 G5 D5 G5:8',
+      'A5:4 F#5 D5 A4',
+    ],
+    harmony: [
+      tresillo('G4', 'Bb4', 'D5'), tresillo('G4', 'Bb4', 'Eb5'), tresillo('A4', 'C5', 'F5'), tresillo('Bb4', 'D5', 'F5'),
+      tresillo('G4', 'Bb4', 'D5'), tresillo('G4', 'Bb4', 'Eb5'), tresillo('G4', 'C5', 'Eb5'), tresillo('F#4', 'A4', 'D5'),
+      tresillo('G4', 'Bb4', 'Eb5'), tresillo('A4', 'C5', 'F5'), tresillo('G4', 'Bb4', 'D5'), tresillo('G4', 'Bb4', 'Eb5'),
+      tresillo('G4', 'C5', 'Eb5'), tresillo('F#4', 'A4', 'D5'), tresillo('G4', 'Bb4', 'D5'), tresillo('F#4', 'A4', 'D5'),
+    ],
+    bass: [
+      skip('G1', 'G2', 'D2'), skip('Eb2', 'Eb3', 'Bb2'), skip('F1', 'F2', 'C2'), skip('Bb1', 'Bb2', 'F2'),
+      skip('G1', 'G2', 'D2'), skip('Eb2', 'Eb3', 'Bb2'), skip('C2', 'C3', 'G2'), skip('D2', 'D3', 'A2'),
+      skip('Eb2', 'Eb3', 'Bb2'), skip('F1', 'F2', 'C2'), skip('G1', 'G2', 'D2'), skip('Eb2', 'Eb3', 'Bb2'),
+      skip('C2', 'C3', 'G2'), skip('D2', 'D3', 'A2'), skip('G1', 'G2', 'D2'), skip('D2', 'D3', 'A2'),
+    ],
+    drums: [
+      ...times(7, 'k:4 s k:2 k s:4'),
+      's:2 s s s s:1 s s s o:4',
+      ...times(7, 'k:4 s k:2 k s:4'),
+      's:2 s s s s:1 s s s o:4',
+    ],
+  },
+}
+
+/** Tick, tock: two chord tones on the beats, a clock in the harmony. */
+const tick = (a: string, b: string) => `${a}:1 r:3 ${b}:1 r:3 ${a}:1 r:3 ${b}:1 r:3`
+
+/** Dialga's domain (Spear Pillar, time unravelling): a driving C minor over a pedal ostinato, the harmony ticking like a clock. */
+const dialga: Score = {
+  bpm: 144,
+  duty: { lead: 0.25, harmony: 0.125 },
+  tracks: {
+    // | Cm | Ab | Bb | G | Cm | Fm | G | G |  then  | Ab | Bb | Cm | Ab | Fm | G | Cm | G |
+    lead: [
+      'C5:4 Eb5 G5 C6',
+      'C6:6 Bb5:2 Ab5:4 Eb5',
+      'D5:4 F5 Bb5 D6',
+      'B5:8 G5:4 D5',
+      'Eb5:2 D5 C5 G4 C5:8',
+      'F5:4 Ab5 C6 Ab5',
+      'G5:6 F5:2 D5:4 B4',
+      'G4:12 r:4',
+      'Ab5:3 G5:1 Ab5:4 C6 Eb6',
+      'D6:3 C6:1 Bb5:4 F5 D5',
+      'G5:2 Ab5 G5 Eb5 C5:8',
+      'Eb6:6 D6:2 C6:4 Ab5',
+      'F5:4 Ab5 C6 F6',
+      'D6:6 B5:2 G5:4 F5',
+      'Eb5:2 D5 Eb5 G5 C6:8',
+      'B5:4 G5 D5 B4',
+    ],
+    harmony: [
+      tick('G4', 'C5'), tick('Ab4', 'C5'), tick('F4', 'Bb4'), tick('G4', 'B4'),
+      tick('G4', 'C5'), tick('F4', 'Ab4'), tick('G4', 'B4'), tick('G4', 'B4'),
+      tick('Ab4', 'C5'), tick('F4', 'Bb4'), tick('G4', 'C5'), tick('Ab4', 'C5'),
+      tick('F4', 'Ab4'), tick('G4', 'B4'), tick('G4', 'C5'), tick('G4', 'B4'),
+    ],
+    bass: [
+      ostinato('C2', 'G2', 'C3'), ostinato('Ab1', 'Eb2', 'Ab2'), ostinato('Bb1', 'F2', 'Bb2'), ostinato('G1', 'D2', 'G2'),
+      ostinato('C2', 'G2', 'C3'), ostinato('F1', 'C2', 'F2'), ostinato('G1', 'D2', 'G2'), ostinato('G1', 'D2', 'G2'),
+      ostinato('Ab1', 'Eb2', 'Ab2'), ostinato('Bb1', 'F2', 'Bb2'), ostinato('C2', 'G2', 'C3'), ostinato('Ab1', 'Eb2', 'Ab2'),
+      ostinato('F1', 'C2', 'F2'), ostinato('G1', 'D2', 'G2'), ostinato('C2', 'G2', 'C3'), ostinato('G1', 'D2', 'G2'),
+    ],
+    drums: [
+      ...times(7, 'k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2'),
+      's:1 s s s k:2 s s:1 s s s o:4',
+      ...times(7, 'k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2'),
+      's:1 s s s k:2 s s:1 s s s o:4',
+    ],
+  },
+}
+
+export const THEMES = { menu, run, boss, forest, cave, snow, tower, kyogre, lugia, hoOh, dialga } as const satisfies Record<string, Score>
 
 export type ThemeId = keyof typeof THEMES
