@@ -94,7 +94,7 @@ import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
-import { captureRef, flushRuns, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { captureRef, flushRuns, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { giftScreen } from './ui/gifts'
 import { playGate } from './ui/account'
@@ -311,6 +311,9 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
   endRun()
   // A newer build went live during the run (see `watchDeploys`): back in the lobby, with the run banked, ranked and its crash watch cleared, is the moment to load it.
   if (reloadForDeploy) return location.reload()
+  // Every Play in the lobby (the partner select, the challenge, a hatch, a shiny pick) finds its ticket in hand.
+  prefetchRun()
+  prefetchRun(challengeToday().day)
   setScreen(
     titleScreen(ui, input, {
       play: () => (accountsEnabled && !playingAsGuest && accountState().kind === 'guest' ? showPlayGate() : showMenu()),
@@ -353,6 +356,7 @@ const showPlayGate = () =>
 /** The partner select; its top bar leads back to the title, to the Poké Mart (the wallet) and to Settings, which come back to it on the same Pokémon. */
 const showMenu = (initial: PlayableId = loadSave().partner) => {
   endRun()
+  prefetchRun()
   const select = starterSelect(ui, input, {
     pick: (id) => setTimeout(() => void startRun(id), 250),
     back: () => showTitle({ focus: 'play' }),
@@ -384,6 +388,7 @@ const showMissions = () => setScreen(missionsScreen(ui, input, () => showTitle({
 /** The Desafio do dia's screen (from the title); its board opens over it and comes back to it. */
 const showChallenge = () => {
   endRun()
+  prefetchRun(challengeToday().day)
   setScreen(
     challengeScreen(ui, input, {
       play: (c, official) => setTimeout(() => void startRun(c.starter, { challenge: c, official }), 250),
@@ -571,13 +576,24 @@ type RunPlan = { seed: number; outbreak: EnemyId; roster: Roster }
 /** A Desafio do dia run, as `startRun` takes it: the challenge, and whether the screen called it official. */
 type ChallengeRun = { challenge: Challenge; official: boolean }
 
-const planRun = (): RunPlan => {
-  const seed = Date.now()
+/** A run's plan from `seed`: the API's for a ranked run, else one of the game's own. */
+const planRun = (seed = Date.now()): RunPlan => {
   const outbreak = outbreakToday()
   return { seed, outbreak, roster: runRoster(seed, outbreak) }
 }
 
 let upcoming = planRun()
+
+/**
+ * Asks ahead for the next ranked run's ticket (`day`: a Desafio do dia's), so
+ * Play never waits on it. Only between runs: a new token replaces the one a
+ * run in progress plays. A regular ticket's seed becomes the next plan, so the
+ * menus warm up the cast it draws.
+ */
+const prefetchRun = (day: DayKey | null = null) =>
+  void prefetchRanked(day).then((seed) => {
+    if (seed !== null && !day && upcoming.seed !== seed) upcoming = planRun(seed)
+  })
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
@@ -609,10 +625,12 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   if (!c) updateSave((s) => ({ ...s, partner: starter }))
   const loading = loadingScreen()
   ui.append(loading)
-  // The start token's clock starts now, while the sprites load.
+  // The ticket asked for ahead: its clock restarts now, while the sprites load. Without one the run is unranked.
   const ranked = startRanked(c?.day ?? null)
+  // A ranked run plays the seed the API dealt (a challenge's is the day's); the replay starts from it and the cast is drawn from it.
+  const seed = c ? c.seed : (ranked?.seed ?? upcoming.seed)
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
-  const plan = c ? { seed: c.seed, outbreak: c.outbreak, roster: runRoster(c.seed, c.outbreak) } : upcoming.outbreak === outbreakToday() ? upcoming : planRun()
+  const plan = c ? { seed, outbreak: c.outbreak, roster: runRoster(seed, c.outbreak) } : upcoming.seed === seed && upcoming.outbreak === outbreakToday() ? upcoming : planRun(seed)
   if (!c) upcoming = planRun()
   // The whole family, branches included: the evolution scene can land on any of them.
   await loadAll([...familyDex(starter), ...openingDex(plan)])
@@ -661,7 +679,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     hatchery: { steps: 0, eggs: 0, refund: 0 },
     dexBase: save.dex,
     recorder: startRecording(start),
-    ranked,
+    ranked: ranked?.ranked ?? null,
     rank: null,
     bestBefore: save.achievements.lifetime.bestTime,
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
@@ -770,6 +788,8 @@ const syncOverlay = (r: Run) => {
       break
     case 'gameover':
     case 'victory':
+      // For Play again: the run is over (endless mode goes on with the token it reported on).
+      prefetchRun(r.challenge ? challengeToday().day : null)
       r.overlay = results(
         ui,
         input,
