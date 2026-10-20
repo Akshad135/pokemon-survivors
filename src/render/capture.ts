@@ -53,7 +53,8 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
   const here = domainHere(g)
   const c = here?.d.capture
   if (!here || !c || (here.d.act !== 'capture' && here.d.act !== 'after')) return
-  const s = here.d.act === 'after' ? CAPTURE.length + here.d.age : here.d.scene
+  // Seconds since the ball left the player's hand (negative while the legendary kneels).
+  const s = (here.d.act === 'after' ? CAPTURE.length + here.d.age : here.d.scene) - CAPTURE.kneel
   const p = g.player
   const x = Math.round(c.x)
   const y = Math.round(c.y)
@@ -61,11 +62,20 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
   const ground = y - 4
   const absorbEnd = CAPTURE.throw + CAPTURE.absorb
   const dropEnd = absorbEnd + CAPTURE.drop
-  const out = s >= CAPTURE.settle ? captureOutcome(c) : null
+  const settle = CAPTURE.settle - CAPTURE.kneel
+  const out = s >= settle ? captureOutcome(c) : null
   // The legendary kneels until the ball takes it in: shrinking into a red glow.
   if (s < absorbEnd) {
     const k = clamp01((s - CAPTURE.throw) / CAPTURE.absorb)
     drawPokemon(ctx, sp, 'Hurt', 0, 0.2, x, y, { loop: false, scale: 1 - k * 0.9, tint: { color: '#f83030', amount: k * 0.8 }, flash: k > 0 ? 0.3 + k * 0.6 : 0, alpha: 1 - k * 0.5 })
+  }
+  if (s < 0) {
+    // Knocked out: stars circle its head before the throw.
+    for (let i = 0; i < 3; i++) {
+      const a = t * 4 + (i / 3) * TAU
+      blitCentered(ctx, STAR(), Math.round(x + Math.cos(a) * 14), Math.round(y - sp.bodyH - 4 + Math.sin(a) * 4))
+    }
+    return
   }
   if (s < CAPTURE.throw) {
     // The throw: an arc from the player up and over to the legendary.
@@ -90,7 +100,7 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
   if (s < dropEnd) {
     const k = (s - absorbEnd) / CAPTURE.drop
     by = Math.round(y - 40 + (ground - (y - 40)) * k * k)
-  } else if (s < CAPTURE.settle) {
+  } else if (s < settle) {
     // Each shake: a wobble left and right, then still.
     const k = ((s - dropEnd) % CAPTURE.shake) / CAPTURE.shake
     angle = k < 0.5 ? Math.sin(k * 2 * TAU) * 0.45 : 0
@@ -101,7 +111,7 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
     blitRotated(ctx, BALL(), bx, by, angle)
     if (out === 'caught') {
       // Click: stars burst out and fade.
-      const k = clamp01((s - CAPTURE.settle) / 0.8)
+      const k = clamp01((s - settle) / 0.8)
       if (k < 1) {
         ctx.globalAlpha = 1 - k
         for (let i = 0; i < 3; i++) {
@@ -114,7 +124,7 @@ export const drawCapture = (ctx: Ctx, g: Game, t: number) => {
     return
   }
   // Broke free: the halves fly apart and the legendary flashes back out, rising away.
-  const k = clamp01((s - CAPTURE.settle) / 1.2)
+  const k = clamp01((s - settle) / 1.2)
   blitCentered(ctx, HALF_TOP(), x - Math.round(k * 16), by - 3 - Math.round(Math.sin(k * Math.PI) * 10))
   blitCentered(ctx, HALF_BOTTOM(), x + Math.round(k * 16), by + 3 - Math.round(Math.sin(k * Math.PI) * 6))
   if (k < 1) {

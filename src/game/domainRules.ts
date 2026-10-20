@@ -19,12 +19,12 @@ export const REVEAL_AT = ENCOUNTER.settle + ENCOUNTER.pan + ENCOUNTER.rise
 export const ENCOUNTER_LENGTH = REVEAL_AT + ENCOUNTER.hold + ENCOUNTER.back
 
 /**
- * The capture scene, in seconds: the Poké Ball flies (`throw`), takes the
- * legendary in (`absorb`), drops, shakes `shakes` times `shake` s apart, and
- * settles at `settle` (caught or broken out, `render/capture.ts`); the loot
- * drops at `length`.
+ * The capture scene, in seconds: the legendary kneels (`kneel`), the Poké
+ * Ball flies (`throw`), takes it in (`absorb`), drops, shakes `shakes` times
+ * `shake` s apart, and settles at `settle` (caught or broken out,
+ * `render/capture.ts`); the loot drops at `length`.
  */
-export const CAPTURE = { throw: 0.7, absorb: 0.5, drop: 0.4, shakes: 3, shake: 0.8, settle: 4.3, length: 5.8 } as const
+export const CAPTURE = { kneel: 0.9, throw: 0.7, absorb: 0.5, drop: 0.4, shakes: 3, shake: 0.8, settle: 5.2, length: 6.7 } as const
 
 const smooth = (k: number) => {
   const c = Math.min(1, Math.max(0, k))

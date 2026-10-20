@@ -32,7 +32,7 @@ const islands = (r: number) => [...ROCKS.map(([x, y]) => circle(x, y + 2, r)), c
 
 /** Origin Pulse: lances from past the screen's edge with safe lanes between them. */
 const lances = (count: number, windup: number, every = 0): BossPattern => ({
-  kind: 'beam', every, source: 'edge', count, spread: 52, windup, duration: 0.45, width: 18, length: 560, damage: 26, visual: 'water',
+  kind: 'beam', every, source: 'edge', count, spread: 52, windup, duration: 0.45, width: 18, length: 560, damage: 23, visual: 'water',
 })
 
 export const KYOGRE_DOMAIN: LegendDomain = {
@@ -108,13 +108,13 @@ export const KYOGRE_DOMAIN: LegendDomain = {
       below: 1,
       steer: { kind: 'anchor', x: 0, y: 0, drift: 24, pace: 0.5 },
       patterns: [
-        { kind: 'ring', every: 4.4, count: 12, speed: 58, radius: 5, damage: 16, visual: 'water' },
+        { kind: 'ring', every: 4.4, count: 12, speed: 58, radius: 5, damage: 14, visual: 'water' },
         // Hydro Pump: aimed at the player, stopped by the stalagmites.
-        { kind: 'beam', every: 5.6, source: 'boss', count: 1, spread: 0, windup: 1.1, duration: 0.5, width: 12, length: 360, damage: 20, visual: 'water', blocked: true },
-        { kind: 'strikes', every: 5, target: 'player', count: 3, spread: 0, radius: 15, delay: 1.1, damage: 17, visual: 'water', lead: 1 },
+        { kind: 'beam', every: 5.6, source: 'boss', count: 1, spread: 0, windup: 1.1, duration: 0.5, width: 12, length: 360, damage: 18, visual: 'water', blocked: true },
+        { kind: 'strikes', every: 5, target: 'player', count: 3, spread: 0, radius: 15, delay: 1.1, damage: 15, visual: 'water', lead: 1 },
         { kind: 'summon', every: 11, enemies: ['carvanha'], count: 2, max: 3, radius: 70, role: 'runner' },
       ],
-      ultimate: { move: 'Water Spout', first: 8, every: 22, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 36, safe: 'cover', visual: 'water' } }] },
+      ultimate: { move: 'Water Spout', first: 8, every: 22, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.4, damage: 32, safe: 'cover', visual: 'water' } }] },
     },
     {
       below: 0.68,
@@ -122,12 +122,12 @@ export const KYOGRE_DOMAIN: LegendDomain = {
       steer: { kind: 'orbit', radius: 112, pace: 0.6 },
       arena: [{ kind: 'flood', at: 0, warn: 2.8, area: [circle(0, 0, R + 4)], spare: islands(30) }],
       patterns: [
-        { kind: 'dive', every: 7.5, hide: 1.5, windup: 0.9, radius: 30, damage: 24, visual: 'water' },
-        { kind: 'volley', every: 4.8, count: 5, arc: 0.9, speed: 105, windup: 0.9, radius: 5, damage: 16, visual: 'water' },
-        { kind: 'beam', every: 6.4, source: 'boss', count: 2, spread: 0.55, windup: 1.1, duration: 0.5, width: 11, length: 360, damage: 20, visual: 'water', blocked: true },
+        { kind: 'dive', every: 7.5, hide: 1.5, windup: 0.9, radius: 30, damage: 22, visual: 'water' },
+        { kind: 'volley', every: 4.8, count: 5, arc: 0.9, speed: 105, windup: 0.9, radius: 5, damage: 14, visual: 'water' },
+        { kind: 'beam', every: 6.4, source: 'boss', count: 2, spread: 0.55, windup: 1.1, duration: 0.5, width: 11, length: 360, damage: 18, visual: 'water', blocked: true },
         { kind: 'summon', every: 13, enemies: ['sharpedo', 'carvanha'], count: 2, max: 3, radius: 60, role: 'runner' },
       ],
-      ultimate: { move: 'Surf', first: 7, every: 20, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.6, damage: 38, safe: 'dry', visual: 'water' } }] },
+      ultimate: { move: 'Surf', first: 7, every: 20, steps: [{ at: 0, pattern: { kind: 'blast', every: 0, windup: 2.6, damage: 34, safe: 'dry', visual: 'water' } }] },
     },
     {
       below: 0.34,
@@ -137,9 +137,9 @@ export const KYOGRE_DOMAIN: LegendDomain = {
       arena: [{ kind: 'flood', at: 0, warn: 2.4, area: [circle(0, 0, R + 4)], spare: islands(24) }],
       patterns: [
         lances(4, 1.3, 5.2),
-        { kind: 'ring', every: 4.2, count: 16, speed: 64, radius: 5, damage: 16, visual: 'water' },
-        { kind: 'dive', every: 9, hide: 1.3, windup: 0.9, radius: 32, damage: 24, visual: 'water' },
-        { kind: 'beam', every: 10, source: 'boss', count: 1, spread: 0, sweep: 1.8, windup: 1.2, duration: 1.8, width: 12, length: 320, damage: 18, visual: 'water' },
+        { kind: 'ring', every: 4.2, count: 16, speed: 64, radius: 5, damage: 14, visual: 'water' },
+        { kind: 'dive', every: 9, hide: 1.3, windup: 0.9, radius: 32, damage: 22, visual: 'water' },
+        { kind: 'beam', every: 10, source: 'boss', count: 1, spread: 0, sweep: 1.8, windup: 1.2, duration: 1.8, width: 12, length: 320, damage: 16, visual: 'water' },
       ],
       ultimate: {
         move: 'Origin Pulse',
@@ -149,7 +149,7 @@ export const KYOGRE_DOMAIN: LegendDomain = {
           { at: 0, pattern: lances(5, 1.5) },
           { at: 1.8, pattern: lances(5, 1.4) },
           { at: 3.6, pattern: lances(5, 1.3) },
-          { at: 5.2, pattern: { kind: 'ring', every: 0, count: 24, speed: 70, radius: 5, damage: 17, visual: 'water' } },
+          { at: 5.2, pattern: { kind: 'ring', every: 0, count: 24, speed: 70, radius: 5, damage: 15, visual: 'water' } },
         ],
       },
     },

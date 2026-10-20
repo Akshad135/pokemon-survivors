@@ -6,13 +6,13 @@ import { ENEMIES } from '../data/enemies'
 import { RIFT, type RiftLegend } from '../data/rifts'
 import { onFloor } from './arenaFloor'
 import { joinAs, parked } from './bosses'
-import { hurtPlayer } from './combat'
+import { hurtPlayer, killEnemy } from './combat'
 import { DOMAIN_HOOKS } from './domainHooks'
 import {
   advanceFront, CAPTURE, composePlan, ENCOUNTER_LENGTH, encounterBeat, REVEAL_AT, transformStage, waterBelow,
 } from './domainRules'
 import { burst, updateEffects } from './effects'
-import { despawnEnemy, spawnEnemy } from './enemies'
+import { spawnEnemy } from './enemies'
 import { riftLoot, riftScale, type RiftArena } from './rift'
 import { exitArena, LAVA_BURN, riftWin } from './riftArena'
 import { keepOnFloor, setAside } from './room'
@@ -188,7 +188,8 @@ const startEncounter = (g: Game, arena: RiftArena, d: DomainState, def: LegendDo
   d.act = 'encounter'
   d.age = 0
   d.scene = 0
-  for (const e of g.enemies) despawnEnemy(e)
+  // Left behind at once: the scene holds the world still, so they couldn't fade out.
+  g.enemies.length = 0
   g.hazards.length = 0
   arena.layout = composePlan(def, true, [])
   const p = g.player
@@ -257,7 +258,8 @@ export const updateDomainScene = (g: Game, dt: number) => {
     return true
   }
   const c = d.capture!
-  centerOn(g, (p.x + c.x) / 2, (p.y + c.y) / 2)
+  // On the legendary, a little low on screen so the news at the top doesn't cover it; the throw comes in from the player's side.
+  centerOn(g, c.x, c.y - 50)
   if (before < CAPTURE.settle && d.scene >= CAPTURE.settle) {
     c.settled = true
     g.events.push({ kind: 'riftCapture', enemy: d.legend, shiny: c.shiny })
@@ -277,7 +279,8 @@ const startCapture = (g: Game, arena: RiftArena, d: DomainState, boss: Enemy | u
   d.act = 'capture'
   d.scene = 0
   g.hazards.length = 0
-  for (const e of g.enemies) if (e.dying < 0) despawnEnemy(e)
+  // The legendary's faint and its adds go at once: the scene holds the world still, and draws the legendary itself.
+  g.enemies.length = 0
 }
 
 /* ---------------- Battle ---------------- */
@@ -376,9 +379,10 @@ export const domainCamera = (g: Game, dt: number) => {
 /**
  * Jumps the domain the player is in to an act (the dev console's
  * `ps.riftAct`): `encounter` seals the way and plays the scene, `battle`
- * skips it with the legendary already in, at the top of `phase` (from 1).
+ * skips it with the legendary already in, at the top of `phase` (from 1),
+ * and `capture` knocks the legendary out for the capture scene.
  */
-export const jumpToAct = (g: Game, act: 'crossing' | 'encounter' | 'battle', phase = 1) => {
+export const jumpToAct = (g: Game, act: 'crossing' | 'encounter' | 'battle' | 'capture', phase = 1) => {
   const here = domainHere(g)
   if (!here) return
   const { arena, d, def } = here
@@ -389,8 +393,13 @@ export const jumpToAct = (g: Game, act: 'crossing' | 'encounter' | 'battle', pha
   d.act = 'battle'
   d.age = 0
   const boss = g.enemies.find((e) => e.id === d.bossId)
+  if (!boss) return
+  if (act === 'capture') {
+    if (boss.fight) Object.assign(boss.fight, { phase: def.phases.length - 1, shift: 0 })
+    return killEnemy(g, boss)
+  }
   const below = def.phases[phase - 1]?.below ?? 1
-  if (boss) boss.hp = Math.max(1, Math.min(boss.maxHp, boss.maxHp * below - 1))
+  boss.hp = Math.max(1, Math.min(boss.maxHp, boss.maxHp * below - 1))
 }
 
 /** What a domain plays: its crossing's theme until the legendary shows itself, then its own (`LegendDomain.music`). */

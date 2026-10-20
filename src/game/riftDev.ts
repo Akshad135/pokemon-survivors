@@ -51,8 +51,8 @@ export const riftDevTools = (game: () => Game | undefined) => {
       })(),
     /** Starts a rift's omen now (its weather, then its portal 20 s later). */
     omen: (legend?: RiftLegend) => playing((g) => startOmen(g, legend))(),
-    /** In a domain, jumps to an act: `ps.riftAct('encounter')`, or `ps.riftAct('battle', 2)` for the top of phase 2. */
-    riftAct: (act: 'encounter' | 'battle', phase?: number) => playing((g) => jumpToAct(g, act, phase))(),
+    /** In a domain, jumps to an act: `ps.riftAct('encounter')`, `ps.riftAct('battle', 2)` for the top of phase 2, or `ps.riftAct('capture')`. */
+    riftAct: (act: 'encounter' | 'battle' | 'capture', phase?: number) => playing((g) => jumpToAct(g, act, phase))(),
     /** Opens a portal right next to the player. */
     portal: (legend?: RiftLegend) => playing((g) => openPortal(g, legend ?? pickLegend(g.rng, g.rift.met), { x: g.player.x + 48, y: g.player.y }))(),
     /** Ends the run as if Mewtwo just fell: the victory screen with the endless offer. */
