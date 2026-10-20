@@ -1,6 +1,7 @@
 import { accountState, giftInbox } from '../account'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
+import { SPECIAL_COMPANIONS } from '../data/companions'
 import { HALLOWEEN } from '../data/halloween'
 import { ENEMIES } from '../data/enemies'
 import { HATCHLINGS } from '../data/hatchlings'
@@ -117,7 +118,7 @@ export type HalloweenScreenActions = {
  * The event screen, over the lobby: dates and days left (or the countdown),
  * what the night does to runs, the candy jar with its rewards, and the
  * haunted outbreaks day by day, and the supporters' jack-o'-lantern badge
- * while becoming one still earns it. Abrir presentes goes to the gift box
+ * and Pumpkaboo while becoming one still earns them. Abrir presentes goes to the gift box
  * when a reward waits there; Apoiar to the Hall da Fama. Esc or Backspace
  * close it.
  */
@@ -156,6 +157,7 @@ export const halloweenScreen = (root: HTMLElement, input: Input, actions: Hallow
       'p',
       { class: 'halloween-supporter' },
       h('img', { src: pumpkinHeartIcon(supporter ? (savedSupporterTier(save) ?? 'supporter') : 'supporter'), alt: '' }),
+      h('img', { class: 'halloween-pumpkaboo', src: portraitUrl(SPECIAL_COMPANIONS.pumpkaboo.dex), alt: SPECIAL_COMPANIONS.pumpkaboo.name }),
       rich(supporter ? m.supportYes : m.supportNo(formatDay(HALLOWEEN.to))),
     )
 

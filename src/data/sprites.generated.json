@@ -41442,6 +41442,53 @@
       }
     }
   },
+  "710": {
+    "anims": {
+      "Walk": {
+        "frameWidth": 24,
+        "frameHeight": 56,
+        "durations": [
+          10,
+          10,
+          6,
+          6,
+          10,
+          10,
+          6,
+          6
+        ]
+      },
+      "Idle": {
+        "frameWidth": 24,
+        "frameHeight": 56,
+        "durations": [
+          8,
+          6,
+          6,
+          6,
+          8,
+          6,
+          6,
+          6
+        ]
+      },
+      "Hurt": {
+        "frameWidth": 32,
+        "frameHeight": 64,
+        "durations": [
+          2,
+          8
+        ]
+      }
+    },
+    "portrait": true,
+    "body": {
+      "bodyW": 18,
+      "bodyH": 19,
+      "footY": -3
+    },
+    "cry": true
+  },
   "714": {
     "anims": {
       "Walk": {

@@ -34,7 +34,7 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
       { pt: 'Um surto assombrado por dia, com o Gastly no dia 31.', en: 'A haunted outbreak every day, with Gastly on the 31st.', es: 'Un brote embrujado cada día, con Gastly el 31.' },
       { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
       { pt: 'Quebre as abóboras: doces ou travessuras?', en: 'Smash the jack-o\'-lanterns: trick or treat?', es: 'Rompe las calabazas: ¿dulce o truco?' },
-      { pt: 'Apoiadores até 2/11 trocam o coração por uma abóbora, para sempre.', en: 'Supporters by Nov 2 swap their heart for a jack-o\'-lantern, forever.', es: 'Quien apoye hasta el 2/11 cambia el corazón por una calabaza, para siempre.' },
+      { pt: 'Apoiadores até 2/11 trocam o coração por uma abóbora, para sempre, e ganham o Pumpkaboo como companheiro.', en: 'Supporters by Nov 2 swap their heart for a jack-o\'-lantern, forever, and get Pumpkaboo as a companion.', es: 'Quien apoye hasta el 2/11 cambia el corazón por una calabaza, para siempre, y gana a Pumpkaboo como compañero.' },
     ],
     changes: [
       {
@@ -56,9 +56,9 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             es: 'Dulces: los Pokémon de tipo Fantasma sueltan dulces, los jefes y los Alfas siempre traen 10, y las calabazas son dulce o truco (a veces aparece una ronda de fantasmas a tu alrededor). Los dulces llenan un frasco que da premios en el Regalo del lobby: el marco Calabaza solo por participar, el fondo Noche de Brujas, un Huevo Raro, el fondo de pantalla Casa Embrujada, el título Rey Calabaza y un Gastly shiny.',
           },
           {
-            pt: 'Apoiadores da Noite das Bruxas: quem já apoia o jogo ou apoiar até 2 de novembro troca o coração por uma abóbora com um coração entalhado (dourada no Ouro), no ranking, no perfil e no Hall da Fama. Ela fica para sempre.',
-            en: 'Halloween Night supporters: anyone who already supports the game or does by November 2 swaps their heart for a jack-o\'-lantern with a heart carved in (golden for Gold), on the ranking, their profile and the Hall of Fame. It stays forever.',
-            es: 'Patrocinadores de la Noche de Brujas: quien ya apoya el juego o lo apoye hasta el 2 de noviembre cambia el corazón por una calabaza con un corazón tallado (dorada en Oro), en el ranking, su perfil y el Salón de la Fama. Se queda para siempre.',
+            pt: 'Apoiadores da Noite das Bruxas: quem já apoia o jogo ou apoiar até 2 de novembro troca o coração por uma abóbora com um coração entalhado (dourada no Ouro), no ranking, no perfil e no Hall da Fama. Ela fica para sempre. E quem entrar no jogo como apoiador durante o evento ganha o Pumpkaboo, um companheiro que só apoiadores têm e que deixa um rastro de doces brilhando por onde passa.',
+            en: 'Halloween Night supporters: anyone who already supports the game or does by November 2 swaps their heart for a jack-o\'-lantern with a heart carved in (golden for Gold), on the ranking, their profile and the Hall of Fame. It stays forever. And supporters who play during the event get Pumpkaboo, a companion only supporters have, leaving a trail of sparkling candy wherever it goes.',
+            es: 'Patrocinadores de la Noche de Brujas: quien ya apoya el juego o lo apoye hasta el 2 de noviembre cambia el corazón por una calabaza con un corazón tallado (dorada en Oro), en el ranking, su perfil y el Salón de la Fama. Se queda para siempre. Y quien entre al juego como patrocinador durante el evento gana a Pumpkaboo, un compañero que solo tienen los patrocinadores y que deja un rastro de dulces brillantes por donde pasa.',
           },
         ],
       },

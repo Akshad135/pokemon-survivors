@@ -17,7 +17,8 @@ import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
-import { parseCompanion, type Companion } from './supporters'
+import type { SpecialCompanionId } from '../data/companions'
+import { parseCompanion, parseCompanions, type Companion } from './supporters'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { StatDelta } from './stats'
@@ -140,6 +141,8 @@ export type Save = {
   shinyPicks: readonly ShinyPick[]
   /** The supporter's companion, drawn after the player in runs (`game/supporters.ts`). */
   companion: Companion | null
+  /** Companions only a Mystery Gift brings (`data/companions.ts`): the Noite das Bruxas supporters' Pumpkaboo. */
+  companions: readonly SpecialCompanionId[]
   /** Where each branching family evolved last (`data/branches.ts`): the Trainer Card shows that form. */
   branches: Branches
   /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
@@ -184,6 +187,7 @@ export const EMPTY_SAVE: Save = {
   ribbons: [],
   shinyPicks: [],
   companion: null,
+  companions: [],
   branches: {},
   clears: {},
   halloween: NO_HALLOWEEN,
@@ -245,6 +249,7 @@ export const parseSaveData = (json: unknown): Save => {
     ribbons: parseRibbons(data.ribbons),
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
+    companions: parseCompanions(data.companions),
     branches: parseBranches(data.branches),
     // Plus the clears the lifetime records prove, for wins from before clears were tracked.
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),

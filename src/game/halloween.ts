@@ -8,6 +8,7 @@ import { spawnEnemy } from './enemies'
 import type { Gift, GiftContent } from './gifts'
 import type { Save } from './meta'
 import { isRecord, wholeNumber } from './parse'
+import { isSupporter } from './supporters'
 import type { Roster } from './roster'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
@@ -179,17 +180,23 @@ export const halloweenGiftId = (index: number) => `halloween2026:${index}`
 /** Whether a gift is one of the jar's, made by the game rather than listed by the API. */
 export const isHalloweenGift = (id: string) => id.startsWith('halloween2026:')
 
+/** The supporters' gift: Pumpkaboo, a companion no one else gets (it leaves candy sparkles behind as it walks). */
+export const PUMPKABOO_GIFT = { id: 'halloween2026:pumpkaboo', content: { kind: 'companion', id: 'pumpkaboo' }, reason: { kind: 'halloweenSupport' } } as const satisfies Gift
+
 /**
- * The jar's rewards waiting to be opened on `day`: every one its candies
- * reached that the save didn't apply yet. The frame for showing up needs an
- * event day (or a candy already in the jar).
+ * The event's gifts waiting to be opened on `day`: every reward the jar's
+ * candies reached that the save didn't apply yet (the frame for showing up
+ * needs an event day, or a candy already in the jar), and Pumpkaboo for a
+ * supporter on an event day.
  */
-export const halloweenGifts = (save: Save, day: DayKey): Gift[] =>
-  HALLOWEEN_REWARDS.flatMap((r, i) => {
+export const halloweenGifts = (save: Save, day: DayKey): Gift[] => [
+  ...HALLOWEEN_REWARDS.flatMap((r, i) => {
     const id = halloweenGiftId(i)
     const reached = r.candies === 0 ? isHalloweenDay(day) || save.halloween.candies > 0 : save.halloween.candies >= r.candies
-    return reached && !save.gifts.includes(id) ? [{ id, content: r.content, reason: { kind: 'halloween' } }] : []
-  })
+    return reached && !save.gifts.includes(id) ? [{ id, content: r.content, reason: { kind: 'halloween' } } satisfies Gift] : []
+  }),
+  ...(isSupporter(save) && isHalloweenDay(day) && !save.gifts.includes(PUMPKABOO_GIFT.id) ? [PUMPKABOO_GIFT] : []),
+]
 
 /** The next reward the jar fills toward, or null once every one is reached. */
 export const nextHalloweenReward = (candies: number) => HALLOWEEN_REWARDS.find((r) => r.candies > candies) ?? null

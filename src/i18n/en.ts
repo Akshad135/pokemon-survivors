@@ -578,9 +578,9 @@ export const en: Messages = {
     candies: 'Candies',
     supporterBadge: (tier) => (tier === 'gold' ? 'Gold Supporter · Halloween Night 2026' : 'Supporter · Halloween Night 2026'),
     perk: 'Pumpkin',
-    perkTitle: (date) => `Support by ${date}: your supporter heart becomes this jack-o'-lantern, forever`,
-    supportYes: 'Thanks for your support! Your badge is a *jack-o\'-lantern* now on the ranking, your profile and the Hall of Fame, and it stays that way forever.',
-    supportNo: (date) => `*Support* the game by ${date} and this *jack-o'-lantern* replaces your heart on the ranking, your profile and the Hall of Fame. Forever.`,
+    perkTitle: (date) => `Support by ${date}: your heart becomes this jack-o'-lantern forever, and Pumpkaboo walks with you`,
+    supportYes: 'Thanks for your support! Your badge is a *jack-o\'-lantern* on the ranking, your profile and the Hall of Fame, forever. And *Pumpkaboo*, for supporters only, walks with you leaving candy sparkles.',
+    supportNo: (date) => `*Support* the game by ${date} to get this *jack-o'-lantern* in place of your heart, forever, and *Pumpkaboo* as a companion, leaving a trail of sparkling candy.`,
     support: 'Support',
   },
 
@@ -670,6 +670,7 @@ export const en: Messages = {
     newTitle: (title) => `New title: *${title}*! It's on already.`,
     style: (name) => `New style: *${name}*! It's on already.`,
     shinyHatch: (name) => `A _shiny_ *${name}* came for you!`,
+    companion: (name) => `*${name}* walks with you in your runs now!`,
     ribbon: (name) => `*${name}*! It's on your profile already.`,
     ribbonWhy: (date, rank, total) => `Challenge of ${date}: #${rank} of ${total}`,
     button: 'Gift!',
@@ -691,6 +692,7 @@ export const en: Messages = {
     staff: (from) => (from ? `A present from @${from}, who makes the game ♥` : 'A present from the game\'s maker ♥'),
     discord: 'For joining our Discord ♥',
     halloween: 'From the Halloween Night candy jar',
+    halloweenSupport: 'For supporting on Halloween Night ♥',
   },
 
   supporters: {

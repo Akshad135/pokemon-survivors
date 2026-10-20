@@ -43,7 +43,9 @@ export const CRITTERS = [52, 175]
 export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483, 380, 381, 386]
 /** Arceus, the endless mode's reaper. */
 export const REAPER = [493]
-export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER])]
+/** Companions that aren't playable (`SPECIAL_COMPANIONS` in src/game/supporters.ts): Pumpkaboo, the Noite das Bruxas supporters'. */
+export const COMPANIONS = [710]
+export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...COMPANIONS])]
 /** Species that can roll shiny: the player lines, regular enemies and rift legendaries. */
 export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS])
 

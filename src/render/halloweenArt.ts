@@ -68,6 +68,31 @@ export const jackIcon = () => toIconUrl('halloween:jack', () => HALLOWEEN_ART.ja
 export const pumpkinHeartIcon = (tier: SupporterTier) =>
   toIconUrl(`halloween:heart:${tier}`, () => art(PUMPKIN_HEART, PUMPKIN_HEART_COLORS[tier], tier === 'gold' ? '#4a3008' : '#2a1008'))
 
+/** How long a candy sparkle lasts, in seconds. */
+export const CANDY_SPARK_LIFE = 0.7
+
+/**
+ * A candy sparkle a companion left behind (`render/companion.ts`), `age`
+ * seconds old, in one of the candies' colors: a little cross with a white
+ * heart, then a dot that dims and drifts up.
+ */
+export const drawCandySpark = (ctx: Ctx, x: number, y: number, age: number, color: number) => {
+  const pal = TREAT_COLORS[color % TREAT_COLORS.length]!
+  const k = age / CANDY_SPARK_LIFE
+  const px = Math.round(x)
+  const py = Math.round(y - k * 6)
+  if (k < 0.35) {
+    ctx.fillStyle = pal[2]
+    ctx.fillRect(px - 1, py, 3, 1)
+    ctx.fillRect(px, py - 1, 1, 3)
+    ctx.fillStyle = pal[4]
+    ctx.fillRect(px, py, 1, 1)
+    return
+  }
+  ctx.fillStyle = k < 0.7 ? pal[3] : pal[1]
+  ctx.fillRect(px, py, 1, 1)
+}
+
 /** A candy on the ground, bobbing; its color comes from its id. */
 export const drawTreat = (ctx: Ctx, id: number, x: number, y: number) => {
   const sprites = HALLOWEEN_ART.treats()

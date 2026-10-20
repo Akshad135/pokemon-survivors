@@ -78,7 +78,7 @@ import { parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesS
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
 import { playsShiny } from './game/shinyPicks'
-import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
+import { canWalkWith, companionForm, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type CompanionId, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Offer, Phase } from './game/types'
@@ -257,9 +257,9 @@ let meadowStick: Stick | null = null
 /** A CSS px point on screen, in the meadow's world px (the canvas sits at the viewport's corner). */
 const meadowAt = (at: Vec): Vec => ({ x: Math.round(scene.cam.x) + at.x / cssScale, y: Math.round(scene.cam.y) + at.y / cssScale })
 
-/** The lobby's handle on the meadow: its partner walks there. */
+/** The lobby's handle on the meadow: its partner walks there, with the supporter's companion. */
 const meadow: Meadow = {
-  meet: (partner) => meetPartner(scene, partner),
+  meet: (partner) => meetPartner(scene, partner, partner && runCompanion({ x: 0, y: 0 })),
   steer: (move, tap, home) => steerPartner(scene, move, tap && meadowAt(tap), meadowAt(home)),
   out: () => scene.partner !== null && scene.partner.state !== 'home',
   stick: (stick) => (meadowStick = stick),
@@ -379,9 +379,9 @@ const runCompanion = (at: Vec): CompanionView | null => {
   const save = loadSave()
   const c = save.companion
   if (!c || !isSupporter(save) || !canWalkWith(save, c)) return null
-  const dex = PLAYABLE[c.id].line[0].dex
+  const { dex, sparkles } = companionForm(c.id)
   void (c.shiny ? preloadShinies([dex]) : loadSpecies(dex)).catch(() => {})
-  return createCompanion(dex, c.shiny, at)
+  return createCompanion(dex, c.shiny, at, sparkles ?? null)
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
@@ -1612,13 +1612,14 @@ const devGifts = {
   /**
    * Puts a Mystery Gift in the lobby's gift box as if a sync listed it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
    * `ps.gift('title')`, `ps.gift('style', 'ambassador')` (a frame), `ps.gift('shinyHatch', 'munchlax')`,
-   * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice).
+   * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice),
+   * `ps.gift('companion', 'pumpkaboo')` (a gift-only companion).
    * `why`: an inviter's handle (welcome) or a count of friends brought.
    */
   gift: (kind: GiftKind = 'egg', arg?: string, why?: string | number) => {
-    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' }, ribbon: { ribbon: { day: previousDay(brasiliaDay(today())), tier: arg ?? 'gold', rank: 12, total: 340 } }, shinyPick: {} }[kind]
+    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' }, ribbon: { ribbon: { day: previousDay(brasiliaDay(today())), tier: arg ?? 'gold', rank: 12, total: 340 } }, shinyPick: {}, companion: { id: arg ?? 'pumpkaboo' } }[kind]
     const content = parseGiftContent({ kind, ...raw })
-    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick'
+    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick, companion (id)'
     const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
     return stageGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
@@ -1634,8 +1635,8 @@ const devGifts = {
         TIER_GIFTS[t].map((content, i) => ({ id: `dev-support-${t}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier: t } as const })),
       ),
     ),
-  /** Takes `id` along as the companion (`shiny` if owned so); no argument walks alone. Shows from the next run. */
-  companion: (id?: PlayableId, shiny = false) => updateSave((s) => ({ ...s, companion: id ? { id, shiny } : null })),
+  /** Takes `id` along as the companion (`shiny` if owned so; a gift-only one like `pumpkaboo` must be owned); no argument walks alone. Shows from the next run. */
+  companion: (id?: CompanionId, shiny = false) => updateSave((s) => ({ ...s, companion: id ? { id, shiny } : null })),
   /** Lands as a guest invited by `handle` (shown as `name`): the title shows the invite banner. */
   invite: (handle = 'ash', name = 'Ash') => {
     stageInvite(handle, name)

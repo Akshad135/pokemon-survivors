@@ -5,7 +5,8 @@ import { HATCHLINGS, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from
 import { HALLOWEEN } from '../data/halloween'
 import { POLL, SUPPORTER, type PollOptionId } from '../data/supporters'
 import { pendingPicks, pickShiny, ownsShiny, shinyChoices } from '../game/shinyPicks'
-import { canWalkWith, hallOf, isSupporter, parseCode, type Companion, type SupporterStatus, type WallEntry } from '../game/supporters'
+import { canWalkWith, companionForm, hallOf, isSupporter, parseCode, type Companion, type CompanionId, type SupporterStatus, type WallEntry } from '../game/supporters'
+import { isSpecialCompanion, SPECIAL_COMPANION_IDS } from '../data/companions'
 import { savedSupporterTier } from '../game/trainer'
 import { brasiliaDay } from '../game/day'
 import { pumpkinOfferOpen } from '../game/halloween'
@@ -86,15 +87,16 @@ const spatialNav = (input: Input, items: HTMLElement[], activate: (i: number) =>
 
 /* ---------------- Pokémon grid ---------------- */
 
-type Cell = { id: PlayableId | null; shiny: boolean }
+type Cell = { id: CompanionId | null; shiny: boolean }
 
-/** A portrait to tap in a picker: the family's first stage, a Poké Ball for "none". */
+/** A portrait to tap in a picker: the family's first stage (or a gift-only companion), a Poké Ball for "none". */
 const cellButton = (c: Cell, extra: Node | null = null) => {
-  const name = c.id ? PLAYABLE[c.id].line[0].name : t().supporters.companionNone
+  const form = c.id ? companionForm(c.id) : null
+  const name = form ? form.name : t().supporters.companionNone
   return h(
     'button',
     { class: 'pick-cell', type: 'button', title: name, 'aria-label': name },
-    h('img', { src: c.id ? portraitUrl(PLAYABLE[c.id].line[0].dex, c.shiny) : pokeballIcon(), alt: '' }),
+    h('img', { src: form ? portraitUrl(form.dex, c.shiny) : pokeballIcon(), alt: '' }),
     extra,
   )
 }
@@ -216,7 +218,7 @@ const shinyPicker = (root: HTMLElement, input: Input, actions: { play: (id: Play
       ],
       footer,
       pick: (c) => {
-        picked = c.id
+        picked = c.id && !isSpecialCompanion(c.id) ? c.id : null
         // Back on the confirm button, so Enter twice picks.
         draw(choices.length)
       },
@@ -232,23 +234,26 @@ const shinyPicker = (root: HTMLElement, input: Input, actions: { play: (id: Play
   return { el: o.el, tick: (time) => sub?.tick?.(time), dispose: () => (sub?.dispose(), o.dispose()), dim: 0.5 }
 }
 
-/** The companion: any Pokémon the save can play (shiny if owned so), or none. */
+/** The save's shiny of a companion, if it has one (a gift-only companion never does). */
+const companionShiny = (save: ReturnType<typeof loadSave>, id: CompanionId | null) => id !== null && !isSpecialCompanion(id) && ownsShiny(save, id)
+
+/** The companion: any Pokémon the save can play (shiny if owned so), the gift-only ones it got first, or none. */
 const companionPicker = (root: HTMLElement, input: Input, back: Back): Screen => {
   const m = t().supporters
   const o = overlay(root, input, back)
   const now = loadSave().companion
-  let picked: PlayableId | null = now?.id ?? null
+  let picked: CompanionId | null = now?.id ?? null
   let shiny = now?.shiny ?? false
 
   const draw = (initial?: number) => {
     const save = loadSave()
-    const ids = PLAYABLE_IDS.filter((id) => canWalkWith(save, { id, shiny: false }))
+    const ids: CompanionId[] = [...SPECIAL_COMPANION_IDS, ...PLAYABLE_IDS].filter((id) => canWalkWith(save, { id, shiny: false }))
     const cells = [null, ...ids].map((id) => {
       const el = cellButton({ id, shiny: id !== null && id === picked && shiny })
       el.classList.toggle('picked', id === picked)
       return { cell: { id, shiny: false }, el }
     })
-    const canShiny = picked !== null && ownsShiny(save, picked)
+    const canShiny = companionShiny(save, picked)
     const footer: Action[] = [
       ...(canShiny ? [{ label: m.companionShiny(shiny), run: () => ((shiny = !shiny), draw(cells.length)) }] : []),
       {
@@ -257,7 +262,7 @@ const companionPicker = (root: HTMLElement, input: Input, back: Back): Screen =>
           const companion = picked ? { id: picked, shiny: shiny && canShiny } : null
           updateSave((s) => ({ ...s, companion }))
           void syncSave()
-          toast(root, companion ? m.companionSaved(PLAYABLE[companion.id].line[0].name) : m.companionOff, 2200)
+          toast(root, companion ? m.companionSaved(companionForm(companion.id).name) : m.companionOff, 2200)
           o.close()
         },
       },
@@ -270,7 +275,7 @@ const companionPicker = (root: HTMLElement, input: Input, back: Back): Screen =>
       footer,
       pick: (c) => {
         picked = c.id
-        shiny = picked !== null && ownsShiny(loadSave(), picked) && shiny
+        shiny = companionShiny(loadSave(), picked) && shiny
         draw(cells.length)
       },
       initial: initial ?? Math.max(0, cells.findIndex((c) => c.cell.id === picked)),
@@ -397,6 +402,7 @@ const codeScreen = (root: HTMLElement, input: Input, redeemed: () => void, back:
 /** The final stage of a supporter's Pokémon (like the Trainer chip), shiny only if it has a shiny sprite; null for an API from before the Hall. */
 export const hallFace = (p: Companion | null) => {
   if (!p) return null
+  if (isSpecialCompanion(p.id)) return { dex: companionForm(p.id).dex, shiny: false }
   const dex = PLAYABLE[p.id].line[PLAYABLE[p.id].line.length - 1]!.dex
   return { dex, shiny: p.shiny && hasShiny(dex) }
 }

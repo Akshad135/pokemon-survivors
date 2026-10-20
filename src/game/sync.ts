@@ -12,6 +12,7 @@ import { mergeMissions } from './missions'
 import { mergeRibbons } from './ribbons'
 import { mergeShinyStarters } from './shinyStarters'
 import { mergeShinyPicks } from './shinyPicks'
+import { mergeCompanions } from './supporters'
 
 /**
  * Account sync rules, shared by the game and the API (`server/`): how two
@@ -48,7 +49,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  *   applied on either side never lands again.
  * - Ribbons: a union, one per day (the better one if both sides had that day).
  * - Shiny picks: a union by ticket; a pick made on either side stays made.
- * - The companion: `incoming`'s, if it has one (like the title).
+ * - The companion: `incoming`'s, if it has one (like the title); gift-only companions: a union.
  * - Branches taken: per family, `incoming`'s when it has one (like the partner).
  * - Clears: a union, each Pokémon at the harder difficulty of the two.
  * - The Noite das Bruxas candy jar: the fuller one (its rewards are gifts, kept above).
@@ -78,6 +79,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     ribbons: mergeRibbons(base.ribbons, incoming.ribbons),
     shinyPicks: mergeShinyPicks(base.shinyPicks, incoming.shinyPicks),
     companion: incoming.companion ?? base.companion,
+    companions: mergeCompanions(base.companions, incoming.companions),
     branches: { ...base.branches, ...incoming.branches },
     clears: mergeClears(base.clears, incoming.clears),
     halloween: mergeHalloween(base.halloween, incoming.halloween),

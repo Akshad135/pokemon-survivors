@@ -687,9 +687,9 @@ export const pt = {
     candies: 'Doces',
     supporterBadge: (tier: SupporterTier): string => (tier === 'gold' ? 'Apoiador(a) Ouro · Noite das Bruxas 2026' : 'Apoiador(a) · Noite das Bruxas 2026'),
     perk: 'Abóbora',
-    perkTitle: (date: string) => `Apoie até ${date}: seu coração de apoiador vira esta abóbora, para sempre`,
-    supportYes: 'Obrigado por apoiar! Seu selo virou uma *abóbora* no ranking, no perfil e no Hall da Fama, e fica assim para sempre.',
-    supportNo: (date: string) => `Quem *apoiar* o jogo até ${date} ganha esta *abóbora* no lugar do coração, no ranking, no perfil e no Hall da Fama. Para sempre.`,
+    perkTitle: (date: string) => `Apoie até ${date}: seu coração vira esta abóbora para sempre, e o Pumpkaboo passa a te acompanhar`,
+    supportYes: 'Obrigado por apoiar! Seu selo virou uma *abóbora* no ranking, no perfil e no Hall da Fama, para sempre. E o *Pumpkaboo*, só de apoiadores, te acompanha soltando brilhos de doce.',
+    supportNo: (date: string) => `Quem *apoiar* o jogo até ${date} ganha esta *abóbora* no lugar do coração, para sempre, e o *Pumpkaboo* como companheiro, deixando um rastro de doces brilhando.`,
     support: 'Apoiar',
   },
 
@@ -789,6 +789,7 @@ export const pt = {
     newTitle: (title: string) => `Novo título: *${title}*! Já está em uso.`,
     style: (name: string) => `Novo estilo: *${name}*! Já está em uso.`,
     shinyHatch: (name: string) => `Um *${name}* _shiny_ veio para você!`,
+    companion: (name: string) => `*${name}* agora te acompanha nas partidas!`,
     ribbon: (name: string) => `*${name}*! Já está no seu perfil.`,
     ribbonWhy: (date: string, rank: number, total: number) => `Desafio de ${date}: #${rank} de ${total}`,
     button: 'Presente!',
@@ -810,6 +811,7 @@ export const pt = {
     staff: (from: string | null) => (from ? `Um presente de @${from}, que faz o jogo ♥` : 'Um presente de quem faz o jogo ♥'),
     discord: 'Por entrar no nosso Discord ♥',
     halloween: 'Do pote de doces da Noite das Bruxas',
+    halloweenSupport: 'Por apoiar na Noite das Bruxas ♥',
   },
 
   /**

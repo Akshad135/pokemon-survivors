@@ -4,6 +4,7 @@ import { chance, createRng, pick, range, weightedPick, type Rng } from '../engin
 import { ENEMIES } from '../data/enemies'
 import { STARTER_IDS, starterDex } from '../data/starters'
 import { EMOTES, type Emote } from './art'
+import { createCompanion, drawCompanion, stepCompanion, type CompanionView } from './companion'
 import { drawSparkles, shadow } from './draw'
 import { drawPokemon, hasShiny, loadedSprites, loadSpecies, type Dex } from './sprites'
 import { drawGround } from './world'
@@ -92,6 +93,8 @@ export type TitleScene = {
   nextShiny: Dex | null
   spawned: number
   partner: Partner | null
+  /** The supporter's companion (`render/companion.ts`), trotting after the partner while it's out in the meadow. */
+  companion: CompanionView | null
   /** Cries for the shell to play (a wild Pokémon answering a hello), drained every frame. */
   cries: Dex[]
   /** Scene time before which no other cry is queued, so a crowd doesn't shout at once. */
@@ -159,6 +162,7 @@ export const createTitleScene = (seed: number): TitleScene => {
     nextShiny: null,
     spawned: 0,
     partner: null,
+    companion: null,
     cries: [],
     quietUntil: 0,
     puffs: [],
@@ -166,9 +170,10 @@ export const createTitleScene = (seed: number): TitleScene => {
   }
 }
 
-/** The lobby's partner takes its place on the stage (`null`: the lobby closed, it's gone). */
-export const meetPartner = (s: TitleScene, partner: { dex: Dex; shiny: boolean } | null) => {
+/** The lobby's partner takes its place on the stage, with the supporter's companion if one walks along (`null`: the lobby closed, both are gone). */
+export const meetPartner = (s: TitleScene, partner: { dex: Dex; shiny: boolean } | null, companion: CompanionView | null = null) => {
   for (const wd of s.wanderers) wd.followUntil = 0
+  s.companion = partner && companion
   s.partner = partner && {
     ...partner,
     state: 'home',
@@ -416,6 +421,10 @@ export const stepTitleScene = (s: TitleScene, dt: number, w: number, h: number) 
     s.cam.y += Math.sin(s.time * 0.11) * 4 * dt
   }
   if (p) stepPartner(s, p, dt, w, h)
+  // The companion waits behind the stage while the partner stands on it, and follows it out.
+  const c = s.companion
+  if (c && p && p.state === 'home') Object.assign(c, createCompanion(c.dex, c.shiny, p, c.sparkles))
+  else if (c && p) stepCompanion(c, p, dt)
   const { cam, rng } = s
   const roaming = p && p.state !== 'home' ? p : null
   for (const wd of s.wanderers) {
@@ -464,6 +473,7 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
   if (s.haunted) drawMeadowJacks(ctx, camX, camY, w, h, s.time)
   drawPuffs(ctx, s, camX, camY)
   const p = s.partner?.state === 'home' ? null : s.partner
+  const c = p && s.companion
   const drawPartner = () => {
     const sprite = p && loadedSprites(p.dex, p.shiny)
     if (!p || !sprite) return
@@ -472,13 +482,20 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     shadow(ctx, x, y, sprite.bodyW)
     drawPokemon(ctx, sprite, p.moving ? 'Walk' : 'Idle', p.dir, s.time, x, y - hopHeight(s.time - p.hopAt))
   }
+  const drawFollower = () => {
+    const sprite = c && loadedSprites(c.dex, c.shiny)
+    if (!c || !sprite) return
+    shadow(ctx, Math.round(c.x) - camX, Math.round(c.y) - camY, sprite.bodyW)
+    ctx.save()
+    ctx.translate(-camX, -camY)
+    drawCompanion(ctx, c, s.time)
+    ctx.restore()
+  }
+  // The partner and its companion, back to front, slot in among the wanderers by their feet.
+  const pending = [...(p ? [{ y: p.y, draw: drawPartner }] : []), ...(c ? [{ y: c.y, draw: drawFollower }] : [])].sort((a, b) => a.y - b.y)
   s.wanderers.sort((a, b) => a.y - b.y)
-  let partnerDrawn = false
   for (const wd of s.wanderers) {
-    if (!partnerDrawn && p && wd.y > p.y) {
-      drawPartner()
-      partnerDrawn = true
-    }
+    while (pending[0] && wd.y > pending[0].y) pending.shift()!.draw()
     const sprite = loadedSprites(wd.dex, wd.shiny)
     if (!sprite) continue
     const x = Math.round(wd.x) - camX
@@ -489,7 +506,7 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     drawPokemon(ctx, sprite, wd.vx === 0 && wd.vy === 0 ? 'Idle' : 'Walk', wd.dir, s.time + wd.phase, x, y - lift, { alpha })
     if (wd.shiny) drawSparkles(ctx, x, y - sprite.bodyH / 2, Math.max(sprite.bodyW, sprite.bodyH), s.time - wd.bornAt, wd.id)
   }
-  if (!partnerDrawn) drawPartner()
+  for (const rest of pending) rest.draw()
   if (s.haunted) drawMeadowNight(ctx, camX, camY, w, h, s.time)
   // Emotes over everyone's heads, bobbing a pixel.
   const bubbles = EMOTES()

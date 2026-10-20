@@ -17,12 +17,14 @@ import {
   mergeHalloween,
   nextHalloweenReward,
   parseHalloween,
+  PUMPKABOO_GIFT,
   pumpkinSupporter,
   withHaunts,
 } from './halloween'
 import { EMPTY_SAVE, type Save } from './meta'
 import { OUTBREAK_SPECIES, outbreakOf } from './outbreak'
 import { drawRoster } from './roster'
+import { canWalkWith, mergeCompanions } from './supporters'
 
 const withCandies = (candies: number, gifts: string[] = []): Save => ({ ...EMPTY_SAVE, halloween: { candies }, gifts })
 
@@ -135,5 +137,29 @@ describe("the supporters' jack-o'-lantern", () => {
     expect(pumpkinSupporter('2026-10-01T12:00:00Z', new Date('2026-10-23T15:00:00Z'))).toBe(false)
     expect(pumpkinSupporter(null, during)).toBe(false)
     expect(pumpkinSupporter('junk', during)).toBe(false)
+  })
+})
+
+describe("the supporters' Pumpkaboo", () => {
+  const supporter: Save = { ...EMPTY_SAVE, titles: ['supporter'] }
+  const pumpkaboo = { id: 'pumpkaboo', shiny: false } as const
+
+  it('comes to a supporter on an event day, once, and only walks along once owned', () => {
+    expect(halloweenGifts(supporter, '2026-10-31').map((g) => g.id)).toContain(PUMPKABOO_GIFT.id)
+    expect(halloweenGifts(supporter, '2026-11-03').map((g) => g.id)).not.toContain(PUMPKABOO_GIFT.id)
+    expect(halloweenGifts(EMPTY_SAVE, '2026-10-31').map((g) => g.id)).not.toContain(PUMPKABOO_GIFT.id)
+    expect(canWalkWith(supporter, pumpkaboo)).toBe(false)
+    const out = applyGift(supporter, PUMPKABOO_GIFT)
+    expect(out.status).toBe('applied')
+    if (out.status !== 'applied') return
+    expect(out.save.companion).toEqual(pumpkaboo)
+    expect(canWalkWith(out.save, pumpkaboo)).toBe(true)
+    expect(canWalkWith(out.save, { ...pumpkaboo, shiny: true })).toBe(false)
+    expect(halloweenGifts(out.save, '2026-10-31').map((g) => g.id)).not.toContain(PUMPKABOO_GIFT.id)
+  })
+
+  it('stays owned when two saves merge', () => {
+    expect(mergeCompanions([], ['pumpkaboo'])).toEqual(['pumpkaboo'])
+    expect(mergeCompanions(['pumpkaboo'], ['pumpkaboo'])).toEqual(['pumpkaboo'])
   })
 })

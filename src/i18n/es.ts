@@ -578,9 +578,9 @@ export const es: Messages = {
     candies: 'Dulces',
     supporterBadge: (tier) => (tier === 'gold' ? 'Patrocinador(a) Oro · Noche de Brujas 2026' : 'Patrocinador(a) · Noche de Brujas 2026'),
     perk: 'Calabaza',
-    perkTitle: (date) => `Apoya antes del ${date}: tu corazón de patrocinador se vuelve esta calabaza, para siempre`,
-    supportYes: '¡Gracias por tu apoyo! Tu insignia ahora es una *calabaza* en el ranking, tu perfil y el Salón de la Fama, y se queda así para siempre.',
-    supportNo: (date) => `Quien *apoye* el juego hasta el ${date} gana esta *calabaza* en lugar del corazón, en el ranking, su perfil y el Salón de la Fama. Para siempre.`,
+    perkTitle: (date) => `Apoya antes del ${date}: tu corazón se vuelve esta calabaza para siempre, y Pumpkaboo te acompaña`,
+    supportYes: '¡Gracias por tu apoyo! Tu insignia es una *calabaza* en el ranking, tu perfil y el Salón de la Fama, para siempre. Y *Pumpkaboo*, solo para patrocinadores, te acompaña dejando destellos de dulce.',
+    supportNo: (date) => `Quien *apoye* el juego hasta el ${date} gana esta *calabaza* en lugar del corazón, para siempre, y a *Pumpkaboo* como compañero, que deja un rastro de dulces brillantes.`,
     support: 'Apoyar',
   },
 
@@ -670,6 +670,7 @@ export const es: Messages = {
     newTitle: (title) => `Nuevo título: ¡*${title}*! Ya está en uso.`,
     style: (name) => `Nuevo estilo: ¡*${name}*! Ya está en uso.`,
     shinyHatch: (name) => `¡Un *${name}* _shiny_ llegó para ti!`,
+    companion: (name) => `¡*${name}* ahora te acompaña en las partidas!`,
     ribbon: (name) => `¡*${name}*! Ya está en tu perfil.`,
     ribbonWhy: (date, rank, total) => `Desafío del ${date}: #${rank} de ${total}`,
     button: '¡Regalo!',
@@ -691,6 +692,7 @@ export const es: Messages = {
     staff: (from) => (from ? `Un regalo de @${from}, que hace el juego ♥` : 'Un regalo de quien hace el juego ♥'),
     discord: 'Por unirte a nuestro Discord ♥',
     halloween: 'Del frasco de dulces de la Noche de Brujas',
+    halloweenSupport: 'Por apoyar en la Noche de Brujas ♥',
   },
 
   supporters: {
