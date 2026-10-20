@@ -102,7 +102,7 @@ const harshSun: Painter = (ctx, w, h, camX, camY, t, g) => {
 }
 
 /** Period of the green streak crossing the sky in Rayquaza's omen, and how long a pass takes, in seconds. */
-const STREAK = { every: 5, pass: 3, length: 30 } as const
+const STREAK = { every: 5, pass: 3, length: 36 } as const
 
 /**
  * Rayquaza's Air Lock: a gale that blows every other weather away. Streaks of
@@ -134,15 +134,23 @@ const gale: Painter = (ctx, w, h, camX, camY, t, g) => {
   if (k >= 1) return
   // The serpent: a head and a tail of green with gold bands, weaving along its pass.
   const flip = hash2(beat, 1, 73) < 0.5
-  const baseY = h * (0.1 + hash2(beat, 2, 73) * 0.16)
-  const head = -60 + k * (w + 120 + STREAK.length * 6)
+  // Below the HUD and the toasts, high over the field.
+  const baseY = h * (0.3 + hash2(beat, 2, 73) * 0.14)
+  const head = -60 + k * (w + 120 + STREAK.length * 5)
   for (let j: number = STREAK.length; j >= 0; j--) {
-    const along = head - j * 6
+    const along = head - j * 5
     const x = Math.round(flip ? w - along : along)
-    const y = Math.round(baseY + Math.sin(along / 30 + beat) * 8)
-    const s = j === 0 ? 4 : j < 4 ? 3 : 2
-    ctx.fillStyle = j % 5 === 2 ? '#f8e070' : j === 0 ? '#58b868' : '#3c9850'
+    const y = Math.round(baseY + Math.sin(along / 34 + beat) * 10)
+    // Thick at the head, tapering to the tail, with a gold band every few segments and a pale wake.
+    const s = j === 0 ? 7 : Math.max(2, Math.round(6 - (j / STREAK.length) * 4))
+    ctx.fillStyle = 'rgba(200,248,208,0.25)'
+    ctx.fillRect(x - s, y - (s >> 1) - 1, s * 2, s + 2)
+    ctx.fillStyle = j % 5 === 2 ? '#f8e070' : j === 0 ? '#68c878' : '#3c9850'
     ctx.fillRect(x - (s >> 1), y - (s >> 1), s, s)
+    if (j === 0) {
+      ctx.fillStyle = '#f8e070'
+      ctx.fillRect(x - 1, y - 2, 2, 2)
+    }
   }
 }
 
