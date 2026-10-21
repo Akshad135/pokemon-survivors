@@ -1,4 +1,4 @@
-import { blitCentered, ellipse, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, type PixelSprite } from '../engine/pixelart'
 import type { Vec } from '../engine/math'
 import { ESCORT, FIELD_TUNING, NEST, TOGEPI_DEX, type FieldMissionKind } from '../game/fieldMissionRules'
 import type { MissionEvent } from '../game/fieldMissions'
@@ -32,9 +32,9 @@ export const heartIcon = () => toIconUrl('missionHeart', () => ART().heart)
 
 /** A twig nest: dark rim, straw bed and a few sticks poking out. */
 const nest = (ctx: Ctx, x: number, y: number, r: number) => {
-  blitCentered(ctx, ellipse(r, Math.round(r * 0.45), '#583818'), x, y)
-  blitCentered(ctx, ellipse(r - 2, Math.round(r * 0.45) - 1, '#a87838'), x, y)
-  blitCentered(ctx, ellipse(r - 5, Math.max(1, Math.round(r * 0.45) - 3), '#c8a058'), x, y)
+  blitEllipse(ctx, r, Math.round(r * 0.45), '#583818', x, y)
+  blitEllipse(ctx, r - 2, Math.round(r * 0.45) - 1, '#a87838', x, y)
+  blitEllipse(ctx, r - 5, Math.max(1, Math.round(r * 0.45) - 3), '#c8a058', x, y)
   ctx.fillStyle = '#583818'
   for (const [ox, oy] of [[-r + 1, -2], [r - 3, -1], [-4, -Math.round(r * 0.45)], [5, Math.round(r * 0.45) - 1]] as const) ctx.fillRect(Math.round(x + ox), Math.round(y + oy), 3, 1)
 }
@@ -81,7 +81,7 @@ const drawCollect = (ctx: Ctx, ev: MapEventOf<'collect'>, t: number) => {
   for (const [i, b] of ev.state.balls.entries()) {
     if (b.got) continue
     const bob = Math.round(Math.sin(t * 4 + i) * 1.5)
-    blitCentered(ctx, ellipse(5, 2, 'rgba(16,40,16,0.3)'), b.x, b.y)
+    blitEllipse(ctx, 5, 2, 'rgba(16,40,16,0.3)', b.x, b.y)
     dashedRing(ctx, b.x, b.y - 2, 9, t * 2 + i, ['#f83838', '#ffffff'], 0.4)
     blitCentered(ctx, ball, b.x, b.y - 5 + bob)
     if ((t + i * 0.37) % 1.2 < 0.18) blitCentered(ctx, SPARKLE()[1]!, b.x + 5, b.y - 11)
@@ -96,7 +96,7 @@ const drawEscort = (ctx: Ctx, g: Game, ev: MapEventOf<'escort'>, t: number, calm
   if (s.following && ev.gone < 0) blitCentered(ctx, ART().heart, s.home.x, s.home.y - 14 + Math.round(Math.sin(t * 3) * 1.5))
   const sprites = loadedSprites(TOGEPI_DEX)
   if (!sprites) return
-  blitCentered(ctx, ellipse(5, 2, 'rgba(16,40,16,0.3)'), ev.x, ev.y)
+  blitEllipse(ctx, 5, 2, 'rgba(16,40,16,0.3)', ev.x, ev.y)
   drawPokemon(ctx, sprites, s.flash > 0 ? 'Hurt' : s.moving ? 'Walk' : 'Idle', s.dir, ev.age, ev.x, ev.y, {
     flash: s.flash > 0.1 && !calm ? 0.6 : 0,
     tint: s.flash > 0.1 && calm ? HURT_TINT : undefined,

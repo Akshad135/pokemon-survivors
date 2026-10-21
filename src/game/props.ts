@@ -4,6 +4,7 @@ import type { BiomeId } from '../data/biomes'
 import { DROP_TABLES, PROPS, rollDrop, type PropKind } from '../data/consumables'
 import { dropItem } from './consumables'
 import { burst } from './effects'
+import { crackPumpkin, isPumpkinCell } from './halloween'
 import { inView } from './queries'
 import { isOpen } from './terrain'
 import type { Attack, Game } from './types'
@@ -31,14 +32,14 @@ export const PROP_CELL = 160
 const DENSITY = 0.22
 const SEED = 4242
 const MARGIN = 24
-const KIND_WEIGHTS = (Object.keys(PROPS) as PropKind[]).map((k) => [k, PROPS[k].weight] as const)
+const KIND_WEIGHTS = (Object.keys(PROPS) as PropKind[]).flatMap((k) => (PROPS[k].weight > 0 ? [[k, PROPS[k].weight] as const] : []))
 
 const cellKey = (cx: number, cy: number) => (cx + 32768) * 65536 + (cy + 32768)
 
-/** The prop living in world cell (cx, cy), if any. Pure and deterministic. */
-export const propAt = (cx: number, cy: number): { kind: PropKind; x: number; y: number } | null => {
+/** The prop living in world cell (cx, cy), if any; a haunted run (`game/halloween.ts`) turns some into jack-o'-lanterns. Pure and deterministic. */
+export const propAt = (cx: number, cy: number, haunted = false): { kind: PropKind; x: number; y: number } | null => {
   if (hash2(cx, cy, SEED) >= DENSITY) return null
-  const kind = weightedPick(() => hash2(cx, cy, SEED + 1), KIND_WEIGHTS)
+  const kind = haunted && isPumpkinCell(cx, cy) ? 'pumpkin' : weightedPick(() => hash2(cx, cy, SEED + 1), KIND_WEIGHTS)
   const span = PROP_CELL - MARGIN * 2
   return {
     kind,
@@ -58,7 +59,7 @@ const materialize = (g: Game) => {
     for (let cx = pcx - reach; cx <= pcx + reach; cx++) {
       const cell = cellKey(cx, cy)
       if (g.brokenProps.has(cell) || g.props.some((p) => p.cell === cell)) continue
-      const spot = propAt(cx, cy)
+      const spot = propAt(cx, cy, g.halloween)
       // Breakables never stand in a lake or inside a rock.
       if (spot && isOpen(g, spot.x, spot.y, 14)) g.props.push({ id: g.nextId++, cell, ...spot, hp: PROPS[spot.kind].hp, hitCooldown: 0, shake: 0 })
     }
@@ -77,6 +78,7 @@ const PROP_COLORS: Record<PropKind, readonly string[]> = {
   itemBall: ['#e83838', '#ffffff', '#202028'],
   berryTree: ['#48a038', '#88d058', '#3870d8', '#a06838'],
   tallGrass: ['#4f9e48', '#78c060', '#2f7a3a'],
+  pumpkin: ['#f88820', '#ffc040', '#583010'],
 }
 
 /** Debris where a biome dresses a breakable differently (see `render/props.ts`): rock chips in the cave, snow on Mt. Silver… */
@@ -95,9 +97,10 @@ const hitProp = (g: Game, prop: Prop) => {
   burst(g, prop.x, prop.y - 6, { colors, count: 4, speed: 50, ttl: 0.3 })
   if (prop.hp > 0) return
   g.brokenProps.add(prop.cell)
+  g.events.push({ kind: 'propBreak' })
+  if (prop.kind === 'pumpkin') return crackPumpkin(g, prop.x, prop.y)
   burst(g, prop.x, prop.y - 6, { colors, count: 18, speed: 90, ttl: 0.5, gravity: 80 })
   dropItem(g, prop.x, prop.y - 2, rollDrop(DROP_TABLES[PROPS[prop.kind].table], g.time, g.rng))
-  g.events.push({ kind: 'propBreak' })
 }
 
 /** Spawns/despawns props around the player and lets any active attack break them. */

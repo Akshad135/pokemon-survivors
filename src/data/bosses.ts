@@ -223,6 +223,13 @@ export const bossKit = (id: EnemyId): readonly BossPattern[] => {
   return [...new Set(phases.flatMap((ph) => [...ph.patterns, ...(ph.ultimate?.steps.map((s) => s.pattern) ?? [])]))]
 }
 
+/**
+ * Disguise (Mimikyu's): the first hit dealing at least this share of the
+ * boss's max HP lands on its disguise instead, which breaks (`disguiseTakes`
+ * in `game/bossFight.ts`); smaller hits before it land as usual.
+ */
+export const BOSS_DISGUISE: Partial<Record<EnemyId, number>> = { mimikyuBoss: 0.025 }
+
 /** How each stance walks: a pace multiplier, and how close `ranged` comes before it stops walking in (px). */
 export const STANCES = {
   close: { pace: 1.3, hold: 0 },
@@ -297,6 +304,104 @@ export const BOSS_PATTERNS: Partial<Record<EnemyId, readonly BossPattern[]>> = {
     { far: 110, kind: 'strikes', every: 7.5, target: 'player', count: 1, spread: 0, radius: 32, delay: 1.4, damage: 22, visual: 'slam', lead: 1, leap: true },
     { below: 0.5, stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 4, spread: 0, radius: 15, delay: 1.2, damage: 18, visual: 'slam', lead: 1 },
     { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.4, count: 10, speed: 70, radius: 5, damage: 16, visual: 'rock' },
+  ],
+  // The Noite das Bruxas night bosses (`HALLOWEEN.bosses`): Onix's slot (2:30) hits like Onix, Snorlax's (5:00) like Snorlax.
+  /** Mimikyu: Shadow Claw up close, Shadow Ball from afar, Shadow Sneak onto you, its rags streaking at you once enraged; its Disguise takes the first big hit (`BOSS_DISGUISE`). */
+  mimikyuBoss: [
+    { stance: 'close', kind: 'strikes', every: 4.2, target: 'self', count: 1, spread: 0, radius: 34, delay: 1.1, damage: 15, visual: 'shadow' },
+    { stance: 'ranged', kind: 'volley', every: 4.2, count: 3, arc: 0.5, speed: 100, windup: 0.9, radius: 5, damage: 13, visual: 'shadow' },
+    { far: 110, kind: 'teleport', every: 7, to: 'player', windup: 1.1, radius: 26, damage: 15, visual: 'shadow' },
+    { below: 0.5, kind: 'phantoms', every: 6, origin: 'ring', count: 3, gap: 0.5, windup: 0.9, speed: 180, width: 12, radius: 110, damage: 14, visual: 'shadow' },
+    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.6, count: 10, speed: 70, radius: 5, damage: 13, visual: 'mist' },
+  ],
+  /** Banette: Curse along your path, Shadow Claw up close, its Shuppet from afar, a cage of curses once enraged. */
+  banetteBoss: [
+    { stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 3, spread: 50, radius: 12, delay: 1.1, damage: 14, visual: 'shadow', lead: 1 },
+    { stance: 'close', kind: 'strikes', every: 4.5, target: 'self', count: 1, spread: 0, radius: 36, delay: 1.2, damage: 16, visual: 'shadow' },
+    { far: 110, kind: 'summon', every: 8, enemies: ['shuppet'], count: 4, max: 8, radius: 40 },
+    { below: 0.5, kind: 'cage', every: 7, radius: 46, count: 10, size: 9, windup: 1.1, ttl: 3, damage: 12, visual: 'shadow' },
+    { from: 'nightmare', stance: 'ranged', kind: 'volley', every: 5, count: 3, arc: 0.5, speed: 110, windup: 0.9, radius: 5, damage: 14, visual: 'shadow' },
+  ],
+  /** Sableye: Power Gem along your path, Fake Out lunges up close, Shadow Sneak under you from afar, Confuse Ray rings once enraged. */
+  sableyeBoss: [
+    { stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 3, spread: 50, radius: 11, delay: 1.1, damage: 14, visual: 'rock', lead: 1 },
+    { stance: 'close', kind: 'dash', every: 5, windup: 0.75, speed: 220, width: 14, damage: 15, count: 2 },
+    { far: 110, kind: 'dive', every: 8, hide: 1.6, windup: 0.9, radius: 26, damage: 16, visual: 'shadow' },
+    { below: 0.5, kind: 'ring', every: 4.5, count: 10, speed: 66, radius: 5, damage: 12, visual: 'shadow' },
+    { from: 'nightmare', stance: 'ranged', kind: 'volley', every: 5, count: 3, arc: 0.5, speed: 110, windup: 0.9, radius: 5, damage: 14, visual: 'rock' },
+  ],
+  /** Drifblim: Shadow Ball on you, a burst up close, Drifloon balloons from afar, Ominous Wind once enraged. */
+  drifblimBoss: [
+    { stance: 'ranged', kind: 'strikes', every: 4.2, target: 'player', count: 1, spread: 0, radius: 22, delay: 1.2, damage: 15, visual: 'shadow', lead: 1 },
+    { stance: 'close', kind: 'strikes', every: 4.8, target: 'self', count: 1, spread: 0, radius: 40, delay: 1.2, damage: 16, visual: 'aero' },
+    { far: 110, kind: 'summon', every: 8, enemies: ['drifloon'], count: 3, max: 6, radius: 36 },
+    { below: 0.5, kind: 'gust', every: 5, count: 3, arc: 0.6, speed: 90, windup: 0.9, radius: 6, reach: 22, push: 120, damage: 12, visual: 'aero' },
+    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.6, count: 10, speed: 66, radius: 5, damage: 12, visual: 'aero' },
+  ],
+  /** Mismagius: Psybeam fans from afar, Shadow Ball rings up close, it blinks onto you from afar, a closing magic circle once enraged. */
+  mismagiusBoss: [
+    { stance: 'ranged', kind: 'volley', every: 4.4, count: 5, arc: 0.9, speed: 100, windup: 0.9, radius: 5, damage: 13, visual: 'psychic' },
+    { stance: 'close', kind: 'ring', every: 4.2, count: 10, speed: 70, radius: 5, damage: 13, visual: 'shadow' },
+    { far: 110, kind: 'teleport', every: 7, to: 'player', windup: 1.1, radius: 28, damage: 15, visual: 'psychic' },
+    { below: 0.5, kind: 'ring', every: 5.5, count: 12, speed: 60, radius: 5, damage: 12, visual: 'psychic', around: 90, windup: 1, gap: 0.9 },
+    { from: 'nightmare', stance: 'ranged', kind: 'strikes', every: 5, target: 'player', count: 4, spread: 50, radius: 12, delay: 1.1, damage: 13, visual: 'fire' },
+  ],
+  /** Houndoom: Flamethrower fans from afar, charges up close, a pounce on you from afar, burning tracks once enraged. */
+  houndoomBoss: [
+    { stance: 'ranged', kind: 'volley', every: 4, count: 3, arc: 0.45, speed: 110, windup: 0.9, radius: 5, damage: 14, visual: 'fire' },
+    { stance: 'close', kind: 'dash', every: 5, windup: 0.8, speed: 230, width: 16, damage: 16, count: 2 },
+    { far: 110, kind: 'strikes', every: 7, target: 'player', count: 1, spread: 0, radius: 24, delay: 1.2, damage: 16, visual: 'fire', lead: 1, leap: true },
+    { below: 0.5, kind: 'trail', every: 0.25, ttl: 2, radius: 6, damage: 10, visual: 'fire' },
+    { from: 'nightmare', stance: 'ranged', kind: 'strikes', every: 5, target: 'player', count: 3, spread: 46, radius: 13, delay: 1.1, damage: 14, visual: 'fire' },
+  ],
+  /** Gengar: Shadow Ball from afar, Hex up close, it fades and comes back on you from afar, Double Team shadows once enraged. */
+  gengarBoss: [
+    { stance: 'ranged', kind: 'volley', every: 4.2, count: 3, arc: 0.5, speed: 110, windup: 0.9, radius: 6, damage: 18, visual: 'shadow' },
+    { stance: 'close', kind: 'strikes', every: 4.8, target: 'self', count: 1, spread: 0, radius: 44, delay: 1.2, damage: 20, visual: 'shadow' },
+    { far: 110, kind: 'teleport', every: 7, to: 'player', windup: 1.2, radius: 30, damage: 20, visual: 'shadow' },
+    { below: 0.5, kind: 'phantoms', every: 6, origin: 'ring', count: 4, gap: 0.45, windup: 0.9, speed: 190, width: 14, radius: 120, damage: 16, visual: 'shadow' },
+    { from: 'nightmare', stance: 'ranged', kind: 'strikes', every: 5, target: 'player', count: 4, spread: 0, radius: 14, delay: 1.2, damage: 16, visual: 'poison', lead: 1 },
+  ],
+  /** Chandelure: Will-O-Wisp rains on you, flames out of its arms up close, Flamethrower at a player far off, a wall of fire once enraged. */
+  chandelureBoss: [
+    { stance: 'ranged', kind: 'strikes', every: 4.2, target: 'player', count: 5, spread: 70, radius: 14, delay: 1.1, damage: 18, visual: 'fire' },
+    { stance: 'close', kind: 'ring', every: 4.4, count: 12, speed: 72, radius: 5, damage: 16, visual: 'fire' },
+    { far: 110, kind: 'beam', every: 7, source: 'boss', count: 1, spread: 0, windup: 1, duration: 0.8, width: 10, length: 260, damage: 18, visual: 'fire' },
+    { below: 0.5, kind: 'cage', every: 7.5, radius: 50, count: 12, size: 10, windup: 1.2, ttl: 3, damage: 14, visual: 'fire' },
+    { from: 'nightmare', stance: 'ranged', kind: 'ring', every: 5, count: 10, speed: 60, radius: 5, damage: 16, visual: 'shadow', around: 90, windup: 1, gap: 0.9 },
+  ],
+  /** Gourgeist: Seed Bomb fans from afar, Trick-or-Treat up close, Phantom Force under you from afar, Leech Seed along your path once enraged. */
+  gourgeistBoss: [
+    { stance: 'ranged', kind: 'volley', every: 4.2, count: 5, arc: 0.8, speed: 105, windup: 0.9, radius: 5, damage: 17, visual: 'seed' },
+    { stance: 'close', kind: 'strikes', every: 4.8, target: 'self', count: 1, spread: 0, radius: 44, delay: 1.2, damage: 20, visual: 'grass' },
+    { far: 110, kind: 'dive', every: 8, hide: 1.8, windup: 1, radius: 30, damage: 20, visual: 'shadow' },
+    { below: 0.5, stance: 'ranged', kind: 'strikes', every: 4.5, target: 'player', count: 5, spread: 0, radius: 14, delay: 1.2, damage: 17, visual: 'grass', lead: 1 },
+    { from: 'nightmare', kind: 'trail', every: 0.3, ttl: 2.4, radius: 7, damage: 12, visual: 'grass' },
+  ],
+  /** Trevenant: roots along your path, a cage of roots up close, roots dragging a player far off back in, Wood Hammer once enraged. */
+  trevenantBoss: [
+    { stance: 'ranged', kind: 'strikes', every: 4.2, target: 'player', count: 4, spread: 0, radius: 14, delay: 1.2, damage: 18, visual: 'grass', lead: 1 },
+    { stance: 'close', kind: 'cage', every: 6.5, radius: 44, count: 10, size: 10, windup: 1.1, ttl: 2.6, damage: 16, visual: 'grass' },
+    { far: 120, kind: 'whirlpool', every: 8, target: 'self', count: 1, spread: 0, radius: 16, reach: 200, pull: 40, windup: 1, ttl: 2.5, damage: 18, visual: 'grass' },
+    { below: 0.5, stance: 'close', kind: 'strikes', every: 5, target: 'self', count: 1, spread: 0, radius: 52, delay: 1.3, damage: 22, visual: 'grass' },
+    { from: 'nightmare', stance: 'ranged', kind: 'ring', every: 4.6, count: 10, speed: 68, radius: 5, damage: 16, visual: 'grass' },
+  ],
+  /** Honchkrow: Dark Pulse from afar, Night Slash charges up close, a pass at a player far off, calling its Murkrow, Sucker Punch rains once enraged. */
+  honchkrowBoss: [
+    { stance: 'ranged', kind: 'volley', every: 4.2, count: 3, arc: 0.5, speed: 110, windup: 0.9, radius: 6, damage: 18, visual: 'shadow' },
+    { stance: 'close', kind: 'dash', every: 5, windup: 0.75, speed: 240, width: 16, damage: 20, count: 2 },
+    { far: 110, kind: 'swoop', every: 8, windup: 0.8, speed: 260, width: 16, damage: 20, count: 2, reach: 150 },
+    { kind: 'summon', every: 10, enemies: ['murkrow'], count: 3, max: 6, radius: 40 },
+    { below: 0.5, kind: 'strikes', every: 4.5, target: 'player', count: 5, spread: 70, radius: 13, delay: 1.1, damage: 17, visual: 'shadow' },
+    { from: 'nightmare', stance: 'close', kind: 'ring', every: 4.6, count: 10, speed: 70, radius: 5, damage: 16, visual: 'shadow' },
+  ],
+  /** Dusknoir: Shadow Punch along your path, a slam up close, Shadow Sneak onto a player far off, its maw drawing you in once enraged. */
+  dusknoirBoss: [
+    { stance: 'ranged', kind: 'strikes', every: 4, target: 'player', count: 3, spread: 50, radius: 13, delay: 1.1, damage: 18, visual: 'shadow', lead: 1 },
+    { stance: 'close', kind: 'strikes', every: 5, target: 'self', count: 1, spread: 0, radius: 48, delay: 1.3, damage: 22, visual: 'slam' },
+    { far: 110, kind: 'teleport', every: 7.5, to: 'player', windup: 1.2, radius: 30, damage: 20, visual: 'shadow' },
+    { below: 0.5, kind: 'whirlpool', every: 8, target: 'self', count: 1, spread: 0, radius: 18, reach: 180, pull: 45, windup: 1, ttl: 2.5, damage: 20, visual: 'shadow' },
+    { from: 'nightmare', stance: 'ranged', kind: 'volley', every: 5, count: 4, arc: 0.6, speed: 110, windup: 0.9, radius: 5, damage: 18, visual: 'shadow' },
   ],
   // The trios, the mythicals and Mewtwo fight in phases: `data/legendBosses.ts`.
   // Rift legendaries: each leans on its signature move and types.

@@ -110,11 +110,12 @@ type Memo3<A, B, C, R> = Map<A, Map<B, Map<C, R>>>
 
 /**
  * Caches a three-argument `fn` in nested Maps, so a hit (hundreds per frame:
- * every shadow, every damage number) allocates nothing. Past `max` entries the
- * cache starts a new generation and keeps the last one around for a while:
- * what's still drawn moves over on its next use, the rest goes with it.
+ * every shadow, every damage number) allocates nothing. Once a generation's entries
+ * add up to `max` (each weighs `cost`, 1 by default) the cache starts a new
+ * generation and keeps the last one around for a while: what's still drawn moves
+ * over on its next use, the rest goes with it.
  */
-const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity) => {
+export const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity, cost: (value: R) => number = () => 1) => {
   let fresh: Memo3<A, B, C, R> = new Map()
   let old: Memo3<A, B, C, R> = new Map()
   let size = 0
@@ -140,17 +141,23 @@ const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity) => {
       size = 0
     }
     store(a, b, c, v)
-    size++
+    size += cost(v)
     return v
   }
 }
 
-/** Hard-edged filled ellipse (no antialiasing). Cached per size/color. */
-export const ellipse = memo3((rx: number, ry: number, color: string): PixelSprite => {
+/**
+ * What a cached canvas weighs in a bounded `memo3`: its pixels, plus a flat share for the
+ * canvas and its context, which cost memory however small the canvas is.
+ */
+const canvasWeight = (c: PixelSprite) => c.width * c.height + 1024
+/** Pixels' worth of canvases a shape cache keeps per generation (2 MB; two generations at most). Big shapes aren't cached (`blitEllipse`, `blitRing`). */
+const SHAPE_BUDGET = 512 * 1024
+
+/** Paints a hard-edged filled ellipse whose bounding box starts at (left, top). */
+const paintEllipse = (ctx: CanvasRenderingContext2D, left: number, top: number, rx: number, ry: number, color: string) => {
   const w = Math.round(rx) * 2 + 1
   const h = Math.round(ry) * 2 + 1
-  const canvas = createCanvas(w, h)
-  const ctx = context2d(canvas)
   ctx.fillStyle = color
   const cx = (w - 1) / 2
   const cy = (h - 1) / 2
@@ -159,26 +166,93 @@ export const ellipse = memo3((rx: number, ry: number, color: string): PixelSprit
     const span = Math.sqrt(Math.max(0, 1 - dy * dy)) * (rx + 0.5)
     const x0 = Math.round(cx - span)
     const x1 = Math.round(cx + span)
-    if (x1 > x0) ctx.fillRect(x0, y, x1 - x0, 1)
+    if (x1 > x0) ctx.fillRect(left + x0, top + y, x1 - x0, 1)
   }
-  return canvas
-})
+}
 
-/** Hard-edged ring (circle outline) of a given thickness. Cached. */
-export const ring = memo3((radius: number, thickness: number, color: string): PixelSprite => {
-  const r = Math.round(radius)
-  const size = r * 2 + 1
-  const canvas = createCanvas(size, size)
-  const ctx = context2d(canvas)
+/** The rightmost x ≥ 0 on row `y` with `Math.hypot(x, y) <= lim` (-1 if none): the same test a pixel-by-pixel scan makes. */
+const reach = (lim: number, y: number) => {
+  if (!(Math.abs(y) <= lim)) return -1
+  let x = Math.floor(Math.sqrt(Math.max(0, lim * lim - y * y)))
+  while (x > 0 && Math.hypot(x, y) > lim) x--
+  while (Math.hypot(x + 1, y) <= lim) x++
+  return x
+}
+
+/**
+ * Paints a hard-edged ring of radius `r` (whole px) and `thickness`, its bounding box starting at
+ * (left, top): every pixel whose center lies within r + 0.5 of the middle but past r + 0.5 - thickness,
+ * filled a row span at a time.
+ */
+const paintRing = (ctx: CanvasRenderingContext2D, left: number, top: number, r: number, thickness: number, color: string) => {
   ctx.fillStyle = color
+  const outer = r + 0.5
+  const inner = outer - thickness
   for (let y = -r; y <= r; y++) {
-    for (let x = -r; x <= r; x++) {
-      const d = Math.hypot(x, y)
-      if (d <= r + 0.5 && d > r + 0.5 - thickness) ctx.fillRect(x + r, y + r, 1, 1)
+    const xo = reach(outer, y)
+    if (xo < 0) continue
+    const xi = reach(inner, y)
+    if (xi < 0) ctx.fillRect(left + r - xo, top + r + y, xo * 2 + 1, 1)
+    else if (xo > xi) {
+      ctx.fillRect(left + r - xo, top + r + y, xo - xi, 1)
+      ctx.fillRect(left + r + xi + 1, top + r + y, xo - xi, 1)
     }
   }
+}
+
+/** Hard-edged filled ellipse (no antialiasing). Cached per size/color, bounded. */
+export const ellipse = memo3((rx: number, ry: number, color: string): PixelSprite => {
+  const canvas = createCanvas(Math.round(rx) * 2 + 1, Math.round(ry) * 2 + 1)
+  paintEllipse(context2d(canvas), 0, 0, rx, ry, color)
   return canvas
-})
+}, SHAPE_BUDGET, canvasWeight)
+
+/** Hard-edged ring (circle outline) of a given thickness. Cached and bounded, like `ellipse`. */
+export const ring = memo3((radius: number, thickness: number, color: string): PixelSprite => {
+  const r = Math.round(radius)
+  const canvas = createCanvas(r * 2 + 1, r * 2 + 1)
+  paintRing(context2d(canvas), 0, 0, r, thickness, color)
+  return canvas
+}, SHAPE_BUDGET, canvasWeight)
+
+/** Shapes past this many pixels are painted fresh instead of cached: a shockwave or a telegraph grows through every size. */
+const BIG_SHAPE = 64 * 64
+
+let stage: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null = null
+onCanvasReset(() => (stage = null))
+
+/**
+ * Paints a `w`×`h` shape on a shared staging canvas and draws it centered at (x, y) the way
+ * `blitCentered` draws a cached one: same pixels, composited the same way, without keeping
+ * a canvas per size (a ripple across the screen would leave megabytes of them each second).
+ */
+const stamp = (ctx: CanvasRenderingContext2D, w: number, h: number, x: number, y: number, paint: (s: CanvasRenderingContext2D) => void) => {
+  if (!stage || stage.canvas.width < w || stage.canvas.height < h) {
+    // Grown in 64 px steps, so a shape swelling a pixel a frame doesn't make a canvas a frame.
+    const grow = (need: number, had = 0) => Math.max(had, Math.ceil(need / 64) * 64)
+    const canvas = createCanvas(grow(w, stage?.canvas.width), grow(h, stage?.canvas.height))
+    stage = { canvas, ctx: context2d(canvas) }
+  }
+  stage.ctx.clearRect(0, 0, w, h)
+  paint(stage.ctx)
+  ctx.drawImage(stage.canvas, 0, 0, w, h, Math.round(x - w / 2), Math.round(y - h / 2), w, h)
+}
+
+/** `blitCentered(ctx, ellipse(rx, ry, color), x, y)`, with big ellipses painted fresh rather than cached. */
+export const blitEllipse = (ctx: CanvasRenderingContext2D, rx: number, ry: number, color: string, x: number, y: number) => {
+  const w = Math.round(rx) * 2 + 1
+  const h = Math.round(ry) * 2 + 1
+  if (w * h <= BIG_SHAPE) return blitCentered(ctx, ellipse(rx, ry, color), x, y)
+  stamp(ctx, w, h, x, y, (s) => paintEllipse(s, 0, 0, rx, ry, color))
+}
+
+/** `blitCentered(ctx, ring(radius, thickness, color), x, y)`, with big rings painted fresh rather than cached. */
+export const blitRing = (ctx: CanvasRenderingContext2D, radius: number, thickness: number, color: string, x: number, y: number) => {
+  const r = Math.round(radius)
+  const size = r * 2 + 1
+  if (size * size <= BIG_SHAPE) return blitCentered(ctx, ring(radius, thickness, color), x, y)
+  stamp(ctx, size, size, x, y, (s) => paintRing(s, 0, 0, r, thickness, color))
+}
 
 /** Draws a sprite centered at (x, y), snapped to whole pixels. */
 export const blitCentered = (ctx: CanvasRenderingContext2D, sprite: CanvasImageSource & { width: number; height: number }, x: number, y: number) =>
@@ -244,7 +318,7 @@ const outlinedText = memo3((text: string, color: string, outline: string): Pixel
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1]] as const) plot(outline, dx, dy)
   plot(color, 0, 0)
   return canvas
-}, 1024)
+}, 256)
 
 /** A number or short word in the in-world font, with the usual dark outline unless told otherwise. */
 export const textSprite = (text: string, color: string, outline = '#181010') => outlinedText(text, color, outline)

@@ -48,7 +48,7 @@ import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
 import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
-import { clock, pokedex, slugOf } from '../pokedex'
+import { clock, gameDex, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
 import { bossAttacks, patternText, traitText, typeBadge } from './pokedex'
 
@@ -475,7 +475,7 @@ const traits = (locale: Locale, m: SiteMessages) => {
 
 const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
-  return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player), Math.round(1 / RIFT.shinyOdds), pokedex().length))}
+  return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player), Math.round(1 / RIFT.shinyOdds), gameDex().length))}
     <p><a class="btn-link" href="${ROUTES.pokedex[locale]}">★ ${s.seeAll}</a></p>`
 }
 
@@ -510,7 +510,8 @@ const items = (m: SiteMessages) => {
   const nameOf = (drop: Drop) => (drop === 'oranBerry' ? 'Oran Berry' : CONSUMABLES[drop].name)
   const where = (drop: Drop) =>
     sources.filter((src) => DROP_TABLES[src].some((e) => e.drop === drop && Math.max(e.early, e.late) > 0)).map((src) => i.sources[src])
-  const props = (Object.keys(PROPS) as Array<keyof typeof PROPS>).map((id) => [i.sources[id], PROPS[id].hp])
+  // The jack-o'-lantern only stands in for a breakable during the Noite das Bruxas.
+  const props = (Object.keys(PROPS) as Array<keyof typeof PROPS>).flatMap((id) => (id === 'pumpkin' ? [] : [[i.sources[id], PROPS[id].hp]]))
   return html`<p>${i.intro}</p>
     ${table([i.sourceHead, i.hitsHead], props)}
     <p class="note">${i.enemyNote(ENEMY_BERRY_CHANCE * 100, ENEMY_DROP_CHANCE * 100)}</p>

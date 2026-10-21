@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, textSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated, textSprite } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import { TAU } from '../engine/math'
 import { HAMMER_WINDUP, HEAVY_HOP, HEAVY_LIFT, PERISH_TIME } from '../game/eggMove3Rules'
@@ -77,13 +77,13 @@ export const drawEgg3Ground = (ctx: Ctx, a: Attack, t: number) => {
       if (a.age < a.activeFrom) {
         // The hammer's shadow grows under where it'll land, and a red ring warns.
         const k = a.age / a.activeFrom
-        blitCentered(ctx, ellipse(Math.max(1, Math.round(r * (0.4 + 0.6 * k))), Math.max(1, Math.round(r * 0.4 * (0.4 + 0.6 * k))), 'rgba(24,16,32,0.38)'), a.x, a.y)
+        blitEllipse(ctx, Math.max(1, Math.round(r * (0.4 + 0.6 * k))), Math.max(1, Math.round(r * 0.4 * (0.4 + 0.6 * k))), 'rgba(24,16,32,0.38)', a.x, a.y)
         if (Math.floor(a.age * 20) % 2 === 0) dashedRing(ctx, a.x, a.y, r, a.age * 3, ['#f85868', '#ffffff'], 0.75, 0.5)
         return
       }
       const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       ctx.globalAlpha = Math.max(0, 1 - e)
-      blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.45)), 'rgba(40,24,40,0.3)'), a.x, a.y)
+      blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.45)), 'rgba(40,24,40,0.3)', a.x, a.y)
       cracks(ctx, a.x, a.y, Math.min(r * 1.1, 44), 9, a.id, '#302030')
       dashedRing(ctx, a.x, a.y, r * (0.7 + e * 0.5), a.id, ['#f8c0d0', '#ffffff', '#9098b0'], 0.9, 0.45)
       ctx.globalAlpha = 1
@@ -93,7 +93,7 @@ export const drawEgg3Ground = (ctx: Ctx, a: Attack, t: number) => {
       if (a.age < 0) return
       const e = a.age / a.ttl
       ctx.globalAlpha = Math.max(0, 1 - e)
-      blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.5)), 'rgba(24,32,48,0.25)'), a.x, a.y)
+      blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.5)), 'rgba(24,32,48,0.25)', a.x, a.y)
       dashedRing(ctx, a.x, a.y, r, a.id, ['#ffffff', '#b8c8d8', '#68788c'], 0.9, 0.5)
       dashedRing(ctx, a.x, a.y, r * 0.75, -a.id, ['#b8c8d8', '#68788c'], 0.5, 0.5)
       cracks(ctx, a.x, a.y, Math.min(r * 0.9, 40), 6 + Math.min(6, a.tier), a.id, '#283040')
@@ -104,14 +104,14 @@ export const drawEgg3Ground = (ctx: Ctx, a: Attack, t: number) => {
       // The hop's shadow stays on the ground, shrinking at the top.
       const k = Math.min(1, a.age / HEAVY_HOP)
       const s = 1 - Math.sin(k * Math.PI) * 0.4
-      blitCentered(ctx, ellipse(Math.round(10 * s), Math.max(1, Math.round(4 * s)), 'rgba(16,24,32,0.4)'), a.x, a.y)
+      blitEllipse(ctx, Math.round(10 * s), Math.max(1, Math.round(4 * s)), 'rgba(16,24,32,0.4)', a.x, a.y)
       return
     }
     case 'bulldoze': {
       // A furrow of churned earth behind each chunk.
       if (a.age < 0) return
       ctx.globalAlpha = 0.5 * fadeOut(a, 0.25)
-      blitCentered(ctx, ellipse(Math.round(r * 1.1), Math.max(1, Math.round(r * 0.45)), 'rgba(74,44,20,0.55)'), a.x, a.y + 2)
+      blitEllipse(ctx, Math.round(r * 1.1), Math.max(1, Math.round(r * 0.45)), 'rgba(74,44,20,0.55)', a.x, a.y + 2)
       ctx.globalAlpha = 1
       return
     }
@@ -120,7 +120,7 @@ export const drawEgg3Ground = (ctx: Ctx, a: Attack, t: number) => {
       if (a.age < 0) return
       const k = Math.min(1, a.age / a.ttl)
       const ground = a.memo
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * (0.4 + 0.6 * k))), Math.max(1, Math.round(r * 0.35 * (0.4 + 0.6 * k))), 'rgba(24,40,72,0.35)'), a.x, ground)
+      blitEllipse(ctx, Math.max(1, Math.round(r * (0.4 + 0.6 * k))), Math.max(1, Math.round(r * 0.35 * (0.4 + 0.6 * k))), 'rgba(24,40,72,0.35)', a.x, ground)
       return
     }
     case 'perishWave': {
@@ -156,7 +156,7 @@ export const drawEgg3Attack = (ctx: Ctx, a: Attack, t: number) => {
       // A dancing flame with embers trailing behind it.
       const dir = heading(a)
       for (let i = 1; i <= 3; i++) px(ctx, a.x - Math.cos(dir) * i * 4 + Math.sin(t * 20 + i) , a.y - Math.sin(dir) * i * 4 + 2, i === 1 ? FIRE[1] : FIRE[0])
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.9)), Math.max(1, Math.round(r * 0.45)), 'rgba(248,120,40,0.35)'), a.x, a.y + 4)
+      blitEllipse(ctx, Math.max(1, Math.round(r * 0.9)), Math.max(1, Math.round(r * 0.45)), 'rgba(248,120,40,0.35)', a.x, a.y + 4)
       flame(ctx, a.x, a.y + 5, t, a.id)
       return
     }
@@ -241,9 +241,9 @@ export const drawEgg3Attack = (ctx: Ctx, a: Attack, t: number) => {
       const dir = heading(a)
       const bob = Math.sin(t * 20 + a.tier * 1.7) * 1.5
       ctx.globalAlpha = fadeOut(a, 0.2)
-      blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(2, Math.round(r * 0.45)), '#4a2c14'), a.x, a.y - 1 + bob * 0.3)
-      blitCentered(ctx, ellipse(Math.round(r * 0.7), Math.max(2, Math.round(r * 0.38)), '#8a5a2c'), a.x, a.y - 2 + bob * 0.3)
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.4)), Math.max(1, Math.round(r * 0.2)), '#b88848'), a.x - 1, a.y - 3 + bob * 0.3)
+      blitEllipse(ctx, Math.round(r * 0.8), Math.max(2, Math.round(r * 0.45)), '#4a2c14', a.x, a.y - 1 + bob * 0.3)
+      blitEllipse(ctx, Math.round(r * 0.7), Math.max(2, Math.round(r * 0.38)), '#8a5a2c', a.x, a.y - 2 + bob * 0.3)
+      blitEllipse(ctx, Math.max(1, Math.round(r * 0.4)), Math.max(1, Math.round(r * 0.2)), '#b88848', a.x - 1, a.y - 3 + bob * 0.3)
       for (let i = 0; i < 2; i++) {
         const spin = t * 14 + i * 3 + a.tier
         px(ctx, a.x + Math.cos(spin) * r * 0.5, a.y - 5 - Math.abs(Math.sin(spin)) * 5, i ? '#604020' : '#e0c080', 3, 2)
@@ -300,8 +300,8 @@ export const drawEgg3Attack = (ctx: Ctx, a: Attack, t: number) => {
       // An icy puff: pale blue cloud, white core and a snowflake or two.
       const e = a.age / a.ttl
       ctx.globalAlpha = Math.max(0, 0.85 - e * 0.8)
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r)), Math.max(1, Math.round(r * 0.8)), '#a8e0f8'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.6)), Math.max(1, Math.round(r * 0.45)), '#ffffff'), a.x - 1, a.y - 1)
+      blitEllipse(ctx, Math.max(1, Math.round(r)), Math.max(1, Math.round(r * 0.8)), '#a8e0f8', a.x, a.y)
+      blitEllipse(ctx, Math.max(1, Math.round(r * 0.6)), Math.max(1, Math.round(r * 0.45)), '#ffffff', a.x - 1, a.y - 1)
       const spin = t * 4 + a.id
       const sx = a.x + Math.cos(spin) * r * 0.6
       const sy = a.y + Math.sin(spin) * r * 0.5
@@ -315,7 +315,7 @@ export const drawEgg3Attack = (ctx: Ctx, a: Attack, t: number) => {
       const spin = a.age * 14 * (a.flip ? -1 : 1)
       const scale = r >= 11 ? 2 : 1
       for (let i = 1; i <= 3; i++) px(ctx, a.x + (hash2(a.id, i) - 0.5) * r * 1.6, a.y - r - i * 4 - (t * 30) % 4, i === 1 ? '#ffffff' : '#d8e8f8', 2, 2)
-      if (a.tier > 0) blitCentered(ctx, ellipse(Math.round(r + 2), Math.round(r + 2), 'rgba(120,200,248,0.35)'), a.x, a.y)
+      if (a.tier > 0) blitEllipse(ctx, Math.round(r + 2), Math.round(r + 2), 'rgba(120,200,248,0.35)', a.x, a.y)
       blitRotated(ctx, EGG3_FX.snowball(), a.x, a.y, Math.round(spin * 2) / 2, scale)
       if (a.ttl - a.age < 0.1) {
         // It hits the ground: a splash of snow.
@@ -458,7 +458,7 @@ const drawPerish = (ctx: Ctx, a: Attack, t: number) => {
   const e = (a.age - PERISH_TIME) / (a.ttl - PERISH_TIME)
   ctx.globalAlpha = Math.max(0, 1 - e)
   rays(ctx, a.x, a.y, 10 + e * 8, 8, ['#d0c8e8', '#504060'], a.id)
-  blitCentered(ctx, ellipse(Math.max(1, Math.round(5 + e * 6)), Math.max(1, Math.round(4 + e * 4)), 'rgba(32,24,40,0.6)'), a.x, a.y - e * 10)
+  blitEllipse(ctx, Math.max(1, Math.round(5 + e * 6)), Math.max(1, Math.round(4 + e * 4)), 'rgba(32,24,40,0.6)', a.x, a.y - e * 10)
   ctx.globalAlpha = 1
 }
 
@@ -479,8 +479,8 @@ const drawBeam = (ctx: Ctx, a: Attack, t: number) => {
     px(ctx, x - width, y - width, '#f8c820', 1 + width * 2, 1 + width * 2)
     px(ctx, o.x + c * d, o.y + s * d, '#ffffff', width, width)
   }
-  blitCentered(ctx, ellipse(4 + width, 4 + width, '#f8c820'), o.x + c * 8, o.y + s * 8)
-  blitCentered(ctx, ellipse(2 + width, 2 + width, '#ffffff'), o.x + c * 8, o.y + s * 8)
+  blitEllipse(ctx, 4 + width, 4 + width, '#f8c820', o.x + c * 8, o.y + s * 8)
+  blitEllipse(ctx, 2 + width, 2 + width, '#ffffff', o.x + c * 8, o.y + s * 8)
   rays(ctx, o.x + c * len, o.y + s * len, 5, 6, ['#ffffff', '#f8e030'], t * 9)
   ctx.globalAlpha = 1
 }

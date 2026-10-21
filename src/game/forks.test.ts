@@ -129,7 +129,7 @@ describe('forks and shiny cards in a run', () => {
 })
 
 describe('Esquecer', () => {
-  const START: ReplayStart = { seed: 11, starter: 'charmander', difficulty: 'normal', ranks: { ...NO_RANKS, escapeRope: 2 }, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
+  const START: ReplayStart = { seed: 11, starter: 'charmander', difficulty: 'normal', ranks: { ...NO_RANKS, escapeRope: 2 }, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
 
   it('spends a charge, forgets the card and draws its slot again', () => {
     const g = startGame(START)

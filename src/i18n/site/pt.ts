@@ -99,6 +99,7 @@ export const sitePt = {
     learnStart: 'desde o início',
     wildStats: { hp: 'HP', damage: 'Dano de contato', speed: 'Velocidade', xp: 'EXP' },
     eventNote: 'Aparece nos eventos do mapa: foge de você e solta moedas a cada golpe. Derrube ele antes que escape para ganhar o Pay Day.',
+    companionNote: 'Companheiro de presente: chega na caixa de presentes dos apoiadores durante a Noite das Bruxas e anda ao seu lado na partida, deixando um rastro de doces.',
     wildNote: 'Valores base. Inimigos comuns ficam mais fortes a cada minuto; chefes, não.',
     appears: 'Quando aparece',
     horde: (from: string, until: string) => `Pode entrar na horda, de ${from} a ${until}`,
@@ -109,6 +110,7 @@ export const sitePt = {
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
     trio: (at: string, trio: string) => `Chefe em ${at} nas partidas que sorteiam o trio ${trio} (1 em 3)`,
+    night: (at: string, percent: number) => `Chefe da Noite das Bruxas em ${at}, nas partidas assombradas do evento (${n(percent)}% de chance)`,
     rift: (from: string) => `No seu domínio, atrás de uma fenda lendária, a partir de ${from} (opcional)`,
     /** `name` comes with its preposition (`places`). */
     place: (name: string, from: string) => `Vive ${name}, a partir de ${from} (lugar opcional)`,
@@ -116,6 +118,7 @@ export const sitePt = {
     places: { cave: 'na Caverna Escura', graveyard: 'no Cemitério Assombrado', sky: 'no céu, acima das nuvens (só para quem voa)' } satisfies Record<PlaceId, string>,
     reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
+    nightAttacks: 'Ataques como chefe da Noite das Bruxas',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
     /** A rift legendary's shiny odds (`RIFT.shinyOdds`); the map's bosses are never shiny. */
     riftShinyNote: (odds: number) => `Pode aparecer shiny em 1 de ${n(odds)} fendas: paga o dobro de ₽ e mais uma Poké Ball.`,
@@ -421,7 +424,7 @@ export const sitePt = {
     legends: {
       paragraphs: (m: { count: number; awaken: readonly number[] }) => [
         `Os ${m.count} lendários do jogo podem ser capturados e jogados no Modo Lendário. Para capturar um, vença-o como chefe, em qualquer modo: a cada vitória antes da captura ele escapa da Poké Ball e o jogo conta (Kyogre escapou… 2/3); na vitória que fecha a conta, ele é capturado e aparece na aba Lendários da seleção de parceiro. Vencer um shiny na vitória da captura, ou em qualquer vitória depois, libera a forma shiny.`,
-        `No Modo Lendário o lendário não evolui: ele desperta no Nv ${m.awaken[0]} e no Nv ${m.awaken[1]} (Habilidade, força e uma carga de Esquecer; Kyogre e Groudon viram Primal, Rayquaza vira Mega), começa com o golpe lendário e uma habilidade inata sempre ativa, e a horda vem mais forte (Pressão). Latias, Latios e Mewtwo Mega Evoluem com a Mega Stone e o botão MEGA, como os outros, e o especial do Deoxys troca de Forma (Normal, Ataque, Defesa, Velocidade). A partida tem o mesmo tempo de sempre, as três dificuldades continuam valendo e o modo tem um ranking só dele, separado por dificuldade: no ranking, a linha Padrão | Lendário troca de quadro.`,
+        `No Modo Lendário o lendário não evolui: ele desperta no Nv ${m.awaken[0]} e no Nv ${m.awaken[1]} (Habilidade, força e uma carga de Esquecer; Kyogre e Groudon viram Primal, Rayquaza vira Mega), começa com o golpe lendário e uma habilidade inata sempre ativa, e a horda vem mais forte (Pressão), só de Pokémon evoluídos, sem formas básicas nem o surto do dia. Latias, Latios e Mewtwo Mega Evoluem com a Mega Stone e o botão MEGA, como os outros, e o especial do Deoxys troca de Forma (Normal, Ataque, Defesa, Velocidade). A partida tem o mesmo tempo de sempre, as três dificuldades continuam valendo e o modo tem um ranking só dele, separado por dificuldade: no ranking, a linha Padrão | Lendário troca de quadro.`,
         'Os lendários do mapa (o trio sorteado da partida, o mítico raro junto do Mewtwo, o Mewtwo no final e o Arceus no modo sem fim) chegam com uma entrada e um card de título e lutam em três fases, até um golpe supremo com um lugar seguro marcado. Quando caem, a captura acontece ali mesmo, numa cena rápida; os das fendas, no fim do domínio. Um lendário nunca enfrenta a si mesmo: as fendas, o trio e o mítico pulam quem você joga, e um Mewtwo enfrenta o Mewtwo Clone no final.',
       ],
       legendHead: 'Lendário',

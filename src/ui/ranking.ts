@@ -8,10 +8,12 @@ import { REGIONS } from '../data/starters'
 import { dailyChallenge } from '../game/challenge'
 import { brasiliaDay, previousDay, type DayKey } from '../game/day'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
+import { pumpkinRow } from '../game/halloween'
 import { BOARD_PERIODS, isPlayable, RUN_MODES, runMode, type Board, type BoardEntry, type BoardPeriod, type RunMode } from '../game/ranking'
 import { fetchBoard, fetchChallengeBoard, type BoardFilter, type RankOutcome } from '../ranking'
 import { formatDay, t } from '../i18n'
 import { flagIcon } from '../render/art'
+import { jackIcon } from '../render/halloweenArt'
 import { today } from './save'
 import { h, later, rich } from './dom'
 import { profileScreen, runForm, runPortrait, supporterBadge } from './profile'
@@ -20,16 +22,23 @@ import { hint, menu, type Screen } from './screens'
 
 const step = <T>(list: readonly T[], at: T, by: number) => list[(list.indexOf(at) + by + list.length) % list.length]!
 
-/** One player's line: position, Pokémon, name (with their supporter badge) and handle, time. */
-const entryRow = (e: BoardEntry, me: boolean) =>
-  h(
+/**
+ * One player's line: position, Pokémon, name (with their supporter badge) and
+ * handle, time. During the Noite das Bruxas, a jack-o'-lantern supporter's
+ * line glows like a candle, with a jack-o'-lantern on its edge (`pumpkinRow`).
+ */
+const entryRow = (e: BoardEntry, me: boolean) => {
+  const lit = e.supporter != null && pumpkinRow(e.supporterSince, today())
+  return h(
     'button',
-    { class: `rank-row${me ? ' me' : ''}${e.rank <= 3 ? ` top${e.rank}` : ''}` },
+    { class: `rank-row${me ? ' me' : ''}${e.rank <= 3 ? ` top${e.rank}` : ''}${lit ? ' pumpkin' : ''}` },
     h('span', { class: 'rank-pos' }, `#${e.rank}`),
     h('img', { src: runPortrait(e), alt: runForm(e).name, title: runForm(e).name }),
-    h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
+    h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter, e.supporterSince)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
     h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), h('small', {}, t().ranking.outcomes[e.outcome])),
+    lit && h('img', { class: 'rank-jack', src: jackIcon(), alt: '' }),
   )
+}
 
 /** A row with its report flag beside it (signed in, someone else's run), or the row alone. */
 const entryLine = (row: HTMLElement, e: BoardEntry, report: ((e: BoardEntry) => void) | null) =>
