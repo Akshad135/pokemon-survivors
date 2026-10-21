@@ -44,6 +44,12 @@ const JACK: BallArt = [
   { 1: '#401808', 2: '#f08020', 3: '#40a038', 5: '#ffe060' },
 ]
 
+/** The Caça aos Fantasmas ghost, for its corners: a little Gastly-like wisp (1 outline, 2 the ghost, 4 its eyes, 5 the glow). */
+const WISP: BallArt = [
+  ['.11111.', '1222221', '1424241', '1222221', '1255521', '1222221', '1.1.1.1'],
+  { 1: '#180c28', 2: '#b8a0f0', 4: '#180c28', 5: '#f05870' },
+]
+
 export const CARD_FRAMES = {
   /** The game's own dialog box: dark line, paper, blue. */
   classic: { edge: '#283040', light: '#f8f8f8', main: '#6878a8', shade: '#101830', accent: '#ffcb05' },
@@ -57,6 +63,8 @@ export const CARD_FRAMES = {
   supporter: { edge: '#0c2418', light: '#f8e8a0', main: '#30a070', shade: '#0c3820', accent: '#f8d030', ball: STAR },
   /** The Noite das Bruxas candy jar's first reward: pumpkin orange and witch purple, jack-o'-lanterns in the corners. */
   pumpkin: { edge: '#1c0c24', light: '#ffc040', main: '#f07818', shade: '#4a1c5c', accent: '#a058e0', ball: JACK },
+  /** The Noite das Bruxas Caça aos Fantasmas, every night boss beaten: spectral violet and ghost-fire teal, wisps in the corners. */
+  spectral: { edge: '#0c0618', light: '#80f0d0', main: '#5a38a0', shade: '#1c0c38', accent: '#58f0b0', ball: WISP },
 } as const satisfies Record<FrameId, CardFrame>
 
 /** A card's backdrop: sky bands top to bottom (dithered where they meet) and how many stars (fireflies, crystals, snow…). */

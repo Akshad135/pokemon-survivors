@@ -1,8 +1,9 @@
-import { chance, hash2, range } from '../engine/rng'
-import { HALLOWEEN } from '../data/halloween'
+import { chance, createRng, hash2, pick, range, seedFrom } from '../engine/rng'
+import { HALLOWEEN, NIGHT_BOSSES } from '../data/halloween'
 import { ENEMIES, type EnemyId } from '../data/enemies'
-import { stageIndexAt } from '../data/waves'
+import { EVENTS, nightCandidates, stageIndexAt, type WaveEvent } from '../data/waves'
 import { brasiliaDay, dayNumber, previousDay, type DayKey } from './day'
+import { createFight } from './bossFight'
 import { burst } from './effects'
 import { spawnEnemy } from './enemies'
 import type { Gift, GiftContent } from './gifts'
@@ -19,10 +20,12 @@ import * as dm from '../engine/dmath'
  * input like the outbreak (`ReplayStart.halloween`, checked by the server
  * with `halloweenFits`): a ghost joins each stage, Ghost-type foes carry
  * candies (`dropCandies`) and some breakables are jack-o'-lanterns
- * (`crackPumpkin`: a treat of candies, or a trick, a ring of ghosts). The
+ * (`crackPumpkin`: a treat of candies, or a trick, a ring of ghosts), and
+ * night bosses take the regular wave boss slots (`drawNightBosses`). The
  * candies a run collects go into the save's jar (`HalloweenSave`), which
  * pays `HALLOWEEN_REWARDS` as Mystery Gifts opened from the lobby's gift
- * box (`halloweenGifts`). Pure.
+ * box (`halloweenGifts`); each night boss's first defeat ticks off the Caça
+ * aos Fantasmas (`recordHunt`), which pays `HUNT_REWARDS` once complete. Pure.
  */
 
 /* ---------------- Calendar ---------------- */
@@ -61,15 +64,42 @@ export const halloweenFits = (haunted: boolean, startedAt: Date) => {
 /** Odds of the haunt next to the stage's other species: as common as an average one. */
 const hauntWeight = (pool: Roster['stages'][number]) => pool.reduce((sum, [, w]) => sum + w, 0) / Math.max(1, pool.length)
 
-/** The cast with the stage's ghost (`HALLOWEEN.haunts`) in each stage. Done after the draw, so the rest of the cast stays the same. */
-export const withHaunts = (roster: Roster, haunted: boolean): Roster => {
+/**
+ * The night bosses of a haunted run with `seed`, aligned with `events`: each
+ * regular boss slot takes one of its ghosts (`nightCandidates`), never one
+ * already drawn; null for every other event. Drawn on an rng of their own
+ * (from the seed), so the rest of the roster stays the same and drawing again
+ * gives the same bosses.
+ */
+export const drawNightBosses = (seed: number, events: readonly WaveEvent[] = EVENTS): (EnemyId | null)[] => {
+  const rng = createRng(seedFrom(`night:${seed}`))
+  const drawn = new Set<EnemyId>()
+  return events.map((e) => {
+    if (e.kind !== 'boss') return null
+    const open = nightCandidates(e).filter((id) => !drawn.has(id))
+    if (open.length === 0) return null
+    const id = pick(rng, open)
+    drawn.add(id)
+    return id
+  })
+}
+
+/**
+ * The haunted cast of a run with `seed`: the stage's ghost (`HALLOWEEN.haunts`)
+ * in each stage and the night bosses in the regular boss slots
+ * (`drawNightBosses`). Done after the draw, so the rest of the cast stays the
+ * same; doing it again changes nothing.
+ */
+export const withHaunts = (roster: Roster, haunted: boolean, seed: number): Roster => {
   if (!haunted) return roster
+  const night = drawNightBosses(seed)
   return {
     ...roster,
     stages: roster.stages.map((pool, i) => {
       const haunt = HALLOWEEN.haunts[Math.min(i, HALLOWEEN.haunts.length - 1)]!
       return pool.some(([id]) => id === haunt) ? pool : [...pool, [haunt, hauntWeight(pool)] as const]
     }),
+    events: roster.events.map((id, i) => night[i] ?? id),
   }
 }
 
@@ -142,23 +172,72 @@ export const crackPumpkin = (g: Game, x: number, y: number) => {
   g.events.push({ kind: 'trickOrTreat', ghost })
 }
 
+/**
+ * A boss's Disguise took a hit whole (`disguiseTakes`): it breaks in a puff of
+ * rags, and the boss takes hits from now on. A hit before its first tick starts
+ * its fight here, as `updateBosses` would.
+ */
+export const bustDisguise = (g: Game, e: Enemy) => {
+  e.fight ??= createFight(g.rng, g.difficulty, { x: e.x, y: e.y })
+  e.fight.busted = true
+  e.flash = 0.3
+  g.shake = Math.max(g.shake, 4)
+  burst(g, e.x, e.y - e.radius, { colors: ['#f8e078', '#c8a048', '#584020', '#ffffff'], count: 30, speed: 110, ttl: 0.55, gravity: 120 })
+  g.events.push({ kind: 'disguise', enemy: e.kind })
+}
+
+/** A boss fell (`killEnemy`): in a haunted run, a night boss goes into the run's tally (the save's checklist reads it from the run's results, `recordHunt`) and the shell toasts it. */
+export const nightBossDown = (g: Game, e: Enemy) => {
+  if (!g.halloween || !NIGHT_BOSSES.includes(e.kind)) return
+  g.tally.nightBosses.push(e.kind)
+  g.events.push({ kind: 'nightBoss', enemy: e.kind })
+}
+
 /** Dex numbers of the event's ghosts, for the shell to warm up before the lobby's haunted meadow wants them. */
 export const HAUNT_DEX = [...new Set(HALLOWEEN.haunts.map((id) => ENEMIES[id].dex))]
 
 /* ---------------- The candy jar ---------------- */
 
-/** The save's side of the event: every candy brought home from a haunted run. */
-export type HalloweenSave = { candies: number }
+/** The save's side of the event: every candy brought home from a haunted run, and the night bosses beaten (the Caça aos Fantasmas, in `NIGHT_BOSSES` order). */
+export type HalloweenSave = { candies: number; hunted: readonly EnemyId[] }
 
-export const NO_HALLOWEEN: HalloweenSave = { candies: 0 }
+export const NO_HALLOWEEN: HalloweenSave = { candies: 0, hunted: [] }
 
-export const parseHalloween = (raw: unknown): HalloweenSave => ({ candies: wholeNumber(isRecord(raw) ? raw.candies : 0) })
+/** The night bosses of a list, once each, in `NIGHT_BOSSES` order (unknown ids dropped). */
+const huntOf = (ids: readonly unknown[]) => NIGHT_BOSSES.filter((id) => ids.includes(id))
 
-/** Two devices' jars: the fuller one (candies brought home on both sides apart aren't added up, like the records). */
-export const mergeHalloween = (a: HalloweenSave, b: HalloweenSave): HalloweenSave => ({ candies: Math.max(a.candies, b.candies) })
+export const parseHalloween = (raw: unknown): HalloweenSave => {
+  const r = isRecord(raw) ? raw : {}
+  return { candies: wholeNumber(r.candies), hunted: Array.isArray(r.hunted) ? huntOf(r.hunted) : [] }
+}
+
+/** Two devices' sides: the fuller jar (candies brought home on both sides apart aren't added up, like the records) and every night boss either beat. */
+export const mergeHalloween = (a: HalloweenSave, b: HalloweenSave): HalloweenSave => ({ candies: Math.max(a.candies, b.candies), hunted: huntOf([...a.hunted, ...b.hunted]) })
 
 /** Banks a run's candies into the jar. */
-export const addCandies = (save: Save, candies: number): Save => (candies > 0 ? { ...save, halloween: { candies: save.halloween.candies + candies } } : save)
+export const addCandies = (save: Save, candies: number): Save => (candies > 0 ? { ...save, halloween: { ...save.halloween, candies: save.halloween.candies + candies } } : save)
+
+/**
+ * Ticks a run's beaten night bosses (`RunSummary.nightBosses`) off the Caça
+ * aos Fantasmas: each one new to it pays `HALLOWEEN.hunt.candies` into the
+ * jar. Safe to record again: a boss already ticked pays nothing.
+ */
+export const recordHunt = (h: HalloweenSave, beaten: readonly EnemyId[]): HalloweenSave => {
+  const fresh = huntOf(beaten).filter((id) => !h.hunted.includes(id))
+  return fresh.length === 0 ? h : { candies: h.candies + fresh.length * HALLOWEEN.hunt.candies, hunted: huntOf([...h.hunted, ...fresh]) }
+}
+
+/** Whether every night boss has been beaten. */
+export const huntDone = (h: HalloweenSave) => h.hunted.length >= NIGHT_BOSSES.length
+
+/** What the Caça aos Fantasmas pays once every night boss fell: the Exorcista title and the Espectral frame. */
+export const HUNT_REWARDS = [
+  { kind: 'title', title: 'exorcist' },
+  { kind: 'style', style: { slot: 'frame', id: 'spectral' } },
+] as const satisfies readonly GiftContent[]
+
+/** The Mystery Gift id of a Caça aos Fantasmas reward (made by the game, like the jar's). */
+export const huntGiftId = (index: number) => `halloween2026:hunt${index}`
 
 /**
  * What the jar pays, in order: the Abóbora frame for showing up, then the
@@ -186,8 +265,9 @@ export const PUMPKABOO_GIFT = { id: 'halloween2026:pumpkaboo', content: { kind: 
 /**
  * The event's gifts waiting to be opened on `day`: every reward the jar's
  * candies reached that the save didn't apply yet (the frame for showing up
- * needs an event day, or a candy already in the jar), and Pumpkaboo for a
- * supporter on an event day.
+ * needs an event day, or a candy already in the jar), the Caça aos Fantasmas
+ * rewards once every night boss fell, and Pumpkaboo for a supporter on an
+ * event day.
  */
 export const halloweenGifts = (save: Save, day: DayKey): Gift[] => [
   ...HALLOWEEN_REWARDS.flatMap((r, i) => {
@@ -195,6 +275,12 @@ export const halloweenGifts = (save: Save, day: DayKey): Gift[] => [
     const reached = r.candies === 0 ? isHalloweenDay(day) || save.halloween.candies > 0 : save.halloween.candies >= r.candies
     return reached && !save.gifts.includes(id) ? [{ id, content: r.content, reason: { kind: 'halloween' } } satisfies Gift] : []
   }),
+  ...(huntDone(save.halloween)
+    ? HUNT_REWARDS.flatMap((content, i) => {
+        const id = huntGiftId(i)
+        return save.gifts.includes(id) ? [] : [{ id, content, reason: { kind: 'ghostHunt' } } satisfies Gift]
+      })
+    : []),
   ...(isSupporter(save) && isHalloweenDay(day) && !save.gifts.includes(PUMPKABOO_GIFT.id) ? [PUMPKABOO_GIFT] : []),
 ]
 

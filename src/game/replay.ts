@@ -33,7 +33,7 @@ export const TICK = 1 / 60
  * pins where a few scripted replays end under this version and fails when the
  * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 25
+export const RULES_VERSION = 26
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -210,9 +210,9 @@ export const parseReplay = (raw: unknown): Replay | null => {
 
 /* ---------------- Re-simulation ---------------- */
 
-/** The wild cast a run draws from its seed, with the event's ghosts and the day's outbreak (the shell draws it ahead to preload its sprites). */
+/** The wild cast a run draws from its seed, with the event's ghosts and night bosses and the day's outbreak (the shell draws it ahead to preload its sprites). */
 export const runRoster = (seed: number, outbreak: EnemyId | null, halloween: boolean) =>
-  withOutbreak(withHaunts(drawRoster(createRng(seed), { weight: biomeWeight }), halloween), outbreak)
+  withOutbreak(withHaunts(drawRoster(createRng(seed), { weight: biomeWeight }), halloween, seed), outbreak)
 
 /** A fresh run from a replay's start, exactly as the shell creates it: it opens on the opening draft. */
 export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.view }) =>

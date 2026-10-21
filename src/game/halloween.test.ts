@@ -1,18 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { HALLOWEEN } from '../data/halloween'
-import { ENEMIES } from '../data/enemies'
-import { STAGES } from '../data/waves'
+import { HALLOWEEN, NIGHT_BOSSES } from '../data/halloween'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
+import { bossWaveAt, EVENTS, STAGES } from '../data/waves'
 import { challengeProblem, challengeStart, dailyChallenge } from './challenge'
 import { applyGift } from './gifts'
 import {
   addCandies,
   candiesOf,
   daysToHalloween,
+  drawNightBosses,
   HALLOWEEN_REWARDS,
   halloweenDaysLeft,
   halloweenFits,
   halloweenGifts,
+  HUNT_REWARDS,
   isHalloweenDay,
   mergeHalloween,
   nextHalloweenReward,
@@ -20,6 +22,7 @@ import {
   PUMPKABOO_GIFT,
   pumpkinRow,
   pumpkinSupporter,
+  recordHunt,
   withHaunts,
 } from './halloween'
 import { EMPTY_SAVE, type Save } from './meta'
@@ -27,7 +30,7 @@ import { OUTBREAK_SPECIES, outbreakOf } from './outbreak'
 import { drawRoster } from './roster'
 import { canWalkWith, mergeCompanions } from './supporters'
 
-const withCandies = (candies: number, gifts: string[] = []): Save => ({ ...EMPTY_SAVE, halloween: { candies }, gifts })
+const withCandies = (candies: number, gifts: string[] = []): Save => ({ ...EMPTY_SAVE, halloween: { candies, hunted: [] }, gifts })
 
 describe('the Noite das Bruxas calendar', () => {
   it('runs from its first day to its last, both included, counting down from the teaser', () => {
@@ -81,8 +84,8 @@ describe('the haunted run', () => {
       expect(STAGES[i]!.cast).toContain(ENEMIES[id].tier)
     })
     const roster = drawRoster(createRng(5))
-    expect(withHaunts(roster, false)).toBe(roster)
-    const haunted = withHaunts(roster, true)
+    expect(withHaunts(roster, false, 5)).toBe(roster)
+    const haunted = withHaunts(roster, true, 5)
     haunted.stages.forEach((pool, i) => {
       expect(pool.some(([id]) => id === HALLOWEEN.haunts[i])).toBe(true)
       expect(pool.filter(([id]) => id !== HALLOWEEN.haunts[i])).toEqual(roster.stages[i]!.filter(([id]) => id !== HALLOWEEN.haunts[i]))
@@ -120,11 +123,76 @@ describe('the candy jar', () => {
   it('banks candies, keeps the fuller jar when two saves merge and parses junk to empty', () => {
     expect(addCandies(withCandies(10), 5).halloween.candies).toBe(15)
     expect(addCandies(withCandies(10), 0).halloween.candies).toBe(10)
-    expect(mergeHalloween({ candies: 40 }, { candies: 90 })).toEqual({ candies: 90 })
-    expect(parseHalloween({ candies: -3 })).toEqual({ candies: 0 })
-    expect(parseHalloween('nope')).toEqual({ candies: 0 })
+    expect(mergeHalloween({ candies: 40, hunted: [] }, { candies: 90, hunted: [] })).toEqual({ candies: 90, hunted: [] })
+    expect(parseHalloween({ candies: -3 })).toEqual({ candies: 0, hunted: [] })
+    expect(parseHalloween('nope')).toEqual({ candies: 0, hunted: [] })
     expect(nextHalloweenReward(0)).toBe(HALLOWEEN_REWARDS[1])
     expect(nextHalloweenReward(10_000)).toBeNull()
+  })
+})
+
+describe('the night bosses', () => {
+  it('take the regular boss slots of a haunted run: one each, never twice, the same for the same seed', () => {
+    const roster = drawRoster(createRng(9))
+    for (const seed of [1, 2, 3, 42, 1_729_000_000_000]) {
+      const night = drawNightBosses(seed)
+      expect(drawNightBosses(seed)).toEqual(night)
+      const drawn = night.filter((id) => id !== null)
+      expect(drawn.length).toBe(Object.keys(HALLOWEEN.bosses).length)
+      expect(new Set(drawn).size).toBe(drawn.length)
+      EVENTS.forEach((e, i) => {
+        const pool = e.kind === 'boss' && 'enemy' in e ? (HALLOWEEN.bosses as Partial<Record<string, readonly string[]>>)[e.enemy] : undefined
+        if (pool) expect(pool).toContain(night[i])
+        else expect(night[i]).toBeNull()
+      })
+      // Only those slots change; doing it again changes nothing.
+      const haunted = withHaunts(roster, true, seed)
+      expect(haunted.events.map((id, i) => night[i] ?? id)).toEqual(haunted.events)
+      expect(haunted.events.filter((id, i) => night[i] === null && id !== roster.events[i])).toEqual([])
+      expect(withHaunts(haunted, true, seed)).toEqual(haunted)
+    }
+    // Different seeds meet different pairs.
+    expect(new Set(Array.from({ length: 40 }, (_, seed) => drawNightBosses(seed).join())).size).toBeGreaterThan(10)
+  })
+
+  it('fight as their slot: its wave, its strength', () => {
+    for (const [slot, pool] of Object.entries(HALLOWEEN.bosses)) {
+      const def: EnemyDef = ENEMIES[slot as keyof typeof ENEMIES]
+      for (const id of pool) {
+        const ghost: EnemyDef = ENEMIES[id]
+        expect(bossWaveAt(id), id).toBe(bossWaveAt(slot as keyof typeof ENEMIES))
+        expect([ghost.boss, ghost.hp, ghost.damage, ghost.xp], id).toEqual([true, def.hp, def.damage, def.xp])
+      }
+    }
+  })
+})
+
+describe('the Caça aos Fantasmas', () => {
+  const beaten = (n: number) => NIGHT_BOSSES.slice(0, n)
+
+  it('ticks off each night boss once, paying candies the first time only', () => {
+    const once = recordHunt({ candies: 10, hunted: [] }, [NIGHT_BOSSES[2]!, NIGHT_BOSSES[0]!, NIGHT_BOSSES[2]!])
+    expect(once).toEqual({ candies: 10 + 2 * HALLOWEEN.hunt.candies, hunted: [NIGHT_BOSSES[0], NIGHT_BOSSES[2]] })
+    expect(recordHunt(once, [NIGHT_BOSSES[0]!])).toBe(once)
+    expect(recordHunt(once, ['onix'])).toBe(once)
+  })
+
+  it('pays its title and frame once every night boss fell, once', () => {
+    const almost: Save = { ...EMPTY_SAVE, halloween: { candies: 0, hunted: beaten(NIGHT_BOSSES.length - 1) } }
+    expect(halloweenGifts(almost, '2026-11-10').filter((g) => g.reason?.kind === 'ghostHunt')).toEqual([])
+    const done: Save = { ...almost, halloween: { candies: 0, hunted: beaten(NIGHT_BOSSES.length) } }
+    const gifts = halloweenGifts(done, '2026-11-10').filter((g) => g.reason?.kind === 'ghostHunt')
+    expect(gifts.map((g) => g.content)).toEqual([...HUNT_REWARDS])
+    const out = applyGift(done, gifts[0]!)
+    expect(out.status).toBe('applied')
+    if (out.status !== 'applied') return
+    expect(out.save.titles).toContain('exorcist')
+    expect(halloweenGifts(out.save, '2026-11-10').map((g) => g.id)).not.toContain(gifts[0]!.id)
+  })
+
+  it('keeps what either device hunted when two saves merge, and drops junk', () => {
+    expect(mergeHalloween({ candies: 5, hunted: beaten(1) }, { candies: 3, hunted: [NIGHT_BOSSES[3]!] })).toEqual({ candies: 5, hunted: [NIGHT_BOSSES[0], NIGHT_BOSSES[3]] })
+    expect(parseHalloween({ candies: 4, hunted: [NIGHT_BOSSES[1], 'onix', 7, NIGHT_BOSSES[1]] })).toEqual({ candies: 4, hunted: [NIGHT_BOSSES[1]] })
   })
 })
 
@@ -163,6 +231,14 @@ describe("the supporters' Pumpkaboo", () => {
     expect(canWalkWith(out.save, pumpkaboo)).toBe(true)
     expect(canWalkWith(out.save, { ...pumpkaboo, shiny: true })).toBe(false)
     expect(halloweenGifts(out.save, '2026-10-31').map((g) => g.id)).not.toContain(PUMPKABOO_GIFT.id)
+  })
+
+  it('walks shiny only for a Gold supporter', () => {
+    const owned: Save = { ...supporter, companions: ['pumpkaboo'] }
+    const gold: Save = { ...owned, style: { ...owned.style, owned: { ...owned.style.owned, background: [...owned.style.owned.background, 'supporter'] } } }
+    expect(canWalkWith(owned, { ...pumpkaboo, shiny: true })).toBe(false)
+    expect(canWalkWith(gold, { ...pumpkaboo, shiny: true })).toBe(true)
+    expect(canWalkWith({ ...gold, companions: [] }, { ...pumpkaboo, shiny: true })).toBe(false)
   })
 
   it('stays owned when two saves merge', () => {

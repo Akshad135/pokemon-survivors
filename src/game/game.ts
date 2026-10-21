@@ -95,7 +95,7 @@ export type RunOptions = {
   luckyEgg?: boolean
   /** The day's outbreak species (`game/outbreak.ts`), put in every stage of the roster (`withOutbreak`, which a roster drawn ahead may already have). */
   outbreak?: EnemyId | null
-  /** Noite das Bruxas (`game/halloween.ts`): a ghost in every stage of the roster (`withHaunts`, which a roster drawn ahead may already have), candies and jack-o'-lanterns. */
+  /** Noite das Bruxas (`game/halloween.ts`): a ghost in every stage of the roster and the night bosses (`withHaunts`, which a roster drawn ahead may already have), candies and jack-o'-lanterns. */
   halloween?: boolean
   /** Bag items the run uses (`game/bag.ts`): a Lure doubles wild shinies, an Incense egg drops. */
   lure?: boolean
@@ -182,7 +182,7 @@ export const createGame = (
     branch: null,
     ability: createAbilityState(),
     // A legend never meets itself among the bosses (`avoidLegend`).
-    roster: avoidLegend(withOutbreak(withHaunts(roster ?? drawRoster(rng), options.halloween === true), options.outbreak ?? null), starter),
+    roster: avoidLegend(withOutbreak(withHaunts(roster ?? drawRoster(rng), options.halloween === true, seed), options.outbreak ?? null), starter),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,

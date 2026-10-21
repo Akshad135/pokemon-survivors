@@ -13267,10 +13267,102 @@ button.hall-tile:hover {
   opacity: 0.45;
 }
 
+/* The Caça aos Fantasmas: the night bosses, silhouettes until beaten, and its two rewards. */
+.halloween-hunt-box {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  background: #2c1440;
+  border: 2px solid #4a2860;
+  border-radius: 4px;
+}
+
+.halloween-hunt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.halloween-hunt-head .halloween-section {
+  color: #ffb040;
+}
+
+.halloween-hunt-head b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #d8c0f0;
+}
+
+.halloween-hunt-blurb {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.05;
+  color: #f0e0ff;
+}
+
+.halloween-hunt-blurb b {
+  color: #ffd060;
+}
+
+.halloween-hunt {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+  list-style: none;
+}
+
+.halloween-ghost {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  background: #1a0a28;
+  border: 2px solid #3a1c50;
+  border-radius: 4px;
+}
+
+.halloween-ghost img {
+  width: 100%;
+  max-width: 40px;
+  image-rendering: pixelated;
+  /* Not beaten yet: a shadow in the dark, with a question mark. */
+  filter: grayscale(1) brightness(0.22);
+}
+
+.halloween-ghost:not(.hunted)::after {
+  content: '?';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--title);
+  font-size: 12px;
+  color: #a080c8;
+}
+
+.halloween-ghost.hunted {
+  background: #5a2878;
+  border-color: #ffb040;
+}
+
+.halloween-ghost.hunted img {
+  filter: none;
+}
+
+.halloween-rewards.hunt {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 /* Phones held upright: two reward columns. Lying down: the blurb goes, the buttons stay in reach. */
 @media (max-width: 520px) {
   .halloween-rewards {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .halloween-hunt {
+    grid-template-columns: repeat(6, 1fr);
   }
   .halloween-day img {
     width: 28px;

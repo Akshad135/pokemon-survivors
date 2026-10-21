@@ -14,7 +14,7 @@ import { dropBossTm } from './tms'
 import { coinDrops } from './meta'
 import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
-import { faintCandies } from './halloween'
+import { bustDisguise, faintCandies, nightBossDown } from './halloween'
 import { applyStatus, breakOnHit, hitTakenMult, STATUS_RULES, type StatusKind } from './status'
 import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY, SEED_JUMPS, SEED_MIN_TIME, SEED_REACH } from './kitRules'
 import { guardHit, moveEvent, moveHit } from './moveHooks'
@@ -25,7 +25,7 @@ import { countKill, countLegend } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
 import { alphaDown } from './alphas'
-import { holdsOn, phaseTaken } from './bossFight'
+import { disguiseTakes, holdsOn, phaseTaken } from './bossFight'
 import { legendFell } from './legendScene'
 import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
@@ -42,6 +42,8 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   const raw = Math.max(1, Math.round(base * eff * playerWeatherBoost(g, attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
   // A Bronzong ward soaks the hit first, unless the move or the ability (Infiltrator) goes through wards.
   const dmg = attack.sure || attack.ignoreWards || abilityImmune(g, 'wards') ? raw : absorb(e.trait, raw)
+  // Mimikyu's Disguise takes the first big hit whole.
+  if (disguiseTakes(e, dmg)) return bustDisguise(g, e)
   e.hp -= dmg
   e.flash = 0.16
   g.damageByMove[attack.move] = (g.damageByMove[attack.move] ?? 0) + dmg
@@ -183,6 +185,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
       countLegend(g.tally, e.kind, e.shiny)
       g.events.push({ kind: 'legendBeaten', legend: e.kind, shiny: e.shiny })
     }
+    nightBossDown(g, e)
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     dropBossTm(g, e)
