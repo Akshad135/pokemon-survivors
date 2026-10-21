@@ -27,6 +27,109 @@ export type ChangelogUpdate = {
  */
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
+    date: '2026-10-21',
+    title: { pt: 'Noite das Bruxas e lendários jogáveis', en: 'Halloween Night and playable legendaries', es: 'Noche de Brujas y legendarios jugables' },
+    highlights: [
+      { pt: 'Modo Lendário: vença os 23 lendários como chefes, no mapa ou nas novas fendas épicas, para capturá-los e jogar com eles, com ranking próprio.', en: 'Legend Mode: beat all 23 legendaries as bosses, on the map or in the new epic rifts, to catch them and play as them, with their own ranking.', es: 'Modo Legendario: vence a los 23 legendarios como jefes, en el mapa o en las nuevas grietas épicas, para capturarlos y jugar con ellos, con su propio ranking.' },
+      { pt: 'Noite das Bruxas de 24/10 a 2/11: toda partida é assombrada, à noite, com um surto de fantasma por dia e abóboras pelo mapa. Doces ou travessuras?', en: 'Halloween Night from Oct 24 to Nov 2: every run is haunted, at night, with a ghost outbreak every day and jack-o\'-lanterns all over the map. Trick or treat?', es: 'Noche de Brujas del 24/10 al 2/11: cada partida está embrujada, de noche, con un brote de fantasma por día y calabazas por el mapa. ¿Dulce o truco?' },
+      { pt: '12 chefes da noite, do Mimikyu ao Chandelure, tomam o lugar do Onix e do Snorlax: cace todos e ganhe o título Exorcista.', en: '12 night bosses, from Mimikyu to Chandelure, take Onix\'s and Snorlax\'s places: hunt them all for the Exorcist title.', es: '12 jefes de la noche, de Mimikyu a Chandelure, toman el lugar de Onix y Snorlax: cázalos a todos y gana el título Exorcista.' },
+      { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
+      { pt: 'Apoiadores até 2/11 trocam o coração por uma abóbora, para sempre, e ganham o Pumpkaboo como companheiro (shiny no Ouro).', en: 'Supporters by Nov 2 swap their heart for a jack-o\'-lantern, forever, and get Pumpkaboo as a companion (shiny for Gold).', es: 'Quien apoye hasta el 2/11 cambia el corazón por una calabaza, para siempre, y gana a Pumpkaboo como compañero (shiny en Oro).' },
+    ],
+    changes: [
+      {
+        title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+        notes: [
+          {
+            pt: 'De 24 de outubro a 2 de novembro (horário de Brasília), toda partida é assombrada: cai a noite, um fantasma a mais entra em cada fase (do Shedinja ao Gengar) e abóboras iluminadas aparecem entre os itens do mapa. O lobby também se veste para a noite, com abóboras, morcegos e fantasmas passeando.',
+            en: 'From October 24 to November 2 (Brasília time), every run is haunted: night falls, an extra ghost joins each stage (from Shedinja to Gengar) and lit jack-o\'-lanterns stand among the breakables. The lobby dresses for the night too, with jack-o\'-lanterns, bats and ghosts wandering around.',
+            es: 'Del 24 de octubre al 2 de noviembre (hora de Brasilia), cada partida está embrujada: cae la noche, un fantasma más se une a cada fase (de Shedinja a Gengar) y calabazas iluminadas aparecen entre los objetos del mapa. El lobby también se viste para la noche, con calabazas, murciélagos y fantasmas paseando.',
+          },
+          {
+            pt: 'Surtos assombrados: cada dia do evento tem o seu fantasma (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), o Gastly no dia 31, as velas do Litwick no Día de Muertos e o Duskull no Dia de Finados. O Desafio do dia também fica assombrado.',
+            en: 'Haunted outbreaks: each event day has its ghost (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), Gastly on the 31st, Litwick\'s candles for the Día de Muertos and Duskull for All Souls\' Day. The Daily Challenge gets haunted too.',
+            es: 'Brotes embrujados: cada día del evento tiene su fantasma (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), Gastly el 31, las velas de Litwick en el Día de Muertos y Duskull en el Día de los Fieles Difuntos. El Desafío del día también se embruja.',
+          },
+          {
+            pt: 'Doces: Pokémon do tipo Fantasma deixam cair doces, chefes e Alfas sempre trazem 10, e as abóboras são doces ou travessuras (às vezes uma roda de fantasmas aparece em volta de você). Os doces enchem um pote que dá prêmios no Presente do lobby: a moldura Abóbora só por participar, o fundo Noite das Bruxas, um Ovo Raro, o papel de parede Casa Assombrada, o título Rei das Abóboras e um Gastly shiny.',
+            en: 'Candies: Ghost-type Pokémon drop candies, bosses and Alphas always bring 10, and jack-o\'-lanterns are trick or treat (sometimes a ring of ghosts shows up around you). Candies fill a jar that pays prizes in the lobby\'s Gift box: the Pumpkin frame just for joining in, the Halloween Night background, a Rare Egg, the Haunted House wallpaper, the Pumpkin King title and a shiny Gastly.',
+            es: 'Dulces: los Pokémon de tipo Fantasma sueltan dulces, los jefes y los Alfas siempre traen 10, y las calabazas son dulce o truco (a veces aparece una ronda de fantasmas a tu alrededor). Los dulces llenan un frasco que da premios en el Regalo del lobby: el marco Calabaza solo por participar, el fondo Noche de Brujas, un Huevo Raro, el fondo de pantalla Casa Embrujada, el título Rey Calabaza y un Gastly shiny.',
+          },
+          {
+            pt: 'Apoiadores da Noite das Bruxas: quem já apoia o jogo ou apoiar até 2 de novembro troca o coração por uma abóbora com um coração entalhado (dourada no Ouro), no ranking, no perfil e no Hall da Fama. Ela fica para sempre, e durante o evento a linha deles no ranking brilha como uma vela. E quem entrar no jogo como apoiador durante o evento ganha o Pumpkaboo, um companheiro que só apoiadores têm e que deixa um rastro de doces brilhando por onde passa. Apoiadores Ouro podem levá-lo shiny.',
+            en: 'Halloween Night supporters: anyone who already supports the game or does by November 2 swaps their heart for a jack-o\'-lantern with a heart carved in (golden for Gold), on the ranking, their profile and the Hall of Fame. It stays forever, and during the event their ranking line glows like a candle. And supporters who play during the event get Pumpkaboo, a companion only supporters have, leaving a trail of sparkling candy wherever it goes. Gold supporters can take it along shiny.',
+            es: 'Patrocinadores de la Noche de Brujas: quien ya apoya el juego o lo apoye hasta el 2 de noviembre cambia el corazón por una calabaza con un corazón tallado (dorada en Oro), en el ranking, su perfil y el Salón de la Fama. Se queda para siempre, y durante el evento su línea en el ranking brilla como una vela. Y quien entre al juego como patrocinador durante el evento gana a Pumpkaboo, un compañero que solo tienen los patrocinadores y que deja un rastro de dulces brillantes por donde pasa. Los patrocinadores Oro pueden llevarlo shiny.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Chefes da noite e Caça aos Fantasmas', en: 'Night bosses and the Ghost Hunt', es: 'Jefes de la noche y Cacería de Fantasmas' },
+        notes: [
+          {
+            pt: 'Nas partidas assombradas, o Onix (2:30) e o Snorlax (5:00) dão lugar a chefes da noite, sorteados a cada partida, cada um com seus próprios golpes: Mimikyu (a Disguise aguenta o primeiro golpe forte), Banette, Sableye, Drifblim, Mismagius e Houndoom às 2:30; Gengar (some e reaparece em cima de você), Chandelure (paredes de fogo), Gourgeist, Trevenant (raízes que te puxam), Honchkrow (chama os Murkrow) e Dusknoir às 5:00. Eles batem como o chefe que substituem. Os lendários continuam onde estavam.',
+            en: 'In haunted runs, Onix (2:30) and Snorlax (5:00) give way to night bosses, drawn each run, each with its own moves: Mimikyu (its Disguise takes the first big hit), Banette, Sableye, Drifblim, Mismagius and Houndoom at 2:30; Gengar (it fades and comes back on top of you), Chandelure (walls of fire), Gourgeist, Trevenant (roots that drag you in), Honchkrow (it calls its Murkrow) and Dusknoir at 5:00. They hit as hard as the boss they stand in for. The legendaries keep their slots.',
+            es: 'En las partidas embrujadas, Onix (2:30) y Snorlax (5:00) dejan su lugar a jefes de la noche, sorteados en cada partida, cada uno con sus propios golpes: Mimikyu (su Disguise aguanta el primer golpe fuerte), Banette, Sableye, Drifblim, Mismagius y Houndoom a las 2:30; Gengar (se desvanece y reaparece encima de ti), Chandelure (muros de fuego), Gourgeist, Trevenant (raíces que te arrastran), Honchkrow (llama a sus Murkrow) y Dusknoir a las 5:00. Pegan como el jefe que reemplazan. Los legendarios siguen en su lugar.',
+          },
+          {
+            pt: 'Caça aos Fantasmas: a tela da Noite das Bruxas mostra os 12 como sombras até você vencê-los. A primeira vitória sobre cada um rende 25 doces no pote, e vencer todos dá o título Exorcista e a moldura Espectral no Presente.',
+            en: 'Ghost Hunt: the Halloween Night screen shows all 12 as shadows until you beat them. The first win over each one puts 25 candies in the jar, and beating them all brings the Exorcist title and the Spectral frame to your Gift box.',
+            es: 'Cacería de Fantasmas: la pantalla de la Noche de Brujas muestra a los 12 como sombras hasta que los vences. La primera victoria sobre cada uno pone 25 dulces en el frasco, y vencerlos a todos trae el título Exorcista y el marco Espectral a tu Regalo.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Ranking', en: 'Ranking', es: 'Ranking' },
+        notes: [
+          {
+            pt: 'Com o jogo aberto desde antes de uma atualização, as partidas eram recusadas pelo ranking sem explicação. Agora o jogo carrega a versão nova antes da próxima partida, e uma partida que atravessou uma atualização diz o motivo de ter ficado fora.',
+            en: 'With the game left open from before an update, runs were turned away from the ranking with no reason given. Now the game loads the new version before your next run, and a run that spanned an update tells you why it stayed off.',
+            es: 'Con el juego abierto desde antes de una actualización, las partidas quedaban fuera del ranking sin explicación. Ahora el juego carga la versión nueva antes de tu próxima partida, y una partida que atravesó una actualización te dice por qué quedó fuera.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Partidas inteiras no celular', en: 'Whole runs on your phone', es: 'Partidas enteras en el celular' },
+        notes: [
+          {
+            pt: 'O jogo não fecha mais sozinho no meio da partida em celulares. A memória que ele usa agora fica estável do começo ao fim: carrega só os Pokémon da fase atual e da próxima, solta os que já passaram e só baixa um shiny quando ele aparece.',
+            en: 'The game no longer closes by itself mid-run on phones. The memory it uses now stays flat from start to finish: it loads only the Pokémon of the current and next stage, lets go of the ones already behind you and only downloads a shiny when one shows up.',
+            es: 'El juego ya no se cierra solo en medio de la partida en celulares. La memoria que usa ahora se mantiene estable de principio a fin: carga solo los Pokémon de la fase actual y la siguiente, suelta los que ya pasaron y solo descarga un shiny cuando aparece.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Mais leve no celular', en: 'Lighter on phones', es: 'Más liviano en el celular' },
+        notes: [
+          {
+            pt: 'O jogo agora gasta bem menos memória numa partida longa (a do Dialga, antes de abrir a fenda, chegava a encher a memória do celular em segundos) e desenha menos coisas fora da tela, como o arco-íris do Water Pledge. Em celulares que engasgam, ele passa sozinho a desenhar menos partículas, sombras, números de dano e golpes lendários mais leves até a partida voltar a fluir.',
+            en: 'The game now uses far less memory over a long run (Dialga\'s, before its rift opens, could fill a phone\'s memory in seconds) and draws less off screen, like Water Pledge\'s rainbow. On phones that stutter, it switches on its own to fewer particles, shadows and damage numbers and lighter legendary moves until the run flows again.',
+            es: 'El juego ahora usa mucha menos memoria en una partida larga (la de Dialga, antes de abrir su grieta, podía llenar la memoria del celular en segundos) y dibuja menos fuera de la pantalla, como el arcoíris de Water Pledge. En celulares que se traban, pasa solo a dibujar menos partículas, sombras y números de daño y movimientos legendarios más livianos hasta que la partida vuelve a fluir.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Correções', en: 'Fixes', es: 'Correcciones' },
+        notes: [
+          {
+            pt: 'Entrar em tela cheia (F11) ou trocar de aba no meio do movimento não deixa mais o Pokémon andando sozinho numa direção.',
+            en: 'Going fullscreen (F11) or switching tabs mid-move no longer leaves your Pokémon walking on its own in one direction.',
+            es: 'Entrar en pantalla completa (F11) o cambiar de pestaña en pleno movimiento ya no deja a tu Pokémon caminando solo en una dirección.',
+          },
+          {
+            pt: 'Achar um ovo na partida com a incubadora cheia agora avisa na hora que ele vai virar ₽, com o valor, em vez de dizer que foi para a incubadora. Ovos de missões e medalhas que não cabem também dizem quanto viraram. Ovos de Presente Misterioso continuam esperando na caixa até abrir um espaço.',
+            en: 'Finding an egg in a run with a full incubator now tells you right away that it will become ₽, and how much, instead of saying it went to the incubator. Mission and medal eggs that don’t fit say what they became too. Mystery Gift eggs still wait in the box until a slot frees up.',
+            es: 'Encontrar un huevo en la partida con la incubadora llena ahora avisa al momento que se convertirá en ₽, con el monto, en vez de decir que fue a la incubadora. Los huevos de misiones y medallas que no caben también dicen en cuánto se convirtieron. Los huevos de Regalo Misterioso siguen esperando en la caja hasta que se libere un espacio.',
+          },
+          {
+            pt: 'Desistir na pausa, ou Trocar Pokémon no fim da partida, com Espaço, Enter ou o botão A do controle começava outra partida com o mesmo Pokémon em vez de abrir a seleção de parceiro. Agora abre a seleção, como com o mouse ou o toque.',
+            en: 'Give up on the pause menu, or Change Pokémon at the end of a run, picked with Space, Enter or the pad’s A button started another run with the same Pokémon instead of opening the partner select. It opens the select now, as with the mouse or touch.',
+            es: 'Rendirse en la pausa, o Cambiar Pokémon al final de la partida, con Espacio, Enter o el botón A del control empezaba otra partida con el mismo Pokémon en vez de abrir la selección de compañero. Ahora abre la selección, como con el mouse o el toque.',
+          },
+        ],
+      },
+    ],
+  },
+  {
     date: '2026-10-20',
     title: { pt: 'Lendários jogáveis e um mapa para explorar', en: 'Playable legendaries and a map to explore', es: 'Legendarios jugables y un mapa para explorar' },
     highlights: [
@@ -219,16 +322,6 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'O Hall da Fama conta todos os apoiadores, inclusive quem preferiu ficar fora do mural, então o número não cai mais quando alguém se esconde.',
             en: 'The Hall of Fame counts every supporter, including those who chose to stay off the wall, so the number no longer drops when someone hides.',
             es: 'El Salón de la Fama cuenta a todos los patrocinadores, incluso a quienes prefirieron quedar fuera del muro, así que el número ya no baja cuando alguien se oculta.',
-          },
-        ],
-      },
-      {
-        title: { pt: 'Trocar de Pokémon pelo teclado', en: 'Changing Pokémon with the keyboard', es: 'Cambiar de Pokémon con el teclado' },
-        notes: [
-          {
-            pt: 'Desistir na pausa, ou Trocar Pokémon no fim da partida, com Espaço, Enter ou o botão A do controle começava outra partida com o mesmo Pokémon em vez de abrir a seleção de parceiro. Agora abre a seleção, como com o mouse ou o toque.',
-            en: 'Give up on the pause menu, or Change Pokémon at the end of a run, picked with Space, Enter or the pad’s A button started another run with the same Pokémon instead of opening the partner select. It opens the select now, as with the mouse or touch.',
-            es: 'Rendirse en la pausa, o Cambiar Pokémon al final de la partida, con Espacio, Enter o el botón A del control empezaba otra partida con el mismo Pokémon en vez de abrir la selección de compañero. Ahora abre la selección, como con el mouse o el toque.',
           },
         ],
       },

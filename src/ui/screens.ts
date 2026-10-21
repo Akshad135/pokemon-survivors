@@ -22,9 +22,9 @@ import { BRANCHES } from '../data/branches'
 import { legendSignature } from '../data/legends'
 import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
-import { toSteps } from '../game/eggs'
+import { EGGS, refundOf, toSteps } from '../game/eggs'
 import { overtime } from '../game/endless'
-import { runEarnings } from '../game/meta'
+import { runEarnings, type ConvertedEggs } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import { statSheet, type SheetStat } from '../game/statSheet'
 import type { DamageSource, Game, Offer } from '../game/types'
@@ -35,6 +35,7 @@ import { portraitUrl, sprites } from '../render/sprites'
 import { placeIcon } from '../render/places'
 import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
+import { treatIcon } from '../render/halloweenArt'
 import { h, later } from './dom'
 import { boundPadHint, glyphText } from './inputLabels'
 import { pressGuard } from './pressGuard'
@@ -389,8 +390,11 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const buttons = g.offers.map((offer, i) => {
     const button = h('button', {})
     fillCard(g, button, offer, i)
-    // Read at hold time: Esquecer redraws a slot with another offer.
-    holdMoveCard(button, () => offerCard(g, g.offers[i]!))
+    // Read at hold time: Esquecer redraws a slot with another offer, and a pick (another finger, the keyboard) empties them.
+    holdMoveCard(button, () => {
+      const offer = g.offers[i]
+      return offer ? offerCard(g, offer) : null
+    })
     return button
   })
 
@@ -710,8 +714,14 @@ export const damageSource = (g: Game, id: DamageSource) => {
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
-/** What the incubator made of the run: ₽ paid for eggs that didn't fit, and eggs now ready to hatch. */
-export type ResultEggs = { refund: number; ready: number }
+/** What the incubator made of the run: eggs paid in ₽ because they didn't fit (found or rewards), and eggs now ready to hatch. */
+export type ResultEggs = { converted: ConvertedEggs; ready: number }
+
+/** One line per reason eggs were paid in ₽ instead of incubated, with their count and amount. */
+export const convertedEggLines = ({ full, cap }: ConvertedEggs): string[] => [
+  ...(full.length > 0 ? [t().eggs.full(full.length, formatPokeDollars(refundOf(full)))] : []),
+  ...(cap.length > 0 ? [t().eggs.capped(cap.length, formatPokeDollars(refundOf(cap)), EGGS.perRun)] : []),
+]
 
 /** What the run added to the Pokédex (`dexNews`). */
 type DexNews = { species: number; shinies: number }
@@ -739,7 +749,7 @@ type ResultsExtras = {
   credits?: HTMLElement | null
 }
 
-const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null, share: null }
+const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { converted: { full: [], cap: [] }, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null, share: null }
 
 /**
  * Everything new a run brought, as one wrapping line of chips under the stats
@@ -758,7 +768,7 @@ const runNews = ({ eggs, news, medals }: ResultsExtras) => {
         news.shinies > 0 && h('img', { src: sparkleIcon(), alt: '' }),
       ),
     eggs.ready > 0 && h('span', { class: 'news-chip egg-ready' }, h('img', { src: eggIcon('common'), alt: '' }), e.readyBadge(eggs.ready)),
-    eggs.refund > 0 && h('span', { class: 'news-chip' }, h('img', { src: coinIcon(1), alt: '' }), e.full(formatPokeDollars(eggs.refund))),
+    ...convertedEggLines(eggs.converted).map((line) => h('span', { class: 'news-chip' }, h('img', { src: coinIcon(1), alt: '' }), line)),
     ...medals,
   ].filter((chip) => chip instanceof HTMLElement)
   return chips.length > 0 ? h('div', { class: 'result-news' }, ...chips) : null
@@ -838,7 +848,7 @@ export const results = (
       h(
         'div',
         { class: 'portrait-wrap' },
-        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
+        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait, alt: '' }),
         g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
       ),
       h('div', { class: 'dialog-title' }, victory ? m.victory : g.endless ? r.endlessOver(name) : m.fainted(name)),
@@ -853,6 +863,7 @@ export const results = (
         extra > 0 && h('div', {}, h('span', {}, r.overtime), h('b', {}, `+${formatTime(extra)}`)),
         h('div', {}, h('span', {}, m.level), h('b', {}, g.player.level)),
         h('div', {}, h('span', {}, m.kills), h('b', {}, g.kills)),
+        g.halloween && h('div', { class: 'result-treats' }, h('span', {}, t().halloween.candies), h('b', {}, h('img', { src: treatIcon(), alt: '' }), `+${formatNumber(g.candies)}`)),
         legends.length > 0 &&
           h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
         g.place.cleared.length > 0 &&

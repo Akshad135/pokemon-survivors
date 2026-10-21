@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, canvasCache, context2d, createCanvas, ellipse } from '../engine/pixelart'
+import { blitEllipse, blitRotated, canvasCache, context2d, createCanvas } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { ARENA_LAYOUTS, type ArenaLayout, type FloorPattern, type FloorPlan } from '../data/arenas'
@@ -305,6 +305,13 @@ const looks = (legend: RiftLegend): FloorLook[] => {
   return [...Array.from({ length: steps + 1 }, (_, n) => [at(n, false), ...(n < steps ? [at(n, true)] : [])]).flat(), at(steps, false, true)]
 }
 
+/** Frees every arena floor look (about 0.6 MB each, a dozen per arena) once no arena is on (`warmScenery`). */
+export const dropArenas = () => {
+  if (floors.size === 0) return
+  for (const floor of floors.values()) floor.width = floor.height = 0
+  floors.clear()
+}
+
 /** Builds at most one of the arena's floor looks it hasn't seen yet, so its steps never stall a frame. */
 export const warmArena = (arena: RiftArena) => {
   const missing = looks(arena.legend).find((l) => !floors.has(lookKey(arena.legend, l)))
@@ -360,19 +367,19 @@ export const drawRiftPortal = (ctx: Ctx, portal: RiftPortal, t: number) => {
   const pulse = Math.round((Math.sin(t * 4) + 1) * 1.5)
   const cy = y - 24 + Math.round(Math.sin(t * 2))
   // Ground swirl.
-  blitCentered(ctx, ellipse(r + 4, Math.round((r + 4) * 0.4), 'rgba(120,80,200,0.35)'), x, y)
+  blitEllipse(ctx, r + 4, Math.round((r + 4) * 0.4), 'rgba(120,80,200,0.35)', x, y)
   dashedRing(ctx, x, y, r, t * 5, VORTEX, 0.5, 0.4)
   // Beam of light, then the tear itself, layered from glow to the dark core.
   ctx.fillStyle = 'rgba(200,168,248,0.25)'
   ctx.fillRect(x - 3, cy - 90, 7, 90)
   ctx.fillStyle = 'rgba(255,255,255,0.45)'
   ctx.fillRect(x - 1, cy - 90, 3, 90)
-  blitCentered(ctx, ellipse(12 + pulse, 22 + pulse, 'rgba(200,168,248,0.3)'), x, cy)
-  blitCentered(ctx, ellipse(9, 18, '#ffffff'), x, cy)
-  blitCentered(ctx, ellipse(8, 17, '#c8a8f8'), x, cy)
-  blitCentered(ctx, ellipse(6, 14, '#7850c8'), x, cy)
-  blitCentered(ctx, ellipse(4, 11, '#301860'), x, cy)
-  blitCentered(ctx, ellipse(2, 7, '#100820'), x, cy)
+  blitEllipse(ctx, 12 + pulse, 22 + pulse, 'rgba(200,168,248,0.3)', x, cy)
+  blitEllipse(ctx, 9, 18, '#ffffff', x, cy)
+  blitEllipse(ctx, 8, 17, '#c8a8f8', x, cy)
+  blitEllipse(ctx, 6, 14, '#7850c8', x, cy)
+  blitEllipse(ctx, 4, 11, '#301860', x, cy)
+  blitEllipse(ctx, 2, 7, '#100820', x, cy)
   dashedRing(ctx, x, cy, 6, -t * 8, VORTEX, 0.4, 2.2)
   if (portal.charge <= 0) return
   // Charge arc: a white ring on the ground that closes as the player steps in.
@@ -474,12 +481,12 @@ export const drawRiftFallAir = (ctx: Ctx, g: Game, t: number) => {
   if (open <= 0) return
   const size = (n: number) => Math.max(1, Math.round(n * open))
   const pulse = Math.round((Math.sin(t * 6) + 1) * 1.5)
-  blitCentered(ctx, ellipse(size(14) + pulse, size(24) + pulse, 'rgba(200,168,248,0.3)'), x, cy)
-  blitCentered(ctx, ellipse(size(11), size(20), '#ffffff'), x, cy)
-  blitCentered(ctx, ellipse(size(10), size(19), '#c8a8f8'), x, cy)
-  blitCentered(ctx, ellipse(size(8), size(16), '#7850c8'), x, cy)
-  blitCentered(ctx, ellipse(size(5), size(12), '#301860'), x, cy)
-  blitCentered(ctx, ellipse(size(3), size(8), '#100820'), x, cy)
+  blitEllipse(ctx, size(14) + pulse, size(24) + pulse, 'rgba(200,168,248,0.3)', x, cy)
+  blitEllipse(ctx, size(11), size(20), '#ffffff', x, cy)
+  blitEllipse(ctx, size(10), size(19), '#c8a8f8', x, cy)
+  blitEllipse(ctx, size(8), size(16), '#7850c8', x, cy)
+  blitEllipse(ctx, size(5), size(12), '#301860', x, cy)
+  blitEllipse(ctx, size(3), size(8), '#100820', x, cy)
   dashedRing(ctx, x, cy, size(7), -t * 8, VORTEX, 0.4, 2.2)
   // Motes rise from a ring around the player and spiral into the tear.
   const motes = 18

@@ -26,6 +26,17 @@ describe('parseBugReport', () => {
     expect(tech.errors[0]!.stack.length).toBe(BUG_REPORT.stack)
   })
 
+  it('rebuilds the load figures of a run and the device, now and at a crash', () => {
+    const perf = { canvases: 412.6, canvasMb: 38.456, peakCanvases: -3, peakCanvasMb: 'lots', frameMs: Infinity }
+    const run = { projectiles: 1e9, wave: 'boss', boss: 'onix‮', place: 'rift:kyogre' }
+    const tech = parseBugReport({ text: 'It closed by itself', tech: { perf, run, crash: { perf, run } } })!.tech!
+    const parsed = { canvases: 412, canvasMb: 38.46, peakCanvases: 0, peakCanvasMb: 0, frameMs: null }
+    expect(tech.perf).toEqual(parsed)
+    expect(tech.crash?.perf).toEqual(parsed)
+    expect(tech.run).toMatchObject({ projectiles: 100_000, wave: 'boss', boss: 'onix', place: 'rift:kyogre' })
+    expect(parseBugReport({ text: 'Older client', tech: { crash: {} } })!.tech).toMatchObject({ perf: null, crash: { perf: null } })
+  })
+
   it('drops a tech that is not an object', () => {
     expect(parseBugReport({ text: 'No tech here', tech: 'lots' })).toEqual({ text: 'No tech here', tech: null })
   })

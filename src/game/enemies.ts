@@ -3,7 +3,7 @@ import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { STANCES } from '../data/bosses'
-import { runMods } from './legend'
+import { hordeScale, runMods } from './legend'
 import { bodyOf } from '../data/bodies'
 import { fightPace, steerBoss, type Steering } from './bossFight'
 import { bumpDamage, hurtPlayer } from './combat'
@@ -26,19 +26,22 @@ export const radiusFor = (dex: number) => Math.max(5, Math.round(bodyOf(dex).bod
 
 /**
  * How much tougher than its base stats a regular enemy spawning now is: the
- * minutes played (`scaling`) and the difficulty. Bosses only take the difficulty's HP.
+ * minutes played (`scaling`), the difficulty and, in the Legend mode, the
+ * lifted horde's lean back (`hordeScale`, which sets its EXP too). Bosses only
+ * take the difficulty's HP.
  */
 export const enemyScale = (g: Game) => {
   const mods = runMods(g)
   const scale = scaling(g.time, mods.ramp)
-  return { hp: scale.hp * mods.enemyHp, damage: scale.damage }
+  const horde = hordeScale(g)
+  return { hp: scale.hp * mods.enemyHp * horde.hp, damage: scale.damage * horde.damage, xp: horde.xp }
 }
 
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
   const def: EnemyDef = ENEMIES[kind]
   const boss = def.boss === true
   const mods = runMods(g)
-  const scale = boss ? { hp: mods.enemyHp, damage: 1 } : enemyScale(g)
+  const scale = boss ? { hp: mods.enemyHp, damage: 1, xp: 1 } : enemyScale(g)
   const hp = Math.round(def.hp * scale.hp)
   const enemy: Enemy = {
     id: g.nextId++,
@@ -50,7 +53,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     speed: def.speed * (boss ? 1 : mods.enemySpeed) * (0.92 + g.rng() * 0.16),
     mass: def.mass,
     radius: radiusFor(def.dex) * (def.scale ?? 1),
-    xp: def.xp,
+    xp: def.xp * scale.xp,
     boss,
     shiny: false,
     elite: false,

@@ -9,8 +9,9 @@ import type { BiomeId } from '../data/biomes'
  */
 const CHUNK = 256
 const TILE = 16
-const MAX_CHUNKS = 48
 const SEED = 1996
+/** How far past the view's edges (px) the ground is built ahead of time (`warmScenery` passes it). */
+export const GROUND_LOOKAHEAD = 128
 
 const smooth = (t: number) => t * t * (3 - 2 * t)
 
@@ -300,11 +301,14 @@ const pathRow = new Float64Array(CHUNK)
 const altRow = new Float64Array(CHUNK)
 const spotRow = new Float64Array(CHUNK)
 
-const buildChunk = (biome: BiomeId, cx: number, cy: number) => {
+/** One chunk's pixels, shared by every build: each build writes all of them. */
+let pixels: ImageData | null = null
+
+/** Paints chunk (cx, cy) of `biome` into `canvas` (a fresh one, or an evicted chunk's: the ground covers every pixel). */
+const buildChunk = (biome: BiomeId, cx: number, cy: number, canvas: HTMLCanvasElement) => {
   const style = STYLES[biome]
-  const canvas = createCanvas(CHUNK, CHUNK)
   const ctx = context2d(canvas)
-  const img = ctx.createImageData(CHUNK, CHUNK)
+  const img = (pixels ??= new ImageData(CHUNK, CHUNK))
   const data = img.data
   const ox = cx * CHUNK
   const oy = cy * CHUNK
@@ -364,14 +368,36 @@ const chunks = canvasCache<string, HTMLCanvasElement>()
 
 const chunkKey = (biome: BiomeId, cx: number, cy: number) => `${biome}:${cx},${cy}`
 
-/** Least recently used goes first: a hit moves the chunk to the back, so on-screen chunks are never evicted. */
+/** Chunks a span of `size` px can touch along one axis. */
+const across = (size: number) => Math.ceil(size / CHUNK) + 1
+
+/**
+ * How many chunks stay cached for a `w`×`h` view: the view and its lookahead in
+ * the biome here, the view in the next one (warming, or the one dissolving out),
+ * and a few spare, so walking back and forth doesn't rebuild. About 22 (5.5 MB) on a phone.
+ */
+const capFor = (w: number, h: number) => across(w + GROUND_LOOKAHEAD * 2) * across(h + GROUND_LOOKAHEAD * 2) + across(w) * across(h) + 4
+let cap = capFor(480, 270)
+
+/**
+ * Least recently used goes first: a hit moves the chunk to the back, so on-screen chunks are
+ * never evicted. A miss past the cap repaints the evicted chunk's canvas instead of making
+ * another one, so a long run keeps the same few canvases (and their GPU textures).
+ */
 const chunkAt = (biome: BiomeId, cx: number, cy: number) => {
   const key = chunkKey(biome, cx, cy)
   let chunk = chunks.get(key)
   if (chunk) chunks.delete(key)
-  else chunk = buildChunk(biome, cx, cy)
+  else {
+    let spare: HTMLCanvasElement | undefined
+    while (chunks.size >= cap) {
+      const oldest = chunks.keys().next().value!
+      spare ??= chunks.get(oldest)
+      chunks.delete(oldest)
+    }
+    chunk = buildChunk(biome, cx, cy, spare ?? createCanvas(CHUNK, CHUNK))
+  }
   chunks.set(key, chunk)
-  if (chunks.size > MAX_CHUNKS) chunks.delete(chunks.keys().next().value!)
   return chunk
 }
 
@@ -434,6 +460,7 @@ export const drawGround = (
   biome: BiomeId = 'meadow',
   fade: { from: BiomeId; k: number } | null = null,
 ) => {
+  cap = capFor(w, h)
   const step = fade ? Math.max(0, Math.min(16, Math.floor(fade.k * 17))) : 16
   if (!fade || step >= 16) return drawChunks(ctx, biome, camX, camY, w, h)
   drawChunks(ctx, fade.from, camX, camY, w, h)
@@ -457,6 +484,7 @@ export const drawGround = (
  * True if it built one.
  */
 export const warmGround = (biome: BiomeId, camX: number, camY: number, w: number, h: number, margin = 0) => {
+  cap = capFor(w, h)
   const { x0, y0, x1, y1 } = chunkSpan(camX - margin, camY - margin, w + margin * 2, h + margin * 2)
   for (let cy = y0; cy <= y1; cy++) {
     for (let cx = x0; cx <= x1; cx++) {

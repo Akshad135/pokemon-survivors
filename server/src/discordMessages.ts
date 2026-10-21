@@ -5,6 +5,7 @@ import { dailyChallenge, type Challenge } from '../../src/game/challenge'
 import type { DayKey } from '../../src/game/day'
 import { DISCORD_GIFT } from '../../src/game/gifts'
 import type { Difficulty } from '../../src/game/difficulty'
+import { isHalloweenDay } from '../../src/game/halloween'
 import type { ChangelogUpdate } from '../../src/site/changelog'
 
 /**
@@ -167,16 +168,19 @@ export const podiumMessage = (day: DayKey, places: readonly PodiumPlace[], total
   }
 }
 
-/** The day's outbreak, posted when the day starts. */
+/** The day's outbreak, posted when the day starts; a haunted one on a Halloween Night day (`game/halloween.ts`). */
 export const outbreakMessage = (day: DayKey, id: EnemyId): OutgoingMessage => {
   const { name, dex } = ENEMIES[id]
+  const haunted = isHalloweenDay(day)
   return {
     allowed_mentions: { parse: [] },
     embeds: [
       {
-        title: `🌊 Today's outbreak: ${name}`,
+        title: haunted ? `🎃 Haunted outbreak: ${name}` : `🌊 Today's outbreak: ${name}`,
         url: PLAY_URL,
-        description: `${name} is everywhere in every run today, and so are its shinies ✨ Good hunting!`,
+        description: haunted
+          ? `It's Halloween Night! ${name} haunts every run today, and so do its shinies 👻 Ghosts drop candies and jack-o'-lanterns hide treats (or tricks). Fill the candy jar for the prizes!`
+          : `${name} is everywhere in every run today, and so are its shinies ✨ Good hunting!`,
         color: PURPLE,
         thumbnail: { url: portraitUrl(dex) },
         footer: { text: day },

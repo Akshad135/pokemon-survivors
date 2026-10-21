@@ -440,6 +440,7 @@ export const pt = {
     place: { day: 'hoje', week: 'na semana', all: 'no total' },
     queued: 'Sem conexão: a partida entra no ranking quando a conexão voltar.',
     rejected: 'Esta partida não entrou no ranking.',
+    outdated: 'O jogo foi atualizado durante esta partida, então ela não pôde entrar no ranking. A próxima já é na versão nova.',
     unranked: 'Esta partida ficou fora do ranking: começou sem conexão ou com o jogo aberto em outra aba ou aparelho.',
     unlisted: 'Esta partida ficou fora do ranking: a conexão caiu enquanto você jogava. Ela conta no seu perfil.',
     guest: 'Entre com uma conta para aparecer no ranking.',
@@ -656,9 +657,9 @@ export const pt = {
       wallpaper: 'Papel de parede da Caixa do PC.',
     } satisfies Record<StyleSlot, string>,
     styles: {
-      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)' } satisfies Record<FrameId, string>,
-      background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender', supporter: 'Céu dourado' } satisfies Record<BackgroundId, string>,
-      wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas', supporter: 'Estrelas douradas' } satisfies Record<WallpaperId, string>,
+      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)', pumpkin: 'Abóbora', spectral: 'Espectral' } satisfies Record<FrameId, string>,
+      background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender', supporter: 'Céu dourado', halloween: 'Noite das Bruxas' } satisfies Record<BackgroundId, string>,
+      wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas', supporter: 'Estrelas douradas', haunted: 'Casa Assombrada' } satisfies Record<WallpaperId, string>,
     },
   },
 
@@ -668,6 +669,53 @@ export const pt = {
     blurb: 'Aparece em todas as partidas de hoje: uns 2 shinies dele por partida.',
     started: (name: string) => `Surto de *${name}*!`,
     hint: 'Ele aparece muito mais hoje, e o shiny também.',
+  },
+
+  /** Noite das Bruxas (Halloween 2026, `game/halloween.ts`): the haunted runs, the candy jar and the lobby's card. */
+  halloween: {
+    name: 'Noite das Bruxas',
+    card: 'NOITE DAS BRUXAS',
+    countdown: (days: number) => (days === 1 ? 'Começa amanhã!' : `Começa em ${days} dias`),
+    daysLeft: (days: number) => (days === 1 ? 'Último dia!' : `Faltam ${days} dias`),
+    daysLeftShort: (days: number) => (days === 1 ? 'ÚLTIMO DIA' : `${days} DIAS`),
+    over: 'A noite acabou. Até o ano que vem!',
+    dates: (from: string, to: string) => `De ${from} a ${to}`,
+    blurb: 'Os fantasmas tomaram conta! Toda partida é assombrada: um fantasma a mais em cada fase, um surto assombrado por dia e abóboras pelo mapa. Junte doces e encha o pote para ganhar os prêmios.',
+    howGhosts: 'Pokémon do tipo *Fantasma* deixam cair doces',
+    howBosses: '*Chefes* e *Alfas* sempre trazem 10 doces',
+    howPumpkins: 'Quebre as *abóboras*: doces ou travessuras?',
+    jarCount: (n: string) => `Pote de doces: *${n}*`,
+    jarNext: (n: string) => `mais ${n} para o próximo prêmio`,
+    received: 'recebido',
+    inGiftBox: 'no Presente!',
+    forJoining: 'por participar',
+    shinyOf: (name: string) => `${name} shiny`,
+    at: (n: string) => `${n} doces`,
+    calendar: 'SURTOS ASSOMBRADOS',
+    today: 'HOJE',
+    openGifts: (n: number) => (n === 1 ? 'Abrir presente' : `Abrir presentes (${n})`),
+    close: 'Fechar',
+    hintKeys: '← → escolher · ENTER confirmar · ESC voltar',
+    hintTouch: 'Toque para escolher',
+    started: '*Noite das Bruxas!*',
+    startedHint: 'Fantasmas, chefes e Alfas trazem doces. Quebre as abóboras!',
+    treat: '*Doce!* A abóbora estava cheia de doces.',
+    trick: (name: string) => `*Travessura!* Uma roda de ${name} apareceu!`,
+    candies: 'Doces',
+    supporterBadge: (tier: SupporterTier): string => (tier === 'gold' ? 'Apoiador(a) Ouro · Noite das Bruxas 2026' : 'Apoiador(a) · Noite das Bruxas 2026'),
+    perk: 'Abóbora',
+    perkTitle: (date: string) => `Apoie até ${date}: seu coração vira esta abóbora para sempre, e o Pumpkaboo passa a te acompanhar`,
+    supportYes: 'Obrigado por apoiar! Seu selo virou uma *abóbora* no ranking, no perfil e no Hall da Fama, para sempre. E o *Pumpkaboo*, só de apoiadores, te acompanha soltando brilhos de doce (*shiny* para quem é Ouro).',
+    supportNo: (date: string) => `Quem *apoiar* o jogo até ${date} ganha esta *abóbora* no lugar do coração, para sempre, e o *Pumpkaboo* como companheiro, deixando um rastro de doces brilhando (*shiny* para quem chega a Ouro).`,
+    support: 'Apoiar',
+    hunt: 'CAÇA AOS FANTASMAS',
+    huntCount: (n: number, total: number) => `${n}/${total} caçados`,
+    huntBlurb: (candies: number) => `Chefes da noite tomam o lugar do Onix e do Snorlax, sorteados a cada partida. Cada um vencido pela primeira vez rende *${candies} doces*.`,
+    huntReward: (title: string, frame: string) => `Vença todos: título *${title}* e moldura *${frame}*`,
+    huntDone: 'Todos caçados! Os prêmios estão no Presente!',
+    nightBoss: (name: string) => `Chefe da noite: *${name}*!`,
+    hunted: (name: string, candies: number, n: number, total: number) => `*${name}* caçado! +${candies} doces · ${n}/${total}`,
+    disguise: (name: string) => `A *Disguise* do ${name} se desfez!`,
   },
 
   /** Desafio do dia: one run the same for everyone, the first finished one counting. */
@@ -766,6 +814,7 @@ export const pt = {
     newTitle: (title: string) => `Novo título: *${title}*! Já está em uso.`,
     style: (name: string) => `Novo estilo: *${name}*! Já está em uso.`,
     shinyHatch: (name: string) => `Um *${name}* _shiny_ veio para você!`,
+    companion: (name: string) => `*${name}* agora te acompanha nas partidas!`,
     ribbon: (name: string) => `*${name}*! Já está no seu perfil.`,
     ribbonWhy: (date: string, rank: number, total: number) => `Desafio de ${date}: #${rank} de ${total}`,
     button: 'Presente!',
@@ -786,6 +835,9 @@ export const pt = {
     support: (tier: SupporterTier): string => (tier === 'gold' ? 'Por chegar a Apoiador(a) Ouro ♥' : 'Por apoiar o projeto ♥'),
     staff: (from: string | null) => (from ? `Um presente de @${from}, que faz o jogo ♥` : 'Um presente de quem faz o jogo ♥'),
     discord: 'Por entrar no nosso Discord ♥',
+    halloween: 'Do pote de doces da Noite das Bruxas',
+    halloweenSupport: 'Por apoiar na Noite das Bruxas ♥',
+    ghostHunt: 'Por vencer todos os chefes da Caça aos Fantasmas',
   },
 
   /**
@@ -1275,6 +1327,8 @@ export const pt = {
   eggs: {
     tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade' } satisfies Record<EggTier, string>,
     found: (egg: string) => `Você achou um *${egg}*! Ele vai para a incubadora.`,
+    /** Found mid-run with no room left in the incubator: it will be paid in ₽ when the run ends. */
+    foundFull: (egg: string, coins: string) => `Você achou um *${egg}*! A incubadora está cheia, então ele vai virar *${coins}*.`,
     title: 'INCUBADORA',
     intro: 'Os ovos chocam com os passos dados nas partidas. Todos os ovos da incubadora andam juntos.',
     sources: 'Chefes, baús trancados e fendas às vezes deixam um ovo.',
@@ -1305,7 +1359,9 @@ export const pt = {
     /** Results screen. */
     steps: 'Passos',
     eggs: 'Ovos',
-    full: (coins: string) => `Incubadora cheia: o ovo virou ${coins}.`,
+    full: (n: number, coins: string) => (n === 1 ? `Incubadora cheia: o ovo virou ${coins}.` : `Incubadora cheia: ${n} ovos viraram ${coins}.`),
+    /** Reward eggs past the run's egg limit (`EGGS.perRun`). */
+    capped: (n: number, coins: string, cap: number) => (n === 1 ? `Limite de ${cap} ovos por partida: o ovo virou ${coins}.` : `Limite de ${cap} ovos por partida: ${n} ovos viraram ${coins}.`),
   },
 
   /** Map event toasts (altars, fountains, chests, Meowth). */
@@ -1596,7 +1652,7 @@ export const pt = {
     titleTag: 'TÍTULO',
     equipped: 'EM USO',
     /** Titles that come as a Mystery Gift, with how they were earned. */
-    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação' } satisfies Record<GiftTitleId, string>,
+    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação', pumpkinKing: 'Encheu o pote de doces da Noite das Bruxas', exorcist: 'Venceu todos os chefes da Caça aos Fantasmas' } satisfies Record<GiftTitleId, string>,
     newMedals: 'Novas medalhas',
     names: {
       firstRun: 'Primeiros passos',
@@ -1681,6 +1737,8 @@ export const pt = {
       alpha100: 'Caçador de Alfas',
       ambassador: 'Embaixador(a)',
       supporter: 'Apoiador(a)',
+      pumpkinKing: 'Rei das Abóboras',
+      exorcist: 'Exorcista',
     } satisfies Record<TitleId, string>,
     goals: {
       runs: (n: string) => (n === '1' ? 'Jogue uma partida' : `Jogue ${n} partidas`),

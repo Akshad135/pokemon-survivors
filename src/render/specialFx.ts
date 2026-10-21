@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, canvasCache, context2d, createCanvas, ellipse, fromStrings, lazy, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated, canvasCache, context2d, createCanvas, fromStrings, lazy, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { TYPE_COLORS, type PokeType } from '../data/types'
 import { gameSpecial, SPECIALS, specialOfType, specialReach, type SpecialId } from '../game/special'
@@ -183,7 +183,7 @@ const drawBolt = (ctx: Ctx, a: Attack, t: number) => {
       ctx.fillStyle = white
       ctx.fillRect(x + (w >> 1), Math.round(y), 1, 6)
     }
-    if (k < 0.2) blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.4)), light), a.x, a.y)
+    if (k < 0.2) blitEllipse(ctx, Math.round(r * 0.8), Math.max(1, Math.round(r * 0.4)), light, a.x, a.y)
   }
   ctx.globalAlpha = Math.max(0, 1 - k)
   pixelRing(ctx, a.x, a.y, Math.round(r * (0.7 + 0.6 * k)), 2, mid)
@@ -210,7 +210,7 @@ const drawMeteor = (ctx: Ctx, a: Attack) => {
   const [, mid, light] = PALETTES[a.type]
   const k = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
   ctx.globalAlpha = Math.max(0, 1 - k)
-  if (k < 0.35) blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.55)), light), a.x, a.y)
+  if (k < 0.35) blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.55)), light, a.x, a.y)
   pixelRing(ctx, a.x, a.y, Math.round(r * (0.8 + 0.5 * k)), 2, mid)
   ctx.globalAlpha = 1
 }
@@ -290,7 +290,7 @@ const drawSlash = (ctx: Ctx, a: Attack) => {
   const scale = k < 0.15 ? 2 : 3
   ctx.globalAlpha = Math.max(0, 1 - k * k)
   blitRotated(ctx, slashSprite(a.type), a.x, a.y, angle, scale)
-  if (k < 0.12) blitCentered(ctx, ellipse(Math.round(radius(a) * 0.25), Math.round(radius(a) * 0.25), '#ffffff'), a.x, a.y)
+  if (k < 0.12) blitEllipse(ctx, Math.round(radius(a) * 0.25), Math.round(radius(a) * 0.25), '#ffffff', a.x, a.y)
   ctx.globalAlpha = 1
 }
 
@@ -362,28 +362,28 @@ export const drawSpecialGround = (ctx: Ctx, a: Attack) => {
   switch (a.visual) {
     case 'fireTrail': {
       ctx.globalAlpha = Math.min(1, (a.ttl - a.age) / 0.4)
-      blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.5)), flareOf(a).scorch), a.x, a.y + 2)
+      blitEllipse(ctx, r, Math.max(1, Math.round(r * 0.5)), flareOf(a).scorch, a.x, a.y + 2)
       ctx.globalAlpha = 1
       return
     }
     case 'blitz':
-      return blitCentered(ctx, ellipse(r + 4, Math.round((r + 4) * 0.5), flareOf(a).glow), a.x, a.y + 8)
+      return blitEllipse(ctx, r + 4, Math.round((r + 4) * 0.5), flareOf(a).glow, a.x, a.y + 8)
     case 'roots':
-      return blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.35)), 'rgba(40,24,8,0.5)'), a.x, a.y)
+      return blitEllipse(ctx, Math.round(r * 0.8), Math.max(1, Math.round(r * 0.35)), 'rgba(40,24,8,0.5)', a.x, a.y)
     case 'meteor': {
       // The landing shadow grows as the piece comes down.
       const fall = a.activeFrom - a.age
       if (fall <= 0 || fall > FALL_TIME) return
       const k = 1 - (fall / FALL_TIME) * 0.6
-      return blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k * 0.45)), 'rgba(16,8,24,0.35)'), a.x, a.y)
+      return blitEllipse(ctx, Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k * 0.45)), 'rgba(16,8,24,0.35)', a.x, a.y)
     }
     case 'wave':
       if (a.type === 'flying') return
-      return blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.4)), 'rgba(56,40,16,0.35)'), a.x, a.y + 8)
+      return blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.4)), 'rgba(56,40,16,0.35)', a.x, a.y + 8)
     case 'puddle': {
       ctx.globalAlpha = 0.6 * Math.min(1, (a.ttl - a.age) / 0.4, a.age / 0.1)
-      blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.5)), PALETTES[a.type][1]), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(r * 0.6), Math.max(1, Math.round(r * 0.3)), PALETTES[a.type][2]), a.x - 1, a.y - 1)
+      blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.5)), PALETTES[a.type][1], a.x, a.y)
+      blitEllipse(ctx, Math.round(r * 0.6), Math.max(1, Math.round(r * 0.3)), PALETTES[a.type][2], a.x - 1, a.y - 1)
       ctx.globalAlpha = 1
       return
     }
@@ -402,7 +402,7 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
     }
     case 'blitz': {
       const f = flareOf(a)
-      blitCentered(ctx, ellipse(Math.round(r), Math.round(r), f.body), a.x, a.y)
+      blitEllipse(ctx, Math.round(r), Math.round(r), f.body, a.x, a.y)
       pixelRing(ctx, a.x, a.y, Math.round(r), 2, Math.floor(t * 20) % 2 ? f.ball[2] : f.ball[3])
       const frames = f.frames()
       for (let i = 0; i < 6; i++) {
@@ -424,10 +424,10 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
         return
       }
       ctx.globalAlpha = 0.8
-      blitCentered(ctx, ellipse(R, R, deep), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(R * 0.78), Math.round(R * 0.78), mid), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(R * 0.52), Math.round(R * 0.52), light), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(R * 0.26), Math.round(R * 0.26), '#ffffff'), a.x, a.y)
+      blitEllipse(ctx, R, R, deep, a.x, a.y)
+      blitEllipse(ctx, Math.round(R * 0.78), Math.round(R * 0.78), mid, a.x, a.y)
+      blitEllipse(ctx, Math.round(R * 0.52), Math.round(R * 0.52), light, a.x, a.y)
+      blitEllipse(ctx, Math.round(R * 0.26), Math.round(R * 0.26), '#ffffff', a.x, a.y)
       pixelRing(ctx, a.x, a.y, R + 3, 1, pale)
       ctx.globalAlpha = 1
       return
@@ -443,8 +443,8 @@ export const drawSpecialAttack = (ctx: Ctx, a: Attack, t: number) => {
       // Muzzle splash on the first segment.
       if ((a.x - a.from.x) ** 2 + (a.y - a.from.y) ** 2 < 15 ** 2) {
         const m = Math.round(width * 0.6)
-        blitCentered(ctx, ellipse(m, m, '#a8d0f8'), a.from.x, a.from.y)
-        blitCentered(ctx, ellipse(Math.round(m * 0.6), Math.round(m * 0.6), '#ffffff'), a.from.x, a.from.y)
+        blitEllipse(ctx, m, m, '#a8d0f8', a.from.x, a.from.y)
+        blitEllipse(ctx, Math.round(m * 0.6), Math.round(m * 0.6), '#ffffff', a.from.x, a.from.y)
       }
       return
     }
