@@ -14,10 +14,12 @@ import { roomOf } from './room'
 /**
  * Weather in play. `since` is the game time it started (`prev` fades out meanwhile);
  * it changes again at `next`. `chip` counts towards the next sandstorm/snow tick.
+ * `held`: a move called this spell (Rain Dance, Sunny Day) over the scheduled
+ * one, which waits with the seconds it had left and comes back when the call ends.
  */
-export type WeatherState = { id: WeatherId; prev: WeatherId; since: number; next: number; chip: number }
+export type WeatherState = { id: WeatherId; prev: WeatherId; since: number; next: number; chip: number; held: { id: WeatherId; left: number } | null }
 
-export const createWeather = (): WeatherState => ({ id: 'clear', prev: 'clear', since: -Infinity, next: FIRST_WEATHER, chip: 0 })
+export const createWeather = (): WeatherState => ({ id: 'clear', prev: 'clear', since: -Infinity, next: FIRST_WEATHER, chip: 0, held: null })
 
 /** Damage multiplier the weather gives an attack of one type (1 when it doesn't care). */
 export const weatherBoost = (weather: WeatherId, type: PokeType) => WEATHER[weather].power?.[type] ?? 1
@@ -87,11 +89,48 @@ export const weatherHere = (g: Game): WeatherId => {
   return room ? (room.weather ?? 'clear') : g.weather.id
 }
 
-/** Starts a weather spell now (also the dev console's `ps.weather`). */
+/** Starts a weather spell now (also the dev console's `ps.weather`). It drops a move's call: the schedule takes over again. */
 export const setWeather = (g: Game, id: WeatherId) => {
   const prev = g.weather.id
-  g.weather = { id, prev, since: g.time, next: g.time + range(g.rng, WEATHER_SPELL.min, WEATHER_SPELL.max), chip: 0 }
+  g.weather = { id, prev, since: g.time, next: g.time + range(g.rng, WEATHER_SPELL.min, WEATHER_SPELL.max), chip: 0, held: null }
   if (id !== prev) g.events.push({ kind: 'weather', weather: id, prev })
+}
+
+/**
+ * The sky after a move calls `id` for `seconds` at `time` (pure). The
+ * scheduled spell waits in `held` with the time it had left (a spell that was
+ * `id` already gives way to a fresh roll after the call). Calling again
+ * extends the call; another move's call keeps what the first one interrupted.
+ * Null when the sky can't be called: an omen holds it (`next` is Infinity).
+ */
+export const calledWeather = (w: WeatherState, id: WeatherId, seconds: number, time: number): WeatherState | null => {
+  if (w.next === Infinity) return null
+  const held = w.held ?? { id: w.id, left: w.id === id ? 0 : Math.max(0, w.next - time) }
+  const same = w.id === id
+  return { id, prev: same ? w.prev : w.id, since: same ? w.since : time, next: same && w.held ? Math.max(w.next, time + seconds) : time + seconds, chip: same ? w.chip : 0, held }
+}
+
+/** When a move's call ends at `time`: the weather it held comes back for the time it had left, if it still fits the biome (`fits`). Null: roll a new one. */
+export const releasedWeather = (w: WeatherState, time: number, fits: (id: WeatherId) => boolean): WeatherState | null => {
+  const held = w.held
+  if (!held || held.left <= 0 || !fits(held.id)) return null
+  const same = held.id === w.id
+  return { id: held.id, prev: same ? w.prev : w.id, since: same ? w.since : time, next: time + held.left, chip: same ? w.chip : 0, held: null }
+}
+
+/**
+ * A move calls `id` for `seconds` (Rain Dance, Sunny Day). The weather lives
+ * outside, so a room (a rift arena, a place) keeps its own; an omen's sky
+ * holds. True when the call took.
+ */
+export const callWeather = (g: Game, id: WeatherId, seconds: number) => {
+  if (roomOf(g)) return false
+  const called = calledWeather(g.weather, id, seconds, g.time)
+  if (!called) return false
+  const prev = g.weather.id
+  g.weather = called
+  if (id !== prev) g.events.push({ kind: 'weather', weather: id, prev })
+  return true
 }
 
 /** Sandstorm and snow wear: a slice of max HP every few seconds to everyone who isn't immune (by type, or by ability: Sand Veil, Magic Guard). */
@@ -118,7 +157,14 @@ const chip = (g: Game) => {
 /** Rolls a new spell when the current one runs out and applies the weather's wear. */
 export const updateWeather = (g: Game, dt: number) => {
   const w = g.weather
-  if (g.time >= w.next) setWeather(g, rollWeather(g.rng, g.biome.id, w.id))
+  if (g.time >= w.next) {
+    // A move's call ends: the spell it held comes back, else the schedule rolls.
+    const back = w.held && releasedWeather(w, g.time, (id) => weatherFits(g.biome.id, id))
+    if (back) {
+      g.weather = back
+      if (back.id !== w.id) g.events.push({ kind: 'weather', weather: back.id, prev: w.id })
+    } else setWeather(g, rollWeather(g.rng, g.biome.id, w.id))
+  }
   if (WEATHER[g.weather.id].chip === undefined) return
   g.weather.chip += dt
   if (g.weather.chip < WEATHER_CHIP.every) return

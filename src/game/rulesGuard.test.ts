@@ -5,6 +5,7 @@ import { chooseOffer, step } from './game'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
+import { withBranch } from './moves'
 import { OUTBREAK_SPECIES } from './outbreak'
 import { moveOf, recordEvent, recordStep, resimulate, RULES_VERSION, startGame, startRecording, TICK, type Replay, type ReplayStart } from './replay'
 import { enterArena } from './riftArena'
@@ -113,6 +114,31 @@ const SCENARIOS = {
       spawnAlpha(g, pickAlpha(g.rng, g.roster.stages[0]!)!, g.player.x + 60, g.player.y)
     },
   },
+  /**
+   * The shop-exclusive TMs' second batch at 2:30: Rain Dance's rain over the
+   * run's sky (Soothing Rain) and Sunny Day's sun called over it, Swords
+   * Dance's stacks, Drain Punch, Thunder Wave's paralysis and Fly's take-offs
+   * and landings, against the horde and an Alpha.
+   */
+  shopTms2: {
+    start: { ...START, starter: 'pichu' },
+    seconds: 25,
+    stage: (g) => {
+      g.time = 150
+      g.nextEvent = 99
+      g.revives = 2
+      gainXp(g, 1200)
+      g.player.moves.push(
+        { id: 'rainDance', level: 5, cooldown: 0.2, path: withBranch(0, 4, 1) },
+        { id: 'sunnyDay', level: 4, cooldown: 12, path: withBranch(0, 4, 1) },
+        { id: 'swordsDance', level: 5, cooldown: 0.4, path: 0 },
+        { id: 'drainPunch', level: 4, cooldown: 0.6, path: withBranch(0, 4, 1) },
+        { id: 'thunderWave', level: 5, cooldown: 0.8, path: 0 },
+        { id: 'fly', level: 5, cooldown: 1, path: 0 },
+      )
+      spawnAlpha(g, pickAlpha(g.rng, g.roster.stages[0]!)!, g.player.x - 70, g.player.y)
+    },
+  },
   /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
   legend: {
     start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
@@ -133,15 +159,16 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  30: {
+  31: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
     alphaHazards: '1002·6·19·93ff9daa',
     nightBoss: '2098·37·17·7d5edd66',
     bag: '1077·9·3·d13820e7',
-    legend: '1098·51·14·86dc0d8b',
     shop: '1537·65·19·246b065f',
+    shopTms2: '1787·49·17·465b899a',
+    legend: '1098·51·14·86dc0d8b',
   },
 }
 
@@ -234,13 +261,15 @@ describe(`the simulation under RULES_VERSION ${RULES_VERSION}`, () => {
   const endings = Object.fromEntries(Object.entries(SCENARIOS).map(([id, s]) => [id, ending(s)])) as Record<ScenarioId, ReturnType<typeof ending>>
 
   it('plays each scenario through what it covers, and its replay lands on the same ending', () => {
-    const { levelUps, mega, riftFall, alphaHazards, bag } = endings
+    const { levelUps, mega, riftFall, alphaHazards, bag, shopTms2 } = endings
     expect(levelUps.live.player.level).toBeGreaterThan(10)
     expect(mega.live.mega.count).toBe(1)
     expect(riftFall.live.events.map((e) => e.kind)).toEqual(expect.arrayContaining(['riftFall', 'riftExit', 'revive', 'gameover']))
     expect(alphaHazards.live.worldHazards.fired).toBeGreaterThan(0)
     expect(alphaHazards.live.events.some((e) => e.kind === 'alpha' && e.moment === 'charge')).toBe(true)
     expect(bag.live.events.some((e) => e.kind === 'maxRevive')).toBe(true)
+    expect(shopTms2.live.weather.held).not.toBeNull()
+    expect(shopTms2.live.player.moves.find((m) => m.id === 'swordsDance')?.stacks).toBeGreaterThan(1)
     for (const e of Object.values(endings)) expect(e.sameEnd).toBe(true)
   })
 

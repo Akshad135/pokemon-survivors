@@ -14,6 +14,7 @@ import { EGG_MOVE_2_ICONS } from './eggMove2Art'
 import { SIGNATURE_ICONS } from './signatureArt'
 import { TM_ICONS } from './tmArt'
 import { SHOP_TM_ICONS } from './shopTmFx'
+import { SHOP_TM_ICONS_2 } from './shopTmFx2'
 import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
 import { cursedIcon, DUO_ICONS } from './duoArt'
 import type { CurseId } from '../data/curses'
@@ -570,6 +571,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...SIGNATURE_ICONS,
   ...TM_ICONS,
   ...SHOP_TM_ICONS,
+  ...SHOP_TM_ICONS_2,
   ...VERB_EVOLVED_ICONS,
   ...LEGENDARY_ICONS,
   ...LEGENDARY_ICONS_2,

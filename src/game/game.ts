@@ -68,6 +68,7 @@ import { updateSpawner } from './spawner'
 import { createTension } from './tension'
 import { updateStatuses } from './statusSystem'
 import { createTally } from './tally'
+import { updateShopTms } from './shopTmSystem'
 import { createWeather, updateWeather } from './weather'
 import { updateTraits } from './traitSystem'
 import { BASE_STATS } from './stats'
@@ -626,6 +627,7 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateTraits(g, dt)
   updateMoveKit(g, dt)
   updateSignatures(g, dt)
+  updateShopTms(g, dt)
   updateLegendary(g)
   updateMoves(g, input.lunge === true, dt)
   updateDuos(g, dt)

@@ -307,6 +307,8 @@ export type TmVisual =
   | 'meteorRise' | 'meteor' | 'icyWind' | 'ironHead' | 'ironShard' | 'psystrike' | 'psyHover'
   /** The shop-exclusive TMs (`shopTmMoves.ts`), drawn by `render/shopTmFx.ts`. */
   | 'payDay' | 'thief' | 'protect' | 'hyperBeam' | 'hyperCharge'
+  /** Their second batch (`shopTmMoves2.ts`), drawn by `render/shopTmFx2.ts`: the called skies' markers and what falls from them, the swords, the fist, the wave, the flight and its landing. */
+  | 'rainDance' | 'rainDrop' | 'sunnyDay' | 'sunBeam' | 'swordsDance' | 'drainPunch' | 'thunderWave' | 'flyLift' | 'flySlam'
 /** Duo moves (`duoMoves.ts`), drawn by `render/duoFx.ts`. */
 export type DuoVisual =
   | 'pledgePillar' | 'seaOfFire' | 'swamp' | 'comet' | 'cometScorch' | 'ionPuddle' | 'freezeDry' | 'nightmare' | 'nightmareSkull'
