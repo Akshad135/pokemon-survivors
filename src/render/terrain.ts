@@ -10,6 +10,7 @@ import type { PlacePiece } from '../data/places'
 import { LANDMARK_GROUNDS, LANDMARK_PIECES, LANDMARK_SHADOW, LANDMARK_TALL, LANDMARK_WARM, LOG_SKINS, logPiece } from './landmarkPieces'
 import type { LandmarkGround, LandmarkPiece } from '../data/landmarks'
 import type { Game } from '../game/types'
+import { hasScenery, keepScenery, sceneryPiece } from './scenery'
 import {
   cone,
   cylinder,
@@ -38,7 +39,8 @@ import {
  * mountains, towers) and lakes that slow them (`game/terrain.ts`). One
  * footprint (ellipses on the ground, `data/terrain.ts`) wears every biome's
  * skin: the meadow's grassy hill is the cave's rock wall and the tower's crypt.
- * Sprites are sculpted once per biome and cached.
+ * Sprites are sculpted once per biome and cached; towers, trees, rocks, bushes
+ * and some landmark pieces wear painted art instead (`render/scenery.ts`).
  */
 
 /** A built sprite and the pixel in it that stands on the world anchor. */
@@ -839,8 +841,10 @@ const build = (biome: BiomeId, kind: PieceKind, variant: number): Piece => {
 
 const pieces = canvasCache<string, Piece>()
 
-/** A piece's sprite, built once per biome (and once more `open`, for a landmark's looted treasure). */
-const pieceOf = (biome: BiomeId, kind: AnyPiece, variant: number, open = false) => {
+/** A piece's sprite: its painted art once loaded (`render/scenery.ts`), else sculpted once per biome (and once more `open`, for a landmark's looted treasure). */
+const pieceOf = (biome: BiomeId, kind: AnyPiece, variant: number, open = false): Piece => {
+  const art = isArenaPiece(kind) ? null : sceneryPiece(biome, kind, variant, open)
+  if (art) return art
   // The arenas' scenery looks the same whatever the biome outside; places' entrances and landmarks wear the biome's.
   const key = isArenaPiece(kind) ? `arena:${kind}:${variant}` : `${biome}:${kind}:${variant}${open ? ':open' : ''}`
   let piece = pieces.get(key)
@@ -871,6 +875,11 @@ const groundOf = (biome: BiomeId, kind: LandmarkGround, variant: number) => {
 export const warmTerrain = (biome: BiomeId) => {
   for (const kind of Object.keys(VARIANTS) as PieceKind[]) {
     for (let v = 0; v < VARIANTS[kind]; v++) {
+      // Painted pieces only start loading; the sculpted one is built only if a picture is late.
+      if (hasScenery(kind)) {
+        sceneryPiece(biome, kind, v)
+        continue
+      }
       if (pieces.has(`${biome}:${kind}:${v}`)) continue
       pieceOf(biome, kind, v)
       return true
@@ -878,6 +887,10 @@ export const warmTerrain = (biome: BiomeId) => {
   }
   // Landmarks' big pieces (the ridge, walls, hedges) take longer than a frame to sculpt.
   for (const [kind, v] of LANDMARK_WARM) {
+    if (hasScenery(kind)) {
+      sceneryPiece(biome, kind, v)
+      continue
+    }
     if (pieces.has(`${biome}:${kind}:${v}`)) continue
     pieceOf(biome, kind, v)
     return true
@@ -896,6 +909,7 @@ export const keepTerrain = (keep: readonly BiomeId[]) => {
   const id = keep.join()
   if (id === kept) return
   kept = id
+  keepScenery(keep)
   for (const cache of [pieces, grounds, skirts]) {
     for (const key of cache.keys()) {
       const biome = key.slice(0, key.indexOf(':'))
@@ -997,8 +1011,13 @@ export const drawTerrainGround = (ctx: CanvasRenderingContext2D, g: Game, biome:
         blit(ctx, mountainShadows[s.variant]!(), s.x + 5, s.y + 3)
         ctx.globalAlpha = 1
       } else {
-        const rx = shadowOf(s.kind)
-        if (rx > 0) ctx.drawImage(ellipse(rx, Math.round(rx * 0.4), SHADOW), Math.round(s.x + 2 - rx), Math.round(s.y - rx * 0.4))
+        const art = isArenaPiece(s.kind) ? null : sceneryPiece(biome, s.kind, s.variant)
+        if (shadowOf(s.kind) > 0) {
+          // Painted art is shaded by its own foot, tucked under where it meets the ground.
+          const rx = art ? art.foot + 1 : shadowOf(s.kind)
+          const ry = Math.round(rx * 0.4)
+          ctx.drawImage(ellipse(rx, ry, SHADOW), Math.round(s.x + 2 - rx), Math.round(art ? s.y + 2 - ry * 2 : s.y - ry))
+        }
         if (SKIRTED.has(s.kind)) blit(ctx, skirtOf(biome, (s.x * 7 + s.y * 13) & (SKIRT_LOOKS - 1)), s.x, s.y + 1)
       }
     }

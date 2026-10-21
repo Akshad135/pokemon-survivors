@@ -69,6 +69,11 @@ ${rows.join('\n')}
 
 Cries come from [PokéAPI/cries](https://github.com/PokeAPI/cries).
 
+## Item icons and scenery
+
+Item icons are the official item sprites from [PokéAPI/sprites](https://github.com/PokeAPI/sprites).
+Towers, trees, rocks, bushes and other painted scenery were made for this game with [PixelLab](https://www.pixellab.ai).
+
 ## Fonts
 
 [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) by CodeMan38 and
