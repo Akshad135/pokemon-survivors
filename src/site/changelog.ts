@@ -222,6 +222,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Trocar de Pokémon pelo teclado', en: 'Changing Pokémon with the keyboard', es: 'Cambiar de Pokémon con el teclado' },
+        notes: [
+          {
+            pt: 'Desistir na pausa, ou Trocar Pokémon no fim da partida, com Espaço, Enter ou o botão A do controle começava outra partida com o mesmo Pokémon em vez de abrir a seleção de parceiro. Agora abre a seleção, como com o mouse ou o toque.',
+            en: 'Give up on the pause menu, or Change Pokémon at the end of a run, picked with Space, Enter or the pad’s A button started another run with the same Pokémon instead of opening the partner select. It opens the select now, as with the mouse or touch.',
+            es: 'Rendirse en la pausa, o Cambiar Pokémon al final de la partida, con Espacio, Enter o el botón A del control empezaba otra partida con el mismo Pokémon en vez de abrir la selección de compañero. Ahora abre la selección, como con el mouse o el toque.',
+          },
+        ],
+      },
     ],
   },
   {

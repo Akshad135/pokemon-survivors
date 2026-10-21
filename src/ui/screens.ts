@@ -655,10 +655,11 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
     nav = menu(input, buttons, (i) => {
       const pressed = buttons[i]
       if (pressed === resume) actions.resume()
-      // Open after this key dispatch, or the new screen would receive the same Enter.
+      // Open after this key dispatch, or the new screen would receive the same Enter (or Space).
       if (pressed === settingsButton) later(() => openSub(actions.settings, i))
       if (pressed === reportButton && report) later(() => openSub(report, i))
-      if (pressed === quit) actions.quit()
+      // Quitting opens the partner select, which would take that same press as its pick and start the run again.
+      if (pressed === quit) later(actions.quit)
     }, { initial: focus })
     el.replaceChildren(
       h(
@@ -820,10 +821,11 @@ export const results = (
     goOn && onContinue,
     onRetry,
     onMenu,
-    share && (() => later(() => openSub(extras.share?.open, share))),
-    boards && (() => later(() => openSub(ranking?.open, boards))),
+    share && (() => openSub(extras.share?.open, share)),
+    boards && (() => openSub(ranking?.open, boards)),
   ].filter((a) => typeof a === 'function')
-  const bindNav = (initial = 0, guard = 0) => menu(input, buttons, (i) => actions[i]?.(), { horizontal: true, initial, guard })
+  // Every button acts after the key dispatch: the screen it opens (Menu's partner select) would take the same press as its own.
+  const bindNav = (initial = 0, guard = 0) => menu(input, buttons, (i) => later(() => actions[i]?.()), { horizontal: true, initial, guard })
   // The run ends mid-fight: A and Space, still being pressed for the special, would pick the focused button (Retry).
   let nav = bindNav(0, RESULTS_GUARD_MS)
 
