@@ -636,6 +636,18 @@ export const en: Messages = {
     hintTouch: 'Tap to choose',
   },
 
+  survey: {
+    title: 'QUICK SURVEY',
+    open: 'Survey: how does the difficulty feel?',
+    question: 'How does the game\'s difficulty feel to you?',
+    answers: { easy: 'Easy', medium: 'Medium', hard: 'Hard', unsure: 'Not sure' },
+    send: 'Send',
+    later: 'Not now',
+    thanks: 'Thanks! Your answer helps tune the game.',
+    hintKeys: '↑ ↓ difficulty · ← → answer · ENTER confirm · ESC close',
+    hintTouch: 'Tap to answer',
+  },
+
   ribbons: {
     names: { gold: 'Gold Ribbon', silver: 'Silver Ribbon', bronze: 'Bronze Ribbon' },
     section: 'Challenge ribbons',

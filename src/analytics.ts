@@ -4,6 +4,7 @@ import type { BranchId } from './data/branches'
 import type { EnemyId } from './data/enemies'
 import type { PlayableId } from './data/hatchlings'
 import type { MegaId } from './data/megas'
+import type { SurveyAnswer } from './data/survey'
 import type { Difficulty } from './game/difficulty'
 import type { RunMode } from './game/ranking'
 import type { LobbyFocus } from './ui/title'
@@ -60,6 +61,8 @@ type AnalyticsEvents = {
    * from our button or the browser's menu (`installed`).
    */
   install: { step: 'prompt' | 'accepted' | 'dismissed' | 'ios' | 'installed' }
+  /** The lobby's survey (`ui/survey.ts`): how each difficulty feels, with the runs and wins the player had when answering. */
+  survey_difficulty: Record<Difficulty, SurveyAnswer> & { runs: number; wins: number }
 }
 
 declare global {
