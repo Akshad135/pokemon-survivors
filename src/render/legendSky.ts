@@ -1,9 +1,8 @@
 import { hash2 } from '../engine/rng'
-import { canvasCache, context2d, createCanvas, ring } from '../engine/pixelart'
+import { blitEllipse, blitRing, canvasCache, context2d, createCanvas, ring } from '../engine/pixelart'
 import { domainOf, type LegendSky } from '../data/domains'
 import { RIFT } from '../data/rifts'
 import { REVEAL_AT } from '../game/domainRules'
-import { ellipse, blitCentered } from '../engine/pixelart'
 import type { Game } from '../game/types'
 
 type Ctx = CanvasRenderingContext2D
@@ -79,11 +78,11 @@ const harshSun: Painter = (ctx, w, h, camX, camY, t, g) => {
       for (let r = 30; r < 150; r += 3) ctx.fillRect(Math.round(sx + Math.cos(a) * r), Math.round(sy + Math.sin(a) * r), 2, 2)
     }
     ctx.globalAlpha = 0.18
-    blitCentered(ctx, ellipse(46, 46, '#fff0b0'), sx, sy)
+    blitEllipse(ctx, 46, 46, '#fff0b0', sx, sy)
     ctx.globalAlpha = 0.3
-    blitCentered(ctx, ellipse(30, 30, '#fff8d0'), sx, sy)
+    blitEllipse(ctx, 30, 30, '#fff8d0', sx, sy)
     ctx.globalAlpha = 1
-    blitCentered(ctx, ellipse(16, 16, '#fffcf0'), sx, sy)
+    blitEllipse(ctx, 16, 16, '#fffcf0', sx, sy)
   }
   // Heat shimmer: faint wavy bands over the lower half.
   ctx.fillStyle = 'rgba(255,236,200,0.09)'
@@ -271,7 +270,7 @@ const timeWarp: Painter = (ctx, w, h, _camX, _camY, t) => {
     const k = mod(t / 2.4 + i / 2, 1)
     ctx.globalAlpha = (1 - k) * 0.35
     const r = Math.round(10 + k * Math.max(w, h) * 0.7)
-    ctx.drawImage(ring(r, 1, '#d0f8ff'), cx - r, cy - r)
+    blitRing(ctx, r, 1, '#d0f8ff', cx, cy)
   }
   ctx.globalAlpha = 1
   // The world stutters: a few rows glitch for a moment every few seconds.

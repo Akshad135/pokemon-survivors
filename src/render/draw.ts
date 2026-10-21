@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, blitRotated, textSprite } from '../engine/pixelart'
 import { HAZARD_COLORS } from './hazardColors'
 import { domainOf } from '../data/domains'
 import { drawCapture } from './capture'
@@ -65,7 +65,7 @@ type Ctx = CanvasRenderingContext2D
 
 export const shadow = (ctx: Ctx, x: number, y: number, width: number) => {
   const rx = Math.max(3, Math.round(width * 0.36))
-  blitCentered(ctx, ellipse(rx, Math.max(1, Math.round(rx * 0.4)), 'rgba(16,40,16,0.28)'), x, y)
+  blitEllipse(ctx, rx, Math.max(1, Math.round(rx * 0.4)), 'rgba(16,40,16,0.28)', x, y)
 }
 
 /* ---------------- Attacks ---------------- */
@@ -77,7 +77,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'telegraph':
       return drawTelegraph(ctx, a)
     case 'whirlpool': {
-      blitCentered(ctx, ellipse(Math.round(r), Math.round(r), 'rgba(80,140,240,0.16)'), a.x, a.y - 4)
+      blitEllipse(ctx, Math.round(r), Math.round(r), 'rgba(80,140,240,0.16)', a.x, a.y - 4)
       dashedRing(ctx, a.x, a.y - 4, r, t * 5, ['#a8d0f8', '#ffffff', '#6890f0'], 0.45)
       dashedRing(ctx, a.x, a.y - 4, r * 0.68, -t * 7, ['#6890f0', '#a8d0f8'], 0.35)
       dashedRing(ctx, a.x, a.y - 4, r * 0.38, t * 9, ['#ffffff'], 0.3)
@@ -88,13 +88,13 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       const fade = Math.min(1, (a.ttl - a.age) / 0.3)
       const grow = Math.min(1, (a.age - a.activeFrom) / 0.12)
       ctx.globalAlpha = fade
-      blitCentered(ctx, ellipse(Math.round(r * grow), Math.round(r * 0.72 * grow), 'rgba(96,32,112,0.55)'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(r * 0.7 * grow), Math.round(r * 0.48 * grow), 'rgba(176,80,184,0.55)'), a.x, a.y - 1)
+      blitEllipse(ctx, Math.round(r * grow), Math.round(r * 0.72 * grow), 'rgba(96,32,112,0.55)', a.x, a.y)
+      blitEllipse(ctx, Math.round(r * 0.7 * grow), Math.round(r * 0.48 * grow), 'rgba(176,80,184,0.55)', a.x, a.y - 1)
       ctx.globalAlpha = 1
       return
     }
     case 'thunder': {
-      if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitCentered(ctx, ring(Math.round(r), 1, '#f8e030'), a.x, a.y)
+      if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitRing(ctx, Math.round(r), 1, '#f8e030', a.x, a.y)
       return
     }
     case 'quake': {
@@ -135,7 +135,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       // A growing shadow (and a blinking rim) warns where the boulder lands; then the dust ring spreads.
       if (a.age < a.activeFrom) {
         const k = 0.4 + 0.6 * (a.age / a.activeFrom)
-        blitCentered(ctx, ellipse(Math.round(r * k), Math.max(1, Math.round(r * 0.5 * k)), 'rgba(24,16,8,0.4)'), a.x, a.y)
+        blitEllipse(ctx, Math.round(r * k), Math.max(1, Math.round(r * 0.5 * k)), 'rgba(24,16,8,0.4)', a.x, a.y)
         if (Math.floor(a.age * 24) % 2 === 0) dashedRing(ctx, a.x, a.y, r, 0, ['#d8c080'], 0.9, 0.5)
         return
       }
@@ -207,15 +207,15 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       const k = a.age / a.activeFrom
       const x = a.from.x + (a.x - a.from.x) * k
       const y = a.from.y + (a.y - a.from.y) * k - Math.sin(k * Math.PI) * 40
-      blitCentered(ctx, ellipse(3, 3, '#502060'), x, y)
-      return blitCentered(ctx, ellipse(2, 2, '#c060d0'), x - 1, y - 1)
+      blitEllipse(ctx, 3, 3, '#502060', x, y)
+      return blitEllipse(ctx, 2, 2, '#c060d0', x - 1, y - 1)
     }
     case 'thunder': {
       if (a.age < a.activeFrom) return
       const fade = 1 - (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       ctx.globalAlpha = Math.max(0, fade)
       bolt(ctx, a.x, a.y, 180)
-      if (a.shape.kind === 'circle') blitCentered(ctx, ellipse(Math.round(a.shape.r), Math.round(a.shape.r * 0.5), 'rgba(255,248,160,0.7)'), a.x, a.y)
+      if (a.shape.kind === 'circle') blitEllipse(ctx, Math.round(a.shape.r), Math.round(a.shape.r * 0.5), 'rgba(255,248,160,0.7)', a.x, a.y)
       ctx.globalAlpha = 1
       return
     }
@@ -290,9 +290,9 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       const r = Math.round(a.shape.r * (0.5 + 0.5 * e))
       ctx.globalAlpha = Math.max(0, 1 - e)
-      blitCentered(ctx, ellipse(r, Math.round(r * 0.75), 'rgba(240,112,32,0.6)'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(r * 0.55), Math.round(r * 0.4), '#f8d860'), a.x, a.y - 1)
-      blitCentered(ctx, ring(r, 1, '#fff0a0'), a.x, a.y)
+      blitEllipse(ctx, r, Math.round(r * 0.75), 'rgba(240,112,32,0.6)', a.x, a.y)
+      blitEllipse(ctx, Math.round(r * 0.55), Math.round(r * 0.4), '#f8d860', a.x, a.y - 1)
+      blitRing(ctx, r, 1, '#fff0a0', a.x, a.y)
       ctx.globalAlpha = 1
       return
     }
@@ -383,18 +383,18 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
   if (h.kind === 'strike') {
     if (h.age < h.armAt) {
       const k = h.age / h.armAt
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
+      blitEllipse(ctx, Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill, h.x, h.y)
       // A boss about to land here (`leap`) casts its shadow first, growing as it falls.
-      if (h.leaper >= 0) blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.7 * k)), Math.max(1, Math.round(r * 0.35 * k)), 'rgba(24,16,32,0.45)'), h.x, h.y)
+      if (h.leaper >= 0) blitEllipse(ctx, Math.max(1, Math.round(r * 0.7 * k)), Math.max(1, Math.round(r * 0.35 * k)), 'rgba(24,16,32,0.45)', h.x, h.y)
       // The outline blinks faster as the impact gets close.
-      if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+      if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitRing(ctx, r, 1, line, h.x, h.y)
       return
     }
     if (h.visual === 'thunder' || h.visual === 'rock') return
     const k = (h.age - h.armAt) / (h.ttl - h.armAt)
     ctx.globalAlpha = 1 - k
-    blitCentered(ctx, ellipse(r, r, fill), h.x, h.y)
-    blitCentered(ctx, ring(Math.round(r * (0.6 + k * 0.5)), 2, line), h.x, h.y)
+    blitEllipse(ctx, r, r, fill, h.x, h.y)
+    blitRing(ctx, Math.round(r * (0.6 + k * 0.5)), 2, line, h.x, h.y)
     ctx.globalAlpha = 1
     return
   }
@@ -407,10 +407,10 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
     ctx.globalAlpha = Math.min(1, shown / 0.15, (h.ttl - h.age) / 0.4)
     const ry = Math.max(1, Math.round(r * 0.5))
     // A sludge puddle gets a hard rim and a bubble that pops now and then.
-    if (h.visual === 'sludge') blitCentered(ctx, ellipse(r + 1, ry + 1, line), h.x, h.y)
-    blitCentered(ctx, ellipse(r, ry, fill), h.x, h.y)
+    if (h.visual === 'sludge') blitEllipse(ctx, r + 1, ry + 1, line, h.x, h.y)
+    blitEllipse(ctx, r, ry, fill, h.x, h.y)
     if (h.visual === 'fire') blitCentered(ctx, FX.flame()[Math.floor((h.age + h.id) * 8) % 2]!, h.x, h.y - 5)
-    if (h.visual === 'sludge' && Math.floor((h.age + h.id) * 3) % 2 === 0) blitCentered(ctx, ring(1, 1, '#e0a0f0'), h.x + ((h.id % 5) - 2) * 2, h.y - 1)
+    if (h.visual === 'sludge' && Math.floor((h.age + h.id) * 3) % 2 === 0) blitRing(ctx, 1, 1, '#e0a0f0', h.x + ((h.id % 5) - 2) * 2, h.y - 1)
     ctx.globalAlpha = 1
   }
 }
@@ -423,14 +423,14 @@ const drawWorldZone = (ctx: Ctx, h: Hazard, line: string, fill: string) => {
   const r = Math.round(h.r)
   if (h.age < h.armAt) {
     const k = h.age / h.armAt
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
-    if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+    blitEllipse(ctx, Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill, h.x, h.y)
+    if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitRing(ctx, r, 1, line, h.x, h.y)
     return
   }
   ctx.globalAlpha = Math.min(1, (h.ttl - h.age) / 0.4)
-  blitCentered(ctx, ellipse(r, r, fill), h.x, h.y)
+  blitEllipse(ctx, r, r, fill, h.x, h.y)
   // Thunder crackles: its rim flickers.
-  if (h.visual !== 'thunder' || Math.floor((h.age + h.id) * 10) % 3 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+  if (h.visual !== 'thunder' || Math.floor((h.age + h.id) * 10) % 3 === 0) blitRing(ctx, r, 1, line, h.x, h.y)
   for (let i = 0; i < 3; i++) {
     const a = h.id * 2.4 + i * 2.1
     const x = h.x + Math.cos(a) * r * 0.5
@@ -480,7 +480,7 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     }
   }
   // The world's telegraphs land under the player, where the horde piles up: their blinking rim shows over the sprites too.
-  if (h.world && h.age < h.armAt && Math.floor(h.age * (6 + (h.age / h.armAt) * 18)) % 2 === 0) blitCentered(ctx, ring(Math.round(h.r), 1, HAZARD_COLORS[h.visual][0]), h.x, h.y)
+  if (h.world && h.age < h.armAt && Math.floor(h.age * (6 + (h.age / h.armAt) * 18)) % 2 === 0) blitRing(ctx, Math.round(h.r), 1, HAZARD_COLORS[h.visual][0], h.x, h.y)
   if (h.kind !== 'strike') return
   // Rocks fall onto their circles; so do the world's hail and flares (`game/hazards.ts`).
   if (h.age < h.armAt && (h.visual === 'rock' || (h.world && (h.visual === 'ice' || h.visual === 'fire')))) {
@@ -497,7 +497,7 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     // Arceus's Judgment falls as a pillar of light.
     if (h.visual === 'judgment') bolt(ctx, h.x, h.y, 220, { width: 5, edge: '#f8e070', core: '#ffffff' })
     else bolt(ctx, h.x, h.y, 200)
-    blitCentered(ctx, ellipse(Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)'), h.x, h.y)
+    blitEllipse(ctx, Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)', h.x, h.y)
     ctx.globalAlpha = 1
   }
 }
@@ -694,7 +694,7 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
   const coins = PICKUPS.coins()
   for (const k of g.pickups) {
     const bob = k.attracted ? 0 : Math.round(Math.sin(t * 4 + k.id) * 1.2)
-    if (!k.attracted) blitCentered(ctx, ellipse(3, 1, 'rgba(16,40,16,0.25)'), k.x, k.y + 4)
+    if (!k.attracted) blitEllipse(ctx, 3, 1, 'rgba(16,40,16,0.25)', k.x, k.y + 4)
     if (k.kind === 'consumable') {
       drawConsumable(ctx, k.item, k.x, k.y + bob, k.id, t)
       continue
