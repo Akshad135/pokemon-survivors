@@ -5,7 +5,12 @@ import { keepGiven, parseGiftContent } from '../../src/game/gifts'
 import { parseSaveData } from '../../src/game/meta'
 import { applyPush, type Push, type Stored } from '../../src/game/sync'
 
-export const connect = (url: string) => postgres(url, { max: 10, onnotice: () => {} })
+/**
+ * Production goes through Supabase's transaction pooler, which hands each
+ * transaction to any server connection, so named prepared statements are off.
+ * Everything that needs one connection stays inside `sql.begin` (locks are `_xact_`).
+ */
+export const connect = (url: string) => postgres(url, { max: 10, prepare: false, onnotice: () => {} })
 
 export type Sql = ReturnType<typeof connect>
 

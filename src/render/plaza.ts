@@ -103,7 +103,7 @@ export const purpleize = (src: CanvasImageSource & { width: number; height: numb
 }
 
 type Sheet = SpeciesSprites['anims']['Idle']
-const purpleSheet = (sheet: Sheet): Sheet => ({ ...sheet, img: purpleize(sheet.img), white: null })
+const purpleSheet = (sheet: Sheet): Sheet => ({ ...sheet, img: purpleize(sheet.img), overlays: null })
 
 let brother: { from: SpeciesSprites; to: SpeciesSprites } | null = null
 onCanvasReset(() => (brother = null))

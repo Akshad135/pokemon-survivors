@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, blitRotated, textSprite } from '../engine/pixelart'
 import { HAZARD_COLORS } from './hazardColors'
 import { domainOf } from '../data/domains'
 import { drawCapture } from './capture'
@@ -9,7 +9,7 @@ import { drawLegendSky, drawOmenGround } from './legendSky'
 import { bossLook, drawDomainAir, drawDomainGround, drawDomainScreen, drawVortexAir, drawVortexGround } from './domainLooks'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
-import { BIOME_ORDER, BIOMES, biomeAt } from '../data/biomes'
+import { BIOME_ORDER, BIOMES, biomeAt, type BiomeId } from '../data/biomes'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import { TYPE_COLORS } from '../data/types'
 import { FLEE_TIME } from '../game/enemies'
@@ -32,8 +32,8 @@ import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { awakeningLook, CLONE_OUTLINE, CLONE_TINT, drawLegendAura, playerSprites } from './legend'
 import { isClone } from '../game/legend'
-import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
-import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, placeFallLook } from './places'
+import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, dropArenas, riftFallLook, warmArena } from './rift'
+import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, dropPlaceFloor, placeFallLook } from './places'
 import { roomOf } from '../game/room'
 import { drawLandmarkAir, drawTunnelDark, playerUnderground } from './landmarks'
 import { drawPokemon, sprites, type AnimName, type SpeciesSprites } from './sprites'
@@ -54,18 +54,19 @@ import { drawLegendary2Air, drawLegendary2Ground } from './legendaryFx2'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
-import { drawWeather, warmFog } from './weather'
+import { dropFog, drawWeather, warmFog } from './weather'
 import { drawHauntedNight, drawTreat } from './halloweenArt'
-import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
-import { drawGround, warmGround } from './world'
+import { drawSolid, drawTerrainGround, drawWading, keepTerrain, solidsInView, warmTerrain } from './terrain'
+import { drawGround, GROUND_LOOKAHEAD, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
 import { CALM_PERIOD, HURT_TINT, type Flashes } from './flashes'
+import { detail } from './quality'
 
 type Ctx = CanvasRenderingContext2D
 
 export const shadow = (ctx: Ctx, x: number, y: number, width: number) => {
   const rx = Math.max(3, Math.round(width * 0.36))
-  blitCentered(ctx, ellipse(rx, Math.max(1, Math.round(rx * 0.4)), 'rgba(16,40,16,0.28)'), x, y)
+  blitEllipse(ctx, rx, Math.max(1, Math.round(rx * 0.4)), 'rgba(16,40,16,0.28)', x, y)
 }
 
 /* ---------------- Attacks ---------------- */
@@ -77,7 +78,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'telegraph':
       return drawTelegraph(ctx, a)
     case 'whirlpool': {
-      blitCentered(ctx, ellipse(Math.round(r), Math.round(r), 'rgba(80,140,240,0.16)'), a.x, a.y - 4)
+      blitEllipse(ctx, Math.round(r), Math.round(r), 'rgba(80,140,240,0.16)', a.x, a.y - 4)
       dashedRing(ctx, a.x, a.y - 4, r, t * 5, ['#a8d0f8', '#ffffff', '#6890f0'], 0.45)
       dashedRing(ctx, a.x, a.y - 4, r * 0.68, -t * 7, ['#6890f0', '#a8d0f8'], 0.35)
       dashedRing(ctx, a.x, a.y - 4, r * 0.38, t * 9, ['#ffffff'], 0.3)
@@ -88,13 +89,13 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       const fade = Math.min(1, (a.ttl - a.age) / 0.3)
       const grow = Math.min(1, (a.age - a.activeFrom) / 0.12)
       ctx.globalAlpha = fade
-      blitCentered(ctx, ellipse(Math.round(r * grow), Math.round(r * 0.72 * grow), 'rgba(96,32,112,0.55)'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(r * 0.7 * grow), Math.round(r * 0.48 * grow), 'rgba(176,80,184,0.55)'), a.x, a.y - 1)
+      blitEllipse(ctx, Math.round(r * grow), Math.round(r * 0.72 * grow), 'rgba(96,32,112,0.55)', a.x, a.y)
+      blitEllipse(ctx, Math.round(r * 0.7 * grow), Math.round(r * 0.48 * grow), 'rgba(176,80,184,0.55)', a.x, a.y - 1)
       ctx.globalAlpha = 1
       return
     }
     case 'thunder': {
-      if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitCentered(ctx, ring(Math.round(r), 1, '#f8e030'), a.x, a.y)
+      if (a.age < a.activeFrom && Math.floor(a.age * 30) % 2 === 0) blitRing(ctx, Math.round(r), 1, '#f8e030', a.x, a.y)
       return
     }
     case 'quake': {
@@ -135,7 +136,7 @@ const drawGroundAttack = (ctx: Ctx, a: Attack, t: number) => {
       // A growing shadow (and a blinking rim) warns where the boulder lands; then the dust ring spreads.
       if (a.age < a.activeFrom) {
         const k = 0.4 + 0.6 * (a.age / a.activeFrom)
-        blitCentered(ctx, ellipse(Math.round(r * k), Math.max(1, Math.round(r * 0.5 * k)), 'rgba(24,16,8,0.4)'), a.x, a.y)
+        blitEllipse(ctx, Math.round(r * k), Math.max(1, Math.round(r * 0.5 * k)), 'rgba(24,16,8,0.4)', a.x, a.y)
         if (Math.floor(a.age * 24) % 2 === 0) dashedRing(ctx, a.x, a.y, r, 0, ['#d8c080'], 0.9, 0.5)
         return
       }
@@ -207,15 +208,15 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       const k = a.age / a.activeFrom
       const x = a.from.x + (a.x - a.from.x) * k
       const y = a.from.y + (a.y - a.from.y) * k - Math.sin(k * Math.PI) * 40
-      blitCentered(ctx, ellipse(3, 3, '#502060'), x, y)
-      return blitCentered(ctx, ellipse(2, 2, '#c060d0'), x - 1, y - 1)
+      blitEllipse(ctx, 3, 3, '#502060', x, y)
+      return blitEllipse(ctx, 2, 2, '#c060d0', x - 1, y - 1)
     }
     case 'thunder': {
       if (a.age < a.activeFrom) return
       const fade = 1 - (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       ctx.globalAlpha = Math.max(0, fade)
       bolt(ctx, a.x, a.y, 180)
-      if (a.shape.kind === 'circle') blitCentered(ctx, ellipse(Math.round(a.shape.r), Math.round(a.shape.r * 0.5), 'rgba(255,248,160,0.7)'), a.x, a.y)
+      if (a.shape.kind === 'circle') blitEllipse(ctx, Math.round(a.shape.r), Math.round(a.shape.r * 0.5), 'rgba(255,248,160,0.7)', a.x, a.y)
       ctx.globalAlpha = 1
       return
     }
@@ -290,9 +291,9 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
       const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       const r = Math.round(a.shape.r * (0.5 + 0.5 * e))
       ctx.globalAlpha = Math.max(0, 1 - e)
-      blitCentered(ctx, ellipse(r, Math.round(r * 0.75), 'rgba(240,112,32,0.6)'), a.x, a.y)
-      blitCentered(ctx, ellipse(Math.round(r * 0.55), Math.round(r * 0.4), '#f8d860'), a.x, a.y - 1)
-      blitCentered(ctx, ring(r, 1, '#fff0a0'), a.x, a.y)
+      blitEllipse(ctx, r, Math.round(r * 0.75), 'rgba(240,112,32,0.6)', a.x, a.y)
+      blitEllipse(ctx, Math.round(r * 0.55), Math.round(r * 0.4), '#f8d860', a.x, a.y - 1)
+      blitRing(ctx, r, 1, '#fff0a0', a.x, a.y)
       ctx.globalAlpha = 1
       return
     }
@@ -383,18 +384,18 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
   if (h.kind === 'strike') {
     if (h.age < h.armAt) {
       const k = h.age / h.armAt
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
+      blitEllipse(ctx, Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill, h.x, h.y)
       // A boss about to land here (`leap`) casts its shadow first, growing as it falls.
-      if (h.leaper >= 0) blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.7 * k)), Math.max(1, Math.round(r * 0.35 * k)), 'rgba(24,16,32,0.45)'), h.x, h.y)
+      if (h.leaper >= 0) blitEllipse(ctx, Math.max(1, Math.round(r * 0.7 * k)), Math.max(1, Math.round(r * 0.35 * k)), 'rgba(24,16,32,0.45)', h.x, h.y)
       // The outline blinks faster as the impact gets close.
-      if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+      if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitRing(ctx, r, 1, line, h.x, h.y)
       return
     }
     if (h.visual === 'thunder' || h.visual === 'rock') return
     const k = (h.age - h.armAt) / (h.ttl - h.armAt)
     ctx.globalAlpha = 1 - k
-    blitCentered(ctx, ellipse(r, r, fill), h.x, h.y)
-    blitCentered(ctx, ring(Math.round(r * (0.6 + k * 0.5)), 2, line), h.x, h.y)
+    blitEllipse(ctx, r, r, fill, h.x, h.y)
+    blitRing(ctx, Math.round(r * (0.6 + k * 0.5)), 2, line, h.x, h.y)
     ctx.globalAlpha = 1
     return
   }
@@ -407,10 +408,10 @@ const drawHazardGround = (ctx: Ctx, h: Hazard) => {
     ctx.globalAlpha = Math.min(1, shown / 0.15, (h.ttl - h.age) / 0.4)
     const ry = Math.max(1, Math.round(r * 0.5))
     // A sludge puddle gets a hard rim and a bubble that pops now and then.
-    if (h.visual === 'sludge') blitCentered(ctx, ellipse(r + 1, ry + 1, line), h.x, h.y)
-    blitCentered(ctx, ellipse(r, ry, fill), h.x, h.y)
+    if (h.visual === 'sludge') blitEllipse(ctx, r + 1, ry + 1, line, h.x, h.y)
+    blitEllipse(ctx, r, ry, fill, h.x, h.y)
     if (h.visual === 'fire') blitCentered(ctx, FX.flame()[Math.floor((h.age + h.id) * 8) % 2]!, h.x, h.y - 5)
-    if (h.visual === 'sludge' && Math.floor((h.age + h.id) * 3) % 2 === 0) blitCentered(ctx, ring(1, 1, '#e0a0f0'), h.x + ((h.id % 5) - 2) * 2, h.y - 1)
+    if (h.visual === 'sludge' && Math.floor((h.age + h.id) * 3) % 2 === 0) blitRing(ctx, 1, 1, '#e0a0f0', h.x + ((h.id % 5) - 2) * 2, h.y - 1)
     ctx.globalAlpha = 1
   }
 }
@@ -423,14 +424,14 @@ const drawWorldZone = (ctx: Ctx, h: Hazard, line: string, fill: string) => {
   const r = Math.round(h.r)
   if (h.age < h.armAt) {
     const k = h.age / h.armAt
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill), h.x, h.y)
-    if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+    blitEllipse(ctx, Math.max(1, Math.round(r * k)), Math.max(1, Math.round(r * k)), fill, h.x, h.y)
+    if (Math.floor(h.age * (6 + k * 18)) % 2 === 0) blitRing(ctx, r, 1, line, h.x, h.y)
     return
   }
   ctx.globalAlpha = Math.min(1, (h.ttl - h.age) / 0.4)
-  blitCentered(ctx, ellipse(r, r, fill), h.x, h.y)
+  blitEllipse(ctx, r, r, fill, h.x, h.y)
   // Thunder crackles: its rim flickers.
-  if (h.visual !== 'thunder' || Math.floor((h.age + h.id) * 10) % 3 === 0) blitCentered(ctx, ring(r, 1, line), h.x, h.y)
+  if (h.visual !== 'thunder' || Math.floor((h.age + h.id) * 10) % 3 === 0) blitRing(ctx, r, 1, line, h.x, h.y)
   for (let i = 0; i < 3; i++) {
     const a = h.id * 2.4 + i * 2.1
     const x = h.x + Math.cos(a) * r * 0.5
@@ -480,7 +481,7 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     }
   }
   // The world's telegraphs land under the player, where the horde piles up: their blinking rim shows over the sprites too.
-  if (h.world && h.age < h.armAt && Math.floor(h.age * (6 + (h.age / h.armAt) * 18)) % 2 === 0) blitCentered(ctx, ring(Math.round(h.r), 1, HAZARD_COLORS[h.visual][0]), h.x, h.y)
+  if (h.world && h.age < h.armAt && Math.floor(h.age * (6 + (h.age / h.armAt) * 18)) % 2 === 0) blitRing(ctx, Math.round(h.r), 1, HAZARD_COLORS[h.visual][0], h.x, h.y)
   if (h.kind !== 'strike') return
   // Rocks fall onto their circles; so do the world's hail and flares (`game/hazards.ts`).
   if (h.age < h.armAt && (h.visual === 'rock' || (h.world && (h.visual === 'ice' || h.visual === 'fire')))) {
@@ -497,7 +498,7 @@ const drawHazard = (ctx: Ctx, h: Hazard) => {
     // Arceus's Judgment falls as a pillar of light.
     if (h.visual === 'judgment') bolt(ctx, h.x, h.y, 220, { width: 5, edge: '#f8e070', core: '#ffffff' })
     else bolt(ctx, h.x, h.y, 200)
-    blitCentered(ctx, ellipse(Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)'), h.x, h.y)
+    blitEllipse(ctx, Math.round(h.r), Math.round(h.r * 0.5), 'rgba(255,248,160,0.7)', h.x, h.y)
     ctx.globalAlpha = 1
   }
 }
@@ -694,7 +695,7 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
   const coins = PICKUPS.coins()
   for (const k of g.pickups) {
     const bob = k.attracted ? 0 : Math.round(Math.sin(t * 4 + k.id) * 1.2)
-    if (!k.attracted) blitCentered(ctx, ellipse(3, 1, 'rgba(16,40,16,0.25)'), k.x, k.y + 4)
+    if (!k.attracted) blitEllipse(ctx, 3, 1, 'rgba(16,40,16,0.25)', k.x, k.y + 4)
     if (k.kind === 'consumable') {
       drawConsumable(ctx, k.item, k.x, k.y + bob, k.id, t)
       continue
@@ -795,9 +796,6 @@ const BIOME_FADE = 2.4
 /** How far ahead (game seconds) the next biome's ground starts building in the background. */
 const BIOME_WARMUP = 10
 
-/** How far past the view's edges (px) the ground is built ahead of time. */
-const GROUND_LOOKAHEAD = 128
-
 /**
  * Builds at most one piece of scenery not built yet, most needed first: the
  * ground about to scroll in, this biome's terrain sprites, the next biome's
@@ -807,6 +805,10 @@ const GROUND_LOOKAHEAD = 128
  * lasts, so building one the first time it shows would stall that frame.
  */
 export const warmScenery = (g: Game | null, calm: boolean) => {
+  const keep = terrainBiomes(g)
+  keepTerrain(keep)
+  if (!g?.rift.arena || g.rift.arena.domain) dropArenas()
+  if (!g?.place.inside) dropPlaceFloor()
   if (g && warmDomain(g)) return true
   if (g && !roomOf(g)) {
     const { w, h } = g.view
@@ -815,9 +817,23 @@ export const warmScenery = (g: Game | null, calm: boolean) => {
     const upcoming = biomeAt(g.time + BIOME_WARMUP)
     if (warmGround(here, x, y, w, h, GROUND_LOOKAHEAD) || warmTerrain(here)) return true
     if (upcoming !== here && (warmGround(upcoming, x, y, w, h) || warmTerrain(upcoming))) return true
-    if (('fog' in BIOMES[here].weather || 'fog' in BIOMES[upcoming].weather) && warmFog(w, h)) return true
+    if ('fog' in BIOMES[here].weather || 'fog' in BIOMES[upcoming].weather) {
+      if (warmFog(w, h)) return true
+    } else if (g.weather.id !== 'fog' && g.weather.prev !== 'fog') dropFog()
   }
-  return calm && BIOME_ORDER.some((b) => warmTerrain(b))
+  return calm && keep.some((b) => warmTerrain(b))
+}
+
+/**
+ * The biomes whose terrain stays sculpted: the one here, the one dissolving out and the next
+ * in order (a run only moves forward); before a run, the first. The rest is dropped (`keepTerrain`).
+ */
+const terrainBiomes = (g: Game | null): BiomeId[] => {
+  if (!g) return [BIOME_ORDER[0]]
+  const here = g.biome.id
+  const next = BIOME_ORDER[BIOME_ORDER.indexOf(here) + 1]
+  const fading = biomeFade(g)?.from
+  return [here, ...(next ? [next] : []), ...(fading && fading !== here ? [fading] : [])]
 }
 
 /** The ground dissolve in progress, if any. */
@@ -832,8 +848,12 @@ const TEXT_PASSES = [false, true] as const
 /** Player preferences from the settings screen, and the supporter's companion walking along (`render/companion.ts`). */
 export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean; flashes: Flashes; companion?: CompanionView | null }
 
+/** Particles a lean frame draws at most (`render/quality.ts`). */
+const LEAN_PARTICLES = 120
+
 export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const { w, h } = g.view
+  const lean = detail.lean
   const calm = opts.flashes === 'reduced'
   const shake = opts.screenShake ? g.shake : 0
   const shakeX = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 2) : 0
@@ -923,7 +943,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
       drawLegendAura(ctx, g, t, calm)
     }
     else if (d === 'companion') companion && shadow(ctx, companion.x, companion.y, sprites(companion.dex).bodyW)
-    else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
+    // Drawing lean, the regular horde goes without: a shadow each is a draw call each.
+    else if (!isSolid(d) && d.dying < 0 && (!lean || d.boss || d.alpha)) shadow(ctx, d.x, d.y, d.radius * 3)
   }
   drawAfterimages(ctx, g, calm)
   for (const d of inDepth) {
@@ -973,7 +994,10 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     else if (hz.phantom === 0 && visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
   drawPhantoms(ctx, g, t)
 
-  for (const p of g.particles) {
+  // Drawing lean, a big burst shows every 2nd (3rd...) particle, about `LEAN_PARTICLES` in all.
+  const every = lean ? Math.max(1, Math.ceil(g.particles.length / LEAN_PARTICLES)) : 1
+  for (let i = 0; i < g.particles.length; i += every) {
+    const p = g.particles[i]!
     if (!visible(p.x, p.y, 8)) continue
     ctx.globalAlpha = Math.min(1, (1 - p.life / p.ttl) * 1.5)
     ctx.fillStyle = p.color
@@ -993,8 +1017,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawDomainScreen(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)
-  // Two passes: super-effective and critical numbers (`12!`) land on top of the rest.
-  const mode = opts.damageNumbers
+  // Two passes: super-effective and critical numbers (`12!`) land on top of the rest. Drawing lean, all of them shows reduced.
+  const mode = lean && opts.damageNumbers === 'all' ? 'reduced' : opts.damageNumbers
   const budget = damageBudget(g.texts, g.bossId)
   for (const bang of TEXT_PASSES) {
     for (const text of g.texts) {

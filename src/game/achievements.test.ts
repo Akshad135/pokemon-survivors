@@ -90,13 +90,14 @@ describe('Pokédex and egg achievements', () => {
     expect(capped.unlocked).toContain('kills100k')
     expect(capped.eggs).toEqual([])
     expect(capped.save.eggs).toEqual([])
-    expect(capped.save.wallet).toBe(capped.reward)
+    expect(capped.converted).toEqual({ full: [], cap: ['rare'] })
+    expect(capped.save.wallet).toBe(capped.reward + EGG_TIERS.rare.refund)
     expect(recordRun(EMPTY_SAVE, summary({ kills: 100_000 }), null, date).save.eggs).toHaveLength(1)
     const full = { ...EMPTY_SAVE, eggs: Array.from({ length: EGGS.slots }, () => ({ tier: 'common' as const, steps: 0 })) }
     const paid = recordHatch({ ...full, achievements: { ...NO_ACHIEVEMENTS, unlocked: ['firstHatch'] } }, true, date)
     expect(paid.eggs).toEqual([])
-    expect(paid.save.wallet).toBe(paid.reward)
-    expect(paid.reward).toBeGreaterThanOrEqual(EGG_TIERS.rare.refund)
+    expect(paid.converted).toEqual({ full: ['rare'], cap: [] })
+    expect(paid.save.wallet).toBe(paid.reward + EGG_TIERS.rare.refund)
   })
 })
 

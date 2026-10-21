@@ -1,6 +1,6 @@
 import { accountState, API_URL } from './account'
 import { apiCall } from './api'
-import { BUG_REPORT, clip, parseBugCrash, type BugCrash, type BugError, type BugReport, type BugRun, type BugTech } from './game/bugReport'
+import { BUG_REPORT, clip, parseBugCrash, type BugCrash, type BugError, type BugPerf, type BugReport, type BugRun, type BugTech } from './game/bugReport'
 import { isRecord } from './game/parse'
 import { locale } from './i18n'
 
@@ -25,10 +25,10 @@ const WATCH_MS = 5000
 
 const errors: BugError[] = []
 
-/** What the shell has on screen, set by `main.ts` (`describeWith`). */
-type Context = { view: string; run: BugRun | null }
+/** What the shell has on screen and how the device copes, set by `main.ts` (`describeWith`). */
+type Context = { view: string; run: BugRun | null; perf: BugPerf | null }
 
-let describe = (): Context => ({ view: '', run: null })
+let describe = (): Context => ({ view: '', run: null, perf: null })
 
 /** The crash watch as stored: the run, the session's last error, and whether the page was in the background. */
 type Watch = BugCrash & { hidden: boolean }
@@ -63,15 +63,18 @@ const heapMb = () => {
 
 const numberOf = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
+/** `navigator.deviceMemory` (GB, rounded down by the browser), where it says (Chromium only). */
+export const deviceMemory = () => numberOf(Reflect.get(navigator, 'deviceMemory'))
+
 /**
  * Brings the crash watch up to date with the run on screen (`describeWith`):
  * written while one is on, cleared once it's over. `main.ts` calls it as a
  * run starts and ends; a timer keeps it fresh in between.
  */
 export const syncRunWatch = () => {
-  const { run } = describe()
+  const { run, perf } = describe()
   if (!run) return watch && writeWatch(null)
-  writeWatch({ at: new Date().toISOString(), version: __GAME_VERSION__, run, heapMb: heapMb(), error: watch?.error ?? null, hidden: document.hidden })
+  writeWatch({ at: new Date().toISOString(), version: __GAME_VERSION__, run, heapMb: heapMb(), perf, error: watch?.error ?? null, hidden: document.hidden })
 }
 
 const record = (e: BugError) => {
@@ -126,7 +129,7 @@ export const takeCrash = (): BugCrash | null => {
   return hidden && !crash.error ? null : crash
 }
 
-/** Tells the reports what's on screen: `main.ts` hands in the run (plain numbers and ids) and the top screen's name. */
+/** Tells the reports what's on screen: `main.ts` hands in the run (plain numbers and ids), the top screen's name and the device's load. */
 export const describeWith = (fn: () => Context) => {
   describe = fn
 }
@@ -136,7 +139,7 @@ const size = (w: number, h: number) => `${Math.round(w)}x${Math.round(h)}`
 
 /** The technical info right now, with the crashed run when the report is about one. */
 export const techInfo = (crash: BugCrash | null): BugTech => {
-  const { view, run } = describe()
+  const { view, run, perf } = describe()
   return {
     version: __GAME_VERSION__,
     locale: locale(),
@@ -144,12 +147,13 @@ export const techInfo = (crash: BugCrash | null): BugTech => {
     screen: size(screen.width, screen.height),
     viewport: size(window.innerWidth, window.innerHeight),
     dpr: window.devicePixelRatio,
-    memory: numberOf(Reflect.get(navigator, 'deviceMemory')),
+    memory: deviceMemory(),
     cores: numberOf(navigator.hardwareConcurrency),
     heapMb: heapMb(),
     standalone: matchMedia('(display-mode: standalone)').matches,
     touch: navigator.maxTouchPoints > 0,
     uptime: Math.round(performance.now() / 1000),
+    perf,
     view,
     run,
     errors: [...errors],

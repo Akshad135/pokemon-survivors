@@ -1,4 +1,4 @@
-import { blitCentered, canvasCache, context2d, createCanvas, ellipse, ring } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, canvasCache, context2d, createCanvas } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import type { PokeType } from '../data/types'
@@ -94,9 +94,9 @@ const drawBurst = (ctx: Ctx, a: Attack) => {
   const r = Math.max(2, Math.round(a.shape.r * (0.35 + 0.65 * ease)))
   ctx.globalAlpha = Math.max(0, 1 - k)
   // A small white core for the first frames, then only the rings.
-  if (k < 0.18) blitCentered(ctx, ellipse(Math.max(1, Math.round(r * 0.35)), Math.max(1, Math.round(r * 0.35)), '#ffffff'), a.x, a.y)
-  blitCentered(ctx, ring(r, 2, body), a.x, a.y)
-  blitCentered(ctx, ring(Math.max(1, r - 3), 1, light), a.x, a.y)
+  if (k < 0.18) blitEllipse(ctx, Math.max(1, Math.round(r * 0.35)), Math.max(1, Math.round(r * 0.35)), '#ffffff', a.x, a.y)
+  blitRing(ctx, r, 2, body, a.x, a.y)
+  blitRing(ctx, Math.max(1, r - 3), 1, light, a.x, a.y)
   dashedRing(ctx, a.x, a.y, r + 2, a.id, [dark, body], 0.4)
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * TAU + (a.id % 7) * 0.2
@@ -142,7 +142,7 @@ const drawArc = (ctx: Ctx, a: Attack, t: number) => {
     px = qx
     py = qy
   }
-  blitCentered(ctx, ring(2 + Math.round(a.age * 16), 1, light), a.x, a.y)
+  blitRing(ctx, 2 + Math.round(a.age * 16), 1, light, a.x, a.y)
   ctx.globalAlpha = 1
 }
 

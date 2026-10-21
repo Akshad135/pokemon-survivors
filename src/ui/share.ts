@@ -273,6 +273,8 @@ export const sharePreview = (root: HTMLElement, input: Input, card: ShareCard, o
     .draw()
     .then(async (canvas) => {
       const blob = await cardBlob(canvas)
+      // The PNG is all that's shown and shared: free the card's 4× canvas (6 MB) now.
+      canvas.width = canvas.height = 0
       if (closed) return
       const url = URL.createObjectURL(blob)
       ready = { blob, file: new File([blob], card.file, { type: 'image/png' }), url }

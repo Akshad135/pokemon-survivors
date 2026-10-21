@@ -1,4 +1,5 @@
 import { mergeAchievements, mergeGiftTitles } from './achievements'
+import { mergeAttempts } from './attempt'
 import { mergeClaimedGifts } from './gifts'
 import { mergeClears } from './clears'
 import { mergeHalloween } from './halloween'
@@ -65,6 +66,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  * - The TM case: TMs owned and TMs runs taught are unions; the armed picks
  *   are `incoming`'s (`mergeTms`). Evolution items: a union. Bottle Caps:
  *   each Pokémon at the higher level (`mergeCaps`). What they cost is in `spent`.
+ * - The Desafio do dia attempt: the later day (`base`'s on the same day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -100,6 +102,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     tms: mergeTms(base.tms, incoming.tms),
     evo: mergeEvoItems(base.evo, incoming.evo),
     caps: mergeCaps(base.caps, incoming.caps),
+    attempt: mergeAttempts(base.attempt, incoming.attempt),
   }
 }
 

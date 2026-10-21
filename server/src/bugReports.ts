@@ -1,4 +1,4 @@
-import { BUG_REPORT, clip, type BugError, type BugReport, type BugRun, type BugTech } from '../../src/game/bugReport'
+import { BUG_REPORT, clip, type BugError, type BugPerf, type BugReport, type BugRun, type BugTech } from '../../src/game/bugReport'
 import { isRecord } from '../../src/game/parse'
 import type { Sql } from './db'
 import { idsByName, restClient } from './discord'
@@ -76,7 +76,19 @@ const codeBlock = (text: string, max: number) => `\`\`\`\n${clip(fenced(text), m
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
-const runLine = (r: BugRun) => `${r.partner} (${r.form}) Lv ${r.level} · ${r.difficulty} · ${clock(r.time)} · ${r.phase} · ${r.biome} · ${r.enemies} enemies`
+const runLine = (r: BugRun) =>
+  [
+    `${r.partner} (${r.form}) Lv ${r.level} · ${r.difficulty} · ${clock(r.time)} · ${r.phase} · ${r.biome}`,
+    `${r.enemies} enemies · ${r.projectiles} projectiles`,
+    r.wave && `wave ${r.wave}`,
+    r.boss && `boss ${r.boss}`,
+    r.place && `in ${r.place}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+/** Canvas memory and frame pace: `canvas: 412 (38.5 MB, peak 51.2 MB / 530) · frame 17.1 ms`. */
+const perfLine = (p: BugPerf) => `canvas: ${p.canvases} (${p.canvasMb} MB, peak ${p.peakCanvasMb} MB / ${p.peakCanvases}) · frame ${p.frameMs ?? '?'} ms`
 
 const errorMessage = (e: BugError, title: string) => {
   const head = `**${title}** (${e.kind}, ${e.at})\n`
@@ -92,14 +104,16 @@ const techLines = (tech: BugTech) =>
     `screen: ${tech.screen} @${tech.dpr}x · viewport ${tech.viewport}${tech.touch ? ' · touch' : ''}`,
     `memory: ${tech.memory ?? '?'} GB · cores: ${tech.cores ?? '?'} · heap: ${tech.heapMb ?? '?'} MB`,
     `locale: ${tech.locale} · up ${clock(tech.uptime)} · on ${tech.view || '?'}`,
+    tech.perf && perfLine(tech.perf),
     tech.run && `run: ${runLine(tech.run)}`,
     tech.crash && `closed mid-run (${tech.crash.at}, ${tech.crash.version}): ${tech.crash.run ? runLine(tech.crash.run) : '?'} · heap ${tech.crash.heapMb ?? '?'} MB`,
+    tech.crash?.perf && `  then ${perfLine(tech.crash.perf)}`,
   ].filter((l): l is string => Boolean(l))
 
 /**
  * The thread a report becomes: titled by its first line and the device,
  * opened by who sent it, their words quoted and the technical info in a code
- * block, then one message per error (the closed session's first, then the
+ * block (in a message of its own when both don't fit in one), then one message per error (the closed session's first, then the
  * newest). Mentions in the text never ping: the post sends
  * `allowed_mentions: { parse: [] }`.
  */
@@ -109,15 +123,16 @@ export const bugThread = (report: BugReport, from: string): BugThread => {
   const suffix = ` · ${tech ? deviceHint(tech.userAgent) : 'no tech info'}`
   const first = report.text.split('\n')[0]!
   const name = clip(`${crashed ? '💥 ' : ''}${clip(first, NAME_MAX - 30)}${suffix}`, NAME_MAX)
-  const info = tech ? codeBlock(techLines(tech).join('\n'), 900) : '_(sent without technical info)_'
+  const info = tech ? codeBlock(techLines(tech).join('\n'), 1400) : '_(sent without technical info)_'
   const quote = fenced(report.text).split('\n').map((l) => `> ${l}`).join('\n')
-  const head = clip(`Report from ${from}${crashed ? ' after the game closed mid-run' : ''}:\n${quote}`, MESSAGE_MAX - info.length - 1)
+  const head = clip(`Report from ${from}${crashed ? ' after the game closed mid-run' : ''}:\n${quote}`, MESSAGE_MAX)
+  const opening = `${head}\n${info}`
   const errors = [
     ...(tech?.crash?.error ? [errorMessage(tech.crash.error, 'Last error before the game closed')] : []),
     ...[...(tech?.errors ?? [])].reverse().map((e) => errorMessage(e, 'Error')),
   ]
   const device: BugTag[] = tech ? [/Android|iPhone|iPad|iPod|Mobi/.test(tech.userAgent) ? 'Mobile' : 'Desktop'] : []
-  return { name, messages: [`${head}\n${info}`, ...errors], tags: ['Open', ...device, ...(crashed ? (['Crash'] as const) : [])] }
+  return { name, messages: [...(opening.length <= MESSAGE_MAX ? [opening] : [head, info]), ...errors], tags: ['Open', ...device, ...(crashed ? (['Crash'] as const) : [])] }
 }
 
 /** Where reports are kept, so none is lost when Discord is down or not set up. */
