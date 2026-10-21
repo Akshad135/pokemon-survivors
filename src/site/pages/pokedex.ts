@@ -22,7 +22,7 @@ import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
 import { STAT_BARS, statRatio } from '../../ui/statBars'
 import { html, type Html } from '../html'
 import { layout } from '../layout'
-import { appearances, clock, pokedex, ROLES, slugOf, spritesOf, type Appearance, type DexEntry, type Role, type SpriteSet } from '../pokedex'
+import { appearances, clock, nightBossOf, pokedex, ROLES, slugOf, spritesOf, type Appearance, type DexEntry, type Role, type SpriteSet } from '../pokedex'
 import { absolute, ROUTES } from '../routes'
 import { createSpriteCss, spriteScale } from '../spriteCss'
 
@@ -148,6 +148,8 @@ const appearance = (a: Appearance, m: SiteMessages) => {
       return a.chance < 1 ? m.pokedex.bossChance(clock(a.at), a.chance * 100) : m.pokedex.boss(clock(a.at))
     case 'trio':
       return m.pokedex.trio(clock(a.at), m.trios.names[a.trio])
+    case 'night':
+      return m.pokedex.night(clock(a.at), a.chance * 100)
     case 'rift':
       return m.pokedex.rift(clock(a.from))
     case 'reaper':
@@ -269,6 +271,9 @@ const legendSection = (id: LegendId, m: SiteMessages) => {
 const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessages) => {
   const e: EnemyDef = ENEMIES[entry.source.id]
   const kit = bossKit(entry.source.id)
+  // A species with a night boss (`HALLOWEEN.bosses`) shows that boss's attacks.
+  const night = kit.length > 0 ? null : nightBossOf(entry.dex)
+  const fights = night ?? entry.source.id
   const s = m.pokedex.wildStats
   const shiny = entry.sprites.shiny ? shinyNote(entry.source.id, kit.length > 0, m) : null
   return html`<dl class="facts">
@@ -282,7 +287,7 @@ const wildBody = (entry: DexEntry & { source: { kind: 'wild' } }, m: SiteMessage
     ${e.trait && html`<h3>${m.pokedex.behavior}</h3><p><b>${m.traits.names[e.trait]}.</b> ${traitText(e.trait, entry.source.id, m)}</p>`}
     <h3>${m.pokedex.appears}</h3>
     <ul class="list">${appearances(entry.source.id).map((a) => html`<li>${appearance(a, m)}</li>`)}</ul>
-    ${kit.length > 0 && html`<h3>${m.pokedex.attacks}</h3>${bossAttacks(entry.source.id, m)}`}
+    ${bossKit(fights).length > 0 && html`<h3>${night ? m.pokedex.nightAttacks : m.pokedex.attacks}</h3>${bossAttacks(fights, m)}`}
     ${isLegend(entry.source.id) && legendSection(entry.source.id, m)}
     ${shiny && html`<p class="note">★ ${shiny}</p>`}`
 }

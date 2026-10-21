@@ -53,7 +53,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - The companion: `incoming`'s, if it has one (like the title); gift-only companions: a union.
  * - Branches taken: per family, `incoming`'s when it has one (like the partner).
  * - Clears: a union, each Pokémon at the harder difficulty of the two.
- * - The Noite das Bruxas candy jar: the fuller one (its rewards are gifts, kept above).
+ * - The Noite das Bruxas candy jar: the fuller one (its rewards are gifts, kept above); its Caça aos Fantasmas: a union.
  * - Legend captures: each legend's win count at the larger side (a shiny
  *   captured is a `shinyStarters` key, a union like the rest).
  */

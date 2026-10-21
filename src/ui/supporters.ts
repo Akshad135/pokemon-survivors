@@ -4,8 +4,8 @@ import type { Input } from '../engine/input'
 import { HATCHLINGS, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
 import { HALLOWEEN } from '../data/halloween'
 import { POLL, SUPPORTER, type PollOptionId } from '../data/supporters'
-import { pendingPicks, pickShiny, ownsShiny, shinyChoices } from '../game/shinyPicks'
-import { canWalkWith, companionForm, hallOf, isSupporter, parseCode, supporterCount, type Companion, type CompanionId, type SupporterStatus, type Wall, type WallEntry } from '../game/supporters'
+import { pendingPicks, pickShiny, shinyChoices } from '../game/shinyPicks'
+import { canWalkWith, companionForm, hallOf, isSupporter, parseCode, supporterCount, walksShiny, type Companion, type CompanionId, type SupporterStatus, type Wall, type WallEntry } from '../game/supporters'
 import { isSpecialCompanion, SPECIAL_COMPANION_IDS } from '../data/companions'
 import { savedSupporterTier } from '../game/trainer'
 import { brasiliaDay } from '../game/day'
@@ -234,10 +234,10 @@ const shinyPicker = (root: HTMLElement, input: Input, actions: { play: (id: Play
   return { el: o.el, tick: (time) => sub?.tick?.(time), dispose: () => (sub?.dispose(), o.dispose()), dim: 0.5 }
 }
 
-/** The save's shiny of a companion, if it has one (a gift-only companion never does). */
-const companionShiny = (save: ReturnType<typeof loadSave>, id: CompanionId | null) => id !== null && !isSpecialCompanion(id) && ownsShiny(save, id)
+/** Whether the companion picked may walk shiny (a shiny owned, or Pumpkaboo for a Gold supporter: `walksShiny`). */
+const companionShiny = (save: ReturnType<typeof loadSave>, id: CompanionId | null) => id !== null && walksShiny(save, id)
 
-/** The companion: any Pokémon the save can play (shiny if owned so), the gift-only ones it got first, or none. */
+/** The companion: any Pokémon the save can play (shiny if owned so), the gift-only ones it got first (Pumpkaboo shiny for Gold), or none. */
 const companionPicker = (root: HTMLElement, input: Input, back: Back): Screen => {
   const m = t().supporters
   const o = overlay(root, input, back)
@@ -402,7 +402,10 @@ const codeScreen = (root: HTMLElement, input: Input, redeemed: () => void, back:
 /** The final stage of a supporter's Pokémon (like the Trainer chip), shiny only if it has a shiny sprite; null for an API from before the Hall. */
 export const hallFace = (p: Companion | null) => {
   if (!p) return null
-  if (isSpecialCompanion(p.id)) return { dex: companionForm(p.id).dex, shiny: false }
+  if (isSpecialCompanion(p.id)) {
+    const dex = companionForm(p.id).dex
+    return { dex, shiny: p.shiny && hasShiny(dex) }
+  }
   const dex = PLAYABLE[p.id].line[PLAYABLE[p.id].line.length - 1]!.dex
   return { dex, shiny: p.shiny && hasShiny(dex) }
 }

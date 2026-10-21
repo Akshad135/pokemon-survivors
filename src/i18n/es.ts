@@ -538,7 +538,7 @@ export const es: Messages = {
       wallpaper: 'Fondo de pantalla de la Caja del PC.',
     },
     styles: {
-      frame: { classic: 'Clásico', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embajador(a)', supporter: 'Apoyo', pumpkin: 'Calabaza' },
+      frame: { classic: 'Clásico', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embajador(a)', supporter: 'Apoyo', pumpkin: 'Calabaza', spectral: 'Espectral' },
       background: { night: 'Noche estrellada', meadow: 'Ruta 1', forest: 'Bosque Verde', cave: 'Mt. Moon', snow: 'Monte Plateado', tower: 'Torre Lavanda', supporter: 'Cielo dorado', halloween: 'Noche de Brujas' },
       wallpaper: { classic: 'Clásico', forest: 'Hojas', cave: 'Piedritas', snow: 'Copos de nieve', tower: 'Fantasmitas', supporter: 'Estrellas doradas', haunted: 'Casa Embrujada' },
     },
@@ -584,9 +584,17 @@ export const es: Messages = {
     supporterBadge: (tier) => (tier === 'gold' ? 'Patrocinador(a) Oro · Noche de Brujas 2026' : 'Patrocinador(a) · Noche de Brujas 2026'),
     perk: 'Calabaza',
     perkTitle: (date) => `Apoya antes del ${date}: tu corazón se vuelve esta calabaza para siempre, y Pumpkaboo te acompaña`,
-    supportYes: '¡Gracias por tu apoyo! Tu insignia es una *calabaza* en el ranking, tu perfil y el Salón de la Fama, para siempre. Y *Pumpkaboo*, solo para patrocinadores, te acompaña dejando destellos de dulce.',
-    supportNo: (date) => `Quien *apoye* el juego hasta el ${date} gana esta *calabaza* en lugar del corazón, para siempre, y a *Pumpkaboo* como compañero, que deja un rastro de dulces brillantes.`,
+    supportYes: '¡Gracias por tu apoyo! Tu insignia es una *calabaza* en el ranking, tu perfil y el Salón de la Fama, para siempre. Y *Pumpkaboo*, solo para patrocinadores, te acompaña dejando destellos de dulce (*shiny* para Oro).',
+    supportNo: (date) => `Quien *apoye* el juego hasta el ${date} gana esta *calabaza* en lugar del corazón, para siempre, y a *Pumpkaboo* como compañero, que deja un rastro de dulces brillantes (*shiny* al llegar a Oro).`,
     support: 'Apoyar',
+    hunt: 'CACERÍA DE FANTASMAS',
+    huntCount: (n, total) => `${n}/${total} cazados`,
+    huntBlurb: (candies) => `Jefes de la noche toman el lugar de Onix y Snorlax, sorteados en cada partida. Cada uno vencido por primera vez da *${candies} dulces*.`,
+    huntReward: (title, frame) => `Véncelos a todos: título *${title}* y marco *${frame}*`,
+    huntDone: '¡Todos cazados! ¡Los premios esperan en Regalo!',
+    nightBoss: (name) => `¡Jefe de la noche: *${name}*!`,
+    hunted: (name, candies, n, total) => `¡*${name}* cazado! +${candies} dulces · ${n}/${total}`,
+    disguise: (name) => `¡El *Disguise* de ${name} se deshizo!`,
   },
 
   challenge: {
@@ -698,6 +706,7 @@ export const es: Messages = {
     discord: 'Por unirte a nuestro Discord ♥',
     halloween: 'Del frasco de dulces de la Noche de Brujas',
     halloweenSupport: 'Por apoyar en la Noche de Brujas ♥',
+    ghostHunt: 'Por vencer a todos los jefes de la Cacería de Fantasmas',
   },
 
   supporters: {
@@ -1469,7 +1478,7 @@ export const es: Messages = {
     noTitle: 'ninguno',
     titleTag: 'TÍTULO',
     equipped: 'EN USO',
-    giftTitles: { ambassador: 'Trajo 3 amigos al juego', supporter: 'Apoyó el proyecto con una donación', pumpkinKing: 'Llenó el frasco de dulces de la Noche de Brujas' },
+    giftTitles: { ambassador: 'Trajo 3 amigos al juego', supporter: 'Apoyó el proyecto con una donación', pumpkinKing: 'Llenó el frasco de dulces de la Noche de Brujas', exorcist: 'Venció a todos los jefes de la Cacería de Fantasmas' },
     newMedals: 'Nuevas medallas',
     names: {
       firstRun: 'Primeros pasos',
@@ -1555,6 +1564,7 @@ export const es: Messages = {
       ambassador: 'Embajador(a)',
       supporter: 'Patrocinador(a)',
       pumpkinKing: 'Rey Calabaza',
+      exorcist: 'Exorcista',
     },
     goals: {
       runs: (n) => (n === '1' ? 'Juega una partida' : `Juega ${n} partidas`),

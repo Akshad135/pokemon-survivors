@@ -7,7 +7,7 @@ import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficul
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { parseClaimedGifts } from './gifts'
-import { NO_HALLOWEEN, parseHalloween, type HalloweenSave } from './halloween'
+import { NO_HALLOWEEN, parseHalloween, recordHunt, type HalloweenSave } from './halloween'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
 import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
@@ -356,13 +356,14 @@ const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
 
 /**
  * Records a run (or what changed since `before`, the snapshot already recorded
- * for it) into the missions, lifetime records and clears, and pays the rewards. `save`
+ * for it) into the missions, lifetime records, clears and the Caça aos Fantasmas, and pays the rewards. `save`
  * already has the run's Pokédex log; `eggRoom` is how many reward eggs the run
  * can still take (`EGGS.perRun` minus the eggs it found or got already).
  */
 export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date, eggRoom: number = EGGS.perRun) => {
   const m = recordMissions(save.missions, summary, before, date)
-  return settle({ ...save, clears: addClear(save.clears, summary) }, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
+  const ticked = { ...save, clears: addClear(save.clears, summary), halloween: recordHunt(save.halloween, summary.nightBosses) }
+  return settle(ticked, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
 }
 
 /** Records a hatched egg (`save` already has it hatched) into the missions and records, and pays the rewards. */

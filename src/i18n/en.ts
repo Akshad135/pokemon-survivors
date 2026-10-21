@@ -538,7 +538,7 @@ export const en: Messages = {
       wallpaper: 'Wallpaper of the PC Box.',
     },
     styles: {
-      frame: { classic: 'Classic', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Ambassador', supporter: 'Supporter', pumpkin: 'Pumpkin' },
+      frame: { classic: 'Classic', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Ambassador', supporter: 'Supporter', pumpkin: 'Pumpkin', spectral: 'Spectral' },
       background: { night: 'Starry night', meadow: 'Route 1', forest: 'Viridian Forest', cave: 'Mt. Moon', snow: 'Mt. Silver', tower: 'Lavender Tower', supporter: 'Golden sky', halloween: 'Halloween Night' },
       wallpaper: { classic: 'Classic', forest: 'Leaves', cave: 'Pebbles', snow: 'Snowflakes', tower: 'Little ghosts', supporter: 'Golden stars', haunted: 'Haunted House' },
     },
@@ -584,9 +584,17 @@ export const en: Messages = {
     supporterBadge: (tier) => (tier === 'gold' ? 'Gold Supporter · Halloween Night 2026' : 'Supporter · Halloween Night 2026'),
     perk: 'Pumpkin',
     perkTitle: (date) => `Support by ${date}: your heart becomes this jack-o'-lantern forever, and Pumpkaboo walks with you`,
-    supportYes: 'Thanks for your support! Your badge is a *jack-o\'-lantern* on the ranking, your profile and the Hall of Fame, forever. And *Pumpkaboo*, for supporters only, walks with you leaving candy sparkles.',
-    supportNo: (date) => `*Support* the game by ${date} to get this *jack-o'-lantern* in place of your heart, forever, and *Pumpkaboo* as a companion, leaving a trail of sparkling candy.`,
+    supportYes: 'Thanks for your support! Your badge is a *jack-o\'-lantern* on the ranking, your profile and the Hall of Fame, forever. And *Pumpkaboo*, for supporters only, walks with you leaving candy sparkles (*shiny* for Gold).',
+    supportNo: (date) => `*Support* the game by ${date} to get this *jack-o'-lantern* in place of your heart, forever, and *Pumpkaboo* as a companion, leaving a trail of sparkling candy (*shiny* at Gold).`,
     support: 'Support',
+    hunt: 'GHOST HUNT',
+    huntCount: (n, total) => `${n}/${total} hunted`,
+    huntBlurb: (candies) => `Night bosses take Onix's and Snorlax's places, drawn each run. Each one's first defeat brings *${candies} candies*.`,
+    huntReward: (title, frame) => `Beat them all: the *${title}* title and the *${frame}* frame`,
+    huntDone: 'All hunted! The rewards wait in the Gift box!',
+    nightBoss: (name) => `Night boss: *${name}*!`,
+    hunted: (name, candies, n, total) => `*${name}* hunted! +${candies} candies · ${n}/${total}`,
+    disguise: (name) => `${name}'s *Disguise* was busted!`,
   },
 
   challenge: {
@@ -698,6 +706,7 @@ export const en: Messages = {
     discord: 'For joining our Discord ♥',
     halloween: 'From the Halloween Night candy jar',
     halloweenSupport: 'For supporting on Halloween Night ♥',
+    ghostHunt: 'For beating every Ghost Hunt boss',
   },
 
   supporters: {
@@ -1468,7 +1477,7 @@ export const en: Messages = {
     noTitle: 'none',
     titleTag: 'TITLE',
     equipped: 'SHOWN',
-    giftTitles: { ambassador: 'Brought 3 friends to the game', supporter: 'Supported the project with a donation', pumpkinKing: 'Filled the Halloween Night candy jar' },
+    giftTitles: { ambassador: 'Brought 3 friends to the game', supporter: 'Supported the project with a donation', pumpkinKing: 'Filled the Halloween Night candy jar', exorcist: 'Beat every Ghost Hunt boss' },
     newMedals: 'New medals',
     names: {
       firstRun: 'First steps',
@@ -1554,6 +1563,7 @@ export const en: Messages = {
       ambassador: 'Ambassador',
       supporter: 'Supporter',
       pumpkinKing: 'Pumpkin King',
+      exorcist: 'Exorcist',
     },
     goals: {
       runs: (n) => (n === '1' ? 'Play a run' : `Play ${n} runs`),

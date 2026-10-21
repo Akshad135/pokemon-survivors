@@ -46,7 +46,7 @@ export type GiftKind = GiftContent['kind']
  * brought, a donation (`game/supporters.ts`), a present from the game's
  * admin (`game/admin.ts`, from their handle), joining the community
  * Discord with the account linked (`DISCORD_GIFT`), the Noite das Bruxas
- * candy jar, or supporting the game on the Noite das Bruxas.
+ * candy jar and Caça aos Fantasmas, or supporting the game on the Noite das Bruxas.
  */
 export type GiftReason =
   | { kind: 'welcome'; from: string | null }
@@ -58,6 +58,8 @@ export type GiftReason =
   | { kind: 'halloween' }
   /** Being a supporter on the Noite das Bruxas (`game/halloween.ts`): made by the game too. */
   | { kind: 'halloweenSupport' }
+  /** The Noite das Bruxas Caça aos Fantasmas, every night boss beaten (`game/halloween.ts`): made by the game too. */
+  | { kind: 'ghostHunt' }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
 
@@ -125,6 +127,7 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (v.kind === 'discord') return { kind: 'discord' }
   if (v.kind === 'halloween') return { kind: 'halloween' }
   if (v.kind === 'halloweenSupport') return { kind: 'halloweenSupport' }
+  if (v.kind === 'ghostHunt') return { kind: 'ghostHunt' }
   return null
 }
 
