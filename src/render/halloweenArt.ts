@@ -1,4 +1,4 @@
-import { blitCentered, context2d, createCanvas, ellipse, onCanvasReset, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, context2d, createCanvas, ellipse, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import type { SupporterTier } from '../game/supporters'
 import type { Game } from '../game/types'
@@ -101,8 +101,8 @@ export const drawTreat = (ctx: Ctx, id: number, x: number, y: number) => {
 
 /** The jack-o'-lantern among the breakables, on its warm glow; the candle flickers now and then. `x` carries the hit wobble. */
 export const drawJack = (ctx: Ctx, x: number, y: number, id: number, t: number) => {
-  blitCentered(ctx, ellipse(9, 3, 'rgba(255,150,40,0.18)'), Math.round(x), Math.round(y))
-  blitCentered(ctx, ellipse(6, 2, 'rgba(40,16,8,0.35)'), Math.round(x), Math.round(y))
+  blitEllipse(ctx, 9, 3, 'rgba(255,150,40,0.18)', Math.round(x), Math.round(y))
+  blitEllipse(ctx, 6, 2, 'rgba(40,16,8,0.35)', Math.round(x), Math.round(y))
   const [lit, low] = HALLOWEEN_ART.jack()
   const s = (t * 3 + id * 0.61) % 4 < 0.25 ? low : lit
   ctx.drawImage(s, Math.round(x - s.width / 2), Math.round(y - s.height + 2))

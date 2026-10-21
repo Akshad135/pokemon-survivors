@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, ring, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, blitRotated, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import type { BuffId } from '../data/consumables'
 import { MAP_EVENTS, type MapEvent, type MapEventKind, type MapEventOf } from '../game/mapEvents'
@@ -73,7 +73,7 @@ const progressArc = (ctx: Ctx, x: number, y: number, r: number, k: number, color
   }
 }
 
-const groundShadow = (ctx: Ctx, x: number, y: number, rx: number) => blitCentered(ctx, ellipse(rx, Math.max(1, Math.round(rx * 0.35)), 'rgba(16,40,16,0.3)'), x, y)
+const groundShadow = (ctx: Ctx, x: number, y: number, rx: number) => blitEllipse(ctx, rx, Math.max(1, Math.round(rx * 0.35)), 'rgba(16,40,16,0.3)', x, y)
 
 const drawAltar = (ctx: Ctx, ev: MapEventOf<'altar'>, t: number) => {
   const { pedestal } = ART()
@@ -82,8 +82,8 @@ const drawAltar = (ctx: Ctx, ev: MapEventOf<'altar'>, t: number) => {
   ctx.drawImage(pedestal, Math.round(ev.x - pedestal.width / 2), Math.round(ev.y - pedestal.height + 1))
   const top = ev.y - pedestal.height - 2
   const pulse = Math.sin(t * 4 + ev.id) > 0
-  blitCentered(ctx, ellipse(4, 4, color), ev.x, top)
-  blitCentered(ctx, ellipse(2, 2, pulse ? '#ffffff' : '#f8f0d0'), ev.x - 1, top - 1)
+  blitEllipse(ctx, 4, 4, color, ev.x, top)
+  blitEllipse(ctx, 2, 2, pulse ? '#ffffff' : '#f8f0d0', ev.x - 1, top - 1)
   // The buff on offer floats above, so you can decide from afar.
   const icon = consumableSprite(ev.state.buff)
   blitCentered(ctx, icon, ev.x, top - 12 + Math.round(Math.sin(t * 3 + ev.id) * 1.5))
@@ -94,14 +94,14 @@ const drawAltar = (ctx: Ctx, ev: MapEventOf<'altar'>, t: number) => {
 const drawFountain = (ctx: Ctx, ev: MapEventOf<'fountain'>, t: number) => {
   const r = FOUNTAIN.radius
   const left = ev.state.charges / FOUNTAIN.charges
-  blitCentered(ctx, ellipse(r, Math.round(r * 0.55), '#383048'), ev.x, ev.y)
-  blitCentered(ctx, ellipse(r - 1, Math.round(r * 0.55) - 1, '#9890a8'), ev.x, ev.y - 1)
-  blitCentered(ctx, ellipse(r - 4, Math.round(r * 0.55) - 3, '#2a3050'), ev.x, ev.y)
+  blitEllipse(ctx, r, Math.round(r * 0.55), '#383048', ev.x, ev.y)
+  blitEllipse(ctx, r - 1, Math.round(r * 0.55) - 1, '#9890a8', ev.x, ev.y - 1)
+  blitEllipse(ctx, r - 4, Math.round(r * 0.55) - 3, '#2a3050', ev.x, ev.y)
   // The water shrinks with every sip taken.
   if (left > 0) {
     const wr = Math.max(2, Math.round((r - 5) * (0.35 + 0.65 * left)))
-    blitCentered(ctx, ellipse(wr, Math.max(1, Math.round(wr * 0.5)), '#3880d8'), ev.x, ev.y)
-    blitCentered(ctx, ellipse(Math.max(1, wr - 3), Math.max(1, Math.round(wr * 0.3)), '#78c0f8'), ev.x - 1, ev.y - 1)
+    blitEllipse(ctx, wr, Math.max(1, Math.round(wr * 0.5)), '#3880d8', ev.x, ev.y)
+    blitEllipse(ctx, Math.max(1, wr - 3), Math.max(1, Math.round(wr * 0.3)), '#78c0f8', ev.x - 1, ev.y - 1)
     const sx = Math.round(ev.x + Math.sin(t * 2.5 + ev.id) * (wr - 2))
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(sx, Math.round(ev.y - 1), 2, 1)
@@ -142,8 +142,8 @@ const SPIKE_SPOTS = [
 const drawSpikes = (ctx: Ctx, ev: MapEventOf<'spikes'>, t: number) => {
   const r = SPIKES.radius
   const phase = ev.state.phase
-  blitCentered(ctx, ellipse(r, Math.round(r * 0.5), '#383040'), ev.x, ev.y)
-  blitCentered(ctx, ellipse(r - 1, Math.round(r * 0.5) - 1, '#686078'), ev.x, ev.y)
+  blitEllipse(ctx, r, Math.round(r * 0.5), '#383040', ev.x, ev.y)
+  blitEllipse(ctx, r - 1, Math.round(r * 0.5) - 1, '#686078', ev.x, ev.y)
   if (phase === 'warn' && Math.floor(t * 12) % 2 === 0) dashedRing(ctx, ev.x, ev.y, r + 2, 0, ['#f04030'], 0.9, 0.5)
   for (const [ox, oy] of SPIKE_SPOTS) {
     const x = Math.round(ev.x + ox)
@@ -169,9 +169,9 @@ const drawBomb = (ctx: Ctx, ev: MapEventOf<'bomb'>, t: number) => {
   const lit = fuse >= 0
   if (lit) {
     const k = Math.min(1, fuse / BOMB.fuse)
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(BOMB.radius * k)), Math.max(1, Math.round(BOMB.radius * k)), 'rgba(240,64,48,0.22)'), ev.x, ev.y)
+    blitEllipse(ctx, Math.max(1, Math.round(BOMB.radius * k)), Math.max(1, Math.round(BOMB.radius * k)), 'rgba(240,64,48,0.22)', ev.x, ev.y)
     // The warning ring blinks faster as the fuse burns down.
-    if (Math.floor(fuse * (6 + k * 20)) % 2 === 0) blitCentered(ctx, ring(BOMB.radius, 1, '#f04030'), ev.x, ev.y)
+    if (Math.floor(fuse * (6 + k * 20)) % 2 === 0) blitRing(ctx, BOMB.radius, 1, '#f04030', ev.x, ev.y)
   } else {
     dashedRing(ctx, ev.x, ev.y, BOMB.radius, t, ['#e05040'], 0.15)
   }
@@ -309,8 +309,8 @@ export const drawMapEventMarkers = (ctx: Ctx, g: Game, t: number) => {
     const icon = ev.kind === 'altar' ? consumableSprite(ev.state.buff) : marker.icon()
     const ix = cx + dx * k - Math.cos(angle) * 7
     const iy = cy + dy * k - Math.sin(angle) * 7
-    blitCentered(ctx, ellipse(8, 8, 'rgba(16,24,48,0.7)'), ix, iy)
-    blitCentered(ctx, ring(8, 1, '#f8f8f8'), ix, iy)
+    blitEllipse(ctx, 8, 8, 'rgba(16,24,48,0.7)', ix, iy)
+    blitRing(ctx, 8, 1, '#f8f8f8', ix, iy)
     blitCentered(ctx, icon, ix, iy)
     blitRotated(ctx, ART().arrows[marker.arrow]!, ax, ay, angle)
   }

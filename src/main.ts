@@ -99,6 +99,7 @@ import { MOVES } from './game/moves'
 import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render, warmScenery } from './render/draw'
+import { createGovernor, detail, observeFrame } from './render/quality'
 import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadedCount, loadSpecies, overlayStats, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies, sweepSprites, type Dex } from './render/sprites'
 import { castNeeds, runSprites, type SpriteNeed } from './render/spriteNeeds'
@@ -1487,8 +1488,18 @@ window.addEventListener('beforeunload', (e) => {
 let last = performance.now()
 /** The simulation's tick accumulator, snapped to the display's cadence (`engine/pacing.ts`). */
 const pace = pacer()
+/** Watches how the run's frames hold up and turns lean drawing on and off (`render/quality.ts`). */
+const governor = createGovernor((navigator as Navigator & { deviceMemory?: number }).deviceMemory)
+detail.lean = governor.lean
+/** `ps.quality()` pins the governor's choice for screenshots and tests. */
+let qualityPin: 'auto' | 'lean' | 'full' = 'auto'
+/** When the last frame that advanced the run was drawn (NaN after one that didn't). */
+let lastDrawn = NaN
+/** Seconds of menu time not drawn yet: the menus' meadow and screens draw at most about 60 times a second. */
+let menuAcc = 0
 
 const frame = (now: number) => {
+  const started = performance.now()
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   const t = now / 1000
@@ -1541,11 +1552,24 @@ const frame = (now: number) => {
         if (stick && g.phase === 'playing') drawJoystick(ctx, stick, cssScale)
         r.hud.update(g)
       }
+      // Only frames that moved the run tell how the device keeps up.
+      if (steps > 0) {
+        const lean = observeFrame(governor, performance.now() - started, now - lastDrawn)
+        detail.lean = qualityPin === 'auto' ? lean : qualityPin === 'lean'
+        lastDrawn = now
+      } else lastDrawn = NaN
     }
   } else {
+    // On 90 and 120 Hz screens the menus draw at most about 60 times a second, like a run: half the work behind a menu.
+    menuAcc += dt
+  }
+  const menuFrame = menuAcc >= STEP * 0.6
+  if (!run && menuFrame) {
+    const mdt = Math.min(0.1, menuAcc)
+    menuAcc = 0
     // Attract mode: wild Pokémon stroll through the meadow behind the menus (haunted on the Noite das Bruxas).
     scene.haunted = halloweenToday()
-    stepTitleScene(scene, dt, view.w, view.h)
+    stepTitleScene(scene, mdt, view.w, view.h)
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
     ctx.fillRect(0, 0, view.w, view.h)
@@ -1554,9 +1578,9 @@ const frame = (now: number) => {
     for (const dex of scene.cries.splice(0)) playCry(cryUrl(dex), 0.3)
     // Menu news (what a quit run completed) shares the run's queue. Banners (Mystery Gifts) wait
     // for the bare title: over the starter select or a dialog they'd cover what the player is reading.
-    tickToasts(ui, dt, false, !ui.querySelector(':scope > .title-home:not(.hidden)') || ui.querySelector(':scope > .screen.dim:not(.hidden)') !== null)
+    tickToasts(ui, mdt, false, !ui.querySelector(':scope > .title-home:not(.hidden)') || ui.querySelector(':scope > .screen.dim:not(.hidden)') !== null)
   }
-  screen?.tick?.(t)
+  if (run || menuFrame) screen?.tick?.(t)
   playTheme(themeFor(run))
   // Ducked under the pause menu, but at full level while the player tunes the volume.
   duckMusic(run?.game.phase === 'paused' && !isSettingsOpen())
@@ -1932,6 +1956,12 @@ if (import.meta.env.DEV) {
       showTitle,
       showMenu,
       theme: currentTheme,
+      /** `ps.quality('lean')` pins lean drawing (`'full'` full detail, `'auto'` back to the governor); returns the governor's state. */
+      quality: (pin?: 'auto' | 'lean' | 'full') => {
+        if (pin) qualityPin = pin
+        detail.lean = qualityPin === 'auto' ? governor.lean : qualityPin === 'lean'
+        return { pin: qualityPin, drawing: detail.lean ? 'lean' : 'full', governor: { ...governor } }
+      },
       spawn: devSpawn,
       alpha: devAlpha,
       mega: devMega,

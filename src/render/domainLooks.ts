@@ -1,4 +1,4 @@
-import { blitCentered, ellipse, ring } from '../engine/pixelart'
+import { blitEllipse, blitRing } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { PHASE_SHIFT } from '../data/bosses'
@@ -25,19 +25,19 @@ type Ctx = CanvasRenderingContext2D
 
 /** Ground layer of a whirlpool: its reach blinks while it forms, then spiral arms turn in toward a dark eye. */
 export const drawVortexGround = (ctx: Ctx, h: Hazard, t: number) => {
-  if (h.kind !== 'zone') return blitCentered(ctx, ellipse(Math.round(h.r), Math.max(1, Math.round(h.r * 0.4)), 'rgba(16,24,48,0.3)'), h.x, h.y)
+  if (h.kind !== 'zone') return blitEllipse(ctx, Math.round(h.r), Math.max(1, Math.round(h.r * 0.4)), 'rgba(16,24,48,0.3)', h.x, h.y)
   const [line, fill] = HAZARD_COLORS[h.visual]
   const reach = Math.round(h.pullReach)
   if (h.age < h.armAt) {
-    if (Math.floor(h.age * 10) % 2 === 0) blitCentered(ctx, ring(reach, 1, line), h.x, h.y)
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(h.r * (h.age / h.armAt))), Math.max(1, Math.round(h.r * 0.8 * (h.age / h.armAt))), fill), h.x, h.y)
+    if (Math.floor(h.age * 10) % 2 === 0) blitRing(ctx, reach, 1, line, h.x, h.y)
+    blitEllipse(ctx, Math.max(1, Math.round(h.r * (h.age / h.armAt))), Math.max(1, Math.round(h.r * 0.8 * (h.age / h.armAt))), fill, h.x, h.y)
     return
   }
   const fade = Math.min(1, (h.ttl - h.age) / 0.4, (h.age - h.armAt) / 0.3)
   ctx.globalAlpha = Math.max(0, fade)
   const spin = t * (h.pull > 0 ? 3 : -3)
   // A small one is a patch of churning water; a huge one (Hurricane) is wind rings closing in on its eye.
-  if (reach <= 90) blitCentered(ctx, ellipse(reach, Math.round(reach * 0.8), fill), h.x, h.y)
+  if (reach <= 90) blitEllipse(ctx, reach, Math.round(reach * 0.8), fill, h.x, h.y)
   else for (let i = 1; i <= 3; i++) dashedRing(ctx, h.x, h.y, Math.round(reach * (((i / 3 - t * 0.25) % 1 + 1) % 1)) + h.r, spin * 0.3 + i, ['#ffffff', line], 0.35, 0.8)
   const steps = Math.min(64, Math.max(10, Math.round(reach / 5)))
   for (let arm = 0; arm < (reach > 90 ? 5 : 3); arm++) {
@@ -49,7 +49,7 @@ export const drawVortexGround = (ctx: Ctx, h: Hazard, t: number) => {
       ctx.fillRect(Math.round(h.x + Math.cos(a) * r), Math.round(h.y + Math.sin(a) * r * 0.8), 2, 1)
     }
   }
-  blitCentered(ctx, ellipse(Math.round(h.r), Math.round(h.r * 0.7), 'rgba(8,16,40,0.7)'), h.x, h.y)
+  blitEllipse(ctx, Math.round(h.r), Math.round(h.r * 0.7), 'rgba(8,16,40,0.7)', h.x, h.y)
   ctx.globalAlpha = 1
 }
 
@@ -61,7 +61,7 @@ export const drawVortexAir = (ctx: Ctx, h: Hazard, t: number) => {
   for (let i = 0; i < 5; i++) {
     const sway = Math.round(Math.sin(t * 14 + i * 1.1 + h.id) * (1 + i * 0.6))
     const rx = 2 + i
-    blitCentered(ctx, ellipse(rx, Math.max(1, Math.round(rx * 0.35)), i % 2 === 0 ? '#f0f8ff' : '#a8c8f0'), x + sway, y - 2 - i * 3)
+    blitEllipse(ctx, rx, Math.max(1, Math.round(rx * 0.35)), i % 2 === 0 ? '#f0f8ff' : '#a8c8f0', x + sway, y - 2 - i * 3)
   }
 }
 
@@ -141,7 +141,7 @@ const drawRebirth = (ctx: Ctx, e: Enemy, t: number) => {
   if (k > 0.72) {
     const q = (k - 0.72) / 0.28
     const colors = ['#f84848', '#f8e048', '#68d858', '#48a8f8', '#b058e0']
-    colors.forEach((c, i) => blitCentered(ctx, ring(Math.round(10 + q * 60 + i * 3), 1, c), x, y - 16))
+    colors.forEach((c, i) => blitRing(ctx, Math.round(10 + q * 60 + i * 3), 1, c, x, y - 16))
   }
   ctx.globalAlpha = 1
 }
@@ -196,11 +196,11 @@ export const drawDomainAir = (ctx: Ctx, g: Game, t: number) => {
   if (stop && stop.wait <= 0) {
     // Held shots blink a cold rim: they'll fly on when time does.
     const blink = Math.floor(t * 6) % 2 === 0
-    for (const a of g.attacks) if (a.age >= 0) blitCentered(ctx, ring(5, 1, blink ? '#a8f0f8' : '#ffffff'), a.x, a.y - 4)
+    for (const a of g.attacks) if (a.age >= 0) blitRing(ctx, 5, 1, blink ? '#a8f0f8' : '#ffffff', a.x, a.y - 4)
   }
   const skip = timeSkipOf(here.d)
   if (skip?.skip === 'stop' && !skip.warning) {
-    for (const e of g.enemies) if (e.dying < 0 && e.status.stun > 0) blitCentered(ctx, ring(Math.round(e.radius + 4), 1, '#a8f0f8'), e.x, e.y - e.radius)
+    for (const e of g.enemies) if (e.dying < 0 && e.status.stun > 0) blitRing(ctx, Math.round(e.radius + 4), 1, '#a8f0f8', e.x, e.y - e.radius)
   }
 }
 
@@ -214,7 +214,7 @@ const closingRings = (ctx: Ctx, x: number, y: number, k: number, size: number, c
   for (let i = 0; i < 3; i++) {
     const r = Math.round(8 + (1 - ((k + i / 3) % 1)) * size)
     ctx.globalAlpha = 0.6
-    blitCentered(ctx, ring(r, 1, color), x, y)
+    blitRing(ctx, r, 1, color, x, y)
   }
   ctx.globalAlpha = 1
 }

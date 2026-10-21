@@ -97,6 +97,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Mais leve no celular', en: 'Lighter on phones', es: 'Más liviano en el celular' },
+        notes: [
+          {
+            pt: 'O jogo agora gasta bem menos memória numa partida longa (a do Dialga, antes de abrir a fenda, chegava a encher a memória do celular em segundos) e desenha menos coisas fora da tela, como o arco-íris do Water Pledge. Em celulares que engasgam, ele passa sozinho a desenhar menos partículas, sombras, números de dano e golpes lendários mais leves até a partida voltar a fluir.',
+            en: 'The game now uses far less memory over a long run (Dialga\'s, before its rift opens, could fill a phone\'s memory in seconds) and draws less off screen, like Water Pledge\'s rainbow. On phones that stutter, it switches on its own to fewer particles, shadows and damage numbers and lighter legendary moves until the run flows again.',
+            es: 'El juego ahora usa mucha menos memoria en una partida larga (la de Dialga, antes de abrir su grieta, podía llenar la memoria del celular en segundos) y dibuja menos fuera de la pantalla, como el arcoíris de Water Pledge. En celulares que se traban, pasa solo a dibujar menos partículas, sombras y números de daño y movimientos legendarios más livianos hasta que la partida vuelve a fluir.',
+          },
+        ],
+      },
     ],
   },
   {

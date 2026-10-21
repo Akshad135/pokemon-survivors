@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, ring } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, blitRotated } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import { TAU } from '../engine/math'
 import { BALL_LOB, BRAVE, FALL_RISE, RESORT_WINDUP } from '../game/eggMove2Rules'
@@ -46,7 +46,7 @@ const line = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: numbe
 /** A filled pixel disc (`squash` flattens it). */
 const disc = (ctx: Ctx, x: number, y: number, r: number, color: string, squash = 1) => {
   const ri = Math.max(1, Math.round(r))
-  blitCentered(ctx, ellipse(ri, Math.max(1, Math.round(ri * squash)), color), x, y)
+  blitEllipse(ctx, ri, Math.max(1, Math.round(ri * squash)), color, x, y)
 }
 
 /**
@@ -227,7 +227,7 @@ export const drawEgg2Attack = (ctx: Ctx, a: Attack, t: number) => {
       const br = Math.max(2, Math.round(r) + wob)
       ctx.globalAlpha = fadeOut(a, 0.15)
       disc(ctx, a.x, a.y, br, 'rgba(120,184,248,0.35)')
-      blitCentered(ctx, ring(br, 1, '#4890e8'), a.x, a.y)
+      blitRing(ctx, br, 1, '#4890e8', a.x, a.y)
       px(ctx, a.x - Math.ceil(br / 2), a.y - Math.ceil(br / 2), '#ffffff', br > 3 ? 2 : 1, 1)
       ctx.globalAlpha = 1
       return
@@ -295,8 +295,8 @@ const drawWeatherBall = (ctx: Ctx, a: Attack, r: number) => {
   const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
   ctx.globalAlpha = Math.max(0, 1 - e)
   if (e < 0.25) disc(ctx, a.x, a.y, r * (0.5 + e * 1.5), c[2])
-  blitCentered(ctx, ring(Math.max(2, Math.round(r * (0.5 + e * 0.6))), 2, c[1]), a.x, a.y)
-  blitCentered(ctx, ring(Math.max(1, Math.round(r * (0.3 + e * 0.5))), 1, c[2]), a.x, a.y)
+  blitRing(ctx, Math.max(2, Math.round(r * (0.5 + e * 0.6))), 2, c[1], a.x, a.y)
+  blitRing(ctx, Math.max(1, Math.round(r * (0.3 + e * 0.5))), 1, c[2], a.x, a.y)
   // Each weather bursts its own way: flames up, splashes, chips of rock, flakes.
   for (let i = 0; i < 10; i++) {
     const angle = (i / 10) * TAU + a.id
@@ -374,7 +374,7 @@ const drawZap = (ctx: Ctx, a: Attack, t: number, r: number) => {
   disc(ctx, a.x, a.y, r, '#f8d030')
   disc(ctx, a.x, a.y, r * 0.72, '#fff8a0')
   disc(ctx, a.x - r * 0.15, a.y - r * 0.15, r * 0.4, '#ffffff')
-  blitCentered(ctx, ring(Math.round(r), 1, '#a86808'), a.x, a.y)
+  blitRing(ctx, Math.round(r), 1, '#a86808', a.x, a.y)
   const frame = Math.floor(t * 18)
   for (let i = 0; i < 5; i++) {
     const angle = hash2(a.id + frame, i) * TAU
@@ -406,7 +406,7 @@ const drawCross = (ctx: Ctx, a: Attack, r: number) => {
     line(ctx, x0, y0, x1, y1, crit ? 3 : 2, colors[1])
     line(ctx, x0 + Math.cos(angle) * 2, y0 + Math.sin(angle) * 2, x1, y1, 1, colors[2])
   }
-  if (k >= 1 && a.age < 0.16) blitCentered(ctx, ring(Math.round(4 + a.age * 40), 1, crit ? '#fff0a0' : '#f0c8ff'), a.x, a.y)
+  if (k >= 1 && a.age < 0.16) blitRing(ctx, Math.round(4 + a.age * 40), 1, crit ? '#fff0a0' : '#f0c8ff', a.x, a.y)
   if (crit && a.age > 0.05) rays(ctx, a.x, a.y, r + 8, 10, ['#ffffff', '#f8e070'], a.age * 4, 6)
   // Drops of venom flung off the blades.
   for (let i = 0; i < 5; i++) {
@@ -457,7 +457,7 @@ const drawWildCharge = (ctx: Ctx, a: Attack, t: number, r: number) => {
     const angle = hash2(frame, i) * TAU
     spark(ctx, a.x + Math.cos(angle) * r * 0.4, a.y + Math.sin(angle) * r * 0.5, angle, r * 0.9 + 3, frame * 5 + i, ['#f8d030', '#ffffff'])
   }
-  if (frame % 3 === 0) blitCentered(ctx, ring(Math.round(r + 3), 1, '#fff8a0'), a.x, a.y)
+  if (frame % 3 === 0) blitRing(ctx, Math.round(r + 3), 1, '#fff8a0', a.x, a.y)
   ctx.globalAlpha = 1
 }
 
@@ -535,11 +535,11 @@ const drawLastResort = (ctx: Ctx, a: Attack, r: number) => {
   const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
   ctx.globalAlpha = Math.max(0, 1 - e)
   if (full) {
-    blitCentered(ctx, ring(Math.max(2, Math.round(r * (0.4 + e * 0.9))), 3, '#f8d030'), a.x, a.y)
-    blitCentered(ctx, ring(Math.max(1, Math.round(r * (0.3 + e * 0.7))), 1, '#ffffff'), a.x, a.y)
+    blitRing(ctx, Math.max(2, Math.round(r * (0.4 + e * 0.9))), 3, '#f8d030', a.x, a.y)
+    blitRing(ctx, Math.max(1, Math.round(r * (0.3 + e * 0.7))), 1, '#ffffff', a.x, a.y)
     rays(ctx, a.x, a.y, r * (0.7 + e * 0.5), 12, ['#ffffff', '#f8d030'], e, 4)
   } else {
-    blitCentered(ctx, ring(Math.max(2, Math.round(r * (0.5 + e * 0.5))), 1, '#f8e070'), a.x, a.y)
+    blitRing(ctx, Math.max(2, Math.round(r * (0.5 + e * 0.5))), 1, '#f8e070', a.x, a.y)
   }
   // Little stars scattering from the impact.
   const count = full ? 8 : 3
