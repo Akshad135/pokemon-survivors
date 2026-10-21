@@ -1,5 +1,6 @@
 import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type GiftTitleId, type TitleId } from '../data/achievements'
+import { parseAttempt, type Attempt } from './attempt'
 import { NO_ACHIEVEMENTS, parseAchievements, parseGiftTitles, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
 import { addClear, mergeClears, parseClears, pastClears, type Clears } from './clears'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
@@ -152,6 +153,8 @@ export type Save = {
   halloween: HalloweenSave
   /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
   legends: Captures
+  /** The last official Desafio do dia attempt finished (`game/attempt.ts`): synced, so every device of the account shows practice after it. */
+  attempt: Attempt | null
 }
 
 /** The branch each branching family took in its latest run that got there. */
@@ -195,6 +198,7 @@ export const EMPTY_SAVE: Save = {
   clears: {},
   halloween: NO_HALLOWEEN,
   legends: NO_CAPTURES,
+  attempt: null,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -259,6 +263,7 @@ export const parseSaveData = (json: unknown): Save => {
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
     halloween: parseHalloween(data.halloween),
     legends: parseCaptures(data.legends),
+    attempt: parseAttempt(data.attempt),
   }
 }
 

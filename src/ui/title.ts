@@ -1,4 +1,4 @@
-import { accountState, accountsEnabled, giftInbox, onAccountChange, onInbox, type AccountState } from '../account'
+import { accountState, accountsEnabled, giftInbox, onAccountChange, onInbox, onSaveSynced, type AccountState } from '../account'
 import { track } from '../analytics'
 import { playSfx } from '../engine/audio'
 import { ACTIONS } from '../engine/bindings'
@@ -581,7 +581,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
 
   const prompt = h('p', { class: 'press-start blink' }, h('span', { class: 'keys-only' }, m.pressKeys), h('span', { class: 'touch-only' }, m.pressTouch))
   // The top bar waits for the lobby: the intro is just the logo and "press start".
-  const bar = h('span', { class: 'hidden' })
+  let bar: HTMLElement = h('span', { class: 'hidden' })
   const intro = shellBody(h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), logo, prompt)
   // The Noite das Bruxas dresses the lobby in orange and purple (`style.css`).
   const el = h('div', { class: halloweenToday() ? 'screen shell title-home haunted' : 'screen shell title-home' }, bar, intro)
@@ -669,23 +669,25 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     const chip = trainerChip(input, { onOpen: () => (track('lobby_press', { entry: 'trainer' }), openOver(actions.trainer)) })
     closeChip = chip.dispose
     navigable(chip.el, 'trainer')
-    bar.replaceWith(
-      topBar({
-        left: chip.el,
-        right: [
-          walletChip(save.wallet),
-          ...(landscape ? [navigable(discordButton(press('discord')), 'discord'), ...SOCIAL_IDS.map((id) => navigable(socialButton(id, press(id)), id))] : []),
-          navigable(newsButton(press('news')), 'news'),
-          navigable(helpButton(press('help')), 'help'),
-          navigable(gearButton(press('settings')), 'settings'),
-        ],
-      }),
-    )
+    const nextBar = topBar({
+      left: chip.el,
+      right: [
+        walletChip(save.wallet),
+        ...(landscape ? [navigable(discordButton(press('discord')), 'discord'), ...SOCIAL_IDS.map((id) => navigable(socialButton(id, press(id)), id))] : []),
+        navigable(newsButton(press('news')), 'news'),
+        navigable(helpButton(press('help')), 'help'),
+        navigable(gearButton(press('settings')), 'settings'),
+      ],
+    })
+    bar.replaceWith(nextBar)
+    bar = nextBar
 
     const outbreak = outbreakCard()
+    const was = stage?.partner
     stage = partnerStage(press('play'))
     stage.el.append(pressable(giftButton(), 'gifts'))
-    actions.meadow.meet(stage.partner)
+    // Rebuilt with the same partner (`refresh`), a walk it's taking goes on.
+    if (was?.dex !== stage.partner.dex || was.shiny !== stage.partner.shiny) actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
     const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), track('lobby_press', { entry: 'hall' }), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
     const side = h(
@@ -725,8 +727,9 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       pressable(challengeCard(), 'challenge'),
       pressable(missionsCard(), 'missions'),
     )
-    lobby = h('div', { class: 'lobby' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), h('div', { class: 'lobby-logo' }, logo), todayEl, side, stage.el, bottom)
-    intro.replaceWith(lobby)
+    const next = h('div', { class: 'lobby' }, h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), h('div', { class: 'lobby-logo' }, logo), todayEl, side, stage.el, bottom)
+    ;(lobby ?? intro).replaceWith(next)
+    lobby = next
     if (logo.width > 1) fitLogo(logo, false)
 
     select(itemOf(current) ? current : 'play', false)
@@ -789,6 +792,19 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     actions.ready()
   }
 
+  /**
+   * A sync brought another device's progress (₽, the challenge, missions…):
+   * the lobby is rebuilt in place on the same entry, the partner's walk
+   * untouched. Not under another screen, which rebuilds the title as it closes.
+   */
+  const refresh = () => {
+    if (!lobby || overScreen || el.classList.contains('hidden')) return
+    offKeys?.()
+    closeChip?.()
+    buildLobby()
+  }
+  const offSynced = onSaveSynced(refresh)
+
   if (opts.intro) {
     // Any key, pad button or tap. `later` keeps that same press from also pressing JOGAR.
     const start = () => {
@@ -817,6 +833,6 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       for (const tick of tickers) tick(time)
       if (logo.width > 1) fitLogo(logo, lobby === null)
     },
-    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offPointers(), leaveMeadow(), el.remove()),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offSynced(), offPointers(), leaveMeadow(), el.remove()),
   }
 }

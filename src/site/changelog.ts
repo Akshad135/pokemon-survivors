@@ -130,6 +130,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             en: 'Your Pokémon’s portrait on the Trainer avatar, the Trainer Card and the Hall of Fame faces hung from the top-left corner, cutting off half the face. It’s centered in the circle now.',
             es: 'El retrato de tu Pokémon en el avatar de Entrenador, la Tarjeta de Entrenador y las caritas del Salón de la Fama quedaba pegado a la esquina superior izquierda, cortando medio rostro. Ahora queda centrado en el círculo.',
           },
+          {
+            pt: 'Com conta, voltar ao jogo (outra aba, outro app, o app instalado reaberto) sincroniza sozinho, e o lobby mostra na hora os ₽, as missões e o Desafio do dia feitos no outro aparelho, sem apertar sincronizar nem recarregar. A tentativa oficial do Desafio do dia também passa entre os aparelhos: feita no notebook, o celular já mostra treino.',
+            en: 'With an account, coming back to the game (another tab, another app, the installed app reopened) syncs on its own, and the lobby shows right away the ₽, missions and Daily Challenge done on your other device, without pressing sync or reloading. The Daily Challenge’s official attempt carries across devices too: made on the laptop, the phone already shows practice.',
+            es: 'Con cuenta, volver al juego (otra pestaña, otra app, la app instalada reabierta) sincroniza solo, y el lobby muestra al momento los ₽, las misiones y el Desafío del día hechos en el otro dispositivo, sin tocar sincronizar ni recargar. El intento oficial del Desafío del día también pasa entre dispositivos: hecho en la laptop, el celular ya muestra práctica.',
+          },
         ],
       },
     ],
