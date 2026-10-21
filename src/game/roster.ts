@@ -89,7 +89,7 @@ const drawOne = (rng: Rng, entries: readonly Entry[], weight: (def: EnemyDef) =>
 const summonsOf = (id: EnemyId): readonly EnemyId[] => (isSummoner(id) ? SUMMONS[id] : [])
 
 /** Who a boss calls in with its `summon` patterns (Banette's Shuppet, Honchkrow's Murkrow). */
-const bossSummons = (id: EnemyId): readonly EnemyId[] => bossKit(id).flatMap((p) => (p.kind === 'summon' ? p.enemies : []))
+export const bossSummons = (id: EnemyId): readonly EnemyId[] => bossKit(id).flatMap((p) => (p.kind === 'summon' ? p.enemies : []))
 
 const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((l) => l.length > 0) ?? []
 
