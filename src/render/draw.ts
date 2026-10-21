@@ -54,6 +54,7 @@ import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from '.
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
 import { drawWeather, warmFog } from './weather'
+import { drawHauntedNight, drawTreat } from './halloweenArt'
 import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
 import { drawGround, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
@@ -705,6 +706,10 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
       drawTmDisc(ctx, k, k.x, k.y + bob, t)
       continue
     }
+    if (k.kind === 'treat') {
+      drawTreat(ctx, k.id, k.x, k.y + bob)
+      continue
+    }
     const sprite =
       k.kind === 'xp' ? candies[xpTier(k.value)]!
       : k.kind === 'coin' ? coins[coinTier(k.value)]!
@@ -975,6 +980,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   ctx.globalAlpha = 1
   ctx.restore()
 
+  // A haunted run's night falls over the world (rift arenas and places keep their own light).
+  if (g.halloween && !g.rift.arena && !g.place.inside) drawHauntedNight(ctx, g, camX, camY, t)
   // The cave's dark and the graveyard's night, then the weather, over the world but under damage numbers.
   drawPlaceDark(ctx, g, camX, camY, t)
   drawTunnelDark(ctx, g, camX, camY)

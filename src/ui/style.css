@@ -7500,6 +7500,55 @@ a.btn.dex-site {
   color: #a8b0d0;
 }
 
+/* Noite das Bruxas: a jack-o'-lantern supporter's line glows like a candle (`pumpkinRow`). */
+.rank-row.pumpkin {
+  position: relative;
+  background: radial-gradient(ellipse at 18% 50%, rgba(255, 140, 40, 0.34), rgba(80, 36, 130, 0.5) 70%);
+  box-shadow: 0 0 0 2px #f08020, 0 0 12px 3px rgba(255, 140, 40, 0.5);
+  animation: rank-candle 2.6s steps(1) infinite;
+}
+
+.rank-row.pumpkin.selected {
+  box-shadow: 0 0 12px 3px rgba(255, 140, 40, 0.5);
+  animation: none;
+}
+
+.rank-row.pumpkin .rank-who b {
+  color: #ffd070;
+  text-shadow: 0 0 6px rgba(255, 150, 40, 0.8);
+}
+
+.rank-row img.rank-jack {
+  position: absolute;
+  right: 86px;
+  bottom: -4px;
+  width: 26px;
+  height: 22px;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+/* Room for the glow between lines. */
+.rank-list:has(.rank-row.pumpkin) {
+  gap: 8px;
+  padding: 8px;
+}
+
+@keyframes rank-candle {
+  0%, 80%, 88%, 100% {
+    box-shadow: 0 0 0 2px #f08020, 0 0 12px 3px rgba(255, 140, 40, 0.5);
+  }
+  82%, 86% {
+    box-shadow: 0 0 0 2px #c86010, 0 0 7px 1px rgba(255, 140, 40, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-row.pumpkin {
+    animation: none;
+  }
+}
+
 .rank-row.top1 .rank-pos {
   color: #ffcb05;
 }
@@ -12853,4 +12902,541 @@ button.hall-tile:hover {
 .admin-report-link {
   align-self: flex-start;
   color: #2a5aa8;
+}
+
+/* ---------- Noite das Bruxas (ui/halloween.ts) ---------- */
+
+/* The lobby dresses for the night: witch-purple frames and a pumpkin JOGAR. */
+.title-home.haunted {
+  --frame: #8850c8;
+}
+
+.title-home.haunted .lobby-play {
+  text-shadow: 3px 3px 0 #5a1c70;
+  background: linear-gradient(#ffa040, #f07018);
+  box-shadow:
+    inset 0 -6px 0 #a84008,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.title-home.haunted .lobby-play:hover,
+.title-home.haunted .lobby-play.selected {
+  background: linear-gradient(#ffb460, #f88028);
+  box-shadow:
+    inset 0 -6px 0 #a84008,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 3px #fff;
+}
+
+.title-home.haunted .lobby-play:active {
+  box-shadow:
+    inset 0 -3px 0 #a84008,
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.title-home.haunted .lobby-rail-label {
+  color: #ffc060;
+  text-shadow: 2px 2px 0 #3a1450;
+}
+
+/* The Hoje card: a night-purple box with a pumpkin frame. */
+.lobby-card.halloween {
+  --paper: #2c1440;
+  --frame: #f07818;
+  color: #f8e8ff;
+}
+
+.lobby-card.halloween:hover,
+.lobby-card.halloween.selected {
+  --frame: #ffd060;
+}
+
+.lobby-card.halloween .lobby-card-label {
+  color: #ffb040;
+}
+
+.lobby-card.halloween .lobby-badge.halloween-left {
+  margin-left: auto;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #2c1440;
+  background: #ffb040;
+}
+
+.lobby-card.halloween .lobby-card-row b {
+  flex: none;
+  font-size: 18px;
+}
+
+.lobby-jack {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  image-rendering: pixelated;
+  animation: halloween-bob 1.6s steps(2) infinite;
+}
+
+.lobby-treat {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+.lobby-progress.halloween-jar {
+  background: #1a0a26;
+  border-color: #f07818;
+}
+
+.lobby-progress.halloween-jar span {
+  background: repeating-linear-gradient(90deg, #f88820 0 6px, #ffc040 6px 8px);
+}
+
+@keyframes halloween-bob {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* The event screen. */
+.dialog.halloween-dialog {
+  --paper: #fff6ea;
+  --frame: #f07818;
+  width: min(600px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  gap: 10px;
+}
+
+.halloween-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.halloween-head img {
+  width: 30px;
+  height: 30px;
+  image-rendering: pixelated;
+}
+
+.halloween-head .dialog-title {
+  color: #5a1c70;
+}
+
+.halloween-dates {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.halloween-dates small {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #706080;
+}
+
+.halloween-dates b {
+  font-family: var(--title);
+  font-size: 9px;
+  color: #c04808;
+}
+
+.halloween-blurb {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.halloween-how {
+  margin: 0;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  font-size: 19px;
+  line-height: 1;
+  background: #2c1440;
+  color: #f8e8ff;
+  border-radius: 4px;
+}
+
+.halloween-how li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.halloween-how img {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.halloween-how b {
+  color: #ffb040;
+}
+
+/* The supporters' jack-o'-lantern: the pitch (or the thanks) under the calendar. */
+.halloween-supporter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 2px dashed #ff5878;
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.halloween-supporter img {
+  flex: none;
+  width: 33px;
+  height: 33px;
+  image-rendering: pixelated;
+}
+
+.halloween-supporter .halloween-pumpkaboo {
+  width: 40px;
+  height: 40px;
+  margin-left: -6px;
+  border-radius: 6px;
+  background: #2a1838;
+}
+
+.halloween-supporter b {
+  color: #ff8098;
+}
+
+.halloween-jar-box,
+.halloween-calendar-box {
+  display: grid;
+  gap: 8px;
+}
+
+.halloween-jar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+}
+
+.halloween-jar-head img {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.halloween-jar-head small {
+  margin-left: auto;
+  font-size: 17px;
+  color: #706080;
+}
+
+.halloween-jar-box .lobby-progress {
+  flex: none;
+  height: 14px;
+}
+
+.halloween-rewards {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  list-style: none;
+}
+
+.halloween-reward {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  align-items: center;
+  padding: 6px;
+  font-size: 16px;
+  line-height: 1;
+  background: #f0e2f8;
+  border: 2px solid #c8b0dc;
+  border-radius: 4px;
+}
+
+.halloween-reward-icon {
+  grid-row: span 2;
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.halloween-reward-at {
+  font-family: var(--title);
+  font-size: 7px;
+  color: #706080;
+}
+
+.halloween-reward.ready {
+  background: #fff0d0;
+  border-color: #f08020;
+  animation: halloween-glow 1.2s steps(2) infinite;
+}
+
+.halloween-reward.ready .halloween-reward-at {
+  color: #c04808;
+}
+
+.halloween-reward.done {
+  background: #e4f4e0;
+  border-color: #78b868;
+}
+
+.halloween-reward.done .halloween-reward-at {
+  color: #388030;
+}
+
+.halloween-reward.locked img {
+  filter: grayscale(0.7) brightness(0.8);
+}
+
+@keyframes halloween-glow {
+  50% {
+    border-color: #ffd060;
+  }
+}
+
+.halloween-section {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #5a1c70;
+}
+
+.halloween-calendar {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  list-style: none;
+}
+
+.halloween-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: #2c1440;
+  border: 2px solid #4a2860;
+  border-radius: 4px;
+}
+
+.halloween-day img {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+}
+
+.halloween-day small {
+  font-family: var(--title);
+  font-size: 6px;
+  color: #d8c0f0;
+}
+
+.halloween-day.today {
+  border-color: #ffb040;
+  background: #5a2878;
+}
+
+.halloween-day.today small {
+  color: #ffd060;
+}
+
+.halloween-day.past {
+  opacity: 0.45;
+}
+
+/* The Caça aos Fantasmas: the night bosses, silhouettes until beaten, and its two rewards. */
+.halloween-hunt-box {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  background: #2c1440;
+  border: 2px solid #4a2860;
+  border-radius: 4px;
+}
+
+.halloween-hunt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.halloween-hunt-head .halloween-section {
+  color: #ffb040;
+}
+
+.halloween-hunt-head b {
+  font-family: var(--title);
+  font-size: 8px;
+  color: #d8c0f0;
+}
+
+.halloween-hunt-blurb {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.05;
+  color: #f0e0ff;
+}
+
+.halloween-hunt-blurb b {
+  color: #ffd060;
+}
+
+.halloween-hunt {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 3px;
+  list-style: none;
+}
+
+.halloween-ghost {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  background: #1a0a28;
+  border: 2px solid #3a1c50;
+  border-radius: 4px;
+}
+
+.halloween-ghost img {
+  width: 100%;
+  max-width: 40px;
+  image-rendering: pixelated;
+  /* Not beaten yet: a shadow in the dark, with a question mark. */
+  filter: grayscale(1) brightness(0.22);
+}
+
+.halloween-ghost:not(.hunted)::after {
+  content: '?';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--title);
+  font-size: 12px;
+  color: #a080c8;
+}
+
+.halloween-ghost.hunted {
+  background: #5a2878;
+  border-color: #ffb040;
+}
+
+.halloween-ghost.hunted img {
+  filter: none;
+}
+
+.halloween-rewards.hunt {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Phones held upright: two reward columns. Lying down: the blurb goes, the buttons stay in reach. */
+@media (max-width: 520px) {
+  .halloween-rewards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .halloween-hunt {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .halloween-day img {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-height: 500px) {
+  .dialog.halloween-dialog {
+    width: min(720px, 100%);
+    padding: 10px 14px;
+    gap: 6px;
+  }
+  .halloween-blurb,
+  .halloween-dialog .hint {
+    display: none;
+  }
+  .halloween-how {
+    grid-template-columns: repeat(3, 1fr);
+    font-size: 16px;
+  }
+}
+
+/* In a run: the candies beside the ₽, and the results' row. */
+.treats {
+  color: #ffb040;
+}
+
+.result-treats b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #c04808;
+}
+
+.result-treats b img {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+.halloween-reward-name {
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Phones held upright: the night's card takes a row of its own above the day's three. */
+@media (max-width: 759px) and (min-height: 501px), (max-width: 759px) and (orientation: portrait) {
+  .lobby-today {
+    flex-wrap: wrap;
+  }
+  .lobby-card.halloween {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+  }
+  .lobby-card.halloween .lobby-card-label {
+    flex: none;
+    gap: 8px;
+  }
+  .lobby-card.halloween .lobby-card-row {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-height: 0;
+  }
+  .lobby-card.halloween .lobby-progress {
+    flex: 0 1 110px;
+  }
+  .lobby-jack {
+    width: 22px;
+    height: 22px;
+  }
 }

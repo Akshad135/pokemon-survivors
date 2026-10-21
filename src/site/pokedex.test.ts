@@ -3,11 +3,11 @@ import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyId } from '../data/enemies'
 import { GAME_SPECIES } from '../data/species'
 import { RUN_LENGTH } from '../data/waves'
-import { appearances, clock, pokedex, regionOf } from './pokedex'
+import { appearances, clock, gameDex, pokedex, regionOf } from './pokedex'
 
 describe('pokedex', () => {
-  it("lists exactly the species the save may hold (`GAME_SPECIES`)", () => {
-    expect(new Set(pokedex().map((e) => e.dex))).toEqual(GAME_SPECIES)
+  it("keeps the in-game Pokédex to exactly the species the save may hold (`GAME_SPECIES`), gift-only companions out", () => {
+    expect(new Set(gameDex().map((e) => e.dex))).toEqual(GAME_SPECIES)
   })
 
   const entries = pokedex()
@@ -45,11 +45,11 @@ describe('appearances', () => {
     }
   })
 
-  it("places every Pokémon somewhere in the run, bosses as boss events, trio slots, rifts, the reaper or a place's boss", () => {
+  it("places every Pokémon somewhere in the run, bosses as boss events, trio slots, night boss slots, rifts, the reaper or a place's boss", () => {
     for (const id of ids) {
       const found = appearances(id)
       expect(found.length).toBeGreaterThan(0)
-      if ('boss' in ENEMIES[id]) expect(found.some((a) => a.kind === 'boss' || a.kind === 'trio' || a.kind === 'rift' || a.kind === 'reaper' || (a.kind === 'place' && a.boss))).toBe(true)
+      if ('boss' in ENEMIES[id]) expect(found.some((a) => a.kind === 'boss' || a.kind === 'trio' || a.kind === 'rift' || a.kind === 'reaper' || (a.kind === 'place' && a.boss) || a.kind === 'night')).toBe(true)
     }
   })
 })

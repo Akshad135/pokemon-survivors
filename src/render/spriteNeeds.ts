@@ -5,7 +5,7 @@ import { isSummoner, SUMMONS } from '../data/traits'
 import { EVENTS, STAGES, stageIndexAt, stageStart } from '../data/waves'
 import { ENDLESS, REAPER } from '../game/endless'
 import { placePool } from '../game/place'
-import type { Roster } from '../game/roster'
+import { bossSummons, type Roster } from '../game/roster'
 import type { Game } from '../game/types'
 import type { Dex, KeepSprites } from './sprites'
 
@@ -30,7 +30,7 @@ const stageEnd = (i: number) => STAGES[i]?.until ?? Infinity
 /**
  * Every species of a run's cast with the window it shows up in: each stage's
  * pool (and what its summoners call in) and its spitter while the stage lasts,
- * each event's species (swarm, ring, boss) from its time. `extras` (the fleeing
+ * each event's species (swarm, ring, boss and who it summons) from its time. `extras` (the fleeing
  * Meowth, the escort's Togepi) are wanted from their time on.
  */
 export const castNeeds = (roster: Roster, extras: readonly { dex: Dex; at: number }[] = []): SpriteNeed[] => [
@@ -41,7 +41,7 @@ export const castNeeds = (roster: Roster, extras: readonly { dex: Dex; at: numbe
   }),
   ...EVENTS.flatMap((e, i) => {
     const id = roster.events[i]
-    return id ? [{ dex: ENEMIES[id].dex, from: e.at, until: e.at + EVENT_TAIL }] : []
+    return id ? [id, ...(e.kind === 'boss' ? bossSummons(id) : [])].map((need) => ({ dex: ENEMIES[need].dex, from: e.at, until: e.at + EVENT_TAIL })) : []
   }),
   ...extras.map(({ dex, at }) => ({ dex, from: at, until: Infinity })),
 ]
@@ -86,6 +86,14 @@ export const runSprites = (g: Game, needs: readonly SpriteNeed[], always: readon
     const dex = ENEMIES[e.kind].dex
     species.add(dex)
     if (e.shiny || e.boss) variants.add(dex)
+    // A boss outliving its event's window still calls in its summons.
+    if (!e.boss) continue
+    for (const id of bossSummons(e.kind)) {
+      const called = ENEMIES[id].dex
+      if (species.has(called)) continue
+      species.add(called)
+      stream.push(called)
+    }
   }
   return { stream, keep: { species, variants } }
 }

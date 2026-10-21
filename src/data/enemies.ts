@@ -35,6 +35,16 @@ const TRIO_SLOTS = [
   { hp: 11500, speed: 54, damage: 34, xp: 250, mass: 30, boss: true, legendary: true },
 ] as const
 
+/**
+ * Stats of the Noite das Bruxas night boss slots (`HALLOWEEN.bosses`): Onix's
+ * at 2:30 and Snorlax's at 5:00, as strong as the boss they stand in for. Like
+ * the trio slots, they belong to the slot: only the pace is the species'.
+ */
+const NIGHT_SLOTS = [
+  { hp: 1100, damage: 18, xp: 50, mass: 20, boss: true },
+  { hp: 2800, damage: 24, xp: 90, mass: 30, boss: true },
+] as const
+
 /** Stats of the rare mythical that may join Mewtwo at the end. */
 const MYTHICAL = { hp: 9000, speed: 70, damage: 30, xp: 300, mass: 40, boss: true, legendary: true } as const
 
@@ -92,6 +102,19 @@ export const ENEMIES = {
   metang: { dex: 375, name: 'Metang', types: ['steel', 'psychic'], hp: 60, speed: 40, damage: 13, xp: 5, mass: 2.6 },
   // A place's boss (`data/places.ts`): HP and contact damage are its 1:30 values, scaled by `placeBossScale`.
   spiritomb: { dex: 442, name: 'Spiritomb', types: ['ghost', 'dark'], hp: 1100, speed: 34, damage: 18, xp: 0, mass: 30, boss: true },
+  // The Noite das Bruxas night bosses (`HALLOWEEN.bosses` in `data/halloween.ts`), apart from the horde's own of the species: one per slot each haunted run.
+  mimikyuBoss: { dex: 778, name: 'Mimikyu', types: ['ghost', 'fairy'], speed: 40, ...NIGHT_SLOTS[0] },
+  banetteBoss: { dex: 354, name: 'Banette', types: ['ghost'], speed: 38, ...NIGHT_SLOTS[0] },
+  sableyeBoss: { dex: 302, name: 'Sableye', types: ['dark', 'ghost'], speed: 40, ...NIGHT_SLOTS[0] },
+  drifblimBoss: { dex: 426, name: 'Drifblim', types: ['ghost', 'flying'], speed: 30, ...NIGHT_SLOTS[0] },
+  mismagiusBoss: { dex: 429, name: 'Mismagius', types: ['ghost'], speed: 38, ...NIGHT_SLOTS[0] },
+  houndoomBoss: { dex: 229, name: 'Houndoom', types: ['dark', 'fire'], speed: 44, ...NIGHT_SLOTS[0] },
+  gengarBoss: { dex: 94, name: 'Gengar', types: ['ghost', 'poison'], speed: 36, ...NIGHT_SLOTS[1] },
+  chandelureBoss: { dex: 609, name: 'Chandelure', types: ['ghost', 'fire'], speed: 30, ...NIGHT_SLOTS[1] },
+  gourgeistBoss: { dex: 711, name: 'Gourgeist', types: ['ghost', 'grass'], speed: 30, ...NIGHT_SLOTS[1] },
+  trevenantBoss: { dex: 709, name: 'Trevenant', types: ['ghost', 'grass'], speed: 28, ...NIGHT_SLOTS[1] },
+  honchkrowBoss: { dex: 430, name: 'Honchkrow', types: ['dark', 'flying'], speed: 38, ...NIGHT_SLOTS[1] },
+  dusknoirBoss: { dex: 477, name: 'Dusknoir', types: ['ghost'], speed: 30, ...NIGHT_SLOTS[1] },
   // The endless mode's reaper (`game/endless.ts`): it hunts the player from 20:00.
   arceus: { dex: 493, name: 'Arceus', types: ['normal'], hp: 300000, speed: 60, damage: 90, xp: 0, mass: 999, boss: true, legendary: true, scale: 2 },
 } as const satisfies Record<string, EnemyDef>

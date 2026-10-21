@@ -5,9 +5,10 @@ import type { EnemyId } from '../data/enemies'
 import type { PlayableId } from '../data/hatchlings'
 import { AWAKEN_AT, isLegend, LEGENDS, type Innate, type LegendDef, type LegendForm, type LegendId } from '../data/legends'
 import type { EvolutionStage } from '../data/starters'
-import { EVENTS, MYTHICALS, TRIO_IDS, TRIOS, type WaveEvent } from '../data/waves'
+import { TIER_STATS, type Tier } from '../data/roster'
+import { EVENTS, MYTHICALS, STAGES, stageIndexAt, TRIO_IDS, TRIOS, type WaveEvent, type WaveStage } from '../data/waves'
 import { DIFFICULTIES, type Difficulty, type DifficultyMods } from './difficulty'
-import { withTrio, type Roster } from './roster'
+import { withTrio, type Roster, type RosterOptions } from './roster'
 import { burst } from './effects'
 import type { StatDelta } from './stats'
 import type { Enemy, Game } from './types'
@@ -114,17 +115,20 @@ export const innateEffects = (starter: PlayableId): readonly AbilityEffect[] => 
 /**
  * Pressure, the Legend mode's own difficulty: multipliers on top of each
  * level's (`DIFFICULTIES`), and on top of the pressure director (`tension.ts`),
- * which already leans on a build that wins too easily. A legend hits harder
- * than a starter, so the horde comes a bit thicker and tougher. Measured with a
- * headless bot (kiting, greedy picks, max ranks): a legend wins Normal 17/18
- * (starters 10/12) and Hard 8/16 (5/11), Nightmare stays at 5/19 (3/12), and
- * standing still dies by about 7:00 on every level, like a starter. Heavier
- * Pressure (×1.3 spawns) left legends behind the starters.
+ * which already leans on a build that wins too easily. A legend's moves sweep
+ * a starter's horde before it ever reaches it, so its horde (evolved only,
+ * `LEGEND_HORDE`) comes thicker, tougher, harder-hitting and faster (the
+ * lifted tiers walk slower, `enemySpeed` makes up for it and then some).
+ * Measured with a headless bot (kiting or not, greedy picks, max ranks,
+ * Kyogre, Groudon, Articuno and Raikou): Normal stays at 15/16 wins, Hard went
+ * from 10/16 to 8/16 and Nightmare from 3/16 to 0/16, the horde dealing about
+ * 40% of the damage taken there instead of about 15%, and the Nightmare field
+ * holds about twice the foes alive between 3:00 and 5:00.
  */
 export const PRESSURE = {
-  normal: { spawnRate: 1.1, enemyHp: 1.05, enemyDamage: 1.05 },
-  hard: { spawnRate: 1.15, enemyHp: 1.1, enemyDamage: 1.1 },
-  nightmare: { spawnRate: 1.15, enemyHp: 1.1, enemyDamage: 1.15, enemySpeed: 1.03 },
+  normal: { spawnRate: 1.2, enemyHp: 1.2, enemyDamage: 1.05, enemySpeed: 1.08 },
+  hard: { spawnRate: 1.25, enemyHp: 1.3, enemyDamage: 1.15, enemySpeed: 1.1 },
+  nightmare: { spawnRate: 1.3, enemyHp: 1.45, enemyDamage: 1.25, enemySpeed: 1.12 },
 } as const satisfies Record<Difficulty, Partial<DifficultyMods>>
 
 const pressed = new Map<Difficulty, DifficultyMods>()
@@ -144,6 +148,48 @@ export const legendMods = (difficulty: Difficulty): DifficultyMods => {
 
 /** The multipliers this run plays with: its difficulty's, pressed harder in the Legend mode. */
 export const runMods = (g: Game): DifficultyMods => (g.legend ? legendMods(g.difficulty) : DIFFICULTIES[g.difficulty])
+
+/* ---------------- The legend's horde ---------------- */
+
+/**
+ * A legend never meets basics: every slot of the horde (the stages' casts,
+ * the swarms', the rings' and so the spitters') draws from the tier it maps
+ * to here, so the run opens on evolved Pokémon (tier 4) and turns into strong
+ * finals (tier 5) as the base run would reach its middle stages. The day's
+ * outbreak (a basic) stays out of it too (`replay.ts`, `runRoster`).
+ */
+export const LEGEND_TIER = { 1: 4, 2: 4, 3: 4, 4: 5, 5: 5 } as const satisfies Record<Tier, Tier>
+
+/** `drawRoster`'s stages and events for a legend's run: the base run's with every tier lifted (`LEGEND_TIER`). */
+export const LEGEND_HORDE = {
+  stages: STAGES.map((s): WaveStage => ({ ...s, cast: s.cast.map((tier) => LEGEND_TIER[tier]) })),
+  events: EVENTS.map((e): WaveEvent => ('tier' in e ? { ...e, tier: LEGEND_TIER[e.tier] } : e)),
+} as const satisfies RosterOptions
+
+const castHp = (cast: readonly Tier[]) => cast.reduce((sum, tier) => sum + TIER_STATS[tier].hp, 0)
+
+/** A regular enemy's stats against its species' own: HP, damage and the EXP it drops. */
+export type HordeScale = { hp: number; damage: number; xp: number }
+
+const OWN: HordeScale = { hp: 1, damage: 1, xp: 1 }
+
+/**
+ * Per stage, how a lifted species' stats lean back toward the base run's slots
+ * it took: `r` is the base cast's HP over the lifted cast's. EXP comes all the
+ * way back (r), so the lift makes the horde tougher, not the legend's levels
+ * faster (unscaled, a Kyogre awakened in its first minute); HP and damage come
+ * halfway (√r), so the first minute's evolved horde has about 2.5× the HP a
+ * basic would and hits about as hard, and the gap closes as the base run
+ * reaches the same tiers. Unscaled, Nightmare's opening tier 4s had 8× the HP
+ * and buried a Raikou in under two minutes.
+ */
+export const LEGEND_SCALE: readonly HordeScale[] = STAGES.map((s) => {
+  const r = castHp(s.cast) / castHp(s.cast.map((tier) => LEGEND_TIER[tier]))
+  return { hp: Math.sqrt(r), damage: Math.sqrt(r), xp: r }
+})
+
+/** The scale of a regular enemy spawning now: `LEGEND_SCALE` in the Legend mode, else its species' own stats. */
+export const hordeScale = (g: Game): HordeScale => (g.legend ? LEGEND_SCALE[stageIndexAt(g.time)]! : OWN)
 
 /* ---------------- Never facing yourself ---------------- */
 
