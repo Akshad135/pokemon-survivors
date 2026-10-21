@@ -1193,6 +1193,7 @@ export const es: Messages = {
   eggs: {
     tiers: { common: 'Huevo común', rare: 'Huevo raro', ultra: 'Huevo ultrarraro', friend: 'Huevo de la Amistad' },
     found: (egg) => `¡Encontraste un *${egg}*! Va a la incubadora.`,
+    foundFull: (egg, coins) => `¡Encontraste un *${egg}*! La incubadora está llena, así que se convertirá en *${coins}*.`,
     title: 'INCUBADORA',
     intro: 'Los huevos eclosionan con los pasos que das en las partidas. Todos los huevos de la incubadora avanzan juntos.',
     sources: 'Los jefes, los cofres cerrados y las grietas a veces dejan un huevo.',
@@ -1221,7 +1222,8 @@ export const es: Messages = {
     readyBadge: (n) => (n === 1 ? '¡1 huevo listo!' : `¡${n} huevos listos!`),
     steps: 'Pasos',
     eggs: 'Huevos',
-    full: (coins) => `Incubadora llena: el huevo se convirtió en ${coins}.`,
+    full: (n, coins) => (n === 1 ? `Incubadora llena: el huevo se convirtió en ${coins}.` : `Incubadora llena: ${n} huevos se convirtieron en ${coins}.`),
+    capped: (n, coins, cap) => (n === 1 ? `Límite de ${cap} huevos por partida: el huevo se convirtió en ${coins}.` : `Límite de ${cap} huevos por partida: ${n} huevos se convirtieron en ${coins}.`),
   },
   mapEvents: {
     altar: (buff) => `¡El altar te concedió *${buff}*!`,

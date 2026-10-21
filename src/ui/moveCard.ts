@@ -206,6 +206,8 @@ export const holdMoveCard = (el: HTMLElement, build: () => HTMLElement | null) =
     start = { x: e.clientX, y: e.clientY }
     clearTimeout(timer)
     timer = window.setTimeout(() => {
+      // The screen may have closed under the finger (a pick made another way): nothing to open.
+      if (!el.isConnected) return
       const card = build()
       if (!card) return
       held = true

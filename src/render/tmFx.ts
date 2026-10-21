@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { TYPE_COLORS } from '../data/types'
@@ -78,12 +78,12 @@ const drawRockShadow = (ctx: Ctx, a: Attack) => {
   const r = radiusOf(a)
   if (a.age < a.activeFrom) {
     const k = a.age / a.activeFrom
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(r * (0.35 + 0.5 * k))), Math.max(1, Math.round(r * 0.4 * (0.35 + 0.5 * k))), 'rgba(24,16,8,0.38)'), a.x, a.y + 3)
+    blitEllipse(ctx, Math.max(1, Math.round(r * (0.35 + 0.5 * k))), Math.max(1, Math.round(r * 0.4 * (0.35 + 0.5 * k))), 'rgba(24,16,8,0.38)', a.x, a.y + 3)
     return
   }
   const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
   ctx.globalAlpha = Math.max(0, 1 - e)
-  blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.32)), 'rgba(24,16,8,0.3)'), a.x, a.y + 3)
+  blitEllipse(ctx, Math.round(r * 0.8), Math.max(1, Math.round(r * 0.32)), 'rgba(24,16,8,0.3)', a.x, a.y + 3)
   dashedRing(ctx, a.x, a.y + 3, r * (0.8 + e * 0.8), a.id, ['#7a6040', '#b89868', '#e0d0a8'], 0.6, 0.45)
   ctx.globalAlpha = 1
 }
@@ -96,10 +96,10 @@ const drawLavaPool = (ctx: Ctx, a: Attack, t: number) => {
   const rx = Math.max(2, Math.round(r * open))
   const ry = Math.max(1, Math.round(r * 0.5 * open))
   ctx.globalAlpha = fadeOut(a, 0.35)
-  blitCentered(ctx, ellipse(rx + 1, ry + 1, '#301008'), a.x, a.y)
-  blitCentered(ctx, ellipse(rx, ry, cool > 0.5 ? '#702010' : '#c83010'), a.x, a.y)
-  if (rx > 3) blitCentered(ctx, ellipse(rx - 2, Math.max(1, ry - 1), cool > 0.5 ? '#a83818' : '#f06818'), a.x, a.y)
-  if (rx > 5 && cool < 0.6) blitCentered(ctx, ellipse(Math.round(rx * 0.45), Math.max(1, Math.round(ry * 0.4)), '#f8b030'), a.x - 1, a.y - 1)
+  blitEllipse(ctx, rx + 1, ry + 1, '#301008', a.x, a.y)
+  blitEllipse(ctx, rx, ry, cool > 0.5 ? '#702010' : '#c83010', a.x, a.y)
+  if (rx > 3) blitEllipse(ctx, rx - 2, Math.max(1, ry - 1), cool > 0.5 ? '#a83818' : '#f06818', a.x, a.y)
+  if (rx > 5 && cool < 0.6) blitEllipse(ctx, Math.round(rx * 0.45), Math.max(1, Math.round(ry * 0.4)), '#f8b030', a.x - 1, a.y - 1)
   // Bubbles pop here and there.
   for (let i = 0; i < 4; i++) {
     const ph = (t * 1.6 + hash2(a.id, i)) % 1
@@ -114,7 +114,7 @@ const drawLavaPool = (ctx: Ctx, a: Attack, t: number) => {
 const drawDischargeGround = (ctx: Ctx, a: Attack) => {
   const r = radiusOf(a)
   ctx.globalAlpha = fadeOut(a, 0.2) * 0.8
-  blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.4)), 'rgba(248,216,48,0.18)'), a.x, a.y + 6)
+  blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.4)), 'rgba(248,216,48,0.18)', a.x, a.y + 6)
   dashedRing(ctx, a.x, a.y + 6, r, a.age * 9, ['#f8d030', '#fff8a0'], 0.7, 0.4)
   ctx.globalAlpha = 1
 }
@@ -123,7 +123,7 @@ const drawYawnGround = (ctx: Ctx, a: Attack) => {
   const r = radiusOf(a)
   if (a.age < a.activeFrom) {
     const k = a.age / a.activeFrom
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(3 + k * r * 0.4)), Math.max(1, Math.round(1 + k * 2)), 'rgba(40,32,80,0.28)'), a.x, a.y + 6)
+    blitEllipse(ctx, Math.max(1, Math.round(3 + k * r * 0.4)), Math.max(1, Math.round(1 + k * 2)), 'rgba(40,32,80,0.28)', a.x, a.y + 6)
     return
   }
   const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
@@ -144,7 +144,7 @@ export const drawTmGround = (ctx: Ctx, g: Game, t: number) => {
         break
       case 'lavaPlume': {
         ctx.globalAlpha = fadeOut(a, 0.3) * 0.7
-        blitCentered(ctx, ellipse(Math.round(radiusOf(a) * 0.8), Math.max(1, Math.round(radiusOf(a) * 0.35)), 'rgba(48,12,4,0.45)'), a.x, a.y + 1)
+        blitEllipse(ctx, Math.round(radiusOf(a) * 0.8), Math.max(1, Math.round(radiusOf(a) * 0.35)), 'rgba(48,12,4,0.45)', a.x, a.y + 1)
         ctx.globalAlpha = 1
         break
       }
@@ -188,7 +188,7 @@ const drawRock = (ctx: Ctx, a: Attack) => {
       const side = i - 2
       const r = Math.max(1, Math.round(2 + puff * 4 - Math.abs(side) * 0.5))
       ctx.globalAlpha = 1 - puff
-      blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.7)), i % 2 ? '#d8c8a0' : '#b8a480'), a.x + side * (5 + puff * 9), a.y - 1 - puff * 5 + Math.abs(side) * 2)
+      blitEllipse(ctx, r, Math.max(1, Math.round(r * 0.7)), i % 2 ? '#d8c8a0' : '#b8a480', a.x + side * (5 + puff * 9), a.y - 1 - puff * 5 + Math.abs(side) * 2)
     }
     ctx.globalAlpha = 1
   }
@@ -214,7 +214,7 @@ const drawYawnBubble = (ctx: Ctx, a: Attack, t: number) => {
     const y = a.from.y + (a.y - 12 - a.from.y) * ease - Math.sin(k * Math.PI) * 8
     const br = Math.max(3, Math.round(3 + (r * 0.55 - 3) * ease))
     const wob = Math.round(Math.sin(t * 12 + a.id) * 0.8)
-    blitCentered(ctx, ellipse(br + wob, br - wob, 'rgba(208,200,255,0.35)'), x, y)
+    blitEllipse(ctx, br + wob, br - wob, 'rgba(208,200,255,0.35)', x, y)
     for (let i = 0; i < br * 6; i++) {
       const ang = (i / (br * 6)) * TAU
       px(ctx, x + Math.cos(ang) * (br + wob), y + Math.sin(ang) * (br - wob), i % 7 === 0 ? '#ffffff' : '#b8b0f0')
@@ -290,7 +290,7 @@ const drawBeams = (ctx: Ctx, g: Game, t: number) => {
       for (let d = 0; d < Math.round(3 * grow); d++) px(ctx, bx - cy * side * d - cx * d * 0.5, by + cx * side * d - cy * d * 0.5, d === 0 ? '#ffffff' : '#c8ecff', 2, 2)
       if (a.flip) {
         spokes(ctx, a.x, a.y, Math.round(w * 1.4) + 5, ['#ffffff', '#c8ecff', '#78c8f0'], t * 4)
-        blitCentered(ctx, ellipse(Math.round(w) + 2, Math.round(w) + 2, '#e8f8ff'), a.x, a.y)
+        blitEllipse(ctx, Math.round(w) + 2, Math.round(w) + 2, '#e8f8ff', a.x, a.y)
       }
     }
   }
@@ -302,8 +302,8 @@ const drawDischarge = (ctx: Ctx, a: Attack, t: number) => {
   const seed = a.id * 7 + Math.floor(t * 24)
   // The flash at the core, then bolts lashing out to the ring.
   if (a.age < 0.1) {
-    blitCentered(ctx, ellipse(12, 12, 'rgba(255,248,160,0.55)'), a.x, a.y)
-    blitCentered(ctx, ellipse(7, 7, '#ffffff'), a.x, a.y)
+    blitEllipse(ctx, 12, 12, 'rgba(255,248,160,0.55)', a.x, a.y)
+    blitEllipse(ctx, 7, 7, '#ffffff', a.x, a.y)
   }
   ctx.globalAlpha = fade
   const bolts = 6 + Math.round(a.memo * 6)
@@ -321,7 +321,7 @@ const drawDischarge = (ctx: Ctx, a: Attack, t: number) => {
     }
   }
   ringPx(ctx, a.x, a.y, r, r * 0.85, ['#f8d030', '#ffffff'], t * 6)
-  blitCentered(ctx, ellipse(4 + Math.round(a.memo * 3), 4 + Math.round(a.memo * 3), '#fff8c0'), a.x, a.y)
+  blitEllipse(ctx, 4 + Math.round(a.memo * 3), 4 + Math.round(a.memo * 3), '#fff8c0', a.x, a.y)
   ctx.globalAlpha = 1
 }
 
@@ -406,13 +406,13 @@ const drawGeyser = (ctx: Ctx, a: Attack, t: number) => {
   if (height > 2) {
     // A splash crowning it.
     const top = a.y - height
-    blitCentered(ctx, ellipse(w + 3, 3, LAVA[1]), a.x, top)
-    blitCentered(ctx, ellipse(w + 2, 2, LAVA[3]), a.x, top - 1)
-    blitCentered(ctx, ellipse(Math.max(1, w - 1), 1, LAVA[4]), a.x, top - 1)
+    blitEllipse(ctx, w + 3, 3, LAVA[1], a.x, top)
+    blitEllipse(ctx, w + 2, 2, LAVA[3], a.x, top - 1)
+    blitEllipse(ctx, Math.max(1, w - 1), 1, LAVA[4], a.x, top - 1)
   }
   // A ring of molten rock at its foot.
-  blitCentered(ctx, ellipse(w + 4, 3, LAVA[1]), a.x, a.y + 1)
-  blitCentered(ctx, ellipse(w + 2, 2, LAVA[2]), a.x, a.y)
+  blitEllipse(ctx, w + 4, 3, LAVA[1], a.x, a.y + 1)
+  blitEllipse(ctx, w + 2, 2, LAVA[2], a.x, a.y)
   // Molten drops thrown out of it.
   for (let i = 0; i < 8; i++) {
     const ang = -Math.PI / 2 + (hash2(a.id, i) - 0.5) * 2.4
@@ -428,7 +428,7 @@ const drawGeyser = (ctx: Ctx, a: Attack, t: number) => {
 const drawMeteorRise = (ctx: Ctx, a: Attack) => {
   const k = Math.min(1, a.age / a.ttl)
   const rock = TM_FX.meteor()
-  blitCentered(ctx, ellipse(5, 5, 'rgba(248,216,112,0.35)'), a.x, a.y - 4 - k * 6)
+  blitEllipse(ctx, 5, 5, 'rgba(248,216,112,0.35)', a.x, a.y - 4 - k * 6)
   ctx.globalAlpha = Math.min(1, k * 3)
   blitCentered(ctx, rock, a.x, a.y - k * 10)
   ctx.globalAlpha = 1
@@ -442,7 +442,7 @@ const drawMeteor = (ctx: Ctx, a: Attack, t: number) => {
     for (let i = 1; i <= 4; i++) px(ctx, a.x - (m.vx / len) * i * 4, a.y - (m.vy / len) * i * 4, i === 1 ? '#fff8d0' : '#f8d870', i < 3 ? 2 : 1, i < 3 ? 2 : 1)
   }
   const glow = 7 + (Math.floor(t * 10 + a.id) % 2)
-  blitCentered(ctx, ellipse(glow, glow, 'rgba(248,216,112,0.35)'), a.x, a.y)
+  blitEllipse(ctx, glow, glow, 'rgba(248,216,112,0.35)', a.x, a.y)
   blitRotated(ctx, TM_FX.meteor(), a.x, a.y, a.age * 7)
 }
 
@@ -456,7 +456,7 @@ const drawIcyWind = (ctx: Ctx, a: Attack, t: number) => {
   const nx = -fy
   const ny = fx
   ctx.globalAlpha = Math.max(0, 1 - k * k)
-  blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.6)), 'rgba(200,236,255,0.28)'), a.x, a.y)
+  blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.6)), 'rgba(200,236,255,0.28)', a.x, a.y)
   // Two wind strokes curling at their tips, like the "gust" glyph.
   for (let s = 0; s < 2; s++) {
     const off = (s - 0.5) * r * 0.9
@@ -503,9 +503,9 @@ const drawPsyHover = (ctx: Ctx, a: Attack, t: number) => {
     const d = (1 - ((k * 2 + i / 6) % 1)) * 12
     px(ctx, a.x + Math.cos(ang) * d, a.y + Math.sin(ang) * d, i % 2 ? '#f8b0e0' : '#ffffff')
   }
-  blitCentered(ctx, ellipse(r + 2, r + 2, 'rgba(248,88,168,0.45)'), a.x, a.y)
-  blitCentered(ctx, ellipse(r, r, '#f878c0'), a.x, a.y)
-  blitCentered(ctx, ellipse(Math.max(1, r - 2), Math.max(1, r - 2), '#ffffff'), a.x, a.y)
+  blitEllipse(ctx, r + 2, r + 2, 'rgba(248,88,168,0.45)', a.x, a.y)
+  blitEllipse(ctx, r, r, '#f878c0', a.x, a.y)
+  blitEllipse(ctx, Math.max(1, r - 2), Math.max(1, r - 2), '#ffffff', a.x, a.y)
 }
 
 const drawPsystrike = (ctx: Ctx, a: Attack, t: number) => {
@@ -520,9 +520,9 @@ const drawPsystrike = (ctx: Ctx, a: Attack, t: number) => {
     const w = Math.max(1, Math.round((1 - k) * r * 1.4))
     px(ctx, a.x - (vx / len) * i * 2.2 - w / 2, a.y - (vy / len) * i * 2.2 - w / 2, k < 0.4 ? '#f878c0' : k < 0.7 ? '#c84898' : 'rgba(160,48,120,0.6)', w, w)
   }
-  blitCentered(ctx, ellipse(r + 2, r + 2, 'rgba(248,88,168,0.45)'), a.x, a.y)
-  blitCentered(ctx, ellipse(r, r, '#f878c0'), a.x, a.y)
-  blitCentered(ctx, ellipse(Math.max(1, r - 2), Math.max(1, r - 2), '#ffffff'), a.x, a.y)
+  blitEllipse(ctx, r + 2, r + 2, 'rgba(248,88,168,0.45)', a.x, a.y)
+  blitEllipse(ctx, r, r, '#f878c0', a.x, a.y)
+  blitEllipse(ctx, Math.max(1, r - 2), Math.max(1, r - 2), '#ffffff', a.x, a.y)
   if (Math.floor(t * 16 + a.id) % 3 === 0) dashedRing(ctx, a.x, a.y, r + 4, t * 8, ['#f8b0e0'], 0.5)
 }
 
@@ -586,7 +586,7 @@ const drawIronBody = (ctx: Ctx, g: Game, a: Attack, t: number) => {
     const e = a.age / 0.25
     ringPx(ctx, p.x, cy, r + 4 + e * 14, (r + 4 + e * 14) * 0.9, ['#8890a8', '#ffffff'], 0)
   }
-  blitCentered(ctx, ellipse(Math.round(r), Math.round(ry), guarding ? 'rgba(200,210,232,0.28)' : 'rgba(160,170,196,0.18)'), p.x, cy)
+  blitEllipse(ctx, Math.round(r), Math.round(ry), guarding ? 'rgba(200,210,232,0.28)' : 'rgba(160,170,196,0.18)', p.x, cy)
   ringPx(ctx, p.x, cy, r, ry, guarding ? ['#485068', '#e8eef8'] : ['#485068', '#a8b0c8'], -t * 1.5)
   for (let i = 0; i < 6; i++) {
     const ang = (i / 6) * TAU + t * 0.8
@@ -638,7 +638,7 @@ export const drawTmPlayer = (ctx: Ctx, g: Game, t: number) => {
 export const drawTmDisc = (ctx: Ctx, k: Extract<Pickup, { kind: 'tm' }>, x: number, y: number, t: number) => {
   const gold = k.source === 'legendary'
   const color = TYPE_COLORS[MOVES[k.move].type]
-  if (!k.attracted) blitCentered(ctx, ellipse(9, 9, gold ? 'rgba(248,208,48,0.25)' : 'rgba(255,255,255,0.18)'), x, y)
+  if (!k.attracted) blitEllipse(ctx, 9, 9, gold ? 'rgba(248,208,48,0.25)' : 'rgba(255,255,255,0.18)', x, y)
   blitCentered(ctx, tmDisc(color, gold), x, y)
   const phase = (t * 0.7 + k.id * 0.13) % 1
   if (phase < 0.25) {

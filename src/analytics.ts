@@ -44,8 +44,41 @@ type AnalyticsEvents = {
     foe: EnemyId | null
     hit: HitKind | null
     challenge?: 'official' | 'practice'
+    /** How the device coped: canvas memory at its peak (MB, `createCanvas`), `navigator.deviceMemory` (GB), and the frames while playing (ms; long: past 50 ms). */
+    peakCanvasMb: number
+    peakCanvases: number
+    deviceMemory: number | null
+    frameAvg: number | null
+    frameP95: number | null
+    longFrames: number
     /** A haunted run's (Noite das Bruxas) candies, to tune the candy jar. */
     candies?: number
+  }
+  /**
+   * The page died mid-run last time (the crash watch, `takeCrash` in `bugReport.ts`), sent once
+   * by the next boot whether or not the player files a report. Rare, so it fits the budget.
+   */
+  run_crash: {
+    version: string
+    sameVersion: boolean
+    /** When the watch last wrote (ISO): the crash came within 5 s of it. */
+    at: string
+    partner: string | null
+    phase: string | null
+    minute: number | null
+    enemies: number | null
+    projectiles: number | null
+    wave: string | null
+    boss: string | null
+    place: string | null
+    heapMb: number | null
+    canvases: number | null
+    canvasMb: number | null
+    peakCanvasMb: number | null
+    frameMs: number | null
+    deviceMemory: number | null
+    /** The session's last error, if one came first. */
+    error: string | null
   }
   /** An entry pressed in the lobby: what players open. */
   lobby_press: { entry: LobbyFocus }
@@ -118,10 +151,42 @@ export const identify = (userId: string | null, handle: string | null) => {
 /** What an error report carries besides the error: where the player was, and the run's replay (see `game/replay.ts`). */
 export type ErrorContext = { [key: string]: string | number | boolean | null }
 
+/** The first URL in a stack trace (Chrome's `at f (url:1:2)` or Safari's `f@url:1:2`), without its line and column. */
+const stackUrl = (stack: string) => /(?:https?|[a-z-]+-extension):\/\/[^\s)]+?(?=:\d+:\d+)/.exec(stack)?.[0] ?? null
+
+/**
+ * Whether an error was thrown by the game's own scripts, from where it was
+ * thrown (an error event's `filename`, else the top of its stack). In-app
+ * browsers inject their own scripts into the page (the Google app and Chrome
+ * on iOS throw "Maximum call stack size exceeded." and "La" from theirs), and
+ * WebKit names the page itself as their file; extensions throw from theirs.
+ * None of that is ours to fix. With nothing to go on, it counts as ours.
+ */
+export const isOwnError = (error: unknown, filename: string | undefined, origin: string) => {
+  const stack = error instanceof Error ? error.stack : undefined
+  const url = filename || (stack ? stackUrl(stack) : null)
+  if (!url) return true
+  try {
+    const u = new URL(url)
+    return u.origin === origin && /\.[cm]?[jt]sx?$/.test(u.pathname)
+  } catch {
+    return true
+  }
+}
+
 const reported = new Set<string>()
 
-/** Reports an error once per message and place, up to `MAX_ERRORS` per page load. */
+/**
+ * A chunk loaded on demand that the server no longer has (each deploy renames
+ * them) or that the network dropped, in each browser's words. Expected: the
+ * shell reloads into the new build on `vite:preloadError` (`watchDeploys` in `main.ts`).
+ */
+export const isStaleChunk = (error: unknown) =>
+  error instanceof Error && /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/.test(error.message)
+
+/** Reports an error once per message and place, up to `MAX_ERRORS` per page load; never a stale chunk. */
 const reportError = (error: unknown, context: () => ErrorContext) => {
+  if (isStaleChunk(error)) return
   const key = error instanceof Error ? `${error.message}\n${error.stack?.split('\n')[1] ?? ''}` : String(error)
   if (reported.has(key) || reported.size >= MAX_ERRORS) return
   reported.add(key)
@@ -152,8 +217,8 @@ export const startAnalytics = (context: () => ErrorContext) => {
   const key = POSTHOG_KEY
   if (!key || !live()) return void (pending = null)
   // "Script error." comes from other origins (extensions) with nothing to go on.
-  addEventListener('error', (e) => e.error && reportError(e.error, context))
-  addEventListener('unhandledrejection', (e) => reportError(e.reason, context))
+  addEventListener('error', (e) => e.error && isOwnError(e.error, e.filename, location.origin) && reportError(e.error, context))
+  addEventListener('unhandledrejection', (e) => isOwnError(e.reason, undefined, location.origin) && reportError(e.reason, context))
   const load = () =>
     import('posthog-js')
       .then(({ default: ph }) => {

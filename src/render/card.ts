@@ -509,6 +509,7 @@ const finish = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, style:
   drawFrame(ctx, CARD_FRAMES[style.frame])
   const out = createCanvas(CARD.w * CARD.scale, CARD.h * CARD.scale)
   context2d(out).drawImage(canvas, 0, 0, out.width, out.height)
+  canvas.width = canvas.height = 0
   return out
 }
 

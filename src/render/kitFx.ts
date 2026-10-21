@@ -1,4 +1,4 @@
-import { blitCentered, ellipse, fromStrings, lazy } from '../engine/pixelart'
+import { blitCentered, blitEllipse, fromStrings, lazy } from '../engine/pixelart'
 import { TYPE_COLORS } from '../data/types'
 import { MOVES, type MoveDef } from '../game/moves'
 import type { Attack, Enemy, Game } from '../game/types'
@@ -27,9 +27,9 @@ export const drawTelegraph = (ctx: Ctx, a: Attack) => {
   const k = Math.min(1, a.age / a.ttl)
   const color = TYPE_COLORS[a.type]
   const late = k > 0.8 && Math.floor(a.age * 30) % 2 === 0
-  blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.5)), 'rgba(16,8,24,0.18)'), a.x, a.y)
+  blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.5)), 'rgba(16,8,24,0.18)', a.x, a.y)
   const inner = Math.max(1, Math.round(r * k))
-  blitCentered(ctx, ellipse(inner, Math.max(1, Math.round(inner * 0.5)), late ? 'rgba(255,255,255,0.55)' : `${color}66`), a.x, a.y)
+  blitEllipse(ctx, inner, Math.max(1, Math.round(inner * 0.5)), late ? 'rgba(255,255,255,0.55)' : `${color}66`, a.x, a.y)
   dashedRing(ctx, a.x, a.y, r, a.age * 6, late ? ['#ffffff'] : [color, '#ffffff'], 0.75, 0.5)
 }
 
