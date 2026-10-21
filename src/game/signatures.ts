@@ -126,7 +126,7 @@ export const updateSignatures = (g: Game, dt: number) => {
       case 'drill': {
         if (a.age < 0 || a.motion.kind !== 'linear') break
         let grinding = false
-        for (const until of a.hits.values()) if (until > g.time) grinding = true
+        for (const until of a.hits.values()) if (until > g.now) grinding = true
         const v = dm.hypot(a.motion.vx, a.motion.vy) || 1
         const want = a.memo * (grinding ? 0.22 : 1)
         const k = (v + (want - v) * Math.min(1, dt * 18)) / v

@@ -14,6 +14,7 @@ import { hasTrait, type StagePool } from './roster'
 import { isHeld } from './status'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
+import { roomOf } from './room'
 
 /**
  * Alpha Pokémon (as in Legends: Arceus): an oversized, red-eyed member of the
@@ -186,7 +187,7 @@ export const spawnAlpha = (g: Game, kind: EnemyId, x: number, y: number) => {
 
 /** A wave boss in its first `quiet` seconds: a due Alpha waits for it. */
 const bossFighting = (g: Game, quiet: number) =>
-  quiet > 0 && g.enemies.some((e) => e.boss && !e.alpha && e.dying < 0 && g.time - e.bornAt < quiet && bossWaveAt(e.kind) !== null)
+  quiet > 0 && g.enemies.some((e) => e.boss && !e.alpha && e.dying < 0 && g.now - e.bornAt < quiet && bossWaveAt(e.kind) !== null)
 
 /** Brings an Alpha in, off screen, when one is due and there's room for it. */
 const direct = (g: Game) => {
@@ -301,10 +302,10 @@ const act = (g: Game, e: Enemy, a: AlphaState, dt: number) => {
 
 /**
  * Runs before `updateEnemies` (so a dash's hit lands before the body's
- * contact): brings Alphas in on schedule outside rift arenas and moves the ones alive.
+ * contact): brings Alphas in on schedule outside rooms (rift arenas, places) and moves the ones alive.
  */
 export const updateAlphas = (g: Game, dt: number) => {
-  const arena = g.rift.arena !== null
+  const arena = roomOf(g) !== null
   if (!arena) direct(g)
   const finale = !g.endless && g.time >= RUN_LENGTH
   for (const e of g.enemies) {

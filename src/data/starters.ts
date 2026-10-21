@@ -12,7 +12,7 @@ export type EvolutionStage = {
   bonus: StatDelta
 }
 
-/** What every playable Pokémon shares: the 27 starters and the families that hatch from eggs (`hatchlings.ts`). */
+/** What every playable Pokémon shares: the 27 starters, the families that hatch from eggs (`hatchlings.ts`) and the legends (`legends.ts`). */
 export type PlayableDef = {
   name: string
   color: string
@@ -26,9 +26,12 @@ export type PlayableDef = {
    * follows (sizes, signature, types, how widely a move is shared) are tested
    * in `learnsets.test.ts`.
    */
-  learnset: readonly [readonly MoveId[], readonly MoveId[]] | readonly [readonly MoveId[], readonly MoveId[], readonly MoveId[]]
-  /** Two or three stages; the last one is the final evolution. */
-  line: readonly [EvolutionStage, EvolutionStage] | readonly [EvolutionStage, EvolutionStage, EvolutionStage]
+  learnset:
+    | readonly [readonly MoveId[]]
+    | readonly [readonly MoveId[], readonly MoveId[]]
+    | readonly [readonly MoveId[], readonly MoveId[], readonly MoveId[]]
+  /** Two or three stages, the last one the final evolution; a legend's single stage never evolves (it awakens, `game/legend.ts`). */
+  line: readonly [EvolutionStage] | readonly [EvolutionStage, EvolutionStage] | readonly [EvolutionStage, EvolutionStage, EvolutionStage]
 }
 
 export type StarterDef = PlayableDef & {

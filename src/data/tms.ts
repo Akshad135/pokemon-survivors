@@ -28,7 +28,9 @@ export const BOSS_TMS = {
 /**
  * The "legendary TM" a beaten legendary offers (at most one learned per run):
  * its own legendary move. Rift legendaries drop it when their arena is won,
- * the finale's mythicals (endless mode) when they fall.
+ * the finale's mythicals (endless mode) when they fall. The trios and Mewtwo
+ * leave their `BOSS_TMS` disc instead, so their capstones (and Arceus's) are
+ * played by the legends themselves.
  */
 export const LEGENDARY_TMS: Partial<Record<RiftLegend | EnemyId, MoveId>> = LEGENDARY_MOVE_OF
 

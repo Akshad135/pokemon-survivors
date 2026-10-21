@@ -142,7 +142,7 @@ export const drawTraitAir = (ctx: Ctx, g: Game, visible: Visible) => {
     }
     if (act && traitPace(e) === 0 && !(act.kind === 'beam' && act.phase === 'fire') && !(act.kind === 'leaper' && act.phase === 'air')) {
       const top = e.y - sprites(ENEMIES[e.kind].dex).bodyH - 6
-      blitCentered(ctx, alert, e.x, top + (Math.floor(g.time * 8) % 2))
+      blitCentered(ctx, alert, e.x, top + (Math.floor(g.now * 8) % 2))
     }
   }
 }

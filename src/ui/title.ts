@@ -12,7 +12,7 @@ import { DISCORD_GIFT } from '../game/gifts'
 import { nextMilestone } from '../game/referral'
 import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks, playsShiny } from '../game/shinyPicks'
-import type { WallEntry } from '../game/supporters'
+import { supporterCount, type WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
 import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
@@ -122,9 +122,10 @@ const layout = () => (matchMedia(LANDSCAPE).matches ? 'landscape' : matchMedia(N
 const pixelSize = (canvas: HTMLCanvasElement, k: number) => {
   const dpr = uiDpr()
   const width = `${(canvas.width * k) / dpr}px`
-  if (canvas.style.width === width) return
+  const height = `${(canvas.height * k) / dpr}px`
+  if (canvas.style.width === width && canvas.style.height === height) return
   canvas.style.width = width
-  canvas.style.height = `${(canvas.height * k) / dpr}px`
+  canvas.style.height = height
 }
 
 /** Fits the logo to the viewport in whole device pixels per logo pixel: big for the intro, smaller in the lobby. */
@@ -359,10 +360,11 @@ const hallCard = (open: () => void) => {
     ? h('button', { ...attrs, type: 'button', onclick: open }, ...kids)
     : h('a', { ...attrs, href: ROUTES.support[locale()], target: '_blank', rel: 'noopener', onclick: () => playSfx('select') }, ...kids)
   void fetchWall().then((wall) => {
-    const newest = wall?.at(-1)
+    const newest = wall?.entries.at(-1)
     if (!wall || !newest) return
-    const shown = [...wall].sort(byStanding).slice(0, 4)
-    const more = wall.length - shown.length
+    const shown = [...wall.entries].sort(byStanding).slice(0, 4)
+    // Supporters off the wall count too, so the number never drops when one hides.
+    const more = supporterCount(wall) - shown.length
     stack.replaceChildren(...shown.map(wallFace), ...(more > 0 ? [h('em', {}, `+${formatNumber(more)}`)] : []))
     ticker.replaceChildren(h('img', { src: heartIcon(), alt: '' }), h('span', {}, m.hallJoined(newest.handle, dayKey(new Date(newest.since)) === dayKey(today()))))
     el.classList.add('filled')
@@ -464,19 +466,24 @@ const partnerStage = (onPlay: () => void) => {
   const shadow = ellipse(13, 3, 'rgba(16, 24, 16, 0.3)')
   const tick = (time: number) => {
     const dpr = uiDpr()
+    const s = loadedSprites(form.dex, shiny)
+    // A big legend (Lugia's wings) gets a wider stage, so it shows whole at a smaller scale instead of cropped and huge.
+    const sw = Math.max(STAGE.w, (s?.bodyW ?? 0) + 16)
+    const sh = Math.max(STAGE.h, (s?.bodyH ?? 0) + 14)
+    const feet = sh - (STAGE.h - STAGE.feet)
+    if (canvas.width !== sw || canvas.height !== sh) Object.assign(canvas, { width: sw, height: sh })
     const room = el.clientHeight - plate.offsetHeight - 8
-    const k = Math.min(Math.round(4 * dpr), logoScale(STAGE.w, STAGE.h, el.clientWidth, Math.max(room, 1), dpr))
+    const k = Math.min(Math.round(4 * dpr), logoScale(sw, sh, el.clientWidth, Math.max(room, 1), dpr))
     pixelSize(canvas, k)
     const ctx = context2d(canvas)
-    ctx.clearRect(0, 0, STAGE.w, STAGE.h)
-    blitCentered(ctx, shadow, STAGE.w / 2, STAGE.feet)
-    const s = loadedSprites(form.dex, shiny)
+    ctx.clearRect(0, 0, sw, sh)
+    blitCentered(ctx, shadow, sw / 2, feet)
     if (!s) return
-    drawPokemon(ctx, s, 'Idle', 0, time, STAGE.w / 2, STAGE.feet)
+    drawPokemon(ctx, s, 'Idle', 0, time, sw / 2, feet)
     // The tappable body: the sprite's, a few art px wider, over the canvas.
     const css = k / dpr
     const w = (s.bodyW + 8) * css
-    const top = canvas.offsetTop + (STAGE.feet - s.bodyH - 4) * css
+    const top = canvas.offsetTop + (feet - s.bodyH - 4) * css
     hit.style.cssText = `left:${canvas.offsetLeft + (canvas.offsetWidth - w) / 2}px;top:${top}px;width:${w}px;height:${(s.bodyH + 6) * css}px`
   }
   const setOut = (next: boolean) => {

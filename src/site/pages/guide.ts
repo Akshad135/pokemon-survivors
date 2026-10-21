@@ -13,7 +13,13 @@ import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../../data/megas'
-import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
+import { RIFT, RIFT_LEGENDS, type RiftLegend } from '../../data/rifts'
+import { DOMAINS, partnerOf } from '../../data/domains'
+import { ABILITIES } from '../../data/abilities'
+import { AWAKEN_AT, LEGEND_IDS, LEGENDS } from '../../data/legends'
+import { legendSource } from '../../game/capture'
+import { legendMods } from '../../game/legend'
+import { CAVE, GRAVEYARD, PLACE, PLACE_IDS, PLACES, SKY, WING_IDS, WINGS } from '../../data/places'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { BOSS_FIGHT, bossCandidates, ELITE, EVENTS, FINALE, MYTHICALS, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart, TRIO_IDS, TRIOS, type BossEvent } from '../../data/waves'
 import { createRng } from '../../engine/rng'
@@ -34,6 +40,8 @@ import { SHINY_BUFF, SHINY_ODDS } from '../../game/shiny'
 import { AFFINITY_ODDS, biomeWeight, drawRoster, TRAIT_ALIVE, TRAIT_CAP, TRAIT_FROM } from '../../game/roster'
 import { MIN_SPECIAL_COOLDOWN, resolveSpecial, SPECIAL_IDS, specialOfType, SPECIALS } from '../../game/special'
 import { riftScale } from '../../game/rift'
+import { placeBossScale, wingAmount } from '../../game/place'
+import { LANDMARK, LANDMARK_IDS, LANDMARK_LOOT, TUNNEL, type LandmarkLoot, type TreasureLandmark } from '../../data/landmarks'
 import { BURN_ATTACK, FREEZE_SHATTER, SEED_HEAL, STATUS_KINDS, STATUS_RULES, type StatusKind } from '../../game/status'
 import { SEED_JUMPS } from '../../game/kitRules'
 import { LOCALES, type Locale } from '../../i18n'
@@ -42,7 +50,7 @@ import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
 import { clock, pokedex, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
-import { patternText, traitText, typeBadge } from './pokedex'
+import { bossAttacks, patternText, traitText, typeBadge } from './pokedex'
 
 type Section = keyof SiteMessages['guide']['sections']
 
@@ -298,7 +306,7 @@ const bosses = (locale: Locale, m: SiteMessages) => {
       e.chance !== undefined ? `${clock(e.at)} (${pct(e.chance / candidates.length)}%)` : clock(e.at),
       'trio' in e ? html`${bossName(locale, id)} <small>${m.trios.names[TRIO_IDS[i]!]}</small>` : bossName(locale, id),
       ENEMIES[id].hp.toLocaleString(m.lang.tag),
-      html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`,
+      bossAttacks(id, m),
     ])
   }
   const rows = EVENTS.flatMap((e) => (e.kind === 'boss' ? rowsOf(e) : []))
@@ -312,18 +320,27 @@ const bosses = (locale: Locale, m: SiteMessages) => {
 
 const rifts = (locale: Locale, m: SiteMessages) => {
   const r = m.guide.rifts
+  const places: Partial<Record<RiftLegend, { place: string }>> = LOCALES[locale].messages.rifts.domains
   const num = (v: number) => v.toLocaleString(m.lang.tag)
-  const attacks = (id: keyof typeof ENEMIES) => html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
+  const attacks = (id: keyof typeof ENEMIES) => bossAttacks(id, m)
+  /** Latios fights in Latias's domain, so his row names hers. */
+  const host = (id: RiftLegend) => (DOMAINS[id] ? id : RIFT_LEGENDS.find((l) => partnerOf(l) === id))
+  const domain = (id: RiftLegend | typeof REAPER) => {
+    const at = id === REAPER ? undefined : host(id)
+    return (at && places[at]?.place) ?? r.endlessTitle
+  }
+  const battle = Math.round(Math.min(...Object.values(DOMAINS).map((d) => d.battleTime)) / 60)
   const rows = [...RIFT_LEGENDS, REAPER].map((id) => [
     bossName(locale, id),
+    domain(id),
     html`${ENEMIES[id].types.map((type) => typeBadge(type, m))}`,
     num(id === REAPER ? reaperHp(0) : ENEMIES[id].hp),
     attacks(id),
   ])
   const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
-  const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
-  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
-    ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
+  const growth = Math.round((riftScale(RIFT.slots[0] + 60).hp - 1) * 100)
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.slots[0]), second: clock(RIFT.slots[1]), bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, battle, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
+    ${table([r.legendHead, r.domainHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
     <p class="note">${r.hpNote(growth)}</p>
     <h3>${r.endlessTitle}</h3>
     ${paragraphs(
@@ -336,6 +353,89 @@ const rifts = (locale: Locale, m: SiteMessages) => {
         reaperBonus: num(ENDLESS.reaperBonus),
       }),
     )}`
+}
+
+/** The Legend mode: how each legend is captured (`game/capture.ts`) and what it plays with. */
+const legends = (locale: Locale, m: SiteMessages) => {
+  const g = m.guide.legends
+  const rows = LEGEND_IDS.map((id) => [
+    bossName(locale, id),
+    g.where[legendSource(id)],
+    String(LEGENDS[id].unlock.wins),
+    ABILITIES[LEGENDS[id].innate.ability].name,
+    MOVES[LEGENDS[id].signature].name,
+  ])
+  const names = LOCALES[locale].messages.difficulty.names
+  const times = (v: number) => `${v.toLocaleString(m.lang.tag, { maximumFractionDigits: 2 })}x`
+  const pressure = DIFFICULTY_IDS.map((id) => {
+    const d = legendMods(id)
+    return [names[id], times(d.enemyHp), times(d.enemyDamage), times(d.spawnRate), times(d.enemySpeed), times(d.ramp), times(d.healing)]
+  })
+  return html`${paragraphs(g.paragraphs({ count: LEGEND_IDS.length, awaken: AWAKEN_AT }))}
+    ${table([g.legendHead, g.whereHead, g.winsHead, g.innateHead, g.opensHead], rows)}
+    <h3>${g.pressureTitle}</h3>
+    <p>${g.pressure}</p>
+    ${table(m.guide.run.difficultyHead, pressure)}`
+}
+
+const places = (locale: Locale, m: SiteMessages) => {
+  const p = m.guide.places
+  const num = (v: number) => v.toLocaleString(m.lang.tag)
+  const pct = (v: number) => Math.round(v * 100)
+  const rows = PLACE_IDS.map((id) => [
+    p.names[id],
+    p.seconds(PLACES[id].time),
+    html`${PLACES[id].species.map((e) => html`<a class="with-mini" href="${dexLink(locale, ENEMIES[e].name)}" title="${ENEMIES[e].name}">${portrait(ENEMIES[e].dex)}</a>`)}`,
+  ])
+  const spiritomb = GRAVEYARD.boss
+  const attacks = html`<ul class="list">${(BOSS_PATTERNS[spiritomb] ?? []).map((pt) => html`<li>${patternText(pt, m)}</li>`)}</ul>`
+  return html`${paragraphs(p.paragraphs({ first: clock(PLACE.firstAt), every: PLACE.every / 60, bossWait: PLACE.bossWait, open: PLACE.openTime, enter: num(PLACE.enterTime), rescue: pct(PLACE.fallHp) }))}
+    ${table([p.placeHead, p.timeHead, p.speciesHead], rows)}
+    <h3>${p.names.cave}</h3>
+    ${paragraphs(
+      p.cave({
+        floors: CAVE.floors,
+        light: CAVE.light,
+        fire: CAVE.fireLight,
+        electric: CAVE.electricLight,
+        time: PLACES.cave.time,
+        wind: new Intl.ListFormat(m.lang.tag, { type: 'conjunction' }).format(CAVE.wind.map((s) => `${s}s`)),
+        house: CAVE.monsterHouse,
+        egg: pct(EGG_SOURCES.place.chance),
+      }),
+    )}
+    <h3>${p.names.graveyard}</h3>
+    ${paragraphs(
+      p.graveyard({
+        spirits: GRAVEYARD.spirits,
+        time: PLACES.graveyard.time,
+        shiny: Math.round(1 / GRAVEYARD.shinyOdds),
+        hp: num(Math.round(ENEMIES[spiritomb].hp * placeBossScale(90).hp)),
+        egg: pct(EGG_SOURCES.place.chance),
+      }),
+    )}
+    ${table([m.guide.bosses.bossHead, m.guide.bosses.attacksHead], [[bossName(locale, spiritomb), attacks]])}
+    <h3>${p.names.sky}</h3>
+    ${paragraphs(p.sky({ time: PLACES.sky.time, tailwind: pct(SKY.tailwind - 1), every: SKY.wings.every, flock: SKY.flock.every }))}
+    ${table([p.wingHead, p.effectHead], WING_IDS.map((id) => [WINGS[id].name, p.wings[id](wingAmount(id))]))}`
+}
+
+/** The map's landmarks: how often they stand, what each one is and what its treasure holds (`data/landmarks.ts`). */
+const landmarks = (_locale: Locale, m: SiteMessages) => {
+  const l = m.guide.landmarks
+  const coins = (n: number) => `₽${(n * COIN_VALUES[1]).toLocaleString(m.lang.tag)}+`
+  const rows = LANDMARK_IDS.map((id) => {
+    const loot: LandmarkLoot | null = id in LANDMARK_LOOT ? LANDMARK_LOOT[id as TreasureLandmark] : null
+    return [
+      html`<b>${l.names[id]}</b>`,
+      l.what[id],
+      loot
+        ? l.loot({ coins: coins(loot.coins), items: loot.drops.length, berries: loot.berries ?? 0, xp: Math.round((loot.xp ?? 0) * 100), egg: loot.egg ? Math.round(EGG_SOURCES.chest.chance * 100) : 0 })
+        : l.noLoot,
+    ]
+  })
+  return html`${paragraphs(l.paragraphs({ block: LANDMARK.block, odds: Math.round(LANDMARK.odds * 100), open: LANDMARK.openTime.toLocaleString(m.lang.tag), tunnel: TUNNEL.enterTime.toLocaleString(m.lang.tag) }))}
+    ${table([l.placeHead, l.whatHead, l.lootHead], rows)}`
 }
 
 const megas = (locale: Locale, m: SiteMessages) => {
@@ -492,6 +592,9 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   bosses,
   traits,
   rifts,
+  legends,
+  places,
+  landmarks,
   megas,
   shinies,
   eggs,

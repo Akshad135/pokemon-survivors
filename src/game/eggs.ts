@@ -1,14 +1,15 @@
 import { chance, weightedPick, type Rng } from '../engine/rng'
 import type { EnemyId } from '../data/enemies'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, type HatchlingId, type PlayableId } from '../data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, isStarter, type HatchlingId, type PlayableId } from '../data/hatchlings'
 import { RIFT_LEGENDS } from '../data/rifts'
+import { GRAVEYARD } from '../data/places'
 import { MYTHICALS } from '../data/waves'
 import { markHatch } from './dex'
 import { REAPER } from './endless'
 import type { Save } from './meta'
 
 /**
- * Eggs: a few drop in runs (bosses, locked chests, rifts), wait in a small
+ * Eggs: a few drop in runs (bosses, locked chests, rifts, places), wait in a small
  * incubator and hatch after enough steps walked inside runs, unlocking a
  * playable family (`data/hatchlings.ts`). Pure rules: the simulation awards
  * them (`awardEgg` in `pickups.ts`) and `ui/save.ts` persists them.
@@ -45,6 +46,8 @@ export const EGG_SOURCES = {
   boss: { chance: 0.15, odds: { common: 70, rare: 25, ultra: 5 } },
   chest: { chance: 0.1, odds: { common: 85, rare: 15 } },
   rift: { chance: 0.4, odds: { rare: 65, ultra: 35 } },
+  /** The cave's treasure chest and Spiritomb (`data/places.ts`). */
+  place: { chance: 0.25, odds: { common: 55, rare: 40, ultra: 5 } },
   final: { chance: 1, odds: { rare: 70, ultra: 30 } },
   reaper: { chance: 1, odds: { ultra: 1 } },
   /** A defended nest (`fieldMissions.ts`): the mission rolls its own odds per difficulty first. */
@@ -53,7 +56,7 @@ export const EGG_SOURCES = {
 
 export type EggSource = keyof typeof EGG_SOURCES
 
-/** The egg rule of a fainted boss: rift legendaries, Arceus, Mewtwo and the mythicals (Mew, Celebi, Jirachi) have their own. */
+/** The egg rule of a fainted boss: rift legendaries, Arceus, Mewtwo, the mythicals (Mew, Celebi, Jirachi) and places' bosses have their own. */
 export const bossEggSource = (kind: EnemyId): EggSource =>
   kind === REAPER
     ? 'reaper'
@@ -61,7 +64,9 @@ export const bossEggSource = (kind: EnemyId): EggSource =>
       ? 'rift'
       : kind === 'mewtwo' || MYTHICALS.some((id) => id === kind)
         ? 'final'
-        : 'boss'
+        : kind === GRAVEYARD.boss
+          ? 'place'
+          : 'boss'
 
 /* ---------------- In a run ---------------- */
 
@@ -145,8 +150,8 @@ export const hatchEgg = (save: Save, index: number, rng: Rng): { save: Save; hat
   }
 }
 
-/** Starters are always playable; egg families once hatched. */
-export const isUnlocked = (hatched: Hatched, id: PlayableId) => !isHatchling(id) || hatched[id] !== undefined
+/** Starters are always playable; egg families once hatched. Legends aren't unlocked by eggs: the Legend mode captures them (the save's side). */
+export const isUnlocked = (hatched: Hatched, id: PlayableId) => isStarter(id) || (isHatchling(id) && hatched[id] !== undefined)
 
 /* ---------------- Save fields ---------------- */
 

@@ -1,6 +1,7 @@
 import type { TitleId } from '../data/achievements'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { isLegend } from '../data/legends'
 import { RUN_LENGTH } from '../data/waves'
 import { DAY_TIME_ZONE, isDayKey, type DayKey } from './day'
 import { isDifficulty, type Difficulty } from './difficulty'
@@ -221,6 +222,20 @@ export type BoardPeriod = (typeof BOARD_PERIODS)[number]
 
 export const isBoardPeriod = (v: unknown): v is BoardPeriod => BOARD_PERIODS.some((p) => p === v)
 
+/**
+ * The boards' two sides: the regular runs (`standard`) and the Legend mode's
+ * (`legend`, a legend played), each split by difficulty. The mode follows the
+ * Pokémon played, so a run can't report the wrong one.
+ */
+export const RUN_MODES = ['standard', 'legend'] as const
+
+export type RunMode = (typeof RUN_MODES)[number]
+
+export const isRunMode = (v: unknown): v is RunMode => RUN_MODES.some((m) => m === v)
+
+/** The boards a run of `starter` goes on. */
+export const runMode = (starter: PlayableId): RunMode => (isLegend(starter) ? 'legend' : 'standard')
+
 /** Players shown at the top of a board. */
 export const BOARD_SIZE = 50
 
@@ -287,6 +302,8 @@ export type PublicProfile = ProfileName & {
   title: TitleId | null
   dex: { seen: number; caught: number }
   records: Partial<Record<Difficulty, ProfileRun>>
+  /** The Legend mode's records, by difficulty. Missing from an older API. */
+  legendRecords?: Partial<Record<Difficulty, ProfileRun>>
   recent: ProfileRun[]
   followers: number
   following: number

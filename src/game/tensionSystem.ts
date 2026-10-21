@@ -1,13 +1,14 @@
 import { edgeDistance, harmAfter, reachAfter, TENSION, tensionAfter, tensionCeiling } from './tension'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
+import { roomOf } from './room'
 
 /** Center of the screen in the world (the camera trails the player by a few px). */
 const screenCenter = (g: Game) => ({ x: g.camera.x + g.view.w / 2, y: g.camera.y + g.view.h / 2 })
 
 /** A regular chasing the player just died: how far into the screen it got feeds `reach`. Bosses and flybys don't count. */
 export const noteKill = (g: Game, e: Enemy) => {
-  if (e.boss || e.behavior.kind !== 'chase' || g.rift.arena) return
+  if (e.boss || e.behavior.kind !== 'chase' || roomOf(g)) return
   const c = screenCenter(g)
   const dx = e.x - c.x
   const dy = e.y - c.y
