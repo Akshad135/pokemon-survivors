@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createRng } from '../engine/rng'
-import { BIOMES, WEATHER_IDS, type BiomeId } from '../data/biomes'
-import { branchesAt } from '../data/branches'
 import { PLAYABLE } from '../data/hatchlings'
 import { BOTTLE_CAPS, EVO_ITEM_PRICE, type ShopLevel } from '../data/shop'
-import { drawBranches } from './branch'
-import { buyCap, buyEvoItem, capBlock, evoBlock, guaranteedBranches, mergeCaps, mergeEvoItems, parseCaps, parseEvoItems, runBoost } from './evoItems'
+import { buyCap, buyEvoItem, capBlock, evoBlock, mergeCaps, mergeEvoItems, parseCaps, parseEvoItems, runBoost } from './evoItems'
 import { advancePhase, chooseOffer } from './game'
 import { EMPTY_SAVE, NO_RANKS, type Save } from './meta'
 import { parseReplay, startGame, type ReplayStart } from './replay'
@@ -14,45 +10,10 @@ import { BASE_STATS, boostStats } from './stats'
 import type { Game } from './types'
 
 const START: ReplayStart = { seed: 7, starter: 'charmander', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
-const EEVEE = branchesAt('eevee', 1)
-const BIOME_IDS = Object.keys(BIOMES) as BiomeId[]
 
 const save = (wallet: number, level: ShopLevel): Save => ({ ...EMPTY_SAVE, wallet, shop: { ...NO_SHOP, level } })
 
 describe('evolution items', () => {
-  it('guarantee their branches among the offers, marked, for every seed, weather and biome', () => {
-    const sure = guaranteedBranches(['iceStone', 'shinyStone'], EEVEE)
-    expect(sure).toEqual(['glaceon', 'sylveon'])
-    for (let seed = 1; seed < 200; seed++) {
-      const ctx = { weather: WEATHER_IDS[seed % WEATHER_IDS.length]!, biome: BIOME_IDS[seed % BIOME_IDS.length]! }
-      const offers = drawBranches(createRng(seed), EEVEE, ctx, 3, sure)
-      expect(offers).toHaveLength(3)
-      expect(new Set(offers.map((o) => o.id)).size).toBe(3)
-      for (const id of sure) expect(offers.find((o) => o.id === id)?.favor).toBe('item')
-    }
-  })
-
-  it('leave the draw as it was without any, and draw among the guaranteed ones past the slots', () => {
-    const ctx = { weather: 'rain', biome: 'meadow' } as const
-    for (let seed = 1; seed < 50; seed++) expect(drawBranches(createRng(seed), EEVEE, ctx, 3, [])).toEqual(drawBranches(createRng(seed), EEVEE, ctx))
-    const all = guaranteedBranches(['waterStone', 'thunderStone', 'fireStone', 'sunStone', 'moonStone'], EEVEE)
-    const offers = drawBranches(createRng(3), EEVEE, ctx, 3, all)
-    expect(offers.every((o) => all.includes(o.id) && o.favor === 'item')).toBe(true)
-    // A family that always offers both still marks the guaranteed one.
-    expect(drawBranches(createRng(1), branchesAt('scyther', 1), ctx, 3, ['scizor']).find((o) => o.id === 'scizor')?.favor).toBe('item')
-  })
-
-  it('come from the run start into the branch pick', () => {
-    const g = startGame({ ...START, starter: 'eevee', evo: ['leafStone'] })
-    chooseOffer(g, g.offers[0]!)
-    g.player.level = PLAYABLE.eevee.line[0].evolveAt!
-    g.pendingLevelUps = 1
-    advancePhase(g)
-    while (g.phase === 'levelup') chooseOffer(g, g.offers[0]!)
-    expect(g.phase).toBe('branch')
-    expect(g.offers).toContainEqual({ kind: 'form', id: 'leafeon', favor: 'item' })
-  })
-
   it('are bought once from the Shop (Lv 3), into `spent`, and merge as a union', () => {
     expect(evoBlock(save(1e6, 2), 'iceStone')).toBe('locked')
     expect(evoBlock(save(100, 3), 'iceStone')).toBe('poor')

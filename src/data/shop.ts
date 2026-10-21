@@ -165,9 +165,11 @@ export const TM_SHELF = {
 } as const
 
 /**
- * The evolution shelf's items, each owned for good: when its family
- * branches, the branches it names are always among the offers
- * (`drawBranches`). Names stay official English.
+ * The evolution shelf's items, each owned for good: the branches it names
+ * need it in a run (`evolutionOffers`; Eevee's three `free` ones don't, the
+ * item only adds them to the choice). A run can also find one: a wave boss
+ * may drop a missing one (`EVO_FIND`), good for that run only. Names stay
+ * official English.
  */
 export const EVO_ITEMS = {
   waterStone: { name: 'Water Stone', branches: ['vaporeon'] },
@@ -192,6 +194,13 @@ export const EVO_ITEM_IDS = Object.keys(EVO_ITEMS) as EvoItemId[]
 
 /** What an evolution item costs. */
 export const EVO_ITEM_PRICE = 10_000
+
+/**
+ * Evolution items found in a run (`game/evoGate.ts`): while the run's
+ * Pokémon still has a branch ahead that needs an item it lacks, each boss
+ * defeated drops one of those items with this chance. It lasts the run.
+ */
+export const EVO_FIND = { chance: 0.3 } as const
 
 /**
  * Bottle Caps (Hyper Training): per Pokémon, `prices.length` levels, each

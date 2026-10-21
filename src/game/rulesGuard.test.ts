@@ -9,6 +9,7 @@ import { withBranch } from './moves'
 import { OUTBREAK_SPECIES } from './outbreak'
 import { moveOf, recordEvent, recordStep, resimulate, RULES_VERSION, startGame, startRecording, TICK, type Replay, type ReplayStart } from './replay'
 import { enterArena } from './riftArena'
+import { spawnWaveBoss } from './spawner'
 import { EVENTS } from '../data/waves'
 import type { Game } from './types'
 
@@ -139,6 +140,25 @@ const SCENARIOS = {
       spawnAlpha(g, pickAlpha(g.rng, g.roster.stages[0]!)!, g.player.x - 70, g.player.y)
     },
   },
+  /**
+   * Evolution items as keys (`evoGate.ts`): Scyther levelled past its
+   * evolution with no item waits in its form, an Everstone's 15% stronger,
+   * while a wave boss falls next to it and rolls its item drop; a Metal Coat
+   * lying close by, as a boss leaves one, lets it evolve on the spot.
+   */
+  evoGate: {
+    start: { ...START, starter: 'scyther' },
+    seconds: 20,
+    stage: (g) => {
+      g.time = 240
+      g.nextEvent = 99
+      g.revives = 2
+      gainXp(g, 2500)
+      const boss = spawnWaveBoss(g, 'onix', g.time)
+      Object.assign(boss, { x: g.player.x + 30, y: g.player.y, hp: 1 })
+      g.pickups.push({ id: g.nextId++, x: g.player.x - 20, y: g.player.y, vx: 0, vy: 0, attracted: false, age: 0, kind: 'evoItem', item: 'metalCoat' })
+    },
+  },
   /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
   legend: {
     start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
@@ -159,7 +179,7 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  31: {
+  32: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
@@ -168,6 +188,7 @@ const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
     bag: '1077·9·3·d13820e7',
     shop: '1537·65·19·246b065f',
     shopTms2: '1787·49·17·465b899a',
+    evoGate: '1487·52·24·4db92003',
     legend: '1098·51·14·86dc0d8b',
   },
 }
@@ -261,7 +282,7 @@ describe(`the simulation under RULES_VERSION ${RULES_VERSION}`, () => {
   const endings = Object.fromEntries(Object.entries(SCENARIOS).map(([id, s]) => [id, ending(s)])) as Record<ScenarioId, ReturnType<typeof ending>>
 
   it('plays each scenario through what it covers, and its replay lands on the same ending', () => {
-    const { levelUps, mega, riftFall, alphaHazards, bag, shopTms2 } = endings
+    const { levelUps, mega, riftFall, alphaHazards, bag, shopTms2, evoGate } = endings
     expect(levelUps.live.player.level).toBeGreaterThan(10)
     expect(mega.live.mega.count).toBe(1)
     expect(riftFall.live.events.map((e) => e.kind)).toEqual(expect.arrayContaining(['riftFall', 'riftExit', 'revive', 'gameover']))
@@ -270,6 +291,7 @@ describe(`the simulation under RULES_VERSION ${RULES_VERSION}`, () => {
     expect(bag.live.events.some((e) => e.kind === 'maxRevive')).toBe(true)
     expect(shopTms2.live.weather.held).not.toBeNull()
     expect(shopTms2.live.player.moves.find((m) => m.id === 'swordsDance')?.stacks).toBeGreaterThan(1)
+    expect([evoGate.live.player.stage, evoGate.live.evoFound.length, evoGate.live.evoHeld]).toEqual([1, 1, false])
     for (const e of Object.values(endings)) expect(e.sameEnd).toBe(true)
   })
 

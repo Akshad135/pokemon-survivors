@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { BRANCH_IDS, BRANCHES, branchesAt, branchesOf } from '../data/branches'
 import manifest from '../data/sprites.generated.json'
-import { drawBranches, formAt } from './branch'
+import { canBranch, evolutionOffers, formAt } from './branch'
 import { runLearnset } from './learnsets'
 import { advancePhase, chooseOffer } from './game'
 import { NO_RANKS } from './meta'
@@ -30,39 +30,61 @@ describe('branch data', () => {
   })
 })
 
-describe('drawBranches', () => {
-  it('draws the same three for the same seed, all different', () => {
-    const ctx = { weather: 'clear', biome: 'meadow' } as const
+describe('evolutionOffers', () => {
+  const ctx = { weather: 'clear', biome: 'meadow' } as const
+  const ids = (offers: readonly { id: string }[]) => offers.map((o) => o.id)
+
+  it("without items, draws one of Eevee's three free branches, the same for the same seed, the weather pulling one in", () => {
+    const seen = new Set<string>()
+    for (let seed = 1; seed < 60; seed++) {
+      const offers = evolutionOffers(createRng(seed), EEVEE, ctx, [])
+      expect(offers).toHaveLength(1)
+      expect(evolutionOffers(createRng(seed), EEVEE, ctx, [])).toEqual(offers)
+      seen.add(offers[0]!.id)
+    }
+    expect([...seen].sort()).toEqual(['flareon', 'jolteon', 'vaporeon'])
+    const rainy = Array.from({ length: 300 }, (_, i) => evolutionOffers(createRng(i + 1), EEVEE, { weather: 'rain', biome: 'meadow' }, [])[0]!)
+    const vaporeon = rainy.filter((o) => o.id === 'vaporeon')
+    expect(vaporeon.length).toBeGreaterThan(rainy.length / 2)
+    expect(vaporeon.every((o) => o.favor === 'weather')).toBe(true)
+  })
+
+  it('opens a choice with items: the free draw plus every branch an item unlocks, marked, in data order', () => {
     for (let seed = 1; seed < 40; seed++) {
-      const a = drawBranches(createRng(seed), EEVEE, ctx)
-      expect(drawBranches(createRng(seed), EEVEE, ctx)).toEqual(a)
-      expect(new Set(a.map((o) => o.id)).size).toBe(3)
+      const offers = evolutionOffers(createRng(seed), EEVEE, ctx, ['iceStone', 'moonStone'])
+      expect(offers).toHaveLength(3)
+      expect(offers.filter((o) => o.favor === 'item').map((o) => o.id)).toEqual(['umbreon', 'glaceon'])
+      expect(['vaporeon', 'jolteon', 'flareon']).toContain(offers[0]!.id)
+      // A free branch's stone puts it in the choice beside another free one.
+      const water = evolutionOffers(createRng(seed), EEVEE, ctx, ['waterStone'])
+      expect(water).toHaveLength(2)
+      expect(water[0]).toEqual({ id: 'vaporeon', favor: 'item' })
     }
+    expect(ids(evolutionOffers(createRng(1), EEVEE, ctx, ['waterStone', 'thunderStone', 'fireStone']))).toEqual(['vaporeon', 'jolteon', 'flareon'])
   })
 
-  it('always offers a branch the weather or the biome favors, flagged', () => {
-    const cases = [
-      [{ weather: 'rain', biome: 'cave' }, ['vaporeon', 'umbreon']],
-      [{ weather: 'sun', biome: 'meadow' }, ['flareon']],
-      [{ weather: 'snow', biome: 'snow' }, ['glaceon']],
-      [{ weather: 'clear', biome: 'forest' }, ['jolteon', 'espeon', 'sylveon', 'leafeon']],
-    ] as const
-    for (const [ctx, favored] of cases) {
-      for (let seed = 1; seed < 30; seed++) {
-        const offers = drawBranches(createRng(seed), EEVEE, ctx)
-        const lead = offers.find((o) => o.favor !== null)
-        expect(lead && favored.some((id) => id === lead.id), `${ctx.weather}/${ctx.biome} #${seed}`).toBe(true)
-      }
-    }
+  it('keeps an item branch closed without its item, and the default one free', () => {
+    expect(ids(evolutionOffers(createRng(1), branchesOf('ralts'), ctx, []))).toEqual(['gardevoir'])
+    expect(ids(evolutionOffers(createRng(1), branchesOf('snorunt'), ctx, []))).toEqual(['glalie'])
+    expect(ids(evolutionOffers(createRng(1), branchesOf('poliwag'), ctx, ['metalCoat']))).toEqual(['poliwrath'])
+    expect(evolutionOffers(createRng(1), branchesOf('ralts'), ctx, ['dawnStone'])).toEqual([{ id: 'gardevoir', favor: null }, { id: 'gallade', favor: 'item' }])
+    expect(evolutionOffers(createRng(1), branchesOf('scyther'), ctx, [])).toEqual([])
+    expect(ids(evolutionOffers(createRng(1), branchesOf('charcadet'), ctx, ['maliciousArmor']))).toEqual(['ceruledge'])
+    expect(canBranch(branchesOf('scyther'), [])).toBe(false)
+    expect(canBranch(branchesOf('scyther'), ['blackAugurite'])).toBe(true)
   })
 
-  it('offers every branch when there are only two', () => {
-    expect(drawBranches(createRng(1), branchesOf('ralts'), { weather: 'fog', biome: 'tower' }).map((o) => o.id)).toEqual(['gardevoir', 'gallade'])
+  it('only draws from the rng between two or more free branches', () => {
+    const rng = createRng(9)
+    evolutionOffers(rng, branchesOf('ralts'), ctx, ['dawnStone'])
+    evolutionOffers(rng, branchesOf('scyther'), ctx, [])
+    expect(rng()).toBe(createRng(9)())
   })
 })
 
 describe('replays', () => {
-  const start: ReplayStart = { seed: 11, starter: 'eevee', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
+  // Two stones: Eevee gets a choice of three (the free draw, Umbreon and Glaceon).
+  const start: ReplayStart = { seed: 11, starter: 'eevee', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], evo: ['moonStone', 'iceStone'], view: { w: 480, h: 270 } }
   /** Eevee at its evolution level, the branch pick open. */
   const staged = () => {
     const g = startGame(start)

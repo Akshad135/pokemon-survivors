@@ -2,13 +2,13 @@ import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { formatNumber, formatPokeDollars, t } from '../i18n'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
-import { BRANCH_OFFERS, BRANCHES, branchesOf } from '../data/branches'
+import { BRANCHES, branchesAt } from '../data/branches'
 import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
 import { BOTTLE_CAPS, EVO_ITEM_IDS, EVO_ITEM_PRICE, EVO_ITEMS, MAX_CAPS, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, type BagItem, type EvoItemId, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { armBlock, armedItems, armItem, BAG_ITEM_IDS, BAG_ITEMS, bagCount } from '../game/bag'
 import { addDays, brasiliaDay, dayNumber, msToNextDay, type DayKey } from '../game/day'
 import { canPlay } from '../game/capture'
-import { buyCap, buyEvoItem, capBlock, capLevel, capPrice, evoBlock } from '../game/evoItems'
+import { branchNeeds, buyCap, buyEvoItem, capBlock, capLevel, capPrice, evoBlock } from '../game/evoItems'
 import { MOVES } from '../game/moves'
 import { armedTms, armTm, buyTm, isRegularTm, nextTmDay, shelfOf, tmBlock, tmLimit, tmListing, tmPrice, type ShelfTm, type TmBlock } from '../game/tmShelf'
 import { EGG_TIERS } from '../game/eggs'
@@ -360,7 +360,7 @@ const tmStock = (save: Save): (Card | string)[] => {
 
 /* ---------------- Evolução (the purple brother) ---------------- */
 
-/** An evolution item: owned for good, it guarantees its branches among the offers. */
+/** An evolution item: owned for good, it unlocks its branches (or adds Eevee's free ones to the choice). */
 const evoCard = (id: EvoItemId): Card => {
   const sh = t().shop
   const def = EVO_ITEMS[id]
@@ -380,14 +380,20 @@ const evoCard = (id: EvoItemId): Card => {
     },
     describe: (save) => {
       const block = evoBlock(save, id)
-      const lines = families.map((line) =>
-        sh.evolution.guarantees(def.branches.filter((b) => BRANCHES[b].line === line).map((b) => BRANCHES[b].name).join(' / '), PLAYABLE[line].line[0].name),
-      )
-      const allShown = families.every((line) => branchesOf(line).length <= BRANCH_OFFERS)
+      const lines = families.flatMap((line) => {
+        const mine = def.branches.filter((b) => BRANCHES[b].line === line)
+        const forms = mine.map((b) => BRANCHES[b].name).join(' / ')
+        const family = PLAYABLE[line].line[0].name
+        if (mine.every((b) => branchNeeds(b) === null)) return [sh.evolution.adds(forms, family)]
+        // A family with no free branch at that evolution stays in its form without any item.
+        const stays = branchesAt(line, BRANCHES[mine[0]!].stage).every((b) => branchNeeds(b) !== null)
+        return [sh.evolution.unlocks(forms, family), ...(stays ? [sh.evolution.stays(family)] : [])]
+      })
+      const drops = def.branches.some((b) => branchNeeds(b) === id)
       return {
         icon: shopIcon(id),
         title: def.name,
-        text: [...lines, allShown ? sh.evolution.allShown : ''].filter((l) => l !== '').join(' '),
+        text: [...lines, ...(drops ? [sh.evolution.drops] : [])].join(' '),
         action: owned(save) ? sh.evolution.owned : block === 'locked' ? sh.blocks.locked : t().mart.buy(formatPokeDollars(EVO_ITEM_PRICE)),
         disabled: block !== null,
       }

@@ -8,6 +8,8 @@ import { BRANCHES, branchesAt, branchesOf, type BranchId } from '../data/branche
 import { abilityIcon } from '../render/abilityArt'
 import { abilityChips } from './abilityPick'
 import { unlockedAt } from '../game/learnsets'
+import { branchNeeds } from '../game/evoItems'
+import { EVO_ITEMS } from '../data/shop'
 import { starterStats } from '../game/leveling'
 import { MOVES, type MoveDef, type MoveId } from '../game/moves'
 import { resolveSpecial } from '../game/special'
@@ -97,15 +99,19 @@ const learnStages = (id: PlayableId) => {
         when,
       ),
       ...(shared.length > 0 ? [rows(shared)] : []),
-      ...branches.flatMap((b) => [stageHead([BRANCHES[b].dex], BRANCHES[b].name, '', 'learn-stage learn-branch'), rows(unlockedAt(id, b, i).filter((mv) => !shared.includes(mv)))]),
+      ...branches.flatMap((b) => {
+        const item = branchNeeds(b)
+        return [stageHead([BRANCHES[b].dex], BRANCHES[b].name, item ? t().branch.needs(EVO_ITEMS[item].name) : '', 'learn-stage learn-branch'), rows(unlockedAt(id, b, i).filter((mv) => !shared.includes(mv)))]
+      }),
     ]
   })
 }
 
-/** How a branching family evolves, before the abilities' note (empty for the others). */
+/** How a branching family evolves, before the abilities' note (empty for the others): Eevee's draw, or the paths items open. */
 const branchNote = (id: PlayableId) => {
-  const n = branchesOf(id).length
-  return n > 3 ? `${t().branch.note(3, n)} ` : n > 0 ? `${t().branch.noteAll} ` : ''
+  const branches = branchesOf(id)
+  if (branches.length === 0) return ''
+  return `${branches.filter((b) => branchNeeds(b) === null).length > 1 ? t().branch.noteDraw : t().branch.noteItems} `
 }
 
 /** One of a line's Mega Evolutions: how it's earned, how long it lasts, its ability and what it does. */

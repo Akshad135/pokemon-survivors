@@ -38,8 +38,10 @@ import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSi
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { armedTms, tmLimit } from './game/tmShelf'
-import { capLevel } from './game/evoItems'
-import { SHOP_LEVEL_IDS, SHOP_LEVELS } from './data/shop'
+import { branchNeeds, capLevel } from './game/evoItems'
+import { runEvoItems } from './game/evoGate'
+import { EVO_ITEM_IDS, EVO_ITEMS, SHOP_LEVEL_IDS, SHOP_LEVELS, type EvoItemId } from './data/shop'
+import { shopIcon } from './ui/shopIcons'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGG_TIERS, EGGS, freeSlots, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
@@ -58,7 +60,7 @@ import { advancePhase, banishOffer, chooseOffer, offerAbilities, playerDex, rero
 import { formAt, playerForm } from './game/branch'
 import { unlockedAt } from './game/learnsets'
 import { ABILITIES, type AbilityEffect, type AbilityId } from './data/abilities'
-import { familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
+import { branchesAt, familyDex, MEGA_BRANCH, type BranchId } from './data/branches'
 import { abilityStacks, grantAbility } from './game/abilities'
 import { abilityIcon } from './render/abilityArt'
 import { recomputeStats, xpFor } from './game/leveling'
@@ -77,6 +79,7 @@ import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
 import { tmDevTools } from './game/tmDev'
+import { evoGateDevTools } from './game/evoGateDev'
 import { duoDevTools } from './game/duoDev'
 import { tensionDevTools } from './game/tensionDev'
 import { hazardDevTools } from './game/hazardDev'
@@ -1079,6 +1082,24 @@ const syncOverlay = (r: Run) => {
 const berryToast = (g: Game, count: number) =>
   toast(ui, h('span', { class: 'item-toast' }, h('img', { src: berryIcon(), alt: '' }), rich(t().levelUp.autoBerry(g.player.level, count))), 2200, 'autoBerry')
 
+/** An evolution item's toast: its icon, a line and a hint under it. */
+const evoItemToast = (items: readonly EvoItemId[], line: string, hint: string, key: string) =>
+  toast(ui, h('span', { class: 'item-toast evo-item-toast' }, ...items.map((id) => shopIcon(id, EVO_ITEMS[id].name)), h('span', {}, rich(line), h('small', {}, hint))), 4200, key)
+
+/** After a branching evolution: the paths it left closed for lack of an item, with their items' icons (none: no toast). */
+const closedPathsToast = (g: Game) => {
+  const branch = g.branch
+  if (!branch || !branchesAt(g.starter, g.player.stage).includes(branch)) return
+  const held = runEvoItems(g)
+  const missing = branchesAt(g.starter, g.player.stage).flatMap((b) => {
+    const item = branchNeeds(b)
+    return b !== branch && item && !held.includes(item) ? [item] : []
+  })
+  if (missing.length === 0) return
+  const items = EVO_ITEM_IDS.filter((id) => missing.includes(id))
+  toast(ui, h('span', { class: 'item-toast evo-item-toast' }, ...items.map((id) => shopIcon(id, EVO_ITEMS[id].name)), h('span', {}, t().branch.others)), 4200, 'evoClosed')
+}
+
 /** After an evolution: what the new form can learn now (`unlockedAt`), each move with its icon. */
 const learnsToast = (g: Game) => {
   const moves = unlockedAt(g.starter, g.branch, g.player.stage)
@@ -1292,6 +1313,12 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'branchChoice':
       playCry(playerCry(g), 0.6)
       return
+    case 'evoItem':
+      playSfx('unlock')
+      return evoItemToast([e.item], t().branch.found(EVO_ITEMS[e.item].name), t().branch.foundHint, 'evoItem')
+    case 'evoHeld':
+      playCry(playerCry(g), 0.6)
+      return evoItemToast(e.items, t().branch.held(playerForm(g).name, e.items.map((id) => `*${EVO_ITEMS[id].name}*`).join(t().branch.or)), t().branch.heldHint, 'evoHeld')
     case 'ability':
       return abilityFeedback(g, e.id, e.moment)
     case 'awaken': {
@@ -1326,7 +1353,8 @@ const handleEvent = (r: Run, e: GameEvent) => {
       const branch = g.branch
       if (branch) updateSave((s) => ({ ...s, branches: { ...s.branches, [g.starter]: branch } }))
       toast(ui, t().toast.evolved(formAt(g.starter, g.branch, g.player.stage - 1).name, playerForm(g).name), 3500)
-      return learnsToast(g)
+      learnsToast(g)
+      return closedPathsToast(g)
     }
     case 'moveEvolved':
       playSfx('evolve')
@@ -2287,6 +2315,7 @@ if (import.meta.env.DEV) {
       ...eggMoveDevTools(() => run?.game),
       ...learnDevTools(() => run?.game),
       ...tmDevTools(() => run?.game),
+      ...evoGateDevTools(() => run?.game),
       ...duoDevTools(() => run?.game),
       ...tensionDevTools(() => run?.game),
       ...hazardDevTools(() => run?.game),

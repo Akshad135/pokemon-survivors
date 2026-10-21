@@ -24,6 +24,7 @@ import { stanceStats } from './stance'
 import { awakeningDeltas } from './legend'
 import { applyDeltas, BASE_STATS, boostStats, type StatDelta } from './stats'
 import { bagDeltas } from './bag'
+import { BAG_ITEMS } from '../data/shop'
 import type { Game, Offer, OwnedItem, OwnedMove, PrizeSource, Rarity } from './types'
 
 export const MAX_MOVES = 6
@@ -249,7 +250,8 @@ export const recomputeStats = (g: Game) => {
     ...g.curses.held.map((id) => CURSES[id].stats),
     ...bagDeltas(g.bag),
   ])
-  p.stats = boostStats(stanceStats(deltas, g.special.stance), g.boost)
+  // A held evolution (no item for any branch yet) is as strong as with an Everstone.
+  p.stats = boostStats(stanceStats(deltas, g.special.stance), g.boost + (g.evoHeld ? BAG_ITEMS.everstone.effect.everstone : 0))
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before
   p.hp = Math.min(p.hp, p.stats.maxHp)
 }
@@ -340,7 +342,7 @@ const fuseMoves = (g: Game, from: readonly [MoveId, MoveId], to: MoveId) => {
   g.events.push({ kind: 'duoFused', from, to })
 }
 
-/** The next evolution, if the player's level has reached it (into the branch picked, for a branching one). */
+/** The next evolution, if the player's level has reached it (into the branch picked, for a branching one; `advancePhase` asks where, or holds it without items). */
 export const pendingEvolution = (g: Game) => {
   const p = g.player
   // An Everstone holds the run in its first form.

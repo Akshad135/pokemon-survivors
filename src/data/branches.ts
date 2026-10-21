@@ -9,13 +9,15 @@ import type { PokeType } from './types'
 
 /**
  * Branching evolutions: a family whose evolution can go more than one way
- * (Eevee's eight, Kirlia's Gardevoir or Gallade…) asks the player at that
- * evolution, and the branch picked replaces the line's stage from there on:
- * its form, types, stat bonus, special and a few more moves to learn. Eevee
- * offers three of its eight, one of them nudged by the run (rain brings
- * Vaporeon closer, the forest Leafeon); the rest offer every branch. Rules in
- * `game/branch.ts`; the line in `starters.ts`/`hatchlings.ts` keeps its usual
- * form, which is what the select screen shows first.
+ * (Eevee's eight, Kirlia's Gardevoir or Gallade…), and the branch taken
+ * replaces the line's stage from there on: its form, types, stat bonus,
+ * special and a few more moves to learn. A branch that needs an item in the
+ * official games (its item in `EVO_ITEMS`, `data/shop.ts`) needs it in a run
+ * too, owned or found (`game/branch.ts` `evolutionOffers`): the others are
+ * free (Gardevoir, Glalie, Poliwrath, and Eevee's three marked `free`, of
+ * which a run without items gets one, drawn). The line in
+ * `starters.ts`/`hatchlings.ts` keeps its usual form, which is what the
+ * select screen shows first.
  */
 export type BranchDef = {
   /** The family it branches off. */
@@ -29,28 +31,30 @@ export type BranchDef = {
   bonus: StatDelta
   /** Moves the branch adds to the family's learnset once it evolves into it (on top of the line's lists). */
   moves: readonly MoveId[]
-  /** The weather or biome that makes it the likelier offer (`drawBranches`). */
+  /** The weather or biome that makes it the likelier draw among the free branches (`evolutionOffers`). */
   favors?: { weather?: readonly WeatherId[]; biome?: readonly BiomeId[] }
   /** Its special, when it isn't the one of its first type (`resolveSpecial`). */
   special?: SpecialId
+  /** Free even though an item names it (Eevee's Water, Thunder and Fire Stones): the item only adds it to the choice. */
+  free?: true
 }
 
 export const BRANCHES = {
-  /* ---------- Eevee: three of eight at Lv 20 ---------- */
+  /* ---------- Eevee at Lv 20: one of the three free ones, drawn, or a choice with stones ---------- */
   vaporeon: {
-    line: 'eevee', stage: 1, name: 'Vaporeon', dex: 134, types: ['water'],
+    line: 'eevee', stage: 1, free: true, name: 'Vaporeon', dex: 134, types: ['water'],
     bonus: { maxHp: 90, regen: 0.4, armor: 1, might: 0.12 },
     moves: ['waterGun', 'whirlpool', 'brine', 'iceShard'],
     favors: { weather: ['rain'] },
   },
   jolteon: {
-    line: 'eevee', stage: 1, name: 'Jolteon', dex: 135, types: ['electric'],
+    line: 'eevee', stage: 1, free: true, name: 'Jolteon', dex: 135, types: ['electric'],
     bonus: { maxHp: 40, speed: 10, cooldown: -0.08, might: 0.18 },
     moves: ['thunder', 'shockWave', 'electroBall', 'pinMissile'],
     favors: { weather: ['clear'] },
   },
   flareon: {
-    line: 'eevee', stage: 1, name: 'Flareon', dex: 136, types: ['fire'],
+    line: 'eevee', stage: 1, free: true, name: 'Flareon', dex: 136, types: ['fire'],
     bonus: { maxHp: 50, might: 0.3, statusDamage: 0.15 },
     moves: ['ember', 'fireSpin', 'willOWisp'],
     favors: { weather: ['sun'] },
@@ -149,8 +153,8 @@ export const BRANCH_IDS = Object.keys(BRANCHES) as BranchId[]
 /** The Megas only one branch can reach: Glalie's, Gardevoir's, Gallade's and Scizor's. */
 export const MEGA_BRANCH: Partial<Record<MegaId, BranchId>> = { glalie: 'glalie', gardevoir: 'gardevoir', gallade: 'gallade', scizor: 'scizor' }
 
-/** How many branches a branching evolution offers at most. */
-export const BRANCH_OFFERS = 3
+/** How much likelier a free branch the run's weather or biome favors is drawn than the others (`evolutionOffers`). */
+export const BRANCH_FAVOR_WEIGHT = 3
 
 /** A family's branches, in data order (empty for the lines that don't branch). */
 export const branchesOf = (line: PlayableId): readonly BranchId[] => BRANCH_IDS.filter((id) => BRANCHES[id].line === line)

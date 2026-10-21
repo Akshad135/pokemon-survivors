@@ -1,26 +1,28 @@
 import { BAG_ITEMS, BOTTLE_CAPS, EVO_ITEM_IDS, EVO_ITEM_PRICE, EVO_ITEMS, MAX_CAPS, SHOP_LEVELS, type BagItem, type EvoItemId } from '../data/shop'
-import type { BranchId } from '../data/branches'
+import { BRANCHES, type BranchDef, type BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import type { Save } from './meta'
 import { isRecord, knownIds, wholeNumber } from './parse'
 
 /**
  * The purple brother's evolution shelf and the Treino's Bottle Caps, both
- * from the Shop (Lv 3), both owned for good. An evolution item guarantees its
- * branches among the offers when its family branches (`drawBranches`): the
- * run gets the save's items in its `ReplayStart.evo`. A Bottle Cap level
+ * from the Shop (Lv 3), both owned for good. An evolution item unlocks the
+ * branches it names (`branchNeeds`, `evolutionOffers`): the run gets the
+ * save's items in its `ReplayStart.evo`, and may find more (`evoGate.ts`). A Bottle Cap level
  * makes every stat of one Pokémon `BOTTLE_CAPS.boost` stronger in its runs
  * (`runBoost`, `ReplayStart.caps`). Pure; shared with the API through the save.
  */
 
 /* ---------------- Evolution items ---------------- */
 
-/** The branches the items guarantee, out of `options`. */
-export const guaranteedBranches = (items: readonly EvoItemId[], options: readonly BranchId[]): BranchId[] =>
-  options.filter((b) => items.some((id) => EVO_ITEMS[id].branches.some((x) => x === b)))
-
-/** The item that guarantees `branch`, if any (the branch card shows it). */
+/** The item that names `branch`, if any: it unlocks it, or adds it to the choice for a `free` one (the branch card shows it). */
 export const evoItemFor = (branch: BranchId): EvoItemId | null => EVO_ITEM_IDS.find((id) => EVO_ITEMS[id].branches.some((b) => b === branch)) ?? null
+
+/** The item a run needs to take `branch`, or null when it's free (no item names it, or it's marked `free`). */
+export const branchNeeds = (branch: BranchId): EvoItemId | null => {
+  const def: BranchDef = BRANCHES[branch]
+  return def.free ? null : evoItemFor(branch)
+}
 
 export type EvoBlock = 'locked' | 'owned' | 'poor'
 

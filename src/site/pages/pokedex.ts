@@ -13,6 +13,8 @@ import { BRANCHES, branchesAt, branchStage, familyDex } from '../../data/branche
 import { ABILITIES, isHidden, type AbilitySet } from '../../data/abilities'
 import { abilitySet } from '../../game/abilities'
 import { formLine } from '../../game/branch'
+import { branchNeeds } from '../../game/evoItems'
+import { EVO_ITEMS } from '../../data/shop'
 import { unlockedAt } from '../../game/learnsets'
 import { starterStats } from '../../game/leveling'
 import { MOVES, type MoveId } from '../../game/moves'
@@ -88,7 +90,11 @@ const learnRows = (source: DexEntry['source'] & { kind: 'starter' }, locale: Loc
     const shared = unlockedAt(source.id, null, k)
     return [
       row(options.length > 2 ? LOCALES[locale].messages.branch.choose(options.length) : options.map((b) => BRANCHES[b].name).join(' / '), when, shared),
-      options.map((b) => row(BRANCHES[b].name, when, unlockedAt(source.id, b, k).filter((mv) => !shared.includes(mv)))),
+      options.map((b) => {
+        // A branch that needs an item names it beside the level.
+        const item = branchNeeds(b)
+        return row(BRANCHES[b].name, item ? `${when} · ${EVO_ITEMS[item].name}` : when, unlockedAt(source.id, b, k).filter((mv) => !shared.includes(mv)))
+      }),
     ]
   })}</dl>`
 }

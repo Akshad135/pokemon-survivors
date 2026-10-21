@@ -39,7 +39,7 @@ export const TICK = 1 / 60
  * pins where a few scripted replays end under this version and fails when the
  * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 31
+export const RULES_VERSION = 32
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -69,7 +69,7 @@ export type ReplayStart = {
   bag: readonly BagItem[]
   /** TMs armed at the Kecleon Shop (`game/tmShelf.ts`), in the order the run's first discs and lessons teach them (`tms.ts`). None when absent. */
   tms?: readonly ShelfTm[]
-  /** Evolution items owned (`game/evoItems.ts`): their branches are always offered (`drawBranches`). None when absent. */
+  /** Evolution items owned (`game/evoItems.ts`): they unlock their branches (`evolutionOffers`); items found in the run come from the simulation, not from here. None when absent. */
   evo?: readonly EvoItemId[]
   /** The Pokémon's Bottle Cap level, 0..`MAX_CAPS` (`runBoost`). 0 when absent. */
   caps?: number

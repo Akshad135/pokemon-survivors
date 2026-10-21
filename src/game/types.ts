@@ -427,7 +427,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' } | { kind: 'treat' })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' } | { kind: 'treat' } | { kind: 'evoItem'; item: EvoItemId })
 
 export type Particle = {
   x: number
@@ -532,6 +532,10 @@ export type GameEvent =
   | { kind: 'evolve'; from: number; to: number }
   /** A branching evolution waits on the player's pick. */
   | { kind: 'branchChoice' }
+  /** An evolution item found in the run (`game/evoGate.ts`). */
+  | { kind: 'evoItem'; item: EvoItemId }
+  /** The evolution waits for one of these items: the run stays in its form, stronger (`Game.evoHeld`). */
+  | { kind: 'evoHeld'; items: readonly EvoItemId[] }
   /** The ability was picked, or did something worth a word (Sturdy held, a guard blocked, a weather called). */
   | { kind: 'ability'; id: AbilityId; moment: 'picked' | 'proc' }
   | { kind: 'evolved'; to: number }
@@ -722,8 +726,12 @@ export type Game = {
   maxRevive: boolean
   /** The Bag's Everstone: the run never evolves (`pendingEvolution`) and its form is stronger (`boost`). */
   everstone: boolean
-  /** Evolution items the save owns (`game/evoItems.ts`): their branches are always among the offers. */
+  /** Evolution items the save owns (`game/evoItems.ts`): they unlock their branches (`evolutionOffers`). */
   evoItems: readonly EvoItemId[]
+  /** Evolution items found in this run (`game/evoGate.ts`), which unlock their branches like owned ones until it ends. */
+  evoFound: EvoItemId[]
+  /** The evolution is due but no branch is open without an item (Scyther, Charcadet): the run stays in its form, as strong as with an Everstone (`recomputeStats`), until one turns up. */
+  evoHeld: boolean
   /** Share every stat grows by in this run: the Pokémon's Bottle Caps and an Everstone (`runBoost`, applied by `recomputeStats`). */
   boost: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
