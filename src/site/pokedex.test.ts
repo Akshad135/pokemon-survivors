@@ -3,11 +3,11 @@ import manifest from '../data/sprites.generated.json'
 import { ENEMIES, type EnemyId } from '../data/enemies'
 import { GAME_SPECIES } from '../data/species'
 import { RUN_LENGTH } from '../data/waves'
-import { appearances, clock, pokedex, regionOf } from './pokedex'
+import { appearances, clock, gameDex, pokedex, regionOf } from './pokedex'
 
 describe('pokedex', () => {
-  it("lists exactly the species the save may hold (`GAME_SPECIES`)", () => {
-    expect(new Set(pokedex().map((e) => e.dex))).toEqual(GAME_SPECIES)
+  it("keeps the in-game Pokédex to exactly the species the save may hold (`GAME_SPECIES`), gift-only companions out", () => {
+    expect(new Set(gameDex().map((e) => e.dex))).toEqual(GAME_SPECIES)
   })
 
   const entries = pokedex()

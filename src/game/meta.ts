@@ -7,6 +7,7 @@ import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficul
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { parseClaimedGifts } from './gifts'
+import { NO_HALLOWEEN, parseHalloween, type HalloweenSave } from './halloween'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
 import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
@@ -16,7 +17,8 @@ import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
-import { parseCompanion, type Companion } from './supporters'
+import type { SpecialCompanionId } from '../data/companions'
+import { parseCompanion, parseCompanions, type Companion } from './supporters'
 import { NO_CAPTURES, parseCaptures, type Captures } from './capture'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
@@ -140,10 +142,14 @@ export type Save = {
   shinyPicks: readonly ShinyPick[]
   /** The supporter's companion, drawn after the player in runs (`game/supporters.ts`). */
   companion: Companion | null
+  /** Companions only a Mystery Gift brings (`data/companions.ts`): the Noite das Bruxas supporters' Pumpkaboo. */
+  companions: readonly SpecialCompanionId[]
   /** Where each branching family evolved last (`data/branches.ts`): the Trainer Card shows that form. */
   branches: Branches
   /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
   clears: Clears
+  /** The Noite das Bruxas candy jar (`game/halloween.ts`): what it holds pays the event's rewards. */
+  halloween: HalloweenSave
   /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
   legends: Captures
 }
@@ -184,8 +190,10 @@ export const EMPTY_SAVE: Save = {
   ribbons: [],
   shinyPicks: [],
   companion: null,
+  companions: [],
   branches: {},
   clears: {},
+  halloween: NO_HALLOWEEN,
   legends: NO_CAPTURES,
 }
 
@@ -245,9 +253,11 @@ export const parseSaveData = (json: unknown): Save => {
     ribbons: parseRibbons(data.ribbons),
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
+    companions: parseCompanions(data.companions),
     branches: parseBranches(data.branches),
     // Plus the clears the lifetime records prove, for wins from before clears were tracked.
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
+    halloween: parseHalloween(data.halloween),
     legends: parseCaptures(data.legends),
   }
 }

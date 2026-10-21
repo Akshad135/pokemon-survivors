@@ -3,6 +3,7 @@ import { formAt } from './branch'
 import type { Save } from './meta'
 import { playsShiny } from './shinyPicks'
 import { ownsStyle } from './style'
+import { isSpecialCompanion, SPECIAL_COMPANIONS } from '../data/companions'
 import { canWalkWith, isSupporter, type Companion, type SupporterTier } from './supporters'
 
 /**
@@ -12,7 +13,9 @@ import { canWalkWith, isSupporter, type Companion, type SupporterTier } from './
  */
 export const trainerAvatar = (save: Save) => {
   const companion = save.companion && isSupporter(save) && canWalkWith(save, save.companion) ? save.companion : null
-  const id: PlayableId = companion?.id ?? save.partner
+  const walking = companion?.id
+  if (walking !== undefined && isSpecialCompanion(walking)) return { dex: SPECIAL_COMPANIONS[walking].dex, shiny: false }
+  const id: PlayableId = walking ?? save.partner
   const shiny = companion ? companion.shiny : playsShiny(save, id)
   // A branching family wears the branch it took last (an Espeon trainer stays an Espeon).
   return { dex: formAt(id, save.branches[id] ?? null, PLAYABLE[id].line.length - 1).dex, shiny }

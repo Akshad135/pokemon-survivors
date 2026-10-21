@@ -141,7 +141,7 @@ export const supporterStore = (sql: Sql, hooks: { onTierUp?: (userId: string) =>
         select u.handle, u.name, u.supporter_points as points, u.supporter_since as since,
           case when s.user_id is null then null else jsonb_build_object(
             'version', s.data->'version', 'partner', s.data->'partner', 'shinyPicks', s.data->'shinyPicks',
-            'companion', s.data->'companion', 'shinyStarters', s.data->'shinyStarters', 'hatched', s.data->'hatched',
+            'companion', s.data->'companion', 'companions', s.data->'companions', 'shinyStarters', s.data->'shinyStarters', 'hatched', s.data->'hatched',
             'title', s.data->'title', 'titles', s.data->'titles', 'achievements', jsonb_build_object('unlocked', s.data->'achievements'->'unlocked')
           ) end as save
         from users u left join saves s on s.user_id = u.id
