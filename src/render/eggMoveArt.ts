@@ -52,6 +52,8 @@ const BLADE = [
 ]
 /** Togepi's waggling finger, pointing up. */
 const FINGER = ['.11....', '1221...', '1221...', '1221...', '122111.', '1222221', '1222221', '1222221', '.11111.']
+/** Smeargle's tail, pointing up: a wooden handle and the paint-soaked tip. */
+const BRUSH = ['..33..', '.3443.', '.3443.', '.3333.', '..33..', '..11..', '..12..', '..12..', '..12..', '..12..', '..11..']
 /** A curse nail, point down. */
 const NAIL = ['11111', '12221', '.121.', '.121.', '.121.', '.121.', '.121.', '..1..']
 const MOUND = [
@@ -72,6 +74,7 @@ export const EGG_FX = {
   blade: lazy(() => sprite(BLADE, { 1: '#3858a0', 2: '#c8e0ff', 3: '#ffffff', 4: '#a87020', 5: '#f8d870' })),
   bladeGlow: lazy(() => sprite(BLADE, { 1: '#f8d870', 2: '#fff8d0', 3: '#ffffff', 4: '#f8d870', 5: '#ffffff' })),
   finger: lazy(() => outline(sprite(FINGER, { 1: '#806040', 2: '#f8e8c8' }), '#382818')),
+  brush: lazy(() => outline(sprite(BRUSH, { 1: '#5a3a20', 2: '#c89058', 3: '#3a8a28', 4: '#78d058' }), '#182810')),
   nail: lazy(() => outline(sprite(NAIL, { 1: '#281838', 2: '#c8b8e0' }), '#a070d8')),
   mound: lazy(() => sprite(MOUND, { 1: '#4a2c14', 2: '#8a5a2c', 3: '#b88848', 4: '#e0c080' })),
   meteorFist: lazy(() => outline(sprite(FIST, { 1: '#283850', 2: '#7890b8', 3: '#d8e8f8' }), '#101828')),
@@ -235,6 +238,7 @@ export const EGG_MOVE_ICONS = {
     return outline(c)
   },
   metronome: () => EGG_FX.finger(),
+  sketch: () => EGG_FX.brush(),
   echoedVoice: () => icon(13, 11, (px) => {
     px(0, 4, '#f0e0ff', 2, 3)
     for (let k = 0; k < 3; k++) {

@@ -1,5 +1,5 @@
 import { createRng, seedFrom, weightedPick, type Rng } from '../engine/rng'
-import { BAG_ITEM_IDS, BAG_ITEMS, bagItemLevel, MAX_SHOP_LEVEL, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, VITRINE_POOL, type BagItem, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
+import { BAG_ITEM_IDS, BAG_ITEMS, bagItemLevel, MAX_SHOP_LEVEL, SHOP_BOUGHT_KEYS, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, VITRINE_POOL, type BagItem, type ShopBoughtKey, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
 import { addToBag } from './bag'
 import { addDays, dayNumber, isDayKey, type DayKey } from './day'
@@ -11,10 +11,10 @@ import { grantStyle, ownsStyle, type StyleSave } from './style'
 /**
  * The Kecleon Shop's rules (its catalog is `data/shop.ts`). The Vitrine do
  * dia turns over at midnight in Brasília and is the same for everyone: a free
- * gift (one consumable, once per day per save), a deal at 30% off and the
- * day's cards, drawn from the pool of consumables, the day's egg and the
- * day's style. A higher shop level sees more cards of the same Vitrine. Each
- * card has a daily stock per save. Buying spends ₽ into the save's `spent`;
+ * gift (one consumable, once per day per save), the Kecleon Egg's fixed card,
+ * a deal at 30% off and the day's cards, drawn from the pool of consumables,
+ * the day's egg and the day's style. A higher shop level sees more cards of
+ * the same Vitrine. Each card has a daily stock per save. Buying spends ₽ into the save's `spent`;
  * investing in the shop's next level spends into the level itself, which the
  * sync counts like the upgrades' ranks (`game/sync.ts`) and nothing refunds.
  * The style shelf sells looks for good. Pure.
@@ -146,8 +146,9 @@ export const nextAppearance = (key: VitrineKey, from: DayKey, level: ShopLevel =
 /** Whether a shop of `level` sells `key` at all (the Everstone waits for the Shop, `bagItemLevel`). */
 export const sellsAt = (key: VitrineKey, level: ShopLevel) => key === 'egg' || key === 'style' || bagItemLevel(key) <= level
 
-/** How many of a card one save may buy on a day. */
-export const vitrineStock = (key: VitrineKey) => (key === 'egg' ? VITRINE.eggStock : key === 'style' ? VITRINE.styleStock : BAG_ITEMS[key].stock)
+/** How many of a card one save may buy on a day (the Kecleon Egg's fixed card too). */
+export const vitrineStock = (key: ShopBoughtKey) =>
+  key === 'egg' ? VITRINE.eggStock : key === 'style' ? VITRINE.styleStock : key === 'kecleonEgg' ? VITRINE.kecleonEgg.stock : BAG_ITEMS[key].stock
 
 /** A card's price today for a save (its style card offers its own style), rounded to ₽10 after the deal; null for a style card with nothing left to offer. */
 export const vitrinePrice = (v: Vitrine, key: VitrineKey, style: StyleSave): number | null => {
@@ -169,7 +170,7 @@ export const vitrinePrice = (v: Vitrine, key: VitrineKey, style: StyleSave): num
 export type ShopSave = {
   level: ShopLevel
   day: DayKey
-  bought: Readonly<Partial<Record<VitrineKey, number>>>
+  bought: Readonly<Partial<Record<ShopBoughtKey, number>>>
   gift: boolean
   wishlist: VitrineKey | null
   visit: ShopVisit
@@ -198,7 +199,7 @@ export const recordVisit = (shop: ShopSave, day: DayKey): ShopSave => {
 const onDay = (shop: ShopSave, day: DayKey): ShopSave => (shop.day === day ? shop : { ...shop, day, bought: {}, gift: false })
 
 /** How many of `key` a save can still buy on the Vitrine's day. */
-export const stockLeft = (shop: ShopSave, v: Vitrine, key: VitrineKey) => Math.max(0, vitrineStock(key) - (onDay(shop, v.day).bought[key] ?? 0))
+export const stockLeft = (shop: ShopSave, v: Vitrine, key: ShopBoughtKey) => Math.max(0, vitrineStock(key) - (onDay(shop, v.day).bought[key] ?? 0))
 
 export type VitrineBlock = 'locked' | 'soldOut' | 'owned' | 'full' | 'poor'
 
@@ -225,6 +226,25 @@ export const buyFromVitrine = (save: Save, v: Vitrine, key: VitrineKey): Save | 
   if (key === 'egg') return grantEgg(paid, v.egg).save
   if (key === 'style') return { ...paid, style: onPick(dayStyle(v, save.style)!, (slot, id) => grantStyle(paid.style, slot, id)) }
   return { ...paid, bag: addToBag(paid.bag, key) }
+}
+
+/* ---------------- The Kecleon Egg (the Vitrine's fixed card) ---------------- */
+
+export type KecleonEggBlock = 'soldOut' | 'full' | 'poor'
+
+/** Why the Kecleon Egg can't be bought on the Vitrine's day: today's is sold, the incubator is full or not enough ₽. */
+export const kecleonEggBlock = (save: Save, v: Vitrine): KecleonEggBlock | null => {
+  if (stockLeft(save.shop, v, 'kecleonEgg') === 0) return 'soldOut'
+  if (save.eggs.length >= EGGS.slots) return 'full'
+  return save.wallet < VITRINE.kecleonEgg.price ? 'poor' : null
+}
+
+/** Buys the day's Kecleon Egg into the incubator (₽ into `spent`). Null when blocked (`kecleonEggBlock`). */
+export const buyKecleonEgg = (save: Save, v: Vitrine): Save | null => {
+  if (kecleonEggBlock(save, v)) return null
+  const { price } = VITRINE.kecleonEgg
+  const shop = onDay(save.shop, v.day)
+  return grantEgg({ ...save, wallet: save.wallet - price, spent: save.spent + price, shop: { ...shop, bought: { ...shop.bought, kecleonEgg: (shop.bought.kecleonEgg ?? 0) + 1 } } }, 'kecleon').save
 }
 
 /** Why the day's free gift can't be taken: it was already. */
@@ -272,7 +292,8 @@ export const buyStyle = <S extends StyleSlot>(save: Save, slot: S, id: StyleId<S
 
 /**
  * Two shops of the same player: the higher level (an investment on either
- * side stands); the most recent day, with the most bought of each card and
+ * side stands); the most recent day, with the most bought of each card (the
+ * Kecleon Egg's fixed card too, so its one a day holds across devices) and
  * the gift taken on either side on the same day; the wishlist is
  * `incoming`'s, a setting like the difficulty; the loyalty stamps, the larger count.
  */
@@ -281,7 +302,7 @@ export const mergeShop = (base: ShopSave, incoming: ShopSave): ShopSave => {
   const visit = mergeVisit(base.visit, incoming.visit)
   const stamps = Math.max(base.stamps, incoming.stamps)
   if (base.day !== incoming.day) return { ...(base.day > incoming.day ? base : incoming), level, wishlist: incoming.wishlist, visit, stamps }
-  const bought = Object.fromEntries(VITRINE_POOL.flatMap((key) => {
+  const bought = Object.fromEntries(SHOP_BOUGHT_KEYS.flatMap((key) => {
     const n = Math.max(base.bought[key] ?? 0, incoming.bought[key] ?? 0)
     return n > 0 ? [[key, n]] : []
   }))
@@ -303,9 +324,9 @@ const isShopLevel = (v: unknown): v is ShopLevel => SHOP_LEVEL_IDS.some((l) => l
 
 const isVitrineKey = (v: unknown): v is VitrineKey => VITRINE_POOL.some((k) => k === v)
 
-/** Counts bought per card from an untrusted record, clamped to each card's stock. */
+/** Counts bought per card (the Kecleon Egg's too) from an untrusted record, clamped to each card's stock. */
 const parseBought = (raw: Record<string, unknown>) =>
-  Object.fromEntries(VITRINE_POOL.flatMap((key) => {
+  Object.fromEntries(SHOP_BOUGHT_KEYS.flatMap((key) => {
     const n = wholeNumber(raw[key], vitrineStock(key))
     return n > 0 ? [[key, n]] : []
   }))

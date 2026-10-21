@@ -273,8 +273,8 @@ export type Plaza = {
   hidden: boolean
   /** Scene time the shop last grew a level: dust and sparkles around the new building (`celebratePlaza`). */
   party: number
-  /** The shopkeeper the camera leans towards while the shop is open: 0 the green Kecleon, 1 the purple brother, or Meowth's caravan. */
-  focus: 0 | 1 | 'caravan'
+  /** The shopkeeper the camera leans towards while the shop is open: 0 the green Kecleon, 1 the purple brother, Meowth's caravan or the seasonal stall. */
+  focus: 0 | 1 | 'caravan' | 'stall'
   /** Who comes by today (set by the shell). */
   visitors: PlazaVisitors
 }
@@ -458,14 +458,15 @@ export const plazaFrame = (plaza: Plaza, w: number, h: number): Vec => {
   const layout = layoutOf(plaza.level, plaza.visitors)
   const tall = layout?.building.h ?? 140
   const framed = frameAt(plaza, layout, tall, w, h)
-  // Meowth's caravan: portrait screens center on it, the rest lean well over to it.
-  if (plaza.focus === 'caravan' && layout) {
-    const mid = Math.round(layout.wagon.x + (layout.meowth.x - layout.wagon.x) / 2)
+  // Meowth's caravan or the seasonal stall: portrait screens center on it, the rest lean well over to it.
+  if ((plaza.focus === 'caravan' || plaza.focus === 'stall') && layout) {
+    const [from, to] = plaza.focus === 'caravan' ? [layout.wagon, layout.meowth] : [layout.stall, layout.stallKeeper]
+    const mid = Math.round(from.x + (to.x - from.x) / 2)
     // Portrait: a step down too, so Meowth (in front of the wagon) clears the dialogue box.
     return h > w * 1.1 ? { x: Math.round(plaza.x + mid - w / 2), y: framed.y + 56 } : { x: framed.x + Math.round(mid * 0.7), y: framed.y }
   }
   // A step towards the shopkeeper who talks (the purple brother's shelves).
-  const lean = Math.round((layout?.keepers[plaza.focus === 'caravan' ? 0 : plaza.focus]?.x ?? 0) * 0.4)
+  const lean = Math.round((layout?.keepers[typeof plaza.focus === 'number' ? plaza.focus : 0]?.x ?? 0) * 0.4)
   return { x: framed.x + lean, y: framed.y }
 }
 

@@ -26,7 +26,7 @@ import { createRng } from '../../engine/rng'
 import { DIFFICULTIES, DIFFICULTY_IDS } from '../../game/difficulty'
 import { ENDLESS, REAPER, reaperHp } from '../../game/endless'
 import { CONSUMABLES } from '../../game/consumables'
-import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, type EggSource } from '../../game/eggs'
+import { EGG_SOURCES, EGG_TIER_IDS, EGG_TIERS, EGGS, hatchPool, type EggSource } from '../../game/eggs'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../../data/hatchlings'
 import { MAP_EVENTS } from '../../game/mapEvents'
 import { TUTOR } from '../../game/tmRules'
@@ -488,7 +488,7 @@ const eggs = (locale: Locale, m: SiteMessages) => {
     tiers[tier],
     num(EGG_TIERS[tier].steps),
     `₽${num(EGG_TIERS[tier].refund)}`,
-    html`<span class="minis">${HATCHLING_IDS.filter((id) => HATCHLINGS[id].egg === tier).map((id) => html`<span class="with-mini">${portrait(HATCHLINGS[id].line[0].dex)}${HATCHLINGS[id].name}</span>`)}</span>`,
+    html`<span class="minis">${hatchPool(tier, {}).map(([id]) => html`<span class="with-mini">${portrait(HATCHLINGS[id].line[0].dex)}${HATCHLINGS[id].name}</span>`)}</span>`,
   ])
   const sourceRows = (Object.keys(EGG_SOURCES) as EggSource[]).map((source) => {
     const odds: Partial<Record<(typeof EGG_TIER_IDS)[number], number>> = EGG_SOURCES[source].odds

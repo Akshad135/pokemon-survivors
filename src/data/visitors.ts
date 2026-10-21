@@ -45,15 +45,15 @@ export const CARAVAN = {
   tms: number
 }
 
-/** A loyalty milestone's reward: a Mystery Gift, the golden statue on the plaza, or the mystery (not built yet). */
-export type LoyaltyReward = GiftContent | 'statue' | 'mystery'
+/** A loyalty milestone's reward: a Mystery Gift, or the golden statue on the plaza. */
+export type LoyaltyReward = GiftContent | 'statue'
 
 /**
  * The loyalty card (Cartão fidelidade): one stamp per Brasília day the player
  * visits the shop, no purchase needed, and missing days never reset it. Each
  * milestone pays once: a rare egg (which also lets Meowth haggle), the Freguês
- * frame, the Freguês VIP title, the golden Kecleon statue on the plaza, and a
- * mystery at 100 (Kecleon as a playable egg family, waiting on a decision).
+ * frame, the Freguês VIP title, the golden Kecleon statue on the plaza, and at
+ * 100 a Kecleon Egg sure to hatch shiny (`EGG_TIERS.kecleonShiny`).
  */
 export const LOYALTY = {
   /** Stamps per row of the card. */
@@ -63,7 +63,7 @@ export const LOYALTY = {
     { stamps: 14, reward: { kind: 'style', style: { slot: 'frame', id: 'regular' } } },
     { stamps: 30, reward: { kind: 'title', title: 'vipCustomer' } },
     { stamps: 60, reward: 'statue' },
-    { stamps: 100, reward: 'mystery' },
+    { stamps: 100, reward: { kind: 'egg', tier: 'kecleonShiny' } },
   ],
 } as const satisfies { perRow: number; milestones: readonly { stamps: number; reward: LoyaltyReward }[] }
 
@@ -73,20 +73,29 @@ export const TYCOON_REWARDS = [
   { kind: 'style', style: { slot: 'frame', id: 'kecleon' } },
 ] as const satisfies readonly GiftContent[]
 
+/** What a stall sells, by key: an egg of `egg`'s tier at `price`, `perDay` per save each Brasília day. */
+type StallGoods = Readonly<Record<string, { egg: EggTier; price: number; perDay: number }>>
+
 /**
  * Seasonal stalls: during an event's Brasília days (`from` to `to`, both
  * included) its stall stands on the plaza, its keeper (`dex`) beside it, and a
- * talk gets its lines (`plaza.stalls` in `i18n`). `link` opens an event screen
- * after the talk. A new event is a new entry here, with its art in
- * `public/assets/shop/stall-<id>.png` and its lines.
+ * talk gets its lines (`plaza.stalls` in `i18n`). A stall with `goods` opens
+ * its shelf in the shop after the talk (`game/stalls.ts`). A new event is a
+ * new entry here, with its art in `public/assets/shop/stall-<id>.png` and its lines.
  */
 export const STALLS = {
-  /** Noite das Bruxas: Duskull minds the candy jar's stall. */
-  halloween: { from: HALLOWEEN.from, to: HALLOWEEN.to, dex: 355, name: 'Duskull', art: 'stall-duskull', link: 'halloween' },
+  /**
+   * Noite das Bruxas: Duskull sells the Haunted Egg, one a day, the only way
+   * to its four ghosts (`HATCHLINGS` with `egg: 'haunted'`). It's back next year.
+   */
+  halloween: { from: HALLOWEEN.from, to: HALLOWEEN.to, dex: 355, name: 'Duskull', art: 'stall-duskull', goods: { hauntedEgg: { egg: 'haunted', price: 6_000, perDay: 1 } } },
   /** Christmas: Delibird Presentes (a talk for now, no shop). */
-  christmas: { from: '2026-12-15', to: '2026-12-31', dex: 225, name: 'Delibird', art: 'stall-delibird', link: null },
-} as const satisfies Record<string, { from: string; to: string; dex: number; name: string; art: string; link: 'halloween' | null }>
+  christmas: { from: '2026-12-15', to: '2026-12-31', dex: 225, name: 'Delibird', art: 'stall-delibird', goods: {} },
+} as const satisfies Record<string, { from: string; to: string; dex: number; name: string; art: string; goods: StallGoods }>
 
 export type StallId = keyof typeof STALLS
 
 export const STALL_IDS = Object.keys(STALLS) as StallId[]
+
+/** Every good any stall sells. */
+export type StallGoodId = { [K in StallId]: keyof (typeof STALLS)[K]['goods'] }[StallId]

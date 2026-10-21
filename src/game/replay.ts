@@ -39,7 +39,7 @@ export const TICK = 1 / 60
  * pins where a few scripted replays end under this version and fails when the
  * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 32
+export const RULES_VERSION = 33
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a

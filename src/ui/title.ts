@@ -19,7 +19,8 @@ import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import type { Place } from '../render/titleScene'
 import type { PlazaNpc } from '../render/plaza'
-import { STALLS } from '../data/visitors'
+import { stallGoods } from '../game/stalls'
+import type { VisitorShelf } from './shop'
 import { dialogue, type Dialogue } from './dialogue'
 import { stallSpeaker, stallToday } from './visitors'
 import { inviterName } from '../ranking'
@@ -122,9 +123,9 @@ export type TitleActions = {
   /**
    * Opens the shop over the Kecleon plaza once the camera got there (Kecleon
    * talks beside it, `ui/shop.ts`); its Back must call `close`, which pans
-   * back home and brings the lobby back in. `shelf`: open on Meowth's caravan (a talk with him).
+   * back home and brings the lobby back in. `shelf`: open on Meowth's caravan or a seasonal stall's shelf (a talk with its keeper).
    */
-  mart: (close: () => void, shelf?: 'caravan') => Screen
+  mart: (close: () => void, shelf?: VisitorShelf) => Screen
   /** Opens the Trainer Card over the title (the Trainer chip, `C`, the invite banner), like `settings`. */
   trainer: (focus: LobbyFocus) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no tile. */
@@ -623,7 +624,7 @@ export const titleScreen = (
   root: HTMLElement,
   input: Input,
   actions: TitleActions,
-  opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean; back?: () => void },
+  opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; shelf?: VisitorShelf; instant?: boolean; back?: () => void },
 ): Screen => {
   const m = t().home
   const lang = locale()
@@ -660,7 +661,7 @@ export const titleScreen = (
   /** How this lobby lets the partner go (see `Meadow.meet`). */
   let leave: (() => void) | null = null
   /** A trip to the Kecleon's shop under way: going there, the shop open, or coming back. */
-  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'shop' | 'back'; shelf?: 'caravan' } | null = null
+  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'shop' | 'back'; shelf?: VisitorShelf } | null = null
   /** Who the talk prompt is over: a shopkeeper, Meowth or a stall's keeper. */
   let talkWho: PlazaNpc = 'keeper'
   /** A seasonal stall's keeper talking, over the plaza (the lobby's keys wait). */
@@ -828,7 +829,7 @@ export const titleScreen = (
    * There Kecleon hops, cries and says hello, then the shop opens over the
    * plaza (`TitleActions.mart`); closing it comes back (`goHome`).
    */
-  function visitShop(mode: ShopTrip, instant = false, shelf?: 'caravan') {
+  function visitShop(mode: ShopTrip, instant = false, shelf?: VisitorShelf) {
     if (visit || !stage) return
     visit = { mode, phase: 'going', shelf }
     offKeys?.()
@@ -850,7 +851,7 @@ export const titleScreen = (
 
   /**
    * The seasonal stall's keeper says its lines over the plaza; the lobby's
-   * keys wait. Its event screen follows (the Noite das Bruxas' candy jar) when it has one.
+   * keys wait. Its shelf in the shop follows when it sells something (Duskull's Haunted Egg).
    */
   function talkToStall() {
     const id = stallToday()
@@ -866,7 +867,7 @@ export const titleScreen = (
         later(() => {
           chat?.dispose()
           chat = null
-          if (STALLS[id].link === 'halloween' && halloweenCardShows()) return runs.halloween()
+          if (stallGoods(id).length > 0) return visitShop('shop', false, 'stall')
           offKeys = input.onKey(lobbyKey)
         }),
     })
@@ -987,7 +988,7 @@ export const titleScreen = (
     actions.ready()
     // `?loja` (and the dev's `ps.plaza()`) head for the shop once the lobby is laid out.
     const trip = opts.shop
-    if (trip) requestAnimationFrame(() => visitShop(trip, opts.instant))
+    if (trip) requestAnimationFrame(() => visitShop(trip, opts.instant, opts.shelf))
     // Otherwise the survey asks by itself once; closed unanswered, its clipboard in the top bar keeps asking.
     else if (takeSurveyOffer()) openOver(actions.survey)
   }

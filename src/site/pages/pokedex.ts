@@ -84,7 +84,8 @@ const learnRows = (source: DexEntry['source'] & { kind: 'starter' }, locale: Loc
   const row = (name: string, when: string, moves: readonly MoveId[]) =>
     moves.length > 0 && html`<dt>${name} <small>${when}</small></dt><dd><ul class="chips">${moves.map((mv) => moveChip(mv, m))}</ul></dd>`
   return html`<dl class="learn">${formLine(source.id, branch).map((st, k) => {
-    const when = k === 0 ? m.pokedex.learnStart : m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)
+    const item = st.item ? ` · ${EVO_ITEMS[st.item].name}` : ''
+    const when = k === 0 ? m.pokedex.learnStart : `${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}${item}`
     const options = branch === null ? branchesAt(source.id, k) : []
     if (options.length === 0) return row(st.name, when, unlockedAt(source.id, branch, k))
     const shared = unlockedAt(source.id, null, k)
@@ -119,7 +120,9 @@ const starterBody = (entry: DexEntry & { source: { kind: 'starter' } }, locale: 
   const line = formLine(id, branch).map((st, k) => {
     const options = branchesAt(id, k)
     const forms = options.length > 0 ? options.map(branchStage) : [st]
-    return html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}<br /><span aria-hidden="true">▶</span></li>`}<li>${forms.map(
+    // A step that needs an item (Porygon2's Up-Grade) names it under the level.
+    const item = st.item ? html`<br />${EVO_ITEMS[st.item].name}` : ''
+    return html`${k > 0 && html`<li class="evo-arrow">${m.pokedex.evolvesAt(s.line[k - 1]!.evolveAt ?? 0)}${item}<br /><span aria-hidden="true">▶</span></li>`}<li>${forms.map(
       (f) => html`<a href="#${slugOf(f.name)}"${f.dex === entry.dex ? html` aria-current="true"` : ''}><img src="${asset(f.dex, 'portrait.png')}" width="40" height="40" loading="lazy" alt="" />${f.name}</a>`,
     )}</li>`
   })

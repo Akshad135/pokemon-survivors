@@ -110,6 +110,87 @@ describe('a family with no free branch (Scyther, Charcadet)', () => {
   })
 })
 
+describe('line steps that need an item (Porygon, Exeggcute)', () => {
+  /** Plays the evolution scene out, then the screens after it. */
+  const evolveOut = (g: Game) => {
+    for (let i = 0; i < 600 && g.phase === 'evolving'; i++) step(g, STILL, TICK)
+    settle(g)
+  }
+
+  it('hold Porygon without the Up-Grade, 15% stronger, and missing only the next step’s item', () => {
+    const g = atEvolution('porygon')
+    expect(missingEvoItems(g)).toEqual(['upgrade'])
+    advancePhase(g)
+    settle(g)
+    expect([g.phase, g.player.stage, g.evoHeld]).toEqual(['playing', 0, true])
+    expect(g.ability.id).not.toBeNull()
+    expect(g.events).toContainEqual({ kind: 'evoHeld', items: ['upgrade'] })
+  })
+
+  it('evolve with the owned Up-Grade, then hold Porygon2 for the Dubious Disc and evolve on finding it', () => {
+    const g = atEvolution('porygon', { evo: ['upgrade'] })
+    advancePhase(g)
+    expect(g.phase).toBe('evolving')
+    evolveOut(g)
+    expect([g.player.stage, g.evoHeld]).toEqual([1, false])
+    // Lv 28: the second step waits on its disc.
+    g.player.level = 28
+    advancePhase(g)
+    settle(g)
+    expect([g.phase, g.player.stage, g.evoHeld]).toEqual(['playing', 1, true])
+    expect(missingEvoItems(g)).toEqual(['dubiousDisc'])
+    collectEvoItem(g, 'dubiousDisc')
+    step(g, STILL, TICK)
+    expect([g.phase, g.evoHeld]).toEqual(['evolving', false])
+    evolveOut(g)
+    expect(g.player.stage).toBe(2)
+    expect(missingEvoItems(g)).toEqual([])
+  }, 30_000)
+
+  it('evolve a held Porygon as soon as an Up-Grade is found', () => {
+    const g = atEvolution('porygon')
+    advancePhase(g)
+    settle(g)
+    collectEvoItem(g, 'upgrade')
+    step(g, STILL, TICK)
+    expect(g.phase).toBe('evolving')
+    evolveOut(g)
+    expect(g.player.stage).toBe(1)
+  }, 30_000)
+
+  it('need the Leaf Stone for Exeggutor, the one that opens Leafeon too', () => {
+    const held = atEvolution('exeggcute')
+    expect(missingEvoItems(held)).toEqual(['leafStone'])
+    advancePhase(held)
+    settle(held)
+    expect([held.player.stage, held.evoHeld]).toEqual([0, true])
+    const g = atEvolution('exeggcute', { evo: ['leafStone'] })
+    advancePhase(g)
+    expect(g.phase).toBe('evolving')
+    evolveOut(g)
+    expect(g.player.stage).toBe(1)
+    // Scraggy's step is a plain level one.
+    const scraggy = atEvolution('scraggy')
+    expect(missingEvoItems(scraggy)).toEqual([])
+    advancePhase(scraggy)
+    expect(scraggy.phase).toBe('evolving')
+  }, 30_000)
+
+  it('let a boss drop only the next step’s item', () => {
+    const g = startGame({ ...START, starter: 'porygon' })
+    const drops = new Set<string>()
+    for (let seed = 1; seed <= 200; seed++) {
+      g.rng = createRng(seed)
+      g.pickups = []
+      dropEvoItem(g, 0, 0)
+      for (const k of g.pickups) if (k.kind === 'evoItem') drops.add(k.item)
+    }
+    expect([...drops]).toEqual(['upgrade'])
+    // Under an Everstone it never evolves, so nothing is missing.
+    expect(missingEvoItems(startGame({ ...START, starter: 'porygon', bag: ['everstone'] }))).toEqual([])
+  })
+})
+
 describe('Eevee', () => {
   it('evolves straight into one of its three free branches without items', () => {
     const seen = new Set<string>()

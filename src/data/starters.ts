@@ -1,5 +1,6 @@
 import type { MoveId } from '../game/moves'
 import type { StatDelta } from '../game/stats'
+import type { EvoItemId } from './shop'
 import type { PokeType } from './types'
 
 export type EvolutionStage = {
@@ -8,6 +9,12 @@ export type EvolutionStage = {
   types: readonly PokeType[]
   /** Level at which this stage evolves into the next one. */
   evolveAt?: number
+  /**
+   * The evolution item the line needs to evolve into this stage (Porygon2's
+   * Up-Grade): without it the run holds the stage before, as strong as with
+   * an Everstone, until it's owned or found (`game/evoGate.ts`).
+   */
+  item?: EvoItemId
   /** Stat bonus granted when reaching this stage. */
   bonus: StatDelta
 }

@@ -7,7 +7,10 @@ import type { PokeType } from './types'
 /**
  * Playable families that hatch from eggs (`game/eggs.ts`), on top of the 27
  * starters. They share the starters' shape; `egg` is the egg tier they hatch from
- * (Munchlax alone hatches from the Friendship Egg, which only invites bring).
+ * (Munchlax alone hatches from the Friendship Egg, which only invites bring;
+ * the Haunted Egg's ghosts only from the egg Duskull's stall sells on the
+ * Noite das Bruxas, and the Kecleon Egg's four only from the Vitrine's fixed
+ * card, so both stay out of the Desafio do dia and the shiny tickets).
  */
 export type HatchlingDef = PlayableDef & { egg: EggTier }
 
@@ -641,6 +644,100 @@ export const HATCHLINGS = {
     learnset: [['gyroBall', 'bodySlam', 'metronome', 'sludgeBomb', 'crunch', 'focusPunch'], ['selfDestruct', 'pyroBall', 'roost']],
     line: line2(['Munchlax', 446, ['normal']], ['Snorlax', 143, ['normal']], { maxHp: 90, armor: 2, might: 0.22, regen: 0.4, area: 0.1 }),
   },
+  /* ---------- Haunted Egg (only Duskull's stall sells it, during the Noite das Bruxas) ---------- */
+  litwick: {
+    name: 'Litwick',
+    color: '#9068d0',
+    egg: 'haunted',
+    // A candle that feeds on life force: frail, but its flames burn longer and Chandelure's reach wider.
+    stats: { might: 0.08, duration: 0.1, statusDamage: 0.1, maxHp: -15 },
+    signature: 'fireSpin',
+    learnset: [['fireSpin', 'ember', 'hex', 'willOWisp', 'psyshock'], ['torchSong', 'spiritShackle', 'toxicSpikes'], ['futureSight', 'sludgeBomb']],
+    line: line3(['Litwick', 607, ['ghost', 'fire']], ['Lampent', 608, ['ghost', 'fire']], ['Chandelure', 609, ['ghost', 'fire']], [
+      { maxHp: 20, might: 0.1, duration: 0.05 },
+      { maxHp: 35, might: 0.25, area: 0.15 },
+    ]),
+  },
+  phantump: {
+    name: 'Phantump',
+    color: '#6a8a48',
+    egg: 'haunted',
+    // A stump with a lost spirit inside: sturdy and slow to wilt; Trevenant's roots heal it as it fights.
+    stats: { maxHp: 20, regen: 0.2, speed: -3 },
+    signature: 'vineWhip',
+    learnset: [['vineWhip', 'razorLeaf', 'hex', 'willOWisp', 'venoshock'], ['leafBlade', 'drumBeating', 'toxicSpikes', 'solarBeam']],
+    line: line2(['Phantump', 708, ['ghost', 'grass']], ['Trevenant', 709, ['ghost', 'grass']], { maxHp: 65, might: 0.22, armor: 1, regen: 0.4 }),
+  },
+  drifloon: {
+    name: 'Drifloon',
+    color: '#9070c0',
+    egg: 'haunted',
+    // A balloon that drifts off with whoever holds its string: light, quick to pull pickups, quicker once Drifblim.
+    stats: { speed: 5, magnet: 10, maxHp: -10 },
+    signature: 'spiritShackle',
+    learnset: [['spiritShackle', 'roost', 'swift', 'selfDestruct', 'thunder'], ['aerialAce', 'shockWave', 'futureSight', 'disarmingVoice']],
+    line: line2(['Drifloon', 425, ['ghost', 'flying']], ['Drifblim', 426, ['ghost', 'flying']], { maxHp: 60, might: 0.22, speed: 4, area: 0.1 }),
+  },
+  sandygast: {
+    name: 'Sandygast',
+    color: '#d8b070',
+    egg: 'haunted',
+    // A sandcastle that drains whoever builds it: tough, slow, its quakes ever wider as Palossand.
+    stats: { maxHp: 25, armor: 1, area: 0.05, speed: -5 },
+    signature: 'bulldoze',
+    learnset: [['bulldoze', 'hex', 'earthquake', 'whirlpool', 'stealthRock'], ['brine', 'psyshock', 'razorLeaf', 'flashCannon']],
+    line: line2(['Sandygast', 769, ['ghost', 'ground']], ['Palossand', 770, ['ghost', 'ground']], { maxHp: 70, armor: 2, might: 0.2, area: 0.15 }),
+  },
+  /* ---------- Kecleon Egg (only the Vitrine's fixed card sells it, one a day) ---------- */
+  porygon: {
+    name: 'Porygon',
+    color: '#e8708a',
+    egg: 'kecleon',
+    // Made of code: it levels up and recharges fast; Porygon-Z's glitchy upgrade trades armor for raw power.
+    stats: { cooldown: -0.05, growth: 0.1, maxHp: -5 },
+    signature: 'zapCannon',
+    learnset: [['zapCannon', 'swift', 'quickAttack', 'electroBall', 'futureSight'], ['thunder', 'chargeBeam', 'iceShard'], ['selfDestruct', 'torchSong']],
+    // Both evolutions need their item (the Up-Grade, then the Dubious Disc): without it, it stays (`game/evoGate.ts`).
+    line: [
+      { name: 'Porygon', dex: 137, types: ['normal'], evolveAt: 12, bonus: {} },
+      { name: 'Porygon2', dex: 233, types: ['normal'], evolveAt: 28, item: 'upgrade', bonus: { maxHp: 35, armor: 1, regen: 0.3, might: 0.08 } },
+      { name: 'Porygon-Z', dex: 474, types: ['normal'], item: 'dubiousDisc', bonus: { maxHp: 20, might: 0.3, cooldown: -0.08, speed: 4, armor: -1 } },
+    ],
+  },
+  exeggcute: {
+    name: 'Exeggcute',
+    color: '#f0c8b8',
+    egg: 'kecleon',
+    // Six eggs that think as one: wide reach and slow healing; Exeggutor, grown under a Leaf Stone, towers over the horde.
+    stats: { area: 0.1, regen: 0.15, speed: -4 },
+    signature: 'razorLeaf',
+    learnset: [['razorLeaf', 'vineWhip', 'futureSight', 'selfDestruct', 'toxicSpikes'], ['leafBlade', 'drumBeating', 'dragonBreath', 'sludgeBomb']],
+    // Exeggutor needs the Leaf Stone (the one that opens Leafeon too).
+    line: [
+      { name: 'Exeggcute', dex: 102, types: ['grass', 'psychic'], evolveAt: 20, bonus: {} },
+      { name: 'Exeggutor', dex: 103, types: ['grass', 'psychic'], item: 'leafStone', bonus: { maxHp: 70, might: 0.25, area: 0.15, armor: 1 } },
+    ],
+  },
+  scraggy: {
+    name: 'Scraggy',
+    color: '#e8c040',
+    egg: 'kecleon',
+    // Pulls its shed skin up like pants: hard to knock down; Scrafty brawls harder.
+    stats: { armor: 1, maxHp: 15, might: 0.05, speed: -2 },
+    signature: 'focusPunch',
+    learnset: [['focusPunch', 'machPunch', 'crunch', 'bodySlam', 'rockTomb'], ['venoshock', 'electroBall', 'torchSong', 'toxicSpikes']],
+    line: line2(['Scraggy', 559, ['dark', 'fighting']], ['Scrafty', 560, ['dark', 'fighting']], { maxHp: 65, might: 0.25, armor: 1 }),
+  },
+  smeargle: {
+    name: 'Smeargle',
+    color: '#58a838',
+    egg: 'kecleon',
+    // Never evolves: it starts strong, and its tail paints whatever move it sees (Sketch, `game/sketch.ts`).
+    stats: { maxHp: 35, might: 0.2, cooldown: -0.06, area: 0.1 },
+    signature: 'sketch',
+    learnset: [['sketch', 'weatherBall', 'furySwipes', 'selfDestruct', 'waterShuriken', 'torchSong', 'drumBeating', 'dragonBreath', 'disarmingVoice', 'venoshock']],
+    line: [{ name: 'Smeargle', dex: 235, types: ['normal'], bonus: {} }],
+  },
 } as const satisfies Record<string, HatchlingDef>
 
 export type HatchlingId = keyof typeof HATCHLINGS
@@ -660,6 +757,16 @@ export type PlayableId = StarterId | HatchlingId | LegendId
 export const PLAYABLE_IDS: readonly (StarterId | HatchlingId)[] = [...STARTER_IDS, ...HATCHLING_IDS]
 
 export const isHatchling = (id: PlayableId): id is HatchlingId => id in HATCHLINGS
+
+/** The eggs whose families come from nowhere else: the Haunted Egg (Duskull's stall) and the Kecleon Egg (the Vitrine's fixed card). */
+const EXCLUSIVE_EGGS: readonly EggTier[] = ['haunted', 'kecleon']
+
+/**
+ * A family only its own egg brings (the Haunted Egg's ghosts, the Kecleon
+ * Egg's four): the Desafio do dia never draws it and shiny tickets can't pick
+ * it, so the egg stays its only way in.
+ */
+export const isExclusiveFamily = (id: PlayableId) => isHatchling(id) && EXCLUSIVE_EGGS.includes(HATCHLINGS[id].egg)
 
 /** A starter: neither a hatched family nor a legend. */
 export const isStarter = (id: PlayableId): id is StarterId => id in STARTERS

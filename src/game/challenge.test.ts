@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { PLAYABLE_IDS } from '../data/hatchlings'
+import { isExclusiveFamily, PLAYABLE_IDS } from '../data/hatchlings'
 import { BAG_ITEM_IDS } from '../data/shop'
 import { challengeOpen, challengeProblem, challengeStart, dailyChallenge, ribbonsDue } from './challenge'
 import { previousDay } from './day'
@@ -19,15 +19,21 @@ describe('dailyChallenge', () => {
     expect(dailyChallenge(DAY).seed).not.toBe(dailyChallenge(previousDay(DAY)).seed)
   })
 
-  it('gives every playable Pokémon its day once per cycle, egg families included', () => {
+  it('gives every playable Pokémon its day once per cycle, egg families included and the exclusive eggs’ families aside', () => {
+    const pool = PLAYABLE_IDS.filter((id) => !isExclusiveFamily(id))
     let day = '2026-01-01'
     const days: string[] = []
     // A whole cycle starts at a multiple of its length in days since 1970.
-    while (days.length < PLAYABLE_IDS.length * 2) days.push((day = previousDay(day)))
+    while (days.length < pool.length * 2) days.push((day = previousDay(day)))
     const starters = days.map((d) => dailyChallenge(d).starter)
     const counts = new Map(starters.map((s) => [s, starters.filter((x) => x === s).length]))
-    expect(new Set(starters)).toEqual(new Set(PLAYABLE_IDS))
+    expect(new Set(starters)).toEqual(new Set(pool))
     expect(Math.max(...counts.values())).toBeLessThanOrEqual(3)
+  })
+
+  it('keeps the Pokémon each day had before the exclusive families came', () => {
+    // Pinned from before the exclusive eggs (Haunted, Kecleon): leaving their families out of the pool keeps every day's draw.
+    expect(['2026-10-21', '2026-10-24', '2026-11-02'].map((d) => dailyChallenge(d).starter)).toEqual(['larvitar', 'roggenrola', 'honedge'])
   })
 })
 

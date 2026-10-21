@@ -19,6 +19,7 @@ const CAST_SOUNDS: Partial<Record<MoveId, readonly [Sfx, number]>> = {
   snarl: ['growl', 300],
   gigaImpact: ['charge', 300],
   metronome: ['metronome', 300],
+  sketch: ['whoosh', 300],
   echoedVoice: ['echo', 250],
   curse: ['curse', 400],
   fieryDance: ['flameDance', 300],

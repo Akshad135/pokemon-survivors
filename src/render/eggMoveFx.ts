@@ -2,7 +2,7 @@ import { blitCentered, blitEllipse, blitRing, blitRotated } from '../engine/pixe
 import { hash2 } from '../engine/rng'
 import { TAU } from '../engine/math'
 import { DREAM_WINDUP, FOUL_WINDUP, MASH_FALL, MASH_MAX, PUNCH_WINDUP, SLAM_LEAP, SLAM_LIFT } from '../game/eggMoveRules'
-import { MOVE_IDS } from '../game/moves'
+import { MOVE_IDS, type MoveId } from '../game/moves'
 import type { Attack, Game } from '../game/types'
 import { moveIconSprite } from './art'
 import { EGG_FX } from './eggMoveArt'
@@ -155,6 +155,19 @@ export const drawEggGround = (ctx: Ctx, a: Attack, t: number) => {
 }
 
 /* ---------------- Air layer ---------------- */
+
+/** A speech bubble centered at (bx, by) with a move's icon in it (Metronome's call, Sketch's painting). */
+const moveBubble = (ctx: Ctx, id: MoveId, bx: number, by: number, fill: string) => {
+  const icon = moveIconSprite(id)
+  const w = icon.width + 4
+  const h = icon.height + 4
+  px(ctx, bx - w / 2 - 1, by - h / 2, '#181818', w + 2, h)
+  px(ctx, bx - w / 2, by - h / 2 - 1, '#181818', w, h + 2)
+  px(ctx, bx - w / 2, by - h / 2, fill, w, h)
+  px(ctx, bx - 1, by + h / 2, '#181818', 3, 2)
+  px(ctx, bx, by + h / 2, fill, 1, 1)
+  blitCentered(ctx, icon, bx, by)
+}
 
 /** Overlay layer (above Pokémon). */
 export const drawEggAttack = (ctx: Ctx, a: Attack, t: number) => {
@@ -393,19 +406,17 @@ export const drawEggAttack = (ctx: Ctx, a: Attack, t: number) => {
       ctx.globalAlpha = fadeOut(a, 0.15)
       blitRotated(ctx, EGG_FX.finger(), a.x, a.y + 8, wag)
       const id = MOVE_IDS[a.tier]
-      if (id && a.age > 0.1) {
-        const icon = moveIconSprite(id)
-        const bx = a.x + 1
-        const by = a.y - 8
-        const w = icon.width + 4
-        const h = icon.height + 4
-        px(ctx, bx - w / 2 - 1, by - h / 2, '#181818', w + 2, h)
-        px(ctx, bx - w / 2, by - h / 2 - 1, '#181818', w, h + 2)
-        px(ctx, bx - w / 2, by - h / 2, '#ffffff', w, h)
-        px(ctx, bx - 1, by + h / 2, '#181818', 3, 2)
-        px(ctx, bx, by + h / 2, '#ffffff', 1, 1)
-        blitCentered(ctx, icon, bx, by)
-      }
+      if (id && a.age > 0.1) moveBubble(ctx, id, a.x + 1, a.y - 8, '#ffffff')
+      ctx.globalAlpha = 1
+      return
+    }
+    case 'sketch': {
+      // The tail brush sweeps a stroke, and a bubble shows the move painted (green when it was just painted).
+      const sweep = Math.sin(a.age * 14) * 0.7
+      ctx.globalAlpha = fadeOut(a, 0.15)
+      blitRotated(ctx, EGG_FX.brush(), a.x + 10, a.y + 12, 0.5 + sweep)
+      const id = MOVE_IDS[a.tier]
+      if (id && a.age > 0.08) moveBubble(ctx, id, a.x - 2, a.y - 8, a.flip ? '#d8f8c8' : '#ffffff')
       ctx.globalAlpha = 1
       return
     }

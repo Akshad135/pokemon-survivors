@@ -15,6 +15,7 @@ import { modBits, modHit, refreshMods, type ModId } from './mods'
 import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
 import { EGG_MOVES_3 } from './eggMoves3'
+import { SKETCH_MOVES } from './sketch'
 import { TM_MOVES } from './tmMoves'
 import { SHOP_TM_MOVES } from './shopTmMoves'
 import { VERB_EVOLVED_MOVES } from './verbEvolutions'
@@ -2274,6 +2275,8 @@ export const MOVES = {
   ...LEGENDARY_MOVES,
   /* ---------- Legendary moves, second batch: the trios, Mewtwo and Arceus (`legendaryMoves2.ts`) ---------- */
   ...LEGENDARY_MOVES_2,
+  /* ---------- Smeargle's Sketch, the Kecleon Egg's signature (`sketch.ts`) ---------- */
+  ...SKETCH_MOVES,
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES

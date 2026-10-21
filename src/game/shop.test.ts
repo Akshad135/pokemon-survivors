@@ -6,10 +6,12 @@ import { EGGS } from './eggs'
 import { buyUpgrade, EMPTY_SAVE, refundAll, type Save } from './meta'
 import {
   buyFromVitrine,
+  buyKecleonEgg,
   buyStyle,
   claimGift,
   dayStyle,
   investInShop,
+  kecleonEggBlock,
   mergeShop,
   mergeVisit,
   nextAppearance,
@@ -160,6 +162,37 @@ describe('buying from the Vitrine', () => {
   it('pins a wishlist card only from the Tent on', () => {
     expect(setWish(rich(0), 'maxRevive')).toBeNull()
     expect(setWish(rich(0, { level: 2 }), 'maxRevive')!.shop.wishlist).toBe('maxRevive')
+  })
+})
+
+describe('the Kecleon Egg’s fixed card', () => {
+  it('sells one a day at any level, into the incubator, beside the rotation (never one of its cards)', () => {
+    expect(VITRINE_POOL).not.toContain('kecleonEgg')
+    const v = vitrineOf(DAY)
+    const once = buyKecleonEgg(rich(50_000), v)!
+    expect(once.eggs).toEqual([{ tier: 'kecleon', steps: 0 }])
+    expect([once.wallet, once.spent]).toEqual([50_000 - VITRINE.kecleonEgg.price, VITRINE.kecleonEgg.price])
+    expect(kecleonEggBlock(once, v)).toBe('soldOut')
+    expect(buyKecleonEgg(once, v)).toBeNull()
+    // The next Brasília day brings another.
+    expect(buyKecleonEgg(once, vitrineOf(addDays(DAY, 1)))!.eggs).toHaveLength(2)
+  })
+
+  it('refuses a full incubator and a short wallet', () => {
+    const v = vitrineOf(DAY)
+    const full = { ...rich(50_000), eggs: Array.from({ length: EGGS.slots }, () => ({ tier: 'common', steps: 0 }) as const) }
+    expect(kecleonEggBlock(full, v)).toBe('full')
+    expect(kecleonEggBlock(rich(VITRINE.kecleonEgg.price - 1), v)).toBe('poor')
+  })
+
+  it('keeps its one a day through the merge and the parse', () => {
+    const v = vitrineOf(DAY)
+    const a = buyKecleonEgg(rich(50_000), v)!
+    // Two devices that each saw it unsold can't both sell it once synced.
+    expect(mergeShop(rich(50_000).shop, a.shop).bought.kecleonEgg).toBe(1)
+    expect(mergeShop(a.shop, { ...a.shop, day: addDays(DAY, -1), bought: {} }).bought.kecleonEgg).toBe(1)
+    expect(parseShop({ ...a.shop, bought: { kecleonEgg: 9 } }).bought).toEqual({ kecleonEgg: 1 })
+    expect(stockLeft(parseShop(JSON.parse(JSON.stringify(a.shop))), v, 'kecleonEgg')).toBe(0)
   })
 })
 

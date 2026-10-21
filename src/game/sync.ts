@@ -9,6 +9,7 @@ import { mergeShop, shopInvested } from './shop'
 import { mergeTms } from './tmShelf'
 import { mergeCaps, mergeEvoItems } from './evoItems'
 import { mergeCaravan } from './caravan'
+import { mergeStall } from './stalls'
 import { mergeStyle } from './style'
 import { mergeDex } from './dex'
 import { mergeEggs, mergeHatched } from './eggs'
@@ -70,6 +71,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  *   each Pokémon at the higher level (`mergeCaps`). What they cost is in `spent`.
  * - Meowth's caravan: the later weekend's; on the same weekend, what either
  *   side bought (a union) and the haggle made on either (`mergeCaravan`).
+ * - The seasonal stalls: the later day's purchases; on the same day, the most
+ *   of each good either side bought (`mergeStall`), so the daily stock holds.
  * - The Desafio do dia attempt: the later day (`base`'s on the same day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
@@ -107,6 +110,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     evo: mergeEvoItems(base.evo, incoming.evo),
     caps: mergeCaps(base.caps, incoming.caps),
     caravan: mergeCaravan(base.caravan, incoming.caravan),
+    stall: mergeStall(base.stall, incoming.stall),
     attempt: mergeAttempts(base.attempt, incoming.attempt),
   }
 }

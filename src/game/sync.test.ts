@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { NO_ACHIEVEMENTS } from './achievements'
-import { buyUpgrade, EMPTY_SAVE, NO_RANKS, refundAll, upgradePrice, type Save } from './meta'
+import { buyUpgrade, EMPTY_SAVE, NO_RANKS, parseSaveData, refundAll, upgradePrice, type Save } from './meta'
+import { keepGiven } from './gifts'
 import { bagCount } from './bag'
 import { buyFromVitrine, buyStyle, claimGift, investInShop, vitrineCards, vitrineOf } from './shop'
 import { applyPush, mergeSaves } from './sync'
@@ -135,6 +136,29 @@ describe('applyPush', () => {
   it('merges a push from an older revision', () => {
     const out = applyPush({ save: account, revision: 4 }, { save: guest, base: 2 })
     expect(out).toEqual({ save: mergeSaves(account, guest), revision: 5, merged: true })
+  })
+
+  it('keeps the Haunted Egg, its families and the stall’s day through the API’s parse, merge and gift check', () => {
+    const device = save({ eggs: [{ tier: 'haunted', steps: 100 }], hatched: { litwick: { shiny: true }, sandygast: { shiny: false } }, stall: { day: '2026-10-24', bought: { hauntedEgg: 1 } } })
+    // As `server/src/app.ts` and `db.ts` do: parse the body, apply the push, then keep only what gifts brought.
+    const pushed = parseSaveData(JSON.parse(JSON.stringify(device)))
+    const stored = keepGiven(applyPush({ save: account, revision: 3 }, { save: pushed, base: 2 }).save, [])
+    expect(stored.eggs).toContainEqual({ tier: 'haunted', steps: 100 })
+    expect(stored.hatched).toMatchObject({ litwick: { shiny: true }, sandygast: { shiny: false } })
+    expect(stored.stall).toEqual(device.stall)
+  })
+
+  it('keeps the Kecleon Eggs, their families and the day’s purchase through the API’s parse, merge and gift check', () => {
+    const device = save({
+      eggs: [{ tier: 'kecleon', steps: 100 }, { tier: 'kecleonShiny', steps: 0 }],
+      hatched: { porygon: { shiny: true }, smeargle: { shiny: false } },
+      shop: { ...EMPTY_SAVE.shop, day: '2026-10-21', bought: { kecleonEgg: 1 } },
+    })
+    const pushed = parseSaveData(JSON.parse(JSON.stringify(device)))
+    const stored = keepGiven(applyPush({ save: account, revision: 3 }, { save: pushed, base: 2 }).save, [])
+    expect(stored.eggs).toEqual(expect.arrayContaining([{ tier: 'kecleon', steps: 100 }, { tier: 'kecleonShiny', steps: 0 }]))
+    expect(stored.hatched).toMatchObject({ porygon: { shiny: true }, smeargle: { shiny: false } })
+    expect(stored.shop.bought.kecleonEgg).toBe(1)
   })
 
   it("hands a reset save to devices that haven't seen the reset, and takes pushes from those that have", () => {

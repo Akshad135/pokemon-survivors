@@ -12,7 +12,8 @@ import type { Save } from './meta'
  * Bruxas candy jar's: they wait in the lobby's gift box, and the save keeps
  * their ids once opened (`gifts`, a union on sync), so each lands once on any
  * device. The 60-stamp milestone raises the golden statue on the plaza (as
- * the Department Store does); the 100-stamp one is a mystery for now. Pure.
+ * the Department Store does), and the 100-stamp one is a Kecleon Egg sure to
+ * hatch shiny. Pure.
  */
 
 export type Milestone = (typeof LOYALTY.milestones)[number]
@@ -23,7 +24,7 @@ export const loyaltyGiftId = (stamps: number) => `loyalty:${stamps}`
 /** The Mystery Gift id of a Department Store reward. */
 export const tycoonGiftId = (index: number) => `shop:tycoon${index}`
 
-/** Whether a milestone's reward is a gift (not the statue or the mystery). */
+/** Whether a milestone's reward is a gift (not the statue). */
 export const isGiftReward = (r: LoyaltyReward): r is GiftContent => typeof r !== 'string'
 
 /** The next milestone past `stamps`, or null past the last. */

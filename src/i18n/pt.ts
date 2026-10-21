@@ -21,6 +21,7 @@ import type { BagItem } from '../game/bag'
 import type { ShopLevel, ShopProp } from '../data/shop'
 import type { VitrineBlock } from '../game/shop'
 import type { CaravanBlock } from '../game/caravan'
+import type { StallBlock } from '../game/stalls'
 import type { StallId } from '../data/visitors'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
@@ -667,7 +668,7 @@ export const pt = {
     levels: { 1: 'Carrinho', 2: 'Tenda', 3: 'Loja', 4: 'Kecleon Mart', 5: 'Loja de Departamento' } satisfies Record<ShopLevel, string>,
     level: (name: string, n: number) => `${name} (Nv ${n})`,
     /** The shelves, as tabs (`SHELVES` in ui/shop.ts). */
-    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', caravan: 'Caravana', loyalty: 'Fidelidade', expansion: 'Expansão' },
+    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', caravan: 'Caravana', stall: 'Barraca', loyalty: 'Fidelidade', expansion: 'Expansão' },
     /** Corner tags on the cards. */
     badges: { gift: 'BRINDE', wish: 'LISTA', new: 'NOVO', armed: 'LEVANDO', level: (n: number) => `NV ${n}`, exclusive: 'EXCLUSIVA', found: 'ACHOU', today: 'HOJE', owned: 'SUA', sure: 'GARANTE' },
     vitrineOf: (weekday: string, level: string) => `Vitrine de ${weekday} · ${level}`,
@@ -724,6 +725,7 @@ export const pt = {
       unlocks: (forms: string, family: string) => `Abre ${forms} na evolução de ${family}. É seu pra sempre.`,
       adds: (forms: string, family: string) => `Põe ${forms} na escolha de ${family} (sem itens, sai um dos três livres, sorteado). É seu pra sempre.`,
       stays: (family: string) => `Sem item, ${family} não evolui (mas fica 15% mais forte).`,
+      evolves: (from: string, form: string, forGood: boolean) => `Evolui ${from} em ${form}.${forGood ? ' É seu pra sempre.' : ''}`,
       drops: 'Chefes também derrubam, só pela partida.',
       owned: 'No estojo',
     },
@@ -779,6 +781,21 @@ export const pt = {
         doneAction: 'Pechinchado',
       },
     },
+    /** The Vitrine's fixed Kecleon Egg card (`game/shop.ts`). */
+    kecleonEgg: {
+      text: (steps: string) => `Choca em ${steps} passos: famílias que nenhum outro ovo traz. Um por dia.`,
+    },
+    /** A seasonal stall's shelf (`game/stalls.ts`): Duskull's Haunted Egg on the Noite das Bruxas. */
+    stall: {
+      intro: (until: string) => `Barraca do Duskull · Noite das Bruxas · até ${until}`,
+      egg: (steps: string) => `Choca em ${steps} passos: fantasmas que nenhum outro ovo traz.`,
+      /** Every family alike: their names, then the one share. */
+      even: (names: string, pct: number) => `${names}: ${pct}% cada`,
+      odds: (list: string, shiny: number) => `${list}. Shiny 1 em ${shiny}.`,
+      duplicate: (coins: string) => `Repetido: ${coins}.`,
+      stock: 'Um por dia, só na Noite das Bruxas (volta no ano que vem).',
+      blocks: { closed: 'Fechada', soldOut: 'Volta amanhã', full: 'Incubadora cheia', poor: 'Faltam ₽' } satisfies Record<StallBlock, string>,
+    },
     /** The loyalty card (`game/loyalty.ts`). */
     loyalty: {
       intro: (n: number) => `Cartão fidelidade: ${n} ${n === 1 ? 'carimbo' : 'carimbos'} · um por dia de visita`,
@@ -786,13 +803,13 @@ export const pt = {
       cardText: (n: number) => `${n} ${n === 1 ? 'carimbo' : 'carimbos'}. Ganha um por dia em que passa na loja, sem precisar comprar. Dia perdido não zera nada.`,
       next: (left: number, reward: string) => `Faltam ${left} para: ${reward}.`,
       milestone: (n: number) => `${n} carimbos`,
-      rewards: { egg: 'Ovo raro', frame: 'Moldura Freguês', title: 'Título Freguês VIP', statue: 'Estátua dourada', mystery: '???' },
+      rewards: { egg: 'Ovo raro', frame: 'Moldura Freguês', title: 'Título Freguês VIP', statue: 'Estátua dourada', kecleonEgg: 'Ovo do Kecleon com shiny garantido' },
       texts: {
         egg: 'Um ovo raro pra incubadora. E o Meowth passa a aceitar pechinchar na caravana.',
         frame: 'A moldura Freguês, verde Kecleon com carimbos nos cantos.',
         title: 'O título Freguês VIP, pra mostrar no seu cartão.',
         statue: 'A estátua dourada do Kecleon, em pé na sua praça.',
-        mystery: 'Segredo do Kecleon. Continue vindo...',
+        kecleonEgg: 'Dele sai um Porygon, Exeggcute, Scraggy ou Smeargle, e sempre shiny. Obrigado por voltar tanto!',
       },
       states: { claimed: 'Já é seu', waiting: 'No Presente!', done: 'Na praça', ahead: (left: number) => `Faltam ${left}` },
       waiting: 'Está esperando no Presente!, no lobby.',
@@ -821,6 +838,7 @@ export const pt = {
     howGhosts: 'Pokémon do tipo *Fantasma* deixam cair doces',
     howBosses: '*Chefes* e *Alfas* sempre trazem 10 doces',
     howPumpkins: 'Quebre as *abóboras*: doces ou travessuras?',
+    howEgg: 'Na praça, o *Duskull* vende um *Ovo Assombrado* por dia',
     jarCount: (n: string) => `Pote de doces: *${n}*`,
     jarNext: (n: string) => `mais ${n} para o próximo prêmio`,
     received: 'recebido',
@@ -1308,7 +1326,7 @@ export const pt = {
     pending: 'Escolhida na 1ª evolução',
     section: 'Habilidades',
     sectionBranch: 'Habilidades (vêm da evolução escolhida)',
-    note: 'Você escolhe uma na primeira evolução. A Oculta é a mais rara dos jogos.',
+    note: 'Você escolhe uma na primeira evolução (quem não evolui, no Nv 12). A Oculta é a mais rara dos jogos.',
     megaNote: 'Na forma Mega, vale a Habilidade da Mega.',
     picked: (who: string, ability: string) => `${who} agora tem *${ability}*!`,
     sturdy: (ability: string) => `*${ability}*: aguentou com 1 HP!`,
@@ -1511,7 +1529,7 @@ export const pt = {
   },
   /** Eggs: the incubator, the hatching scene and the egg box in the Pokémon select. */
   eggs: {
-    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade' } satisfies Record<EggTier, string>,
+    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade', haunted: 'Ovo Assombrado', kecleon: 'Ovo do Kecleon', kecleonShiny: 'Ovo do Kecleon brilhante' } satisfies Record<EggTier, string>,
     found: (egg: string) => `Você achou um *${egg}*! Ele vai para a incubadora.`,
     /** Found mid-run with no room left in the incubator: it will be paid in ₽ when the run ends. */
     foundFull: (egg: string, coins: string) => `Você achou um *${egg}*! A incubadora está cheia, então ele vai virar *${coins}*.`,
@@ -1539,6 +1557,8 @@ export const pt = {
     locked: '???',
     lockedBlurb: (egg: string) => `Ainda está no ovo. Sai de um *${egg}*.`,
     friendBlurb: 'Só sai do *Ovo da Amizade*: convide amigos pelo seu link para ganhar um.',
+    hauntedBlurb: 'Só sai do *Ovo Assombrado*, que o Duskull vende na praça durante a Noite das Bruxas. Depois, só no ano que vem.',
+    kecleonBlurb: 'Só sai do *Ovo do Kecleon*, que a Vitrine da loja vende, um por dia.',
     lockedButton: 'Ainda no ovo',
     incubator: (n: number, slots: number) => `Incubadora ${n}/${slots}`,
     readyBadge: (n: number) => (n === 1 ? '1 ovo pronto!' : `${n} ovos prontos!`),
@@ -2540,6 +2560,18 @@ export const pt = {
         'Ondas 20% maiores',
         { fork: [{ name: 'Estrondo', desc: 'Quem cai explode; recarga -0.2s' }, { name: 'Grito final', desc: 'Finaliza com ≤12% HP; recarga -0.2s' }] },
         '+4 de dano',
+      ],
+    },
+    sketch: {
+      description: 'O rabo-pincel copia um golpe do inimigo mais próximo (um chefe por perto primeiro): o golpe do tipo dele, e um mais forte se for chefe. Usa o golpe pintado 3 vezes e pinta de novo. Sem ninguém por perto, pinta de memória.',
+      upgrades: [
+        '+10% de poder',
+        'Recarga 0.2s mais rápida',
+        { fork: [{ name: 'Retoque', desc: 'Pinta de novo logo após (50%); +20% de alcance' }, { name: 'Respingo', desc: 'Salta para mais 2; +4 de dano' }] },
+        'Recarga 0.2s mais rápida',
+        '+15% de poder',
+        { fork: [{ name: 'Obra-prima', desc: 'Quem cai explode; recarga -0.2s' }, { name: 'Retrato', desc: '×1.5 em elites e chefes; recarga -0.2s' }] },
+        '+15% de poder',
       ],
     },
     curse: {
@@ -4483,6 +4515,14 @@ export const pt = {
     feebas: 'O mais sem graça. Até virar o mais belo.',
     deino: 'Mordedor cego. Bate forte e, com três cabeças, atira mais.',
     munchlax: 'Tanque guloso. Muita vida, defesa e regeneração; puxa os itens de longe.',
+    litwick: 'Vela fantasma. Chamas que duram mais e queimam mais forte.',
+    phantump: 'Toco assombrado. Muita vida e regeneração.',
+    drifloon: 'Balão fantasma. Rápido, puxa os itens de longe.',
+    sandygast: 'Castelo de areia. Resistente, com tremores largos.',
+    porygon: 'Pokémon de código. Recarga e cresce rápido; evolui com Up-Grade e Dubious Disc.',
+    exeggcute: 'Seis ovos, uma mente. Alcance largo e cura lenta; evolui com a Leaf Stone.',
+    scraggy: 'Brigão de calça larga. Resistente, com socos fortes.',
+    smeargle: 'Pintor. Não evolui: copia o golpe de quem estiver por perto.',
     articuno: 'Ave do gelo. Golpes amplos; o frio deixa os inimigos lentos.',
     zapdos: 'Ave do trovão. Rápido, e quem o toca fica paralisado.',
     moltres: 'Ave do fogo. Muito dano, e quem o toca se queima.',
@@ -4657,6 +4697,7 @@ export const pt = {
       milestone: (n: number) => `${n} carimbos! Deixei um presente pra você no lobby, freguês!`,
       statue: '60 carimbos! Mandei fazer uma estátua minha... digo, nossa! Tá lá na praça!',
       tycoon: 'Loja de Departamento! Sócio, agora você é um Magnata! Deixei um presente no lobby.',
+      kecleonEgg: 'Kecleon! Esse ovo veio de longe... nem eu sei quem está aí dentro. Cuida bem dele!',
     },
     /** After a purchase, one of these in turn. */
     thanks: ['Obrigado! Volte sempre!', 'Ótima escolha!', 'Negócio fechado!', 'Hehe, bom proveito!'],
@@ -4673,9 +4714,14 @@ export const pt = {
       haggleAgain: 'Já te dei desconto! Quer me deixar sem moedas pro Pay Day?',
       thanks: ['Nyahaha! Negócio fechado!', 'Pagou, levou! Sem devolução!', 'Isso brilha mais que a moeda da minha testa!'],
     },
+    /** Duskull at its stall's shelf (`game/stalls.ts`): its hello, by the day, and its thanks in turn. */
+    duskull: {
+      hello: ['Um Ovo Assombrado por noite. O que sai dele? Fantasmas que não aparecem em nenhum outro ovo.', 'Buu... Esses ovos não chocam no calor. Chocam no medo. Leva um?', 'Quatro fantasmas, um ovo. Qual vai sair? Nem eu sei... hehehe.'],
+      thanks: ['Buu... Boa escolha. Cuidado com ele à meia-noite.', 'Hehehe... Ele já está olhando pra você.', 'Volte amanhã. Se tiver coragem.'],
+    },
     /** The seasonal stalls' keepers (`STALLS` in data/visitors.ts), line by line. */
     stalls: {
-      halloween: ['Buu... A Noite das Bruxas chegou à praça.', 'Junte doces nas partidas: o pote troca por prêmios. Vem ver!'],
+      halloween: ['Buu... A Noite das Bruxas chegou à praça.', 'Os doces das partidas vão pro pote, lá no lobby. Aqui eu vendo outra coisa...'],
       christmas: ['Deli! A Delibird Presentes chegou à praça!', 'Ainda tô embrulhando tudo. Volta no Natal que o saco vai estar cheio!'],
     } satisfies Record<StallId, readonly string[]>,
   },
