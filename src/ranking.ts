@@ -8,7 +8,8 @@ import type { DayKey } from './game/day'
 import { isOutbreakSpecies } from './game/outbreak'
 import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunMode, type RunRanks, type RunResult } from './game/ranking'
 import { firstTouch, landingRef, parseInvites, REF_PARAM } from './game/referral'
-import type { Replay } from './game/replay'
+import type { Recorder, Replay } from './game/replay'
+import { cutReplay, STREAM, STREAM_START, type ReplayChunk } from './game/replayStream'
 import { ROUTES, SITE_URL } from './site/routes'
 import { locale } from './i18n'
 
@@ -92,9 +93,11 @@ const writeQueue = (queue: Pending[]) => {
  * What became of a ranked run's result: on the boards (`ranked`, with the
  * player's position, and the challenge board's for a Desafio do dia run),
  * waiting for a connection (`queued`), refused by the server (`rejected`),
- * or never ranked because its start got no token (`unranked`).
+ * never ranked because its start got no token (`unranked`), or taken but
+ * kept off the boards because its replay didn't reach the API in time while
+ * it played (`unlisted`: the connection dropped; only with the API's `STREAM_ENFORCE`).
  */
-export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'unranked' }
+export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'unranked' | 'unlisted' }
 
 const parseRanks = (body: unknown): RunRanks | null => {
   const ranks = isRecord(body) && isRecord(body.ranks) ? body.ranks : null
@@ -102,12 +105,96 @@ const parseRanks = (body: unknown): RunRanks | null => {
   return ranks ? { day: at(ranks.day), week: at(ranks.week), all: at(ranks.all) } : null
 }
 
+/* ---------------- Replay streaming ---------------- */
+
+/** The first wait before sending a chunk again, doubled on each failure up to `RETRY_MAX_MS`. */
+const RETRY_MS = 2000
+const RETRY_MAX_MS = 30_000
+
+/**
+ * A ranked run's replay on its way to the API while it plays
+ * (`game/replayStream.ts`): once `STREAM.ticks` ticks were recorded since the
+ * last chunk, they become the next one, sent in order and sent again while
+ * the network is down. Any other failure ends the stream (the result still
+ * reports, and the API decides what it's worth).
+ */
+type Stream = {
+  token: string
+  /** Called on every frame that stepped the run: cuts a chunk when one is due (an integer compare otherwise). */
+  cut: (rec: Recorder) => void
+  /** Sends the chunks cut so far. Whether none is left waiting (false: no connection, they wait). */
+  flush: () => Promise<boolean>
+}
+
+const createStream = (token: string, live: Promise<boolean>): Stream => {
+  let at = STREAM_START
+  let seq = 0
+  const waiting: { seq: number; chunk: ReplayChunk }[] = []
+  let stopped = false
+  let sending: Promise<boolean> = Promise.resolve(true)
+  let retry: ReturnType<typeof setTimeout> | null = null
+  let backoff = RETRY_MS
+
+  const stop = () => {
+    stopped = true
+    waiting.length = 0
+  }
+
+  const sendWaiting = async () => {
+    if (!(await live)) stop()
+    while (waiting.length > 0) {
+      const session = await sessionToken()
+      if (!session) return false
+      const { seq: n, chunk } = waiting[0]!
+      const { status } = await read(`/runs/${token}/chunks/${n}`, session, { method: 'PUT', body: JSON.stringify(chunk) })
+      // Only what stops the result too (no connection, an expired session) keeps a chunk waiting: a result never waits on a broken chunk route.
+      if (status === 0 || status === 401) return false
+      waiting.shift()
+      if (status >= 300) stop()
+    }
+    backoff = RETRY_MS
+    return true
+  }
+
+  /** Tries again later, while this is the latest run's stream; once they're through, a result that waited behind them goes too. */
+  const later = () => {
+    if (retry !== null || streaming?.token !== token) return
+    retry = setTimeout(() => {
+      retry = null
+      void flush().then((ok) => ok && void flushRuns())
+    }, backoff)
+    backoff = Math.min(backoff * 2, RETRY_MAX_MS)
+  }
+
+  const flush = (): Promise<boolean> =>
+    (sending = sending.then(sendWaiting, sendWaiting).then((ok) => {
+      if (!ok) later()
+      return ok
+    }))
+
+  return {
+    token,
+    cut: (rec) => {
+      if (stopped || rec.tick - at.tick < STREAM.ticks) return
+      const { segment, next } = cutReplay(rec.replay, at, rec.tick)
+      waiting.push({ seq: seq++, chunk: { from: at.tick, to: next.tick, ...segment } })
+      at = next
+      void flush()
+    },
+    flush,
+  }
+}
+
+/** The stream of the ranked run playing now, or of the last one (its result may still be on its way). */
+let streaming: Stream | null = null
+
 /**
  * Sends the queued results of the signed-in player, oldest first. An answer
  * takes a result off the queue, whatever it says (a banned account's 403
  * too: it's `rejected`, never sent again); no connection, an expired
- * session or the rate limit keep it (and the rest) for next time. Returns
- * what the API said, by token.
+ * session or the rate limit keep it (and the rest) for next time, as do
+ * chunks of its stream still waiting, which go first. Returns what the API
+ * said, by token.
  */
 const flushOnce = async () => {
   const done = new Map<string, RankOutcome>()
@@ -115,10 +202,13 @@ const flushOnce = async () => {
   const token = userId ? await sessionToken() : null
   if (!token) return done
   for (const p of readQueue().filter((q) => q.userId === userId)) {
+    // The replay's chunks before its result: what they committed must be in by then.
+    if (streaming?.token === p.token && !(await streaming.flush())) break
     const { status, body } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
     if (status === 0 || status === 401 || status === 429 || status >= 500) break
     const ranks = parseRanks(body)
-    done.set(p.token, ranks ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'rejected' })
+    const listed = !isRecord(body) || body.listed !== false
+    done.set(p.token, !ranks ? { kind: 'rejected' } : listed ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'unlisted' })
     // A newer result of the same run (endless mode) may have queued meanwhile: only this one is done.
     writeQueue(readQueue().filter((q) => q.token !== p.token || q.result.time > p.result.time))
   }
@@ -147,8 +237,19 @@ type Ticket = { userId: string; day: DayKey | null; token: string; seed: number 
  */
 const OUTBREAK_HOLD_MS = 20 * 3600 * 1000
 
-/** The ticket's outbreak while it holds, by both clocks (sleep can stall the monotonic one, a clock fix jumps the wall one). */
-const heldOutbreak = (t: Ticket) => (Math.max(Date.now() - t.dealt.wall, performance.now() - t.dealt.mono) < OUTBREAK_HOLD_MS ? t.outbreak : null)
+/** How long a ticket has been held, by both clocks (sleep can stall the monotonic one, a clock fix jumps the wall one). */
+const heldFor = (t: Ticket) => Math.max(Date.now() - t.dealt.wall, performance.now() - t.dealt.mono)
+
+/** The ticket's outbreak while it holds. */
+const heldOutbreak = (t: Ticket) => (heldFor(t) < OUTBREAK_HOLD_MS ? t.outbreak : null)
+
+/**
+ * A ticket held longer than this is asked for again when the menus prefetch:
+ * the API times a run's first chunk from when its seed was dealt (a seed
+ * known long before the run could be searched offline), so the seed in hand
+ * should be fresh when Play is pressed.
+ */
+const FRESH_MS = 2 * 60 * 1000
 
 /** What a ticket in hand tells the next run: its seed and outbreak (null: the game's own). */
 export type TicketPlan = { seed: number | null; outbreak: EnemyId | null }
@@ -193,7 +294,9 @@ export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketP
   const kind = kindOf(day)
   if (!rankingEnabled || !userId) return null
   const have = held[kind]
-  if (fits(have, day)) return { seed: have.seed, outbreak: heldOutbreak(have) }
+  if (fits(have, day) && heldFor(have) < FRESH_MS) return { seed: have.seed, outbreak: heldOutbreak(have) }
+  // A stale ticket gives way now: the new one replaces its token, so no run may start on it meanwhile.
+  if (have && !asking[kind]) held[kind] = null
   asking[kind] ??= reporting
     .then(flushRuns)
     .then(() => requestTicket(userId, day))
@@ -204,17 +307,19 @@ export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketP
 }
 
 /**
- * A run played signed in. `submit` reports its result with the replay so far
+ * A run played signed in. `stream` goes on every frame that stepped it, and
+ * sends the replay to the API in chunks as it's recorded (see `Stream`).
+ * `submit` reports its result with the replay so far
  * and resolves once the API took it (or the queue did); reporting again only
  * sends a longer run (a victory that went on into endless mode), else it
  * answers what it did last.
  */
-export type RankedRun = { submit: (result: RunResult, replay: Replay) => Promise<RankOutcome> }
+export type RankedRun = { stream: (rec: Recorder) => void; submit: (result: RunResult, replay: Replay) => Promise<RankOutcome> }
 
 /** A run that starts signed in: the seed and outbreak it must play (null: the game's own) and its ranking. */
 export type RankedStart = TicketPlan & { ranked: RankedRun }
 
-const unranked: RankedRun = { submit: () => Promise.resolve({ kind: 'unranked' }) }
+const unranked: RankedRun = { stream: () => {}, submit: () => Promise.resolve({ kind: 'unranked' }) }
 
 /**
  * Takes the ticket in hand for a run that begins now (`challenge`: the day of
@@ -232,12 +337,15 @@ export const startRanked = (challenge: DayKey | null = null): RankedStart | null
   const { token } = ticket
   // 409: another tab or device got a newer token since, so this one can't report.
   const live = sessionToken().then(async (session) => (session ? (await read(`/runs/${token}/start`, session, { method: 'POST' })).status !== 409 : true))
+  const stream = createStream(token, live)
+  streaming = stream
   let sent = -1
   let last: Promise<RankOutcome> = Promise.resolve({ kind: 'unranked' })
   return {
     seed: ticket.seed,
     outbreak: heldOutbreak(ticket),
     ranked: {
+      stream: stream.cut,
       submit: (result, replay) => {
         if (result.time <= sent) return last
         sent = result.time

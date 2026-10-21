@@ -337,6 +337,7 @@ export const en: Messages = {
     queued: 'Offline: the run joins the ranking once you are back online.',
     rejected: "This run didn't make it into the ranking.",
     unranked: 'This run is off the ranking: it started offline, or with the game open in another tab or device.',
+    unlisted: 'This run stayed off the ranking: the connection dropped while you played. It still counts on your profile.',
     guest: 'Sign in to show up on the ranking.',
     noHandle: 'Create your profile on the account screen to show up on the ranking.',
     open: 'Ranking',

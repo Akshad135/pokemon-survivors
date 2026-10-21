@@ -32,6 +32,7 @@ describe('banGated', () => {
     for (const [method, path] of [
       ['POST', '/runs'],
       ['PUT', `/runs/${RUN}`],
+      ['PUT', `/runs/${RUN}/chunks/3`],
       ['PUT', '/save'],
       ['POST', '/reports'],
       ['POST', '/suggestions'],
