@@ -192,6 +192,8 @@ const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | nu
   const building = arts.get(`lv${level}`)
   if (!building || ART_IDS.some((id) => !arts.has(id))) return null
   const half = Math.round(building.w / 2)
+  // The 3/4 buildings of Lv 4 and 5 stand on a deep diamond: the pad and the cobblestones reach back under all of it.
+  const depth = level >= 4 ? Math.round(half * 0.45) : 0
   // Lanterns flank the building, the rest of the props sit outside them.
   const lamp = Math.max(104, half + 14)
   const keepers: KeeperSpot[] =
@@ -212,7 +214,7 @@ const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | nu
   const wide = v.caravan || v.stall !== null
   const layout: Layout = {
     building,
-    pad: { y: -6, rx: half + 4, ry: Math.round(building.w / 7) },
+    pad: { y: -6 - depth, rx: half + 4 + (depth ? 6 : 0), ry: Math.round(building.w / 7) + depth },
     keepers,
     counter: level === 3 ? LV3_COUNTER : null,
     props: [
@@ -223,7 +225,7 @@ const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | nu
       ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: v.stall ? lamp + 30 : lamp + 16, y: v.stall ? 82 : 66 }] : []),
     ],
     spot: { x: 0, y: 34 },
-    cobbles: { x: 0, y: wide ? 40 : 36, rx: lamp + (wide ? 186 : 66), ry: wide ? 88 : 78 },
+    cobbles: { x: 0, y: (wide ? 40 : 36) - Math.round(depth * 0.7), rx: lamp + (wide ? 186 : 66), ry: (wide ? 88 : 78) + Math.round(depth * 1.1) },
     wagon,
     meowth: { x: wagon.x + 84, y: wagon.y + 16, dir: 1 },
     stall,
