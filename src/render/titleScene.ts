@@ -10,15 +10,18 @@ import { drawPokemon, hasShiny, loadedSprites, loadSpecies, type Dex } from './s
 import { drawGround } from './world'
 import { drawMeadowJacks, drawMeadowNight } from './halloweenArt'
 import {
+  celebratePlaza,
   createPlaza,
   drawPlazaGround,
   drawPlazaMarker,
+  drawPlazaParty,
   greetKeepers,
   KECLEON_DEX,
   plazaFrame,
   plazaPieces,
   plazaTapped,
   pushOut,
+  revealKeeper,
   shopSpot,
   stepPlaza,
   talkAnchor,
@@ -297,11 +300,28 @@ const arrive = (s: TitleScene, to: Place) => {
     p.state = to === 'plaza' ? 'shop' : 'home'
     if (to === 'plaza') p.dir = 4
   }
-  if (to === 'plaza') {
+  // A camouflaged Kecleon keeps still and quiet until it's talked to (`revealShopkeeper`).
+  if (to === 'plaza' && !s.plaza.hidden) {
     greetKeepers(s.plaza, s.time)
-    s.cries.push(KECLEON_DEX)
-    s.quietUntil = s.time + 1.2
+    cry(s, KECLEON_DEX)
   }
+}
+
+const cry = (s: TitleScene, dex: Dex) => {
+  s.cries.push(dex)
+  s.quietUntil = s.time + 1.2
+}
+
+/** The camouflaged Kecleon pops out with a cry (the 1-in-20 easter egg's "Surpresa!"). */
+export const revealShopkeeper = (s: TitleScene) => {
+  revealKeeper(s.plaza, s.time)
+  cry(s, KECLEON_DEX)
+}
+
+/** The shop grew to `level`: the new building stands at once, dust and sparkles fly and Kecleon cries out. */
+export const celebrateShop = (s: TitleScene, level: Plaza['level']) => {
+  celebratePlaza(s.plaza, level, s.time)
+  cry(s, KECLEON_DEX)
 }
 
 /** Advances a trip: the camera eases along, the partner hops from where it was to its spot. */
@@ -683,6 +703,7 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     if (wd.shiny) drawSparkles(ctx, x, y - sprite.bodyH / 2, Math.max(sprite.bodyW, sprite.bodyH), s.time - wd.bornAt, wd.id)
   }
   flush(Infinity)
+  drawPlazaParty(ctx, s.plaza, camX, camY, s.time)
   if (s.haunted) drawMeadowNight(ctx, camX, camY, w, h, s.time)
   // Emotes over everyone's heads, bobbing a pixel.
   const bubbles = EMOTES()

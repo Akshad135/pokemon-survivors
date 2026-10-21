@@ -1,9 +1,9 @@
 import { clamp, dir8, type Dir8, type Vec } from '../engine/math'
 import { blitCentered, context2d, createCanvas, ellipse, lazy, onCanvasReset } from '../engine/pixelart'
 import { EMOTES, type Emote } from './art'
-import { shadow } from './draw'
+import { drawSparkles, shadow } from './draw'
 import { drawPokemon, loadedSprites, loadSpecies, type SpeciesSprites } from './sprites'
-import type { ShopLevel } from '../data/shop'
+import type { ShopLevel, ShopProp } from '../data/shop'
 
 /**
  * The Kecleon plaza: the lobby's shop as a place in the meadow, east of the
@@ -21,6 +21,9 @@ export type { ShopLevel }
 
 /** Where the plaza's building stands from home (the lobby's resting view center), world px: off a desktop's right edge, low enough that the edge marker pointing to it clears the lobby's right rail. */
 export const PLAZA_OFFSET = { x: 520, y: 150 } as const
+
+/** The props the plaza draws so far, of the levels' `props` (the Expansão shelf lists only these; the string lights and the statue come later). */
+export const PLAZA_PROPS: readonly ShopProp[] = ['board', 'flowers']
 
 const ART_IDS = ['lv1', 'lv2', 'lv3', 'lv4', 'lv5', 'lantern', 'board', 'crates', 'flowers'] as const
 type ArtId = (typeof ART_IDS)[number]
@@ -199,6 +202,12 @@ export type Plaza = {
   keepers: [Keeper, Keeper]
   /** The edge marker as last drawn (world px), for taps. */
   marker: { x: number; y: number; shown: boolean }
+  /** The green Kecleon blends into the counter (the 1-in-20 easter egg) until it pops out (`revealKeeper`). */
+  hidden: boolean
+  /** Scene time the shop last grew a level: dust and sparkles around the new building (`celebratePlaza`). */
+  party: number
+  /** The shopkeeper the camera leans towards while the shop is open: 0 the green Kecleon, 1 the purple brother. */
+  focus: 0 | 1
 }
 
 export const createPlaza = (home: Vec): Plaza => {
@@ -212,6 +221,9 @@ export const createPlaza = (home: Vec): Plaza => {
       { hopAt: -9, emote: 'sparkle', dir: 0 },
     ],
     marker: { x: 0, y: 0, shown: false },
+    hidden: false,
+    party: -9,
+    focus: 0,
   }
 }
 
@@ -222,6 +234,22 @@ const keepersAt = (plaza: Plaza, layout: Layout) => layout.keepers.map((k, i) =>
 export const greetKeepers = (plaza: Plaza, time: number) => {
   plaza.keepers[0].hopAt = time
   plaza.keepers[1].hopAt = time + 0.18
+}
+
+/** The camouflaged Kecleon pops out at scene time `time`: it shows again, hops and pops a "!". */
+export const revealKeeper = (plaza: Plaza, time: number) => {
+  plaza.hidden = false
+  plaza.keepers[0].emote = 'bang'
+  plaza.keepers[0].hopAt = time
+}
+
+/** The shop grew to `level` at scene time `time`: the new building stands at once, with dust, sparkles and both shopkeepers cheering. */
+export const celebratePlaza = (plaza: Plaza, level: ShopLevel, time: number) => {
+  plaza.level = level
+  plaza.party = time
+  plaza.keepers[0].emote = 'note'
+  plaza.keepers[1].emote = 'sparkle'
+  greetKeepers(plaza, time + 0.2)
 }
 
 /** Turns the shopkeepers in front of the building towards `partner` when it comes close. */
@@ -263,10 +291,36 @@ export const talkAnchor = (plaza: Plaza, p: Vec): Vec | null => {
   return best && { x: plaza.x + best.x, y: plaza.y + best.y - 30 }
 }
 
-/** Pushes feet at `v` out of the building's pad, so walkers go around the shop (mutates `v`). */
+/** How close (world px) a walker may come to a shopkeeper's feet. */
+const KEEPER_ROOM = 12
+
+/**
+ * Pushes feet at `v` off the shopkeepers, out of the building's pad, and out of the ground the
+ * building covers behind it (whoever stood there would peek over its roof, as
+ * if standing on it), so walkers go around the shop (mutates `v`).
+ */
 export const pushOut = (plaza: Plaza, v: Vec) => {
   const layout = layoutOf(plaza.level)
   if (!layout) return
+  // Nobody stands on a shopkeeper's toes.
+  for (const k of layout.keepers) {
+    const dx = v.x - plaza.x - k.x
+    const dy = v.y - plaza.y - k.y
+    const d = Math.hypot(dx, dy)
+    if (d >= KEEPER_ROOM) continue
+    v.x = plaza.x + k.x + (d > 1e-6 ? (dx / d) * KEEPER_ROOM : KEEPER_ROOM)
+    v.y = plaza.y + k.y + (d > 1e-6 ? (dy / d) * KEEPER_ROOM : 0)
+  }
+  const half = layout.building.w / 2 + 10
+  // Well clear of the roof line: feet just above it read as standing on the roof.
+  const top = plaza.y - layout.building.h - 24
+  const bottom = plaza.y + layout.pad.y
+  if (v.y > top && v.y < bottom && Math.abs(v.x - plaza.x) < half) {
+    const side = half - Math.abs(v.x - plaza.x)
+    if (v.y - top < side) v.y = top
+    else v.x = plaza.x + Math.sign(v.x - plaza.x || 1) * half
+    return
+  }
   const { rx, ry } = layout.pad
   const cx = plaza.x
   const cy = plaza.y + layout.pad.y
@@ -302,8 +356,16 @@ export const plazaTapped = (plaza: Plaza, at: Vec) => {
 export const plazaFrame = (plaza: Plaza, w: number, h: number): Vec => {
   const layout = layoutOf(plaza.level)
   const tall = layout?.building.h ?? 140
+  // A step towards the shopkeeper who talks (the purple brother's shelves).
+  const lean = Math.round((layout?.keepers[plaza.focus]?.x ?? 0) * 0.4)
+  const framed = frameAt(plaza, layout, tall, w, h)
+  return { x: framed.x + lean, y: framed.y }
+}
+
+const frameAt = (plaza: Plaza, layout: Layout | null, tall: number, w: number, h: number): Vec => {
+  // Portrait: the building's feet about a third down, so it, the shopkeepers and the partner clear the shop's sheet and Kecleon's box below.
   if (h > w * 1.1) {
-    const feet = Math.min(Math.round(h * 0.6), Math.max(Math.round(h * 0.45), tall + 14))
+    const feet = Math.max(Math.round(h * 0.33), Math.min(tall + 8, Math.round(h * 0.36)))
     return { x: Math.round(plaza.x - w / 2), y: plaza.y - feet }
   }
   const lamp = layout ? Math.max(104, Math.round(layout.building.w / 2) + 14) : 110
@@ -462,10 +524,12 @@ const hop = (since: number, count: number, height: number) =>
 const KEEPER_REACTION = 1.4
 
 /** One shopkeeper, its hop and its emote. `shadowed` false behind the kiosk's counter. */
-const drawKeeper = (ctx: CanvasRenderingContext2D, k: Keeper, purple: boolean, x: number, y: number, time: number, shadowed: boolean) => {
+const drawKeeper = (ctx: CanvasRenderingContext2D, k: Keeper, purple: boolean, x: number, y: number, time: number, shadowed: boolean, hidden: boolean) => {
   const sprite = keeperSprites(purple)
   if (!sprite) return
   const lift = hop(time - k.hopAt, 2, 4)
+  // Camouflaged, only a faint shimmer of it shows (and no shadow).
+  if (hidden) return drawPokemon(ctx, sprite, 'Idle', k.dir, time, x, y, { alpha: 0.12 })
   if (shadowed) shadow(ctx, x, y, sprite.bodyW)
   drawPokemon(ctx, sprite, 'Idle', k.dir, time + (purple ? 0.4 : 0), x, y - lift)
   const since = time - k.hopAt
@@ -504,16 +568,37 @@ export const plazaPieces = (plaza: Plaza): readonly Piece[] => {
         put(ctx, building, plaza.x - camX, plaza.y - camY)
         if (counter === null) return
         // The kiosk: its shopkeepers stand behind the counter, whose front is drawn again over their feet.
-        for (const k of keepers) drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, false)
+        for (const k of keepers) drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, false, plaza.hidden && !k.purple)
         put(ctx, building, plaza.x - camX, plaza.y - camY, counter)
       },
     },
     ...(counter === null
-      ? keepers.map((k): Piece => ({ y: k.y, draw: (ctx, camX, camY, time) => drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, true) }))
+      ? keepers.map((k): Piece => ({ y: k.y, draw: (ctx, camX, camY, time) => drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, true, plaza.hidden && !k.purple) }))
       : []),
   ]
   pieceCache.set(plaza, { level: plaza.level, pieces })
   return pieces
+}
+
+const PARTY_TIME = 1.6
+
+/** The shop's level-up: puffs of dust rolling off the pad's rim, then sparkles bursting over the new building, for `PARTY_TIME` seconds. */
+export const drawPlazaParty = (ctx: CanvasRenderingContext2D, plaza: Plaza, camX: number, camY: number, time: number) => {
+  const since = time - plaza.party
+  const layout = layoutOf(plaza.level)
+  if (since < 0 || since >= PARTY_TIME || !layout) return
+  const x = plaza.x - camX
+  const y = plaza.y + layout.pad.y - camY
+  const k = Math.min(1, since / 0.6)
+  ctx.globalAlpha = 0.85 * (1 - k)
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2
+    const r = 1 + k * 0.35
+    blitCentered(ctx, ellipse(4, 3, '#f0ead8'), Math.round(x + Math.cos(a) * layout.pad.rx * r), Math.round(y + Math.sin(a) * layout.pad.ry * r - k * 4))
+  }
+  ctx.globalAlpha = 1
+  drawSparkles(ctx, x, y - layout.building.h / 2, layout.building.w * 0.8, since - 0.15, 7)
+  drawSparkles(ctx, x, y - layout.building.h * 0.7, layout.building.w * 0.5, since - 0.45, 11)
 }
 
 /** The edge marker's box: Kecleon's head on a white card. Null until Kecleon's sheets are in (`lazy` tries again then). */

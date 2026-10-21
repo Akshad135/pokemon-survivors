@@ -48,7 +48,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  * - The bag: each item's got and used counters keep the larger side; what's
  *   armed is `incoming`'s. The shop: the higher level; the most recent day,
  *   the most bought of each card and the gift taken on either side on the
- *   same day; the wishlist is `incoming`'s. Styles: a union, worn as `incoming`.
+ *   same day; the wishlist is `incoming`'s; the visits, the later day's (the
+ *   longer streak on the same day, `mergeVisit`). Styles: a union, worn as `incoming`.
  * - Gift titles and the ids of the Mystery Gifts applied: unions, so a gift
  *   applied on either side never lands again.
  * - Ribbons: a union, one per day (the better one if both sides had that day).

@@ -108,7 +108,7 @@ import { consumableIcon } from './render/props'
 import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
-import { createTitleScene, drawTitleScene, meetPartner, sceneAt, steerPartner, stepTitleScene, talkSpot, tapsPlaza, visitPlaza } from './render/titleScene'
+import { celebrateShop, createTitleScene, drawTitleScene, meetPartner, revealShopkeeper, sceneAt, steerPartner, stepTitleScene, talkSpot, tapsPlaza, visitPlaza } from './render/titleScene'
 import type { ShopLevel } from './render/plaza'
 import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
@@ -139,7 +139,7 @@ import { tmPick } from './ui/tmPick'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
-import { shop } from './ui/shop'
+import { shop, type ShopPlaza } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { invitesScreen } from './ui/invites'
 import { titleScreen, type LobbyFocus, type Meadow, type ShopTrip } from './ui/title'
@@ -293,7 +293,14 @@ const meadow: Meadow = {
   steer: (move, tap, home) => steerPartner(scene, move, tap && meadowAt(tap), meadowAt(home)),
   out: () => scene.partner !== null && scene.partner.state !== 'home',
   stick: (stick) => (meadowStick = stick),
-  visit: (to, instant) => visitPlaza(scene, to, view.w, view.h, instant),
+  visit: (to, instant) => {
+    // 1 visit in 20 from afar, the counter looks empty: Kecleon is camouflaged until talked to (`ShopPlaza.reveal`).
+    const offView = Math.abs(scene.plaza.x - (scene.cam.x + view.w / 2)) > view.w / 2 + 60
+    scene.plaza.hidden = to === 'plaza' && (devSurprise || (offView && Math.random() < 1 / 20))
+    devSurprise = false
+    scene.plaza.focus = 0
+    visitPlaza(scene, to, view.w, view.h, instant)
+  },
   at: () => sceneAt(scene),
   talkSpot: () => {
     const at = talkSpot(scene)
@@ -304,8 +311,41 @@ const meadow: Meadow = {
 
 /** Dev: the plaza's building level (`ps.plaza(n)`), over the shop's own. */
 let devPlazaLevel: ShopLevel | null = null
-/** The Kecleon plaza's level: 1 until the save keeps the shop's expansion (Loja do Kecleon, PR 3 reads it here). */
-const plazaLevel = (): ShopLevel => devPlazaLevel ?? 1
+/** Dev: the next trip to the plaza finds the counter empty (`ps.surprise()`). */
+let devSurprise = false
+/** The save's shop level, read when the lobby opens and when the shop grows (not from storage every frame). */
+let shopLevel: ShopLevel = loadSave().shop.level
+/** The Kecleon plaza's level: the shop's expansion, or the dev's override. */
+const plazaLevel = (): ShopLevel => devPlazaLevel ?? shopLevel
+
+/** Whether the last run beat Mewtwo, for Kecleon's congratulations at the next visit (said once). */
+let wonLastRun = false
+
+/** The plaza as the shop's panel drives it: the camouflaged Kecleon, the building growing, the camera leaning to a shopkeeper. */
+const shopPlaza: ShopPlaza = {
+  hidden: () => scene.plaza.hidden,
+  reveal: () => revealShopkeeper(scene),
+  grew: (level) => {
+    shopLevel = level
+    devPlazaLevel = null
+    celebrateShop(scene, level)
+  },
+  lookAt: (keeper) => (scene.plaza.focus = keeper === 'purple' ? 1 : 0),
+}
+
+/** The shop over the plaza; `close` leaves it (and `?loja` behind). */
+const openShop = (close: () => void) => {
+  const won = wonLastRun
+  wonLastRun = false
+  return shop(ui, input, {
+    plaza: shopPlaza,
+    wonLastRun: won,
+    close: () => {
+      if (new URLSearchParams(location.search).has(SHOP_PARAM)) history.replaceState(null, '', location.pathname)
+      close()
+    },
+  })
+}
 
 const queueMega = () => {
   unlockAudio()
@@ -354,8 +394,9 @@ let pressedStart = false
  * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch, not back from signing in);
  * coming back from the starter select goes straight to the lobby. `focus` is what the lobby highlights (JOGAR by default).
  */
-const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean } = {}) => {
+const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean; back?: () => void } = {}) => {
   endRun()
+  shopLevel = loadSave().shop.level
   // A newer build went live during the run (see `watchDeploys`): back in the lobby, with the run banked, ranked and its crash watch cleared, is the moment to load it.
   if (reloadForDeploy) return location.reload()
   // Every Play in the lobby (the partner select, the challenge, a hatch, a shiny pick) finds its ticket in hand.
@@ -381,11 +422,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip;
       discord: (focus) => discordScreen(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       // Over the Kecleon plaza; closing it leaves `?loja` behind too.
-      mart: (close) =>
-        shop(ui, input, () => {
-          if (new URLSearchParams(location.search).has(SHOP_PARAM)) history.replaceState(null, '', location.pathname)
-          close()
-        }),
+      mart: openShop,
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
       trainer: (focus) =>
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
@@ -435,7 +472,8 @@ const runCompanion = (at: Vec): CompanionView | null => {
   return createCompanion(dex, c.shiny, at, sparkles ?? null)
 }
 
-const showShop = () => setScreen(shop(ui, input, () => showMenu()))
+/** The shop from the partner select's wallet: straight to the plaza, and back to the select. */
+const showShop = () => showTitle({ shop: 'shop', instant: true, back: () => showMenu() })
 
 /** The Caixa do PC (from the Pokédex); its Trainer Card stands the last Pokémon played beside the trainer. */
 const showPcBox = (back: () => void) =>
@@ -693,6 +731,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   if (reloadForDeploy) return location.reload()
   setScreen(null)
   endRun()
+  wonLastRun = false
   const c = daily?.challenge ?? null
   // The Desafio do dia's Pokémon is the day's, not the player's pick.
   if (!c) updateSave((s) => ({ ...s, partner: starter }))
@@ -1246,6 +1285,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       bankRun(r, true)
       recordProgress(r)
       rankRun(r)
+      wonLastRun = true
       return playSfx('evolve')
     case 'biome': {
       const w = t().world
@@ -1969,6 +2009,11 @@ if (import.meta.env.DEV) {
         showTitle({ shop: 'look' })
         return plazaLevel()
       },
+      /** The camouflage easter egg on demand: the lobby goes to the shop and the counter looks empty until you talk. */
+      surprise: () => {
+        devSurprise = true
+        showTitle({ shop: 'shop' })
+      },
       /**
        * Noite das Bruxas: moves the missions' clock to an event day (`2026-10-31` by default; `ps.halloween('2026-10-22')` for the
        * countdown) and rebuilds the title; `ps.halloween(false)` goes back to now. Runs started then are haunted (dev only: the server
@@ -2029,8 +2074,8 @@ if (import.meta.env.DEV) {
       ...martDevTools(() => {
         // A new outbreak plays from the next run's plan, and the title, the Mart or the select shows it.
         upcoming = planRun()
-        if (screen?.el.classList.contains('title-home')) showTitle()
-        else if (screen?.el.classList.contains('mart-screen')) showShop()
+        if (ui.querySelector('.shop-sheet')) showTitle({ shop: 'shop', instant: true })
+        else if (screen?.el.classList.contains('title-home')) showTitle()
         else if (screen?.el.classList.contains('partner-screen')) showMenu()
       }),
     },
