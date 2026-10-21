@@ -549,6 +549,10 @@ export type GameEvent =
   | { kind: 'treat' }
   /** A jack-o'-lantern cracked open: a treat (`ghost` null) or a trick, a ring of that ghost. */
   | { kind: 'trickOrTreat'; ghost: EnemyId | null }
+  /** A haunted run's night boss fell (`HALLOWEEN.bosses`): one for the Caça aos Fantasmas. */
+  | { kind: 'nightBoss'; enemy: EnemyId }
+  /** A boss's Disguise took a hit and broke (`BOSS_DISGUISE`). */
+  | { kind: 'disguise'; enemy: EnemyId }
   | { kind: 'revive' }
   | { kind: 'victory' }
   /** The run walked into another biome. */

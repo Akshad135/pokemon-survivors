@@ -656,7 +656,7 @@ export const pt = {
       wallpaper: 'Papel de parede da Caixa do PC.',
     } satisfies Record<StyleSlot, string>,
     styles: {
-      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)', pumpkin: 'Abóbora' } satisfies Record<FrameId, string>,
+      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)', pumpkin: 'Abóbora', spectral: 'Espectral' } satisfies Record<FrameId, string>,
       background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender', supporter: 'Céu dourado', halloween: 'Noite das Bruxas' } satisfies Record<BackgroundId, string>,
       wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas', supporter: 'Estrelas douradas', haunted: 'Casa Assombrada' } satisfies Record<WallpaperId, string>,
     },
@@ -704,9 +704,17 @@ export const pt = {
     supporterBadge: (tier: SupporterTier): string => (tier === 'gold' ? 'Apoiador(a) Ouro · Noite das Bruxas 2026' : 'Apoiador(a) · Noite das Bruxas 2026'),
     perk: 'Abóbora',
     perkTitle: (date: string) => `Apoie até ${date}: seu coração vira esta abóbora para sempre, e o Pumpkaboo passa a te acompanhar`,
-    supportYes: 'Obrigado por apoiar! Seu selo virou uma *abóbora* no ranking, no perfil e no Hall da Fama, para sempre. E o *Pumpkaboo*, só de apoiadores, te acompanha soltando brilhos de doce.',
-    supportNo: (date: string) => `Quem *apoiar* o jogo até ${date} ganha esta *abóbora* no lugar do coração, para sempre, e o *Pumpkaboo* como companheiro, deixando um rastro de doces brilhando.`,
+    supportYes: 'Obrigado por apoiar! Seu selo virou uma *abóbora* no ranking, no perfil e no Hall da Fama, para sempre. E o *Pumpkaboo*, só de apoiadores, te acompanha soltando brilhos de doce (*shiny* para quem é Ouro).',
+    supportNo: (date: string) => `Quem *apoiar* o jogo até ${date} ganha esta *abóbora* no lugar do coração, para sempre, e o *Pumpkaboo* como companheiro, deixando um rastro de doces brilhando (*shiny* para quem chega a Ouro).`,
     support: 'Apoiar',
+    hunt: 'CAÇA AOS FANTASMAS',
+    huntCount: (n: number, total: number) => `${n}/${total} caçados`,
+    huntBlurb: (candies: number) => `Chefes da noite tomam o lugar do Onix e do Snorlax, sorteados a cada partida. Cada um vencido pela primeira vez rende *${candies} doces*.`,
+    huntReward: (title: string, frame: string) => `Vença todos: título *${title}* e moldura *${frame}*`,
+    huntDone: 'Todos caçados! Os prêmios estão no Presente!',
+    nightBoss: (name: string) => `Chefe da noite: *${name}*!`,
+    hunted: (name: string, candies: number, n: number, total: number) => `*${name}* caçado! +${candies} doces · ${n}/${total}`,
+    disguise: (name: string) => `A *Disguise* do ${name} se desfez!`,
   },
 
   /** Desafio do dia: one run the same for everyone, the first finished one counting. */
@@ -828,6 +836,7 @@ export const pt = {
     discord: 'Por entrar no nosso Discord ♥',
     halloween: 'Do pote de doces da Noite das Bruxas',
     halloweenSupport: 'Por apoiar na Noite das Bruxas ♥',
+    ghostHunt: 'Por vencer todos os chefes da Caça aos Fantasmas',
   },
 
   /**
@@ -1638,7 +1647,7 @@ export const pt = {
     titleTag: 'TÍTULO',
     equipped: 'EM USO',
     /** Titles that come as a Mystery Gift, with how they were earned. */
-    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação', pumpkinKing: 'Encheu o pote de doces da Noite das Bruxas' } satisfies Record<GiftTitleId, string>,
+    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação', pumpkinKing: 'Encheu o pote de doces da Noite das Bruxas', exorcist: 'Venceu todos os chefes da Caça aos Fantasmas' } satisfies Record<GiftTitleId, string>,
     newMedals: 'Novas medalhas',
     names: {
       firstRun: 'Primeiros passos',
@@ -1724,6 +1733,7 @@ export const pt = {
       ambassador: 'Embaixador(a)',
       supporter: 'Apoiador(a)',
       pumpkinKing: 'Rei das Abóboras',
+      exorcist: 'Exorcista',
     } satisfies Record<TitleId, string>,
     goals: {
       runs: (n: string) => (n === '1' ? 'Jogue uma partida' : `Jogue ${n} partidas`),

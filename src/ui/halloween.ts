@@ -2,12 +2,14 @@ import { accountState, giftInbox } from '../account'
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { SPECIAL_COMPANIONS } from '../data/companions'
-import { HALLOWEEN } from '../data/halloween'
+import { HALLOWEEN, NIGHT_BOSSES } from '../data/halloween'
 import { ENEMIES } from '../data/enemies'
 import { HATCHLINGS } from '../data/hatchlings'
 import type { GiftContent } from '../game/gifts'
 import { brasiliaDay } from '../game/day'
-import { daysToHalloween, HALLOWEEN_CALENDAR, HALLOWEEN_REWARDS, halloweenDaysLeft, halloweenGiftId, isHalloweenGift, nextHalloweenReward, pumpkinOfferOpen } from '../game/halloween'
+import {
+  daysToHalloween, HALLOWEEN_CALENDAR, HALLOWEEN_REWARDS, halloweenDaysLeft, halloweenGiftId, huntDone, huntGiftId, HUNT_REWARDS, isHalloweenGift, nextHalloweenReward, pumpkinOfferOpen,
+} from '../game/halloween'
 import { savedSupporterTier } from '../game/trainer'
 import { formatDay, formatNumber, t } from '../i18n'
 import { jackIcon, pumpkinHeartIcon, treatIcon } from '../render/halloweenArt'
@@ -20,8 +22,8 @@ import { hint, menu, type Screen } from './screens'
 /**
  * Noite das Bruxas in the lobby (`game/halloween.ts`): the Hoje card, from
  * the countdown (`HALLOWEEN.teaser`) to the event's last day, and the event
- * screen it opens: the candy jar and its rewards, the haunted outbreaks'
- * calendar and how to fill the jar.
+ * screen it opens: the candy jar and its rewards, the Caça aos Fantasmas
+ * checklist, the haunted outbreaks' calendar and how to fill the jar.
  */
 
 /** Where the event stands today: counting down, on, or neither (no card). */
@@ -90,18 +92,47 @@ const rewardName = (content: GiftContent) => {
   }
 }
 
-/** A reward of the jar as a tile: what it brings, at how many candies, and whether it came (✓), waits in the gift box or is still ahead. */
-const rewardTile = (index: number, waiting: readonly string[], applied: readonly string[]) => {
+/** A reward as a tile: what it brings, and whether it came (✓), waits in the gift box (gift `id`) or is still `ahead` (what it takes). */
+const rewardTile = (content: GiftContent, id: string, ahead: string, waiting: readonly string[], applied: readonly string[]) => {
   const m = t().halloween
-  const r = HALLOWEEN_REWARDS[index]!
-  const id = halloweenGiftId(index)
   const state = applied.includes(id) ? 'done' : waiting.includes(id) ? 'ready' : 'locked'
   return h(
     'li',
     { class: `halloween-reward ${state}` },
-    h('img', { class: 'halloween-reward-icon', src: contentLine({ content: r.content }).src, alt: '' }),
-    h('b', { class: 'halloween-reward-name' }, rewardName(r.content)),
-    h('small', { class: 'halloween-reward-at' }, state === 'done' ? `✓ ${m.received}` : state === 'ready' ? m.inGiftBox : r.candies === 0 ? m.forJoining : m.at(formatNumber(r.candies))),
+    h('img', { class: 'halloween-reward-icon', src: contentLine({ content }).src, alt: '' }),
+    h('b', { class: 'halloween-reward-name' }, rewardName(content)),
+    h('small', { class: 'halloween-reward-at' }, state === 'done' ? `✓ ${m.received}` : state === 'ready' ? m.inGiftBox : ahead),
+  )
+}
+
+/** The jar's reward `index` as a tile: ahead, at how many candies. */
+const jarTile = (index: number, waiting: readonly string[], applied: readonly string[]) => {
+  const m = t().halloween
+  const r = HALLOWEEN_REWARDS[index]!
+  return rewardTile(r.content, halloweenGiftId(index), r.candies === 0 ? m.forJoining : m.at(formatNumber(r.candies)), waiting, applied)
+}
+
+/**
+ * The Caça aos Fantasmas: every night boss's portrait, a silhouette until
+ * beaten in a haunted run, how many fell, what each first defeat pays and
+ * the rewards for beating them all.
+ */
+const huntBox = (save: ReturnType<typeof loadSave>, waiting: readonly string[]) => {
+  const m = t().halloween
+  const hunted = save.halloween.hunted
+  const count = m.huntCount(hunted.length, NIGHT_BOSSES.length)
+  const ghosts = NIGHT_BOSSES.map((id) => {
+    const def = ENEMIES[id]
+    const got = hunted.includes(id)
+    return h('li', { class: `halloween-ghost${got ? ' hunted' : ''}`, title: got ? def.name : '?' }, h('img', { src: portraitUrl(def.dex), alt: got ? def.name : '?' }))
+  })
+  return h(
+    'section',
+    { class: 'halloween-hunt-box' },
+    h('div', { class: 'halloween-hunt-head' }, h('small', { class: 'halloween-section' }, m.hunt), h('b', {}, count)),
+    h('p', { class: 'halloween-hunt-blurb' }, rich(huntDone(save.halloween) ? m.huntDone : m.huntBlurb(HALLOWEEN.hunt.candies))),
+    h('ul', { class: 'halloween-hunt' }, ...ghosts),
+    h('ul', { class: 'halloween-rewards hunt' }, ...HUNT_REWARDS.map((content, i) => rewardTile(content, huntGiftId(i), count, waiting, save.gifts))),
   )
 }
 
@@ -116,8 +147,8 @@ export type HalloweenScreenActions = {
 
 /**
  * The event screen, over the lobby: dates and days left (or the countdown),
- * what the night does to runs, the candy jar with its rewards, and the
- * haunted outbreaks day by day, and the supporters' jack-o'-lantern badge
+ * what the night does to runs, the candy jar with its rewards, the Caça aos
+ * Fantasmas, the haunted outbreaks day by day, and the supporters' jack-o'-lantern badge
  * and Pumpkaboo while becoming one still earns them. Abrir presentes goes to the gift box
  * when a reward waits there; Apoiar to the Hall da Fama. Esc or Backspace
  * close it.
@@ -190,8 +221,9 @@ export const halloweenScreen = (root: HTMLElement, input: Input, actions: Hallow
           next && h('small', {}, m.jarNext(formatNumber(next.candies - candies))),
         ),
         h('span', { class: 'lobby-progress halloween-jar' }, h('span', { style: `width:${Math.round(jarFill(candies) * 100)}%` })),
-        h('ul', { class: 'halloween-rewards' }, ...HALLOWEEN_REWARDS.map((_, i) => rewardTile(i, waiting, save.gifts))),
+        h('ul', { class: 'halloween-rewards' }, ...HALLOWEEN_REWARDS.map((_, i) => jarTile(i, waiting, save.gifts))),
       ),
+      huntBox(save, waiting),
       h('section', { class: 'halloween-calendar-box' }, h('small', { class: 'halloween-section' }, m.calendar), h('ul', { class: 'halloween-calendar' }, ...calendar)),
       badge,
       h('div', { class: 'buttons' }, ...buttons),

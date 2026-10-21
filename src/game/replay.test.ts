@@ -10,7 +10,8 @@ import { spawnMapEvent } from './mapEvents'
 import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
-import { HALLOWEEN } from '../data/halloween'
+import { HALLOWEEN, isNightBoss } from '../data/halloween'
+import { EVENTS, nightCandidates } from '../data/waves'
 import { enterPlace } from './placeInterior'
 import { enterDomain } from './domain'
 import { DOMAINS } from '../data/domains'
@@ -43,7 +44,8 @@ const play = (seconds: number, start = START, every = 300, stage: (g: Game) => v
   const bot = createRng(3)
   let angle = 0
   while (g.time < seconds && g.phase !== 'gameover') {
-    if (g.phase === 'levelup' || g.phase === 'branch' || g.phase === 'ability') {
+    // Every pick is an offer: level-ups, branches, abilities, and a boss's TM or Poké Ball prize.
+    if (g.phase === 'levelup' || g.phase === 'branch' || g.phase === 'ability' || g.phase === 'tm' || g.phase === 'pokeball') {
       // Steps an older shell recorded while the level-up was already open.
       for (let n = 0; n < idle; n++) step(g, { move: recordStep(rec, view, { x: 1, y: 0 }), special: false }, TICK)
       const i = Math.floor(bot() * g.offers.length)
@@ -241,6 +243,28 @@ describe('replays', () => {
     pumpkins(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, halloween: 'yes' } })!.start.halloween).toBe(false)
+  })
+
+  it("re-simulate a haunted run's night bosses: their fights, Mimikyu's Disguise and a defeat for the Caça aos Fantasmas", () => {
+    /** The run's own 5:00 night boss off to the side, then Mimikyu (frail, so it falls inside the minute) beside the player: an earlier wave's boss doesn't chase off a later one's. */
+    const night = (g: Game) => {
+      const late = g.roster.events[EVENTS.findIndex((e) => e.kind === 'boss' && 'enemy' in e && e.enemy === 'snorlax')]!
+      Object.assign(spawnWaveBoss(g, late, 300), { x: g.player.x - 90, y: g.player.y })
+      Object.assign(spawnWaveBoss(g, 'mimikyuBoss', 150), { x: g.player.x + 50, y: g.player.y, hp: 100, maxHp: 100 })
+    }
+    const start: ReplayStart = { ...START, halloween: true }
+    const { g, replay } = play(60, start, 120, night)
+    // Every regular boss slot drew a night boss of its pool.
+    EVENTS.forEach((e, i) => {
+      if (e.kind === 'boss' && nightCandidates(e).length > 0) expect(nightCandidates(e)).toContain(g.roster.events[i])
+    })
+    expect(g.events.some((e) => e.kind === 'disguise')).toBe(true)
+    expect(g.tally.nightBosses).toContain('mimikyuBoss')
+    expect(g.tally.nightBosses.every(isNightBoss)).toBe(true)
+    expect(g.events.some((e) => e.kind === 'nightBoss' && e.enemy === 'mimikyuBoss')).toBe(true)
+    const staged = startGame(start)
+    night(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it.each(PLACE_IDS)('re-simulate a run through the %s, its own spawns and rules included', (id) => {

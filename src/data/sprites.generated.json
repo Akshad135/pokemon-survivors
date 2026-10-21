@@ -35939,6 +35939,96 @@
       }
     }
   },
+  "429": {
+    "anims": {
+      "Walk": {
+        "frameWidth": 32,
+        "frameHeight": 64,
+        "durations": [
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      "Idle": {
+        "frameWidth": 32,
+        "frameHeight": 64,
+        "durations": [
+          6,
+          4,
+          4,
+          6,
+          6,
+          4,
+          4,
+          6
+        ]
+      },
+      "Hurt": {
+        "frameWidth": 40,
+        "frameHeight": 64,
+        "durations": [
+          2,
+          8
+        ]
+      }
+    },
+    "portrait": true,
+    "body": {
+      "bodyW": 23,
+      "bodyH": 26,
+      "footY": 0
+    },
+    "cry": true
+  },
+  "430": {
+    "anims": {
+      "Walk": {
+        "frameWidth": 32,
+        "frameHeight": 56,
+        "durations": [
+          6,
+          4,
+          4,
+          6,
+          6,
+          6,
+          6
+        ]
+      },
+      "Idle": {
+        "frameWidth": 32,
+        "frameHeight": 40,
+        "durations": [
+          20,
+          12,
+          20,
+          40
+        ]
+      },
+      "Hurt": {
+        "frameWidth": 40,
+        "frameHeight": 64,
+        "durations": [
+          2,
+          8
+        ]
+      }
+    },
+    "portrait": true,
+    "body": {
+      "bodyW": 31,
+      "bodyH": 24,
+      "footY": 2
+    },
+    "cry": true
+  },
   "434": {
     "anims": {
       "Walk": {
@@ -37797,6 +37887,54 @@
     "formCries": [
       "mega"
     ]
+  },
+  "477": {
+    "anims": {
+      "Walk": {
+        "frameWidth": 48,
+        "frameHeight": 72,
+        "durations": [
+          12,
+          12,
+          12,
+          12
+        ]
+      },
+      "Idle": {
+        "frameWidth": 48,
+        "frameHeight": 80,
+        "durations": [
+          8,
+          8,
+          10,
+          10,
+          8,
+          7,
+          12,
+          10,
+          10,
+          9,
+          8,
+          8,
+          8
+        ]
+      },
+      "Hurt": {
+        "frameWidth": 48,
+        "frameHeight": 80,
+        "durations": [
+          2,
+          8
+        ]
+      }
+    },
+    "portrait": true,
+    "body": {
+      "bodyW": 31,
+      "bodyH": 33,
+      "footY": 1
+    },
+    "cry": true
   },
   "478": {
     "anims": {
@@ -43507,6 +43645,101 @@
       "bodyW": 18,
       "bodyH": 19,
       "footY": -3
+    },
+    "cry": true,
+    "shiny": {
+      "anims": {
+        "Walk": {
+          "frameWidth": 24,
+          "frameHeight": 56,
+          "durations": [
+            10,
+            10,
+            6,
+            6,
+            10,
+            10,
+            6,
+            6
+          ]
+        },
+        "Idle": {
+          "frameWidth": 24,
+          "frameHeight": 56,
+          "durations": [
+            8,
+            6,
+            6,
+            6,
+            8,
+            6,
+            6,
+            6
+          ]
+        },
+        "Hurt": {
+          "frameWidth": 32,
+          "frameHeight": 64,
+          "durations": [
+            2,
+            8
+          ]
+        }
+      },
+      "portrait": true,
+      "body": {
+        "bodyW": 18,
+        "bodyH": 19,
+        "footY": -3
+      }
+    }
+  },
+  "711": {
+    "anims": {
+      "Walk": {
+        "frameWidth": 24,
+        "frameHeight": 56,
+        "durations": [
+          6,
+          6,
+          8,
+          8,
+          6,
+          6,
+          6,
+          8,
+          8,
+          6
+        ]
+      },
+      "Idle": {
+        "frameWidth": 24,
+        "frameHeight": 56,
+        "durations": [
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12,
+          12
+        ]
+      },
+      "Hurt": {
+        "frameWidth": 40,
+        "frameHeight": 72,
+        "durations": [
+          2,
+          8
+        ]
+      }
+    },
+    "portrait": true,
+    "body": {
+      "bodyW": 19,
+      "bodyH": 28,
+      "footY": 1
     },
     "cry": true
   },

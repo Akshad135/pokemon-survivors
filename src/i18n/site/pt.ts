@@ -110,6 +110,7 @@ export const sitePt = {
     boss: (at: string) => `Chefe em ${at}`,
     bossChance: (at: string, percent: number) => `Chefe em ${at} (${n(percent)}% de chance)`,
     trio: (at: string, trio: string) => `Chefe em ${at} nas partidas que sorteiam o trio ${trio} (1 em 3)`,
+    night: (at: string, percent: number) => `Chefe da Noite das Bruxas em ${at}, nas partidas assombradas do evento (${n(percent)}% de chance)`,
     rift: (from: string) => `No seu domínio, atrás de uma fenda lendária, a partir de ${from} (opcional)`,
     /** `name` comes with its preposition (`places`). */
     place: (name: string, from: string) => `Vive ${name}, a partir de ${from} (lugar opcional)`,
@@ -117,6 +118,7 @@ export const sitePt = {
     places: { cave: 'na Caverna Escura', graveyard: 'no Cemitério Assombrado', sky: 'no céu, acima das nuvens (só para quem voa)' } satisfies Record<PlaceId, string>,
     reaper: (at: string) => `Ceifador do modo sem fim, a partir de ${at}`,
     attacks: 'Ataques',
+    nightAttacks: 'Ataques como chefe da Noite das Bruxas',
     shinyNote: 'Pode aparecer shiny (1 em 450): elite com 8x HP.',
     /** A rift legendary's shiny odds (`RIFT.shinyOdds`); the map's bosses are never shiny. */
     riftShinyNote: (odds: number) => `Pode aparecer shiny em 1 de ${n(odds)} fendas: paga o dobro de ₽ e mais uma Poké Ball.`,

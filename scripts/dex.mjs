@@ -45,9 +45,15 @@ export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483, 380, 381, 386]
 export const REAPER = [493]
 /** Places' bosses (src/data/places.ts): Spiritomb, out of the graveyard's Odd Keystone. It can roll shiny. */
 export const PLACE_BOSSES = [442]
-/** Companions that aren't playable (`SPECIAL_COMPANIONS` in src/game/supporters.ts): Pumpkaboo, the Noite das Bruxas supporters'. */
+/** Companions that aren't playable (`SPECIAL_COMPANIONS` in src/data/companions.ts): Pumpkaboo, the Noite das Bruxas supporters' (shiny for the Gold ones). */
 export const COMPANIONS = [710]
-export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES, ...COMPANIONS])]
+/**
+ * The Noite das Bruxas night bosses (`HALLOWEEN.bosses` in src/data/halloween.ts): Mimikyu, Banette, Sableye,
+ * Drifblim, Mismagius, Houndoom, Gengar, Chandelure, Gourgeist, Trevenant, Honchkrow and Dusknoir. Like the
+ * wave bosses, they never roll shiny (the ones the horde has come with its shinies).
+ */
+export const HALLOWEEN_BOSSES = [778, 354, 302, 426, 429, 229, 94, 609, 711, 709, 430, 477]
+export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES, ...COMPANIONS, ...HALLOWEEN_BOSSES])]
 /**
  * Flying types that take to the sky (the sky's flock in src/data/places.ts and the
  * Flying-type player forms): they get a `Fly` sheet when SpriteCollab has one.
@@ -56,10 +62,10 @@ export const FLYERS = new Set([
   16, 17, 18, 21, 22, 227, 276, 277, 333, 334, 396, 397, 398, // the sky's flock
   6, 41, 42, 123, 130, 149, 169, 176, 373, 468, 714, 715, 722, 723, // player forms
 ])
-/** Species that can roll shiny: the player lines, regular enemies, rift legendaries and places' bosses. */
+/** Species that can roll shiny: the player lines, regular enemies, rift legendaries, places' bosses and the companions (Pumpkaboo for Gold supporters). */
 /** Legendaries that can also roll shiny as wave bosses (the trios, Mewtwo, the mythicals) and Arceus, for the Legend mode's captures. */
 export const SHINY_LEGENDS = [144, 145, 146, 150, 151, 243, 244, 245, 251, 377, 378, 379, 385, 493]
-export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS, ...PLACE_BOSSES, ...SHINY_LEGENDS])
+export const SHINY = new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...RIFT_LEGENDS, ...PLACE_BOSSES, ...SHINY_LEGENDS, ...COMPANIONS])
 
 /**
  * Alternate formes the game draws, by key, mapped to their SpriteCollab form id

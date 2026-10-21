@@ -37,7 +37,8 @@ import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
-import { addCandies, HAUNT_DEX } from './game/halloween'
+import { addCandies, HAUNT_DEX, recordHunt } from './game/halloween'
+import { HALLOWEEN, isNightBoss, NIGHT_BOSSES } from './data/halloween'
 import { jackIcon, treatIcon } from './render/halloweenArt'
 import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
@@ -1042,7 +1043,22 @@ const handleEvent = (r: Run, e: GameEvent) => {
       }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
+      // A night boss comes in the event's colors.
+      if (isNightBoss(e.enemy)) return toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().halloween.nightBoss(def.name))), 3200)
       return toast(ui, rich(t().toast.boss(def.name)), 3200)
+    }
+    case 'nightBoss': {
+      // Its first defeat ticks the Caça aos Fantasmas off (from the run's results, `recordHunt`): the toast says so now.
+      const before = loadSave().halloween
+      if (before.hunted.includes(e.enemy)) return
+      const ticked = recordHunt(before, g.tally.nightBosses).hunted.length
+      return toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: treatIcon(), alt: '' }), rich(t().halloween.hunted(ENEMIES[e.enemy].name, HALLOWEEN.hunt.candies, ticked, NIGHT_BOSSES.length))), 3600, 'nightBoss')
+    }
+    case 'disguise': {
+      const def = ENEMIES[e.enemy]
+      playSfx('break')
+      playCry(sprites(def.dex).cry, 0.6)
+      return toast(ui, rich(t().halloween.disguise(def.name)), 2400)
     }
     case 'bossFled': {
       const def = ENEMIES[e.enemy]
@@ -1912,9 +1928,16 @@ if (import.meta.env.DEV) {
         return brasiliaDay(today())
       },
       candies: (n = 500) => {
-        updateSave((s) => ({ ...s, halloween: { candies: n } }))
+        updateSave((s) => ({ ...s, halloween: { ...s.halloween, candies: n } }))
         showTitle()
         return n
+      },
+      /** `ps.ghostHunt(n)` ticks the first `n` night bosses off the Caça aos Fantasmas (one short of all by default, so the next one completes it; 0 clears it). */
+      ghostHunt: (n = NIGHT_BOSSES.length - 1) => {
+        const hunted = NIGHT_BOSSES.slice(0, Math.max(0, n))
+        updateSave((s) => ({ ...s, halloween: { ...s.halloween, hunted } }))
+        showTitle()
+        return hunted
       },
       pumpkin: () => withRun((g) => g.props.push({ id: g.nextId++, cell: -1 - g.nextId, kind: 'pumpkin', x: g.player.x + 40, y: g.player.y, hp: 2, hitCooldown: 0, shake: 0 })),
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
