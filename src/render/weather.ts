@@ -169,8 +169,16 @@ const fogVeil = (() => {
     vctx.putImageData(img, 0, 0)
     return (cache = { w, h, sight, canvas }).canvas
   }
-  return Object.assign(veil, { ready })
+  /** Lets the veil go (2 MB on a phone) until fog can roll in again. */
+  const drop = () => {
+    if (cache) cache.canvas.width = cache.canvas.height = 0
+    cache = null
+  }
+  return Object.assign(veil, { ready, drop })
 })()
+
+/** Frees the fog veil when no fog is in the air nor can come (`warmScenery`); the next fog builds it again. */
+export const dropFog = fogVeil.drop
 
 /** Builds the fog veil for a view ahead of time (it takes longer than a frame). True if it built it. */
 export const warmFog = (w: number, h: number) => {

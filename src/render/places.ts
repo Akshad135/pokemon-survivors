@@ -182,6 +182,13 @@ const bakeGraveyard = (floor: readonly ArenaShape[], graves: readonly Pt[], keys
 let baked: { layout: FloorPlan; floor: Baked; fence: Baked | null } | null = null
 onCanvasReset(() => (baked = null))
 
+/** Frees the last place's baked floor (a few MB) once the player is back outside (`warmScenery`). */
+export const dropPlaceFloor = () => {
+  if (!baked) return
+  for (const b of [baked.floor, baked.fence]) if (b) b.canvas.width = b.canvas.height = 0
+  baked = null
+}
+
 const bakedFloor = (inside: PlaceInterior) => {
   if (baked?.layout === inside.layout) return baked
   if (inside.id === 'graveyard') {

@@ -305,6 +305,13 @@ const looks = (legend: RiftLegend): FloorLook[] => {
   return [...Array.from({ length: steps + 1 }, (_, n) => [at(n, false), ...(n < steps ? [at(n, true)] : [])]).flat(), at(steps, false, true)]
 }
 
+/** Frees every arena floor look (about 0.6 MB each, a dozen per arena) once no arena is on (`warmScenery`). */
+export const dropArenas = () => {
+  if (floors.size === 0) return
+  for (const floor of floors.values()) floor.width = floor.height = 0
+  floors.clear()
+}
+
 /** Builds at most one of the arena's floor looks it hasn't seen yet, so its steps never stall a frame. */
 export const warmArena = (arena: RiftArena) => {
   const missing = looks(arena.legend).find((l) => !floors.has(lookKey(arena.legend, l)))

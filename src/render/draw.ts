@@ -9,7 +9,7 @@ import { drawLegendSky, drawOmenGround } from './legendSky'
 import { bossLook, drawDomainAir, drawDomainGround, drawDomainScreen, drawVortexAir, drawVortexGround } from './domainLooks'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
-import { BIOME_ORDER, BIOMES, biomeAt } from '../data/biomes'
+import { BIOME_ORDER, BIOMES, biomeAt, type BiomeId } from '../data/biomes'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import { TYPE_COLORS } from '../data/types'
 import { FLEE_TIME } from '../game/enemies'
@@ -32,8 +32,8 @@ import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
 import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
 import { awakeningLook, CLONE_OUTLINE, CLONE_TINT, drawLegendAura, playerSprites } from './legend'
 import { isClone } from '../game/legend'
-import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
-import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, placeFallLook } from './places'
+import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, dropArenas, riftFallLook, warmArena } from './rift'
+import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, dropPlaceFloor, placeFallLook } from './places'
 import { roomOf } from '../game/room'
 import { drawLandmarkAir, drawTunnelDark, playerUnderground } from './landmarks'
 import { drawPokemon, sprites, type AnimName, type SpeciesSprites } from './sprites'
@@ -53,10 +53,10 @@ import { drawLegendary2Air, drawLegendary2Ground } from './legendaryFx2'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
-import { drawWeather, warmFog } from './weather'
+import { dropFog, drawWeather, warmFog } from './weather'
 import { drawHauntedNight, drawTreat } from './halloweenArt'
-import { drawSolid, drawTerrainGround, drawWading, solidsInView, warmTerrain } from './terrain'
-import { drawGround, warmGround } from './world'
+import { drawSolid, drawTerrainGround, drawWading, keepTerrain, solidsInView, warmTerrain } from './terrain'
+import { drawGround, GROUND_LOOKAHEAD, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
 import { CALM_PERIOD, HURT_TINT, type Flashes } from './flashes'
 
@@ -794,9 +794,6 @@ const BIOME_FADE = 2.4
 /** How far ahead (game seconds) the next biome's ground starts building in the background. */
 const BIOME_WARMUP = 10
 
-/** How far past the view's edges (px) the ground is built ahead of time. */
-const GROUND_LOOKAHEAD = 128
-
 /**
  * Builds at most one piece of scenery not built yet, most needed first: the
  * ground about to scroll in, this biome's terrain sprites, the next biome's
@@ -806,6 +803,10 @@ const GROUND_LOOKAHEAD = 128
  * lasts, so building one the first time it shows would stall that frame.
  */
 export const warmScenery = (g: Game | null, calm: boolean) => {
+  const keep = terrainBiomes(g)
+  keepTerrain(keep)
+  if (!g?.rift.arena || g.rift.arena.domain) dropArenas()
+  if (!g?.place.inside) dropPlaceFloor()
   if (g && warmDomain(g)) return true
   if (g && !roomOf(g)) {
     const { w, h } = g.view
@@ -814,9 +815,23 @@ export const warmScenery = (g: Game | null, calm: boolean) => {
     const upcoming = biomeAt(g.time + BIOME_WARMUP)
     if (warmGround(here, x, y, w, h, GROUND_LOOKAHEAD) || warmTerrain(here)) return true
     if (upcoming !== here && (warmGround(upcoming, x, y, w, h) || warmTerrain(upcoming))) return true
-    if (('fog' in BIOMES[here].weather || 'fog' in BIOMES[upcoming].weather) && warmFog(w, h)) return true
+    if ('fog' in BIOMES[here].weather || 'fog' in BIOMES[upcoming].weather) {
+      if (warmFog(w, h)) return true
+    } else if (g.weather.id !== 'fog' && g.weather.prev !== 'fog') dropFog()
   }
-  return calm && BIOME_ORDER.some((b) => warmTerrain(b))
+  return calm && keep.some((b) => warmTerrain(b))
+}
+
+/**
+ * The biomes whose terrain stays sculpted: the one here, the one dissolving out and the next
+ * in order (a run only moves forward); before a run, the first. The rest is dropped (`keepTerrain`).
+ */
+const terrainBiomes = (g: Game | null): BiomeId[] => {
+  if (!g) return [BIOME_ORDER[0]]
+  const here = g.biome.id
+  const next = BIOME_ORDER[BIOME_ORDER.indexOf(here) + 1]
+  const fading = biomeFade(g)?.from
+  return [here, ...(next ? [next] : []), ...(fading && fading !== here ? [fading] : [])]
 }
 
 /** The ground dissolve in progress, if any. */
