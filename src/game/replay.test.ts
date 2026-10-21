@@ -340,3 +340,20 @@ describe('replays', () => {
     expect(rulesStanding(RULES_VERSION + 1)).toBe('newer')
   })
 })
+
+describe('parseReplay', () => {
+  const raw = (view: { w: number; h: number }, events: unknown[] = []) => ({ rules: RULES_VERSION, start: { ...START, view }, moves: [], events })
+
+  it('takes the screens the game shows, ultrawide included', () => {
+    expect(parseReplay(raw({ w: 480, h: 270 }))?.start.view).toEqual({ w: 480, h: 270 })
+    expect(parseReplay(raw({ w: 1024, h: 288 }))?.start.view).toEqual({ w: 1024, h: 288 })
+    expect(parseReplay(raw({ w: 960, h: 439 }))?.start.view).toEqual({ w: 960, h: 439 })
+    expect(parseReplay(raw({ w: 160, h: 300 }, [[60, 'view', 300, 160]]))?.events).toEqual([[60, 'view', 300, 160]])
+  })
+
+  it('refuses a made-up giant screen, which would keep the horde out of reach', () => {
+    expect(parseReplay(raw({ w: 100_000, h: 100_000 }))).toBeNull()
+    expect(parseReplay(raw({ w: 800, h: 800 }))).toBeNull()
+    expect(parseReplay(raw({ w: 480, h: 270 }, [[60, 'view', 4096, 4096]]))).toBeNull()
+  })
+})

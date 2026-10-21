@@ -34,6 +34,7 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
       { pt: 'Lugares para entrar: uma Mystery Dungeon no escuro, um cemitério com Spiritomb e o céu, só para quem voa.', en: 'Places to step into: a Mystery Dungeon in the dark, a graveyard with Spiritomb and the sky, for flyers only.', es: 'Lugares para entrar: un Mundo Misterioso a oscuras, un cementerio con Spiritomb y el cielo, solo para voladores.' },
       { pt: 'Tesouros escondidos no mapa e cinco conquistas novas, uma com o título Explorador(a).', en: 'Treasures hidden on the map and five new achievements, one with the Explorer title.', es: 'Tesoros escondidos en el mapa y cinco logros nuevos, uno con el título Explorador(a).' },
       { pt: 'Um mapa mais vivo: moitas, troncos caídos, pedras e árvores por todo canto, em todos os biomas.', en: 'A livelier map: bushes, fallen logs, rocks and trees everywhere, in every biome.', es: 'Un mapa más vivo: arbustos, troncos caídos, rocas y árboles por todas partes, en cada bioma.' },
+      { pt: 'Viu uma partida impossível no ranking? Toque na bandeira ao lado dela para denunciar.', en: 'Saw an impossible run on the ranking? Tap the flag next to it to report it.', es: '¿Viste una partida imposible en el ranking? Toca la bandera a su lado para denunciarla.' },
     ],
     changes: [
       {
@@ -98,6 +99,51 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'Moitas (com flores ou frutinhas), troncos caídos e pedras e árvores soltas entre os bosques e as montanhas, cada bioma com o seu jeito: cogumelos que brilham na caverna, arbustos com neve na montanha e espinheiros no cemitério.',
             en: 'Bushes (with flowers or berries), fallen logs and lone rocks and trees between the groves and the mountains, each biome in its own way: glowing mushrooms in the cave, snowy shrubs on the mountain and thorns in the graveyard.',
             es: 'Arbustos (con flores o bayas), troncos caídos y rocas y árboles sueltos entre los bosques y las montañas, cada bioma a su manera: hongos que brillan en la cueva, arbustos nevados en la montaña y espinos en el cementerio.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Ranking mais confiável', en: 'A more reliable ranking', es: 'Ranking más confiable' },
+        notes: [
+          {
+            pt: 'A conferência das partidas do ranking tirava algumas partidas honestas: as jogadas numa versão anterior do jogo, depois de uma atualização que mudou as regras, e as que terminaram com a tela de level-up aberta. As duas coisas foram corrigidas, e agora o próprio jogo avisa a equipe antes que uma atualização mude as regras sem cuidado.',
+            en: 'The check of ranked runs was taking some honest runs off: the ones played on an older version of the game after an update changed the rules, and the ones that ended with the level-up screen open. Both are fixed, and the game now warns the team before an update changes the rules by accident.',
+            es: 'La revisión de las partidas del ranking sacaba algunas partidas honestas: las jugadas en una versión anterior del juego, después de una actualización que cambió las reglas, y las que terminaron con la pantalla de subida de nivel abierta. Las dos cosas están corregidas, y ahora el propio juego avisa al equipo antes de que una actualización cambie las reglas sin querer.',
+          },
+          {
+            pt: 'Com a data do aparelho errada, uma partida do ranking podia jogar o Surto de outro dia e sair do ranking. Agora o servidor diz ao jogo qual é o Surto de hoje.',
+            en: "With the device's date wrong, a ranked run could play another day's Outbreak and leave the ranking. Now the server tells the game which Outbreak is today's.",
+            es: 'Con la fecha del dispositivo mal, una partida del ranking podía jugar el Brote de otro día y salir del ranking. Ahora el servidor le dice al juego cuál es el Brote de hoy.',
+          },
+          {
+            pt: 'Tentar de novo, tocado depois de abrir o ranking ou o cartão de compartilhar nos resultados, começava duas partidas de uma vez, e a que ficava saía do ranking. Agora começa uma só.',
+            en: 'Try again, tapped after opening the ranking or the share card on the results, started two runs at once, and the one that stayed was off the ranking. Now it starts just one.',
+            es: 'Reintentar, tocado después de abrir el ranking o la tarjeta para compartir en los resultados, empezaba dos partidas a la vez, y la que quedaba salía del ranking. Ahora empieza una sola.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Denúncias', en: 'Reports', es: 'Denuncias' },
+        notes: [
+          {
+            pt: 'Com uma conta, cada linha do ranking (e do Desafio do dia) tem uma bandeira para denunciar aquela partida, e o perfil de outro treinador tem o botão Denunciar. Escolha o motivo (trapaça, nome ofensivo ou outro), deixe um comentário se quiser e pronto: ninguém fica sabendo quem denunciou.',
+            en: "With an account, every line of the ranking (and of the Daily Challenge) has a flag to report that run, and another trainer's profile has a Report button. Pick the reason (cheating, offensive name or something else), leave a comment if you like and that's it: nobody finds out who reported.",
+            es: 'Con una cuenta, cada línea del ranking (y del Desafío del día) tiene una bandera para denunciar esa partida, y el perfil de otro entrenador tiene el botón Denunciar. Elige el motivo (trampa, nombre ofensivo u otro), deja un comentario si quieres y listo: nadie se entera de quién denunció.',
+          },
+          {
+            pt: 'As partidas continuam entrando no ranking na hora. Só uma denúncia faz a equipe olhar: uma partida trapaceada sai do ranking, um save editado volta ao zero e uma conta banida não entra mais no ranking nem nos perfis (ela ainda pode jogar no aparelho, sem conta).',
+            en: "Runs still join the ranking right away. Only a report gets the team to look: a cheated run leaves the ranking, an edited save goes back to zero, and a banned account no longer shows on the ranking or in profiles (it can still play on the device, without an account).",
+            es: 'Las partidas siguen entrando al ranking al instante. Solo una denuncia hace que el equipo revise: una partida con trampa sale del ranking, una partida guardada editada vuelve a cero y una cuenta baneada ya no aparece en el ranking ni en los perfiles (aún puede jugar en el dispositivo, sin cuenta).',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Hall da Fama', en: 'Hall of Fame', es: 'Salón de la Fama' },
+        notes: [
+          {
+            pt: 'O Hall da Fama conta todos os apoiadores, inclusive quem preferiu ficar fora do mural, então o número não cai mais quando alguém se esconde.',
+            en: 'The Hall of Fame counts every supporter, including those who chose to stay off the wall, so the number no longer drops when someone hides.',
+            es: 'El Salón de la Fama cuenta a todos los patrocinadores, incluso a quienes prefirieron quedar fuera del muro, así que el número ya no baja cuando alguien se oculta.',
           },
         ],
       },
@@ -166,6 +212,26 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'Num computador com o relógio atrasado, o fim da partida dizia "Sem conexão" e ela não entrava no ranking, e o save também não sincronizava. Agora funciona com qualquer relógio, e as partidas que ficaram esperando entram no ranking na próxima vez que você abrir o jogo naquele navegador.',
             en: 'On a computer whose clock runs behind, the end of a run said "Offline" and the run never made the ranking, and the save didn\'t sync either. Now it works whatever the clock says, and runs left waiting make the ranking the next time you open the game in that browser.',
             es: 'En una computadora con el reloj atrasado, el final de la partida decía "Sin conexión" y no entraba al ranking, y la partida guardada tampoco se sincronizaba. Ahora funciona con cualquier reloj, y las partidas que quedaron esperando entran al ranking la próxima vez que abras el juego en ese navegador.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'O jogo não fecha mais no iPhone', en: 'No more closing on iPhone', es: 'El juego ya no se cierra en iPhone' },
+        notes: [
+          {
+            pt: 'Em alguns iPhones o jogo fechava sozinho segundos depois de começar uma partida: ele preparava de uma vez o brilho de golpe de todos os Pokémon carregados e passava do limite de memória do aparelho. Agora cada um é preparado só quando leva o primeiro golpe, com bem menos memória.',
+            en: "On some iPhones the game closed by itself seconds into a run: it prepared the hit flash of every loaded Pokémon at once and went past the device's memory limit. Now each one is prepared only when it takes its first hit, with far less memory.",
+            es: 'En algunos iPhones el juego se cerraba solo segundos después de empezar una partida: preparaba de una vez el destello de golpe de todos los Pokémon cargados y pasaba el límite de memoria del aparato. Ahora cada uno se prepara solo cuando recibe su primer golpe, con mucha menos memoria.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Os Exp. Candy não somem mais', en: 'Exp. Candies no longer vanish', es: 'Los Exp. Candy ya no desaparecen' },
+        notes: [
+          {
+            pt: 'Com muitos Exp. Candy esquecidos pelo mapa, os Pokémon derrotados paravam de soltar doces novos: a EXP ia para um doce antigo, longe de você. Agora todo Pokémon derrotado solta o seu doce, e o doce mais antigo do chão se junta a ele, sem perder EXP.',
+            en: 'With lots of Exp. Candies left around the map, fainted Pokémon stopped dropping new ones: the EXP went into an old candy, far from you. Now every fainted Pokémon drops its candy, and the oldest candy on the ground joins it, with no EXP lost.',
+            es: 'Con muchos Exp. Candy olvidados por el mapa, los Pokémon derrotados dejaban de soltar caramelos nuevos: la EXP iba a un caramelo antiguo, lejos de ti. Ahora todo Pokémon derrotado suelta su caramelo, y el caramelo más antiguo del suelo se une a él, sin perder EXP.',
           },
         ],
       },
@@ -270,6 +336,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Instagram oficial', en: 'Official Instagram', es: 'Instagram oficial' },
+        notes: [
+          {
+            pt: 'O jogo também está no Instagram, @pokemonsurvivors, com Reels e carrosséis do jogo. Ele fica ao lado do TikTok e do YouTube no lobby e em Ajustes → Sobre.',
+            en: 'The game is on Instagram too, @pokemonsurvivors, with Reels and carousels of the game. It sits beside TikTok and YouTube in the lobby and in Settings → About.',
+            es: 'El juego también está en Instagram, @pokemonsurvivors, con Reels y carruseles del juego. Está junto a TikTok y YouTube en el lobby y en Ajustes → Acerca de.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Normal ou Shiny, você escolhe', en: 'Normal or Shiny, your call', es: 'Normal o Shiny, tú eliges' },
         notes: [
           {
@@ -328,9 +404,9 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             es: '¿Venciste a Mewtwo con un Pokémon? Su línea evolutiva gana un trofeo en la Pokédex y en la elección de compañero: bronce en Normal, plata en Difícil y oro en Pesadilla. La Pokédex cuenta cuántos superaste, para intentar superarlo con todos. Idea de @havenlad en el Muro de ideas.',
           },
           {
-            pt: 'Vitórias de antes também contam quando o seu histórico mostra com quem foram (por exemplo, se todas foram com iniciais de uma mesma região).',
-            en: 'Earlier wins count too when your records show who won them (for example, if they were all with starters from one region).',
-            es: 'Las victorias de antes también cuentan cuando tu historial muestra con quién fueron (por ejemplo, si todas fueron con iniciales de una misma región).',
+            pt: 'Vitórias de antes dos troféus também contam. Com conta, toda vitória que está no ranking ganha o troféu na próxima vez que o jogo sincronizar. Sem conta, valem as que o seu histórico prova (por exemplo, um inicial que é o único que você jogou da região). Antes, quem tinha vencido com vários Pokémon ficava sem troféu por essas vitórias; obrigado a @justwex pelo aviso.',
+            en: "Wins from before trophies existed count too. With an account, every win on the ranking gets its trophy the next time the game syncs. Without one, the ones your records prove do (for example, a starter that's the only one you played from its region). Before, if you had won with several Pokémon, those wins got no trophy; thanks to @justwex for the report.",
+            es: 'Las victorias de antes de los trofeos también cuentan. Con cuenta, toda victoria que está en el ranking gana su trofeo la próxima vez que el juego sincronice. Sin cuenta, valen las que tu historial prueba (por ejemplo, un inicial que es el único que jugaste de su región). Antes, si habías ganado con varios Pokémon, esas victorias no daban trofeo; gracias a @justwex por el aviso.',
           },
         ],
       },

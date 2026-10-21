@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EGG_TIERS, EGGS, hatchPool } from './eggs'
-import { applyGift, DISCORD_GIFT, giftToOpen, parseGift, type Gift, type GiftContent } from './gifts'
+import { applyGift, DISCORD_GIFT, giftToOpen, keepGiven, parseGift, type Gift, type GiftContent } from './gifts'
 import { EMPTY_SAVE, parseSaveData, type Save } from './meta'
 
 const gift = (content: GiftContent, id = 'g1'): Gift => ({ id, content, reason: null })
@@ -82,5 +82,33 @@ describe('giftToOpen', () => {
     expect(giftToOpen(full, [egg])).toEqual({ gift: egg, blocked: true })
     expect(giftToOpen(EMPTY_SAVE, [egg, coins])).toEqual({ gift: egg, blocked: false })
     expect(giftToOpen(EMPTY_SAVE, [])).toBeNull()
+  })
+})
+
+describe('keepGiven', () => {
+  const supporter = gift({ kind: 'title', title: 'supporter' }, 'title')
+  const frame = gift({ kind: 'style', style: { slot: 'frame', id: 'supporter' } }, 'frame')
+  const ticket = gift({ kind: 'shinyPick' }, 'ticket')
+  const bronze = { day: '2026-10-18', tier: 'bronze', rank: 40, total: 50 } as const
+  const ribbon = gift({ kind: 'ribbon', ribbon: bronze }, 'ribbon')
+  const walking: Save = { ...EMPTY_SAVE, companion: { id: 'pichu', shiny: false } }
+  const thanked = [supporter, frame, ticket, ribbon].reduce((s, g) => applied(s, g).save, walking)
+
+  it('keeps every reward the gifts brought', () => {
+    expect(keepGiven(thanked, [supporter, frame, ticket, ribbon])).toEqual(thanked)
+  })
+
+  it("drops what no gift brought, and unwears it: an edited save isn't a supporter", () => {
+    const kept = keepGiven(thanked, [])
+    expect(kept).toMatchObject({ titles: [], title: null, ribbons: [], shinyPicks: [], companion: null })
+    expect(kept.style.owned.frame).toEqual([])
+    expect(kept.style.equipped.frame).toBe('classic')
+  })
+
+  it('keeps styles bought with ₽, and takes the ribbon as it was given', () => {
+    const bought: Save = { ...EMPTY_SAVE, style: { owned: { frame: ['poke'], background: [], wallpaper: [] }, equipped: { frame: 'poke', background: 'night', wallpaper: 'classic' } } }
+    expect(keepGiven(bought, []).style).toEqual(bought.style)
+    const gilded: Save = { ...thanked, ribbons: [{ day: '2026-10-18', tier: 'gold', rank: 1, total: 50 }] }
+    expect(keepGiven(gilded, [ribbon]).ribbons).toEqual([bronze])
   })
 })

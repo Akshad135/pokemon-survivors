@@ -17,6 +17,7 @@ import type { BagItem } from '../game/bag'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
 import type { SuggestionSort } from '../game/suggestions'
+import type { ReportReason } from '../game/reports'
 import type { EggTier } from '../game/eggs'
 import type { UpgradeId } from '../game/meta'
 import type { MOVES, MoveId } from '../game/moves'
@@ -433,7 +434,7 @@ export const pt = {
     place: { day: 'hoje', week: 'na semana', all: 'no total' },
     queued: 'Sem conexão: a partida entra no ranking quando a conexão voltar.',
     rejected: 'Esta partida não entrou no ranking.',
-    unranked: 'Esta partida ficou fora do ranking porque começou sem conexão.',
+    unranked: 'Esta partida ficou fora do ranking: começou sem conexão ou com o jogo aberto em outra aba ou aparelho.',
     guest: 'Entre com uma conta para aparecer no ranking.',
     noHandle: 'Crie seu perfil na tela da conta para aparecer no ranking.',
     open: 'Ranking',
@@ -468,6 +469,7 @@ export const pt = {
     recent: 'Partidas recentes',
     noRuns: 'Nenhuma partida no ranking ainda.',
     share: 'Compartilhar',
+    report: 'Denunciar',
     card: 'Cartão de Treinador',
     copied: 'Link do perfil copiado!',
     edit: 'Editar',
@@ -848,6 +850,7 @@ export const pt = {
     codeErrors: { format: 'O código tem o formato PS-XXXX-XXXX.', unknown: 'Esse código não existe.', used: 'Esse código já foi usado.', offline: 'Sem conexão. Tente de novo.' },
 
     wallEmpty: 'Ainda ninguém por aqui. Seu nome pode ser o primeiro!',
+    offWall: (total: number) => `${total} apoiadores ao todo. Alguns preferem ficar fora do mural.`,
 
     credits: 'Obrigado aos treinadores que mantêm o jogo no ar',
     banner: 'Seu shiny te espera!',
@@ -893,6 +896,7 @@ export const pt = {
         invalid: 'Essa ideia não deu para enviar. Revise o texto e tente de novo.',
         limit: (n: number) => `Você já mandou ${n} ideias hoje. Volte amanhã!`,
         profile: 'Crie seu perfil antes de sugerir.',
+        banned: 'Esta conta não pode sugerir ideias.',
         offline: 'Sem conexão. Tente de novo daqui a pouco.',
       },
     },
@@ -927,6 +931,36 @@ export const pt = {
       text: 'Parece que o jogo fechou durante uma partida. Quer contar o que aconteceu?',
       report: 'Reportar',
       dismiss: 'Agora não',
+    },
+  },
+
+  /** Reporting a player or one of their runs: the boards' flag and the profile's Denunciar. Titles in the pixel font: unaccented or mixed case. */
+  report: {
+    title: 'DENUNCIAR',
+    flag: (handle: string) => `Denunciar @${handle}`,
+    lead: (name: string, handle: string) => `Denunciar ${name} (@${handle})`,
+    run: (pokemon: string, time: string, difficulty: string) => `Partida: ${pokemon} · ${time} · ${difficulty}`,
+    reason: 'MOTIVO',
+    reasons: {
+      cheating: { name: 'Trapaça', hint: 'Partida ou progresso impossível, save editado.' },
+      name: { name: 'Nome ofensivo', hint: 'O nome ou o @ ofende alguém.' },
+      other: { name: 'Outro motivo', hint: 'Conte no comentário.' },
+    } satisfies Record<ReportReason, { name: string; hint: string }>,
+    note: 'Comentário (opcional)',
+    placeholder: 'O que você viu?',
+    privacy: 'A equipe olha cada denúncia. Ninguém fica sabendo quem denunciou.',
+    send: 'Enviar',
+    sending: 'Enviando…',
+    back: 'Voltar',
+    thanksTitle: 'OBRIGADO!',
+    thanks: 'Denúncia enviada. A equipe vai dar uma olhada. Valeu por ajudar a manter o ranking justo!',
+    ok: 'OK',
+    errors: {
+      self: 'Você não pode denunciar a si mesmo.',
+      limit: (n: number) => `Você já mandou ${n} denúncias hoje. Tente de novo amanhã.`,
+      banned: 'Esta conta não pode enviar denúncias.',
+      invalid: 'Não deu para enviar. Revise o comentário e tente de novo.',
+      offline: 'Sem conexão. Tente de novo daqui a pouco.',
     },
   },
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { chooseOffer, createGame } from './game'
-import { dropXp, pokeballAsks, updatePickups } from './pickups'
+import { dropXp, MAX_XP_PICKUPS, pokeballAsks, updatePickups } from './pickups'
+import type { Game } from './types'
 import * as dm from '../engine/dmath'
 
 const DT = 1 / 60
@@ -32,6 +33,37 @@ describe('magnet', () => {
       updatePickups(g, DT)
     }
     expect(g.pickups).toHaveLength(0)
+  })
+})
+
+const candies = (g: Game) => g.pickups.flatMap((k) => (k.kind === 'xp' ? [k] : []))
+
+describe('Exp. Candy cap', () => {
+  const full = () => {
+    const g = createGame('honedge', { w: 480, h: 270 }, 1)
+    g.pickups.length = 0
+    for (let i = 0; i < MAX_XP_PICKUPS; i++) dropXp(g, -500, -500, 2)
+    return g
+  }
+
+  it('still drops the candy where the foe fainted, folding the oldest one into it', () => {
+    const g = full()
+    const oldest = candies(g)[0]
+    dropXp(g, 40, 60, 5)
+    const after = candies(g)
+    expect(after).toHaveLength(MAX_XP_PICKUPS)
+    expect(after).not.toContain(oldest)
+    expect(after.at(-1)).toMatchObject({ x: 40, y: 60, value: 7 })
+    expect(after.reduce((sum, k) => sum + k.value, 0)).toBe(MAX_XP_PICKUPS * 2 + 5)
+  })
+
+  it('leaves a candy already flying to the player alone', () => {
+    const g = full()
+    const [flying] = candies(g)
+    flying!.attracted = true
+    dropXp(g, 40, 60, 5)
+    expect(candies(g)).toContain(flying)
+    expect(candies(g)).toHaveLength(MAX_XP_PICKUPS)
   })
 })
 

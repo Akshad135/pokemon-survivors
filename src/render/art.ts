@@ -873,9 +873,30 @@ const YOUTUBE = [
   '................',
 ]
 
+/** Instagram's camera: a white outline, lens and flash on its purple-to-yellow gradient. 1 outline, 2 purple, 3 magenta, 4 pink, 5 orange, 6 yellow, 7 white. */
+const INSTAGRAM = [
+  '..111111111111..',
+  '.14333332222221.',
+  '1444333332222221',
+  '1444777777772221',
+  '1447443333327221',
+  '1547444333737221',
+  '1557444773337221',
+  '1557447447337321',
+  '1557547447337331',
+  '1557554774437331',
+  '1657555444447331',
+  '1667555544447331',
+  '1666777777774431',
+  '1666655555444441',
+  '.16666555554441.',
+  '..111111111111..',
+]
+
 const SOCIAL_ART = {
   tiktok: () => art(TIKTOK, { 1: '#000000', 2: '#161823', 3: '#ffffff', 4: '#25f4ee', 5: '#fe2c55' }),
   youtube: () => art(YOUTUBE, { 1: '#7a0012', 2: '#ff0033', 3: '#ffffff' }),
+  instagram: () => art(INSTAGRAM, { 1: '#4a1248', 2: '#833ab4', 3: '#c13584', 4: '#e1306c', 5: '#f77737', 6: '#fcaf45', 7: '#ffffff' }),
 } as const satisfies Record<SocialId, () => PixelSprite>
 
 /** Each official profile's icon (`SOCIALS` in `site/routes.ts`). */
@@ -918,6 +939,11 @@ const ADD_HOME = [
 const IOS_BLUE = { 1: '#303040', 2: '#3878f0', 3: '#ffffff' } as const
 export const shareIcon = () => toIconUrl('share', () => art(SHARE, IOS_BLUE))
 export const addHomeIcon = () => toIconUrl('addHome', () => art(ADD_HOME, IOS_BLUE))
+
+/** A report's flag (`ui/report.ts`): a red flag on a pale pole. 1 outline, 2 red, 3 light red, 4 pole. */
+const FLAG = ['11........', '141111111.', '1432222221', '1432222221', '1432222221', '141111111.', '141.......', '141.......', '141.......', '.1........']
+
+export const flagIcon = () => toIconUrl('flag', () => art(FLAG, { 1: '#402030', 2: '#e83838', 3: '#f88878', 4: '#c8d0e0' }))
 
 /** The supporter's badge by their names (`game/supporters.ts`): a rose heart, a gold one for the gold tier. */
 export const supporterIcon = (tier: SupporterTier) =>
