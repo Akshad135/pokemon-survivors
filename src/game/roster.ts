@@ -3,6 +3,7 @@ import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { biomeAt, BIOMES, type BiomeId } from '../data/biomes'
 import type { Tier } from '../data/roster'
 import { isSummoner, SUMMONS } from '../data/traits'
+import { bossKit } from '../data/bosses'
 import type { PokeType } from '../data/types'
 import { hasFlavor, SPIT_FROM } from './spitters'
 import { bossOf, EVENTS, MYTHICALS, RUN_LENGTH, RUNNER, STAGES, stageIndexAt, stageStart, TRIO_IDS, TRIOS, type TrioId, type WaveEvent, type WaveStage } from '../data/waves'
@@ -86,6 +87,9 @@ const drawOne = (rng: Rng, entries: readonly Entry[], weight: (def: EnemyDef) =>
 }
 
 const summonsOf = (id: EnemyId): readonly EnemyId[] => (isSummoner(id) ? SUMMONS[id] : [])
+
+/** Who a boss calls in with its `summon` patterns (Banette's Shuppet, Honchkrow's Murkrow). */
+export const bossSummons = (id: EnemyId): readonly EnemyId[] => bossKit(id).flatMap((p) => (p.kind === 'summon' ? p.enemies : []))
 
 const firstNonEmpty = <T>(...lists: ReadonlyArray<readonly T[]>) => lists.find((l) => l.length > 0) ?? []
 
@@ -233,7 +237,7 @@ const AFFINITY = Object.fromEntries(
 export const biomeWeight: SpeciesWeight = (def, stage) => AFFINITY[stageBiome(stage)](def, stage)
 
 /**
- * Every species a run needs (horde, swarms, rings, bosses, what its summoners call in) with the run time
+ * Every species a run needs (horde, swarms, rings, bosses, what its summoners and bosses call in) with the run time
  * it first shows up at, soonest first. The shell loads `at === 0` before the
  * run starts and streams the rest in this order.
  */
@@ -242,7 +246,7 @@ export const rosterSchedule = (roster: Roster, events: readonly WaveEvent[] = EV
     ...roster.stages.flatMap((pool, i) => pool.flatMap(([id]) => [id, ...summonsOf(id)].map((need) => ({ id: need, at: stageStart(i) })))),
     ...events.flatMap((e, i) => {
       const id = roster.events[i]
-      return id ? [{ id, at: e.at }] : []
+      return id ? [id, ...(e.kind === 'boss' ? bossSummons(id) : [])].map((need) => ({ id: need, at: e.at })) : []
     }),
     ...roster.spitters.flatMap((id, i) => (id ? [{ id, at: stageStart(i) }] : [])),
   ].sort((a, b) => a.at - b.at)

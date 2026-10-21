@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { stacksOf } from '../game/kitRules'
@@ -63,8 +63,8 @@ const drawFlameTrail = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const life = 1 - a.age / a.ttl
   ctx.globalAlpha = Math.min(1, life * 1.6)
-  blitCentered(ctx, ellipse(Math.round(r * 0.9), Math.max(1, Math.round(r * 0.4)), 'rgba(200,64,16,0.32)'), a.x, a.y)
-  blitCentered(ctx, ellipse(Math.round(r * 0.5), Math.max(1, Math.round(r * 0.22)), 'rgba(248,176,48,0.45)'), a.x, a.y)
+  blitEllipse(ctx, Math.round(r * 0.9), Math.max(1, Math.round(r * 0.4)), 'rgba(200,64,16,0.32)', a.x, a.y)
+  blitEllipse(ctx, Math.round(r * 0.5), Math.max(1, Math.round(r * 0.22)), 'rgba(248,176,48,0.45)', a.x, a.y)
   const frames = VERB_FX.flameLick()
   const sprite = frames[Math.floor((t * 10 + a.id) % 2)]!
   // Young flames stand tall; old ones sink into embers.
@@ -105,7 +105,7 @@ const drawSheerColdGround = (ctx: Ctx, a: Attack) => {
   const r = radiusOf(a)
   const k = a.age / a.ttl
   ctx.globalAlpha = Math.max(0, 1 - k * k) * 0.9
-  blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.5)), 'rgba(200,240,255,0.22)'), a.x, a.y)
+  blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.5)), 'rgba(200,240,255,0.22)', a.x, a.y)
   ctx.fillStyle = '#e0f8ff'
   for (let i = 0; i < 9; i++) {
     const ang = (i / 9) * TAU + a.id
@@ -179,7 +179,7 @@ const drawFocusGround = (ctx: Ctx, g: Game, t: number) => {
   if (k <= 0) return
   const full = k >= 1
   ctx.globalAlpha = 0.45 + 0.55 * k
-  blitCentered(ctx, ellipse(Math.round(8 + k * 6), Math.max(1, Math.round(3 + k * 2)), full ? 'rgba(248,112,64,0.45)' : 'rgba(192,48,40,0.3)'), p.x, p.y)
+  blitEllipse(ctx, Math.round(8 + k * 6), Math.max(1, Math.round(3 + k * 2)), full ? 'rgba(248,112,64,0.45)' : 'rgba(192,48,40,0.3)', p.x, p.y)
   dashedRing(ctx, p.x, p.y, 10 + k * 6, t * (3 + k * 6), full ? ['#ffffff', '#f8d030', '#f87040'] : ['#f87040', '#c03028'], 0.3 + 0.5 * k, 0.42)
   ctx.globalAlpha = 1
 }
@@ -208,7 +208,7 @@ export const drawVerbGround = (ctx: Ctx, g: Game, t: number) => {
       case 'stealthRock': {
         const rise = Math.min(1, a.age / 0.2)
         ctx.globalAlpha = rise * fadeOut(a, 0.6)
-        blitCentered(ctx, ellipse(4, 1, 'rgba(24,16,8,0.35)'), a.x, a.y + 2)
+        blitEllipse(ctx, 4, 1, 'rgba(24,16,8,0.35)', a.x, a.y + 2)
         ctx.globalAlpha = 1
         break
       }
@@ -216,7 +216,7 @@ export const drawVerbGround = (ctx: Ctx, g: Game, t: number) => {
         // The scorch mark it leaves behind.
         ctx.globalAlpha = fadeOut(a, 0.35) * 0.8
         const r = radiusOf(a)
-        blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.max(1, Math.round(r * 0.38)), 'rgba(40,24,16,0.4)'), a.x, a.y + 8)
+        blitEllipse(ctx, Math.round(r * 0.8), Math.max(1, Math.round(r * 0.38)), 'rgba(40,24,16,0.4)', a.x, a.y + 8)
         ctx.globalAlpha = 1
         break
       }
@@ -224,13 +224,13 @@ export const drawVerbGround = (ctx: Ctx, g: Game, t: number) => {
         if (a.age < a.activeFrom) {
           // The shadow of the lob closing in on its landing spot.
           const k = a.age / a.activeFrom
-          blitCentered(ctx, ellipse(Math.max(1, Math.round(3 + k * 5)), Math.max(1, Math.round(1 + k * 2)), 'rgba(16,24,48,0.3)'), a.x, a.y + 6)
+          blitEllipse(ctx, Math.max(1, Math.round(3 + k * 5)), Math.max(1, Math.round(1 + k * 2)), 'rgba(16,24,48,0.3)', a.x, a.y + 6)
           break
         }
         const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
         const r = radiusOf(a)
         ctx.globalAlpha = Math.max(0, 1 - e)
-        blitCentered(ctx, ellipse(Math.round(r * (0.6 + 0.5 * e)), Math.max(1, Math.round(r * 0.32 * (0.6 + 0.5 * e))), 'rgba(72,120,208,0.45)'), a.x, a.y + 6)
+        blitEllipse(ctx, Math.round(r * (0.6 + 0.5 * e)), Math.max(1, Math.round(r * 0.32 * (0.6 + 0.5 * e))), 'rgba(72,120,208,0.45)', a.x, a.y + 6)
         dashedRing(ctx, a.x, a.y + 6, r * (0.7 + 0.6 * e), a.id, ['#ffffff', '#88b8f0'], 0.6, 0.35)
         ctx.globalAlpha = 1
         break
@@ -270,9 +270,9 @@ const drawSolarCharge = (ctx: Ctx, g: Game, a: Attack, t: number) => {
     px(ctx, a.x + Math.cos(ang) * d, a.y + Math.sin(ang) * d, i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#f8f8a0' : '#78c850', ph > 0.7 ? 2 : 1, ph > 0.7 ? 2 : 1)
   }
   const glow = 1 + Math.round(k * 5)
-  blitCentered(ctx, ellipse(glow + 2, glow + 2, 'rgba(200,240,136,0.45)'), a.x, a.y)
-  blitCentered(ctx, ellipse(glow, glow, '#f8f8c0'), a.x, a.y)
-  if (glow > 2) blitCentered(ctx, ellipse(glow - 2, glow - 2, '#ffffff'), a.x, a.y)
+  blitEllipse(ctx, glow + 2, glow + 2, 'rgba(200,240,136,0.45)', a.x, a.y)
+  blitEllipse(ctx, glow, glow, '#f8f8c0', a.x, a.y)
+  if (glow > 2) blitEllipse(ctx, glow - 2, glow - 2, '#ffffff', a.x, a.y)
   if (k > 0.75 && Math.floor(t * 20) % 2 === 0) twinkle(ctx, a.x, a.y, 4 + glow, '#ffffff')
 }
 
@@ -301,7 +301,7 @@ const drawSolarBeams = (ctx: Ctx, g: Game, t: number) => {
       const cy = Math.sin(m.angle)
       const flick = layer.flick ? Math.floor(t * 30 + m.radius) % 2 : 0
       thickLine(ctx, p.x + cx * (m.radius - half), p.y - 8 + cy * (m.radius - half), p.x + cx * (m.radius + half), p.y - 8 + cy * (m.radius + half), Math.max(1, Math.round(w * layer.k)) + flick, layer.color)
-      if (layer.k < 1 && m.radius < 14) blitCentered(ctx, ellipse(Math.round(w * 0.6) + 1, Math.round(w * 0.6) + 1, '#f8f8c0'), p.x + cx * 10, p.y - 8 + cy * 10)
+      if (layer.k < 1 && m.radius < 14) blitEllipse(ctx, Math.round(w * 0.6) + 1, Math.round(w * 0.6) + 1, '#f8f8c0', p.x + cx * 10, p.y - 8 + cy * 10)
       if (layer.k < 1 && a.flip) spokes(ctx, a.x, a.y, 2, Math.round(w * 1.4) + 4, 8, ['#ffffff', '#d8f8a0', '#78c850'], t * 6)
     }
   }
@@ -352,7 +352,7 @@ const drawElectroBall = (ctx: Ctx, a: Attack, t: number) => {
     const len = Math.hypot(m.vx, m.vy) || 1
     for (let i = 1; i <= 3; i++) {
       ctx.globalAlpha = 0.5 - i * 0.13
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * (1 - i * 0.2))), Math.max(1, Math.round(r * (1 - i * 0.2))), '#f8d030'), a.x - (m.vx / len) * i * r * 0.7, a.y - (m.vy / len) * i * r * 0.7)
+      blitEllipse(ctx, Math.max(1, Math.round(r * (1 - i * 0.2))), Math.max(1, Math.round(r * (1 - i * 0.2))), '#f8d030', a.x - (m.vx / len) * i * r * 0.7, a.y - (m.vy / len) * i * r * 0.7)
     }
     ctx.globalAlpha = 1
   }
@@ -388,16 +388,16 @@ const drawSelfDestruct = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   if (a.age <= a.activeUntil) {
     const flick = Math.floor(t * 30) % 2
-    blitCentered(ctx, ellipse(Math.round(r), Math.round(r * 0.8), 'rgba(216,64,32,0.75)'), a.x, a.y)
-    blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.round(r * 0.64), '#f8a030'), a.x, a.y - flick)
-    blitCentered(ctx, ellipse(Math.round(r * 0.55), Math.round(r * 0.45), '#fff0a0'), a.x, a.y - 1)
-    blitCentered(ctx, ellipse(Math.round(r * 0.3), Math.round(r * 0.25), '#ffffff'), a.x, a.y - 1)
+    blitEllipse(ctx, Math.round(r), Math.round(r * 0.8), 'rgba(216,64,32,0.75)', a.x, a.y)
+    blitEllipse(ctx, Math.round(r * 0.8), Math.round(r * 0.64), '#f8a030', a.x, a.y - flick)
+    blitEllipse(ctx, Math.round(r * 0.55), Math.round(r * 0.45), '#fff0a0', a.x, a.y - 1)
+    blitEllipse(ctx, Math.round(r * 0.3), Math.round(r * 0.25), '#ffffff', a.x, a.y - 1)
     spokes(ctx, a.x, a.y, Math.round(r * 0.9), Math.round(r * 1.25), 12, ['#ffffff', '#fff0a0', '#f8a030'], a.id)
     return
   }
   const e = (a.age - a.activeUntil) / (a.ttl - a.activeUntil)
   ctx.globalAlpha = Math.max(0, 1 - e)
-  blitCentered(ctx, ellipse(Math.round(r * (1 - e * 0.5)), Math.round(r * 0.8 * (1 - e * 0.5)), 'rgba(248,160,48,0.35)'), a.x, a.y - e * 10)
+  blitEllipse(ctx, Math.round(r * (1 - e * 0.5)), Math.round(r * 0.8 * (1 - e * 0.5)), 'rgba(248,160,48,0.35)', a.x, a.y - e * 10)
   dashedRing(ctx, a.x, a.y, r * (1 + e * 0.35), a.id + e * 3, ['#686060', '#a09890', '#484040'], 0.85, 0.75)
   dashedRing(ctx, a.x, a.y - 2, r * (0.85 + e * 0.3), -a.id - e * 4, ['#d8d0c8', '#888078'], 0.6, 0.75)
   ctx.globalAlpha = 1
@@ -529,8 +529,8 @@ const drawFutureColumn = (ctx: Ctx, a: Attack, t: number) => {
   px(ctx, a.x - w + 1, top, '#f878b0', w * 2 - 1, a.y - top)
   px(ctx, a.x - Math.round(w * 0.55), top, '#ffc0dc', Math.round(w * 1.1) + 1, a.y - top)
   px(ctx, a.x - Math.round(w * 0.2), top, '#ffffff', Math.max(1, Math.round(w * 0.4)) + 1, a.y - top)
-  if (a.age < 0.07) blitCentered(ctx, ellipse(Math.round(r * 1.2), Math.round(r * 0.6), 'rgba(255,255,255,0.8)'), a.x, a.y)
-  blitCentered(ctx, ellipse(Math.round(r * (0.6 + e * 0.6)), Math.max(1, Math.round(r * 0.3 * (0.6 + e * 0.6))), '#f878b0'), a.x, a.y)
+  if (a.age < 0.07) blitEllipse(ctx, Math.round(r * 1.2), Math.round(r * 0.6), 'rgba(255,255,255,0.8)', a.x, a.y)
+  blitEllipse(ctx, Math.round(r * (0.6 + e * 0.6)), Math.max(1, Math.round(r * 0.3 * (0.6 + e * 0.6))), '#f878b0', a.x, a.y)
   dashedRing(ctx, a.x, a.y, r * (0.8 + e * 0.8), t * 4 + a.id, ['#ffd0e8', '#f85888', '#ffffff'], 0.7, 0.45)
   ctx.globalAlpha = 1
 }

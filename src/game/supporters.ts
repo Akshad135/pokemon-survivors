@@ -1,6 +1,8 @@
 import { TITLE_IDS, type TitleId } from '../data/achievements'
-import type { PlayableId } from '../data/hatchlings'
+import { isSpecialCompanion, SPECIAL_COMPANION_IDS, SPECIAL_COMPANIONS, type SpecialCompanionId } from '../data/companions'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { isUnlocked } from './eggs'
+import { ownsStyle } from './style'
 import { isPollOption, POLL, POLL_OPTION_IDS, SUPPORTER, type PollOptionId } from '../data/supporters'
 import type { GiftContent } from './gifts'
 import type { Save } from './meta'
@@ -50,6 +52,9 @@ export const tiersReached = (before: number, after: number): SupporterTier[] =>
 /** Whether the save got the supporter's thank-you (its title): it unlocks the companion. */
 export const isSupporter = (save: Save) => save.titles.includes('supporter')
 
+/** Whether the save got the Gold tier's thank-you too (its background), without asking the API. */
+export const isGoldSupporter = (save: Save) => isSupporter(save) && ownsStyle(save.style, 'background', 'supporter')
+
 /* ---------------- Codes ---------------- */
 
 /** Letters and digits that can't be mistaken for each other (no 0/O, 1/I/L). */
@@ -73,15 +78,39 @@ export const parseCode = (raw: unknown) => {
 
 /* ---------------- Companion ---------------- */
 
-/** A Pokémon that walks after the player in runs, only drawn (it never touches the simulation). */
-export type Companion = { id: PlayableId; shiny: boolean }
+/** A companion's species: any playable family, or one of the gift-only ones (`SPECIAL_COMPANIONS`). */
+export type CompanionId = PlayableId | SpecialCompanionId
 
-/** Pokémon the save may take along: every starter and each family hatched (no legend), shiny only if owned so. */
-export const canWalkWith = (save: Save, c: Companion) => isUnlocked(save.hatched, c.id) && (!c.shiny || ownsShiny(save, c.id))
+/** A Pokémon that walks after the player in runs, only drawn (it never touches the simulation). */
+export type Companion = { id: CompanionId; shiny: boolean }
+
+/** Whether the save may take `id` along shiny: a playable family it owns shiny, or a gift-only one shiny for its tier (`SPECIAL_COMPANIONS`, Gold). */
+export const walksShiny = (save: Save, id: CompanionId) => {
+  if (!isSpecialCompanion(id)) return ownsShiny(save, id)
+  const def: { shiny?: 'gold' } = SPECIAL_COMPANIONS[id]
+  return def.shiny === 'gold' && isGoldSupporter(save)
+}
+
+/**
+ * Pokémon the save may take along: every starter and each family hatched
+ * (no legend), and the gift-only ones it got (`save.companions`); shiny only
+ * when it may (`walksShiny`).
+ */
+export const canWalkWith = (save: Save, c: Companion) =>
+  (isSpecialCompanion(c.id) ? save.companions.includes(c.id) : isUnlocked(save.hatched, c.id)) && (!c.shiny || walksShiny(save, c.id))
+
+/** The name and dex a companion walks as (a playable family's first stage, or the gift-only one's), and the sparkles it leaves. */
+export const companionForm = (id: CompanionId): { name: string; dex: number; sparkles?: 'candy' } => (isSpecialCompanion(id) ? SPECIAL_COMPANIONS[id] : PLAYABLE[id].line[0])
+
+/** The save's gift-only companions: known ids, once each. */
+export const parseCompanions = (v: unknown): SpecialCompanionId[] => (Array.isArray(v) ? SPECIAL_COMPANION_IDS.filter((id) => v.includes(id)) : [])
+
+/** Two saves' gift-only companions: a union. */
+export const mergeCompanions = (a: readonly SpecialCompanionId[], b: readonly SpecialCompanionId[]): SpecialCompanionId[] => SPECIAL_COMPANION_IDS.filter((id) => a.includes(id) || b.includes(id))
 
 /** The save's `companion`, or null. */
 export const parseCompanion = (v: unknown): Companion | null =>
-  isRecord(v) && isPlayable(v.id) ? { id: v.id, shiny: v.shiny === true } : null
+  isRecord(v) && (isPlayable(v.id) || isSpecialCompanion(v.id)) ? { id: v.id, shiny: v.shiny === true } : null
 
 /* ---------------- API shapes ---------------- */
 

@@ -1,4 +1,4 @@
-import { blitCentered, ellipse, ring } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import { LUNGE_TIME, MINE_ARM } from '../game/moveRules'
 import type { Attack } from '../game/types'
@@ -100,7 +100,7 @@ export const drawMoveFxGround = (ctx: Ctx, a: Attack) => {
     case 'wisp':
     case 'inferno': {
       ctx.globalAlpha = Math.min(1, a.age / 0.15, (a.ttl - a.age) / 0.3)
-      blitCentered(ctx, ellipse(5, 2, 'rgba(16,24,48,0.3)'), a.x, a.y)
+      blitEllipse(ctx, 5, 2, 'rgba(16,24,48,0.3)', a.x, a.y)
       ctx.globalAlpha = 1
       return
     }
@@ -128,7 +128,7 @@ export const drawMoveFxAttack = (ctx: Ctx, a: Attack, t: number) => {
       arc(ctx, a, t, ARC_COLORS[a.visual])
       // Thunderbolt crackles with a second strand.
       if (a.visual === 'thunderbolt') arc(ctx, a, t, { edge: '#f8e070', core: '#fff8d0', width: 0 }, 1)
-      blitCentered(ctx, ring(3 + Math.round(a.age * 14), 1, ARC_COLORS[a.visual].core), a.x, a.y)
+      blitRing(ctx, 3 + Math.round(a.age * 14), 1, ARC_COLORS[a.visual].core, a.x, a.y)
       ctx.globalAlpha = 1
       return
     }
@@ -139,7 +139,7 @@ export const drawMoveFxAttack = (ctx: Ctx, a: Attack, t: number) => {
       const k = a.age / a.ttl
       const r = Math.round(a.shape.r * (0.55 + 0.45 * k))
       ctx.globalAlpha = Math.max(0, 1 - k)
-      blitCentered(ctx, ellipse(r, Math.max(1, Math.round(r * 0.6)), fill), a.x, a.y)
+      blitEllipse(ctx, r, Math.max(1, Math.round(r * 0.6)), fill, a.x, a.y)
       dashedRing(ctx, a.x, a.y, r, a.id, [line, spark], 0.7, 0.6)
       ctx.globalAlpha = 1
       return

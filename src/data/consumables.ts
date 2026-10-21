@@ -94,6 +94,8 @@ export const PROPS = {
   itemBall: { name: 'Item Ball', hp: 1, radius: 6, weight: 4, table: 'itemBall' },
   berryTree: { name: 'Berry Tree', hp: 3, radius: 8, weight: 2.5, table: 'berryTree' },
   tallGrass: { name: 'Tall Grass', hp: 1, radius: 8, weight: 3.5, table: 'tallGrass' },
+  /** Noite das Bruxas only (`game/halloween.ts`): never drawn by weight, it takes a breakable's place in a haunted run. */
+  pumpkin: { name: "Jack-o'-lantern", hp: 2, radius: 7, weight: 0, table: 'itemBall' },
 } as const satisfies Record<string, PropDef>
 
 export type PropKind = keyof typeof PROPS

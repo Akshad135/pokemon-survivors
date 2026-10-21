@@ -1,4 +1,5 @@
 import type { EnemyId } from './enemies'
+import { HALLOWEEN } from './halloween'
 import type { Tier } from './roster'
 
 /**
@@ -131,8 +132,13 @@ export const bossCandidates = (e: BossEvent): readonly EnemyId[] =>
 export const bossOf = (e: BossEvent, trio: TrioId, mythical: Mythical): EnemyId =>
   'enemy' in e ? e.enemy : 'trio' in e ? TRIOS[trio][e.trio] : mythical
 
-/** When the wave a boss belongs to arrives (its scheduled event), or null for bosses off the schedule (rifts, Arceus). */
-export const bossWaveAt = (enemy: EnemyId) => EVENTS.find((e) => e.kind === 'boss' && bossCandidates(e).includes(enemy))?.at ?? null
+/** The Noite das Bruxas night bosses that may take a boss event's slot in a haunted run (`HALLOWEEN.bosses`): the ghosts standing in for its fixed enemy. */
+export const nightCandidates = (e: BossEvent): readonly EnemyId[] =>
+  'enemy' in e ? ((HALLOWEEN.bosses as Partial<Record<EnemyId, readonly EnemyId[]>>)[e.enemy] ?? []) : []
+
+/** When the wave a boss belongs to arrives (its scheduled event, a night boss's slot included), or null for bosses off the schedule (rifts, Arceus). */
+export const bossWaveAt = (enemy: EnemyId) =>
+  EVENTS.find((e) => e.kind === 'boss' && (bossCandidates(e).includes(enemy) || nightCandidates(e).includes(enemy)))?.at ?? null
 
 /**
  * Each wave boss has until the next one: when a boss of the wave at `at`

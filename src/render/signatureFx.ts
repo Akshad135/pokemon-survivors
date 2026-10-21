@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, ring } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, blitRotated } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import { TAU } from '../engine/math'
 import { playerDex } from '../game/game'
@@ -67,7 +67,7 @@ export const drawSignatureGround = (ctx: Ctx, a: Attack, t: number) => {
     case 'leechSeed': {
       if (a.age >= a.activeFrom) return
       const k = a.age / a.activeFrom
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(2 + 3 * k)), Math.max(1, Math.round(1 + k)), 'rgba(24,40,16,0.35)'), a.x, a.y + 3)
+      blitEllipse(ctx, Math.max(1, Math.round(2 + 3 * k)), Math.max(1, Math.round(1 + k)), 'rgba(24,40,16,0.35)', a.x, a.y + 3)
       return
     }
     case 'eruptionFall': {
@@ -75,7 +75,7 @@ export const drawSignatureGround = (ctx: Ctx, a: Attack, t: number) => {
       const r = radiusOf(a, 16)
       const k = a.age / a.ttl
       const fall = Math.max(0, (k - 0.4) / 0.6)
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * (0.3 + 0.7 * fall))), Math.max(1, Math.round(r * 0.45 * (0.3 + 0.7 * fall))), 'rgba(48,8,0,0.35)'), a.x, a.y)
+      blitEllipse(ctx, Math.max(1, Math.round(r * (0.3 + 0.7 * fall))), Math.max(1, Math.round(r * 0.45 * (0.3 + 0.7 * fall))), 'rgba(48,8,0,0.35)', a.x, a.y)
       if (Math.floor(a.age * (8 + fall * 22)) % 2 === 0) dashedRing(ctx, a.x, a.y, r, a.id, ['#f86030', '#f8d030'], 0.8, 0.5)
       return
     }
@@ -83,8 +83,8 @@ export const drawSignatureGround = (ctx: Ctx, a: Attack, t: number) => {
     case 'flameLanding': {
       const r = radiusOf(a, 16)
       ctx.globalAlpha = fadeOut(a, 0.35) * 0.8
-      blitCentered(ctx, ellipse(Math.round(r * 0.9), Math.round(r * 0.42), 'rgba(40,16,8,0.5)'), a.x, a.y + 1)
-      blitCentered(ctx, ellipse(Math.round(r * 0.55), Math.round(r * 0.24), 'rgba(248,96,24,0.45)'), a.x, a.y + 1)
+      blitEllipse(ctx, Math.round(r * 0.9), Math.round(r * 0.42), 'rgba(40,16,8,0.5)', a.x, a.y + 1)
+      blitEllipse(ctx, Math.round(r * 0.55), Math.round(r * 0.24), 'rgba(248,96,24,0.45)', a.x, a.y + 1)
       ctx.globalAlpha = 1
       return
     }
@@ -101,7 +101,7 @@ export const drawSignatureGround = (ctx: Ctx, a: Attack, t: number) => {
       const r = radiusOf(a, 22)
       const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       ctx.globalAlpha = Math.max(0, 1 - e)
-      blitCentered(ctx, ellipse(Math.round(r), Math.round(r * 0.45), 'rgba(40,24,8,0.4)'), a.x, a.y + 8)
+      blitEllipse(ctx, Math.round(r), Math.round(r * 0.45), 'rgba(40,24,8,0.4)', a.x, a.y + 8)
       // Cracks running out of the impact.
       for (let i = 0; i < 6; i++) {
         const angle = (i / 6) * TAU + a.id
@@ -117,7 +117,7 @@ export const drawSignatureGround = (ctx: Ctx, a: Attack, t: number) => {
     case 'leafTornado': {
       const r = radiusOf(a, 16)
       ctx.globalAlpha = Math.min(1, a.age / 0.15, fadeOut(a, 0.2))
-      blitCentered(ctx, ellipse(Math.round(r), Math.round(r * 0.4), 'rgba(24,56,16,0.3)'), a.x, a.y + r * 0.6)
+      blitEllipse(ctx, Math.round(r), Math.round(r * 0.4), 'rgba(24,56,16,0.3)', a.x, a.y + r * 0.6)
       ctx.globalAlpha = 1
       return
     }
@@ -125,7 +125,7 @@ export const drawSignatureGround = (ctx: Ctx, a: Attack, t: number) => {
       // The foe's shadow, nailed down by a spectral arrow.
       const r = radiusOf(a, 6)
       ctx.globalAlpha = fadeOut(a, 0.25)
-      blitCentered(ctx, ellipse(Math.round(r * 1.3 + 2), Math.round(r * 0.5 + 1), 'rgba(56,24,88,0.55)'), a.x, a.y)
+      blitEllipse(ctx, Math.round(r * 1.3 + 2), Math.round(r * 0.5 + 1), 'rgba(56,24,88,0.55)', a.x, a.y)
       blitRotated(ctx, FX.arrow(), a.x + r * 0.6, a.y - 3, Math.PI * 0.62)
       ctx.globalAlpha = 1
       return
@@ -154,7 +154,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       // It bursts open on landing: a green ring and the seed shell splitting.
       const k = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
       ctx.globalAlpha = Math.max(0, 1 - k)
-      blitCentered(ctx, ring(Math.round(4 + k * radiusOf(a, 10)), 1, '#a8e870'), a.x, a.y)
+      blitRing(ctx, Math.round(4 + k * radiusOf(a, 10)), 1, '#a8e870', a.x, a.y)
       for (let i = 0; i < 4; i++) {
         const angle = (i / 4) * TAU + a.id
         px(ctx, a.x + Math.cos(angle) * (2 + k * 10), a.y + Math.sin(angle) * (2 + k * 8) - k * 4, i % 2 ? '#88d850' : '#e0f8a0', 2, 2)
@@ -217,10 +217,10 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       const k = Math.min(1, a.age / a.ttl)
       const grow = 0.55 + 0.45 * Math.min(1, a.age / 0.12)
       ctx.globalAlpha = Math.max(0, 1 - k * k)
-      blitCentered(ctx, ellipse(Math.round(r * grow), Math.round(r * 0.6 * grow), 'rgba(240,96,24,0.32)'), a.x, a.y - 2)
-      blitCentered(ctx, ellipse(Math.round(r * 0.6 * grow), Math.round(r * 0.36 * grow), 'rgba(248,176,48,0.55)'), a.x, a.y - 3)
-      blitCentered(ctx, ellipse(Math.round(r * 0.3 * grow), Math.round(r * 0.18 * grow), 'rgba(255,248,200,0.9)'), a.x, a.y - 3)
-      if (a.age < 0.05) blitCentered(ctx, ellipse(Math.round(r * 0.45), Math.round(r * 0.3), '#ffffff'), a.x, a.y - 3)
+      blitEllipse(ctx, Math.round(r * grow), Math.round(r * 0.6 * grow), 'rgba(240,96,24,0.32)', a.x, a.y - 2)
+      blitEllipse(ctx, Math.round(r * 0.6 * grow), Math.round(r * 0.36 * grow), 'rgba(248,176,48,0.55)', a.x, a.y - 3)
+      blitEllipse(ctx, Math.round(r * 0.3 * grow), Math.round(r * 0.18 * grow), 'rgba(255,248,200,0.9)', a.x, a.y - 3)
+      if (a.age < 0.05) blitEllipse(ctx, Math.round(r * 0.45), Math.round(r * 0.3), '#ffffff', a.x, a.y - 3)
       dashedRing(ctx, a.x, a.y - 2, r * (0.6 + k * 0.6), a.id, ['#fff0a0', '#f8b030', '#ffffff'], 0.8, 0.62)
       const flames = a.visual === 'flameLanding' ? 8 : 5
       for (let i = 0; i < flames; i++) {
@@ -248,7 +248,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       blitRotated(ctx, top, a.x, a.y - gap - top.height / 2, tilt)
       blitRotated(ctx, bottom, a.x, a.y + gap + bottom.height / 2, tilt)
       if (a.age >= a.activeFrom) {
-        blitCentered(ctx, ring(Math.round(3 + (a.age - a.activeFrom) * 40), 1, '#f84030'), a.x, a.y)
+        blitRing(ctx, Math.round(3 + (a.age - a.activeFrom) * 40), 1, '#f84030', a.x, a.y)
         for (let i = 0; i < 4; i++) {
           const angle = (i / 4) * TAU + 0.4
           px(ctx, a.x + Math.cos(angle) * 6, a.y + Math.sin(angle) * 6, '#ffffff', 2, 1)
@@ -318,8 +318,8 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       blitRotated(ctx, hammer, pivot.x + Math.cos(angle) * reach, pivot.y + Math.sin(angle) * reach, angle, scale)
       if (a.age >= a.activeFrom) {
         const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
-        if (e < 0.25) blitCentered(ctx, ellipse(Math.round(r * 0.7), Math.round(r * 0.4), 'rgba(255,255,255,0.7)'), a.x, a.y + 6)
-        blitCentered(ctx, ring(Math.round(r * (0.5 + e)), 1, '#f8f0d0'), a.x, a.y + 4)
+        if (e < 0.25) blitEllipse(ctx, Math.round(r * 0.7), Math.round(r * 0.4), 'rgba(255,255,255,0.7)', a.x, a.y + 6)
+        blitRing(ctx, Math.round(r * (0.5 + e)), 1, '#f8f0d0', a.x, a.y + 4)
       }
       ctx.globalAlpha = 1
       return
@@ -357,7 +357,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
         const sway = Math.sin(a.age * 7 + i * 0.8) * 2
         const y = foot - k * height
         ctx.globalAlpha = base * 0.3
-        blitCentered(ctx, ellipse(Math.round(rx), Math.max(1, Math.round(rx * 0.32)), '#a8e070'), a.x + sway, y)
+        blitEllipse(ctx, Math.round(rx), Math.max(1, Math.round(rx * 0.32)), '#a8e070', a.x + sway, y)
         ctx.globalAlpha = base
         dashedRing(ctx, a.x + sway, y, rx, a.age * 18 + i * 1.3, i % 2 ? ['#ffffff', '#c8f0a0'] : ['#78c850', '#e8f8d0'], 0.85, 0.32)
       }
@@ -382,7 +382,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       streak(ctx, a, ['#fff0a0', '#f8b030', '#f05818'], a.activeUntil)
       if (a.age > a.activeUntil) return
       // Wrapped in fire on the way.
-      blitCentered(ctx, ellipse(10, 9, 'rgba(248,120,32,0.45)'), a.x, a.y)
+      blitEllipse(ctx, 10, 9, 'rgba(248,120,32,0.45)', a.x, a.y)
       for (let i = 0; i < 4; i++) {
         const angle = (i / 4) * TAU + a.age * 20
         blitCentered(ctx, FX.flame()[(i + Math.floor(t * 12)) % 2]!, a.x + Math.cos(angle) * 7, a.y + Math.sin(angle) * 5 - 3)
@@ -429,8 +429,8 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       const y = a.y + Math.cos(dir) * wobble
       const color = PSY_COLORS[(a.memo + Math.floor(t * 8)) % PSY_COLORS.length]!
       ctx.globalAlpha = fadeOut(a, 0.2)
-      blitCentered(ctx, ring(Math.round(r), 1, color), x, y)
-      blitCentered(ctx, ring(Math.max(1, Math.round(r * 0.55)), 1, '#ffffff'), x, y)
+      blitRing(ctx, Math.round(r), 1, color, x, y)
+      blitRing(ctx, Math.max(1, Math.round(r * 0.55)), 1, '#ffffff', x, y)
       ctx.globalAlpha = 1
       return
     }
@@ -468,7 +468,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       const wob = Math.sin(a.age * 9 + a.id) * 0.8
       const rx = Math.max(1, Math.round(r * grow + wob))
       const ry = Math.max(1, Math.round(r * grow - wob))
-      blitCentered(ctx, ellipse(rx, ry, 'rgba(184,228,255,0.4)'), a.x, a.y)
+      blitEllipse(ctx, rx, ry, 'rgba(184,228,255,0.4)', a.x, a.y)
       dashedRing(ctx, a.x, a.y, rx, 0, ['#4890e0', '#78b8f0', '#ffffff'], 1, ry / rx)
       px(ctx, a.x - rx * 0.45, a.y - ry * 0.5, '#ffffff', 2, 1)
       px(ctx, a.x - rx * 0.55, a.y - ry * 0.3, '#ffffff')
@@ -486,7 +486,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       const r = radiusOf(a, 18)
       const k = Math.min(1, a.age / a.ttl)
       ctx.globalAlpha = Math.max(0, 1 - k)
-      blitCentered(ctx, ring(Math.round(r * (0.4 + 0.6 * k)), 1, '#c8ecff'), a.x, a.y)
+      blitRing(ctx, Math.round(r * (0.4 + 0.6 * k)), 1, '#c8ecff', a.x, a.y)
       dashedRing(ctx, a.x, a.y, r * (0.3 + 0.5 * k), a.id, ['#ffffff', '#78b8f0'], 0.6)
       for (let i = 0; i < 6; i++) {
         const angle = (i / 6) * TAU + a.id
@@ -503,7 +503,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
       const live = k >= 1 || (k > 0.7 && Math.floor(a.age * 30) % 2 === 0)
       const color = live ? '#f84838' : '#a8e0ff'
       ctx.globalAlpha = fadeOut(a, 0.1)
-      blitCentered(ctx, ring(r, 1, color), a.x, a.y)
+      blitRing(ctx, r, 1, color, a.x, a.y)
       px(ctx, a.x, a.y - r - 3, color, 1, 5)
       px(ctx, a.x, a.y + r - 1, color, 1, 5)
       px(ctx, a.x - r - 3, a.y, color, 5, 1)
@@ -536,7 +536,7 @@ export const drawSignatureAttack = (ctx: Ctx, a: Attack, t: number) => {
     case 'aquaStep': {
       streak(ctx, a, ['#ffffff', '#a8d8f8', '#4890e8'], a.activeUntil)
       if (a.age > a.activeUntil) return
-      blitCentered(ctx, ellipse(9, 7, 'rgba(120,184,248,0.4)'), a.x, a.y)
+      blitEllipse(ctx, 9, 7, 'rgba(120,184,248,0.4)', a.x, a.y)
       for (let i = 0; i < 5; i++) {
         const angle = (i / 5) * TAU + a.age * 25
         px(ctx, a.x + Math.cos(angle) * 9, a.y + Math.sin(angle) * 7, i % 2 ? '#ffffff' : '#78c0f8', 2, 2)

@@ -422,7 +422,7 @@ export type Pickup = {
   /** True once it's being pulled into the player. */
   attracted: boolean
   age: number
-} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' })
+} & ({ kind: 'xp'; value: number } | { kind: 'coin'; value: number } | { kind: 'berry' } | { kind: 'pokeball' } | { kind: 'megaStone'; mega: MegaId } | { kind: 'consumable'; item: ConsumableId } | { kind: 'tm'; move: MoveId; source: TmSource } | { kind: 'alphaPrize' } | { kind: 'treat' })
 
 export type Particle = {
   x: number
@@ -545,6 +545,14 @@ export type GameEvent =
   | { kind: 'gameover'; foe: EnemyId | null; hit: HitKind }
   | { kind: 'consumable'; item: ConsumableId }
   | { kind: 'propBreak' }
+  /** A haunted run's candy (a treat, not an Exp. Candy) picked up (`game/halloween.ts`). */
+  | { kind: 'treat' }
+  /** A jack-o'-lantern cracked open: a treat (`ghost` null) or a trick, a ring of that ghost. */
+  | { kind: 'trickOrTreat'; ghost: EnemyId | null }
+  /** A haunted run's night boss fell (`HALLOWEEN.bosses`): one for the Caça aos Fantasmas. */
+  | { kind: 'nightBoss'; enemy: EnemyId }
+  /** A boss's Disguise took a hit and broke (`BOSS_DISGUISE`). */
+  | { kind: 'disguise'; enemy: EnemyId }
   | { kind: 'revive' }
   | { kind: 'victory' }
   /** The run walked into another biome. */
@@ -675,6 +683,10 @@ export type Game = {
   roster: Roster
   /** The day's outbreak species, or null (`game/outbreak.ts`): its kills count toward missions (`countKill`). */
   outbreak: EnemyId | null
+  /** Noite das Bruxas (`game/halloween.ts`): the run is haunted, a run input like the outbreak. */
+  halloween: boolean
+  /** Candies collected this run (a haunted one), banked into the save's jar at the end. */
+  candies: number
   /** Multiplier on wild shiny odds: Shiny Charm ranks and a Lure (`shinyBoost`). */
   shinyBoost: number
   spawnBudget: number

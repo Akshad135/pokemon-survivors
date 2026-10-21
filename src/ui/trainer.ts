@@ -13,7 +13,7 @@ import { adminScreen } from './admin'
 import { discordScreen } from './discord'
 import { h, later } from './dom'
 import { missionsScreen } from './missions'
-import { profileEditor, profileScreen } from './profile'
+import { profileEditor, profileScreen, supporterBadgeIcon } from './profile'
 import { loadSave } from './save'
 import { openSettings } from './settings'
 import { sharePreview, trainerShare, trainerTotals } from './share'
@@ -139,7 +139,7 @@ export const trainerCardScreen = (
       ...(handle ? [{ label: m.viewProfile, run: () => openSub((back) => profileScreen(root, input, handle, back)) }] : []),
       share,
       discord,
-      ...(tier ? [{ label: since ? m.supporterSince(tier === 'gold', monthYear(since)) : t().supporters.badge(tier), icon: supporterIcon(tier), run: () => openSub(opts.supporters) }] : []),
+      ...(tier ? [{ label: since ? m.supporterSince(tier === 'gold', monthYear(since)) : t().supporters.badge(tier), icon: supporterBadgeIcon(tier, since), run: () => openSub(opts.supporters) }] : []),
       missions,
       // Admin only, so not translated (see `ui/admin.ts`).
       ...(admin ? [{ label: 'Painel admin', run: () => openSub((back) => adminScreen(root, input, back)) }] : []),

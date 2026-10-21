@@ -5,7 +5,7 @@ import { ENEMIES, type EnemyDef } from '../data/enemies'
 import { RIFT_LEGENDS } from '../data/rifts'
 import { GRAVEYARD } from '../data/places'
 import { dexStatus, type Pokedex } from '../game/dex'
-import { pokedex, type DexEntry } from '../site/pokedex'
+import { gameDex, type DexEntry } from '../site/pokedex'
 import { sparkleIcon } from '../render/art'
 import type { WallpaperId } from '../data/style'
 import { wallpaperUrl } from '../render/cosmetics'
@@ -36,7 +36,7 @@ const shinyCatchable = (e: DexEntry) => {
 }
 
 /** Every species the Caixa do PC has room for, in national dex order. */
-export const boxSpecies = () => pokedex().filter(shinyCatchable)
+export const boxSpecies = () => gameDex().filter(shinyCatchable)
 
 /** The shinies a Pokédex holds, packed in dex order like a PC box. */
 export const caughtShinies = (dex: Pokedex, species: readonly DexEntry[] = boxSpecies()) => species.filter((e) => dexStatus(dex, e.dex).shiny)

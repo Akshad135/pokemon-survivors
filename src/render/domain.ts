@@ -1,4 +1,4 @@
-import { blitCentered, canvasCache, context2d, createCanvas, ellipse, onCanvasReset } from '../engine/pixelart'
+import { blitEllipse, canvasCache, context2d, createCanvas, onCanvasReset } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { fits } from '../game/arenaFloor'
@@ -329,9 +329,9 @@ const cloudTile = (seed: number) => {
       // Drawn in every wrapped copy that touches the tile, so it repeats seamlessly.
       for (const ox of [-CLOUD_TILE, 0, CLOUD_TILE]) {
         for (const oy of [-CLOUD_TILE, 0, CLOUD_TILE]) {
-          blitCentered(ctx, ellipse(rx, Math.round(rx * 0.55), SKY.shadow), x + ox, y + oy + 2)
-          blitCentered(ctx, ellipse(rx, Math.round(rx * 0.5), SKY.cloud), x + ox, y + oy)
-          blitCentered(ctx, ellipse(Math.max(2, rx - 4), Math.max(1, Math.round(rx * 0.3)), SKY.light), x + ox - 2, y + oy - 2)
+          blitEllipse(ctx, rx, Math.round(rx * 0.55), SKY.shadow, x + ox, y + oy + 2)
+          blitEllipse(ctx, rx, Math.round(rx * 0.5), SKY.cloud, x + ox, y + oy)
+          blitEllipse(ctx, Math.max(2, rx - 4), Math.max(1, Math.round(rx * 0.3)), SKY.light, x + ox - 2, y + oy - 2)
         }
       }
     }
@@ -496,9 +496,9 @@ const drawSeal = (ctx: Ctx, p: Painter, ox: number, oy: number) => {
     const x = Math.round(ox + ax + (i - 4) * 9 + (hash2(i, 1, 5) - 0.5) * 4)
     const y = Math.round(oy + ay + r - 2 + (hash2(i, 2, 5) - 0.5) * 6)
     const s = 6 + Math.floor(hash2(i, 3, 5) * 4)
-    blitCentered(ctx, ellipse(s + 1, s, '#05080c'), x, y + 1)
-    blitCentered(ctx, ellipse(s, s - 1, stone[2]!), x, y)
-    blitCentered(ctx, ellipse(Math.max(1, s - 3), Math.max(1, s - 4), stone[3]!), x - 1, y - 2)
+    blitEllipse(ctx, s + 1, s, '#05080c', x, y + 1)
+    blitEllipse(ctx, s, s - 1, stone[2]!, x, y)
+    blitEllipse(ctx, Math.max(1, s - 3), Math.max(1, s - 4), stone[3]!, x - 1, y - 2)
   }
 }
 
@@ -610,7 +610,7 @@ export const drawTear = (ctx: Ctx, portal: RiftPortal, t: number) => {
   const x = Math.round(portal.x)
   const y = Math.round(portal.y)
   const r = RIFT.tearRadius
-  blitCentered(ctx, ellipse(r + 6, Math.round((r + 6) * 0.4), 'rgba(120,80,200,0.35)'), x, y)
+  blitEllipse(ctx, r + 6, Math.round((r + 6) * 0.4), 'rgba(120,80,200,0.35)', x, y)
   dashedRing(ctx, x, y, r, t * 5, ['#ffffff', theme.motes, '#7850c8'], 0.5, 0.4)
   const H = 92
   const top = y - 18 - H
