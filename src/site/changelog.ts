@@ -125,6 +125,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             en: 'Give up on the pause menu, or Change Pokémon at the end of a run, picked with Space, Enter or the pad’s A button started another run with the same Pokémon instead of opening the partner select. It opens the select now, as with the mouse or touch.',
             es: 'Rendirse en la pausa, o Cambiar Pokémon al final de la partida, con Espacio, Enter o el botón A del control empezaba otra partida con el mismo Pokémon en vez de abrir la selección de compañero. Ahora abre la selección, como con el mouse o el toque.',
           },
+          {
+            pt: 'O retrato do seu Pokémon no avatar de Treinador, no Cartão de Treinador e nas carinhas do Hall da Fama ficava preso no canto de cima, à esquerda, cortando metade do rosto. Agora fica centralizado no círculo.',
+            en: 'Your Pokémon’s portrait on the Trainer avatar, the Trainer Card and the Hall of Fame faces hung from the top-left corner, cutting off half the face. It’s centered in the circle now.',
+            es: 'El retrato de tu Pokémon en el avatar de Entrenador, la Tarjeta de Entrenador y las caritas del Salón de la Fama quedaba pegado a la esquina superior izquierda, cortando medio rostro. Ahora queda centrado en el círculo.',
+          },
         ],
       },
     ],
