@@ -112,7 +112,7 @@ import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
-import { captureRef, flushRuns, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { captureRef, flushRuns, onRulesBehind, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { giftScreen } from './ui/gifts'
 import { playGate } from './ui/account'
@@ -658,6 +658,8 @@ const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) =>
  * next run's opening.
  */
 const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) => {
+  // Play again on a build that fell behind (`watchDeploys`): the newer one first, back in the lobby.
+  if (reloadForDeploy) return location.reload()
   setScreen(null)
   endRun()
   const c = daily?.challenge ?? null
@@ -1600,7 +1602,7 @@ const promptProfile = () => {
   })
 }
 
-/** Set when a newer build is live and a run held off the reload: the next trip to the lobby reloads. */
+/** Set when a newer build is live and a run held off the reload: the next trip to the lobby, or the next run, reloads. */
 let reloadForDeploy = false
 
 /** Whether the site now serves another build: the page's HTML, fetched fresh, misses one of this page's scripts. False offline. */
@@ -1610,20 +1612,25 @@ const newerBuild = async () => {
   return html !== null && scripts.some((path) => !html.includes(path))
 }
 
+/** Reloads into a newer build when one is live: right away in the menus (the save is local), or once the run is over. */
+const loadNewerBuild = () =>
+  void newerBuild().then((newer) => {
+    if (!newer) return
+    if (run) reloadForDeploy = true
+    else location.reload()
+  })
+
 /**
  * Each deploy renames the chunks loaded on demand (Novidades, Clerk) and drops
- * the old ones, so a game opened before it can't load them anymore. When a
- * chunk fails and a newer build is live, reload into it: right away in the
- * menus (the save is local), or once the run is over.
+ * the old ones, so a game opened before it can't load them anymore: when a
+ * chunk fails, load the newer build. Same when the API plays newer rules than
+ * this build (a ticket says so, or a result came back `outdated`): every
+ * ranked run this build plays would be refused.
  */
-const watchDeploys = () =>
-  addEventListener('vite:preloadError', () =>
-    void newerBuild().then((newer) => {
-      if (!newer) return
-      if (run) reloadForDeploy = true
-      else location.reload()
-    }),
-  )
+const watchDeploys = () => {
+  addEventListener('vite:preloadError', loadNewerBuild)
+  onRulesBehind(loadNewerBuild)
+}
 
 /** The game closed mid-run last time (`takeCrash`): the title asks, once, whether to report it. */
 const askAboutCrash = () => {

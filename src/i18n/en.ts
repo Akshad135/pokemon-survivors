@@ -336,6 +336,7 @@ export const en: Messages = {
     place: { day: 'today', week: 'this week', all: 'all time' },
     queued: 'Offline: the run joins the ranking once you are back online.',
     rejected: "This run didn't make it into the ranking.",
+    outdated: "The game was updated while you played, so this run couldn't join the ranking. Your next run plays the new version.",
     unranked: 'This run is off the ranking: it started offline, or with the game open in another tab or device.',
     unlisted: 'This run stayed off the ranking: the connection dropped while you played. It still counts on your profile.',
     guest: 'Sign in to show up on the ranking.',
