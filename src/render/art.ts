@@ -13,6 +13,7 @@ import { EGG_MOVE_3_ICONS } from './eggMove3Art'
 import { EGG_MOVE_2_ICONS } from './eggMove2Art'
 import { SIGNATURE_ICONS } from './signatureArt'
 import { TM_ICONS } from './tmArt'
+import { SHOP_TM_ICONS } from './shopTmFx'
 import { VERB_EVOLVED_ICONS } from './verbEvolvedArt'
 import { cursedIcon, DUO_ICONS } from './duoArt'
 import type { CurseId } from '../data/curses'
@@ -566,6 +567,7 @@ const compose = (w: number, h: number, layers: ReadonlyArray<readonly [PixelSpri
 const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...SIGNATURE_ICONS,
   ...TM_ICONS,
+  ...SHOP_TM_ICONS,
   ...VERB_EVOLVED_ICONS,
   ...LEGENDARY_ICONS,
   ...LEGENDARY_ICONS_2,
@@ -727,6 +729,7 @@ const BAG_ART: Record<BagItem, readonly [readonly string[], Palette]> = {
   honey: [['..1111..', '.122221.', '.111111.', '13333331', '13444331', '13433331', '13333331', '.133331.', '..1111..'], { 1: '#503010', 2: '#f8f0d0', 3: '#f0a020', 4: '#ffe080' }],
   xAttack: [['..111..', '..121..', '..343..', '.34443.', '3544443', '3566663', '3544443', '3444443', '.33333.'], { 1: '#f8e030', 2: '#c8c8d8', 3: '#901818', 4: '#e83838', 5: '#ffa0a0', 6: '#f8e030' }],
   maxRevive: [['....1....', '...121...', '..12321..', '.1233321.', '123343321', '.1233321.', '..12321..', '...121...', '....1....'], { 1: '#a06800', 2: '#f8c830', 3: '#fff0a0', 4: '#ffffff' }],
+  everstone: [['..1111..', '.123321.', '12333321', '13344331', '13333331', '.133331.', '..1111..'], { 1: '#383838', 2: '#d8d8d0', 3: '#909088', 4: '#b8b8b0' }],
 }
 
 const iconCache = new Map<string, string>()

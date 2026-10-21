@@ -13,9 +13,12 @@ import { ABILITIES } from '../data/abilities'
 import { canPlay, capturedCount, isCaptured, legendSource, winsNeeded } from '../game/capture'
 import { armBlock, armedItems, armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
 import { SHOP_LEVELS } from '../data/shop'
+import { capLevel } from '../game/evoItems'
+import { MOVES } from '../game/moves'
+import { armedTms, armTm, tmLimit, type ShelfTm } from '../game/tmShelf'
 import { ownsShiny, pickShinyForm, playsShiny } from '../game/shinyPicks'
-import { eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
-import { shopIcon } from './shopIcons'
+import { eggIcon, moveIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
+import { capPips, shopIcon } from './shopIcons'
 import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
@@ -130,6 +133,8 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     const level = save.clears[id]
     return level ? h('img', { class: 'partner-cell-clear', src: trophyIcon(level), alt: clearText(id) ?? '' }) : null
   }
+  /** A Pokémon's Bottle Caps (`game/evoItems.ts`) as pips at the cell's foot, when it has any. */
+  const capTag = (id: PlayableId) => (capLevel(save.caps, id) > 0 ? capPips(capLevel(save.caps, id)) : null)
   const cellTitle = (id: PlayableId, name: string) => [name, clearText(id)].filter((s) => s !== null).join(' · ')
 
   const cells = new Map<PlayableId, HTMLElement>()
@@ -141,6 +146,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       h('span', { class: 'partner-cell-name' }, PLAYABLE[id].name),
       shinyOf(id) && shinyTag(),
       clearTag(id),
+      capTag(id),
     )
     cells.set(id, el)
     return el
@@ -159,6 +165,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       open ? cellPortrait(id) : cellSilhouette(id),
       shinyOf(id) && shinyTag(),
       clearTag(id),
+      capTag(id),
     )
     cells.set(id, el)
     return el
@@ -182,6 +189,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       !open && h('b', { class: 'partner-cell-count' }, wins),
       shinyOf(id) && shinyTag(),
       clearTag(id),
+      capTag(id),
     )
     cells.set(id, el)
     return el
@@ -384,6 +392,36 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       key && h('span', { class: 'key-hint' }, key.slice(3)),
     )
   })
+  /** The TMs owned at the shop, armed or not for the next runs (`game/tmShelf.ts`), like the Bag's slots. */
+  let tms = save.tms
+  const tmLimitNow = () => tmLimit(loadSave().shop.level)
+  const tmLabel = h('small', { class: 'partner-bag-label' })
+  const tmSlots = h('div', { class: 'partner-tms' })
+  const renderTms = () => {
+    const armed = armedTms(tms, tmLimitNow())
+    tmSlots.replaceChildren(
+      tmLabel,
+      ...tms.owned.map((id) =>
+        h(
+          'button',
+          { class: armed.includes(id) ? 'partner-slot tm on' : 'partner-slot tm', type: 'button', role: 'switch', 'aria-checked': String(armed.includes(id)), 'aria-label': m.bag.tmToggle(MOVES[id].name), title: m.bag.tmToggle(MOVES[id].name), onclick: () => toggleTm(id) },
+          h('img', { src: moveIcon(id), alt: '' }),
+        ),
+      ),
+    )
+    tmLabel.textContent = `${m.bag.tmsLabel} ${m.bag.armed(armed.length, tmLimitNow())}`
+    tmSlots.classList.toggle('hidden', tms.owned.length === 0)
+  }
+  /** Arms or disarms an owned TM; past the limit, the oldest armed one makes room. */
+  const toggleTm = (id: ShelfTm) => {
+    const on = !armedTms(tms, tmLimitNow()).includes(id)
+    tms = armTm(tms, id, on, tmLimitNow())
+    updateSave((s) => ({ ...s, tms: armTm(s.tms, id, on, tmLimitNow()) }))
+    playSfx(on ? 'shiny' : 'move')
+    blurb.textContent = on ? `${MOVES[id].name}: ${m.shop.tms.text}` : m.difficulty.blurbs[difficulty]
+    renderTms()
+  }
+
   /** Different items a run may take: the shop's level says (`SHOP_LEVELS`). */
   const bagLimit = () => SHOP_LEVELS[loadSave().shop.level].bagSlots
   const bagLabel = h('small', { class: 'partner-bag-label' })
@@ -420,10 +458,11 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     playSfx(on ? 'shiny' : 'move')
     blurb.textContent = on ? m.bag.descriptions[id] : m.difficulty.blurbs[difficulty]
     renderBag()
+  renderTms()
   }
 
   const bar = actionBar(
-    h('div', { class: 'partner-bag' }, bagLabel, ...slots),
+    h('div', { class: 'partner-bag' }, bagLabel, ...slots, tmSlots),
     h('div', { class: 'partner-diff' }, h('div', { class: 'partner-diff-row' }, seg.el, h('span', { class: 'key-hint' }, 'X')), blurb),
     go,
   )
@@ -590,6 +629,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   root.append(el)
   blurb.textContent = m.difficulty.blurbs[difficulty]
   renderBag()
+  renderTms()
   render()
   requestAnimationFrame(reveal)
 

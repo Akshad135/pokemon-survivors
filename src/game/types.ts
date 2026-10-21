@@ -7,7 +7,7 @@ import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
 import type { RiftLegend } from '../data/rifts'
 import type { BuffId } from '../data/consumables'
-import type { BagItem } from '../data/shop'
+import type { BagItem, EvoItemId } from '../data/shop'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
@@ -305,6 +305,8 @@ export type SignatureVisual =
 export type TmVisual =
   | 'rockSlide' | 'yawn' | 'iceBeam' | 'discharge' | 'heatWave' | 'thunderFang' | 'lavaPlume' | 'lavaPool' | 'auroraBeam'
   | 'meteorRise' | 'meteor' | 'icyWind' | 'ironHead' | 'ironShard' | 'psystrike' | 'psyHover'
+  /** The shop-exclusive TMs (`shopTmMoves.ts`), drawn by `render/shopTmFx.ts`. */
+  | 'payDay' | 'thief' | 'protect' | 'hyperBeam' | 'hyperCharge'
 /** Duo moves (`duoMoves.ts`), drawn by `render/duoFx.ts`. */
 export type DuoVisual =
   | 'pledgePillar' | 'seaOfFire' | 'swamp' | 'comet' | 'cometScorch' | 'ionPuddle' | 'freezeDry' | 'nightmare' | 'nightmareSkull'
@@ -587,6 +589,8 @@ export type GameEvent =
   | { kind: 'shatter'; cause: 'execute' | 'freeze' }
   /** A guard window negated a hit. */
   | { kind: 'guard' }
+  /** Thief stole an Alpha's or a boss's held item (`shopTmMoves.ts`). */
+  | { kind: 'stolen' }
   /** A verb move asks for its sound (`moveVerbs.ts`). */
   | { kind: 'moveSound'; sound: MoveSound }
   /** A move with a cast sound fired, or its big moment landed (`ui/castSounds.ts`, then `ui/castSfx.ts`, pick the sound). */
@@ -714,6 +718,12 @@ export type Game = {
   bag: readonly BagItem[]
   /** The Bag's Max Revive is still unspent: the first faint gets back up (`tryMaxRevive`). */
   maxRevive: boolean
+  /** The Bag's Everstone: the run never evolves (`pendingEvolution`) and its form is stronger (`boost`). */
+  everstone: boolean
+  /** Evolution items the save owns (`game/evoItems.ts`): their branches are always among the offers. */
+  evoItems: readonly EvoItemId[]
+  /** Share every stat grows by in this run: the Pokémon's Bottle Caps and an Everstone (`runBoost`, applied by `recomputeStats`). */
+  boost: number
   /** Full-screen white flash strength (Explosion), decays to 0. */
   flash: number
   /** Biome the run is in (`game/biomes.ts`). */
@@ -726,7 +736,7 @@ export type Game = {
   rift: RiftState
   /** Places (`place.ts`): the entrance on the map, the inside the player is in and the wings picked up. */
   place: PlaceState
-  /** TMs and Move Tutors this run (`game/tms.ts`): tutors met, lessons taken, the legendary TM. */
+  /** TMs and Move Tutors this run (`game/tms.ts`): tutors met, lessons taken, the legendary TM, the armed TMs still to come, Pay Day's and Thief's loot. */
   tm: TmState
   /** Set once the player goes on past Mewtwo (endless mode). */
   endless: EndlessState | null

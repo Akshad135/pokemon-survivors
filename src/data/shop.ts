@@ -1,5 +1,6 @@
 import type { EggTier } from '../game/eggs'
 import type { StatDelta } from '../game/stats'
+import type { BranchId } from './branches'
 
 /**
  * The Kecleon Shop's catalog, as data: the five shop levels a player invests
@@ -24,6 +25,8 @@ export type BagEffect =
   | { outbreakWeight: number }
   /** The first faint gets back up with this share of max HP, once. */
   | { revive: number }
+  /** The run never evolves, and the base form's stats grow by this share (`runBoost`). */
+  | { everstone: number }
 
 type BagItemDef = {
   name: string
@@ -31,9 +34,11 @@ type BagItemDef = {
   price: number
   /** How many one save may buy on a day. */
   stock: number
-  /** How likely the day's free gift is this item, against the others' weights. */
+  /** How likely the day's free gift is this item, against the others' weights (0: never the gift). */
   gift: number
   effect: BagEffect
+  /** The shop level that sells it (1 when omitted): below it, its Vitrine card is locked. */
+  minLevel?: ShopLevel
 }
 
 /** The Bag's consumables, one of each armed per run at most. */
@@ -46,7 +51,14 @@ export const BAG_ITEMS = {
   honey: { name: 'Honey', price: 700, stock: 3, gift: 3, effect: { outbreakWeight: 2 } },
   xAttack: { name: 'X Attack', price: 1500, stock: 3, gift: 2, effect: { stat: { might: 0.1 } } },
   maxRevive: { name: 'Max Revive', price: 5000, stock: 1, gift: 1, effect: { revive: 0.5 } },
+  everstone: { name: 'Everstone', price: 3000, stock: 2, gift: 0, effect: { everstone: 0.15 }, minLevel: 3 },
 } as const satisfies Record<string, BagItemDef>
+
+/** The shop level that sells a consumable (`BagItemDef.minLevel`). */
+export const bagItemLevel = (id: BagItem): ShopLevel => {
+  const def: BagItemDef = BAG_ITEMS[id]
+  return def.minLevel ?? 1
+}
 
 export type BagItem = keyof typeof BAG_ITEMS
 
@@ -132,3 +144,64 @@ export const VITRINE = {
 } as const satisfies { eggs: Record<Exclude<EggTier, 'friend'>, { price: number; weight: number }> } & Record<string, unknown>
 
 export type VitrineEgg = keyof typeof VITRINE.eggs
+
+/* ---------------- The purple brother's shelves (TMs, evolution items) and Bottle Caps ---------------- */
+
+/**
+ * The TM shelf: every regular TM (the boss discs' moves) and the
+ * shop-exclusive ones, owned for good once bought. The TMs a run ever taught
+ * are always listed; the rest rotate `rotation` a day, each back within 7
+ * days (`game/tmShelf.ts`). Legendary (gold) TMs are never sold.
+ */
+export const TM_SHELF = {
+  /** A regular TM. */
+  price: 6000,
+  /** A shop-exclusive TM (`game/shopTmMoves.ts`): always listed. */
+  exclusive: 20_000,
+  /** Regular TMs not learned yet that the shelf shows on a day. */
+  rotation: 3,
+  /** The rotation counts from this day (a Monday), like the Vitrine's. */
+  epoch: '2026-10-19',
+} as const
+
+/**
+ * The evolution shelf's items, each owned for good: when its family
+ * branches, the branches it names are always among the offers
+ * (`drawBranches`). Names stay official English.
+ */
+export const EVO_ITEMS = {
+  waterStone: { name: 'Water Stone', branches: ['vaporeon'] },
+  thunderStone: { name: 'Thunder Stone', branches: ['jolteon'] },
+  fireStone: { name: 'Fire Stone', branches: ['flareon'] },
+  sunStone: { name: 'Sun Stone', branches: ['espeon'] },
+  moonStone: { name: 'Moon Stone', branches: ['umbreon'] },
+  leafStone: { name: 'Leaf Stone', branches: ['leafeon'] },
+  iceStone: { name: 'Ice Stone', branches: ['glaceon'] },
+  shinyStone: { name: 'Shiny Stone', branches: ['sylveon'] },
+  dawnStone: { name: 'Dawn Stone', branches: ['gallade', 'froslass'] },
+  metalCoat: { name: 'Metal Coat', branches: ['scizor'] },
+  blackAugurite: { name: 'Black Augurite', branches: ['kleavor'] },
+  kingsRock: { name: "King's Rock", branches: ['politoed'] },
+  auspiciousArmor: { name: 'Auspicious Armor', branches: ['armarouge'] },
+  maliciousArmor: { name: 'Malicious Armor', branches: ['ceruledge'] },
+} as const satisfies Record<string, { name: string; branches: readonly BranchId[] }>
+
+export type EvoItemId = keyof typeof EVO_ITEMS
+
+export const EVO_ITEM_IDS = Object.keys(EVO_ITEMS) as EvoItemId[]
+
+/** What an evolution item costs. */
+export const EVO_ITEM_PRICE = 10_000
+
+/**
+ * Bottle Caps (Hyper Training): per Pokémon, `prices.length` levels, each
+ * making every stat `boost` stronger, only in runs played as that Pokémon
+ * (`runBoost`). The Treino shelf sells them from the Shop (Lv 3).
+ */
+export const BOTTLE_CAPS = { prices: [2000, 6000, 18_000], boost: 0.03 } as const
+
+/** The most Bottle Cap levels a Pokémon can have. */
+export const MAX_CAPS = BOTTLE_CAPS.prices.length
+
+/** The most TMs any level arms at once: a replay that arms more is malformed (`parseReplay`). */
+export const MAX_ARMED_TMS = Math.max(...SHOP_LEVEL_IDS.map((l) => SHOP_LEVELS[l].armedTms))

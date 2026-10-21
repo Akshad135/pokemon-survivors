@@ -1,5 +1,5 @@
 import { createRng, seedFrom, weightedPick, type Rng } from '../engine/rng'
-import { BAG_ITEM_IDS, BAG_ITEMS, MAX_SHOP_LEVEL, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, VITRINE_POOL, type BagItem, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
+import { BAG_ITEM_IDS, BAG_ITEMS, bagItemLevel, MAX_SHOP_LEVEL, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, VITRINE_POOL, type BagItem, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
 import { addToBag } from './bag'
 import { addDays, dayNumber, isDayKey, type DayKey } from './day'
@@ -111,11 +111,13 @@ export const vitrineOf = (day: DayKey): Vitrine => {
     rng,
     VITRINE_POOL.filter((key) => !core.includes(key)),
   )
+  const deal = core[dealAt]!
   return {
     day,
-    gift: weightedPick(rng, BAG_ITEM_IDS.map((id) => [id, BAG_ITEMS[id].gift] as const)),
+    // Never the deal's item: a free one and the same at 30% off on one day would waste a slot.
+    gift: weightedPick(rng, BAG_ITEM_IDS.flatMap((id) => (id !== deal && BAG_ITEMS[id].gift > 0 ? [[id, BAG_ITEMS[id].gift] as const] : []))),
     egg: weightedPick(rng, (Object.keys(VITRINE.eggs) as VitrineEgg[]).map((tier) => [tier, VITRINE.eggs[tier].weight] as const)),
-    cards: [core[dealAt]!, ...core.filter((_, i) => i !== dealAt), ...extras].slice(0, MAX_CARDS),
+    cards: [deal, ...core.filter((_, i) => i !== dealAt), ...extras].slice(0, MAX_CARDS),
     styles: shuffled(rng, SOLD_STYLES),
   }
 }
@@ -140,6 +142,9 @@ export const nextAppearance = (key: VitrineKey, from: DayKey, level: ShopLevel =
   }
   return null
 }
+
+/** Whether a shop of `level` sells `key` at all (the Everstone waits for the Shop, `bagItemLevel`). */
+export const sellsAt = (key: VitrineKey, level: ShopLevel) => key === 'egg' || key === 'style' || bagItemLevel(key) <= level
 
 /** How many of a card one save may buy on a day. */
 export const vitrineStock = (key: VitrineKey) => (key === 'egg' ? VITRINE.eggStock : key === 'style' ? VITRINE.styleStock : BAG_ITEMS[key].stock)
@@ -192,12 +197,12 @@ export const stockLeft = (shop: ShopSave, v: Vitrine, key: VitrineKey) => Math.m
 export type VitrineBlock = 'locked' | 'soldOut' | 'owned' | 'full' | 'poor'
 
 /**
- * Why a card can't be bought now, or null when it can: not shown at the
- * save's level, sold out today, a style card with nothing left to offer, an
+ * Why a card can't be bought now, or null when it can: not shown (or not
+ * sold) at the save's level, sold out today, a style card with nothing left to offer, an
  * egg for a full incubator, or not enough ₽.
  */
 export const vitrineBlock = (save: Save, v: Vitrine, key: VitrineKey): VitrineBlock | null => {
-  if (!vitrineCards(v, save.shop.level).includes(key)) return 'locked'
+  if (!vitrineCards(v, save.shop.level).includes(key) || !sellsAt(key, save.shop.level)) return 'locked'
   if (stockLeft(save.shop, v, key) === 0) return 'soldOut'
   const price = vitrinePrice(v, key, save.style)
   if (price === null) return 'owned'

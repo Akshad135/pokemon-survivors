@@ -664,9 +664,9 @@ export const pt = {
     levels: { 1: 'Carrinho', 2: 'Tenda', 3: 'Loja', 4: 'Kecleon Mart', 5: 'Loja de Departamento' } satisfies Record<ShopLevel, string>,
     level: (name: string, n: number) => `${name} (Nv ${n})`,
     /** The shelves, as tabs (`SHELVES` in ui/shop.ts). */
-    tabs: { vitrine: 'Vitrine', bag: 'Mochila', training: 'Treino', style: 'Estilo', expansion: 'Expansão' },
+    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', expansion: 'Expansão' },
     /** Corner tags on the cards. */
-    badges: { gift: 'BRINDE', wish: 'LISTA', new: 'NOVO', armed: 'LEVANDO', level: (n: number) => `NV ${n}` },
+    badges: { gift: 'BRINDE', wish: 'LISTA', new: 'NOVO', armed: 'LEVANDO', level: (n: number) => `NV ${n}`, exclusive: 'EXCLUSIVA', found: 'ACHOU', today: 'HOJE', owned: 'SUA', sure: 'GARANTE' },
     vitrineOf: (weekday: string, level: string) => `Vitrine de ${weekday} · ${level}`,
     turnsIn: (time: string) => `vira em ${time}`,
     gift: (name: string) => `Brinde: ${name}`,
@@ -699,7 +699,43 @@ export const pt = {
       empty: 'Você não tem nenhum. Compre na Vitrine.',
       more: (name: string, n: number, max: number) => `${name} (Nv ${n}) leva ${max} itens por partida.`,
     },
+    /** The purple brother's TM shelf (`game/tmShelf.ts`): TMs for good, armed before a run. */
+    tms: {
+      intro: (n: number, max: number) => `TMs armadas: ${n}/${max} · o primeiro TM da partida é ela`,
+      groups: { exclusive: 'Exclusivas da loja', found: 'Achou numa partida', today: 'Hoje na prateleira', owned: 'No seu estojo' },
+      arm: 'Armar',
+      disarm: 'Desarmar',
+      armed: 'Armada',
+      text: 'Comprou, fica no estojo pra sempre. Arme antes da partida: o primeiro TM que cair (de um chefe) ou a primeira aula do Tutor de Golpes é ela.',
+      exclusive: 'Só o irmão roxo vende.',
+      found: 'Você já aprendeu numa partida: fica sempre na prateleira.',
+      today: (on: string) => `Na rotação de hoje: 3 TMs por dia. ${on}`,
+      back: (on: string) => `Volta à prateleira ${on}.`,
+      swap: (max: number) => (max === 1 ? 'Armar esta desarma a outra.' : `Arma ${max} por vez: armar esta desarma a mais antiga.`),
+      more: (name: string, n: number) => `${name} (Nv ${n}) arma 2 TMs.`,
+      blocks: { locked: 'Aumente a loja', owned: 'Já é sua', away: 'Fora hoje', poor: 'Faltam ₽' },
+    },
+    /** The evolution shelf (`game/evoItems.ts`): each item guarantees a branch. */
+    evolution: {
+      intro: 'Itens de evolução: garantem um caminho quando a família ramifica.',
+      guarantees: (forms: string, family: string) => `Garante ${forms} entre as opções quando ${family} evolui. É seu pra sempre.`,
+      allShown: 'Essa família sempre mostra os dois caminhos: o item marca o seu como garantido.',
+      owned: 'No estojo',
+    },
+    /** Bottle Caps on the Treino shelf (`game/evoItems.ts`). */
+    caps: {
+      group: (name: string) => `Tampinhas · ${name}`,
+      title: (n: number, max: number) => `Tampinha ${n}/${max}`,
+      text: (name: string) => `+3% em tudo (HP, poder, defesa e velocidade) por nível, só jogando com ${name}. Até 3 níveis.`,
+      now: (pct: number) => `Agora: +${pct}%.`,
+      max: 'Máximo',
+      pick: 'Outro Pokémon',
+      pickText: 'Escolha de qual Pokémon são as Tampinhas.',
+      pickTitle: 'Tampinhas de qual Pokémon?',
+      lockedAt: (name: string) => `Tampinhas: a partir da ${name} (Nv 3).`,
+    },
     styleIntro: 'Molduras, fundos e papéis de parede. Comprou, já está usando.',
+    trainingGroup: 'Melhorias permanentes',
     trainingIntro: 'Melhorias para sempre. Dá para reembolsar tudo quando quiser.',
     /** The Expansão shelf: the shop's levels as a ladder. */
     expansion: {
@@ -1086,6 +1122,8 @@ export const pt = {
   /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */
   bag: {
     label: 'Mochila',
+    tmsLabel: 'TMs',
+    tmToggle: (name: string) => `TM ${name}`,
     descriptions: {
       lure: 'Shinies selvagens 2× mais comuns na próxima partida (os do surto também).',
       incense: 'Chance de ovo 2× maior na próxima partida.',
@@ -1095,6 +1133,7 @@ export const pt = {
       honey: 'O Pokémon do surto aparece 2× mais na próxima partida.',
       xAttack: 'Golpes +10% na próxima partida.',
       maxRevive: 'Na próxima partida, o primeiro desmaio te põe de pé com metade do HP.',
+      everstone: 'A próxima partida não evolui, mas a forma base fica 15% mais forte em tudo (HP, poder, defesa e velocidade).',
     } satisfies Record<BagItem, string>,
     active: {
       lure: 'Shinies 2× mais comuns nesta partida!',
@@ -1105,6 +1144,7 @@ export const pt = {
       honey: 'O surto aparece 2× mais nesta partida!',
       xAttack: 'Golpes +10% nesta partida!',
       maxRevive: 'Um desmaio perdoado nesta partida!',
+      everstone: 'Sem evolução nesta partida: +15% em tudo!',
     } satisfies Record<BagItem, string>,
     toggle: (name: string, n: number) => `${name} ×${n}`,
     armed: (n: number, max: number) => `${n}/${max}`,
@@ -1131,6 +1171,8 @@ export const pt = {
     pokeballBerry: 'uma Oran Berry!',
     revive: 'O *Revive* te pôs de pé!',
     maxRevive: 'O *Max Revive* te pôs de pé com metade do HP!',
+    stolen: 'Você roubou o item que ele segurava!',
+    armedTm: (name: string) => `TM armada: *${name}*. O primeiro TM da partida é ela!`,
   },
 
   /** Mega Evolution: the button, its toasts, the partner details and what each Mega form does. */
@@ -1223,6 +1265,7 @@ export const pt = {
     title: (name: string) => `${name} vai evoluir… mas em quê?`,
     subtitle: 'A evolução muda o tipo, os status, o especial, os golpes e as Habilidades.',
     favored: (what: string) => `${what} favorece`,
+    guaranteed: (item: string) => `${item} garante`,
     moves: 'Golpes novos',
     abilities: 'Habilidades',
     special: 'Especial',
@@ -3503,6 +3546,54 @@ export const pt = {
         '+1 esfera e +5 de dano',
       ],
     },
+    payDay: {
+      description: 'Você joga moedas nos inimigos mais próximos. Cada acerto pode soltar uma moeda de ₽10 (até 120 por partida).',
+      upgrades: [
+        '+1 moeda',
+        '+3 de dano',
+        { fork: [{ name: 'Bolada', desc: '+3% de chance de ₽ e +2 de dano; quem cai explode' }, { name: 'Troco', desc: '+2 moedas que racham ao acertar; -2 de dano' }] },
+        'Recarga 0.15s mais rápida',
+        '+4 de dano',
+        { fork: [{ name: 'Chuva de moedas', desc: '+2 moedas e joga de novo logo após (50%)' }, { name: 'Ricochete', desc: '+4 de dano e +2% de ₽; ricocheteiam' }] },
+        '+1 moeda e +3 de dano',
+      ],
+    },
+    thief: {
+      description: 'Uma garra sombria ataca os inimigos ao alcance, Alfas e chefes primeiro (+30% neles). Num Alfa ou chefe, pode roubar o item que ele segura: um item e ₽50, uma vez por inimigo.',
+      upgrades: [
+        '+5 de dano',
+        '+1 garra',
+        { fork: [{ name: 'Batedor', desc: '+1 garra; o golpe salta para 2 vizinhos' }, { name: 'Cobiça', desc: '+4 de dano; cura com parte do dano' }] },
+        'Recarga 0.15s mais rápida',
+        '+6 de dano',
+        { fork: [{ name: 'Knock Off', desc: '+6 de dano; mais forte em elites e chefes' }, { name: 'Golpe noturno', desc: '+30% de área; quem cai explode' }] },
+        '+1 garra e +5 de dano',
+      ],
+    },
+    protect: {
+      description: 'A cada 12s uma bolha te protege por 1s: nenhum golpe passa, e quem encosta é empurrado para longe.',
+      upgrades: [
+        'Dura +0.2s',
+        'Recarga 1s mais rápida',
+        { fork: [{ name: 'Escudo espinhoso', desc: '+8 de dano; quem cai na bolha explode' }, { name: 'Detectar', desc: 'Dura +0.3s e protege de novo logo após' }] },
+        'Dura +0.2s',
+        'Recarga 1s mais rápida',
+        { fork: [{ name: 'Bunker', desc: '+6 de dano; a bolha cura com o que acerta' }, { name: 'Guarda rápida', desc: 'Recarga −1.5s e +20% de área; o empurrão salta' }] },
+        'Dura +0.3s e recarga 1s mais rápida',
+      ],
+    },
+    hyperBeam: {
+      description: 'Carrega por um instante e dispara um raio enorme na direção do inimigo mais próximo, acertando tudo na linha várias vezes. Depois você fica parado um momento para recarregar.',
+      upgrades: [
+        '+8 de dano',
+        'Recarga 0.8s mais rápida',
+        { fork: [{ name: 'Sobrecarga', desc: '+12 de dano; quem cai explode' }, { name: 'Rastro ardente', desc: '+25% de área; deixa o chão ardendo' }] },
+        '+10 de dano',
+        'Recarga 0.8s mais rápida',
+        { fork: [{ name: 'Giga raio', desc: '+10 de dano; mais forte em elites e chefes' }, { name: 'Raio duplo', desc: '+1 raio e o golpe salta; -6 de dano' }] },
+        '+14 de dano e +15% de área',
+      ],
+    },
     ragingFury: {
       description: 'Você avança em fúria, envolto em chamas: o manto queima quem encosta enquanto você anda, o rastro vira uma estrada em brasa e, a cada poucos passos, a fúria explode numa nova de fogo. Parado, só fumega. Pode queimar.',
       upgrades: [
@@ -4410,9 +4501,14 @@ export const pt = {
       surprise: 'SURPRESA! Hehe, te peguei! Ninguém escapa da minha camuflagem.',
       pinned: (name: string, when: string) => `Anotado! ${name} na sua lista. ${when}`,
       levelUp: (name: string) => `Olha só isso! A loja virou ${name}! Obrigado, sócio!`,
+      /** The purple brother, on his shelves. */
+      purpleTms: 'Psst... TMs de primeira. Arme uma e ela aparece na partida. Garantido.',
+      purpleEvolution: 'Pedras e relíquias! O Eevee nunca te oferece o Glaceon? Comigo isso acaba.',
+      greenBack: 'Voltou pro meu lado do balcão? Fica à vontade!',
     },
     /** After a purchase, one of these in turn. */
     thanks: ['Obrigado! Volte sempre!', 'Ótima escolha!', 'Negócio fechado!', 'Hehe, bom proveito!'],
+    thanksPurple: ['Hehe, escolha de quem entende!', 'Bom proveito, freguês!', 'Essa vai fazer estrago!', 'Negócio fechado, psst!'],
     /** "Volta ___": the weekdays from Sunday, with their preposition. */
     weekdays: ['no domingo', 'na segunda', 'na terça', 'na quarta', 'na quinta', 'na sexta', 'no sábado'],
     /** "Vitrine de ___": the weekdays from Sunday. */

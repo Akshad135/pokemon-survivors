@@ -90,6 +90,29 @@ const SCENARIOS = {
       g.player.hp = 1
     },
   },
+  /**
+   * The Kecleon Shop's run inputs on Nightmare at 6:00: an Everstone and three
+   * Bottle Caps (+24% to every stat, no evolution, the Ability pick at Lv 16),
+   * an armed TM, and the shop-exclusive TMs learned (Pay Day's coins, Thief on
+   * an Alpha, Protect's bubble, Hyper Beam).
+   */
+  shop: {
+    start: { ...START, difficulty: 'nightmare', starter: 'charmander', bag: ['everstone'], tms: ['iceBeam'], evo: ['fireStone'], caps: 3 },
+    seconds: 25,
+    stage: (g) => {
+      g.time = 360
+      g.nextEvent = 99
+      g.revives = 2
+      gainXp(g, 1500)
+      g.player.moves.push(
+        { id: 'payDay', level: 5, cooldown: 0.2, path: 0 },
+        { id: 'thief', level: 5, cooldown: 0.4, path: 0 },
+        { id: 'protect', level: 3, cooldown: 0.6, path: 0 },
+        { id: 'hyperBeam', level: 3, cooldown: 0.8, path: 0 },
+      )
+      spawnAlpha(g, pickAlpha(g.rng, g.roster.stages[0]!)!, g.player.x + 60, g.player.y)
+    },
+  },
   /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
   legend: {
     start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
@@ -110,7 +133,7 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  29: {
+  30: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
@@ -118,6 +141,7 @@ const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
     nightBoss: '2098·37·17·7d5edd66',
     bag: '1077·9·3·d13820e7',
     legend: '1098·51·14·86dc0d8b',
+    shop: '1537·65·19·246b065f',
   },
 }
 

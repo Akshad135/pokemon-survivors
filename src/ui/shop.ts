@@ -1,11 +1,16 @@
 import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { formatNumber, formatPokeDollars, t } from '../i18n'
-import { PLAYABLE } from '../data/hatchlings'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { BRANCH_OFFERS, BRANCHES, branchesOf } from '../data/branches'
 import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
-import { SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, type BagItem, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
+import { BOTTLE_CAPS, EVO_ITEM_IDS, EVO_ITEM_PRICE, EVO_ITEMS, MAX_CAPS, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, type BagItem, type EvoItemId, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { armBlock, armedItems, armItem, BAG_ITEM_IDS, BAG_ITEMS, bagCount } from '../game/bag'
-import { addDays, brasiliaDay, msToNextDay } from '../game/day'
+import { addDays, brasiliaDay, msToNextDay, type DayKey } from '../game/day'
+import { canPlay } from '../game/capture'
+import { buyCap, buyEvoItem, capBlock, capLevel, capPrice, evoBlock } from '../game/evoItems'
+import { MOVES } from '../game/moves'
+import { armedTms, armTm, buyTm, isRegularTm, nextTmDay, shelfOf, tmBlock, tmLimit, tmListing, tmPrice, type ShelfTm, type TmBlock } from '../game/tmShelf'
 import { EGG_TIERS } from '../game/eggs'
 import { buyUpgrade, refundAll, totalSpent, UPGRADE_IDS, UPGRADES, upgradePrice, type Save } from '../game/meta'
 import {
@@ -33,7 +38,8 @@ import {
 } from '../game/shop'
 import { playsShiny } from '../game/shinyPicks'
 import { equipStyle, ownsStyle } from '../game/style'
-import { coinIcon, eggIcon, upgradeIcon } from '../render/art'
+import { coinIcon, eggIcon, moveIcon, upgradeIcon } from '../render/art'
+import { portraitUrl } from '../render/sprites'
 import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
 import { PLAZA_PROPS } from '../render/plaza'
@@ -42,7 +48,7 @@ import { h, later, setText } from './dom'
 import { emptyCounter, kecleonSpeaker, levelUpLine, pickTrigger, thanks, visitLine, weekdayOf, type VisitContext } from './kecleon'
 import { loadSave, today, vitrineToday, writeSave } from './save'
 import { hint, menu, type Screen } from './screens'
-import { shopIcon } from './shopIcons'
+import { capPips, shopIcon } from './shopIcons'
 import { nearestInDirection, type Direction } from './spatial'
 
 /**
@@ -106,7 +112,7 @@ const shell = (picture: HTMLElement, name: string) => {
   return { el, badges, sub, price }
 }
 
-type BadgeKind = 'gift' | 'deal' | 'wish' | 'new' | 'armed' | 'level' | 'here'
+type BadgeKind = 'gift' | 'deal' | 'wish' | 'new' | 'armed' | 'level' | 'here' | 'exclusive' | 'found' | 'today' | 'owned'
 const badge = (kind: BadgeKind, text: string) => h('b', { class: `shop-badge ${kind}` }, text)
 
 /** Sets a card's badges, dropping the falsy ones. */
@@ -260,6 +266,216 @@ const bagCard = (id: BagItem): Card => {
   }
 }
 
+/* ---------------- TMs (the purple brother) ---------------- */
+
+/** A TM's picture: the disc with its move's icon on it. */
+const tmPicture = (id: ShelfTm) => h('span', { class: 'shop-tm' }, shopIcon('tmDisc'), img(moveIcon(id), 'shop-tm-move'))
+
+/** What a blocked TM card says instead of its price. */
+const tmBlockText = (block: TmBlock | null) => (block === null || block === 'poor' ? null : t().shop.tms.blocks[block])
+
+/** "Volta à prateleira no sábado" for a regular TM after `day` (empty for an exclusive, always there). */
+const tmBack = (id: ShelfTm, day: DayKey) => {
+  if (!isRegularTm(id)) return ''
+  const back = nextTmDay(id, addDays(day, 1))
+  return back ? t().shop.tms.back(t().plaza.weekdays[weekdayOf(back)]!) : ''
+}
+
+/**
+ * A TM on the shelf: bought for good, then armed or not for the next runs
+ * (up to the level's `armedTms`; arming past it swaps the oldest out).
+ */
+const tmCard = (id: ShelfTm, day: DayKey): Card => {
+  const sh = t().shop
+  const name = MOVES[id].name
+  const { el, badges, sub, price } = shell(tmPicture(id), name)
+  const owned = (save: Save) => save.tms.owned.includes(id)
+  const armed = (save: Save) => armedTms(save.tms, tmLimit(save.shop.level)).includes(id)
+  return {
+    el,
+    refresh: (save) => {
+      const listing = tmListing(save.tms, id, day)
+      setBadges(badges, [
+        armed(save) && badge('armed', sh.tms.armed.toLocaleUpperCase()),
+        !owned(save) && listing === 'exclusive' && badge('exclusive', sh.badges.exclusive),
+        !owned(save) && listing === 'learned' && badge('found', sh.badges.found),
+        !owned(save) && listing === 'today' && badge('today', sh.badges.today),
+        owned(save) && !armed(save) && badge('owned', sh.badges.owned),
+      ])
+      setText(sub, t().types[MOVES[id].type])
+      const block = owned(save) ? null : tmBlock(save, id, day)
+      setText(price, owned(save) ? (armed(save) ? sh.tms.disarm : sh.tms.arm) : (tmBlockText(block) ?? formatPokeDollars(tmPrice(id))))
+      el.classList.toggle('armed', armed(save))
+      el.classList.toggle('poor', block === 'poor')
+    },
+    describe: (save) => {
+      const listing = tmListing(save.tms, id, day)
+      const limit = tmLimit(save.shop.level)
+      const block = owned(save) ? null : tmBlock(save, id, day)
+      const next = nextShopLevel(save.shop.level)
+      const why = owned(save) ? '' : listing === 'exclusive' ? sh.tms.exclusive : listing === 'learned' ? sh.tms.found : listing === 'today' ? sh.tms.today(tmBack(id, day)) : tmBack(id, day)
+      const more = next && SHOP_LEVELS[next].armedTms > limit ? ` ${sh.tms.more(sh.levels[next], next)}` : ''
+      const full = owned(save) && !armed(save) && armedTms(save.tms, limit).length >= limit ? `${sh.tms.swap(limit)}${more}` : ''
+      return {
+        icon: tmPicture(id),
+        title: `TM · ${name}`,
+        text: [t().moves[id].description, why, owned(save) ? '' : sh.tms.text, full].filter((l) => l !== '').join(' '),
+        action: owned(save) ? (armed(save) ? sh.tms.disarm : sh.tms.arm) : (tmBlockText(block) ?? t().mart.buy(formatPokeDollars(tmPrice(id)))),
+        disabled: !owned(save) && block !== null,
+      }
+    },
+    act: (save) => (owned(save) ? { ...save, tms: armTm(save.tms, id, !armed(save), tmLimit(save.shop.level)) } : buyTm(save, id, day)),
+    said: (before, after) => (after.wallet < before.wallet ? 'thanks' : null),
+  }
+}
+
+/** The TM shelf: the case first (to arm), then the exclusives, the TMs found in runs and today's rotation. */
+const tmStock = (save: Save): (Card | string)[] => {
+  const g = t().shop.tms.groups
+  const day = vitrineToday().day
+  const shelf = shelfOf(save.tms, day)
+  const forSale = (kind: 'exclusive' | 'learned' | 'today') => shelf.filter((id) => !save.tms.owned.includes(id) && tmListing(save.tms, id, day) === kind)
+  const group = (title: string, ids: readonly ShelfTm[]) => (ids.length > 0 ? [title, ...ids.map((id) => tmCard(id, day))] : [])
+  return [
+    ...group(g.owned, shelf.filter((id) => save.tms.owned.includes(id))),
+    ...group(g.exclusive, forSale('exclusive')),
+    ...group(g.found, forSale('learned')),
+    ...group(g.today, forSale('today')),
+  ]
+}
+
+/* ---------------- Evolução (the purple brother) ---------------- */
+
+/** An evolution item: owned for good, it guarantees its branches among the offers. */
+const evoCard = (id: EvoItemId): Card => {
+  const sh = t().shop
+  const def = EVO_ITEMS[id]
+  const forms = def.branches.map((b) => BRANCHES[b].name).join(' · ')
+  const { el, badges, sub, price } = shell(shopIcon(id), def.name)
+  const owned = (save: Save) => save.evo.includes(id)
+  const families = [...new Set(def.branches.map((b) => BRANCHES[b].line))]
+  return {
+    el,
+    refresh: (save) => {
+      setBadges(badges, [owned(save) && badge('owned', sh.badges.owned)])
+      setText(sub, forms)
+      const block = evoBlock(save, id)
+      setText(price, owned(save) ? sh.evolution.owned : block === 'locked' ? sh.blocks.locked : formatPokeDollars(EVO_ITEM_PRICE))
+      el.classList.toggle('done', owned(save))
+      el.classList.toggle('poor', block === 'poor')
+    },
+    describe: (save) => {
+      const block = evoBlock(save, id)
+      const lines = families.map((line) =>
+        sh.evolution.guarantees(def.branches.filter((b) => BRANCHES[b].line === line).map((b) => BRANCHES[b].name).join(' / '), PLAYABLE[line].line[0].name),
+      )
+      const allShown = families.every((line) => branchesOf(line).length <= BRANCH_OFFERS)
+      return {
+        icon: shopIcon(id),
+        title: def.name,
+        text: [...lines, allShown ? sh.evolution.allShown : ''].filter((l) => l !== '').join(' '),
+        action: owned(save) ? sh.evolution.owned : block === 'locked' ? sh.blocks.locked : t().mart.buy(formatPokeDollars(EVO_ITEM_PRICE)),
+        disabled: block !== null,
+      }
+    },
+    act: (save) => buyEvoItem(save, id),
+  }
+}
+
+/* ---------------- Tampinhas (Treino) ---------------- */
+
+/** The next Bottle Cap for `id`: its price, its level as pips, what it adds. */
+const capCard = (id: PlayableId): Card => {
+  const sh = t().shop
+  const name = PLAYABLE[id].line[0].name
+  const { el, sub, price } = shell(shopIcon('bottleCap'), name)
+  sub.classList.add('pips')
+  return {
+    el,
+    refresh: (save) => {
+      const level = capLevel(save.caps, id)
+      sub.replaceChildren(...Array.from({ length: MAX_CAPS }, (_, i) => h('span', { class: i < level ? 'pip on' : 'pip' })))
+      const next = capPrice(level)
+      const block = capBlock(save, id)
+      setText(price, block === 'locked' ? sh.blocks.locked : next === null ? sh.caps.max : formatPokeDollars(next))
+      el.classList.toggle('done', next === null)
+      el.classList.toggle('locked', block === 'locked')
+      el.classList.toggle('poor', block === 'poor')
+    },
+    describe: (save) => {
+      const level = capLevel(save.caps, id)
+      const next = capPrice(level)
+      const block = capBlock(save, id)
+      return {
+        icon: shopIcon('bottleCap'),
+        title: `${sh.caps.title(level, MAX_CAPS)} · ${name}`,
+        text: [sh.caps.text(name), level > 0 ? sh.caps.now(Math.round(level * BOTTLE_CAPS.boost * 100)) : '', block === 'locked' ? sh.caps.lockedAt(sh.levels[3]) : '']
+          .filter((l) => l !== '')
+          .join(' '),
+        action: block === 'locked' ? sh.blocks.locked : next === null ? sh.caps.max : t().mart.buy(formatPokeDollars(next)),
+        disabled: block !== null,
+      }
+    },
+    act: (save) => buyCap(save, id),
+  }
+}
+
+/** The card that opens the picker of whose Bottle Caps the Treino shows. */
+const capPickCard = (id: PlayableId, pick: () => void): Card => {
+  const sh = t().shop
+  const portrait = () => img(portraitUrl(PLAYABLE[id].line[0].dex), 'shop-portrait')
+  const { el, price } = shell(portrait(), sh.caps.pick)
+  return {
+    el,
+    refresh: () => setText(price, '▸'),
+    describe: () => ({ icon: portrait(), title: sh.caps.pick, text: sh.caps.pickText, action: sh.caps.pick, disabled: false }),
+    act: () => {
+      pick()
+      return null
+    },
+    said: () => null,
+  }
+}
+
+/**
+ * The picker of whose Bottle Caps the Treino shows: every Pokémon the save
+ * can play, with its caps as pips. Arrows move, Enter (a tap) picks, Esc closes.
+ */
+const capsPicker = (root: HTMLElement, input: Input, save: Save, current: PlayableId, onPick: (id: PlayableId | null) => void): Screen => {
+  const ids = (Object.keys(PLAYABLE) as PlayableId[]).filter((id) => canPlay(save, id))
+  const buttons = ids.map((id) =>
+    h(
+      'button',
+      { class: id === current ? 'caps-pick-cell on' : 'caps-pick-cell', type: 'button', title: PLAYABLE[id].line[0].name, onclick: () => onPick(id) },
+      img(portraitUrl(PLAYABLE[id].line[0].dex)),
+      capPips(capLevel(save.caps, id)),
+    ),
+  )
+  let at = Math.max(0, ids.indexOf(current))
+  const mark = () => buttons.forEach((b, i) => b.classList.toggle('selected', i === at))
+  const off = input.onKey((key) => {
+    const dir = DIRECTIONS[key]
+    if (dir) {
+      at = nearestInDirection(buttons.map((b) => b.getBoundingClientRect()), at, dir)
+      buttons[at]?.scrollIntoView({ block: 'nearest' })
+      mark()
+      playSfx('move')
+    } else if (key === 'Enter' || key === 'Space') onPick(ids[at] ?? null)
+    else if (key === 'Escape' || key === 'Backspace') onPick(null)
+  })
+  const el: HTMLElement = h(
+    'div',
+    { class: 'screen dim shop-confirm' },
+    h('div', { class: 'dialog box pop caps-picker' }, h('div', { class: 'dialog-title' }, t().shop.caps.pickTitle), h('div', { class: 'caps-pick-grid' }, ...buttons)),
+  )
+  // A tap outside the box closes it.
+  el.addEventListener('click', (e) => e.target === el && onPick(null))
+  root.append(el)
+  mark()
+  later(() => buttons[at]?.scrollIntoView({ block: 'nearest' }))
+  return { el, dispose: () => (off(), el.remove()) }
+}
+
 /* ---------------- Treino ---------------- */
 
 /** The permanent upgrades (the vitamins and the Shiny Charm), with their ranks as pips. */
@@ -410,16 +626,18 @@ const countdown = () => {
 /**
  * A shelf: a tab of the panel, tended by a `keeper`, open from some shop
  * level, laid out as a `grid` of cards or a `list` of rows. `stock` fills it
- * (a string is a group heading); `intro` is the line over it. PR 4 adds the
- * purple brother's TMs and evolution items here, with `keeper: 'purple'`
- * (the camera leans to him and `hello` is what he says when the tab opens).
+ * (a string is a group heading; `ShelfContext` gives it the panel's state);
+ * `intro` is the line over it. The purple brother's shelves (TMs, Evolução)
+ * have `keeper: 'purple'`: the camera leans to him and `hello` is what he
+ * says when the tab opens. A new shelf is one more entry in `SHELVES`, with
+ * its tab's name in `t().shop.tabs`.
  */
 type Shelf = {
   id: keyof ReturnType<typeof t>['shop']['tabs']
   keeper: Keeper
   open: (level: ShopLevel) => boolean
   layout: 'grid' | 'list'
-  stock: (save: Save) => readonly (Card | string)[]
+  stock: (save: Save, ctx: ShelfContext) => readonly (Card | string)[]
   intro: (save: Save) => string
   /** The Vitrine's turnover countdown beside the intro. */
   countdown?: boolean
@@ -427,6 +645,21 @@ type Shelf = {
   refund?: boolean
   hello?: () => DialogueLine
 }
+
+/** What a shelf's stock can read and do beyond the save: whose Bottle Caps the Treino shows, and opening their picker. */
+type ShelfContext = { capsFor: PlayableId; pickCaps: () => void }
+
+/** The Treino: the Bottle Caps of one Pokémon (from the Shop, Lv 3; a locked peek before) and the card to pick another, then the vitamins. */
+const trainingStock = (save: Save, ctx: ShelfContext): (Card | string)[] => [
+  t().shop.caps.group(PLAYABLE[ctx.capsFor].line[0].name),
+  capCard(ctx.capsFor),
+  ...(SHOP_LEVELS[save.shop.level].shelves.caps ? [capPickCard(ctx.capsFor, ctx.pickCaps)] : []),
+  t().shop.trainingGroup,
+  ...UPGRADE_IDS.map(upgradeCard),
+]
+
+/** The purple brother's hello on one of his shelves. */
+const purpleHello = (text: string): DialogueLine => ({ text, emotion: 'Happy' })
 
 const SHELVES: readonly Shelf[] = [
   {
@@ -450,7 +683,25 @@ const SHELVES: readonly Shelf[] = [
     stock: () => BAG_ITEM_IDS.map(bagCard),
     intro: (save) => t().shop.bag.intro(armedItems(save.bag).length, bagLimit(save)),
   },
-  { id: 'training', keeper: 'green', open: () => true, layout: 'list', stock: () => UPGRADE_IDS.map(upgradeCard), intro: () => t().shop.trainingIntro, refund: true },
+  {
+    id: 'tms',
+    keeper: 'purple',
+    open: (lv) => SHOP_LEVELS[lv].shelves.tms,
+    layout: 'grid',
+    stock: (save) => tmStock(save),
+    intro: (save) => t().shop.tms.intro(armedTms(save.tms, tmLimit(save.shop.level)).length, tmLimit(save.shop.level)),
+    hello: () => purpleHello(t().plaza.lines.purpleTms),
+  },
+  {
+    id: 'evolution',
+    keeper: 'purple',
+    open: (lv) => SHOP_LEVELS[lv].shelves.evolution,
+    layout: 'grid',
+    stock: () => EVO_ITEM_IDS.map(evoCard),
+    intro: () => t().shop.evolution.intro,
+    hello: () => purpleHello(t().plaza.lines.purpleEvolution),
+  },
+  { id: 'training', keeper: 'green', open: () => true, layout: 'list', stock: trainingStock, intro: () => t().shop.trainingIntro, refund: true },
   {
     id: 'style',
     keeper: 'green',
@@ -583,6 +834,8 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
     let focused: HTMLElement | null = null
     let confirm: Screen | null = null
     let purchases = 0
+    /** Whose Bottle Caps the Treino shows: the partner, until another is picked. */
+    let capsFor: PlayableId = save.partner
 
     const wallet = h('span')
     const tabs = SHELVES.map((s) => h('button', { class: 'shop-tab', type: 'button', role: 'tab' }, sh.tabs[s.id]))
@@ -650,7 +903,7 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
         tab.setAttribute('aria-selected', String(s === shelf))
       })
       items.className = `shop-items ${shelf.layout}`
-      const stock = shelf.stock(save)
+      const stock = shelf.stock(save, { capsFor, pickCaps })
       cards = stock.filter((c): c is Card => typeof c !== 'string')
       items.replaceChildren(...stock.map((c) => (typeof c === 'string' ? h('div', { class: 'shop-group' }, c) : c.el)))
       cards.forEach((c, i) => wire(c.el, i))
@@ -660,16 +913,38 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
 
     const switchShelf = (next: Shelf, sound = true) => {
       if (next === shelf) return
-      const keeper = shelf.keeper
+      const from = shelf.keeper
       shelf = next
       chosen = 0
       if (sound) playSfx('move')
       build()
       focused = cards[0]?.el ?? null
       opts.plaza.lookAt(shelf.keeper)
-      const hello = shelf.keeper !== keeper && shelf.hello?.()
+      // Each of the purple brother's shelves gets its own hello, even coming from the other one; the green one takes the counter back.
+      const back: DialogueLine | null = from === 'purple' && shelf.keeper === 'green' ? { text: t().plaza.lines.greenBack, emotion: 'Happy' } : null
+      const hello = shelf.hello?.() ?? back
       if (hello) talk?.say([hello], kecleonSpeaker(shelf.keeper === 'purple'))
       refresh()
+    }
+
+    /** Opens the Bottle Caps' picker; a pick rebuilds the Treino on that Pokémon. */
+    function pickCaps() {
+      if (confirm) return
+      later(() => {
+        confirm = capsPicker(root, input, save, capsFor, (id) => {
+          confirm?.dispose()
+          confirm = null
+          if (id) {
+            capsFor = id
+            playSfx('select')
+            build()
+            // The Bottle Cap card comes first.
+            chosen = 0
+            focused = cards[chosen]?.el ?? null
+          }
+          refresh()
+        })
+      })
     }
 
     const stepShelf = (by: number) => {
@@ -719,7 +994,7 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
       save = next
       writeSave(save)
       const said = card.said ? card.said(was, next) : 'thanks'
-      const line = said === 'thanks' ? thanks(purchases++) : said
+      const line = said === 'thanks' ? thanks(purchases++, shelf.keeper === 'purple') : said
       if (next.shop.level !== was.shop.level) {
         playSfx('evolve')
         opts.plaza.grew(next.shop.level)

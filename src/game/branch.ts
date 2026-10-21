@@ -38,8 +38,8 @@ export type BranchContext = { weather: WeatherId; biome: BiomeId }
 
 export const branchContext = (g: Game): BranchContext => ({ weather: weatherHere(g), biome: g.biome.id })
 
-/** Why a branch was nudged forward: the weather or the biome (null: it wasn't). */
-export type BranchFavor = 'weather' | 'biome' | null
+/** Why a branch was nudged forward: the weather, the biome, or an evolution item the save owns guarantees it (null: it wasn't). */
+export type BranchFavor = 'weather' | 'biome' | 'item' | null
 
 /** How the run's context favors a branch: the weather first, then the biome. */
 export const favorOf = (id: BranchId, ctx: BranchContext): BranchFavor => {
@@ -56,10 +56,15 @@ export type BranchOffer = { id: BranchId; favor: BranchFavor }
  * The branches an evolution offers. Up to `count` options are all offered, in
  * data order. Otherwise one comes from those the context favors (any, when
  * none fits) and the rest are drawn from the others, and the favored one lands
- * in a random slot.
+ * in a random slot. `sure` (the branches the save's evolution items guarantee,
+ * `guaranteedBranches`) are always among them, marked `item`: they take their
+ * slots first (drawn among them if there are more than `count`), the draw
+ * fills the rest. Without any, the draw is exactly as before.
  */
-export const drawBranches = (rng: Rng, options: readonly BranchId[], ctx: BranchContext, count = BRANCH_OFFERS): BranchOffer[] => {
-  if (options.length <= count) return options.map((id) => ({ id, favor: favorOf(id, ctx) }))
+export const drawBranches = (rng: Rng, options: readonly BranchId[], ctx: BranchContext, count = BRANCH_OFFERS, sure: readonly BranchId[] = []): BranchOffer[] => {
+  const item = (id: BranchId): BranchOffer => ({ id, favor: 'item' })
+  if (options.length <= count) return options.map((id) => (sure.includes(id) ? item(id) : { id, favor: favorOf(id, ctx) }))
+  if (sure.length > 0) return drawAround(rng, options, ctx, count, sure).map((id) => (sure.includes(id) ? item(id) : { id, favor: favorOf(id, ctx) }))
   const fitting = options.filter((id) => favorOf(id, ctx) !== null)
   const lead = pick(rng, fitting.length > 0 ? fitting : options)
   const rest = options.filter((id) => id !== lead)
@@ -68,4 +73,21 @@ export const drawBranches = (rng: Rng, options: readonly BranchId[], ctx: Branch
   const offers: BranchOffer[] = others.map((id) => ({ id, favor: null }))
   offers.splice(Math.floor(rng() * count), 0, { id: lead, favor: favorOf(lead, ctx) })
   return offers
+}
+
+/** `drawBranches` with guaranteed branches: they take their slots first, the favored draw fills the rest, then the slots are shuffled. */
+const drawAround = (rng: Rng, options: readonly BranchId[], ctx: BranchContext, count: number, sure: readonly BranchId[]): BranchId[] => {
+  const kept = [...sure]
+  while (kept.length > count) kept.splice(Math.floor(rng() * kept.length), 1)
+  const rest = options.filter((id) => !kept.includes(id))
+  const fitting = rest.filter((id) => favorOf(id, ctx) !== null)
+  const picked = [...kept]
+  if (picked.length < count) picked.push(pick(rng, fitting.length > 0 ? fitting : rest))
+  const left = rest.filter((id) => !picked.includes(id))
+  while (picked.length < count) picked.push(left.splice(Math.floor(rng() * left.length), 1)[0]!)
+  for (let i = picked.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[picked[i], picked[j]] = [picked[j]!, picked[i]!]
+  }
+  return picked
 }

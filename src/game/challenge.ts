@@ -13,7 +13,7 @@ import type { ReplayStart } from './replay'
  * for everyone, drawn from the date alone: the seed (so the same map, cast
  * and drops), the Pokémon (any playable one, an egg family still unhatched
  * included: a taste of it) and the difficulty. The Poké Mart's upgrades, the
- * Bag's consumables, the Shiny Charm and the first run's lucky egg are
+ * Bag's consumables, the armed TMs, evolution items and Bottle Caps, the Shiny Charm and the first run's lucky egg are
  * off, so the board is clean; the day's outbreak stays on (it's the day's
  * too), and so does the Noite das Bruxas on its days. Only the first finished run of each player counts on the challenge
  * board (the API decides, `server/src/ranking.ts`); the rest are practice.
@@ -76,16 +76,16 @@ export type ChallengeProblem = 'seed' | 'starter' | 'difficulty' | 'ranks' | 'it
 
 /**
  * Why a run's start isn't `day`'s challenge, or null when it is: the same
- * seed, Pokémon, difficulty, outbreak and haunting, no upgrade, no Bag item
- * nor lucky egg. The shiny colors are free (they don't touch the run).
+ * seed, Pokémon, difficulty, outbreak and haunting, no upgrade nor Bottle
+ * Cap, no Bag item, armed TM, evolution item nor lucky egg. The shiny colors are free (they don't touch the run).
  */
 export const challengeProblem = (start: ReplayStart, day: DayKey): ChallengeProblem | null => {
   const c = dailyChallenge(day)
   if (start.seed !== c.seed) return 'seed'
   if (start.starter !== c.starter) return 'starter'
   if (start.difficulty !== c.difficulty) return 'difficulty'
-  if (UPGRADE_IDS.some((id) => start.ranks[id] !== 0)) return 'ranks'
-  if (start.bag.length > 0 || start.luckyEgg) return 'items'
+  if (UPGRADE_IDS.some((id) => start.ranks[id] !== 0) || (start.caps ?? 0) > 0) return 'ranks'
+  if (start.bag.length > 0 || (start.tms?.length ?? 0) > 0 || (start.evo?.length ?? 0) > 0 || start.luckyEgg) return 'items'
   if (start.halloween !== c.halloween) return 'halloween'
   return start.outbreak === c.outbreak ? null : 'outbreak'
 }

@@ -4,8 +4,10 @@ import { isLegend } from '../data/legends'
 import { createRng } from '../engine/rng'
 import * as dm from '../engine/dmath'
 import type { Vec } from '../engine/math'
-import { MAX_BAG_SLOTS } from '../data/shop'
+import { MAX_ARMED_TMS, MAX_BAG_SLOTS, MAX_CAPS, type EvoItemId } from '../data/shop'
 import { parseBagItems, type BagItem } from './bag'
+import { parseEvoItems } from './evoItems'
+import { parseTmList, type ShelfTm } from './tmShelf'
 import { isDifficulty, type Difficulty } from './difficulty'
 import { continueEndless } from './endlessSystem'
 import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
@@ -37,7 +39,7 @@ export const TICK = 1 / 60
  * pins where a few scripted replays end under this version and fails when the
  * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 29
+export const RULES_VERSION = 30
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -65,6 +67,12 @@ export type ReplayStart = {
   halloween: boolean
   /** Bag items used up as the run started (`game/bag.ts`), in catalog order; the API lists them with the run. */
   bag: readonly BagItem[]
+  /** TMs armed at the Kecleon Shop (`game/tmShelf.ts`), in the order the run's first discs and lessons teach them (`tms.ts`). None when absent. */
+  tms?: readonly ShelfTm[]
+  /** Evolution items owned (`game/evoItems.ts`): their branches are always offered (`drawBranches`). None when absent. */
+  evo?: readonly EvoItemId[]
+  /** The Pokémon's Bottle Cap level, 0..`MAX_CAPS` (`runBoost`). 0 when absent. */
+  caps?: number
   /** World px the screen showed at the start: spawns and despawns depend on it. */
   view: { w: number; h: number }
 }
@@ -183,8 +191,9 @@ export const isMoves = (moves: unknown[]): moves is number[] =>
 
 /**
  * A replay from an untrusted body, or null when its shape is wrong or its
- * screen is bigger than the game shows (`parseView`), or its Bag repeats an
- * item or takes more than any shop level allows. Ranks are clamped to the
+ * screen is bigger than the game shows (`parseView`), or its Bag (or armed
+ * TMs, or evolution items) repeats an item or takes more than any shop level
+ * allows, or its Bottle Caps go past the top. Ranks are clamped to the
  * Poké Mart's limits; a replay without `rules` predates them (1).
  */
 export const parseReplay = (raw: unknown): Replay | null => {
@@ -201,6 +210,12 @@ export const parseReplay = (raw: unknown): Replay | null => {
   const bag = parseBagItems([...(Array.isArray(s.bag) ? s.bag : []), ...(s.lure === true ? ['lure'] : []), ...(s.incense === true ? ['incense'] : [])])
   // One of each, and no more than the shop's top level lets a run take.
   if (Array.isArray(s.bag) && (bag.length !== s.bag.length || bag.length > MAX_BAG_SLOTS)) return null
+  // The same for the armed TMs and the evolution items: known ones, each once; caps within their levels.
+  const tms = parseTmList(s.tms)
+  const evo = parseEvoItems(s.evo)
+  if (s.tms !== undefined && (!Array.isArray(s.tms) || tms.length !== s.tms.length || tms.length > MAX_ARMED_TMS)) return null
+  if (s.evo !== undefined && (!Array.isArray(s.evo) || evo.length !== s.evo.length)) return null
+  if (s.caps !== undefined && (!isWhole(s.caps) || s.caps > MAX_CAPS)) return null
   return {
     rules: isWhole(raw.rules) && raw.rules > 0 ? raw.rules : 1,
     start: {
@@ -213,6 +228,9 @@ export const parseReplay = (raw: unknown): Replay | null => {
       outbreak: isOutbreakSpecies(s.outbreak) ? s.outbreak : null,
       halloween: s.halloween === true,
       bag,
+      tms,
+      evo,
+      caps: isWhole(s.caps) ? s.caps : 0,
       view,
     },
     moves: raw.moves,
@@ -243,6 +261,9 @@ export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.vi
     outbreak: start.outbreak,
     halloween: start.halloween,
     bag: start.bag,
+    tms: start.tms ?? [],
+    evo: start.evo ?? [],
+    caps: start.caps ?? 0,
   })
 
 const applyEvent = (g: Game, e: ReplayEvent) => {

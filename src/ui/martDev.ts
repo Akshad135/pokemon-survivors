@@ -1,6 +1,9 @@
 import type { EnemyId } from '../data/enemies'
 import { STYLE_SLOTS, styleIds } from '../data/style'
-import { SHOP_LEVEL_IDS, type ShopLevel } from '../data/shop'
+import { EVO_ITEM_IDS, MAX_CAPS, SHOP_LEVEL_IDS, type EvoItemId, type ShopLevel } from '../data/shop'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { grantCaps } from '../game/evoItems'
+import { armTm, isShelfTm, shelfTms, tmLimit, tmRotation, type ShelfTm } from '../game/tmShelf'
 import { addToBag, BAG_ITEM_IDS, type BagItem } from '../game/bag'
 import { brasiliaDay, isDayKey } from '../game/day'
 import { OUTBREAK_SPECIES } from '../game/outbreak'
@@ -55,6 +58,39 @@ export const martDevTools = (refresh: () => void) => ({
     )
     console.log(`${v.day} · gift: ${v.gift} · egg: ${v.egg}`)
     return v
+  },
+  /**
+   * Owns a TM from the shop's shelf, as if bought, and arms it (`ps.ownTm('payDay')`; every one without an
+   * argument, none armed). Prints today's rotation. Returns the TM case.
+   */
+  ownTm: (id?: ShelfTm) => {
+    if (id !== undefined && !isShelfTm(id)) return `TMs: ${shelfTms().join(', ')}`
+    const save = loadSave()
+    const owned = shelfTms().filter((m) => m === id || id === undefined || save.tms.owned.includes(m))
+    const tms = id ? armTm({ ...save.tms, owned }, id, true, tmLimit(save.shop.level)) : { ...save.tms, owned }
+    writeSave({ ...save, tms })
+    console.log(`Today's rotation: ${tmRotation(brasiliaDay(today())).join(', ')}`)
+    refresh()
+    return loadSave().tms
+  },
+  /** Sets a Pokémon's Bottle Caps, 0 to 3 (`ps.caps('charmander', 3)`; the partner's without an id). Returns the caps. */
+  caps: (id?: PlayableId, n = 3) => {
+    const save = loadSave()
+    const who = id ?? save.partner
+    if (!Object.hasOwn(PLAYABLE, who)) return 'Unknown Pokémon'
+    const level = Math.max(0, Math.min(MAX_CAPS, n))
+    const caps = level === 0 ? Object.fromEntries(Object.entries(save.caps).filter(([k]) => k !== who)) : { ...save.caps, [who]: 0 }
+    writeSave({ ...save, caps: level === 0 ? caps : grantCaps(caps, who, level) })
+    refresh()
+    return loadSave().caps
+  },
+  /** Owns an evolution item, as if bought (`ps.evoItem('iceStone')`; all of them without an argument). Returns the items owned. */
+  evoItem: (id?: EvoItemId) => {
+    if (id !== undefined && !EVO_ITEM_IDS.includes(id)) return `Items: ${EVO_ITEM_IDS.join(', ')}`
+    const save = loadSave()
+    writeSave({ ...save, evo: EVO_ITEM_IDS.filter((x) => x === id || id === undefined || save.evo.includes(x)) })
+    refresh()
+    return loadSave().evo
   },
   /** Adds ₽ to the wallet (`ps.money(20000)`). */
   money: (amount = 10_000) => {

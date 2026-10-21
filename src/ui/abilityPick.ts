@@ -2,6 +2,8 @@ import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { ABILITIES, BRANCH_ABILITIES, isHidden, type AbilityId, type AbilitySet } from '../data/abilities'
 import { BRANCHES, type BranchDef, type BranchId } from '../data/branches'
+import { EVO_ITEMS } from '../data/shop'
+import { evoItemFor } from '../game/evoItems'
 import { TYPE_COLORS } from '../data/types'
 import { playerForm } from '../game/branch'
 import { MOVES } from '../game/moves'
@@ -15,6 +17,7 @@ import { specialIcon } from '../render/specialFx'
 import { portraitUrl } from '../render/sprites'
 import { t } from '../i18n'
 import { h } from './dom'
+import { shopIcon } from './shopIcons'
 import { hint, menu, typeBadge, type Screen } from './screens'
 
 /**
@@ -84,6 +87,7 @@ const branchCard = (g: Game, offer: Extract<Offer, { kind: 'form' }>, i: number)
   const special = resolveSpecial(g.starter, def.stage, null, offer.id)
   const own: Partial<Record<BranchId, AbilitySet>> = BRANCH_ABILITIES
   const abilities = own[offer.id]
+  const item = offer.favor === 'item' ? evoItemFor(offer.id) : null
   const favor =
     offer.favor === 'weather' ? m.world.weather[weatherHere(g)]
     : offer.favor === 'biome' ? m.world.biomes[g.biome.id]
@@ -92,12 +96,13 @@ const branchCard = (g: Game, offer: Extract<Offer, { kind: 'form' }>, i: number)
   const card = h(
     'button',
     {
-      class: favor ? 'evo-card favored' : 'evo-card',
+      class: favor || item ? 'evo-card favored' : 'evo-card',
       type: 'button',
       style: `--type:${TYPE_COLORS[main ?? 'normal']};--type2:${TYPE_COLORS[second ?? main ?? 'normal']};--i:${i}`,
     },
     h('span', { class: 'offer-key' }, i + 1),
     favor && h('span', { class: 'evo-card-favor' }, h('img', { src: sparkleIcon(), alt: '' }), m.branch.favored(favor)),
+    item && h('span', { class: 'evo-card-favor item' }, shopIcon(item), m.branch.guaranteed(EVO_ITEMS[item].name)),
     h('div', { class: 'evo-card-art' }, h('img', { class: 'evo-card-portrait', src: portraitUrl(def.dex, g.player.shiny), alt: '' })),
     h('div', { class: 'evo-card-name' }, def.name),
     h('div', { class: 'types' }, ...def.types.map(typeBadge)),

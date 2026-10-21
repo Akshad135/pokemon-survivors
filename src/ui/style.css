@@ -826,6 +826,26 @@ button {
   color: #c8d0ff;
 }
 
+/* The armed TMs, after the Bag's slots: a disc-purple frame around each owned TM. */
+.partner-tms {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  border-left: 2px solid #56607e;
+}
+
+.partner-slot.tm {
+  border-color: #6a4c98;
+}
+
+.partner-slot.tm img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+
 .partner-slot {
   position: relative;
   display: flex;
@@ -4746,13 +4766,14 @@ button {
 .shop-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
+/* Seven shelves from the Shop on: tight enough to sit on one row of the side panel. */
 .shop-tab {
-  padding: 7px 10px;
+  padding: 7px 6px;
   font-family: var(--title);
-  font-size: 9px;
+  font-size: 8px;
   color: #6878a8;
   background: #dce0ec;
   border: 3px solid transparent;
@@ -4967,6 +4988,122 @@ button {
 
 .shop-badge.level {
   background: #6878a8;
+}
+
+/* The purple brother's badges: an exclusive TM, one found in a run, today's rotation, one owned. */
+.shop-badge.exclusive {
+  background: #8048b8;
+}
+
+.shop-badge.found {
+  background: #c86818;
+}
+
+.shop-badge.today {
+  background: #3878d8;
+}
+
+.shop-badge.owned {
+  background: #56607e;
+}
+
+/* A TM card's picture: the disc (sized like any shop icon), its move's icon pinned on its corner. */
+.shop-tm {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+.shop-tm > img.shop-tm-move {
+  position: absolute;
+  right: -6%;
+  bottom: 0;
+  width: 46%;
+  height: 46%;
+  image-rendering: pixelated;
+  background: #fff;
+  border: 2px solid #283048;
+  border-radius: 5px;
+}
+
+/* Headings span the whole grid (the TM shelf's groups). */
+.shop-items.grid .shop-group {
+  grid-column: 1 / -1;
+}
+
+/* A Pokémon's portrait on the Bottle Caps' picker card. */
+.shop-pic > img.shop-portrait,
+.shop-desc-icon > img.shop-portrait {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  border-radius: 6px;
+}
+
+/* Bottle Cap pips: on a partner select cell, and in the caps picker. */
+.cap-pips {
+  display: flex;
+  gap: 2px;
+}
+
+.cap-pips i {
+  width: 5px;
+  height: 5px;
+  background: rgba(40, 48, 72, 0.35);
+  border-radius: 50%;
+}
+
+.cap-pips i.on {
+  background: #f8c830;
+  box-shadow: 0 0 0 1px #805000;
+}
+
+.partner-cell > .cap-pips {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* The Bottle Caps' picker: every playable Pokémon, its caps under it. */
+.caps-picker {
+  width: min(560px, 92vw);
+}
+
+.caps-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 6px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.caps-pick-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px 5px;
+  background: #e8ecf4;
+  border: 3px solid transparent;
+  border-radius: 8px;
+}
+
+.caps-pick-cell img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
+.caps-pick-cell.on {
+  background: #fff1c8;
+}
+
+.caps-pick-cell.selected,
+.caps-pick-cell:hover {
+  border-color: #e83838;
+  background: #fff;
 }
 
 /* Lists (Treino, Estilo, Expansão): picture, name over a line, price on the right, badges on the top edge. */
@@ -11092,6 +11229,20 @@ button.hall-tile:hover {
 .evo-card-favor img {
   width: 10px;
   height: 10px;
+}
+
+/* An evolution item guarantees this branch: the purple tag with the item's icon at 1×. */
+.evo-card-favor.item {
+  top: -22px;
+  padding: 0 7px 0 2px;
+  color: #fff;
+  background: #6a4c98;
+}
+
+.evo-card-favor.item .shop-icon {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
 }
 
 @keyframes favor-bob {

@@ -9,6 +9,7 @@ import type { Difficulty } from './difficulty'
 import { toSteps } from './eggs'
 import { wonRun } from './meta'
 import type { MapEventNotice } from './mapEvents'
+import type { MoveId } from './moves'
 import type { Enemy, Game } from './types'
 
 /**
@@ -38,6 +39,8 @@ export type RunTally = {
   legendWins: Partial<Record<EnemyId, LegendWins>>
   /** Noite das Bruxas night bosses beaten in a haunted run, in order (`nightBossDown`): the Caça aos Fantasmas checklist. */
   nightBosses: EnemyId[]
+  /** TM moves learned (or raised) from a disc or a Move Tutor, in order (`tms.ts`): the save lists them on the shop's TM shelf for good. */
+  tms: MoveId[]
 }
 
 /** A legendary's defeats in a run. */
@@ -56,6 +59,7 @@ export const createTally = (): RunTally => ({
   notices: {},
   legendWins: {},
   nightBosses: [],
+  tms: [],
 })
 
 const bump = <K extends string>(counts: Partial<Record<K, number>>, key: K) => {
@@ -136,6 +140,8 @@ export type RunSummary = {
   legendWins: Partial<Record<EnemyId, LegendWins>>
   /** Night bosses beaten in a haunted run, in order: the save ticks them off its Caça aos Fantasmas (`recordHunt`). */
   nightBosses: readonly EnemyId[]
+  /** TM moves the run learned (`RunTally.tms`): the shop's TM shelf lists them for good (`learnTms`). */
+  tms: readonly MoveId[]
 }
 
 /** Snapshot of a run for missions and achievements. Safe to take again later: recording works on deltas. */
@@ -174,5 +180,6 @@ export const summarizeRun = (g: Game): RunSummary => {
     killsByBiome: { ...t.killsByBiome },
     legendWins: { ...t.legendWins },
     nightBosses: [...t.nightBosses],
+    tms: [...t.tms],
   }
 }

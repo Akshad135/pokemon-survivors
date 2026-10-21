@@ -16,6 +16,7 @@ import { scaleStatus, type StatusSpec } from './status'
 import { SIGNATURE_MOVES } from './signatureMoves'
 import { EGG_MOVES_3 } from './eggMoves3'
 import { TM_MOVES } from './tmMoves'
+import { SHOP_TM_MOVES } from './shopTmMoves'
 import { VERB_EVOLVED_MOVES } from './verbEvolutions'
 import { EGG_MOVES_2 } from './eggMoves2'
 import { DUO_MOVES } from './duoMoves'
@@ -2260,6 +2261,8 @@ export const MOVES = {
   ...EGG_MOVES_3,
   /* ---------- TM moves: boss discs and the Move Tutor (`tmMoves.ts`) ---------- */
   ...TM_MOVES,
+  /* ---------- Shop-exclusive TMs: only the Kecleon Shop's TM shelf sells them (`shopTmMoves.ts`) ---------- */
+  ...SHOP_TM_MOVES,
   /* ---------- Evolutions of the verb moves (`verbEvolutions.ts`) ---------- */
   ...VERB_EVOLVED_MOVES,
   /* ---------- Egg families' signature moves, second batch (`eggMoves2.ts`) ---------- */
