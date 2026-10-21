@@ -8,10 +8,12 @@ import { regionOf } from '../site/pokedex'
 import {
   bossEggSource,
   depositEggs,
+  EGG_SOURCES,
   EGG_TIERS,
   EGGS,
   grantEgg,
   hatchEgg,
+  hatchOdds,
   hatchPool,
   isUnlocked,
   parseEggs,
@@ -122,6 +124,19 @@ describe('hatching', () => {
     const pool = hatchPool('common', { pichu: { shiny: false } })
     expect(pool.find(([id]) => id === 'pichu')?.[1]).toBe(1)
     expect(pool.find(([id]) => id === 'eevee')?.[1]).toBe(EGGS.newWeight)
+  })
+
+  it('hatches the Haunted Egg’s four ghosts at even odds, owned or not, and only from it', () => {
+    const haunted = HATCHLING_IDS.filter((id) => HATCHLINGS[id].egg === 'haunted')
+    expect(haunted).toEqual(['litwick', 'phantump', 'drifloon', 'sandygast'])
+    for (const hatched of [{}, { litwick: { shiny: false } }]) expect(hatchOdds('haunted', hatched).map(([, share]) => share)).toEqual([0.25, 0.25, 0.25, 0.25])
+    // The same seed draws the same ghost (and shininess).
+    const draw = (seed: number) => hatchEgg(withEggs([ready('haunted')]), 0, createRng(seed))!.hatch
+    for (let seed = 0; seed < 50; seed++) expect(draw(seed)).toEqual(draw(seed))
+    const out = new Set(Array.from({ length: 200 }, (_, seed) => draw(seed).id))
+    expect(out).toEqual(new Set(haunted))
+    // No egg dropped in runs is haunted.
+    for (const rule of Object.values(EGG_SOURCES)) expect(Object.keys(rule.odds)).not.toContain('haunted')
   })
 
   it('keeps starters always playable and egg families locked until hatched', () => {

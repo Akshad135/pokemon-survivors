@@ -43,7 +43,7 @@ export const siteEs: SiteMessages = {
   pokedex: {
     title: 'Pokédex de Pokémon Survivors: iniciales, enemigos, jefes y legendarios',
     description:
-      'Todos los Pokémon de Pokémon Survivors con sprite animado y shiny: los 27 iniciales y las 55 familias de los huevos con sus evoluciones, enemigos salvajes, jefes y legendarios. Tipos, estadísticas en el juego, movimientos, especiales y cuándo aparece cada uno.',
+      'Todos los Pokémon de Pokémon Survivors con sprite animado y shiny: los 27 iniciales y las 59 familias de los huevos con sus evoluciones, enemigos salvajes, jefes y legendarios. Tipos, estadísticas en el juego, movimientos, especiales y cuándo aparece cada uno.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Los ${count} Pokémon que existen en Pokémon Survivors, con los números del juego: iniciales de todas las regiones, las familias que salen de los huevos y sus evoluciones, la horda salvaje, los jefes y los legendarios. Pasa el mouse (o toca) para ver el sprite caminando y usa ★ para ver el shiny.`,
@@ -538,6 +538,7 @@ export const siteEs: SiteMessages = {
         `Cuando un huevo está listo, eclosiona al salir de la partida o en la incubadora (en el menú principal y en la pestaña Huevos de la selección de compañero). Las familias que todavía no tienes salen ${weight}x más. La cría tiene 1 probabilidad entre ${shiny} de ser shiny, y entonces es shiny en todas las partidas.`,
         'Un repetido, o un huevo encontrado con la incubadora llena, se convierte en Poké Dollars. El jugador que nunca tuvo un huevo recibe el primero con seguridad.',
         'El Huevo de la Amistad no cae en las partidas: llega como Regalo Misterioso cuando creas tu cuenta con la invitación de alguien, y cuando un amigo al que invitaste termina 3 partidas. Solo sale Munchlax de él. Con 3 amigos ganas el título Embajador(a) y un marco exclusivo, con 5, un Huevo ultra raro, y con 10, un Dratini shiny. Tu link y el progreso de cada amigo están en la tarjeta Invita amigos, en la pantalla de inicio.',
+        'El Huevo Embrujado tampoco cae en las partidas: solo lo vende el puesto de Duskull, en la plaza, durante la Noche de Brujas (24/10 al 2/11), uno por día. De él solo salen Litwick, Phantump, Drifloon y Sandygast, 25% cada uno, los tengas o no. Después del evento, vuelve el año que viene.',
       ],
       tierHead: 'Huevo',
       stepsHead: 'Pasos',

@@ -305,7 +305,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
             'div',
             { class: 'partner-id' },
             h('h3', { class: 'partner-name' }, m.eggs.locked),
-            h('p', { class: 'partner-blurb locked-blurb' }, h('img', { src: eggIcon(tier), alt: '' }), rich(tier === 'friend' ? m.eggs.friendBlurb : m.eggs.lockedBlurb(m.eggs.tiers[tier]))),
+            h('p', { class: 'partner-blurb locked-blurb' }, h('img', { src: eggIcon(tier), alt: '' }), rich(tier === 'friend' ? m.eggs.friendBlurb : tier === 'haunted' ? m.eggs.hauntedBlurb : m.eggs.lockedBlurb(m.eggs.tiers[tier]))),
           ),
         ),
         h('p', { class: 'partner-blurb partner-intro' }, m.eggs.intro),

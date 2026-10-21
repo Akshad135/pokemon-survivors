@@ -345,6 +345,11 @@ export const FAMILY_ABILITIES = {
   deino: ['hustle', 'levitate', 'strongJaw'],
   /* Friendship Egg */
   munchlax: ['pickup', 'thickFat', 'gluttony'],
+  /* Haunted Egg (where the games' ability isn't here: Phantump's Harvest grows back as Regenerator, Drifloon's Aftermath and Flare Boost as Levitate and Cursed Body, Sandygast's Water Compaction as Sturdy) */
+  litwick: ['flashFire', 'flameBody', 'infiltrator'],
+  phantump: ['naturalCure', 'frisk', 'regenerator'],
+  drifloon: ['unburden', 'levitate', 'cursedBody'],
+  sandygast: ['sandVeil', 'sturdy', 'sandStream'],
   /* Legends: picked at the first awakening, on top of the innate (`data/legends.ts`), never sharing its running state's kind */
   articuno: ['iceBody', 'keenEye', 'sniper'],
   zapdos: ['lightningRod', 'keenEye', 'sniper'],

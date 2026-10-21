@@ -90,11 +90,15 @@ const H = 96
 /** The egg is drawn at this whole-number zoom. */
 const EGG_SCALE = 3
 
+/** The Haunted Egg's will-o'-wisps: a flame color, its bright core and the burst's violet. */
+const WISP = { flame: '#78f0a8', core: '#e0fff0', tail: 'rgba(120,240,168,0.5)', flash: '184,140,255' } as const
+
 /**
  * "Oh? The Egg is hatching!": the egg wobbles and cracks, bursts in a white
  * flash and the Pokémon appears (shiny sparkles included) with its cry. A tap
  * or key skips to the reveal; then `play` starts a run with it and `done` moves on.
- * `holdAt` freezes the animation at that second (dev screenshots).
+ * The Haunted Egg hatches at night: a dusk backdrop, will-o'-wisps circling
+ * and a violet burst. `holdAt` freezes the animation at that second (dev screenshots).
  */
 export const hatchScene = (root: HTMLElement, input: Input, hatch: Hatch, actions: { play: () => void; done: () => void }, holdAt?: number): Screen => {
   const m = t().eggs
@@ -132,7 +136,8 @@ export const hatchScene = (root: HTMLElement, input: Input, hatch: Hatch, action
 
   // Before the reveal, any key or tap skips the animation.
   const offSkip = input.onKey(() => !revealed && start >= 0 && performance.now() / 1000 - start > 0.4 && reveal())
-  const box = h('div', { class: 'dialog box pop hatch' }, canvas, text, buttons, skipHint)
+  const haunted = hatch.tier === 'haunted'
+  const box = h('div', { class: haunted ? 'dialog box pop hatch haunted' : 'dialog box pop hatch' }, canvas, text, buttons, skipHint)
   box.addEventListener('click', () => !revealed && reveal())
   const el = h('div', { class: 'screen dim' }, box)
   root.append(el)
@@ -171,18 +176,34 @@ export const hatchScene = (root: HTMLElement, input: Input, hatch: Hatch, action
     }
   }
 
+  /** Three wisps circling the egg (and the newborn), bobbing, each a small flame with its tail up. */
+  const drawWisps = (k: number) => {
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 + k * 1.2
+      const x = Math.round(cx + Math.cos(a) * 38)
+      const y = Math.round(floor - 24 + Math.sin(a) * 9 + Math.sin(k * 3 + i * 2) * 2)
+      ctx.fillStyle = WISP.tail
+      ctx.fillRect(x, y - 3, 1, 2)
+      ctx.fillStyle = WISP.flame
+      ctx.fillRect(x - 1, y - 1, 3, 3)
+      ctx.fillStyle = WISP.core
+      ctx.fillRect(x, y, 1, 1)
+    }
+  }
+
   const tick = (now: number) => {
     if (start < 0) start = now
     const k = holdAt ?? now - start
     if (k >= HATCH.reveal && !revealed) reveal()
     ctx.clearRect(0, 0, W, H)
-    blitEllipse(ctx, 14, 3, 'rgba(16,40,16,0.3)', cx, floor)
+    blitEllipse(ctx, 14, 3, haunted ? 'rgba(24,8,40,0.4)' : 'rgba(16,40,16,0.3)', cx, floor)
     if (k < HATCH.burst) drawEgg(k)
     else drawNewborn(k)
-    // The burst: white flash in, then out over the newborn (none with Flashes reduced).
+    if (haunted) drawWisps(k)
+    // The burst: a white (or, haunted, violet) flash in, then out over the newborn (none with Flashes reduced).
     const flash = k < HATCH.burst - 0.2 ? 0 : k < HATCH.burst ? (k - HATCH.burst + 0.2) / 0.2 : Math.max(0, 1 - (k - HATCH.burst) / 0.5)
     if (flash > 0 && settings().flashes === 'normal') {
-      ctx.fillStyle = `rgba(255,255,255,${flash})`
+      ctx.fillStyle = `rgba(${haunted ? WISP.flash : '255,255,255'},${flash})`
       ctx.fillRect(0, 0, W, H)
     }
   }

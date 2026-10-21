@@ -344,9 +344,11 @@ const EGG_PALETTES = {
   rare: { 1: '#c8b890', 2: '#f8f0d8', 3: '#ffffff', 4: '#4888e8' },
   ultra: { 1: '#282840', 2: '#45456a', 3: '#9090c0', 4: '#f8c830' },
   friend: { 1: '#d888a0', 2: '#f8d0dc', 3: '#ffffff', 4: '#e84870' },
+  /** The Haunted Egg: a dusk-violet shell with will-o'-wisp green spots. */
+  haunted: { 1: '#281840', 2: '#58388a', 3: '#a888e0', 4: '#78f0a8' },
 } as const satisfies Record<EggTier, Palette>
 
-const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048' } as const satisfies Record<EggTier, string>
+const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048', haunted: '#78f0a8' } as const satisfies Record<EggTier, string>
 
 /** Memoized sprite per key (one per tier and crack stage). */
 const eggCache = canvasCache<string, PixelSprite>()
