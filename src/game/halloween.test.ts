@@ -10,6 +10,7 @@ import {
   candiesOf,
   daysToHalloween,
   HALLOWEEN_REWARDS,
+  halloweenAt,
   halloweenDaysLeft,
   halloweenFits,
   halloweenGifts,
@@ -61,6 +62,16 @@ describe('the Noite das Bruxas calendar', () => {
     expect(halloweenFits(true, new Date('2026-10-23T15:00:00Z'))).toBe(false)
     expect(halloweenFits(true, new Date('2026-11-04T15:00:00Z'))).toBe(false)
     expect(halloweenFits(false, new Date('2026-10-31T15:00:00Z'))).toBe(true)
+  })
+
+  it('takes the haunting the API dealt with a ticket for a run that starts up to a day later, across both edges', () => {
+    // 23:59 in Brasília on the day before the event and on its last day (02:59 UTC the next day).
+    const eve = new Date('2026-10-24T02:59:00Z')
+    const last = new Date('2026-11-03T02:59:00Z')
+    expect([halloweenAt(eve), halloweenAt(last)]).toEqual([false, true])
+    for (const dealt of [eve, last]) {
+      for (const later of [0, 2 * 60_000, 23 * 3600_000]) expect(halloweenFits(halloweenAt(dealt), new Date(dealt.getTime() + later))).toBe(true)
+    }
   })
 
   it("haunts the Desafio do dia on the event's days, and a start that skips it isn't the challenge", () => {

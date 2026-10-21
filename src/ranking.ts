@@ -133,25 +133,30 @@ export const flushRuns = () => (flushing = flushing.then(flushOnce, flushOnce).c
 /**
  * A start token the API dealt ahead of its run, for the player `userId`, with
  * the seed the run must play (null from an API older than server seeds,
- * which takes any), the day's outbreak by the API's clock (null from an older
- * API), when it came (`dealt`: the wall clock and the page's monotonic one)
- * and the Desafio do dia day it's for (null: a regular run).
+ * which takes any), the day's outbreak and whether the day is haunted (Noite
+ * das Bruxas) by the API's clock (null from an older API), when it came
+ * (`dealt`: the wall clock and the page's monotonic one) and the Desafio do
+ * dia day it's for (null: a regular run).
  */
-type Ticket = { userId: string; day: DayKey | null; token: string; seed: number | null; outbreak: EnemyId | null; dealt: { wall: number; mono: number } }
+type Ticket = TicketPlan & { userId: string; day: DayKey | null; token: string; dealt: { wall: number; mono: number } }
 
 /**
- * How long a ticket's outbreak holds. The API accepts the outbreak of the day
- * a run starts or the day before (`outbreakFits`), so one dealt less than a
- * day before the run fits whatever the device's clock says; past this, the
- * run plays the device's day instead.
+ * How long a ticket's day holds (its outbreak and haunting). The API accepts
+ * the outbreak of the day a run starts or the day before (`outbreakFits`),
+ * and a haunted run on an event day or the day after (`halloweenFits`), so a
+ * day dealt less than a day before the run fits whatever the device's clock
+ * says; past this, the run plays the device's day instead.
  */
-const OUTBREAK_HOLD_MS = 20 * 3600 * 1000
+const DAY_HOLD_MS = 20 * 3600 * 1000
 
-/** The ticket's outbreak while it holds, by both clocks (sleep can stall the monotonic one, a clock fix jumps the wall one). */
-const heldOutbreak = (t: Ticket) => (Math.max(Date.now() - t.dealt.wall, performance.now() - t.dealt.mono) < OUTBREAK_HOLD_MS ? t.outbreak : null)
+/** What a ticket tells its run: its seed, plus its day while it holds, by both clocks (sleep can stall the monotonic one, a clock fix jumps the wall one). */
+const planOf = (t: Ticket): TicketPlan =>
+  Math.max(Date.now() - t.dealt.wall, performance.now() - t.dealt.mono) < DAY_HOLD_MS
+    ? { seed: t.seed, outbreak: t.outbreak, halloween: t.halloween }
+    : { seed: t.seed, outbreak: null, halloween: null }
 
-/** What a ticket in hand tells the next run: its seed and outbreak (null: the game's own). */
-export type TicketPlan = { seed: number | null; outbreak: EnemyId | null }
+/** What a ticket in hand tells the next run: its seed, outbreak and haunting (null: the game's own). */
+export type TicketPlan = { seed: number | null; outbreak: EnemyId | null; halloween: boolean | null }
 
 type TicketKind = 'regular' | 'challenge'
 
@@ -169,7 +174,7 @@ let reporting: Promise<unknown> = Promise.resolve()
 /** Whether `t` can start a run of `day` for the player signed in now. */
 const fits = (t: Ticket | null, day: DayKey | null): t is Ticket => t !== null && t.userId === accountUserId() && t.day === day
 
-/** A start token, its seed and the day's outbreak from the API, or null (guest, offline, rate limited, a challenge that closed). */
+/** A start token, its seed and the day (outbreak, haunting) from the API, or null (guest, offline, rate limited, a challenge that closed). */
 const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket | null> => {
   const session = await sessionToken()
   if (!session) return null
@@ -177,7 +182,8 @@ const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket
   if (!isRecord(body) || typeof body.token !== 'string') return null
   const seed = typeof body.seed === 'number' && Number.isSafeInteger(body.seed) ? body.seed : null
   const outbreak = isOutbreakSpecies(body.outbreak) ? body.outbreak : null
-  return { userId, day, token: body.token, seed, outbreak, dealt: { wall: Date.now(), mono: performance.now() } }
+  const halloween = typeof body.halloween === 'boolean' ? body.halloween : null
+  return { userId, day, token: body.token, seed, outbreak, halloween, dealt: { wall: Date.now(), mono: performance.now() } }
 }
 
 /**
@@ -186,21 +192,21 @@ const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket
  * waits on the network. Results still queued go first: the new token replaces
  * the player's unfinished one, which may be a run that just ended. Call it
  * only between runs (menus, results), never while a ranked run plays.
- * Resolves to the ticket's seed and outbreak, null without one.
+ * Resolves to what the ticket tells its run (`TicketPlan`), null without one.
  */
 export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketPlan | null> => {
   const userId = accountUserId()
   const kind = kindOf(day)
   if (!rankingEnabled || !userId) return null
   const have = held[kind]
-  if (fits(have, day)) return { seed: have.seed, outbreak: heldOutbreak(have) }
+  if (fits(have, day)) return planOf(have)
   asking[kind] ??= reporting
     .then(flushRuns)
     .then(() => requestTicket(userId, day))
     .then((t) => (t && accountUserId() === userId ? (held[kind] = t) : null))
     .finally(() => (asking[kind] = null))
   const got = await asking[kind]
-  return fits(got, day) ? { seed: got.seed, outbreak: heldOutbreak(got) } : null
+  return fits(got, day) ? planOf(got) : null
 }
 
 /**
@@ -211,7 +217,7 @@ export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketP
  */
 export type RankedRun = { submit: (result: RunResult, replay: Replay) => Promise<RankOutcome> }
 
-/** A run that starts signed in: the seed and outbreak it must play (null: the game's own) and its ranking. */
+/** A run that starts signed in: the seed, outbreak and haunting it must play (null: the game's own) and its ranking. */
 export type RankedStart = TicketPlan & { ranked: RankedRun }
 
 const unranked: RankedRun = { submit: () => Promise.resolve({ kind: 'unranked' }) }
@@ -220,14 +226,14 @@ const unranked: RankedRun = { submit: () => Promise.resolve({ kind: 'unranked' }
  * Takes the ticket in hand for a run that begins now (`challenge`: the day of
  * the Desafio do dia it plays) and restarts its clock on the API. Without one
  * (offline, rate limited, Play pressed before it came) the run is unranked
- * and plays a seed and outbreak of the game's own. Null for guests.
+ * and plays a seed and day of the game's own. Null for guests.
  */
 export const startRanked = (challenge: DayKey | null = null): RankedStart | null => {
   const userId = accountUserId()
   if (!rankingEnabled || !userId) return null
   const kind = kindOf(challenge)
   const ticket = held[kind]
-  if (!fits(ticket, challenge)) return { seed: null, outbreak: null, ranked: unranked }
+  if (!fits(ticket, challenge)) return { seed: null, outbreak: null, halloween: null, ranked: unranked }
   held[kind] = null
   const { token } = ticket
   // 409: another tab or device got a newer token since, so this one can't report.
@@ -235,8 +241,7 @@ export const startRanked = (challenge: DayKey | null = null): RankedStart | null
   let sent = -1
   let last: Promise<RankOutcome> = Promise.resolve({ kind: 'unranked' })
   return {
-    seed: ticket.seed,
-    outbreak: heldOutbreak(ticket),
+    ...planOf(ticket),
     ranked: {
       submit: (result, replay) => {
         if (result.time <= sent) return last
