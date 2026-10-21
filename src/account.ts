@@ -4,7 +4,7 @@ import type { ClerkUIConstructor } from '@clerk/shared/types'
 import { track } from './analytics'
 import { readToken } from './clerkClock'
 import { applyGift, giftToOpen, parseGift, type Gift, type GiftOutcome } from './game/gifts'
-import { parseSaveData } from './game/meta'
+import { parseSaveData, type Save } from './game/meta'
 import { isRecord } from './game/parse'
 import type { ProfileName } from './game/ranking'
 import { brasiliaDay } from './game/day'
@@ -25,6 +25,10 @@ import { loadSave, today, writeSave } from './ui/save'
  * with Discord) is reported to the API (`POST /discord/link`), which puts
  * them in the community server with their supporter role.
  *
+ * It syncs at boot, after a run, from the account screen and whenever the
+ * game comes back to the foreground (`startAccount`), and tells the shell
+ * when a sync brought another device's progress (`onSaveSynced`).
+ *
  * Nothing here may block the game: offline, a missing API or a Clerk outage
  * just leave the save local and the sync status `offline`.
  */
@@ -43,6 +47,9 @@ const CALLBACK = 'login'
 const DISCORD_CALLBACK = 'discord'
 
 const TIMEOUT_MS = 12_000
+
+/** Coming back to the game syncs again once this long (ms) has passed since the last sync began. */
+const RESUME_GAP_MS = 30_000
 
 /** True while the page is the one Google or Discord sent the player back to: boot skips the "press start" intro. */
 export const backFromSignIn = () => accountsEnabled && (new URLSearchParams(location.search).has(CALLBACK) || new URLSearchParams(location.search).has(DISCORD_CALLBACK))
@@ -150,6 +157,20 @@ const setState = (next: AccountState) => {
 }
 
 const setSync = (sync: SyncStatus) => state.kind === 'signedIn' && setState({ ...state, sync })
+
+const savedListeners = new Set<() => void>()
+
+/** Calls `fn` whenever a sync changed the local save (another device's progress came in), for the screens to show it. Returns the unsubscribe. */
+export const onSaveSynced = (fn: () => void) => {
+  savedListeners.add(fn)
+  return () => void savedListeners.delete(fn)
+}
+
+/** Writes `save` as if a sync brought it from another device (the dev helpers stage one with it). */
+export const stageSyncedSave = (save: Save) => {
+  writeSave(save)
+  savedListeners.forEach((fn) => fn())
+}
 
 /* ---------------- Clerk ---------------- */
 
@@ -261,6 +282,7 @@ const push = async (c: Clerk, link: Link) => {
   const unchanged = JSON.stringify(loadSave()) === sent
   if (unchanged) writeSave(pushed.save)
   if (unchanged || !pushed.merged) writeLink({ ...link, revision: pushed.revision })
+  if (unchanged && JSON.stringify(pushed.save) !== sent) savedListeners.forEach((fn) => fn())
 }
 
 /** Makes this device the signed-in user's, keeping its revision and profile if it was theirs already. */
@@ -552,6 +574,8 @@ const fetchGifts = async (token: string) => {
 
 let syncing = false
 let again = false
+/** When the last sync began (`performance.now()`), for `RESUME_GAP_MS`. */
+let lastSync = -Infinity
 
 /**
  * Pushes the local save to the account, when signed in (end of a run, boot,
@@ -564,6 +588,7 @@ export const syncSave = async () => {
   syncing = true
   do {
     again = false
+    lastSync = performance.now()
     const saved = readLink()
     if (!accountsEnabled || !saved) break
     setSync('syncing')
@@ -703,13 +728,34 @@ const finishSignIn = async () => {
 }
 
 /**
+ * Syncs when the game comes back to the foreground (another tab, an app
+ * switch, a PWA reopened from the background), so progress made on another
+ * device shows up without a reload. Signed in only, at most once per
+ * `RESUME_GAP_MS`, and only while `allowed` (the shell holds it off during a run,
+ * which syncs when it ends).
+ */
+const syncOnResume = (allowed: () => boolean) => {
+  // The page just loaded: boot's own sync (or the sign in) goes first.
+  lastSync = performance.now()
+  const resume = () => {
+    if (document.visibilityState !== 'visible' || !readLink() || !allowed() || performance.now() - lastSync < RESUME_GAP_MS) return
+    void syncSave()
+  }
+  document.addEventListener('visibilitychange', resume)
+  window.addEventListener('pageshow', (e) => e.persisted && resume())
+  window.addEventListener('focus', resume)
+}
+
+/**
  * Boot: finishes a sign in coming back from Google or Discord, or, on a
  * device that signed in before, shows the account right away and syncs once
  * Clerk has loaded in the background (after the game's own assets). Back
- * from connecting Discord, it syncs at once.
+ * from connecting Discord, it syncs at once. From then on, coming back to the
+ * game syncs too, while `allowed` (`syncOnResume`).
  */
-export const startAccount = () => {
+export const startAccount = (allowed: () => boolean) => {
   if (!accountsEnabled) return
+  syncOnResume(allowed)
   if (new URLSearchParams(location.search).has(CALLBACK)) return void finishSignIn()
   const saved = readLink()
   if (!saved) return

@@ -87,6 +87,56 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Partidas inteiras no celular', en: 'Whole runs on your phone', es: 'Partidas enteras en el celular' },
+        notes: [
+          {
+            pt: 'O jogo não fecha mais sozinho no meio da partida em celulares. A memória que ele usa agora fica estável do começo ao fim: carrega só os Pokémon da fase atual e da próxima, solta os que já passaram e só baixa um shiny quando ele aparece.',
+            en: 'The game no longer closes by itself mid-run on phones. The memory it uses now stays flat from start to finish: it loads only the Pokémon of the current and next stage, lets go of the ones already behind you and only downloads a shiny when one shows up.',
+            es: 'El juego ya no se cierra solo en medio de la partida en celulares. La memoria que usa ahora se mantiene estable de principio a fin: carga solo los Pokémon de la fase actual y la siguiente, suelta los que ya pasaron y solo descarga un shiny cuando aparece.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Mais leve no celular', en: 'Lighter on phones', es: 'Más liviano en el celular' },
+        notes: [
+          {
+            pt: 'O jogo agora gasta bem menos memória numa partida longa (a do Dialga, antes de abrir a fenda, chegava a encher a memória do celular em segundos) e desenha menos coisas fora da tela, como o arco-íris do Water Pledge. Em celulares que engasgam, ele passa sozinho a desenhar menos partículas, sombras, números de dano e golpes lendários mais leves até a partida voltar a fluir.',
+            en: 'The game now uses far less memory over a long run (Dialga\'s, before its rift opens, could fill a phone\'s memory in seconds) and draws less off screen, like Water Pledge\'s rainbow. On phones that stutter, it switches on its own to fewer particles, shadows and damage numbers and lighter legendary moves until the run flows again.',
+            es: 'El juego ahora usa mucha menos memoria en una partida larga (la de Dialga, antes de abrir su grieta, podía llenar la memoria del celular en segundos) y dibuja menos fuera de la pantalla, como el arcoíris de Water Pledge. En celulares que se traban, pasa solo a dibujar menos partículas, sombras y números de daño y movimientos legendarios más livianos hasta que la partida vuelve a fluir.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Correções', en: 'Fixes', es: 'Correcciones' },
+        notes: [
+          {
+            pt: 'Entrar em tela cheia (F11) ou trocar de aba no meio do movimento não deixa mais o Pokémon andando sozinho numa direção.',
+            en: 'Going fullscreen (F11) or switching tabs mid-move no longer leaves your Pokémon walking on its own in one direction.',
+            es: 'Entrar en pantalla completa (F11) o cambiar de pestaña en pleno movimiento ya no deja a tu Pokémon caminando solo en una dirección.',
+          },
+          {
+            pt: 'Achar um ovo na partida com a incubadora cheia agora avisa na hora que ele vai virar ₽, com o valor, em vez de dizer que foi para a incubadora. Ovos de missões e medalhas que não cabem também dizem quanto viraram. Ovos de Presente Misterioso continuam esperando na caixa até abrir um espaço.',
+            en: 'Finding an egg in a run with a full incubator now tells you right away that it will become ₽, and how much, instead of saying it went to the incubator. Mission and medal eggs that don’t fit say what they became too. Mystery Gift eggs still wait in the box until a slot frees up.',
+            es: 'Encontrar un huevo en la partida con la incubadora llena ahora avisa al momento que se convertirá en ₽, con el monto, en vez de decir que fue a la incubadora. Los huevos de misiones y medallas que no caben también dicen en cuánto se convirtieron. Los huevos de Regalo Misterioso siguen esperando en la caja hasta que se libere un espacio.',
+          },
+          {
+            pt: 'Desistir na pausa, ou Trocar Pokémon no fim da partida, com Espaço, Enter ou o botão A do controle começava outra partida com o mesmo Pokémon em vez de abrir a seleção de parceiro. Agora abre a seleção, como com o mouse ou o toque.',
+            en: 'Give up on the pause menu, or Change Pokémon at the end of a run, picked with Space, Enter or the pad’s A button started another run with the same Pokémon instead of opening the partner select. It opens the select now, as with the mouse or touch.',
+            es: 'Rendirse en la pausa, o Cambiar Pokémon al final de la partida, con Espacio, Enter o el botón A del control empezaba otra partida con el mismo Pokémon en vez de abrir la selección de compañero. Ahora abre la selección, como con el mouse o el toque.',
+          },
+          {
+            pt: 'O retrato do seu Pokémon no avatar de Treinador, no Cartão de Treinador e nas carinhas do Hall da Fama ficava preso no canto de cima, à esquerda, cortando metade do rosto. Agora fica centralizado no círculo.',
+            en: 'Your Pokémon’s portrait on the Trainer avatar, the Trainer Card and the Hall of Fame faces hung from the top-left corner, cutting off half the face. It’s centered in the circle now.',
+            es: 'El retrato de tu Pokémon en el avatar de Entrenador, la Tarjeta de Entrenador y las caritas del Salón de la Fama quedaba pegado a la esquina superior izquierda, cortando medio rostro. Ahora queda centrado en el círculo.',
+          },
+          {
+            pt: 'Com conta, voltar ao jogo (outra aba, outro app, o app instalado reaberto) sincroniza sozinho, e o lobby mostra na hora os ₽, as missões e o Desafio do dia feitos no outro aparelho, sem apertar sincronizar nem recarregar. A tentativa oficial do Desafio do dia também passa entre os aparelhos: feita no notebook, o celular já mostra treino.',
+            en: 'With an account, coming back to the game (another tab, another app, the installed app reopened) syncs on its own, and the lobby shows right away the ₽, missions and Daily Challenge done on your other device, without pressing sync or reloading. The Daily Challenge’s official attempt carries across devices too: made on the laptop, the phone already shows practice.',
+            es: 'Con cuenta, volver al juego (otra pestaña, otra app, la app instalada reabierta) sincroniza solo, y el lobby muestra al momento los ₽, las misiones y el Desafío del día hechos en el otro dispositivo, sin tocar sincronizar ni recargar. El intento oficial del Desafío del día también pasa entre dispositivos: hecho en la laptop, el celular ya muestra práctica.',
+          },
+        ],
+      },
     ],
   },
   {

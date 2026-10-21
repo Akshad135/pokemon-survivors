@@ -885,6 +885,25 @@ export const warmTerrain = (biome: BiomeId) => {
   return false
 }
 
+let kept = ''
+
+/**
+ * Drops the sculpted sprites of every biome not in `keep` (the arenas' scenery stays). A run
+ * never walks back into a biome it left, so its terrain would only sit in memory. Cheap when
+ * `keep` didn't change.
+ */
+export const keepTerrain = (keep: readonly BiomeId[]) => {
+  const id = keep.join()
+  if (id === kept) return
+  kept = id
+  for (const cache of [pieces, grounds, skirts]) {
+    for (const key of cache.keys()) {
+      const biome = key.slice(0, key.indexOf(':'))
+      if (biome !== 'arena' && !(keep as readonly string[]).includes(biome)) cache.delete(key)
+    }
+  }
+}
+
 const mountainShadows = CLIFFS.map((tiers) => lazy(() => footShadow(tiers[0]!.foot, 1)))
 
 const blit = (ctx: CanvasRenderingContext2D, p: Piece, x: number, y: number) => ctx.drawImage(p.sprite, Math.round(x - p.ax), Math.round(y - p.ay))

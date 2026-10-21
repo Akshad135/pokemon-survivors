@@ -1,4 +1,4 @@
-import { blitCentered, canvasCache, ellipse, fromStrings, ring, type Palette, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, canvasCache, fromStrings, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { BiomeId } from '../data/biomes'
 import { REPEL_RADIUS } from '../data/consumables'
 import type { ConsumableId } from '../game/consumables'
@@ -104,13 +104,13 @@ const drawProp = (ctx: Ctx, prop: Prop, t: number, skin: PropSkin) => {
   const x = prop.x + wobble
   switch (prop.kind) {
     case 'itemBall': {
-      blitCentered(ctx, ellipse(5, 1, 'rgba(16,40,16,0.3)'), prop.x, prop.y)
+      blitEllipse(ctx, 5, 1, 'rgba(16,40,16,0.3)', prop.x, prop.y)
       blitCentered(ctx, ITEM_BALL_ART(), x, prop.y - 5)
       if ((t + prop.id * 0.29) % 1.6 < 0.2) blitCentered(ctx, SPARKLE(), x - 3, prop.y - 8)
       return
     }
     case 'berryTree': {
-      blitCentered(ctx, ellipse(7, 2, 'rgba(16,40,16,0.3)'), prop.x, prop.y)
+      blitEllipse(ctx, 7, 2, 'rgba(16,40,16,0.3)', prop.x, prop.y)
       const s = skin.berryTree
       return ctx.drawImage(s, Math.round(x - s.width / 2), Math.round(prop.y - s.height + 1))
     }
@@ -137,8 +137,8 @@ export const drawProps = (ctx: Ctx, g: Game, t: number, biome: BiomeId) => {
   if (repel && (repel.left > 1.5 || Math.floor(t * 8) % 2 === 0)) {
     const p = g.player
     ctx.globalAlpha = 0.7 + Math.sin(t * 6) * 0.2
-    blitCentered(ctx, ellipse(REPEL_RADIUS, Math.round(REPEL_RADIUS * 0.5), 'rgba(88,216,120,0.3)'), p.x, p.y)
-    blitCentered(ctx, ring(REPEL_RADIUS - 4 + Math.round(Math.sin(t * 4) * 2), 1, '#b0f0a0'), p.x, p.y - 8)
+    blitEllipse(ctx, REPEL_RADIUS, Math.round(REPEL_RADIUS * 0.5), 'rgba(88,216,120,0.3)', p.x, p.y)
+    blitRing(ctx, REPEL_RADIUS - 4 + Math.round(Math.sin(t * 4) * 2), 1, '#b0f0a0', p.x, p.y - 8)
     ctx.globalAlpha = 1
   }
 }

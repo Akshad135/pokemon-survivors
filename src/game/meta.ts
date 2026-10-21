@@ -1,5 +1,6 @@
 import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type GiftTitleId, type TitleId } from '../data/achievements'
+import { parseAttempt, type Attempt } from './attempt'
 import { NO_ACHIEVEMENTS, parseAchievements, parseGiftTitles, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
 import { addClear, mergeClears, parseClears, pastClears, type Clears } from './clears'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
@@ -152,6 +153,8 @@ export type Save = {
   halloween: HalloweenSave
   /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
   legends: Captures
+  /** The last official Desafio do dia attempt finished (`game/attempt.ts`): synced, so every device of the account shows practice after it. */
+  attempt: Attempt | null
 }
 
 /** The branch each branching family took in its latest run that got there. */
@@ -195,6 +198,7 @@ export const EMPTY_SAVE: Save = {
   clears: {},
   halloween: NO_HALLOWEEN,
   legends: NO_CAPTURES,
+  attempt: null,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -260,6 +264,7 @@ export const parseSaveData = (json: unknown): Save => {
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
     halloween: parseHalloween(data.halloween),
     legends: parseCaptures(data.legends),
+    attempt: parseAttempt(data.attempt),
   }
 }
 
@@ -329,30 +334,39 @@ const rewardEggs = (completed: readonly Mission[], unlocked: readonly Achievemen
   }),
 ]
 
-type EggPay = { save: Save; eggs: EggTier[]; refund: number }
+/** Reward eggs paid out in ₽ instead: `full`, the incubator had no room; `cap`, the run had its `EGGS.perRun` eggs already. */
+export type ConvertedEggs = { full: EggTier[]; cap: EggTier[] }
+
+type EggPay = { save: Save; eggs: EggTier[]; converted: ConvertedEggs }
 
 /**
  * Puts reward eggs in the incubator (`grantEgg`: a full one pays their ₽).
  * Past `room` they are paid in ₽ too, so a run's rewards share its
- * `EGGS.perRun` with the eggs it found.
+ * `EGGS.perRun` with the eggs it found. `converted` says which became ₽ and why.
  */
 const payEggs = (save: Save, eggs: readonly EggTier[], room: number) =>
   eggs.reduce<EggPay>(
     (acc, tier, i) => {
-      if (i >= room) return { ...acc, save: { ...acc.save, wallet: acc.save.wallet + EGG_TIERS[tier].refund }, refund: acc.refund + EGG_TIERS[tier].refund }
+      const { full, cap } = acc.converted
+      if (i >= room) return { ...acc, save: { ...acc.save, wallet: acc.save.wallet + EGG_TIERS[tier].refund }, converted: { full, cap: [...cap, tier] } }
       const granted = grantEgg(acc.save, tier)
-      return { save: granted.save, eggs: granted.converted.length > 0 ? acc.eggs : [...acc.eggs, tier], refund: acc.refund + granted.refund }
+      return granted.converted.length > 0
+        ? { ...acc, save: granted.save, converted: { full: [...full, tier], cap } }
+        : { ...acc, save: granted.save, eggs: [...acc.eggs, tier] }
     },
-    { save, eggs: [], refund: 0 },
+    { save, eggs: [], converted: { full: [], cap: [] } },
   )
 
-/** Saves the boards and records, and pays every mission completed and medal earned (₽, then items into the bag, then eggs). */
+/**
+ * Saves the boards and records, and pays every mission completed and medal earned (₽, then items into the bag, then eggs).
+ * `reward` is the ₽ of the missions and medals; the eggs that didn't fit (`converted`) pay theirs on top.
+ */
 const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
   const coins = m.completed.reduce((sum, mission) => sum + mission.reward, 0) + a.unlocked.reduce((sum, id) => sum + MEDAL_REWARD[ACHIEVEMENTS[id].medal], 0)
   const items = m.completed.flatMap((mission): BagItem[] => (mission.item ? [mission.item] : []))
   const bag = items.reduce((b, id) => addToBag(b, id), save.bag)
   const paid = payEggs({ ...save, wallet: save.wallet + coins, bag, missions: m.missions, achievements: a.achievements }, rewardEggs(m.completed, a.unlocked), eggRoom)
-  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins + paid.refund, eggs: paid.eggs, items }
+  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins, eggs: paid.eggs, converted: paid.converted, items }
 }
 
 /**

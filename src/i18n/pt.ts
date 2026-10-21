@@ -1367,6 +1367,8 @@ export const pt = {
   eggs: {
     tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade' } satisfies Record<EggTier, string>,
     found: (egg: string) => `Você achou um *${egg}*! Ele vai para a incubadora.`,
+    /** Found mid-run with no room left in the incubator: it will be paid in ₽ when the run ends. */
+    foundFull: (egg: string, coins: string) => `Você achou um *${egg}*! A incubadora está cheia, então ele vai virar *${coins}*.`,
     title: 'INCUBADORA',
     intro: 'Os ovos chocam com os passos dados nas partidas. Todos os ovos da incubadora andam juntos.',
     sources: 'Chefes, baús trancados e fendas às vezes deixam um ovo.',
@@ -1397,7 +1399,9 @@ export const pt = {
     /** Results screen. */
     steps: 'Passos',
     eggs: 'Ovos',
-    full: (coins: string) => `Incubadora cheia: o ovo virou ${coins}.`,
+    full: (n: number, coins: string) => (n === 1 ? `Incubadora cheia: o ovo virou ${coins}.` : `Incubadora cheia: ${n} ovos viraram ${coins}.`),
+    /** Reward eggs past the run's egg limit (`EGGS.perRun`). */
+    capped: (n: number, coins: string, cap: number) => (n === 1 ? `Limite de ${cap} ovos por partida: o ovo virou ${coins}.` : `Limite de ${cap} ovos por partida: ${n} ovos viraram ${coins}.`),
   },
 
   /** Map event toasts (altars, fountains, chests, Meowth). */

@@ -12,7 +12,7 @@ import { BAG_ITEMS, type BagItem } from '../game/bag'
 import { bagIcon, coinIcon, eggIcon, giftIcon, medalIcon } from '../render/art'
 import { h, later, rich, setText } from './dom'
 import { equipTitle, loadSave, outbreakToday, today } from './save'
-import { hint, type Screen } from './screens'
+import { convertedEggLines, hint, type Screen } from './screens'
 import { toast } from './toasts'
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
@@ -123,8 +123,11 @@ export const missionReport = (before: readonly MissionStatus[], reward: number, 
 export const medalChips = (unlocked: readonly AchievementId[]) =>
   unlocked.map((id) => h('span', { class: 'news-chip medal-chip' }, h('img', { src: medalIcon(ACHIEVEMENTS[id].medal), alt: t().achievements.medals[ACHIEVEMENTS[id].medal] }), t().achievements.names[id]))
 
-/** One toast for what was completed away from the results screen: a run quit from the pause menu, or a hatched egg. */
-export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward' | 'eggs' | 'items'>) => {
+/**
+ * One toast for what was completed away from the results screen: a run quit from the pause menu, or a hatched egg.
+ * Reward eggs that didn't fit say what they became.
+ */
+export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'completed' | 'unlocked' | 'reward' | 'eggs' | 'converted' | 'items'>) => {
   if (record.completed.length === 0 && record.unlocked.length === 0) return
   const m = t().missions
   const medal = record.unlocked[0]
@@ -132,6 +135,7 @@ export const progressToast = (root: HTMLElement, record: Pick<RunRecord, 'comple
     record.completed.length > 0 && m.toastDone(record.completed.length, formatPokeDollars(record.reward)),
     medal && m.toastMedal(t().achievements.names[medal]),
     record.eggs.length > 0 && m.toastEgg(record.eggs.length),
+    ...convertedEggLines(record.converted),
     record.items.length > 0 && m.toastItem(record.items.length),
   ].filter((line) => typeof line === 'string')
   playSfx('levelUp')

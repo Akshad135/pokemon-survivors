@@ -101,17 +101,3 @@ export const ribbonsDue = (day: DayKey, now: Date) => {
   const yesterday = previousDay(brasiliaDay(now))
   return day < yesterday || (day === yesterday && msSinceDayStart(now) >= CHALLENGE.settleMs)
 }
-
-/* ---------------- The player's attempt ---------------- */
-
-/** The official attempt this device knows of: its day and the time it lasted. */
-export type Attempt = { day: DayKey; time: number }
-
-/**
- * Whether the next challenge run of `day` is the official attempt: neither
- * this device nor the server (`attempted`, signed in; null when it didn't
- * say) knows of a finished one. Either one is enough to make it practice, so
- * an attempt still queued offline, or played as a guest, isn't announced as
- * official again.
- */
-export const nextIsOfficial = (day: DayKey, local: Attempt | null, attempted: boolean | null) => attempted !== true && local?.day !== day
