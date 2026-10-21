@@ -77,6 +77,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Ranking', en: 'Ranking', es: 'Ranking' },
+        notes: [
+          {
+            pt: 'Com o jogo aberto desde antes de uma atualização, as partidas eram recusadas pelo ranking sem explicação. Agora o jogo carrega a versão nova antes da próxima partida, e uma partida que atravessou uma atualização diz o motivo de ter ficado fora.',
+            en: 'With the game left open from before an update, runs were turned away from the ranking with no reason given. Now the game loads the new version before your next run, and a run that spanned an update tells you why it stayed off.',
+            es: 'Con el juego abierto desde antes de una actualización, las partidas quedaban fuera del ranking sin explicación. Ahora el juego carga la versión nueva antes de tu próxima partida, y una partida que atravesó una actualización te dice por qué quedó fuera.',
+          },
+        ],
+      },
     ],
   },
   {
