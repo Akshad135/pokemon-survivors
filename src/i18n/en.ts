@@ -725,6 +725,7 @@ export const en: Messages = {
     codeErrors: { format: 'Codes look like PS-XXXX-XXXX.', unknown: "That code doesn't exist.", used: 'That code was already used.', offline: 'No connection. Try again.' },
 
     wallEmpty: 'Nobody here yet. Your name could be the first!',
+    offWall: (total) => `${total} supporters in all. Some prefer to stay off the wall.`,
 
     credits: 'Thanks to the trainers who keep the game running',
     banner: 'Your shiny is waiting!',

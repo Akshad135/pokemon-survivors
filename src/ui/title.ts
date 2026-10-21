@@ -12,7 +12,7 @@ import { DISCORD_GIFT } from '../game/gifts'
 import { nextMilestone } from '../game/referral'
 import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks, playsShiny } from '../game/shinyPicks'
-import type { WallEntry } from '../game/supporters'
+import { supporterCount, type WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
 import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
@@ -359,10 +359,11 @@ const hallCard = (open: () => void) => {
     ? h('button', { ...attrs, type: 'button', onclick: open }, ...kids)
     : h('a', { ...attrs, href: ROUTES.support[locale()], target: '_blank', rel: 'noopener', onclick: () => playSfx('select') }, ...kids)
   void fetchWall().then((wall) => {
-    const newest = wall?.at(-1)
+    const newest = wall?.entries.at(-1)
     if (!wall || !newest) return
-    const shown = [...wall].sort(byStanding).slice(0, 4)
-    const more = wall.length - shown.length
+    const shown = [...wall.entries].sort(byStanding).slice(0, 4)
+    // Supporters off the wall count too, so the number never drops when one hides.
+    const more = supporterCount(wall) - shown.length
     stack.replaceChildren(...shown.map(wallFace), ...(more > 0 ? [h('em', {}, `+${formatNumber(more)}`)] : []))
     ticker.replaceChildren(h('img', { src: heartIcon(), alt: '' }), h('span', {}, m.hallJoined(newest.handle, dayKey(new Date(newest.since)) === dayKey(today()))))
     el.classList.add('filled')

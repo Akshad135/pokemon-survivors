@@ -848,6 +848,7 @@ export const pt = {
     codeErrors: { format: 'O código tem o formato PS-XXXX-XXXX.', unknown: 'Esse código não existe.', used: 'Esse código já foi usado.', offline: 'Sem conexão. Tente de novo.' },
 
     wallEmpty: 'Ainda ninguém por aqui. Seu nome pode ser o primeiro!',
+    offWall: (total: number) => `${total} apoiadores ao todo. Alguns preferem ficar fora do mural.`,
 
     credits: 'Obrigado aos treinadores que mantêm o jogo no ar',
     banner: 'Seu shiny te espera!',

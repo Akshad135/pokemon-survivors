@@ -71,6 +71,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Hall da Fama', en: 'Hall of Fame', es: 'Salón de la Fama' },
+        notes: [
+          {
+            pt: 'O Hall da Fama conta todos os apoiadores, inclusive quem preferiu ficar fora do mural, então o número não cai mais quando alguém se esconde.',
+            en: 'The Hall of Fame counts every supporter, including those who chose to stay off the wall, so the number no longer drops when someone hides.',
+            es: 'El Salón de la Fama cuenta a todos los patrocinadores, incluso a quienes prefirieron quedar fuera del muro, así que el número ya no baja cuando alguien se oculta.',
+          },
+        ],
+      },
     ],
   },
   {

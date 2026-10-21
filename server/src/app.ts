@@ -151,7 +151,7 @@ const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, c
  *   (signed: `webhooks.ts`; AbacatePay's the Standard Webhooks way, or with `?webhookSecret=` for an
  *   older webhook). 401 for a bad signature, 503 without the secret.
  * - `GET /me/supporter` (auth): `SupporterStatus`. `PUT /me/supporter` (auth) `{ public }`: shows or hides the badge and name.
- * - `GET /supporters`: `{ supporters }`, the wall (`WallEntry[]`, with each one's title and Hall da Fama Pokémon).
+ * - `GET /supporters`: `{ supporters, hidden }`, the wall (`WallEntry[]`, with each one's title and Hall da Fama Pokémon) and how many supporters per tier stay off it.
  * - `GET /poll`: `Poll`. `PUT /poll` (auth) `{ choice }`: a supporter's vote, 403 for anyone else.
  * - `GET /suggestions?sort=top|new|done`: `{ suggestions }` (`Suggestion[]`), a tab of the idea board, with the asker's votes.
  * - `POST /suggestions` (auth) `{ title, body }`: posts an idea (`parseSuggestionDraft`), 201 `{ suggestion }`.
@@ -410,7 +410,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
 
   app.get('/supporters', async (c) => {
     c.header('Cache-Control', 'public, max-age=60')
-    return c.json({ supporters: await supporters.wall() })
+    const [wall, hidden] = await Promise.all([supporters.wall(), supporters.hidden()])
+    return c.json({ supporters: wall, hidden })
   })
 
   app.get('/poll', async (c) => c.json(await supporters.poll()))
