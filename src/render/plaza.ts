@@ -13,11 +13,12 @@ import { CARAVAN, STALLS, type StallId } from '../data/visitors'
  * (`public/assets/shop/`), anchored by the bottom center of what they paint,
  * with no ground of their own: each casts a shadow on the cobblestones (its
  * own silhouette squashed flat, or a soft ellipse under the deep 3/4
- * buildings). The building keeps an invisible footprint walkers go around.
- * The shopkeepers are Kecleon's own sheets, plus its purple brother from Lv 2,
- * recolored from the same sheets. Visitors come by too (`PlazaVisitors`, set
- * by the shell): Meowth's weekend caravan, a seasonal stall and the golden
- * Kecleon statue, each on its own stone pad. Pure presentation, like the rest of the lobby.
+ * buildings). The shopkeepers are Kecleon's own sheets, plus its purple
+ * brother from Lv 2, recolored from the same sheets. Visitors come by too
+ * (`PlazaVisitors`, set by the shell): Meowth's weekend caravan, a seasonal
+ * stall and the golden Kecleon statue. The building and each visitor keep an
+ * invisible footprint walkers go around (`padsOf`). Pure presentation, like
+ * the rest of the lobby.
  */
 
 export const KECLEON_DEX = 352
@@ -181,7 +182,7 @@ type Layout = {
   stall: Placed
   stallKeeper: KeeperSpot
   statue: Placed
-  /** What the building and the props cast on the cobblestones. */
+  /** What the building, the props and the visitors' pieces cast on the cobblestones. */
   shadows: readonly Shadow[]
 }
 
@@ -190,7 +191,7 @@ const layouts = new Map<string, Layout>()
 /** Row of `shop-lv3.png` where its counter's front starts (the kiosk's shopkeepers stand behind it). */
 const LV3_COUNTER = 122
 
-/** The stone pads under the visitors (radii), each a little wider than what stands on it. */
+/** The visitors' footprints (radii, never drawn), each a little wider than what stands on it. */
 const VISITOR_PADS = { wagon: { rx: 74, ry: 16 }, stall: { rx: 60, ry: 18 }, statue: { rx: 21, ry: 7 } } as const
 
 const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | null => {
@@ -219,6 +220,7 @@ const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | nu
   // The caravan parks west of the shop, a stall stands east of it (where the crates were); the statue keeps the front.
   const wagon = { x: -lamp - 118, y: 44 }
   const stall = { x: lamp + 84, y: 40 }
+  const statue = { x: -Math.round(half * 0.5), y: 92 }
   const wide = v.caravan || v.stall !== null
   const props: Layout['props'] = [
     { id: 'lantern', x: -lamp, y: 14 },
@@ -239,11 +241,14 @@ const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | nu
     meowth: { x: wagon.x + 84, y: wagon.y + 16, dir: 1 },
     stall,
     stallKeeper: { x: stall.x - 58, y: stall.y + 12, dir: 7 },
-    statue: { x: -Math.round(half * 0.5), y: 92 },
+    statue,
     shadows: [
       // The deep 3/4 buildings cast a soft ellipse under their footprint; everything else, its own silhouette.
       depth ? { x: 0, y: -Math.round(half * 0.3), rx: half - 10, ry: Math.round(half * 0.32) } : { x: 0, y: 0, art: building },
       ...props.map((p) => ({ x: p.x, y: p.y, art: arts.get(p.id)! })),
+      ...(v.caravan ? [{ ...wagon, art: arts.get('caravan')! }] : []),
+      ...(v.stall ? [{ ...stall, art: arts.get(STALLS[v.stall].art)! }] : []),
+      ...(v.statue ? [{ ...statue, art: arts.get('pedestal')! }] : []),
     ],
   }
   layouts.set(key, layout)
@@ -397,7 +402,7 @@ export const pushOut = (plaza: Plaza, v: Vec) => {
     else v.x = plaza.x + Math.sign(v.x - plaza.x || 1) * half
     return
   }
-  // Off the building's pad and the visitors' (a wagon or a stall is as solid as its pad, a little taller behind).
+  // Off the building's footprint and the visitors' (a wagon or a stall is as solid as its footprint, a little taller behind).
   for (const pad of padsOf(plaza, layout)) {
     const { rx, ry } = pad
     const cx = plaza.x + pad.x
@@ -416,7 +421,7 @@ export const pushOut = (plaza: Plaza, v: Vec) => {
   }
 }
 
-/** The stone pads on the plaza: the building's, then the visitors' (center relative to the building's feet, radii; `back` stretches the solid part behind a tall piece). */
+/** The footprints on the plaza, never drawn: the building's, then the visitors' (center relative to the building's feet, radii; `back` stretches the solid part behind a tall piece). */
 const padsOf = (plaza: Plaza, layout: Layout) => {
   const v = plaza.visitors
   return [
@@ -664,7 +669,6 @@ const drawStatue = (ctx: CanvasRenderingContext2D, x: number, y: number, time: n
   const pedestal = arts.get('pedestal')
   const green = loadedSprites(KECLEON_DEX)
   if (!pedestal || !green) return
-  blitCentered(ctx, ellipse(Math.round(pedestal.w / 2), 2, 'rgba(16,40,16,0.3)'), x, y - 1)
   put(ctx, pedestal, x, y)
   // Frozen on its first idle frame: it's a statue.
   drawPokemon(ctx, goldenSprites(green), 'Idle', 0, 0, x, y - pedestal.h + PEDESTAL_TOP)
