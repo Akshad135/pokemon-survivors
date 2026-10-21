@@ -188,7 +188,8 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
     g.shake = 6
     // A wave legendary's capture plays where it fell; Mewtwo's victory waits for it.
     const captured = legendFell(g, e)
-    if (e.kind === 'mewtwo') {
+    // A faint earlier in the tick stands: the run is over, not won.
+    if (e.kind === 'mewtwo' && g.phase !== 'gameover') {
       if (captured && g.legendScene) g.legendScene.then = 'victory'
       else {
         g.phase = 'victory'

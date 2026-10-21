@@ -216,7 +216,8 @@ export const MAP_EVENTS: { [K in MapEventKind]: MapEventDef<K> } = {
       s.progress = chestProgress(s.progress, inside, dt)
       if (s.progress > before && Math.floor(s.progress * 6) !== Math.floor(before * 6)) notify(g, { kind: 'chestTick' })
       if (s.progress > 0) ev.ttl = Math.max(ev.ttl, ev.age + 4)
-      if (s.progress < 1) return
+      // Its cursed item asks the player, so it opens on a running run only: never over a faint, a win or another screen.
+      if (s.progress < 1 || g.phase !== 'playing') return
       const coins = chestCoins(g.time)
       dropCoins(g, ev.x, ev.y - 4, coins)
       dropPickup(g, ev.x + 8, ev.y, 'pokeball')
