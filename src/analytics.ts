@@ -43,6 +43,39 @@ type AnalyticsEvents = {
     foe: EnemyId | null
     hit: HitKind | null
     challenge?: 'official' | 'practice'
+    /** How the device coped: canvas memory at its peak (MB, `createCanvas`), `navigator.deviceMemory` (GB), and the frames while playing (ms; long: past 50 ms). */
+    peakCanvasMb: number
+    peakCanvases: number
+    deviceMemory: number | null
+    frameAvg: number | null
+    frameP95: number | null
+    longFrames: number
+  }
+  /**
+   * The page died mid-run last time (the crash watch, `takeCrash` in `bugReport.ts`), sent once
+   * by the next boot whether or not the player files a report. Rare, so it fits the budget.
+   */
+  run_crash: {
+    version: string
+    sameVersion: boolean
+    /** When the watch last wrote (ISO): the crash came within 5 s of it. */
+    at: string
+    partner: string | null
+    phase: string | null
+    minute: number | null
+    enemies: number | null
+    projectiles: number | null
+    wave: string | null
+    boss: string | null
+    place: string | null
+    heapMb: number | null
+    canvases: number | null
+    canvasMb: number | null
+    peakCanvasMb: number | null
+    frameMs: number | null
+    deviceMemory: number | null
+    /** The session's last error, if one came first. */
+    error: string | null
   }
   /** An entry pressed in the lobby: what players open. */
   lobby_press: { entry: LobbyFocus }
@@ -115,8 +148,17 @@ export type ErrorContext = { [key: string]: string | number | boolean | null }
 
 const reported = new Set<string>()
 
-/** Reports an error once per message and place, up to `MAX_ERRORS` per page load. */
+/**
+ * A chunk loaded on demand that the server no longer has (each deploy renames
+ * them) or that the network dropped, in each browser's words. Expected: the
+ * shell reloads into the new build on `vite:preloadError` (`watchDeploys` in `main.ts`).
+ */
+export const isStaleChunk = (error: unknown) =>
+  error instanceof Error && /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/.test(error.message)
+
+/** Reports an error once per message and place, up to `MAX_ERRORS` per page load; never a stale chunk. */
 const reportError = (error: unknown, context: () => ErrorContext) => {
+  if (isStaleChunk(error)) return
   const key = error instanceof Error ? `${error.message}\n${error.stack?.split('\n')[1] ?? ''}` : String(error)
   if (reported.has(key) || reported.size >= MAX_ERRORS) return
   reported.add(key)

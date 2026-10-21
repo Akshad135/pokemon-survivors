@@ -85,7 +85,10 @@ export const newsScreen = (root: HTMLElement, input: Input, onClose: () => void)
     later(onClose)
   }
 
-  void latestUpdate().then((update) => !closed && render(update))
+  void latestUpdate().then(
+    (update) => !closed && render(update),
+    () => {},
+  )
   root.append(el)
   return { el, dispose, dim: 0.5 }
 }

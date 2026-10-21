@@ -2,7 +2,8 @@ import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
 // First, so its error listeners catch what goes wrong while the rest loads.
-import { bugReportsEnabled, describeWith, syncRunWatch, takeCrash } from './bugReport'
+import { bugReportsEnabled, describeWith, deviceMemory, syncRunWatch, takeCrash } from './bugReport'
+import type { BugCrash, BugPerf } from './game/bugReport'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { castSound } from './ui/castSounds'
@@ -10,7 +11,8 @@ import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { advancePacer, pacer, resetPacer } from './engine/pacing'
-import { context2d, resetCanvases } from './engine/pixelart'
+import { canvasStats, context2d, resetCanvases, resetCanvasPeaks } from './engine/pixelart'
+import { frameStats, recentFrameMs, recordFrame, resetRunFrames, runFrames } from './engine/frameStats'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
@@ -39,7 +41,7 @@ import { setBiome } from './game/biomes'
 import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
 import { pickAlpha, spawnAlpha } from './game/alphas'
-import { stageIndexAt } from './data/waves'
+import { EVENTS, stageIndexAt } from './data/waves'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
@@ -288,13 +290,43 @@ const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || play
 const SCREEN_CLASSES = new Set(['screen', 'shell', 'dim', 'pop', 'hidden'])
 
 // A bug report says what's on screen: the screens stacked up (the form itself aside) and the run, as plain numbers.
+/** Frame pacing, for the crash watch and the run's summary on `run_end`. */
+const frames = frameStats()
+
+const mb = (bytes: number) => Math.round(bytes / 104_857.6) / 10
+
+/** Canvas memory and frame pace right now (`createCanvas` keeps the counts as it goes). */
+const perfNow = (): BugPerf => ({
+  canvases: canvasStats.live,
+  canvasMb: mb(canvasStats.bytes),
+  peakCanvases: canvasStats.peakLive,
+  peakCanvasMb: mb(canvasStats.peakBytes),
+  frameMs: recentFrameMs(frames),
+})
+
 describeWith(() => {
   const view = [...ui.querySelectorAll(':scope > .screen:not(.bug-screen)')].map((el) => [...el.classList].filter((c) => !SCREEN_CLASSES.has(c)).join('.')).join(' > ')
+  const perf = perfNow()
   const g = run?.game
-  if (!g || g.phase === 'gameover' || g.phase === 'victory') return { view, run: null }
+  if (!g || g.phase === 'gameover' || g.phase === 'victory') return { view, run: null, perf }
+  const boss = g.bossId === null ? undefined : g.enemies.find((e) => e.id === g.bossId)
   return {
     view,
-    run: { partner: g.starter, form: playerName(g), difficulty: g.difficulty, time: Math.floor(g.time), level: g.player.level, phase: g.phase, biome: g.biome.id, enemies: g.enemies.length },
+    perf,
+    run: {
+      partner: g.starter,
+      form: playerName(g),
+      difficulty: g.difficulty,
+      time: Math.floor(g.time),
+      level: g.player.level,
+      phase: g.phase,
+      biome: g.biome.id,
+      enemies: g.enemies.length,
+      projectiles: g.attacks.length + g.hazards.length,
+      wave: EVENTS[g.nextEvent - 1]?.kind ?? '',
+      boss: boss?.kind ?? '',
+      place: g.rift.arena ? `rift:${g.rift.arena.legend}` : (g.place.inside?.id ?? ''),
+    },
   }
 })
 
@@ -553,7 +585,21 @@ const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | nul
     foe: faint?.foe ?? null,
     hit: faint?.hit ?? null,
     ...challengeKind(r.challenge),
+    ...runPerf(),
   })
+}
+
+/** How the device coped with the run: canvas memory at its peak and the frames while playing. */
+const runPerf = () => {
+  const f = runFrames(frames)
+  return {
+    peakCanvasMb: mb(canvasStats.peakBytes),
+    peakCanvases: canvasStats.peakLive,
+    deviceMemory: deviceMemory(),
+    frameAvg: f.avg,
+    frameP95: f.p95,
+    longFrames: f.long,
+  }
 }
 
 /** The `challenge` field of a run's events: a Desafio do dia run says whether it started as the official attempt. */
@@ -704,7 +750,9 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
     companion: runCompanion(game.player),
   }
-  // The crash watch holds the run from now on (`bugReport.ts`).
+  // The crash watch holds the run from now on (`bugReport.ts`), and the run's own peaks and frames start here.
+  resetCanvasPeaks()
+  resetRunFrames(frames)
   syncRunWatch()
   track('run_start', { starter, difficulty: game.difficulty, mode: runMode(starter), ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
@@ -1386,6 +1434,7 @@ let last = performance.now()
 const pace = pacer()
 
 const frame = (now: number) => {
+  recordFrame(frames, now - last, run?.game.phase === 'playing')
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   const t = now / 1000
@@ -1557,9 +1606,33 @@ const watchDeploys = () =>
     }),
   )
 
+/** Counts a run the page died in, once, whether or not the player reports it: rare enough for an event of its own. */
+const reportCrash = (c: BugCrash) =>
+  track('run_crash', {
+    version: c.version,
+    sameVersion: c.version === __GAME_VERSION__,
+    at: c.at,
+    partner: c.run?.partner ?? null,
+    phase: c.run?.phase ?? null,
+    minute: c.run ? Math.floor(c.run.time / 60) : null,
+    enemies: c.run?.enemies ?? null,
+    projectiles: c.run?.projectiles ?? null,
+    wave: c.run?.wave || null,
+    boss: c.run?.boss || null,
+    place: c.run?.place || null,
+    heapMb: c.heapMb,
+    canvases: c.perf?.canvases ?? null,
+    canvasMb: c.perf?.canvasMb ?? null,
+    peakCanvasMb: c.perf?.peakCanvasMb ?? null,
+    frameMs: c.perf?.frameMs ?? null,
+    deviceMemory: deviceMemory(),
+    error: c.error?.message ?? null,
+  })
+
 /** The game closed mid-run last time (`takeCrash`): the title asks, once, whether to report it. */
 const askAboutCrash = () => {
   const crash = takeCrash()
+  if (crash) reportCrash(crash)
   if (!crash || !bugReportsEnabled || !screen?.el.classList.contains('title-home')) return
   crashPrompt(screen.el, () => setScreen(bugReportForm(ui, input, () => showTitle(), crash)))
 }

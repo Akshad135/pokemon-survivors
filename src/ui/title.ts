@@ -221,13 +221,17 @@ const newsButton = (onClick: () => void) => {
   const m = t().news
   const el = iconButton(newsIcon(), m.open, onClick, 'N')
   el.classList.add('lobby-news')
-  void latestUpdate().then((update) => {
-    if (!isUnread(update)) return
-    el.classList.add('unread')
-    el.setAttribute('aria-label', m.unread)
-    el.title = m.unread
-    el.append(h('em', { class: 'lobby-badge' }, '!'))
-  })
+  // A chunk that didn't load (a deploy renamed it, the network dropped) just leaves the badge off.
+  void latestUpdate().then(
+    (update) => {
+      if (!isUnread(update)) return
+      el.classList.add('unread')
+      el.setAttribute('aria-label', m.unread)
+      el.title = m.unread
+      el.append(h('em', { class: 'lobby-badge' }, '!'))
+    },
+    () => {},
+  )
   return el
 }
 
