@@ -508,13 +508,21 @@ const rainbow = (ctx: Ctx, g: Game, t: number) => {
   const cy = Math.round(g.player.y + g.view.h * 0.25)
   const r0 = Math.round(Math.max(g.view.w * 0.5, g.view.h * 0.75))
   ctx.globalAlpha = alpha
+  // The arc is wider than the screen: only the dots in view (with room for the screen shake) are drawn, most of them on a phone held upright.
+  const margin = 8 + Math.ceil(g.shake)
+  const left = Math.round(g.camera.x) - margin
+  const top = Math.round(g.camera.y) - margin
+  const right = left + g.view.w + margin * 2
+  const bottom = top + g.view.h + margin * 2
   RAINBOW.forEach((color, band) => {
     const r = r0 - band * 3
     const steps = Math.round(Math.PI * r)
     ctx.fillStyle = color
     for (let i = 0; i <= steps; i++) {
       const ang = Math.PI + (i / steps) * Math.PI
-      ctx.fillRect(Math.round(cx + Math.cos(ang) * r), Math.round(cy + Math.sin(ang) * r * 0.7), 2, 3)
+      const x = Math.round(cx + Math.cos(ang) * r)
+      const y = Math.round(cy + Math.sin(ang) * r * 0.7)
+      if (x >= left && x <= right && y >= top && y <= bottom) ctx.fillRect(x, y, 2, 3)
     }
   })
   // A few twinkles riding the arc.
