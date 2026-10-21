@@ -6,9 +6,10 @@ import type { Dir8 } from '../engine/math'
 
 /**
  * Loader/renderer for PMD SpriteCollab sheets. Each sheet has 8 rows (one per
- * direction) and N columns (frames). Durations are in 1/60s ticks.
+ * direction) and N columns (frames). Durations are in 1/60s ticks. `Fly` is a
+ * flyer's wingbeat up in the sky, for the species SpriteCollab has one for.
  */
-export type AnimName = 'Walk' | 'Idle' | 'Hurt'
+export type AnimName = 'Walk' | 'Idle' | 'Hurt' | 'Fly'
 export type Dex = number
 
 type Sheet = {
@@ -23,7 +24,7 @@ type Sheet = {
 
 export type SpeciesSprites = {
   dex: Dex
-  anims: Record<AnimName, Sheet>
+  anims: Record<Exclude<AnimName, 'Fly'>, Sheet> & { Fly?: Sheet }
   portrait: HTMLImageElement
   cry: string
   /** Distance from frame center down to the feet, in px. */
@@ -144,12 +145,12 @@ const fetchSpecies = async (dex: Dex, shiny: boolean, form?: FormKey): Promise<S
     }
   }
 
-  const [Walk, Idle, Hurt] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt')])
+  const [Walk, Idle, Hurt, Fly] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt'), anims.Fly ? loadSheet('Fly') : null])
   // A missing portrait shouldn't block a run: fall back to the walk sheet. Forms ship none and use the normal one.
   const portrait = await loadImage(form ? portraitUrl(dex, shiny) : `${dir}/portrait.png`).catch(() => loadImage(`${dir}/Walk.png`))
   const sprites: SpeciesSprites = {
     dex,
-    anims: { Walk, Idle, Hurt },
+    anims: { Walk, Idle, Hurt, ...(Fly && { Fly }) },
     portrait,
     cry: cryUrl(dex, form),
     // A form's own body only places its sheets; hitboxes keep the species' `bodyOf`.
@@ -314,7 +315,7 @@ export const drawPokemon = (
   y: number,
   opts: DrawOpts = {},
 ) => {
-  const sheet = s.anims[anim]
+  const sheet = s.anims[anim] ?? s.anims.Walk
   const frame = frameIndex(sheet, seconds, opts.loop ?? true)
   const sx = frame * sheet.fw
   const sy = dir * sheet.fh

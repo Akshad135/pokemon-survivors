@@ -1,5 +1,7 @@
 import type { AchievementId, AchievementStat, GiftTitleId, TitleId } from '../data/achievements'
 import type { BiomeId } from '../data/biomes'
+import type { PlaceId, WingId } from '../data/places'
+import type { LandmarkId, TreasureLandmark } from '../data/landmarks'
 import type { PokeType } from '../data/types'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
@@ -1347,6 +1349,81 @@ export const pt = {
     reaperDefeated: (n: number) => (n === 1 ? 'Arceus derrotado!' : `Arceus derrotado ${n}x!`),
   },
 
+  /** Places: the cave, the graveyard and the sky (`data/places.ts`), their entrances on the map and what goes on inside. */
+  landmarks: {
+    /** The sign that slides in when a landmark comes close, as the games name a place. */
+    names: { cottage: 'Casa Abandonada', tunnel: 'Túnel da Mina', maze: 'Labirinto de Sebes', ruins: 'Ruínas Unown', camp: 'Acampamento Abandonado' } satisfies Record<LandmarkId, string>,
+    /** A line under the name: what's there to do. */
+    hints: {
+      cottage: 'Alguém deixou um caixote lá dentro…',
+      tunnel: 'Entre por uma boca e saia pela outra.',
+      maze: 'Há um baú no coração do labirinto.',
+      ruins: 'O altar espera em silêncio.',
+      camp: 'Uma mochila esquecida perto da fogueira.',
+    } satisfies Record<LandmarkId, string>,
+    loot: {
+      cottage: 'Você vasculhou o caixote velho!',
+      maze: 'Você chegou ao coração do labirinto!',
+      ruins: 'Os glifos Unown brilham!',
+      camp: 'Você abriu a mochila esquecida!',
+    } satisfies Record<TreasureLandmark, string>,
+    tunnelOut: 'Você saiu do outro lado do túnel!',
+  },
+  places: {
+    names: { cave: 'Caverna Escura', graveyard: 'Cemitério Assombrado', sky: 'Acima das Nuvens' } satisfies Record<PlaceId, string>,
+    /** Short names for the HUD's pill while an entrance is open. */
+    hudNames: { cave: 'Caverna', graveyard: 'Cemitério', sky: 'Corrente' } satisfies Record<PlaceId, string>,
+    open: {
+      cave: 'A entrada de uma *caverna* apareceu! Siga a seta.',
+      graveyard: 'Um *cemitério* surgiu na névoa! Siga a seta.',
+      sky: 'Uma *corrente de ar* sobe para o céu! Siga a seta e voe.',
+    } satisfies Record<PlaceId, string>,
+    sealed: {
+      cave: 'Pedras desabaram na entrada da caverna.',
+      graveyard: 'O portão do cemitério se fechou.',
+      sky: 'A corrente de ar se desfez.',
+    } satisfies Record<PlaceId, string>,
+    blocked: 'Só um Pokémon do tipo *Voador* consegue subir nessa corrente de ar.',
+    /** What to do, shown on the way in. */
+    goal: {
+      cave: 'Ache as escadas no escuro e desça até o *tesouro*!',
+      graveyard: 'Cada fantasma derrotado desperta a *Pedra Peculiar*…',
+      sky: 'Pegue as *asas* que o vento traz antes que ele acalme!',
+    } satisfies Record<PlaceId, string>,
+    /** A dungeon floor, as Mystery Dungeon names them (B1F). */
+    floor: (n: number) => `B${n}F`,
+    /** The wind's three warnings, then the gust. */
+    wind: ['Algo está se agitando…', 'Está chegando mais perto!', 'Está bem aqui! O vento está fortíssimo!'],
+    blownOut: 'Uma rajada de vento soprou você para fora da caverna!',
+    monsterHouse: 'É uma *Casa de Monstros*!',
+    treasure: (coins: string) => `Tesouro aberto: *${coins}*, itens e uma Poké Ball!`,
+    keystone: 'A *Pedra Peculiar* rachou e *Spiritomb* despertou!',
+    keystoneShiny: 'A *Pedra Peculiar* rachou e um *Spiritomb* _shiny_ despertou!',
+    spiritomb: '*Spiritomb* derrotado! Os espíritos descansam em paz.',
+    dawnSoon: 'O dia está nascendo…',
+    dawn: 'O sol nasceu e os fantasmas sumiram.',
+    calmSoon: 'O vento está acalmando…',
+    landed: (n: number) => (n === 0 ? 'O vento acalmou e você planou de volta.' : `O vento acalmou. Você voltou com ${n === 1 ? '1 asa' : `${n} asas`}!`),
+    /** What each wing gives, `n` from `WINGS`. */
+    wings: {
+      healthWing: (n: number) => `+${n} de HP máximo`,
+      muscleWing: (n: number) => `+${n}% de dano`,
+      resistWing: (n: number) => `+${n} de defesa`,
+      swiftWing: (n: number) => `+${n} de velocidade`,
+      prettyWing: (n: number) => `vale ₽${n}`,
+    } satisfies Record<WingId, (n: number) => string>,
+    hudOpen: (name: string, time: string) => `${name} ${time}`,
+    hudCave: (floor: string, time: string) => `${floor} · vento ${time}`,
+    hudSpirits: (n: number, of: number, time: string) => `Espíritos ${n}/${of} · ${time}`,
+    hudDawn: (time: string) => `Amanhecer ${time}`,
+    hudSky: (n: number, time: string) => `Asas ${n} · ${time}`,
+    /** The results' row of places cleared this run. */
+    results: 'Lugares',
+    /** Fainting inside: a rescue brings the player back out instead of ending the run. */
+    fall: 'Você desmaiou! Uma *equipe de resgate* está a caminho…',
+    rescued: 'Você foi resgatado e voltou ao mapa. A corrida continua!',
+  },
+
   types: {
     normal: 'Normal', fire: 'Fogo', water: 'Água', grass: 'Planta', electric: 'Elétrico', poison: 'Veneno',
     flying: 'Voador', bug: 'Inseto', rock: 'Pedra', ground: 'Terra', ghost: 'Fantasma', fighting: 'Lutador',
@@ -1461,6 +1538,10 @@ export const pt = {
       shinyHatch: 'Ninhada brilhante',
       rift1: 'Desbravador de fendas',
       rift25: 'Viajante das fendas',
+      place1: 'Fora da trilha',
+      place25: 'Aventureiro',
+      landmark1: 'Bisbilhoteiro',
+      landmark50: 'Caçador de tesouros',
       mega1: 'Laço Mega',
       mega25: 'Mestre Mega',
       alpha1: 'Primeiro Alfa',
@@ -1468,6 +1549,7 @@ export const pt = {
       alpha100: 'Caçador de Alfas',
       legends: 'Domador de Lendas',
       shinyLegend: 'Lenda brilhante',
+      explorer: 'Explorador',
       champion: 'Campeão',
       wins10: 'Dinastia',
       trio: 'Trio inicial',
@@ -1496,6 +1578,7 @@ export const pt = {
       starterLines: 'Professor Pokémon',
       shinyHatch: 'Criador de Shinies',
       legends: 'Domador de Lendas',
+      explorer: 'Explorador(a)',
       champion: 'Campeão',
       regions: 'Mestre das Regiões',
       reaperDown: 'Lenda Viva',
@@ -1533,6 +1616,9 @@ export const pt = {
       shinyHatches: () => 'Choque um Pokémon shiny (1 em 100)',
       megas: (n: string) => (n === '1' ? 'Mega Evolua uma vez' : `Mega Evolua ${n} vezes`),
       alphaKills: (n: string) => (n === '1' ? 'Derrote um Pokémon Alfa' : `Derrote ${n} Pokémon Alfa`),
+      placeClears: (n: string) => (n === '1' ? 'Conclua um lugar: o tesouro da caverna, Spiritomb ou um voo com asas' : `Conclua ${n} lugares`),
+      landmarks: (n: string) => (n === '1' ? 'Abra um tesouro escondido no mapa: na casa abandonada, no labirinto, nas ruínas ou no acampamento' : `Abra ${n} tesouros escondidos no mapa`),
+      places: (n: string) => `Conclua os ${n} lugares: o tesouro da caverna, Spiritomb no cemitério e um voo acima das nuvens`,
     } satisfies Record<AchievementStat, (n: string) => string>,
     region: (name: string) => `Vença o Mewtwo com um inicial de ${name}`,
   },

@@ -6049,6 +6049,47 @@ button {
   color: #986800;
 }
 
+.rift-pill.rift-place {
+  color: #1c6c78;
+}
+
+/* Mystery Dungeon's floor card: black, the dungeon's name and its floor. */
+.floor-card {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #000;
+  color: #fff;
+  font-family: var(--title);
+  text-shadow: none;
+  pointer-events: none;
+  animation: floor-card-in 0.25s steps(4);
+}
+
+.floor-card.hidden {
+  display: none;
+}
+
+.floor-card b {
+  font-size: clamp(14px, 3.4vw, 26px);
+}
+
+.floor-card span {
+  font-size: clamp(12px, 2.6vw, 20px);
+  color: #f8d878;
+}
+
+@keyframes floor-card-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .rift-pill.urgent {
   animation: rift-pulse 0.5s steps(2) infinite;
 }
@@ -12301,6 +12342,83 @@ button.hall-tile:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/*
+ * A landmark's name (`ui/landmarks.ts`): a wooden sign sliding in at the
+ * top-left corner, under the move slots, the way the games name a route.
+ */
+.landmark-sign {
+  position: absolute;
+  z-index: 2;
+  top: calc(var(--safe-t) + 92px);
+  left: calc(var(--safe-l) + 10px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: min(320px, calc(100 * var(--vw) - 24px));
+  padding: 9px 14px 8px;
+  background: #f8f0d8;
+  border: 3px solid #5c3c20;
+  box-shadow: inset 0 0 0 2px #b88850, 0 3px 0 #2c1c10;
+  color: #3c2414;
+  pointer-events: none;
+  animation: landmark-sign 3.4s steps(1) both;
+}
+
+.landmark-sign.hidden {
+  display: none;
+}
+
+.landmark-sign b {
+  font-family: var(--title);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.landmark-sign small {
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1;
+  color: #7c5430;
+}
+
+@keyframes landmark-sign {
+  0% { transform: translateX(-110%); }
+  3% { transform: translateX(-70%); }
+  6% { transform: translateX(-30%); }
+  9%, 88% { transform: translateX(0); opacity: 1; }
+  91% { transform: translateX(-30%); }
+  94% { transform: translateX(-70%); }
+  97%, 100% { transform: translateX(-110%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landmark-sign {
+    animation: landmark-sign-fade 3.4s steps(1) both;
+  }
+}
+
+@keyframes landmark-sign-fade {
+  0%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Narrow screens: the news column takes the top, so the sign sits above the status box. */
+@media (max-width: 600px) {
+  .landmark-sign {
+    top: auto;
+    bottom: calc(var(--safe-b) + 64px);
+    padding: 7px 10px 6px;
+  }
+
+  .landmark-sign b {
+    font-size: 9px;
+  }
+
+  .landmark-sign small {
+    font-size: 16px;
+  }
 }
 
 /* ---------- Reports (ui/report.ts) and the boards' flag ---------- */

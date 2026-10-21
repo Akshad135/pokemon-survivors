@@ -88,6 +88,9 @@ export const siteEn: SiteMessages = {
     bossChance: (at: string, percent: number) => `Boss at ${at} (${n(percent)}% chance)`,
     trio: (at: string, trio: string) => `Boss at ${at} in runs that draw the ${trio} trio (1 in 3)`,
     rift: (from: string) => `Behind a legendary rift, from ${from} (optional arena)`,
+    place: (name: string, from: string) => `Lives in the ${name}, from ${from} (optional place)`,
+    placeBoss: (name: string, from: string) => `Breaks out of the Odd Keystone in the ${name}, from ${from}`,
+    places: { cave: 'Dark Cave', graveyard: 'Haunted Graveyard', sky: 'sky above the clouds (Flying types only)' },
     reaper: (at: string) => `The endless mode's reaper, from ${at}`,
     attacks: 'Attacks',
     shinyNote: 'Can show up shiny (1 in 450): an elite with 8x HP.',
@@ -203,6 +206,8 @@ export const siteEn: SiteMessages = {
       bosses: 'Bosses',
       traits: 'Special enemies',
       rifts: 'Legendary rifts and endless mode',
+      places: 'Places: the cave, the graveyard and the sky',
+      landmarks: 'Landmarks on the map',
       megas: 'Mega Evolution',
       shinies: 'Shinies',
       eggs: 'Eggs and the incubator',
@@ -237,7 +242,7 @@ export const siteEn: SiteMessages = {
       paragraphs: (minutes: number, starters: number) => [
         `Pick one of ${starters} starters, Kanto to Paldea. Each one has its own stats, starting move, learnset and special attack (see the Pokédex).`,
         `Walk around and dodge: your moves fire on their own as their cooldowns come back. Survive ${minutes} minutes of ever bigger hordes. At the end Mewtwo shows up, and beating it wins the run. After that you can keep going in endless mode.`,
-        'If your HP hits zero the run is over (unless you are holding a Revive, or are in a rift’s arena, which just casts you back out). The Poké Dollars you picked up go to your wallet.',
+        'If your HP hits zero the run is over (unless you are holding a Revive, or are in a rift’s arena or a place, which just send you back out to the map). The Poké Dollars you picked up go to your wallet.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Regular enemies get tougher every minute (bosses don't): ${rows.map(([at, hp, dmg]) => `at ${at}, ${hp}x HP and ${dmg}x damage`).join('; ')}.`,
@@ -382,6 +387,62 @@ export const siteEn: SiteMessages = {
         `Time survived is the main score: every minute past 15:00 pays ₽${n(e.perMinute)} in the bonus, and every defeated Arceus another ₽${e.reaperBonus}.`,
       ],
     },
+    landmarks: {
+      paragraphs: (p) => [
+        `The map has landmarks, placed from the run's seed like mountains and lakes: at most one per ${p.block}×${p.block} stretch of the map (${p.odds}% of them have one), always dressed for the biome the run is in. As you come close, a wooden sign names it in the corner of the screen.`,
+        `Four of them keep a treasure: stand next to it for ${p.open}s to open it. Each opens once per run, and a glint marks the ones still closed. The tunnel has no treasure but it's a shortcut: stand in one of its mouths for ${p.tunnel}s and you come out of the other, on the far side of the ridge, while the horde loses track of you.`,
+        `Between them, bushes, fallen logs and lone rocks and trees. All of it blocks whoever walks (the horde too), but flying Pokémon, ghosts and bosses go over it.`,
+      ],
+      names: { cottage: 'Abandoned Cottage', tunnel: 'Mine Tunnel', maze: 'Hedge Maze', ruins: 'Unown Ruins', camp: 'Abandoned Camp' },
+      placeHead: 'Landmark',
+      whatHead: "What's there",
+      lootHead: 'Treasure',
+      what: {
+        cottage: 'A stone cottage without its roof: walk in through the door. Windows, a fireplace, an old bed and a crate in the corner, and a well in the yard.',
+        tunnel: 'A long ridge with a mine mouth at each end, rails and an ore cart.',
+        maze: 'Tall hedges with a single way to the chest at the heart. Walkers get lost in the dead ends; you don’t have to.',
+        ruins: 'Standing stones carved with Unown glyphs in a ring, an altar in the middle and fallen columns.',
+        camp: 'A tent, logs around a fire still burning and a forgotten backpack.',
+      },
+      noLoot: 'Shortcut: in one mouth, out the other',
+      loot: (l) =>
+        [l.coins, l.items > 0 ? (l.items === 1 ? 'an item' : `${l.items} items`) : '', l.berries > 0 ? `${l.berries} Oran Berries` : '', l.xp > 0 ? `Exp. Candy (about ${l.xp}% of a level)` : '', l.egg > 0 ? `a ${l.egg}% chance of an egg` : '']
+          .filter(Boolean)
+          .join(', '),
+    },
+    places: {
+      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string; rescue: number }) => [
+        `From ${p.first}, about every ${n(p.every)} minutes, the entrance to a place shows up off screen, with an arrow on the edge pointing at it: a cave’s mouth in a hill, a graveyard’s gate or an updraft between standing stones. It stays open for ${p.open}s and, if a boss is alive, waits up to ${p.bossWait}s for it to fall. A run shows different places before any repeats.`,
+        `Going in is optional: stand ${p.enter}s in the doorway. Inside, the world waits, as in a rift: the horde freezes and nothing new spawns, but the run clock keeps going. Each place has its own Pokémon, which get stronger as the run goes on, and a time limit; when it runs out, you come back out the way you went in. Fainting inside doesn’t end the run: a rescue team takes you back to the door with ${p.rescue}% of your HP, without the reward and with your Revive kept.`,
+      ],
+      names: { cave: 'Dark Cave', graveyard: 'Haunted Graveyard', sky: 'Above the Clouds' },
+      placeHead: 'Place',
+      timeHead: 'Time',
+      speciesHead: 'Who lives there',
+      seconds: (s: number) => `${s}s`,
+      cave: (c: { floors: number; light: number; fire: number; electric: number; time: number; wind: string; house: number; egg: number }) => [
+        `Dark Cave, a Mystery Dungeon: ${c.floors} floors of rooms and corridors in the dark, laid out anew on each visit, then the treasure chamber. You only see a circle of light around your Pokémon (${c.light} px); Fire types carry a flame (${c.fire} px) and Electric types use Flash (${c.electric} px). Crystals glow in the rooms, and Pokémon out in the dark show only their eyes.`,
+        `Find each floor’s stairs, which glow in the dark, and head down; items and ₽ lie on the floor. In the treasure chamber the chest is guarded by a Monster House of ${c.house} Pokémon (one more every 2 minutes of the run): stand next to it to open it. It pays ₽, a Poké Ball, a Rare Candy and a Super Potion, with a ${c.egg}% chance of an egg.`,
+        `As in the games, a wind warns three times (with ${c.wind} left) and, at ${c.time}s, blows you out of the cave.`,
+      ],
+      graveyard: (g: { spirits: number; time: number; shiny: number; hp: string; egg: number }) => [
+        `Haunted Graveyard: only ghosts live there, and they rise from the graves. They float through the headstones; you don’t. Every ghost you defeat sends its spirit into the Odd Keystone in the middle of the graveyard.`,
+        `With ${g.spirits} spirits the keystone cracks and Spiritomb breaks out (${g.hp} HP at 1:30, more as the clock runs; 1 in ${g.shiny} is shiny). Beating it pays ₽, a Poké Ball, a Rare Candy and a Super Potion, heals 30% of your HP and has a ${g.egg}% chance of an egg. At ${g.time}s dawn breaks and the ghosts fade, Spiritomb beaten or not.`,
+      ],
+      sky: (s: { time: number; tailwind: number; every: number; flock: number }) => [
+        `Above the Clouds: only a Flying-type Pokémon can ride the updraft up, and it doesn’t even show up for those who can’t fly. Up there you fly with a tailwind (+${s.tailwind}% speed), only flying Pokémon come and a flock crosses the sky every ${s.flock}s.`,
+        `Every ${s.every}s a wing drifts in on the wind and across the sky: grab it before it’s gone. Each wing raises a stat for the rest of the run. At ${s.time}s the wind calms and you glide back down.`,
+      ],
+      wingHead: 'Wing',
+      effectHead: 'Effect',
+      wings: {
+        healthWing: (n: number) => `+${n} max HP`,
+        muscleWing: (n: number) => `+${n}% damage`,
+        resistWing: (n: number) => `+${n} defense`,
+        swiftWing: (n: number) => `+${n} speed`,
+        prettyWing: (n: number) => `₽${n} on the spot`,
+      },
+    },
     bosses: {
       paragraphs: (r) => [
         'Bosses arrive at fixed times. Legendaries make an entrance with a screen flash, their cry and a banner. All of them get an HP bar at the top and their own attacks: marked circles on the ground show where a hit will land, so step out of them.',
@@ -436,6 +497,7 @@ export const siteEn: SiteMessages = {
         boss: 'Onix, Snorlax and the legendary trio',
         chest: 'Locked chest',
         rift: 'A rift legendary',
+        place: "The cave's chest and Spiritomb, in the graveyard",
         final: 'Mewtwo and the rare mythical (Mew, Celebi or Jirachi)',
         reaper: 'Arceus, in endless mode',
         mission: 'Field mission: the defended nest (Normal / Hard / Nightmare)',

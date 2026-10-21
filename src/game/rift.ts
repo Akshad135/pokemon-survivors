@@ -1,9 +1,8 @@
 import { pick, range, type Rng } from '../engine/rng'
 import { RIFT, RIFT_ITEMS, RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
-import type { Prop } from './props'
-import type { Feature } from './terrain'
-import type { Enemy, Hazard, Pickup } from './types'
+import type { ArenaLayout } from '../data/arenas'
+import type { Room, Stash } from './room'
 
 /**
  * Pure rules and state of the legendary rifts. The map side (a portal opens,
@@ -13,15 +12,11 @@ import type { Enemy, Hazard, Pickup } from './types'
 /** A portal waiting on the map. `charge` counts the seconds the player has stood in it. */
 export type RiftPortal = { x: number; y: number; left: number; charge: number; legend: RiftLegend }
 
-/** The world outside, set aside untouched while the player fights in the arena. */
-export type RiftStash = { enemies: Enemy[]; hazards: Hazard[]; pickups: Pickup[]; props: Prop[]; bossId: number | null }
-
-export type RiftArena = {
+/** A rift's arena: a room (centered where the portal was) whose plan is `ARENA_LAYOUTS[legend]`. */
+export type RiftArena = Room & {
   legend: RiftLegend
   shiny: boolean
-  /** Center of the floor (where the portal was); its plan is `ARENA_LAYOUTS[legend]`. */
-  x: number
-  y: number
+  layout: ArenaLayout
   /** Seconds until the rift collapses. */
   left: number
   age: number
@@ -30,9 +25,7 @@ export type RiftArena = {
   loot: number | null
   /** Seconds left on the defeat (the player fainted, the rift throws them out); null while they stand. */
   fall: number | null
-  stash: RiftStash
-  /** What stands on the floor, in world px: map terrain's rules (`game/terrain.ts`) collide with it. */
-  terrain: Feature
+  stash: Stash
 }
 
 export type RiftState = {

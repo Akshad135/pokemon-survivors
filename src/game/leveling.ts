@@ -10,6 +10,7 @@ import { abilityDeltas } from './abilities'
 import { formAt } from './branch'
 import { FRESH_WEIGHT, runLearnset, unlockedAt } from './learnsets'
 import { buffDeltas } from './buffs'
+import { wingDeltas } from './place'
 import { CURSES, type CurseId } from '../data/curses'
 import { blocksNewMoves } from './curses'
 import { readyDuos } from './duoRules'
@@ -235,6 +236,7 @@ export const recomputeStats = (g: Game) => {
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
+    ...wingDeltas(g.place.wings),
     ...g.player.moveBuffs.map((b) => b.stats),
     ...abilityDeltas(g, MAX_ITEMS - p.items.length),
     ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),

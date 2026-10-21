@@ -20,6 +20,7 @@ import { abilityIcon } from '../render/abilityArt'
 import { megaIcon } from '../render/megaFx'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
+import { createPlaceCard } from './placeCard'
 import { createFieldMissionHud } from './fieldMissionHud'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
@@ -42,6 +43,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const mega = createMegaControls(onMega)
   const lunge = createLungeControls(onLunge)
   const rift = createRiftHud()
+  const card = createPlaceCard()
   const mission = createFieldMissionHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
@@ -97,6 +99,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     ),
     boss,
     rift.el,
+    card.el,
     mission.el,
     h(
       'div',
@@ -189,6 +192,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     mega.update(g)
     lunge.update(g)
     rift.update(g)
+    card.update(g)
     mission.update(g, !rift.el.classList.contains('hidden'))
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()

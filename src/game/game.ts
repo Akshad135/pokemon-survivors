@@ -45,8 +45,14 @@ import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
 import { withOutbreak } from './outbreak'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
+import { createLandmarkState, updateLandmarks, updateTunnel } from './landmarks'
 import { drawRoster, type Roster } from './roster'
 import { createRiftState } from './rift'
+import { createPlaceState } from './place'
+import { updatePlaceEntrance } from './placeEntrance'
+import { updatePlace, updatePlaceFall, updatePlaceIntro } from './placeInterior'
+import { roomOf } from './room'
+import { SKY } from '../data/places'
 import { updateArena, updateArenaFall } from './riftArena'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
@@ -175,6 +181,8 @@ export const createGame = (
     weather: createWeather(),
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
+    place: createPlaceState(),
+    landmarks: createLandmarkState(),
     tm: createTmState(),
     endless: null,
     tally: createTally(),
@@ -220,7 +228,8 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
   const ground = groundAt(g, p.x, p.y)
-  const pace = p.stats.speed * slow * (ground === 'water' ? playerWaterPace(g) : 1)
+  const tailwind = g.place.inside?.id === 'sky' ? SKY.tailwind : 1
+  const pace = p.stats.speed * slow * tailwind * (ground === 'water' ? playerWaterPace(g) : 1)
   const vx = moving ? input.x * pace : 0
   const vy = moving ? input.y * pace : 0
   // On ice the player's speed only slowly follows the stick, so they slide.
@@ -466,25 +475,28 @@ const updateEvolution = (g: Game, dt: number) => {
 export const step = (g: Game, input: StepInput, dt: number) => {
   if (g.phase === 'evolving') return updateEvolution(g, dt)
   if (g.phase !== 'playing') return
-  // The Mega Evolution plays with the world held still.
+  // The Mega Evolution plays with the world held still, and so does a dungeon floor's title card.
   if (updateMegaIntro(g, dt)) return
-  // So does the rift throwing a fainted player back out.
+  if (updatePlaceIntro(g, dt)) return
+  // So does the rift throwing a fainted player back out, or a rescue out of a place.
   if (updateArenaFall(g, dt)) return
+  if (updatePlaceFall(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
     return
   }
 
   g.time += dt
-  // Inside a rift arena the horde and the map wait outside: no spawns, props,
-  // map events, weather or biome changes. A biome change that came due meanwhile
-  // plays on the way out.
-  const inArena = g.rift.arena !== null
+  // Inside a room (a rift arena, a place) the horde and the map wait outside:
+  // no regular spawns, props, map events, weather or biome changes. A biome
+  // change that came due meanwhile plays on the way out.
+  const inArena = roomOf(g) !== null
   if (!inArena) {
     updateBiome(g)
     updateWeather(g, dt)
   }
-  updatePlayer(g, input.move, dt)
+  // Under a tunnel's ridge the player is carried through instead of walking.
+  if (!updateTunnel(g, dt)) updatePlayer(g, input.move, dt)
   updateCurses(g)
   updateMega(g, input.mega === true, dt)
   if (updateAbility(g, dt)) recomputeStats(g)
@@ -499,6 +511,9 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateStatuses(g, dt)
   updateRiftPortal(g, dt)
   updateArena(g, dt)
+  updatePlaceEntrance(g, dt)
+  updatePlace(g, dt)
+  updateLandmarks(g, dt)
   updateEndless(g)
   rebuildGrid(g)
   updateTraits(g, dt)
@@ -510,7 +525,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateAttacks(g, dt)
   updateVerbEvolved(g, dt)
   updateTerrain(g, dt)
-  if (!inArena) {
+  // Checked again: the player may have stepped into a room this very tick.
+  if (!roomOf(g)) {
     updateProps(g, dt)
     updateMapEvents(g, dt)
   }

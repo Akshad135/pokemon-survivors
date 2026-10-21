@@ -15,6 +15,8 @@ import type { MegaId } from '../data/megas'
 import type { AbilityId, HitKind } from '../data/abilities'
 import type { BranchId } from '../data/branches'
 import type { AbilityState } from './abilities'
+import type { LandmarkId } from '../data/landmarks'
+import type { LandmarkMoment, LandmarkState } from './landmarks'
 import type { BranchFavor } from './branch'
 import type { BiomeState } from './biomes'
 import type { Ranks } from './meta'
@@ -30,6 +32,8 @@ import type { Prop } from './props'
 import type { TerrainState } from './terrain'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
+import type { PlaceNotice, PlaceState } from './place'
+import type { PlaceId } from '../data/places'
 import type { SpecialState } from './special'
 import type { Stance } from './stance'
 import type { RunTally } from './tally'
@@ -544,6 +548,10 @@ export type GameEvent =
   | { kind: 'reaperDown'; defeats: number }
   /** A boss, chest or rift left an egg; it goes to the incubator when the run is banked. */
   | { kind: 'egg'; tier: EggTier }
+  /** A landmark was named, its treasure opened, or the player went into or out of a tunnel (`landmarks.ts`). */
+  | { kind: 'landmark'; landmark: LandmarkId; moment: LandmarkMoment }
+  /** Something happened at a place: its entrance, the way in and out, what goes on inside (`place.ts`). */
+  | { kind: 'place'; place: PlaceId; notice: PlaceNotice }
   /** A foe shattered: an execute, or a frozen foe's ice broken by a hit. */
   | { kind: 'shatter'; cause: 'execute' | 'freeze' }
   /** A guard window negated a hit. */
@@ -632,8 +640,10 @@ export type Game = {
   props: Prop[]
   /** World cells whose prop was already broken, so it never respawns. */
   brokenProps: Set<number>
-  /** Rocks, trees, mountains, towers and lakes on the map (`game/terrain.ts`). */
+  /** Rocks, trees, mountains, towers, lakes and landmarks on the map (`game/terrain.ts`). */
   terrain: TerrainState
+  /** The landmarks' treasures taken, names shown and the tunnel being walked (`game/landmarks.ts`). */
+  landmarks: LandmarkState
   buffs: Buff[]
   /** Points of interest placed by the event director (`mapEvents.ts`). */
   mapEvents: MapEventsState
@@ -651,6 +661,8 @@ export type Game = {
   traits: { seen: Set<TraitId>; nextIntro: number }
   /** Legendary rifts: the portal on the map, the arena and what was met this run. */
   rift: RiftState
+  /** Places (`place.ts`): the entrance on the map, the inside the player is in and the wings picked up. */
+  place: PlaceState
   /** TMs and Move Tutors this run (`game/tms.ts`): tutors met, lessons taken, the legendary TM. */
   tm: TmState
   /** Set once the player goes on past Mewtwo (endless mode). */

@@ -8,6 +8,7 @@ import { playerForm } from './branch'
 import { killEnemy } from './combat'
 import { burst, floatText } from './effects'
 import type { Game } from './types'
+import { roomOf } from './room'
 
 /**
  * Weather in play. `since` is the game time it started (`prev` fades out meanwhile);
@@ -43,6 +44,7 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   steel: ['steel'],
   aero: ['flying'],
   grass: ['grass'],
+  shadow: ['ghost'],
   judgment: ['normal'],
   poison: ['poison'],
   // The horde's spit (`spitters.ts`).
@@ -68,7 +70,7 @@ export const weatherFits = (biome: BiomeId, weather: WeatherId) => {
 }
 
 /** The weather where the player stands: a rift arena is outside it, so always clear skies. */
-export const weatherHere = (g: Game): WeatherId => (g.rift.arena ? 'clear' : g.weather.id)
+export const weatherHere = (g: Game): WeatherId => (roomOf(g) ? 'clear' : g.weather.id)
 
 /** Starts a weather spell now (also the dev console's `ps.weather`). */
 export const setWeather = (g: Game, id: WeatherId) => {

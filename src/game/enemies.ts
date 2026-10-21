@@ -13,6 +13,8 @@ import { isSpitter, spitBand, spitterStride } from './spitters'
 import { CONFUSE_BUMP, CONFUSE_CONTACT, createStatus, isFrozen, statusAttack, statusPace } from './status'
 import { enemyGroundPace } from './terrain'
 import { createTraitState, isAirborne, traitPace } from './traits'
+import { dungeonNav } from './dungeon'
+import { underground } from './landmarks'
 import { TRAITS } from '../data/traits'
 import type { Enemy, EnemyBehavior, Game } from './types'
 import * as dm from '../engine/dmath'
@@ -119,10 +121,18 @@ export const despawnEnemy = (e: Enemy) => {
   e.dying = FAINT_TIME
 }
 
+/** Where a walker heads instead of the player (a dungeon's corridor), reused every tick. */
+const waypoint = { x: 0, y: 0 }
+
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
   const recycleDist = dm.hypot(g.view.w, g.view.h) * 0.85
+  // In the cave's dungeon, walkers follow the corridors toward the player instead of the wall between them.
+  const inside = g.place.inside
+  const cave = inside?.id === 'cave' && inside.state.plan ? inside : null
+  const nav = cave?.state.plan ? dungeonNav(cave.state.plan, p.x - cave.x, p.y - cave.y) : null
   const band = spitBand(g.view)
+  const lost = underground(g)
 
   for (const e of g.enemies) {
     if (e.dying >= 0) {
@@ -141,8 +151,8 @@ export const updateEnemies = (g: Game, dt: number) => {
     let vx = 0
     let vy = 0
     const confused = e.status.confuse.time > 0
-    if (e.behavior.kind === 'chase' && (confused || p.hidden)) {
-      // Lost track of the player (confused, or the player burrowed): amble about.
+    if (e.behavior.kind === 'chase' && (confused || p.hidden || lost)) {
+      // Lost track of the player (confused, or the player burrowed or went into a tunnel): amble about.
       const h = e.status.heading + e.id * 2.4 + (confused ? 0 : g.time * 0.6)
       vx = dm.cos(h) * pace * LOST_PACE
       vy = dm.sin(h) * pace * LOST_PACE
@@ -161,6 +171,10 @@ export const updateEnemies = (g: Game, dt: number) => {
         speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
       } else if (isSpitter(e)) {
         speed = pace * spitterStride(dm.hypot(p.x - e.x, p.y - e.y), inView(g, e.x, e.y, -TRAITS.spitter.inset), band)
+      }
+      if (nav && cave && nav(e.x - cave.x, e.y - cave.y, waypoint)) {
+        tx = cave.x + waypoint.x
+        ty = cave.y + waypoint.y
       }
       const d = dirTo(e.x, e.y, tx, ty)
       vx = d.x * speed

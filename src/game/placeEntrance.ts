@@ -1,0 +1,97 @@
+import { retain, TAU } from '../engine/math'
+import { range } from '../engine/rng'
+import { ENTRANCE_PIECES, PLACE, PLACE_FEET, PLACES, type PlaceDef, type PlaceId } from '../data/places'
+import { DIRECTOR } from './mapEventRules'
+import { chargePortal } from './rift'
+import { nextPlaceAt, pickPlace, placeDue } from './place'
+import { enterPlace } from './placeInterior'
+import { notifyPlace, solidAt } from './placeKit'
+import { isFlyer } from './sky'
+import { isOpen } from './terrain'
+import type { Game } from './types'
+import * as dm from '../engine/dmath'
+
+/**
+ * The map side of places: every few minutes an entrance shows up just past
+ * the screen's edge (a cave mouth in a rocky hill, a graveyard's gate, an
+ * updraft between standing stones), with an arrow pointing at it. It stands
+ * like any terrain and stays open for a while; standing in its door for
+ * `PLACE.enterTime` steps in. Once used or closed it stays where it is until
+ * it's off screen.
+ */
+
+/** How much clear ground an entrance needs around its door. */
+const CLEARANCE = 72
+
+/** A spot just past the screen's edge with room for an entrance: clear of terrain, map events and the rift's portal. */
+const entranceSpot = (g: Game) => {
+  const p = g.player
+  const d = dm.hypot(g.view.w, g.view.h) / 2 + 70
+  for (let i = 0; i < 12; i++) {
+    const a = range(g.rng, 0, TAU)
+    const x = Math.round(p.x + dm.cos(a) * d)
+    const y = Math.round(p.y + dm.sin(a) * d)
+    if (!isOpen(g, x, y - 16, CLEARANCE)) continue
+    const crowded = [...g.mapEvents.list, ...(g.rift.portal ? [g.rift.portal] : [])].some((o) => dm.sq(o.x - x) + dm.sq(o.y - y) < dm.sq(DIRECTOR.spacing))
+    if (!crowded) return { x, y }
+  }
+  return null
+}
+
+/** Opens place `id`'s entrance at (x, y), or at a free spot past the screen's edge; tries again shortly if there's none. */
+export const openEntrance = (g: Game, id: PlaceId = pickPlace(g.rng, { offered: g.place.offered, biome: g.biome.id, flyer: isFlyer(g) }), at?: { x: number; y: number }) => {
+  const spot = at ?? entranceSpot(g)
+  if (!spot) {
+    g.place.nextAt = g.time + 3
+    return null
+  }
+  const { x, y } = spot
+  const solids = ENTRANCE_PIECES[id].map(([piece, dx, dy], i) => solidAt(piece, PLACE_FEET[piece], x + dx, y + dy, i))
+  g.place.entrance = { id, x, y, left: PLACE.openTime, charge: 0, open: true, terrain: { solids, lake: null } }
+  g.place.offered.push(id)
+  g.place.nextAt = nextPlaceAt(g.place.nextAt, g.time, g.rng)
+  // Breakables that stood where the entrance now is make room for it.
+  const feet = solids.flatMap((s) => s.foot)
+  retain(g.props, (pr) => !feet.some((e) => dm.sq((pr.x - e.x) / (e.rx + 8)) + dm.sq((pr.y - e.y) / (e.ry + 8)) < 1))
+  notifyPlace(g, id, { kind: 'open' })
+  return g.place.entrance
+}
+
+/** Opens entrances on schedule, closes them when their time is up, drops them once out of sight and steps the player in. */
+export const updatePlaceEntrance = (g: Game, dt: number) => {
+  const s = g.place
+  const ent = s.entrance
+  if (!ent) {
+    const busy = s.inside !== null || g.rift.portal !== null || g.rift.arena !== null
+    if (placeDue({ time: g.time, nextAt: s.nextAt, busy, bossAlive: g.bossId !== null, endless: g.endless !== null })) openEntrance(g)
+    return
+  }
+  // It waits on the map while the player is inside (or in a rift).
+  if (s.inside || g.rift.arena) return
+  const p = g.player
+  if (ent.open) {
+    ent.left -= dt
+    if (ent.left <= 0) {
+      ent.open = false
+      notifyPlace(g, ent.id, { kind: 'sealed' })
+    }
+  }
+  if (!ent.open) {
+    const away = Math.abs(ent.x - p.x) > g.view.w / 2 + 110 || Math.abs(ent.y - p.y) > g.view.h / 2 + 130
+    if (away) s.entrance = null
+    return
+  }
+  const def: PlaceDef = PLACES[ent.id]
+  const inside = dm.sq(p.x - ent.x) + dm.sq(p.y - ent.y) < dm.sq(def.door + p.radius * 0.5)
+  if (inside && def.flyers && !isFlyer(g)) {
+    // Told once per visit to the door.
+    if (ent.charge >= 0) notifyPlace(g, ent.id, { kind: 'blocked' })
+    ent.charge = -1
+    return
+  }
+  ent.charge = chargePortal(Math.max(0, ent.charge), inside, dt)
+  if (ent.charge < PLACE.enterTime) return
+  ent.open = false
+  ent.charge = 0
+  enterPlace(g, ent.id, ent.x, ent.y)
+}

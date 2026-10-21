@@ -10,6 +10,7 @@ import { hasTrait } from './roster'
 import { spawnRing, spawnSwarm } from './spawner'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
+import { roomOf } from './room'
 
 /** Extra Poké Balls and ₽ dropped by a defeated Arceus, on top of a boss's usual drop. */
 const REAPER_LOOT = { pokeballs: 3, coins: [250, 250, 250, 250, 250, 250, 250, 250] } as const
@@ -61,10 +62,10 @@ const hunt = (g: Game, s: EndlessState, reaper: Enemy) => {
   reaper.y = p.y + (dy / d) * edge
 }
 
-/** Endless horde events and the reaper. Paused while the player is inside a rift arena. */
+/** Endless horde events and the reaper. Paused while the player is inside a room (a rift arena, a place). */
 export const updateEndless = (g: Game) => {
   const s = g.endless
-  if (!s || g.rift.arena) return
+  if (!s || roomOf(g)) return
   if (g.time >= s.nextEvent) {
     // Trait species stay seasoning: a ring of 40 Nidoqueen would be the whole horde.
     const pool = (g.roster.stages[stageIndexAt(g.time)] ?? []).filter(([id]) => !hasTrait(id))

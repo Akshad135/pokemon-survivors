@@ -51,6 +51,11 @@ import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { riftDevTools } from './game/riftDev'
+import { placeDevTools } from './game/placeDev'
+import { placeFeedback } from './ui/places'
+import { landmarkFeedback } from './ui/landmarks'
+import { PLACES } from './data/places'
+import { placeSchedule } from './game/place'
 import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
@@ -66,6 +71,7 @@ import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
+import type { LandmarkId } from './data/landmarks'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
@@ -596,7 +602,8 @@ const prefetchRun = (day: DayKey | null = null) =>
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper.
+ * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper
+ * (the places' dwellers come from `placeSchedule`).
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
@@ -690,7 +697,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   syncRunWatch()
   track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
-  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
+  const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
+  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
@@ -1089,6 +1097,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return playSfx('break', 60)
     case 'mapEvent':
       return mapEventFeedback(ui, e.notice)
+    case 'place':
+      return placeFeedback(ui, e.place, e.notice)
+    case 'landmark':
+      return landmarkFeedback(ui, e.landmark, e.moment)
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
@@ -1199,8 +1211,9 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
-  // A rift arena keeps the boss theme until the player is back, loot window included.
-  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : BIOMES[r.game.biome.id].theme
+  // A rift arena keeps the boss theme until the player is back, loot window included; a place plays its own.
+  const inside = r.game.place.inside
+  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : inside ? PLACES[inside.id].theme : BIOMES[r.game.biome.id].theme
 }
 
 /* ---------------- Global keys ---------------- */
@@ -1665,6 +1678,27 @@ const devTerrain = (g: Game, kind: SolidKind | 'lake' = 'cliff', dy = 70) => {
   return null
 }
 
+/** Walks the player to the nearest landmark of a kind (any without one), `dy` px south of its anchor. */
+const devLandmark = (g: Game, id?: LandmarkId, dy = 60) => {
+  const C = TERRAIN.cell
+  const pcx = Math.floor(g.player.x / C)
+  const pcy = Math.floor(g.player.y / C)
+  for (let r = 0; r < 40; r++) {
+    for (let cy = pcy - r; cy <= pcy + r; cy++) {
+      for (let cx = pcx - r; cx <= pcx + r; cx++) {
+        if (Math.max(Math.abs(cx - pcx), Math.abs(cy - pcy)) !== r) continue
+        const lm = featureAt(g.terrain.seed, cx, cy)?.landmark
+        if (!lm || (id && lm.id !== id)) continue
+        const at = clearSpot(g, { x: lm.x, y: lm.y + dy }, g.player.radius + 2)
+        g.player.x = at.x
+        g.player.y = at.y
+        return lm
+      }
+    }
+  }
+  return null
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -1699,10 +1733,13 @@ if (import.meta.env.DEV) {
       card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
+      /** `ps.landmark('maze')` walks you to the nearest maze (`cottage`, `tunnel`, `ruins`, `camp`; any without an argument), 60 px south of it. */
+      landmark: (id?: LandmarkId, dy?: number) => (run ? devLandmark(run.game, id, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       /** `ps.ball(3)` drops Poké Balls 20 px to the right of the player (inside the magnet), side by side. */
       ball: (n = 1) => withRun((g) => Array.from({ length: n }, (_, i) => dropPickup(g, g.player.x + 20 + i * 6, g.player.y, 'pokeball'))),
       ...riftDevTools(() => run?.game),
+      ...placeDevTools(() => run?.game),
       ...levelUpDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),
       ...eggMoveDevTools(() => run?.game),

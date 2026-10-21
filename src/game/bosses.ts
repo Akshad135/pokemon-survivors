@@ -229,6 +229,7 @@ const IMPACT: Partial<Record<HazardVisual, { colors: readonly string[]; event: '
   steel: { colors: ['#c8e0f8', '#78e0f8', '#ffffff'], event: 'quake' },
   aero: { colors: ['#ffffff', '#d8e8f8', '#a8c8f8'], event: 'quake' },
   grass: { colors: ['#70d048', '#e0f8a0', '#286820'], event: 'quake' },
+  shadow: { colors: ['#302040', '#7860a8', '#d8c8f8'], event: 'quake' },
   judgment: { colors: ['#fff0a0', '#f8d030', '#ffffff'], event: 'thunder' },
 }
 

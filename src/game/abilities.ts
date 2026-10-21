@@ -14,6 +14,7 @@ import type { StatDelta } from './stats'
 import { applyStatus } from './status'
 import type { Enemy, Game } from './types'
 import { setWeather, weatherHere } from './weather'
+import { roomOf } from './room'
 
 /**
  * Abilities in a run (`data/abilities.ts`): picked when the first evolution
@@ -308,8 +309,8 @@ export const updateAbility = (g: Game, dt: number) => {
   for (const e of effectsOf(g)) {
     switch (e.kind) {
       case 'summon':
-        // The weather lives outside: a rift arena waits until the player is back.
-        if (s.biome !== g.biome.id && !g.rift.arena) {
+        // The weather lives outside: a room (rift arena, place) waits until the player is back.
+        if (s.biome !== g.biome.id && !roomOf(g)) {
           s.biome = g.biome.id
           setWeather(g, e.weather)
           g.events.push({ kind: 'ability', id: s.id!, moment: 'proc' })

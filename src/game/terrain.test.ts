@@ -42,8 +42,8 @@ describe('terrain layout', () => {
   })
 
   it('puts every kind of feature on the map', () => {
-    const kinds = new Set(sweep(SEED).flatMap(({ f }) => [...(f?.solids.map((s) => s.kind) ?? []), ...(f?.lake ? ['lake'] : [])]))
-    expect([...kinds].sort()).toEqual(['cliff', 'lake', 'rock', 'tower', 'tree'])
+    const kinds = new Set(sweep(SEED).flatMap(({ f }) => (f?.landmark ? [] : [...(f?.solids.map((s) => s.kind) ?? []), ...(f?.lake ? ['lake'] : [])])))
+    expect([...kinds].sort()).toEqual(['bush', 'cliff', 'lake', 'log', 'rock', 'tower', 'tree'])
   })
 })
 

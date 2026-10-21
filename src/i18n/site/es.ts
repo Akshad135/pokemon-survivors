@@ -88,6 +88,9 @@ export const siteEs: SiteMessages = {
     bossChance: (at: string, percent: number) => `Jefe a las ${at} (${n(percent)}% de probabilidad)`,
     trio: (at: string, trio: string) => `Jefe a las ${at} en las partidas que sortean el trío ${trio} (1 de cada 3)`,
     rift: (from: string) => `Detrás de una grieta legendaria, desde las ${from} (arena opcional)`,
+    place: (name: string, from: string) => `Vive en ${name}, desde las ${from} (lugar opcional)`,
+    placeBoss: (name: string, from: string) => `Sale de la Piedra Espíritu en ${name}, desde las ${from}`,
+    places: { cave: 'la Cueva Oscura', graveyard: 'el Cementerio Embrujado', sky: 'el cielo sobre las nubes (solo para voladores)' },
     reaper: (at: string) => `Segador del modo infinito, desde las ${at}`,
     attacks: 'Ataques',
     shinyNote: 'Puede aparecer shiny (1 de cada 450): élite con 8x de HP.',
@@ -207,6 +210,8 @@ export const siteEs: SiteMessages = {
       bosses: 'Jefes',
       traits: 'Enemigos especiales',
       rifts: 'Grietas legendarias y modo infinito',
+      places: 'Lugares: cueva, cementerio y cielo',
+      landmarks: 'Puntos de interés del mapa',
       megas: 'Megaevolución',
       shinies: 'Shinies',
       eggs: 'Huevos e incubadora',
@@ -241,7 +246,7 @@ export const siteEs: SiteMessages = {
       paragraphs: (minutes: number, starters: number) => [
         `Elige uno de los ${starters} iniciales, de Kanto a Paldea. Cada uno tiene sus propias estadísticas, movimiento inicial, movimientos que aprende y ataque especial (mira la Pokédex).`,
         `Muévete por el campo y esquiva: los movimientos se disparan solos al ritmo de su recarga. Sobrevive ${minutes} minutos de hordas cada vez más grandes. Al final aparece Mewtwo, y derrotarlo gana la partida. Después, si quieres, puedes seguir en el modo infinito.`,
-        'Si tu HP llega a cero, la partida termina (a menos que tengas un Revive guardado o estés en la arena de una grieta, que solo te expulsa de vuelta). Los Poké Dollars que recogiste van a tu billetera.',
+        'Si tu HP llega a cero, la partida termina (a menos que tengas un Revive guardado o estés en la arena de una grieta o en un lugar, de donde solo te sacan de vuelta al mapa). Los Poké Dollars que recogiste van a tu billetera.',
       ],
       scaling: (rows: readonly (readonly [string, string, string])[]) =>
         `Los enemigos comunes se vuelven más fuertes cada minuto (los jefes no): ${rows.map(([at, hp, dmg]) => `a las ${at}, ${hp}x de HP y ${dmg}x de daño`).join('; ')}.`,
@@ -386,6 +391,62 @@ export const siteEs: SiteMessages = {
         `El tiempo sobrevivido es la métrica principal: cada minuto después de las 15:00 paga ₽${n(e.perMinute)} en la bonificación, y cada Arceus derrotado, ₽${e.reaperBonus} más.`,
       ],
     },
+    landmarks: {
+      paragraphs: (p) => [
+        `El mapa tiene puntos de interés fijos, colocados por la semilla de la partida como las montañas y los lagos: como máximo uno cada ${p.block}×${p.block} tramos del mapa (${p.odds}% de ellos tienen uno), siempre con el aspecto del bioma en que está la partida. Al acercarte, un cartel de madera muestra el nombre del lugar en la esquina de la pantalla.`,
+        `Cuatro de ellos guardan un tesoro: quédate ${p.open}s junto a él para abrirlo. Cada tesoro se abre una sola vez por partida, y un destello marca los que siguen cerrados. El túnel no tiene tesoro, pero es un atajo: quédate ${p.tunnel}s en una de sus bocas y sales por la otra, del otro lado de la montaña, mientras la horda te pierde el rastro.`,
+        `Entre ellos, arbustos, troncos caídos y rocas y árboles sueltos. Todo eso bloquea a quien camina (también a la horda), pero los Pokémon voladores, los fantasmas y los jefes pasan por encima.`,
+      ],
+      names: { cottage: 'Casa Abandonada', tunnel: 'Túnel de la Mina', maze: 'Laberinto de Setos', ruins: 'Ruinas Unown', camp: 'Campamento Abandonado' },
+      placeHead: 'Lugar',
+      whatHead: 'Qué hay',
+      lootHead: 'Tesoro',
+      what: {
+        cottage: 'Una casa de piedra sin techo: entra por la puerta. Ventanas, chimenea, una cama vieja y una caja en el rincón, y un pozo en el patio.',
+        tunnel: 'Una sierra larga con una boca de mina en cada punta, rieles y un carrito de mineral.',
+        maze: 'Setos altos con un único camino hasta el cofre del centro. Quien camina se pierde en los callejones; tú no tienes por qué.',
+        ruins: 'Piedras con glifos Unown en ronda, un altar en el medio y columnas caídas.',
+        camp: 'Una carpa, troncos alrededor de la fogata todavía encendida y una mochila olvidada.',
+      },
+      noLoot: 'Atajo: entra por una boca, sal por la otra',
+      loot: (l) =>
+        [l.coins, l.items > 0 ? (l.items === 1 ? 'un objeto' : `${l.items} objetos`) : '', l.berries > 0 ? `${l.berries} Oran Berries` : '', l.xp > 0 ? `Exp. Candy (cerca del ${l.xp}% de un nivel)` : '', l.egg > 0 ? `${l.egg}% de probabilidad de un huevo` : '']
+          .filter(Boolean)
+          .join(', '),
+    },
+    places: {
+      paragraphs: (p: { first: string; every: number; bossWait: number; open: number; enter: string; rescue: number }) => [
+        `Desde las ${p.first}, más o menos cada ${n(p.every)} minutos, la entrada de un lugar aparece fuera de la pantalla, con una flecha en el borde que apunta hacia ella: la boca de una cueva en una colina, la reja de un cementerio o una corriente de aire entre piedras. Queda abierta ${p.open}s y, si hay un jefe vivo, espera hasta ${p.bossWait}s a que caiga. La partida muestra lugares distintos antes de repetir alguno.`,
+        `Entrar es opcional: quédate ${p.enter}s en la entrada. Adentro el mundo espera, como en una grieta: la horda se congela y no aparece nada nuevo, pero el reloj de la partida sigue. Cada lugar tiene sus propios Pokémon, que se hacen más fuertes a medida que avanza la partida, y un límite de tiempo; cuando se acaba, sales por donde entraste. Si te debilitas adentro, la partida no termina: un equipo de rescate te lleva de vuelta a la entrada con el ${p.rescue}% de tus PS, sin la recompensa y con el Revive guardado.`,
+      ],
+      names: { cave: 'Cueva Oscura', graveyard: 'Cementerio Embrujado', sky: 'Sobre las Nubes' },
+      placeHead: 'Lugar',
+      timeHead: 'Tiempo',
+      speciesHead: 'Quién vive ahí',
+      seconds: (s: number) => `${s}s`,
+      cave: (c: { floors: number; light: number; fire: number; electric: number; time: number; wind: string; house: number; egg: number }) => [
+        `Cueva Oscura, un Mundo Misterioso: ${c.floors} pisos de salas y pasillos a oscuras, sorteados en cada visita, y luego la cámara del tesoro. Solo ves un círculo de luz alrededor de tu Pokémon (${c.light} px); los de tipo Fuego llevan una llama (${c.fire} px) y los Eléctricos usan Destello (${c.electric} px). Hay cristales que brillan en las salas, y los Pokémon en la oscuridad solo muestran los ojos.`,
+        `Encuentra la escalera de cada piso, que brilla en la oscuridad, y baja; hay objetos y ₽ en el suelo. En la cámara del tesoro, el cofre está custodiado por una Casa de Monstruos con ${c.house} Pokémon (uno más cada 2 minutos de partida): quédate cerca para abrirlo. Da ₽, una Poké Ball, un Caramelo Raro y una Superpoción, con ${c.egg}% de probabilidad de un huevo.`,
+        `Como en los juegos, un viento avisa tres veces (cuando faltan ${c.wind}) y, a los ${c.time}s, te saca soplando de la cueva.`,
+      ],
+      graveyard: (g: { spirits: number; time: number; shiny: number; hp: string; egg: number }) => [
+        `Cementerio Embrujado: ahí solo viven fantasmas, que salen de las tumbas. Ellos atraviesan las lápidas; tú no. Cada fantasma derrotado manda su espíritu a la Piedra Espíritu en medio del cementerio.`,
+        `Con ${g.spirits} espíritus la piedra se agrieta y Spiritomb despierta (${g.hp} PS a las 1:30, más con el reloj; 1 de cada ${g.shiny} es shiny). Vencerlo da ₽, una Poké Ball, un Caramelo Raro y una Superpoción, cura el 30% de tus PS y tiene ${g.egg}% de probabilidad de un huevo. A los ${g.time}s amanece y los fantasmas desaparecen, con o sin Spiritomb derrotado.`,
+      ],
+      sky: (s: { time: number; tailwind: number; every: number; flock: number }) => [
+        `Sobre las Nubes: solo un Pokémon de tipo Volador puede subir con la corriente de aire, y ni siquiera aparece para quien no vuela. Allá arriba vuelas con viento a favor (+${s.tailwind}% de velocidad), solo aparecen Pokémon voladores y una bandada cruza el cielo cada ${s.flock}s.`,
+        `Cada ${s.every}s el viento trae una pluma que cruza el cielo: atrápala antes de que pase. Cada pluma mejora una estadística hasta el final de la partida. A los ${s.time}s el viento se calma y planeas de vuelta.`,
+      ],
+      wingHead: 'Pluma',
+      effectHead: 'Efecto',
+      wings: {
+        healthWing: (n: number) => `+${n} PS máximos`,
+        muscleWing: (n: number) => `+${n}% de daño`,
+        resistWing: (n: number) => `+${n} de defensa`,
+        swiftWing: (n: number) => `+${n} de velocidad`,
+        prettyWing: (n: number) => `₽${n} al instante`,
+      },
+    },
     bosses: {
       paragraphs: (r) => [
         'Los jefes llegan en horarios fijos. Los legendarios entran con un destello en la pantalla, su grito y un aviso. Todos tienen una barra de HP arriba y ataques propios: los círculos marcados en el suelo avisan dónde va a caer el golpe, así que sal de ellos.',
@@ -440,6 +501,7 @@ export const siteEs: SiteMessages = {
         boss: 'Onix, Snorlax y el trío legendario',
         chest: 'Cofre con candado',
         rift: 'Legendario de una grieta',
+        place: 'Cofre de la cueva y Spiritomb, en el cementerio',
         final: 'Mewtwo y el mítico raro (Mew, Celebi o Jirachi)',
         reaper: 'Arceus, en el modo infinito',
         mission: 'Misión de campo: el nido defendido (Normal / Difícil / Pesadilla)',

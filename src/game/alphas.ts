@@ -14,6 +14,7 @@ import { hasTrait, type StagePool } from './roster'
 import { isHeld } from './status'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
+import { roomOf } from './room'
 
 /**
  * Alpha Pokémon (as in Legends: Arceus): an oversized, red-eyed member of the
@@ -301,10 +302,10 @@ const act = (g: Game, e: Enemy, a: AlphaState, dt: number) => {
 
 /**
  * Runs before `updateEnemies` (so a dash's hit lands before the body's
- * contact): brings Alphas in on schedule outside rift arenas and moves the ones alive.
+ * contact): brings Alphas in on schedule outside rooms (rift arenas, places) and moves the ones alive.
  */
 export const updateAlphas = (g: Game, dt: number) => {
-  const arena = g.rift.arena !== null
+  const arena = roomOf(g) !== null
   if (!arena) direct(g)
   const finale = !g.endless && g.time >= RUN_LENGTH
   for (const e of g.enemies) {

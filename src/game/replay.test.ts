@@ -9,10 +9,14 @@ import { spawnMapEvent } from './mapEvents'
 import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
+import { enterPlace } from './placeInterior'
+import { GRAVEYARD, PLACE_IDS } from '../data/places'
 import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
 import { makeSpitter } from './spitters'
 import type { Game } from './types'
+import { featureAt, type Landmark } from './terrain'
+import { LANDMARK } from '../data/landmarks'
 import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
 
@@ -186,6 +190,59 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it.each(PLACE_IDS)('re-simulate a run through the %s, its own spawns and rules included', (id) => {
+    // The graveyard one spirit short, so Spiritomb wakes and fights inside the replay.
+    const inside = (g: Game) => {
+      g.time = 200
+      enterPlace(g, id, 0, 0)
+      if (g.place.inside?.id === 'graveyard') g.place.inside.state.spirits = GRAVEYARD.spirits - 1
+    }
+    const start: ReplayStart = { ...START, starter: 'pidgey' }
+    const { g, replay } = play(250, start, 300, inside)
+    expect(g.place.visited).toEqual([id])
+    const staged = startGame(start)
+    inside(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate an entrance the director opens on its own', () => {
+    const early = (g: Game) => {
+      g.place.nextAt = 3
+    }
+    const { g, replay } = play(20, START, 300, early)
+    expect(g.place.offered.length).toBe(1)
+    const staged = startGame(START)
+    early(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it.each(['tunnel', 'maze', 'ruins'] as const)('re-simulate a run through a landmark: the %s', (id) => {
+    /** The nearest landmark of the kind, the player one tick from stepping in (or opening its treasure). */
+    const near = (g: Game) => {
+      for (let r = 2; r < 30; r++) {
+        for (let cx = -r; cx <= r; cx++) {
+          for (const cy of [-r, r]) {
+            const lm = featureAt(g.terrain.seed, cx, cy)?.landmark
+            if (lm?.id === id) return lm
+          }
+        }
+      }
+      throw new Error(`no ${id}`)
+    }
+    const stage = (g: Game) => {
+      const lm: Landmark = near(g)
+      const spot = lm.treasure ?? lm.mouths[0]!
+      Object.assign(g.player, spot)
+      if (lm.treasure) g.landmarks.opening = { cell: lm.cell, t: LANDMARK.openTime - 0.01 }
+      else g.landmarks.entering = { cell: lm.cell, mouth: 0, t: 0.39 }
+    }
+    const { g, replay } = play(12, START, 300, stage)
+    expect(g.events.some((e) => e.kind === 'landmark' && e.moment === (id === 'tunnel' ? 'tunnelOut' : 'loot'))).toBe(true)
+    const staged = startGame(START)
+    stage(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
   it('re-simulate a Nightmare run under full tension: close spawns, tense elites and a surge', () => {

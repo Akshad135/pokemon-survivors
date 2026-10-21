@@ -45,11 +45,11 @@ describe('appearances', () => {
     }
   })
 
-  it('places every Pokémon somewhere in the run, bosses as boss events, trio slots, rifts or the reaper', () => {
+  it("places every Pokémon somewhere in the run, bosses as boss events, trio slots, rifts, the reaper or a place's boss", () => {
     for (const id of ids) {
-      const kinds = appearances(id).map((a) => a.kind)
-      expect(kinds.length).toBeGreaterThan(0)
-      if ('boss' in ENEMIES[id]) expect(kinds.some((k) => k === 'boss' || k === 'trio' || k === 'rift' || k === 'reaper')).toBe(true)
+      const found = appearances(id)
+      expect(found.length).toBeGreaterThan(0)
+      if ('boss' in ENEMIES[id]) expect(found.some((a) => a.kind === 'boss' || a.kind === 'trio' || a.kind === 'rift' || a.kind === 'reaper' || (a.kind === 'place' && a.boss))).toBe(true)
     }
   })
 })
