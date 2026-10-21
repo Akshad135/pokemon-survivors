@@ -11,6 +11,7 @@ import { runMods } from './legend'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
 import { dropBossTm } from './tms'
+import { dropEvoItem } from './evoGate'
 import { coinDrops } from './meta'
 import { modKill } from './mods'
 import { awardEgg, dropCoins, dropPickup, dropXp } from './pickups'
@@ -189,6 +190,7 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     dropBossTm(g, e)
+    dropEvoItem(g, e.x + 10, e.y + 2)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
     // A wave legendary's capture plays where it fell; Mewtwo's victory waits for it.

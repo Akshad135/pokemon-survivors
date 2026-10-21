@@ -159,7 +159,7 @@ export type Save = {
   legends: Captures
   /** The TM case (`game/tmShelf.ts`): TMs bought at the shop, the ones armed for the next runs and the TM moves runs ever taught. */
   tms: TmCase
-  /** Evolution items bought at the shop (`game/evoItems.ts`): each guarantees its branches among the offers. */
+  /** Evolution items bought at the shop (`game/evoItems.ts`): each unlocks its branches (`evolutionOffers`). */
   evo: readonly EvoItemId[]
   /** Bottle Cap levels per Pokémon (`game/evoItems.ts`): every stat a bit stronger in its runs. */
   caps: Caps

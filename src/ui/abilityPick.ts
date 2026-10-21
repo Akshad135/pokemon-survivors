@@ -102,7 +102,7 @@ const branchCard = (g: Game, offer: Extract<Offer, { kind: 'form' }>, i: number)
     },
     h('span', { class: 'offer-key' }, i + 1),
     favor && h('span', { class: 'evo-card-favor' }, h('img', { src: sparkleIcon(), alt: '' }), m.branch.favored(favor)),
-    item && h('span', { class: 'evo-card-favor item' }, shopIcon(item), m.branch.guaranteed(EVO_ITEMS[item].name)),
+    item && h('span', { class: 'evo-card-favor item' }, shopIcon(item), m.branch.unlocked(EVO_ITEMS[item].name)),
     h('div', { class: 'evo-card-art' }, h('img', { class: 'evo-card-portrait', src: portraitUrl(def.dex, g.player.shiny), alt: '' })),
     h('div', { class: 'evo-card-name' }, def.name),
     h('div', { class: 'types' }, ...def.types.map(typeBadge)),
@@ -133,7 +133,8 @@ export const branchPick = (root: HTMLElement, input: Input, g: Game, onChoose: (
     h('div', { class: 'evo-cards' }, ...cards),
     hint(m.levelUp.sideHintKeys, m.levelUp.hintTouch),
   )
-  el.style.setProperty('--count', String(cards.length))
+  // Rows of up to four: stones can open more ways than fit on one row.
+  el.style.setProperty('--count', String(Math.min(cards.length, 4)))
   root.append(el)
   playSfx('evolve')
   return { el, dispose: () => (off(), el.remove()) }

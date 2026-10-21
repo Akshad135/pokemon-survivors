@@ -718,11 +718,13 @@ export const pt = {
       more: (name: string, n: number) => `${name} (Nv ${n}) arma 2 TMs.`,
       blocks: { locked: 'Aumente a loja', owned: 'Já é sua', away: 'Fora hoje', poor: 'Faltam ₽' },
     },
-    /** The evolution shelf (`game/evoItems.ts`): each item guarantees a branch. */
+    /** The evolution shelf (`game/evoItems.ts`): each item unlocks a branch (Eevee's Water, Thunder and Fire Stones add theirs to the choice). */
     evolution: {
-      intro: 'Itens de evolução: garantem um caminho quando a família ramifica.',
-      guarantees: (forms: string, family: string) => `Garante ${forms} entre as opções quando ${family} evolui. É seu pra sempre.`,
-      allShown: 'Essa família sempre mostra os dois caminhos: o item marca o seu como garantido.',
+      intro: 'Itens de evolução: o caminho que pede um item só abre com ele. Comprado aqui, é seu pra sempre; um chefe também pode derrubar um na partida, só para ela.',
+      unlocks: (forms: string, family: string) => `Abre ${forms} na evolução de ${family}. É seu pra sempre.`,
+      adds: (forms: string, family: string) => `Põe ${forms} na escolha de ${family} (sem itens, sai um dos três livres, sorteado). É seu pra sempre.`,
+      stays: (family: string) => `Sem item, ${family} não evolui (mas fica 15% mais forte).`,
+      drops: 'Chefes também derrubam, só pela partida.',
       owned: 'No estojo',
     },
     /** Bottle Caps on the Treino shelf (`game/evoItems.ts`). */
@@ -1324,13 +1326,22 @@ export const pt = {
     title: (name: string) => `${name} vai evoluir… mas em quê?`,
     subtitle: 'A evolução muda o tipo, os status, o especial, os golpes e as Habilidades.',
     favored: (what: string) => `${what} favorece`,
-    guaranteed: (item: string) => `${item} garante`,
+    unlocked: (item: string) => `Com ${item}`,
     moves: 'Golpes novos',
     abilities: 'Habilidades',
     special: 'Especial',
     section: 'Evoluções possíveis',
-    note: (shown: number, total: number) => `Na evolução aparecem ${shown} das ${total}; o clima e o lugar puxam uma delas.`,
-    noteAll: 'Na evolução você escolhe o caminho.',
+    noteDraw: 'Sem itens, evolui num dos três livres, sorteado (o clima e o lugar puxam um deles); cada pedra que você tiver entra na escolha.',
+    noteItems: 'Os caminhos com item só abrem com ele: da Loja do Kecleon, ou derrubado por um chefe na partida.',
+    /** A branch that needs an item, in the partner's moves tab. */
+    needs: (item: string) => `com ${item}`,
+    /** Run toasts (`game/evoGate.ts`): an item found, an evolution held for one, the paths an evolution left closed. */
+    found: (item: string) => `Você achou um item de evolução: *${item}*!`,
+    foundHint: 'Vale até o fim da partida.',
+    held: (name: string, items: string) => `*${name}* não evolui sem ${items}: +15% em tudo enquanto isso.`,
+    heldHint: 'Um chefe pode derrubar o item; na Loja do Kecleon ele é seu pra sempre.',
+    or: ' ou ',
+    others: 'Outros caminhos pedem um item de evolução: da Loja do Kecleon, ou de um chefe na partida.',
     choose: (n: number) => `${n} opções`,
     specialNote: 'Na evolução, o especial passa a ser o da forma escolhida.',
   },
@@ -4640,7 +4651,7 @@ export const pt = {
       levelUp: (name: string) => `Olha só isso! A loja virou ${name}! Obrigado, sócio!`,
       /** The purple brother, on his shelves. */
       purpleTms: 'Psst... TMs de primeira. Arme uma e ela aparece na partida. Garantido.',
-      purpleEvolution: 'Pedras e relíquias! O Eevee nunca te oferece o Glaceon? Comigo isso acaba.',
+      purpleEvolution: 'Pedras e relíquias! Sem Dawn Stone, nada de Gallade. Comprou comigo, é seu pra sempre.',
       greenBack: 'Voltou pro meu lado do balcão? Fica à vontade!',
       stamp: (n: number) => `Carimbo do dia! Agora são ${n} no seu cartão fidelidade.`,
       milestone: (n: number) => `${n} carimbos! Deixei um presente pra você no lobby, freguês!`,

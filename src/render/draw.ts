@@ -1,3 +1,4 @@
+import { drawEvoItem } from './evoItemArt'
 import { blitCentered, blitEllipse, blitRing, blitRotated, textSprite } from '../engine/pixelart'
 import { HAZARD_COLORS } from './hazardColors'
 import { domainOf } from '../data/domains'
@@ -713,6 +714,10 @@ const drawPickups = (ctx: Ctx, g: Game, t: number) => {
     }
     if (k.kind === 'treat') {
       drawTreat(ctx, k.id, k.x, k.y + bob)
+      continue
+    }
+    if (k.kind === 'evoItem') {
+      drawEvoItem(ctx, k, k.x, k.y + bob, t)
       continue
     }
     const sprite =

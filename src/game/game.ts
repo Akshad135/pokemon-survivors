@@ -5,14 +5,15 @@ import { bodyOf } from '../data/bodies'
 import { isLegend } from '../data/legends'
 import type { EnemyId } from '../data/enemies'
 import { isHidden } from '../data/abilities'
-import { BRANCH_OFFERS, branchesAt } from '../data/branches'
+import { branchesAt } from '../data/branches'
 import type { EvoItemId } from '../data/shop'
 import type { EvolutionStage } from '../data/starters'
-import { guaranteedBranches, runBoost } from './evoItems'
+import { runBoost } from './evoItems'
+import { evolutionFreed, missingEvoItems, runEvoItems } from './evoGate'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilityLuck, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS, type BagItem } from './bag'
-import { branchContext, drawBranches, playerForm } from './branch'
+import { branchContext, evolutionOffers, playerForm } from './branch'
 import { createAlphaClock, updateAlphas } from './alphas'
 import { updateAttacks } from './attacks'
 import { createBiome, updateBiome } from './biomes'
@@ -105,7 +106,7 @@ export type RunOptions = {
   bag?: readonly BagItem[]
   /** TMs armed at the shop (`game/tmShelf.ts`): the run's first TM discs and lessons teach them, in order (`tms.ts`). */
   tms?: readonly MoveId[]
-  /** Evolution items owned (`game/evoItems.ts`): their branches are always offered. */
+  /** Evolution items owned (`game/evoItems.ts`): they unlock their branches (`evolutionOffers`). */
   evo?: readonly EvoItemId[]
   /** The Pokémon's Bottle Cap level (`runBoost`). */
   caps?: number
@@ -229,6 +230,8 @@ export const createGame = (
     maxRevive: bag.includes('maxRevive'),
     everstone: bag.includes('everstone'),
     evoItems: options.evo ?? [],
+    evoFound: [],
+    evoHeld: false,
     boost: runBoost(options.caps ?? 0, bag),
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
@@ -375,19 +378,43 @@ export const advancePhase = (g: Game): void => {
   }
   const branches = g.branch === null ? branchesAt(g.starter, g.player.stage + 1) : []
   if (branches.length > 0) {
+    const offers = evolutionOffers(g.rng, branches, branchContext(g), runEvoItems(g))
+    if (offers.length === 0) return holdEvolution(g)
+    g.evoHeld = false
+    // A single way to go (no items, or a held one's first): it evolves without asking.
+    if (offers.length === 1) {
+      g.branch = offers[0]!.id
+      return startEvolution(g)
+    }
     g.phase = 'branch'
-    g.offers = drawBranches(g.rng, branches, branchContext(g), BRANCH_OFFERS, guaranteedBranches(g.evoItems, branches)).map(({ id, favor }) => ({ kind: 'form', id, favor }))
+    g.offers = offers.map(({ id, favor }) => ({ kind: 'form', id, favor }))
     g.events.push({ kind: 'branchChoice' })
     return
   }
   startEvolution(g)
 }
 
-/** An Everstone run reached its first evolution's level without an Ability yet: it gets its pick there instead. */
+/** An Everstone run, or one held for an item, reached its first evolution's level without an Ability yet: it gets its pick there instead. */
 const everstoneAbilityDue = (g: Game) => {
-  if (!g.everstone || g.ability.id !== null || g.legend) return false
+  if (!(g.everstone || g.evoHeld) || g.ability.id !== null || g.legend) return false
   const first: EvolutionStage = PLAYABLE[g.starter].line[0]
   return first.evolveAt !== undefined && g.player.level >= first.evolveAt
+}
+
+/**
+ * The evolution is due but none of its branches is open (Scyther, Charcadet
+ * without an item): the run stays in its form, as strong as with an
+ * Everstone, picks its Ability there, and goes on once an item turns up
+ * (`evolutionFreed`, checked every tick).
+ */
+const holdEvolution = (g: Game) => {
+  if (!g.evoHeld) {
+    g.evoHeld = true
+    recomputeStats(g)
+    g.events.push({ kind: 'evoHeld', items: missingEvoItems(g) })
+  }
+  if (everstoneAbilityDue(g)) return offerAbilities(g)
+  g.phase = 'playing'
 }
 
 const startEvolution = (g: Game) => {
@@ -650,5 +677,6 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   }
   updateSightings(g, dt)
 
-  if (g.phase === 'playing' && g.pendingLevelUps > 0) advancePhase(g)
+  // Level-ups, or a held evolution whose item was just found.
+  if (g.phase === 'playing' && (g.pendingLevelUps > 0 || evolutionFreed(g))) advancePhase(g)
 }

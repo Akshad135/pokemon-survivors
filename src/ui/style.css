@@ -5891,6 +5891,17 @@ button {
   height: 28px;
 }
 
+/* Evolution items keep their PixelLab icons at a whole 32 px. */
+.item-toast img.shop-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+}
+
+.evo-item-toast img.shop-icon + img.shop-icon {
+  margin-left: -8px;
+}
+
 /* The toast's second line ("Surto de Gastly!" / "Ele aparece muito mais hoje…"), not glued to the first. */
 .item-toast small {
   display: block;
@@ -11319,7 +11330,7 @@ button.hall-tile:hover {
   height: 10px;
 }
 
-/* An evolution item guarantees this branch: the purple tag with the item's icon at 1×. */
+/* An evolution item opens this branch: the purple tag with the item's icon at 1×. */
 .evo-card-favor.item {
   top: -22px;
   padding: 0 7px 0 2px;
