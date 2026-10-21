@@ -222,6 +222,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Teclas presas', en: 'Stuck keys', es: 'Teclas atascadas' },
+        notes: [
+          {
+            pt: 'Entrar em tela cheia (F11) ou trocar de aba no meio do movimento não deixa mais o Pokémon andando sozinho numa direção.',
+            en: 'Going fullscreen (F11) or switching tabs mid-move no longer leaves your Pokémon walking on its own in one direction.',
+            es: 'Entrar en pantalla completa (F11) o cambiar de pestaña en pleno movimiento ya no deja a tu Pokémon caminando solo en una dirección.',
+          },
+        ],
+      },
     ],
   },
   {
