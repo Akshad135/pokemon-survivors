@@ -12,7 +12,7 @@ import { pokeballIcon, ribbonIcon, supporterIcon } from '../render/art'
 import { pumpkinHeartIcon } from '../render/halloweenArt'
 import { portraitUrl } from '../render/sprites'
 import { fetchProfile, profileUrl, setFollow } from '../ranking'
-import { pokedex } from '../site/pokedex'
+import { gameDex } from '../site/pokedex'
 import { LOCALES, locale, t } from '../i18n'
 import { h, later } from './dom'
 import { today } from './save'
@@ -155,7 +155,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
 
   const show = (p: PublicProfile) => {
     const m = t().profile
-    const total = pokedex().length
+    const total = gameDex().length
     const signedIn = accountState().kind === 'signedIn'
     const follow: Action = {
       label: p.followed ? m.unfollow : m.follow,

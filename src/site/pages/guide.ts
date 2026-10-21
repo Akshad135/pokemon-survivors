@@ -48,7 +48,7 @@ import { LOCALES, type Locale } from '../../i18n'
 import { SITE_MESSAGES, type SiteMessages } from '../../i18n/site'
 import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
-import { clock, pokedex, slugOf } from '../pokedex'
+import { clock, gameDex, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
 import { bossAttacks, patternText, traitText, typeBadge } from './pokedex'
 
@@ -475,7 +475,7 @@ const traits = (locale: Locale, m: SiteMessages) => {
 
 const shinies = (locale: Locale, m: SiteMessages) => {
   const s = m.guide.shinies
-  return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player), Math.round(1 / RIFT.shinyOdds), pokedex().length))}
+  return html`${paragraphs(s.paragraphs(Math.round(1 / SHINY_ODDS.enemy), SHINY_BUFF.hp, SHINY_BUFF.xp, Math.round(1 / SHINY_ODDS.player), Math.round(1 / RIFT.shinyOdds), gameDex().length))}
     <p><a class="btn-link" href="${ROUTES.pokedex[locale]}">★ ${s.seeAll}</a></p>`
 }
 
