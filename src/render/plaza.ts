@@ -365,9 +365,9 @@ export const plazaFrame = (plaza: Plaza, w: number, h: number): Vec => {
 }
 
 const frameAt = (plaza: Plaza, layout: Layout | null, tall: number, w: number, h: number): Vec => {
-  // Portrait: the building's feet about a third down, so it, the shopkeepers and the partner clear the shop's sheet and Kecleon's box below.
+  // Portrait: the building's feet about a third down (lower for the tall Lv 4 and 5), so it, the shopkeepers and the partner clear the shop's sheet and Kecleon's box below.
   if (h > w * 1.1) {
-    const feet = Math.max(Math.round(h * 0.33), Math.min(tall + 8, Math.round(h * 0.36)))
+    const feet = Math.max(Math.round(h * 0.33), Math.min(tall + 8, Math.round(h * 0.47)))
     return { x: Math.round(plaza.x - w / 2), y: plaza.y - feet }
   }
   const lamp = layout ? Math.max(104, Math.round(layout.building.w / 2) + 14) : 110
