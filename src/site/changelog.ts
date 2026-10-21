@@ -120,6 +120,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             en: 'Finding an egg in a run with a full incubator now tells you right away that it will become ₽, and how much, instead of saying it went to the incubator. Mission and medal eggs that don’t fit say what they became too. Mystery Gift eggs still wait in the box until a slot frees up.',
             es: 'Encontrar un huevo en la partida con la incubadora llena ahora avisa al momento que se convertirá en ₽, con el monto, en vez de decir que fue a la incubadora. Los huevos de misiones y medallas que no caben también dicen en cuánto se convirtieron. Los huevos de Regalo Misterioso siguen esperando en la caja hasta que se libere un espacio.',
           },
+          {
+            pt: 'Desistir na pausa, ou Trocar Pokémon no fim da partida, com Espaço, Enter ou o botão A do controle começava outra partida com o mesmo Pokémon em vez de abrir a seleção de parceiro. Agora abre a seleção, como com o mouse ou o toque.',
+            en: 'Give up on the pause menu, or Change Pokémon at the end of a run, picked with Space, Enter or the pad’s A button started another run with the same Pokémon instead of opening the partner select. It opens the select now, as with the mouse or touch.',
+            es: 'Rendirse en la pausa, o Cambiar Pokémon al final de la partida, con Espacio, Enter o el botón A del control empezaba otra partida con el mismo Pokémon en vez de abrir la selección de compañero. Ahora abre la selección, como con el mouse o el toque.',
+          },
         ],
       },
     ],
