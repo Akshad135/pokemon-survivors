@@ -178,8 +178,8 @@ export const createGame = (
     evolution: null,
     branch: null,
     ability: createAbilityState(),
-    // A legend never meets itself among the bosses (`avoidLegend`).
-    roster: avoidLegend(withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null), starter),
+    // A legend never meets itself among the bosses (`avoidLegend`), nor the outbreak's basic in its horde (`LEGEND_HORDE`).
+    roster: avoidLegend(withOutbreak(roster ?? drawRoster(rng), isLegend(starter) ? null : (options.outbreak ?? null)), starter),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,

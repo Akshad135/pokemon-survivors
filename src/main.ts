@@ -30,6 +30,7 @@ import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
 import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
+import { isLegend } from './data/legends'
 import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
@@ -587,14 +588,14 @@ const endRun = () => {
 
 const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, t().loading))
 
-/** The next run's seed, the day's outbreak and the wild cast, drawn ahead so the menus can warm up its first stage. */
-type RunPlan = { seed: number; outbreak: EnemyId; roster: Roster }
+/** The next run's seed, the day's outbreak and the wild cast (a legend's own, `legend`), drawn ahead so the menus can warm up its first stage. */
+type RunPlan = { seed: number; outbreak: EnemyId; legend: boolean; roster: Roster }
 
 /** A Desafio do dia run, as `startRun` takes it: the challenge, and whether the screen called it official. */
 type ChallengeRun = { challenge: Challenge; official: boolean }
 
 /** A run's plan from `seed` and `outbreak`: the API's for a ranked run, else the game's own and the device's day. */
-const planRun = (seed = Date.now(), outbreak = outbreakToday()): RunPlan => ({ seed, outbreak, roster: runRoster(seed, outbreak) })
+const planRun = (seed = Date.now(), outbreak = outbreakToday(), legend = false): RunPlan => ({ seed, outbreak, legend, roster: runRoster(seed, outbreak, legend) })
 
 let upcoming = planRun()
 
@@ -608,7 +609,7 @@ const prefetchRun = (day: DayKey | null = null) =>
   void prefetchRanked(day).then((ticket) => {
     if (!ticket || ticket.seed === null || day) return
     const outbreak = outbreakToday(ticket.outbreak)
-    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak) upcoming = planRun(ticket.seed, outbreak)
+    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak) upcoming = planRun(ticket.seed, outbreak, upcoming.legend)
   })
 
 /**
@@ -649,8 +650,10 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   // And the outbreak it dealt with the ticket (the API checks it by its own clock); without one, the device's day.
   const outbreak = outbreakToday(ranked?.outbreak ?? null)
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
-  const plan = c ? { seed, outbreak: c.outbreak, roster: runRoster(seed, c.outbreak) } : upcoming.seed === seed && upcoming.outbreak === outbreak ? upcoming : planRun(seed, outbreak)
-  if (!c) upcoming = planRun()
+  const legend = !c && isLegend(starter)
+  const plan = c ? planRun(seed, c.outbreak) : upcoming.seed === seed && upcoming.outbreak === outbreak && upcoming.legend === legend ? upcoming : planRun(seed, outbreak, legend)
+  // The next run likely plays the same mode: its plan draws that horde.
+  if (!c) upcoming = planRun(undefined, undefined, legend)
   // The whole family, branches included: the evolution scene can land on any of them.
   await loadAll([...familyDex(starter), ...openingDex(plan)])
   // The outbreak's shiny can show up in the first minute.
@@ -720,7 +723,8 @@ const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
     const m = t().challenge
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: ribbonIcon('gold'), alt: '' }), h('span', {}, rich(m.started(formatDay(challenge.day))), h('small', {}, challenge.official ? m.startedOfficial : m.startedPractice))), 4200, 'challenge')
   }
-  if (start.outbreak) {
+  // A legend's horde has no outbreak (`runRoster`).
+  if (start.outbreak && !isLegend(start.starter)) {
     const def = ENEMIES[start.outbreak]
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
   }

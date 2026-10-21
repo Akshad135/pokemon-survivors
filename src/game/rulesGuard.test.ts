@@ -66,6 +66,16 @@ const SCENARIOS = {
       spawnAlpha(g, pickAlpha(g.rng, g.roster.stages[0]!)!, g.player.x + 120, g.player.y)
     },
   },
+  /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
+  legend: {
+    start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
+    seconds: 20,
+    stage: (g) => {
+      g.time = 180
+      g.nextEvent = 99
+      gainXp(g, 800)
+    },
+  },
 } as const satisfies Record<string, Scenario>
 
 type ScenarioId = keyof typeof SCENARIOS
@@ -76,11 +86,12 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  25: {
+  26: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
     alphaHazards: '1002·6·19·93ff9daa',
+    legend: '1098·51·14·86dc0d8b',
   },
 }
 

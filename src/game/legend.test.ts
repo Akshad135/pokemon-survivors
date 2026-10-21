@@ -4,11 +4,15 @@ import { ABILITIES, FAMILY_ABILITIES, type AbilityEffect } from '../data/abiliti
 import { EVOLUTIONS } from '../data/evolutions'
 import { PLAYABLE, PLAYABLE_IDS } from '../data/hatchlings'
 import { AWAKEN_AT, LEGEND_IDS, LEGENDS, type LegendDef } from '../data/legends'
-import { MYTHICALS, TRIOS } from '../data/waves'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
+import { EVENTS, MYTHICALS, STAGES, TRIOS } from '../data/waves'
 import { DIFFICULTIES, DIFFICULTY_IDS } from './difficulty'
 import { advancePhase, chooseOffer, createGame, EVOLUTION_TIME, LEGEND_RADIUS, step } from './game'
 import { avoidLegend, innateEffects, legendMods, pendingAwakening, PRESSURE } from './legend'
 import { starterStats, xpFor } from './leveling'
+import { NO_RANKS } from './meta'
+import { OUTBREAK_SPECIES } from './outbreak'
+import { runRoster, startGame } from './replay'
 import { pickLegend } from './rift'
 import { drawRoster, withTrio } from './roster'
 import { applyDeltas, BASE_STATS } from './stats'
@@ -95,6 +99,33 @@ describe('Pressure', () => {
       expect(mods.spawnRate).toBeCloseTo(DIFFICULTIES[d].spawnRate * PRESSURE[d].spawnRate)
       expect(mods.iframes).toBe(DIFFICULTIES[d].iframes)
     }
+  })
+})
+
+describe("the legend's horde", () => {
+  it('draws no basics: every species of the stages, swarms, rings and spitters is tier 4 or 5, and no outbreak', () => {
+    for (const seed of [1, 2, 3]) {
+      const outbreak = OUTBREAK_SPECIES[0]!
+      const { roster } = startGame({ seed, starter: 'kyogre', difficulty: 'nightmare', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak, lure: false, incense: false, view: VIEW })
+      const horde = [
+        ...roster.stages.flatMap((pool) => pool.map(([id]) => id)),
+        ...roster.spitters.flatMap((id) => (id ? [id] : [])),
+        ...roster.events.flatMap((id, i) => (id && EVENTS[i]?.kind !== 'boss' && !('enemy' in EVENTS[i]!) ? [id] : [])),
+      ]
+      for (const id of horde) {
+        const def: EnemyDef = ENEMIES[id]
+        expect([id, def.tier]).toEqual([id, expect.toSatisfy((tier) => tier === 4 || tier === 5)])
+      }
+      expect(horde).not.toContain(outbreak)
+    }
+  })
+
+  it('keeps the bosses and the shape of the run: same stages, same events', () => {
+    const roster = runRoster(4, null, true)
+    expect(roster.stages).toHaveLength(STAGES.length)
+    expect(roster.events.map((id, i) => (EVENTS[i]?.kind === 'boss' ? id : null))).toEqual(
+      runRoster(4, null).events.map((id, i) => (EVENTS[i]?.kind === 'boss' ? id : null)),
+    )
   })
 })
 

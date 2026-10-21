@@ -1,5 +1,6 @@
 import type { EnemyId } from '../data/enemies'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { isLegend } from '../data/legends'
 import { createRng } from '../engine/rng'
 import * as dm from '../engine/dmath'
 import type { Vec } from '../engine/math'
@@ -7,6 +8,7 @@ import { isDifficulty, type Difficulty } from './difficulty'
 import { continueEndless } from './endlessSystem'
 import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
 import { UPGRADE_IDS, UPGRADES, type Ranks } from './meta'
+import { LEGEND_HORDE } from './legend'
 import { isRecord, wholeNumber } from './parse'
 import { isOutbreakSpecies, withOutbreak } from './outbreak'
 import { biomeWeight, drawRoster } from './roster'
@@ -32,7 +34,7 @@ export const TICK = 1 / 60
  * pins where a few scripted replays end under this version and fails when the
  * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 25
+export const RULES_VERSION = 26
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -211,12 +213,19 @@ export const parseReplay = (raw: unknown): Replay | null => {
 
 /* ---------------- Re-simulation ---------------- */
 
-/** The wild cast a run draws from its seed, with the day's outbreak (the shell draws it ahead to preload its sprites). */
-export const runRoster = (seed: number, outbreak: EnemyId | null) => withOutbreak(drawRoster(createRng(seed), { weight: biomeWeight }), outbreak)
+/**
+ * The wild cast a run draws from its seed, with the day's outbreak (the shell
+ * draws it ahead to preload its sprites). A legend's run draws its own horde
+ * (`LEGEND_HORDE`), without the outbreak: it's a basic.
+ */
+export const runRoster = (seed: number, outbreak: EnemyId | null, legend = false) =>
+  legend
+    ? drawRoster(createRng(seed), { weight: biomeWeight, ...LEGEND_HORDE })
+    : withOutbreak(drawRoster(createRng(seed), { weight: biomeWeight }), outbreak)
 
 /** A fresh run from a replay's start, exactly as the shell creates it: it opens on the opening draft. */
 export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.view }) =>
-  createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed, start.outbreak), {
+  createGame(start.starter, view, start.seed, start.ranks, runRoster(start.seed, start.outbreak, isLegend(start.starter)), {
     draft: true,
     shiny: start.shiny,
     luckyEgg: start.luckyEgg,
