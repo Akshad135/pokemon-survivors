@@ -19,6 +19,7 @@ import { abilitySet } from '../game/abilities'
 import { heldMega } from '../game/mega'
 import { megaIcon } from '../render/megaFx'
 import { BRANCHES } from '../data/branches'
+import { legendSignature } from '../data/legends'
 import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
 import { toSteps } from '../game/eggs'
@@ -166,7 +167,7 @@ const offerRecipes = (g: Game, offer: Offer) => {
       // Reaching max level makes it a duo ingredient: the fusions it would open show up.
       if (offer.level < maxMoveLevel(offer.id) || isDuo(offer.id)) return evos
       const moves = [...p.moves.filter((o) => o.id !== offer.id), { id: offer.id, level: offer.level, cooldown: 0 }]
-      const duos = readyDuos(moves).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves).some((r) => r.to === d.to))
+      const duos = readyDuos(moves, legendSignature(g.starter)).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves, legendSignature(g.starter)).some((r) => r.to === d.to))
       return [...evos, ...duos.map((d) => duoChip(d.from, d.to))]
     }
     case 'duo':
@@ -576,7 +577,7 @@ const duoPanel = (g: Game) => {
   const p = g.player
   const owned = p.moves.find((o) => isDuo(o.id))
   const types = new Set<PokeType>([...runLearnset(g.starter, g.branch), ...p.moves.map((o) => o.id)].map((id) => MOVES[id].type))
-  const ready = readyDuos(p.moves)
+  const ready = readyDuos(p.moves, legendSignature(g.starter))
   const recipes = reachableDuos(types)
   if (recipes.length === 0 && !owned) return null
   const chips = owned

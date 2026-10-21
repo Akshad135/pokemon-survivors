@@ -3,7 +3,7 @@ import { ENEMIES } from '../data/enemies'
 import { stageIndexAt } from '../data/waves'
 import { burst } from './effects'
 import { ENDLESS, endlessEventSize, REAPER, reaperDue, reaperHp, reaperSpeed, startEndless, type EndlessState } from './endless'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { blastHorde, spawnEnemy } from './enemies'
 import { dropCoins, dropPickup } from './pickups'
 import { hasTrait } from './roster'
@@ -11,6 +11,7 @@ import { spawnRing, spawnSwarm } from './spawner'
 import type { Enemy, Game } from './types'
 import * as dm from '../engine/dmath'
 import { roomOf } from './room'
+import { legendEntrance } from './legendScene'
 
 /** Extra Poké Balls and ₽ dropped by a defeated Arceus, on top of a boss's usual drop. */
 const REAPER_LOOT = { pokeballs: 3, coins: [250, 250, 250, 250, 250, 250, 250, 250] } as const
@@ -26,7 +27,7 @@ export const continueEndless = (g: Game) => {
 const summonReaper = (g: Game, s: EndlessState) => {
   const p = g.player
   const reaper = spawnEnemy(g, REAPER, p.x, p.y - g.view.h / 2 - 24)
-  reaper.hp = reaper.maxHp = Math.round(reaperHp(s.reaperDefeats) * DIFFICULTIES[g.difficulty].enemyHp)
+  reaper.hp = reaper.maxHp = Math.round(reaperHp(s.reaperDefeats) * runMods(g).enemyHp)
   s.reaperId = reaper.id
   s.reaperSince = g.time
   g.bossId = reaper.id
@@ -34,6 +35,7 @@ const summonReaper = (g: Game, s: EndlessState) => {
   g.flash = 1
   g.shake = 12
   g.events.push({ kind: 'reaper', defeats: s.reaperDefeats })
+  legendEntrance(g, reaper)
 }
 
 const reaperDown = (g: Game, s: EndlessState, reaper: Enemy | undefined) => {

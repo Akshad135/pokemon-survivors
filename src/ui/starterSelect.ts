@@ -1,13 +1,16 @@
 import { blitCentered, context2d } from '../engine/pixelart'
 import { playCry, playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
-import { HATCHLING_IDS, HATCHLINGS, isHatchling, PLAYABLE, type HatchlingId, type PlayableId } from '../data/hatchlings'
+import { HATCHLING_IDS, HATCHLINGS, isHatchling, isStarter, PLAYABLE, type HatchlingId, type PlayableId } from '../data/hatchlings'
 import { REGIONS, type StarterId } from '../data/starters'
 import { TYPE_COLORS } from '../data/types'
 import { megasOf } from '../data/megas'
 import { bodyOf } from '../data/bodies'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
-import { EGGS, isReady, isUnlocked } from '../game/eggs'
+import { EGGS, isReady } from '../game/eggs'
+import { isLegend, LEGEND_IDS, LEGENDS, type LegendId } from '../data/legends'
+import { ABILITIES } from '../data/abilities'
+import { canPlay, capturedCount, isCaptured, legendSource, winsNeeded } from '../game/capture'
 import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
 import { ownsShiny, pickShinyForm, playsShiny } from '../game/shinyPicks'
 import { bagIcon, eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
@@ -39,7 +42,12 @@ const BAG_KEYS = { lure: 'KeyC', incense: 'KeyV' } as const satisfies Record<Bag
 /** How many hatched families the desktop's "Hatched" teaser row shows before "+n". */
 const TEASER = 7
 
-type Tab = 'starters' | 'eggs'
+/** The roster's tabs, in Tab / E order: the starters, the egg families and the legends (Legend mode). */
+const TABS = ['starters', 'eggs', 'legends'] as const
+
+type Tab = (typeof TABS)[number]
+
+const tabOf = (id: PlayableId): Tab => (isHatchling(id) ? 'eggs' : isLegend(id) ? 'legends' : 'starters')
 
 type SelectActions = {
   pick: (id: PlayableId) => void
@@ -50,12 +58,14 @@ type SelectActions = {
 }
 
 /**
- * The partner select: the roster (Starters: 9 regions × Grass/Fire/Water, or
- * Eggs: the hatched families, the rest still in their egg), the selected
+ * The partner select: the roster (Starters: 9 regions × Grass/Fire/Water,
+ * Eggs: the hatched families, the rest still in their egg, or Legendaries:
+ * the legends captured for the Legend mode, the rest a silhouette with their
+ * wins so far and where to beat them), the selected
  * partner's panel, the details sheet behind its button, and one action bar
  * (Bag, difficulty, Start, colored by the difficulty).
  *
- * Keyboard: arrows move in the grid (↓ past the starters' last row reaches the eggs), Tab/Q/E switch tabs,
+ * Keyboard: arrows move in the grid (↓ past the starters' last row reaches the eggs, then the legends), Tab/E and Q switch tabs,
  * 1-9 jump to a region, I opens the details, Z flips Normal/Shiny, X cycles the difficulty, C and V arm a
  * Lure and an Incense, O opens the incubator, L the Poké Mart, Enter starts, Esc/Backspace go back.
  * Pointer: a tap selects, a tap on the selected cell (or Start) starts.
@@ -64,16 +74,21 @@ type SelectActions = {
 export const starterSelect = (root: HTMLElement, input: Input, actions: SelectActions, initial: PlayableId = 'charmander'): Screen & { selected: () => PlayableId } => {
   const m = t()
   const save = loadSave()
-  const unlocked = (id: PlayableId) => isUnlocked(save.hatched, id)
+  const unlocked = (id: PlayableId) => canPlay(save, id)
   /** The save with the Normal/Shiny picks made on this screen; any shiny owned (rolled once, a ticket, a shiny hatch) can be picked. */
   let forms = save
   const canPick = (id: PlayableId) => ownsShiny(save, id)
   const shinyOf = (id: PlayableId) => playsShiny(forms, id)
 
-  let tab: Tab = isHatchling(initial) ? 'eggs' : 'starters'
+  let tab: Tab = tabOf(initial)
   /** Each tab remembers its own cursor, so switching back lands where it was. */
   const firstHatched = HATCHLING_IDS.find((id) => save.hatched[id]) ?? HATCHLING_IDS[0]!
-  const cursor: { starters: StarterId; eggs: HatchlingId } = isHatchling(initial) ? { starters: 'charmander', eggs: initial } : { starters: initial, eggs: firstHatched }
+  const firstCaptured = LEGEND_IDS.find((id) => isCaptured(save.legends, id)) ?? LEGEND_IDS[0]
+  const cursor: { starters: StarterId; eggs: HatchlingId; legends: LegendId } = {
+    starters: isStarter(initial) ? initial : 'charmander',
+    eggs: isHatchling(initial) ? initial : firstHatched,
+    legends: isLegend(initial) ? initial : firstCaptured,
+  }
   const current = (): PlayableId => cursor[tab]
   let stage = 0
   let picked = false
@@ -88,16 +103,18 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const tapCell = (id: PlayableId) => (id === current() ? confirm() : select(id))
 
   const cellPortrait = (id: PlayableId) => h('img', { class: 'partner-cell-portrait', src: portraitUrl(PLAYABLE[id].line[0].dex, shinyOf(id)), alt: '' })
-  /** A family still in its egg: its first stage's silhouette at 2×, centered on the body (`bodyOf`) and cropped by the cell like a portrait. */
-  const cellSilhouette = (id: HatchlingId) => {
+  /** A family still in its egg (a legend not captured yet): its first stage's silhouette at 2× (a big legend's at 1×), centered on the body (`bodyOf`) and cropped by the cell like a portrait. */
+  const cellSilhouette = (id: HatchlingId | LegendId) => {
     const dex = PLAYABLE[id].line[0].dex
     const sheet = walkSheet(dex)
-    if (!sheet) return h('img', { class: 'partner-cell-egg', src: eggIcon(HATCHLINGS[id].egg), alt: '' })
+    if (!sheet) return isHatchling(id) ? h('img', { class: 'partner-cell-egg', src: eggIcon(HATCHLINGS[id].egg), alt: '' }) : h('span', { class: 'partner-cell-silhouette' })
     const { bodyH, footY } = bodyOf(dex)
+    // A big legend (Lugia's 79 px wings) stays at 1×, or the cell would only show a black blob.
+    const scale = isLegend(id) && bodyH > 26 ? 1 : 2
     return h(
       'span',
       { class: 'partner-cell-silhouette' },
-      h('i', { style: `width:${sheet.fw}px;height:${sheet.fh}px;background-image:url(${sheet.url});transform:translateY(${bodyH - 2 * footY}px) scale(2)` }),
+      h('i', { style: `width:${sheet.fw}px;height:${sheet.fh}px;background-image:url(${sheet.url});transform:translateY(${((bodyH - 2 * footY) * scale) / 2}px) scale(${scale})` }),
     )
   }
   const shinyTag = () => h('img', { class: 'partner-cell-shiny', src: sparkleIcon(), alt: 'Shiny' })
@@ -145,10 +162,34 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     return el
   }
 
+  /** A legend: its portrait once captured, else its silhouette with the wins it has toward capturing it. */
+  const legendCell = (id: LegendId) => {
+    const open = unlocked(id)
+    const name = PLAYABLE[id].name
+    const wins = `${Math.min(save.legends[id] ?? 0, winsNeeded(id))}/${winsNeeded(id)}`
+    const el = h(
+      'button',
+      {
+        class: open ? 'partner-cell legend' : 'partner-cell legend locked',
+        type: 'button',
+        title: open ? cellTitle(id, name) : `${name} · ${m.legend.wins(wins)}`,
+        style: `--t:${open ? PLAYABLE[id].color : '#8890b0'}`,
+        onclick: () => tapCell(id),
+      },
+      open ? cellPortrait(id) : cellSilhouette(id),
+      !open && h('b', { class: 'partner-cell-count' }, wins),
+      shinyOf(id) && shinyTag(),
+      clearTag(id),
+    )
+    cells.set(id, el)
+    return el
+  }
+
   const owned = HATCHLING_IDS.filter((id) => save.hatched[id])
   const tabButtons = {
     starters: h('button', { class: 'partner-tab', type: 'button', role: 'tab', onclick: () => setTab('starters') }, m.partner.starters, h('small', {}, `${STARTER_IDS.length}`)),
     eggs: h('button', { class: 'partner-tab', type: 'button', role: 'tab', onclick: () => setTab('eggs') }, m.eggs.tab, h('small', {}, `${owned.length}/${HATCHLING_IDS.length}`)),
+    legends: h('button', { class: 'partner-tab', type: 'button', role: 'tab', onclick: () => setTab('legends') }, m.legend.tab, h('small', {}, `${capturedCount(save.legends)}/${LEGEND_IDS.length}`)),
   } satisfies Record<Tab, HTMLElement>
 
   const starterGrid = h(
@@ -197,12 +238,17 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     ),
   )
 
+  /** Lendários: every legend, captured or not, and what the mode is about. ↑ ↓ read the column count from the grid. */
+  const legendGrid = h('div', { class: 'partner-egg-grid partner-legend-grid' }, ...LEGEND_IDS.map(legendCell))
+  const legendsPane = h('div', { class: 'partner-legends' }, legendGrid, h('p', { class: 'partner-legend-note' }, rich(m.legend.selectNote)))
+
   const roster = h(
     'section',
     { class: 'partner-roster box' },
-    h('div', { class: 'partner-tabs', role: 'tablist' }, tabButtons.starters, tabButtons.eggs, h('span', { class: 'key-hint' }, 'TAB')),
+    h('div', { class: 'partner-tabs', role: 'tablist' }, tabButtons.starters, tabButtons.eggs, tabButtons.legends, h('span', { class: 'key-hint' }, 'TAB')),
     h('div', { class: 'partner-pane starters' }, starterGrid, teaser),
     eggsPane,
+    legendsPane,
   )
 
   /* ---------- Partner panel ---------- */
@@ -218,6 +264,26 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     hero.style.setProperty('--accent', open ? PLAYABLE[id].color : '#8890b0')
     const level = save.clears[id]
     const pedestal = h('div', { class: 'partner-pedestal' }, sprite)
+    if (isLegend(id) && !open) {
+      const need = winsNeeded(id)
+      hero.replaceChildren(
+        h(
+          'div',
+          { class: 'partner-hero-top' },
+          pedestal,
+          h(
+            'div',
+            { class: 'partner-id' },
+            h('small', { class: 'partner-dex' }, `#${String(form.dex).padStart(3, '0')}`),
+            h('h3', { class: 'partner-name' }, form.name),
+            h('p', { class: 'partner-legend-wins' }, m.legend.wins(`${Math.min(save.legends[id] ?? 0, need)}/${need}`)),
+            h('p', { class: 'partner-blurb locked-blurb' }, rich(m.legend.where[legendSource(id)])),
+          ),
+        ),
+        h('p', { class: 'partner-blurb partner-intro' }, m.legend.rule(need), ' ', m.legend.shinyRule),
+      )
+      return
+    }
     if (isHatchling(id) && !open) {
       const tier = HATCHLINGS[id].egg
       hero.replaceChildren(
@@ -263,6 +329,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
           h('h3', { class: 'partner-name' }, form.name),
           h('div', { class: 'types' }, ...form.types.map(typeBadge)),
           level && h('p', { class: 'partner-clear' }, h('img', { src: trophyIcon(level), alt: '' }), m.dex.clearedOn(m.difficulty.names[level])),
+          isLegend(id) && h('p', { class: 'partner-legend-mode' }, m.legend.mode, ' · ', `${m.legend.innate}: ${ABILITIES[LEGENDS[id].innate.ability].name}`),
           h('p', { class: 'partner-blurb' }, m.blurbs[id]),
           h('div', { class: 'partner-hero-actions' }, canPick(id) && shinyPicker(shinyOf(id), setShiny), more(true)),
         ),
@@ -346,16 +413,17 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
 
   const renderGo = () => {
     const id = current()
-    go.querySelector('.partner-go-label')!.textContent = unlocked(id) ? `${m.partner.start} ▶` : m.eggs.lockedButton
+    go.querySelector('.partner-go-label')!.textContent = unlocked(id) ? `${m.partner.start} ▶` : isLegend(id) ? m.legend.lockedButton : m.eggs.lockedButton
     paintGo()
   }
 
   const render = () => {
-    for (const k of ['starters', 'eggs'] as const) {
+    for (const k of TABS) {
       tabButtons[k].classList.toggle('on', k === tab)
       tabButtons[k].setAttribute('aria-selected', String(k === tab))
     }
     roster.classList.toggle('eggs', tab === 'eggs')
+    roster.classList.toggle('legends', tab === 'legends')
     cells.forEach((c, id) => c.classList.toggle('selected', id === current()))
     renderHero()
     renderGo()
@@ -368,8 +436,9 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
   const select = (id: PlayableId) => {
     if (id === current()) return
     if (isHatchling(id)) cursor.eggs = id
-    else cursor.starters = id as StarterId
-    tab = isHatchling(id) ? 'eggs' : 'starters'
+    else if (isLegend(id)) cursor.legends = id
+    else cursor.starters = id
+    tab = tabOf(id)
     stage = 0
     render()
     reveal()
@@ -407,7 +476,14 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
       const cols = getComputedStyle(eggGrid).gridTemplateColumns.split(' ').length || 1
       const next = stepGrid(HATCHLING_IDS.indexOf(cursor.eggs), dir, cols, HATCHLING_IDS.length)
       if (next === 'above') return setTab('starters')
-      if (next !== 'below') select(HATCHLING_IDS[next]!)
+      if (next === 'below') return setTab('legends')
+      return select(HATCHLING_IDS[next]!)
+    }
+    if (tab === 'legends') {
+      const cols = getComputedStyle(legendGrid).gridTemplateColumns.split(' ').length || 1
+      const next = stepGrid(LEGEND_IDS.indexOf(cursor.legends), dir, cols, LEGEND_IDS.length)
+      if (next === 'above') return setTab('eggs')
+      if (next !== 'below') select(LEGEND_IDS[next]!)
       return
     }
     const i = STARTER_IDS.indexOf(cursor.starters)
@@ -468,7 +544,8 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     else if (key === 'ArrowRight' || key === 'KeyD') step('right')
     else if (key === 'ArrowUp' || key === 'KeyW') step('up')
     else if (key === 'ArrowDown' || key === 'KeyS') step('down')
-    else if (key === 'Tab' || key === 'KeyQ' || key === 'KeyE' || key === 'PageUp' || key === 'PageDown') setTab(tab === 'starters' ? 'eggs' : 'starters')
+    else if (key === 'Tab' || key === 'KeyE' || key === 'PageDown') setTab(TABS[(TABS.indexOf(tab) + 1) % TABS.length]!)
+    else if (key === 'KeyQ' || key === 'PageUp') setTab(TABS[(TABS.indexOf(tab) + TABS.length - 1) % TABS.length]!)
     else if (/^Digit[1-9]$/.test(key)) select(STARTER_IDS[(Number(key.slice(5)) - 1) * 3 + (STARTER_IDS.indexOf(cursor.starters) % 3)]!)
     else if (key === 'KeyI') openDetails()
     else if (key === 'KeyO') openIncubator()

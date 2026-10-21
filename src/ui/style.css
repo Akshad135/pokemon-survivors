@@ -402,7 +402,9 @@ button {
 }
 
 .partner-roster.eggs .partner-pane,
-.partner-roster:not(.eggs) .partner-eggs {
+.partner-roster.legends .partner-pane,
+.partner-roster:not(.eggs) .partner-eggs,
+.partner-roster:not(.legends) .partner-legends {
   display: none;
 }
 
@@ -635,6 +637,52 @@ button {
   flex: none;
   align-self: center;
   min-height: 44px;
+}
+
+/* Lendários: the legends' grid (the eggs' grid rules) and a line on what the mode is. */
+.partner-legends {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.partner-legend-note {
+  flex: none;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.1;
+  color: #505068;
+  text-align: center;
+}
+
+/* A legend not captured yet: its wins so far in the corner. */
+.partner-cell-count {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  padding: 0 3px;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1;
+  color: #fff;
+  background: #283040;
+  border-radius: 3px;
+}
+
+.partner-legend-wins,
+.partner-legend-mode {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: #505068;
+}
+
+.partner-legend-wins {
+  font-size: 20px;
+  color: #283040;
 }
 
 /* The partner: Idle sprite on a pedestal tinted by its type, role, stats and evolution line. */
@@ -1169,6 +1217,26 @@ button {
     background: var(--paper);
     border-color: var(--paper);
   }
+  /* Three tabs on a narrow phone: label and count closer together. */
+  .partner-tab {
+    gap: 5px;
+    padding: 0 4px;
+    font-size: 8px;
+  }
+  .partner-tab small {
+    font-size: 16px;
+  }
+  /* The roster has no paper here: the Legend mode's line gets the tabs' dark plate. */
+  .partner-legend-note {
+    padding: 4px 8px;
+    font-size: 16px;
+    color: #c8d0ff;
+    background: rgba(24, 30, 48, 0.78);
+    border-radius: 8px;
+  }
+  .partner-legend-note b {
+    color: #fff;
+  }
   .partner-pane {
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -1357,6 +1425,10 @@ button {
   .partner-eggs .incubator-entry img {
     width: 24px;
     height: 24px;
+  }
+  /* Short landscape screens keep the height for the legends themselves. */
+  .partner-legend-note {
+    display: none;
   }
   .partner-hero {
     gap: 8px;
@@ -12418,6 +12490,110 @@ button.hall-tile:hover {
 
   .landmark-sign small {
     font-size: 16px;
+  }
+}
+
+/* ---------------- Epic rifts ---------------- */
+
+/* A boss with phases: a notch on its HP bar at each phase's threshold. */
+.boss-bar {
+  position: relative;
+}
+
+.boss-tick {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  margin-left: -1px;
+  background: #f8f0c8;
+  box-shadow: 0 0 0 1px #101018;
+}
+
+/* The encounter's title card: the legendary's name and epithet over a dark band. */
+.legend-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58%;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 8px;
+  background: linear-gradient(transparent, rgba(4, 8, 24, 0.82) 25%, rgba(4, 8, 24, 0.82) 75%, transparent);
+  color: #fff;
+  font-family: var(--title);
+  text-align: center;
+  pointer-events: none;
+  animation: legend-title-in 0.5s steps(5);
+}
+
+.legend-title.hidden {
+  display: none;
+}
+
+.legend-title b {
+  font-size: clamp(20px, 6vw, 40px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f8f8ff;
+  text-shadow: 3px 3px 0 #1c3c78;
+}
+
+.legend-title span {
+  font-size: clamp(11px, 2.8vw, 18px);
+  color: #f8d878;
+}
+
+@keyframes legend-title-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+}
+
+/* A legendary's ultimate: its move's name, big, in a deep red that reads on the toast's light box. */
+.toast-ultimate {
+  font-family: var(--title);
+  font-size: 14px;
+  color: #c82810;
+  letter-spacing: 0.06em;
+}
+
+/* A linked pair (Latias and Latios): under the shared bar, each one's own HP, red and blue; a knocked-out one blinks. */
+.boss-pair {
+  width: 100%;
+  display: flex;
+  gap: 6px;
+  margin-top: -3px;
+}
+
+.boss-pair-bar {
+  flex: 1;
+  height: 5px;
+  background: #201018;
+  border: 2px solid #101018;
+}
+
+.boss-pair-fill {
+  display: block;
+  height: 100%;
+  background: #f86078;
+}
+
+.boss-pair-fill[data-kind='latios'] {
+  background: #58a0f8;
+}
+
+.boss-pair-fill.down {
+  animation: boss-pair-down 0.5s steps(2) infinite;
+}
+
+@keyframes boss-pair-down {
+  50% {
+    opacity: 0.25;
   }
 }
 

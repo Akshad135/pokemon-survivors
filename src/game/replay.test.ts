@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { chooseOffer, step, takeBerryLevelUps } from './game'
 import { ITEM_IDS, ITEMS } from '../data/items'
-import { maxMoveLevel } from './moves'
+import { maxMoveLevel, type MoveId } from './moves'
+import { LEGENDARY_MOVES_2 } from './legendaryMoves2'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { spawnMapEvent } from './mapEvents'
@@ -10,6 +11,9 @@ import { pickAlpha, spawnAlpha } from './alphas'
 import { NO_RANKS } from './meta'
 import { OUTBREAK_SPECIES } from './outbreak'
 import { enterPlace } from './placeInterior'
+import { enterDomain } from './domain'
+import { DOMAINS } from '../data/domains'
+import { domainOf } from '../data/domains'
 import { GRAVEYARD, PLACE_IDS } from '../data/places'
 import { spawnWaveBoss } from './spawner'
 import { spawnEnemy } from './enemies'
@@ -19,6 +23,8 @@ import { featureAt, type Landmark } from './terrain'
 import { LANDMARK } from '../data/landmarks'
 import { TENSION_PEAK } from './tension'
 import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, startGame, startRecording, TICK, type ReplayStart } from './replay'
+
+const LEGENDARY_IDS_2 = Object.keys(LEGENDARY_MOVES_2) as MoveId[]
 
 const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
 
@@ -126,6 +132,34 @@ describe('replays', () => {
     const staged = startGame(start)
     megaReady(staged)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate the capstones of the trios, Mewtwo and Arceus: crystals, fields, shells, lifts and throws', () => {
+    // Four minutes in, so the horde is thick enough for every one of them to land.
+    const capstones = (g: Game) => {
+      g.time = 240
+      for (const id of LEGENDARY_IDS_2) g.player.moves.push({ id, level: 5, cooldown: 0, path: id.length % 2 ? 4 : 0 })
+    }
+    const { g, replay } = play(260, START, 300, capstones)
+    const staged = startGame(START)
+    capstones(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+  })
+
+  it('re-simulate Legend-mode runs: Pressure, the innates, both awakenings and Deoxys swapping Formes', () => {
+    // Fast levels, so the 40 s run reaches both awakenings (Lv 12 and 28).
+    const fast = (g: Game) => {
+      g.player.level = 11
+      gainXp(g, 4000)
+    }
+    for (const starter of ['kyogre', 'deoxys', 'jirachi'] as const) {
+      const start: ReplayStart = { ...START, starter, difficulty: 'hard' }
+      const { g, replay } = play(40, start, 120, fast)
+      expect(g.legend?.awakened).toBe(2)
+      const staged = startGame(start)
+      fast(staged)
+      expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    }
   })
 
   it('re-simulate Quick Attack, which only lunges on a press', () => {
@@ -314,6 +348,225 @@ describe('replays', () => {
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
   })
 
+  it("re-simulate a whole rift into Kyogre's domain: the crossing, the encounter, three phases and the capture", () => {
+    /** A player strong enough to take Kyogre down in under a minute, stepping into its domain at once. */
+    const strong = (g: Game) => {
+      g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'earthquake', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+      enterDomain(g, 'kyogre', g.player.x, g.player.y)
+    }
+    const view = { ...START.view }
+    const g = startGame(START, view)
+    strong(g)
+    const rec = startRecording(START)
+    const origin = { x: g.player.x, y: g.player.y }
+    // Up through the cavern's chambers, then circling in the arena.
+    const way = [[44, -282], [-46, -596], [36, -904], [-40, -1200], [30, -1504], [0, -1920]] as const
+    let w = 0
+    while (g.rift.arena && rec.tick < 60 * 120) {
+      if (g.phase !== 'playing') {
+        recordEvent(rec, ['offer', 0])
+        chooseOffer(g, g.offers[0]!)
+        continue
+      }
+      const p = g.player
+      const [tx, ty] = way[w]!
+      const dx = origin.x + tx - p.x
+      const dy = origin.y + ty - p.y
+      const len = Math.hypot(dx, dy) || 1
+      if (len < 30 && w < way.length - 1) w++
+      const a = rec.tick / 120
+      const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: Math.cos(a), y: Math.sin(a) }
+      step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+    }
+    expect(g.rift.cleared).toEqual(['kyogre'])
+    expect(g.events.filter((e) => e.kind === 'bossPhase').length).toBe(2)
+    expect(g.events.some((e) => e.kind === 'riftCapture')).toBe(true)
+    // The run clock stayed stopped the whole way through.
+    expect(g.time).toBe(0)
+    const staged = startGame(START)
+    strong(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
+  }, 60_000)
+
+  // Groudon's magma tunnel and Rayquaza's Sky Pillar, up their passages (round the pools and holes), then circling in the arena.
+  const DOMAIN_WAYS = {
+    groudon: [[0, -30], [-50, -220], [-50, -320], [40, -520], [76, -575], [40, -640], [-30, -840], [-30, -950], [50, -1150], [50, -1270], [-20, -1470], [-20, -1572], [0, -1920]],
+    rayquaza: [[50, -60], [70, -270], [-10, -390], [-60, -600], [-10, -660], [0, -720], [50, -930], [40, -990], [-10, -1050], [-50, -1260], [0, -1384], [20, -1590], [20, -1706], [0, -1920]],
+  } as const
+  for (const legend of ['groudon', 'rayquaza'] as const) {
+    it(`re-simulate a whole rift into ${legend}'s domain: the crossing, the encounter, three phases and the capture`, () => {
+      const strong = (g: Game) => {
+        g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'iceShard', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+        // Levels for the HP to walk the crossing straight through its lava and fight without dodging.
+        gainXp(g, 4000)
+        enterDomain(g, legend, g.player.x, g.player.y)
+      }
+      const view = { ...START.view }
+      const g = startGame(START, view)
+      strong(g)
+      const rec = startRecording(START)
+      const origin = { x: g.rift.arena!.x, y: g.rift.arena!.y }
+      const way = DOMAIN_WAYS[legend]
+      let w = 0
+      while (g.rift.arena && rec.tick < 60 * 150) {
+        if (g.phase !== 'playing' && g.phase !== 'evolving') {
+          recordEvent(rec, ['offer', 0])
+          chooseOffer(g, g.offers[0]!)
+          continue
+        }
+        const p = g.player
+        const [tx, ty] = way[w]!
+        const dx = origin.x + tx - p.x
+        const dy = origin.y + ty - p.y
+        const len = Math.hypot(dx, dy) || 1
+        if (len < 24 && w < way.length - 1) w++
+        const a = rec.tick / 120
+        const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: Math.cos(a), y: Math.sin(a) }
+        step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+      }
+      expect(g.rift.cleared).toEqual([legend])
+      expect(g.events.filter((e) => e.kind === 'bossPhase').length).toBe(2)
+      expect(g.time).toBe(0)
+      const staged = startGame(START)
+      strong(staged)
+      expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+      expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
+    }, 60_000)
+  }
+
+  for (const legend of ['lugia', 'hoOh', 'dialga'] as const) {
+    it(`re-simulate a whole rift into ${legend}'s domain, its own mechanics included`, () => {
+      const strong = (g: Game) => {
+        g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'earthquake', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+        enterDomain(g, legend, g.player.x, g.player.y)
+      }
+      const def = DOMAINS[legend]!
+      // Through the middle of each stretch of the crossing, north, then circling in the arena.
+      const way = [
+        ...def.crossing.floor.map((s) => (s.kind === 'circle' ? [s.x, s.y] : [s.pts.reduce((a, q) => a + q[0], 0) / s.pts.length, s.pts.reduce((a, q) => a + q[1], 0) / s.pts.length])).sort((a, b) => b[1]! - a[1]!),
+        [def.arena.at[0], def.crossing.gate - 60],
+      ]
+      const view = { ...START.view }
+      const g = startGame(START, view)
+      strong(g)
+      const rec = startRecording(START)
+      const origin = { x: g.player.x, y: g.player.y }
+      let w = 0
+      while (g.rift.arena && rec.tick < 60 * 150) {
+        if (g.phase !== 'playing') {
+          recordEvent(rec, ['offer', 0])
+          chooseOffer(g, g.offers[0]!)
+          continue
+        }
+        const p = g.player
+        const [tx, ty] = way[w]!
+        const dx = origin.x + tx! - p.x
+        const dy = origin.y + ty! - p.y
+        const len = Math.hypot(dx, dy) || 1
+        if (len < 30 && w < way.length - 1) w++
+        // In the arena, circling close around its middle (the rim may burn).
+        const a = rec.tick / 90
+        const cx = origin.x + def.arena.at[0] + Math.cos(a) * 50 - p.x
+        const cy = origin.y + def.arena.at[1] + Math.sin(a) * 50 - p.y
+        const cl = Math.hypot(cx, cy) || 1
+        const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: cx / cl, y: cy / cl }
+        step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+      }
+      expect(g.rift.cleared).toEqual([legend])
+      expect(g.events.filter((e) => e.kind === 'bossPhase').length).toBe(2)
+      const staged = startGame(START)
+      strong(staged)
+      const out = resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)
+      expect(out).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+      expect([staged.player.x, staged.player.y, staged.now]).toEqual([g.player.x, g.player.y, g.now])
+    })
+  }
+
+  for (const legend of ['latias', 'deoxys'] as const) {
+    it(`re-simulate a whole rift into ${legend}'s domain, its partner and barrier included`, () => {
+      const def = domainOf(legend)!
+      /** A player strong enough to get through every phase, stepping into the domain at once. */
+      const strong = (g: Game) => {
+        g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'earthquake', 'sludgeBomb', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+        enterDomain(g, legend, g.player.x, g.player.y)
+      }
+      const view = { ...START.view }
+      const g = startGame(START, view)
+      strong(g)
+      const rec = startRecording(START)
+      const origin = { x: g.player.x, y: g.player.y }
+      // Up through the crossing's glades or rocks, then circling in the arena.
+      const way = [...def.crossing.floor.flatMap((f) => (f.kind === 'circle' ? [[f.x, f.y] as const] : [])).slice(1), [def.arena.at[0], def.arena.at[1] + 120] as const]
+      let w = 0
+      while (g.rift.arena && rec.tick < 60 * 150) {
+        if (g.phase !== 'playing') {
+          recordEvent(rec, ['offer', 0])
+          chooseOffer(g, g.offers[0]!)
+          continue
+        }
+        // Keep the player standing: this checks the replay, not the balance.
+        g.player.hp = g.player.stats.maxHp
+        const p = g.player
+        const [tx, ty] = way[w]!
+        const dx = origin.x + tx - p.x
+        const dy = origin.y + ty - p.y
+        const len = Math.hypot(dx, dy) || 1
+        if (len < 30 && w < way.length - 1) w++
+        const a = rec.tick / 120
+        const stick = g.rift.arena.domain?.act === 'crossing' ? { x: dx / len, y: dy / len } : { x: Math.cos(a), y: Math.sin(a) }
+        step(g, { move: recordStep(rec, view, stick), special: false }, TICK)
+      }
+      // The duo clears both and throws a ball at each.
+      const both = def.partner ? [legend, def.partner.id] : [legend]
+      expect(g.rift.cleared).toEqual(both)
+      expect(g.events.filter((e) => e.kind === 'riftCapture').map((e) => e.kind === 'riftCapture' && e.enemy)).toEqual(both)
+      expect(g.events.filter((e) => e.kind === 'bossPhase' && e.enemy === legend).length).toBe(def.phases.length - 1)
+      expect(g.time).toBe(0)
+      const staged = startGame(START)
+      strong(staged)
+      expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    })
+  }
+
+  it("re-simulate Mewtwo on the map: its entrance, three phases, its ultimates and the capture its victory waits for", () => {
+    /** A player strong enough to take Mewtwo down in a couple of minutes, with Mewtwo arriving at once. */
+    const finale = (g: Game) => {
+      g.player.moves = (['razorLeaf', 'thunder', 'flashCannon', 'swift'] as const).map((id) => ({ id, level: maxMoveLevel(id), cooldown: 0 }))
+      g.player.items = ITEM_IDS.slice(0, 3).map((id) => ({ id, level: ITEMS[id].levels.length }))
+      gainXp(g, 60000)
+      Object.assign(g, { phase: 'playing', pendingLevelUps: 0, offers: [] })
+      recomputeStats(g)
+      g.player.hp = g.player.stats.maxHp
+      spawnWaveBoss(g, 'mewtwo', g.time, true)
+    }
+    const start: ReplayStart = START
+    const view = { ...start.view }
+    const g = startGame(start, view)
+    finale(g)
+    const rec = startRecording(start)
+    while (g.phase !== 'victory' && g.phase !== 'gameover' && rec.tick < 60 * 240) {
+      if (g.phase !== 'playing') {
+        recordEvent(rec, ['offer', 0])
+        chooseOffer(g, g.offers[0]!)
+        continue
+      }
+      const a = rec.tick / 90
+      step(g, { move: recordStep(rec, view, { x: Math.cos(a), y: Math.sin(a) }), special: false }, TICK)
+    }
+    const kinds = g.events.map((e) => e.kind)
+    expect(g.phase).toBe('victory')
+    expect(kinds.filter((k) => k === 'bossPhase').length).toBe(2)
+    expect(kinds).toContain('legendTitle')
+    expect(kinds).toContain('bossUltimate')
+    // The capture's ball settles before the victory shows.
+    expect(kinds.lastIndexOf('bossCapture')).toBeLessThan(kinds.lastIndexOf('victory'))
+    const staged = startGame(start)
+    finale(staged)
+    expect(resimulate(parseReplay(JSON.parse(JSON.stringify(rec.replay)))!, staged)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    expect([staged.player.x, staged.player.y, staged.player.hp, staged.now]).toEqual([g.player.x, g.player.y, g.player.hp, g.now])
+  }, 30_000)
+
   it('give a run played on another seed away', () => {
     const { g, replay } = play(40)
     const other = resimulate({ ...replay, start: { ...replay.start, seed: 8 } })
@@ -326,7 +579,7 @@ describe('replays', () => {
     expect(parseReplay({ ...json, moves: [1] })).toBeNull()
     expect(parseReplay({ ...json, moves: [999, 1] })).toBeNull()
     expect(parseReplay({ ...json, events: [[5, 'special'], [2, 'special']] })).toBeNull()
-    expect(parseReplay({ ...json, start: { ...json.start, starter: 'mewtwo' } })).toBeNull()
+    expect(parseReplay({ ...json, start: { ...json.start, starter: 'missingno' } })).toBeNull()
     expect(parseReplay({ ...json, start: { ...json.start, ranks: { hpUp: 99 } } })!.start.ranks.hpUp).toBe(5)
   })
 

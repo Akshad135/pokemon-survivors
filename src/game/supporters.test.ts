@@ -60,7 +60,7 @@ describe('the wall', () => {
 
   it('keeps a known title and Pokémon, and drops what it does not know', () => {
     expect(parseWall([{ ...entry, title: 'supporter', pokemon: { id: 'gible', shiny: true } }])[0]).toMatchObject({ title: 'supporter', pokemon: { id: 'gible', shiny: true } })
-    expect(parseWall([{ ...entry, title: 'emperor', pokemon: { id: 'mewtwo' } }])[0]).toMatchObject({ title: null, pokemon: null })
+    expect(parseWall([{ ...entry, title: 'emperor', pokemon: { id: 'missingno' } }])[0]).toMatchObject({ title: null, pokemon: null })
     expect(parseWall([{ ...entry, tier: 'platinum' }, { ...entry, since: 'soon' }, 'ash'])).toEqual([])
   })
 

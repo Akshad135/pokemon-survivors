@@ -13,7 +13,12 @@ import { REGIONS, STARTER_IDS, STARTERS } from '../../data/starters'
 import { WEATHER, WEATHER_CHIP } from '../../data/weather'
 import { effectiveness, POKE_TYPES } from '../../data/types'
 import { MEGA, MEGA_IDS, MEGA_LINES, MEGAS, megasOf, type MegaDef } from '../../data/megas'
-import { RIFT, RIFT_LEGENDS } from '../../data/rifts'
+import { RIFT, RIFT_LEGENDS, type RiftLegend } from '../../data/rifts'
+import { DOMAINS, partnerOf } from '../../data/domains'
+import { ABILITIES } from '../../data/abilities'
+import { AWAKEN_AT, LEGEND_IDS, LEGENDS } from '../../data/legends'
+import { legendSource } from '../../game/capture'
+import { legendMods } from '../../game/legend'
 import { CAVE, GRAVEYARD, PLACE, PLACE_IDS, PLACES, SKY, WING_IDS, WINGS } from '../../data/places'
 import { TIER_FLOORS, TIERS } from '../../data/roster'
 import { BOSS_FIGHT, bossCandidates, ELITE, EVENTS, FINALE, MYTHICALS, RUN_LENGTH, RUNNER, scaling, STAGES, stageStart, TRIO_IDS, TRIOS, type BossEvent } from '../../data/waves'
@@ -45,7 +50,7 @@ import { html, type Child, type Html } from '../html'
 import { layout } from '../layout'
 import { clock, pokedex, slugOf } from '../pokedex'
 import { ROUTES } from '../routes'
-import { patternText, traitText, typeBadge } from './pokedex'
+import { bossAttacks, patternText, traitText, typeBadge } from './pokedex'
 
 type Section = keyof SiteMessages['guide']['sections']
 
@@ -301,7 +306,7 @@ const bosses = (locale: Locale, m: SiteMessages) => {
       e.chance !== undefined ? `${clock(e.at)} (${pct(e.chance / candidates.length)}%)` : clock(e.at),
       'trio' in e ? html`${bossName(locale, id)} <small>${m.trios.names[TRIO_IDS[i]!]}</small>` : bossName(locale, id),
       ENEMIES[id].hp.toLocaleString(m.lang.tag),
-      html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`,
+      bossAttacks(id, m),
     ])
   }
   const rows = EVENTS.flatMap((e) => (e.kind === 'boss' ? rowsOf(e) : []))
@@ -315,18 +320,27 @@ const bosses = (locale: Locale, m: SiteMessages) => {
 
 const rifts = (locale: Locale, m: SiteMessages) => {
   const r = m.guide.rifts
+  const places: Partial<Record<RiftLegend, { place: string }>> = LOCALES[locale].messages.rifts.domains
   const num = (v: number) => v.toLocaleString(m.lang.tag)
-  const attacks = (id: keyof typeof ENEMIES) => html`<ul class="list">${(BOSS_PATTERNS[id] ?? []).map((p) => html`<li>${patternText(p, m)}</li>`)}</ul>`
+  const attacks = (id: keyof typeof ENEMIES) => bossAttacks(id, m)
+  /** Latios fights in Latias's domain, so his row names hers. */
+  const host = (id: RiftLegend) => (DOMAINS[id] ? id : RIFT_LEGENDS.find((l) => partnerOf(l) === id))
+  const domain = (id: RiftLegend | typeof REAPER) => {
+    const at = id === REAPER ? undefined : host(id)
+    return (at && places[at]?.place) ?? r.endlessTitle
+  }
+  const battle = Math.round(Math.min(...Object.values(DOMAINS).map((d) => d.battleTime)) / 60)
   const rows = [...RIFT_LEGENDS, REAPER].map((id) => [
     bossName(locale, id),
+    domain(id),
     html`${ENEMIES[id].types.map((type) => typeBadge(type, m))}`,
     num(id === REAPER ? reaperHp(0) : ENEMIES[id].hp),
     attacks(id),
   ])
   const bonus = (time: number) => runBonus({ time, kills: 0, victory: true, greed: 1 })
-  const growth = Math.round((riftScale(RIFT.firstAt + 60).hp - 1) * 100)
-  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.firstAt), every: RIFT.every / 60, bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, arena: RIFT.arenaTime, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
-    ${table([r.legendHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
+  const growth = Math.round((riftScale(RIFT.slots[0] + 60).hp - 1) * 100)
+  return html`${paragraphs(r.paragraphs({ first: clock(RIFT.slots[0]), second: clock(RIFT.slots[1]), bossWait: RIFT.bossWait, portal: RIFT.portalTime, enter: RIFT.enterTime, battle, fallHp: Math.round(RIFT.fallHp * 100), shiny: Math.round(1 / RIFT.shinyOdds) }))}
+    ${table([r.legendHead, r.domainHead, r.typesHead, r.hpHead, r.attacksHead], rows)}
     <p class="note">${r.hpNote(growth)}</p>
     <h3>${r.endlessTitle}</h3>
     ${paragraphs(
@@ -339,6 +353,29 @@ const rifts = (locale: Locale, m: SiteMessages) => {
         reaperBonus: num(ENDLESS.reaperBonus),
       }),
     )}`
+}
+
+/** The Legend mode: how each legend is captured (`game/capture.ts`) and what it plays with. */
+const legends = (locale: Locale, m: SiteMessages) => {
+  const g = m.guide.legends
+  const rows = LEGEND_IDS.map((id) => [
+    bossName(locale, id),
+    g.where[legendSource(id)],
+    String(LEGENDS[id].unlock.wins),
+    ABILITIES[LEGENDS[id].innate.ability].name,
+    MOVES[LEGENDS[id].signature].name,
+  ])
+  const names = LOCALES[locale].messages.difficulty.names
+  const times = (v: number) => `${v.toLocaleString(m.lang.tag, { maximumFractionDigits: 2 })}x`
+  const pressure = DIFFICULTY_IDS.map((id) => {
+    const d = legendMods(id)
+    return [names[id], times(d.enemyHp), times(d.enemyDamage), times(d.spawnRate), times(d.enemySpeed), times(d.ramp), times(d.healing)]
+  })
+  return html`${paragraphs(g.paragraphs({ count: LEGEND_IDS.length, awaken: AWAKEN_AT }))}
+    ${table([g.legendHead, g.whereHead, g.winsHead, g.innateHead, g.opensHead], rows)}
+    <h3>${g.pressureTitle}</h3>
+    <p>${g.pressure}</p>
+    ${table(m.guide.run.difficultyHead, pressure)}`
 }
 
 const places = (locale: Locale, m: SiteMessages) => {
@@ -555,6 +592,7 @@ const SECTIONS: Record<Section, (locale: Locale, m: SiteMessages) => Html> = {
   bosses,
   traits,
   rifts,
+  legends,
   places,
   landmarks,
   megas,

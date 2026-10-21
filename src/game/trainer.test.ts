@@ -24,7 +24,7 @@ describe('partner', () => {
   it('survives a reload, and an unknown or missing one falls back to Charmander', () => {
     const load = (partner: unknown) => parseSave(JSON.stringify({ ...EMPTY_SAVE, version: SAVE_VERSION, partner })).partner
     expect(load('gible')).toBe('gible')
-    for (const bad of [undefined, 'mewtwo', 'toString', 7]) expect(load(bad)).toBe('charmander')
+    for (const bad of [undefined, 'missingno', 'toString', 7]) expect(load(bad)).toBe('charmander')
   })
 })
 

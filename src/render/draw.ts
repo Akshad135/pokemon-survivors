@@ -1,12 +1,19 @@
 import { blitCentered, blitRotated, ellipse, ring, textSprite } from '../engine/pixelart'
+import { HAZARD_COLORS } from './hazardColors'
+import { domainOf } from '../data/domains'
+import { drawCapture } from './capture'
+import { drawDomainFloor, drawTear, warmDomain } from './domain'
+import { bossForm, drawBeamAir, drawBeamGround, drawBlasts, drawBossGround, drawBossMarker, drawEntrance, drawLegendScene, drawPairDown, drawPhantoms } from './legendFx'
+import { sceneHides } from '../game/legendScene'
+import { drawLegendSky, drawOmenGround } from './legendSky'
+import { bossLook, drawDomainAir, drawDomainGround, drawDomainScreen, drawVortexAir, drawVortexGround } from './domainLooks'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { BIOME_ORDER, BIOMES, biomeAt } from '../data/biomes'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
-import type { HazardVisual } from '../data/bosses'
 import { TYPE_COLORS } from '../data/types'
 import { FLEE_TIME } from '../game/enemies'
-import { EVOLUTION_TIME, playerDex } from '../game/game'
+import { EVOLUTION_TIME } from '../game/game'
 import { coinTier } from '../game/meta'
 import { xpTier } from '../game/pickups'
 import { isHeld } from '../game/status'
@@ -22,7 +29,9 @@ import { drawMegaAir, drawMegaAttack, drawMegaGround, drawMegaStone, megaLook } 
 import { drawModAttack, drawModGround } from './modFx'
 import { drawMoveFxAttack, drawMoveFxGround } from './moveFx'
 import { drawConsumable, drawFlash, drawProps, drawSleep } from './props'
-import { drawSpecialAttack, drawSpecialAura, drawSpecialGround, STANCE_FORMS } from './specialFx'
+import { drawSpecialAttack, drawSpecialAura, drawSpecialGround } from './specialFx'
+import { awakeningLook, CLONE_OUTLINE, CLONE_TINT, drawLegendAura, playerSprites } from './legend'
+import { isClone } from '../game/legend'
 import { drawArena, drawRiftArrow, drawRiftFallAir, drawRiftFallGround, drawRiftFallOut, drawRiftPortal, riftFallLook, warmArena } from './rift'
 import { drawEntranceAir, drawEntranceGround, drawPlaceArrow, drawPlaceDark, drawPlaceFallOut, drawPlaceFloor, drawPlaceGround, drawPlaceOver, drawWings, placeFallLook } from './places'
 import { roomOf } from '../game/room'
@@ -40,6 +49,7 @@ import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
 import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
 import { drawDuoAir, drawDuoGround } from './duoFx'
 import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
+import { drawLegendary2Air, drawLegendary2Ground } from './legendaryFx2'
 import { drawSignatureAttack, drawSignatureGround, drawSignaturePlayer } from './signatureFx'
 import { drawTraitAir, drawTraitGround, traitLift, traitTint } from './traits'
 import { bolt, dashedRing } from './strokes'
@@ -346,28 +356,6 @@ const drawAttack = (ctx: Ctx, a: Attack, t: number) => {
 
 /* ---------------- Boss hazards ---------------- */
 
-const HAZARD_COLORS: Record<HazardVisual, readonly [string, string]> = {
-  rock: ['#c08040', 'rgba(120,80,32,0.28)'],
-  slam: ['#f8d878', 'rgba(160,120,48,0.3)'],
-  thunder: ['#f8e030', 'rgba(248,224,48,0.22)'],
-  ice: ['#98d8f8', 'rgba(152,216,248,0.25)'],
-  fire: ['#f08030', 'rgba(240,128,48,0.25)'],
-  psychic: ['#f870c0', 'rgba(248,96,208,0.4)'],
-  water: ['#58a8f8', 'rgba(88,168,248,0.28)'],
-  dragon: ['#a070f8', 'rgba(112,56,248,0.3)'],
-  steel: ['#c8e0f8', 'rgba(104,136,200,0.3)'],
-  aero: ['#f0f8ff', 'rgba(200,220,248,0.28)'],
-  grass: ['#78d850', 'rgba(112,208,72,0.28)'],
-  shadow: ['#a890e8', 'rgba(56,32,88,0.42)'],
-  judgment: ['#fff0a0', 'rgba(248,224,112,0.32)'],
-  poison: ['#c060d8', 'rgba(160,64,192,0.3)'],
-  fireball: ['#f08030', 'rgba(240,128,48,0.25)'],
-  bubble: ['#58a8f8', 'rgba(88,168,248,0.28)'],
-  sludge: ['#602070', 'rgba(160,64,176,0.85)'],
-  spark: ['#f8e030', 'rgba(248,224,48,0.22)'],
-  seed: ['#78d850', 'rgba(112,208,72,0.28)'],
-  orb: ['#e8e8f0', 'rgba(200,200,216,0.3)'],
-}
 
 /** How far a volley's aim line reaches, px, and the step between its dashes. */
 const AIM_LENGTH = 110
@@ -560,9 +548,9 @@ const enemyAnim = (e: Enemy, s: SpeciesSprites, aloft: boolean): AnimName =>
  * (Flashes: reduced) swaps the white hit flash for a dim red tint; `aloft`
  * flies the species that can.
  */
-const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, calm: boolean, aloft: boolean) => {
+const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, calm: boolean, aloft: boolean, clone: boolean) => {
   const def: EnemyDef = ENEMIES[e.kind]
-  const s = sprites(def.dex, e.shiny)
+  const s = sprites(def.dex, e.shiny, bossForm(e))
   const scale = drawScale(e)
   if (e.fled) {
     // Running off: it keeps walking away, rising a little, and fades out at the end.
@@ -575,16 +563,18 @@ const drawEnemy = (ctx: Ctx, e: Enemy, time: number, t: number, calm: boolean, a
     drawPokemon(ctx, s, 'Hurt', e.dir, e.dying, e.x, e.y, { alpha: 1 - k, flash: calm ? 0 : 0.6 + k * 0.4, tint: calm ? HURT_TINT : undefined, loop: false, scale })
     return
   }
-  // Leapers are drawn lifted mid-jump; their shadow stays on the ground.
-  const y = e.y - traitLift(e)
+  // Leapers are drawn lifted mid-jump, and a boss aloft or reborn as its phase says (`bossLook`); their shadow stays on the ground.
+  const look = e.fight ? bossLook(e, t) : null
+  const y = e.y - traitLift(e) - (look?.lift ?? 0)
   const size = Math.max(s.bodyW, s.bodyH) * scale
   const rage = e.fight?.enraged === true
   const anim = enemyAnim(e, s, aloft)
   if (e.runner && (anim === 'Walk' || anim === 'Fly') && e.status.stun <= 0) drawSpeedLines(ctx, e, y - Math.round((s.bodyH * scale) / 2), s.bodyW * scale, t)
   if (rage) RAGE_TINT.amount = 0.15 + 0.15 * pulse(t, 3)
   const hit = e.flash > 0.08
-  const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (calm && hit ? HURT_TINT : rage ? RAGE_TINT : undefined)
-  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: hit && !calm ? 0.85 : 0, tint, scale, outline: outlineOf(e, t, calm) })
+  const tint = traitTint(e) ?? statusTint(e.status, t, e.id) ?? (calm && hit ? HURT_TINT : rage ? RAGE_TINT : clone ? CLONE_TINT : undefined)
+  if (look?.alpha === 0) return
+  drawPokemon(ctx, s, anim, e.dir, e.animTime, e.x, y, { flash: Math.max(look?.flash ?? 0, hit && !calm ? 0.85 : 0), tint: look?.tint ?? tint, scale, outline: outlineOf(e, t, calm) ?? (clone ? CLONE_OUTLINE : undefined), alpha: look?.alpha })
   if (e.shiny) drawSparkles(ctx, e.x, y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), time - e.bornAt, e.id)
   if (rage) drawRageEmbers(ctx, e.x, y - (s.bodyH * scale) / 2, size, t, e.id)
 }
@@ -641,7 +631,7 @@ const hpColor = (ratio: number) => (ratio > 0.5 ? '#48d048' : ratio > 0.2 ? '#f8
 /** Chain dash afterimages: fading type-colored copies of the player along the lunge. */
 const drawAfterimages = (ctx: Ctx, g: Game, calm: boolean) => {
   const p = g.player
-  const s = sprites(playerDex(g), p.shiny, megaLook(g, calm).form)
+  const s = playerSprites(g, megaLook(g, calm).form)
   for (const a of g.attacks) {
     if (a.visual !== 'afterimage' || a.age < 0) continue
     const k = a.age / a.ttl
@@ -652,9 +642,9 @@ const drawAfterimages = (ctx: Ctx, g: Game, calm: boolean) => {
 /** `calm` (Flashes: reduced): a hit tints the player dim red, and nothing on it flickers white. */
 const drawPlayer = (ctx: Ctx, g: Game, calm: boolean) => {
   const p = g.player
-  // A Mega wears its Mega form (flickering white while it transforms); Aegislash its Blade Forme in Blade stance.
+  // A Mega wears its Mega form (flickering white while it transforms); a legend its own (`playerSprites`); Aegislash its Blade Forme in Blade stance.
   const mega = megaLook(g, calm)
-  const s = sprites(playerDex(g), p.shiny, mega.form ?? (g.special.stance ? STANCE_FORMS[g.special.stance] : undefined))
+  const s = playerSprites(g, mega.form)
   // Fainted in a rift arena (the rift pulls the player up and out) or in a place (a rescue fades them away).
   const fall = riftFallLook(g) ?? placeFallLook(g)
   if (fall) {
@@ -677,7 +667,7 @@ const drawPlayer = (ctx: Ctx, g: Game, calm: boolean) => {
   const alpha = egg ? egg.alpha : p.hidden ? 0.3 : faded && mega.flash === 0 ? (calm ? 0.65 : 0.45) : 1
   if (alpha > 0) drawPokemon(ctx, s, anim, p.dir, p.animTime, p.x, p.y - (egg?.lift ?? 0), { alpha, flash, tint, outline: mega.outline })
   // The shiny entrance plays shortly after the run starts.
-  if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.time - 0.3, 0)
+  if (p.shiny) drawSparkles(ctx, p.x, p.y - s.bodyH / 2, Math.max(s.bodyW, s.bodyH), g.now - 0.3, 0)
   drawMegaAir(ctx, g, p.y - s.bodyH, p.animTime)
   drawHpBar(ctx, g)
 }
@@ -738,18 +728,21 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number, calm: boolean) => {
 
   const cx = Math.round(w / 2)
   const cy = Math.round(h / 2 + 24)
-  const from = sprites(evo.from, g.player.shiny)
-  const to = sprites(evo.to, g.player.shiny)
+  // A legend's awakening plays the same scene on itself, landing in its form; the big ones at 1×.
+  const look = evo.awakening ? awakeningLook(g, evo.from, evo.form) : null
+  const from = look?.before ?? sprites(evo.from, g.player.shiny)
+  const to = look?.after ?? sprites(evo.to, g.player.shiny)
+  const scale = look?.scale ?? 2
   const flashStart = 0.7
   const flashEnd = 3.7
   if (k < flashStart) {
-    drawPokemon(ctx, from, 'Idle', 0, t, cx, cy, { scale: 2 })
+    drawPokemon(ctx, from, 'Idle', 0, t, cx, cy, { scale })
   } else if (k < flashEnd) {
     // Alternating silhouettes that speed up, like the handheld games.
     const progress = (k - flashStart) / (flashEnd - flashStart)
     const period = Math.max(calm ? CALM_PERIOD : 0, 0.5 - progress * 0.44)
     const showNew = Math.floor((k - flashStart) / period) % 2 === 1
-    drawPokemon(ctx, showNew ? to : from, 'Idle', 0, t, cx, cy, { scale: 2, flash: 1 })
+    drawPokemon(ctx, showNew ? to : from, 'Idle', 0, t, cx, cy, { scale, flash: 1 })
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * TAU + k * 2
       const r = 70 - progress * 40
@@ -757,7 +750,7 @@ const drawEvolution = (ctx: Ctx, g: Game, t: number, calm: boolean) => {
       ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy - 30 + Math.sin(a) * r * 0.6), 2, 2)
     }
   } else {
-    drawPokemon(ctx, to, 'Idle', 0, t, cx, cy, { scale: 2 })
+    drawPokemon(ctx, to, 'Idle', 0, t, cx, cy, { scale })
     const white = 1 - (k - flashEnd) / 0.5
     if (white > 0 && !calm) {
       ctx.fillStyle = `rgba(255,255,255,${white})`
@@ -808,6 +801,7 @@ const GROUND_LOOKAHEAD = 128
  * lasts, so building one the first time it shows would stall that frame.
  */
 export const warmScenery = (g: Game | null, calm: boolean) => {
+  if (g && warmDomain(g)) return true
   if (g && !roomOf(g)) {
     const { w, h } = g.view
     const { x, y } = g.camera
@@ -844,13 +838,14 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const fade = biomeFade(g)
   const inside = g.place.inside
   const indoors = roomOf(g) !== null
-  if (g.rift.arena) drawArena(ctx, g.rift.arena, camX, camY, w, h, t)
+  if (g.rift.arena?.domain) drawDomainFloor(ctx, g.rift.arena, g.rift.arena.domain, camX, camY, w, h, t)
+  else if (g.rift.arena) drawArena(ctx, g.rift.arena, camX, camY, w, h, t)
   else if (inside) drawPlaceFloor(ctx, inside, camX, camY, w, h, t)
   else drawGround(ctx, camX, camY, w, h, g.biome.id, fade)
   const upcoming = biomeAt(g.time + BIOME_WARMUP)
   // Scenery warms in idle time (`warmScenery`); in case that never comes, one of the next biome's chunks per frame.
   if (upcoming !== g.biome.id) warmGround(upcoming, camX, camY, w, h)
-  if (g.rift.arena) warmArena(g.rift.arena)
+  if (g.rift.arena && !g.rift.arena.domain) warmArena(g.rift.arena)
   // Scenery changes outfit halfway through the dissolve, like the breakables.
   const look = fade && fade.k < 0.5 ? fade.from : g.biome.id
   ctx.save()
@@ -866,12 +861,18 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawVerbEvolvedGround(ctx, g, t)
   drawDuoGround(ctx, g, t)
   drawLegendaryGround(ctx, g, t)
-  for (const hz of g.hazards) if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
+  drawLegendary2Ground(ctx, g, t)
+  for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamGround(ctx, hz)
+    else if (hz.pull !== 0) drawVortexGround(ctx, hz, t)
+    else if (visible(hz.x, hz.y)) drawHazardGround(ctx, hz)
+  drawBossGround(ctx, g, t)
+  drawOmenGround(ctx, g)
+  drawDomainGround(ctx, g)
   // Breakables change outfit halfway through the dissolve.
   drawProps(ctx, g, t, look)
   // Map events wait outside with the rest of the world while the player is in a room.
   if (!indoors) drawMapEvents(ctx, g, t, calm)
-  if (g.rift.portal && !indoors) drawRiftPortal(ctx, g.rift.portal, t)
+  if (g.rift.portal && !indoors) (domainOf(g.rift.portal.legend) ? drawTear : drawRiftPortal)(ctx, g.rift.portal, t)
   drawEntranceGround(ctx, g, t)
   drawPlaceGround(ctx, g, t)
   drawSpecialAura(ctx, g, t)
@@ -882,7 +883,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawPickups(ctx, g, t)
 
   drawables.length = 0
-  for (const e of g.enemies) if (visible(e.x, e.y)) drawables.push(e)
+  // A wave legendary's scene draws it itself (its arrival, its capture).
+  const hiddenBoss = sceneHides(g)
+  for (const e of g.enemies) if (visible(e.x, e.y) && e.id !== hiddenBoss) drawables.push(e)
   drawables.push('player')
   const companion = opts.companion
   if (companion) drawables.push('companion')
@@ -908,8 +911,10 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     if (aloft) break
     if (d === 'player') {
       if (hidden) continue
-      shadow(ctx, g.player.x, g.player.y, sprites(playerDex(g)).bodyW)
-      drawWading(ctx, g, sprites(playerDex(g)).bodyW, t)
+      const body = playerSprites(g).bodyW
+      shadow(ctx, g.player.x, g.player.y, body)
+      drawWading(ctx, g, body, t)
+      drawLegendAura(ctx, g, t, calm)
     }
     else if (d === 'companion') companion && shadow(ctx, companion.x, companion.y, sprites(companion.dex).bodyW)
     else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
@@ -919,7 +924,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     if (d === 'player') !hidden && drawPlayer(ctx, g, calm)
     else if (d === 'companion') companion && drawCompanion(ctx, companion, t)
     else if (isSolid(d)) drawSolid(ctx, g, d, look)
-    else drawEnemy(ctx, d, g.time, t, calm, aloft)
+    else drawEnemy(ctx, d, g.now, t, calm, aloft, isClone(g, d))
   }
   // Badges only on bosses: on a 300-enemy horde they'd bury the sprites (tint + particles carry it there).
   for (const d of inDepth) {
@@ -942,6 +947,11 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawTraitAir(ctx, g, visible)
   drawAlphaAir(ctx, g, t, visible)
   drawRiftFallAir(ctx, g, t)
+  drawEntrance(ctx, g, t)
+  drawPairDown(ctx, g, t)
+  drawCapture(ctx, g, t)
+  drawDomainAir(ctx, g, t)
+  drawLegendScene(ctx, g, t)
 
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)
@@ -949,8 +959,12 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawVerbEvolvedAir(ctx, g, t, visible)
   drawDuoAir(ctx, g, t, visible)
   drawLegendaryAir(ctx, g, t, visible)
+  drawLegendary2Air(ctx, g, t, visible)
   drawDrainVines(ctx, g, t)
-  for (const hz of g.hazards) if (visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
+  for (const hz of g.hazards) if (hz.kind === 'beam') drawBeamAir(ctx, hz, t, g)
+    else if (hz.pull !== 0) drawVortexAir(ctx, hz, t)
+    else if (hz.phantom === 0 && visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
+  drawPhantoms(ctx, g, t)
 
   for (const p of g.particles) {
     if (!visible(p.x, p.y, 8)) continue
@@ -965,6 +979,9 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawPlaceDark(ctx, g, camX, camY, t)
   drawTunnelDark(ctx, g, camX, camY)
   drawWeather(ctx, g, camX, camY, t)
+  drawLegendSky(ctx, g, camX, camY, t)
+  drawBlasts(ctx, g, camX, camY, t)
+  drawDomainScreen(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)
   // Two passes: super-effective and critical numbers (`12!`) land on top of the rest.
@@ -984,6 +1001,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawPlaceArrow(ctx, g, camX, camY, t)
   if (!indoors) drawMapEventMarkers(ctx, g, t)
   drawAlphaMarkers(ctx, g, t, markerInsets())
+  drawBossMarker(ctx, g, camX, camY, t)
   drawRiftFallOut(ctx, g)
   drawPlaceFallOut(ctx, g)
   // Explosions, rift jumps, a Mega's burst: white over the whole screen, unless flashes are reduced.

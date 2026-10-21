@@ -62,7 +62,7 @@ export const updatePlaceEntrance = (g: Game, dt: number) => {
   const s = g.place
   const ent = s.entrance
   if (!ent) {
-    const busy = s.inside !== null || g.rift.portal !== null || g.rift.arena !== null
+    const busy = s.inside !== null || g.rift.omen !== null || g.rift.portal !== null || g.rift.arena !== null
     if (placeDue({ time: g.time, nextAt: s.nextAt, busy, bossAlive: g.bossId !== null, endless: g.endless !== null })) openEntrance(g)
     return
   }

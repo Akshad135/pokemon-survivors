@@ -13,7 +13,7 @@ import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
 import { outbreakAt } from '../../src/game/outbreak'
 import { isRecord } from '../../src/game/parse'
-import { isBoardPeriod, isPlayable, parseDisplayName, parseHandle, parseRunResult } from '../../src/game/ranking'
+import { isBoardPeriod, isPlayable, isRunMode, parseDisplayName, parseHandle, parseRunResult, runMode } from '../../src/game/ranking'
 import { parseReplay, rulesStanding } from '../../src/game/replay'
 import { banGated, parseModeration, parseReport } from '../../src/game/reports'
 import { parseCode } from '../../src/game/supporters'
@@ -130,8 +130,8 @@ const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, c
  *   re-simulated: 400 `outdated` for older ones (the run straddled a deploy),
  *   503 for newer ones (the API isn't deployed yet: the game keeps the result
  *   and sends it again later).
- * - `GET /boards/:difficulty?period=day|week|all&starter=&friends=1`: `Board`.
- *   `friends` needs a token.
+ * - `GET /boards/:difficulty?period=day|week|all&starter=&friends=1&mode=standard|legend`: `Board`.
+ *   `friends` needs a token. `mode=legend` is the Legend mode's board (runs played with a legend); without it, the regular one.
  * - `GET /challenge/:day?friends=1`: `ChallengeBoard`, the day's official attempts. `friends` needs a token.
  * - `GET /profiles/:handle`: `PublicProfile`, 404 if nobody has that handle.
  * - `PUT|DELETE /follows/:handle` (auth): follows or unfollows. `{ followed, followers }`.
@@ -269,7 +269,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     checks.schedule(token)
     void gifts.credit(c.var.userId).catch((err) => console.error('invite credit failed', err))
     const [ranks, challenge] = await Promise.all([
-      ranking.runRanks(c.var.userId, result.difficulty),
+      ranking.runRanks(c.var.userId, runMode(result.starter), result.difficulty),
       finished.challenge ? ranking.challengePlace(c.var.userId, finished.challenge, finished.official === true) : null,
     ])
     return c.json({ ranks, challenge })
@@ -280,9 +280,10 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const period = c.req.query('period') ?? 'all'
     const starter = c.req.query('starter') || null
     const friends = c.req.query('friends') === '1'
-    if (!isDifficulty(difficulty) || !isBoardPeriod(period) || (starter !== null && !isPlayable(starter))) return c.json({ error: 'unknown board' }, 400)
+    const mode = c.req.query('mode') ?? 'standard'
+    if (!isDifficulty(difficulty) || !isBoardPeriod(period) || !isRunMode(mode) || (starter !== null && !isPlayable(starter))) return c.json({ error: 'unknown board' }, 400)
     if (friends && !c.var.userId) return c.json({ error: 'unauthorized' }, 401)
-    return c.json(await ranking.board({ difficulty, period, starter, friends, viewer: c.var.userId }))
+    return c.json(await ranking.board({ mode, difficulty, period, starter, friends, viewer: c.var.userId }))
   })
 
   app.get('/challenge/:day', maybeAuth, async (c) => {

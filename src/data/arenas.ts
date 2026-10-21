@@ -35,7 +35,7 @@ export const ARENA_FEET: Record<ArenaPiece, Ellipse> = {
 /** Every few seconds a rule steps the arena (the tide rises, the edge falls), with a warning before. */
 export type ArenaStepRule = { every: number; warn: number; max: number; px: number }
 
-export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs' | 'sand' | 'craters'
+export type FloorPattern = 'rings' | 'planks' | 'wetRock' | 'basalt' | 'jade' | 'slabs' | 'sand' | 'craters' | 'garden'
 
 /**
  * The ground of a closed space (a rift's arena, a place's interior): the floor
@@ -46,7 +46,7 @@ export type FloorPlan = {
   /** Cut out of the floor (deep water): only flyers and swimmers cross it. */
   holes?: readonly Circle[]
   /** Shallow water that slows walkers, except on the islands. */
-  shallow?: readonly Circle[]
+  shallow?: readonly ArenaShape[]
   islands?: readonly Circle[]
   /** Lava rivers that burn walkers (Fire types are fine), crossed on the bridges. */
   lava?: readonly { pts: readonly Pt[]; w: number }[]
@@ -55,6 +55,9 @@ export type FloorPlan = {
   tide?: ArenaStepRule
   /** The floor shrinks toward the center by `px` each step (Sky Pillar crumbling). */
   crumble?: ArenaStepRule
+  /** Ground turned to lava by an arena transform (`data/domains.ts`), except on `cool` spots: it burns walkers like the rivers. */
+  lavaFields?: readonly ArenaShape[]
+  cool?: readonly Circle[]
 }
 
 export type ArenaLayout = FloorPlan & {
@@ -67,10 +70,19 @@ export type ArenaLayout = FloorPlan & {
 
 const R = 150
 
-const circle = (x: number, y: number, r: number): Circle => ({ kind: 'circle', x, y, r })
-const poly = (...pts: Pt[]): Poly => ({ kind: 'poly', pts })
-const around = (n: number, r: number, turn = 0) =>
+export const circle = (x: number, y: number, r: number): Circle => ({ kind: 'circle', x, y, r })
+export const poly = (...pts: Pt[]): Poly => ({ kind: 'poly', pts })
+/** `n` points evenly around a circle of radius `r`, starting `turn` rad round. */
+export const around = (n: number, r: number, turn = 0) =>
   Array.from({ length: n }, (_, i): Pt => [Math.round(dm.cos(turn + (i / n) * Math.PI * 2) * r), Math.round(dm.sin(turn + (i / n) * Math.PI * 2) * r)])
+
+/** A straight stretch of floor `w` px wide from `a` to `b` (a convex quad), for corridors between rooms. */
+export const lane = ([ax, ay]: Pt, [bx, by]: Pt, w: number): Poly => {
+  const d = Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)) || 1
+  const nx = (-(by - ay) / d) * (w / 2)
+  const ny = ((bx - ax) / d) * (w / 2)
+  return poly([ax + nx, ay + ny], [bx + nx, by + ny], [bx - nx, by - ny], [ax - nx, ay - ny])
+}
 
 const LUGIA_ISLANDS = around(6, 104, 0.5).map(([x, y]) => circle(x, Math.round(y * 0.96), 28))
 

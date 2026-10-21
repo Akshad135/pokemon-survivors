@@ -1,8 +1,12 @@
 import { pick, range, type Rng } from '../engine/rng'
-import { RIFT, RIFT_ITEMS, RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
+import { RIFT, RIFT_DRAWS, RIFT_ITEMS, type RiftLegend } from '../data/rifts'
 import { RUN_LENGTH } from '../data/waves'
-import type { ArenaLayout } from '../data/arenas'
+import type { EnemyId } from '../data/enemies'
+import { domainOf, DOMAIN_PRESS } from '../data/domains'
+import type { FloorPlan } from '../data/arenas'
+import type { DomainState } from './domain'
 import type { Room, Stash } from './room'
+import type { Game } from './types'
 
 /**
  * Pure rules and state of the legendary rifts. The map side (a portal opens,
@@ -16,7 +20,7 @@ export type RiftPortal = { x: number; y: number; left: number; charge: number; l
 export type RiftArena = Room & {
   legend: RiftLegend
   shiny: boolean
-  layout: ArenaLayout
+  layout: FloorPlan
   /** Seconds until the rift collapses. */
   left: number
   age: number
@@ -26,11 +30,18 @@ export type RiftArena = Room & {
   /** Seconds left on the defeat (the player fainted, the rift throws them out); null while they stand. */
   fall: number | null
   stash: Stash
+  /** A legendary with a domain (`data/domains.ts`) plays its four acts here (`game/domain.ts`); null in the old arena. */
+  domain: DomainState | null
 }
 
+/** The omen before a portal (`RIFT.omenTime`): the legendary's weather takes the sky, then its portal opens. */
+export type RiftOmen = { legend: RiftLegend; left: number }
+
 export type RiftState = {
-  /** Game time the next portal is due. */
+  /** Run time the next omen is due, and which of `RIFT.slots` it is. */
   nextAt: number
+  slot: number
+  omen: RiftOmen | null
   portal: RiftPortal | null
   arena: RiftArena | null
   /** Legendaries met (portal opened) and beaten this run, in order. */
@@ -38,42 +49,71 @@ export type RiftState = {
   cleared: RiftLegend[]
 }
 
-export const createRiftState = (): RiftState => ({ nextAt: RIFT.firstAt, portal: null, arena: null, met: [], cleared: [] })
+export const createRiftState = (): RiftState => ({ nextAt: RIFT.slots[0] - RIFT.omenTime, slot: 0, omen: null, portal: null, arena: null, met: [], cleared: [] })
 
 /**
- * When the portal after the one due at `slot` (opening at `time`) is due.
- * Counted from the schedule, not from the opening, so a portal that waited on
- * a boss doesn't push the run's later rifts back; never before this rift's
- * portal and arena could be over.
+ * When the omen of rift `slot` (0-based) is due: its slot in `RIFT.slots`
+ * minus the omen, give or take `RIFT.jitter`; never, once the run's slots are
+ * used up (the endless mode keeps its own cadence, `endlessRiftAt`).
  */
-export const nextRiftAt = (slot: number, time: number, rng: Rng) =>
-  Math.max(slot + RIFT.every + range(rng, -RIFT.jitter, RIFT.jitter), time + RIFT.portalTime + RIFT.arenaTime)
+export const riftAt = (slot: number, rng: Rng) => {
+  const at = RIFT.slots[slot]
+  return at === undefined ? Infinity : at - RIFT.omenTime + range(rng, -RIFT.jitter, RIFT.jitter)
+}
+
+/** In endless mode, the next omen after one at `time`. */
+export const endlessRiftAt = (time: number, rng: Rng) => time + RIFT.every + range(rng, -RIFT.jitter, RIFT.jitter)
 
 /**
- * Whether a portal opens now. During a boss fight it waits for the boss to
+ * Whether an omen starts now. During a boss fight it waits for the boss to
  * fall, for up to `RIFT.bossWait` in a regular run (always for the endless
- * mode's reaper), and in a regular run it never opens so late that the arena
- * could overlap Mewtwo.
+ * mode's reaper), and in a regular run it never starts so late that its
+ * portal would still be open when Mewtwo comes. Inside the rift the run clock
+ * stops (`clockRuns`), so the arena's length doesn't count.
  */
 export const riftDue = (s: { time: number; nextAt: number; busy: boolean; bossAlive: boolean; endless: boolean }) =>
   s.time >= s.nextAt &&
   !s.busy &&
   (!s.bossAlive || (!s.endless && s.time >= s.nextAt + RIFT.bossWait)) &&
-  (s.endless || s.time + RIFT.portalTime + RIFT.arenaTime < RUN_LENGTH)
+  (s.endless || s.time + RIFT.omenTime + RIFT.portalTime < RUN_LENGTH)
 
-/** A legendary not met yet this run; once all were met, any of them. */
-export const pickLegend = (rng: Rng, met: readonly RiftLegend[]): RiftLegend => {
-  const fresh = RIFT_LEGENDS.filter((l) => !met.includes(l))
-  return pick(rng, fresh.length > 0 ? fresh : RIFT_LEGENDS)
+/** Whether the run clock runs: it stops while the player is inside a rift. */
+export const clockRuns = (g: Pick<Game, 'rift'>) => g.rift.arena === null
+
+/**
+ * A legendary not met yet this run; once all were met, any of them. Latias
+ * brings Latios along (`RIFT_DRAWS`). Never `self`, the legend the player plays
+ * (Legend mode), nor a domain fighting alongside it (no Eon duo for a Latios).
+ */
+export const pickLegend = (rng: Rng, met: readonly RiftLegend[], self: EnemyId | null = null): RiftLegend => {
+  const open = RIFT_DRAWS.filter((l) => l !== self && domainOf(l)?.partner?.id !== self)
+  const fresh = open.filter((l) => !met.includes(l))
+  return pick(rng, fresh.length > 0 ? fresh : open)
 }
 
 /** Standing in the portal fills it; stepping out drains it twice as fast. */
 export const chargePortal = (charge: number, inside: boolean, dt: number) => (inside ? charge + dt : Math.max(0, charge - dt * 2))
 
-/** Rift legendaries are tuned for 3:30 and grow with the run clock, like the horde. */
+/**
+ * Rift legendaries are tuned for the first rift (4:00) and grow with the run
+ * clock, like the horde: fast enough that the second rift (10:20) is as hard
+ * for the stronger player who reaches it. `damage` scales their touch and, in
+ * a domain, their attacks (`domainHarm`).
+ */
 export const riftScale = (time: number) => {
-  const late = Math.max(0, time / 60 - RIFT.firstAt / 60)
-  return { hp: 1 + late * 0.5, damage: 1 + late * 0.06 }
+  const late = Math.max(0, time / 60 - RIFT.slots[0] / 60)
+  return { hp: 1 + late * 0.75, damage: 1 + late * 0.09 }
+}
+
+/**
+ * What a domain's harm to the player is multiplied by: the difficulty's press
+ * (`DOMAIN_PRESS`), and its attacks grow with the run clock like the
+ * legendary's body does (`riftScale`), so the second rift hits a stronger
+ * player as hard as the first. 1 outside a domain. `body`: a touch, already scaled.
+ */
+export const domainHarm = (g: Game, body: boolean) => {
+  if (!g.rift.arena?.domain) return 1
+  return DOMAIN_PRESS[g.difficulty].harm * (body ? 1 : riftScale(g.time).damage)
 }
 
 /**

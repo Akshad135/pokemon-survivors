@@ -3,9 +3,9 @@ import { clearGrid, insert, query } from '../engine/spatial'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { scaling } from '../data/waves'
 import { STANCES } from '../data/bosses'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { bodyOf } from '../data/bodies'
-import { fightPace } from './bossFight'
+import { fightPace, steerBoss, type Steering } from './bossFight'
 import { bumpDamage, hurtPlayer } from './combat'
 import { leadTime } from './horde'
 import { inView } from './queries'
@@ -29,7 +29,7 @@ export const radiusFor = (dex: number) => Math.max(5, Math.round(bodyOf(dex).bod
  * minutes played (`scaling`) and the difficulty. Bosses only take the difficulty's HP.
  */
 export const enemyScale = (g: Game) => {
-  const mods = DIFFICULTIES[g.difficulty]
+  const mods = runMods(g)
   const scale = scaling(g.time, mods.ramp)
   return { hp: scale.hp * mods.enemyHp, damage: scale.damage }
 }
@@ -37,7 +37,7 @@ export const enemyScale = (g: Game) => {
 export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavior: EnemyBehavior = { kind: 'chase' }) => {
   const def: EnemyDef = ENEMIES[kind]
   const boss = def.boss === true
-  const mods = DIFFICULTIES[g.difficulty]
+  const mods = runMods(g)
   const scale = boss ? { hp: mods.enemyHp, damage: 1 } : enemyScale(g)
   const hp = Math.round(def.hp * scale.hp)
   const enemy: Enemy = {
@@ -56,7 +56,7 @@ export const spawnEnemy = (g: Game, kind: EnemyId, x: number, y: number, behavio
     elite: false,
     runner: false,
     fight: null,
-    bornAt: g.time,
+    bornAt: g.now,
     cooldowns: [],
     behavior,
     dir: 0,
@@ -121,8 +121,18 @@ export const despawnEnemy = (e: Enemy) => {
   e.dying = FAINT_TIME
 }
 
+/** A linked boss's partner while it's in play (`BossFight.link`), for steering in tandem. */
+const mateOf = (g: Game, e: Enemy) => {
+  const link = e.fight?.link ?? -1
+  if (link < 0) return null
+  const mate = g.enemies.find((k) => k.id === link)
+  return mate && mate.dying < 0 && !mate.fight?.down ? mate : null
+}
+
 /** Where a walker heads instead of the player (a dungeon's corridor), reused every tick. */
 const waypoint = { x: 0, y: 0 }
+/** Where a boss with phases heads (`steerBoss`), reused every tick. */
+const steering: Steering = { x: 0, y: 0, pace: 1 }
 
 export const updateEnemies = (g: Game, dt: number) => {
   const p = g.player
@@ -153,7 +163,7 @@ export const updateEnemies = (g: Game, dt: number) => {
     const confused = e.status.confuse.time > 0
     if (e.behavior.kind === 'chase' && (confused || p.hidden || lost)) {
       // Lost track of the player (confused, or the player burrowed or went into a tunnel): amble about.
-      const h = e.status.heading + e.id * 2.4 + (confused ? 0 : g.time * 0.6)
+      const h = e.status.heading + e.id * 2.4 + (confused ? 0 : g.now * 0.6)
       vx = dm.cos(h) * pace * LOST_PACE
       vy = dm.sin(h) * pace * LOST_PACE
     } else if (e.behavior.kind === 'chase') {
@@ -166,9 +176,16 @@ export const updateEnemies = (g: Game, dt: number) => {
         const t = leadTime(dm.hypot(p.x - e.x, p.y - e.y), pace)
         tx += p.vx * t
         ty += p.vy * t
+      } else if (e.fight && steerBoss(e.fight, e.kind, e, p, g.now, steering, mateOf(g, e))) {
+        // A boss with phases moves as its phase says (`BossSteer`), or holds still through its scripts.
+        tx = steering.x
+        ty = steering.y
+        speed = pace * steering.pace
       } else if (e.fight) {
+        // It holds still through a phase's opening and its scripts (a dash, a dive) too.
         const hold = STANCES[e.fight.stance].hold
-        speed = hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold ? 0 : pace * fightPace(e.fight)
+        const still = e.fight.shift > 0 || e.fight.motion !== null || (hold > 0 && dm.sq(p.x - e.x) + dm.sq(p.y - e.y) < hold * hold)
+        speed = still ? 0 : pace * fightPace(e.fight)
       } else if (isSpitter(e)) {
         speed = pace * spitterStride(dm.hypot(p.x - e.x, p.y - e.y), inView(g, e.x, e.y, -TRAITS.spitter.inset), band)
       }

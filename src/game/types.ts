@@ -32,6 +32,7 @@ import type { Prop } from './props'
 import type { TerrainState } from './terrain'
 import type { Roster } from './roster'
 import type { RiftState } from './rift'
+import type { LegendScene } from './legendScene'
 import type { PlaceNotice, PlaceState } from './place'
 import type { PlaceId } from '../data/places'
 import type { SpecialState } from './special'
@@ -50,8 +51,11 @@ import type { TmState } from './tms'
 import type { CurseId } from '../data/curses'
 import type { CurseState } from './curses'
 import type { LegendaryVisual } from './legendaryMoves'
+import type { LegendaryVisual2 } from './legendaryMoves2'
 import type { TensionState } from './tension'
 import type { AlphaClock, AlphaState } from './alphas'
+import type { LegendForm, LegendId } from '../data/legends'
+import type { LegendState } from './legend'
 
 export type OwnedMove = {
   id: MoveId
@@ -235,6 +239,8 @@ export type Visual =
   | DuoVisual
   /** Legendary moves (`legendaryMoves.ts`), drawn by `render/legendaryFx.ts`. */
   | LegendaryVisual
+  /** Legendary moves, second batch (`legendaryMoves2.ts`), drawn by `render/legendaryFx2.ts`. */
+  | LegendaryVisual2
 
 /** What dealt the damage, for the results screen: a move, the special or the ability (Rough Skin, Magic Bounce). */
 export type DamageSource = MoveId | 'special' | 'ability'
@@ -371,8 +377,8 @@ export type Attack = {
 /** Enemy-owned hitbox that hurts the player (boss attacks). */
 export type Hazard = {
   id: number
-  /** strike = telegraphed impact, shot = projectile, zone = lingering patch. */
-  kind: 'strike' | 'shot' | 'zone'
+  /** strike = telegraphed impact, shot = projectile, zone = lingering patch, beam = a line from (x, y) (`angle`, `len`). */
+  kind: 'strike' | 'shot' | 'zone' | 'beam'
   visual: HazardVisual
   x: number
   y: number
@@ -391,6 +397,20 @@ export type Hazard = {
   world: boolean
   /** Id of the boss that lands with this strike (a `leap`), or -1. A shot with an `armAt` hovers until then (a volley's windup). */
   leaper: number
+  /** A beam's direction (rad), length (px) and turn while it burns (rad/s); `r` is half its width. 0 for the rest. */
+  angle: number
+  len: number
+  spin: number
+  /**
+   * Wind (whirlpools, gusts): while it can hurt, a player within `pullReach`
+   * px is drawn toward its center at `pull` px/s (negative: blown away). 0 for the rest.
+   */
+  pull: number
+  pullReach: number
+  /** A sweeping beam that stops at the first cover each tick: its full length (`len` follows the cover). 0 for the rest. */
+  cover: number
+  /** A phantom (`swoop`): the dex of the Pokémon whose see-through copy rides this shot, or 0. */
+  phantom: number
 }
 
 export type Pickup = {
@@ -572,11 +592,34 @@ export type GameEvent =
   | { kind: 'alphaPrize' }
   /** The world struck at the player for the first time this run (`game/hazards.ts`): a one-time explainer toast. */
   | { kind: 'hazardIntro' }
+  /** Legend mode (`legend.ts`): an awakening (`n`, 1 or 2) started, or landed, maybe in its `form` (Primal Kyogre). */
+  | { kind: 'awaken'; legend: LegendId; n: number }
+  | { kind: 'awakened'; legend: LegendId; n: number; form: LegendForm | null }
+  /** A legendary boss fell (rift, trio, mythical, Mewtwo, Arceus), once per defeat: the save counts it toward capturing it. */
+  | { kind: 'legendBeaten'; legend: EnemyId; shiny: boolean }
+  /** A boss with phases moved on to phase `phase` (from 0), or began its ultimate (`move`, the official English name). */
+  | { kind: 'bossPhase'; enemy: EnemyId; phase: number }
+  | { kind: 'bossUltimate'; enemy: EnemyId; move: string }
+  /** Epic rifts (`game/domain.ts`): the omen took the sky, the legendary showed itself (its title card), the capture's ball settled. */
+  | { kind: 'riftOmen'; enemy: RiftLegend }
+  | { kind: 'riftTitle'; enemy: RiftLegend; shiny: boolean }
+  | { kind: 'riftCapture'; enemy: RiftLegend; shiny: boolean }
+  /** A moment of a domain's own mechanics the shell calls out (Dialga's time skips): `rifts.domains[enemy].cues[cue]` in `src/i18n`. */
+  | { kind: 'domainCue'; enemy: RiftLegend; cue: string }
+  /** A boss raised its barrier (`guard`), or its last keeper broke (`up: false`). */
+  | { kind: 'bossGuard'; enemy: EnemyId; up: boolean }
+  /** A linked pair (`game/domainPair.ts`): `enemy` was knocked out and `partner` fights on enraged, or `enemy` revived `partner`. */
+  | { kind: 'pairDown'; enemy: EnemyId; partner: EnemyId }
+  | { kind: 'pairRevive'; enemy: EnemyId; partner: EnemyId }
+  /** A wave legendary on the map (`legendScene.ts`) showed itself (its title card), or its capture's ball settled. */
+  | { kind: 'legendTitle'; enemy: EnemyId; shiny: boolean }
+  | { kind: 'bossCapture'; enemy: EnemyId; shiny: boolean }
 
 /** A timed player buff (X Attack, X Speed, Max Repel). `left` counts down in seconds. */
 export type Buff = { id: BuffId; left: number; total: number }
 
-export type Evolution = { from: number; to: number; t: number }
+/** An evolution's scene: dex `from` → `to`. A legend's awakening (`awakening`: 1 or 2) plays it too, landing in its `form` where it takes one. */
+export type Evolution = { from: number; to: number; t: number; awakening?: number; form?: LegendForm }
 
 export type Game = {
   /** The Pokémon this run plays: a starter or a hatched family. */
@@ -584,6 +627,7 @@ export type Game = {
   /** Multipliers this run plays with (`difficulty.ts`). */
   difficulty: Difficulty
   rng: Rng
+  /** The run clock, in seconds: it stops inside a rift (`clockRuns`). */
   time: number
   phase: Phase
   nextId: number
@@ -682,6 +726,15 @@ export type Game = {
   worldHazards: WorldHazardState
   /** The level-up on screen is a prize (`openPrizeLevelUp`), and where it came from; its title says so. */
   prize: PrizeSource | null
+  /** The Legend mode's state (`legend.ts`): the legend played and its awakenings; null in every other run. */
+  legend: LegendState | null
+  /**
+   * Seconds simulated since the run began, never paused. `time` is the run
+   * clock, which stops inside a rift; hit cooldowns, ages and animation phases use `now`.
+   */
+  now: number
+  /** A wave legendary's entrance or capture playing on the map, with the world held still (`legendScene.ts`). */
+  legendScene: LegendScene | null
 }
 
 /** Where a prize level-up came from: an Alpha's gem or a field mission. */

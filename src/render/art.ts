@@ -18,6 +18,7 @@ import { cursedIcon, DUO_ICONS } from './duoArt'
 import type { CurseId } from '../data/curses'
 import type { SocialId } from '../site/routes'
 import { LEGENDARY_ICONS } from './legendaryArt'
+import { LEGENDARY_ICONS_2 } from './legendaryArt2'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -567,6 +568,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...TM_ICONS,
   ...VERB_EVOLVED_ICONS,
   ...LEGENDARY_ICONS,
+  ...LEGENDARY_ICONS_2,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),

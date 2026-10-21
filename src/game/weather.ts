@@ -2,6 +2,7 @@ import { range, weightedPick, type Rng } from '../engine/rng'
 import { BIOMES, FIRST_WEATHER, WEATHER_IDS, WEATHER_SPELL, type BiomeId, type WeatherId } from '../data/biomes'
 import type { PokeType } from '../data/types'
 import { WEATHER, WEATHER_CHIP } from '../data/weather'
+import { domainOf } from '../data/domains'
 import type { HazardVisual } from '../data/bosses'
 import { abilityImmune } from './abilities'
 import { playerForm } from './branch'
@@ -20,6 +21,14 @@ export const createWeather = (): WeatherState => ({ id: 'clear', prev: 'clear', 
 
 /** Damage multiplier the weather gives an attack of one type (1 when it doesn't care). */
 export const weatherBoost = (weather: WeatherId, type: PokeType) => WEATHER[weather].power?.[type] ?? 1
+
+/** The weather's edge on the player's attacks: whole, or the share a legendary's domain leaves it (`LegendDomain.weatherShare`). */
+export const playerWeatherBoost = (g: Game, type: PokeType) => {
+  const boost = weatherBoost(weatherHere(g), type)
+  const legend = g.rift.arena?.domain?.legend
+  const share = (legend && domainOf(legend)?.weatherShare) ?? 1
+  return 1 + (boost - 1) * share
+}
 
 /** Same for an attacker of several types (an enemy body hits with all of its types). */
 export const weatherPower = (weather: WeatherId, types: readonly PokeType[]) =>
@@ -54,6 +63,9 @@ export const HAZARD_TYPES: Record<HazardVisual, readonly PokeType[]> = {
   spark: ['electric'],
   seed: ['grass'],
   orb: ['normal'],
+  // The Eon duo's Mist Ball and Luster Purge.
+  mist: ['psychic'],
+  luster: ['psychic'],
 }
 
 /** Rolls the next weather spell from the biome's odds, never repeating `current`. */
@@ -69,8 +81,11 @@ export const weatherFits = (biome: BiomeId, weather: WeatherId) => {
   return weather === 'clear' || (odds[weather] ?? 0) > 0
 }
 
-/** The weather where the player stands: a rift arena is outside it, so always clear skies. */
-export const weatherHere = (g: Game): WeatherId => (roomOf(g) ? 'clear' : g.weather.id)
+/** The weather where the player stands: a room is outside it, under clear skies or its own (a legendary's domain). */
+export const weatherHere = (g: Game): WeatherId => {
+  const room = roomOf(g)
+  return room ? (room.weather ?? 'clear') : g.weather.id
+}
 
 /** Starts a weather spell now (also the dev console's `ps.weather`). */
 export const setWeather = (g: Game, id: WeatherId) => {
