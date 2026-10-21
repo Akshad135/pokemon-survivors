@@ -433,6 +433,7 @@ export const pt = {
     queued: 'Sem conexão: a partida entra no ranking quando a conexão voltar.',
     rejected: 'Esta partida não entrou no ranking.',
     unranked: 'Esta partida ficou fora do ranking: começou sem conexão ou com o jogo aberto em outra aba ou aparelho.',
+    unlisted: 'Esta partida ficou fora do ranking: a conexão caiu enquanto você jogava. Ela conta no seu perfil.',
     guest: 'Entre com uma conta para aparecer no ranking.',
     noHandle: 'Crie seu perfil na tela da conta para aparecer no ranking.',
     open: 'Ranking',

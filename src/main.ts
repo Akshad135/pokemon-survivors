@@ -1283,6 +1283,8 @@ const frame = (now: number) => {
         pace.acc -= STEP
         steps++
       }
+      // A ranked run's replay goes to the API in chunks as it plays.
+      if (steps > 0) r.ranked?.stream(r.recorder)
     } else {
       resetPacer(pace)
       specialQueued = false
