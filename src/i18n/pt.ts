@@ -15,6 +15,7 @@ import type { TraitId } from '../data/traits'
 import type { ConsumableId } from '../game/consumables'
 import type { FriendMilestone } from '../game/referral'
 import type { Difficulty } from '../game/difficulty'
+import type { SurveyAnswer } from '../data/survey'
 import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
 import type { BagItem } from '../game/bag'
 import type { ShopLevel, ShopProp } from '../data/shop'
@@ -893,6 +894,19 @@ export const pt = {
     close: 'Fechar',
     hintKeys: '← → escolher · ENTER confirmar · ESC voltar',
     hintTouch: 'Toque para escolher',
+  },
+
+  /** The difficulty survey (`ui/survey.ts`): asked once in the lobby, then a clipboard with a "!" in the top bar until answered. */
+  survey: {
+    title: 'PESQUISA RÁPIDA',
+    open: 'Pesquisa: o que você acha da dificuldade?',
+    question: 'O que você está achando da dificuldade do jogo?',
+    answers: { easy: 'Fácil', medium: 'Médio', hard: 'Difícil', unsure: 'Não sei' } satisfies Record<SurveyAnswer, string>,
+    send: 'Enviar',
+    later: 'Agora não',
+    thanks: 'Valeu! Sua resposta ajuda a ajustar o jogo.',
+    hintKeys: '↑ ↓ dificuldade · ← → resposta · ENTER confirmar · ESC fechar',
+    hintTouch: 'Toque para responder',
   },
 
   /** Ribbons of the Desafio do dia, on the profile and the Trainer Card. */
