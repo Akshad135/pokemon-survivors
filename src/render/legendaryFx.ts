@@ -7,6 +7,7 @@ import { SANDS, TIME } from '../game/legendaryMoves'
 import type { Attack, Game } from '../game/types'
 import { LEGEND_FX } from './legendaryArt'
 import { dashedRing } from './strokes'
+import { detail } from './quality'
 
 /**
  * Art of the legendary moves (`game/legendaryMoves.ts`), the biggest effects
@@ -28,12 +29,13 @@ export const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 /** 1 while it lives, easing to 0 over its last `window` seconds. */
 export const fadeOut = (a: Attack, window: number) => clamp01((a.ttl - a.age) / window)
 
-/** Square-brush line from (x0, y0) to (x1, y1), `w` px thick. */
+/** Square-brush line from (x0, y0) to (x1, y1), `w` px thick. Drawing lean, a brush 2 px or wider stamps every other step: the squares still overlap. */
 export const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
   const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0)))
   const half = Math.floor(w / 2)
+  const stride = detail.lean && w >= 2 ? 2 : 1
   ctx.fillStyle = color
-  for (let i = 0; i <= n; i++) {
+  for (let i = 0; i <= n; i = i < n && i + stride > n ? n : i + stride) {
     const k = i / n
     ctx.fillRect(Math.round(x0 + (x1 - x0) * k) - half, Math.round(y0 + (y1 - y0) * k) - half, w, w)
   }
@@ -45,13 +47,17 @@ export const twinkle = (ctx: Ctx, x: number, y: number, size: number, color: str
   px(ctx, x, y - size, color, 1, size * 2 + 1)
 }
 
-/** A solid ring `thick` px wide at radius `r` (squashed by `squash`), in one color. */
+/**
+ * A solid ring `thick` px wide at radius `r` (squashed by `squash`), in one color. Drawing lean,
+ * a ring 2 px or thicker is plotted in 2 px squares, every other step: a quarter of the calls.
+ */
 export const band = (ctx: Ctx, x: number, y: number, r: number, thick: number, color: string, squash = 1) => {
   const steps = Math.max(24, Math.ceil(r * TAU))
+  const size = detail.lean && thick >= 2 ? 2 : 1
   ctx.fillStyle = color
-  for (let i = 0; i < steps; i++) {
+  for (let i = 0; i < steps; i += size) {
     const a = (i / steps) * TAU
-    for (let d = 0; d < thick; d++) ctx.fillRect(Math.round(x + Math.cos(a) * (r - d)), Math.round(y + Math.sin(a) * (r - d) * squash), 1, 1)
+    for (let d = 0; d < thick; d += size) ctx.fillRect(Math.round(x + Math.cos(a) * (r - d)), Math.round(y + Math.sin(a) * (r - d) * squash), size, size)
   }
 }
 
@@ -91,8 +97,10 @@ const drawWhirlwind = (ctx: Ctx, a: Attack, t: number) => {
   const height = Math.round(r * 3.2 * (0.4 + 0.6 * k))
   const layers = Math.max(10, Math.round(height / 2))
   ctx.globalAlpha = Math.max(0.15, k)
+  // Drawing lean (`render/quality.ts`), the column has half the layers of air and every streak half the dots.
+  const thin = detail.lean ? 2 : 1
   // The body: a translucent column of churning air, so the funnel reads as one mass.
-  for (let i = 0; i < layers; i += 2) {
+  for (let i = 0; i < layers; i += 2 * thin) {
     const f = i / (layers - 1)
     const w = r * (0.25 + 1.0 * f ** 1.3)
     const sway = Math.sin(t * 3 + a.id + f * 3) * 4 * f
@@ -105,7 +113,7 @@ const drawWhirlwind = (ctx: Ctx, a: Attack, t: number) => {
     const cy = a.y - f * height
     const spin = t * (13 - f * 5) + i * 0.55
     const n = Math.max(12, Math.round(w * 2.4))
-    for (let j = 0; j < n; j++) {
+    for (let j = 0; j < n; j += thin) {
       const ang = spin + (j / n) * TAU
       const front = Math.sin(ang) > 0
       // Long streaks with short gaps; the back half is dimmer.

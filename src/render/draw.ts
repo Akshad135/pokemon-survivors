@@ -59,6 +59,7 @@ import { drawSolid, drawTerrainGround, drawWading, keepTerrain, solidsInView, wa
 import { drawGround, GROUND_LOOKAHEAD, warmGround } from './world'
 import { damageBudget, showsText, textAlpha, type DamageNumbers } from './damageNumbers'
 import { CALM_PERIOD, HURT_TINT, type Flashes } from './flashes'
+import { detail } from './quality'
 
 type Ctx = CanvasRenderingContext2D
 
@@ -846,8 +847,12 @@ const TEXT_PASSES = [false, true] as const
 /** Player preferences from the settings screen, and the supporter's companion walking along (`render/companion.ts`). */
 export type RenderOptions = { damageNumbers: DamageNumbers; screenShake: boolean; flashes: Flashes; companion?: CompanionView | null }
 
+/** Particles a lean frame draws at most (`render/quality.ts`). */
+const LEAN_PARTICLES = 120
+
 export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   const { w, h } = g.view
+  const lean = detail.lean
   const calm = opts.flashes === 'reduced'
   const shake = opts.screenShake ? g.shake : 0
   const shakeX = shake > 0 ? Math.round((Math.random() - 0.5) * shake * 2) : 0
@@ -937,7 +942,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
       drawLegendAura(ctx, g, t, calm)
     }
     else if (d === 'companion') companion && shadow(ctx, companion.x, companion.y, sprites(companion.dex).bodyW)
-    else if (!isSolid(d) && d.dying < 0) shadow(ctx, d.x, d.y, d.radius * 3)
+    // Drawing lean, the regular horde goes without: a shadow each is a draw call each.
+    else if (!isSolid(d) && d.dying < 0 && (!lean || d.boss || d.alpha)) shadow(ctx, d.x, d.y, d.radius * 3)
   }
   drawAfterimages(ctx, g, calm)
   for (const d of inDepth) {
@@ -986,7 +992,10 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
     else if (hz.phantom === 0 && visible(hz.x, hz.y, 200)) drawHazard(ctx, hz)
   drawPhantoms(ctx, g, t)
 
-  for (const p of g.particles) {
+  // Drawing lean, a big burst shows every 2nd (3rd...) particle, about `LEAN_PARTICLES` in all.
+  const every = lean ? Math.max(1, Math.ceil(g.particles.length / LEAN_PARTICLES)) : 1
+  for (let i = 0; i < g.particles.length; i += every) {
+    const p = g.particles[i]!
     if (!visible(p.x, p.y, 8)) continue
     ctx.globalAlpha = Math.min(1, (1 - p.life / p.ttl) * 1.5)
     ctx.fillStyle = p.color
@@ -1006,8 +1015,8 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawDomainScreen(ctx, g, camX, camY, t)
   ctx.save()
   ctx.translate(-camX, -camY)
-  // Two passes: super-effective and critical numbers (`12!`) land on top of the rest.
-  const mode = opts.damageNumbers
+  // Two passes: super-effective and critical numbers (`12!`) land on top of the rest. Drawing lean, all of them shows reduced.
+  const mode = lean && opts.damageNumbers === 'all' ? 'reduced' : opts.damageNumbers
   const budget = damageBudget(g.texts, g.bossId)
   for (const bang of TEXT_PASSES) {
     for (const text of g.texts) {

@@ -100,6 +100,7 @@ import { MOVES } from './game/moves'
 import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render, warmScenery } from './render/draw'
+import { createGovernor, detail, observeFrame } from './render/quality'
 import { drawJoystick } from './render/joystick'
 import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
 import { setMarkerInsets } from './render/mapEvents'
@@ -1449,10 +1450,18 @@ window.addEventListener('beforeunload', (e) => {
 let last = performance.now()
 /** The simulation's tick accumulator, snapped to the display's cadence (`engine/pacing.ts`). */
 const pace = pacer()
+/** Watches how the run's frames hold up and turns lean drawing on and off (`render/quality.ts`). */
+const governor = createGovernor((navigator as Navigator & { deviceMemory?: number }).deviceMemory)
+detail.lean = governor.lean
+/** `ps.quality()` pins the governor's choice for screenshots and tests. */
+let qualityPin: 'auto' | 'lean' | 'full' = 'auto'
+/** When the last frame that advanced the run was drawn (NaN after one that didn't). */
+let lastDrawn = NaN
 /** Seconds of menu time not drawn yet: the menus' meadow and screens draw at most about 60 times a second. */
 let menuAcc = 0
 
 const frame = (now: number) => {
+  const started = performance.now()
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   const t = now / 1000
@@ -1505,6 +1514,12 @@ const frame = (now: number) => {
         if (stick && g.phase === 'playing') drawJoystick(ctx, stick, cssScale)
         r.hud.update(g)
       }
+      // Only frames that moved the run tell how the device keeps up.
+      if (steps > 0) {
+        const lean = observeFrame(governor, performance.now() - started, now - lastDrawn)
+        detail.lean = qualityPin === 'auto' ? lean : qualityPin === 'lean'
+        lastDrawn = now
+      } else lastDrawn = NaN
     }
   } else {
     // On 90 and 120 Hz screens the menus draw at most about 60 times a second, like a run: half the work behind a menu.
@@ -1905,6 +1920,12 @@ if (import.meta.env.DEV) {
       showTitle,
       showMenu,
       theme: currentTheme,
+      /** `ps.quality('lean')` pins lean drawing (`'full'` full detail, `'auto'` back to the governor); returns the governor's state. */
+      quality: (pin?: 'auto' | 'lean' | 'full') => {
+        if (pin) qualityPin = pin
+        detail.lean = qualityPin === 'auto' ? governor.lean : qualityPin === 'lean'
+        return { pin: qualityPin, drawing: detail.lean ? 'lean' : 'full', governor: { ...governor } }
+      },
       spawn: devSpawn,
       alpha: devAlpha,
       mega: devMega,
