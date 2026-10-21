@@ -16,6 +16,7 @@ import { outbreakAt } from '../../src/game/outbreak'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, isRunMode, parseDisplayName, parseHandle, parseRunResult, runMode } from '../../src/game/ranking'
 import { parseReplay, rulesStanding } from '../../src/game/replay'
+import { parseChunk } from '../../src/game/replayStream'
 import { banGated, parseModeration, parseReport } from '../../src/game/reports'
 import { parseCode } from '../../src/game/supporters'
 import { isSuggestionSort, isSuggestionStatus, isVote, parseSuggestionDraft } from '../../src/game/suggestions'
@@ -94,7 +95,10 @@ const SUGGESTION_ERRORS = { profile: 403, limit: 429, unknown: 404, closed: 409 
 const REPORT_ERRORS = { self: 400, limit: 429 } as const
 
 /** What a run's end answers when it's refused, by `FinishError`. */
-const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, clock: 422, challenge: 400 } as const
+const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, clock: 422, challenge: 400, rewrite: 409 } as const
+
+/** What a replay chunk answers when it's refused, by `ChunkError`. */
+const CHUNK_ERRORS = { unknown: 404, replaced: 409, committed: 409, gap: 409, clock: 422 } as const
 
 /**
  * The HTTP API. Routes marked (auth) need a Clerk session token
@@ -119,14 +123,21 @@ const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, c
  *   isn't open (`challengeOpen`).
  * - `POST /runs/:token/start` (auth): the run of a token asked for ahead really starts now: its
  *   clock restarts (`stampRun`). 204, 404 for an unknown or finished token, 409 for a replaced one.
+ * - `PUT /runs/:token/chunks/:seq` (auth) `ReplayChunk` (`src/game/replayStream.ts`): the replay's ticks
+ *   `[from, to)` while the run plays, chunk `seq` (0, 1, 2…), committing them. `{ lag }`, how late it came
+ *   (seconds, `commitLag`; null for a retry of a chunk already in, which changes nothing). 400 for a chunk
+ *   of the wrong shape or size, 404 for an unknown token or a run that ended (only a victory's goes on,
+ *   into endless mode), 409 for a replaced token, a `seq` another chunk holds (`committed`) or a chunk
+ *   that doesn't start where the stream is (`gap`), 422 when the clock can't fit it.
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
- *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
+ *   returns `{ ranks, challenge, listed }` (`ChallengePlace`, null for any other run; `listed`
+ *   false when, with `STREAM_ENFORCE` on, it wasn't streamed in time and stays off the boards); the
  *   replay may be re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
  *   400 for an implausible result, a missing replay or a replay of another run,
  *   `seed` for a replay of another seed than the token's (`reportProblem`; a token from before the
  *   server dealt seeds takes any), 404 for an unknown token, 409 for a replaced one or when it
- *   contradicts what the run already recorded, 422 when the clock can't fit it. The replay must play by this
+ *   contradicts what the run already recorded or rewrites what its chunks committed (`rewrite`), 422 when the clock can't fit it. The replay must play by this
  *   server's rules (`RULES_VERSION`), so every run on the boards can be
  *   re-simulated: 400 `outdated` for older ones (the run straddled a deploy),
  *   503 for newer ones (the API isn't deployed yet: the game keeps the result
@@ -252,6 +263,15 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     return stamped === 'ok' ? c.body(null, 204) : c.json({ error: stamped }, stamped === 'replaced' ? 409 : 404)
   })
 
+  // 15 s of play is ~2 KB of JSON; the limits of `STREAM` keep a chunk far below this.
+  app.put('/runs/:token/chunks/:seq', auth, bodyLimit({ maxSize: 64 * 1024 }), async (c) => {
+    const seq = Number(c.req.param('seq'))
+    const chunk = parseChunk(await json(c))
+    if (!Number.isSafeInteger(seq) || seq < 0 || !chunk) return c.json({ error: 'invalid chunk' }, 400)
+    const taken = await ranking.putChunk(c.var.userId, c.req.param('token'), seq, chunk)
+    return taken.ok ? c.json({ lag: taken.lag }) : c.json({ error: taken.error }, CHUNK_ERRORS[taken.error])
+  })
+
   // A 30-minute replay is ~60 KB of JSON.
   app.put('/runs/:token', auth, runBody, async (c) => {
     const body = await json(c)
@@ -274,7 +294,7 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
       ranking.runRanks(c.var.userId, runMode(result.starter), result.difficulty),
       finished.challenge ? ranking.challengePlace(c.var.userId, finished.challenge, finished.official === true) : null,
     ])
-    return c.json({ ranks, challenge })
+    return c.json({ ranks, challenge, listed: finished.listed })
   })
 
   app.get('/boards/:difficulty', maybeAuth, async (c) => {

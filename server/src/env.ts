@@ -43,6 +43,11 @@ export const loadEnv = () => {
     discordBugForumId: process.env.DISCORD_BUG_FORUM_ID || null,
     /** Emails (comma separated, `ADMIN_EMAILS`) whose verified owners run the gift desk (`admin.ts`). Empty: nobody is admin. */
     adminEmails: (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
+    /**
+     * `STREAM_ENFORCE=1`: a ranked run whose replay wasn't streamed in time (`streamedInTime` in
+     * `src/game/replayStream.ts`) stays off the public boards. Off (the default), the API only stores and logs the lag.
+     */
+    streamEnforce: ['1', 'true', 'on'].includes((process.env.STREAM_ENFORCE ?? '').trim().toLowerCase()),
     /** Whether the game at `origin` may call the API (CORS) and own its tokens (`azp`). */
     allowedOrigin: (origin: string) => origins.includes(origin) || LOCALHOST.test(origin),
   }
