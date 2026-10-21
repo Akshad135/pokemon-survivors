@@ -1498,7 +1498,13 @@ let lastDrawn = NaN
 /** Seconds of menu time not drawn yet: the menus' meadow and screens draw at most about 60 times a second. */
 let menuAcc = 0
 
+/**
+ * One display frame. It books the next one first: an exception thrown in here
+ * still reaches the error report (once, `analytics.ts` dedupes it) but never
+ * stops the loop, which would freeze the game for good.
+ */
 const frame = (now: number) => {
+  requestAnimationFrame(frame)
   const started = performance.now()
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
@@ -1584,7 +1590,6 @@ const frame = (now: number) => {
   playTheme(themeFor(run))
   // Ducked under the pause menu, but at full level while the player tunes the volume.
   duckMusic(run?.game.phase === 'paused' && !isSettingsOpen())
-  requestAnimationFrame(frame)
 }
 
 /* ---------------- Idle warm-up ---------------- */
@@ -1605,9 +1610,13 @@ const pumpWarmUp = (deadline: { didTimeout: boolean; timeRemaining: () => number
   const calm = !run || (run.game.phase !== 'playing' && run.game.phase !== 'evolving')
   const warm = () => warmScenery(run?.game ?? null, calm) || warmIcon()
   let made = false
-  if (deadline.didTimeout) made = warm()
-  else while (deadline.timeRemaining() > IDLE_SLACK && warm()) made = true
-  scheduleWarmUp(made ? (hasIdle ? 0 : 50) : 1000)
+  // A build that throws (reported as any error) must not stop the warm-up for the rest of the session.
+  try {
+    if (deadline.didTimeout) made = warm()
+    else while (deadline.timeRemaining() > IDLE_SLACK && warm()) made = true
+  } finally {
+    scheduleWarmUp(made ? (hasIdle ? 0 : 50) : 1000)
+  }
 }
 const scheduleWarmUp = (ms: number) =>
   setTimeout(() => {
