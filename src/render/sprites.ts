@@ -15,18 +15,21 @@ export type Dex = number
 
 type Sheet = {
   img: HTMLImageElement | HTMLCanvasElement
-  /** The sheet's white silhouette, made on first use (`whiteOf`). */
-  white: HTMLCanvasElement | null
   fw: number
   fh: number
   durations: readonly number[]
   totalTicks: number
+  /** The sweep (`sweepSprites`) it was last drawn or asked for in; `GONE` once its species was dropped, and then it draws nothing. */
+  seen: number
+  /** Its frames' silhouettes (`overlay`), by `overlayKey`; null until the first one. */
+  overlays: Map<number, Overlay> | null
 }
 
 export type SpeciesSprites = {
   dex: Dex
   anims: Record<Exclude<AnimName, 'Fly'>, Sheet> & { Fly?: Sheet }
-  portrait: HTMLImageElement
+  /** The portrait's URL, for DOM art (an <img>); never downloaded with the sheets. */
+  portrait: string
   cry: string
   /** Distance from frame center down to the feet, in px. */
   footY: number
@@ -58,7 +61,12 @@ export type FormKey = Form | MegaForm | LegendForm
 const base = (dex: Dex) => `${import.meta.env.BASE_URL}assets/pokemon/${dex}`
 /** Alternate forms live in a `<form>/` subfolder, shinies in a `shiny/` one below the form's, each with their own sheets. */
 const variantBase = (dex: Dex, shiny: boolean, form?: FormKey) => `${base(dex)}${form ? `/${form}` : ''}${shiny ? '/shiny' : ''}`
-const cacheKey = (dex: Dex, shiny: boolean, form?: FormKey) => `${dex}${form ? `:${form}` : ''}${shiny ? 's' : ''}`
+/**
+ * A loaded variant's key: a number for a species' normal and shiny colors (the hot path: `sprites` runs for every
+ * Pokémon on screen every frame, so no string is built there), a string for an alternate form.
+ */
+type Key = number | string
+const cacheKey = (dex: Dex, shiny: boolean, form?: FormKey): Key => (form ? `${dex}:${form}${shiny ? 's' : ''}` : dex * 2 + (shiny ? 1 : 0))
 
 const manifestVariant = (dex: Dex, shiny: boolean, form?: FormKey) => {
   const entry = MANIFEST[String(dex)]
@@ -66,7 +74,8 @@ const manifestVariant = (dex: Dex, shiny: boolean, form?: FormKey) => {
   return shiny ? variant?.shiny : variant
 }
 
-export const hasShiny = (dex: Dex) => MANIFEST[String(dex)]?.shiny !== undefined
+const SHINIES = new Set(Object.entries(MANIFEST).flatMap(([dex, entry]) => (entry.shiny ? [Number(dex)] : [])))
+export const hasShiny = (dex: Dex) => SHINIES.has(dex)
 
 /** Loads an image and decodes it off the main thread, so its first draw (mid-run) doesn't stall a frame. */
 const loadImage = (src: string) => {
@@ -79,89 +88,327 @@ const loadImage = (src: string) => {
   )
 }
 
-/** Solid white silhouette used for hit flashes and the evolution sequence. */
-const silhouette = (img: HTMLImageElement | HTMLCanvasElement) => {
-  const canvas = createCanvas(img.width, img.height)
-  const ctx = context2d(canvas)
-  ctx.drawImage(img, 0, 0)
-  ctx.globalCompositeOperation = 'source-in'
-  ctx.fillStyle = '#fff'
-  ctx.fillRect(0, 0, img.width, img.height)
-  return canvas
+/* ---------------- Silhouettes ---------------- */
+
+/**
+ * One frame's silhouette in one color: the white of a hit flash (and the
+ * evolution's), a status tint, an elite's or enraged boss's outline. Each is
+ * made the first time it's drawn, from that frame alone (fw×fh, about a
+ * twentieth of its sheet), and packed into an atlas page shared by all: a
+ * frame draws slower the more distinct images it draws from, and a crowd of
+ * flashing enemies would draw from hundreds. One made mid-frame draws from its
+ * own `loose` canvas until the next task packs it (writing into a page the
+ * frame already drew from makes the browser copy the whole page). Past
+ * `OVERLAY_PAGES` the least recently drawn silhouette gives its spot to the
+ * new one. Whole-sheet silhouettes per color, kept for good, grew past 100 MB
+ * of canvases over a run (every species, sheet and status color) until phones
+ * killed the tab.
+ */
+type Overlay = {
+  sheet: Sheet
+  key: number
+  /** Where it's packed; null while it's `loose`. */
+  shelf: Shelf | null
+  x: number
+  loose: HTMLCanvasElement | null
+  /** The sweep it was last drawn in. */
+  seen: number
+  /** Neighbors in the list of packed silhouettes, least recently drawn first. */
+  older: Overlay | null
+  newer: Overlay | null
+}
+
+/** A row of a page's silhouettes, as tall as its tallest: filled left to right, then its freed spots reused. */
+type Shelf = { page: Page; y: number; h: number; end: number; free: { x: number; w: number }[] }
+
+/** An atlas page: shelves of silhouettes, stacked top to bottom, `count` of them packed there now. */
+type Page = { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; shelves: Shelf[]; top: number; count: number }
+
+/** A page's side, in px: 1 MB of pixels, room for about 180 frames of a common species (the biggest frame is 144 px). */
+const PAGE = 512
+/** Clear px between silhouettes, so no sampling ever bleeds a neighbor in. */
+const GAP = 1
+/** A shelf takes frames up to this many px shorter than itself, so tall and short frames don't share one. */
+const SHELF_SLACK = 6
+
+/**
+ * Pages kept at most: 16 MB, a fixed, small slice of a phone's canvas memory
+ * (the whole-sheet ones passed 100 MB). A crowded late screen (a dozen species
+ * in 8 directions, white-flashed, burning, poisoned, outlined) draws a few MB
+ * of silhouettes. A stress of 240 enemies of 8 species, all flashing, outlined
+ * and in every status color at once, needs 22 MB: at 16 it redoes a few dozen
+ * silhouettes a second and its frames cost what they did with no cap, while
+ * at 12 the redoing showed (about 1.5 ms a frame on a 4× slowed CPU).
+ */
+export const OVERLAY_PAGES = 16
+
+/** Sweeps (`sweepSprites`) a silhouette stays undrawn before it's dropped; a page left empty is freed. */
+const OVERLAY_IDLE = 10
+
+const pages: Page[] = []
+let oldest: Overlay | null = null
+let newest: Overlay | null = null
+const toPack: Overlay[] = []
+let packing = false
+/** Silhouettes made so far, for the dev console. */
+let made = 0
+
+const unlink = (o: Overlay) => {
+  if (o.older) o.older.newer = o.newer
+  else if (oldest === o) oldest = o.newer
+  if (o.newer) o.newer.older = o.older
+  else if (newest === o) newest = o.older
+  o.older = null
+  o.newer = null
+}
+
+const pushNewest = (o: Overlay) => {
+  o.older = newest
+  if (newest) newest.newer = o
+  else oldest = o
+  newest = o
+}
+
+/** Small ids for the few colors silhouettes come in, so a frame's key stays a small integer. */
+const COLOR_IDS = new Map<string, number>()
+const colorId = (color: string) => {
+  let id = COLOR_IDS.get(color)
+  if (id === undefined) COLOR_IDS.set(color, (id = COLOR_IDS.size))
+  return id
+}
+
+/** `col`, `row` (< 1024, < 8) and the color in one integer, unique within a sheet. */
+const overlayKey = (col: number, row: number, color: string) => colorId(color) * 8192 + row * 1024 + col
+
+/** Forgets a silhouette: it's made again when next drawn, and its spot on the page waits for another. */
+const evict = (o: Overlay) => {
+  unlink(o)
+  if (o.sheet.overlays?.get(o.key) === o) o.sheet.overlays.delete(o.key)
+  if (o.shelf) {
+    o.shelf.free.push({ x: o.x, w: o.sheet.fw })
+    o.shelf.page.count--
+  }
+  o.shelf = null
+  if (o.loose) o.loose.width = o.loose.height = 0
+  o.loose = null
+}
+
+/** Drops a page and frees its pixels right away, without waiting for the garbage collector. */
+const freePage = (page: Page) => {
+  for (let o = oldest; o; ) {
+    const next = o.newer
+    if (o.shelf?.page === page) evict(o)
+    o = next
+  }
+  pages.splice(pages.indexOf(page), 1)
+  page.canvas.width = 0
+  page.canvas.height = 0
+}
+
+/** The shelves a `w`×`h` silhouette fits, by height. */
+const holds = (s: Shelf, h: number) => s.h >= h && s.h - h <= SHELF_SLACK
+
+/** A free spot for a `w`×`h` silhouette: a freed one, the end of a shelf, a new shelf, or a new page. Null when all is taken. */
+const spot = (w: number, h: number): { shelf: Shelf; x: number } | null => {
+  for (const page of pages) {
+    for (const shelf of page.shelves) {
+      if (!holds(shelf, h)) continue
+      const i = shelf.free.findIndex((f) => f.w >= w)
+      if (i >= 0) return { shelf, x: shelf.free.splice(i, 1)[0]!.x }
+      if (shelf.end + w <= PAGE) {
+        const x = shelf.end
+        shelf.end += w + GAP
+        return { shelf, x }
+      }
+    }
+  }
+  let page = pages.find((p) => p.top + h <= PAGE)
+  if (!page && pages.length < OVERLAY_PAGES) {
+    const canvas = createCanvas(PAGE, PAGE)
+    page = { canvas, ctx: context2d(canvas), shelves: [], top: 0, count: 0 }
+    pages.push(page)
+  }
+  if (!page) return null
+  const shelf: Shelf = { page, y: page.top, h, end: w + GAP, free: [] }
+  page.shelves.push(shelf)
+  page.top += h + GAP
+  return { shelf, x: 0 }
 }
 
 /**
- * The sheet's silhouette, made the first time a hit flash, tint or outline draws it. Made up front,
- * every loaded sheet kept one: the run's whole horde, the menus' starters, shinies and forms, over
- * 100 MB of canvases seconds into a run, past what iOS lets a page hold (`getContext` then fails).
+ * A spot for a `w`×`h` silhouette, freeing the least recently drawn ones that
+ * could give theirs (a few hundred looked at, at most); failing that, the
+ * least recently drawn page whole.
  */
-const whiteOf = (sheet: Sheet) => (sheet.white ??= silhouette(sheet.img))
-
-const tints = new WeakMap<HTMLCanvasElement, Map<string, HTMLCanvasElement>>()
-
-/** Silhouette recolored to `color`, cached per sheet and color (status tints). */
-const tinted = (white: HTMLCanvasElement, color: string) => {
-  let byColor = tints.get(white)
-  if (!byColor) tints.set(white, (byColor = new Map()))
-  let canvas = byColor.get(color)
-  if (!canvas) {
-    canvas = createCanvas(white.width, white.height)
-    const ctx = context2d(canvas)
-    ctx.drawImage(white, 0, 0)
-    ctx.globalCompositeOperation = 'source-in'
-    ctx.fillStyle = color
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    byColor.set(color, canvas)
+const claim = (w: number, h: number) => {
+  const free = spot(w, h)
+  if (free) return free
+  let looked = 0
+  for (let o = oldest; o && looked < 256; o = o.newer, looked++) {
+    if (o.shelf && holds(o.shelf, h) && o.sheet.fw >= w) {
+      const shelf = o.shelf
+      const x = o.x
+      evict(o)
+      shelf.free.pop()
+      return { shelf, x }
+    }
   }
-  return canvas
+  const page = oldest?.shelf?.page ?? pages[0]!
+  freePage(page)
+  return spot(w, h)!
 }
 
-const cache = new Map<string, SpeciesSprites>()
-const pending = new Map<string, Promise<SpeciesSprites>>()
+/** Packs the silhouettes made since the last task into pages, which no frame is drawing from now, and frees their loose canvases. */
+const pack = () => {
+  packing = false
+  for (const o of toPack) {
+    const loose = o.loose
+    if (!loose) continue
+    o.loose = null
+    if (o.sheet.overlays?.get(o.key) === o) {
+      const { fw, fh } = o.sheet
+      const { shelf, x } = claim(fw, fh)
+      shelf.page.ctx.clearRect(x, shelf.y, fw, shelf.h)
+      shelf.page.ctx.drawImage(loose, x, shelf.y)
+      o.shelf = shelf
+      o.x = x
+      shelf.page.count++
+      pushNewest(o)
+    }
+    loose.width = 0
+    loose.height = 0
+  }
+  toPack.length = 0
+}
 
-/** Loads (once) every sheet, the portrait and cry URL of a species variant. Concurrent calls share one request. */
+/** The silhouette of the frame at `col`, `row` of `sheet` in `color`, from its page or made now. */
+const overlay = (sheet: Sheet, col: number, row: number, color: string) => {
+  const key = overlayKey(col, row, color)
+  const o = sheet.overlays?.get(key)
+  if (o) {
+    o.seen = epoch
+    if (o.shelf && o !== newest) {
+      unlink(o)
+      pushNewest(o)
+    }
+    return o
+  }
+  const { fw, fh } = sheet
+  made++
+  const loose = createCanvas(fw, fh)
+  const ctx = context2d(loose)
+  ctx.drawImage(sheet.img, col * fw, row * fh, fw, fh, 0, 0, fw, fh)
+  ctx.globalCompositeOperation = 'source-in'
+  ctx.fillStyle = color
+  ctx.fillRect(0, 0, fw, fh)
+  const fresh: Overlay = { sheet, key, shelf: null, x: 0, loose, seen: epoch, older: null, newer: null }
+  ;(sheet.overlays ??= new Map()).set(key, fresh)
+  toPack.push(fresh)
+  if (!packing) {
+    packing = true
+    setTimeout(pack, 0)
+  }
+  return fresh
+}
+
+/** Draws a silhouette (`overlay`) of a `fw`×`fh` frame into (dx, dy, dw, dh). */
+const blit = (ctx: CanvasRenderingContext2D, o: Overlay, fw: number, fh: number, dx: number, dy: number, dw: number, dh: number) => {
+  if (o.shelf) ctx.drawImage(o.shelf.page.canvas, o.x, o.shelf.y, fw, fh, dx, dy, dw, dh)
+  else if (o.loose) ctx.drawImage(o.loose, dx, dy, dw, dh)
+}
+
+/** Forgets a dropped sheet's silhouettes. */
+const releaseOverlays = (sheet: Sheet) => {
+  if (sheet.overlays) for (const o of [...sheet.overlays.values()]) evict(o)
+  sheet.overlays = null
+}
+
+/** Drops the silhouettes not drawn in the last `OVERLAY_IDLE` sweeps and frees the pages that leaves empty, so calm moments and the menus hold few. */
+const sweepOverlays = () => {
+  while (oldest && oldest.seen < epoch - OVERLAY_IDLE) evict(oldest)
+  for (const page of [...pages]) if (page.count === 0) freePage(page)
+}
+
+/** The silhouette pages right now, for the dev console. */
+export const overlayStats = () => {
+  let silhouettes = 0
+  for (let o = oldest; o; o = o.newer) silhouettes++
+  return { pages: pages.length, max: OVERLAY_PAGES, MB: (pages.length * PAGE * PAGE * 4) / 1048576, silhouettes, made }
+}
+
+/* ---------------- Loading and freeing ---------------- */
+
+/** A dropped sheet's `seen`. */
+const GONE = -1
+
+/** Counts sweeps (`sweepSprites`); a sheet drawn or asked for takes the current one as its `seen`. */
+let epoch = 0
+
+const sheetOf = (img: HTMLImageElement | HTMLCanvasElement, fw: number, fh: number, durations: readonly number[]): Sheet => ({
+  img,
+  fw,
+  fh,
+  durations,
+  totalTicks: durations.reduce((a, b) => a + b, 0),
+  seen: epoch,
+  overlays: null,
+})
+
+const cache = new Map<Key, SpeciesSprites>()
+const pending = new Map<Key, Promise<SpeciesSprites>>()
+/** Variants whose download failed since the last sweep: not asked for again until then (a flaky connection gets retried, a frame loop doesn't). */
+const failed = new Set<Key>()
+
+/** Loads (once) every sheet and the cry URL of a species variant. Concurrent calls share one request. */
 export const loadSpecies = (dex: Dex, shiny = false, form?: FormKey): Promise<SpeciesSprites> => {
   const key = cacheKey(dex, shiny, form)
   const cached = cache.get(key)
   if (cached) return Promise.resolve(cached)
-  const inFlight = pending.get(key) ?? fetchSpecies(dex, shiny, form).finally(() => pending.delete(key))
+  const inFlight =
+    pending.get(key) ??
+    fetchSpecies(dex, shiny, form)
+      .then(
+        (s) => (cache.set(key, s), s),
+        (error: unknown) => {
+          failed.add(key)
+          throw error
+        },
+      )
+      .finally(() => pending.delete(key))
   pending.set(key, inFlight)
   return inFlight
 }
 
-const fetchSpecies = async (dex: Dex, shiny: boolean, form?: FormKey): Promise<SpeciesSprites> => {
+/** Starts loading a variant in the background unless it's loaded, on its way or just failed. Cheap enough to call every frame. */
+const ask = (dex: Dex, shiny: boolean, form?: FormKey) => {
   const key = cacheKey(dex, shiny, form)
+  if (!cache.has(key) && !pending.has(key) && !failed.has(key)) void loadSpecies(dex, shiny, form).catch(() => {})
+}
+
+const fetchSpecies = async (dex: Dex, shiny: boolean, form?: FormKey): Promise<SpeciesSprites> => {
   const variant = manifestVariant(dex, shiny, form)
   const anims = variant?.anims
-  if (!anims) throw new Error(`Missing ${shiny ? 'shiny ' : ''}${form ?? ''} sprites for #${dex}. Run npm run assets.`)
+  const walkMeta = anims?.Walk
+  if (!anims || !walkMeta) throw new Error(`Missing ${shiny ? 'shiny ' : ''}${form ?? ''} sprites for #${dex}. Run npm run assets.`)
   const dir = variantBase(dex, shiny, form)
-
-  const loadSheet = async (name: AnimName): Promise<Sheet> => {
-    const meta = anims[name] ?? anims.Walk!
-    const img = await loadImage(`${dir}/${anims[name] ? name : 'Walk'}.png`)
-    return {
-      img,
-      white: null,
-      fw: meta.frameWidth,
-      fh: meta.frameHeight,
-      durations: meta.durations,
-      totalTicks: meta.durations.reduce((a, b) => a + b, 0),
-    }
-  }
-
-  const [Walk, Idle, Hurt, Fly] = await Promise.all([loadSheet('Walk'), loadSheet('Idle'), loadSheet('Hurt'), anims.Fly ? loadSheet('Fly') : null])
-  // A missing portrait shouldn't block a run: fall back to the walk sheet. Forms ship none and use the normal one.
-  const portrait = await loadImage(form ? portraitUrl(dex, shiny) : `${dir}/portrait.png`).catch(() => loadImage(`${dir}/Walk.png`))
-  const sprites: SpeciesSprites = {
+  const loadSheet = async (name: AnimName, meta: { frameWidth: number; frameHeight: number; durations: number[] }) =>
+    sheetOf(await loadImage(`${dir}/${name}.png`), meta.frameWidth, meta.frameHeight, meta.durations)
+  // A missing animation plays the walk: the same sheet, not a second copy of its image.
+  const walk = loadSheet('Walk', walkMeta)
+  const [Walk, Idle, Hurt, Fly] = await Promise.all([
+    walk,
+    anims.Idle ? loadSheet('Idle', anims.Idle) : walk,
+    anims.Hurt ? loadSheet('Hurt', anims.Hurt) : walk,
+    anims.Fly ? loadSheet('Fly', anims.Fly) : null,
+  ])
+  return {
     dex,
     anims: { Walk, Idle, Hurt, ...(Fly && { Fly }) },
-    portrait,
+    portrait: portraitUrl(dex, shiny),
     cry: cryUrl(dex, form),
     // A form's own body only places its sheets; hitboxes keep the species' `bodyOf`.
     ...((form && variant.body) || bodyOf(dex, shiny)),
   }
-  cache.set(key, sprites)
-  return sprites
 }
 
 export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map((dex) => loadSpecies(dex)))
@@ -170,21 +417,60 @@ export const loadAll = (dexes: readonly Dex[]) => Promise.all(dexes.map((dex) =>
 export const preloadShinies = (dexes: readonly Dex[]) =>
   Promise.allSettled(dexes.filter(hasShiny).map((dex) => loadSpecies(dex, true)))
 
+/** What the background stream loads next, soonest needed first (`streamSpecies`). */
+let queue: readonly Dex[] = []
+let streaming = false
+
+const missing = (dex: Dex) => !cache.has(dex * 2) && !failed.has(dex * 2)
+
 /**
- * Loads species one after another in the background (normal forms first, then
- * their shinies), so a run's later stages stream in without hogging the network.
- * Stops early once `keepGoing` turns false (the run ended).
+ * Loads these species' normal colors one after another in the background, in
+ * this order, so they don't hog the network or decode all at once. A new call
+ * replaces the list: the shell hands over what the run needs now and next,
+ * every few seconds, and what's no longer needed is never fetched.
  */
-export const streamSpecies = async (dexes: readonly Dex[], keepGoing: () => boolean = () => true) => {
-  for (const dex of dexes) {
-    if (!keepGoing()) return
-    await loadSpecies(dex).catch(() => {})
-  }
-  for (const dex of dexes.filter(hasShiny)) {
-    if (!keepGoing()) return
-    await loadSpecies(dex, true).catch(() => {})
+export const streamSpecies = (dexes: readonly Dex[]) => {
+  queue = dexes
+  if (streaming) return
+  streaming = true
+  void (async () => {
+    for (let next = queue.find(missing); next !== undefined; next = queue.find(missing)) await loadSpecies(next).catch(() => {})
+    streaming = false
+  })()
+}
+
+/** What a sweep keeps however long since it was drawn: species whose normal colors stay, and species whose every loaded variant (shiny, forms) stays. */
+export type KeepSprites = { species: ReadonlySet<Dex>; variants: ReadonlySet<Dex> }
+
+/**
+ * Frees every loaded species variant not drawn nor asked for (`sprites`) in the
+ * last `idle` sweeps and not in `keep`: its silhouettes, and its images, whose
+ * decoded pixels go right away. Anything still holding one draws nothing with
+ * it (`GONE`), and asking again (`sprites`, `loadSpecies`) reloads it from the
+ * HTTP cache, with the dust puff standing in meanwhile. The shell sweeps every
+ * few seconds, so a run holds its current and next stages, not all it met.
+ */
+export const sweepSprites = (keep: KeepSprites, idle: number) => {
+  epoch++
+  failed.clear()
+  sweepOverlays()
+  for (const [key, s] of cache) {
+    const variant = typeof key === 'string' || key % 2 === 1
+    if (keep.variants.has(s.dex) || (!variant && keep.species.has(s.dex))) continue
+    const { Walk, Idle, Hurt, Fly } = s.anims
+    if (Math.max(Walk.seen, Idle.seen, Hurt.seen, Fly?.seen ?? GONE) >= epoch - idle) continue
+    cache.delete(key)
+    for (const sheet of new Set([Walk, Idle, Hurt, Fly])) {
+      if (!sheet) continue
+      sheet.seen = GONE
+      releaseOverlays(sheet)
+      if (sheet.img instanceof HTMLImageElement) sheet.img.removeAttribute('src')
+    }
   }
 }
+
+/** Species variants loaded right now, for the dev console. */
+export const loadedCount = () => cache.size
 
 /** A puff of dust, drawn in place of a species that hasn't finished downloading. */
 const PUFF = [
@@ -201,10 +487,11 @@ const PUFF = [
 let puff: Sheet | null = null
 const standIns = new Map<Dex, SpeciesSprites>()
 
-// A GPU reset blanks the silhouettes (and their tints, keyed by them) and the puff, all canvases.
-// The sheets are images and survive, so the silhouettes are redrawn from them when next drawn.
+// A GPU reset blanks the silhouettes and the puff, all canvases. The sheets are images and
+// survive, so the silhouettes are made again from them when next drawn.
 onCanvasReset(() => {
-  for (const s of cache.values()) for (const sheet of Object.values(s.anims)) sheet.white = null
+  for (const page of [...pages]) freePage(page)
+  for (const o of toPack) evict(o)
   puff = null
   standIns.clear()
 })
@@ -258,15 +545,18 @@ const shrinkSheet = (sheet: Sheet, k: number): Sheet => {
   const rows = Math.round(sheet.img.height / sheet.fh)
   const fw = Math.max(1, Math.round(sheet.fw * k))
   const fh = Math.max(1, Math.round(sheet.fh * k))
-  const read = context2d(createCanvas(sheet.img.width, sheet.img.height))
+  const scratch = createCanvas(sheet.img.width, sheet.img.height)
+  const read = context2d(scratch)
   read.drawImage(sheet.img, 0, 0)
   const src = read.getImageData(0, 0, sheet.img.width, sheet.img.height)
+  scratch.width = 0
+  scratch.height = 0
   const canvas = createCanvas(cols * fw, rows * fh)
   const ctx = context2d(canvas)
   const out = ctx.createImageData(canvas.width, canvas.height)
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) shrinkFrame(src, c * sheet.fw, r * sheet.fh, sheet.fw, sheet.fh, out, c * fw, r * fh, fw, fh)
   ctx.putImageData(out, 0, 0)
-  return { ...sheet, img: canvas, white: silhouette(canvas), fw, fh }
+  return sheetOf(canvas, fw, fh, sheet.durations)
 }
 
 let fits = new WeakMap<SpeciesSprites, SpeciesSprites>()
@@ -297,25 +587,19 @@ export const fitSprites = (s: SpeciesSprites, maxW: number): SpeciesSprites => {
   return fit
 }
 
-/** Downloads `sprites` already kicked off: dex numbers (normal forms) and alternate form cache keys. */
-const requested = new Set<Dex | string>()
-
 /** Stand-in sprites for `dex`, which also starts (once) downloading the real ones. */
 const pendingSprites = (dex: Dex): SpeciesSprites => {
-  if (!requested.has(dex)) {
-    requested.add(dex)
-    void loadSpecies(dex).catch(() => {})
-  }
+  ask(dex, false)
   let s = standIns.get(dex)
   if (!s) {
     if (!puff) {
       const frame = fromStrings(PUFF, { 1: '#6c7058', 2: '#b0b098', 3: '#e0e0c8' })
       const img = createCanvas(frame.width, frame.height * 8)
       for (let row = 0; row < 8; row++) context2d(img).drawImage(frame, 0, row * frame.height)
-      puff = { img, white: null, fw: frame.width, fh: frame.height, durations: [60], totalTicks: 60 }
+      puff = sheetOf(img, frame.width, frame.height, [60])
     }
     // The puff stands where the Pokémon will: same feet and body as its real sprite.
-    s = { dex, anims: { Walk: puff, Idle: puff, Hurt: puff }, portrait: new Image(), cry: cryUrl(dex), ...bodyOf(dex) }
+    s = { dex, anims: { Walk: puff, Idle: puff, Hurt: puff }, portrait: portraitUrl(dex), cry: cryUrl(dex), ...bodyOf(dex) }
     standIns.set(dex, s)
   }
   return s
@@ -334,25 +618,33 @@ export const preloadForms = (dexes: readonly Dex[], shiny: boolean) =>
 
 /** An alternate form's sprites if loaded; otherwise starts (once) loading them and returns undefined. */
 const formSprites = (dex: Dex, shiny: boolean, form: FormKey) => {
-  const key = cacheKey(dex, shiny, form)
-  const s = cache.get(key)
-  if (!s && !requested.has(key) && manifestVariant(dex, shiny, form)) {
-    requested.add(key)
-    void loadSpecies(dex, shiny, form).catch(() => {})
-  }
+  const s = cache.get(cacheKey(dex, shiny, form))
+  if (!s && manifestVariant(dex, shiny, form)) ask(dex, shiny, form)
+  return s
+}
+
+/** A shiny's sprites if loaded; otherwise starts loading them (when SpriteCollab has the colors) and returns undefined. */
+const shinySprites = (dex: Dex) => {
+  const s = cache.get(dex * 2 + 1)
+  if (!s && hasShiny(dex)) ask(dex, true)
   return s
 }
 
 /**
  * Sprites of a species variant: a shiny form SpriteCollab lacks (Mega Tyranitar) wears the form's
  * normal colors, an alternate form falls back to the species' own colors, a shiny to the normal
- * colors, then to a dust puff while it downloads. Never throws.
+ * colors (until its own download, started here, lands), then to a dust puff while it downloads.
+ * Asking keeps them loaded (`sweepSprites`). Never throws.
  */
-export const sprites = (dex: Dex, shiny = false, form?: FormKey) =>
-  (form && (formSprites(dex, shiny, form) || (shiny && !manifestVariant(dex, true, form) && formSprites(dex, false, form)))) ||
-  (shiny && cache.get(cacheKey(dex, true))) ||
-  cache.get(cacheKey(dex, false)) ||
-  pendingSprites(dex)
+export const sprites = (dex: Dex, shiny = false, form?: FormKey) => {
+  const s =
+    (form && (formSprites(dex, shiny, form) || (shiny && !manifestVariant(dex, true, form) && formSprites(dex, false, form)))) ||
+    (shiny && shinySprites(dex)) ||
+    cache.get(dex * 2) ||
+    pendingSprites(dex)
+  s.anims.Walk.seen = epoch
+  return s
+}
 
 export const portraitUrl = (dex: Dex, shiny = false) =>
   `${variantBase(dex, shiny && MANIFEST[String(dex)]?.shiny?.portrait === true)}/portrait.png`
@@ -363,7 +655,7 @@ export const walkSheet = (dex: Dex) => {
   return walk && { url: `${base(dex)}/Walk.png`, fw: walk.frameWidth, fh: walk.frameHeight }
 }
 
-/** Sprites if already loaded, without throwing (menus draw progressively). */
+/** Sprites if already loaded, without throwing (menus draw progressively). Unlike `sprites`, asking doesn't keep them: drawing does. */
 export const loadedSprites = (dex: Dex, shiny = false): SpeciesSprites | undefined => cache.get(cacheKey(dex, shiny))
 
 /** A species' cry, or its form's own (Megas) when PokeAPI has one. */
@@ -396,7 +688,13 @@ export type DrawOpts = {
   outline?: string
 }
 
-/** Draws a species at its feet position (x, y). */
+/** The hit flash's color. */
+const WHITE = '#fff'
+
+/**
+ * Draws a species at its feet position (x, y). Its flash, tint and outline are
+ * the frame's silhouettes (`overlay`). Sprites dropped by a sweep draw nothing.
+ */
 export const drawPokemon = (
   ctx: CanvasRenderingContext2D,
   s: SpeciesSprites,
@@ -408,9 +706,9 @@ export const drawPokemon = (
   opts: DrawOpts = {},
 ) => {
   const sheet = s.anims[anim] ?? s.anims.Walk
+  if (sheet.seen === GONE) return
+  sheet.seen = epoch
   const frame = frameIndex(sheet, seconds, opts.loop ?? true)
-  const sx = frame * sheet.fw
-  const sy = dir * sheet.fh
   const k = opts.scale ?? 1
   const dw = sheet.fw * k
   const dh = sheet.fh * k
@@ -419,22 +717,23 @@ export const drawPokemon = (
   const alpha = opts.alpha ?? 1
   const flash = opts.flash ?? 0
   if (alpha !== 1) ctx.globalAlpha = alpha
+  const { fw, fh } = sheet
   if (opts.outline) {
-    const edge = tinted(whiteOf(sheet), opts.outline)
-    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx - 1, dy, dw, dh)
-    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx + 1, dy, dw, dh)
-    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx, dy - 1, dw, dh)
-    ctx.drawImage(edge, sx, sy, sheet.fw, sheet.fh, dx, dy + 1, dw, dh)
+    const edge = overlay(sheet, frame, dir, opts.outline)
+    blit(ctx, edge, fw, fh, dx - 1, dy, dw, dh)
+    blit(ctx, edge, fw, fh, dx + 1, dy, dw, dh)
+    blit(ctx, edge, fw, fh, dx, dy - 1, dw, dh)
+    blit(ctx, edge, fw, fh, dx, dy + 1, dw, dh)
   }
-  if (flash < 1) ctx.drawImage(sheet.img, sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+  if (flash < 1) ctx.drawImage(sheet.img, frame * fw, dir * fh, fw, fh, dx, dy, dw, dh)
   const tint = opts.tint
   if (tint && tint.amount > 0 && flash < 1) {
     ctx.globalAlpha = alpha * Math.min(1, tint.amount)
-    ctx.drawImage(tinted(whiteOf(sheet), tint.color), sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+    blit(ctx, overlay(sheet, frame, dir, tint.color), fw, fh, dx, dy, dw, dh)
   }
   if (flash > 0) {
     ctx.globalAlpha = alpha * Math.min(1, flash)
-    ctx.drawImage(whiteOf(sheet), sx, sy, sheet.fw, sheet.fh, dx, dy, dw, dh)
+    blit(ctx, overlay(sheet, frame, dir, WHITE), fw, fh, dx, dy, dw, dh)
   }
   ctx.globalAlpha = 1
 }

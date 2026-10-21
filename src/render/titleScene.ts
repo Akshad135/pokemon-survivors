@@ -1,5 +1,5 @@
 import { clamp, dir8, retain, type Dir8, type Vec } from '../engine/math'
-import { blitCentered, ellipse } from '../engine/pixelart'
+import { blitCentered, blitEllipse } from '../engine/pixelart'
 import { chance, createRng, pick, range, weightedPick, type Rng } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
 import { STARTER_IDS, starterDex } from '../data/starters'
@@ -623,7 +623,7 @@ const drawPuffs = (ctx: CanvasRenderingContext2D, s: TitleScene, camX: number, c
   for (const puff of s.puffs) {
     const k = (s.time - puff.at) / PUFF_TIME
     ctx.globalAlpha = 0.8 * (1 - k)
-    for (const side of [-1, 1]) blitCentered(ctx, ellipse(3, 2, '#f0f0e0'), Math.round(puff.x - camX + side * (4 + k * 10)), Math.round(puff.y - camY - k * 3))
+    for (const side of [-1, 1]) blitEllipse(ctx, 3, 2, '#f0f0e0', Math.round(puff.x - camX + side * (4 + k * 10)), Math.round(puff.y - camY - k * 3))
   }
   ctx.globalAlpha = 1
 }

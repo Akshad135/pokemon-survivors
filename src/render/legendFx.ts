@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse, ring } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, blitRotated } from '../engine/pixelart'
 import { dir8, TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
@@ -140,31 +140,31 @@ export const drawBossGround = (ctx: Ctx, g: Game, t: number) => {
       const k = Math.max(0, 1 - (m.left - m.lock) / 1.6)
       const x = Math.round(m.x)
       const y = Math.round(m.y)
-      blitCentered(ctx, ellipse(Math.round(10 + k * 12), Math.round(4 + k * 5), 'rgba(8,16,24,0.5)'), x, y)
+      blitEllipse(ctx, Math.round(10 + k * 12), Math.round(4 + k * 5), 'rgba(8,16,24,0.5)', x, y)
       const [line] = HAZARD_COLORS[m.visual]
       const q = (t * 2) % 1
       ctx.globalAlpha = 1 - q
-      blitCentered(ctx, ring(Math.round(26 - q * 16), 1, line), x, y)
+      blitRing(ctx, Math.round(26 - q * 16), 1, line, x, y)
       ctx.globalAlpha = 1
     } else if (m?.kind === 'dive' && m.left > m.lock) {
       const [line, fill] = HAZARD_COLORS[m.visual]
       const x = Math.round(m.x)
       const y = Math.round(m.y)
-      blitCentered(ctx, ellipse(16, 7, 'rgba(8,16,40,0.45)'), x, y)
+      blitEllipse(ctx, 16, 7, 'rgba(8,16,40,0.45)', x, y)
       for (let i = 0; i < 3; i++) {
         const k = (t * 1.6 + i / 3) % 1
         const r = Math.round(4 + k * 18)
         ctx.globalAlpha = 1 - k
-        blitCentered(ctx, ring(r, 1, i % 2 ? line : '#ffffff'), x, y)
+        blitRing(ctx, r, 1, i % 2 ? line : '#ffffff', x, y)
       }
       ctx.globalAlpha = 1
-      blitCentered(ctx, ellipse(6, 3, fill), x, y)
+      blitEllipse(ctx, 6, 3, fill, x, y)
     }
     if (f.guards.length > 0) drawGuardLinks(ctx, g, e, t)
     if (f.shift > 0 && !parked(e)) {
       const k = (t * 2) % 1
       ctx.globalAlpha = 1 - k
-      blitCentered(ctx, ring(Math.round(e.radius + 6 + k * 30), 2, '#f8f0a0'), Math.round(e.x), Math.round(e.y))
+      blitRing(ctx, Math.round(e.radius + 6 + k * 30), 2, '#f8f0a0', Math.round(e.x), Math.round(e.y))
       ctx.globalAlpha = 1
     }
   }
@@ -204,9 +204,9 @@ export const drawBlasts = (ctx: Ctx, g: Game, camX: number, camY: number, t: num
     }
     const [line] = HAZARD_COLORS[b.visual]
     // Shelters show their edge, so the player sees how far in to step.
-    for (const spot of b.spots) blitCentered(ctx, ring(Math.round(b.radius), 1, blink ? '#f8fff0' : '#98f8b0'), Math.round(spot.x - camX), Math.round(spot.y - camY))
+    for (const spot of b.spots) blitRing(ctx, Math.round(b.radius), 1, blink ? '#f8fff0' : '#98f8b0', Math.round(spot.x - camX), Math.round(spot.y - camY))
     const r = Math.round(10 + (1 - k) * 60)
-    blitCentered(ctx, ring(r, 2, line), Math.round(b.x - camX), Math.round(b.y - 14 - camY))
+    blitRing(ctx, r, 2, line, Math.round(b.x - camX), Math.round(b.y - 14 - camY))
   }
 }
 
@@ -272,7 +272,7 @@ export const drawEntrance = (ctx: Ctx, g: Game, t: number) => {
   for (let i = 0; i < 3; i++) {
     const q = (t * 1.2 + i / 3) % 1
     ctx.globalAlpha = (1 - q) * Math.min(1, k * 3 + 0.3)
-    blitCentered(ctx, ring(Math.round(8 + q * 40), 1, look.ring), x, y)
+    blitRing(ctx, Math.round(8 + q * 40), 1, look.ring, x, y)
   }
   ctx.globalAlpha = 1
   if (k <= 0) return
@@ -302,7 +302,7 @@ export const drawEntrance = (ctx: Ctx, g: Game, t: number) => {
       ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y - Math.abs(Math.sin(a)) * r * 0.6), 1, 1)
     }
   } else if (def.entrance === 'descend') {
-    blitCentered(ctx, ellipse(Math.round(6 + k * 14), Math.round(3 + k * 6), 'rgba(16,8,32,0.45)'), x, y)
+    blitEllipse(ctx, Math.round(6 + k * 14), Math.round(3 + k * 6), 'rgba(16,8,32,0.45)', x, y)
     drawPokemon(ctx, s, 'Idle', 0, t, x, y - Math.round((1 - k) * 220))
   } else {
     drawPokemon(ctx, s, 'Idle', 0, t, x, y, { alpha: k, flash: 1 - k })
@@ -338,7 +338,7 @@ const meteorIn = (ctx: Ctx, s: ReturnType<typeof sprites>, x: number, y: number,
   if (k < 0.45) {
     const mx = Math.round(x + 170 * (1 - fall))
     const my = Math.round(y - 8 - 260 * (1 - fall))
-    blitCentered(ctx, ellipse(Math.round(3 + fall * 9), Math.round(2 + fall * 4), 'rgba(16,8,32,0.45)'), x, y)
+    blitEllipse(ctx, Math.round(3 + fall * 9), Math.round(2 + fall * 4), 'rgba(16,8,32,0.45)', x, y)
     for (let i = 1; i < 14; i++) {
       ctx.globalAlpha = 1 - i / 14
       ctx.fillStyle = i < 5 ? '#f8d070' : '#f86830'
@@ -352,7 +352,7 @@ const meteorIn = (ctx: Ctx, s: ReturnType<typeof sprites>, x: number, y: number,
   const crash = (k - 0.45) / 0.2
   if (crash < 1) {
     ctx.globalAlpha = 1 - crash
-    blitCentered(ctx, ring(Math.round(8 + crash * 50), 2, '#f8d0a0'), x, y)
+    blitRing(ctx, Math.round(8 + crash * 50), 2, '#f8d0a0', x, y)
     ctx.globalAlpha = 1
   }
   const form = Math.min(1, (k - 0.5) / 0.5)
@@ -381,7 +381,7 @@ const drawGuardLinks = (ctx: Ctx, g: Game, e: Enemy, t: number) => {
       ctx.fillRect(Math.round(k.x + (dx / d) * s), Math.round(k.y - 8 + (dy / d) * s), 2, 2)
     }
   }
-  if (Math.floor(t * 6) % 3 !== 0) blitCentered(ctx, ring(Math.round(e.radius + 8), 1, '#c8e0f8'), Math.round(e.x), Math.round(e.y - e.radius * 0.6))
+  if (Math.floor(t * 6) % 3 !== 0) blitRing(ctx, Math.round(e.radius + 8), 1, '#c8e0f8', Math.round(e.x), Math.round(e.y - e.radius * 0.6))
 }
 
 /**
@@ -476,7 +476,7 @@ export const drawLegendScene = (ctx: Ctx, g: Game, t: number) => {
   for (let i = 0; i < 3; i++) {
     const q = (t * 1.2 + i / 3) % 1
     ctx.globalAlpha = (1 - q) * Math.min(1, k * 3 + 0.3)
-    blitCentered(ctx, ring(Math.round(8 + q * 36), 1, dust), x, y)
+    blitRing(ctx, Math.round(8 + q * 36), 1, dust, x, y)
   }
   ctx.globalAlpha = 1
   if (k <= 0) return
@@ -484,13 +484,13 @@ export const drawLegendScene = (ctx: Ctx, g: Game, t: number) => {
   const scale = drawScale(boss)
   const body = sp.bodyH * scale
   if (arrival === 'descend') {
-    blitCentered(ctx, ellipse(Math.round(6 + k * 14), Math.round(3 + k * 6), 'rgba(16,8,32,0.45)'), x, y)
+    blitEllipse(ctx, Math.round(6 + k * 14), Math.round(3 + k * 6), 'rgba(16,8,32,0.45)', x, y)
     drawPokemon(ctx, sp, 'Idle', 0, t, x, y - Math.round((1 - k) * 200), { scale })
   } else if (arrival === 'bound') {
     // In from the side away from the player, in one long leap.
     const side = boss.x >= g.player.x ? 1 : -1
     const hop = Math.sin(k * Math.PI) * 46
-    blitCentered(ctx, ellipse(Math.round(6 + k * 10), Math.round(3 + k * 4), 'rgba(16,8,32,0.4)'), x + Math.round(side * (1 - k) * 110), y)
+    blitEllipse(ctx, Math.round(6 + k * 10), Math.round(3 + k * 4), 'rgba(16,8,32,0.4)', x + Math.round(side * (1 - k) * 110), y)
     drawPokemon(ctx, sp, 'Walk', side > 0 ? 6 : 2, t, x + Math.round(side * (1 - k) * 110), y - Math.round(hop), { scale })
   } else if (arrival === 'rise') {
     ctx.save()

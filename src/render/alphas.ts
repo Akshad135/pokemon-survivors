@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, canvasCache, ellipse, fromStrings, lazy, textSprite, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated, canvasCache, fromStrings, lazy, textSprite, type PixelSprite } from '../engine/pixelart'
 import { hash2 } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
 import { ALPHA } from '../game/alphas'
@@ -56,7 +56,7 @@ export const drawAlphaGround = (ctx: Ctx, g: Game, time: number, visible: Visibl
     }
     if (!visible(e.x, e.y, 40)) continue
     const r = Math.round(e.radius * 1.3 + Math.sin(time * 4 + e.id) * 2)
-    blitCentered(ctx, ellipse(r, Math.max(2, Math.round(r * 0.45)), a.enraged ? 'rgba(248,48,32,0.4)' : 'rgba(248,56,56,0.26)'), e.x, e.y)
+    blitEllipse(ctx, r, Math.max(2, Math.round(r * 0.45)), a.enraged ? 'rgba(248,48,32,0.4)' : 'rgba(248,56,56,0.26)', e.x, e.y)
   }
 }
 
@@ -122,8 +122,8 @@ export const drawAlphaMarkers = (ctx: Ctx, g: Game, time: number, inset: { top: 
     const bob = Math.round(Math.sin(time * 8 + e.id) * 1.5)
     const ix = cx + dx * k - Math.cos(angle) * 7
     const iy = cy + dy * k - Math.sin(angle) * 7
-    blitCentered(ctx, ellipse(7, 7, '#181010'), ix, iy)
-    blitCentered(ctx, ellipse(6, 6, e.alpha?.enraged && Math.floor(time * 8) % 2 === 0 ? '#f8a020' : CRIMSON), ix, iy)
+    blitEllipse(ctx, 7, 7, '#181010', ix, iy)
+    blitEllipse(ctx, 6, 6, e.alpha?.enraged && Math.floor(time * 8) % 2 === 0 ? '#f8a020' : CRIMSON, ix, iy)
     blitCentered(ctx, MARKER().glyph, ix, iy)
     blitRotated(ctx, MARKER().arrow, cx + dx * k + Math.cos(angle) * (6 + bob), cy + dy * k + Math.sin(angle) * (6 + bob), angle)
   }

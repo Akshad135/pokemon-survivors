@@ -38,6 +38,8 @@ export const outlined = (sprite: PixelSprite, color = '#181818'): PixelSprite =>
   sctx.fillRect(0, 0, sil.width, sil.height)
   for (const [dx, dy] of [[0, 1], [2, 1], [1, 0], [1, 2]] as const) ctx.drawImage(sil, dx, dy)
   ctx.drawImage(sprite, 1, 1)
+  // The silhouette was only a stamp: free its pixels now rather than at the next GC.
+  sil.width = sil.height = 0
   return canvas
 }
 
@@ -740,6 +742,7 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
   const canvas = createCanvas(size, size)
   context2d(canvas).drawImage(sprite, Math.floor((size - sprite.width) / 2), Math.floor((size - sprite.height) / 2))
   const url = canvas.toDataURL()
+  canvas.width = canvas.height = 0
   iconCache.set(key, url)
   return url
 }

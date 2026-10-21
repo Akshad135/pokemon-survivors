@@ -1,6 +1,6 @@
 import { playCry, playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
-import { blitCentered, context2d, ellipse } from '../engine/pixelart'
+import { blitEllipse, context2d } from '../engine/pixelart'
 import { HATCHLING_IDS, HATCHLINGS } from '../data/hatchlings'
 import { EGG_TIERS, EGGS, isReady, stepsLeft, type Egg, type Hatch } from '../game/eggs'
 import { eggCrack, eggIcon, eggSprite, SPARKLE } from '../render/art'
@@ -176,7 +176,7 @@ export const hatchScene = (root: HTMLElement, input: Input, hatch: Hatch, action
     const k = holdAt ?? now - start
     if (k >= HATCH.reveal && !revealed) reveal()
     ctx.clearRect(0, 0, W, H)
-    blitCentered(ctx, ellipse(14, 3, 'rgba(16,40,16,0.3)'), cx, floor)
+    blitEllipse(ctx, 14, 3, 'rgba(16,40,16,0.3)', cx, floor)
     if (k < HATCH.burst) drawEgg(k)
     else drawNewborn(k)
     // The burst: white flash in, then out over the newborn (none with Flashes reduced).
