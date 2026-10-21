@@ -222,6 +222,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
           },
         ],
       },
+      {
+        title: { pt: 'Avatar centralizado', en: 'Centered avatar', es: 'Avatar centrado' },
+        notes: [
+          {
+            pt: 'O retrato do seu Pokémon no avatar de Treinador, no Cartão de Treinador e nas carinhas do Hall da Fama ficava preso no canto de cima, à esquerda, cortando metade do rosto. Agora fica centralizado no círculo.',
+            en: 'Your Pokémon’s portrait on the Trainer avatar, the Trainer Card and the Hall of Fame faces hung from the top-left corner, cutting off half the face. It’s centered in the circle now.',
+            es: 'El retrato de tu Pokémon en el avatar de Entrenador, la Tarjeta de Entrenador y las caritas del Salón de la Fama quedaba pegado a la esquina superior izquierda, cortando medio rostro. Ahora queda centrado en el círculo.',
+          },
+        ],
+      },
     ],
   },
   {
