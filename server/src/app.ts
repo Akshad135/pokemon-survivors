@@ -11,9 +11,11 @@ import { isPollOption } from '../../src/data/supporters'
 import { isDayKey } from '../../src/game/day'
 import { isDifficulty } from '../../src/game/difficulty'
 import { parseSaveData } from '../../src/game/meta'
+import { outbreakAt } from '../../src/game/outbreak'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, isRunMode, parseDisplayName, parseHandle, parseRunResult, runMode } from '../../src/game/ranking'
-import { parseReplay } from '../../src/game/replay'
+import { parseReplay, rulesStanding } from '../../src/game/replay'
+import { banGated, parseModeration, parseReport } from '../../src/game/reports'
 import { parseCode } from '../../src/game/supporters'
 import { isSuggestionSort, isSuggestionStatus, isVote, parseSuggestionDraft } from '../../src/game/suggestions'
 import type { AdminStore } from './admin'
@@ -25,6 +27,7 @@ import type { DiscordLink } from './discordLink'
 import type { Report } from './errors'
 import type { Donate } from './donations'
 import type { GiftStore } from './gifts'
+import type { ModerationStore } from './moderation'
 import type { RankingStore } from './ranking'
 import type { SupporterStore } from './supporters'
 import { SUGGESTION_ID, type SuggestionStore } from './suggestions'
@@ -48,6 +51,8 @@ export type AppDeps = {
   discord: Pick<DiscordLink, 'link' | 'unlink'>
   /** The gift desk: who is admin (asked of Clerk), finding players and sending them gifts. */
   admin: Pick<AdminStore, 'isAdmin' | 'search' | 'send' | 'recent'>
+  /** Reports and bans: the write gate asks who is banned, players report, the admin acts. */
+  moderation: Pick<ModerationStore, 'banned' | 'report' | 'open' | 'act'>
   /** Webhook secrets: Stripe's signing secret and Payment Link, AbacatePay's URL secret. Unset ones answer 503. */
   webhooks: { stripeSecret?: string; stripePaymentLink: string | null; abacatePaySecret?: string }
   allowedOrigin: (origin: string) => boolean
@@ -84,13 +89,19 @@ const SEND_ERRORS = { unknown: 404, 'bad request': 400 } as const
 /** What posting or voting on an idea answers when it doesn't go. */
 const SUGGESTION_ERRORS = { profile: 403, limit: 429, unknown: 404, closed: 409 } as const
 
+/** What a report answers when it's refused, by `Reported`: only what's about the reporter. */
+const REPORT_ERRORS = { self: 400, limit: 429 } as const
+
 /** What a run's end answers when it's refused, by `FinishError`. */
-const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 } as const
+const FINISH_ERRORS = { unknown: 404, replaced: 409, mismatch: 409, seed: 400, clock: 422, challenge: 400 } as const
 
 /**
  * The HTTP API. Routes marked (auth) need a Clerk session token
  * (`Authorization: Bearer …`) and act on that player; the public ones read it
- * when present (to answer "me" and "following").
+ * when present (to answer "me" and "following"). A banned account's writes
+ * (`BAN_GATED`: run starts and ends, save pushes, reports, ideas and votes)
+ * get 403 `{ error: 'banned' }`, and banned players are left off every board,
+ * profile and list.
  *
  * - `GET /health`: 200 while the database answers, else 503.
  * - `GET /save` (auth): the stored save and its revision, 404 before the first push.
@@ -99,17 +110,26 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   what is stored now, for the device to keep (see `applyPush`).
  * - `GET /me` (auth): `{ profile }`, the player's handle and name, null before they pick them.
  * - `PUT /me` (auth) `{ handle, name }`: sets them. 409 `{ suggestion }` when the handle is taken.
- * - `POST /runs` (auth) `{ challenge? }`: `{ token }` for a run that just started. 429 past the start rate limit.
- *   With `challenge` (a `YYYY-MM-DD` Brasília day) it's that day's Desafio do dia, 400 when
- *   that day's challenge isn't open (`challengeOpen`).
+ * - `POST /runs` (auth) `{ challenge? }`: `{ token, seed }` for the player's next run: the start
+ *   token and the seed the run must play (random, from `crypto`). It replaces the player's other
+ *   unfinished token of the same kind, so only one regular and one challenge token are live at a
+ *   time. 429 past the start rate limit. With `challenge` (a `YYYY-MM-DD` Brasília day) it's that
+ *   day's Desafio do dia, whose seed is the day's (`dailyChallenge`); 400 when that day's challenge
+ *   isn't open (`challengeOpen`).
+ * - `POST /runs/:token/start` (auth): the run of a token asked for ahead really starts now: its
+ *   clock restarts (`stampRun`). 204, 404 for an unknown or finished token, 409 for a replaced one.
  * - `PUT /runs/:token` (auth) `RunResult & { replay }`: records how it ended and
  *   returns `{ ranks, challenge }` (`ChallengePlace`, null for any other run); the
  *   replay may be re-simulated afterwards (`checks.ts`), and the run may make the player's invite count (`gifts.credit`). A challenge run's replay must
  *   be its day's challenge.
- *   400 for an implausible result or a replay of another run, 404 for an
- *   unknown token, 409 when it contradicts what the run already recorded, 422
- *   when the clock can't fit it. A body without a replay (an older game) is
- *   taken and stays unverified.
+ *   400 for an implausible result, a missing replay or a replay of another run,
+ *   `seed` for a replay of another seed than the token's (`reportProblem`; a token from before the
+ *   server dealt seeds takes any), 404 for an unknown token, 409 for a replaced one or when it
+ *   contradicts what the run already recorded, 422 when the clock can't fit it. The replay must play by this
+ *   server's rules (`RULES_VERSION`), so every run on the boards can be
+ *   re-simulated: 400 `outdated` for older ones (the run straddled a deploy),
+ *   503 for newer ones (the API isn't deployed yet: the game keeps the result
+ *   and sends it again later).
  * - `GET /boards/:difficulty?period=day|week|all&starter=&friends=1&mode=standard|legend`: `Board`.
  *   `friends` needs a token. `mode=legend` is the Legend mode's board (runs played with a legend); without it, the regular one.
  * - `GET /challenge/:day?friends=1`: `ChallengeBoard`, the day's official attempts. `friends` needs a token.
@@ -131,7 +151,7 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (signed: `webhooks.ts`; AbacatePay's the Standard Webhooks way, or with `?webhookSecret=` for an
  *   older webhook). 401 for a bad signature, 503 without the secret.
  * - `GET /me/supporter` (auth): `SupporterStatus`. `PUT /me/supporter` (auth) `{ public }`: shows or hides the badge and name.
- * - `GET /supporters`: `{ supporters }`, the wall (`WallEntry[]`, with each one's title and Hall da Fama Pokémon).
+ * - `GET /supporters`: `{ supporters, hidden }`, the wall (`WallEntry[]`, with each one's title and Hall da Fama Pokémon) and how many supporters per tier stay off it.
  * - `GET /poll`: `Poll`. `PUT /poll` (auth) `{ choice }`: a supporter's vote, 403 for anyone else.
  * - `GET /suggestions?sort=top|new|done`: `{ suggestions }` (`Suggestion[]`), a tab of the idea board, with the asker's votes.
  * - `POST /suggestions` (auth) `{ title, body }`: posts an idea (`parseSuggestionDraft`), 201 `{ suggestion }`.
@@ -140,6 +160,9 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  * - `POST /bug-reports` `{ text, tech? }`: a bug report (`parseBugReport`), from a guest or (with a token)
  *   a player. 201 `{ id }`, stored and on its way to Discord. 400 invalid, 429 past `BUG_REPORT.perHour`
  *   for the IP or the account.
+ * - `POST /reports` (auth) `{ target, run?, reason, note? }` (`parseReport`): reports a player by handle, or one
+ *   of their runs on the boards. 202 `{ received: true }` whatever becomes of it (nothing about the target
+ *   comes back). 400 invalid or reporting oneself, 429 past `REPORT.perDay` in 24 hours.
  * - `POST /discord/link` (auth): links the Discord account the player connected in Clerk, joins them
  *   to the community server and gives them their supporter role. `{ username, joined }`; 404 when
  *   Clerk has no verified Discord account for them, 503 when Clerk can't answer.
@@ -150,8 +173,12 @@ const FINISH_ERRORS = { unknown: 404, mismatch: 409, clock: 422, challenge: 400 
  *   (false when that `request` already went); 404 for an unknown player. `GET /admin/gifts`: `{ gifts }`
  *   (`AdminSent[]`), the latest sent by hand. `PUT /admin/suggestions/:id` `{ status }`: marks an idea
  *   `done` (shipped), `open` again or `hidden` (off the board). `{ status }`, 404 for an unknown idea.
+ *   `GET /admin/reports`: `{ groups, open }`, the open reports grouped by run or player (`ReportGroup[]`)
+ *   and how many are open. `POST /admin/moderation` (`parseModeration`) `{ userId, action, run?, reason? }`:
+ *   `remove` a run from the boards, `reset` the save, `ban` (with a reason) or `unban`, or `dismiss`,
+ *   resolving the reports it answers. `{ resolved }`, 404 for an unknown player or run.
  */
-export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, webhooks, allowedOrigin, ping, report }: AppDeps) => {
+export const createApp = ({ store, ranking, gifts, checks, verify, donate, supporters, suggestions, bugReports, discord, admin, moderation, webhooks, allowedOrigin, ping, report }: AppDeps) => {
   // `userId` is set by `auth` or `maybeAuth` on the routes that ask who's calling; `onError` reports it.
   const app = new Hono<MaybeAuth>()
 
@@ -167,6 +194,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const userId = token ? await verify(token) : null
     if (!userId) return c.json({ error: 'unauthorized' }, 401)
     c.set('userId', userId)
+    // Only the writes ask: a banned account still reads its save, boards and gifts.
+    if (banGated(c.req.method, c.req.path) && (await moderation.banned(userId))) return c.json({ error: 'banned' }, 403)
     await next()
   })
 
@@ -211,8 +240,14 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const body = await json(c)
     const challenge = isRecord(body) && body.challenge !== undefined ? body.challenge : null
     if (challenge !== null && (!isDayKey(challenge) || !challengeOpen(challenge, new Date()))) return c.json({ error: 'not an open challenge' }, 400)
-    const token = await ranking.startRun(c.var.userId, challenge)
-    return token ? c.json({ token }, 201) : c.json({ error: 'too many runs' }, 429)
+    const started = await ranking.startRun(c.var.userId, challenge)
+    // The day's outbreak by this clock (the one `outbreakFits` checks against), so a wrong device clock can't play another day's.
+    return started ? c.json({ ...started, outbreak: outbreakAt(new Date()) }, 201) : c.json({ error: 'too many runs' }, 429)
+  })
+
+  app.post('/runs/:token/start', auth, async (c) => {
+    const stamped = await ranking.stampRun(c.var.userId, c.req.param('token'))
+    return stamped === 'ok' ? c.body(null, 204) : c.json({ error: stamped }, stamped === 'replaced' ? 409 : 404)
   })
 
   // A 30-minute replay is ~60 KB of JSON.
@@ -220,14 +255,18 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const body = await json(c)
     const result = parseRunResult(body)
     if (!result) return c.json({ error: 'implausible result' }, 400)
-    const replay = isRecord(body) && body.replay !== undefined ? parseReplay(body.replay) : null
-    if (isRecord(body) && body.replay !== undefined && (!replay || replay.start.starter !== result.starter || replay.start.difficulty !== result.difficulty)) {
+    // A run without a replay, or with one this server can't judge, could claim anything: none counts.
+    const replay = isRecord(body) ? parseReplay(body.replay) : null
+    if (!replay || replay.start.starter !== result.starter || replay.start.difficulty !== result.difficulty) {
       return c.json({ error: 'replay of another run' }, 400)
     }
+    const standing = rulesStanding(replay.rules)
+    if (standing === 'older') return c.json({ error: 'outdated' }, 400)
+    if (standing === 'newer') return c.json({ error: 'api behind' }, 503)
     const token = c.req.param('token')
     const finished = await ranking.finishRun(c.var.userId, token, result, replay)
     if (!finished.ok) return c.json({ error: finished.error }, FINISH_ERRORS[finished.error])
-    if (replay) checks.schedule(token)
+    checks.schedule(token)
     void gifts.credit(c.var.userId).catch((err) => console.error('invite credit failed', err))
     const [ranks, challenge] = await Promise.all([
       ranking.runRanks(c.var.userId, runMode(result.starter), result.difficulty),
@@ -372,7 +411,8 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
 
   app.get('/supporters', async (c) => {
     c.header('Cache-Control', 'public, max-age=60')
-    return c.json({ supporters: await supporters.wall() })
+    const [wall, hidden] = await Promise.all([supporters.wall(), supporters.hidden()])
+    return c.json({ supporters: wall, hidden })
   })
 
   app.get('/poll', async (c) => c.json(await supporters.poll()))
@@ -408,6 +448,14 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const voted = await suggestions.vote(c.var.userId, id, vote)
     if (!voted.ok) return c.json({ error: voted.error }, SUGGESTION_ERRORS[voted.error])
     return c.json({ score: voted.score, vote: voted.vote })
+  })
+
+  app.post('/reports', auth, smallBody, async (c) => {
+    const draft = parseReport(await json(c))
+    if (!draft) return c.json({ error: 'expected { target, run?, reason, note? }' }, 400)
+    const reported = await moderation.report(c.var.userId, draft)
+    if (reported !== 'stored') return c.json({ error: reported }, REPORT_ERRORS[reported])
+    return c.json({ received: true }, 202)
   })
 
   app.post('/bug-reports', maybeAuth, bodyLimit({ maxSize: 32 * 1024 }), async (c) => {
@@ -454,6 +502,15 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     if (!SUGGESTION_ID.test(id) || !(await suggestions.setStatus(id, status))) return c.json({ error: 'unknown' }, 404)
     console.log(`admin ${c.var.userId} set suggestion ${id} to ${status}`)
     return c.json({ status })
+  })
+
+  desk.get('/reports', async (c) => c.json(await moderation.open()))
+
+  desk.post('/moderation', smallBody, async (c) => {
+    const m = parseModeration(await json(c))
+    if (!m) return c.json({ error: 'expected { userId, action, run?, reason? }' }, 400)
+    const done = await moderation.act(c.var.userId, m)
+    return done ? c.json(done) : c.json({ error: 'unknown' }, 404)
   })
 
   app.route('/admin', desk)

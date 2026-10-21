@@ -220,6 +220,9 @@ const apiToken = async (c: Clerk) => {
 /** The signed-in player's session token for the API, or null for guests and when Clerk can't load. Never throws. */
 export const sessionToken = async () => {
   if (!accountsEnabled || !readLink()) return null
+  // Dev builds against a local API: no Clerk needed for the stand-in token.
+  const dev = devToken()
+  if (dev) return dev
   try {
     return await apiToken(await loadClerk())
   } catch {
@@ -541,7 +544,9 @@ let again = false
 
 /**
  * Pushes the local save to the account, when signed in (end of a run, boot,
- * the account screen). Calls during a sync queue one more. Never throws.
+ * the account screen). Calls during a sync queue one more. Never throws. A
+ * banned account's push answers 403: the save just stays on the device, as
+ * offline, until the next sync asks again.
  */
 export const syncSave = async () => {
   if (syncing) return void (again = true)

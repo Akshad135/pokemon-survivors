@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createDexLog, dexCounts, dexNews, dexStatus, EMPTY_DEX, logDefeat, markCaught, markDefeated, markSeen, parseDex, recordRun } from './dex'
 import { EMPTY_SAVE, parseSave } from './meta'
+import { GAME_SPECIES, OWNABLE_SPECIES } from '../data/species'
 
 describe('marks', () => {
   it('reads unseen species as blank and keeps flags when adding defeats', () => {
@@ -51,9 +52,16 @@ describe('a run', () => {
 
 describe('parseDex', () => {
   it('drops malformed entries and clears unknown flag bits', () => {
-    const raw = { 16: [3, 1], 19: [-2, 255], x: [1, 0], 0: [1, 0], 25: 'seen', 7: [2.9] }
-    expect(parseDex(raw)).toEqual({ 16: [3, 1], 19: [0, 3], 7: [2, 0] })
+    const raw = { 16: [3, 1], 4: [-2, 255], x: [1, 0], 0: [1, 0], 25: 'seen', 7: [2.9] }
+    expect(parseDex(raw)).toEqual({ 16: [3, 1], 4: [0, 3], 7: [2, 0] })
     expect(parseDex([1, 2])).toEqual(EMPTY_DEX)
+  })
+
+  it("keeps only what the game can give: its species, and wild ones caught only after a defeat", () => {
+    // Charmander is played, Rattata only roams the horde, 1025 isn't in the game.
+    expect([OWNABLE_SPECIES.has(4), OWNABLE_SPECIES.has(19), GAME_SPECIES.has(19), GAME_SPECIES.has(1025)]).toEqual([true, false, true, false])
+    expect(parseDex({ 4: [0, 3], 19: [0, 3], 1025: [9, 1] })).toEqual({ 4: [0, 3], 19: [0, 0] })
+    expect(parseDex({ 19: [2, 3] })).toEqual({ 19: [2, 3] })
   })
 
   it('round-trips through the save, and older saves start with an empty Pokédex', () => {

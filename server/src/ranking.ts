@@ -1,4 +1,5 @@
-import { challengeProblem } from '../../src/game/challenge'
+import { randomInt } from 'node:crypto'
+import { challengeProblem, dailyChallenge } from '../../src/game/challenge'
 import type { DayKey } from '../../src/game/day'
 import type { Difficulty } from '../../src/game/difficulty'
 import { dexCounts } from '../../src/game/dex'
@@ -11,6 +12,7 @@ import {
   runMode,
   freeHandle,
   RANKED,
+  reportProblem,
   type Board,
   type BoardEntry,
   type ChallengeBoard,
@@ -33,8 +35,11 @@ import type { Sql } from './db'
 /** Which board: a mode (regular or Legend), a difficulty and a period, optionally one Pokémon or only the friends of `viewer`. */
 export type BoardQuery = { mode: RunMode; difficulty: Difficulty; period: BoardPeriod; starter: PlayableId | null; friends: boolean; viewer: string | null }
 
-/** Why a run's end was refused. `challenge`: a challenge run whose replay isn't its day's challenge (or came without one). */
-export type FinishError = 'unknown' | 'mismatch' | 'clock' | 'challenge'
+/**
+ * Why a run's end was refused. `challenge`: a challenge run whose replay isn't its day's challenge (or came without one).
+ * `seed`: a replay of another seed than the one dealt with the token. `replaced`: a newer start token took its place.
+ */
+export type FinishError = 'unknown' | 'replaced' | 'mismatch' | 'seed' | 'clock' | 'challenge'
 
 /** A run's end that went in, with its challenge day and whether it's the official attempt (null for any other run). */
 export type Finished = { ok: true; challenge: DayKey | null; official: boolean | null }
@@ -62,9 +67,9 @@ type SupporterRow = { supporter_points: number; supporter_public: boolean }
 /** A player's supporter badge, if they donated and show it. */
 const badgeOf = (r: SupporterRow) => (r.supporter_public ? supporterTier(r.supporter_points) : null)
 
-type EntryRow = RunRow & SupporterRow & { user_id: string; handle: string; name: string; rank: number }
+type EntryRow = RunRow & SupporterRow & { id: string; user_id: string; handle: string; name: string; rank: number }
 
-const toEntry = (r: EntryRow): BoardEntry => ({ ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter: badgeOf(r) })
+const toEntry = (r: EntryRow): BoardEntry => ({ ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter: badgeOf(r), run: r.id })
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -74,8 +79,8 @@ const isUniqueViolation = (err: unknown) => typeof err === 'object' && err !== n
 /**
  * Ranked runs, boards, profiles and follows. Boards rank each player once, by
  * their best run (ties go to who did it first), and only list players with a
- * handle. A run counts as soon as it's reported: only one whose re-simulation
- * failed (`checks.ts`) counts nowhere. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
+ * handle and never a banned one. A run counts as soon as it's reported: only one whose re-simulation
+ * failed (`checks.ts`), or that an admin took off (`moderation.ts`), counts nowhere. Day and week start at midnight and on Monday in `BOARD_TIME_ZONE`,
  * and a run counts for the period it started in.
  */
 export const rankingStore = (sql: Sql) => {
@@ -84,7 +89,7 @@ export const rankingStore = (sql: Sql) => {
   /** Every player's best run on a board, ranked, as a fragment to select from. */
   const ranked = ({ mode, difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
     with best as (
-      select distinct on (r.user_id) r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
+      select distinct on (r.user_id) r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
       from runs r
       where r.finished_at is not null and r.verified is not false and r.mode = ${mode} and r.difficulty = ${difficulty}
         ${period === 'all' ? sql`` : sql`and r.started_at >= (date_trunc(${period}, now() at time zone ${BOARD_TIME_ZONE}) at time zone ${BOARD_TIME_ZONE})`}
@@ -94,7 +99,7 @@ export const rankingStore = (sql: Sql) => {
     )
     select b.*, u.handle, u.name, u.supporter_points, u.supporter_public, (row_number() over (order by b.survived desc, b.started_at))::int as rank
     from best b join users u on u.id = b.user_id
-    where u.handle is not null`
+    where u.handle is not null and u.banned_at is null`
 
   /**
    * A day's challenge board as a fragment: every player's official attempt
@@ -102,11 +107,11 @@ export const rankingStore = (sql: Sql) => {
    * how many are on it.
    */
   const challengeRanked = (day: DayKey, friends: boolean, viewer: string | null) => sql`
-    select r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
+    select r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
       (row_number() over (order by r.survived desc, r.started_at))::int as rank,
       (count(*) over ())::int as total
     from runs r join users u on u.id = r.user_id
-    where r.challenge = ${day}::date and r.official and r.finished_at is not null and r.verified is not false and u.handle is not null
+    where r.challenge = ${day}::date and r.official and r.finished_at is not null and r.verified is not false and u.handle is not null and u.banned_at is null
       ${friends && viewer ? sql`and (r.user_id = ${viewer} or r.user_id in (select followee_id from follows where follower_id = ${viewer}))` : sql``}`
 
   const rankOf = async (query: BoardQuery, userId: string) => {
@@ -139,39 +144,82 @@ export const rankingStore = (sql: Sql) => {
     },
 
     /**
-     * A start token: the id of a new run row. Null when the player started too
-     * many runs lately. Old tokens that never finished are dropped on the way.
+     * A start token (the id of a new run row) and the seed its run must play:
+     * the day's challenge seed for a Desafio do dia run, else a random one.
+     * Null when the player started too many runs lately. The player's other
+     * unfinished tokens of the same kind (regular or challenge) are replaced,
+     * so nobody holds two seeds to pick from; replaced rows still count for the
+     * rate limit. Old tokens that never finished are dropped on the way.
      */
     startRun: async (userId: string, challenge: DayKey | null = null) => {
       await touchUser(userId)
-      const [recent] = await sql<{ n: number }[]>`
-        select count(*)::int as n from runs where user_id = ${userId} and started_at > now() - make_interval(secs => ${RANKED.window})`
-      if ((recent?.n ?? 0) >= RANKED.startsPerWindow) return null
-      await sql`delete from runs where user_id = ${userId} and finished_at is null and started_at < now() - make_interval(days => ${RANKED.tokenDays})`
-      const [row] = await sql<{ id: string }[]>`insert into runs (user_id, challenge) values (${userId}, ${challenge}::date) returning id`
-      return row!.id
+      return sql.begin(async (tx) => {
+        // Two starts at once take turns, so neither misses the other's token (nor the rate limit).
+        await tx`select pg_advisory_xact_lock(hashtextextended(${`runs:${userId}`}, 0))`
+        const [recent] = await tx<{ n: number }[]>`
+          select count(*)::int as n from runs where user_id = ${userId} and started_at > now() - make_interval(secs => ${RANKED.window})`
+        if ((recent?.n ?? 0) >= RANKED.startsPerWindow) return null
+        await tx`delete from runs where user_id = ${userId} and finished_at is null and started_at < now() - make_interval(days => ${RANKED.tokenDays})`
+        await tx`
+          update runs set replaced_at = now()
+          where user_id = ${userId} and finished_at is null and replaced_at is null and (challenge is null) = ${challenge === null}`
+        const seed = challenge ? dailyChallenge(challenge).seed : randomInt(0, RANKED.seedSpan)
+        const [row] = await tx<{ id: string }[]>`insert into runs (user_id, challenge, seed) values (${userId}, ${challenge}::date, ${seed}) returning id`
+        return { token: row!.id, seed }
+      })
+    },
+
+    /**
+     * Moves the clock of `token`'s run to now, as it really starts (the game
+     * asks for its token ahead, on the menus). It only ever shortens the time
+     * the run may last, so the game needn't be trusted with it. `replaced` when
+     * a newer token took its place: that run can't report.
+     */
+    stampRun: async (userId: string, token: string): Promise<'ok' | 'unknown' | 'replaced'> => {
+      if (!UUID.test(token)) return 'unknown'
+      const [row] = await sql<{ replaced: boolean }[]>`
+        update runs set started_at = case when replaced_at is null then now() else started_at end
+        where id = ${token} and user_id = ${userId} and finished_at is null
+        returning replaced_at is not null as replaced`
+      return !row ? 'unknown' : row.replaced ? 'replaced' : 'ok'
     },
 
     /**
      * Records how the run of `token` ended, if the wall clock since the token
      * allows that much play (`clockAllows`). A victory that goes on into endless
      * mode ends again later: the same run may only grow, on the same Pokémon and level.
+     * The replay must play the seed dealt with the token (`reportProblem`), and a replaced token can't report.
      * A challenge run must bring its day's challenge as its replay (`challengeProblem`);
      * the first one of the player's day to finish is their official attempt.
      */
-    finishRun: (userId: string, token: string, result: RunResult, replay: Replay | null): Promise<Finished | { ok: false; error: FinishError }> =>
+    finishRun: (userId: string, token: string, result: RunResult, replay: Replay): Promise<Finished | { ok: false; error: FinishError }> =>
       sql.begin(async (tx) => {
         if (!UUID.test(token)) return { ok: false, error: 'unknown' } as const
-        const [run] = await tx<{ elapsed: number; finished: boolean; starter: string | null; difficulty: string | null; survived: number | null; challenge: DayKey | null; official: boolean | null }[]>`
-          select extract(epoch from now() - started_at)::float8 as elapsed, finished_at is not null as finished, starter, difficulty, survived,
-            challenge::text as challenge, official
+        const [run] = await tx<
+          {
+            elapsed: number
+            finished: boolean
+            replaced: boolean
+            seed: number | null
+            starter: PlayableId
+            difficulty: Difficulty
+            survived: number
+            outcome: RunResult['outcome']
+            challenge: DayKey | null
+            official: boolean | null
+          }[]
+        >`
+          select extract(epoch from now() - started_at)::float8 as elapsed, finished_at is not null as finished, replaced_at is not null as replaced,
+            seed::float8 as seed, starter, difficulty, survived, outcome, challenge::text as challenge, official
           from runs where id = ${token} and user_id = ${userId} for update`
         if (!run) return { ok: false, error: 'unknown' } as const
-        if (run.finished && (run.starter !== result.starter || run.difficulty !== result.difficulty || (run.survived ?? 0) > result.time)) {
-          return { ok: false, error: 'mismatch' } as const
-        }
+        if (run.replaced) return { ok: false, error: 'replaced' } as const
+        // An unfinished row has no report yet (those columns are null).
+        const reported = run.finished ? { starter: run.starter, difficulty: run.difficulty, time: run.survived, outcome: run.outcome } : null
+        const problem = reportProblem({ seed: run.seed, reported }, result, replay.start.seed)
+        if (problem) return { ok: false, error: problem } as const
         if (!clockAllows(run.elapsed, result.time)) return { ok: false, error: 'clock' } as const
-        if (run.challenge && (!replay || challengeProblem(replay.start, run.challenge))) return { ok: false, error: 'challenge' } as const
+        if (run.challenge && challengeProblem(replay.start, run.challenge)) return { ok: false, error: 'challenge' } as const
         let official = run.official
         if (run.challenge && !run.finished) {
           // The player's row makes two challenge runs finishing at once take turns.
@@ -183,7 +231,7 @@ export const rankingStore = (sql: Sql) => {
         await tx`
           update runs set finished_at = now(), starter = ${result.starter}, stage = ${result.stage}, branch = ${result.branch}, difficulty = ${result.difficulty},
             survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
-            replay = ${replay ? tx.json(replay) : null}, verified = null, checked_at = null, check_ms = null, official = ${official},
+            replay = ${tx.json(replay)}, verified = null, checked_at = null, check_ms = null, official = ${official},
             mode = ${runMode(result.starter)}
           where id = ${token}`
         return { ok: true, challenge: run.challenge, official } as const
@@ -282,14 +330,14 @@ export const rankingStore = (sql: Sql) => {
 
     /**
      * Places for `day`'s ribbons: each official attempt on the board (by a
-     * player with a handle, not failed), with a competition rank (ties share
+     * player with a handle, not banned, not failed), with a competition rank (ties share
      * the better place) and how many there are.
      */
     ribbonPlaces: (day: DayKey) =>
       sql<{ user_id: string; rank: number; total: number }[]>`
         select r.user_id, (rank() over (order by r.survived desc))::int as rank, (count(*) over ())::int as total
         from runs r join users u on u.id = r.user_id
-        where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null`,
+        where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null and u.banned_at is null`,
 
     /** A day's top `n` official attempts like `ribbonPlaces` ranks them (ties share a place), for the Discord podium, and how many took part. */
     podium: async (day: DayKey, n = 3) => {
@@ -297,7 +345,7 @@ export const rankingStore = (sql: Sql) => {
         select * from (
           select (rank() over (order by r.survived desc))::int as rank, (count(*) over ())::int as total, u.handle, u.name, r.survived, r.started_at
           from runs r join users u on u.id = r.user_id
-          where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null
+          where r.challenge = ${day}::date and r.official and r.verified is not false and r.finished_at is not null and u.handle is not null and u.banned_at is null
         ) p
         where rank <= ${n} order by rank, started_at limit ${n}`
       return { places: rows.map((r) => ({ rank: r.rank, handle: r.handle, name: r.name ?? r.handle, survived: r.survived })), total: rows[0]?.total ?? 0 }
@@ -314,12 +362,12 @@ export const rankingStore = (sql: Sql) => {
     },
 
     /**
-     * A public profile by handle, as `viewer` sees it, or null. The title and
-     * the Pokédex come from the player's synced save.
+     * A public profile by handle, as `viewer` sees it, or null (also for a
+     * banned player). The title and the Pokédex come from the player's synced save.
      */
     profile: async (handle: string, viewer: string | null): Promise<PublicProfile | null> => {
       const [user] = await sql<(SupporterRow & { id: string; handle: string; name: string | null; supporter_since: Date | null })[]>`
-        select id, handle, name, supporter_points, supporter_public, supporter_since from users where handle = ${handle}`
+        select id, handle, name, supporter_points, supporter_public, supporter_since from users where handle = ${handle} and banned_at is null`
       if (!user) return null
       const self = viewer === user.id
       // One's own badge shows even when hidden from others, so the profile says what they see.

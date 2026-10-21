@@ -96,9 +96,16 @@ export type Push = { save: Save; base: number | null }
  * seen everything stored, so its save is the newer one and replaces it as is:
  * that keeps ₽ spent, eggs hatched and refunds. Anything else (a first sign
  * in, another device pushed in between) merges both with `mergeSaves`.
+ *
+ * `resetAt` is the revision a reset stored, when the account's save was wiped
+ * (an edited save, see `server/README.md`). A device that hasn't seen it (its
+ * `base` is older, or it never synced) would merge the wiped progress back, so
+ * its push changes nothing and gets the stored save, as merged: the device
+ * takes it over its own.
  */
-export const applyPush = (stored: Stored | null, push: Push): Stored & { merged: boolean } => {
+export const applyPush = (stored: Stored | null, push: Push, resetAt: number | null = null): Stored & { merged: boolean } => {
   if (!stored) return { save: push.save, revision: 1, merged: false }
+  if (resetAt !== null && (push.base === null || push.base < resetAt)) return { ...stored, merged: true }
   const merged = push.base !== stored.revision
   return { save: merged ? mergeSaves(stored.save, push.save) : push.save, revision: stored.revision + 1, merged }
 }

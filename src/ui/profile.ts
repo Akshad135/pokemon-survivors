@@ -14,6 +14,7 @@ import { pokedex } from '../site/pokedex'
 import { LOCALES, locale, t } from '../i18n'
 import { h, later } from './dom'
 import { titleBadge } from './missions'
+import { reportDialog } from './report'
 import { sharePreview, trainerShare } from './share'
 import { difficultyTag, hint, menu, type Screen } from './screens'
 import { toast } from './toasts'
@@ -107,7 +108,7 @@ const share = async (root: HTMLElement, p: PublicProfile) => {
 /**
  * A public profile (`/?u=handle` opens it straight away): name, handle, the
  * equipped title, records per difficulty (the Legend mode's apart), Desafio do dia ribbons, Pokédex progress, recent ranked runs
- * and follower counts. Signed in, it offers Follow, or Edit on one's own.
+ * and follower counts. Signed in, it offers Follow and Denunciar, or Edit on one's own.
  * Back, Esc or Backspace close it and call `onClose` after the key dispatch.
  */
 export const profileScreen = (root: HTMLElement, input: Input, handle: string, onClose: () => void): Screen => {
@@ -155,6 +156,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
     const actions = [
       ...(p.self ? [{ label: m.edit, run: openEditor }, { label: m.card, run: () => openCard(p) }] : signedIn ? [follow] : []),
       { label: m.share, run: () => void share(root, p) },
+      ...(signedIn && !p.self ? [{ label: m.report, run: () => openReport(p) }] : []),
       back(),
     ]
     frame(
@@ -207,6 +209,17 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
     el.classList.add('hidden')
     const best = bestRecord(p)
     sub = sharePreview(root, input, trainerShare(best?.starter ?? 'charmander'), () => {
+      sub = null
+      el.classList.remove('hidden')
+      show(p)
+    })
+  }
+
+  /** The report dialog over the profile, about the player (not a run). */
+  const openReport = (p: PublicProfile) => {
+    nav?.off()
+    el.classList.add('hidden')
+    sub = reportDialog(root, input, { handle: p.handle, name: p.name, run: null }, () => {
       sub = null
       el.classList.remove('hidden')
       show(p)

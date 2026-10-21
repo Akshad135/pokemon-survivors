@@ -12,8 +12,18 @@ export const createCanvas = (w: number, h: number) => {
   return c
 }
 
+/** A 1×1 context made with the first one, for when a canvas gets none. */
+let spare: CanvasRenderingContext2D | null = null
+
+/**
+ * A canvas' 2D context, unsmoothed for hard pixels. iOS hands out no context once the page's
+ * canvases pass its memory budget: that canvas' drawing then lands on the spare and its art
+ * comes out blank, instead of the game crashing mid-run.
+ */
 export const context2d = (canvas: HTMLCanvasElement) => {
-  const ctx = canvas.getContext('2d', { willReadFrequently: false })!
+  spare ??= createCanvas(1, 1).getContext('2d')
+  const ctx = canvas.getContext('2d', { willReadFrequently: false }) ?? spare
+  if (!ctx) throw new Error('No 2D canvas context')
   ctx.imageSmoothingEnabled = false
   return ctx
 }

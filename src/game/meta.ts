@@ -1,7 +1,7 @@
 import { chance, type Rng } from '../engine/rng'
 import { ACHIEVEMENTS, MEDAL_EGG, MEDAL_REWARD, type AchievementId, type GiftTitleId, type TitleId } from '../data/achievements'
 import { NO_ACHIEVEMENTS, parseAchievements, parseGiftTitles, parseTitle, recordAchievements, recordHatchAchievements, type AchievementsSave } from './achievements'
-import { addClear, parseClears, pastClears, type Clears } from './clears'
+import { addClear, mergeClears, parseClears, pastClears, type Clears } from './clears'
 import { EMPTY_DEX, parseDex, type Pokedex } from './dex'
 import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficulty'
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
@@ -246,8 +246,8 @@ export const parseSaveData = (json: unknown): Save => {
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
     branches: parseBranches(data.branches),
-    // Saves from before clears were tracked get the ones their records prove.
-    clears: data.clears === undefined ? pastClears(achievements.lifetime) : parseClears(data.clears),
+    // Plus the clears the lifetime records prove, for wins from before clears were tracked.
+    clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
     legends: parseCaptures(data.legends),
   }
 }

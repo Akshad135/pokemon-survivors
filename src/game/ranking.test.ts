@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RUN_LENGTH } from '../data/waves'
-import { clockAllows, freeHandle, handleProblem, maxKills, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, runMode, suggestHandle, type RunResult } from './ranking'
+import { clockAllows, freeHandle, handleProblem, maxKills, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, reportProblem, runMode, suggestHandle, type RunResult } from './ranking'
 
 const run = (o: Partial<Record<keyof RunResult, unknown>> = {}) => ({ starter: 'charmander', stage: 1, difficulty: 'hard', time: 300, outcome: 'death', level: 20, kills: 800, version: 'abc1234', ...o })
 
@@ -51,6 +51,28 @@ describe('clockAllows', () => {
   it('lets the run fit the wall clock since its token, plus the slack', () => {
     expect(clockAllows(600, 600 + RANKED.slack)).toBe(true)
     expect(clockAllows(600, 601 + RANKED.slack)).toBe(false)
+  })
+})
+
+describe('reportProblem', () => {
+  const result = (o: Partial<RunResult> = {}) => ({ ...(run() as RunResult), branch: null, ...o })
+  const fresh = (seed: number | null) => ({ seed, reported: null })
+
+  it('takes only the seed dealt with the token, and any on a row from before seeds were dealt', () => {
+    expect(reportProblem(fresh(42), result(), 42)).toBeNull()
+    expect(reportProblem(fresh(42), result(), 43)).toBe('seed')
+    expect(reportProblem(fresh(null), result(), 43)).toBeNull()
+  })
+
+  it('lets only a victory grow (endless mode), never shrink or change Pokémon', () => {
+    const won = { seed: 42, reported: { starter: 'charmander', difficulty: 'hard', time: RUN_LENGTH, outcome: 'victory' } } as const
+    expect(reportProblem(won, result({ time: RUN_LENGTH + 600, outcome: 'victory' }), 42)).toBeNull()
+    expect(reportProblem(won, result({ time: RUN_LENGTH - 1 }), 42)).toBe('mismatch')
+    expect(reportProblem(won, result({ time: RUN_LENGTH + 600, starter: 'squirtle' }), 42)).toBe('mismatch')
+    const died = { seed: 42, reported: { starter: 'charmander', difficulty: 'hard', time: 300, outcome: 'death' } } as const
+    // The same report again (a retry) still goes; a longer one would be a seed kept on hold.
+    expect(reportProblem(died, result(), 42)).toBeNull()
+    expect(reportProblem(died, result({ time: 900 }), 42)).toBe('mismatch')
   })
 })
 

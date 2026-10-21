@@ -8,7 +8,7 @@ import { continueEndless } from './endlessSystem'
 import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
 import { UPGRADE_IDS, UPGRADES, type Ranks } from './meta'
 import { isRecord, wholeNumber } from './parse'
-import { OUTBREAK_SPECIES, withOutbreak } from './outbreak'
+import { isOutbreakSpecies, withOutbreak } from './outbreak'
 import { biomeWeight, drawRoster } from './roster'
 import type { Game } from './types'
 
@@ -28,9 +28,11 @@ export const TICK = 1 / 60
  * Version of the rules a replay plays by. Bump it with any change that makes
  * the same inputs end somewhere else (balance, spawns, boss rules, a new
  * random draw): the server only judges replays of its own rules (`rulesStanding`).
- * Replays from before the field existed are rules 1.
+ * Replays from before the field existed are rules 1. `rulesGuard.test.ts`
+ * pins where a few scripted replays end under this version and fails when the
+ * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 23
+export const RULES_VERSION = 24
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -143,26 +145,42 @@ export const recordStep = (rec: Recorder, view: { w: number; h: number }, move: 
 
 const isWhole = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0
 
-const isOutbreakSpecies = (v: unknown): v is EnemyId => OUTBREAK_SPECIES.some((id) => id === v)
+/**
+ * The largest screen a replay may declare, in world px. Spawns, despawns and
+ * a boss's reach scale with the view's diagonal, so a made-up giant screen
+ * would keep the horde out of reach and still re-simulate faithfully. The
+ * largest seen in play is 960 × 439 (`fitView` in `engine/viewport.ts`, under a
+ * browser's zoom and visual viewport); the limits leave room above it, and the
+ * long side for ultrawide and stretched windows.
+ */
+export const VIEW_LIMIT = { short: 600, long: 2048 } as const
+
+/** A declared screen of `w` × `h` world px, or null when the game couldn't show it. */
+export const parseView = (w: unknown, h: unknown) =>
+  isWhole(w) && isWhole(h) && w > 0 && h > 0 && Math.min(w, h) <= VIEW_LIMIT.short && Math.max(w, h) <= VIEW_LIMIT.long ? { w, h } : null
 
 const parseEvent = (raw: unknown): ReplayEvent | null => {
   if (!Array.isArray(raw) || !isWhole(raw[0])) return null
   const [tick, kind, a, b] = raw
   if (kind === 'offer' || kind === 'banish') return isWhole(a) && a < 8 ? [tick, kind, a] : null
-  if (kind === 'view') return isWhole(a) && isWhole(b) && a > 0 && b > 0 && a <= 4096 && b <= 4096 ? [tick, kind, a, b] : null
+  if (kind === 'view') {
+    const view = parseView(a, b)
+    return view ? [tick, kind, view.w, view.h] : null
+  }
   return kind === 'special' || kind === 'mega' || kind === 'lunge' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
 }
 
 /**
- * A replay from an untrusted body, or null when its shape is wrong. Ranks are
- * clamped to the Poké Mart's limits; a replay without `rules` predates them (1).
+ * A replay from an untrusted body, or null when its shape is wrong or its
+ * screen is bigger than the game shows (`parseView`). Ranks are clamped to the
+ * Poké Mart's limits; a replay without `rules` predates them (1).
  */
 export const parseReplay = (raw: unknown): Replay | null => {
   if (!isRecord(raw) || !isRecord(raw.start) || !Array.isArray(raw.moves) || !Array.isArray(raw.events)) return null
   const s = raw.start
-  const view = isRecord(s.view) ? s.view : {}
+  const view = isRecord(s.view) ? parseView(s.view.w, s.view.h) : null
   if (typeof s.seed !== 'number' || !Number.isFinite(s.seed) || typeof s.starter !== 'string' || !Object.hasOwn(PLAYABLE, s.starter)) return null
-  if (!isDifficulty(s.difficulty) || !isWhole(view.w) || !isWhole(view.h) || view.w === 0 || view.h === 0) return null
+  if (!isDifficulty(s.difficulty) || !view) return null
   if (raw.moves.length % 2 !== 0 || !raw.moves.every((n, i) => isWhole(n) && (i % 2 === 1 ? n > 0 : n < MOVES.length))) return null
   const events = raw.events.map(parseEvent)
   if (events.some((e) => e === null) || events.some((e, i) => i > 0 && e![0] < events[i - 1]![0])) return null
@@ -179,7 +197,7 @@ export const parseReplay = (raw: unknown): Replay | null => {
       outbreak: isOutbreakSpecies(s.outbreak) ? s.outbreak : null,
       lure: s.lure === true,
       incense: s.incense === true,
-      view: { w: view.w, h: view.h },
+      view,
     },
     moves: raw.moves,
     events: events as ReplayEvent[],
@@ -231,7 +249,8 @@ const applyEvent = (g: Game, e: ReplayEvent) => {
 
 /**
  * How a re-simulated run ended. `stuck`: its replay ran out on a level-up,
- * waiting on a pick it doesn't make. `branch`: the branching evolution it
+ * waiting on a pick it doesn't make (a run quit there; the API only logs
+ * it, `server/src/checks.ts`). `branch`: the branching evolution it
  * took, which the boards trust over the one the game reported.
  */
 export type Resimulated = { time: number; kills: number; level: number; branch: Game['branch']; phase: Game['phase']; stuck: boolean }

@@ -75,7 +75,8 @@ export const hint = (keys: string, touch: string) =>
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
  * `guard` (ms) makes a menu that opens mid-fight ignore picks at first:
  * taps and clicks for that long, keys and pad buttons until they pause
- * (`pressGuard`).
+ * (`pressGuard`). `off` stops it whole, keys and pointer: a screen that binds
+ * its buttons again (back from a screen on top) doesn't stack a second click.
  */
 export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number; guard?: number } = {}) => {
   let index = opts.initial ?? 0
@@ -87,14 +88,15 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
     if (sound) playSfx('move')
   }
+  const pointer = new AbortController()
   buttons.forEach((b, i) => {
-    b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => performance.now() - openedAt > tapGuard && activate(i))
+    b.addEventListener('pointerenter', () => i !== index && focus(i), { signal: pointer.signal })
+    b.addEventListener('click', () => performance.now() - openedAt > tapGuard && activate(i), { signal: pointer.signal })
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
   const next = opts.horizontal ? ['ArrowRight', 'KeyD'] : ['ArrowDown', 'KeyS']
-  const off = input.onKey((key) => {
+  const offKeys = input.onKey((key) => {
     if (prev.includes(key)) focus(index - 1)
     else if (next.includes(key)) focus(index + 1)
     else if (key === 'Enter' || key === 'Space') {
@@ -104,6 +106,10 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
       if (i < buttons.length && takes(performance.now() - openedAt)) activate(i)
     }
   })
+  const off = () => {
+    offKeys()
+    pointer.abort()
+  }
   return { off, focus, get index() { return index } }
 }
 
@@ -617,12 +623,20 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
   /** The screen open on top (settings, the bug report). */
   let sub: Screen | null = null
 
+  /**
+   * Hides the menu under `open`'s screen and redraws it when that one closes.
+   * Both ends run after a key dispatch (`later`), when the menu may be gone
+   * already (the run resumed, the game ended it): a disposed menu (`el` out of
+   * the page, as `openSettings` checks too) opens nothing and binds no keys,
+   * or its Quit and Resume would keep listening over the run.
+   */
   const openSub = (open: (back: () => void) => Screen, focus: number) => {
-    if (sub) return
+    if (sub || !el.isConnected) return
     nav?.off()
     el.classList.add('hidden')
     sub = open(() => {
       sub = null
+      if (!el.isConnected) return
       el.classList.remove('hidden')
       render(focus, false)
     })
@@ -784,13 +798,19 @@ export const results = (
   const share = extras.share ? h('button', { class: extras.share.glow ? 'btn share-button glow' : 'btn share-button' }, h('img', { src: sparkleIcon(), alt: '' }), t().share.button) : null
   /** The boards or the share preview, open over the results. */
   let sub: Screen | null = null
-  /** Hides the results under `open`'s screen until it closes, then comes back on the same button. */
+  /**
+   * Hides the results under `open`'s screen until it closes, then comes back
+   * on the same button. Once the results are disposed (Retry, endless mode)
+   * nothing opens or binds again, as in the pause menu: their keys would play
+   * Retry or Menu over the next run.
+   */
   const openSub = (open: ((back: () => void) => Screen) | undefined, button: HTMLButtonElement) => {
-    if (!open) return
+    if (!open || sub || !el.isConnected) return
     nav.off()
     el.classList.add('hidden')
     sub = open(() => {
       sub = null
+      if (!el.isConnected) return
       el.classList.remove('hidden')
       nav = bindNav(buttons.indexOf(button))
     })

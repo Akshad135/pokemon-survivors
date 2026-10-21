@@ -15,15 +15,15 @@ export const fetchSuggestions = async (sort: SuggestionSort): Promise<Suggestion
   return status === 200 && isRecord(body) ? parseSuggestions(body.suggestions) : null
 }
 
-/** What posting an idea came to: the idea, or why not (`profile`: no handle yet, `limit`: `SUGGESTION.perDay` reached). */
-export type Posted = { ok: true; suggestion: Suggestion } | { ok: false; reason: 'profile' | 'limit' | 'invalid' | 'offline' }
+/** What posting an idea came to: the idea, or why not (`profile`: no handle yet, `limit`: `SUGGESTION.perDay` reached, `banned`: the account can't post). */
+export type Posted = { ok: true; suggestion: Suggestion } | { ok: false; reason: 'profile' | 'limit' | 'banned' | 'invalid' | 'offline' }
 
 /** Posts an idea (already cleaned by `parseSuggestionDraft`). */
 export const postSuggestion = async (draft: SuggestionDraft): Promise<Posted> => {
   const { status, body } = await apiCall('/suggestions', { method: 'POST', body: draft, auth: true })
   const suggestion = status === 201 && isRecord(body) ? parseSuggestion(body.suggestion) : null
   if (suggestion) return { ok: true, suggestion }
-  if (status === 403) return { ok: false, reason: 'profile' }
+  if (status === 403) return { ok: false, reason: isRecord(body) && body.error === 'banned' ? 'banned' : 'profile' }
   if (status === 429) return { ok: false, reason: 'limit' }
   if (status === 400) return { ok: false, reason: 'invalid' }
   return { ok: false, reason: 'offline' }

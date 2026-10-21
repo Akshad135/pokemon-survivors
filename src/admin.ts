@@ -3,9 +3,11 @@ import { apiCall } from './api'
 import { parseAdminSent, parseAdminUsers, type AdminSent, type AdminUser } from './game/admin'
 import type { GiftContent } from './game/gifts'
 import { isRecord } from './game/parse'
+import type { Moderation, ReportGroup } from './game/reports'
 
 /**
- * The admin's gift desk, the game's side (`game/admin.ts`). Only the API
+ * The admin's panel, the game's side (`game/admin.ts`, `game/reports.ts`):
+ * the gift desk, reports and bans. Only the API
  * decides who is admin: this just asks, to show the desk's button, and every
  * call is checked again there.
  */
@@ -47,4 +49,17 @@ export const sendGift = async (userId: string, content: GiftContent, request: st
 export const sentGifts = async (): Promise<AdminSent[] | null> => {
   const { status, body } = await apiCall('/admin/gifts', { auth: true })
   return status === 200 && isRecord(body) ? parseAdminSent(body.gifts) : null
+}
+
+/** The open reports, grouped (`ReportGroup`), and how many are open; null when the API can't be reached. Our own API: a look at the shape is enough. */
+export const fetchReports = async (): Promise<{ groups: ReportGroup[]; open: number } | null> => {
+  const { status, body } = await apiCall('/admin/reports', { auth: true })
+  return status === 200 && isRecord(body) && Array.isArray(body.groups) && typeof body.open === 'number' ? { groups: body.groups as ReportGroup[], open: body.open } : null
+}
+
+/** Acts on a player (`Moderation`): how many reports it resolved, `unknown` (no such player or run), or null when it didn't go. */
+export const moderate = async (m: Moderation): Promise<number | 'unknown' | null> => {
+  const { status, body } = await apiCall('/admin/moderation', { method: 'POST', body: m, auth: true })
+  if (status === 404) return 'unknown'
+  return status === 200 && isRecord(body) && typeof body.resolved === 'number' ? body.resolved : null
 }

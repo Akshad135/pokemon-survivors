@@ -1,8 +1,9 @@
-import { PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
-import { REGIONS } from '../data/starters'
+import { PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
+import { REGIONS, STARTERS } from '../data/starters'
 import { DIFFICULTY_IDS, isDifficulty, type Difficulty } from './difficulty'
 import type { Lifetime } from './achievements'
 import { isRecord } from './parse'
+import { isPlayable } from './ranking'
 import type { RunSummary } from './tally'
 
 /**
@@ -41,21 +42,29 @@ export const parseClears = (raw: unknown): Clears =>
       )
     : {}
 
+/** Each regional starter with its region and base type, for `pastClears`. */
+const REGIONAL = REGIONS.flatMap((r) => r.starters.map((id) => ({ id, gen: r.gen, type: STARTERS[id].line[0].types[0]! })))
+
 /**
  * Clears a save from before they were tracked can prove from its records:
- * the regions and base types of the starters that won (`winGens`, `winTypes`).
- * Each region has one starter per type, so when either list has a single
- * entry, every pair is a starter that won. The difficulty isn't known: Normal.
+ * the regions and base types of the starters that won (`winGens`, `winTypes`)
+ * and the starters played. A region's winner is a starter of it that was
+ * played and whose type won; when only one fits, it won. The same goes for
+ * each type. Hatched families left no trace. The difficulty isn't known: Normal.
  */
 export const pastClears = (l: Lifetime): Clears => {
-  if (l.winGens.length !== 1 && l.winTypes.length !== 1) return {}
-  return Object.fromEntries(
-    REGIONS.filter((r) => l.winGens.includes(r.gen))
-      .flatMap((r) => r.starters)
-      .filter((id) => l.winTypes.includes(PLAYABLE[id].line[0].types[0]!))
-      .map((id) => [id, 'normal'] as const),
-  )
+  const fits = REGIONAL.filter((s) => l.starters.includes(s.id) && l.winGens.includes(s.gen) && l.winTypes.includes(s.type))
+  const sole = (match: (s: (typeof fits)[number]) => boolean) => {
+    const found = fits.filter(match)
+    return found.length === 1 ? [found[0]!.id] : []
+  }
+  const won = [...l.winGens.flatMap((gen) => sole((s) => s.gen === gen)), ...l.winTypes.flatMap((type) => sole((s) => s.type === type))]
+  return Object.fromEntries(won.map((id) => [id, 'normal'] as const))
 }
+
+/** The clears a list of won runs proves (the API's ranked runs), skipping unknown Pokémon and difficulties. */
+export const wonClears = (runs: readonly { starter: string; difficulty: string }[]): Clears =>
+  runs.reduce<Clears>((clears, r) => (isPlayable(r.starter) && isDifficulty(r.difficulty) ? withClear(clears, r.starter, r.difficulty) : clears), {})
 
 /** How many Pokémon have a clear. */
 export const clearCount = (clears: Clears) => Object.keys(clears).length

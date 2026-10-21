@@ -41,8 +41,8 @@ export type Voted = { ok: true; score: number; vote: Vote } | { ok: false; error
  * it) and comes with the author's own up vote; a player posts
  * `SUGGESTION.perDay` ideas in 24 hours at most. Anyone with an account
  * votes on open ideas, once each (changing or taking it back). Only the
- * admin changes a status (the desk's route in `app.ts`); hidden ideas leave
- * every list.
+ * admin changes a status (the desk's route in `app.ts`); hidden ideas, and
+ * the ideas of a banned player, leave every list.
  */
 export const suggestionStore = (sql: Sql) => {
   const ORDER = {
@@ -62,7 +62,7 @@ export const suggestionStore = (sql: Sql) => {
     /** A tab of the board: open ideas by votes or newest first, or the shipped ones. */
     list: async (sort: SuggestionSort, viewer: string | null): Promise<Suggestion[]> => {
       const status = sort === 'done' ? 'done' : 'open'
-      const rows = await sql<Row[]>`${select(viewer)} where s.status = ${status} and u.handle is not null order by ${ORDER[sort]} limit ${SUGGESTION.list}`
+      const rows = await sql<Row[]>`${select(viewer)} where s.status = ${status} and u.handle is not null and u.banned_at is null order by ${ORDER[sort]} limit ${SUGGESTION.list}`
       return rows.map(toSuggestion)
     },
 
