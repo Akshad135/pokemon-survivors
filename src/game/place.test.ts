@@ -4,7 +4,7 @@ import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { PLACE, PLACE_IDS, PLACES, WINGS } from '../data/places'
 import { RUN_LENGTH, STAGES, stageIndexAt } from '../data/waves'
 import { applyDeltas, BASE_STATS } from './stats'
-import { pickPlace, placeDue, placePool, placeSchedule, wingDeltas } from './place'
+import { pickPlace, placeDue, placePool, wingDeltas } from './place'
 
 const due = { time: 200, nextAt: 200, busy: false, bossAlive: false, endless: false }
 
@@ -61,21 +61,6 @@ describe('placePool', () => {
         else expect(new Set(pool.map(tierOf)).size).toBe(1)
       }
     }
-  })
-
-  it("streams every species before it can come out, and the sky's only for a flyer", () => {
-    const all = placeSchedule(true)
-    const grounded = placeSchedule(false)
-    for (const id of PLACE_IDS) {
-      for (const e of PLACES[id].species) {
-        const first = STAGES.findIndex((s) => placePool(id, s.until - 1).some(([p]) => p === e))
-        if (first < 0) continue
-        const at = all.find((s) => s.dex === ENEMIES[e].dex)!.at
-        expect(at).toBeLessThanOrEqual(Math.max(PLACE.firstAt, STAGES[first - 1]?.until ?? 0))
-      }
-    }
-    expect(grounded.length).toBeLessThan(all.length)
-    expect(grounded.some((s) => s.dex === ENEMIES.spiritomb.dex)).toBe(true)
   })
 })
 

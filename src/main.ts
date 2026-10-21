@@ -16,7 +16,7 @@ import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
 import { bodyOf } from './data/bodies'
 import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
-import { isRiftLegend, RIFT, RIFT_LEGENDS } from './data/rifts'
+import { isRiftLegend } from './data/rifts'
 import { domainTheme } from './game/domain'
 import { partnerOf } from './data/domains'
 import { captureOutcome, setCaptureOutcome } from './render/capture'
@@ -57,7 +57,7 @@ import { abilityStacks, grantAbility } from './game/abilities'
 import { abilityIcon } from './render/abilityArt'
 import { recomputeStats, xpFor } from './game/leveling'
 import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
-import { ENDLESS, REAPER } from './game/endless'
+import { REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { legendDevTools } from './game/legendDev'
@@ -67,7 +67,6 @@ import { placeDevTools } from './game/placeDev'
 import { placeFeedback } from './ui/places'
 import { landmarkFeedback } from './ui/landmarks'
 import { PLACES } from './data/places'
-import { placeSchedule } from './game/place'
 import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
@@ -102,7 +101,8 @@ import { setWeather } from './game/weather'
 import { render, warmScenery } from './render/draw'
 import { createGovernor, detail, observeFrame } from './render/quality'
 import { drawJoystick } from './render/joystick'
-import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
+import { cryUrl, loadAll, loadedCount, loadSpecies, overlayStats, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies, sweepSprites, type Dex } from './render/sprites'
+import { castNeeds, runSprites, type SpriteNeed } from './render/spriteNeeds'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
@@ -113,7 +113,7 @@ import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
-import { captureRef, flushRuns, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { captureRef, flushRuns, onRulesBehind, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { giftScreen } from './ui/gifts'
 import { playGate } from './ui/account'
@@ -258,6 +258,8 @@ type Run = {
   challenge: { day: DayKey; official: boolean; attempt: boolean } | null
   /** The supporter's companion walking along, drawn only (`render/companion.ts`). */
   companion: CompanionView | null
+  /** Which sheets the run streams and keeps (`syncSprites`): its cast's windows, and what it keeps in every variant. */
+  sprites: { needs: SpriteNeed[]; always: Dex[] }
 }
 
 let screen: Screen | null = null
@@ -637,28 +639,63 @@ const prefetchRun = (day: DayKey | null = null) =>
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper
- * (the places' dwellers come from `placeSchedule`).
+ * up: the fleeing Meowth and the escort mission's Togepi. A rift's legendary,
+ * a place's dwellers and the reaper load when the run gets near them (`runSprites`).
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
   { dex: TOGEPI_DEX, at: FIELD.first },
-  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.slots[0] - RIFT.omenTime })),
-  { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
 ]
 
 /** Dex numbers of a cast's first stage, the only enemies a run waits for. */
 const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) => (s.at === 0 ? [s.dex] : []))
+
+/** Milliseconds between sprite syncs (`syncSprites`). */
+const SPRITE_SYNC = 3000
+/**
+ * Syncs a sheet survives undrawn before it's freed: a run lets go of a past
+ * stage's horde within seconds; the menus keep what they loaded for a minute,
+ * so a screen's art never vanishes while it's open.
+ */
+const RUN_IDLE = 2
+const MENU_IDLE = 20
+
+/**
+ * What the menus stream and keep: the Noite das Bruxas' ghosts in the meadow first, every region's
+ * starter trio (the partner select), then the next run's first stage.
+ */
+const menuSprites = () => [...new Set([...(halloweenToday() ? HAUNT_DEX : []), ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)])]
+
+/**
+ * Hands the sprite stream what's needed now and next, and frees the sheets
+ * nothing needs any more (`sweepSprites`): during a run its current and next
+ * stages, what's alive and the player's line, so a phone's memory stays flat
+ * over the 15 minutes instead of holding every species and shiny the run met.
+ */
+const syncSprites = () => {
+  if (run) {
+    const { stream, keep } = runSprites(run.game, run.sprites.needs, run.sprites.always)
+    streamSpecies(stream)
+    // The results screen is a menu: its share card loads the run's shinies and legendaries to draw them.
+    const over = run.game.phase === 'gameover' || run.game.phase === 'victory'
+    sweepSprites(keep, over ? MENU_IDLE : RUN_IDLE)
+    return
+  }
+  const menu = menuSprites()
+  streamSpecies(menu)
+  sweepSprites({ species: new Set(menu), variants: new Set() }, MENU_IDLE)
+}
 
 /**
  * Loads the starter's evolution line and the first stage's species, then starts
  * a fresh run: a regular one from the save (upgrades, the Bag's armed items),
  * or the Desafio do dia's (`challengeStart`: its seed, nothing from the save
  * but the shiny colors). The rest of the cast (later stages, swarms, bosses) and the
- * `EXTRAS` stream in the background in the order the run needs them, then the
- * next run's opening.
+ * `EXTRAS` stream in the background as the run nears them (`syncSprites`).
  */
 const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) => {
+  // Play again on a build that fell behind (`watchDeploys`): the newer one first, back in the lobby.
+  if (reloadForDeploy) return location.reload()
   setScreen(null)
   endRun()
   const c = daily?.challenge ?? null
@@ -736,15 +773,16 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     bestBefore: save.achievements.lifetime.bestTime,
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
     companion: runCompanion(game.player),
+    // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
+    sprites: { needs: castNeeds(game.roster, EXTRAS), always: [...familyDex(starter), playerDex(game), ENEMIES[plan.outbreak].dex] },
   }
+  if (run.companion) run.sprites.always.push(run.companion.dex)
+  // The menus' sheets age out from here; the run's next stage starts streaming.
+  syncSprites()
   // The crash watch holds the run from now on (`bugReport.ts`).
   syncRunWatch()
   track('run_start', { starter, difficulty: game.difficulty, mode: runMode(starter), ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
-  const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
-  // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
-  const later = [...rosterSchedule(game.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
-  void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
 /** The run's first toasts: the challenge it plays, the day's outbreak, then each bag item it used. */
@@ -1579,17 +1617,6 @@ const scheduleWarmUp = (ms: number) =>
 
 /* ---------------- Boot ---------------- */
 
-/**
- * Warms the sprite cache one species at a time so the menu stays responsive:
- * every region's trio first (menu cards), then the next run's first stage.
- */
-const preloadInBackground = async () => {
-  // The Noite das Bruxas fills the meadow with its ghosts first.
-  const haunts = halloweenToday() ? HAUNT_DEX : []
-  const queue = [...haunts, ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)]
-  for (const dex of queue) await loadSpecies(dex).catch(() => {})
-}
-
 /** A shared profile link (`/?u=handle`): the game opens on that profile, and closing it leaves the link. */
 const showSharedProfile = (handle: string) => {
   setScreen(
@@ -1624,7 +1651,7 @@ const promptProfile = () => {
   })
 }
 
-/** Set when a newer build is live and a run held off the reload: the next trip to the lobby reloads. */
+/** Set when a newer build is live and a run held off the reload: the next trip to the lobby, or the next run, reloads. */
 let reloadForDeploy = false
 
 /** Whether the site now serves another build: the page's HTML, fetched fresh, misses one of this page's scripts. False offline. */
@@ -1634,20 +1661,25 @@ const newerBuild = async () => {
   return html !== null && scripts.some((path) => !html.includes(path))
 }
 
+/** Reloads into a newer build when one is live: right away in the menus (the save is local), or once the run is over. */
+const loadNewerBuild = () =>
+  void newerBuild().then((newer) => {
+    if (!newer) return
+    if (run) reloadForDeploy = true
+    else location.reload()
+  })
+
 /**
  * Each deploy renames the chunks loaded on demand (Novidades, Clerk) and drops
- * the old ones, so a game opened before it can't load them anymore. When a
- * chunk fails and a newer build is live, reload into it: right away in the
- * menus (the save is local), or once the run is over.
+ * the old ones, so a game opened before it can't load them anymore: when a
+ * chunk fails, load the newer build. Same when the API plays newer rules than
+ * this build (a ticket says so, or a result came back `outdated`): every
+ * ranked run this build plays would be refused.
  */
-const watchDeploys = () =>
-  addEventListener('vite:preloadError', () =>
-    void newerBuild().then((newer) => {
-      if (!newer) return
-      if (run) reloadForDeploy = true
-      else location.reload()
-    }),
-  )
+const watchDeploys = () => {
+  addEventListener('vite:preloadError', loadNewerBuild)
+  onRulesBehind(loadNewerBuild)
+}
 
 /** The game closed mid-run last time (`takeCrash`): the title asks, once, whether to report it. */
 const askAboutCrash = () => {
@@ -1674,7 +1706,9 @@ const boot = () => {
   askAboutCrash()
   requestAnimationFrame(frame)
   scheduleWarmUp(1000)
-  void preloadInBackground()
+  // The menus' sheets stream in one at a time, so the title stays responsive; from then on the stream follows the run.
+  syncSprites()
+  setInterval(syncSprites, SPRITE_SYNC)
   promptProfile()
   startAccount()
   // Results that didn't reach the ranking last time (offline) go now, once the account is back.
@@ -1917,6 +1951,8 @@ if (import.meta.env.DEV) {
     ps: {
       run: () => run,
       startRun,
+      // Sheets loaded and frame silhouettes cached right now (`render/sprites.ts`).
+      sprites: () => ({ loaded: loadedCount(), overlays: overlayStats() }),
       showTitle,
       showMenu,
       theme: currentTheme,

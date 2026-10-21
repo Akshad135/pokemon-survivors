@@ -837,7 +837,7 @@ export const results = (
       h(
         'div',
         { class: 'portrait-wrap' },
-        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait.src, alt: '' }),
+        h('img', { class: 'result-portrait', src: sprites(playerDex(g), g.player.shiny).portrait, alt: '' }),
         g.player.shiny && h('img', { class: 'shiny-badge', src: sparkleIcon(), alt: 'Shiny' }),
       ),
       h('div', { class: 'dialog-title' }, victory ? m.victory : g.endless ? r.endlessOver(name) : m.fainted(name)),

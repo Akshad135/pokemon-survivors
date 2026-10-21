@@ -336,6 +336,7 @@ export const es: Messages = {
     place: { day: 'hoy', week: 'esta semana', all: 'en total' },
     queued: 'Sin conexión: la partida entra al ranking cuando vuelva la conexión.',
     rejected: 'Esta partida no entró al ranking.',
+    outdated: 'El juego se actualizó mientras jugabas, así que esta partida no pudo entrar al ranking. La próxima ya es en la versión nueva.',
     unranked: 'Esta partida quedó fuera del ranking: empezó sin conexión o con el juego abierto en otra pestaña o dispositivo.',
     unlisted: 'Esta partida quedó fuera del ranking: la conexión se cayó mientras jugabas. Igual cuenta en tu perfil.',
     guest: 'Entra con una cuenta para aparecer en el ranking.',

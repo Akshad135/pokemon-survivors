@@ -214,7 +214,8 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
      * Takes chunk `seq` of the stream of `token`'s run (`src/game/replayStream.ts`): it must start where
      * the stream is and fit the wall clock since the run started (`clockAllows`). The same chunk again
      * (a retry whose answer got lost) is fine. Returns how late it came (`commitLag`), from the last
-     * commitment, or from when the seed was dealt for the first; the run keeps its worst.
+     * commitment, or from when the seed was dealt for the first; the run keeps its worst, and counts
+     * those past `STREAM.lagTolerance` (`stream_late`).
      */
     putChunk: (userId: string, token: string, seq: number, chunk: ReplayChunk): Promise<{ ok: true; lag: number | null } | { ok: false; error: ChunkError }> =>
       sql.begin(async (tx) => {
@@ -240,8 +241,12 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
         await tx`
           insert into run_chunks (run_id, seq, from_tick, to_tick, moves, events)
           values (${token}, ${seq}, ${chunk.from}, ${chunk.to}, ${tx.json(chunk.moves)}, ${tx.json(chunk.events.map((e) => [...e]))})`
-        await tx`update runs set stream_seq = ${seq + 1}, stream_ticks = ${chunk.to}, stream_at = now(), stream_lag = greatest(stream_lag, ${lag}) where id = ${token}`
-        if (lag > STREAM.lagTolerance) console.log(`stream ${token}: chunk ${seq} came ${lag.toFixed(1)} s late`)
+        const late = lag > STREAM.lagTolerance
+        await tx`
+          update runs set stream_seq = ${seq + 1}, stream_ticks = ${chunk.to}, stream_at = now(), stream_lag = greatest(stream_lag, ${lag}),
+            stream_late = stream_late + ${late ? 1 : 0}
+          where id = ${token}`
+        if (late) console.log(`stream ${token}: chunk ${seq} came ${lag.toFixed(1)} s late`)
         return { ok: true, lag } as const
       }),
 
@@ -260,9 +265,9 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
      * the first one of the player's day to finish is their official attempt.
      * The replay must keep every input its stream committed (`settleReport`, else `rewrite`); it then
      * pins all of its ticks and the chunks it covers are deleted. A victory's report is timed like a chunk
-     * (endless mode may go on from it); a faint's or a quit's isn't, its tail being capped. Whether the
-     * run was streamed in time is stored and logged; with `streamEnforce` a run that wasn't stays off
-     * the public boards for good (`unlisted`), and still counts for the player.
+     * (endless mode may go on from it, and a late one counts in `stream_late`); a faint's or a quit's isn't,
+     * its tail being capped. Whether the run was streamed in time is stored and logged; with `streamEnforce`
+     * a run that wasn't stays off the public boards for good (`unlisted`), and still counts for the player.
      */
     finishRun: (userId: string, token: string, result: RunResult, replay: Replay): Promise<Finished | { ok: false; error: FinishError }> =>
       sql.begin(async (tx) => {
@@ -323,6 +328,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
             survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
             replay = ${tx.json(replay)}, verified = null, checked_at = null, check_ms = null, official = ${official},
             stream_base = ${settled.pin.ticks}, stream_digest = ${settled.pin.digest}, stream_lag = ${stream.lag}, stream_ok = ${inTime}, unlisted = ${!listed},
+            stream_late = stream_late + ${lag !== null && lag > STREAM.lagTolerance ? 1 : 0},
             mode = ${runMode(result.starter)}
             ${fresh ? tx`, stream_at = now()` : tx``}
           where id = ${token}`

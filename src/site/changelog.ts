@@ -78,6 +78,26 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Ranking', en: 'Ranking', es: 'Ranking' },
+        notes: [
+          {
+            pt: 'Com o jogo aberto desde antes de uma atualização, as partidas eram recusadas pelo ranking sem explicação. Agora o jogo carrega a versão nova antes da próxima partida, e uma partida que atravessou uma atualização diz o motivo de ter ficado fora.',
+            en: 'With the game left open from before an update, runs were turned away from the ranking with no reason given. Now the game loads the new version before your next run, and a run that spanned an update tells you why it stayed off.',
+            es: 'Con el juego abierto desde antes de una actualización, las partidas quedaban fuera del ranking sin explicación. Ahora el juego carga la versión nueva antes de tu próxima partida, y una partida que atravesó una actualización te dice por qué quedó fuera.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Partidas inteiras no celular', en: 'Whole runs on your phone', es: 'Partidas enteras en el celular' },
+        notes: [
+          {
+            pt: 'O jogo não fecha mais sozinho no meio da partida em celulares. A memória que ele usa agora fica estável do começo ao fim: carrega só os Pokémon da fase atual e da próxima, solta os que já passaram e só baixa um shiny quando ele aparece.',
+            en: 'The game no longer closes by itself mid-run on phones. The memory it uses now stays flat from start to finish: it loads only the Pokémon of the current and next stage, lets go of the ones already behind you and only downloads a shiny when one shows up.',
+            es: 'El juego ya no se cierra solo en medio de la partida en celulares. La memoria que usa ahora se mantiene estable de principio a fin: carga solo los Pokémon de la fase actual y la siguiente, suelta los que ya pasaron y solo descarga un shiny cuando aparece.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Mais leve no celular', en: 'Lighter on phones', es: 'Más liviano en el celular' },
         notes: [
           {

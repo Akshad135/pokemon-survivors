@@ -8,7 +8,7 @@ import type { DayKey } from './game/day'
 import { isOutbreakSpecies } from './game/outbreak'
 import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunMode, type RunRanks, type RunResult } from './game/ranking'
 import { firstTouch, landingRef, parseInvites, REF_PARAM } from './game/referral'
-import type { Recorder, Replay } from './game/replay'
+import { RULES_VERSION, type Recorder, type Replay } from './game/replay'
 import { cutReplay, STREAM, STREAM_START, type ReplayChunk } from './game/replayStream'
 import { ROUTES, SITE_URL } from './site/routes'
 import { locale } from './i18n'
@@ -35,15 +35,24 @@ const call = (path: string, token: string | null, init: RequestInit = {}) =>
     signal: AbortSignal.timeout(TIMEOUT_MS),
   })
 
-/** A JSON body, or null when the call failed or answered an error. */
-const read = async (path: string, token: string | null, init?: RequestInit) => {
+/** A JSON body, or null when the call failed or answered an error; for an error, the API's `{ error }` when it said one. */
+const read = async (path: string, token: string | null, init?: RequestInit): Promise<{ status: number; body: unknown; error: string | null }> => {
   try {
     const res = await call(path, token, init)
-    const body: unknown = res.ok ? await res.json() : null
-    return { status: res.status, body }
+    if (res.ok) return { status: res.status, body: await res.json(), error: null }
+    const said: unknown = await res.json().catch(() => null)
+    return { status: res.status, body: null, error: isRecord(said) && typeof said.error === 'string' ? said.error : null }
   } catch {
-    return { status: 0, body: null }
+    return { status: 0, body: null, error: null }
   }
+}
+
+/** Called when the API plays newer rules than this build (`RULES_VERSION`): its runs would be refused as `outdated`. */
+let rulesBehind = () => {}
+
+/** Sets what to do when this build's rules fall behind the API's (`main.ts` loads the newer build). */
+export const onRulesBehind = (then: () => void) => {
+  rulesBehind = then
 }
 
 /* ---------------- Ranked runs ---------------- */
@@ -92,12 +101,13 @@ const writeQueue = (queue: Pending[]) => {
 /**
  * What became of a ranked run's result: on the boards (`ranked`, with the
  * player's position, and the challenge board's for a Desafio do dia run),
- * waiting for a connection (`queued`), refused by the server (`rejected`),
- * never ranked because its start got no token (`unranked`), or taken but
+ * waiting for a connection (`queued`), refused by the server (`rejected`;
+ * `outdated` when it played by older rules than the API's: the game was
+ * updated while it played), never ranked because its start got no token (`unranked`), or taken but
  * kept off the boards because its replay didn't reach the API in time while
  * it played (`unlisted`: the connection dropped; only with the API's `STREAM_ENFORCE`).
  */
-export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'unranked' | 'unlisted' }
+export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'outdated' | 'unranked' | 'unlisted' }
 
 const parseRanks = (body: unknown): RunRanks | null => {
   const ranks = isRecord(body) && isRecord(body.ranks) ? body.ranks : null
@@ -204,11 +214,13 @@ const flushOnce = async () => {
   for (const p of readQueue().filter((q) => q.userId === userId)) {
     // The replay's chunks before its result: what they committed must be in by then.
     if (streaming?.token === p.token && !(await streaming.flush())) break
-    const { status, body } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
+    const { status, body, error } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
     if (status === 0 || status === 401 || status === 429 || status >= 500) break
     const ranks = parseRanks(body)
     const listed = !isRecord(body) || body.listed !== false
-    done.set(p.token, !ranks ? { kind: 'rejected' } : listed ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'unlisted' })
+    const outdated = status === 400 && error === 'outdated'
+    if (outdated) rulesBehind()
+    done.set(p.token, outdated ? { kind: 'outdated' } : !ranks ? { kind: 'rejected' } : listed ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'unlisted' })
     // A newer result of the same run (endless mode) may have queued meanwhile: only this one is done.
     writeQueue(readQueue().filter((q) => q.token !== p.token || q.result.time > p.result.time))
   }
@@ -284,6 +296,8 @@ const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket
   const seed = typeof body.seed === 'number' && Number.isSafeInteger(body.seed) ? body.seed : null
   const outbreak = isOutbreakSpecies(body.outbreak) ? body.outbreak : null
   const halloween = typeof body.halloween === 'boolean' ? body.halloween : null
+  // An API older than this answers no `rules`.
+  if (typeof body.rules === 'number' && body.rules > RULES_VERSION) rulesBehind()
   return { userId, day, token: body.token, seed, outbreak, halloween, dealt: { wall: Date.now(), mono: performance.now() } }
 }
 
