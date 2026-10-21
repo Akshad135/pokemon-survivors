@@ -100,15 +100,21 @@ export const isReady = (egg: Egg) => stepsLeft(egg) === 0
 
 const walk = (egg: Egg, steps: number): Egg => ({ tier: egg.tier, steps: Math.min(EGG_TIERS[egg.tier].steps, egg.steps + steps) })
 
+/** Incubator slots still free. */
+export const freeSlots = (eggs: readonly Egg[]) => Math.max(0, EGGS.slots - eggs.length)
+
+/** The ₽ eggs of these tiers are paid out for when they don't fit. */
+export const refundOf = (tiers: readonly EggTier[]) => tiers.reduce((sum, tier) => sum + EGG_TIERS[tier].refund, 0)
+
 /**
  * Banks a run into the incubator: the eggs already in it walk `steps`, then
  * the new ones (with the steps they walked since found) take the free slots.
  * Those that don't fit are paid out in ₽.
  */
 export const depositEggs = (save: Save, steps: number, found: readonly Egg[]) => {
-  const free = Math.max(0, EGGS.slots - save.eggs.length)
+  const free = freeSlots(save.eggs)
   const converted = found.slice(free).map((e) => e.tier)
-  const refund = converted.reduce((sum, tier) => sum + EGG_TIERS[tier].refund, 0)
+  const refund = refundOf(converted)
   const eggs = [...save.eggs.map((e) => walk(e, steps)), ...found.slice(0, free).map((e) => walk(e, 0))]
   return { save: { ...save, eggs, wallet: save.wallet + refund }, converted, refund }
 }

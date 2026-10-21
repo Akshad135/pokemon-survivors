@@ -115,6 +115,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             en: 'Going fullscreen (F11) or switching tabs mid-move no longer leaves your Pokémon walking on its own in one direction.',
             es: 'Entrar en pantalla completa (F11) o cambiar de pestaña en pleno movimiento ya no deja a tu Pokémon caminando solo en una dirección.',
           },
+          {
+            pt: 'Achar um ovo na partida com a incubadora cheia agora avisa na hora que ele vai virar ₽, com o valor, em vez de dizer que foi para a incubadora. Ovos de missões e medalhas que não cabem também dizem quanto viraram. Ovos de Presente Misterioso continuam esperando na caixa até abrir um espaço.',
+            en: 'Finding an egg in a run with a full incubator now tells you right away that it will become ₽, and how much, instead of saying it went to the incubator. Mission and medal eggs that don’t fit say what they became too. Mystery Gift eggs still wait in the box until a slot frees up.',
+            es: 'Encontrar un huevo en la partida con la incubadora llena ahora avisa al momento que se convertirá en ₽, con el monto, en vez de decir que fue a la incubadora. Los huevos de misiones y medallas que no caben también dicen en cuánto se convirtieron. Los huevos de Regalo Misterioso siguen esperando en la caja hasta que se libere un espacio.',
+          },
         ],
       },
     ],
