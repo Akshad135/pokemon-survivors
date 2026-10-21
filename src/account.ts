@@ -8,7 +8,7 @@ import { parseSaveData, type Save } from './game/meta'
 import { isRecord } from './game/parse'
 import type { ProfileName } from './game/ranking'
 import { brasiliaDay } from './game/day'
-import { halloweenGifts, isHalloweenGift } from './game/halloween'
+import { gameGifts as madeByGame, isGameGift } from './game/gameGifts'
 import { loadSave, today, writeSave } from './ui/save'
 
 /**
@@ -495,10 +495,10 @@ const inboxListeners = new Set<(gifts: readonly Gift[]) => void>()
 
 /**
  * Gifts the game makes itself, for guests too: the Noite das Bruxas candy
- * jar's rewards (`halloweenGifts`), worked out from the save, so they never
- * touch the API.
+ * jar's rewards and the Kecleon Shop's loyalty card and Department Store
+ * (`game/gameGifts.ts`), worked out from the save, so they never touch the API.
  */
-const gameGifts = () => halloweenGifts(loadSave(), brasiliaDay(today()))
+const gameGifts = () => madeByGame(loadSave(), brasiliaDay(today()))
 
 /** The gifts waiting to be opened: the account's, then the game's own. */
 export const giftInbox = (): readonly Gift[] => [...inbox, ...gameGifts()]
@@ -544,7 +544,7 @@ export const openGift = (id: string): GiftOutcome | null => {
   if (out.status === 'applied') writeSave(out.save)
   setInbox(inbox.filter((g) => g.id !== id))
   // The game's own gifts aren't the API's to claim.
-  if (!isHalloweenGift(id)) void claimGifts([id])
+  if (!isGameGift(id)) void claimGifts([id])
   if (out.status === 'applied') void syncSave()
   return out
 }

@@ -129,14 +129,18 @@ export const armTm = (tms: TmCase, id: ShelfTm, on: boolean, limit: number): TmC
   return { ...tms, armed: [...armedTms(tms, limit), id].slice(-limit) }
 }
 
+/** Puts `id` in the case for good, armed right away when a shop of `level` has a slot free (the shelf's purchases and Meowth's caravan). */
+export const ownTm = (tms: TmCase, id: ShelfTm, level: ShopLevel): TmCase => {
+  const owned = { ...tms, owned: shelfTms().filter((m) => m === id || tms.owned.includes(m)) }
+  const limit = tmLimit(level)
+  return armedTms(owned, limit).length < limit ? armTm(owned, id, true, limit) : owned
+}
+
 /** Buys a TM for good (₽ into `spent`, like the Vitrine), armed right away when a slot is free. Null when blocked (`tmBlock`). */
 export const buyTm = (save: Save, id: ShelfTm, day: DayKey): Save | null => {
   if (tmBlock(save, id, day)) return null
   const price = tmPrice(id)
-  const owned = { ...save.tms, owned: shelfTms().filter((m) => m === id || save.tms.owned.includes(m)) }
-  const limit = tmLimit(save.shop.level)
-  const tms = armedTms(owned, limit).length < limit ? armTm(owned, id, true, limit) : owned
-  return { ...save, wallet: save.wallet - price, spent: save.spent + price, tms }
+  return { ...save, wallet: save.wallet - price, spent: save.spent + price, tms: ownTm(save.tms, id, save.shop.level) }
 }
 
 /** A finished run's TMs: the regular TM moves it learned join the shelf's list for good. */

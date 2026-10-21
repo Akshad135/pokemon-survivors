@@ -46,7 +46,8 @@ export type GiftKind = GiftContent['kind']
  * brought, a donation (`game/supporters.ts`), a present from the game's
  * admin (`game/admin.ts`, from their handle), joining the community
  * Discord with the account linked (`DISCORD_GIFT`), the Noite das Bruxas
- * candy jar and Caça aos Fantasmas, or supporting the game on the Noite das Bruxas.
+ * candy jar and Caça aos Fantasmas, supporting the game on the Noite das Bruxas,
+ * or the Kecleon Shop's loyalty card and Department Store.
  */
 export type GiftReason =
   | { kind: 'welcome'; from: string | null }
@@ -60,6 +61,10 @@ export type GiftReason =
   | { kind: 'halloweenSupport' }
   /** The Noite das Bruxas Caça aos Fantasmas, every night boss beaten (`game/halloween.ts`): made by the game too. */
   | { kind: 'ghostHunt' }
+  /** A Kecleon Shop loyalty card milestone (`game/loyalty.ts`): made by the game too. */
+  | { kind: 'loyalty'; stamps: number }
+  /** The Kecleon Shop grown to the Department Store (`game/loyalty.ts`): made by the game too. */
+  | { kind: 'tycoon' }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
 
@@ -128,6 +133,8 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (v.kind === 'halloween') return { kind: 'halloween' }
   if (v.kind === 'halloweenSupport') return { kind: 'halloweenSupport' }
   if (v.kind === 'ghostHunt') return { kind: 'ghostHunt' }
+  if (v.kind === 'loyalty') return { kind: 'loyalty', stamps: wholeNumber(v.stamps) }
+  if (v.kind === 'tycoon') return { kind: 'tycoon' }
   return null
 }
 

@@ -132,6 +132,9 @@ import { challengeScreen, challengeShiny } from './ui/challenge'
 import { hatchScene, incubator } from './ui/incubator'
 import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
 import { martDevTools } from './ui/martDev'
+import { CARAVAN, STALL_IDS, STALLS, type StallId } from './data/visitors'
+import { nextMilestone } from './game/loyalty'
+import { plazaVisitors, setDevCaravan, setDevStall } from './ui/visitors'
 import { missionDevTools } from './ui/missionsDev'
 import { pcBoxScreen } from './ui/pcBox'
 import { newsScreen } from './ui/news'
@@ -314,7 +317,7 @@ const meadow: Meadow = {
   at: () => sceneAt(scene),
   talkSpot: () => {
     const at = talkSpot(scene)
-    return at && meadowToScreen(at)
+    return at && { ...meadowToScreen(at), who: at.who }
   },
   tapsShop: (at) => tapsPlaza(scene, meadowAt(at)),
 }
@@ -340,16 +343,27 @@ const shopPlaza: ShopPlaza = {
     devPlazaLevel = null
     celebrateShop(scene, level)
   },
-  lookAt: (keeper) => (scene.plaza.focus = keeper === 'purple' ? 1 : 0),
+  lookAt: (keeper) => (scene.plaza.focus = keeper === 'purple' ? 1 : keeper === 'meowth' ? 'caravan' : 0),
 }
 
-/** The shop over the plaza; `close` leaves it (and `?loja` behind). */
-const openShop = (close: () => void) => {
+/** Who comes by the plaza (Meowth's caravan, a seasonal stall, the golden statue), worked out from the save about once a second. */
+let visitorsAt = -1
+const refreshVisitors = (now: number) => {
+  if (now - visitorsAt < 1000 && visitorsAt >= 0) return
+  visitorsAt = now
+  const next = plazaVisitors(loadSave())
+  const was = scene.plaza.visitors
+  if (next.caravan !== was.caravan || next.stall !== was.stall || next.statue !== was.statue) scene.plaza.visitors = next
+}
+
+/** The shop over the plaza; `close` leaves it (and `?loja` behind); `shelf` opens on Meowth's caravan. */
+const openShop = (close: () => void, shelf?: 'caravan') => {
   const won = wonLastRun
   wonLastRun = false
   return shop(ui, input, {
     plaza: shopPlaza,
     wonLastRun: won,
+    shelf,
     close: () => {
       if (new URLSearchParams(location.search).has(SHOP_PARAM)) history.replaceState(null, '', location.pathname)
       close()
@@ -789,7 +803,15 @@ const MENU_IDLE = 20
  * (the partner select), then the next run's first stage.
  */
 const menuSprites = () => [
-  ...new Set([...(halloweenToday() ? HAUNT_DEX : []), KECLEON_DEX, ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)]),
+  ...new Set([
+    ...(halloweenToday() ? HAUNT_DEX : []),
+    KECLEON_DEX,
+    // The plaza's visitors today: Meowth at his caravan, a seasonal stall's keeper.
+    ...(scene.plaza.visitors.caravan ? [CARAVAN.dex] : []),
+    ...(scene.plaza.visitors.stall ? [STALLS[scene.plaza.visitors.stall].dex] : []),
+    ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)),
+    ...openingDex(upcoming),
+  ]),
 ]
 
 /**
@@ -939,7 +961,8 @@ const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
   }
   for (const id of start.bag) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon(id), alt: '' }), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
-  for (const id of start.tms ?? []) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(id), alt: '' }), rich(t().toast.armedTm(MOVES[id].name))), 3200, `tm-${id}`)
+  // Each armed TM says which of the run's TM drops it is: the first, then the second.
+  for (const [i, id] of (start.tms ?? []).entries()) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(id), alt: '' }), rich(t().toast.armedTm(MOVES[id].name, i))), 3200, `tm-${id}`)
 }
 
 const runHud = (game: Game) => {
@@ -1724,6 +1747,7 @@ const frame = (now: number) => {
     // Attract mode: wild Pokémon stroll through the meadow behind the menus (haunted on the Noite das Bruxas).
     scene.haunted = halloweenToday()
     scene.plaza.level = plazaLevel()
+    refreshVisitors(performance.now())
     stepTitleScene(scene, mdt, view.w, view.h)
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
@@ -2188,6 +2212,33 @@ if (import.meta.env.DEV) {
         else if (level !== undefined) devPlazaLevel = SHOP_LEVEL_IDS.find((l) => l === level) ?? devPlazaLevel
         showTitle({ shop: 'look' })
         return plazaLevel()
+      },
+      /**
+       * Meowth's caravan: `ps.caravan(true)` forces it in (the next weekend day's stock, and the shop to the Kecleon Mart if
+       * it's lower), `ps.caravan(false)` keeps it away, `ps.caravan()` goes back to the calendar; the lobby heads for it.
+       */
+      caravan: (on?: boolean) => {
+        setDevCaravan(on ?? null)
+        if (on) updateSave((s) => (s.shop.level >= CARAVAN.minLevel ? s : { ...s, shop: { ...s.shop, level: CARAVAN.minLevel } }))
+        shopLevel = loadSave().shop.level
+        visitorsAt = -1
+        showTitle({ shop: 'look' })
+        return plazaVisitors(loadSave())
+      },
+      /** Sets the loyalty card's stamps (`ps.stamps(7)`; one short of the next milestone without an argument). Returns the shop. */
+      stamps: (n?: number) => {
+        updateSave((s) => ({ ...s, shop: { ...s.shop, stamps: Math.max(0, n ?? (nextMilestone(s.shop.stamps)?.stamps ?? 101) - 1) } }))
+        visitorsAt = -1
+        showTitle()
+        return loadSave().shop
+      },
+      /** Puts a seasonal stall on the plaza (`ps.stall('halloween')`, `'christmas'`; `null` none; no argument: the calendar's) and goes there. */
+      stall: (id?: StallId | null) => {
+        if (id && !STALL_IDS.includes(id)) return `Stalls: ${STALL_IDS.join(', ')}`
+        setDevStall(id)
+        visitorsAt = -1
+        showTitle({ shop: 'look' })
+        return plazaVisitors(loadSave())
       },
       /** The camouflage easter egg on demand: the lobby goes to the shop and the counter looks empty until you talk. */
       surprise: () => {

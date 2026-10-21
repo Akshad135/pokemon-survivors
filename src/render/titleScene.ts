@@ -27,6 +27,7 @@ import {
   talkAnchor,
   type Piece,
   type Plaza,
+  type PlazaNpc,
 } from './plaza'
 
 /**
@@ -347,13 +348,13 @@ const stepTrip = (s: TitleScene, trip: Trip, dt: number, w: number, h: number) =
   if (trip.t >= trip.time) arrive(s, trip.to)
 }
 
-/** Above the head of the shopkeeper the strolling partner stands close enough to talk to (world px), or null. */
-export const talkSpot = (s: TitleScene): Vec | null => {
+/** Above the head of whoever at the plaza the strolling partner stands close enough to talk to (world px, and who), or null. */
+export const talkSpot = (s: TitleScene): (Vec & { who: PlazaNpc }) | null => {
   const p = s.partner
   return p && p.state === 'out' && !s.trip ? talkAnchor(s.plaza, p) : null
 }
 
-/** Whether a tap (world px) lands on the plaza's shopkeepers, its building or its edge marker. */
+/** Who a tap (world px) on the plaza is for: the shop (its shopkeepers, building or edge marker), Meowth or a stall; null for none. */
 export const tapsPlaza = (s: TitleScene, at: Vec) => plazaTapped(s.plaza, at)
 
 /** Starts a stroll along one of the 8 sprite directions (towards `target` if given) or a short rest. */

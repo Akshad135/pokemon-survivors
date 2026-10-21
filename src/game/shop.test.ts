@@ -186,12 +186,13 @@ describe('investing in the shop', () => {
 describe('the save’s shop', () => {
   it('merges to the higher level, the newest day, and the most bought on the same day', () => {
     const visit = { day: DAY, streak: 2 }
-    const a: ShopSave = { level: 3, day: DAY, bought: { lure: 1, egg: 1 }, gift: true, wishlist: 'honey', visit }
-    const b: ShopSave = { level: 2, day: DAY, bought: { lure: 2, incense: 1 }, gift: false, wishlist: null, visit }
-    expect(mergeShop(a, b)).toEqual({ level: 3, day: DAY, bought: { lure: 2, incense: 1, egg: 1 }, gift: true, wishlist: null, visit })
+    const a: ShopSave = { level: 3, day: DAY, bought: { lure: 1, egg: 1 }, gift: true, wishlist: 'honey', visit, stamps: 12 }
+    const b: ShopSave = { level: 2, day: DAY, bought: { lure: 2, incense: 1 }, gift: false, wishlist: null, visit, stamps: 5 }
+    expect(mergeShop(a, b)).toEqual({ level: 3, day: DAY, bought: { lure: 2, incense: 1, egg: 1 }, gift: true, wishlist: null, visit, stamps: 12 })
     const tomorrow = { ...b, day: addDays(DAY, 1) }
-    expect(mergeShop(a, tomorrow)).toEqual({ ...tomorrow, level: 3 })
-    expect(mergeShop(tomorrow, a)).toEqual({ ...tomorrow, level: 3, wishlist: 'honey' })
+    // The loyalty stamps keep the larger count, whichever day wins.
+    expect(mergeShop(a, tomorrow)).toEqual({ ...tomorrow, level: 3, stamps: 12 })
+    expect(mergeShop(tomorrow, a)).toEqual({ ...tomorrow, level: 3, wishlist: 'honey', stamps: 12 })
   })
 
   it("parses tolerantly, and an older save's counter keeps that day's stock", () => {
@@ -204,7 +205,10 @@ describe('the save’s shop', () => {
       gift: true,
       wishlist: 'egg',
       visit: { day: DAY, streak: 1 },
+      // A save from before the loyalty card gets its last visit's stamp.
+      stamps: 1,
     })
+    expect(parseShop({ level: 2, stamps: 41.7 }).stamps).toBe(41)
     expect(parseShop(undefined, { day: DAY, bought: { lure: 2, incense: 3, egg: 1 } })).toEqual({ ...NO_SHOP, day: DAY, bought: { lure: 2, incense: 3, egg: 1 } })
   })
 })
@@ -217,6 +221,15 @@ describe('shop visits', () => {
     const next = recordVisit(first, addDays(DAY, 1))
     expect(next.visit).toEqual({ day: addDays(DAY, 1), streak: 2 })
     expect(recordVisit(next, addDays(DAY, 3)).visit).toEqual({ day: addDays(DAY, 3), streak: 1 })
+  })
+
+  it('stamp the loyalty card once a day, and a gap never takes stamps away', () => {
+    const first = recordVisit(NO_SHOP, DAY)
+    expect(first.stamps).toBe(1)
+    expect(recordVisit(first, DAY).stamps).toBe(1)
+    const later = recordVisit(recordVisit(first, addDays(DAY, 1)), addDays(DAY, 9))
+    expect(later.stamps).toBe(3)
+    expect(later.visit.streak).toBe(1)
   })
 
   it('merge to the latest day, and the longer streak on the same day', () => {

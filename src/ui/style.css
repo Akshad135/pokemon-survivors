@@ -14411,3 +14411,104 @@ button.hall-tile:hover {
     height: 22px;
   }
 }
+
+/*
+ * The grid shelves snap whole rows to the top as they scroll (and as the
+ * arrows bring a card into view), so the top row never shows cut in half:
+ * a half card read as one without its picture and name.
+ */
+.shop-items.grid {
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: 2px;
+}
+
+/* Room under the last row, so even the last rows can snap to the top instead of stopping half way. */
+.shop-items.grid::after {
+  content: '';
+  grid-column: 1 / -1;
+  height: 120px;
+}
+
+.shop-items.grid > .shop-card,
+.shop-items.grid > .shop-group {
+  scroll-snap-align: start;
+}
+
+/* The loyalty card: a wide card, the stamps in rows of 10 under its name, the next milestone below. */
+.shop-items.list .shop-card.loyalty {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name price'
+    'pic pic'
+    'sub sub';
+  padding: 10px 12px;
+  background: #fff8e8;
+}
+
+.shop-items.list .shop-card.loyalty.chosen {
+  background: #fff;
+}
+
+.shop-items.list .shop-card.loyalty .shop-pic {
+  width: 100%;
+  height: auto;
+}
+
+.shop-items.list .shop-card.loyalty .shop-sub {
+  white-space: normal;
+}
+
+.loyalty-card {
+  display: block;
+  width: 100%;
+}
+
+.loyalty-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+  margin: 4px auto;
+}
+
+.loyalty-cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  font-family: var(--title);
+  font-size: 7px;
+  color: #b0a080;
+  background: #f0e6cc;
+  border: 2px dashed #d8c8a0;
+  border-radius: 50%;
+}
+
+.loyalty-cell.mark {
+  color: #c83030;
+  border-color: #e08070;
+}
+
+.loyalty-cell.on {
+  background: #fff;
+  border: 2px solid #e8b0a0;
+}
+
+.shop-items.list .loyalty-cell .shop-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* The 100-stamp milestone: a mystery for now. */
+.shop-mystery {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  font-family: var(--title);
+  font-size: 16px;
+  color: #f8d030;
+  background: #283048;
+  border-radius: 6px;
+}

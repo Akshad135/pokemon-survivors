@@ -19,6 +19,8 @@ import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/styl
 import type { BagItem } from '../game/bag'
 import type { ShopLevel, ShopProp } from '../data/shop'
 import type { VitrineBlock } from '../game/shop'
+import type { CaravanBlock } from '../game/caravan'
+import type { StallId } from '../data/visitors'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
 import type { SuggestionSort } from '../game/suggestions'
@@ -650,7 +652,7 @@ export const pt = {
       wallpaper: 'Papel de parede da Caixa do PC.',
     } satisfies Record<StyleSlot, string>,
     styles: {
-      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)', pumpkin: 'Abóbora', spectral: 'Espectral' } satisfies Record<FrameId, string>,
+      frame: { classic: 'Clássica', poke: 'Poké Ball', great: 'Great Ball', ultra: 'Ultra Ball', master: 'Master Ball', ambassador: 'Embaixador(a)', supporter: 'Apoiador(a)', pumpkin: 'Abóbora', spectral: 'Espectral', regular: 'Freguês', kecleon: 'Kecleon Dourado', meowth: 'Meowth' } satisfies Record<FrameId, string>,
       background: { night: 'Noite estrelada', meadow: 'Rota 1', forest: 'Floresta de Viridian', cave: 'Monte Moon', snow: 'Monte Prateado', tower: 'Torre de Lavender', supporter: 'Céu dourado', halloween: 'Noite das Bruxas' } satisfies Record<BackgroundId, string>,
       wallpaper: { classic: 'Clássico', forest: 'Folhas', cave: 'Pedrinhas', snow: 'Flocos de neve', tower: 'Fantasminhas', supporter: 'Estrelas douradas', haunted: 'Casa Assombrada' } satisfies Record<WallpaperId, string>,
     },
@@ -664,7 +666,7 @@ export const pt = {
     levels: { 1: 'Carrinho', 2: 'Tenda', 3: 'Loja', 4: 'Kecleon Mart', 5: 'Loja de Departamento' } satisfies Record<ShopLevel, string>,
     level: (name: string, n: number) => `${name} (Nv ${n})`,
     /** The shelves, as tabs (`SHELVES` in ui/shop.ts). */
-    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', expansion: 'Expansão' },
+    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', caravan: 'Caravana', loyalty: 'Fidelidade', expansion: 'Expansão' },
     /** Corner tags on the cards. */
     badges: { gift: 'BRINDE', wish: 'LISTA', new: 'NOVO', armed: 'LEVANDO', level: (n: number) => `NV ${n}`, exclusive: 'EXCLUSIVA', found: 'ACHOU', today: 'HOJE', owned: 'SUA', sure: 'GARANTE' },
     vitrineOf: (weekday: string, level: string) => `Vitrine de ${weekday} · ${level}`,
@@ -701,12 +703,12 @@ export const pt = {
     },
     /** The purple brother's TM shelf (`game/tmShelf.ts`): TMs for good, armed before a run. */
     tms: {
-      intro: (n: number, max: number) => `TMs armadas: ${n}/${max} · o primeiro TM da partida é ela`,
+      intro: (n: number, max: number) => `TMs armadas: ${n}/${max} · ${max > 1 ? 'as primeiras TMs da partida são as suas' : 'a primeira TM da partida é ela'}`,
       groups: { exclusive: 'Exclusivas da loja', found: 'Achou numa partida', today: 'Hoje na prateleira', owned: 'No seu estojo' },
       arm: 'Armar',
       disarm: 'Desarmar',
       armed: 'Armada',
-      text: 'Comprou, fica no estojo pra sempre. Arme antes da partida: o primeiro TM que cair (de um chefe) ou a primeira aula do Tutor de Golpes é ela.',
+      text: 'Comprou, fica no estojo pra sempre. Arme antes da partida: a primeira TM que cair (de um chefe) ou a primeira aula do Tutor de Golpes é ela.',
       exclusive: 'Só o irmão roxo vende.',
       found: 'Você já aprendeu numa partida: fica sempre na prateleira.',
       today: (on: string) => `Na rotação de hoje: 3 TMs por dia. ${on}`,
@@ -748,8 +750,49 @@ export const pt = {
       wishlist: 'Lista de desejos: o Kecleon avisa quando o item volta.',
       brother: 'Chega o irmão roxo do Kecleon.',
       props: { board: 'Quadro de avisos na praça.', flowers: 'Vasos de flores na praça.', lights: 'Varal de luzes na praça.', statue: 'Estátua dourada do Kecleon.' } satisfies Record<ShopProp, string>,
+      caravan: 'Caravana do Meowth na praça, de sexta a domingo.',
+      tycoon: 'Título Magnata e a moldura Kecleon Dourado.',
       owned: 'Já é sua.',
       invest: (price: string) => `Investir ${price}`,
+    },
+    /** Meowth's weekend caravan (`game/caravan.ts`). */
+    caravan: {
+      intro: (haggled: number | null) => `Caravana do Meowth · sexta a domingo · 1 de cada${haggled ? ` · −${haggled}% pechinchado` : ''}`,
+      egg: 'Trazido de longe, só no fim de semana.',
+      goldCap: {
+        text: 'Leva um Pokémon seu direto à Tampinha 3/3: +9% em tudo jogando com ele.',
+        pickTitle: 'Tampinha Dourada pra qual Pokémon?',
+        none: 'Todos os seus Pokémon já estão com 3 Tampinhas.',
+      },
+      frame: 'A moldura do Meowth, só na caravana. Comprou, já está usando.',
+      tm: 'TM exclusiva, pelo preço da prateleira do irmão roxo. Vem armada se tiver vaga.',
+      stock: 'Um de cada por fim de semana.',
+      blocks: { closed: 'Fora', soldOut: 'Levou', owned: 'Já é seu', full: 'Incubadora cheia', poor: 'Faltam ₽' } satisfies Record<CaravanBlock, string>,
+      haggle: {
+        title: 'Pechinchar',
+        text: (stamps: number, off: number) => `Com ${stamps} carimbos no cartão fidelidade do Kecleon, o Meowth dá ${off}% em tudo neste fim de semana.`,
+        done: (off: number) => `Pechinchado: ${off}% em tudo até domingo.`,
+        action: 'Pechinchar',
+        doneAction: 'Pechinchado',
+      },
+    },
+    /** The loyalty card (`game/loyalty.ts`). */
+    loyalty: {
+      intro: (n: number) => `Cartão fidelidade: ${n} ${n === 1 ? 'carimbo' : 'carimbos'} · um por dia de visita`,
+      card: 'Cartão fidelidade',
+      cardText: (n: number) => `${n} ${n === 1 ? 'carimbo' : 'carimbos'}. Ganha um por dia em que passa na loja, sem precisar comprar. Dia perdido não zera nada.`,
+      next: (left: number, reward: string) => `Faltam ${left} para: ${reward}.`,
+      milestone: (n: number) => `${n} carimbos`,
+      rewards: { egg: 'Ovo raro', frame: 'Moldura Freguês', title: 'Título Freguês VIP', statue: 'Estátua dourada', mystery: '???' },
+      texts: {
+        egg: 'Um ovo raro pra incubadora. E o Meowth passa a aceitar pechinchar na caravana.',
+        frame: 'A moldura Freguês, verde Kecleon com carimbos nos cantos.',
+        title: 'O título Freguês VIP, pra mostrar no seu cartão.',
+        statue: 'A estátua dourada do Kecleon, em pé na sua praça.',
+        mystery: 'Segredo do Kecleon. Continue vindo...',
+      },
+      states: { claimed: 'Já é seu', waiting: 'No Presente!', done: 'Na praça', ahead: (left: number) => `Faltam ${left}` },
+      waiting: 'Está esperando no Presente!, no lobby.',
     },
     investConfirm: (name: string, price: string) => `Investir ${price} e transformar a loja em ${name}? Não tem reembolso.`,
     hint: 'Q E prateleira · SETAS escolher · ENTER comprar · F lista · ESC voltar',
@@ -929,6 +972,8 @@ export const pt = {
     halloween: 'Do pote de doces da Noite das Bruxas',
     halloweenSupport: 'Por apoiar na Noite das Bruxas ♥',
     ghostHunt: 'Por vencer todos os chefes da Caça aos Fantasmas',
+    loyalty: (n: number) => `Por ${n} carimbos no cartão fidelidade do Kecleon`,
+    tycoon: 'Por transformar a loja do Kecleon em Loja de Departamento',
   },
 
   /**
@@ -1172,7 +1217,7 @@ export const pt = {
     revive: 'O *Revive* te pôs de pé!',
     maxRevive: 'O *Max Revive* te pôs de pé com metade do HP!',
     stolen: 'Você roubou o item que ele segurava!',
-    armedTm: (name: string) => `TM armada: *${name}*. O primeiro TM da partida é ela!`,
+    armedTm: (name: string, order: number) => `TM armada: *${name}*. A ${order === 0 ? 'primeira' : 'segunda'} TM da partida é ela!`,
   },
 
   /** Mega Evolution: the button, its toasts, the partner details and what each Mega form does. */
@@ -1768,7 +1813,7 @@ export const pt = {
     titleTag: 'TÍTULO',
     equipped: 'EM USO',
     /** Titles that come as a Mystery Gift, with how they were earned. */
-    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação', pumpkinKing: 'Encheu o pote de doces da Noite das Bruxas', exorcist: 'Venceu todos os chefes da Caça aos Fantasmas' } satisfies Record<GiftTitleId, string>,
+    giftTitles: { ambassador: 'Trouxe 3 amigos para o jogo', supporter: 'Apoiou o projeto com uma doação', pumpkinKing: 'Encheu o pote de doces da Noite das Bruxas', exorcist: 'Venceu todos os chefes da Caça aos Fantasmas', vipCustomer: 'Juntou 30 carimbos no cartão fidelidade do Kecleon', tycoon: 'Transformou a loja do Kecleon em Loja de Departamento' } satisfies Record<GiftTitleId, string>,
     newMedals: 'Novas medalhas',
     names: {
       firstRun: 'Primeiros passos',
@@ -1855,6 +1900,8 @@ export const pt = {
       supporter: 'Apoiador(a)',
       pumpkinKing: 'Rei das Abóboras',
       exorcist: 'Exorcista',
+      vipCustomer: 'Freguês VIP',
+      tycoon: 'Magnata',
     } satisfies Record<TitleId, string>,
     goals: {
       runs: (n: string) => (n === '1' ? 'Jogue uma partida' : `Jogue ${n} partidas`),
@@ -4509,6 +4556,10 @@ export const pt = {
       purpleTms: 'Psst... TMs de primeira. Arme uma e ela aparece na partida. Garantido.',
       purpleEvolution: 'Pedras e relíquias! O Eevee nunca te oferece o Glaceon? Comigo isso acaba.',
       greenBack: 'Voltou pro meu lado do balcão? Fica à vontade!',
+      stamp: (n: number) => `Carimbo do dia! Agora são ${n} no seu cartão fidelidade.`,
+      milestone: (n: number) => `${n} carimbos! Deixei um presente pra você no lobby, freguês!`,
+      statue: '60 carimbos! Mandei fazer uma estátua minha... digo, nossa! Tá lá na praça!',
+      tycoon: 'Loja de Departamento! Sócio, agora você é um Magnata! Deixei um presente no lobby.',
     },
     /** After a purchase, one of these in turn. */
     thanks: ['Obrigado! Volte sempre!', 'Ótima escolha!', 'Negócio fechado!', 'Hehe, bom proveito!'],
@@ -4517,6 +4568,19 @@ export const pt = {
     weekdays: ['no domingo', 'na segunda', 'na terça', 'na quarta', 'na quinta', 'na sexta', 'no sábado'],
     /** "Vitrine de ___": the weekdays from Sunday. */
     dayNames: ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'],
+    /** Meowth, at his weekend caravan (`game/caravan.ts`). */
+    meowth: {
+      hello: ['Ei! Você é aquele que me bateu no mapa! ...Bom, cliente é cliente.', 'Nyahaha! Mercadoria fina, trazida de longe. Só no fim de semana!', 'Chegou na hora! Segunda eu já pego a estrada.'],
+      haggleYes: (off: number) => `Tá bom, tá bom! ${off}% pro freguês do Kecleon. Mas não espalha!`,
+      haggleNo: (stamps: number) => `Pechinchar? Nyah! Você nem é freguês! Volta com ${stamps} carimbos no cartão do Kecleon.`,
+      haggleAgain: 'Já te dei desconto! Quer me deixar sem moedas pro Pay Day?',
+      thanks: ['Nyahaha! Negócio fechado!', 'Pagou, levou! Sem devolução!', 'Isso brilha mais que a moeda da minha testa!'],
+    },
+    /** The seasonal stalls' keepers (`STALLS` in data/visitors.ts), line by line. */
+    stalls: {
+      halloween: ['Buu... A Noite das Bruxas chegou à praça.', 'Junte doces nas partidas: o pote troca por prêmios. Vem ver!'],
+      christmas: ['Deli! A Delibird Presentes chegou à praça!', 'Ainda tô embrulhando tudo. Volta no Natal que o saco vai estar cheio!'],
+    } satisfies Record<StallId, readonly string[]>,
   },
 
   /** Explainer toast the first time each enemy trait shows up in a run. */
