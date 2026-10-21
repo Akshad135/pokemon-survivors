@@ -239,7 +239,7 @@ describe('replays', () => {
       const again = resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)
       expect(again, id).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     }
-   }, 30_000)
+  }, 30_000)
 
   it('starts a Rare Candy run at Lv 3, its two level-ups right after the opening draft', () => {
     const g = startGame({ ...START, bag: ['rareCandy'] })
