@@ -82,11 +82,12 @@ type Memo3<A, B, C, R> = Map<A, Map<B, Map<C, R>>>
 
 /**
  * Caches a three-argument `fn` in nested Maps, so a hit (hundreds per frame:
- * every shadow, every damage number) allocates nothing. Past `max` entries the
- * cache starts a new generation and keeps the last one around for a while:
- * what's still drawn moves over on its next use, the rest goes with it.
+ * every shadow, every damage number) allocates nothing. Once a generation's entries
+ * add up to `max` (each weighs `cost`, 1 by default) the cache starts a new
+ * generation and keeps the last one around for a while: what's still drawn moves
+ * over on its next use, the rest goes with it.
  */
-const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity) => {
+export const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity, cost: (value: R) => number = () => 1) => {
   let fresh: Memo3<A, B, C, R> = new Map()
   let old: Memo3<A, B, C, R> = new Map()
   let size = 0
@@ -112,12 +113,23 @@ const memo3 = <A, B, C, R>(fn: (a: A, b: B, c: C) => R, max = Infinity) => {
       size = 0
     }
     store(a, b, c, v)
-    size++
+    size += cost(v)
     return v
   }
 }
 
-/** Hard-edged filled ellipse (no antialiasing). Cached per size/color. */
+/**
+ * What a cached canvas weighs in a bounded `memo3`: its pixels, plus a flat share for the
+ * canvas and its context, which cost memory however small the canvas is.
+ */
+const canvasWeight = (c: PixelSprite) => c.width * c.height + 1024
+/** Pixels' worth of canvases a shape cache keeps per generation (2 MB; two generations at most). */
+const SHAPE_BUDGET = 512 * 1024
+
+/**
+ * Hard-edged filled ellipse (no antialiasing). Cached per size/color, bounded: telegraphs
+ * and shockwaves grow through every radius, so a long run would keep a thousand of them.
+ */
 export const ellipse = memo3((rx: number, ry: number, color: string): PixelSprite => {
   const w = Math.round(rx) * 2 + 1
   const h = Math.round(ry) * 2 + 1
@@ -134,9 +146,9 @@ export const ellipse = memo3((rx: number, ry: number, color: string): PixelSprit
     if (x1 > x0) ctx.fillRect(x0, y, x1 - x0, 1)
   }
   return canvas
-})
+}, SHAPE_BUDGET, canvasWeight)
 
-/** Hard-edged ring (circle outline) of a given thickness. Cached. */
+/** Hard-edged ring (circle outline) of a given thickness. Cached and bounded, like `ellipse`. */
 export const ring = memo3((radius: number, thickness: number, color: string): PixelSprite => {
   const r = Math.round(radius)
   const size = r * 2 + 1
@@ -150,7 +162,7 @@ export const ring = memo3((radius: number, thickness: number, color: string): Pi
     }
   }
   return canvas
-})
+}, SHAPE_BUDGET, canvasWeight)
 
 /** Draws a sprite centered at (x, y), snapped to whole pixels. */
 export const blitCentered = (ctx: CanvasRenderingContext2D, sprite: CanvasImageSource & { width: number; height: number }, x: number, y: number) =>
@@ -216,7 +228,7 @@ const outlinedText = memo3((text: string, color: string, outline: string): Pixel
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1]] as const) plot(outline, dx, dy)
   plot(color, 0, 0)
   return canvas
-}, 1024)
+}, 256)
 
 /** A number or short word in the in-world font, with the usual dark outline unless told otherwise. */
 export const textSprite = (text: string, color: string, outline = '#181010') => outlinedText(text, color, outline)
