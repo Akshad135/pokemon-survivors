@@ -152,6 +152,8 @@ const layoutOf = (level: ShopLevel): Layout | null => {
   const building = arts.get(`lv${level}`)
   if (!building || ART_IDS.some((id) => !arts.has(id))) return null
   const half = Math.round(building.w / 2)
+  // The 3/4 buildings of Lv 4 and 5 stand on a deep diamond: the pad and the cobblestones reach back under all of it.
+  const depth = level >= 4 ? Math.round(half * 0.45) : 0
   // Lanterns flank the building, the rest of the props sit outside them.
   const lamp = Math.max(104, half + 14)
   const keepers: KeeperSpot[] =
@@ -168,7 +170,7 @@ const layoutOf = (level: ShopLevel): Layout | null => {
           ]
   const layout: Layout = {
     building,
-    pad: { y: -6, rx: half + 4, ry: Math.round(building.w / 7) },
+    pad: { y: -6 - depth, rx: half + 4 + (depth ? 6 : 0), ry: Math.round(building.w / 7) + depth },
     keepers,
     counter: level === 3 ? LV3_COUNTER : null,
     props: [
@@ -179,7 +181,7 @@ const layoutOf = (level: ShopLevel): Layout | null => {
       ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: lamp + 16, y: 66 }] : []),
     ],
     spot: { x: 0, y: 34 },
-    cobbles: { x: 0, y: 36, rx: lamp + 66, ry: 78 },
+    cobbles: { x: 0, y: 36 - Math.round(depth * 0.7), rx: lamp + 66, ry: 78 + Math.round(depth * 1.1) },
   }
   layouts.set(level, layout)
   return layout
