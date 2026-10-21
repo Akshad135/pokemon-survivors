@@ -1,6 +1,6 @@
 import { range, type Rng } from '../engine/rng'
 import {
-  BOSS_DIFFICULTY, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, MIN_TELEGRAPH, STANCES,
+  BOSS_DIFFICULTY, BOSS_DISGUISE, BOSS_PATTERNS, BOSS_PHASES, BOSS_RAGE, MIN_TELEGRAPH, STANCES,
   type BlastSafe, type BossPattern, type BossPhase, type BossStance, type HazardVisual,
 } from '../data/bosses'
 import type { EnemyId } from '../data/enemies'
@@ -47,7 +47,7 @@ export type TimeStop = { wait: number; left: number; total: number }
  * one knocked out is `down`, out of play until its partner revives it or falls
  * too (`game/domainPair.ts`). `held` is the HP a linked boss holds through its
  * phase's opening. `guards` are the ids of the barrier keepers (`guard`) that
- * stand for it now.
+ * stand for it now. `busted`: its Disguise (`BOSS_DISGUISE`) took its hit.
  */
 export type BossFight = {
   stance: BossStance
@@ -70,6 +70,7 @@ export type BossFight = {
   down: boolean
   held: number
   guards: number[]
+  busted: boolean
 }
 
 /** The phases of a boss that fights in phases, or null. */
@@ -156,6 +157,7 @@ export const createFight = (rng: Rng, difficulty: Difficulty, home = { x: 0, y: 
   down: false,
   held: 0,
   guards: [],
+  busted: false,
 })
 
 /** Counts the stance down; returns true on the tick it swaps (with a fresh seeded duration). */
@@ -313,3 +315,9 @@ export const phaseTaken = (e: { kind: EnemyId; fight: BossFight | null }) => (e.
 /** The share of HP a pair of linked bosses has left together (one pool). */
 export const pooledShare = (a: { hp: number; maxHp: number }, b: { hp: number; maxHp: number } | undefined) =>
   b ? (Math.max(0, a.hp) + Math.max(0, b.hp)) / (a.maxHp + b.maxHp) : a.hp / a.maxHp
+
+/** Whether a hit of `damage` lands on a boss's Disguise (`BOSS_DISGUISE`): the first one big enough, while the disguise is still up (from its spawn on). */
+export const disguiseTakes = (e: { kind: EnemyId; maxHp: number; fight: BossFight | null }, damage: number) => {
+  const share = BOSS_DISGUISE[e.kind]
+  return share !== undefined && e.fight?.busted !== true && damage >= e.maxHp * share
+}

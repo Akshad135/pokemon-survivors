@@ -10,11 +10,12 @@ import { parseDonation } from '../../src/data/donations'
 import { isPollOption } from '../../src/data/supporters'
 import { isDayKey } from '../../src/game/day'
 import { isDifficulty } from '../../src/game/difficulty'
+import { halloweenAt } from '../../src/game/halloween'
 import { parseSaveData } from '../../src/game/meta'
 import { outbreakAt } from '../../src/game/outbreak'
 import { isRecord } from '../../src/game/parse'
 import { isBoardPeriod, isPlayable, isRunMode, parseDisplayName, parseHandle, parseRunResult, runMode } from '../../src/game/ranking'
-import { parseReplay, rulesStanding } from '../../src/game/replay'
+import { parseReplay, RULES_VERSION, rulesStanding } from '../../src/game/replay'
 import { parseChunk } from '../../src/game/replayStream'
 import { banGated, parseModeration, parseReport } from '../../src/game/reports'
 import { parseCode } from '../../src/game/supporters'
@@ -114,8 +115,9 @@ const CHUNK_ERRORS = { unknown: 404, replaced: 409, committed: 409, gap: 409, cl
  *   what is stored now, for the device to keep (see `applyPush`).
  * - `GET /me` (auth): `{ profile }`, the player's handle and name, null before they pick them.
  * - `PUT /me` (auth) `{ handle, name }`: sets them. 409 `{ suggestion }` when the handle is taken.
- * - `POST /runs` (auth) `{ challenge? }`: `{ token, seed }` for the player's next run: the start
- *   token and the seed the run must play (random, from `crypto`). It replaces the player's other
+ * - `POST /runs` (auth) `{ challenge? }`: `{ token, seed, rules }` for the player's next run: the start
+ *   token, the seed the run must play (random, from `crypto`) and the rules its replay must play by
+ *   (`RULES_VERSION`: a game behind them loads the newer build first). It replaces the player's other
  *   unfinished token of the same kind, so only one regular and one challenge token are live at a
  *   time. 429 past the start rate limit. With `challenge` (a `YYYY-MM-DD` Brasília day) it's that
  *   day's Desafio do dia, whose seed is the day's (`dailyChallenge`); 400 when that day's challenge
@@ -252,8 +254,9 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const challenge = isRecord(body) && body.challenge !== undefined ? body.challenge : null
     if (challenge !== null && (!isDayKey(challenge) || !challengeOpen(challenge, new Date()))) return c.json({ error: 'not an open challenge' }, 400)
     const started = await ranking.startRun(c.var.userId, challenge)
-    // The day's outbreak by this clock (the one `outbreakFits` checks against), so a wrong device clock can't play another day's.
-    return started ? c.json({ ...started, outbreak: outbreakAt(new Date()) }, 201) : c.json({ error: 'too many runs' }, 429)
+    // The day by this clock (the one `outbreakFits` and `halloweenFits` check against): its outbreak and whether it's haunted, so a wrong device clock can't play another day's.
+    const now = new Date()
+    return started ? c.json({ ...started, outbreak: outbreakAt(now), halloween: halloweenAt(now), rules: RULES_VERSION }, 201) : c.json({ error: 'too many runs' }, 429)
   })
 
   app.post('/runs/:token/start', auth, async (c) => {

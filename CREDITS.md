@@ -1211,6 +1211,12 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 493 | Arceus (shiny) | baronessfaron | baronessfaron |
 | 442 | Spiritomb | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 442 | Spiritomb (shiny) | Anonymous | baronessfaron |
+| 710 | Pumpkaboo | baronessfaron | baronessfaron, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 710 | Pumpkaboo (shiny) | Emboarger | ◥θ┴θ◤, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
+| 429 | Mismagius | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
+| 711 | Gourgeist | JFain, baronessfaron | baronessfaron, [Soulja](https://twitter.com/OlSoulja), [Emmuffin](https://twitter.com/Ernmuffin) |
+| 430 | Honchkrow | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
+| 477 | Dusknoir | [CHUNSOFT](https://www.spike-chunsoft.com/), [Caitemis](https://caitemis-art.tumblr.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 
 ## Cries
 

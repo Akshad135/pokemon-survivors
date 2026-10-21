@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { driftLinks } from '../game/verbEvolvedRules'
@@ -101,8 +101,8 @@ const drawFuryBlaze = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const life = 1 - a.age / a.ttl
   ctx.globalAlpha = Math.min(1, life * 1.8)
-  blitCentered(ctx, ellipse(Math.round(r), Math.max(1, Math.round(r * 0.45)), 'rgba(232,88,24,0.18)'), a.x, a.y)
-  blitCentered(ctx, ellipse(Math.round(r * 0.55), Math.max(1, Math.round(r * 0.25)), 'rgba(248,168,40,0.32)'), a.x, a.y)
+  blitEllipse(ctx, Math.round(r), Math.max(1, Math.round(r * 0.45)), 'rgba(232,88,24,0.18)', a.x, a.y)
+  blitEllipse(ctx, Math.round(r * 0.55), Math.max(1, Math.round(r * 0.25)), 'rgba(248,168,40,0.32)', a.x, a.y)
   const frames = VE.furyFlame()
   const sprite = frames[Math.floor((t * 12 + a.id) % 2)]!
   const sink = Math.round((1 - life) * (1 - life) * 10)
@@ -121,15 +121,15 @@ const drawFuryGlow = (ctx: Ctx, g: Game, a: Attack, t: number) => {
   const p = g.player
   const r = radiusOf(a)
   if (!p.moving) {
-    blitCentered(ctx, ellipse(Math.round(r * 0.7), Math.max(1, Math.round(r * 0.3)), 'rgba(168,32,16,0.25)'), p.x, p.y)
+    blitEllipse(ctx, Math.round(r * 0.7), Math.max(1, Math.round(r * 0.3)), 'rgba(168,32,16,0.25)', p.x, p.y)
     return
   }
   const pulse = Math.floor(t * 10) % 2
-  blitCentered(ctx, ellipse(Math.round(r + 2 + pulse), Math.max(1, Math.round((r + 2) * 0.45)), 'rgba(232,72,24,0.28)'), p.x, p.y)
-  blitCentered(ctx, ellipse(Math.round(r * 0.6), Math.max(1, Math.round(r * 0.28)), 'rgba(248,200,80,0.35)'), p.x, p.y)
+  blitEllipse(ctx, Math.round(r + 2 + pulse), Math.max(1, Math.round((r + 2) * 0.45)), 'rgba(232,72,24,0.28)', p.x, p.y)
+  blitEllipse(ctx, Math.round(r * 0.6), Math.max(1, Math.round(r * 0.28)), 'rgba(248,200,80,0.35)', p.x, p.y)
   // The blaze wrapping the body, behind the sprite.
-  blitCentered(ctx, ellipse(12 + pulse, 15 + pulse, 'rgba(232,72,24,0.35)'), p.x, p.y - 12)
-  blitCentered(ctx, ellipse(8, 11, 'rgba(248,160,40,0.4)'), p.x, p.y - 13 - pulse)
+  blitEllipse(ctx, 12 + pulse, 15 + pulse, 'rgba(232,72,24,0.35)', p.x, p.y - 12)
+  blitEllipse(ctx, 8, 11, 'rgba(248,160,40,0.4)', p.x, p.y - 13 - pulse)
   cloakFlames(ctx, g, a, t, false)
 }
 
@@ -187,7 +187,7 @@ const drawSludgeWave = (ctx: Ctx, a: Attack, t: number) => {
 const drawLandingShadow = (ctx: Ctx, a: Attack, ring: readonly string[]) => {
   if (a.age < a.activeFrom) {
     const k = a.age / a.activeFrom
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(2 + k * 5)), Math.max(1, Math.round(1 + k * 2)), 'rgba(16,24,48,0.32)'), a.x, a.y + 5)
+    blitEllipse(ctx, Math.max(1, Math.round(2 + k * 5)), Math.max(1, Math.round(1 + k * 2)), 'rgba(16,24,48,0.32)', a.x, a.y + 5)
     return
   }
   const e = (a.age - a.activeFrom) / (a.ttl - a.activeFrom)
@@ -202,8 +202,8 @@ const drawHoleVoid = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const open = Math.min(1, a.age / 0.15) * fadeOut(a, 0.12)
   ctx.globalAlpha = open
-  blitCentered(ctx, ellipse(Math.round(r * 1.05), Math.max(1, Math.round(r * 0.55)), 'rgba(48,16,64,0.45)'), a.x, a.y + 4)
-  blitCentered(ctx, ellipse(Math.round(r * 0.6), Math.max(1, Math.round(r * 0.32)), 'rgba(16,4,24,0.6)'), a.x, a.y + 4)
+  blitEllipse(ctx, Math.round(r * 1.05), Math.max(1, Math.round(r * 0.55)), 'rgba(48,16,64,0.45)', a.x, a.y + 4)
+  blitEllipse(ctx, Math.round(r * 0.6), Math.max(1, Math.round(r * 0.32)), 'rgba(16,4,24,0.6)', a.x, a.y + 4)
   for (let i = 0; i < 14; i++) {
     const ph = (t * 1.6 + hash2(a.id, i)) % 1
     const ang = hash2(a.id, i, 2) * TAU + ph * 3
@@ -223,7 +223,7 @@ const drawWings = (ctx: Ctx, g: Game, a: Attack) => {
   const beat = Math.round(Math.sin(a.age * 18) * 2)
   const y = p.y - 26 - beat
   ctx.globalAlpha = fadeOut(a, 0.15)
-  blitCentered(ctx, ellipse(Math.round(10 + 14 * k), Math.round(7 + 4 * k), 'rgba(112,20,40,0.25)'), p.x, y + 6)
+  blitEllipse(ctx, Math.round(10 + 14 * k), Math.round(7 + 4 * k), 'rgba(112,20,40,0.25)', p.x, y + 6)
   for (const [s, side] of [[left!, -1], [right!, 1]] as const) {
     const w = Math.max(1, Math.round(s.width * k))
     // Revealed from the root (at the shoulder) outward.
@@ -240,7 +240,7 @@ const drawUppercutGround = (ctx: Ctx, a: Attack) => {
   const k = Math.min(1, a.age / UPPER.rise)
   ctx.globalAlpha = a.age < UPPER.rise ? 1 : fadeOut(a, 0.3)
   const y = a.y + r * 0.6
-  blitCentered(ctx, ellipse(Math.round(r * (0.5 + 0.5 * k)), Math.max(1, Math.round(r * 0.3 * (0.5 + 0.5 * k))), 'rgba(40,24,8,0.45)'), a.x, y)
+  blitEllipse(ctx, Math.round(r * (0.5 + 0.5 * k)), Math.max(1, Math.round(r * 0.3 * (0.5 + 0.5 * k))), 'rgba(40,24,8,0.45)', a.x, y)
   ctx.fillStyle = '#402810'
   for (let i = 0; i < 7; i++) {
     const ang = (i / 7) * TAU + a.id
@@ -286,9 +286,9 @@ const drawSpout = (ctx: Ctx, g: Game, a: Attack, t: number) => {
   px(ctx, p.x - 4 + wob, p.y - 4 - h, '#88b8f0', 8, h)
   px(ctx, p.x - 1 + wob, p.y - 4 - h, '#ffffff', 3, h)
   for (let y = p.y - 4 - h + ((t * 120) % 8); y < p.y - 4; y += 8) px(ctx, p.x - 6 + wob, y, '#d8f0ff', 2, 3)
-  blitCentered(ctx, ellipse(12, 6, '#ffffff'), p.x + wob, p.y - 4 - h)
-  blitCentered(ctx, ellipse(9, 4, '#d8f0ff'), p.x + wob, p.y - 3 - h)
-  blitCentered(ctx, ellipse(10, 3, 'rgba(136,184,240,0.6)'), p.x, p.y - 2)
+  blitEllipse(ctx, 12, 6, '#ffffff', p.x + wob, p.y - 4 - h)
+  blitEllipse(ctx, 9, 4, '#d8f0ff', p.x + wob, p.y - 3 - h)
+  blitEllipse(ctx, 10, 3, 'rgba(136,184,240,0.6)', p.x, p.y - 2)
   for (let i = 0; i < 6; i++) {
     const ang = -Math.PI / 2 + (hash2(a.id, i) - 0.5) * 2.2
     const d = (t * 60 + hash2(a.id, i, 1) * 20) % 22
@@ -340,17 +340,17 @@ export const drawVerbEvolvedGround = (ctx: Ctx, g: Game, t: number) => {
         drawFrostStreak(ctx, a)
         break
       case 'gearGrind':
-        blitCentered(ctx, ellipse(Math.round(radiusOf(a) * 0.8), Math.max(1, Math.round(radiusOf(a) * 0.3)), 'rgba(16,16,24,0.3)'), a.x, a.y + radiusOf(a) + 2)
+        blitEllipse(ctx, Math.round(radiusOf(a) * 0.8), Math.max(1, Math.round(radiusOf(a) * 0.3)), 'rgba(16,16,24,0.3)', a.x, a.y + radiusOf(a) + 2)
         break
       case 'axeSplinter':
         ctx.globalAlpha = Math.min(1, a.age / 0.2) * fadeOut(a, 0.6)
-        blitCentered(ctx, ellipse(3, 1, 'rgba(24,16,8,0.35)'), a.x, a.y + 2)
+        blitEllipse(ctx, 3, 1, 'rgba(24,16,8,0.35)', a.x, a.y + 2)
         ctx.globalAlpha = 1
         break
       case 'explosion': {
         ctx.globalAlpha = fadeOut(a, 0.4) * 0.85
         const r = radiusOf(a)
-        blitCentered(ctx, ellipse(Math.round(r * 0.85), Math.max(1, Math.round(r * 0.4)), 'rgba(40,24,16,0.42)'), a.x, a.y + 8)
+        blitEllipse(ctx, Math.round(r * 0.85), Math.max(1, Math.round(r * 0.4)), 'rgba(40,24,16,0.42)', a.x, a.y + 8)
         ctx.globalAlpha = 1
         break
       }
@@ -384,7 +384,7 @@ const drawFuryCloak = (ctx: Ctx, g: Game, a: Attack, t: number) => {
     for (let i = 1; i <= 5; i++) {
       const k = i / 5
       ctx.globalAlpha = 0.55 * (1 - k)
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(6 * (1 - k * 0.6))), Math.max(1, Math.round(5 * (1 - k * 0.6))), i < 3 ? '#f8a028' : '#e84818'), p.x - (vx / sp) * i * 5, p.y - 10 - (vy / sp) * i * 5)
+      blitEllipse(ctx, Math.max(1, Math.round(6 * (1 - k * 0.6))), Math.max(1, Math.round(5 * (1 - k * 0.6))), i < 3 ? '#f8a028' : '#e84818', p.x - (vx / sp) * i * 5, p.y - 10 - (vy / sp) * i * 5)
     }
     ctx.globalAlpha = 1
   }
@@ -414,8 +414,8 @@ const drawSeedSun = (ctx: Ctx, a: Attack, t: number) => {
   const sun = VE.sun()
   ctx.globalAlpha = fadeOut(a, 0.25)
   const glow = Math.round(5 + swell * 8 + Math.sin(t * 20) * 1)
-  blitCentered(ctx, ellipse(glow + 3, glow + 3, 'rgba(248,216,80,0.25)'), a.x, a.y)
-  blitCentered(ctx, ellipse(glow, glow, 'rgba(255,248,176,0.45)'), a.x, a.y)
+  blitEllipse(ctx, glow + 3, glow + 3, 'rgba(248,216,80,0.25)', a.x, a.y)
+  blitEllipse(ctx, glow, glow, 'rgba(255,248,176,0.45)', a.x, a.y)
   blitRotated(ctx, sun, a.x, a.y, t * 3, swell < 1 ? 1 : 2)
   if (swell < 1) {
     // Light motes drawn into the sun.
@@ -462,7 +462,7 @@ const drawSeedBloom = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const e = a.age / a.ttl
   ctx.globalAlpha = Math.max(0, 1 - e * e)
-  if (a.age < 0.06) blitCentered(ctx, ellipse(Math.round(r), Math.round(r * 0.8), 'rgba(255,255,220,0.8)'), a.x, a.y)
+  if (a.age < 0.06) blitEllipse(ctx, Math.round(r), Math.round(r * 0.8), 'rgba(255,255,220,0.8)', a.x, a.y)
   for (let i = 0; i < 6; i++) {
     const ang = (i / 6) * TAU + a.id
     const d = r * (0.3 + e * 0.8)
@@ -515,7 +515,7 @@ const drawDriftOrb = (ctx: Ctx, a: Attack, t: number) => {
       const back = m.angle - Math.sign(m.spin || 1) * i * 0.16
       const cx = a.x - Math.cos(m.angle) * m.radius + Math.cos(back) * m.radius
       const cy = a.y - Math.sin(m.angle) * m.radius + Math.sin(back) * m.radius
-      blitCentered(ctx, ellipse(Math.max(1, Math.round(r * (1 - i * 0.2))), Math.max(1, Math.round(r * (1 - i * 0.2))), i === 1 ? '#58e8f8' : '#8040f8'), cx, cy)
+      blitEllipse(ctx, Math.max(1, Math.round(r * (1 - i * 0.2))), Math.max(1, Math.round(r * (1 - i * 0.2))), i === 1 ? '#58e8f8' : '#8040f8', cx, cy)
     }
     ctx.globalAlpha = 1
   }
@@ -547,8 +547,8 @@ const drawSludgeGeyser = (ctx: Ctx, a: Attack) => {
     px(ctx, a.x - 4, a.y - h, '#381040', 9, h)
     px(ctx, a.x - 3, a.y - h, '#9038a0', 7, h)
     px(ctx, a.x - 1, a.y - h, '#d080e0', 3, h)
-    blitCentered(ctx, ellipse(6, 3, '#9038a0'), a.x, a.y - h)
-    blitCentered(ctx, ellipse(4, 2, '#d080e0'), a.x, a.y - h - 1)
+    blitEllipse(ctx, 6, 3, '#9038a0', a.x, a.y - h)
+    blitEllipse(ctx, 4, 2, '#d080e0', a.x, a.y - h - 1)
   }
   for (let i = 0; i < 6; i++) {
     const ang = -Math.PI / 2 + (hash2(a.id, i) - 0.5) * 2.6
@@ -573,9 +573,9 @@ const drawBlast = (ctx: Ctx, a: Attack, t: number, big: boolean) => {
   ctx.globalAlpha = Math.max(0, 1 - e * e)
   if (e < 0.5) {
     const heart = Math.max(2, Math.round(front * (big ? 0.5 : 0.6) * (1 - e * 1.6)))
-    blitCentered(ctx, ellipse(heart + 3, Math.round((heart + 3) * 0.85), '#f8c030'), a.x, a.y)
-    blitCentered(ctx, ellipse(heart, Math.round(heart * 0.85), '#fff4b0'), a.x, a.y - (Math.floor(t * 30) % 2))
-    blitCentered(ctx, ellipse(Math.max(1, Math.round(heart * 0.6)), Math.max(1, Math.round(heart * 0.5)), '#ffffff'), a.x, a.y)
+    blitEllipse(ctx, heart + 3, Math.round((heart + 3) * 0.85), '#f8c030', a.x, a.y)
+    blitEllipse(ctx, heart, Math.round(heart * 0.85), '#fff4b0', a.x, a.y - (Math.floor(t * 30) % 2))
+    blitEllipse(ctx, Math.max(1, Math.round(heart * 0.6)), Math.max(1, Math.round(heart * 0.5)), '#ffffff', a.x, a.y)
   }
   for (let i = 0; i < n; i++) {
     const ang = (i / n) * TAU + hash2(a.id, i) * 0.4
@@ -586,9 +586,9 @@ const drawBlast = (ctx: Ctx, a: Attack, t: number, big: boolean) => {
     const size = Math.max(2, Math.round(front * (big ? 0.1 : 0.13) * (0.8 + hash2(a.id, i, 2) * 0.4) * (1 - e * 0.5)))
     const smoke = e > 0.25 + hash2(a.id, i, 3) * 0.3
     ctx.globalAlpha = Math.max(0, 1 - e * e) * (smoke ? 0.7 : 1)
-    blitCentered(ctx, ellipse(size + 1, size + 1, smoke ? '#383030' : '#a01808'), x, y)
-    blitCentered(ctx, ellipse(size, size, smoke ? '#686060' : '#e85818'), x, y - 1)
-    blitCentered(ctx, ellipse(Math.max(1, size - 2), Math.max(1, size - 2), smoke ? '#a09890' : e < 0.1 ? '#fff4b0' : '#f8c030'), x - 1, y - 2)
+    blitEllipse(ctx, size + 1, size + 1, smoke ? '#383030' : '#a01808', x, y)
+    blitEllipse(ctx, size, size, smoke ? '#686060' : '#e85818', x, y - 1)
+    blitEllipse(ctx, Math.max(1, size - 2), Math.max(1, size - 2), smoke ? '#a09890' : e < 0.1 ? '#fff4b0' : '#f8c030', x - 1, y - 2)
   }
   if (a.age <= open + 0.05) spokes(ctx, a.x, a.y, Math.round(front * 1.02), Math.round(front * (big ? 1.4 : 1.3)), big ? 16 : 10, ['#ffffff', '#fff4b0', '#f8c030', '#e85818'], a.id)
   if (big) {
@@ -597,9 +597,9 @@ const drawBlast = (ctx: Ctx, a: Attack, t: number, big: boolean) => {
       // The mushroom: a cloud of smoke climbing off the blast.
       const top = a.y - r * (0.15 + e * 0.5)
       ctx.globalAlpha = Math.max(0, 1 - e) * 0.85
-      blitCentered(ctx, ellipse(Math.round(r * 0.2), Math.round(r * 0.13), '#484040'), a.x, top)
-      blitCentered(ctx, ellipse(Math.round(r * 0.16), Math.round(r * 0.1), '#888078'), a.x - 1, top - 2)
-      blitCentered(ctx, ellipse(Math.round(r * 0.07), Math.round(r * 0.045), '#c8c0b8'), a.x - 3, top - 4)
+      blitEllipse(ctx, Math.round(r * 0.2), Math.round(r * 0.13), '#484040', a.x, top)
+      blitEllipse(ctx, Math.round(r * 0.16), Math.round(r * 0.1), '#888078', a.x - 1, top - 2)
+      blitEllipse(ctx, Math.round(r * 0.07), Math.round(r * 0.045), '#c8c0b8', a.x - 3, top - 4)
     }
   }
   ctx.globalAlpha = 1
@@ -624,7 +624,7 @@ const drawOblivionBeam = (ctx: Ctx, g: Game, a: Attack, t: number) => {
     const d = 4 + k * 16
     px(ctx, a.x + Math.cos(ang) * d, a.y + Math.sin(ang) * d + k * 6, i % 2 ? '#c02838' : '#180810', 2, 1)
   }
-  if (Math.floor(t * 20) % 2 === 0 && a.age < 0.1) blitCentered(ctx, ellipse(4, 4, '#ffffff'), a.x, a.y)
+  if (Math.floor(t * 20) % 2 === 0 && a.age < 0.1) blitEllipse(ctx, 4, 4, '#ffffff', a.x, a.y)
   ctx.globalAlpha = 1
 }
 
@@ -647,7 +647,7 @@ const drawUppercut = (ctx: Ctx, a: Attack, t: number) => {
   px(ctx, a.x - 2, top + 8, '#e85840', 4, arm)
   px(ctx, a.x - 7, top + 10, '#f8d030', 15, 3)
   px(ctx, a.x - 7, top + 13, '#a07010', 15, 1)
-  blitCentered(ctx, ellipse(14, 12, 'rgba(255,240,160,0.35)'), a.x, top - 2)
+  blitEllipse(ctx, 14, 12, 'rgba(255,240,160,0.35)', a.x, top - 2)
   blitRotated(ctx, fist, a.x, top - 2, 0, 2)
   ctx.restore()
   for (let i = -2; i <= 2; i++) {
@@ -702,8 +702,8 @@ const drawHoleRing = (ctx: Ctx, a: Attack, t: number) => {
   const rx = Math.max(2, Math.round(r * k))
   const ry = Math.max(1, Math.round(rx * 0.5))
   const cy = a.y - 8
-  blitCentered(ctx, ellipse(rx, ry, '#200830'), a.x, cy)
-  blitCentered(ctx, ellipse(Math.max(1, rx - 4), Math.max(1, ry - 2), '#401050'), a.x, cy)
+  blitEllipse(ctx, rx, ry, '#200830', a.x, cy)
+  blitEllipse(ctx, Math.max(1, rx - 4), Math.max(1, ry - 2), '#401050', a.x, cy)
   // The void swirls.
   for (let i = 0; i < 18; i++) {
     const ang = t * 3 + (i / 18) * TAU * 2
@@ -731,8 +731,8 @@ const drawHoleBurst = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const e = a.age / a.ttl
   ctx.globalAlpha = Math.max(0, 1 - e * e)
-  if (a.age < 0.07) blitCentered(ctx, ellipse(Math.round(r), Math.round(r * 0.7), 'rgba(255,255,255,0.85)'), a.x, a.y - 6)
-  blitCentered(ctx, ellipse(Math.round(r * 0.5 * (1 - e)), Math.max(1, Math.round(r * 0.3 * (1 - e))), '#f85888'), a.x, a.y - 6)
+  if (a.age < 0.07) blitEllipse(ctx, Math.round(r), Math.round(r * 0.7), 'rgba(255,255,255,0.85)', a.x, a.y - 6)
+  blitEllipse(ctx, Math.round(r * 0.5 * (1 - e)), Math.max(1, Math.round(r * 0.3 * (1 - e))), '#f85888', a.x, a.y - 6)
   dashedRing(ctx, a.x, a.y - 6, r * (0.5 + e * 0.8), t * 5, ['#ffffff', '#ffd0e8', '#f85888', '#f8c830'], 0.85, 0.6)
   spokes(ctx, a.x, a.y - 6, r * 0.3 + e * 8, r * 0.6 + e * 16, 12, ['#ffffff', '#f8c830', '#f85888'], a.id)
   ctx.globalAlpha = 1
@@ -874,7 +874,7 @@ const drawLance = (ctx: Ctx, a: Attack, t: number) => {
   ctx.globalAlpha = fadeOut(a, 0.1)
   const cx = Math.cos(ang)
   const cy = Math.sin(ang)
-  for (let i = 1; i <= 4; i++) blitCentered(ctx, ellipse(Math.max(1, 4 - i), Math.max(1, 4 - i), i < 2 ? '#ffffff' : '#c8e8ff'), a.x - cx * (14 + i * 6) * scale, a.y - cy * (14 + i * 6) * scale)
+  for (let i = 1; i <= 4; i++) blitEllipse(ctx, Math.max(1, 4 - i), Math.max(1, 4 - i), i < 2 ? '#ffffff' : '#c8e8ff', a.x - cx * (14 + i * 6) * scale, a.y - cy * (14 + i * 6) * scale)
   blitRotated(ctx, VE.lance(), a.x, a.y, ang, scale)
   if (Math.floor(t * 12 + a.id) % 4 === 0) px(ctx, a.x + cx * 12 * scale, a.y + cy * 12 * scale - 1, '#ffffff', 2, 2)
   ctx.globalAlpha = 1
@@ -885,7 +885,7 @@ const drawLanceBurst = (ctx: Ctx, a: Attack, t: number) => {
   const r = radiusOf(a)
   const e = a.age / a.ttl
   ctx.globalAlpha = Math.max(0, 1 - e * e)
-  if (a.age < 0.06) blitCentered(ctx, ellipse(Math.round(r * 0.8), Math.round(r * 0.6), 'rgba(255,255,255,0.8)'), a.x, a.y)
+  if (a.age < 0.06) blitEllipse(ctx, Math.round(r * 0.8), Math.round(r * 0.6), 'rgba(255,255,255,0.8)', a.x, a.y)
   dashedRing(ctx, a.x, a.y, r * (0.5 + e * 0.6), t * 4, ['#ffffff', '#d8f0ff', '#98d8f8'], 0.85, 0.7)
   for (let i = 0; i < 8; i++) {
     const ang = (i / 8) * TAU + a.id

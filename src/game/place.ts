@@ -1,8 +1,8 @@
 import { range, weightedPick, type Rng } from '../engine/rng'
 import type { BiomeId } from '../data/biomes'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
-import { GRAVEYARD, PLACE, PLACE_IDS, PLACES, PRETTY_WING_COINS, WINGS, WING_IDS, type PlaceDef, type PlaceId, type WingId } from '../data/places'
-import { RUN_LENGTH, STAGES, stageIndexAt, stageStart } from '../data/waves'
+import { PLACE, PLACE_IDS, PLACES, PRETTY_WING_COINS, WINGS, WING_IDS, type PlaceDef, type PlaceId, type WingId } from '../data/places'
+import { RUN_LENGTH, STAGES, stageIndexAt } from '../data/waves'
 import type { CaveState } from './cave'
 import type { GraveyardState } from './graveyard'
 import type { Room, Stash } from './room'
@@ -148,27 +148,6 @@ export const placePool = (id: PlaceId, time: number): ReadonlyArray<readonly [En
   const gap = (e: EnemyId) => Math.abs(tierOf(e) - top)
   const best = Math.min(...species.map(gap))
   return species.filter((e) => gap(e) === best).map((e) => [e, 1] as const)
-}
-
-/**
- * The places' species with the first run time each can come out (the first
- * stage whose cast has its tier, never before the first entrance), and
- * Spiritomb, so the shell streams their sprites in ahead. The sky's only for
- * a Pokémon whose line flies.
- */
-export const placeSchedule = (flyer: boolean) => {
-  const out = new Map<EnemyId, number>([[GRAVEYARD.boss, PLACE.firstAt]])
-  for (const id of PLACE_IDS) {
-    const def: PlaceDef = PLACES[id]
-    if (def.flyers && !flyer) continue
-    for (const e of def.species) {
-      const enemy: EnemyDef = ENEMIES[e]
-      const stage = STAGES.findIndex((s) => s.cast.includes(enemy.tier ?? 1))
-      const at = Math.max(PLACE.firstAt, stage < 0 ? 0 : stageStart(stage))
-      out.set(e, Math.min(out.get(e) ?? Infinity, at))
-    }
-  }
-  return [...out].map(([e, at]) => ({ dex: ENEMIES[e].dex, at }))
 }
 
 /** A wing drifting into the sky. */

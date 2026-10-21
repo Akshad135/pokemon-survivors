@@ -36,6 +36,8 @@ export type RunTally = {
   notices: Partial<Record<MapEventNotice['kind'], number>>
   /** Legendary bosses beaten, by species: how many times, and how many of them shiny (capturing them, Legend mode). */
   legendWins: Partial<Record<EnemyId, LegendWins>>
+  /** Noite das Bruxas night bosses beaten in a haunted run, in order (`nightBossDown`): the Caça aos Fantasmas checklist. */
+  nightBosses: EnemyId[]
 }
 
 /** A legendary's defeats in a run. */
@@ -53,6 +55,7 @@ export const createTally = (): RunTally => ({
   alphaKills: 0,
   notices: {},
   legendWins: {},
+  nightBosses: [],
 })
 
 const bump = <K extends string>(counts: Partial<Record<K, number>>, key: K) => {
@@ -131,6 +134,8 @@ export type RunSummary = {
   killsByBiome: Partial<Record<BiomeId, number>>
   /** Legendary bosses beaten, by species (`countLegend`): the save counts them toward capturing each one. */
   legendWins: Partial<Record<EnemyId, LegendWins>>
+  /** Night bosses beaten in a haunted run, in order: the save ticks them off its Caça aos Fantasmas (`recordHunt`). */
+  nightBosses: readonly EnemyId[]
 }
 
 /** Snapshot of a run for missions and achievements. Safe to take again later: recording works on deltas. */
@@ -168,5 +173,6 @@ export const summarizeRun = (g: Game): RunSummary => {
     killsByWeather: { ...t.killsByWeather },
     killsByBiome: { ...t.killsByBiome },
     legendWins: { ...t.legendWins },
+    nightBosses: [...t.nightBosses],
   }
 }

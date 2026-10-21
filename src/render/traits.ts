@@ -1,4 +1,4 @@
-import { blitCentered, ellipse, ring, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRing, type PixelSprite } from '../engine/pixelart'
 import { ENEMIES } from '../data/enemies'
 import { TRAITS } from '../data/traits'
 import { TYPE_COLORS } from '../data/types'
@@ -42,8 +42,8 @@ const stripe = (ctx: Ctx, sprite: PixelSprite, x: number, y: number, angle: numb
 /** Telegraph circle like the bosses': a fill growing with `k` and an outline blinking faster. */
 const danger = (ctx: Ctx, x: number, y: number, r: number, k: number, time: number) => {
   const fill = Math.max(1, Math.round(r * k))
-  blitCentered(ctx, ellipse(fill, fill, DANGER.fill), x, y)
-  if (blink(time, k)) blitCentered(ctx, ring(Math.round(r), 1, DANGER.line), x, y)
+  blitEllipse(ctx, fill, fill, DANGER.fill, x, y)
+  if (blink(time, k)) blitRing(ctx, Math.round(r), 1, DANGER.line, x, y)
 }
 
 /** Ground layer: pulse rings and every warning (blast radius, beam line, landing spot). */
@@ -60,8 +60,8 @@ export const drawTraitGround = (ctx: Ctx, g: Game, visible: Visible) => {
         const look = PULSES[act.kind]
         const r = Math.max(2, Math.round(look.radius * (1 - (1 - k) ** 2)))
         ctx.globalAlpha = 1 - k * 0.8
-        blitCentered(ctx, ellipse(r, r, look.fill), e.x, e.y)
-        blitCentered(ctx, ring(r, 2, look.line), e.x, e.y)
+        blitEllipse(ctx, r, r, look.fill, e.x, e.y)
+        blitRing(ctx, r, 2, look.line, e.x, e.y)
         ctx.globalAlpha = 1
         break
       }
@@ -86,7 +86,7 @@ export const drawTraitGround = (ctx: Ctx, g: Game, visible: Visible) => {
         const k = Math.min(1, elapsed / (l.crouch + l.air))
         // The landing shadow grows as the leaper comes down.
         const rx = Math.round(4 + k * (l.radius * 0.7 - 4))
-        blitCentered(ctx, ellipse(rx, Math.max(1, Math.round(rx * 0.45)), 'rgba(16,24,16,0.45)'), act.toX, act.toY)
+        blitEllipse(ctx, rx, Math.max(1, Math.round(rx * 0.45)), 'rgba(16,24,16,0.45)', act.toX, act.toY)
         danger(ctx, act.toX, act.toY, l.radius, k, elapsed)
         break
       }
@@ -108,8 +108,8 @@ export const drawTraitAir = (ctx: Ctx, g: Game, visible: Visible) => {
       const k = e.dying / BLAST_TIME
       const r = blastRadius(e.radius)
       ctx.globalAlpha = 1 - k
-      blitCentered(ctx, ellipse(r, r, 'rgba(255,240,160,0.5)'), e.x, e.y)
-      blitCentered(ctx, ring(Math.round(r * (0.7 + k * 0.3)), 2, '#f8e858'), e.x, e.y)
+      blitEllipse(ctx, r, r, 'rgba(255,240,160,0.5)', e.x, e.y)
+      blitRing(ctx, Math.round(r * (0.7 + k * 0.3)), 2, '#f8e858', e.x, e.y)
       ctx.globalAlpha = 1
       continue
     }
@@ -119,7 +119,7 @@ export const drawTraitAir = (ctx: Ctx, g: Game, visible: Visible) => {
       const color = TYPE_COLORS[e.types[0] ?? 'electric']
       ctx.globalAlpha = Math.min(1, (TRAITS.beam.fire - act.t) / 0.08)
       stripe(ctx, TRAIT_FX.beam(color), act.ox, act.oy, Math.atan2(act.dy, act.dx), TRAITS.beam.length)
-      blitCentered(ctx, ellipse(3, 3, '#ffffff'), act.ox, act.oy)
+      blitEllipse(ctx, 3, 3, '#ffffff', act.ox, act.oy)
       ctx.globalAlpha = 1
     }
     if (!visible(e.x, e.y)) continue
@@ -129,8 +129,8 @@ export const drawTraitAir = (ctx: Ctx, g: Game, visible: Visible) => {
     if (act?.kind === 'spitter' && act.phase === 'charge') spitGlow(ctx, g, e, act.t, act.t / flavorOf(e.types).charge)
     if (st.wardTime > 0 && st.ward > 0 && (st.wardTime > 1.5 || Math.floor(st.wardTime * 8) % 2 === 0)) {
       const hit = st.wardHit < 0.12
-      blitCentered(ctx, ellipse(e.radius + 4, e.radius + 4, hit ? 'rgba(255,255,255,0.35)' : 'rgba(136,184,248,0.22)'), e.x, cy)
-      blitCentered(ctx, ring(e.radius + 4, 1, hit ? '#ffffff' : '#a8d0ff'), e.x, cy)
+      blitEllipse(ctx, e.radius + 4, e.radius + 4, hit ? 'rgba(255,255,255,0.35)' : 'rgba(136,184,248,0.22)', e.x, cy)
+      blitRing(ctx, e.radius + 4, 1, hit ? '#ffffff' : '#a8d0ff', e.x, cy)
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(Math.round(e.x - e.radius * 0.6), Math.round(cy - e.radius * 0.6), 1, 1)
     }
@@ -158,9 +158,9 @@ const spitGlow = (ctx: Ctx, g: Game, e: Enemy, t: number, k: number) => {
   const y = e.y - sprites(ENEMIES[e.kind].dex).bodyH * 0.5 + ((p.y - e.y) / d) * e.radius * 0.4
   const color = TYPE_COLORS[e.types[0] ?? 'normal']
   const r = Math.max(1, Math.round(1 + k * 3))
-  blitCentered(ctx, ellipse(r + 2, r + 2, 'rgba(255,255,255,0.35)'), x, y)
-  blitCentered(ctx, ellipse(r, r, blink(t, k) ? '#ffffff' : color), x, y)
-  if (!blink(t, k)) blitCentered(ctx, ring(r + 3, 1, color), x, y)
+  blitEllipse(ctx, r + 2, r + 2, 'rgba(255,255,255,0.35)', x, y)
+  blitEllipse(ctx, r, r, blink(t, k) ? '#ffffff' : color, x, y)
+  if (!blink(t, k)) blitRing(ctx, r + 3, 1, color, x, y)
 }
 
 /** How high a leaper is drawn above its ground position (its shadow stays on the ground). */

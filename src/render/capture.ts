@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, ellipse } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { ENEMIES, type EnemyId } from '../data/enemies'
@@ -119,7 +119,7 @@ export const drawCaptureScene = (ctx: Ctx, g: Game, c: { kind: EnemyId; x: numbe
     angle = k < 0.5 ? Math.sin(k * 2 * TAU) * 0.45 : 0
     bx = x + Math.round(angle * 3)
   }
-  blitCentered(ctx, ellipse(5, 2, 'rgba(16,8,32,0.4)'), x, ground + 4)
+  blitEllipse(ctx, 5, 2, 'rgba(16,8,32,0.4)', x, ground + 4)
   if (!out || out === 'caught') {
     blitRotated(ctx, BALL(), bx, by, angle)
     if (out === 'caught') {
