@@ -1,8 +1,8 @@
 import type { TitleId } from '../data/achievements'
 import type { EnemyId } from '../data/enemies'
-import { dailyChallenge, type Attempt } from '../game/challenge'
-import { brasiliaDay, isDayKey } from '../game/day'
-import { isRecord } from '../game/parse'
+import { mergeAttempts, parseAttempt, type Attempt } from '../game/attempt'
+import { dailyChallenge } from '../game/challenge'
+import { brasiliaDay } from '../game/day'
 import { counterOf } from '../game/mart'
 import { outbreakAt } from '../game/outbreak'
 import { depositEggs, type Egg } from '../game/eggs'
@@ -83,28 +83,31 @@ export const setOutbreak = (id: EnemyId | null) => {
 /** Today's Desafio do dia (Brasília day, on the missions' clock). */
 export const challengeToday = () => dailyChallenge(brasiliaDay(today()))
 
+/** Where the attempt lived before it joined the save. Still written: it keeps the device's own attempt through a sync with an API that doesn't know the field yet. */
 const ATTEMPT_KEY = 'ps:challenge'
 
-/**
- * The last official challenge attempt this device finished (`Attempt`),
- * kept apart from the save: it's only a hint for the challenge screen, the
- * API keeps the real one for an account (`nextIsOfficial`).
- */
-export const loadAttempt = (): Attempt | null => {
+const deviceAttempt = (): Attempt | null => {
   try {
-    const data: unknown = JSON.parse(localStorage.getItem(ATTEMPT_KEY) ?? 'null')
-    return isRecord(data) && isDayKey(data.day) && typeof data.time === 'number' ? { day: data.day, time: data.time } : null
+    return parseAttempt(JSON.parse(localStorage.getItem(ATTEMPT_KEY) ?? 'null'))
   } catch {
     return null
   }
 }
 
+/**
+ * The last official challenge attempt finished (`Attempt`): the save's, which
+ * the account syncs from the other devices, or this device's own if later.
+ * Only a hint for the screens: the API decides which run is official (`nextIsOfficial`).
+ */
+export const loadAttempt = (): Attempt | null => mergeAttempts(loadSave().attempt, deviceAttempt())
+
 export const saveAttempt = (attempt: Attempt | null) => {
+  updateSave((save) => ({ ...save, attempt }))
   try {
     if (attempt) localStorage.setItem(ATTEMPT_KEY, JSON.stringify(attempt))
     else localStorage.removeItem(ATTEMPT_KEY)
   } catch {
-    // Storage blocked: the screen just can't tell practice apart this session.
+    // Storage blocked: the save still has it.
   }
 }
 

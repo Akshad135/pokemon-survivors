@@ -28,9 +28,10 @@ import { ITEMS } from './data/items'
 import type { AchievementId } from './data/achievements'
 import type { TraitId } from './data/traits'
 import { REGIONS, STARTERS } from './data/starters'
-import { challengeStart, nextIsOfficial, type Challenge } from './game/challenge'
+import { nextIsOfficial } from './game/attempt'
+import { challengeStart, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
-import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, startAccount, syncSave } from './account'
+import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, stageSyncedSave, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
@@ -1584,7 +1585,8 @@ const boot = () => {
   scheduleWarmUp(1000)
   void preloadInBackground()
   promptProfile()
-  startAccount()
+  // Coming back to the game syncs again, but not mid-run: a run syncs when it ends.
+  startAccount(() => run === null)
   // Results that didn't reach the ranking last time (offline) go now, once the account is back.
   if (accountState().kind === 'signedIn') setTimeout(() => void flushRuns(), 5000)
 }
@@ -1772,6 +1774,17 @@ const devChallenge = (mode?: 'play' | 'done' | 'reset', time = 754) => {
 }
 
 /**
+ * Dev: lands a sync as if another device of the account played today's
+ * challenge (`time` seconds, its official attempt) and earned `coins` ₽, so
+ * the lobby shows it without a reload. Returns the save.
+ */
+const devOtherDevice = (coins = 1000, time = 754) => {
+  const save = loadSave()
+  stageSyncedSave({ ...save, wallet: save.wallet + coins, attempt: { day: challengeToday().day, time } })
+  return loadSave()
+}
+
+/**
  * Dev: walks the player to the nearest piece of terrain of a kind (`rock`,
  * `tree`, `cliff`, `tower` or `lake`), standing `dy` px south of it, e.g. `ps.terrain('cliff')`.
  */
@@ -1835,6 +1848,7 @@ if (import.meta.env.DEV) {
       event: devEvent,
       field: devField,
       challenge: devChallenge,
+      otherDevice: devOtherDevice,
       dex: () => loadSave().dex,
       /** Plays an error report's `replay` (the JSON string from PostHog) again: a simulation error throws here at the same tick. */
       replay: (json: string) => {

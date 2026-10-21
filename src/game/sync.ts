@@ -1,4 +1,5 @@
 import { mergeAchievements, mergeGiftTitles } from './achievements'
+import { mergeAttempts } from './attempt'
 import { mergeClaimedGifts } from './gifts'
 import { mergeClears } from './clears'
 import { mergeCaptures } from './capture'
@@ -53,6 +54,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - Clears: a union, each Pokémon at the harder difficulty of the two.
  * - Legend captures: each legend's win count at the larger side (a shiny
  *   captured is a `shinyStarters` key, a union like the rest).
+ * - The Desafio do dia attempt: the later day (`base`'s on the same day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -82,6 +84,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     branches: { ...base.branches, ...incoming.branches },
     clears: mergeClears(base.clears, incoming.clears),
     legends: mergeCaptures(base.legends, incoming.legends),
+    attempt: mergeAttempts(base.attempt, incoming.attempt),
   }
 }
 
