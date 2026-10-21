@@ -4179,6 +4179,16 @@ export const es: Messages = {
     left: (name: string) => `Dejaste *${name}* atrás.`,
     itemHintTouch: 'Toca para elegir',
   },
+  plaza: {
+    talk: 'Hablar',
+    next: 'Continuar',
+    greetings: {
+      morning: '¡Buenos días, buenos días! ¡Bienvenido a la Tienda Kecleon! Llegó mercancía fresquita.',
+      afternoon: '¡Buenas tardes! ¡Bienvenido, bienvenido! ¡Estás en tu casa!',
+      evening: '¡Buenas noches! ¡Bienvenido, bienvenido! ¿Qué va a ser hoy?',
+      night: '¿Todavía despierto? ¡Bienvenido, bienvenido! ¡La Tienda Kecleon nunca cierra!',
+    },
+  },
   traits: {
     healer: (name: string) => `*${name}* cura a los aliados cercanos. ¡Derríbalo primero!`,
     shield: (name: string) => `*${name}* protege a sus aliados con un _escudo_ que absorbe daño.`,

@@ -123,6 +123,8 @@ const SFX = {
   denied: () => tone(160, 120, 0.16, 'square', 0.12),
   select: () => tone(660, 990, 0.08, 'square', 0.12),
   move: () => tone(440, 440, 0.04, 'square', 0.06),
+  /** A dialogue box's text blip, a letter or two at a time. */
+  talk: () => tone(740, 740, 0.025, 'square', 0.035),
   boss: () => [196, 185, 175, 165].forEach((f, i) => tone(f, f * 0.98, 0.35, 'sawtooth', 0.16, i * 0.3)),
   evolve: () => [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.2, 'triangle', 0.18, i * 0.11)),
   thunder: () => {

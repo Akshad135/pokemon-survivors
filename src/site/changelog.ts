@@ -88,6 +88,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Loja do Kecleon', en: 'Kecleon Shop', es: 'Tienda Kecleon' },
+        notes: [
+          {
+            pt: 'A loja agora é um lugar: a praça do Kecleon fica a leste da casa do seu parceiro, no prado do lobby. Aperte Loja (L) e a câmera vai até lá com o parceiro pulando junto, ou vá andando e fale com o Kecleon (E, ou toque nele). Uma plaquinha na borda da tela mostra o caminho.',
+            en: 'The shop is a place now: the Kecleon plaza stands east of your partner\'s home, in the lobby\'s meadow. Press Shop (L) and the camera heads there with your partner hopping along, or walk over and talk to Kecleon (E, or tap it). A little sign at the edge of the screen points the way.',
+            es: 'La tienda ahora es un lugar: la plaza de Kecleon está al este de la casa de tu compañero, en la pradera del lobby. Pulsa Tienda (L) y la cámara va hasta allá con tu compañero saltando a su lado, o ve caminando y habla con Kecleon (E, o tócalo). Un letrerito en el borde de la pantalla muestra el camino.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Pesquisa de dificuldade', en: 'Difficulty survey', es: 'Encuesta de dificultad' },
         notes: [
           {

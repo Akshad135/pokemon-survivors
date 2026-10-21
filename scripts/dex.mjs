@@ -53,7 +53,9 @@ export const COMPANIONS = [710]
  * wave bosses, they never roll shiny (the ones the horde has come with its shinies).
  */
 export const HALLOWEEN_BOSSES = [778, 354, 302, 426, 429, 229, 94, 609, 711, 709, 430, 477]
-export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES, ...COMPANIONS, ...HALLOWEEN_BOSSES])]
+/** The lobby's shopkeepers (render/plaza.ts): Kecleon, and its purple brother recolored from the same sheets. */
+export const SHOPKEEPERS = [352]
+export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES, ...COMPANIONS, ...HALLOWEEN_BOSSES, ...SHOPKEEPERS])]
 /**
  * Flying types that take to the sky (the sky's flock in src/data/places.ts and the
  * Flying-type player forms): they get a `Fly` sheet when SpriteCollab has one.
@@ -145,6 +147,14 @@ export const FORM_CRIES = {
   652: { mega: 'chesnaught-mega' },
   655: { mega: 'delphox-mega' },
   658: { mega: 'greninja-mega' },
+}
+
+/**
+ * Emotion portraits beyond `Normal` (SpriteCollab's `portrait/<dex>/<Emotion>.png`) for the species
+ * that talk in a dialogue box (`ui/dialogue.ts`). They land in `public/assets/pokemon/<dex>/portraits/`.
+ */
+export const EMOTIONS = {
+  352: ['Normal', 'Happy', 'Joyous', 'Surprised', 'Sigh', 'Inspired', 'Angry'],
 }
 
 export const pad = (n) => String(n).padStart(4, '0')

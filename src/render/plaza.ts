@@ -1,0 +1,575 @@
+import { clamp, dir8, type Dir8, type Vec } from '../engine/math'
+import { blitCentered, context2d, createCanvas, ellipse, lazy, onCanvasReset } from '../engine/pixelart'
+import { EMOTES, type Emote } from './art'
+import { shadow } from './draw'
+import { drawPokemon, loadedSprites, loadSpecies, type SpeciesSprites } from './sprites'
+import type { ShopLevel } from '../data/shop'
+
+/**
+ * The Kecleon plaza: the lobby's shop as a place in the meadow, east of the
+ * partner's home. The cobblestones are drawn in code (and cached); the
+ * building of the shop's level and the props are PixelLab PNGs
+ * (`public/assets/shop/`), anchored by the bottom center of what they paint,
+ * with no ground of their own: each casts a shadow on the cobblestones (its
+ * own silhouette squashed flat, or a soft ellipse under the deep 3/4
+ * buildings). The building keeps an invisible footprint walkers go around.
+ * The shopkeepers are Kecleon's own sheets, plus its purple brother from Lv 2,
+ * recolored from the same sheets. Pure presentation, like the rest of the lobby.
+ */
+
+export const KECLEON_DEX = 352
+/** Its official name, as the dialogue box shows it. */
+export const KECLEON_NAME = 'Kecleon'
+export type { ShopLevel }
+
+/** Where the plaza's building stands from home (the lobby's resting view center), world px: off a desktop's right edge, low enough that the edge marker pointing to it clears the lobby's right rail. */
+export const PLAZA_OFFSET = { x: 520, y: 150 } as const
+
+const ART_IDS = ['lv1', 'lv2', 'lv3', 'lv4', 'lv5', 'lantern', 'board', 'crates', 'flowers'] as const
+type ArtId = (typeof ART_IDS)[number]
+const artFile = (id: ArtId) => `${import.meta.env.BASE_URL}assets/shop/${id.startsWith('lv') ? `shop-${id}` : `prop-${id}`}.png`
+
+/** A loaded PNG and the box of its painted pixels, so pieces stand on their real feet whatever padding the image has. */
+type Art = { img: HTMLImageElement; minX: number; minY: number; maxY: number; w: number; h: number }
+const arts = new Map<ArtId, Art>()
+let loading = false
+
+/** Alpha bounding box of an image (pixels above a faint alpha). */
+const measure = (img: HTMLImageElement): Art => {
+  const canvas = createCanvas(img.width, img.height)
+  const ctx = context2d(canvas)
+  ctx.drawImage(img, 0, 0)
+  const data = ctx.getImageData(0, 0, img.width, img.height).data
+  let minX = img.width
+  let maxX = -1
+  let minY = img.height
+  let maxY = -1
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      if (data[(y * img.width + x) * 4 + 3]! <= 40) continue
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    }
+  }
+  return { img, minX, minY, maxY, w: maxX - minX + 1, h: maxY - minY + 1 }
+}
+
+/** Starts loading the plaza's PNGs and the shopkeeper's sheets (once). Pieces show up as they arrive. */
+export const loadPlazaArt = () => {
+  if (loading) return
+  loading = true
+  void loadSpecies(KECLEON_DEX).catch(() => {})
+  for (const id of ART_IDS) {
+    const img = new Image()
+    img.src = artFile(id)
+    void img.decode().then(
+      () => arts.set(id, measure(img)),
+      () => {},
+    )
+  }
+}
+
+/** Draws `art` with the bottom center of its painted box at (x, y); `fromRow` draws only its rows from there down (a counter's front). */
+const put = (ctx: CanvasRenderingContext2D, art: Art, x: number, y: number, fromRow = 0) => {
+  const dx = Math.round(x - (art.minX + art.w / 2))
+  const dy = Math.round(y - art.maxY - 1)
+  if (fromRow === 0) return ctx.drawImage(art.img, dx, dy)
+  const rows = art.img.height - fromRow
+  ctx.drawImage(art.img, 0, fromRow, art.img.width, rows, dx, dy + fromRow, art.img.width, rows)
+}
+
+/* ---------------- The purple brother ---------------- */
+
+/** PMD's purple Kecleon: green-dominant pixels move to a purple ramp; the red stripe and the dark outline stay. */
+export const purpleize = (src: CanvasImageSource & { width: number; height: number }) => {
+  const canvas = createCanvas(src.width, src.height)
+  const ctx = context2d(canvas)
+  ctx.drawImage(src, 0, 0)
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const a = image.data
+  for (let i = 0; i < a.length; i += 4) {
+    const r = a[i]!
+    const g = a[i + 1]!
+    const b = a[i + 2]!
+    if (a[i + 3] === 0 || g <= r * 0.9 || g <= b) continue
+    a[i] = Math.min(255, g * 0.78 + r * 0.15)
+    a[i + 1] = Math.min(255, g * 0.42 + b * 0.2)
+    a[i + 2] = Math.min(255, g + 20)
+  }
+  ctx.putImageData(image, 0, 0)
+  return canvas
+}
+
+type Sheet = SpeciesSprites['anims']['Idle']
+const purpleSheet = (sheet: Sheet): Sheet => ({ ...sheet, img: purpleize(sheet.img), overlays: null })
+
+let brother: { from: SpeciesSprites; to: SpeciesSprites } | null = null
+onCanvasReset(() => (brother = null))
+
+/** The purple brother's sprites, recolored once from the green Kecleon's. */
+const brotherSprites = (green: SpeciesSprites) => {
+  if (brother?.from !== green) {
+    const { Walk, Idle, Hurt } = green.anims
+    brother = { from: green, to: { ...green, anims: { Walk: purpleSheet(Walk), Idle: purpleSheet(Idle), Hurt: purpleSheet(Hurt) } } }
+  }
+  return brother.to
+}
+
+/** A shopkeeper's sprites (the brother's recolored), once Kecleon's sheets are loaded. */
+export const keeperSprites = (purple: boolean) => {
+  const green = loadedSprites(KECLEON_DEX)
+  return green && (purple ? brotherSprites(green) : green)
+}
+
+/* ---------------- Layout ---------------- */
+
+type Placed = { x: number; y: number }
+type KeeperSpot = Placed & { dir: Dir8 }
+
+/** A shadow on the cobblestones, relative to the building's feet: a piece's squashed silhouette (its feet at x, y), or a soft ellipse centered at x, y. */
+type Shadow = (Placed & { art: Art }) | (Placed & { rx: number; ry: number })
+
+/** Where everything stands at a level, relative to the building's feet (its bottom center). */
+type Layout = {
+  building: Art
+  /** The building's footprint, never drawn: an ellipse walkers go around (its center's y, and radii). */
+  pad: { y: number; rx: number; ry: number }
+  /** The green Kecleon, then the purple brother from Lv 2. */
+  keepers: readonly KeeperSpot[]
+  /** Lv 3's open counter: the image's rows from here down are its front, drawn again over the shopkeepers behind it. */
+  counter: number | null
+  props: readonly (Placed & { id: ArtId })[]
+  /** Where the partner stands to shop. */
+  spot: Placed
+  /** The cobblestones' ellipse. */
+  cobbles: Placed & { rx: number; ry: number }
+  /** What the building and the props cast on the cobblestones. */
+  shadows: readonly Shadow[]
+}
+
+const layouts = new Map<ShopLevel, Layout>()
+
+/** Row of `shop-lv3.png` where its counter's front starts (the kiosk's shopkeepers stand behind it). */
+const LV3_COUNTER = 122
+
+const layoutOf = (level: ShopLevel): Layout | null => {
+  const cached = layouts.get(level)
+  if (cached) return cached
+  const building = arts.get(`lv${level}`)
+  if (!building || ART_IDS.some((id) => !arts.has(id))) return null
+  const half = Math.round(building.w / 2)
+  // The 3/4 buildings of Lv 4 and 5 stand on a deep diamond: the footprint and the cobblestones reach back under all of it.
+  const depth = level >= 4 ? Math.round(half * 0.45) : 0
+  // Lanterns flank the building, the rest of the props sit outside them.
+  const lamp = Math.max(104, half + 14)
+  const keepers: KeeperSpot[] =
+    level === 3
+      ? [
+          { x: -22, y: LV3_COUNTER + 4 - building.maxY - 1, dir: 0 },
+          { x: 8, y: LV3_COUNTER + 4 - building.maxY - 1, dir: 0 },
+        ]
+      : level === 1
+        ? [{ x: half + 4, y: 12, dir: 7 }]
+        : [
+            { x: -half + 2, y: 14, dir: 1 },
+            { x: half - 2, y: 14, dir: 7 },
+          ]
+  const props: Layout['props'] = [
+    { id: 'lantern', x: -lamp, y: 14 },
+    { id: 'lantern', x: lamp, y: 14 },
+    { id: 'crates', x: lamp + 26, y: 30 },
+    ...(level >= 2 ? [{ id: 'board' as const, x: -lamp - 36, y: 58 }] : []),
+    ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: lamp + 16, y: 66 }] : []),
+  ]
+  const layout: Layout = {
+    building,
+    pad: { y: -6 - depth, rx: half + 4 + (depth ? 6 : 0), ry: Math.round(building.w / 7) + depth },
+    keepers,
+    counter: level === 3 ? LV3_COUNTER : null,
+    props,
+    spot: { x: 0, y: 34 },
+    cobbles: { x: 0, y: 36 - Math.round(depth * 0.7), rx: lamp + 66, ry: 78 + Math.round(depth * 1.1) },
+    shadows: [
+      // The deep 3/4 buildings cast a soft ellipse under their footprint; everything else, its own silhouette.
+      depth ? { x: 0, y: -Math.round(half * 0.3), rx: half - 10, ry: Math.round(half * 0.32) } : { x: 0, y: 0, art: building },
+      ...props.map((p) => ({ x: p.x, y: p.y, art: arts.get(p.id)! })),
+    ],
+  }
+  layouts.set(level, layout)
+  return layout
+}
+
+/* ---------------- State ---------------- */
+
+/** A shopkeeper's reaction: a double hop and an emote, from scene time `at`. */
+export type Keeper = { hopAt: number; emote: Emote; dir: Dir8 }
+
+export type Plaza = {
+  /** The building's feet, world px. */
+  x: number
+  y: number
+  /** The shop's level (set by the shell: the save's, or the dev override). */
+  level: ShopLevel
+  keepers: [Keeper, Keeper]
+  /** The edge marker as last drawn (world px), for taps. */
+  marker: { x: number; y: number; shown: boolean }
+}
+
+export const createPlaza = (home: Vec): Plaza => {
+  loadPlazaArt()
+  return {
+    x: home.x + PLAZA_OFFSET.x,
+    y: home.y + PLAZA_OFFSET.y,
+    level: 1,
+    keepers: [
+      { hopAt: -9, emote: 'note', dir: 0 },
+      { hopAt: -9, emote: 'sparkle', dir: 0 },
+    ],
+    marker: { x: 0, y: 0, shown: false },
+  }
+}
+
+/** The shopkeepers present at the plaza's level, with where they stand (world px). */
+const keepersAt = (plaza: Plaza, layout: Layout) => layout.keepers.map((k, i) => ({ keeper: plaza.keepers[i]!, x: plaza.x + k.x, y: plaza.y + k.y, spot: k, purple: i === 1 }))
+
+/** The shopkeepers hop and pop an emote at scene time `time` (the brother a beat later). */
+export const greetKeepers = (plaza: Plaza, time: number) => {
+  plaza.keepers[0].hopAt = time
+  plaza.keepers[1].hopAt = time + 0.18
+}
+
+/** Turns the shopkeepers in front of the building towards `partner` when it comes close. */
+export const stepPlaza = (plaza: Plaza, partner: Vec | null) => {
+  const layout = layoutOf(plaza.level)
+  if (!layout) return
+  for (let i = 0; i < layout.keepers.length; i++) {
+    const spot = layout.keepers[i]!
+    const x = plaza.x + spot.x
+    const y = plaza.y + spot.y
+    const close = partner && layout.counter === null && Math.hypot(partner.x - x, partner.y - y) < 70
+    plaza.keepers[i]!.dir = close ? dir8(partner.x - x, partner.y - y) : spot.dir
+  }
+}
+
+/** Where the partner stands to shop, world px. */
+export const shopSpot = (plaza: Plaza): Vec => {
+  const spot = layoutOf(plaza.level)?.spot ?? { x: 0, y: 34 }
+  return { x: plaza.x + spot.x, y: plaza.y + spot.y }
+}
+
+/** How close (world px) the partner must stand to a shopkeeper or the counter to talk. */
+const TALK_RANGE = 24
+
+/** Above the head of the shopkeeper the partner (feet at `p`) can talk to, world px; null when out of range. */
+export const talkAnchor = (plaza: Plaza, p: Vec): Vec | null => {
+  const layout = layoutOf(plaza.level)
+  if (!layout) return null
+  const atCounter = Math.hypot(p.x - plaza.x - layout.spot.x, p.y - plaza.y - layout.spot.y) < TALK_RANGE
+  let best: KeeperSpot | null = null
+  let bestD = Infinity
+  for (const k of layout.keepers) {
+    const d = Math.hypot(p.x - plaza.x - k.x, p.y - plaza.y - k.y)
+    if ((d < TALK_RANGE || atCounter) && d < bestD) {
+      bestD = d
+      best = k
+    }
+  }
+  return best && { x: plaza.x + best.x, y: plaza.y + best.y - 30 }
+}
+
+/** Pushes feet at `v` out of the building's footprint, so walkers go around the shop (mutates `v`). */
+export const pushOut = (plaza: Plaza, v: Vec) => {
+  const layout = layoutOf(plaza.level)
+  if (!layout) return
+  const { rx, ry } = layout.pad
+  const cx = plaza.x
+  const cy = plaza.y + layout.pad.y
+  const dx = (v.x - cx) / rx
+  const dy = (v.y - cy) / ry
+  const d = dx * dx + dy * dy
+  if (d >= 1) return
+  if (d < 1e-6) {
+    v.y = cy + ry
+    return
+  }
+  const k = 1 / Math.sqrt(d)
+  v.x = cx + (v.x - cx) * k
+  v.y = cy + (v.y - cy) * k
+}
+
+/** Whether a tap at `at` (world px) lands on a shopkeeper, the building or the edge marker. */
+export const plazaTapped = (plaza: Plaza, at: Vec) => {
+  if (plaza.marker.shown && Math.abs(at.x - plaza.marker.x) <= 18 && Math.abs(at.y - plaza.marker.y) <= 15) return true
+  const layout = layoutOf(plaza.level)
+  if (!layout) return false
+  const half = layout.building.w / 2
+  if (Math.abs(at.x - plaza.x) <= half && at.y <= plaza.y + 4 && at.y >= plaza.y - layout.building.h) return true
+  return keepersAt(plaza, layout).some((k) => Math.abs(at.x - k.x) <= 12 && at.y <= k.y + 3 && at.y >= k.y - 30)
+}
+
+/**
+ * Where the camera (its top-left, world px) frames the plaza for a `w`×`h`
+ * view: on portrait screens the building and its shopkeepers fill the upper
+ * part, leaving the lower ~45% to the shop's sheet; elsewhere the plaza sits
+ * on the left, leaving the right side to the shop's panel.
+ */
+export const plazaFrame = (plaza: Plaza, w: number, h: number): Vec => {
+  const layout = layoutOf(plaza.level)
+  const tall = layout?.building.h ?? 140
+  if (h > w * 1.1) {
+    const feet = Math.min(Math.round(h * 0.6), Math.max(Math.round(h * 0.45), tall + 14))
+    return { x: Math.round(plaza.x - w / 2), y: plaza.y - feet }
+  }
+  const lamp = layout ? Math.max(104, Math.round(layout.building.w / 2) + 14) : 110
+  const left = Math.round(Math.max(w * 0.32, lamp + 46))
+  const feet = Math.round(Math.min(h - 44, Math.max(h * 0.6, tall + 12)))
+  return { x: plaza.x - left, y: plaza.y - feet }
+}
+
+/* ---------------- Drawing ---------------- */
+
+const rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)] as const
+
+const STONES = ['#d8c8a0', '#cfbd94', '#e0d2ac', '#c8b68c', '#d4c49a'].map(rgb)
+const MORTAR = rgb('#a89470')
+const STONE_HI = rgb('#ebe0c0')
+const STONE_LO = rgb('#bca880')
+const TUFT = [rgb('#6aa850'), rgb('#7cc060')] as const
+
+/**
+ * The cobblestones: an irregular rounded patch of staggered stones (10×6)
+ * with mortar, a lit top edge and a few grass tufts, ringed by a darker band
+ * of trodden grass. Built once per size into a canvas centered on its middle.
+ */
+const cobbles = (() => {
+  const cache = new Map<string, HTMLCanvasElement>()
+  onCanvasReset(() => cache.clear())
+  return (rx: number, ry: number) => {
+    const key = `${rx}x${ry}`
+    const hit = cache.get(key)
+    if (hit) return hit
+    const pad = 4
+    const w = rx * 2 + pad * 2 + 1
+    const h = ry * 2 + pad * 2 + 1
+    const canvas = createCanvas(w, h)
+    const ctx = context2d(canvas)
+    const image = ctx.createImageData(w, h)
+    const px = image.data
+    const set = (x: number, y: number, c: readonly number[], alpha = 255) => {
+      const i = (y * w + x) * 4
+      px[i] = c[0]!
+      px[i + 1] = c[1]!
+      px[i + 2] = c[2]!
+      px[i + 3] = alpha
+    }
+    const inside = (x: number, y: number) => {
+      const dx = x / rx
+      const dy = y / ry
+      const wobble = 0.06 * Math.sin(x * 0.11 + y * 0.07) + 0.05 * Math.cos(y * 0.13)
+      return dx * dx + dy * dy < 1 + wobble
+    }
+    for (let y = -ry - pad; y <= ry + pad; y++) {
+      const row = Math.floor((y + 600) / 6)
+      const offset = (row % 2) * 5
+      const ly = (y + 600) % 6
+      for (let x = -rx - pad; x <= rx + pad; x++) {
+        const cx = x + rx + pad
+        const cy = y + ry + pad
+        if (!inside(x, y)) {
+          // Trodden grass just outside the stones.
+          const ex = x / (rx + 3)
+          const ey = y / (ry + 3)
+          if (ex * ex + ey * ey < 1) set(cx, cy, [24, 56, 24], 70)
+          continue
+        }
+        const lx = (x + 600 + offset) % 10
+        const stone = STONES[(Math.floor((x + 600 + offset) / 10) * 31 + row * 17) % 5]!
+        const c = lx === 0 || ly === 0 ? MORTAR : ly === 1 && lx < 9 ? STONE_HI : ly === 5 || lx === 9 ? STONE_LO : stone
+        set(cx, cy, c)
+      }
+    }
+    // A few grass tufts between the stones, from a fixed little generator so the patch never changes.
+    let seed = 7
+    const next = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+    for (let i = 0; i < 22; i++) {
+      const x = Math.round(-rx + next() * rx * 2)
+      const y = Math.round(-ry + next() * ry * 2)
+      if (!inside(x, y) || !inside(x + 1, y - 1)) continue
+      set(x + rx + pad, y + ry + pad, TUFT[0])
+      set(x + 1 + rx + pad, y - 1 + ry + pad, TUFT[1])
+    }
+    ctx.putImageData(image, 0, 0)
+    cache.set(key, canvas)
+    return canvas
+  }
+})()
+
+/** The shadows' tint: a dark green that reads on the cobblestones and on the grass. */
+const SHADOW = 'rgba(30,40,30,0.3)'
+/** How flat a silhouette shadow is, of its piece's painted height. */
+const SQUASH = 0.28
+
+/** A piece's silhouette shadow: its painted rows squashed to `SQUASH` of their height and tinted `SHADOW`. Cached per art. */
+const silhouette = (() => {
+  const cache = new Map<Art, HTMLCanvasElement>()
+  onCanvasReset(() => cache.clear())
+  return (art: Art) => {
+    const hit = cache.get(art)
+    if (hit) return hit
+    const canvas = createCanvas(art.img.width, Math.max(1, Math.round(art.h * SQUASH)))
+    const ctx = context2d(canvas)
+    ctx.drawImage(art.img, 0, art.minY, art.img.width, art.h, 0, 0, canvas.width, canvas.height)
+    ctx.globalCompositeOperation = 'source-in'
+    ctx.fillStyle = SHADOW
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    cache.set(art, canvas)
+    return canvas
+  }
+})()
+
+/** Draws a shadow on the ground at (x, y), screen px: a silhouette bottom-aligned to the feet and nudged 2 px down-right, or an ellipse centered there. */
+const drawShadow = (ctx: CanvasRenderingContext2D, s: Shadow, x: number, y: number) => {
+  if ('rx' in s) return blitCentered(ctx, ellipse(s.rx, s.ry, SHADOW), x, y)
+  const mask = silhouette(s.art)
+  ctx.drawImage(mask, Math.round(x - (s.art.minX + s.art.w / 2)) + 2, Math.round(y - mask.height) + 2)
+}
+
+/** Draws the plaza's floor (cobblestones, the pieces' shadows) under everyone, when it's in view. */
+export const drawPlazaGround = (ctx: CanvasRenderingContext2D, plaza: Plaza, camX: number, camY: number, w: number, h: number) => {
+  const layout = layoutOf(plaza.level)
+  if (!layout) return
+  const c = layout.cobbles
+  const x = plaza.x + c.x - camX
+  const y = plaza.y + c.y - camY
+  if (x + c.rx + 8 < 0 || x - c.rx - 8 > w || y + c.ry + 8 < 0 || y - c.ry - layout.building.h > h) return
+  blitCentered(ctx, cobbles(c.rx, c.ry), x, y)
+  for (const s of layout.shadows) drawShadow(ctx, s, plaza.x + s.x - camX, plaza.y + s.y - camY)
+}
+
+/** Height (px) of a hop `since` seconds in, `count` hops long; 0 outside it. */
+const hop = (since: number, count: number, height: number) =>
+  since < 0 || since >= 0.3 * count ? 0 : Math.round(Math.sin((Math.PI * (since % 0.3)) / 0.3) * height)
+
+const KEEPER_REACTION = 1.4
+
+/** One shopkeeper, its hop and its emote. `shadowed` false behind the kiosk's counter. */
+const drawKeeper = (ctx: CanvasRenderingContext2D, k: Keeper, purple: boolean, x: number, y: number, time: number, shadowed: boolean) => {
+  const sprite = keeperSprites(purple)
+  if (!sprite) return
+  const lift = hop(time - k.hopAt, 2, 4)
+  if (shadowed) shadow(ctx, x, y, sprite.bodyW)
+  drawPokemon(ctx, sprite, 'Idle', k.dir, time + (purple ? 0.4 : 0), x, y - lift)
+  const since = time - k.hopAt
+  if (since >= 0 && since < KEEPER_REACTION) blitCentered(ctx, EMOTES()[k.emote], x, y - sprite.bodyH - lift - 8 - (Math.floor(since * 4) % 2))
+}
+
+/** Something the meadow sorts by its feet among the wanderers. */
+export type Piece = { y: number; draw: (ctx: CanvasRenderingContext2D, camX: number, camY: number, time: number) => void }
+
+const pieceCache = new WeakMap<Plaza, { level: ShopLevel; pieces: Piece[] }>()
+
+/** The plaza's upright pieces (building, shopkeepers, props), world y of their feet, built once per level. */
+export const plazaPieces = (plaza: Plaza): readonly Piece[] => {
+  const cached = pieceCache.get(plaza)
+  if (cached?.level === plaza.level) return cached.pieces
+  const layout = layoutOf(plaza.level)
+  if (!layout) return []
+  const { building, counter } = layout
+  const keepers = keepersAt(plaza, layout)
+  const pieces: Piece[] = [
+    ...layout.props.map((p): Piece => {
+      const art = arts.get(p.id)!
+      const x = plaza.x + p.x
+      const y = plaza.y + p.y
+      return {
+        y,
+        draw: (ctx, camX, camY) => put(ctx, art, x - camX, y - camY),
+      }
+    }),
+    {
+      y: plaza.y,
+      draw: (ctx, camX, camY, time) => {
+        put(ctx, building, plaza.x - camX, plaza.y - camY)
+        if (counter === null) return
+        // The kiosk: its shopkeepers stand behind the counter, whose front is drawn again over their feet.
+        for (const k of keepers) drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, false)
+        put(ctx, building, plaza.x - camX, plaza.y - camY, counter)
+      },
+    },
+    ...(counter === null
+      ? keepers.map((k): Piece => ({ y: k.y, draw: (ctx, camX, camY, time) => drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, true) }))
+      : []),
+  ]
+  pieceCache.set(plaza, { level: plaza.level, pieces })
+  return pieces
+}
+
+/** The edge marker's box: Kecleon's head on a white card. Null until Kecleon's sheets are in (`lazy` tries again then). */
+const markerCard = lazy(() => {
+  const s = loadedSprites(KECLEON_DEX)
+  if (!s) return null
+  const sheet = s.anims.Idle
+  const card = createCanvas(24, 19)
+  const ctx = context2d(card)
+  ctx.fillStyle = '#283040'
+  ctx.fillRect(1, 0, 22, 19)
+  ctx.fillRect(0, 1, 24, 17)
+  ctx.fillStyle = '#f8f8f8'
+  ctx.fillRect(1, 1, 22, 17)
+  ctx.fillStyle = '#e0f0d0'
+  ctx.fillRect(2, 2, 20, 15)
+  // The head: the top of the first idle frame, facing the player.
+  const top = Math.max(0, Math.round(sheet.fh / 2 + s.footY - s.bodyH))
+  ctx.drawImage(sheet.img, Math.round(sheet.fw / 2 - 9), top, 18, 14, 3, 3, 18, 14)
+  return card
+})
+/**
+ * A card with Kecleon's head and an arrow at the edge of the view, pointing
+ * at the plaza while it's off screen. It remembers where it was drawn
+ * (`plaza.marker`) so a tap on it can lead there.
+ */
+export const drawPlazaMarker = (ctx: CanvasRenderingContext2D, plaza: Plaza, camX: number, camY: number, w: number, h: number, time: number, show: boolean) => {
+  plaza.marker.shown = false
+  const target = { x: plaza.x - camX, y: plaza.y - 30 - camY }
+  if (!show || (target.x > -20 && target.x < w + 20 && target.y > -10 && target.y < h + 40)) return
+  const box = markerCard()
+  if (!box) return
+  const cx = w / 2
+  const cy = h / 2
+  const dx = target.x - cx
+  const dy = target.y - cy
+  // The card (24×19) and its arrow (5 px) stay whole inside the view.
+  const ex = w / 2 - 20
+  const ey = h / 2 - 17
+  const t = Math.min(ex / Math.max(1e-6, Math.abs(dx)), ey / Math.max(1e-6, Math.abs(dy)))
+  const sideways = Math.abs(dx) * ey >= Math.abs(dy) * ex
+  const bob = Math.floor(time * 3) % 2
+  const x = Math.round(clamp(cx + dx * t, 20, w - 20)) + (sideways ? Math.sign(dx) * bob : 0)
+  const y = Math.round(clamp(cy + dy * t, h * 0.16, h * 0.84)) + (sideways ? 0 : Math.sign(dy) * bob)
+  ctx.drawImage(box, x - 12, y - 9)
+  // The arrow, on the side facing the plaza: a dark triangle around a green one.
+  const dir = sideways ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) }
+  const baseX = dir.x > 0 ? x + 12 : dir.x < 0 ? x - 13 : x
+  const baseY = dir.y > 0 ? y + 10 : dir.y < 0 ? y - 10 : y
+  for (let i = 0; i < 5; i++) {
+    const len = 9 - i * 2
+    ctx.fillStyle = i < 4 && i > 0 ? '#5cb048' : '#283040'
+    if (dir.x !== 0) ctx.fillRect(baseX + dir.x * i, baseY - Math.floor(len / 2), 1, len)
+    else ctx.fillRect(baseX - Math.floor(len / 2), baseY + dir.y * i, len, 1)
+    if (i > 0 && i < 4) {
+      ctx.fillStyle = '#283040'
+      if (dir.x !== 0) {
+        ctx.fillRect(baseX + dir.x * i, baseY - Math.floor(len / 2), 1, 1)
+        ctx.fillRect(baseX + dir.x * i, baseY + Math.floor(len / 2), 1, 1)
+      } else {
+        ctx.fillRect(baseX - Math.floor(len / 2), baseY + dir.y * i, 1, 1)
+        ctx.fillRect(baseX + Math.floor(len / 2), baseY + dir.y * i, 1, 1)
+      }
+    }
+  }
+  plaza.marker.x = x + camX
+  plaza.marker.y = y + camY
+  plaza.marker.shown = true
+}

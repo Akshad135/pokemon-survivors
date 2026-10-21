@@ -65,6 +65,12 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | --: | --- | --- | --- |
 ${rows.join('\n')}
 
+## Shop art
+
+The Kecleon shop's buildings and props in the lobby (\`public/assets/shop/\`) were generated for this
+project with [PixelLab](https://www.pixellab.ai). Kecleon's emotion portraits in its dialogue box are
+SpriteCollab portraits, credited in its row above.
+
 ## Cries
 
 Cries come from [PokéAPI/cries](https://github.com/PokeAPI/cries).
