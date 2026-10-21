@@ -4,9 +4,9 @@ import { h } from './dom'
 /**
  * The shop's PixelLab icons (32×32, `public/assets/shop/icons/`): the Bag's
  * consumables, the evolution items, the TM disc, the Bottle Caps, the daily
- * gift, the shop's expansion and the wishlist's heart.
+ * gift, the shop's expansion, the wishlist's heart and the loyalty card's stamp.
  */
-export type ShopIconId = BagItem | EvoItemId | 'tmDisc' | 'bottleCap' | 'goldBottleCap' | 'gift' | 'expansion' | 'wishlist'
+export type ShopIconId = BagItem | EvoItemId | 'tmDisc' | 'bottleCap' | 'goldBottleCap' | 'gift' | 'expansion' | 'wishlist' | 'stamp'
 
 export const shopIconUrl = (id: ShopIconId) => `${import.meta.env.BASE_URL}assets/shop/icons/${id}.png`
 

@@ -50,6 +50,24 @@ const WISP: BallArt = [
   { 1: '#180c28', 2: '#b8a0f0', 4: '#180c28', 5: '#f05870' },
 ]
 
+/** The loyalty card's stamp, for the Freguês frame's corners (1 outline, 2 the red ink, 4 the paper showing through). */
+const STAMP: BallArt = [
+  ['.11111.', '1222221', '1244221', '1242421', '1224221', '1222221', '.11111.'],
+  { 1: '#581818', 2: '#e04040', 4: '#fff0e0' },
+]
+
+/** A gold coin with Kecleon's red zigzag, for the Department Store's frame (1 outline, 2 gold, 3 its shade, 5 the zigzag). */
+const KECLEON_COIN: BallArt = [
+  ['..111..', '.12221.', '1222221', '1525251', '1252521', '.13331.', '..111..'],
+  { 1: '#3a2808', 2: '#f8d030', 3: '#c89028', 5: '#e03838' },
+]
+
+/** Meowth's charm coin, for its frame's corners (1 outline, 2 gold, 3 its shade, 4 the shine, 5 the oval). */
+const CHARM: BallArt = [
+  ['..111..', '.14221.', '1225221', '1252521', '1225221', '.13331.', '..111..'],
+  { 1: '#4a3008', 2: '#f8d030', 3: '#c89028', 4: '#fffbe0', 5: '#a06818' },
+]
+
 export const CARD_FRAMES = {
   /** The game's own dialog box: dark line, paper, blue. */
   classic: { edge: '#283040', light: '#f8f8f8', main: '#6878a8', shade: '#101830', accent: '#ffcb05' },
@@ -65,6 +83,12 @@ export const CARD_FRAMES = {
   pumpkin: { edge: '#1c0c24', light: '#ffc040', main: '#f07818', shade: '#4a1c5c', accent: '#a058e0', ball: JACK },
   /** The Noite das Bruxas Caça aos Fantasmas, every night boss beaten: spectral violet and ghost-fire teal, wisps in the corners. */
   spectral: { edge: '#0c0618', light: '#80f0d0', main: '#5a38a0', shade: '#1c0c38', accent: '#58f0b0', ball: WISP },
+  /** The Kecleon Shop's loyalty card, 14 stamps: Kecleon green with red stamps in the corners. */
+  regular: { edge: '#10280c', light: '#c8f0a0', main: '#48a040', shade: '#183c14', accent: '#e04040', ball: STAMP },
+  /** The Kecleon Shop grown to the Department Store: gold leaf, Kecleon's zigzag coins in the corners. */
+  kecleon: { edge: '#3a2808', light: '#fff4b0', main: '#d8a020', shade: '#6a4a10', accent: '#e03838', ball: KECLEON_COIN },
+  /** Meowth's weekend caravan: cream fur, brown trim and a charm coin in each corner. */
+  meowth: { edge: '#2c1c0c', light: '#fff4d8', main: '#e0c890', shade: '#7a5a30', accent: '#f8d030', ball: CHARM },
 } as const satisfies Record<FrameId, CardFrame>
 
 /** A card's backdrop: sky bands top to bottom (dithered where they meet) and how many stars (fireflies, crystals, snow…). */

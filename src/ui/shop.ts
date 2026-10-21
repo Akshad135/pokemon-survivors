@@ -6,7 +6,7 @@ import { BRANCH_OFFERS, BRANCHES, branchesOf } from '../data/branches'
 import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
 import { BOTTLE_CAPS, EVO_ITEM_IDS, EVO_ITEM_PRICE, EVO_ITEMS, MAX_CAPS, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, type BagItem, type EvoItemId, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { armBlock, armedItems, armItem, BAG_ITEM_IDS, BAG_ITEMS, bagCount } from '../game/bag'
-import { addDays, brasiliaDay, msToNextDay, type DayKey } from '../game/day'
+import { addDays, brasiliaDay, dayNumber, msToNextDay, type DayKey } from '../game/day'
 import { canPlay } from '../game/capture'
 import { buyCap, buyEvoItem, capBlock, capLevel, capPrice, evoBlock } from '../game/evoItems'
 import { MOVES } from '../game/moves'
@@ -43,6 +43,10 @@ import { portraitUrl } from '../render/sprites'
 import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
 import { PLAZA_PROPS } from '../render/plaza'
+import { CARAVAN, LOYALTY } from '../data/visitors'
+import { buyFromCaravan, caravanBlock, caravanPrice, caravanStock, goldCapFits, haggle, haggled, isoWeek, listPrice, type CaravanBlock, type CaravanKey } from '../game/caravan'
+import { isGiftReward, milestoneState, nextMilestone, reachedNow, type Milestone } from '../game/loyalty'
+import { caravanDay, caravanOpen, meowthSpeaker } from './visitors'
 import { dialogue, type Dialogue, type DialogueLine } from './dialogue'
 import { h, later, setText } from './dom'
 import { emptyCounter, kecleonSpeaker, levelUpLine, pickTrigger, thanks, visitLine, weekdayOf, type VisitContext } from './kecleon'
@@ -66,8 +70,18 @@ import { nearestInDirection, type Direction } from './spatial'
 
 /* ---------------- The plaza and its shopkeepers ---------------- */
 
-/** Who tends a shelf: the green Kecleon, or the purple brother (from the Tent, PR 4's TMs and evolution items). */
-export type Keeper = 'green' | 'purple'
+/** Who tends a shelf: the green Kecleon, the purple brother (from the Tent: TMs and evolution items), or Meowth at his weekend caravan. */
+export type Keeper = 'green' | 'purple' | 'meowth'
+
+/** A shelf's keeper as the dialogue box's speaker. */
+const speakerOf = (keeper: Keeper) => (keeper === 'meowth' ? meowthSpeaker() : kecleonSpeaker(keeper === 'purple'))
+
+/** A thanks after a purchase from `keeper`, a different one each time (`n`: purchases so far this visit). */
+const thanksFrom = (keeper: Keeper, n: number): DialogueLine => {
+  if (keeper !== 'meowth') return thanks(n, keeper === 'purple')
+  const lines = t().plaza.meowth.thanks
+  return { text: lines[n % lines.length]!, emotion: n % 2 ? 'Joyous' : 'Happy' }
+}
 
 /** The plaza behind the panel, as the shop drives it (the shell wires it to the lobby's meadow). */
 export type ShopPlaza = {
@@ -441,8 +455,15 @@ const capPickCard = (id: PlayableId, pick: () => void): Card => {
  * The picker of whose Bottle Caps the Treino shows: every Pokémon the save
  * can play, with its caps as pips. Arrows move, Enter (a tap) picks, Esc closes.
  */
-const capsPicker = (root: HTMLElement, input: Input, save: Save, current: PlayableId, onPick: (id: PlayableId | null) => void): Screen => {
-  const ids = (Object.keys(PLAYABLE) as PlayableId[]).filter((id) => canPlay(save, id))
+const capsPicker = (
+  root: HTMLElement,
+  input: Input,
+  save: Save,
+  current: PlayableId,
+  onPick: (id: PlayableId | null) => void,
+  opts: { title: string; fits: (id: PlayableId) => boolean } = { title: t().shop.caps.pickTitle, fits: (id) => canPlay(save, id) },
+): Screen => {
+  const ids = (Object.keys(PLAYABLE) as PlayableId[]).filter(opts.fits)
   const buttons = ids.map((id) =>
     h(
       'button',
@@ -466,7 +487,7 @@ const capsPicker = (root: HTMLElement, input: Input, save: Save, current: Playab
   const el: HTMLElement = h(
     'div',
     { class: 'screen dim shop-confirm' },
-    h('div', { class: 'dialog box pop caps-picker' }, h('div', { class: 'dialog-title' }, t().shop.caps.pickTitle), h('div', { class: 'caps-pick-grid' }, ...buttons)),
+    h('div', { class: 'dialog box pop caps-picker' }, h('div', { class: 'dialog-title' }, opts.title), h('div', { class: 'caps-pick-grid' }, ...buttons)),
   )
   // A tap outside the box closes it.
   el.addEventListener('click', (e) => e.target === el && onPick(null))
@@ -578,6 +599,8 @@ const unlocks = (level: ShopLevel): string[] => {
     (!was || def.bagSlots > was.bagSlots) && e.bag(def.bagSlots),
     def.wishlist && !was?.wishlist && e.wishlist,
     def.brother && !was?.brother && e.brother,
+    def.caravan && !was?.caravan && e.caravan,
+    def.tycoon && !was?.tycoon && e.tycoon,
     ...def.props.filter((p) => PLAZA_PROPS.includes(p)).map((p) => e.props[p]),
   ].filter((l): l is string => typeof l === 'string')
 }
@@ -611,7 +634,187 @@ const levelCard = (level: ShopLevel): Card => {
     },
     act: (save) => (isNext(save) ? investInShop(save) : null),
     confirm: (save) => (isNext(save) && !investBlock(save) ? sh.investConfirm(sh.levels[level], formatPokeDollars(def.cost)) : null),
-    said: (_, after) => levelUpLine(sh.levels[after.shop.level]),
+    said: (_, after) => (SHOP_LEVELS[after.shop.level].tycoon ? { text: t().plaza.lines.tycoon, emotion: 'Joyous' } : levelUpLine(sh.levels[after.shop.level])),
+  }
+}
+
+/* ---------------- Caravana (Meowth, weekends) ---------------- */
+
+/** What a caravan card shows: its name, picture and what it is. */
+const caravanItem = (key: CaravanKey): Item => {
+  const c = t().shop.caravan
+  if (key === 'egg') return { name: t().eggs.tiers[CARAVAN.egg.tier], picture: () => img(eggIcon(CARAVAN.egg.tier), 'shop-egg'), text: `${t().mart.eggDescription(formatNumber(EGG_TIERS[CARAVAN.egg.tier].steps))} ${c.egg}` }
+  if (key === 'goldCap') return { name: CARAVAN.goldCap.name, picture: () => shopIcon('goldBottleCap'), text: c.goldCap.text }
+  if (key === 'frame') return { name: t().mart.styles.frame[CARAVAN.frame.id], picture: (big) => stylePicture('frame', CARAVAN.frame.id, big === true), text: c.frame }
+  return { name: MOVES[key].name, picture: () => tmPicture(key), text: `${t().moves[key].description} ${c.tm}` }
+}
+
+/** What a blocked caravan card says instead of its price. */
+const caravanBlockText = (block: CaravanBlock | null) => (block === null || block === 'poor' ? null : t().shop.caravan.blocks[block])
+
+/** Whether a caravan key is one of its TMs. */
+const isCaravanTm = (key: CaravanKey): key is Exclude<CaravanKey, 'egg' | 'goldCap' | 'frame'> => key !== 'egg' && key !== 'goldCap' && key !== 'frame'
+
+/**
+ * One of Meowth's wares: one of each per weekend, at his prices (less the
+ * haggle). The Gold Bottle Cap asks for its Pokémon first (`pickGoldCap`).
+ */
+const caravanCard = (key: CaravanKey, ctx: ShelfContext): Card => {
+  const c = t().shop.caravan
+  const item = caravanItem(key)
+  const { el, badges, sub, price } = shell(item.picture(), item.name)
+  const day = caravanDay()
+  const priceText = (save: Save) => {
+    const now = caravanPrice(save, key, day)
+    return now < listPrice(key) ? [h('s', {}, formatPokeDollars(listPrice(key))), ' ', formatPokeDollars(now)] : [formatPokeDollars(now)]
+  }
+  /** No Pokémon left for the Gold Bottle Cap: every one the save plays is at the top. */
+  const noTarget = (save: Save) => key === 'goldCap' && !(Object.keys(PLAYABLE) as PlayableId[]).some((id) => goldCapFits(save, id))
+  return {
+    el,
+    refresh: (save) => {
+      const block = caravanBlock(save, key, day)
+      setBadges(badges, [isCaravanTm(key) && badge('exclusive', t().shop.badges.exclusive), haggled(save, day) && block === null && badge('deal', `−${Math.round(CARAVAN.haggle.off * 100)}%`)])
+      setText(sub, isCaravanTm(key) ? t().types[MOVES[key].type] : '')
+      const blocked = caravanBlockText(block)
+      price.replaceChildren(...(blocked ? [blocked] : priceText(save)))
+      el.classList.toggle('sold', block === 'soldOut' || block === 'owned' || block === 'full' || noTarget(save))
+      el.classList.toggle('poor', block === 'poor')
+    },
+    describe: (save) => {
+      const block = caravanBlock(save, key, day)
+      return {
+        icon: item.picture(true),
+        title: item.name,
+        text: [item.text, c.stock, noTarget(save) ? c.goldCap.none : ''].filter((l) => l !== '').join(' '),
+        action: caravanBlockText(block) ?? t().mart.buy(formatPokeDollars(caravanPrice(save, key, day))),
+        disabled: block !== null || noTarget(save),
+      }
+    },
+    act: (save) => {
+      if (key !== 'goldCap') return buyFromCaravan(save, key, day)
+      if (caravanBlock(save, key, day) || noTarget(save)) return null
+      // The Gold Bottle Cap: pick the Pokémon first; the purchase happens with the pick.
+      ctx.pickGoldCap((id) => buyFromCaravan(loadSave(), key, day, id))
+      return null
+    },
+    said: (before, after) => (after.wallet < before.wallet ? 'thanks' : null),
+  }
+}
+
+/** The haggle: with enough loyalty stamps Meowth takes 20% off the weekend; without, he refuses (with a line, nothing random). */
+const haggleCard = (): Card => {
+  const c = t().shop.caravan.haggle
+  const off = Math.round(CARAVAN.haggle.off * 100)
+  const day = caravanDay()
+  const { el, badges, sub, price } = shell(shopIcon('stamp'), c.title)
+  return {
+    el,
+    refresh: (save) => {
+      const done = haggled(save, day)
+      setBadges(badges, [])
+      setText(sub, `${Math.min(save.shop.stamps, CARAVAN.haggle.stamps)}/${CARAVAN.haggle.stamps}`)
+      setText(price, done ? c.doneAction : `−${off}%`)
+      el.classList.toggle('done', done)
+    },
+    describe: (save) => ({
+      icon: shopIcon('stamp'),
+      title: c.title,
+      text: haggled(save, day) ? c.done(off) : c.text(CARAVAN.haggle.stamps, off),
+      action: haggled(save, day) ? c.doneAction : c.action,
+      disabled: false,
+    }),
+    // Haggling again, or without the stamps, keeps the save as it was: Meowth answers either way.
+    act: (save) => (haggled(save, day) ? save : haggle(save, day).save),
+    said: (before, after) => {
+      const m = t().plaza.meowth
+      if (haggled(before, day)) return { text: m.haggleAgain, emotion: 'Sigh' }
+      return haggled(after, day) ? { text: m.haggleYes(off), emotion: 'Joyous' } : { text: m.haggleNo(CARAVAN.haggle.stamps), emotion: 'Angry' }
+    },
+  }
+}
+
+/* ---------------- Fidelidade (the loyalty card) ---------------- */
+
+/** The card itself: the stamps in rows of `LOYALTY.perRow`, up to the next milestone's row (the milestones marked with their number). */
+const stampGrid = (save: Save) => {
+  const n = save.shop.stamps
+  const next = nextMilestone(n)
+  const shown = Math.max(LOYALTY.perRow, Math.ceil(Math.max(n, next?.stamps ?? n) / LOYALTY.perRow) * LOYALTY.perRow)
+  const marks = new Set<number>(LOYALTY.milestones.map((m) => m.stamps))
+  return h(
+    'span',
+    { class: 'loyalty-grid' },
+    ...Array.from({ length: shown }, (_, i) =>
+      h('span', { class: `loyalty-cell${i < n ? ' on' : ''}${marks.has(i + 1) ? ' mark' : ''}` }, i < n ? shopIcon('stamp') : marks.has(i + 1) ? String(i + 1) : ''),
+    ),
+  )
+}
+
+/** A milestone's reward as words. */
+const rewardName = (m: Milestone) => t().shop.loyalty.rewards[rewardKey(m)]
+
+/** Which kind of reward a milestone brings, for its texts. */
+const rewardKey = (m: Milestone) => (m.reward === 'statue' || m.reward === 'mystery' ? m.reward : m.reward.kind === 'egg' ? 'egg' : m.reward.kind === 'style' ? 'frame' : 'title')
+
+/** The loyalty card as a wide card: the grid of stamps, how many, and what the next milestone brings. */
+const loyaltyCard = (): Card => {
+  const l = t().shop.loyalty
+  const grid = h('span', { class: 'loyalty-card' })
+  const { el, sub, price } = shell(grid, l.card)
+  el.classList.add('loyalty')
+  const nextLine = (save: Save) => {
+    const next = nextMilestone(save.shop.stamps)
+    return next ? l.next(next.stamps - save.shop.stamps, rewardName(next)) : ''
+  }
+  return {
+    el,
+    refresh: (save) => {
+      grid.replaceChildren(stampGrid(save))
+      setText(sub, nextLine(save))
+      setText(price, l.milestone(save.shop.stamps))
+    },
+    describe: (save) => ({ icon: shopIcon('stamp'), title: l.card, text: [l.cardText(save.shop.stamps), nextLine(save)].filter((x) => x !== '').join(' '), action: l.milestone(save.shop.stamps), disabled: true }),
+    act: () => null,
+    said: () => null,
+  }
+}
+
+/** A milestone's picture: its gift's look, the golden statue, or a question mark. */
+const milestonePicture = (m: Milestone): HTMLElement => {
+  if (m.reward === 'mystery') return h('span', { class: 'shop-mystery' }, '?')
+  if (m.reward === 'statue') return shopIcon('expansion')
+  if (m.reward.kind === 'egg') return img(eggIcon(m.reward.tier), 'shop-egg')
+  if (m.reward.kind === 'style') return img(frameIcon(m.reward.style.id), 'shop-pixel')
+  return shopIcon('stamp')
+}
+
+/** One milestone of the card: what it brings and where it stands (yours, waiting in the gift box, on the plaza, or ahead). */
+const milestoneCard = (m: Milestone): Card => {
+  const l = t().shop.loyalty
+  const { el, badges, sub, price } = shell(milestonePicture(m), rewardName(m))
+  const status = (save: Save) => {
+    const state = milestoneState(save, m)
+    return state === 'ahead' ? l.states.ahead(m.stamps - save.shop.stamps) : l.states[state]
+  }
+  return {
+    el,
+    refresh: (save) => {
+      const state = milestoneState(save, m)
+      setBadges(badges, [badge(state === 'ahead' ? 'level' : 'owned', l.milestone(m.stamps).toLocaleUpperCase())])
+      setText(sub, '')
+      setText(price, status(save))
+      el.classList.toggle('done', state !== 'ahead')
+    },
+    describe: (save) => ({
+      icon: milestonePicture(m),
+      title: `${l.milestone(m.stamps)} · ${rewardName(m)}`,
+      text: [l.texts[rewardKey(m)], milestoneState(save, m) === 'waiting' ? l.waiting : ''].filter((x) => x !== '').join(' '),
+      action: status(save),
+      disabled: true,
+    }),
+    act: () => null,
+    said: () => null,
   }
 }
 
@@ -635,7 +838,8 @@ const countdown = () => {
 type Shelf = {
   id: keyof ReturnType<typeof t>['shop']['tabs']
   keeper: Keeper
-  open: (level: ShopLevel) => boolean
+  /** Whether its tab shows for the save now (the level's shelves; the caravan only on its weekends). */
+  open: (save: Save) => boolean
   layout: 'grid' | 'list'
   stock: (save: Save, ctx: ShelfContext) => readonly (Card | string)[]
   intro: (save: Save) => string
@@ -646,8 +850,8 @@ type Shelf = {
   hello?: () => DialogueLine
 }
 
-/** What a shelf's stock can read and do beyond the save: whose Bottle Caps the Treino shows, and opening their picker. */
-type ShelfContext = { capsFor: PlayableId; pickCaps: () => void }
+/** What a shelf's stock can read and do beyond the save: whose Bottle Caps the Treino shows, opening their picker, and picking the Gold Bottle Cap's Pokémon. */
+type ShelfContext = { capsFor: PlayableId; pickCaps: () => void; pickGoldCap: (buy: (id: PlayableId) => Save | null) => void }
 
 /** The Treino: the Bottle Caps of one Pokémon (from the Shop, Lv 3; a locked peek before) and the card to pick another, then the vitamins. */
 const trainingStock = (save: Save, ctx: ShelfContext): (Card | string)[] => [
@@ -676,6 +880,15 @@ const SHELVES: readonly Shelf[] = [
     countdown: true,
   },
   {
+    id: 'caravan',
+    keeper: 'meowth',
+    open: caravanOpen,
+    layout: 'grid',
+    stock: (_, ctx) => [haggleCard(), ...caravanStock(isoWeek(caravanDay())).map((key) => caravanCard(key, ctx))],
+    intro: (save) => t().shop.caravan.intro(haggled(save, caravanDay()) ? Math.round(CARAVAN.haggle.off * 100) : null),
+    hello: () => meowthHello(),
+  },
+  {
     id: 'bag',
     keeper: 'green',
     open: () => true,
@@ -686,7 +899,7 @@ const SHELVES: readonly Shelf[] = [
   {
     id: 'tms',
     keeper: 'purple',
-    open: (lv) => SHOP_LEVELS[lv].shelves.tms,
+    open: (save) => SHOP_LEVELS[save.shop.level].shelves.tms,
     layout: 'grid',
     stock: (save) => tmStock(save),
     intro: (save) => t().shop.tms.intro(armedTms(save.tms, tmLimit(save.shop.level)).length, tmLimit(save.shop.level)),
@@ -695,7 +908,7 @@ const SHELVES: readonly Shelf[] = [
   {
     id: 'evolution',
     keeper: 'purple',
-    open: (lv) => SHOP_LEVELS[lv].shelves.evolution,
+    open: (save) => SHOP_LEVELS[save.shop.level].shelves.evolution,
     layout: 'grid',
     stock: () => EVO_ITEM_IDS.map(evoCard),
     intro: () => t().shop.evolution.intro,
@@ -710,8 +923,22 @@ const SHELVES: readonly Shelf[] = [
     stock: () => STYLE_SLOTS.flatMap((slot) => [t().mart.styleSlots[slot], ...styleCards(slot)]),
     intro: () => t().shop.styleIntro,
   },
+  {
+    id: 'loyalty',
+    keeper: 'green',
+    open: () => true,
+    layout: 'list',
+    stock: () => [loyaltyCard(), ...LOYALTY.milestones.map(milestoneCard)],
+    intro: (save) => t().shop.loyalty.intro(save.shop.stamps),
+  },
   { id: 'expansion', keeper: 'green', open: () => true, layout: 'list', stock: () => SHOP_LEVEL_IDS.map(levelCard), intro: () => t().shop.expansion.intro },
 ]
+
+/** Meowth's hello at his caravan: one of his lines, by the day (the same all day long). */
+const meowthHello = (): DialogueLine => {
+  const lines = t().plaza.meowth.hello
+  return { text: lines[dayNumber(caravanDay()) % lines.length]!, emotion: 'Happy' }
+}
 
 /* ---------------- Arrival ---------------- */
 
@@ -750,6 +977,20 @@ const visitContext = (before: Save, save: Save, wonLastRun: boolean): VisitConte
   }
 }
 
+/**
+ * What Kecleon says first on a visit that stamped the card: a milestone just
+ * reached (a gift in the lobby, or the statue), else today's stamp on the first
+ * visits; null leaves it to the usual triggers (`pickTrigger`).
+ */
+const stampLine = (before: Save, save: Save): DialogueLine | null => {
+  const reached = reachedNow(before.shop.stamps, save.shop.stamps)
+  const l = t().plaza.lines
+  const top = reached[reached.length - 1]
+  if (top) return top.reward === 'statue' ? { text: l.statue, emotion: 'Joyous' } : isGiftReward(top.reward) ? { text: l.milestone(top.stamps), emotion: 'Joyous' } : null
+  // The stamp gets a word while the card is new; past the first milestone, only the milestones do.
+  return save.shop.stamps > before.shop.stamps && save.shop.stamps < LOYALTY.milestones[0].stamps ? { text: l.stamp(save.shop.stamps), emotion: 'Happy' } : null
+}
+
 /* ---------------- The panel ---------------- */
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
@@ -781,13 +1022,15 @@ const confirmDialog = (root: HTMLElement, input: Input, text: string, onAnswer: 
  * camouflaged, waits to be talked to and pops out first); the visit counts
  * toward the regulars' streak. `close` goes back (the lobby pans home).
  */
-export const shop = (root: HTMLElement, input: Input, opts: { close: () => void; plaza: ShopPlaza; wonLastRun: boolean }): Screen => {
+export const shop = (root: HTMLElement, input: Input, opts: { close: () => void; plaza: ShopPlaza; wonLastRun: boolean; shelf?: 'caravan' }): Screen => {
   const sh = t().shop
   const before = loadSave()
   let save: Save = { ...before, shop: recordVisit(before.shop, brasiliaDay(today())) }
   writeSave(save)
   const context = visitContext(before, save, opts.wonLastRun)
-  const arrival = visitLine(pickTrigger(context), context)
+  // A talk with Meowth opens on his caravan (while it's here), with his hello.
+  const first = SHELVES.find((s) => s.id === opts.shelf && s.open(save)) ?? SHELVES[0]!
+  const arrival = first.keeper === 'meowth' ? meowthHello() : (stampLine(before, save) ?? visitLine(pickTrigger(context), context))
 
   const el = h('div', { class: 'shop-layer' })
   root.append(el)
@@ -804,12 +1047,13 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
   /** The panel and Kecleon's passive box beside it. */
   const start = (line: DialogueLine) => {
     talk?.dispose()
-    talk = dialogue(root, input, { speaker: kecleonSpeaker(), lines: [line], onDone: () => {}, className: 'shop-talk', passive: true })
+    talk = dialogue(root, input, { speaker: speakerOf(first.keeper), lines: [line], onDone: () => {}, className: 'shop-talk', passive: true })
     panel = openPanel()
   }
 
   // The camouflage easter egg: an empty counter until it's talked to, then "Surpresa!", then the shop.
-  if (opts.plaza.hidden()) {
+  if (first.keeper === 'meowth') opts.plaza.lookAt('meowth')
+  if (opts.plaza.hidden() && first.keeper !== 'meowth') {
     let phase: 'empty' | 'surprise' = 'empty'
     talk = dialogue(root, input, {
       speaker: emptyCounter(),
@@ -827,7 +1071,7 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
   } else start(arrival)
 
   function openPanel() {
-    let shelf: Shelf = SHELVES[0]!
+    let shelf: Shelf = first
     let cards: Card[] = []
     /** The card the strip describes, and the element the arrows are on (a tab, a card or a button). */
     let chosen = 0
@@ -863,7 +1107,7 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
     )
     el.append(sheet)
 
-    const openShelves = () => SHELVES.filter((s) => s.open(save.shop.level))
+    const openShelves = () => SHELVES.filter((s) => s.open(save))
     const wishable = (card: Card | undefined) => card?.wish !== undefined && SHOP_LEVELS[save.shop.level].wishlist
     /** Everything the arrows reach, in the layout's order. */
     const navs = () => [...tabs.filter((tab) => !tab.hidden), ...cards.map((c) => c.el), ...(wishable(cards[chosen]) ? [wishBtn] : []), buy, back, ...(shelf.refund ? [refund] : [])]
@@ -898,12 +1142,12 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
     const build = () => {
       tabs.forEach((tab, i) => {
         const s = SHELVES[i]!
-        tab.hidden = !s.open(save.shop.level)
+        tab.hidden = !s.open(save)
         tab.classList.toggle('on', s === shelf)
         tab.setAttribute('aria-selected', String(s === shelf))
       })
       items.className = `shop-items ${shelf.layout}`
-      const stock = shelf.stock(save, { capsFor, pickCaps })
+      const stock = shelf.stock(save, { capsFor, pickCaps, pickGoldCap })
       cards = stock.filter((c): c is Card => typeof c !== 'string')
       items.replaceChildren(...stock.map((c) => (typeof c === 'string' ? h('div', { class: 'shop-group' }, c) : c.el)))
       cards.forEach((c, i) => wire(c.el, i))
@@ -921,10 +1165,40 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
       focused = cards[0]?.el ?? null
       opts.plaza.lookAt(shelf.keeper)
       // Each of the purple brother's shelves gets its own hello, even coming from the other one; the green one takes the counter back.
-      const back: DialogueLine | null = from === 'purple' && shelf.keeper === 'green' ? { text: t().plaza.lines.greenBack, emotion: 'Happy' } : null
+      const back: DialogueLine | null = from !== 'green' && shelf.keeper === 'green' ? { text: t().plaza.lines.greenBack, emotion: 'Happy' } : null
       const hello = shelf.hello?.() ?? back
-      if (hello) talk?.say([hello], kecleonSpeaker(shelf.keeper === 'purple'))
+      if (hello) talk?.say([hello], speakerOf(shelf.keeper))
       refresh()
+    }
+
+    /**
+     * The Gold Bottle Cap's picker: the Pokémon the save plays below the top
+     * level. A pick buys it (`buy` from the stored save) and Meowth thanks you.
+     */
+    function pickGoldCap(buy: (id: PlayableId) => Save | null) {
+      if (confirm) return
+      later(() => {
+        const at = loadSave()
+        confirm = capsPicker(
+          root,
+          input,
+          at,
+          goldCapFits(at, save.partner) ? save.partner : ((Object.keys(PLAYABLE) as PlayableId[]).find((id) => goldCapFits(at, id)) ?? save.partner),
+          (id) => {
+            confirm?.dispose()
+            confirm = null
+            const next = id && buy(id)
+            if (next) {
+              save = next
+              writeSave(save)
+              playSfx('buy')
+              talk?.say([thanksFrom(shelf.keeper, purchases++)], speakerOf(shelf.keeper))
+            }
+            refresh()
+          },
+          { title: t().shop.caravan.goldCap.pickTitle, fits: (id) => goldCapFits(at, id) },
+        )
+      })
     }
 
     /** Opens the Bottle Caps' picker; a pick rebuilds the Treino on that Pokémon. */
@@ -994,14 +1268,14 @@ export const shop = (root: HTMLElement, input: Input, opts: { close: () => void;
       save = next
       writeSave(save)
       const said = card.said ? card.said(was, next) : 'thanks'
-      const line = said === 'thanks' ? thanks(purchases++, shelf.keeper === 'purple') : said
+      const line = said === 'thanks' ? thanksFrom(shelf.keeper, purchases++) : said
       if (next.shop.level !== was.shop.level) {
         playSfx('evolve')
         opts.plaza.grew(next.shop.level)
         // A bigger shop shows more of the Vitrine and packs more: every shelf redraws.
         build()
       } else playSfx(line ? 'buy' : 'select')
-      if (line) talk?.say([line], kecleonSpeaker(shelf.keeper === 'purple'))
+      if (line) talk?.say([line], speakerOf(shelf.keeper))
       refresh()
     }
 

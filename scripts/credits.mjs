@@ -67,9 +67,10 @@ ${rows.join('\n')}
 
 ## Shop art
 
-The Kecleon shop's buildings and props in the lobby (\`public/assets/shop/\`) were generated for this
-project with [PixelLab](https://www.pixellab.ai). Kecleon's emotion portraits in its dialogue box are
-SpriteCollab portraits, credited in its row above.
+The Kecleon shop's buildings, props, icons, Meowth's caravan and the seasonal stalls in the lobby
+(\`public/assets/shop/\`) were generated for this project with [PixelLab](https://www.pixellab.ai). The emotion
+portraits in the dialogue box (Kecleon, Meowth, Duskull and Delibird) are SpriteCollab portraits,
+credited in their rows above.
 
 ## Cries
 

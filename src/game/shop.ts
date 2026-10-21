@@ -162,8 +162,9 @@ export const vitrinePrice = (v: Vitrine, key: VitrineKey, style: StyleSave): num
 /**
  * The save's side of the shop: its level, what it bought and whether it took
  * the gift on `day` (an older day's counts start over), the card pinned on
- * the wishlist, and its visits (the last Brasília day it came by and how many
- * days in a row), for what Kecleon says (`ui/kecleon.ts`).
+ * the wishlist, its visits (the last Brasília day it came by and how many
+ * days in a row), for what Kecleon says (`ui/kecleon.ts`), and the loyalty
+ * card's stamps: one per Brasília day with a visit, for good (`game/loyalty.ts`).
  */
 export type ShopSave = {
   level: ShopLevel
@@ -172,6 +173,7 @@ export type ShopSave = {
   gift: boolean
   wishlist: VitrineKey | null
   visit: ShopVisit
+  stamps: number
 }
 
 /** The last day the player came to the shop ('' never) and the days in a row up to it. */
@@ -179,13 +181,17 @@ export type ShopVisit = { day: DayKey; streak: number }
 
 const NO_VISIT: ShopVisit = { day: '', streak: 0 }
 
-export const NO_SHOP: ShopSave = { level: 1, day: '', bought: {}, gift: false, wishlist: null, visit: NO_VISIT }
+export const NO_SHOP: ShopSave = { level: 1, day: '', bought: {}, gift: false, wishlist: null, visit: NO_VISIT, stamps: 0 }
 
-/** The player comes to the shop on `day`: the streak grows if the last visit was the day before, starts over after a gap, and stays on the same day. */
+/**
+ * The player comes to the shop on `day`: the streak grows if the last visit
+ * was the day before, starts over after a gap, and stays on the same day; a
+ * new day stamps the loyalty card (a gap never takes stamps away).
+ */
 export const recordVisit = (shop: ShopSave, day: DayKey): ShopSave => {
   const { visit } = shop
   if (visit.day === day) return shop
-  return { ...shop, visit: { day, streak: visit.day !== '' && addDays(visit.day, 1) === day ? visit.streak + 1 : 1 } }
+  return { ...shop, visit: { day, streak: visit.day !== '' && addDays(visit.day, 1) === day ? visit.streak + 1 : 1 }, stamps: shop.stamps + 1 }
 }
 
 /** The shop as of `day`: a new day restocks and brings a new gift. */
@@ -268,17 +274,18 @@ export const buyStyle = <S extends StyleSlot>(save: Save, slot: S, id: StyleId<S
  * Two shops of the same player: the higher level (an investment on either
  * side stands); the most recent day, with the most bought of each card and
  * the gift taken on either side on the same day; the wishlist is
- * `incoming`'s, a setting like the difficulty.
+ * `incoming`'s, a setting like the difficulty; the loyalty stamps, the larger count.
  */
 export const mergeShop = (base: ShopSave, incoming: ShopSave): ShopSave => {
   const level = Math.max(base.level, incoming.level) as ShopLevel
   const visit = mergeVisit(base.visit, incoming.visit)
-  if (base.day !== incoming.day) return { ...(base.day > incoming.day ? base : incoming), level, wishlist: incoming.wishlist, visit }
+  const stamps = Math.max(base.stamps, incoming.stamps)
+  if (base.day !== incoming.day) return { ...(base.day > incoming.day ? base : incoming), level, wishlist: incoming.wishlist, visit, stamps }
   const bought = Object.fromEntries(VITRINE_POOL.flatMap((key) => {
     const n = Math.max(base.bought[key] ?? 0, incoming.bought[key] ?? 0)
     return n > 0 ? [[key, n]] : []
   }))
-  return { level, day: base.day, bought, gift: base.gift || incoming.gift, wishlist: incoming.wishlist, visit }
+  return { level, day: base.day, bought, gift: base.gift || incoming.gift, wishlist: incoming.wishlist, visit, stamps }
 }
 
 /** Two sides' visits: the later day's, and on the same day the longer streak (each side counted its own visits up to it). */
@@ -314,12 +321,15 @@ export const parseShop = (raw: unknown, legacyCounter?: unknown): ShopSave => {
     return { ...NO_SHOP, day: legacyCounter.day, bought: parseBought(isRecord(legacyCounter.bought) ? legacyCounter.bought : {}) }
   }
   const day = isDayKey(raw.day) ? raw.day : ''
+  const visit = parseVisit(raw.visit)
   return {
     level: isShopLevel(raw.level) ? raw.level : 1,
     day,
     bought: day && isRecord(raw.bought) ? parseBought(raw.bought) : {},
     gift: day !== '' && raw.gift === true,
     wishlist: isVitrineKey(raw.wishlist) ? raw.wishlist : null,
-    visit: parseVisit(raw.visit),
+    visit,
+    // A save from before the loyalty card gets the stamp of its last visit.
+    stamps: raw.stamps === undefined ? (visit.day === '' ? 0 : 1) : wholeNumber(raw.stamps, 100_000),
   }
 }

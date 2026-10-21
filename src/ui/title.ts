@@ -18,6 +18,10 @@ import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIco
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import type { Place } from '../render/titleScene'
+import type { PlazaNpc } from '../render/plaza'
+import { STALLS } from '../data/visitors'
+import { dialogue, type Dialogue } from './dialogue'
+import { stallSpeaker, stallToday } from './visitors'
 import { inviterName } from '../ranking'
 import { ROUTES, SOCIAL_IDS, SOCIALS, type SocialId } from '../site/routes'
 import { fetchWall } from '../supporters'
@@ -82,10 +86,10 @@ export type Meadow = {
   visit: (to: Place, instant?: boolean) => void
   /** Where the meadow rests, or `moving` during a trip. */
   at: () => Place | 'moving'
-  /** Above the shopkeeper the strolling partner stands close enough to talk to, or null. */
-  talkSpot: () => Vec | null
-  /** Whether a tap lands on the plaza's shopkeepers, its building or the edge marker pointing to it. */
-  tapsShop: (at: Vec) => boolean
+  /** Above whoever at the plaza the strolling partner stands close enough to talk to (and who), or null. */
+  talkSpot: () => (Vec & { who: PlazaNpc }) | null
+  /** Who a tap is for: the shop (its shopkeepers, building or the edge marker pointing to it), Meowth or a stall; null for none. */
+  tapsShop: (at: Vec) => PlazaNpc | null
 }
 
 export type TitleActions = {
@@ -118,9 +122,9 @@ export type TitleActions = {
   /**
    * Opens the shop over the Kecleon plaza once the camera got there (Kecleon
    * talks beside it, `ui/shop.ts`); its Back must call `close`, which pans
-   * back home and brings the lobby back in.
+   * back home and brings the lobby back in. `shelf`: open on Meowth's caravan (a talk with him).
    */
-  mart: (close: () => void) => Screen
+  mart: (close: () => void, shelf?: 'caravan') => Screen
   /** Opens the Trainer Card over the title (the Trainer chip, `C`, the invite banner), like `settings`. */
   trainer: (focus: LobbyFocus) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no tile. */
@@ -656,12 +660,16 @@ export const titleScreen = (
   /** How this lobby lets the partner go (see `Meadow.meet`). */
   let leave: (() => void) | null = null
   /** A trip to the Kecleon's shop under way: going there, the shop open, or coming back. */
-  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'shop' | 'back' } | null = null
+  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'shop' | 'back'; shelf?: 'caravan' } | null = null
+  /** Who the talk prompt is over: a shopkeeper, Meowth or a stall's keeper. */
+  let talkWho: PlazaNpc = 'keeper'
+  /** A seasonal stall's keeper talking, over the plaza (the lobby's keys wait). */
+  let chat: Dialogue | null = null
   /** A sync landed during a trip: the lobby is rebuilt once back home (`refresh`). */
   let stale = false
   /** The top bar's wallet, refreshed when the shop closes. */
   let wallet: HTMLElement | null = null
-  const talkButton = talkPrompt(() => visitShop('shop'))
+  const talkButton = talkPrompt(() => talkTo(talkWho))
 
   /** Everything the arrows reach, wherever the layout puts it. */
   let navs: { el: HTMLElement; key: LobbyFocus }[] = []
@@ -820,9 +828,9 @@ export const titleScreen = (
    * There Kecleon hops, cries and says hello, then the shop opens over the
    * plaza (`TitleActions.mart`); closing it comes back (`goHome`).
    */
-  function visitShop(mode: ShopTrip, instant = false) {
+  function visitShop(mode: ShopTrip, instant = false, shelf?: 'caravan') {
     if (visit || !stage) return
-    visit = { mode, phase: 'going' }
+    visit = { mode, phase: 'going', shelf }
     offKeys?.()
     offKeys = input.onKey(visitKey)
     el.classList.add('visiting')
@@ -832,6 +840,36 @@ export const titleScreen = (
     actions.meadow.stick(null)
     actions.meadow.steer({ x: 0, y: 0 }, null, stage.feet())
     actions.meadow.visit('plaza', instant)
+  }
+
+  /** A talk at the plaza: the shop with a shopkeeper, the caravan's shelf with Meowth, a few words with a stall's keeper. */
+  function talkTo(who: PlazaNpc) {
+    if (who === 'stall') return talkToStall()
+    visitShop('shop', false, who === 'meowth' ? 'caravan' : undefined)
+  }
+
+  /**
+   * The seasonal stall's keeper says its lines over the plaza; the lobby's
+   * keys wait. Its event screen follows (the Noite das Bruxas' candy jar) when it has one.
+   */
+  function talkToStall() {
+    const id = stallToday()
+    if (!id || chat || visit || !stage) return
+    offKeys?.()
+    offKeys = null
+    talkButton.classList.add('hidden')
+    playSfx('select')
+    chat = dialogue(root, input, {
+      speaker: stallSpeaker(id),
+      lines: t().plaza.stalls[id].map((text, i) => ({ text, emotion: i === 0 ? 'Happy' : 'Joyous' })),
+      onDone: () =>
+        later(() => {
+          chat?.dispose()
+          chat = null
+          if (STALLS[id].link === 'halloween' && halloweenCardShows()) return runs.halloween()
+          offKeys = input.onKey(lobbyKey)
+        }),
+    })
   }
 
   /** Keys during a trip: Esc or Backspace turns back on the way; for a look, Enter or Space too once there. */
@@ -849,7 +887,7 @@ export const titleScreen = (
       return
     }
     visit.phase = 'shop'
-    overScreen = actions.mart(goHome)
+    overScreen = actions.mart(goHome, visit.shelf)
   }
 
   /** Back from the shop: the camera pans home, the partner hops back to its stage and the lobby slides in. */
@@ -927,10 +965,11 @@ export const titleScreen = (
   const stroll = () => {
     if (!stage) return
     const { meadow } = actions
-    // A tap on a shopkeeper, the shop or the marker pointing to it goes shopping.
-    if (tap && meadow.tapsShop(tap)) {
+    // A tap on a shopkeeper, the shop or the marker pointing to it goes shopping (Meowth's caravan, or a stall's keeper talks).
+    const tapped = tap && meadow.tapsShop(tap)
+    if (tapped) {
       tap = null
-      return visitShop('shop')
+      return talkTo(tapped)
     }
     meadow.steer(drag?.stick?.vec ?? heldMove(input), tap, stage.feet())
     meadow.stick(drag?.stick ?? null)
@@ -939,6 +978,7 @@ export const titleScreen = (
     // By a shopkeeper, the talk prompt floats over its head.
     const spot = meadow.talkSpot()
     talkButton.classList.toggle('hidden', !spot)
+    if (spot) talkWho = spot.who
     if (spot) talkButton.style.cssText = `left:${Math.round(spot.x / uiZoom())}px;top:${Math.round(spot.y / uiZoom())}px`
   }
 
@@ -992,11 +1032,12 @@ export const titleScreen = (
     tick: (time: number) => {
       overScreen?.tick?.(time)
       if (el.classList.contains('hidden')) return
+      chat?.tick?.(time)
       if (visit) travel()
-      else stroll()
+      else if (!chat) stroll()
       for (const tick of tickers) tick(time)
       if (logo.width > 1) fitLogo(logo, lobby === null)
     },
-    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offSynced(), offPointers(), leaveMeadow(), el.remove()),
+    dispose: () => (overScreen?.dispose(), chat?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offSynced(), offPointers(), leaveMeadow(), el.remove()),
   }
 }

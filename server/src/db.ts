@@ -49,8 +49,8 @@ export const saveStore = (sql: Sql) => ({
    * clears were tracked, or from a device that lost its save, still count.
    * Gift-only rewards stay only if the player's gifts brought them (`keepGiven`):
    * an edited save can't give itself the Supporter title or a ribbon. The
-   * game's own gifts it applied and earned (`gameGiftsApplied`: the candy
-   * jar's, the Caça aos Fantasmas') count as given. After a
+   * game's own gifts it applied and earned (`gameGiftsApplied`: the candy jar's, the
+   * loyalty card's, the Tycoon's) count as given. After a
    * reset (`users.save_reset_revision`), devices that haven't seen it get the reset save back.
    */
   push: (userId: string, push: Push) =>

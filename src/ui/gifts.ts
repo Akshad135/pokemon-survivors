@@ -77,6 +77,10 @@ export const reasonLine = (gift: Gift) => {
       return t().gifts.halloweenSupport
     case 'ghostHunt':
       return t().gifts.ghostHunt
+    case 'loyalty':
+      return t().gifts.loyalty(r.stamps)
+    case 'tycoon':
+      return t().gifts.tycoon
   }
 }
 

@@ -4,6 +4,7 @@ import { EMOTES, type Emote } from './art'
 import { drawSparkles, shadow } from './draw'
 import { drawPokemon, loadedSprites, loadSpecies, type SpeciesSprites } from './sprites'
 import type { ShopLevel, ShopProp } from '../data/shop'
+import { CARAVAN, STALLS, type StallId } from '../data/visitors'
 
 /**
  * The Kecleon plaza: the lobby's shop as a place in the meadow, east of the
@@ -12,9 +13,12 @@ import type { ShopLevel, ShopProp } from '../data/shop'
  * (`public/assets/shop/`), anchored by the bottom center of what they paint,
  * with no ground of their own: each casts a shadow on the cobblestones (its
  * own silhouette squashed flat, or a soft ellipse under the deep 3/4
- * buildings). The building keeps an invisible footprint walkers go around.
- * The shopkeepers are Kecleon's own sheets, plus its purple brother from Lv 2,
- * recolored from the same sheets. Pure presentation, like the rest of the lobby.
+ * buildings). The shopkeepers are Kecleon's own sheets, plus its purple
+ * brother from Lv 2, recolored from the same sheets. Visitors come by too
+ * (`PlazaVisitors`, set by the shell): Meowth's weekend caravan, a seasonal
+ * stall and the golden Kecleon statue. The building and each visitor keep an
+ * invisible footprint walkers go around (`padsOf`). Pure presentation, like
+ * the rest of the lobby.
  */
 
 export const KECLEON_DEX = 352
@@ -25,12 +29,36 @@ export type { ShopLevel }
 /** Where the plaza's building stands from home (the lobby's resting view center), world px: off a desktop's right edge, low enough that the edge marker pointing to it clears the lobby's right rail. */
 export const PLAZA_OFFSET = { x: 520, y: 150 } as const
 
-/** The props the plaza draws so far, of the levels' `props` (the Expansão shelf lists only these; the string lights and the statue come later). */
-export const PLAZA_PROPS: readonly ShopProp[] = ['board', 'flowers']
+/** The props the plaza draws so far, of the levels' `props` (the Expansão shelf lists only these; the string lights come later). */
+export const PLAZA_PROPS: readonly ShopProp[] = ['board', 'flowers', 'statue']
 
-const ART_IDS = ['lv1', 'lv2', 'lv3', 'lv4', 'lv5', 'lantern', 'board', 'crates', 'flowers'] as const
-type ArtId = (typeof ART_IDS)[number]
-const artFile = (id: ArtId) => `${import.meta.env.BASE_URL}assets/shop/${id.startsWith('lv') ? `shop-${id}` : `prop-${id}`}.png`
+/** Who comes by the plaza today (the shell works it out from the save and the day): Meowth's caravan, a seasonal stall, the golden statue. */
+export type PlazaVisitors = { caravan: boolean; stall: StallId | null; statue: boolean }
+
+export const NO_VISITORS: PlazaVisitors = { caravan: false, stall: null, statue: false }
+
+/** Who talks at the plaza: a shopkeeper (the shop), Meowth (his caravan) or a seasonal stall's keeper. */
+export type PlazaNpc = 'keeper' | 'meowth' | 'stall'
+
+/** The plaza's PNGs (`public/assets/shop/`), by id. */
+const ART_FILES = {
+  lv1: 'shop-lv1',
+  lv2: 'shop-lv2',
+  lv3: 'shop-lv3',
+  lv4: 'shop-lv4',
+  lv5: 'shop-lv5',
+  lantern: 'prop-lantern',
+  board: 'prop-board',
+  crates: 'prop-crates',
+  flowers: 'prop-flowers',
+  pedestal: 'prop-pedestal',
+  caravan: 'caravan-meowth',
+  'stall-duskull': 'stall-duskull',
+  'stall-delibird': 'stall-delibird',
+} as const satisfies Record<string, string>
+type ArtId = keyof typeof ART_FILES
+const ART_IDS = Object.keys(ART_FILES) as ArtId[]
+const artFile = (id: ArtId) => `${import.meta.env.BASE_URL}assets/shop/${ART_FILES[id]}.png`
 
 /** A loaded PNG and the box of its painted pixels, so pieces stand on their real feet whatever padding the image has. */
 type Art = { img: HTMLImageElement; minX: number; minY: number; maxY: number; w: number; h: number }
@@ -148,17 +176,27 @@ type Layout = {
   spot: Placed
   /** The cobblestones' ellipse. */
   cobbles: Placed & { rx: number; ry: number }
-  /** What the building and the props cast on the cobblestones. */
+  /** Where the visitors stand, when they come: Meowth's wagon and Meowth, a seasonal stall and its keeper, the golden statue. */
+  wagon: Placed
+  meowth: KeeperSpot
+  stall: Placed
+  stallKeeper: KeeperSpot
+  statue: Placed
+  /** What the building, the props and the visitors' pieces cast on the cobblestones. */
   shadows: readonly Shadow[]
 }
 
-const layouts = new Map<ShopLevel, Layout>()
+const layouts = new Map<string, Layout>()
 
 /** Row of `shop-lv3.png` where its counter's front starts (the kiosk's shopkeepers stand behind it). */
 const LV3_COUNTER = 122
 
-const layoutOf = (level: ShopLevel): Layout | null => {
-  const cached = layouts.get(level)
+/** The visitors' footprints (radii, never drawn), each a little wider than what stands on it. */
+const VISITOR_PADS = { wagon: { rx: 74, ry: 16 }, stall: { rx: 60, ry: 18 }, statue: { rx: 21, ry: 7 } } as const
+
+const layoutOf = (level: ShopLevel, v: PlazaVisitors = NO_VISITORS): Layout | null => {
+  const key = `${level}:${v.caravan}:${v.stall}:${v.statue}`
+  const cached = layouts.get(key)
   if (cached) return cached
   const building = arts.get(`lv${level}`)
   if (!building || ART_IDS.some((id) => !arts.has(id))) return null
@@ -179,12 +217,17 @@ const layoutOf = (level: ShopLevel): Layout | null => {
             { x: -half + 2, y: 14, dir: 1 },
             { x: half - 2, y: 14, dir: 7 },
           ]
+  // The caravan parks west of the shop, a stall stands east of it (where the crates were); the statue keeps the front.
+  const wagon = { x: -lamp - 118, y: 44 }
+  const stall = { x: lamp + 84, y: 40 }
+  const statue = { x: -Math.round(half * 0.5), y: 92 }
+  const wide = v.caravan || v.stall !== null
   const props: Layout['props'] = [
     { id: 'lantern', x: -lamp, y: 14 },
     { id: 'lantern', x: lamp, y: 14 },
-    { id: 'crates', x: lamp + 26, y: 30 },
-    ...(level >= 2 ? [{ id: 'board' as const, x: -lamp - 36, y: 58 }] : []),
-    ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: lamp + 16, y: 66 }] : []),
+    ...(v.stall === null ? [{ id: 'crates' as const, x: lamp + 26, y: 30 }] : []),
+    ...(level >= 2 ? [{ id: 'board' as const, x: v.caravan ? -lamp - 196 : -lamp - 36, y: v.caravan ? 96 : 58 }] : []),
+    ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: v.stall ? lamp + 30 : lamp + 16, y: v.stall ? 82 : 66 }] : []),
   ]
   const layout: Layout = {
     building,
@@ -193,14 +236,22 @@ const layoutOf = (level: ShopLevel): Layout | null => {
     counter: level === 3 ? LV3_COUNTER : null,
     props,
     spot: { x: 0, y: 34 },
-    cobbles: { x: 0, y: 36 - Math.round(depth * 0.7), rx: lamp + 66, ry: 78 + Math.round(depth * 1.1) },
+    cobbles: { x: 0, y: (wide ? 40 : 36) - Math.round(depth * 0.7), rx: lamp + (wide ? 186 : 66), ry: (wide ? 88 : 78) + Math.round(depth * 1.1) },
+    wagon,
+    meowth: { x: wagon.x + 84, y: wagon.y + 16, dir: 1 },
+    stall,
+    stallKeeper: { x: stall.x - 58, y: stall.y + 12, dir: 7 },
+    statue,
     shadows: [
       // The deep 3/4 buildings cast a soft ellipse under their footprint; everything else, its own silhouette.
       depth ? { x: 0, y: -Math.round(half * 0.3), rx: half - 10, ry: Math.round(half * 0.32) } : { x: 0, y: 0, art: building },
       ...props.map((p) => ({ x: p.x, y: p.y, art: arts.get(p.id)! })),
+      ...(v.caravan ? [{ ...wagon, art: arts.get('caravan')! }] : []),
+      ...(v.stall ? [{ ...stall, art: arts.get(STALLS[v.stall].art)! }] : []),
+      ...(v.statue ? [{ ...statue, art: arts.get('pedestal')! }] : []),
     ],
   }
-  layouts.set(level, layout)
+  layouts.set(key, layout)
   return layout
 }
 
@@ -222,8 +273,10 @@ export type Plaza = {
   hidden: boolean
   /** Scene time the shop last grew a level: dust and sparkles around the new building (`celebratePlaza`). */
   party: number
-  /** The shopkeeper the camera leans towards while the shop is open: 0 the green Kecleon, 1 the purple brother. */
-  focus: 0 | 1
+  /** The shopkeeper the camera leans towards while the shop is open: 0 the green Kecleon, 1 the purple brother, or Meowth's caravan. */
+  focus: 0 | 1 | 'caravan'
+  /** Who comes by today (set by the shell). */
+  visitors: PlazaVisitors
 }
 
 export const createPlaza = (home: Vec): Plaza => {
@@ -240,11 +293,24 @@ export const createPlaza = (home: Vec): Plaza => {
     hidden: false,
     party: -9,
     focus: 0,
+    visitors: NO_VISITORS,
   }
 }
 
 /** The shopkeepers present at the plaza's level, with where they stand (world px). */
 const keepersAt = (plaza: Plaza, layout: Layout) => layout.keepers.map((k, i) => ({ keeper: plaza.keepers[i]!, x: plaza.x + k.x, y: plaza.y + k.y, spot: k, purple: i === 1 }))
+
+/** The visitors present, who talks for each and where they stand (world px): Meowth by his wagon, a stall's keeper by the stall. */
+const npcsAt = (plaza: Plaza, layout: Layout): { who: PlazaNpc; dex: number; spot: KeeperSpot }[] => {
+  const v = plaza.visitors
+  return [
+    ...(v.caravan ? [{ who: 'meowth' as const, dex: CARAVAN.dex, spot: layout.meowth }] : []),
+    ...(v.stall ? [{ who: 'stall' as const, dex: STALLS[v.stall].dex, spot: layout.stallKeeper }] : []),
+  ]
+}
+
+/** The visitors' facing, turned to the partner when it comes close (by `stepPlaza`), keyed by who they are. */
+const visitorDirs = new WeakMap<Plaza, Partial<Record<PlazaNpc, Dir8>>>()
 
 /** The shopkeepers hop and pop an emote at scene time `time` (the brother a beat later). */
 export const greetKeepers = (plaza: Plaza, time: number) => {
@@ -268,43 +334,42 @@ export const celebratePlaza = (plaza: Plaza, level: ShopLevel, time: number) => 
   greetKeepers(plaza, time + 0.2)
 }
 
-/** Turns the shopkeepers in front of the building towards `partner` when it comes close. */
+/** Turns the shopkeepers in front of the building, and the visitors, towards `partner` when it comes close. */
 export const stepPlaza = (plaza: Plaza, partner: Vec | null) => {
-  const layout = layoutOf(plaza.level)
+  const layout = layoutOf(plaza.level, plaza.visitors)
   if (!layout) return
-  for (let i = 0; i < layout.keepers.length; i++) {
-    const spot = layout.keepers[i]!
+  const facing = (spot: KeeperSpot, free: boolean) => {
     const x = plaza.x + spot.x
     const y = plaza.y + spot.y
-    const close = partner && layout.counter === null && Math.hypot(partner.x - x, partner.y - y) < 70
-    plaza.keepers[i]!.dir = close ? dir8(partner.x - x, partner.y - y) : spot.dir
+    return partner && free && Math.hypot(partner.x - x, partner.y - y) < 70 ? dir8(partner.x - x, partner.y - y) : spot.dir
   }
+  for (let i = 0; i < layout.keepers.length; i++) plaza.keepers[i]!.dir = facing(layout.keepers[i]!, layout.counter === null)
+  visitorDirs.set(plaza, Object.fromEntries(npcsAt(plaza, layout).map((n) => [n.who, facing(n.spot, true)])))
 }
 
 /** Where the partner stands to shop, world px. */
 export const shopSpot = (plaza: Plaza): Vec => {
-  const spot = layoutOf(plaza.level)?.spot ?? { x: 0, y: 34 }
+  const spot = layoutOf(plaza.level, plaza.visitors)?.spot ?? { x: 0, y: 34 }
   return { x: plaza.x + spot.x, y: plaza.y + spot.y }
 }
 
 /** How close (world px) the partner must stand to a shopkeeper or the counter to talk. */
 const TALK_RANGE = 24
 
-/** Above the head of the shopkeeper the partner (feet at `p`) can talk to, world px; null when out of range. */
-export const talkAnchor = (plaza: Plaza, p: Vec): Vec | null => {
-  const layout = layoutOf(plaza.level)
+/** Above the head of whoever the partner (feet at `p`) can talk to, world px, and who it is; null when out of range. */
+export const talkAnchor = (plaza: Plaza, p: Vec): (Vec & { who: PlazaNpc }) | null => {
+  const layout = layoutOf(plaza.level, plaza.visitors)
   if (!layout) return null
   const atCounter = Math.hypot(p.x - plaza.x - layout.spot.x, p.y - plaza.y - layout.spot.y) < TALK_RANGE
-  let best: KeeperSpot | null = null
-  let bestD = Infinity
-  for (const k of layout.keepers) {
-    const d = Math.hypot(p.x - plaza.x - k.x, p.y - plaza.y - k.y)
-    if ((d < TALK_RANGE || atCounter) && d < bestD) {
-      bestD = d
-      best = k
-    }
-  }
-  return best && { x: plaza.x + best.x, y: plaza.y + best.y - 30 }
+  const candidates = [
+    ...layout.keepers.map((spot) => ({ spot, who: 'keeper' as PlazaNpc, counter: atCounter })),
+    ...npcsAt(plaza, layout).map((n) => ({ spot: n.spot, who: n.who, counter: false })),
+  ].flatMap((c) => {
+    const d = Math.hypot(p.x - plaza.x - c.spot.x, p.y - plaza.y - c.spot.y)
+    return d < TALK_RANGE || c.counter ? [{ ...c, d }] : []
+  })
+  const best = candidates.reduce<(typeof candidates)[number] | null>((a, c) => (a === null || c.d < a.d ? c : a), null)
+  return best && { x: plaza.x + best.spot.x, y: plaza.y + best.spot.y - 30, who: best.who }
 }
 
 /** How close (world px) a walker may come to a shopkeeper's feet. */
@@ -316,10 +381,10 @@ const KEEPER_ROOM = 12
  * if standing on it), so walkers go around the shop (mutates `v`).
  */
 export const pushOut = (plaza: Plaza, v: Vec) => {
-  const layout = layoutOf(plaza.level)
+  const layout = layoutOf(plaza.level, plaza.visitors)
   if (!layout) return
-  // Nobody stands on a shopkeeper's toes.
-  for (const k of layout.keepers) {
+  // Nobody stands on a shopkeeper's (or a visitor's) toes.
+  for (const k of [...layout.keepers, ...npcsAt(plaza, layout).map((n) => n.spot)]) {
     const dx = v.x - plaza.x - k.x
     const dy = v.y - plaza.y - k.y
     const d = Math.hypot(dx, dy)
@@ -337,30 +402,50 @@ export const pushOut = (plaza: Plaza, v: Vec) => {
     else v.x = plaza.x + Math.sign(v.x - plaza.x || 1) * half
     return
   }
-  const { rx, ry } = layout.pad
-  const cx = plaza.x
-  const cy = plaza.y + layout.pad.y
-  const dx = (v.x - cx) / rx
-  const dy = (v.y - cy) / ry
-  const d = dx * dx + dy * dy
-  if (d >= 1) return
-  if (d < 1e-6) {
-    v.y = cy + ry
-    return
+  // Off the building's footprint and the visitors' (a wagon or a stall is as solid as its footprint, a little taller behind).
+  for (const pad of padsOf(plaza, layout)) {
+    const { rx, ry } = pad
+    const cx = plaza.x + pad.x
+    const cy = plaza.y + pad.y
+    const dx = (v.x - cx) / rx
+    const dy = (v.y - cy) / (v.y < cy ? ry * pad.back : ry)
+    const d = dx * dx + dy * dy
+    if (d >= 1) continue
+    if (d < 1e-6) {
+      v.y = cy + ry
+      continue
+    }
+    const k = 1 / Math.sqrt(d)
+    v.x = cx + (v.x - cx) * k
+    v.y = cy + (v.y - cy) * k
   }
-  const k = 1 / Math.sqrt(d)
-  v.x = cx + (v.x - cx) * k
-  v.y = cy + (v.y - cy) * k
 }
 
-/** Whether a tap at `at` (world px) lands on a shopkeeper, the building or the edge marker. */
-export const plazaTapped = (plaza: Plaza, at: Vec) => {
-  if (plaza.marker.shown && Math.abs(at.x - plaza.marker.x) <= 18 && Math.abs(at.y - plaza.marker.y) <= 15) return true
-  const layout = layoutOf(plaza.level)
-  if (!layout) return false
+/** The footprints on the plaza, never drawn: the building's, then the visitors' (center relative to the building's feet, radii; `back` stretches the solid part behind a tall piece). */
+const padsOf = (plaza: Plaza, layout: Layout) => {
+  const v = plaza.visitors
+  return [
+    { x: 0, y: layout.pad.y, rx: layout.pad.rx, ry: layout.pad.ry, back: 1 },
+    ...(v.caravan ? [{ x: layout.wagon.x, y: layout.wagon.y - 6, ...VISITOR_PADS.wagon, back: 3 }] : []),
+    ...(v.stall ? [{ x: layout.stall.x, y: layout.stall.y - 16, ...VISITOR_PADS.stall, back: 3 }] : []),
+    ...(v.statue ? [{ x: layout.statue.x, y: layout.statue.y - 3, ...VISITOR_PADS.statue, back: 2 }] : []),
+  ]
+}
+
+/** Who a tap at `at` (world px) is for: the shop (a shopkeeper, the building or the edge marker), Meowth (him or his wagon), a stall; null for none. */
+export const plazaTapped = (plaza: Plaza, at: Vec): PlazaNpc | null => {
+  if (plaza.marker.shown && Math.abs(at.x - plaza.marker.x) <= 18 && Math.abs(at.y - plaza.marker.y) <= 15) return 'keeper'
+  const layout = layoutOf(plaza.level, plaza.visitors)
+  if (!layout) return null
+  const near = (spot: Placed) => Math.abs(at.x - plaza.x - spot.x) <= 12 && at.y <= plaza.y + spot.y + 3 && at.y >= plaza.y + spot.y - 30
+  const npc = npcsAt(plaza, layout).find((n) => near(n.spot))
+  if (npc) return npc.who
+  const over = (art: Art | undefined, spot: Placed) => art !== undefined && Math.abs(at.x - plaza.x - spot.x) <= art.w / 2 && at.y <= plaza.y + spot.y + 4 && at.y >= plaza.y + spot.y - art.h
+  if (plaza.visitors.caravan && over(arts.get('caravan'), layout.wagon)) return 'meowth'
+  if (plaza.visitors.stall && over(arts.get(STALLS[plaza.visitors.stall].art), layout.stall)) return 'stall'
   const half = layout.building.w / 2
-  if (Math.abs(at.x - plaza.x) <= half && at.y <= plaza.y + 4 && at.y >= plaza.y - layout.building.h) return true
-  return keepersAt(plaza, layout).some((k) => Math.abs(at.x - k.x) <= 12 && at.y <= k.y + 3 && at.y >= k.y - 30)
+  if (Math.abs(at.x - plaza.x) <= half && at.y <= plaza.y + 4 && at.y >= plaza.y - layout.building.h) return 'keeper'
+  return keepersAt(plaza, layout).some((k) => near({ x: k.x - plaza.x, y: k.y - plaza.y })) ? 'keeper' : null
 }
 
 /**
@@ -370,11 +455,17 @@ export const plazaTapped = (plaza: Plaza, at: Vec) => {
  * on the left, leaving the right side to the shop's panel.
  */
 export const plazaFrame = (plaza: Plaza, w: number, h: number): Vec => {
-  const layout = layoutOf(plaza.level)
+  const layout = layoutOf(plaza.level, plaza.visitors)
   const tall = layout?.building.h ?? 140
-  // A step towards the shopkeeper who talks (the purple brother's shelves).
-  const lean = Math.round((layout?.keepers[plaza.focus]?.x ?? 0) * 0.4)
   const framed = frameAt(plaza, layout, tall, w, h)
+  // Meowth's caravan: portrait screens center on it, the rest lean well over to it.
+  if (plaza.focus === 'caravan' && layout) {
+    const mid = Math.round(layout.wagon.x + (layout.meowth.x - layout.wagon.x) / 2)
+    // Portrait: a step down too, so Meowth (in front of the wagon) clears the dialogue box.
+    return h > w * 1.1 ? { x: Math.round(plaza.x + mid - w / 2), y: framed.y + 56 } : { x: framed.x + Math.round(mid * 0.7), y: framed.y }
+  }
+  // A step towards the shopkeeper who talks (the purple brother's shelves).
+  const lean = Math.round((layout?.keepers[plaza.focus === 'caravan' ? 0 : plaza.focus]?.x ?? 0) * 0.4)
   return { x: framed.x + lean, y: framed.y }
 }
 
@@ -500,7 +591,7 @@ const drawShadow = (ctx: CanvasRenderingContext2D, s: Shadow, x: number, y: numb
 
 /** Draws the plaza's floor (cobblestones, the pieces' shadows) under everyone, when it's in view. */
 export const drawPlazaGround = (ctx: CanvasRenderingContext2D, plaza: Plaza, camX: number, camY: number, w: number, h: number) => {
-  const layout = layoutOf(plaza.level)
+  const layout = layoutOf(plaza.level, plaza.visitors)
   if (!layout) return
   const c = layout.cobbles
   const x = plaza.x + c.x - camX
@@ -532,14 +623,64 @@ const drawKeeper = (ctx: CanvasRenderingContext2D, k: Keeper, purple: boolean, x
 /** Something the meadow sorts by its feet among the wanderers. */
 export type Piece = { y: number; draw: (ctx: CanvasRenderingContext2D, camX: number, camY: number, time: number) => void }
 
-const pieceCache = new WeakMap<Plaza, { level: ShopLevel; pieces: Piece[] }>()
+const pieceCache = new WeakMap<Plaza, { layout: Layout; pieces: Piece[] }>()
 
-/** The plaza's upright pieces (building, shopkeepers, props), world y of their feet, built once per level. */
+/* ---------------- The golden statue ---------------- */
+
+/** A gold leaf ramp, darkest first: each opaque pixel of Kecleon's sheet takes the step of its brightness. */
+const GOLD = ['#3a2408', '#6e4a10', '#a87418', '#d8a428', '#f4d050', '#fff2a8'].map(rgb)
+
+/** Kecleon's sheet cast in gold: the outline stays dark, the rest follows its brightness up the ramp. */
+const goldize = (src: CanvasImageSource & { width: number; height: number }) => {
+  const canvas = createCanvas(src.width, src.height)
+  const ctx = context2d(canvas)
+  ctx.drawImage(src, 0, 0)
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const a = image.data
+  for (let i = 0; i < a.length; i += 4) {
+    if (a[i + 3] === 0) continue
+    const lum = (a[i]! * 0.3 + a[i + 1]! * 0.55 + a[i + 2]! * 0.15) / 255
+    const step = GOLD[Math.min(GOLD.length - 1, Math.floor(lum * 1.25 * GOLD.length))]!
+    a[i] = step[0]
+    a[i + 1] = step[1]
+    a[i + 2] = step[2]
+  }
+  ctx.putImageData(image, 0, 0)
+  return canvas
+}
+
+let golden: { from: SpeciesSprites; to: SpeciesSprites } | null = null
+onCanvasReset(() => (golden = null))
+
+/** The golden Kecleon's sprites, cast once from the green one's. */
+const goldenSprites = (green: SpeciesSprites) => {
+  if (golden?.from !== green) {
+    const gild = (sheet: Sheet): Sheet => ({ ...sheet, img: goldize(sheet.img), overlays: null })
+    golden = { from: green, to: { ...green, anims: { Walk: green.anims.Walk, Idle: gild(green.anims.Idle), Hurt: green.anims.Hurt } } }
+  }
+  return golden.to
+}
+
+/** How far into the pedestal's painted top (px) the statue's feet sink, so it stands on the top face rather than its rim. */
+const PEDESTAL_TOP = 6
+
+/** The golden Kecleon on its pedestal (feet of the pedestal at x, y), with a glint now and then. */
+const drawStatue = (ctx: CanvasRenderingContext2D, x: number, y: number, time: number) => {
+  const pedestal = arts.get('pedestal')
+  const green = loadedSprites(KECLEON_DEX)
+  if (!pedestal || !green) return
+  put(ctx, pedestal, x, y)
+  // Frozen on its first idle frame: it's a statue.
+  drawPokemon(ctx, goldenSprites(green), 'Idle', 0, 0, x, y - pedestal.h + PEDESTAL_TOP)
+  drawSparkles(ctx, x, y - pedestal.h - 14, 18, (time % 4) - 0.2, 3)
+}
+
+/** The plaza's upright pieces (building, shopkeepers, props, visitors), world y of their feet, built once per layout. */
 export const plazaPieces = (plaza: Plaza): readonly Piece[] => {
-  const cached = pieceCache.get(plaza)
-  if (cached?.level === plaza.level) return cached.pieces
-  const layout = layoutOf(plaza.level)
+  const layout = layoutOf(plaza.level, plaza.visitors)
   if (!layout) return []
+  const cached = pieceCache.get(plaza)
+  if (cached?.layout === layout) return cached.pieces
   const { building, counter } = layout
   const keepers = keepersAt(plaza, layout)
   const pieces: Piece[] = [
@@ -565,9 +706,40 @@ export const plazaPieces = (plaza: Plaza): readonly Piece[] => {
     ...(counter === null
       ? keepers.map((k): Piece => ({ y: k.y, draw: (ctx, camX, camY, time) => drawKeeper(ctx, k.keeper, k.purple, k.x - camX, k.y - camY, time, true, plaza.hidden && !k.purple) }))
       : []),
+    ...visitorPieces(plaza, layout),
   ]
-  pieceCache.set(plaza, { level: plaza.level, pieces })
+  pieceCache.set(plaza, { layout, pieces })
   return pieces
+}
+
+/** The visitors' pieces: Meowth's wagon and Meowth, a seasonal stall and its keeper, the golden statue. Their sheets load on first sight. */
+const visitorPieces = (plaza: Plaza, layout: Layout): Piece[] => {
+  const v = plaza.visitors
+  const at = (spot: Placed) => ({ x: plaza.x + spot.x, y: plaza.y + spot.y })
+  const artPiece = (id: ArtId, spot: Placed): Piece => {
+    const { x, y } = at(spot)
+    return { y, draw: (ctx, camX, camY) => put(ctx, arts.get(id)!, x - camX, y - camY) }
+  }
+  const npcs: Piece[] = npcsAt(plaza, layout).map((n) => {
+    void loadSpecies(n.dex).catch(() => {})
+    const { x, y } = at(n.spot)
+    return {
+      y,
+      draw: (ctx, camX, camY, time) => {
+        const sprite = loadedSprites(n.dex)
+        if (!sprite) return
+        shadow(ctx, x - camX, y - camY, sprite.bodyW)
+        drawPokemon(ctx, sprite, 'Idle', visitorDirs.get(plaza)?.[n.who] ?? n.spot.dir, time + 0.7, x - camX, y - camY)
+      },
+    }
+  })
+  const statue = at(layout.statue)
+  return [
+    ...(v.caravan ? [artPiece('caravan', layout.wagon)] : []),
+    ...(v.stall ? [artPiece(STALLS[v.stall].art, layout.stall)] : []),
+    ...npcs,
+    ...(v.statue ? [{ y: statue.y, draw: (ctx, camX, camY, time) => drawStatue(ctx, statue.x - camX, statue.y - camY, time) } satisfies Piece] : []),
+  ]
 }
 
 const PARTY_TIME = 1.6
@@ -575,7 +747,7 @@ const PARTY_TIME = 1.6
 /** The shop's level-up: puffs of dust rolling off the footprint's rim, then sparkles bursting over the new building, for `PARTY_TIME` seconds. */
 export const drawPlazaParty = (ctx: CanvasRenderingContext2D, plaza: Plaza, camX: number, camY: number, time: number) => {
   const since = time - plaza.party
-  const layout = layoutOf(plaza.level)
+  const layout = layoutOf(plaza.level, plaza.visitors)
   if (since < 0 || since >= PARTY_TIME || !layout) return
   const x = plaza.x - camX
   const y = plaza.y + layout.pad.y - camY

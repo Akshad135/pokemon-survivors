@@ -155,6 +155,10 @@ export const FORM_CRIES = {
  */
 export const EMOTIONS = {
   352: ['Normal', 'Happy', 'Joyous', 'Surprised', 'Sigh', 'Inspired', 'Angry'],
+  // The plaza's visitors (src/data/visitors.ts): Meowth's weekend caravan and the seasonal stalls' Duskull and Delibird.
+  52: ['Normal', 'Happy', 'Joyous', 'Surprised', 'Sigh', 'Inspired', 'Angry'],
+  355: ['Normal', 'Happy', 'Joyous', 'Surprised', 'Sigh', 'Inspired', 'Angry'],
+  225: ['Normal', 'Happy', 'Joyous', 'Surprised', 'Sigh', 'Inspired', 'Angry'],
 }
 
 export const pad = (n) => String(n).padStart(4, '0')

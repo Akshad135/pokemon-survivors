@@ -1,0 +1,63 @@
+import { CARAVAN, STALLS, type StallId } from '../data/visitors'
+import { caravanHere, isCaravanDay } from '../game/caravan'
+import { addDays, brasiliaDay, type DayKey } from '../game/day'
+import { hasStatue } from '../game/loyalty'
+import type { Save } from '../game/meta'
+import { stallOn } from '../game/stalls'
+import type { PlazaVisitors } from '../render/plaza'
+import { emotionUrl, type Speaker } from './dialogue'
+import { h } from './dom'
+import { today } from './save'
+
+/**
+ * Who comes by the Kecleon plaza today, for the shell (the plaza's pieces)
+ * and the shop (the Caravana tab): Meowth's weekend caravan, the seasonal
+ * stall and the golden statue, from the save and the Brasília day on the
+ * missions' clock, unless the dev console forces them (`ps.caravan`, `ps.stall`).
+ */
+
+/** Dev: the caravan forced in (true) or away (false), or the calendar's (null). */
+let devCaravan: boolean | null = null
+/** Dev: a stall forced in (or none, null), or the calendar's (undefined). */
+let devStall: StallId | null | undefined
+
+export const setDevCaravan = (on: boolean | null) => (devCaravan = on)
+export const setDevStall = (id: StallId | null | undefined) => (devStall = id)
+
+/**
+ * The day the caravan's stock and prices follow: today, or, while the dev
+ * console forces it in on a weekday, the next weekend day (the rules stay the
+ * calendar's, only the day moves).
+ */
+export const caravanDay = (): DayKey => {
+  const day = brasiliaDay(today())
+  if (devCaravan !== true) return day
+  let d = day
+  while (!isCaravanDay(d)) d = addDays(d, 1)
+  return d
+}
+
+/** Whether Meowth's caravan is at this save's plaza now. */
+export const caravanOpen = (save: Save) => devCaravan !== false && caravanHere(save, caravanDay())
+
+/** The seasonal stall on the plaza today, or null. */
+export const stallToday = (): StallId | null => (devStall !== undefined ? devStall : stallOn(brasiliaDay(today())))
+
+/** Everyone who comes by the plaza for this save today. */
+export const plazaVisitors = (save: Save): PlazaVisitors => ({ caravan: caravanOpen(save), stall: stallToday(), statue: hasStatue(save) })
+
+/** Portrait sizes: SpriteCollab's are 40×40. */
+const PORTRAIT = 40
+
+/** A visitor as a dialogue speaker: its name in its color and its emotion portraits. */
+const visitorSpeaker = (dex: number, name: string, color: string): Speaker => ({
+  name,
+  color,
+  portrait: (emotion) => h('img', { src: emotionUrl(dex, emotion), alt: '', width: PORTRAIT, height: PORTRAIT }),
+})
+
+/** Meowth, at his caravan. */
+export const meowthSpeaker = () => visitorSpeaker(CARAVAN.dex, CARAVAN.name, '#b07818')
+
+/** A seasonal stall's keeper. */
+export const stallSpeaker = (id: StallId) => visitorSpeaker(STALLS[id].dex, STALLS[id].name, id === 'halloween' ? '#7048a8' : '#c83030')

@@ -8,6 +8,7 @@ import { mergeBag } from './bag'
 import { mergeShop, shopInvested } from './shop'
 import { mergeTms } from './tmShelf'
 import { mergeCaps, mergeEvoItems } from './evoItems'
+import { mergeCaravan } from './caravan'
 import { mergeStyle } from './style'
 import { mergeDex } from './dex'
 import { mergeEggs, mergeHatched } from './eggs'
@@ -52,7 +53,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  *   armed is `incoming`'s. The shop: the higher level; the most recent day,
  *   the most bought of each card and the gift taken on either side on the
  *   same day; the wishlist is `incoming`'s; the visits, the later day's (the
- *   longer streak on the same day, `mergeVisit`). Styles: a union, worn as `incoming`.
+ *   longer streak on the same day, `mergeVisit`); the loyalty stamps, the
+ *   larger count (its milestones are gifts, kept above). Styles: a union, worn as `incoming`.
  * - Gift titles and the ids of the Mystery Gifts applied: unions, so a gift
  *   applied on either side never lands again.
  * - Ribbons: a union, one per day (the better one if both sides had that day).
@@ -66,6 +68,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  * - The TM case: TMs owned and TMs runs taught are unions; the armed picks
  *   are `incoming`'s (`mergeTms`). Evolution items: a union. Bottle Caps:
  *   each Pokémon at the higher level (`mergeCaps`). What they cost is in `spent`.
+ * - Meowth's caravan: the later weekend's; on the same weekend, what either
+ *   side bought (a union) and the haggle made on either (`mergeCaravan`).
  * - The Desafio do dia attempt: the later day (`base`'s on the same day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
@@ -102,6 +106,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     tms: mergeTms(base.tms, incoming.tms),
     evo: mergeEvoItems(base.evo, incoming.evo),
     caps: mergeCaps(base.caps, incoming.caps),
+    caravan: mergeCaravan(base.caravan, incoming.caravan),
     attempt: mergeAttempts(base.attempt, incoming.attempt),
   }
 }
