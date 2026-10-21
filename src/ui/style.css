@@ -5379,15 +5379,19 @@ button {
   }
 }
 
-/* Portrait phones: a bottom sheet over the lower half, the plaza and Kecleon's box above it. */
+/* Portrait phones: a bottom sheet over the lower half, the plaza and Kecleon's box above it.
+   On a short phone half the screen leaves the cards less than a row, so the sheet grows up to 420 px (at most 62% of the screen). */
 @media (max-width: 759px) and (orientation: portrait) {
+  :root {
+    --shop-sheet-h: max(calc(47 * var(--dvh)), min(420px, calc(62 * var(--dvh))));
+  }
   .shop-sheet {
     top: auto;
     left: 0;
     right: 0;
     bottom: 0;
     width: auto;
-    height: calc(47 * var(--dvh));
+    height: var(--shop-sheet-h);
     gap: 6px;
     padding: 10px max(10px, var(--safe-r)) max(8px, var(--safe-b)) max(10px, var(--safe-l));
     border-bottom-width: 0;
@@ -5396,7 +5400,7 @@ button {
   }
   .dialogue-layer.shop-talk {
     right: 0;
-    bottom: calc(47 * var(--dvh));
+    bottom: var(--shop-sheet-h);
     padding-bottom: 6px;
   }
   .shop-back-label {
@@ -5442,8 +5446,8 @@ button {
     width: 32px;
     height: 32px;
   }
-  /* Official item sprites sit ~20 px inside their 32 px square: grid cards show them at 2x so they read on phones. */
-  .shop-items.grid .shop-pic:has(> .shop-icon),
+  /* Official item sprites (and the TM discs) sit ~20 px inside their 32 px square: grid cards show them at 2x so they read on phones. */
+  .shop-items.grid .shop-pic:has(> .shop-icon, > .shop-tm),
   .shop-items.grid .shop-icon {
     width: 64px;
     height: 64px;
@@ -5557,8 +5561,8 @@ button {
     width: 32px;
     height: 32px;
   }
-  /* Official item sprites sit ~20 px inside their 32 px square: grid cards show them at 2x so they read on phones. */
-  .shop-items.grid .shop-pic:has(> .shop-icon),
+  /* Official item sprites (and the TM discs) sit ~20 px inside their 32 px square: grid cards show them at 2x so they read on phones. */
+  .shop-items.grid .shop-pic:has(> .shop-icon, > .shop-tm),
   .shop-items.grid .shop-icon {
     width: 64px;
     height: 64px;

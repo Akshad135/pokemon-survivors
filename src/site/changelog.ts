@@ -251,6 +251,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         title: { pt: 'Correções', en: 'Fixes', es: 'Correcciones' },
         notes: [
           {
+            pt: 'Loja do Kecleon no celular: a lista e as abas agora rolam com o dedo (dava para ver só a primeira fileira, sem chegar às Melhorias), o painel cresce em telas baixas para mostrar mais itens, e o disco das TMs não cobre mais o nome.',
+            en: 'Kecleon Shop on phones: the list and the tabs now scroll with your finger (only the first row showed, with no way down to the upgrades), the panel grows on short screens to show more items, and the TM discs no longer cover their names.',
+            es: 'Tienda Kecleon en el celular: la lista y las pestañas ahora se desplazan con el dedo (solo se veía la primera fila, sin llegar a las mejoras), el panel crece en pantallas bajas para mostrar más objetos, y el disco de las MTs ya no tapa su nombre.',
+          },
+          {
             pt: 'Entrar em tela cheia (F11) ou trocar de aba no meio do movimento não deixa mais o Pokémon andando sozinho numa direção.',
             en: 'Going fullscreen (F11) or switching tabs mid-move no longer leaves your Pokémon walking on its own in one direction.',
             es: 'Entrar en pantalla completa (F11) o cambiar de pestaña en pleno movimiento ya no deja a tu Pokémon caminando solo en una dirección.',
