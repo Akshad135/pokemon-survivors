@@ -9,14 +9,33 @@ import { drawSparkles, shadow } from './draw'
 import { drawPokemon, hasShiny, loadedSprites, loadSpecies, type Dex } from './sprites'
 import { drawGround } from './world'
 import { drawMeadowJacks, drawMeadowNight } from './halloweenArt'
+import {
+  createPlaza,
+  drawPlazaGround,
+  drawPlazaMarker,
+  greetKeepers,
+  KECLEON_DEX,
+  plazaFrame,
+  plazaPieces,
+  plazaTapped,
+  pushOut,
+  shopSpot,
+  stepPlaza,
+  talkAnchor,
+  type Piece,
+  type Plaza,
+} from './plaza'
 
 /**
- * Attract-mode backdrop behind the menus: the meadow under a slowly drifting
- * camera, with wild Pokémon strolling around (and, rarely, a shiny).
- * On the lobby the partner can hop off its stage and take a walk among them
- * (`meetPartner`, `steerPartner`): bumping into one makes it react, and some
- * tag along for a while. Pure presentation: it only reads sprites that are
- * already loaded, and the cries it wants played wait in `cries` for the shell.
+ * Attract-mode backdrop behind the menus: the meadow around the partner's
+ * home, under a gently swaying camera, with wild Pokémon strolling around
+ * (and, rarely, a shiny). East of home stands the Kecleon plaza
+ * (`render/plaza.ts`), the shop as a place. On the lobby the partner can hop
+ * off its stage and take a walk among them (`meetPartner`, `steerPartner`):
+ * bumping into one makes it react, and some tag along for a while. A trip
+ * (`visitPlaza`) pans the camera to the plaza or back home, the partner
+ * hopping along. Pure presentation: it only reads sprites that are already
+ * loaded, and the cries it wants played wait in `cries` for the shell.
  */
 
 /** How a wild Pokémon answers the partner's hello, and the emote it pops. */
@@ -59,12 +78,14 @@ type Wanderer = {
 /**
  * The lobby's partner. `home` while it stands on the stage (the lobby draws
  * it there, big), `out` once a key, the stick or a tap sends it into the
- * meadow, and `back` while it walks back to the stage after a rest.
+ * meadow, `back` while it walks back to the stage after a rest, `trip` while
+ * it hops along a camera trip (`visitPlaza`) and `shop` while it stands at
+ * the Kecleon's counter.
  */
 export type Partner = {
   dex: Dex
   shiny: boolean
-  state: 'home' | 'out' | 'back'
+  state: 'home' | 'out' | 'back' | 'trip' | 'shop'
   x: number
   y: number
   dir: Dir8
@@ -83,10 +104,25 @@ export type Partner = {
   trail: Vec[]
 }
 
+/** Where the camera rests when nobody strolls: the partner's home or the Kecleon plaza. */
+export type Place = 'home' | 'plaza'
+
+/** A camera trip to a place, eased over `time` seconds, the partner hopping from `from` to its spot there. */
+type Trip = { to: Place; t: number; time: number; cam: Vec; from: Vec }
+
 export type TitleScene = {
   rng: Rng
   time: number
   cam: Vec
+  /** The lobby's resting view center, world px: the partner's home, a fixed place in the meadow. */
+  home: Vec
+  /** Where the camera rests, and the trip under way to the other place. */
+  rest: Place
+  trip: Trip | null
+  /** False until the first step snaps the camera onto its rest (the view's size wasn't known before). */
+  placed: boolean
+  /** The Kecleon plaza, east of home. */
+  plaza: Plaza
   wanderers: Wanderer[]
   nextSpawn: number
   /** Species whose shiny form is loading for the next shiny roll. */
@@ -107,7 +143,8 @@ export type TitleScene = {
 
 /** Every species that may roam: wild Pokémon and the starter lines (evolutions show up once a run has loaded them). */
 const POOL: readonly Dex[] = [
-  ...Object.values(ENEMIES).flatMap((e) => ('boss' in e ? [] : [e.dex])),
+  // Kecleon keeps the shop: a wild one would pass for a third shopkeeper.
+  ...Object.values(ENEMIES).flatMap((e) => ('boss' in e || e.dex === KECLEON_DEX ? [] : [e.dex])),
   ...STARTER_IDS.flatMap(starterDex),
 ]
 
@@ -116,7 +153,8 @@ const GHOSTS: readonly Dex[] = Object.values(ENEMIES).flatMap((e) => (!('boss' i
 /** Share of a haunted meadow's newcomers that are ghosts, when any is loaded. */
 const HAUNTED_SHARE = 0.65
 
-const CAMERA_SPEED = 9
+/** The camera's idle sway around its rest, world px. */
+const SWAY = { x: 5, y: 3 }
 /** Off-screen band (world px) where wanderers enter; past it they're recycled. */
 const MARGIN = 40
 /** How far outside the view (world px) newcomers appear. */
@@ -153,10 +191,16 @@ const population = (w: number, h: number) => clamp(Math.round((w * h) / 9000), 5
 export const createTitleScene = (seed: number): TitleScene => {
   const rng = createRng(seed)
   // Every visit starts somewhere else in the infinite meadow.
+  const home = { x: Math.floor(rng() * 8192), y: Math.floor(rng() * 8192) }
   return {
     rng,
     time: 0,
-    cam: { x: Math.floor(rng() * 8192), y: Math.floor(rng() * 8192) },
+    cam: { ...home },
+    home,
+    rest: 'home',
+    trip: null,
+    placed: false,
+    plaza: createPlaza(home),
     wanderers: [],
     nextSpawn: 0,
     nextShiny: null,
@@ -173,6 +217,11 @@ export const createTitleScene = (seed: number): TitleScene => {
 /** The lobby's partner takes its place on the stage, with the supporter's companion if one walks along (`null`: the lobby closed, both are gone). */
 export const meetPartner = (s: TitleScene, partner: { dex: Dex; shiny: boolean } | null, companion: CompanionView | null = null) => {
   for (const wd of s.wanderers) wd.followUntil = 0
+  // A new lobby starts at home: any trip it didn't finish is called off.
+  if (partner) {
+    s.trip = null
+    s.rest = 'home'
+  }
   s.companion = partner && companion
   s.partner = partner && {
     ...partner,
@@ -198,6 +247,94 @@ export const steerPartner = (s: TitleScene, move: Vec, tap: Vec | null, home: Ve
   p.home = home
   if (tap) p.target = tap
 }
+
+/** The camera's top-left resting at `place` for a `w`×`h` view (home sways a little). */
+const restCam = (s: TitleScene, place: Place, w: number, h: number): Vec =>
+  place === 'plaza'
+    ? plazaFrame(s.plaza, w, h)
+    : { x: s.home.x - w / 2 + Math.sin(s.time * 0.21) * SWAY.x, y: s.home.y - h / 2 + Math.sin(s.time * 0.13) * SWAY.y }
+
+const easeInOut = (k: number) => (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2)
+
+/** Where the partner ends a trip to `place`: the shop's counter, or its stage. */
+const tripGoal = (s: TitleScene, p: Partner, place: Place) => (place === 'plaza' ? shopSpot(s.plaza) : p.home)
+
+/**
+ * Starts a trip of the camera to `to` (the Kecleon plaza or home), eased
+ * over about a second (shorter when it's close); the partner hops off its
+ * stage and along to its spot there. `instant` lands at once (a deep link).
+ */
+export const visitPlaza = (s: TitleScene, to: Place, w: number, h: number, instant = false) => {
+  const p = s.partner
+  if (p) {
+    if (p.state === 'home') {
+      p.x = p.home.x
+      p.y = p.home.y
+      s.puffs.push({ x: p.x, y: p.y, at: s.time })
+    }
+    p.state = 'trip'
+    p.move = { x: 0, y: 0 }
+    p.target = null
+    p.idle = 0
+    p.trail.length = 0
+  }
+  const end = restCam(s, to, w, h)
+  const time = instant ? 0 : clamp(Math.hypot(end.x - s.cam.x, end.y - s.cam.y) / 450, 0.45, 1.1)
+  s.trip = { to, t: 0, time, cam: { ...s.cam }, from: p ? { x: p.x, y: p.y } : { ...s.cam } }
+  if (instant) stepTrip(s, s.trip, 0, w, h)
+}
+
+/** Where the scene is: resting at a place, or on its way (`moving`). */
+export const sceneAt = (s: TitleScene): Place | 'moving' => (s.trip ? 'moving' : s.rest)
+
+/** Lands a trip: the camera rests there, and at the plaza the shopkeepers greet the partner. */
+const arrive = (s: TitleScene, to: Place) => {
+  s.trip = null
+  s.rest = to
+  const p = s.partner
+  if (p) {
+    p.moving = false
+    p.state = to === 'plaza' ? 'shop' : 'home'
+    if (to === 'plaza') p.dir = 4
+  }
+  if (to === 'plaza') {
+    greetKeepers(s.plaza, s.time)
+    s.cries.push(KECLEON_DEX)
+    s.quietUntil = s.time + 1.2
+  }
+}
+
+/** Advances a trip: the camera eases along, the partner hops from where it was to its spot. */
+const stepTrip = (s: TitleScene, trip: Trip, dt: number, w: number, h: number) => {
+  trip.t = Math.min(trip.time, trip.t + dt)
+  const k = trip.time > 0 ? easeInOut(trip.t / trip.time) : 1
+  const end = restCam(s, trip.to, w, h)
+  s.cam.x = trip.cam.x + (end.x - trip.cam.x) * k
+  s.cam.y = trip.cam.y + (end.y - trip.cam.y) * k
+  const p = s.partner
+  if (p) {
+    const goal = tripGoal(s, p, trip.to)
+    p.x = trip.from.x + (goal.x - trip.from.x) * k
+    p.y = trip.from.y + (goal.y - trip.from.y) * k
+    if (Math.hypot(goal.x - trip.from.x, goal.y - trip.from.y) > 1) p.dir = dir8(goal.x - trip.from.x, goal.y - trip.from.y)
+    p.moving = true
+    // Hop after hop, a puff of dust at each take-off.
+    if (s.time - p.hopAt >= HOP.time + 0.05 && trip.t < trip.time) {
+      p.hopAt = s.time
+      s.puffs.push({ x: p.x, y: p.y, at: s.time })
+    }
+  }
+  if (trip.t >= trip.time) arrive(s, trip.to)
+}
+
+/** Above the head of the shopkeeper the strolling partner stands close enough to talk to (world px), or null. */
+export const talkSpot = (s: TitleScene): Vec | null => {
+  const p = s.partner
+  return p && p.state === 'out' && !s.trip ? talkAnchor(s.plaza, p) : null
+}
+
+/** Whether a tap (world px) lands on the plaza's shopkeepers, its building or its edge marker. */
+export const tapsPlaza = (s: TitleScene, at: Vec) => plazaTapped(s.plaza, at)
 
 /** Starts a stroll along one of the 8 sprite directions (towards `target` if given) or a short rest. */
 const nextLeg = (rng: Rng, w: Wanderer, target?: Vec) => {
@@ -236,10 +373,18 @@ const pickSpecies = (s: TitleScene) => {
   return { dex: pick(s.rng, ghosts.length > 0 && chance(s.rng, HAUNTED_SHARE) ? ghosts : ready), shiny: false }
 }
 
+/** Whether feet at (x, y) are within a `w`×`h` view at `cam`, give or take the off-screen band. */
+const near = (x: number, y: number, cam: Vec, w: number, h: number) => x > cam.x - MARGIN && x < cam.x + w + MARGIN && y > cam.y - MARGIN && y < cam.y + h + MARGIN
+
+/** Whether newcomers fade in on screen instead of walking in: while the scene is young, and on a trip (into where it's going). */
+const filling = (s: TitleScene) => s.time < FILL_TIME || s.trip !== null
+
 const spawn = (s: TitleScene, w: number, h: number) => {
   const species = pickSpecies(s)
   if (!species) return
-  const { rng, cam } = s
+  const { rng } = s
+  // On a trip, the crowd gathers where the camera is going, so it doesn't land on an empty meadow.
+  const cam = s.trip ? restCam(s, s.trip.to, w, h) : s.cam
   const inside = { x: cam.x + range(rng, 0.15, 0.85) * w, y: cam.y + range(rng, 0.15, 0.85) * h }
   const wanderer: Wanderer = {
     ...species,
@@ -256,17 +401,17 @@ const spawn = (s: TitleScene, w: number, h: number) => {
     followUntil: 0,
     calmAt: 0,
   }
-  if (s.time < FILL_TIME) {
+  if (filling(s)) {
     wanderer.dir = pick(rng, [0, 1, 2, 6, 7] as const)
     nextLeg(rng, wanderer)
   } else {
-    // Enter from an edge, mostly the one the camera drifts towards, heading into the view.
+    // Enter from an edge, mostly a side one, heading into the view.
     const side = rng()
     const along = { x: cam.x + rng() * w, y: cam.y + rng() * h }
     const at =
-      side < 0.5 ? { x: cam.x + w + ENTRY, y: along.y }
-      : side < 0.7 ? { x: along.x, y: cam.y - ENTRY }
-      : side < 0.9 ? { x: along.x, y: cam.y + h + ENTRY }
+      side < 0.35 ? { x: cam.x + w + ENTRY, y: along.y }
+      : side < 0.5 ? { x: along.x, y: cam.y - ENTRY }
+      : side < 0.65 ? { x: along.x, y: cam.y + h + ENTRY }
       : { x: cam.x - ENTRY, y: along.y }
     wanderer.x = at.x
     wanderer.y = at.y
@@ -308,7 +453,13 @@ const stepPartner = (s: TitleScene, p: Partner, dt: number, w: number, h: number
     }
     p.state = 'out'
   } else if ((p.idle += dt) > REST && p.state === 'out') {
+    // Far from home (out at the plaza), it hops back along a trip instead of a long walk.
+    if (Math.hypot(p.x - p.home.x, p.y - p.home.y) > 200) return visitPlaza(s, 'home', w, h)
     p.state = 'back'
+  }
+  if (p.state === 'trip' || p.state === 'shop') {
+    p.moving = false
+    return
   }
   if (p.state === 'home') {
     p.x = p.home.x
@@ -322,6 +473,7 @@ const stepPartner = (s: TitleScene, p: Partner, dt: number, w: number, h: number
   if (p.moving) {
     p.x += v.x * dt
     p.y += v.y * dt
+    pushOut(s.plaza, p)
     p.dir = dir8(v.x, v.y)
     const last = p.trail.at(-1)
     if (!last || Math.hypot(p.x - last.x, p.y - last.y) >= TRAIL_STEP) {
@@ -415,18 +567,27 @@ const tagAlong = (wd: Wanderer, p: Partner, rank: number) => {
 export const stepTitleScene = (s: TitleScene, dt: number, w: number, h: number) => {
   s.time += dt
   const p = s.partner
-  // The camera drifts on its own unless the partner is out in the meadow.
-  if (!p || p.state === 'home') {
-    s.cam.x += CAMERA_SPEED * dt
-    s.cam.y += Math.sin(s.time * 0.11) * 4 * dt
+  if (!s.placed) {
+    s.placed = true
+    Object.assign(s.cam, restCam(s, s.rest, w, h))
   }
-  if (p) stepPartner(s, p, dt, w, h)
+  if (p && p.state !== 'trip') stepPartner(s, p, dt, w, h)
+  // On a trip the camera eases there; else it rests (swaying a little) unless the partner is out in the meadow, where it follows.
+  if (s.trip) stepTrip(s, s.trip, dt, w, h)
+  else if (!p || (p.state !== 'out' && p.state !== 'back')) {
+    const rest = restCam(s, s.rest, w, h)
+    const k = Math.min(1, dt * 3)
+    s.cam.x += (rest.x - s.cam.x) * k
+    s.cam.y += (rest.y - s.cam.y) * k
+  }
+  stepPlaza(s.plaza, p && p.state !== 'home' ? p : null)
   // The companion waits behind the stage while the partner stands on it, and follows it out.
   const c = s.companion
   if (c && p && p.state === 'home') Object.assign(c, createCompanion(c.dex, c.shiny, p, c.sparkles))
   else if (c && p) stepCompanion(c, p, dt)
   const { cam, rng } = s
-  const roaming = p && p.state !== 'home' ? p : null
+  // Only a strolling partner meets the crowd: not on its stage, a trip or at the counter.
+  const roaming = p && (p.state === 'out' || p.state === 'back') ? p : null
   for (const wd of s.wanderers) {
     if (wd.greet) react(s, wd, dt)
     else if (following(s, wd) && p) tagAlong(wd, p, lineRank(s, wd))
@@ -436,15 +597,17 @@ export const stepTitleScene = (s: TitleScene, dt: number, w: number, h: number) 
     }
     wd.x += wd.vx * dt
     wd.y += wd.vy * dt
+    pushOut(s.plaza, wd)
     if (roaming && !wd.greet && !following(s, wd) && s.time >= wd.calmAt && s.time - wd.bornAt > FADE_IN && Math.hypot(wd.x - roaming.x, wd.y - roaming.y) < GREET_RANGE) {
       greet(s, roaming, wd)
     }
   }
-  retain(s.wanderers, (wd) => wd.x > cam.x - MARGIN && wd.x < cam.x + w + MARGIN && wd.y > cam.y - MARGIN && wd.y < cam.y + h + MARGIN)
+  const ahead = s.trip && restCam(s, s.trip.to, w, h)
+  retain(s.wanderers, (wd) => near(wd.x, wd.y, cam, w, h) || (ahead !== null && near(wd.x, wd.y, ahead, w, h)))
   retain(s.puffs, (puff) => s.time - puff.at < PUFF_TIME)
   if (s.wanderers.length < population(w, h) && s.time >= s.nextSpawn) {
     spawn(s, w, h)
-    s.nextSpawn = s.time + (s.time < FILL_TIME ? 0.08 : range(rng, 0.4, 1.4))
+    s.nextSpawn = s.time + (filling(s) ? 0.08 : range(rng, 0.4, 1.4))
   }
 }
 
@@ -465,11 +628,16 @@ const drawPuffs = (ctx: CanvasRenderingContext2D, s: TitleScene, camX: number, c
   ctx.globalAlpha = 1
 }
 
+/** What the draw sorts by feet besides the wanderers, reused every frame. */
+const pending: Piece[] = []
+const byFeet = (a: { y: number }, b: { y: number }) => a.y - b.y
+
 /** Draws the meadow, its wanderers and the partner (when out), back to front, snapped to the world pixel grid; emotes go on top. */
 export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: number, h: number) => {
   const camX = Math.round(s.cam.x)
   const camY = Math.round(s.cam.y)
   drawGround(ctx, camX, camY, w, h)
+  drawPlazaGround(ctx, s.plaza, camX, camY, w, h)
   if (s.haunted) drawMeadowJacks(ctx, camX, camY, w, h, s.time)
   drawPuffs(ctx, s, camX, camY)
   const p = s.partner?.state === 'home' ? null : s.partner
@@ -491,11 +659,19 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     drawCompanion(ctx, c, s.time)
     ctx.restore()
   }
-  // The partner and its companion, back to front, slot in among the wanderers by their feet.
-  const pending = [...(p ? [{ y: p.y, draw: drawPartner }] : []), ...(c ? [{ y: c.y, draw: drawFollower }] : [])].sort((a, b) => a.y - b.y)
-  s.wanderers.sort((a, b) => a.y - b.y)
+  // The partner, its companion and the plaza's pieces, back to front, slot in among the wanderers by their feet.
+  pending.length = 0
+  if (p) pending.push({ y: p.y, draw: drawPartner })
+  if (c) pending.push({ y: c.y, draw: drawFollower })
+  for (const piece of plazaPieces(s.plaza)) pending.push(piece)
+  pending.sort(byFeet)
+  let next = 0
+  const flush = (y: number) => {
+    while (next < pending.length && y > pending[next]!.y) pending[next++]!.draw(ctx, camX, camY, s.time)
+  }
+  s.wanderers.sort(byFeet)
   for (const wd of s.wanderers) {
-    while (pending[0] && wd.y > pending[0].y) pending.shift()!.draw()
+    flush(wd.y)
     const sprite = loadedSprites(wd.dex, wd.shiny)
     if (!sprite) continue
     const x = Math.round(wd.x) - camX
@@ -506,7 +682,7 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     drawPokemon(ctx, sprite, wd.vx === 0 && wd.vy === 0 ? 'Idle' : 'Walk', wd.dir, s.time + wd.phase, x, y - lift, { alpha })
     if (wd.shiny) drawSparkles(ctx, x, y - sprite.bodyH / 2, Math.max(sprite.bodyW, sprite.bodyH), s.time - wd.bornAt, wd.id)
   }
-  for (const rest of pending) rest.draw()
+  flush(Infinity)
   if (s.haunted) drawMeadowNight(ctx, camX, camY, w, h, s.time)
   // Emotes over everyone's heads, bobbing a pixel.
   const bubbles = EMOTES()
@@ -517,4 +693,6 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     const top = Math.round(wd.y) - camY - sprite.bodyH - greetHop(wd.greet)
     blitCentered(ctx, bubbles[REACTIONS[wd.greet.kind].emote], Math.round(wd.x) - camX, top - 8 - bob)
   }
+  // While the lobby rests at home (or the partner strolls), a card at the edge points the way to the shop.
+  drawPlazaMarker(ctx, s.plaza, camX, camY, w, h, s.time, s.partner !== null && !s.trip && s.rest === 'home')
 }

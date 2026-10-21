@@ -17,6 +17,7 @@ import { formatNumber, locale, t } from '../i18n'
 import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
+import type { Place } from '../render/titleScene'
 import { inviterName } from '../ranking'
 import { ROUTES, SOCIAL_IDS, SOCIALS, type SocialId } from '../site/routes'
 import { fetchWall } from '../supporters'
@@ -28,12 +29,14 @@ import { contentLine } from './gifts'
 import { countedFriends, loadInvites } from './invites'
 import { isUnread, latestUpdate } from './news'
 import { hallFace, hallPortrait } from './supporters'
+import { dialogue, type Dialogue } from './dialogue'
+import { greeting, kecleonSpeaker } from './kecleon'
 import type { Screen } from './screens'
 import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } from './shell'
 import { nearestInDirection, type Direction } from './spatial'
 import { toast } from './toasts'
 import { trainerChip } from './trainer'
-import { uiDpr, uiViewport } from './uiScale'
+import { uiDpr, uiViewport, uiZoom } from './uiScale'
 
 /** What the lobby can highlight. A screen opened over it gets the one it came from, to come back to it. */
 export type LobbyFocus =
@@ -60,17 +63,29 @@ export type LobbyFocus =
 
 /**
  * The meadow behind the lobby (`render/titleScene.ts`), where the partner
- * takes its walks. Points are CSS px; the shell maps them into the world.
+ * takes its walks and the Kecleon plaza stands. Points are CSS px; the shell
+ * maps them into the world.
  */
 export type Meadow = {
-  /** Puts the partner on its stage (`null` when the lobby goes away). */
-  meet: (partner: { dex: Dex; shiny: boolean } | null) => void
+  /**
+   * Puts the partner on its stage. Returns how this lobby lets it go: a no-op
+   * once a newer lobby met it (the next title is built before this one goes).
+   */
+  meet: (partner: { dex: Dex; shiny: boolean }) => () => void
   /** This frame's keys or stick, a tapped spot, and where the stage holds the partner's feet. */
   steer: (move: Vec, tap: Vec | null, home: Vec) => void
   /** Whether the partner is out in the meadow (else the stage draws it). */
   out: () => boolean
   /** The drag joystick to draw over the meadow, or null. */
   stick: (stick: Stick | null) => void
+  /** Starts the camera's trip to the Kecleon plaza or back home, the partner hopping along (`instant`: lands at once). */
+  visit: (to: Place, instant?: boolean) => void
+  /** Where the meadow rests, or `moving` during a trip. */
+  at: () => Place | 'moving'
+  /** Above the shopkeeper the strolling partner stands close enough to talk to, or null. */
+  talkSpot: () => Vec | null
+  /** Whether a tap lands on the plaza's shopkeepers, its building or the edge marker pointing to it. */
+  tapsShop: (at: Vec) => boolean
 }
 
 export type TitleActions = {
@@ -98,8 +113,12 @@ export type TitleActions = {
   discord: (focus: LobbyFocus) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: LobbyFocus) => Screen
-  /** Opens the Poké Mart over the title, like `settings`. */
-  mart: (focus: LobbyFocus) => Screen
+  /**
+   * Opens the shop over the Kecleon plaza, once the camera got there and
+   * Kecleon said hello; its Back must call `close`, which pans back home and
+   * brings the lobby back in.
+   */
+  mart: (close: () => void) => Screen
   /** Opens the Trainer Card over the title (the Trainer chip, `C`, the invite banner), like `settings`. */
   trainer: (focus: LobbyFocus) => Screen
   /** Opens the boards over the title, like `settings`. No action (no API), no tile. */
@@ -545,8 +564,24 @@ const heldMove = (input: Input): Vec => {
   return len > 0 ? { x: x / len, y: y / len } : { x: 0, y: 0 }
 }
 
-/** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls). */
+/** Shortcuts, shown as key hints on what they press (`C` belongs to the Trainer chip; P, E and Space are taken by the run's controls, and E talks to a shopkeeper the partner stands by). */
 const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyG: 'gifts', KeyN: 'news', KeyX: 'pokedex', KeyO: 'eggs', KeyL: 'mart', KeyR: 'ranking', KeyI: 'ideas', KeyM: 'missions', KeyH: 'hall' }
+
+/** The "Falar · E" bubble over a shopkeeper while the strolling partner stands close (a tap on it talks too). */
+const talkPrompt = (onTalk: () => void) =>
+  h(
+    'button',
+    { class: 'plaza-talk box hidden', type: 'button', onclick: onTalk },
+    h('b', {}, t().plaza.talk),
+    h('span', { class: 'key-hint' }, 'E'),
+  )
+
+/**
+ * How the lobby goes to the Kecleon's shop: `shop` (the dock's Loja, a talk,
+ * `?loja`) greets and opens the shop, `look` (dev, `ps.plaza()`) only goes
+ * there, for a look; Esc or Enter brings it back.
+ */
+export type ShopTrip = 'shop' | 'look'
 
 /**
  * Title screen over the live meadow: the pixel logo and a blinking "press
@@ -559,10 +594,18 @@ const HOTKEYS: Readonly<Record<string, LobbyFocus>> = { KeyG: 'gifts', KeyN: 'ne
  * screen; Enter presses the highlighted one, JOGAR at first. The movement
  * keys, a tap on the grass or a drag (a joystick) send the partner off its
  * stage for a walk in the meadow (`Meadow`), where it greets the wild Pokémon.
+ * Loja (or a talk with Kecleon on a walk) is a trip to the Kecleon plaza east
+ * of home (`visitShop`), and `shop` starts on one once the lobby is up
+ * (`instant`: already there).
  * `intro: false` opens straight on the lobby (coming back from another
  * screen, or after a language switch), highlighting `focus`.
  */
-export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActions, opts: { intro?: boolean; focus?: LobbyFocus }): Screen => {
+export const titleScreen = (
+  root: HTMLElement,
+  input: Input,
+  actions: TitleActions,
+  opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean },
+): Screen => {
   const m = t().home
   const lang = locale()
 
@@ -595,6 +638,14 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   let offIntro: (() => void) | null = null
   /** Settings, the Pokédex, the Trainer Card… open over the meadow. */
   let overScreen: Screen | null = null
+  /** How this lobby lets the partner go (see `Meadow.meet`). */
+  let leave: (() => void) | null = null
+  /** A trip to the Kecleon's shop under way: going there, Kecleon talking, the shop open, or coming back. */
+  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'talk' | 'shop' | 'back' } | null = null
+  let talk: Dialogue | null = null
+  /** The top bar's wallet, refreshed when the shop closes. */
+  let wallet: HTMLElement | null = null
+  const talkButton = talkPrompt(() => visitShop('shop'))
 
   /** Everything the arrows reach, wherever the layout puts it. */
   let navs: { el: HTMLElement; key: LobbyFocus }[] = []
@@ -645,7 +696,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     friends: () => openOver(actions.invites),
     pokedex: () => openOver(actions.pokedex),
     eggs: actions.incubator,
-    mart: () => openOver(actions.mart),
+    mart: () => visitShop('shop'),
     ranking: () => ranking && openOver(ranking),
     ideas: () => ideas && openOver(ideas),
     play: actions.play,
@@ -669,7 +720,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       topBar({
         left: chip.el,
         right: [
-          walletChip(save.wallet),
+          (wallet = walletChip(save.wallet)),
           ...(landscape ? [navigable(discordButton(press('discord')), 'discord'), ...SOCIAL_IDS.map((id) => navigable(socialButton(id, press(id)), id))] : []),
           navigable(newsButton(press('news')), 'news'),
           navigable(helpButton(press('help')), 'help'),
@@ -681,7 +732,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     const outbreak = outbreakCard()
     stage = partnerStage(press('play'))
     stage.el.append(pressable(giftButton(), 'gifts'))
-    actions.meadow.meet(stage.partner)
+    leave = actions.meadow.meet(stage.partner)
     tickers = [outbreak.tick, stage.tick]
     const hall = navigable(hallCard(() => (select('hall', false), playSfx('select'), track('lobby_press', { entry: 'hall' }), later(() => openOver((focus) => actions.supporters(focus, 'pick'))))), 'hall')
     const side = h(
@@ -726,19 +777,109 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     if (logo.width > 1) fitLogo(logo, false)
 
     select(itemOf(current) ? current : 'play', false)
-    offKeys = input.onKey((key) => {
-      const dir = DIRECTIONS[key]
-      if (dir) return move(dir)
-      if (key === 'Enter' || key === 'Space') return void itemOf(current)?.click()
-      const hot = HOTKEYS[key]
-      const target = hot && itemOf(hot)
-      if (hot && target) target.click()
+    offKeys = input.onKey(lobbyKey)
+  }
+
+  function lobbyKey(key: string) {
+    const dir = DIRECTIONS[key]
+    if (dir) return move(dir)
+    if (key === 'Enter' || key === 'Space') return void itemOf(current)?.click()
+    // Standing by a shopkeeper, E talks.
+    if (key === 'KeyE' && !talkButton.classList.contains('hidden')) return void talkButton.click()
+    const hot = HOTKEYS[key]
+    const target = hot && itemOf(hot)
+    if (hot && target) target.click()
+  }
+
+  /* ---------------- The trip to the Kecleon's shop ---------------- */
+
+  /**
+   * Goes to the shop: the lobby's cards slide off the edges, the camera pans
+   * to the plaza and the partner hops along (`instant`: lands there at once).
+   * There Kecleon hops, cries and says hello, then the shop opens over the
+   * plaza (`TitleActions.mart`); closing it comes back (`goHome`).
+   */
+  function visitShop(mode: ShopTrip, instant = false) {
+    if (visit || !stage) return
+    visit = { mode, phase: 'going' }
+    offKeys?.()
+    offKeys = input.onKey(visitKey)
+    el.classList.add('visiting')
+    talkButton.classList.add('hidden')
+    drag = null
+    tap = null
+    actions.meadow.stick(null)
+    actions.meadow.steer({ x: 0, y: 0 }, null, stage.feet())
+    actions.meadow.visit('plaza', instant)
+  }
+
+  /** Keys during a trip: Esc or Backspace turns back on the way; for a look, Enter or Space too once there. */
+  function visitKey(key: string) {
+    if (!visit) return
+    const back = key === 'Escape' || key === 'Backspace'
+    if ((visit.phase === 'going' && back) || (visit.phase === 'here' && (back || key === 'Enter' || key === 'Space'))) goHome()
+  }
+
+  /** At the plaza: Kecleon talks, then the shop opens (a look just waits). */
+  const arrived = () => {
+    if (!visit) return
+    if (visit.mode === 'look') {
+      visit.phase = 'here'
+      return
+    }
+    visit.phase = 'talk'
+    talk = dialogue(root, input, {
+      speaker: kecleonSpeaker(),
+      lines: [greeting()],
+      // After this press, or the shop would get it too.
+      onDone: () =>
+        later(() => {
+          if (visit?.phase !== 'talk') return
+          talk?.dispose()
+          talk = null
+          visit.phase = 'shop'
+          overScreen = actions.mart(goHome)
+        }),
     })
+  }
+
+  /** Back from the shop: the camera pans home, the partner hops back to its stage and the lobby slides in. */
+  function goHome() {
+    if (!visit || visit.phase === 'back') return
+    overScreen?.dispose()
+    overScreen = null
+    talk?.dispose()
+    talk = null
+    visit.phase = 'back'
+    el.classList.remove('visiting')
+    const fresh = walletChip(loadSave().wallet)
+    wallet?.replaceWith(fresh)
+    wallet = fresh
+    actions.meadow.visit('home')
+  }
+
+  const landed = () => {
+    visit = null
+    offKeys?.()
+    offKeys = input.onKey(lobbyKey)
+  }
+
+  /** Every frame of a trip: the stage keeps the partner's home in sync, and the trip moves on when the meadow gets there. */
+  const travel = () => {
+    if (!visit || !stage) return
+    const { meadow } = actions
+    meadow.steer({ x: 0, y: 0 }, null, stage.feet())
+    stage.setOut(meadow.out())
+    talk?.tick?.(0)
+    const at = meadow.at()
+    if (visit.phase === 'going' && at === 'plaza') arrived()
+    else if (visit.phase === 'back' && at === 'home') landed()
   }
 
   /** The lobby goes away (another screen over it, or for good): so does the partner, and any press on the meadow. */
   const leaveMeadow = () => {
-    actions.meadow.meet(null)
+    leave?.()
+    leave = null
     actions.meadow.stick(null)
     stage = null
     drag = null
@@ -746,7 +887,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   }
 
   const onDown = (e: PointerEvent) => {
-    if (!stage || drag || (e.pointerType === 'mouse' && e.button !== 0)) return
+    if (!stage || drag || visit || (e.pointerType === 'mouse' && e.button !== 0)) return
     if (!onMeadow(e.target)) return
     drag = { id: e.pointerId, origin: { x: e.clientX, y: e.clientY }, stick: null }
   }
@@ -774,15 +915,27 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const stroll = () => {
     if (!stage) return
     const { meadow } = actions
+    // A tap on a shopkeeper, the shop or the marker pointing to it goes shopping.
+    if (tap && meadow.tapsShop(tap)) {
+      tap = null
+      return visitShop('shop')
+    }
     meadow.steer(drag?.stick?.vec ?? heldMove(input), tap, stage.feet())
     meadow.stick(drag?.stick ?? null)
     tap = null
     stage.setOut(meadow.out())
+    // By a shopkeeper, the talk prompt floats over its head.
+    const spot = meadow.talkSpot()
+    talkButton.classList.toggle('hidden', !spot)
+    if (spot) talkButton.style.cssText = `left:${Math.round(spot.x / uiZoom())}px;top:${Math.round(spot.y / uiZoom())}px`
   }
 
   const enterLobby = () => {
     buildLobby()
     actions.ready()
+    // `?loja` (and the dev's `ps.plaza()`) head for the shop once the lobby is laid out.
+    const trip = opts.shop
+    if (trip) requestAnimationFrame(() => visitShop(trip, opts.instant))
   }
 
   if (opts.intro) {
@@ -802,6 +955,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     enterLobby()
   }
 
+  el.append(talkButton)
   root.append(el)
   return {
     el,
@@ -809,10 +963,11 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     tick: (time: number) => {
       overScreen?.tick?.(time)
       if (el.classList.contains('hidden')) return
-      stroll()
+      if (visit) travel()
+      else stroll()
       for (const tick of tickers) tick(time)
       if (logo.width > 1) fitLogo(logo, lobby === null)
     },
-    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offPointers(), leaveMeadow(), el.remove()),
+    dispose: () => (overScreen?.dispose(), talk?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offPointers(), leaveMeadow(), el.remove()),
   }
 }

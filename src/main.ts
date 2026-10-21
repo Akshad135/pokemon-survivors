@@ -108,7 +108,8 @@ import { consumableIcon } from './render/props'
 import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
-import { createTitleScene, drawTitleScene, meetPartner, steerPartner, stepTitleScene } from './render/titleScene'
+import { createTitleScene, drawTitleScene, meetPartner, sceneAt, steerPartner, stepTitleScene, talkSpot, tapsPlaza, visitPlaza } from './render/titleScene'
+import { SHOP_LEVELS, type ShopLevel } from './render/plaza'
 import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
@@ -141,7 +142,7 @@ import { runShare, sharePreview, trainerShare } from './ui/share'
 import { shop } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { invitesScreen } from './ui/invites'
-import { titleScreen, type LobbyFocus, type Meadow } from './ui/title'
+import { titleScreen, type LobbyFocus, type Meadow, type ShopTrip } from './ui/title'
 import { creditsLine, supportersScreen } from './ui/supporters'
 import { suggestionsScreen } from './ui/suggestions'
 import { banner, clearToasts, tickToasts, toast } from './ui/toasts'
@@ -276,13 +277,35 @@ let meadowStick: Stick | null = null
 /** A CSS px point on screen, in the meadow's world px (the canvas sits at the viewport's corner). */
 const meadowAt = (at: Vec): Vec => ({ x: Math.round(scene.cam.x) + at.x / cssScale, y: Math.round(scene.cam.y) + at.y / cssScale })
 
-/** The lobby's handle on the meadow: its partner walks there, with the supporter's companion. */
+/** A meadow point (world px) on screen, in CSS px. */
+const meadowToScreen = (at: Vec): Vec => ({ x: (at.x - Math.round(scene.cam.x)) * cssScale, y: (at.y - Math.round(scene.cam.y)) * cssScale })
+
+/** Lobbies that met the partner so far: only the latest one may send it away (the next title is built before the last one goes). */
+let meetings = 0
+
+/** The lobby's handle on the meadow: its partner walks there, with the supporter's companion, and visits the Kecleon plaza. */
 const meadow: Meadow = {
-  meet: (partner) => meetPartner(scene, partner, partner && runCompanion({ x: 0, y: 0 })),
+  meet: (partner) => {
+    const id = ++meetings
+    meetPartner(scene, partner, runCompanion({ x: 0, y: 0 }))
+    return () => void (id === meetings && meetPartner(scene, null))
+  },
   steer: (move, tap, home) => steerPartner(scene, move, tap && meadowAt(tap), meadowAt(home)),
   out: () => scene.partner !== null && scene.partner.state !== 'home',
   stick: (stick) => (meadowStick = stick),
+  visit: (to, instant) => visitPlaza(scene, to, view.w, view.h, instant),
+  at: () => sceneAt(scene),
+  talkSpot: () => {
+    const at = talkSpot(scene)
+    return at && meadowToScreen(at)
+  },
+  tapsShop: (at) => tapsPlaza(scene, meadowAt(at)),
 }
+
+/** Dev: the plaza's building level (`ps.plaza(n)`), over the shop's own. */
+let devPlazaLevel: ShopLevel | null = null
+/** The Kecleon plaza's level: 1 until the save keeps the shop's expansion (Loja do Kecleon, PR 3 reads it here). */
+const plazaLevel = (): ShopLevel => devPlazaLevel ?? 1
 
 const queueMega = () => {
   unlockAudio()
@@ -331,7 +354,7 @@ let pressedStart = false
  * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch, not back from signing in);
  * coming back from the starter select goes straight to the lobby. `focus` is what the lobby highlights (JOGAR by default).
  */
-const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
+const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean } = {}) => {
   endRun()
   // A newer build went live during the run (see `watchDeploys`): back in the lobby, with the run banked, ranked and its crash watch cleared, is the moment to load it.
   if (reloadForDeploy) return location.reload()
@@ -357,7 +380,12 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
         }),
       discord: (focus) => discordScreen(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
-      mart: (focus) => shop(ui, input, () => showTitle({ focus })),
+      // Over the Kecleon plaza; closing it leaves `?loja` behind too.
+      mart: (close) =>
+        shop(ui, input, () => {
+          if (new URLSearchParams(location.search).has(SHOP_PARAM)) history.replaceState(null, '', location.pathname)
+          close()
+        }),
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
       trainer: (focus) =>
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
@@ -1514,6 +1542,7 @@ const frame = (now: number) => {
   } else {
     // Attract mode: wild Pokémon stroll through the meadow behind the menus (haunted on the Noite das Bruxas).
     scene.haunted = halloweenToday()
+    scene.plaza.level = plazaLevel()
     stepTitleScene(scene, dt, view.w, view.h)
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
@@ -1585,6 +1614,8 @@ const showSharedProfile = (handle: string) => {
 
 /** `?ideias`, the idea board's own link (to share on social media): it opens over the lobby, and closing it lands there. */
 const IDEAS_PARAM = 'ideias'
+/** `?loja`, the Kecleon's shop's own link: the lobby opens at the plaza, Kecleon says hello and the shop opens. */
+const SHOP_PARAM = 'loja'
 
 const showIdeasLink = () =>
   setScreen(
@@ -1657,6 +1688,7 @@ const boot = () => {
   const shared = rankingEnabled ? parseHandle(new URLSearchParams(location.search).get(PROFILE_PARAM)) : null
   if (shared) showSharedProfile(shared)
   else if (rankingEnabled && new URLSearchParams(location.search).has(IDEAS_PARAM)) showIdeasLink()
+  else if (new URLSearchParams(location.search).has(SHOP_PARAM)) showTitle({ shop: 'shop', instant: true })
   // Back from signing in, the player already pressed start before leaving: straight to the menu.
   else showTitle({ intro: !backFromSignIn() })
   askAboutCrash()
@@ -1927,6 +1959,16 @@ if (import.meta.env.DEV) {
       },
       /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */
       meadow: () => scene,
+      /**
+       * The Kecleon plaza: `ps.plaza(3)` shows the shop's building at that level (1 to 5, until the next reload; `ps.plaza(0)`
+       * goes back to the save's) and the lobby pans there for a look, cards out; Esc or Enter comes back.
+       */
+      plaza: (level?: number) => {
+        if (level === 0) devPlazaLevel = null
+        else if (level !== undefined) devPlazaLevel = SHOP_LEVELS.find((l) => l === level) ?? devPlazaLevel
+        showTitle({ shop: 'look' })
+        return plazaLevel()
+      },
       /**
        * Noite das Bruxas: moves the missions' clock to an event day (`2026-10-31` by default; `ps.halloween('2026-10-22')` for the
        * countdown) and rebuilds the title; `ps.halloween(false)` goes back to now. Runs started then are haunted (dev only: the server

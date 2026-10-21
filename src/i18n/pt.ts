@@ -4342,6 +4342,20 @@ export const pt = {
     /** Touch hint when the prize is a held item (a move's card says to hold it for the move card). */
     itemHintTouch: 'Toque para escolher',
   },
+  /** The Kecleon plaza in the lobby (render/plaza.ts, ui/title.ts) and its dialogue box (ui/dialogue.ts). */
+  plaza: {
+    /** The prompt over a shopkeeper when the strolling partner stands close (E on a keyboard, a tap on touch). */
+    talk: 'Falar',
+    /** The dialogue box's "next" arrow, for screen readers. */
+    next: 'Continuar',
+    /** Kecleon's greeting when the partner arrives, by the local time of day. */
+    greetings: {
+      morning: 'Bom dia, bom dia! Bem-vindo à Loja do Kecleon! Chegou mercadoria fresquinha.',
+      afternoon: 'Boa tarde! Bem-vindo, bem-vindo! Fica à vontade, a casa é sua!',
+      evening: 'Boa noite! Bem-vindo, bem-vindo! O que vai ser hoje?',
+      night: 'Ainda acordado? Bem-vindo, bem-vindo! A Loja do Kecleon nunca fecha!',
+    },
+  },
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {
     healer: (name: string) => `*${name}* cura os aliados por perto. Derrube primeiro!`,

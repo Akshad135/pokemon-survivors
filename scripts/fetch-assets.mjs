@@ -4,7 +4,7 @@
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { measureBody } from './body.mjs'
-import { DEX, FLYERS, FORM_CRIES, FORMS, SHINY, pad } from './dex.mjs'
+import { DEX, EMOTIONS, FLYERS, FORM_CRIES, FORMS, SHINY, pad } from './dex.mjs'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const OUT = join(ROOT, 'public/assets/pokemon')
@@ -121,6 +121,15 @@ const fetchFormCries = async (dex, dir) => {
   return keys.length > 0 ? keys : null
 }
 
+/** A talking species' emotion portraits (`EMOTIONS`) into `portraits/`: the ones that downloaded. */
+const fetchEmotions = async (dex, dir) => {
+  const emotions = EMOTIONS[dex]
+  if (!emotions) return null
+  await mkdir(join(dir, 'portraits'), { recursive: true })
+  const got = await Promise.all(emotions.map(async (e) => (await download(`${PORTRAITS}/${pad(dex)}/${e}.png`, join(dir, 'portraits', `${e}.png`))) && e))
+  return got.filter(Boolean)
+}
+
 const fetchSpecies = async (dex) => {
   const dir = join(OUT, String(dex))
   const [normal, shiny, cry] = await Promise.all([
@@ -131,6 +140,7 @@ const fetchSpecies = async (dex) => {
   if (!normal) throw new Error(`#${dex}: missing AnimData.xml`)
   const forms = FORMS[dex] && Object.fromEntries(await Promise.all(Object.entries(FORMS[dex]).map(([key, id]) => fetchForm(dex, key, id, dir))))
   const formCries = await fetchFormCries(dex, dir)
+  const emotions = await fetchEmotions(dex, dir)
 
   const tags = [
     normal.portrait && '+portrait',
@@ -138,6 +148,7 @@ const fetchSpecies = async (dex) => {
     shiny && `+shiny(${Object.keys(shiny.anims).join(', ')})`,
     forms && `+forms(${Object.keys(forms).join(', ')})`,
     formCries && `+cries(${formCries.join(', ')})`,
+    emotions && `+emotions(${emotions.length})`,
   ]
   console.log(`#${dex}: ${Object.keys(normal.anims).join(', ')} ${tags.filter(Boolean).join(' ')}`)
   return [dex, { ...normal, cry, ...(shiny && { shiny }), ...(forms && { forms }), ...(formCries && { formCries }) }]

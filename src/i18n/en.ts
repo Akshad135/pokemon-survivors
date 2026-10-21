@@ -4164,6 +4164,16 @@ export const en: Messages = {
     left: (name: string) => `You left *${name}* behind.`,
     itemHintTouch: 'Tap to choose',
   },
+  plaza: {
+    talk: 'Talk',
+    next: 'Continue',
+    greetings: {
+      morning: 'Good morning, good morning! Welcome to the Kecleon Shop! Fresh stock just came in.',
+      afternoon: 'Good afternoon! Welcome, welcome! Make yourself at home!',
+      evening: 'Good evening! Welcome, welcome! What will it be today?',
+      night: 'Still up? Welcome, welcome! The Kecleon Shop never closes!',
+    },
+  },
   traits: {
     healer: (name: string) => `*${name}* heals nearby allies. Take it down first!`,
     shield: (name: string) => `*${name}* wards its allies with a _shield_ that soaks damage.`,
