@@ -22,9 +22,9 @@ import { BRANCHES } from '../data/branches'
 import { legendSignature } from '../data/legends'
 import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
-import { toSteps } from '../game/eggs'
+import { EGGS, refundOf, toSteps } from '../game/eggs'
 import { overtime } from '../game/endless'
-import { runEarnings } from '../game/meta'
+import { runEarnings, type ConvertedEggs } from '../game/meta'
 import { resolveSpecial } from '../game/special'
 import { statSheet, type SheetStat } from '../game/statSheet'
 import type { DamageSource, Game, Offer } from '../game/types'
@@ -709,8 +709,14 @@ export const damageSource = (g: Game, id: DamageSource) => {
   return { icon: specialIcon(r.id), name: r.tier.name, type: r.def.type }
 }
 
-/** What the incubator made of the run: ₽ paid for eggs that didn't fit, and eggs now ready to hatch. */
-export type ResultEggs = { refund: number; ready: number }
+/** What the incubator made of the run: eggs paid in ₽ because they didn't fit (found or rewards), and eggs now ready to hatch. */
+export type ResultEggs = { converted: ConvertedEggs; ready: number }
+
+/** One line per reason eggs were paid in ₽ instead of incubated, with their count and amount. */
+export const convertedEggLines = ({ full, cap }: ConvertedEggs): string[] => [
+  ...(full.length > 0 ? [t().eggs.full(full.length, formatPokeDollars(refundOf(full)))] : []),
+  ...(cap.length > 0 ? [t().eggs.capped(cap.length, formatPokeDollars(refundOf(cap)), EGGS.perRun)] : []),
+]
 
 /** What the run added to the Pokédex (`dexNews`). */
 type DexNews = { species: number; shinies: number }
@@ -738,7 +744,7 @@ type ResultsExtras = {
   credits?: HTMLElement | null
 }
 
-const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { refund: 0, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null, share: null }
+const NO_EXTRAS: ResultsExtras = { badge: null, report: null, medals: [], eggs: { converted: { full: [], cap: [] }, ready: 0 }, news: { species: 0, shinies: 0 }, ranking: null, share: null }
 
 /**
  * Everything new a run brought, as one wrapping line of chips under the stats
@@ -757,7 +763,7 @@ const runNews = ({ eggs, news, medals }: ResultsExtras) => {
         news.shinies > 0 && h('img', { src: sparkleIcon(), alt: '' }),
       ),
     eggs.ready > 0 && h('span', { class: 'news-chip egg-ready' }, h('img', { src: eggIcon('common'), alt: '' }), e.readyBadge(eggs.ready)),
-    eggs.refund > 0 && h('span', { class: 'news-chip' }, h('img', { src: coinIcon(1), alt: '' }), e.full(formatPokeDollars(eggs.refund))),
+    ...convertedEggLines(eggs.converted).map((line) => h('span', { class: 'news-chip' }, h('img', { src: coinIcon(1), alt: '' }), line)),
     ...medals,
   ].filter((chip) => chip instanceof HTMLElement)
   return chips.length > 0 ? h('div', { class: 'result-news' }, ...chips) : null

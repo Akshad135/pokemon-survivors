@@ -34,7 +34,7 @@ import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSi
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
-import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
+import { depositEggs, EGG_TIERS, EGGS, freeSlots, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
 import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
@@ -81,7 +81,7 @@ import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import type { LandmarkId } from './data/landmarks'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
-import { runEarnings, wonRun } from './game/meta'
+import { runEarnings, wonRun, type ConvertedEggs } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runMode, runResult } from './game/ranking'
@@ -231,8 +231,10 @@ type Run = {
   reward: number
   rewardEggs: number
   rewardItems: BagItem[]
-  /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
-  hatchery: { steps: number; eggs: number; refund: number }
+  /** Steps and eggs of this run already in the incubator. */
+  hatchery: { steps: number; eggs: number }
+  /** Eggs of this run (found or rewards) paid in ₽ because they didn't fit, for the results. */
+  convertedEggs: ConvertedEggs
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
   dexBase: Pokedex
   /** Everything the simulation took from the player, for the ranking to re-simulate (`game/replay.ts`). */
@@ -476,8 +478,9 @@ const bankHatchery = (r: Run) => {
   const steps = toSteps(g.player.walked)
   const fresh = g.eggs.found.slice(r.hatchery.eggs).map((e) => ({ tier: e.tier, steps: steps - toSteps(e.at) }))
   if (steps === r.hatchery.steps && fresh.length === 0) return
-  const { refund } = bankEggs(steps - r.hatchery.steps, fresh)
-  r.hatchery = { steps, eggs: g.eggs.found.length, refund: r.hatchery.refund + refund }
+  const { converted } = bankEggs(steps - r.hatchery.steps, fresh)
+  r.hatchery = { steps, eggs: g.eggs.found.length }
+  r.convertedEggs.full.push(...converted)
 }
 
 /**
@@ -507,6 +510,8 @@ const recordProgress = (r: Run) => {
   r.unlocked.push(...record.unlocked)
   r.reward += record.reward
   r.rewardEggs += record.eggs.length
+  r.convertedEggs.full.push(...record.converted.full)
+  r.convertedEggs.cap.push(...record.converted.cap)
   r.rewardItems.push(...record.items)
   return record
 }
@@ -695,7 +700,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     reward: 0,
     rewardEggs: 0,
     rewardItems: [],
-    hatchery: { steps: 0, eggs: 0, refund: 0 },
+    hatchery: { steps: 0, eggs: 0 },
+    convertedEggs: { full: [], cap: [] },
     dexBase: save.dex,
     recorder: startRecording(start),
     ranked: ranked?.ranked ?? null,
@@ -823,7 +829,7 @@ const syncOverlay = (r: Run) => {
           badge: titleBadge(loadSave().title),
           report: missionReport(r.missionsBefore, r.reward, r.rewardEggs, r.rewardItems),
           medals: medalChips(r.unlocked),
-          eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
+          eggs: { converted: r.convertedEggs, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
           ranking: rankingEnabled
             ? { panel: rankPanel(r.rank, r.challenge !== null, runMode(g.starter)), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, mode: runMode(g.starter), challenge: r.challenge !== null }) }
@@ -1293,8 +1299,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, rich(t().alphas.prize), 2600)
     case 'egg': {
       const m = t().eggs
+      // The run's eggs bank when it ends: this one fits if the incubator has a slot for it after the ones found before it.
+      const fits = g.eggs.found.length - r.hatchery.eggs <= freeSlots(loadSave().eggs)
+      const text = fits ? m.found(m.tiers[e.tier]) : m.foundFull(m.tiers[e.tier], formatPokeDollars(EGG_TIERS[e.tier].refund))
       playSfx('unlock')
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: eggIcon(e.tier), alt: '' }), rich(m.found(m.tiers[e.tier]))), 3600)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: eggIcon(e.tier), alt: '' }), rich(text)), 3600)
     }
   }
 }
