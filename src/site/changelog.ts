@@ -28,8 +28,9 @@ export type ChangelogUpdate = {
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
     date: '2026-10-21',
-    title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+    title: { pt: 'Noite das Bruxas e lendários jogáveis', en: 'Halloween Night and playable legendaries', es: 'Noche de Brujas y legendarios jugables' },
     highlights: [
+      { pt: 'Modo Lendário: vença os 23 lendários como chefes, no mapa ou nas novas fendas épicas, para capturá-los e jogar com eles, com ranking próprio.', en: 'Legend Mode: beat all 23 legendaries as bosses, on the map or in the new epic rifts, to catch them and play as them, with their own ranking.', es: 'Modo Legendario: vence a los 23 legendarios como jefes, en el mapa o en las nuevas grietas épicas, para capturarlos y jugar con ellos, con su propio ranking.' },
       { pt: 'Noite das Bruxas de 24/10 a 2/11: toda partida é assombrada, à noite, com um surto de fantasma por dia e abóboras pelo mapa. Doces ou travessuras?', en: 'Halloween Night from Oct 24 to Nov 2: every run is haunted, at night, with a ghost outbreak every day and jack-o\'-lanterns all over the map. Trick or treat?', es: 'Noche de Brujas del 24/10 al 2/11: cada partida está embrujada, de noche, con un brote de fantasma por día y calabazas por el mapa. ¿Dulce o truco?' },
       { pt: '12 chefes da noite, do Mimikyu ao Chandelure, tomam o lugar do Onix e do Snorlax: cace todos e ganhe o título Exorcista.', en: '12 night bosses, from Mimikyu to Chandelure, take Onix\'s and Snorlax\'s places: hunt them all for the Exorcist title.', es: '12 jefes de la noche, de Mimikyu a Chandelure, toman el lugar de Onix y Snorlax: cázalos a todos y gana el título Exorcista.' },
       { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
@@ -73,21 +74,6 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'Caça aos Fantasmas: a tela da Noite das Bruxas mostra os 12 como sombras até você vencê-los. A primeira vitória sobre cada um rende 25 doces no pote, e vencer todos dá o título Exorcista e a moldura Espectral no Presente.',
             en: 'Ghost Hunt: the Halloween Night screen shows all 12 as shadows until you beat them. The first win over each one puts 25 candies in the jar, and beating them all brings the Exorcist title and the Spectral frame to your Gift box.',
             es: 'Cacería de Fantasmas: la pantalla de la Noche de Brujas muestra a los 12 como sombras hasta que los vences. La primera victoria sobre cada uno pone 25 dulces en el frasco, y vencerlos a todos trae el título Exorcista y el marco Espectral a tu Regalo.',
-          },
-        ],
-      },
-      {
-        title: { pt: 'Modo Lendário mais difícil', en: 'A tougher Legend Mode', es: 'Un Modo Legendario más difícil' },
-        notes: [
-          {
-            pt: 'Lendário não enfrenta forma básica: a horda do Modo Lendário agora vem só de Pokémon evoluídos, do primeiro minuto ao último, sem o surto do dia (na Noite das Bruxas, só os fantasmas evoluídos: Misdreavus, Banette e Gengar).',
-            en: 'Legendaries don’t fight basic forms: Legend Mode’s horde is now all evolved Pokémon, from the first minute to the last, without the outbreak of the day (on Halloween Night, only the evolved ghosts: Misdreavus, Banette and Gengar).',
-            es: 'Un legendario no enfrenta formas básicas: la horda del Modo Legendario ahora es solo de Pokémon evolucionados, del primer minuto al último, sin el brote del día (en la Noche de Brujas, solo los fantasmas evolucionados: Misdreavus, Banette y Gengar).',
-          },
-          {
-            pt: 'A Pressão ficou mais forte em todas as dificuldades, e muito mais no Pesadelo: mais Pokémon, mais resistentes, mais rápidos e batendo mais forte. Ficar parado deixou de ser um passeio.',
-            en: 'Pressure got stronger on every difficulty, and much stronger on Nightmare: more Pokémon, tougher, faster and hitting harder. Standing around is no longer a stroll.',
-            es: 'La Presión se volvió más fuerte en todas las dificultades, y mucho más en Pesadilla: más Pokémon, más resistentes, más rápidos y pegando más fuerte. Quedarse quieto dejó de ser un paseo.',
           },
         ],
       },
