@@ -159,6 +159,40 @@ const SCENARIOS = {
       g.pickups.push({ id: g.nextId++, x: g.player.x - 20, y: g.player.y, vx: 0, vy: 0, attracted: false, age: 0, kind: 'evoItem', item: 'metalCoat' })
     },
   },
+  /**
+   * A line step that needs its item (`EvolutionStage.item`): Porygon past
+   * Lv 28 with neither item holds its form, 15% stronger, while a wave boss
+   * falls next to it and rolls its drop (only the Up-Grade can come); an
+   * Up-Grade close by evolves it to Porygon2, which holds again for the
+   * Dubious Disc lying a little farther, then evolves into Porygon-Z.
+   */
+  porygonGate: {
+    start: { ...START, starter: 'porygon' },
+    seconds: 25,
+    stage: (g) => {
+      g.time = 240
+      g.nextEvent = 99
+      g.revives = 2
+      gainXp(g, 6000)
+      const boss = spawnWaveBoss(g, 'onix', g.time)
+      Object.assign(boss, { x: g.player.x + 30, y: g.player.y, hp: 1 })
+      g.pickups.push({ id: g.nextId++, x: g.player.x - 20, y: g.player.y, vx: 0, vy: 0, attracted: false, age: 0, kind: 'evoItem', item: 'upgrade' })
+      g.pickups.push({ id: g.nextId++, x: g.player.x, y: g.player.y + 26, vx: 0, vy: 0, attracted: false, age: 0, kind: 'evoItem', item: 'dubiousDisc' })
+    },
+  },
+  /** Smeargle's Sketch at Lv 5 with a wave boss close by and the horde around: it paints off the boss first, then off whoever is nearest. */
+  sketch: {
+    start: { ...START, starter: 'smeargle' },
+    seconds: 20,
+    stage: (g) => {
+      g.time = 150
+      g.nextEvent = 99
+      g.revives = 2
+      for (const m of g.player.moves) if (m.id === 'sketch') m.level = 5
+      const boss = spawnWaveBoss(g, 'onix', g.time)
+      Object.assign(boss, { x: g.player.x + 60, y: g.player.y })
+    },
+  },
   /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
   legend: {
     start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
@@ -179,7 +213,7 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  32: {
+  33: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
@@ -189,6 +223,8 @@ const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
     shop: '1537·65·19·246b065f',
     shopTms2: '1787·49·17·465b899a',
     evoGate: '1487·52·24·4db92003',
+    porygonGate: '2074·62·37·8883eec0',
+    sketch: '1210·19·2·0f281e81',
     legend: '1098·51·14·86dc0d8b',
   },
 }
@@ -282,7 +318,7 @@ describe(`the simulation under RULES_VERSION ${RULES_VERSION}`, () => {
   const endings = Object.fromEntries(Object.entries(SCENARIOS).map(([id, s]) => [id, ending(s)])) as Record<ScenarioId, ReturnType<typeof ending>>
 
   it('plays each scenario through what it covers, and its replay lands on the same ending', () => {
-    const { levelUps, mega, riftFall, alphaHazards, bag, shopTms2, evoGate } = endings
+    const { levelUps, mega, riftFall, alphaHazards, bag, shopTms2, evoGate, porygonGate, sketch } = endings
     expect(levelUps.live.player.level).toBeGreaterThan(10)
     expect(mega.live.mega.count).toBe(1)
     expect(riftFall.live.events.map((e) => e.kind)).toEqual(expect.arrayContaining(['riftFall', 'riftExit', 'revive', 'gameover']))
@@ -292,6 +328,9 @@ describe(`the simulation under RULES_VERSION ${RULES_VERSION}`, () => {
     expect(shopTms2.live.weather.held).not.toBeNull()
     expect(shopTms2.live.player.moves.find((m) => m.id === 'swordsDance')?.stacks).toBeGreaterThan(1)
     expect([evoGate.live.player.stage, evoGate.live.evoFound.length, evoGate.live.evoHeld]).toEqual([1, 1, false])
+    expect([porygonGate.live.player.stage, porygonGate.live.evoFound.toSorted(), porygonGate.live.evoHeld]).toEqual([2, ['dubiousDisc', 'upgrade'], false])
+    expect(sketch.live.player.moves.find((m) => m.id === 'sketch')?.sketch).toBeDefined()
+    expect(sketch.live.kills).toBeGreaterThan(0)
     for (const e of Object.values(endings)) expect(e.sameEnd).toBe(true)
   })
 

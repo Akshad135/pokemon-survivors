@@ -87,7 +87,9 @@ const learnStages = (id: PlayableId) => {
   const s: PlayableDef = PLAYABLE[id]
   const rows = (moves: readonly MoveId[]) => h('div', { class: 'move-list' }, ...moves.map((mv) => moveRow(mv, mv === s.signature)))
   return s.line.flatMap((st, i) => {
-    const when = i === 0 ? t().partner.learnStart : t().level(s.line[i - 1]!.evolveAt!)
+    const level = i === 0 ? t().partner.learnStart : t().level(s.line[i - 1]!.evolveAt!)
+    // A step that needs an item (Porygon2's Up-Grade) names it beside the level.
+    const when = st.item ? `${level} · ${t().branch.needs(EVO_ITEMS[st.item].name)}` : level
     const branches = branchesAt(id, i)
     if (branches.length === 0) return [stageHead([st.dex], st.name, when), rows(unlockedAt(id, null, i))]
     const names = branches.map((b) => BRANCHES[b].name)

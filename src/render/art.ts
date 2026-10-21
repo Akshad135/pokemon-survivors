@@ -336,6 +336,23 @@ const EGG = [
   '.1222222211.',
   '..11111111..',
 ]
+/** The Kecleon Egg: the same shell with Kecleon's red zigzag around its middle instead of spots. */
+const KECLEON_EGG = [
+  '....2222....',
+  '...222222...',
+  '..23222222..',
+  '..32222222..',
+  '.2222222222.',
+  '.2222222221.',
+  '.2422242224.',
+  '244424442444',
+  '442444244424',
+  '422242224221',
+  '222222222221',
+  '122222222211',
+  '.1222222211.',
+  '..11111111..',
+]
 /** The crack that splits the shell, revealed from the middle out as hatching goes on. */
 const EGG_CRACK = ['', '', '', '', '1...1...1...', '.1.1.1.1.1.1', '..1...1...1.']
 
@@ -346,9 +363,16 @@ const EGG_PALETTES = {
   friend: { 1: '#d888a0', 2: '#f8d0dc', 3: '#ffffff', 4: '#e84870' },
   /** The Haunted Egg: a dusk-violet shell with will-o'-wisp green spots. */
   haunted: { 1: '#281840', 2: '#58388a', 3: '#a888e0', 4: '#78f0a8' },
+  /** The Kecleon Egg: Kecleon's green with its red zigzag. */
+  kecleon: { 1: '#2c6a30', 2: '#68c058', 3: '#c8f0a8', 4: '#d83838' },
+  /** The loyalty card's Kecleon Egg, sure to hatch shiny: a golden zigzag on a deeper green shell. */
+  kecleonShiny: { 1: '#1c4a20', 2: '#3c8a3c', 3: '#a8e890', 4: '#f8d030' },
 } as const satisfies Record<EggTier, Palette>
 
-const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048', haunted: '#78f0a8' } as const satisfies Record<EggTier, string>
+const CRACK_COLORS = { common: '#584830', rare: '#584830', ultra: '#f8f0c0', friend: '#803048', haunted: '#78f0a8', kecleon: '#1c4020', kecleonShiny: '#1c4020' } as const satisfies Record<EggTier, string>
+
+/** The eggs drawn from their own rows instead of `EGG`'s spots. */
+const EGG_ROWS: Partial<Record<EggTier, readonly string[]>> = { kecleon: KECLEON_EGG, kecleonShiny: KECLEON_EGG }
 
 /** Memoized sprite per key (one per tier and crack stage). */
 const eggCache = canvasCache<string, PixelSprite>()
@@ -358,7 +382,7 @@ const toSprite = (key: string, build: () => PixelSprite) => {
   return s
 }
 
-export const eggSprite = (tier: EggTier) => toSprite(`egg:${tier}`, () => art(EGG, EGG_PALETTES[tier], '#181818'))
+export const eggSprite = (tier: EggTier) => toSprite(`egg:${tier}`, () => art(EGG_ROWS[tier] ?? EGG, EGG_PALETTES[tier], '#181818'))
 
 /**
  * Crack overlay for `stage` 1..3, aligned with `eggSprite` (outline included):

@@ -70,6 +70,8 @@ export type OwnedMove = {
   stacks?: number
   /** `Player.walked` when it last fired, for `walkedSince`. */
   walkedAt?: number
+  /** Sketch's painting (`sketch.ts`): the move it copied and the casts it has left. */
+  sketch?: { move: MoveId; left: number }
 }
 
 /** A move's window on the player (guard, burrow): `left` seconds, and the move whose hook it calls. */
@@ -272,7 +274,7 @@ export type EggMoveVisual =
   | 'hypnosis' | 'dreamBite' | 'forcePalm' | 'auraWave' | 'digMound' | 'digBurst' | 'twister' | 'sandTomb'
   | 'meteorMash' | 'zenHeadbutt' | 'foulPlay' | 'bodySlam' | 'slamWave' | 'dynamicPunch' | 'rollout' | 'iceBall'
   | 'furyCutter' | 'sacredSword' | 'sacredEdge' | 'dragonDart' | 'snarl' | 'gigaImpact' | 'gigaWave' | 'flail'
-  | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse'
+  | 'boneRush' | 'metronome' | 'echoedVoice' | 'curse' | 'sketch'
 /** The third batch of egg signatures (`eggMoves3.ts`), drawn by `render/eggMove3Fx.ts`. */
 export type EggMove3Visual =
   | 'fieryDance' | 'overdrive' | 'gigatonHammer' | 'hammerTap' | 'hammerQuake' | 'bitterBlade' | 'leechLife' | 'fireFang'

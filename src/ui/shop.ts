@@ -3,18 +3,20 @@ import type { Input } from '../engine/input'
 import { formatDay, formatNumber, formatPokeDollars, t } from '../i18n'
 import { HATCHLINGS, PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { BRANCHES, branchesAt } from '../data/branches'
+import type { EvolutionStage } from '../data/starters'
 import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
 import { BOTTLE_CAPS, EVO_ITEM_IDS, EVO_ITEM_PRICE, EVO_ITEMS, MAX_CAPS, SHOP_LEVEL_IDS, SHOP_LEVELS, VITRINE, type BagItem, type EvoItemId, type ShopLevel, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { armBlock, armedItems, armItem, BAG_ITEM_IDS, BAG_ITEMS, bagCount } from '../game/bag'
 import { addDays, brasiliaDay, dayNumber, msToNextDay, type DayKey } from '../game/day'
 import { canPlay } from '../game/capture'
-import { branchNeeds, buyCap, buyEvoItem, capBlock, capLevel, capPrice, evoBlock } from '../game/evoItems'
+import { branchNeeds, buyCap, buyEvoItem, capBlock, capLevel, capPrice, evoBlock, evoItemSteps } from '../game/evoItems'
 import { MOVES } from '../game/moves'
 import { armedTms, armTm, buyTm, isRegularTm, nextTmDay, shelfOf, tmBlock, tmLimit, tmListing, tmPrice, type ShelfTm, type TmBlock } from '../game/tmShelf'
-import { EGG_TIERS, EGGS, hatchOdds } from '../game/eggs'
+import { EGG_TIERS, EGGS, hatchOdds, type EggTier } from '../game/eggs'
 import { buyUpgrade, refundAll, totalSpent, UPGRADE_IDS, UPGRADES, upgradePrice, type Save } from '../game/meta'
 import {
   buyFromVitrine,
+  buyKecleonEgg,
   buyStyle,
   claimGift,
   dayStyle,
@@ -22,6 +24,7 @@ import {
   investBlock,
   investInShop,
   isDeal,
+  kecleonEggBlock,
   nextAppearance,
   nextShopLevel,
   onPick,
@@ -191,6 +194,46 @@ const giftCard = (v: Vitrine): Card => {
 
 /** What a blocked Vitrine card says instead of its price. */
 const blockText = (block: VitrineBlock | null) => (block === null || block === 'poor' ? null : t().shop.blocks[block])
+
+/**
+ * The Kecleon Egg's fixed card: beside the day's cards (never one of them),
+ * one a day at any level, with the odds of each of its four families for this
+ * save. Kecleon has a word for whoever takes one.
+ */
+const kecleonEggCard = (v: Vitrine): Card => {
+  const sh = t().shop
+  const k = sh.kecleonEgg
+  const { price: cost } = VITRINE.kecleonEgg
+  const name = t().eggs.tiers.kecleon
+  const { el, badges, sub, price } = shell(shopIcon('kecleonEgg'), name)
+  el.classList.add('kecleon-egg')
+  const odds = (save: Save) => hatchOdds('kecleon', save.hatched)
+  const blocked = (save: Save) => {
+    const block = kecleonEggBlock(save, v)
+    return block === null || block === 'poor' ? null : sh.blocks[block]
+  }
+  return {
+    el,
+    refresh: (save) => {
+      const block = kecleonEggBlock(save, v)
+      setBadges(badges, [badge('exclusive', sh.badges.exclusive)])
+      setText(sub, `${odds(save).filter(([id]) => save.hatched[id]).length}/${odds(save).length}`)
+      setText(price, blocked(save) ?? formatPokeDollars(cost))
+      el.classList.toggle('sold', block === 'soldOut' || block === 'full')
+      el.classList.toggle('poor', block === 'poor')
+    },
+    describe: (save) => ({
+      icon: shopIcon('kecleonEgg'),
+      title: name,
+      // The odds first: on a phone the strip shows a few lines before it scrolls.
+      text: [eggOdds('kecleon', save), k.text(formatNumber(EGG_TIERS.kecleon.steps)), t().shop.stall.duplicate(formatPokeDollars(EGG_TIERS.kecleon.refund)), sh.stock(stockLeft(save.shop, v, 'kecleonEgg'), vitrineStock('kecleonEgg'))].join(' '),
+      action: blocked(save) ?? t().mart.buy(formatPokeDollars(cost)),
+      disabled: kecleonEggBlock(save, v) !== null,
+    }),
+    act: (save) => buyKecleonEgg(save, v),
+    said: (before, after) => (after.wallet < before.wallet ? { text: t().plaza.lines.kecleonEgg, emotion: 'Inspired' } : null),
+  }
+}
 
 /** One card of the day's Vitrine: the deal first, the ones above the shop's level locked (a peek at what growing brings). */
 const vitrineCard = (v: Vitrine, key: VitrineKey, i: number, style: StylePick | null): Card => {
@@ -369,7 +412,12 @@ const tmStock = (save: Save): (Card | string)[] => {
 const evoCard = (id: EvoItemId): Card => {
   const sh = t().shop
   const def = EVO_ITEMS[id]
-  const forms = def.branches.map((b) => BRANCHES[b].name).join(' · ')
+  // The line steps it evolves (Porygon2, Exeggutor), each with the form it leaves.
+  const steps = evoItemSteps(id).map(({ family, stage }) => {
+    const line: readonly EvolutionStage[] = PLAYABLE[family].line
+    return { form: line[stage]!.name, from: line[stage - 1]!.name }
+  })
+  const forms = [...def.branches.map((b) => BRANCHES[b].name), ...steps.map((s) => s.form)].join(' · ')
   const { el, badges, sub, price } = shell(shopIcon(id), def.name)
   const owned = (save: Save) => save.evo.includes(id)
   const families = [...new Set(def.branches.map((b) => BRANCHES[b].line))]
@@ -394,11 +442,13 @@ const evoCard = (id: EvoItemId): Card => {
         const stays = branchesAt(line, BRANCHES[mine[0]!].stage).every((b) => branchNeeds(b) !== null)
         return [sh.evolution.unlocks(forms, family), ...(stays ? [sh.evolution.stays(family)] : [])]
       })
-      const drops = def.branches.some((b) => branchNeeds(b) === id)
+      // A line step has no other way on: without the item, the form before it stays. "Yours for good" once (a branch's line says it).
+      const evolves = steps.flatMap((s) => [sh.evolution.evolves(s.from, s.form, lines.length === 0), sh.evolution.stays(s.from)])
+      const drops = steps.length > 0 || def.branches.some((b) => branchNeeds(b) === id)
       return {
         icon: shopIcon(id),
         title: def.name,
-        text: [...lines, ...(drops ? [sh.evolution.drops] : [])].join(' '),
+        text: [...lines, ...evolves, ...(drops ? [sh.evolution.drops] : [])].join(' '),
         action: owned(save) ? sh.evolution.owned : block === 'locked' ? sh.blocks.locked : t().mart.buy(formatPokeDollars(EVO_ITEM_PRICE)),
         disabled: block !== null,
       }
@@ -747,6 +797,21 @@ const haggleCard = (): Card => {
 
 /* ---------------- Barraca (a seasonal stall: Duskull's Haunted Egg) ---------------- */
 
+/**
+ * The odds of an egg only one shelf sells (the Haunted Egg, the Kecleon Egg),
+ * for this save, as `hatchEgg` draws them: each family (✓ once hatched) with
+ * its share, or the one share when all are alike, then the shiny odds.
+ */
+const eggOdds = (egg: EggTier, save: Save) => {
+  const s = t().shop.stall
+  const shares = hatchOdds(egg, save.hatched)
+  const family = ([id]: (typeof shares)[number]) => `${HATCHLINGS[id].name}${save.hatched[id] ? ' ✓' : ''}`
+  const list = shares.every(([, share]) => share === shares[0]?.[1])
+    ? s.even(shares.map(family).join(', '), Math.round((shares[0]?.[1] ?? 0) * 100))
+    : shares.map((entry) => `${family(entry)} ${Math.round(entry[1] * 100)}%`).join(', ')
+  return s.odds(list, Math.round(1 / EGGS.shinyOdds))
+}
+
 /** What a blocked stall card says instead of its price. */
 const stallBlockText = (block: StallBlock | null) => (block === null || block === 'poor' ? null : t().shop.stall.blocks[block])
 
@@ -773,17 +838,11 @@ const stallCard = (good: StallGoodId): Card => {
       el.classList.toggle('poor', block === 'poor')
     },
     describe: (save) => {
-      const shares = odds(save)
-      const family = ([id]: (typeof shares)[number]) => `${HATCHLINGS[id].name}${save.hatched[id] ? ' ✓' : ''}`
-      // Every family alike (the Haunted Egg): the names, then the one share.
-      const list = shares.every(([, share]) => share === shares[0]?.[1])
-        ? s.even(shares.map(family).join(', '), Math.round((shares[0]?.[1] ?? 0) * 100))
-        : shares.map((entry) => `${family(entry)} ${Math.round(entry[1] * 100)}%`).join(', ')
       return {
         icon: picture(),
         title: name,
         // The odds first: on a phone the strip shows a few lines before it scrolls.
-        text: [s.odds(list, Math.round(1 / EGGS.shinyOdds)), s.egg(formatNumber(EGG_TIERS[egg].steps)), s.duplicate(formatPokeDollars(EGG_TIERS[egg].refund)), s.stock].join(' '),
+        text: [eggOdds(egg, save), s.egg(formatNumber(EGG_TIERS[egg].steps)), s.duplicate(formatPokeDollars(EGG_TIERS[egg].refund)), s.stock].join(' '),
         action: stallBlockText(stallBlock(save, good, day)) ?? t().mart.buy(formatPokeDollars(cost)),
         disabled: stallBlock(save, good, day) !== null,
       }
@@ -820,7 +879,8 @@ const stampGrid = (save: Save) => {
 const rewardName = (m: Milestone) => t().shop.loyalty.rewards[rewardKey(m)]
 
 /** Which kind of reward a milestone brings, for its texts. */
-const rewardKey = (m: Milestone) => (m.reward === 'statue' || m.reward === 'mystery' ? m.reward : m.reward.kind === 'egg' ? 'egg' : m.reward.kind === 'style' ? 'frame' : 'title')
+const rewardKey = (m: Milestone) =>
+  m.reward === 'statue' ? m.reward : m.reward.kind === 'egg' ? (m.reward.tier === 'kecleonShiny' ? 'kecleonEgg' : 'egg') : m.reward.kind === 'style' ? 'frame' : 'title'
 
 /** The loyalty card as a wide card: the grid of stamps, how many, and what the next milestone brings. */
 const loyaltyCard = (): Card => {
@@ -845,9 +905,8 @@ const loyaltyCard = (): Card => {
   }
 }
 
-/** A milestone's picture: its gift's look, the golden statue, or a question mark. */
+/** A milestone's picture: its gift's look, or the golden statue. */
 const milestonePicture = (m: Milestone): HTMLElement => {
-  if (m.reward === 'mystery') return h('span', { class: 'shop-mystery' }, '?')
   if (m.reward === 'statue') return shopIcon('expansion')
   if (m.reward.kind === 'egg') return img(eggIcon(m.reward.tier), 'shop-egg')
   if (m.reward.kind === 'style') return img(frameIcon(m.reward.style.id), 'shop-pixel')
@@ -939,7 +998,7 @@ const SHELVES: readonly Shelf[] = [
     stock: (save) => {
       const v = vitrineToday()
       const style = dayStyle(v, save.style)
-      return [giftCard(v), ...v.cards.map((key, i) => vitrineCard(v, key, i, style))]
+      return [giftCard(v), kecleonEggCard(v), ...v.cards.map((key, i) => vitrineCard(v, key, i, style))]
     },
     intro: (save) => t().shop.vitrineOf(t().plaza.dayNames[weekdayOf(vitrineToday().day)]!, t().shop.level(t().shop.levels[save.shop.level], save.shop.level)),
     countdown: true,

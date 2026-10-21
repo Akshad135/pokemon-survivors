@@ -45,15 +45,15 @@ export const CARAVAN = {
   tms: number
 }
 
-/** A loyalty milestone's reward: a Mystery Gift, the golden statue on the plaza, or the mystery (not built yet). */
-export type LoyaltyReward = GiftContent | 'statue' | 'mystery'
+/** A loyalty milestone's reward: a Mystery Gift, or the golden statue on the plaza. */
+export type LoyaltyReward = GiftContent | 'statue'
 
 /**
  * The loyalty card (Cartão fidelidade): one stamp per Brasília day the player
  * visits the shop, no purchase needed, and missing days never reset it. Each
  * milestone pays once: a rare egg (which also lets Meowth haggle), the Freguês
- * frame, the Freguês VIP title, the golden Kecleon statue on the plaza, and a
- * mystery at 100 (Kecleon as a playable egg family, waiting on a decision).
+ * frame, the Freguês VIP title, the golden Kecleon statue on the plaza, and at
+ * 100 a Kecleon Egg sure to hatch shiny (`EGG_TIERS.kecleonShiny`).
  */
 export const LOYALTY = {
   /** Stamps per row of the card. */
@@ -63,7 +63,7 @@ export const LOYALTY = {
     { stamps: 14, reward: { kind: 'style', style: { slot: 'frame', id: 'regular' } } },
     { stamps: 30, reward: { kind: 'title', title: 'vipCustomer' } },
     { stamps: 60, reward: 'statue' },
-    { stamps: 100, reward: 'mystery' },
+    { stamps: 100, reward: { kind: 'egg', tier: 'kecleonShiny' } },
   ],
 } as const satisfies { perRow: number; milestones: readonly { stamps: number; reward: LoyaltyReward }[] }
 

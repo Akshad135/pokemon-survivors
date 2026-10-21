@@ -141,9 +141,21 @@ export const VITRINE = {
   /** How many eggs and styles one save may buy on a day. */
   eggStock: 1,
   styleStock: 1,
-} as const satisfies { eggs: Record<Exclude<EggTier, 'friend' | 'haunted'>, { price: number; weight: number }> } & Record<string, unknown>
+  /**
+   * The Kecleon Egg's fixed card, beside the day's cards and never one of
+   * them (the rotation and its 7-day guarantee don't see it): its price and
+   * how many one save may buy each Brasília day, at any shop level. Its four
+   * families hatch from no other egg (`EGG_TIERS.kecleon`).
+   */
+  kecleonEgg: { price: 10_000, stock: 1 },
+} as const satisfies { eggs: Record<Exclude<EggTier, 'friend' | 'haunted' | 'kecleon' | 'kecleonShiny'>, { price: number; weight: number }> } & Record<string, unknown>
 
 export type VitrineEgg = keyof typeof VITRINE.eggs
+
+/** What the save counts as bought on a day (`ShopSave.bought`): the rotation's cards and the Kecleon Egg's fixed card. */
+export const SHOP_BOUGHT_KEYS = [...VITRINE_POOL, 'kecleonEgg'] as const
+
+export type ShopBoughtKey = (typeof SHOP_BOUGHT_KEYS)[number]
 
 /* ---------------- The purple brother's shelves (TMs, evolution items) and Bottle Caps ---------------- */
 
@@ -167,10 +179,24 @@ export const TM_SHELF = {
 /**
  * The evolution shelf's items, each owned for good: the branches it names
  * need it in a run (`evolutionOffers`; Eevee's three `free` ones don't, the
- * item only adds them to the choice). A run can also find one: a wave boss
- * may drop a missing one (`EVO_FIND`), good for that run only. Names stay
- * official English.
+ * item only adds them to the choice), and so do the line steps that name it
+ * (`EvolutionStage.item`: the Up-Grade for Porygon2, the Dubious Disc for
+ * Porygon-Z, the Leaf Stone for Exeggutor besides Leafeon). A run can also
+ * find one: a wave boss may drop a missing one (`EVO_FIND`), good for that
+ * run only. Names stay official English.
  */
+/**
+ * The evolution items' ids, in catalog order. Spelled out (not `keyof typeof
+ * EVO_ITEMS`): the lines name their step's item (`EvolutionStage.item`), and
+ * the items name branches of those lines, so the ids can't hang on either.
+ */
+export const EVO_ITEM_IDS = [
+  'waterStone', 'thunderStone', 'fireStone', 'sunStone', 'moonStone', 'leafStone', 'iceStone', 'shinyStone', 'dawnStone',
+  'metalCoat', 'blackAugurite', 'kingsRock', 'auspiciousArmor', 'maliciousArmor', 'upgrade', 'dubiousDisc',
+] as const
+
+export type EvoItemId = (typeof EVO_ITEM_IDS)[number]
+
 export const EVO_ITEMS = {
   waterStone: { name: 'Water Stone', branches: ['vaporeon'] },
   thunderStone: { name: 'Thunder Stone', branches: ['jolteon'] },
@@ -186,11 +212,9 @@ export const EVO_ITEMS = {
   kingsRock: { name: "King's Rock", branches: ['politoed'] },
   auspiciousArmor: { name: 'Auspicious Armor', branches: ['armarouge'] },
   maliciousArmor: { name: 'Malicious Armor', branches: ['ceruledge'] },
-} as const satisfies Record<string, { name: string; branches: readonly BranchId[] }>
-
-export type EvoItemId = keyof typeof EVO_ITEMS
-
-export const EVO_ITEM_IDS = Object.keys(EVO_ITEMS) as EvoItemId[]
+  upgrade: { name: 'Up-Grade', branches: [] },
+  dubiousDisc: { name: 'Dubious Disc', branches: [] },
+} as const satisfies Record<EvoItemId, { name: string; branches: readonly BranchId[] }>
 
 /** What an evolution item costs. */
 export const EVO_ITEM_PRICE = 10_000

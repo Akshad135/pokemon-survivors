@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { createRng } from '../engine/rng'
+import { HATCHLINGS } from '../data/hatchlings'
+import { depositEggs, EGG_TIERS, hatchEgg } from './eggs'
 import { applyGift, keepGiven } from './gifts'
 import { gameGiftsApplied, isGameGift } from './gameGifts'
 import { hasStatue, loyaltyGiftId, milestoneState, nextMilestone, reachedNow, shopGifts, tycoonGiftId } from './loyalty'
@@ -32,10 +35,30 @@ describe('the loyalty card', () => {
     expect(opened.style.owned.frame).toContain('regular')
     expect(opened.eggs.map((e) => e.tier)).toEqual(['rare'])
     expect(shopGifts(opened)).toEqual([])
-    const [egg, frame, title, statue, mystery] = LOYALTY.milestones
+    const [egg, frame, title, statue, kecleonEgg] = LOYALTY.milestones
     expect([egg, frame, title].map((m) => milestoneState(opened, m))).toEqual(['claimed', 'claimed', 'claimed'])
     expect(milestoneState(withStamps(30), egg)).toBe('waiting')
-    expect([statue, mystery].map((m) => milestoneState(opened, m))).toEqual(['ahead', 'ahead'])
+    expect([statue, kecleonEgg].map((m) => milestoneState(opened, m))).toEqual(['ahead', 'ahead'])
+  })
+
+  it('pays a Kecleon Egg sure to hatch shiny at 100 stamps, kept through the API', () => {
+    const waiting = openAll(withStamps(99))
+    expect(shopGifts(waiting)).toEqual([])
+    const at100 = { ...waiting, eggs: [] }
+    expect(shopGifts({ ...at100, shop: { ...at100.shop, stamps: 100 } }).map((g) => g.id)).toEqual([loyaltyGiftId(100)])
+    const opened = openAll({ ...at100, shop: { ...at100.shop, stamps: 100 } })
+    expect(opened.eggs).toEqual([{ tier: 'kecleonShiny', steps: 0 }])
+    expect(milestoneState(opened, LOYALTY.milestones[4])).toBe('claimed')
+    // The API's gift check leaves the egg and the claimed id alone.
+    const kept = keepGiven(opened, gameGiftsApplied(opened))
+    expect([kept.eggs, kept.gifts]).toEqual([opened.eggs, opened.gifts])
+    // Walked and hatched, it's one of the four, always shiny.
+    for (let seed = 1; seed <= 20; seed++) {
+      const ready = depositEggs(opened, EGG_TIERS.kecleonShiny.steps, []).save
+      const out = hatchEgg(ready, 0, createRng(seed))!
+      expect(out.hatch.shiny).toBe(true)
+      expect(HATCHLINGS[out.hatch.id].egg).toBe('kecleon')
+    }
   })
 
   it('raises the golden statue at 60 stamps or with the Department Store', () => {

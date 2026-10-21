@@ -1,4 +1,4 @@
-import { isEventFamily, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
+import { isExclusiveFamily, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
 import { markHatch } from './dex'
 import type { Save } from './meta'
 import { isRecord } from './parse'
@@ -18,9 +18,10 @@ export type ShinyPick = { id: string; pick: PlayableId | null }
 
 /**
  * Families a ticket can't pick: Munchlax stays the reward for bringing 10
- * friends (`game/referral.ts`), and an event's families (the Haunted Egg's) its egg's.
+ * friends (`game/referral.ts`), and the exclusive eggs' families (the Haunted Egg's,
+ * the Kecleon Egg's) their egg's.
  */
-const NOT_PICKABLE: ReadonlySet<PlayableId> = new Set(['munchlax', ...PLAYABLE_IDS.filter(isEventFamily)])
+const NOT_PICKABLE: ReadonlySet<PlayableId> = new Set(['munchlax', ...PLAYABLE_IDS.filter(isExclusiveFamily)])
 
 /** The player can already play `id` shiny: a starter rolled shiny once, or a family hatched shiny. */
 export const ownsShiny = (save: Save, id: PlayableId) => id in save.shinyStarters || (isHatchling(id) && save.hatched[id]?.shiny === true)
@@ -36,7 +37,7 @@ export const playsShiny = (save: Save, id: PlayableId) => ownsShiny(save, id) &&
 export const pickShinyForm = (save: Save, id: PlayableId, shiny: boolean): Save =>
   ownsShiny(save, id) ? { ...save, shinyStarters: { ...save.shinyStarters, [id]: shiny } } : save
 
-/** What a ticket can become, in the select screen's order: every Pokémon not shiny yet (Munchlax and the event families aside). */
+/** What a ticket can become, in the select screen's order: every Pokémon not shiny yet (Munchlax and the exclusive eggs' families aside). */
 export const shinyChoices = (save: Save): PlayableId[] => PLAYABLE_IDS.filter((id) => !NOT_PICKABLE.has(id) && !ownsShiny(save, id))
 
 /** Tickets still waiting for a pick. */

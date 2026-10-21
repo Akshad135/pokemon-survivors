@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE } from '../data/hatchlings'
+import type { EvolutionStage } from '../data/starters'
 import { POKE_TYPES } from '../data/types'
 import { MYTHICALS } from '../data/waves'
 import manifest from '../data/sprites.generated.json'
@@ -139,6 +140,19 @@ describe('hatching', () => {
     for (const rule of Object.values(EGG_SOURCES)) expect(Object.keys(rule.odds)).not.toContain('haunted')
   })
 
+  it('hatches the Kecleon Egg’s four at even odds, only from it (and its shiny twin, always shiny)', () => {
+    const kecleon = HATCHLING_IDS.filter((id) => HATCHLINGS[id].egg === 'kecleon')
+    expect(kecleon).toEqual(['porygon', 'exeggcute', 'scraggy', 'smeargle'])
+    for (const hatched of [{}, { porygon: { shiny: false } }]) expect(hatchOdds('kecleon', hatched).map(([, share]) => share)).toEqual([0.25, 0.25, 0.25, 0.25])
+    expect(hatchOdds('kecleonShiny', {})).toEqual(hatchOdds('kecleon', {}))
+    const draw = (tier: 'kecleon' | 'kecleonShiny', seed: number) => hatchEgg(withEggs([ready(tier)]), 0, createRng(seed))!.hatch
+    for (let seed = 0; seed < 50; seed++) expect(draw('kecleon', seed)).toEqual(draw('kecleon', seed))
+    expect(new Set(Array.from({ length: 200 }, (_, seed) => draw('kecleon', seed).id))).toEqual(new Set(kecleon))
+    expect(Array.from({ length: 50 }, (_, seed) => draw('kecleonShiny', seed).shiny).every(Boolean)).toBe(true)
+    // No egg dropped in runs is a Kecleon Egg.
+    for (const rule of Object.values(EGG_SOURCES)) expect(Object.keys(rule.odds).filter((tier) => tier.startsWith('kecleon'))).toEqual([])
+  })
+
   it('keeps starters always playable and egg families locked until hatched', () => {
     expect(isUnlocked({}, 'charmander')).toBe(true)
     expect(isUnlocked({}, 'gible')).toBe(false)
@@ -169,11 +183,13 @@ describe('egg families', () => {
     expect(gens.size).toBe(9)
   })
 
-  it('evolve mid-run and grow stronger', () => {
+  it('evolve mid-run and grow stronger (Smeargle aside: one stage, it paints moves instead)', () => {
+    expect(HATCHLING_IDS.filter((id) => PLAYABLE[id].line.length === 1)).toEqual(['smeargle'])
     for (const id of HATCHLING_IDS) {
-      const s = PLAYABLE[id]
-      expect(s.line[0].evolveAt).toBeLessThanOrEqual(20)
-      expect(starterStats(id, s.line.length - 1).maxHp).toBeGreaterThan(starterStats(id, 0).maxHp)
+      const line: readonly EvolutionStage[] = PLAYABLE[id].line
+      if (line.length === 1) continue
+      expect(line[0]!.evolveAt).toBeLessThanOrEqual(20)
+      expect(starterStats(id, line.length - 1).maxHp).toBeGreaterThan(starterStats(id, 0).maxHp)
     }
   })
 

@@ -1,19 +1,28 @@
 import { BAG_ITEMS, BOTTLE_CAPS, EVO_ITEM_IDS, EVO_ITEM_PRICE, EVO_ITEMS, MAX_CAPS, SHOP_LEVELS, type BagItem, type EvoItemId } from '../data/shop'
 import { BRANCHES, type BranchDef, type BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import type { EvolutionStage } from '../data/starters'
 import type { Save } from './meta'
 import { isRecord, knownIds, wholeNumber } from './parse'
 
 /**
  * The purple brother's evolution shelf and the Treino's Bottle Caps, both
  * from the Shop (Lv 3), both owned for good. An evolution item unlocks the
- * branches it names (`branchNeeds`, `evolutionOffers`): the run gets the
+ * branches it names (`branchNeeds`, `evolutionOffers`) and the line steps
+ * that name it (`evoItemSteps`, Porygon's Up-Grade): the run gets the
  * save's items in its `ReplayStart.evo`, and may find more (`evoGate.ts`). A Bottle Cap level
  * makes every stat of one Pokémon `BOTTLE_CAPS.boost` stronger in its runs
  * (`runBoost`, `ReplayStart.caps`). Pure; shared with the API through the save.
  */
 
 /* ---------------- Evolution items ---------------- */
+
+/** The line steps an item evolves (`EvolutionStage.item`): each family and the index of the stage it evolves into. */
+export const evoItemSteps = (id: EvoItemId): { family: PlayableId; stage: number }[] =>
+  (Object.keys(PLAYABLE) as PlayableId[]).flatMap((family) => {
+    const line: readonly EvolutionStage[] = PLAYABLE[family].line
+    return line.flatMap((s, stage) => (s.item === id ? [{ family, stage }] : []))
+  })
 
 /** The item that names `branch`, if any: it unlocks it, or adds it to the choice for a `free` one (the branch card shows it). */
 export const evoItemFor = (branch: BranchId): EvoItemId | null => EVO_ITEM_IDS.find((id) => EVO_ITEMS[id].branches.some((b) => b === branch)) ?? null

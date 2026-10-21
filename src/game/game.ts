@@ -9,7 +9,7 @@ import { branchesAt } from '../data/branches'
 import type { EvoItemId } from '../data/shop'
 import type { EvolutionStage } from '../data/starters'
 import { runBoost } from './evoItems'
-import { evolutionFreed, missingEvoItems, runEvoItems } from './evoGate'
+import { evolutionFreed, missingEvoItems, runEvoItems, stepOpen } from './evoGate'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilityLuck, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS, type BagItem } from './bag'
@@ -370,8 +370,8 @@ export const advancePhase = (g: Game): void => {
     return
   }
   if (pendingAwakening(g) > 0) return startAwakening(g)
-  // Held in its first form by an Everstone, the Pokémon still picks its Ability when it would have evolved.
-  if (everstoneAbilityDue(g)) return offerAbilities(g)
+  // Held in its first form by an Everstone (or a one-stage family), the Pokémon still picks its Ability when it would have evolved.
+  if (abilityDueInForm(g)) return offerAbilities(g)
   if (!pendingEvolution(g)) {
     g.phase = 'playing'
     return
@@ -391,19 +391,32 @@ export const advancePhase = (g: Game): void => {
     g.events.push({ kind: 'branchChoice' })
     return
   }
+  // A line step that names an item (Porygon2's Up-Grade) waits for it, like a closed branch.
+  if (!stepOpen(g)) return holdEvolution(g)
+  g.evoHeld = false
   startEvolution(g)
 }
 
-/** An Everstone run, or one held for an item, reached its first evolution's level without an Ability yet: it gets its pick there instead. */
-const everstoneAbilityDue = (g: Game) => {
-  if (!(g.everstone || g.evoHeld) || g.ability.id !== null || g.legend) return false
-  const first: EvolutionStage = PLAYABLE[g.starter].line[0]
-  return first.evolveAt !== undefined && g.player.level >= first.evolveAt
+/** The level a one-stage family (Smeargle) picks its Ability at: where the others first evolve. */
+const SOLO_ABILITY_LEVEL = 12
+
+/**
+ * The Ability pick is due without an evolution: an Everstone run, or one held
+ * for an item, reached its first evolution's level, or a one-stage family
+ * reached `SOLO_ABILITY_LEVEL`, without an Ability yet.
+ */
+const abilityDueInForm = (g: Game) => {
+  if (g.ability.id !== null || g.legend) return false
+  const line: readonly EvolutionStage[] = PLAYABLE[g.starter].line
+  if (line.length === 1) return g.player.level >= SOLO_ABILITY_LEVEL
+  const first = line[0]!
+  return (g.everstone || g.evoHeld) && first.evolveAt !== undefined && g.player.level >= first.evolveAt
 }
 
 /**
  * The evolution is due but none of its branches is open (Scyther, Charcadet
- * without an item): the run stays in its form, as strong as with an
+ * without an item), or its line step needs an item the run lacks (Porygon
+ * without the Up-Grade): the run stays in its form, as strong as with an
  * Everstone, picks its Ability there, and goes on once an item turns up
  * (`evolutionFreed`, checked every tick).
  */
@@ -413,7 +426,7 @@ const holdEvolution = (g: Game) => {
     recomputeStats(g)
     g.events.push({ kind: 'evoHeld', items: missingEvoItems(g) })
   }
-  if (everstoneAbilityDue(g)) return offerAbilities(g)
+  if (abilityDueInForm(g)) return offerAbilities(g)
   g.phase = 'playing'
 }
 

@@ -14516,15 +14516,3 @@ button.hall-tile:hover {
   height: 100%;
 }
 
-/* The 100-stamp milestone: a mystery for now. */
-.shop-mystery {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  font-family: var(--title);
-  font-size: 16px;
-  color: #f8d030;
-  background: #283048;
-  border-radius: 6px;
-}

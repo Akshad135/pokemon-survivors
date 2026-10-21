@@ -1,6 +1,6 @@
 import { createRng, seedFrom, weightedPick } from '../engine/rng'
 import type { EnemyId } from '../data/enemies'
-import { isEventFamily, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
+import { isExclusiveFamily, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
 import { brasiliaDay, dayNumber, msSinceDayStart, previousDay, type DayKey } from './day'
 import type { Difficulty } from './difficulty'
 import { NO_RANKS, UPGRADE_IDS } from './meta'
@@ -12,7 +12,7 @@ import type { ReplayStart } from './replay'
  * Desafio do dia (daily challenge): one run per Brasília day that is the same
  * for everyone, drawn from the date alone: the seed (so the same map, cast
  * and drops), the Pokémon (any playable one, an egg family still unhatched
- * included: a taste of it; the event families aside) and the difficulty. The Poké Mart's upgrades, the
+ * included: a taste of it; the exclusive eggs' families aside) and the difficulty. The Poké Mart's upgrades, the
  * Bag's consumables, the armed TMs, evolution items and Bottle Caps, the Shiny Charm and the first run's lucky egg are
  * off, so the board is clean; the day's outbreak stays on (it's the day's
  * too), and so does the Noite das Bruxas on its days. Only the first finished run of each player counts on the challenge
@@ -33,11 +33,12 @@ export const CHALLENGE = {
 export type Challenge = { day: DayKey; seed: number; starter: PlayableId; difficulty: Difficulty; outbreak: EnemyId; halloween: boolean }
 
 /**
- * Who the challenge draws from: every playable Pokémon but the event
- * families, which only their event's egg brings (they also joined after the
- * draw began: leaving them out keeps every day's Pokémon where it was).
+ * Who the challenge draws from: every playable Pokémon but the exclusive
+ * families, which only their own egg brings (the Haunted Egg's, the Kecleon
+ * Egg's; they also joined after the draw began: leaving them out keeps every
+ * day's Pokémon where it was).
  */
-const POOL = PLAYABLE_IDS.filter((id) => !isEventFamily(id))
+const POOL = PLAYABLE_IDS.filter((id) => !isExclusiveFamily(id))
 
 /** A seeded shuffle of the pool: one cycle of days gives each one its day. */
 const cycleOrder = (cycle: number) => {

@@ -148,6 +148,19 @@ describe('applyPush', () => {
     expect(stored.stall).toEqual(device.stall)
   })
 
+  it('keeps the Kecleon Eggs, their families and the day’s purchase through the API’s parse, merge and gift check', () => {
+    const device = save({
+      eggs: [{ tier: 'kecleon', steps: 100 }, { tier: 'kecleonShiny', steps: 0 }],
+      hatched: { porygon: { shiny: true }, smeargle: { shiny: false } },
+      shop: { ...EMPTY_SAVE.shop, day: '2026-10-21', bought: { kecleonEgg: 1 } },
+    })
+    const pushed = parseSaveData(JSON.parse(JSON.stringify(device)))
+    const stored = keepGiven(applyPush({ save: account, revision: 3 }, { save: pushed, base: 2 }).save, [])
+    expect(stored.eggs).toEqual(expect.arrayContaining([{ tier: 'kecleon', steps: 100 }, { tier: 'kecleonShiny', steps: 0 }]))
+    expect(stored.hatched).toMatchObject({ porygon: { shiny: true }, smeargle: { shiny: false } })
+    expect(stored.shop.bought.kecleonEgg).toBe(1)
+  })
+
   it("hands a reset save to devices that haven't seen the reset, and takes pushes from those that have", () => {
     const wiped = { save: EMPTY_SAVE, revision: 7 }
     expect(applyPush(wiped, { save: account, base: 6 }, 7)).toEqual({ ...wiped, merged: true })
