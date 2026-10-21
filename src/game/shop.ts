@@ -156,8 +156,9 @@ export const vitrinePrice = (v: Vitrine, key: VitrineKey, style: StyleSave): num
 
 /**
  * The save's side of the shop: its level, what it bought and whether it took
- * the gift on `day` (an older day's counts start over), and the card pinned
- * on the wishlist.
+ * the gift on `day` (an older day's counts start over), the card pinned on
+ * the wishlist, and its visits (the last Brasília day it came by and how many
+ * days in a row), for what Kecleon says (`ui/kecleon.ts`).
  */
 export type ShopSave = {
   level: ShopLevel
@@ -165,9 +166,22 @@ export type ShopSave = {
   bought: Readonly<Partial<Record<VitrineKey, number>>>
   gift: boolean
   wishlist: VitrineKey | null
+  visit: ShopVisit
 }
 
-export const NO_SHOP: ShopSave = { level: 1, day: '', bought: {}, gift: false, wishlist: null }
+/** The last day the player came to the shop ('' never) and the days in a row up to it. */
+export type ShopVisit = { day: DayKey; streak: number }
+
+const NO_VISIT: ShopVisit = { day: '', streak: 0 }
+
+export const NO_SHOP: ShopSave = { level: 1, day: '', bought: {}, gift: false, wishlist: null, visit: NO_VISIT }
+
+/** The player comes to the shop on `day`: the streak grows if the last visit was the day before, starts over after a gap, and stays on the same day. */
+export const recordVisit = (shop: ShopSave, day: DayKey): ShopSave => {
+  const { visit } = shop
+  if (visit.day === day) return shop
+  return { ...shop, visit: { day, streak: visit.day !== '' && addDays(visit.day, 1) === day ? visit.streak + 1 : 1 } }
+}
 
 /** The shop as of `day`: a new day restocks and brings a new gift. */
 const onDay = (shop: ShopSave, day: DayKey): ShopSave => (shop.day === day ? shop : { ...shop, day, bought: {}, gift: false })
@@ -253,12 +267,24 @@ export const buyStyle = <S extends StyleSlot>(save: Save, slot: S, id: StyleId<S
  */
 export const mergeShop = (base: ShopSave, incoming: ShopSave): ShopSave => {
   const level = Math.max(base.level, incoming.level) as ShopLevel
-  if (base.day !== incoming.day) return { ...(base.day > incoming.day ? base : incoming), level, wishlist: incoming.wishlist }
+  const visit = mergeVisit(base.visit, incoming.visit)
+  if (base.day !== incoming.day) return { ...(base.day > incoming.day ? base : incoming), level, wishlist: incoming.wishlist, visit }
   const bought = Object.fromEntries(VITRINE_POOL.flatMap((key) => {
     const n = Math.max(base.bought[key] ?? 0, incoming.bought[key] ?? 0)
     return n > 0 ? [[key, n]] : []
   }))
-  return { level, day: base.day, bought, gift: base.gift || incoming.gift, wishlist: incoming.wishlist }
+  return { level, day: base.day, bought, gift: base.gift || incoming.gift, wishlist: incoming.wishlist, visit }
+}
+
+/** Two sides' visits: the later day's, and on the same day the longer streak (each side counted its own visits up to it). */
+export const mergeVisit = (base: ShopVisit, incoming: ShopVisit): ShopVisit => {
+  if (base.day !== incoming.day) return base.day > incoming.day ? base : incoming
+  return base.streak >= incoming.streak ? base : incoming
+}
+
+const parseVisit = (raw: unknown): ShopVisit => {
+  if (!isRecord(raw) || !isDayKey(raw.day)) return NO_VISIT
+  return { day: raw.day, streak: Math.max(1, wholeNumber(raw.streak, 10_000)) }
 }
 
 const isShopLevel = (v: unknown): v is ShopLevel => SHOP_LEVEL_IDS.some((l) => l === v)
@@ -289,5 +315,6 @@ export const parseShop = (raw: unknown, legacyCounter?: unknown): ShopSave => {
     bought: day && isRecord(raw.bought) ? parseBought(raw.bought) : {},
     gift: day !== '' && raw.gift === true,
     wishlist: isVitrineKey(raw.wishlist) ? raw.wishlist : null,
+    visit: parseVisit(raw.visit),
   }
 }

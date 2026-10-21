@@ -12,19 +12,29 @@ import { pumpkinRow } from '../game/halloween'
 import { BOARD_PERIODS, isPlayable, RUN_MODES, runMode, type Board, type BoardEntry, type BoardPeriod, type RunMode } from '../game/ranking'
 import { fetchBoard, fetchChallengeBoard, type BoardFilter, type RankOutcome } from '../ranking'
 import { formatDay, t } from '../i18n'
+import { BAG_ITEMS, parseBagItems } from '../game/bag'
 import { flagIcon } from '../render/art'
 import { jackIcon } from '../render/halloweenArt'
 import { today } from './save'
 import { h, later, rich } from './dom'
 import { profileScreen, runForm, runPortrait, supporterBadge } from './profile'
 import { reportDialog } from './report'
+import { shopIcon } from './shopIcons'
 import { hint, menu, type Screen } from './screens'
 
 const step = <T>(list: readonly T[], at: T, by: number) => list[(list.indexOf(at) + by + list.length) % list.length]!
 
+/** The Bag items a run took, as overlapping icons (none from an older API or run). */
+export const runBag = (bag: unknown) => {
+  const items = parseBagItems(bag)
+  if (items.length === 0) return null
+  const label = t().ranking.bag(items.map((id) => BAG_ITEMS[id].name).join(', '))
+  return h('span', { class: 'rank-bag', role: 'img', 'aria-label': label, title: label }, ...items.map((id) => shopIcon(id)))
+}
+
 /**
  * One player's line: position, Pokémon, name (with their supporter badge) and
- * handle, time. During the Noite das Bruxas, a jack-o'-lantern supporter's
+ * handle, the Bag items the run took, time. During the Noite das Bruxas, a jack-o'-lantern supporter's
  * line glows like a candle, with a jack-o'-lantern on its edge (`pumpkinRow`).
  */
 const entryRow = (e: BoardEntry, me: boolean) => {
@@ -35,6 +45,7 @@ const entryRow = (e: BoardEntry, me: boolean) => {
     h('span', { class: 'rank-pos' }, `#${e.rank}`),
     h('img', { src: runPortrait(e), alt: runForm(e).name, title: runForm(e).name }),
     h('span', { class: 'rank-who' }, h('b', {}, e.name, supporterBadge(e.supporter, e.supporterSince)), h('small', {}, `@${e.handle}`, me && ` · ${t().ranking.you}`)),
+    runBag(e.bag) ?? h('span', {}),
     h('span', { class: 'rank-time' }, h('b', {}, formatTime(e.time)), h('small', {}, t().ranking.outcomes[e.outcome])),
     lit && h('img', { class: 'rank-jack', src: jackIcon(), alt: '' }),
   )

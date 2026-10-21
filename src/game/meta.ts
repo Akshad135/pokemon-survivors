@@ -127,7 +127,7 @@ export type Save = {
   shinyStarters: ShinyStarters
   /** The Bag's consumables, and the ones armed for the next run (`game/bag.ts`). */
   bag: Bag
-  /** The Kecleon Shop: its level, what was bought from today's Vitrine, the gift and the wishlist (`game/shop.ts`). */
+  /** The Kecleon Shop: its level, what was bought from today's Vitrine, the gift, the wishlist and the visits (`game/shop.ts`). */
   shop: ShopSave
   /** Card frames, backgrounds and PC wallpapers owned and worn (`game/style.ts`). */
   style: StyleSave

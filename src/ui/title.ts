@@ -29,8 +29,6 @@ import { contentLine } from './gifts'
 import { countedFriends, loadInvites } from './invites'
 import { isUnread, latestUpdate } from './news'
 import { hallFace, hallPortrait } from './supporters'
-import { dialogue, type Dialogue } from './dialogue'
-import { greeting, kecleonSpeaker } from './kecleon'
 import { surveyWaiting, takeSurveyOffer } from './survey'
 import type { Screen } from './screens'
 import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } from './shell'
@@ -118,9 +116,9 @@ export type TitleActions = {
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
   pokedex: (focus: LobbyFocus) => Screen
   /**
-   * Opens the shop over the Kecleon plaza, once the camera got there and
-   * Kecleon said hello; its Back must call `close`, which pans back home and
-   * brings the lobby back in.
+   * Opens the shop over the Kecleon plaza once the camera got there (Kecleon
+   * talks beside it, `ui/shop.ts`); its Back must call `close`, which pans
+   * back home and brings the lobby back in.
    */
   mart: (close: () => void) => Screen
   /** Opens the Trainer Card over the title (the Trainer chip, `C`, the invite banner), like `settings`. */
@@ -612,7 +610,8 @@ export type ShopTrip = 'shop' | 'look'
  * stage for a walk in the meadow (`Meadow`), where it greets the wild Pokémon.
  * Loja (or a talk with Kecleon on a walk) is a trip to the Kecleon plaza east
  * of home (`visitShop`), and `shop` starts on one once the lobby is up
- * (`instant`: already there).
+ * (`instant`: already there; `back`: leaving the shop calls it instead of
+ * walking home).
  * `intro: false` opens straight on the lobby (coming back from another
  * screen, or after a language switch), highlighting `focus`.
  */
@@ -620,7 +619,7 @@ export const titleScreen = (
   root: HTMLElement,
   input: Input,
   actions: TitleActions,
-  opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean },
+  opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean; back?: () => void },
 ): Screen => {
   const m = t().home
   const lang = locale()
@@ -656,9 +655,8 @@ export const titleScreen = (
   let overScreen: Screen | null = null
   /** How this lobby lets the partner go (see `Meadow.meet`). */
   let leave: (() => void) | null = null
-  /** A trip to the Kecleon's shop under way: going there, Kecleon talking, the shop open, or coming back. */
-  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'talk' | 'shop' | 'back' } | null = null
-  let talk: Dialogue | null = null
+  /** A trip to the Kecleon's shop under way: going there, the shop open, or coming back. */
+  let visit: { mode: ShopTrip; phase: 'going' | 'here' | 'shop' | 'back' } | null = null
   /** A sync landed during a trip: the lobby is rebuilt once back home (`refresh`). */
   let stale = false
   /** The top bar's wallet, refreshed when the shop closes. */
@@ -843,27 +841,15 @@ export const titleScreen = (
     if ((visit.phase === 'going' && back) || (visit.phase === 'here' && (back || key === 'Enter' || key === 'Space'))) goHome()
   }
 
-  /** At the plaza: Kecleon talks, then the shop opens (a look just waits). */
+  /** At the plaza: the shop opens, Kecleon talking beside it (a look just waits). */
   const arrived = () => {
     if (!visit) return
     if (visit.mode === 'look') {
       visit.phase = 'here'
       return
     }
-    visit.phase = 'talk'
-    talk = dialogue(root, input, {
-      speaker: kecleonSpeaker(),
-      lines: [greeting()],
-      // After this press, or the shop would get it too.
-      onDone: () =>
-        later(() => {
-          if (visit?.phase !== 'talk') return
-          talk?.dispose()
-          talk = null
-          visit.phase = 'shop'
-          overScreen = actions.mart(goHome)
-        }),
-    })
+    visit.phase = 'shop'
+    overScreen = actions.mart(goHome)
   }
 
   /** Back from the shop: the camera pans home, the partner hops back to its stage and the lobby slides in. */
@@ -871,8 +857,8 @@ export const titleScreen = (
     if (!visit || visit.phase === 'back') return
     overScreen?.dispose()
     overScreen = null
-    talk?.dispose()
-    talk = null
+    // Opened from elsewhere (the partner select's wallet): back there instead of home.
+    if (opts.back) return later(opts.back)
     visit.phase = 'back'
     el.classList.remove('visiting')
     const fresh = walletChip(loadSave().wallet)
@@ -897,7 +883,6 @@ export const titleScreen = (
     const { meadow } = actions
     meadow.steer({ x: 0, y: 0 }, null, stage.feet())
     stage.setOut(meadow.out())
-    talk?.tick?.(0)
     const at = meadow.at()
     if (visit.phase === 'going' && at === 'plaza') arrived()
     else if (visit.phase === 'back' && at === 'home') landed()
@@ -1012,6 +997,6 @@ export const titleScreen = (
       for (const tick of tickers) tick(time)
       if (logo.width > 1) fitLogo(logo, lobby === null)
     },
-    dispose: () => (overScreen?.dispose(), talk?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offSynced(), offPointers(), leaveMeadow(), el.remove()),
+    dispose: () => (overScreen?.dispose(), offIntro?.(), offKeys?.(), closeChip?.(), offSynced(), offPointers(), leaveMeadow(), el.remove()),
   }
 }

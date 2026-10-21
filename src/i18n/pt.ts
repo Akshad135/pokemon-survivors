@@ -18,7 +18,7 @@ import type { Difficulty } from '../game/difficulty'
 import type { SurveyAnswer } from '../data/survey'
 import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
 import type { BagItem } from '../game/bag'
-import type { ShopLevel } from '../data/shop'
+import type { ShopLevel, ShopProp } from '../data/shop'
 import type { VitrineBlock } from '../game/shop'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
@@ -418,6 +418,8 @@ export const pt = {
 
   /** Boards (title menu, end of a run). Day and week follow Brasília's clock. */
   ranking: {
+    /** A row's Bag items, for screen readers and the tooltip. */
+    bag: (items: string) => `Mochila: ${items}`,
     title: 'RANKING',
     periods: { day: 'Hoje', week: 'Semana', all: 'Total' },
     everyone: 'Todos',
@@ -633,22 +635,11 @@ export const pt = {
     rank: (name: string, rank: number, max: number) => `${name} · Nv ${rank}/${max}`,
     buy: (price: string) => `Comprar ${price}`,
     back: 'Voltar',
-    backDescription: 'Voltar para a escolha de parceiro.',
     refund: 'Reembolsar',
-    refundAll: 'Reembolsar tudo',
-    refundDescription: (amount: string) => `Desfaz todas as compras e devolve ${amount}.`,
     refundConfirm: (amount: string) => `Reembolsar tudo e receber ${amount}?`,
     yes: 'Sim',
     no: 'Não',
-    hint: 'Q E prateleira · ↑ ↓ escolher · ENTER comprar · ESC voltar',
-    tabs: { upgrades: 'Melhorias', vitrine: 'Vitrine do dia', style: 'Estilo' },
-    vitrineIntro: (level: string, time: string) => `${level} · Igual para todo mundo, com estoque do dia. Vira em ${time}.`,
-    stock: (left: number, max: number) => `Estoque ${left}/${max}`,
-    inBag: (n: number) => `Na bolsa: ${n}`,
-    sale: (pct: number) => `-${pct}%`,
-    saleNote: (pct: number) => `Promoção do dia: ${pct}% off!`,
-    soldOut: 'Esgotado hoje',
-    incubatorFull: 'Incubadora cheia',
+    inBag: (n: number) => `Na mochila: ${n}`,
     eggDescription: (steps: string) => `Vai direto para a incubadora e choca com ${steps} passos.`,
     owned: 'Seu',
     equipped: 'Equipado',
@@ -670,8 +661,15 @@ export const pt = {
 
   /** The Kecleon Shop (`game/shop.ts`): its levels and the Vitrine do dia. */
   shop: {
+    title: 'Loja do Kecleon',
     levels: { 1: 'Carrinho', 2: 'Tenda', 3: 'Loja', 4: 'Kecleon Mart', 5: 'Loja de Departamento' } satisfies Record<ShopLevel, string>,
     level: (name: string, n: number) => `${name} (Nv ${n})`,
+    /** The shelves, as tabs (`SHELVES` in ui/shop.ts). */
+    tabs: { vitrine: 'Vitrine', bag: 'Mochila', training: 'Treino', style: 'Estilo', expansion: 'Expansão' },
+    /** Corner tags on the cards. */
+    badges: { gift: 'BRINDE', wish: 'LISTA', new: 'NOVO', armed: 'LEVANDO', level: (n: number) => `NV ${n}` },
+    vitrineOf: (weekday: string, level: string) => `Vitrine de ${weekday} · ${level}`,
+    turnsIn: (time: string) => `vira em ${time}`,
     gift: (name: string) => `Brinde: ${name}`,
     giftDescription: (text: string) => `Grátis, um por dia. ${text}`,
     claim: 'Pegar grátis',
@@ -681,11 +679,46 @@ export const pt = {
     allStyles: 'Você já tem todos os estilos à venda.',
     eggOdds: (common: number, rare: number, ultra: number) => `Chances do ovo do dia: comum ${common}%, raro ${rare}%, ultra ${ultra}%.`,
     blocks: { locked: 'Aumente a loja', soldOut: 'Esgotado hoje', owned: 'Já é seu', full: 'Incubadora cheia', poor: 'Faltam ₽' } satisfies Record<VitrineBlock, string>,
-    invest: (name: string) => `Aumentar para ${name}`,
-    investDescription: (name: string, slots: number, bag: number) =>
-      `A loja vira ${name}: ${slots} itens na vitrine e ${bag} itens diferentes na bolsa por partida. O investimento é para sempre e não tem reembolso.`,
+    lockedAt: (name: string, n: number) => `Aparece com a loja no Nv ${n} (${name}).`,
+    stock: (left: number, max: number) => `Estoque de hoje: ${left}/${max}.`,
+    have: (n: number) => `Você tem ${n}.`,
+    deal: (pct: number) => `Oferta do dia: ${pct}% off!`,
+    /** The wishlist (from the Tent, Lv 2): one card pinned, and when it's back. */
+    wish: {
+      pin: 'Desejar',
+      unpin: 'Tirar',
+      back: (on: string) => `Volta à vitrine ${on}.`,
+      today: 'Na vitrine hoje!',
+      none: 'Não volta nas próximas 2 semanas.',
+      locked: (name: string) => `Lista de desejos: a partir da ${name} (Nv 2).`,
+    },
+    /** The Mochila shelf: what the next run takes. */
+    bag: {
+      intro: (n: number, max: number) => `Próxima partida: ${n}/${max} itens`,
+      arm: 'Levar',
+      disarm: 'Deixar',
+      empty: 'Você não tem nenhum. Compre na Vitrine.',
+      more: (name: string, n: number, max: number) => `${name} (Nv ${n}) leva ${max} itens por partida.`,
+    },
+    styleIntro: 'Molduras, fundos e papéis de parede. Comprou, já está usando.',
+    trainingIntro: 'Melhorias para sempre. Dá para reembolsar tudo quando quiser.',
+    /** The Expansão shelf: the shop's levels as a ladder. */
+    expansion: {
+      intro: 'Invista na loja: ela cresce na praça e abre mais coisas. Não tem reembolso.',
+      current: 'SUA LOJA',
+      next: 'A SEGUIR',
+      building: (name: string) => `O prédio vira ${name}.`,
+      vitrine: (n: number) => `Vitrine com ${n} itens por dia.`,
+      bag: (n: number) => `Leva ${n} itens da mochila por partida.`,
+      wishlist: 'Lista de desejos: o Kecleon avisa quando o item volta.',
+      brother: 'Chega o irmão roxo do Kecleon.',
+      props: { board: 'Quadro de avisos na praça.', flowers: 'Vasos de flores na praça.', lights: 'Varal de luzes na praça.', statue: 'Estátua dourada do Kecleon.' } satisfies Record<ShopProp, string>,
+      owned: 'Já é sua.',
+      invest: (price: string) => `Investir ${price}`,
+    },
     investConfirm: (name: string, price: string) => `Investir ${price} e transformar a loja em ${name}? Não tem reembolso.`,
-    investMax: 'A loja já é a maior que dá.',
+    hint: 'Q E prateleira · SETAS escolher · ENTER comprar · F lista · ESC voltar',
+    hintTouch: 'Toque para escolher, toque de novo para comprar',
   },
   outbreak: {
     title: 'Surto de hoje',
@@ -1066,7 +1099,7 @@ export const pt = {
 
   /** The Bag: Lures and Incenses from the Poké Mart's counter or from missions. */
   bag: {
-    label: 'Bolsa',
+    label: 'Mochila',
     descriptions: {
       lure: 'Shinies selvagens 2× mais comuns na próxima partida (os do surto também).',
       incense: 'Chance de ovo 2× maior na próxima partida.',
@@ -1089,7 +1122,7 @@ export const pt = {
     } satisfies Record<BagItem, string>,
     toggle: (name: string, n: number) => `${name} ×${n}`,
     armed: (n: number, max: number) => `${n}/${max}`,
-    full: (max: number) => `A bolsa leva ${max} itens diferentes por partida. Aumente a loja para levar mais.`,
+    full: (max: number) => `A mochila leva ${max} itens diferentes por partida. Aumente a loja para levar mais.`,
   },
 
   toast: {
@@ -1654,9 +1687,9 @@ export const pt = {
     toastEgg: (n: number) => (n === 1 ? 'Um *ovo* foi para a incubadora!' : `${n} *ovos* foram para a incubadora!`),
     rewardEgg: (tier: string) => `+ ${tier}`,
     reportEggs: (n: number) => (n === 1 ? '+1 ovo' : `+${n} ovos`),
-    rewardItem: (name: string) => `+ ${name} (vai para a bolsa)`,
-    reportItems: (n: number) => (n === 1 ? '+1 item na bolsa' : `+${n} itens na bolsa`),
-    toastItem: (n: number) => (n === 1 ? 'Um *item* foi para a bolsa!' : `${n} *itens* foram para a bolsa!`),
+    rewardItem: (name: string) => `+ ${name} (vai para a mochila)`,
+    reportItems: (n: number) => (n === 1 ? '+1 item na mochila' : `+${n} itens na mochila`),
+    toastItem: (n: number) => (n === 1 ? 'Um *item* foi para a mochila!' : `${n} *itens* foram para a mochila!`),
     goals: {
       kills: (n: string) => `Derrote ${n} Pokémon`,
       typeKills: (n: string, type: string) => `Derrote ${n} Pokémon do tipo ${type}`,
@@ -4373,7 +4406,37 @@ export const pt = {
       evening: 'Boa noite! Bem-vindo, bem-vindo! O que vai ser hoje?',
       night: 'Ainda acordado? Bem-vindo, bem-vindo! A Loja do Kecleon nunca fecha!',
     },
+    /** What Kecleon says on arrival, by what's going on (`pickTrigger` in ui/kecleon.ts). */
+    lines: {
+      first: 'Bem-vindo, bem-vindo! Loja do Kecleon! Cliente novo? Fica à vontade, a casa é sua!',
+      wishToday: (name: string) => `${name}, da sua lista, chegou hoje! Tá na vitrine!`,
+      mewtwo: 'Você derrubou o MEWTWO?! Isso merece uma comemoração... ah, olha só a vitrine de hoje!',
+      loyal: (days: number) => `${days} dias seguidos! Meu freguês favorito! Separei o melhor da vitrine pra você.`,
+      invest: 'Uau, que carteira! Já pensou em investir na loja? Tenho planos pra um segundo andar...',
+      wishLater: (name: string, on: string) => `${name}? Volta ${on}. Pode deixar que eu guardo um pra você.`,
+      broke: 'Hmm... os Pokédólares tão curtinhos, né? Uma partida e você volta, eu espero.',
+      shiny: 'Que cor diferente! Quase tão boa quanto a minha camuflagem.',
+      types: {
+        fire: (name: string) => `Um ${name}! Só não chega muito perto do toldo, tá?`,
+        water: (name: string) => `Um ${name}! Cuidado pra não respingar na mercadoria!`,
+        electric: (name: string) => `Um ${name}! Não encosta no caixa, da última vez deu curto.`,
+        grass: (name: string) => `Um ${name}! Verdinho igual a mim. Gostei!`,
+        ghost: (name: string) => `Um ${name}! Aqui ninguém atravessa a parede sem pagar, viu?`,
+      },
+      /** The camouflage easter egg: the counter looks empty, then Kecleon pops out. */
+      empty: 'O balcão parece vazio... mas tem um par de olhos piscando ali.',
+      surprise: 'SURPRESA! Hehe, te peguei! Ninguém escapa da minha camuflagem.',
+      pinned: (name: string, when: string) => `Anotado! ${name} na sua lista. ${when}`,
+      levelUp: (name: string) => `Olha só isso! A loja virou ${name}! Obrigado, sócio!`,
+    },
+    /** After a purchase, one of these in turn. */
+    thanks: ['Obrigado! Volte sempre!', 'Ótima escolha!', 'Negócio fechado!', 'Hehe, bom proveito!'],
+    /** "Volta ___": the weekdays from Sunday, with their preposition. */
+    weekdays: ['no domingo', 'na segunda', 'na terça', 'na quarta', 'na quinta', 'na sexta', 'no sábado'],
+    /** "Vitrine de ___": the weekdays from Sunday. */
+    dayNames: ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'],
   },
+
   /** Explainer toast the first time each enemy trait shows up in a run. */
   traits: {
     healer: (name: string) => `*${name}* cura os aliados por perto. Derrube primeiro!`,

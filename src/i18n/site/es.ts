@@ -66,7 +66,7 @@ export const siteEs: SiteMessages = {
     portrait: (name: string) => `Retrato de ${name}`,
     sprite: (name: string) => `Sprite animado de ${name}`,
     stats: 'Estadísticas en el juego',
-    statsNote: 'Sin objetos ni mejoras del Poké Mart.',
+    statsNote: 'Sin objetos ni mejoras de la Tienda Kecleon.',
     evolution: 'Línea evolutiva',
     evolvesAt: (level: number) => `Nv. ${level}`,
     hatchNote: (egg: string) => `Jugable después de eclosionar de un ${egg}.`,
@@ -224,7 +224,7 @@ export const siteEs: SiteMessages = {
   guide: {
     title: 'Cómo jugar Pokémon Survivors: guía completa',
     description:
-      'Guía de Pokémon Survivors: controles en teclado, control y celular, cómo funciona la partida, niveles, movimientos, evolución de movimientos con objetos, ataque especial, tipos y estados, jefes, shinies, objetos y eventos del mapa y Poké Mart.',
+      'Guía de Pokémon Survivors: controles en teclado, control y celular, cómo funciona la partida, niveles, movimientos, evolución de movimientos con objetos, ataque especial, tipos y estados, jefes, shinies, objetos y eventos del mapa y la Tienda Kecleon.',
     h1: 'Cómo jugar',
     intro:
       'Pokémon Survivors es un roguelite tipo Vampire Survivors: tú solo te mueves y tu Pokémon ataca solo. Esta guía explica todo lo que pasa en una partida, con los números del juego.',
@@ -249,7 +249,7 @@ export const siteEs: SiteMessages = {
       eggs: 'Huevos e incubadora',
       items: 'Objetos en el mapa',
       mapEvents: 'Eventos en el mapa',
-      mart: 'Poké Mart y Poké Dollars',
+      mart: 'Tienda Kecleon y Poké Dollars',
       missions: 'Misiones y logros',
       settings: 'Ajustes y música',
     },
@@ -264,7 +264,7 @@ export const siteEs: SiteMessages = {
         ['Navegar por los menús', 'Flechas, Enter confirma, Esc vuelve', 'D-pad o stick izquierdo, A confirma, B vuelve', 'Toca'],
         ['Elegir mejora', '1 a 3, o ↑ ↓ y Enter', 'D-pad y A', 'Toca la opción'],
         ['Elegir al compañero', 'Flechas en la cuadrícula, Tab Iniciales/Huevos, 1 a 9 región, I detalles, Enter empieza', 'D-pad (↓ en la última fila lleva a Huevos) y A', 'Toca para ver, toca otra vez (o Empezar) para jugar'],
-        ['Abrir el Poké Mart', 'L en la selección de compañero', '—', 'Toca la cartera (₽) arriba en la selección de compañero'],
+        ['Ir a la Tienda Kecleon', 'L en el lobby (o en la selección de compañero), o camina hasta la plaza y pulsa E', 'D-pad hasta Tienda y A', 'Toca Tienda, a Kecleon o el letrerito que apunta a la plaza'],
         ['Activar/desactivar sonido', 'M', 'Ajustes', 'Ajustes'],
         ['Idioma', 'I en la pantalla de título, o Ajustes', 'Ajustes', 'PT | EN | ES en la pantalla de título, o Ajustes'],
       ],
@@ -316,13 +316,13 @@ export const siteEs: SiteMessages = {
         'Los Pokémon derrotados sueltan Exp. Candies. Acércate a ellos para recogerlos (la Dowsing Machine aumenta el alcance).',
         `En cada nivel, elige 1 de 3 ofertas: un movimiento nuevo de la lista de tu Pokémon, una mejora de movimiento, un held item nuevo o un nivel más de objeto. Puedes tener hasta ${moves} movimientos y ${items} objetos. Los movimientos llegan hasta el Nv. ${moveLevel}.`,
         'Los objetos de tipo (Charcoal, Mystic Water…) solo aparecen si tu Pokémon aprende movimientos de ese tipo. Cuando no queda nada que ofrecer, llega una Oran Berry (+40 HP).',
-        'Cambiar (sortear otras ofertas) y Saltar (renunciar a la subida de nivel sin elegir nada, útil cuando ninguna oferta sirve) son cargas que se compran en el Poké Mart.',
+        'Cambiar (sortear otras ofertas) y Saltar (renunciar a la subida de nivel sin elegir nada, útil cuando ninguna oferta sirve) son cargas que se compran en la Tienda Kecleon.',
       ],
       choices: (rarePercent: number, shinyOneIn: number) => [
         'La partida empieza con un draft: con el reloj detenido, eliges tu 2.º movimiento entre 3 de la lista de tu Pokémon.',
         'Todo movimiento base se divide en dos caminos en el Nv. 4 y en el Nv. 7: la carta dice "2 caminos" y, al elegirla, se abre en los dos. Cada camino cambia cómo juega el movimiento (rebotar, explotar, dejar un rastro, hacer eco…), no solo los números.',
         `Cada carta sortea su rareza: la rara (${n(rarePercent)}% de probabilidad, marco azul) sube 2 niveles de una vez, y la shiny (1 de ${shinyOneIn}, el doble con el Shiny Charm) es una elección gratis, seguida de otra.`,
-        'Olvidar saca una oferta de la partida: la carta sale volando, el espacio se sortea de nuevo y ese movimiento u objeto no vuelve más. Las cargas vienen de la Escape Rope del Poké Mart, de cada jefe derrotado y de cada evolución.',
+        'Olvidar saca una oferta de la partida: la carta sale volando, el espacio se sortea de nuevo y ese movimiento u objeto no vuelve más. Las cargas vienen de la Escape Rope de la Tienda Kecleon, de cada jefe derrotado y de cada evolución.',
         'La lista de movimientos crece con tu Pokémon: cada evolución desbloquea movimientos nuevos (un aviso muestra cuáles), que salen más seguido en las 3 subidas de nivel siguientes. Hay más movimientos que espacios, así que cada partida deja algunos fuera.',
         'Los jefes derrotados dejan una MT con un movimiento de fuera de su lista, el Tutor de Movimientos enseña movimientos que van con tu tipo y ganar una grieta ofrece el movimiento legendario del propio legendario (uno por partida). Con los espacios llenos, aprender pide olvidar un movimiento.',
       ],
@@ -633,7 +633,7 @@ export const siteEs: SiteMessages = {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
         `Los enemigos derrotados a veces sueltan Poké Dollars: moneda, pila y bolsa (${list(coins.map((c) => `₽${n(c)}`))}). Los más fuertes sueltan con más frecuencia, y los jefes y shinies siempre pagan.`,
         `Al final de la partida llega una bonificación: ₽${minute} por minuto sobrevivido, ₽1 cada ${kills} derrotados y ₽${n(victory)} por la victoria. Si abandonas desde la pausa te quedas con las monedas, pero pierdes la bonificación.`,
-        'Gástalo todo en el Poké Mart (botón arriba a la derecha de la selección de compañero) en mejoras permanentes. El botón Reembolsar te devuelve todo lo que gastaste, para probar otras combinaciones. El progreso se guarda solo en este navegador.',
+        'Gástalo todo en la Tienda Kecleon, en la plaza al este de la casa de tu compañero en el lobby. La Vitrina del día es igual para todos y cambia a medianoche de Brasilia: un regalo gratis por día, una oferta con 30% de descuento, consumibles para la Mochila, el huevo del día y un estilo. En el Entreno están las mejoras permanentes: el botón Reembolsar te devuelve todo lo que gastaste en ellas, para probar otras combinaciones. En la Expansión inviertes para que la tienda crezca (Carrito, Tienda de campaña, Tienda, Kecleon Mart y Gran Almacén), con más objetos en la Vitrina y en la Mochila. Sin cuenta, el progreso se guarda solo en este navegador.',
       ],
       upgradeHead: 'Mejora',
       effectHead: 'Efecto',
@@ -673,7 +673,7 @@ export const siteEs: SiteMessages = {
   changelog: {
     title: 'Novedades de Pokémon Survivors: historial de actualizaciones',
     description:
-      'Todo lo que cambió en Pokémon Survivors, actualización por actualización: iniciales, jefes legendarios, shinies, evolución de movimientos, Poké Mart, versión para celular y más.',
+      'Todo lo que cambió en Pokémon Survivors, actualización por actualización: iniciales, jefes legendarios, shinies, evolución de movimientos, la Tienda Kecleon, versión para celular y más.',
     h1: 'Novedades',
     intro: 'Todo lo que cambió en el juego, actualización por actualización, de la más nueva a la más antigua. Cada una empieza con sus destacados.',
     changes: (n: number) => `Todos los cambios (${n})`,
@@ -781,7 +781,7 @@ export const siteEs: SiteMessages = {
       'Todo lo que el juego recuerda queda en el localStorage de tu navegador, en tu dispositivo. Como invitado, nada de eso se envía a ningún servidor, salvo el identificador aleatorio de ph_ps, que va con las estadísticas de uso (abajo):',
     ],
     storage: {
-      'ps:save': 'Poké Dollars, mejoras compradas en el Poké Mart, la Pokédex del juego (especies vistas, cuántas derrotaste y cuáles capturaste), los huevos de la incubadora (eggs), los Pokémon eclosionados (hatched), el progreso de las misiones, los logros, los récords (como Pokémon derrotados y el mayor tiempo sobrevivido) y el título elegido.',
+      'ps:save': 'Poké Dollars, mejoras compradas en la Tienda Kecleon, la Pokédex del juego (especies vistas, cuántas derrotaste y cuáles capturaste), los huevos de la incubadora (eggs), los Pokémon eclosionados (hatched), el progreso de las misiones, los logros, los récords (como Pokémon derrotados y el mayor tiempo sobrevivido) y el título elegido.',
       'ps:settings': 'Ajustes: volumen de la música y de los efectos, sonido activado o desactivado, números de daño y temblor de pantalla.',
       'ps:lang': 'Idioma elegido (español, portugués o inglés).',
       'ps:muted': 'Solo si jugaste versiones antiguas: el sonido desactivado de antes de que existieran los Ajustes. El juego solo lee esta clave, ya no la escribe.',

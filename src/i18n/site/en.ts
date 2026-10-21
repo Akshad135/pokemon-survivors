@@ -66,7 +66,7 @@ export const siteEn: SiteMessages = {
     portrait: (name: string) => `${name} portrait`,
     sprite: (name: string) => `Animated ${name} sprite`,
     stats: 'In-game stats',
-    statsNote: 'Without held items or Poké Mart upgrades.',
+    statsNote: 'Without held items or Kecleon Shop upgrades.',
     evolution: 'Evolution line',
     evolvesAt: (level: number) => `Lv ${level}`,
     hatchNote: (egg) => `Playable once it hatches from a ${egg}.`,
@@ -220,7 +220,7 @@ export const siteEn: SiteMessages = {
   guide: {
     title: 'How to play Pokémon Survivors: complete guide',
     description:
-      'Pokémon Survivors guide: keyboard, gamepad and phone controls, how a run works, levels, moves, move evolutions with held items, the special attack, types and status, bosses, shinies, map items, map events and the Poké Mart.',
+      'Pokémon Survivors guide: keyboard, gamepad and phone controls, how a run works, levels, moves, move evolutions with held items, the special attack, types and status, bosses, shinies, map items, map events and the Kecleon Shop.',
     h1: 'How to play',
     intro:
       'Pokémon Survivors is a Vampire Survivors-style roguelite: you only move, and your Pokémon attacks on its own. This guide explains everything that happens in a run, with the game\'s numbers.',
@@ -245,7 +245,7 @@ export const siteEn: SiteMessages = {
       eggs: 'Eggs and the incubator',
       items: 'Map items',
       mapEvents: 'Map events',
-      mart: 'Poké Mart and Poké Dollars',
+      mart: 'Kecleon Shop and Poké Dollars',
       missions: 'Missions and achievements',
       settings: 'Settings and music',
     },
@@ -260,7 +260,7 @@ export const siteEn: SiteMessages = {
         ['Navigate menus', 'Arrows, Enter confirms, Esc goes back', 'D-pad or left stick, A confirms, B goes back', 'Tap'],
         ['Pick an upgrade', '1 to 3, or ↑ ↓ and Enter', 'D-pad and A', 'Tap it'],
         ['Pick your partner', 'Arrows in the grid, Tab Starters/Eggs, 1 to 9 region, I details, Enter starts', 'D-pad (↓ on the last row leads to Eggs) and A', 'Tap to view, tap again (or Start) to play'],
-        ['Open the Poké Mart', 'L on the partner select', '—', 'Tap the wallet (₽) at the top of the partner select'],
+        ['Go to the Kecleon Shop', 'L in the lobby (or on the partner select), or walk to the plaza and press E', 'D-pad to Shop, then A', 'Tap Shop, Kecleon or the little sign pointing to the plaza'],
         ['Sound on/off', 'M', 'Settings', 'Settings'],
         ['Language', 'I on the title screen, or Settings', 'Settings', 'PT | EN | ES on the title screen, or Settings'],
       ],
@@ -312,13 +312,13 @@ export const siteEn: SiteMessages = {
         'Fainted Pokémon drop Exp. Candies. Walk near them to collect them (the Dowsing Machine widens the reach).',
         `On every level up, pick 1 of 3 offers: a new move from your Pokémon's learnset, a move upgrade, a new held item or another item level. You can hold up to ${moves} moves and ${items} items. Moves go up to Lv ${moveLevel}.`,
         'Type items (Charcoal, Mystic Water…) only show up if your Pokémon learns moves of that type. When there is nothing left to offer, you get an Oran Berry (+40 HP).',
-        'Reroll (draw new offers) and Skip (pass on a level up without picking anything, handy when no offer fits) are charges bought in the Poké Mart.',
+        'Reroll (draw new offers) and Skip (pass on a level up without picking anything, handy when no offer fits) are charges bought in the Kecleon Shop.',
       ],
       choices: (rarePercent: number, shinyOneIn: number) => [
         'A run starts with a draft: with the clock stopped, you pick your 2nd move out of 3 from your Pokémon’s list.',
         'Every base move splits into two paths at Lv 4 and Lv 7: the card says "2 paths" and, once picked, opens into both. Each path changes how the move plays (bouncing, exploding, leaving a trail, echoing…), not just its numbers.',
         `Every card rolls a rarity: a rare one (${n(rarePercent)}% chance, blue frame) gives 2 levels at once, and a shiny one (1 in ${shinyOneIn}, twice as often with the Shiny Charm) is a free pick, followed by another.`,
-        'Forget takes an offer out of the run: the card flies off, the slot is rerolled and that move or item never comes back. Charges come from the Poké Mart’s Escape Rope, every boss beaten and every evolution.',
+        'Forget takes an offer out of the run: the card flies off, the slot is rerolled and that move or item never comes back. Charges come from the Kecleon Shop’s Escape Rope, every boss beaten and every evolution.',
         'The move list grows with your Pokémon: each evolution unlocks new moves (a toast shows which), and they show up more often for the next 3 level ups. There are more moves than slots, so every run leaves some out.',
         'Beaten bosses drop a TM with a move from outside the learnset, the Move Tutor teaches moves that suit your type, and clearing a rift offers the legendary’s own move (one per run). With every slot full, learning one asks you to forget a move.',
       ],
@@ -629,7 +629,7 @@ export const siteEn: SiteMessages = {
       paragraphs: (coins: readonly number[], minute: number, kills: number, victory: number) => [
         `Fainted enemies sometimes drop Poké Dollars: a coin, a stack or a bag (${list(coins.map((c) => `₽${n(c)}`))}). Tougher ones drop them more often, and bosses and shinies always pay out.`,
         `A bonus comes at the end of the run: ₽${minute} per minute survived, ₽1 per ${kills} fainted foes and ₽${n(victory)} for winning. Quitting from the pause menu keeps the coins but forfeits the bonus.`,
-        'Spend it all in the Poké Mart (button at the top right of the starter select) on permanent upgrades. The Refund button gives back everything you spent, so you can try other builds. Progress is saved only in this browser.',
+        'Spend it all in the Kecleon Shop, on the plaza east of your partner\'s home in the lobby. Today\'s Showcase is the same for everyone and turns over at midnight Brasília time: a free gift every day, a deal at 30% off, consumables for your Bag, the day\'s egg and a style. Training holds the permanent upgrades: the Refund button gives back everything you spent on them, so you can try other builds. In Expansion you invest to grow the shop (Cart, Tent, Shop, Kecleon Mart and Department Store), with more items in the Showcase and the Bag. Without an account, progress is saved only in this browser.',
       ],
       upgradeHead: 'Upgrade',
       effectHead: 'Effect',
@@ -669,7 +669,7 @@ export const siteEn: SiteMessages = {
   changelog: {
     title: 'Pokémon Survivors changelog: every update',
     description:
-      'Everything that changed in Pokémon Survivors, update by update: starters, legendary bosses, shinies, move evolutions, the Poké Mart, the mobile version and more.',
+      'Everything that changed in Pokémon Survivors, update by update: starters, legendary bosses, shinies, move evolutions, the Kecleon Shop, the mobile version and more.',
     h1: 'Changelog',
     intro: 'Everything that changed in the game, update by update, newest first. Each one opens with its highlights.',
     changes: (n: number) => `All changes (${n})`,
@@ -777,7 +777,7 @@ export const siteEn: SiteMessages = {
       'Everything the game remembers lives in your browser\'s localStorage, on your device. As a guest, none of it is sent to any server, except the random id in ph_ps, which goes with the usage statistics (below):',
     ],
     storage: {
-      'ps:save': 'Poké Dollars, the upgrades bought in the Poké Mart, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs), the Pokémon hatched (hatched), mission progress, achievements, records (like Pokémon defeated and your longest survival) and the title you picked.',
+      'ps:save': 'Poké Dollars, the upgrades bought in the Kecleon Shop, the in-game Pokédex (species seen, how many you defeated and which you caught), the eggs in the incubator (eggs), the Pokémon hatched (hatched), mission progress, achievements, records (like Pokémon defeated and your longest survival) and the title you picked.',
       'ps:settings': 'Settings: music and effects volume, sound on or off, damage numbers and screen shake.',
       'ps:lang': 'Your language (Portuguese, English or Spanish).',
       'ps:muted': 'Only if you played an older version: the mute flag from before Settings existed. The game only reads it and no longer writes it.',

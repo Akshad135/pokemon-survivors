@@ -14,7 +14,8 @@ import { canPlay, capturedCount, isCaptured, legendSource, winsNeeded } from '..
 import { armBlock, armedItems, armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
 import { SHOP_LEVELS } from '../data/shop'
 import { ownsShiny, pickShinyForm, playsShiny } from '../game/shinyPicks'
-import { bagIcon, eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
+import { eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
+import { shopIcon } from './shopIcons'
 import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
 import { t } from '../i18n'
 import { h, later, rich } from './dom'
@@ -378,7 +379,7 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     return h(
       'button',
       { class: 'partner-slot', type: 'button', role: 'switch', title: m.bag.descriptions[id], onclick: () => toggleBag(id) },
-      h('img', { src: bagIcon(id), alt: '' }),
+      shopIcon(id),
       h('em', {}),
       key && h('span', { class: 'key-hint' }, key.slice(3)),
     )

@@ -50,11 +50,13 @@ export type Dialogue = Screen & {
  * Opens the box in `root` and types `lines` one after the other; after the
  * last, `onDone` (the box stays until its owner disposes it). `className`
  * adds a placement (`.dialogue` sits at the bottom of the screen by default).
+ * `passive`: the box only talks (the shop's keeper beside its panel): no keys,
+ * no "next" arrow, and a tap just finishes the line, so the presses stay the panel's.
  */
 export const dialogue = (
   root: HTMLElement,
   input: Input,
-  opts: { speaker: Speaker; lines: readonly DialogueLine[]; onDone: () => void; className?: string },
+  opts: { speaker: Speaker; lines: readonly DialogueLine[]; onDone: () => void; className?: string; passive?: boolean },
 ): Dialogue => {
   let speaker = opts.speaker
   let lines = opts.lines
@@ -91,7 +93,7 @@ export const dialogue = (
     typed.textContent = all.slice(0, shown).join('')
     // The untyped rest keeps its room, so the box never grows as the line types.
     rest.textContent = all.slice(shown).join('')
-    next.classList.toggle('hidden', shown < all.length)
+    next.classList.toggle('hidden', opts.passive === true || shown < all.length)
   }
 
   /** A press: finishes the line being typed, else moves on (or ends). */
@@ -118,11 +120,13 @@ export const dialogue = (
     opts.onDone()
   }
 
-  const off = input.onKey((key) => {
-    if (key === 'Enter' || key === 'Space' || key === 'KeyE') advance()
-    else if (key === 'Escape' || key === 'Backspace') skip()
-  })
-  box.addEventListener('click', advance)
+  const off = opts.passive
+    ? () => {}
+    : input.onKey((key) => {
+        if (key === 'Enter' || key === 'Space' || key === 'KeyE') advance()
+        else if (key === 'Escape' || key === 'Backspace') skip()
+      })
+  box.addEventListener('click', () => (opts.passive ? shown < letters().length && advance() : advance()))
 
   root.append(el)
   begin()

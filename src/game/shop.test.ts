@@ -11,10 +11,12 @@ import {
   dayStyle,
   investInShop,
   mergeShop,
+  mergeVisit,
   nextAppearance,
   NO_SHOP,
   onPick,
   parseShop,
+  recordVisit,
   setWish,
   shopInvested,
   stockLeft,
@@ -166,9 +168,10 @@ describe('investing in the shop', () => {
 
 describe('the save’s shop', () => {
   it('merges to the higher level, the newest day, and the most bought on the same day', () => {
-    const a: ShopSave = { level: 3, day: DAY, bought: { lure: 1, egg: 1 }, gift: true, wishlist: 'honey' }
-    const b: ShopSave = { level: 2, day: DAY, bought: { lure: 2, incense: 1 }, gift: false, wishlist: null }
-    expect(mergeShop(a, b)).toEqual({ level: 3, day: DAY, bought: { lure: 2, incense: 1, egg: 1 }, gift: true, wishlist: null })
+    const visit = { day: DAY, streak: 2 }
+    const a: ShopSave = { level: 3, day: DAY, bought: { lure: 1, egg: 1 }, gift: true, wishlist: 'honey', visit }
+    const b: ShopSave = { level: 2, day: DAY, bought: { lure: 2, incense: 1 }, gift: false, wishlist: null, visit }
+    expect(mergeShop(a, b)).toEqual({ level: 3, day: DAY, bought: { lure: 2, incense: 1, egg: 1 }, gift: true, wishlist: null, visit })
     const tomorrow = { ...b, day: addDays(DAY, 1) }
     expect(mergeShop(a, tomorrow)).toEqual({ ...tomorrow, level: 3 })
     expect(mergeShop(tomorrow, a)).toEqual({ ...tomorrow, level: 3, wishlist: 'honey' })
@@ -176,9 +179,37 @@ describe('the save’s shop', () => {
 
   it("parses tolerantly, and an older save's counter keeps that day's stock", () => {
     expect(parseShop(undefined)).toEqual(NO_SHOP)
-    expect(parseShop({ level: 9, day: 'x', bought: { lure: 3 }, gift: true, wishlist: 'rocket' })).toEqual(NO_SHOP)
-    expect(parseShop({ level: 4, day: DAY, bought: { lure: 99, rocket: 1, egg: -1 }, gift: true, wishlist: 'egg' })).toEqual({ level: 4, day: DAY, bought: { lure: 3 }, gift: true, wishlist: 'egg' })
+    expect(parseShop({ level: 9, day: 'x', bought: { lure: 3 }, gift: true, wishlist: 'rocket', visit: { day: 'x', streak: 4 } })).toEqual(NO_SHOP)
+    expect(parseShop({ level: 4, day: DAY, bought: { lure: 99, rocket: 1, egg: -1 }, gift: true, wishlist: 'egg', visit: { day: DAY, streak: 0 } })).toEqual({
+      level: 4,
+      day: DAY,
+      bought: { lure: 3 },
+      gift: true,
+      wishlist: 'egg',
+      visit: { day: DAY, streak: 1 },
+    })
     expect(parseShop(undefined, { day: DAY, bought: { lure: 2, incense: 3, egg: 1 } })).toEqual({ ...NO_SHOP, day: DAY, bought: { lure: 2, incense: 3, egg: 1 } })
+  })
+})
+
+describe('shop visits', () => {
+  it('count the days in a row, once a day, and start over after a gap', () => {
+    const first = recordVisit(NO_SHOP, DAY)
+    expect(first.visit).toEqual({ day: DAY, streak: 1 })
+    expect(recordVisit(first, DAY)).toBe(first)
+    const next = recordVisit(first, addDays(DAY, 1))
+    expect(next.visit).toEqual({ day: addDays(DAY, 1), streak: 2 })
+    expect(recordVisit(next, addDays(DAY, 3)).visit).toEqual({ day: addDays(DAY, 3), streak: 1 })
+  })
+
+  it('merge to the latest day, and the longer streak on the same day', () => {
+    const today = { day: DAY, streak: 2 }
+    const loyal = { day: DAY, streak: 6 }
+    const yesterday = { day: addDays(DAY, -1), streak: 9 }
+    expect(mergeVisit(yesterday, today)).toBe(today)
+    expect(mergeVisit(today, yesterday)).toBe(today)
+    expect(mergeVisit(today, loyal)).toBe(loyal)
+    expect(mergeShop({ ...NO_SHOP, visit: loyal }, { ...NO_SHOP, day: DAY, visit: yesterday }).visit).toBe(loyal)
   })
 })
 
