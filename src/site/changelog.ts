@@ -38,6 +38,21 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
     ],
     changes: [
       {
+        title: { pt: 'Cenário e ícones novos', en: 'New scenery and icons', es: 'Escenario e íconos nuevos' },
+        notes: [
+          {
+            pt: 'Os itens agora usam os ícones oficiais dos jogos: a Choice Scarf é azul, o Leftovers é a maçã mordida, a Muscle Band é dourada. Vale para itens, vitaminas do Poké Mart, consumíveis, a Bolsa e a Loja do Kecleon: Mochila, pedras e itens de evolução, Bottle Caps e as TMs, cada uma na cor do seu tipo.',
+            en: 'Items now use the official icons from the games: the Choice Scarf is blue, Leftovers is the bitten apple, the Muscle Band is golden. That goes for held items, Poké Mart vitamins, consumables, the Bag and the Kecleon Shop: Bag items, stones and evolution items, Bottle Caps and TMs, each in its type\'s color.',
+            es: 'Los objetos ahora usan los íconos oficiales de los juegos: la Choice Scarf es azul, Leftovers es la manzana mordida, la Muscle Band es dorada. Vale para objetos, vitaminas del Poké Mart, consumibles, la Mochila y la Tienda Kecleon: objetos de la Mochila, piedras y objetos de evolución, Bottle Caps y las MTs, cada una del color de su tipo.',
+          },
+          {
+            pt: 'O mapa ganhou arte nova: torres maiores em cada bioma (o pagode do prado, a árvore oca da floresta, a espiral de cristal da caverna, a torre de gelo e a torre assombrada), árvores, pedras e arbustos, barracas, menires e altares das ruínas, lápides, a Odd Keystone e as pedras do vento do céu.',
+            en: 'The map got new art: bigger towers in every biome (the meadow pagoda, the forest\'s hollow tree, the cave\'s crystal spire, the ice tower and the haunted tower), trees, rocks and bushes, tents, the ruins\' menhirs and altars, tombstones, the Odd Keystone and the sky\'s wind stones.',
+            es: 'El mapa tiene arte nuevo: torres más grandes en cada bioma (la pagoda de la pradera, el árbol hueco del bosque, la espiral de cristal de la cueva, la torre de hielo y la torre embrujada), árboles, rocas y arbustos, tiendas, los menhires y altares de las ruinas, lápidas, la Odd Keystone y las piedras del viento del cielo.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
         notes: [
           {

@@ -5,7 +5,7 @@ import type { ConsumableId } from '../game/consumables'
 import { isAsleep } from '../game/status'
 import type { Prop } from '../game/props'
 import type { Game } from '../game/types'
-import { art, lazy, toIconUrl } from './art'
+import { art, itemArt, lazy } from './art'
 import { drawJack } from './halloweenArt'
 
 /**
@@ -46,7 +46,7 @@ export const consumableSprite = (id: ConsumableId) => {
   return sprite
 }
 
-export const consumableIcon = (id: ConsumableId) => toIconUrl(`consumable:${id}`, () => consumableSprite(id))
+export const consumableIcon = (id: ConsumableId) => itemArt(id)
 
 /* ---------------- Props ---------------- */
 

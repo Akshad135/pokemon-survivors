@@ -41,7 +41,7 @@ import { armedTms, tmLimit } from './game/tmShelf'
 import { branchNeeds, capLevel } from './game/evoItems'
 import { runEvoItems } from './game/evoGate'
 import { EVO_ITEM_IDS, EVO_ITEMS, SHOP_LEVEL_IDS, SHOP_LEVELS, type EvoItemId } from './data/shop'
-import { shopIcon } from './ui/shopIcons'
+import { shopIcon, tmPicture } from './ui/shopIcons'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGG_TIERS, EGGS, freeSlots, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
@@ -114,7 +114,7 @@ import { cryUrl, loadAll, loadedCount, loadSpecies, overlayStats, portraitUrl, p
 import { castNeeds, runSprites, type SpriteNeed } from './render/spriteNeeds'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
-import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
+import { berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { celebrateShop, createTitleScene, drawTitleScene, meetPartner, revealShopkeeper, sceneAt, steerPartner, stepTitleScene, talkSpot, tapsPlaza, visitPlaza } from './render/titleScene'
@@ -966,9 +966,9 @@ const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
     const def = ENEMIES[start.outbreak]
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
   }
-  for (const id of start.bag) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon(id), alt: '' }), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
+  for (const id of start.bag) toast(ui, h('span', { class: 'item-toast' }, shopIcon(id), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
   // Each armed TM says which of the run's TM drops it is: the first, then the second.
-  for (const [i, id] of (start.tms ?? []).entries()) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(id), alt: '' }), rich(t().toast.armedTm(MOVES[id].name, i))), 3200, `tm-${id}`)
+  for (const [i, id] of (start.tms ?? []).entries()) toast(ui, h('span', { class: 'item-toast' }, tmPicture(id), rich(t().toast.armedTm(MOVES[id].name, i))), 3200, `tm-${id}`)
 }
 
 const runHud = (game: Game) => {
@@ -1435,7 +1435,7 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
     case 'maxRevive':
       playSfx('evolve')
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon('maxRevive'), alt: '' }), rich(t().toast.maxRevive)), 3400)
+      return toast(ui, h('span', { class: 'item-toast' }, shopIcon('maxRevive'), rich(t().toast.maxRevive)), 3400)
     case 'gameover':
       bankRun(r, true)
       recordProgress(r)

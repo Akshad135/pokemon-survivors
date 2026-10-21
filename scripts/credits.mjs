@@ -67,7 +67,8 @@ ${rows.join('\n')}
 
 ## Shop art
 
-The Kecleon shop's buildings, props, icons, Meowth's caravan and the seasonal stalls in the lobby
+The Kecleon shop's buildings, props, its own icons (the daily gift, the expansion, the wishlist, the loyalty
+stamp and the Kecleon Egg), Meowth's caravan and the seasonal stalls in the lobby
 (\`public/assets/shop/\`) were generated for this project with [PixelLab](https://www.pixellab.ai). The emotion
 portraits in the dialogue box (Kecleon, Meowth, Duskull and Delibird) are SpriteCollab portraits,
 credited in their rows above.
@@ -75,6 +76,14 @@ credited in their rows above.
 ## Cries
 
 Cries come from [PokéAPI/cries](https://github.com/PokeAPI/cries).
+
+## Item icons and scenery
+
+Item icons (held items, Poké Mart upgrades, consumables, the Kecleon shop's Bag items, evolution items,
+Bottle Caps and TMs) are the official item sprites from [PokéAPI/sprites](https://github.com/PokeAPI/sprites).
+Loaded Dice, Fairy Feather, Black Augurite, Auspicious Armor and Malicious Armor only exist there as HD art,
+so they were converted to pixel art with [PixelLab](https://www.pixellab.ai).
+Towers, trees, rocks, bushes and other painted scenery were made for this game with [PixelLab](https://www.pixellab.ai).
 
 ## Fonts
 

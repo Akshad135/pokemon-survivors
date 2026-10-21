@@ -1,7 +1,10 @@
 import { canvasCache, context2d, createCanvas, fromStrings, lazy, type Palette, type PixelSprite } from '../engine/pixelart'
 import type { Medal } from '../data/achievements'
-import type { ItemId } from '../data/items'
+import { ITEMS, type ItemId } from '../data/items'
 import type { BagItem } from '../game/bag'
+import type { ConsumableId } from '../game/consumables'
+import type { EvoItemId } from '../data/shop'
+import type { PokeType } from '../data/types'
 import type { SupporterTier } from '../game/supporters'
 import type { EggTier } from '../game/eggs'
 import type { Difficulty } from '../game/difficulty'
@@ -696,71 +699,24 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...DUO_ICONS,
 }
 
-const ITEM_ART: Record<ItemId, readonly [readonly string[], Palette]> = {
-  muscleBand: [['.111111.', '12222221', '13333331', '12222221', '.111111.'], { 1: '#803010', 2: '#f08030', 3: '#f8c070' }],
-  quickClaw: [['.1....1.', '121..121', '.121121.', '..1221..', '..1221..', '.12..21.', '12....21'], { 1: '#204080', 2: '#78b0f8' }],
-  wideLens: [['.1111...', '122221..', '123221..', '122221..', '.11111..', '....111.', '.....111', '......11'], { 1: '#404048', 2: '#a8d8f8', 3: '#ffffff' }],
-  lightClay: [['.111111.', '12222221', '12322221', '12222221', '12222221', '.111111.'], { 1: '#806838', 2: '#d8c088', 3: '#f8f0d0' }],
-  loadedDice: [['11111111', '12222221', '12322321', '12222221', '12232221', '12222221', '12322321', '11111111'], { 1: '#303030', 2: '#f8f8f8', 3: '#c02020' }],
-  leftovers: [['....2...', '...2....', '.111111.', '11331111', '13111111', '11111111', '.111111.', '..1..1..'], { 1: '#c83030', 2: '#58a030', 3: '#f8a0a0' }],
-  choiceScarf: [['11111111', '12222221', '11111221', '....1221', '....1221', '...12221', '...1..11'], { 1: '#a03060', 2: '#f878b0' }],
-  luckyEgg: [['..111..', '.12221.', '1222221', '1232321', '1222221', '1222221', '.12221.', '..111..'], { 1: '#a07850', 2: '#f8f0d8', 3: '#f87878' }],
-  dowsingMachine: [['.1....1.', '.1....1.', '..1..1..', '11111111', '12222221', '12333321', '12222221', '11111111'], { 1: '#404858', 2: '#88a0c0', 3: '#78f8a0' }],
-  charcoal: [['..111...', '.12221..', '1222321.', '12222221', '.1222221', '..11111.'], { 1: '#101010', 2: '#383838', 3: '#f08030' }],
-  mysticWater: [['...1...', '..121..', '.12221.', '1223221', '1222221', '.12221.', '..111..'], { 1: '#2848b0', 2: '#6890f0', 3: '#ffffff' }],
-  miracleSeed: [['...2.2.', '....2..', '..111..', '.13331.', '1333331', '.13331.', '..111..'], { 1: '#704818', 2: '#58c838', 3: '#d8a858' }],
-  silkScarf: [['11111111', '12222221', '11111221', '....1221', '....1221', '...12221', '...1..11'], { 1: '#9898a8', 2: '#f8f8f8' }],
-  poisonBarb: [['......1', '.....11', '....121', '...121.', '..121..', '.121...', '111....'], { 1: '#502060', 2: '#c060d0' }],
-  sharpBeak: [['.111....', '12221...', '122221..', '1222221.', '1111111.', '.12221..', '..111...'], { 1: '#806010', 2: '#f8c030' }],
-  neverMeltIce: [['...1...', '..121..', '.12321.', '1233421', '1234421', '.12421.', '..121..', '...1...'], ICE],
-  hardStone: [['..1111..', '.122221.', '12233221', '12232221', '12222211', '.112211.', '..1111..'], { 1: '#404040', 2: '#888078', 3: '#c8c0b0' }],
-  silverPowder: [['.3...3.', '..1.1..', '.12221.', '1222221', '1232221', '1222221', '.11111.'], { 1: '#686878', 2: '#d8d8e8', 3: '#ffffff' }],
-  dragonFang: [['1111111', '1333331', '1222221', '.12221.', '.1221..', '..121..', '..11...'], { 1: '#605838', 2: '#f8f0d0', 3: '#a070f8' }],
-  magnet: [['33....44', '33....44', '11....11', '11....11', '11....11', '.11..11.', '..1111..'], { 1: '#808088', 3: '#e83030', 4: '#3060e0' }],
-  kingsRock: [['3...3...3', '2...2...2', '22.222.22', '222242222', '211111112', '222222222'], { 1: '#c89000', 2: '#f8d830', 3: '#f8f8c0', 4: '#e83838' }],
-  toxicOrb: [['..1111..', '.122221.', '12233221', '12322321', '12232321', '12223321', '.122221.', '..1111..'], { 1: '#502060', 2: '#a040c0', 3: '#e0a0f8' }],
-  assaultVest: [['.11..11.', '12211221', '12222221', '.122221.', '.123321.', '.122221.', '.111111.'], { 1: '#5a3018', 2: '#c05838', 3: '#f8d058' }],
-  metronome: [['...11...', '...14...', '..1241..', '..1421..', '.122421.', '.124221.', '12422221', '11111111'], { 1: '#583010', 2: '#d89040', 4: '#f8f0d0' }],
-  powerHerb: [['.2...2..', '232.232.', '.2...2..', '..1.1...', '...1....', '..11....', '.1......'], { 1: '#386820', 2: '#f8f8f8', 3: '#e83838' }],
-  ...TE.TYPE_ITEM_ART,
-}
+/* ---------------- Item icons ---------------- */
 
-/* ---------------- Poké Mart icons ---------------- */
+/** A TM disc's picture, one per move type (`tmFire`, `tmWater`…). */
+export type TmArtId = `tm${Capitalize<PokeType>}`
 
-/** Vitamin bottle: 1 outline, 2 cap, 3 bottle, 4 shine, 5 label. */
-const BOTTLE = ['..1111..', '..1221..', '..1111..', '.133331.', '13433331', '14555531', '13555531', '13333331', '.111111.']
-const vitamin = (cap: string, body: string): readonly [readonly string[], Palette] => [
-  BOTTLE,
-  { 1: '#202028', 2: cap, 3: body, 4: '#ffffff', 5: '#f0f0f0' },
-]
+/** Every item with an official sprite: what `itemArt` takes. */
+export type ItemArtId = ItemId | UpgradeId | BagItem | ConsumableId | EvoItemId | 'bottleCap' | 'goldBottleCap' | TmArtId
 
-const UPGRADE_ART: Record<UpgradeId, readonly [readonly string[], Palette]> = {
-  hpUp: vitamin('#f8f8f8', '#58c058'),
-  protein: vitamin('#f8f8f8', '#e85040'),
-  iron: vitamin('#f8f8f8', '#8890a8'),
-  carbos: vitamin('#f8f8f8', '#40a8e0'),
-  calcium: vitamin('#f8f8f8', '#e8d070'),
-  zinc: vitamin('#f8f8f8', '#a070d0'),
-  ppUp: vitamin('#f8d030', '#f078b8'),
-  expCharm: [['.111111.', '12222221', '12333321', '12344321', '12333321', '12222221', '.111111.', '..1..1..'], { 1: '#283048', 2: '#4880d8', 3: '#a8d0f8', 4: '#f8f8f8' }],
-  amuletCoin: [['1......1', '.1....1.', '..1111..', '.122221.', '12233221', '12322321', '12233221', '.122221.', '..1111..'], { 1: '#805000', 2: '#f8c830', 3: '#fff8b0' }],
-  abilityCapsule: [['..1111..', '.122221.', '12222221', '12222221', '13333331', '13333331', '13333331', '.133331.', '..1111..'], { 1: '#283048', 2: '#e85878', 3: '#f8f0f8' }],
-  escapeRope: [['..1111..', '.12..21.', '12.11.21', '1.1221.1', '1.1..1.1', '12.11.21', '.12..21.', '..1111..'], { 1: '#805828', 2: '#d8a868' }],
-  shinyCharm: [['....1....', '...131...', '...121...', '.1122211.', '122232221', '.1122211.', '...121...', '...121...', '....1....'], { 1: '#805000', 2: '#f8c830', 3: '#ffffff' }],
-}
+/**
+ * Held items, Poké Mart upgrades, consumables, the Bag's items, the evolution
+ * items, the Bottle Caps and the TM discs are the official item sprites
+ * (PokeAPI's `sprites/items`), trimmed to square in `public/assets/items/<id>.png`.
+ * The few that only exist as HD art were turned into pixel art with PixelLab.
+ */
+export const itemArt = (id: ItemArtId) => `${import.meta.env.BASE_URL}assets/items/${id}.png`
 
-/** The bag's items: a Lure spray (pink, like the games'), Incense jars with their smoke, a candy, an egg, a honey pot, a bottle and a gold crystal. */
-const BAG_ART: Record<BagItem, readonly [readonly string[], Palette]> = {
-  lure: [['...11...', '..1221..', '.111111.', '.133331.', '.134431.', '.134431.', '.133331.', '.133331.', '..1111..'], { 1: '#402030', 2: '#f8f8f8', 3: '#f070b0', 4: '#ffe0f0' }],
-  incense: [['..2..2..', '.2..2...', '..2..2..', '.111111.', '13333331', '13444431', '13333331', '.133331.', '..1111..'], { 1: '#302018', 2: '#d8d0f0', 3: '#c88848', 4: '#f8d8a0' }],
-  rareCandy: [['1..222..1', '132422231', '132222231', '132222231', '1..222..1'], { 1: '#2850a8', 2: '#4878e0', 3: '#78a8f8', 4: '#ffffff' }],
-  luckyEgg: [['..111..', '.12221.', '1222221', '1232321', '1222221', '1222221', '.12221.', '..111..'], { 1: '#a07850', 2: '#f8f0d8', 3: '#f87878' }],
-  luckIncense: [['..2..2..', '.2..2...', '..2..2..', '.111111.', '13333331', '13444431', '13333331', '.133331.', '..1111..'], { 1: '#203018', 2: '#f8e8a0', 3: '#58a048', 4: '#b8e890' }],
-  honey: [['..1111..', '.122221.', '.111111.', '13333331', '13444331', '13433331', '13333331', '.133331.', '..1111..'], { 1: '#503010', 2: '#f8f0d0', 3: '#f0a020', 4: '#ffe080' }],
-  xAttack: [['..111..', '..121..', '..343..', '.34443.', '3544443', '3566663', '3544443', '3444443', '.33333.'], { 1: '#f8e030', 2: '#c8c8d8', 3: '#901818', 4: '#e83838', 5: '#ffa0a0', 6: '#f8e030' }],
-  maxRevive: [['....1....', '...121...', '..12321..', '.1233321.', '123343321', '.1233321.', '..12321..', '...121...', '....1....'], { 1: '#a06800', 2: '#f8c830', 3: '#fff0a0', 4: '#ffffff' }],
-  everstone: [['..1111..', '.123321.', '12333321', '13344331', '13333331', '.133331.', '..1111..'], { 1: '#383838', 2: '#d8d8d0', 3: '#909088', 4: '#b8b8b0' }],
-}
+/** The TM disc in a move type's color, as the games paint it. */
+export const tmArtId = (type: PokeType) => `tm${type.charAt(0).toUpperCase()}${type.slice(1)}` as TmArtId
 
 const iconCache = new Map<string, string>()
 
@@ -780,17 +736,17 @@ export const toIconUrl = (key: string, build: () => PixelSprite) => {
 
 export const moveIcon = (id: MoveId) => toIconUrl(`move:${id}`, MOVE_ICON_ART[id])
 
-/** Move and held item icons not made yet, for `warmIcon`. */
+/** Move icons not made yet and item pictures not fetched yet, for `warmIcon`. */
 let unmadeIcons: (() => unknown)[] | null = null
 
 /**
- * Makes one level-up icon (a move's or a held item's) not made yet, so the
- * cards open without encoding their pictures. True if it made one. Called in idle time.
+ * Makes one level-up icon (a move's) not made yet or fetches one held item's
+ * picture, so the cards open with their pictures ready. True if it did one. Called in idle time.
  */
 export const warmIcon = () => {
   unmadeIcons ??= [
     ...(Object.keys(MOVE_ICON_ART) as MoveId[]).map((id) => () => moveIcon(id)),
-    ...(Object.keys(ITEM_ART) as ItemId[]).map((id) => () => itemIcon(id)),
+    ...(Object.keys(ITEMS) as ItemId[]).map((id) => () => (new Image().src = itemIcon(id))),
   ]
   const next = unmadeIcons.pop()
   next?.()
@@ -806,26 +762,12 @@ export const moveIconSprite = (id: MoveId) => {
   return sprite
 }
 
-export const itemIcon = (id: ItemId) =>
-  toIconUrl(`item:${id}`, () => {
-    const [rows, pal] = ITEM_ART[id]
-    return art(rows, pal, '#181818')
-  })
+export const itemIcon = (id: ItemId) => itemArt(id)
 
 /** A cursed item in its purple frame (`render/duoArt.ts`). */
 export const curseIcon = (id: CurseId) => toIconUrl(`curse:${id}`, () => cursedIcon(id))
 
-export const bagIcon = (id: BagItem) =>
-  toIconUrl(`bag:${id}`, () => {
-    const [rows, pal] = BAG_ART[id]
-    return art(rows, pal, '#181818')
-  })
-
-export const upgradeIcon = (id: UpgradeId) =>
-  toIconUrl(`upgrade:${id}`, () => {
-    const [rows, pal] = UPGRADE_ART[id]
-    return art(rows, pal, '#181818')
-  })
+export const bagIcon = (id: BagItem) => itemArt(id)
 
 export const coinIcon = (tier = 0) => toIconUrl(`coin:${tier}`, () => PICKUPS.coins()[tier]!)
 export const candyIcon = (tier: number) => toIconUrl(`candy:${tier}`, () => PICKUPS.candy()[tier]!)
