@@ -68,7 +68,7 @@ The simulation is deterministic, open source and much faster than real time, so 
 
 - **Chunks** (`src/game/replayStream.ts`, `src/ranking.ts`): every 15 s of play (`STREAM.ticks`, counted in ticks, so pauses and level-up screens cut nothing) the game cuts the recorder's new ticks (their moves and events) and sends them to `PUT /runs/:token/chunks/:seq`, in order, after `/start`. A chunk that can't go (offline, an expired session) waits and is sent again (2 s, doubling to 30 s), and the result of the run waits behind its chunks; any other failure (a refusal, a 5xx, an API without the route) ends the stream, so a result never waits on a broken chunk route. A retry of a chunk already in changes nothing. Guests and unranked runs send nothing. The cut reads only the new stretch of the recorder, at most once per 15 s.
 - **Checks on each chunk** (`putChunk`): the player's token, not replaced, unfinished (or finished as a victory: endless mode goes on), `seq` next in line, starting at the tick where the last one ended, 15 to 30 s of ticks and 2,000 events at most, and no more play than the wall clock since `started_at` allows (`clockAllows`).
-- **Lag** (`commitLag`): how late a commitment came, past the play its new ticks take, counted from the last commitment (the first chunk from when the seed was dealt, `runs.issued_at`, since a seed known on the menus could be searched before `/start`). Real time only runs ahead of game time (pauses, level-up screens, the results screen before endless mode), so an honest stream lags by what the player waited plus the network, and a bot by its search. The run keeps its worst (`runs.stream_lag`). It's counted per commitment rather than as the whole stream's distance to the wall clock, which every level-up screen and pause of a long run would add up. The game asks for a fresh ticket when the one in hand is 2 minutes old, so menu time doesn't count against it.
+- **Lag** (`commitLag`): how late a commitment came, past the play its new ticks take, counted from the last commitment (the first chunk from when the seed was dealt, `runs.issued_at`, since a seed known on the menus could be searched before `/start`). Real time only runs ahead of game time (pauses, level-up screens, the results screen before endless mode), so an honest stream lags by what the player waited plus the network, and a bot by its search. The run keeps its worst (`runs.stream_lag`) and counts the commitments more than `STREAM.lagTolerance` late (`runs.stream_late`): an honest player pauses a few times a run (switching tabs pauses the game), while a bot searching offline would lag on almost every chunk. It's counted per commitment rather than as the whole stream's distance to the wall clock, which every level-up screen and pause of a long run would add up. The game asks for a fresh ticket when the one in hand is 2 minutes old, so menu time doesn't count against it.
 - **The report** (`finishRun`, `settleReport`): its replay must keep every committed input, else 409 `rewrite`. It then pins all its ticks by the sha256 of their canonical form (`runs.stream_base`, `stream_digest`), so a later report of the same run (endless mode) can't rewrite them either, and the chunks it covers are deleted. A victory's report is timed like a chunk (the run may go on from it); a faint's or a quit's isn't. Its **tail**, the ticks it brings past the stream, may be at most 30 s (`STREAM.tailTicks`). Chunks of runs that never reported are swept a day later.
 - **Observe or enforce.** A report was streamed in time (`streamedInTime`, stored in `runs.stream_ok` and logged) when its tail fits and no commitment came more than 3 minutes late (`STREAM.lagTolerance`). With `STREAM_ENFORCE` off (the default) nothing else changes. With it on, a run that wasn't stays off the public boards for good (`runs.unlisted`: the boards, the challenge board, ribbons, the Discord podium) but still counts for the player (profile, records, clears), and the results screen says the connection dropped (`listed: false`). A game from before streaming sends no chunks, so with enforcement on its runs longer than 30 s stay off the boards; `watchDeploys` reloads it once its player is back on the menus.
 
@@ -84,10 +84,20 @@ from runs
 where finished_at > now() - interval '7 days' and stream_seq > 0;
 ```
 
+And how many late commitments runs have (counted since migration 018), to pick how many enforcement could forgive:
+
+```sql
+select stream_late, count(*) as runs, round(avg(stream_seq)) as avg_chunks, round(max(survived) / 60) as longest_min
+from runs
+where finished_at > now() - interval '7 days' and stream_seq > 0
+  and issued_at > (select ran_at from migrations where name = '018_stream_late.sql')
+group by stream_late order by stream_late;
+```
+
 And the longest runs enforcement would have kept off the boards, to see whether they look honest:
 
 ```sql
-select r.id, u.handle, r.difficulty, r.survived, r.stream_lag, r.stream_seq as chunks, r.version
+select r.id, u.handle, r.difficulty, r.survived, r.stream_lag, r.stream_late as late, r.stream_seq as chunks, r.version
 from runs r join users u on u.id = r.user_id
 where r.finished_at > now() - interval '7 days' and r.stream_ok is false
 order by r.survived desc limit 50;
