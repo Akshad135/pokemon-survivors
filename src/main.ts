@@ -1656,13 +1656,14 @@ for (const type of ['pointerdown', 'pointerup', 'touchend'] as const) window.add
 
 // No pinch/double-tap zoom, pull-to-refresh, rubber-banding or long-press menus.
 // CSS `touch-action` covers most browsers; these guards cover iOS Safari quirks.
+// A one-finger drag still scrolls inside a screen or the Kecleon Shop's panel, which lives over the plaza, outside any screen.
 const blockDefault = (e: Event) => e.preventDefault()
 document.addEventListener('contextmenu', blockDefault)
 document.addEventListener('gesturestart', blockDefault)
 document.addEventListener(
   'touchmove',
   (e) => {
-    const inScrollable = e.target instanceof Element && e.target.closest('.screen')
+    const inScrollable = e.target instanceof Element && e.target.closest('.screen, .shop-sheet')
     if (e.touches.length > 1 || !inScrollable) e.preventDefault()
   },
   { passive: false },
