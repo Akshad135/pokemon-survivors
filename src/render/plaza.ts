@@ -3,6 +3,7 @@ import { blitCentered, context2d, createCanvas, ellipse, lazy, onCanvasReset } f
 import { EMOTES, type Emote } from './art'
 import { shadow } from './draw'
 import { drawPokemon, loadedSprites, loadSpecies, type SpeciesSprites } from './sprites'
+import type { ShopLevel } from '../data/shop'
 
 /**
  * The Kecleon plaza: the lobby's shop as a place in the meadow, east of the
@@ -16,8 +17,7 @@ import { drawPokemon, loadedSprites, loadSpecies, type SpeciesSprites } from './
 export const KECLEON_DEX = 352
 /** Its official name, as the dialogue box shows it. */
 export const KECLEON_NAME = 'Kecleon'
-export const SHOP_LEVELS = [1, 2, 3, 4, 5] as const
-export type ShopLevel = (typeof SHOP_LEVELS)[number]
+export type { ShopLevel }
 
 /** Where the plaza's building stands from home (the lobby's resting view center), world px: off a desktop's right edge, low enough that the edge marker pointing to it clears the lobby's right rail. */
 export const PLAZA_OFFSET = { x: 520, y: 150 } as const

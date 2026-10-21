@@ -34,7 +34,7 @@ import { isLegend } from './data/legends'
 import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEMS, useArmed, type BagItem } from './game/bag'
-import { SHOP_LEVELS } from './data/shop'
+import { SHOP_LEVEL_IDS, SHOP_LEVELS } from './data/shop'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
@@ -109,7 +109,7 @@ import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon 
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, sceneAt, steerPartner, stepTitleScene, talkSpot, tapsPlaza, visitPlaza } from './render/titleScene'
-import { SHOP_LEVELS, type ShopLevel } from './render/plaza'
+import type { ShopLevel } from './render/plaza'
 import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
@@ -1965,7 +1965,7 @@ if (import.meta.env.DEV) {
        */
       plaza: (level?: number) => {
         if (level === 0) devPlazaLevel = null
-        else if (level !== undefined) devPlazaLevel = SHOP_LEVELS.find((l) => l === level) ?? devPlazaLevel
+        else if (level !== undefined) devPlazaLevel = SHOP_LEVEL_IDS.find((l) => l === level) ?? devPlazaLevel
         showTitle({ shop: 'look' })
         return plazaLevel()
       },
