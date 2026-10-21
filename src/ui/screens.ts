@@ -19,6 +19,7 @@ import { abilitySet } from '../game/abilities'
 import { heldMega } from '../game/mega'
 import { megaIcon } from '../render/megaFx'
 import { BRANCHES } from '../data/branches'
+import { legendSignature } from '../data/legends'
 import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
 import { toSteps } from '../game/eggs'
@@ -31,6 +32,7 @@ import { berryIcon, coinIcon, curseIcon, eggIcon, itemIcon, moveIcon, sparkleIco
 import { modIcon } from '../render/modFx'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
+import { placeIcon } from '../render/places'
 import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
 import { h, later } from './dom'
@@ -165,7 +167,7 @@ const offerRecipes = (g: Game, offer: Offer) => {
       // Reaching max level makes it a duo ingredient: the fusions it would open show up.
       if (offer.level < maxMoveLevel(offer.id) || isDuo(offer.id)) return evos
       const moves = [...p.moves.filter((o) => o.id !== offer.id), { id: offer.id, level: offer.level, cooldown: 0 }]
-      const duos = readyDuos(moves).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves).some((r) => r.to === d.to))
+      const duos = readyDuos(moves, legendSignature(g.starter)).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves, legendSignature(g.starter)).some((r) => r.to === d.to))
       return [...evos, ...duos.map((d) => duoChip(d.from, d.to))]
     }
     case 'duo':
@@ -575,7 +577,7 @@ const duoPanel = (g: Game) => {
   const p = g.player
   const owned = p.moves.find((o) => isDuo(o.id))
   const types = new Set<PokeType>([...runLearnset(g.starter, g.branch), ...p.moves.map((o) => o.id)].map((id) => MOVES[id].type))
-  const ready = readyDuos(p.moves)
+  const ready = readyDuos(p.moves, legendSignature(g.starter))
   const recipes = reachableDuos(types)
   if (recipes.length === 0 && !owned) return null
   const chips = owned
@@ -851,6 +853,8 @@ export const results = (
         h('div', {}, h('span', {}, m.kills), h('b', {}, g.kills)),
         legends.length > 0 &&
           h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
+        g.place.cleared.length > 0 &&
+          h('div', {}, h('span', {}, t().places.results), h('b', { class: 'result-legends' }, ...g.place.cleared.map((id) => h('img', { src: placeIcon(id), alt: t().places.names[id], title: t().places.names[id] })))),
         h('div', {}, h('span', {}, e.steps), h('b', {}, formatNumber(toSteps(g.player.walked)))),
         g.eggs.found.length > 0 &&
           h('div', {}, h('span', {}, e.eggs), h('b', { class: 'result-legends' }, ...g.eggs.found.map((egg) => h('img', { src: eggIcon(egg.tier), alt: e.tiers[egg.tier], title: e.tiers[egg.tier] })))),

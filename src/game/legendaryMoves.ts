@@ -22,32 +22,32 @@ import * as dm from '../engine/dmath'
  * This module must not import `moves.ts` at runtime (it is evaluated first).
  */
 
-const stats = (s: Partial<MoveStats>): MoveStats => ({
+export const stats = (s: Partial<MoveStats>): MoveStats => ({
   damage: 0, cooldown: 1, area: 1, amount: 1, speed: 0, duration: 1, pierce: Infinity, knockback: 0, statusChance: 0, statusDamage: 0, ...s,
 })
 
 /** Angles spread evenly around `center`, `step` radians apart. */
-const fan = (center: number, count: number, step: number) =>
+export const fan = (center: number, count: number, step: number) =>
   Array.from({ length: count }, (_, i) => center + (i - (count - 1) / 2) * step)
 
 /** Toward `foe`, else toward the nearest foe within `range`, else the way the player faces. */
-const aimAt = (g: Game, range: number, foe: Enemy | null = null) => {
+export const aimAt = (g: Game, range: number, foe: Enemy | null = null) => {
   const p = g.player
   const target = foe ?? nearestEnemy(g, p.x, p.y, range)
   const d = target ? dirTo(p.x, p.y, target.x, target.y) : p.facing
   return dm.atan2(d.y, d.x)
 }
 
-const look = (move: MoveId, type: Look['type'], visual: Look['visual']): Look => ({ move, type, visual })
+export const look = (move: MoveId, type: Look['type'], visual: Look['visual']): Look => ({ move, type, visual })
 
 /** Lets the shell play the move's own sound (`ui/castSfx.ts`). */
-const cast = (g: Game, move: MoveId) => g.events.push({ kind: 'cast', move })
+export const cast = (g: Game, move: MoveId) => g.events.push({ kind: 'cast', move })
 
 /** Whether the second branch was taken at the Lv4 fork (step index 2), like `branchAt` in `moves.ts`. */
-const tookB = (owned: OwnedMove) => owned.level >= 4 && ((owned.path ?? 0) >> 2) & 1
+export const tookB = (owned: OwnedMove) => owned.level >= 4 && ((owned.path ?? 0) >> 2) & 1
 
 /** Up to `count` foes in view, densest crowds first, never two within `apart` px of each other. */
-const crowdTargets = (g: Game, count: number, apart: number, reach: number) => {
+export const crowdTargets = (g: Game, count: number, apart: number, reach: number) => {
   const p = g.player
   const pool = enemiesInView(g).filter((e) => dm.sq(e.x - p.x) + dm.sq(e.y - p.y) <= reach * reach)
   const picked: Enemy[] = []

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RUN_LENGTH } from '../data/waves'
-import { clockAllows, freeHandle, handleProblem, maxKills, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, reportProblem, suggestHandle, type RunResult } from './ranking'
+import { clockAllows, freeHandle, handleProblem, maxKills, parseDisplayName, parseHandle, parseRunResult, rankable, RANKED, reportProblem, runMode, suggestHandle, type RunResult } from './ranking'
 
 const run = (o: Partial<Record<keyof RunResult, unknown>> = {}) => ({ starter: 'charmander', stage: 1, difficulty: 'hard', time: 300, outcome: 'death', level: 20, kills: 800, version: 'abc1234', ...o })
 
@@ -19,7 +19,7 @@ describe('parseRunResult', () => {
   })
 
   it('refuses unknown Pokémon, difficulties, outcomes and stages', () => {
-    for (const o of [{ starter: 'mewtwo' }, { difficulty: 'easy' }, { outcome: 'won' }, { stage: 3 }, { stage: 1.5 }]) expect(parseRunResult(run(o))).toBeNull()
+    for (const o of [{ starter: 'missingno' }, { difficulty: 'easy' }, { outcome: 'won' }, { stage: 3 }, { stage: 1.5 }]) expect(parseRunResult(run(o))).toBeNull()
   })
 
   it('refuses a victory before Mewtwo shows up', () => {
@@ -35,6 +35,15 @@ describe('parseRunResult', () => {
   it('lets long endless runs faint far more per second', () => {
     // A real 2-hour endless run: 342,655 faints in 7,335 s (~47/s).
     expect(parseRunResult(run({ outcome: 'victory', time: 7335, level: 430, kills: 342_655 }))).not.toBeNull()
+  })
+})
+
+describe('runMode', () => {
+  it('puts a legend’s run on the Legend boards, at its single stage', () => {
+    expect(runMode('kyogre')).toBe('legend')
+    expect([runMode('charmander'), runMode('eevee')]).toEqual(['standard', 'standard'])
+    expect(parseRunResult(run({ starter: 'kyogre', stage: 0 }))).not.toBeNull()
+    expect(parseRunResult(run({ starter: 'kyogre', stage: 1 }))).toBeNull()
   })
 })
 

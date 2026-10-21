@@ -28,14 +28,150 @@ export type ChangelogUpdate = {
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
     date: '2026-10-20',
-    title: { pt: 'Ranking justo', en: 'A fair ranking', es: 'Ranking justo' },
+    title: { pt: 'Lendários jogáveis e um mapa para explorar', en: 'Playable legendaries and a map to explore', es: 'Legendarios jugables y un mapa para explorar' },
     highlights: [
+      { pt: 'Modo Lendário: capture os 23 lendários vencendo-os como chefes e jogue com eles, com ranking próprio.', en: 'Legend Mode: catch all 23 legendaries by beating them as bosses, then play as them, with their own ranking.', es: 'Modo Legendario: captura a los 23 legendarios venciéndolos como jefes y juega con ellos, con su propio ranking.' },
+      { pt: 'Fendas épicas: o céu avisa, você atravessa o domínio do lendário, vence uma batalha em 3 fases e joga a Poké Ball.', en: 'Epic rifts: the sky warns you, you cross the legendary’s domain, win a 3-phase battle and throw the Poké Ball.', es: 'Grietas épicas: el cielo avisa, cruzas el dominio del legendario, ganas una batalla en 3 fases y lanzas la Poké Ball.' },
+      { pt: 'Os lendários do mapa, de Articuno a Arceus, agora lutam em 3 fases, com entrada, tema próprio e um golpe supremo.', en: 'The legendaries on the map, from Articuno to Arceus, now fight in 3 phases, with an entrance, their own theme and an ultimate.', es: 'Los legendarios del mapa, de Articuno a Arceus, ahora pelean en 3 fases, con entrada, tema propio y un golpe supremo.' },
+      { pt: 'Pontos de interesse e tesouros pelo mapa, e lugares para entrar: uma Mystery Dungeon no escuro, um cemitério com Spiritomb e o céu.', en: 'Landmarks and treasures all over the map, and places to step into: a Mystery Dungeon in the dark, a graveyard with Spiritomb and the sky.', es: 'Puntos de interés y tesoros por el mapa, y lugares para entrar: un Mundo Misterioso a oscuras, un cementerio con Spiritomb y el cielo.' },
       { pt: 'Viu uma partida impossível no ranking? Toque na bandeira ao lado dela para denunciar.', en: 'Saw an impossible run on the ranking? Tap the flag next to it to report it.', es: '¿Viste una partida imposible en el ranking? Toca la bandera a su lado para denunciarla.' },
-      { pt: 'Nome ofensivo ou save editado: denuncie o treinador direto no perfil dele.', en: 'An offensive name or an edited save: report the trainer right from their profile.', es: 'Nombre ofensivo o partida guardada editada: denuncia al entrenador desde su perfil.' },
-      { pt: 'A equipe olha cada denúncia e tira do ranking quem trapaceia.', en: 'The team looks at every report and takes cheaters off the ranking.', es: 'El equipo revisa cada denuncia y saca del ranking a quien hace trampa.' },
-      { pt: 'Partidas honestas não saem mais do ranking por um erro nosso na conferência.', en: 'Honest runs no longer leave the ranking over a mistake of ours in the check.', es: 'Las partidas honestas ya no salen del ranking por un error nuestro en la revisión.' },
     ],
     changes: [
+      {
+        title: { pt: 'Modo Lendário', en: 'Legend Mode', es: 'Modo Legendario' },
+        notes: [
+          {
+            pt: 'A ideia mais votada do mural de ideias, de @clementwong212: os lendários agora são jogáveis, num modo só deles. São 23: Articuno, Zapdos, Moltres, Raikou, Entei, Suicune, Regirock, Regice, Registeel, Mew, Celebi, Jirachi, Mewtwo, Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza, Dialga, Latias, Latios, Deoxys e Arceus.',
+            en: 'The most voted idea on the ideas board, from @clementwong212: legendaries are now playable, in a mode of their own. All 23 of them: Articuno, Zapdos, Moltres, Raikou, Entei, Suicune, Regirock, Regice, Registeel, Mew, Celebi, Jirachi, Mewtwo, Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza, Dialga, Latias, Latios, Deoxys and Arceus.',
+            es: 'La idea más votada del muro de ideas, de @clementwong212: los legendarios ahora son jugables, en un modo propio. Son 23: Articuno, Zapdos, Moltres, Raikou, Entei, Suicune, Regirock, Regice, Registeel, Mew, Celebi, Jirachi, Mewtwo, Lugia, Ho-Oh, Kyogre, Groudon, Rayquaza, Dialga, Latias, Latios, Deoxys y Arceus.',
+          },
+          {
+            pt: 'Para capturar um lendário, vença-o como chefe, em qualquer modo: 3 vezes para os das fendas e dos trios, 5 para o Mewtwo e 1 para Mew, Celebi e Jirachi. A cada vitória ele escapa da Poké Ball e o jogo conta (Kyogre escapou… 2/3); na última, ele é seu e aparece na nova aba Lendários da seleção de parceiro. Arceus é o último troféu: só se deixa capturar no modo sem fim, depois dos outros 22.',
+            en: 'To catch a legendary, beat it as a boss, in any mode: 3 times for the rift and trio legendaries, 5 for Mewtwo and once for Mew, Celebi and Jirachi. Every win before that it breaks free from the Poké Ball and the game keeps count (Kyogre broke free… 2/3); on the last one it’s yours and shows up in the new Legendaries tab of the partner select. Arceus is the final trophy: it can only be caught in endless mode, after the other 22.',
+            es: 'Para capturar un legendario, véncelo como jefe, en cualquier modo: 3 veces los de las grietas y los tríos, 5 a Mewtwo y 1 a Mew, Celebi y Jirachi. En cada victoria se escapa de la Poké Ball y el juego lleva la cuenta (Kyogre se escapó… 2/3); en la última es tuyo y aparece en la nueva pestaña Legendarios de la selección de compañero. Arceus es el último trofeo: solo se deja capturar en el modo infinito, después de los otros 22.',
+          },
+          {
+            pt: 'Lendários não evoluem: eles despertam no Nv 12 e no Nv 28, com Habilidade, mais força e uma carga de Esquecer. No segundo despertar, Kyogre e Groudon viram Primal e Rayquaza vira Mega; Latias, Latios e Mewtwo (Y) Mega Evoluem com o botão Mega, e o especial do Deoxys troca de Forma. Cada um começa com o seu golpe lendário e uma Habilidade inata sempre ativa: Drizzle traz a chuva, Drought o sol, Air Lock deixa o Rayquaza imune ao clima, Levitate faz os Latis flutuarem sobre a lava.',
+            en: 'Legendaries don’t evolve: they awaken at Lv 12 and Lv 28, with an Ability, more power and a Forget charge. On the second awakening, Kyogre and Groudon turn Primal and Rayquaza turns Mega; Latias, Latios and Mewtwo (Y) Mega Evolve with the Mega button, and Deoxys’s special swaps its Forme. Each one opens with its legendary move and an innate Ability that’s always on: Drizzle brings the rain, Drought the sun, Air Lock makes Rayquaza immune to the weather, Levitate floats the Latis over lava.',
+            es: 'Los legendarios no evolucionan: despiertan en el Nv 12 y en el Nv 28, con Habilidad, más fuerza y una carga de Olvidar. En el segundo despertar, Kyogre y Groudon se vuelven Primigenios y Rayquaza, Mega; Latias, Latios y Mewtwo (Y) megaevolucionan con el botón Mega, y el especial de Deoxys cambia su Forma. Cada uno empieza con su movimiento legendario y una Habilidad innata siempre activa: Drizzle trae la lluvia, Drought el sol, Air Lock vuelve a Rayquaza inmune al clima y Levitate hace flotar a los Latis sobre la lava.',
+          },
+          {
+            pt: 'A partida dura o mesmo tempo, as três dificuldades continuam valendo e a horda vem mais forte (Pressão). O modo tem um ranking só dele, o Lendário, separado por dificuldade: no ranking, troque entre Padrão e Lendário. E ninguém enfrenta a si mesmo: um Mewtwo encara o Mewtwo Clone no final.',
+            en: 'A run lasts as long as ever, all three difficulties still apply and the horde comes in stronger (Pressure). The mode has a ranking of its own, Legendary, split by difficulty: on the rankings, switch between Standard and Legendary. And no one faces themselves: a Mewtwo takes on the Mewtwo Clone at the end.',
+            es: 'La partida dura lo mismo, las tres dificultades siguen valiendo y la horda viene más fuerte (Presión). El modo tiene un ranking propio, el Legendario, separado por dificultad: en el ranking, cambia entre Estándar y Legendario. Y nadie se enfrenta a sí mismo: un Mewtwo se mide con el Mewtwo Clon al final.',
+          },
+          {
+            pt: '11 golpes lendários novos, um para cada membro dos trios, Mewtwo e Arceus: Snowscape, Electric Terrain, Overheat, Thunderclap, Burning Bulwark, Aqua Ring, Rock Wrecker, Glaciate, Metal Burst, Telekinesis e Judgment, que muda de tipo com o bioma.',
+            en: '11 new legendary moves, one for each trio member, Mewtwo and Arceus: Snowscape, Electric Terrain, Overheat, Thunderclap, Burning Bulwark, Aqua Ring, Rock Wrecker, Glaciate, Metal Burst, Telekinesis and Judgment, which changes type with the biome.',
+            es: '11 movimientos legendarios nuevos, uno para cada miembro de los tríos, Mewtwo y Arceus: Snowscape, Electric Terrain, Overheat, Thunderclap, Burning Bulwark, Aqua Ring, Rock Wrecker, Glaciate, Metal Burst, Telekinesis y Judgment, que cambia de tipo con el bioma.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Fendas épicas', en: 'Epic rifts', es: 'Grietas épicas' },
+        notes: [
+          {
+            pt: 'Agora são 2 fendas por partida, por volta de 4:00 e de 10:20, e o relógio da partida para lá dentro. Antes de cada uma, o lendário avisa: o clima dele toma o céu (chuva torrencial, sol abrasador, vendaval, tempestade, arco-íris, chuva de meteoros, o tempo tropeçando) e um rasgo enorme se abre no ar.',
+            en: 'There are now 2 rifts per run, around 4:00 and 10:20, and the run clock stops inside. Before each one, the legendary gives a sign: its weather takes over the sky (pouring rain, harsh sun, a gale, a storm, a rainbow, a meteor shower, time stumbling) and a huge tear opens in the air.',
+            es: 'Ahora hay 2 grietas por partida, alrededor de 4:00 y de 10:20, y el reloj de la partida se detiene adentro. Antes de cada una, el legendario avisa: su clima se adueña del cielo (lluvia torrencial, sol abrasador, vendaval, tormenta, arcoíris, lluvia de meteoros, el tiempo que tropieza) y se abre un desgarro enorme en el aire.',
+          },
+          {
+            pt: 'Cada lendário tem o seu domínio, maior que a tela, para atravessar com os Pokémon que o servem e uma ameaça vindo atrás: a maré na Caverna do Fundo do Mar (Kyogre), a lava na Caverna de Magma (Groudon), os andares desabando no Pilar Celeste (Rayquaza), os redemoinhos das Ilhas Redemoinho (Lugia), a Torre do Sino em chamas (Ho-Oh), os saltos no tempo do Pilar Lança (Dialga), a névoa de sonho da Ilha do Sul (Latias e Latios, juntos) e o Meteoro à Deriva se desfazendo no vazio (Deoxys).',
+            en: 'Each legendary has its own domain, bigger than the screen, to cross past the Pokémon that serve it with a threat coming up behind: the tide in the Seafloor Cavern (Kyogre), lava in the Magma Cavern (Groudon), floors crumbling on the Sky Pillar (Rayquaza), the whirlpools of the Whirl Islands (Lugia), the Bell Tower on fire (Ho-Oh), time skipping on Spear Pillar (Dialga), the dream mist of Southern Island (Latias and Latios, together) and the Drifting Meteoroid coming apart in the void (Deoxys).',
+            es: 'Cada legendario tiene su dominio, más grande que la pantalla, que cruzar entre los Pokémon que lo sirven con una amenaza que viene detrás: la marea en la Cueva Fondo Marino (Kyogre), la lava en la Caverna de Magma (Groudon), los pisos que se derrumban en el Pilar Celeste (Rayquaza), los remolinos de las Islas Remolino (Lugia), la Torre Campana en llamas (Ho-Oh), los saltos en el tiempo de la Columna Lanza (Dialga), la neblina de ensueño de la Isla Sur (Latias y Latios, juntos) y el Meteoroide a la Deriva que se deshace en el vacío (Deoxys).',
+          },
+          {
+            pt: 'No fim, o lendário chega com um card de título e o seu próprio tema, e a batalha tem 3 fases: cada uma transforma a arena e termina num golpe supremo, sempre com um lugar seguro marcado. Kyogre inunda a caverna e solta o Origin Pulse, Ho-Oh renasce das cinzas, o Roar of Time do Dialga congela os seus golpes no ar e o Deoxys troca de Forma a cada fase.',
+            en: 'At the end the legendary arrives with a title card and its own theme, and the battle has 3 phases: each one transforms the arena and builds to an ultimate, always with a marked safe spot. Kyogre floods the cavern and unleashes Origin Pulse, Ho-Oh rises from its ashes, Dialga’s Roar of Time freezes your attacks in mid-air and Deoxys swaps Formes every phase.',
+            es: 'Al final, el legendario llega con una tarjeta de título y su propio tema, y la batalla tiene 3 fases: cada una transforma la arena y termina en un golpe supremo, siempre con un lugar seguro marcado. Kyogre inunda la cueva y suelta el Origin Pulse, Ho-Oh renace de sus cenizas, el Roar of Time de Dialga congela tus ataques en el aire y Deoxys cambia de Forma en cada fase.',
+          },
+          {
+            pt: 'Vencido, ele se ajoelha e a Poké Ball voa: balança três vezes e prende ou estoura, contando para a captura. Desmaiar lá dentro continua sem encerrar a partida: você volta ao mapa com 30% do HP.',
+            en: 'Once beaten, it kneels and the Poké Ball flies: it shakes three times and either clicks or bursts open, counting toward the catch. Fainting inside still doesn’t end the run: you land back on the map with 30% HP.',
+            es: 'Vencido, se arrodilla y vuela la Poké Ball: se sacude tres veces y lo atrapa o se abre, y cuenta para la captura. Desmayarte adentro sigue sin terminar la partida: vuelves al mapa con 30% del HP.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Lendários do mapa em 3 fases', en: 'Map legendaries in 3 phases', es: 'Legendarios del mapa en 3 fases' },
+        notes: [
+          {
+            pt: 'O trio da partida, o mítico raro, Mewtwo e Arceus chegam com uma entrada: as aves descem do céu, as feras saltam, os Regis sobem do chão, um card mostra o nome e o epíteto (ZAPDOS · Senhor do Trovão) e cada trio tem o seu tema.',
+            en: 'The run’s trio, the rare mythical, Mewtwo and Arceus make an entrance: the birds swoop down from the sky, the beasts leap in, the Regis rise from the ground, a card shows the name and epithet (ZAPDOS · Lord of Thunder) and each trio has its own theme.',
+            es: 'El trío de la partida, el mítico raro, Mewtwo y Arceus llegan con una entrada: las aves bajan del cielo, las bestias saltan, los Regis salen del suelo, una tarjeta muestra el nombre y el epíteto (ZAPDOS · Señor del Trueno) y cada trío tiene su tema.',
+          },
+          {
+            pt: 'A luta tem 3 fases, marcadas na barra de HP: a segunda traz um jeito novo de se mover e a terceira, um golpe supremo com o golpe lendário de cada um (Snowscape, Electric Terrain, Psystrike, Judgment…), sempre com um lugar seguro marcado. O Judgment do Arceus muda de tipo com o bioma. Quando ele cai, uma captura rápida acontece ali mesmo, no mapa.',
+            en: 'The fight has 3 phases, marked on the HP bar: the second brings a new way to move and the third an ultimate built on each one’s legendary move (Snowscape, Electric Terrain, Psystrike, Judgment…), always with a marked safe spot. Arceus’s Judgment changes type with the biome. When it falls, a quick capture plays right there on the map.',
+            es: 'La pelea tiene 3 fases, marcadas en la barra de HP: la segunda trae una forma nueva de moverse y la tercera, un golpe supremo con el movimiento legendario de cada uno (Snowscape, Electric Terrain, Psystrike, Judgment…), siempre con un lugar seguro marcado. El Judgment de Arceus cambia de tipo con el bioma. Cuando cae, una captura rápida sucede ahí mismo, en el mapa.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Pontos de interesse no mapa', en: 'Landmarks on the map', es: 'Puntos de interés en el mapa' },
+        notes: [
+          {
+            pt: 'Ideia do @samael no mural de ideias, a mais votada: o mapa agora tem lugares fixos para descobrir, com a cara de cada bioma. Ao chegar perto, uma placa mostra o nome do lugar, como nos jogos.',
+            en: 'An idea from @samael on the ideas board, the most voted one: the map now has fixed places to discover, dressed for each biome. As you come close, a sign shows the place’s name, like in the games.',
+            es: 'Idea de @samael en el muro de ideas, la más votada: el mapa ahora tiene lugares fijos para descubrir, con el aspecto de cada bioma. Al acercarte, un cartel muestra el nombre del lugar, como en los juegos.',
+          },
+          {
+            pt: 'Casa Abandonada: uma casa de pedra sem telhado, com janelas, lareira e um caixote esquecido lá dentro. Labirinto de Sebes: um baú no coração do labirinto. Ruínas Unown: um altar que acende os glifos e solta Exp. Candy. Acampamento Abandonado: a fogueira ainda acesa e uma mochila com Oran Berries.',
+            en: 'Abandoned Cottage: a stone cottage without its roof, with windows, a fireplace and a crate left inside. Hedge Maze: a chest at its heart. Unown Ruins: an altar that lights up the glyphs and spills Exp. Candy. Abandoned Camp: the fire still burning and a backpack with Oran Berries.',
+            es: 'Casa Abandonada: una casa de piedra sin techo, con ventanas, chimenea y una caja olvidada adentro. Laberinto de Setos: un cofre en su corazón. Ruinas Unown: un altar que enciende los glifos y suelta Exp. Candy. Campamento Abandonado: la fogata todavía encendida y una mochila con Oran Berries.',
+          },
+          {
+            pt: 'Túnel da Mina: entre por uma boca e saia pela outra, do outro lado da montanha. A horda perde o seu rastro enquanto você está lá embaixo.',
+            en: 'Mine Tunnel: go in one mouth and come out the other, on the far side of the ridge. The horde loses track of you while you’re down there.',
+            es: 'Túnel de la Mina: entra por una boca y sal por la otra, del otro lado de la montaña. La horda te pierde el rastro mientras estás allá abajo.',
+          },
+          {
+            pt: 'Cada tesouro abre uma vez por partida, ficando um instante perto dele. Duas conquistas novas contam os tesouros abertos.',
+            en: 'Each treasure opens once per run, by standing next to it for a moment. Two new achievements count the treasures opened.',
+            es: 'Cada tesoro se abre una vez por partida, quedándote un instante junto a él. Dos logros nuevos cuentan los tesoros abiertos.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Lugares para entrar', en: 'Places to step into', es: 'Lugares para entrar' },
+        notes: [
+          {
+            pt: 'Algumas vezes por partida, a entrada de um lugar aparece no mapa, com uma seta apontando para ela. Fique na porta para entrar: lá dentro o mundo espera e o lugar tem seus próprios Pokémon, um objetivo e um limite de tempo.',
+            en: 'A few times a run, the entrance to a place shows up on the map, with an arrow pointing at it. Stand in the doorway to go in: inside, the world waits and the place has its own Pokémon, a goal and a time limit.',
+            es: 'Algunas veces por partida, la entrada de un lugar aparece en el mapa, con una flecha que apunta hacia ella. Quédate en la entrada para pasar: adentro el mundo espera y el lugar tiene sus propios Pokémon, un objetivo y un límite de tiempo.',
+          },
+          {
+            pt: 'Caverna Escura, uma Mystery Dungeon: andares no escuro com escadas para achar, uma Casa de Monstros e um baú no fundo. Pokémon de Fogo e Elétricos iluminam mais longe, e o vento avisa antes de soprar você para fora.',
+            en: 'Dark Cave, a Mystery Dungeon: floors in the dark with stairs to find, a Monster House and a chest at the bottom. Fire and Electric types light up farther, and the wind warns before it blows you out.',
+            es: 'Cueva Oscura, un Mundo Misterioso: pisos a oscuras con escaleras que encontrar, una Casa de Monstruos y un cofre al fondo. Los Pokémon de Fuego y Eléctricos iluminan más lejos, y el viento avisa antes de sacarte de la cueva.',
+          },
+          {
+            pt: 'Cemitério Assombrado: só fantasmas, saindo das covas. Os espíritos deles despertam a Pedra Peculiar e, dela, Spiritomb, um chefe novo (que pode ser shiny). Vença antes do amanhecer.',
+            en: 'Haunted Graveyard: ghosts only, rising from the graves. Their spirits stir the Odd Keystone, and out of it comes Spiritomb, a new boss (who can be shiny). Beat it before dawn.',
+            es: 'Cementerio Embrujado: solo fantasmas, saliendo de las tumbas. Sus espíritus despiertan a la Piedra Espíritu y, de ella, a Spiritomb, un jefe nuevo (que puede ser shiny). Véncelo antes del amanecer.',
+          },
+          {
+            pt: 'Acima das Nuvens, só para quem voa: com um Pokémon do tipo Voador, uma corrente de ar leva você ao céu, onde só aparecem voadores, todos batendo as asas, e asas chegam com o vento. Cada asa melhora um atributo até o fim da partida.',
+            en: 'Above the Clouds, for flyers only: with a Flying-type Pokémon, an updraft takes you up to the sky, where only flying Pokémon come, all flapping their wings, and wings drift in on the wind. Each wing raises a stat for the rest of the run.',
+            es: 'Sobre las Nubes, solo para quien vuela: con un Pokémon de tipo Volador, una corriente de aire te lleva al cielo, donde solo aparecen voladores, todos batiendo las alas, y el viento trae plumas. Cada pluma mejora una estadística hasta el final de la partida.',
+          },
+          {
+            pt: 'Três conquistas novas, uma delas com o título Explorador(a), para quem concluir os três lugares.',
+            en: 'Three new achievements, one with the Explorer title, for clearing all three places.',
+            es: 'Tres logros nuevos, uno con el título Explorador(a), para quien complete los tres lugares.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Um mapa mais vivo', en: 'A livelier map', es: 'Un mapa más vivo' },
+        notes: [
+          {
+            pt: 'Moitas (com flores ou frutinhas), troncos caídos e pedras e árvores soltas entre os bosques e as montanhas, cada bioma com o seu jeito: cogumelos que brilham na caverna, arbustos com neve na montanha e espinheiros no cemitério.',
+            en: 'Bushes (with flowers or berries), fallen logs and lone rocks and trees between the groves and the mountains, each biome in its own way: glowing mushrooms in the cave, snowy shrubs on the mountain and thorns in the graveyard.',
+            es: 'Arbustos (con flores o bayas), troncos caídos y rocas y árboles sueltos entre los bosques y las montañas, cada bioma a su manera: hongos que brillan en la cueva, arbustos nevados en la montaña y espinos en el cementerio.',
+          },
+        ],
+      },
       {
         title: { pt: 'Ranking mais confiável', en: 'A more reliable ranking', es: 'Ranking más confiable' },
         notes: [
@@ -68,6 +204,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             pt: 'As partidas continuam entrando no ranking na hora. Só uma denúncia faz a equipe olhar: uma partida trapaceada sai do ranking, um save editado volta ao zero e uma conta banida não entra mais no ranking nem nos perfis (ela ainda pode jogar no aparelho, sem conta).',
             en: "Runs still join the ranking right away. Only a report gets the team to look: a cheated run leaves the ranking, an edited save goes back to zero, and a banned account no longer shows on the ranking or in profiles (it can still play on the device, without an account).",
             es: 'Las partidas siguen entrando al ranking al instante. Solo una denuncia hace que el equipo revise: una partida con trampa sale del ranking, una partida guardada editada vuelve a cero y una cuenta baneada ya no aparece en el ranking ni en los perfiles (aún puede jugar en el dispositivo, sin cuenta).',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Hall da Fama', en: 'Hall of Fame', es: 'Salón de la Fama' },
+        notes: [
+          {
+            pt: 'O Hall da Fama conta todos os apoiadores, inclusive quem preferiu ficar fora do mural, então o número não cai mais quando alguém se esconde.',
+            en: 'The Hall of Fame counts every supporter, including those who chose to stay off the wall, so the number no longer drops when someone hides.',
+            es: 'El Salón de la Fama cuenta a todos los patrocinadores, incluso a quienes prefirieron quedar fuera del muro, así que el número ya no baja cuando alguien se oculta.',
           },
         ],
       },

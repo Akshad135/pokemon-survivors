@@ -17,6 +17,7 @@ import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shi
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
 import { parseCompanion, type Companion } from './supporters'
+import { NO_CAPTURES, parseCaptures, type Captures } from './capture'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { StatDelta } from './stats'
@@ -143,6 +144,8 @@ export type Save = {
   branches: Branches
   /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
   clears: Clears
+  /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
+  legends: Captures
 }
 
 /** The branch each branching family took in its latest run that got there. */
@@ -183,6 +186,7 @@ export const EMPTY_SAVE: Save = {
   companion: null,
   branches: {},
   clears: {},
+  legends: NO_CAPTURES,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -244,6 +248,7 @@ export const parseSaveData = (json: unknown): Save => {
     branches: parseBranches(data.branches),
     // Plus the clears the lifetime records prove, for wins from before clears were tracked.
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
+    legends: parseCaptures(data.legends),
   }
 }
 

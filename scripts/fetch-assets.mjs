@@ -4,7 +4,7 @@
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { measureBody } from './body.mjs'
-import { DEX, FORM_CRIES, FORMS, SHINY, pad } from './dex.mjs'
+import { DEX, FLYERS, FORM_CRIES, FORMS, SHINY, pad } from './dex.mjs'
 
 const ROOT = new URL('..', import.meta.url).pathname
 const OUT = join(ROOT, 'public/assets/pokemon')
@@ -16,6 +16,20 @@ const CRIES = 'https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemo
 const POKEAPI = 'https://pokeapi.co/api/v2/pokemon'
 
 const ANIMS = ['Walk', 'Idle', 'Hurt']
+
+/**
+ * A flyer's `Fly` sheet: SpriteCollab's Hover (flapping in place, one row per
+ * direction, like Walk), or else its FlapAround. FlapAround spins through the
+ * directions from each row's own, so only its first two frames are kept: a
+ * wingbeat facing the row's direction. Aliases (Zubat's Hover is a copy of Shoot) don't count.
+ */
+const flyAnim = (anims) => {
+  const hover = anims.Hover
+  if (hover && !hover.copyOf) return { name: 'Hover', frameWidth: hover.frameWidth, frameHeight: hover.frameHeight, durations: hover.durations }
+  const flap = anims.FlapAround
+  if (flap && !flap.copyOf) return { name: 'FlapAround', frameWidth: flap.frameWidth, frameHeight: flap.frameHeight, durations: [6, 6] }
+  return null
+}
 
 const exists = (p) => access(p).then(() => true, () => false)
 
@@ -58,13 +72,17 @@ const fetchVariant = async (dex, form, dir, withPortrait = true) => {
   await mkdir(dir, { recursive: true })
   const anims = parseAnims(await res.text())
 
+  const wanted = [
+    ...ANIMS.map((name) => [name, resolveAnim(anims, name)]),
+    ...(FLYERS.has(dex) ? [['Fly', flyAnim(anims)]] : []),
+  ]
   const entries = await Promise.all(
-    ANIMS.map(async (name) => {
-      const anim = resolveAnim(anims, name)
+    wanted.map(async ([name, anim]) => {
       if (!anim) return null
       const ok = await download(`${SPRITES}/${pad(dex)}${form}/${anim.name}-Anim.png`, join(dir, `${name}.png`))
       if (!ok) return null
-      return [name, { frameWidth: anim.frameWidth, frameHeight: anim.frameHeight, durations: anim.durations }]
+      const { name: _, copyOf: __, ...meta } = anim
+      return [name, meta]
     }),
   )
   const portrait = withPortrait && await download(`${PORTRAITS}/${pad(dex)}${form}/Normal.png`, join(dir, 'portrait.png'))

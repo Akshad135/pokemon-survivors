@@ -2,11 +2,12 @@ import { dir8, type Vec } from '../engine/math'
 import { createRng } from '../engine/rng'
 import { createGrid } from '../engine/spatial'
 import { bodyOf } from '../data/bodies'
+import { isLegend } from '../data/legends'
 import type { EnemyId } from '../data/enemies'
 import { isHidden } from '../data/abilities'
 import { branchesAt } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
-import { abilityImmune, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
+import { abilityImmune, abilityLuck, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS } from './bag'
 import { branchContext, drawBranches, playerForm } from './branch'
 import { createAlphaClock, updateAlphas } from './alphas'
@@ -19,9 +20,9 @@ import { DEFAULT_DIFFICULTY, type Difficulty } from './difficulty'
 import { updateBosses, updateHazards } from './bosses'
 import { createWorldHazards, updateWorldHazards } from './hazards'
 import { updateConsumables } from './consumables'
-import { updateEffects } from './effects'
+import { burst, updateEffects } from './effects'
 import { updateEndless } from './endlessSystem'
-import { rebuildGrid, updateEnemies } from './enemies'
+import { blastHorde, rebuildGrid, updateEnemies } from './enemies'
 import {
   applyOffer, branchOffers, draftOffers, loadout, nothingToChoose, offerSubject, pendingEvolution, recomputeStats, rollOffers, shinyOfferOdds, xpFor,
   type RollOptions,
@@ -40,14 +41,23 @@ import { createTmState, pickTm } from './tms'
 import { updateVerbEvolved } from './verbEvolutions'
 import { updateLegendary } from './legendary'
 import { createSpecialState, specialBusy, specialSpeedFactor, updateSpecial } from './special'
+import { AWAKENING, avoidLegend, createLegendState, formAfter, pendingAwakening, updateLegend } from './legend'
 import { decidePokeball, updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
 import { withOutbreak } from './outbreak'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
+import { createLandmarkState, updateLandmarks, updateTunnel } from './landmarks'
 import { drawRoster, type Roster } from './roster'
-import { createRiftState } from './rift'
+import { clockRuns, createRiftState } from './rift'
+import { createPlaceState } from './place'
+import { updatePlaceEntrance } from './placeEntrance'
+import { updatePlace, updatePlaceFall, updatePlaceIntro } from './placeInterior'
+import { roomOf } from './room'
+import { SKY } from '../data/places'
 import { updateArena, updateArenaFall } from './riftArena'
+import { domainCamera, updateDomainScene } from './domain'
+import { updateLegendScene } from './legendScene'
 import { updateRiftPortal } from './riftPortal'
 import { updateSightings } from './sightings'
 import { updateSpawner } from './spawner'
@@ -64,6 +74,15 @@ import * as dm from '../engine/dmath'
 export const EVOLUTION_TIME = 4.6
 
 export const playerDex = (g: Game) => playerForm(g).dex
+
+/** Widest hitbox a legend gets, in px: Lugia's wings span 79 px; capped at a Charizard's (body 27 px), so a big legend isn't a bigger target for the horde and the bosses. */
+export const LEGEND_RADIUS = 8
+
+/** The player's hitbox from its sprite's body (data, so every device agrees); a legend's is capped (`LEGEND_RADIUS`). */
+const playerRadius = (dex: number, legend: boolean) => {
+  const r = Math.max(6, Math.round(bodyOf(dex).bodyW * 0.3))
+  return legend ? Math.min(LEGEND_RADIUS, r) : r
+}
 
 /** What the save brings into a run besides the Poké Mart ranks. */
 export type RunOptions = {
@@ -121,7 +140,7 @@ export const createGame = (
       moves: [{ id: def.signature, level: 1, cooldown: 0.4, path: 0 }],
       items: [],
       stats: BASE_STATS,
-      radius: Math.max(6, Math.round(bodyOf(def.line[0].dex).bodyW * 0.3)),
+      radius: playerRadius(def.line[0].dex, isLegend(starter)),
       animTime: 0,
       shiny,
       luckyShiny: lucky,
@@ -159,7 +178,8 @@ export const createGame = (
     evolution: null,
     branch: null,
     ability: createAbilityState(),
-    roster: withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null),
+    // A legend never meets itself among the bosses (`avoidLegend`).
+    roster: avoidLegend(withOutbreak(roster ?? drawRoster(rng), options.outbreak ?? null), starter),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
@@ -175,6 +195,8 @@ export const createGame = (
     weather: createWeather(),
     traits: { seen: new Set(), nextIntro: 0 },
     rift: createRiftState(),
+    place: createPlaceState(),
+    landmarks: createLandmarkState(),
     tm: createTmState(),
     endless: null,
     tally: createTally(),
@@ -188,6 +210,9 @@ export const createGame = (
     alphas: createAlphaClock(options.difficulty ?? DEFAULT_DIFFICULTY),
     worldHazards: createWorldHazards(),
     prize: null,
+    legend: createLegendState(starter),
+    now: 0,
+    legendScene: null,
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
@@ -202,8 +227,11 @@ export const createGame = (
 /** Whether the level-up on screen is the opening draft: the run's clock only starts once it's picked. */
 export const drafting = (g: Game) => g.phase === 'levelup' && g.time === 0
 
-/** How a run rolls its level-up cards: rarity on, with its Shiny Charm's odds. */
-const rolling = (g: Game): RollOptions => ({ shiny: shinyOfferOdds(g.ranks.shinyCharm) })
+/** How a run rolls its level-up cards: rarity on, with its Shiny Charm's odds and the luck of an ability (Jirachi's Serene Grace). */
+const rolling = (g: Game): RollOptions => {
+  const luck = abilityLuck(g)
+  return { shiny: shinyOfferOdds(g.ranks.shinyCharm) * luck.shiny, rare: luck.rare }
+}
 
 /**
  * Per-tick player input, as plain data so the simulation stays DOM-free. `mega`
@@ -220,7 +248,8 @@ const updatePlayer = (g: Game, input: Vec, dt: number) => {
   // A speed factor of 0 means the special is dashing the player around.
   p.moving = moving || slow === 0
   const ground = groundAt(g, p.x, p.y)
-  const pace = p.stats.speed * slow * (ground === 'water' ? playerWaterPace(g) : 1)
+  const tailwind = g.place.inside?.id === 'sky' ? SKY.tailwind : 1
+  const pace = p.stats.speed * slow * tailwind * (ground === 'water' ? playerWaterPace(g) : 1)
   const vx = moving ? input.x * pace : 0
   const vy = moving ? input.y * pace : 0
   // On ice the player's speed only slowly follows the stick, so they slide.
@@ -292,7 +321,7 @@ const updateMoves = (g: Game, press: boolean, dt: number) => {
  * After level-ups resolve: open the next level-up, ask where a branching
  * evolution goes, start an evolution, or resume. Exported for the dev console.
  */
-export const advancePhase = (g: Game) => {
+export const advancePhase = (g: Game): void => {
   g.prize = null
   if (g.pendingLevelUps > 0) {
     g.phase = 'levelup'
@@ -300,6 +329,7 @@ export const advancePhase = (g: Game) => {
     g.events.push({ kind: 'levelup' })
     return
   }
+  if (pendingAwakening(g) > 0) return startAwakening(g)
   if (!pendingEvolution(g)) {
     g.phase = 'playing'
     return
@@ -320,6 +350,41 @@ const startEvolution = (g: Game) => {
   g.phase = 'evolving'
   g.evolution = { ...evo, t: 0 }
   g.events.push({ kind: 'evolve', ...evo })
+}
+
+/** A legend's awakening starts: the evolution's scene, on the same species (in its new form, where it takes one). */
+const startAwakening = (g: Game): void => {
+  const s = g.legend
+  const n = pendingAwakening(g)
+  if (!s || n === 0) return advancePhase(g)
+  const dex = playerDex(g)
+  const form = formAfter(s.id, n)?.key
+  g.phase = 'evolving'
+  g.evolution = { from: dex, to: dex, t: 0, awakening: n, ...(form && { form }) }
+  g.events.push({ kind: 'awaken', legend: s.id, n })
+}
+
+/**
+ * The awakening lands: its stats, a heal, an Esquecer charge and an aura
+ * burst that throws the horde back; the first one opens the Ability pick.
+ */
+const awaken = (g: Game, n: number): void => {
+  const s = g.legend
+  if (!s) return advancePhase(g)
+  const p = g.player
+  s.awakened = n
+  recomputeStats(g)
+  healPlayer(g, p.stats.maxHp * AWAKENING.heal)
+  g.banishes++
+  blastHorde(g, AWAKENING.push)
+  const color = PLAYABLE[g.starter].color
+  burst(g, p.x, p.y - 12, { colors: [color, '#ffffff', '#f8e8a0'], count: 80, speed: 190, ttl: 0.9, size: 2, drag: 3 })
+  g.shake = Math.max(g.shake, 8)
+  g.flash = Math.max(g.flash, 0.4)
+  g.evolution = null
+  g.events.push({ kind: 'awakened', legend: s.id, n, form: formAfter(s.id, n)?.key ?? null })
+  if (g.ability.id === null) offerAbilities(g)
+  else advancePhase(g)
 }
 
 /** After the first evolution: the abilities to pick from (Honedge's lone Stance Change is just granted). Exported for the dev console. */
@@ -448,9 +513,10 @@ const updateEvolution = (g: Game, dt: number) => {
   if (!evo) return
   evo.t += dt
   if (evo.t < EVOLUTION_TIME) return
+  if (evo.awakening) return awaken(g, evo.awakening)
   const p = g.player
   p.stage++
-  p.radius = Math.max(6, Math.round(bodyOf(evo.to).bodyW * 0.3))
+  p.radius = playerRadius(evo.to, false)
   recomputeStats(g)
   healPlayer(g, p.stats.maxHp * 0.5)
   // Every evolution earns an Esquecer charge (`banishOffer`), and the moves it unlocks come up more for a while.
@@ -466,26 +532,34 @@ const updateEvolution = (g: Game, dt: number) => {
 export const step = (g: Game, input: StepInput, dt: number) => {
   if (g.phase === 'evolving') return updateEvolution(g, dt)
   if (g.phase !== 'playing') return
-  // The Mega Evolution plays with the world held still.
+  // The Mega Evolution plays with the world held still, and so does a dungeon floor's title card.
   if (updateMegaIntro(g, dt)) return
-  // So does the rift throwing a fainted player back out.
+  if (updatePlaceIntro(g, dt)) return
+  // So does the rift throwing a fainted player back out, or a rescue out of a place, a domain's encounter and capture scenes and a wave legendary's.
   if (updateArenaFall(g, dt)) return
+  if (updateDomainScene(g, dt)) return
+  if (updateLegendScene(g, dt)) return
+  if (updatePlaceFall(g, dt)) return
   if (g.hitstop > 0) {
     g.hitstop -= dt
     return
   }
 
-  g.time += dt
-  // Inside a rift arena the horde and the map wait outside: no spawns, props,
-  // map events, weather or biome changes. A biome change that came due meanwhile
-  // plays on the way out.
-  const inArena = g.rift.arena !== null
+  // The run clock stops inside a rift (`clockRuns`); `now` never does.
+  g.now += dt
+  if (clockRuns(g)) g.time += dt
+  // Inside a room (a rift arena, a place) the horde and the map wait outside:
+  // no regular spawns, props, map events, weather or biome changes. A biome
+  // change that came due meanwhile plays on the way out.
+  const inArena = roomOf(g) !== null
   if (!inArena) {
     updateBiome(g)
     updateWeather(g, dt)
   }
-  updatePlayer(g, input.move, dt)
+  // Under a tunnel's ridge the player is carried through instead of walking.
+  if (!updateTunnel(g, dt)) updatePlayer(g, input.move, dt)
   updateCurses(g)
+  if (updateLegend(g)) recomputeStats(g)
   updateMega(g, input.mega === true, dt)
   if (updateAbility(g, dt)) recomputeStats(g)
   updateSpecial(g, input.special, dt)
@@ -499,6 +573,9 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateStatuses(g, dt)
   updateRiftPortal(g, dt)
   updateArena(g, dt)
+  updatePlaceEntrance(g, dt)
+  updatePlace(g, dt)
+  updateLandmarks(g, dt)
   updateEndless(g)
   rebuildGrid(g)
   updateTraits(g, dt)
@@ -510,7 +587,8 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateAttacks(g, dt)
   updateVerbEvolved(g, dt)
   updateTerrain(g, dt)
-  if (!inArena) {
+  // Checked again: the player may have stepped into a room this very tick.
+  if (!roomOf(g)) {
     updateProps(g, dt)
     updateMapEvents(g, dt)
   }
@@ -518,8 +596,11 @@ export const step = (g: Game, input: StepInput, dt: number) => {
   updateConsumables(g, dt)
   updateEffects(g, dt)
 
-  g.camera.x = g.player.x - g.view.w / 2
-  g.camera.y = g.player.y - 10 - g.view.h / 2
+  // In a legendary's domain the camera looks ahead and frames the fight (`domainCamera`); elsewhere it sits on the player.
+  if (!domainCamera(g, dt)) {
+    g.camera.x = g.player.x - g.view.w / 2
+    g.camera.y = g.player.y - 10 - g.view.h / 2
+  }
   updateSightings(g, dt)
 
   if (g.phase === 'playing' && g.pendingLevelUps > 0) advancePhase(g)

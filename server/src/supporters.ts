@@ -2,7 +2,7 @@ import { randomFillSync } from 'node:crypto'
 import type { TransactionSql } from 'postgres'
 import { POLL, POLL_OPTION_IDS, type PollOptionId } from '../../src/data/supporters'
 import { donationPoints, newCode, supporterTier, TIER_GIFTS, tiersReached, type SupporterTier } from '../../src/game/supporters'
-import type { DonationStatus, Poll, SupporterStatus, WallEntry } from '../../src/game/supporters'
+import type { DonationStatus, HiddenSupporters, Poll, SupporterStatus, WallEntry } from '../../src/game/supporters'
 import { parseSaveData } from '../../src/game/meta'
 import { hallPokemon } from '../../src/game/trainer'
 import type { Sql } from './db'
@@ -123,6 +123,19 @@ export const supporterStore = (sql: Sql, hooks: { onTierUp?: (userId: string) =>
      * their title and Pokémon for the Hall da Fama. Only the save fields
      * those read come out of Postgres, never the whole save.
      */
+    /** Supporters per tier who stay off the wall (hidden, or without a handle yet): the Hall counts them without naming them. */
+    hidden: async (): Promise<HiddenSupporters> => {
+      const rows = await sql<{ points: number }[]>`
+        select supporter_points as points from users
+        where supporter_points > 0 and not (supporter_public and handle is not null)`
+      const counts: HiddenSupporters = { supporter: 0, gold: 0 }
+      for (const r of rows) {
+        const tier = supporterTier(r.points)
+        if (tier) counts[tier]++
+      }
+      return counts
+    },
+
     wall: async (): Promise<WallEntry[]> => {
       const rows = await sql<{ handle: string; name: string | null; points: number; since: Date; save: unknown }[]>`
         select u.handle, u.name, u.supporter_points as points, u.supporter_since as since,

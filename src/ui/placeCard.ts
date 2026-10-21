@@ -1,0 +1,28 @@
+import type { Game } from '../game/types'
+import { t } from '../i18n'
+import { h, setText } from './dom'
+
+/**
+ * Mystery Dungeon's floor card: the screen goes black with the dungeon's name
+ * and floor ("Dark Cave", "B1F") while the floor's title card holds the
+ * simulation still (`updatePlaceIntro`). Part of the HUD, so it follows the
+ * game's own clock (pausing on it pauses the card).
+ */
+export const createPlaceCard = () => {
+  const name = h('b', {})
+  const floor = h('span', {})
+  const el = h('div', { class: 'floor-card hidden' }, name, floor)
+  let shown = false
+  const update = (g: Game) => {
+    const inside = g.place.inside
+    const show = inside?.id === 'cave' && inside.intro > 0
+    if (show && inside?.id === 'cave') {
+      setText(name, t().places.names.cave)
+      setText(floor, t().places.floor(inside.state.floor + 1))
+    }
+    if (show === shown) return
+    shown = show
+    el.classList.toggle('hidden', !show)
+  }
+  return { el, update }
+}

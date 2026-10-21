@@ -1,5 +1,6 @@
 import { ACHIEVEMENT_IDS, ACHIEVEMENTS, GIFT_TITLES, TITLE_IDS, type AchievementDef, type AchievementId, type AchievementStat, type GiftTitleId, type TitleId } from '../data/achievements'
-import { isHatchling } from '../data/hatchlings'
+import { PLACE_IDS, type PlaceId } from '../data/places'
+import { isStarter } from '../data/hatchlings'
 import { RIFT_LEGENDS, type RiftLegend } from '../data/rifts'
 import { REGIONS, STARTER_IDS, STARTERS, type StarterId } from '../data/starters'
 import { POKE_TYPES, type PokeType } from '../data/types'
@@ -14,7 +15,7 @@ import type { RunSummary } from './tally'
  */
 
 /** Run summary fields that add up over a lifetime as they are. */
-const SUMMED = ['kills', 'shinyKills', 'bossKills', 'shinyLegends', 'chests', 'meowths', 'altars', 'coins', 'moveEvolutions', 'reaperDefeats', 'megas', 'alphaKills'] as const satisfies readonly (keyof RunSummary)[]
+const SUMMED = ['kills', 'shinyKills', 'bossKills', 'shinyLegends', 'chests', 'meowths', 'altars', 'coins', 'moveEvolutions', 'reaperDefeats', 'megas', 'alphaKills', 'placeClears', 'landmarks'] as const satisfies readonly (keyof RunSummary)[]
 
 const COUNTERS = [...SUMMED, 'runs', 'wins', 'rifts', 'finalStages', 'shinyStarters', 'missions', 'bestTime', 'bestLevel', 'bestOvertime', 'hatches', 'shinyHatches'] as const
 
@@ -23,6 +24,8 @@ type Counter = (typeof COUNTERS)[number]
 export type Lifetime = Readonly<Record<Counter, number>> & {
   /** Rift legendaries ever beaten. */
   legends: readonly RiftLegend[]
+  /** Places ever cleared. */
+  places: readonly PlaceId[]
   /** Generations (regions) whose starter beat Mewtwo. */
   winGens: readonly number[]
   /** Base types of the starters that beat Mewtwo. */
@@ -34,6 +37,7 @@ export type Lifetime = Readonly<Record<Counter, number>> & {
 export const NO_LIFETIME: Lifetime = {
   ...(Object.fromEntries(COUNTERS.map((c) => [c, 0])) as Record<Counter, number>),
   legends: [],
+  places: [],
   winGens: [],
   winTypes: [],
   starters: [],
@@ -50,8 +54,8 @@ const regionGen = (id: StarterId) => REGIONS.find((r) => r.starters.includes(id)
 export const addRun = (l: Lifetime, s: RunSummary, before: RunSummary | null, missionsDone = 0): Lifetime => {
   const summed = Object.fromEntries(SUMMED.map((k) => [k, l[k] + s[k] - (before?.[k] ?? 0)])) as Record<(typeof SUMMED)[number], number>
   const won = s.victory && !before?.victory
-  // Starter goals (regions, the trio, starters played) skip hatched families.
-  const starter = isHatchling(s.starter) ? null : s.starter
+  // Starter goals (regions, the trio, starters played) skip hatched families and legends.
+  const starter = isStarter(s.starter) ? s.starter : null
   const starterWon = s.victory && starter !== null
   return {
     ...l,
@@ -66,6 +70,7 @@ export const addRun = (l: Lifetime, s: RunSummary, before: RunSummary | null, mi
     bestLevel: Math.max(l.bestLevel, s.level),
     bestOvertime: Math.max(l.bestOvertime, s.victory ? overtime(s.time) : 0),
     legends: union(l.legends, ...s.legends),
+    places: union(l.places, ...s.places),
     winGens: starterWon ? union(l.winGens, regionGen(starter)) : l.winGens,
     winTypes: starterWon ? union(l.winTypes, ...STARTERS[starter].line[0].types.slice(0, 1)) : l.winTypes,
     starters: starter ? union(l.starters, starter) : l.starters,
@@ -83,6 +88,7 @@ const statValue = (l: Lifetime, stat: AchievementStat, dex: Pokedex): number => 
     case 'bestMinutes': return Math.floor(l.bestTime / 60)
     case 'overtimeMinutes': return Math.floor(l.bestOvertime / 60)
     case 'legends': return l.legends.length
+    case 'places': return l.places.length
     case 'regions': return l.winGens.length
     case 'starters': return l.starters.length
     case 'trio': return l.winTypes.filter((t) => t === 'grass' || t === 'fire' || t === 'water').length
@@ -137,6 +143,7 @@ export const mergeAchievements = (a: AchievementsSave, b: AchievementsSave): Ach
     lifetime: {
       ...(Object.fromEntries(COUNTERS.map((c) => [c, Math.max(x[c], y[c])])) as Record<Counter, number>),
       legends: knownIds([...x.legends, ...y.legends], RIFT_LEGENDS),
+      places: knownIds([...x.places, ...y.places], PLACE_IDS),
       winGens: knownIds([...x.winGens, ...y.winGens], GENS),
       winTypes: knownIds([...x.winTypes, ...y.winTypes], POKE_TYPES),
       starters: knownIds([...x.starters, ...y.starters], STARTER_IDS),
@@ -153,6 +160,7 @@ export const parseAchievements = (raw: unknown): AchievementsSave => {
     lifetime: {
       ...(Object.fromEntries(COUNTERS.map((c) => [c, wholeNumber(l[c])])) as Record<Counter, number>),
       legends: knownIds(l.legends, RIFT_LEGENDS),
+      places: knownIds(l.places, PLACE_IDS),
       winGens: knownIds(l.winGens, GENS),
       winTypes: knownIds(l.winTypes, POKE_TYPES),
       starters: knownIds(l.starters, STARTER_IDS),

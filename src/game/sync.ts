@@ -1,6 +1,7 @@
 import { mergeAchievements, mergeGiftTitles } from './achievements'
 import { mergeClaimedGifts } from './gifts'
 import { mergeClears } from './clears'
+import { mergeCaptures } from './capture'
 import { mergeBag } from './bag'
 import { mergeCounter } from './mart'
 import { mergeStyle } from './style'
@@ -50,6 +51,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - The companion: `incoming`'s, if it has one (like the title).
  * - Branches taken: per family, `incoming`'s when it has one (like the partner).
  * - Clears: a union, each Pokémon at the harder difficulty of the two.
+ * - Legend captures: each legend's win count at the larger side (a shiny
+ *   captured is a `shinyStarters` key, a union like the rest).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -78,6 +81,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     companion: incoming.companion ?? base.companion,
     branches: { ...base.branches, ...incoming.branches },
     clears: mergeClears(base.clears, incoming.clears),
+    legends: mergeCaptures(base.legends, incoming.legends),
   }
 }
 

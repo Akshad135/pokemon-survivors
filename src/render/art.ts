@@ -18,6 +18,7 @@ import { cursedIcon, DUO_ICONS } from './duoArt'
 import type { CurseId } from '../data/curses'
 import type { SocialId } from '../site/routes'
 import { LEGENDARY_ICONS } from './legendaryArt'
+import { LEGENDARY_ICONS_2 } from './legendaryArt2'
 import * as TE from './typeEvolvedArt'
 
 /**
@@ -424,6 +425,8 @@ export const HAZARD_FX = {
   dragon: lazy(() => art(SMALL_ORB, { 1: '#4820a8', 2: '#a070f8', 3: '#f0e0ff' }, '#180840')),
   steel: lazy(() => art(SMALL_ORB, { 1: '#4868a8', 2: '#a8c8f0', 3: '#ffffff' }, '#182040')),
   aero: lazy(() => art(SMALL_ORB, { 1: '#7890c0', 2: '#d8e8f8', 3: '#ffffff' }, '#283858')),
+  /** Shadow Ball: a dark orb with a violet glint. */
+  shadow: lazy(() => art(SMALL_ORB, { 1: '#201030', 2: '#5c3c88', 3: '#c8b0f8' }, '#08040c')),
   judgment: lazy(() => art(SMALL_ORB, { 1: '#c09020', 2: '#f8e070', 3: '#ffffff' }, '#483008')),
   stealthRock: lazy(() => art(GROUND_SPIKE, { 1: '#584020', 2: '#a08040', 3: '#e0c880' }, '#181818')),
   toxicSpike: lazy(() => art(GROUND_SPIKE, { 1: '#502068', 2: '#a050c8', 3: '#e8b0f8' }, '#200828')),
@@ -565,6 +568,7 @@ const MOVE_ICON_ART: Record<MoveId, () => PixelSprite> = {
   ...TM_ICONS,
   ...VERB_EVOLVED_ICONS,
   ...LEGENDARY_ICONS,
+  ...LEGENDARY_ICONS_2,
   ember: () => FX.ember()[0]!,
   fireSpin: () => FX.flame()[0]!,
   waterGun: () => FX.water(),

@@ -1,8 +1,13 @@
 import type { AchievementId, AchievementStat, GiftTitleId, TitleId } from '../data/achievements'
 import type { BiomeId } from '../data/biomes'
+import type { PlaceId, WingId } from '../data/places'
+import type { LandmarkId, TreasureLandmark } from '../data/landmarks'
 import type { PokeType } from '../data/types'
+import type { RiftLegend } from '../data/rifts'
+import type { WaveLegend } from '../data/legendBosses'
 import type { PlayableId } from '../data/hatchlings'
 import type { MegaId } from '../data/megas'
+import type { LegendId } from '../data/legends'
 import type { AbilityId } from '../data/abilities'
 import type { ItemId } from '../data/items'
 import type { CurseId } from '../data/curses'
@@ -58,6 +63,9 @@ const typeBoost = (type: string) => `+10% de dano em golpes do tipo ${type}.`
  * so every other locale must match it key for key. Toast strings use light
  * markup rendered by `rich`: `*bold*` and `_accent_`.
  */
+/** A legendary's domain in words (`rifts.domains`): its place, epithet, omen, the crossing's warning, a line per phase after the first, and the calls of its own mechanics (`domainCue`). */
+export type DomainLines = { place: string; epithet: string; omen: string; crossing: string; phases: readonly string[]; cues?: Readonly<Record<string, string>> }
+
 export const pt = {
   loading: 'Carregando…',
   level: (n: number) => `Nv ${n}`,
@@ -191,7 +199,7 @@ export const pt = {
     lunge: 'Bote',
     lungeTitle: (name: string) => `${name} (Shift)`,
     /** Aegislash's forme, shown on the special button (Stance Change). */
-    stances: { shield: 'Escudo', blade: 'Lâmina' } satisfies Record<Stance, string>,
+    stances: { shield: 'Escudo', blade: 'Lâmina', normal: 'Normal', attack: 'Ataque', defense: 'Defesa', speed: 'Velocidade' } satisfies Record<Stance, string>,
     /** Jumps left in a running chain dash. */
     jumps: (n: number) => `×${n}`,
   },
@@ -424,7 +432,7 @@ export const pt = {
     myProfile: 'Meu perfil',
     back: 'Voltar',
     resets: 'Hoje e Semana viram à meia-noite de Brasília (a semana começa na segunda).',
-    hintKeys: '↑ ↓ jogador · ← → período · Q E dificuldade · F amigos · ENTER perfil · ESC voltar',
+    hintKeys: '↑ ↓ jogador · ← → período · Q E dificuldade · M modo · F amigos · ENTER perfil · ESC voltar',
     hintTouch: 'Toque num treinador para ver o perfil',
     outcomes: { victory: 'Venceu', death: 'Desmaiou', quit: 'Desistiu' },
     /** End of a run: where the player stands now. */
@@ -450,6 +458,9 @@ export const pt = {
     challengePractice: 'Treino: sua tentativa oficial de hoje já foi.',
     challengePracticePlace: (rank: number, total: number) => `Treino · sua tentativa oficial: #${rank} de ${total}`,
     challengeGuest: 'Treino local: entre com uma conta para entrar no ranking do desafio.',
+    /** The boards' two sides (`RunMode`): the regular runs and the Legend mode's (a legend played). */
+    modes: { standard: 'Padrão', legend: 'Lendário' },
+    legendGroup: 'Lendários',
   },
 
   /** Public profiles and the profile editor. */
@@ -462,6 +473,8 @@ export const pt = {
     brought: (n: number) => (n === 1 ? '1 amigo trazido' : `${n} amigos trazidos`),
     followGuest: 'Entre com uma conta para seguir treinadores.',
     records: 'Recordes',
+    /** The Legend mode's records, under the regular ones (only when there's one). */
+    legendRecords: 'Recordes no Modo Lendário',
     noRecord: '—',
     dex: 'Pokédex',
     dexLine: (caught: number, seen: number, total: number) => `${caught}/${total} capturados · ${seen} vistos`,
@@ -849,6 +862,7 @@ export const pt = {
     codeErrors: { format: 'O código tem o formato PS-XXXX-XXXX.', unknown: 'Esse código não existe.', used: 'Esse código já foi usado.', offline: 'Sem conexão. Tente de novo.' },
 
     wallEmpty: 'Ainda ninguém por aqui. Seu nome pode ser o primeiro!',
+    offWall: (total: number) => `${total} apoiadores ao todo. Alguns preferem ficar fora do mural.`,
 
     credits: 'Obrigado aos treinadores que mantêm o jogo no ar',
     banner: 'Seu shiny te espera!',
@@ -1021,6 +1035,7 @@ export const pt = {
       alakazam: 'cada especial também dispara 2 dos seus golpes (como o Metronome), recargas −15% e golpes +10%. O especial vira Psystrike.',
       gengar: 'inimigos a até 90 px perdem 45% da velocidade, golpes +25% e recargas −10%. O especial vira Poltergeist.',
       dragonite: 'recebe 25% menos dano, golpes +25% e velocidade +6. O especial vira Hurricane.',
+      mewtwoY: 'golpes +40%, recargas −15% e área +15%. O especial vira Psystrike.',
       meganium: 'HP +40, regenera 2 HP/s e golpes Planta e Fada +30%. O especial vira Solar Beam.',
       feraligatr: 'golpes Dragão +35%, golpes Água +20%, golpes +25% e defesa +1. O especial vira Wave Crash, uma investida em cadeia.',
       tyranitar: 'levanta uma tempestade de areia (fora das fendas) que desgasta a horda e não afeta o Tyranitar. HP +60, defesa +3 e golpes +20%. O especial vira Stone Edge.',
@@ -1030,6 +1045,8 @@ export const pt = {
       gardevoir: 'golpes Normal e Fada +30%, golpes +15% e regenera 1,5 HP/s. O especial vira Moonblast.',
       gallade: 'golpes +30%, golpes Lutador +25% e velocidade +8. A investida em cadeia salta até 6 vezes e cada pouso solta um anel de Aura Spheres.',
       metagross: 'golpes +30%, defesa +2 e velocidade +6. O especial vira Meteor Mash.',
+      latias: 'recebe 15% menos dano, HP +30 e golpes +25%. O especial vira Scale Shot.',
+      latios: 'golpes +35%, velocidade +8 e projéteis 20% mais rápidos. O especial vira Dragon Claw.',
       staraptor: 'golpes +30% e velocidade +10. A investida em cadeia vira Sky Attack e cada pouso solta um anel de lâminas de vento.',
       garchomp: 'golpes +30%, golpes Terra, Pedra e Aço +30% e defesa +1. O especial vira Earth Power.',
       garchompZ: 'velocidade +14, recargas −15% e golpes +15%. O especial vira Scale Shot.',
@@ -1214,6 +1231,11 @@ export const pt = {
     insomnia: 'Velocidade +5 e regenera 0,3 HP/s.',
     innerFocus: 'Cada nocaute do especial adianta a recarga dele em 0,25\u00a0s.',
     stanceChange: 'O especial troca entre a Forma Escudo e a Forma Lâmina.',
+    pressure: 'Inimigos a até 64 px perdem 20% da velocidade.',
+    regenerator: 'A cada 8 s, cura 5% do HP máximo.',
+    drizzle: 'Chama a chuva ao começar e a cada bioma novo (fora das fendas): Água ×1,5.',
+    airLock: 'O clima não fortalece os inimigos nem te desgasta, e os ataques do mundo não te atingem.',
+    multitype: 'Seu tipo muda com o bioma, e golpes desse tipo causam +20%.',
   } satisfies Record<AbilityId, string>,
 
   /** Biomes and weather: banners, toasts and the HUD weather icon. */
@@ -1328,6 +1350,7 @@ export const pt = {
     enter: (name: string) => `A fenda leva você até *${name}*!`,
     enterShiny: (name: string) => `A fenda leva você até um *${name}* _shiny_!`,
     cleared: (name: string) => `*${name}* derrotado! A fenda deixa um tesouro.`,
+    pairCleared: (a: string, b: string) => `*${a}* e *${b}* derrotados! A fenda deixa um tesouro.`,
     collapse: 'A fenda colapsou! Você foi jogado de volta.',
     fall: (name: string) => `*${name}* derrotou você! A fenda está te expulsando…`,
     fallen: 'Você voltou à *dimensão normal*. A corrida continua!',
@@ -1345,6 +1368,156 @@ export const pt = {
     overtime: 'Tempo extra',
     legends: 'Lendários',
     reaperDefeated: (n: number) => (n === 1 ? 'Arceus derrotado!' : `Arceus derrotado ${n}x!`),
+    /** Epic rifts (`data/domains.ts`): the omen, the way through a domain, its legendary's phases and the capture. */
+    omen: (name: string) => `*${name}* está despertando! Uma fenda vai se abrir.`,
+    omenFaint: 'Uma energia *lendária* se agita… Uma fenda vai se abrir.',
+    enterDomain: (place: string) => `Você entrou em *${place}*!`,
+    hudCrossing: 'Avance!',
+    escaped: (name: string) => `*${name}* escapou da Poké Ball!`,
+    caught: (name: string) => `*${name}* foi capturado!`,
+    /** Rayquaza's omen after Kyogre's or Groudon's rift this run: its Air Lock ends their weather. */
+    calms: (name: string) => `O vento silencia o que restava da fúria de *${name}*.`,
+    /** Per legendary: its domain's name, its epithet on the title card, its omen, the crossing's warning and a line per phase after the first. */
+    domains: {
+      kyogre: {
+        place: 'Caverna do Fundo do Mar',
+        epithet: 'Senhor dos Mares',
+        omen: 'Uma chuva torrencial cai do nada…',
+        crossing: 'A maré está subindo! Avance pela caverna!',
+        phases: ['A caverna inunda! Fique nas ilhas para escapar do Surf.', 'Kyogre volta à *forma Primal*! Cuidado com o Origin Pulse!'],
+      },
+      groudon: {
+        place: 'Caverna de Magma',
+        epithet: 'Senhor da Terra',
+        omen: 'O sol arde sem piedade e a terra racha…',
+        crossing: 'O túnel está desabando e a lava vem atrás! Corra!',
+        phases: ['A lava sobe e divide a câmara! Atravesse pelas pedras frias.', 'Groudon volta à *forma Primal*! Cuidado com as Precipice Blades!'],
+      },
+      rayquaza: {
+        place: 'Pilar Celeste',
+        epithet: 'Senhor dos Céus',
+        omen: 'Um vendaval varre o céu e acalma todo o clima…',
+        crossing: 'Os andares desabam atrás de você! Suba o Pilar!',
+        phases: ['O teto se parte e cai no céu! Cuidado com as bordas.', 'Rayquaza *Mega Evolui*! Cuidado com o Dragon Ascent!'],
+      },
+      lugia: {
+        place: 'Ilhas Redemoinho',
+        epithet: 'Guardião dos Mares',
+        omen: 'Uma tempestade se forma no horizonte…',
+        crossing: 'A tempestade avança! Atravesse as ilhas e fuja dos redemoinhos!',
+        phases: ['O mar sobe! Saia dos redemoinhos e cuidado com o Hurricane.', 'Lugia levanta voo! Fuja das rajadas que caem do céu.'],
+      },
+      hoOh: {
+        place: 'Torre do Sino',
+        epithet: 'Fênix do Arco-Íris',
+        omen: 'Um arco-íris corta o céu e brasas começam a cair…',
+        crossing: 'A torre está em chamas! Suba andar por andar!',
+        phases: ['Ho-Oh levanta voo! Desvie dos rastros de fogo e do Brave Bird.', 'Ho-Oh *renasce das cinzas*! A beirada do telhado arde.'],
+      },
+      dialga: {
+        place: 'Pilar Lança',
+        epithet: 'Senhor do Tempo',
+        omen: 'O tempo começa a tropeçar…',
+        crossing: 'O tempo está se desfazendo! Avance pelo Pilar Lança!',
+        phases: ['O tempo se distorce! No Roar of Time, seus golpes congelam no ar.', 'O tempo acelera! Dialga fica cada vez mais rápido.'],
+        cues: { stop: 'O tempo parou!', forward: 'O tempo saltou para frente!', rewind: 'O tempo voltou!' },
+      },
+      latias: {
+        place: 'Ilha do Sul',
+        epithet: 'Dupla Eon',
+        omen: 'Uma névoa de sonho cobre tudo…',
+        crossing: 'O sonho está se desfazendo! Avance pelo jardim antes que a névoa te engula!',
+        phases: ['O sonho se desfaz e o mar invade a ilha! Cuidado com as miragens.', 'Latias e Latios *Mega Evoluem*! Abrigue-se na névoa de Latias quando o Draco Meteor cair!'],
+      },
+      deoxys: {
+        place: 'Meteoro à Deriva',
+        epithet: 'Visitante das Estrelas',
+        omen: 'Uma chuva de meteoros risca o céu…',
+        crossing: 'O meteoro está se partindo! Avance antes que o vazio te alcance!',
+        phases: ['Deoxys muda para a *Forma Ataque*! Frágil, mas mortal.', 'Deoxys muda para a *Forma Defesa*! Derrube os guardiões para quebrar a barreira.', 'Deoxys muda para a *Forma Velocidade*! Não pare de se mexer.'],
+      },
+    } satisfies Partial<Record<RiftLegend, DomainLines>>,
+    /** A pair fighting as one (Latias and Latios), and a boss's barrier (Deoxys's Defense Forme). */
+    pairName: (a: string, b: string) => `${a} & ${b}`,
+    pairDown: (down: string, survivor: string) => `*${down}* caiu! *${survivor}* ficou furioso: derrube-o antes que ele cure o parceiro!`,
+    pairRevive: (healer: string, revived: string) => `*${healer}* trouxe *${revived}* de volta!`,
+    guardUp: (name: string) => `*${name}* ergueu uma barreira! Derrube os guardiões para quebrá-la.`,
+    guardDown: 'A barreira se quebrou!',
+  },
+
+  /** Places: the cave, the graveyard and the sky (`data/places.ts`), their entrances on the map and what goes on inside. */
+  landmarks: {
+    /** The sign that slides in when a landmark comes close, as the games name a place. */
+    names: { cottage: 'Casa Abandonada', tunnel: 'Túnel da Mina', maze: 'Labirinto de Sebes', ruins: 'Ruínas Unown', camp: 'Acampamento Abandonado' } satisfies Record<LandmarkId, string>,
+    /** A line under the name: what's there to do. */
+    hints: {
+      cottage: 'Alguém deixou um caixote lá dentro…',
+      tunnel: 'Entre por uma boca e saia pela outra.',
+      maze: 'Há um baú no coração do labirinto.',
+      ruins: 'O altar espera em silêncio.',
+      camp: 'Uma mochila esquecida perto da fogueira.',
+    } satisfies Record<LandmarkId, string>,
+    loot: {
+      cottage: 'Você vasculhou o caixote velho!',
+      maze: 'Você chegou ao coração do labirinto!',
+      ruins: 'Os glifos Unown brilham!',
+      camp: 'Você abriu a mochila esquecida!',
+    } satisfies Record<TreasureLandmark, string>,
+    tunnelOut: 'Você saiu do outro lado do túnel!',
+  },
+  places: {
+    names: { cave: 'Caverna Escura', graveyard: 'Cemitério Assombrado', sky: 'Acima das Nuvens' } satisfies Record<PlaceId, string>,
+    /** Short names for the HUD's pill while an entrance is open. */
+    hudNames: { cave: 'Caverna', graveyard: 'Cemitério', sky: 'Corrente' } satisfies Record<PlaceId, string>,
+    open: {
+      cave: 'A entrada de uma *caverna* apareceu! Siga a seta.',
+      graveyard: 'Um *cemitério* surgiu na névoa! Siga a seta.',
+      sky: 'Uma *corrente de ar* sobe para o céu! Siga a seta e voe.',
+    } satisfies Record<PlaceId, string>,
+    sealed: {
+      cave: 'Pedras desabaram na entrada da caverna.',
+      graveyard: 'O portão do cemitério se fechou.',
+      sky: 'A corrente de ar se desfez.',
+    } satisfies Record<PlaceId, string>,
+    blocked: 'Só um Pokémon do tipo *Voador* consegue subir nessa corrente de ar.',
+    /** What to do, shown on the way in. */
+    goal: {
+      cave: 'Ache as escadas no escuro e desça até o *tesouro*!',
+      graveyard: 'Cada fantasma derrotado desperta a *Pedra Peculiar*…',
+      sky: 'Pegue as *asas* que o vento traz antes que ele acalme!',
+    } satisfies Record<PlaceId, string>,
+    /** A dungeon floor, as Mystery Dungeon names them (B1F). */
+    floor: (n: number) => `B${n}F`,
+    /** The wind's three warnings, then the gust. */
+    wind: ['Algo está se agitando…', 'Está chegando mais perto!', 'Está bem aqui! O vento está fortíssimo!'],
+    blownOut: 'Uma rajada de vento soprou você para fora da caverna!',
+    monsterHouse: 'É uma *Casa de Monstros*!',
+    treasure: (coins: string) => `Tesouro aberto: *${coins}*, itens e uma Poké Ball!`,
+    keystone: 'A *Pedra Peculiar* rachou e *Spiritomb* despertou!',
+    keystoneShiny: 'A *Pedra Peculiar* rachou e um *Spiritomb* _shiny_ despertou!',
+    spiritomb: '*Spiritomb* derrotado! Os espíritos descansam em paz.',
+    dawnSoon: 'O dia está nascendo…',
+    dawn: 'O sol nasceu e os fantasmas sumiram.',
+    calmSoon: 'O vento está acalmando…',
+    landed: (n: number) => (n === 0 ? 'O vento acalmou e você planou de volta.' : `O vento acalmou. Você voltou com ${n === 1 ? '1 asa' : `${n} asas`}!`),
+    /** What each wing gives, `n` from `WINGS`. */
+    wings: {
+      healthWing: (n: number) => `+${n} de HP máximo`,
+      muscleWing: (n: number) => `+${n}% de dano`,
+      resistWing: (n: number) => `+${n} de defesa`,
+      swiftWing: (n: number) => `+${n} de velocidade`,
+      prettyWing: (n: number) => `vale ₽${n}`,
+    } satisfies Record<WingId, (n: number) => string>,
+    hudOpen: (name: string, time: string) => `${name} ${time}`,
+    hudCave: (floor: string, time: string) => `${floor} · vento ${time}`,
+    hudSpirits: (n: number, of: number, time: string) => `Espíritos ${n}/${of} · ${time}`,
+    hudDawn: (time: string) => `Amanhecer ${time}`,
+    hudSky: (n: number, time: string) => `Asas ${n} · ${time}`,
+    /** The results' row of places cleared this run. */
+    results: 'Lugares',
+    /** Fainting inside: a rescue brings the player back out instead of ending the run. */
+    fall: 'Você desmaiou! Uma *equipe de resgate* está a caminho…',
+    rescued: 'Você foi resgatado e voltou ao mapa. A corrida continua!',
   },
 
   types: {
@@ -1461,6 +1634,10 @@ export const pt = {
       shinyHatch: 'Ninhada brilhante',
       rift1: 'Desbravador de fendas',
       rift25: 'Viajante das fendas',
+      place1: 'Fora da trilha',
+      place25: 'Aventureiro',
+      landmark1: 'Bisbilhoteiro',
+      landmark50: 'Caçador de tesouros',
       mega1: 'Laço Mega',
       mega25: 'Mestre Mega',
       alpha1: 'Primeiro Alfa',
@@ -1468,6 +1645,7 @@ export const pt = {
       alpha100: 'Caçador de Alfas',
       legends: 'Domador de Lendas',
       shinyLegend: 'Lenda brilhante',
+      explorer: 'Explorador',
       champion: 'Campeão',
       wins10: 'Dinastia',
       trio: 'Trio inicial',
@@ -1496,6 +1674,7 @@ export const pt = {
       starterLines: 'Professor Pokémon',
       shinyHatch: 'Criador de Shinies',
       legends: 'Domador de Lendas',
+      explorer: 'Explorador(a)',
       champion: 'Campeão',
       regions: 'Mestre das Regiões',
       reaperDown: 'Lenda Viva',
@@ -1533,6 +1712,9 @@ export const pt = {
       shinyHatches: () => 'Choque um Pokémon shiny (1 em 100)',
       megas: (n: string) => (n === '1' ? 'Mega Evolua uma vez' : `Mega Evolua ${n} vezes`),
       alphaKills: (n: string) => (n === '1' ? 'Derrote um Pokémon Alfa' : `Derrote ${n} Pokémon Alfa`),
+      placeClears: (n: string) => (n === '1' ? 'Conclua um lugar: o tesouro da caverna, Spiritomb ou um voo com asas' : `Conclua ${n} lugares`),
+      landmarks: (n: string) => (n === '1' ? 'Abra um tesouro escondido no mapa: na casa abandonada, no labirinto, nas ruínas ou no acampamento' : `Abra ${n} tesouros escondidos no mapa`),
+      places: (n: string) => `Conclua os ${n} lugares: o tesouro da caverna, Spiritomb no cemitério e um voo acima das nuvens`,
     } satisfies Record<AchievementStat, (n: string) => string>,
     region: (name: string) => `Vença o Mewtwo com um inicial de ${name}`,
   },
@@ -3687,6 +3869,106 @@ export const pt = {
         'Recarga 0.3s mais rápida e +6 de dano',
       ],
     },
+    /* Legendary moves, second batch: the trios, Mewtwo and Arceus (`legendaryMoves2.ts`) */
+    snowscape: {
+      description: 'As asas de Articuno lançam um floco de neve de cristais de gelo ao seu redor. Eles ficam pairando e gelam quem encosta (fica lento), depois estilhaçam todos juntos e podem congelar (o próximo acerto dói em dobro).',
+      upgrades: [
+        '+10 de dano',
+        '+2 braços de cristais',
+        { fork: [{ name: 'Nevasca', desc: 'Cada lançamento se repete pela metade; +20% de área e +20% de chance de congelar' }, { name: 'Gelo eterno', desc: 'Quem cai explode; +14 de dano' }] },
+        'Recarga 0.5s mais rápida e +10 de dano',
+      ],
+    },
+    electricTerrain: {
+      description: 'Zapdos eletrifica o chão ao seu redor: um campo que estala e vai com você, e a cada instante um raio cai num inimigo dentro dele. Pode paralisar.',
+      upgrades: [
+        '+7 de dano',
+        '+20% de área e o campo dura +0.4s',
+        { fork: [{ name: 'Tempestade', desc: '+1 raio por vez; -4 de dano' }, { name: 'Raio em cadeia', desc: 'Acertos soltam faíscas nos vizinhos; +8 de dano' }] },
+        'Recarga 0.6s mais rápida e +7 de dano',
+      ],
+    },
+    overheat: {
+      description: 'O calor de Moltres vai subindo: dois lançamentos atiram leques de penas em chamas, e o terceiro superaquece numa explosão de fogo ao seu redor que queima tudo o que alcança.',
+      upgrades: [
+        '+8 de dano',
+        '+2 penas',
+        { fork: [{ name: 'Supernova', desc: 'Quem cai explode; +25% de área' }, { name: 'Rastro de brasas', desc: 'As penas deixam fogo no chão; recarga 0.2s mais rápida' }] },
+        'Recarga 0.3s mais rápida e +6 de dano',
+      ],
+    },
+    thunderclap: {
+      description: 'O raio de Raikou salta de inimigo em inimigo mais rápido que o olho, e o último leva um trovão que sacode a multidão ao redor. Pode paralisar.',
+      upgrades: [
+        '+13 de dano',
+        '+2 saltos e +10% de área',
+        { fork: [{ name: 'Velocidade do raio', desc: '+4 saltos e +4 de dano' }, { name: 'Trovão final', desc: 'Quem cai explode; +16 de dano' }] },
+        'Recarga 0.5s mais rápida e +13 de dano',
+      ],
+    },
+    burningBulwark: {
+      description: 'A carapaça vulcânica de Entei envolve você: bloqueia o próximo golpe e queima quem encosta. Quando quebra ou acaba, entra em erupção em dois anéis de magma.',
+      upgrades: [
+        '+18 de dano',
+        'Carapaça dura +0.5s e +15% de área',
+        { fork: [{ name: 'Vulcão', desc: '+4 gêiseres por anel' }, { name: 'Magma vivo', desc: 'Quem cai explode; +20 de dano' }] },
+        'Recarga 0.7s mais rápida e +18 de dano',
+      ],
+    },
+    aquaRing: {
+      description: 'Suicune corre em espiral para fora de você no vento norte, varrendo os inimigos. A água pura em que pisa vira um anel que os empurra para longe e cura você um pouco.',
+      upgrades: [
+        '+8 de dano',
+        '+15% de área e o anel dura +0.6s',
+        { fork: [{ name: 'Vento norte', desc: 'Cada lançamento se repete pela metade; +4 trechos de anel e dura +1s' }, { name: 'Água purificada', desc: 'Acertos curam mais; +10 de dano' }] },
+        'Recarga 0.6s mais rápida e +8 de dano',
+      ],
+    },
+    rockWrecker: {
+      description: 'Regirock arremessa uma rocha colossal sobre a maior multidão: ela cai com um tremor e segue rolando por cima deles.',
+      upgrades: [
+        '+22 de dano',
+        '+20% de área',
+        { fork: [{ name: 'Avalanche', desc: '+1 rocha; -10 de dano' }, { name: 'Rocha demolidora', desc: 'Quem cai explode; +26 de dano e rola +0.4s' }] },
+        'Recarga 0.5s mais rápida e +22 de dano',
+      ],
+    },
+    glaciate: {
+      description: 'O frio de Regice se espalha numa cúpula de ar congelado ao seu redor, deixando lento quem está dentro. Então cai ao zero absoluto: tudo dentro estilhaça, inimigos comuns quase sem vida se partem na hora, e pode congelar.',
+      upgrades: [
+        '+22 de dano',
+        '+15% de área',
+        { fork: [{ name: 'Zero absoluto', desc: 'Recarga 0.6s mais rápida e +20% de chance de congelar' }, { name: 'Gelo estilhaçado', desc: 'Quem cai explode; +26 de dano' }] },
+        'Recarga 0.6s mais rápida e +22 de dano',
+      ],
+    },
+    metalBurst: {
+      description: 'A Iron Defense de Registeel endurece você (cada golpe que leva perde 2 de dano), e o aço explode de você numa onda e num anel de estilhaços. Cada golpe que você levou desde o último deixa a explosão mais forte.',
+      upgrades: [
+        '+15 de dano',
+        '+4 estilhaços',
+        { fork: [{ name: 'Muralha de ferro', desc: 'Defesa dobrada, dura +1.2s e +2 estilhaços' }, { name: 'Aço carregado', desc: 'Acertos soltam faíscas nos vizinhos; +16 de dano' }] },
+        'Recarga 0.5s mais rápida e +15 de dano',
+      ],
+    },
+    telekinesis: {
+      description: 'A mente de Mewtwo agarra os inimigos mais próximos e os ergue do chão, parados. Depois os arremessa contra a multidão: batem em quem estiver no caminho, e o golpe dói em dobro. Chefes não voam, mas são esmagados.',
+      upgrades: [
+        '+12 de dano',
+        '+2 inimigos erguidos',
+        { fork: [{ name: 'Mente sem limites', desc: '+3 inimigos erguidos; -8 de dano' }, { name: 'Arremesso fatal', desc: 'Quem cai explode; +14 de dano' }] },
+        'Recarga 0.4s mais rápida e +12 de dano',
+      ],
+    },
+    judgment: {
+      description: 'A roda dourada de Arceus gira sobre você e cada placa dispara uma lança de luz que atravessa os inimigos. Multitype: o tipo segue a terra (Planta na Rota 1, Inseto na Floresta de Viridian, Pedra no Monte Moon, Gelo no Monte Prateado, Fantasma na Torre de Lavender).',
+      upgrades: [
+        '+15 de dano',
+        '+2 lanças',
+        { fork: [{ name: 'Juízo duplo', desc: 'Cada lançamento se repete pela metade; +25% de área' }, { name: 'Juízo final', desc: 'Dano extra em elites e chefes; +18 de dano' }] },
+        'Recarga 0.4s mais rápida e +15 de dano',
+      ],
+    },
   },
 
   items: {
@@ -3835,6 +4117,29 @@ export const pt = {
     feebas: 'O mais sem graça. Até virar o mais belo.',
     deino: 'Mordedor cego. Bate forte e, com três cabeças, atira mais.',
     munchlax: 'Tanque guloso. Muita vida, defesa e regeneração; puxa os itens de longe.',
+    articuno: 'Ave do gelo. Golpes amplos; o frio deixa os inimigos lentos.',
+    zapdos: 'Ave do trovão. Rápido, e quem o toca fica paralisado.',
+    moltres: 'Ave do fogo. Muito dano, e quem o toca se queima.',
+    raikou: 'Raio veloz. O mais rápido das feras.',
+    entei: 'Vulcão vivo. Forte e resistente.',
+    suicune: 'Vento do norte. Regenera e desvia com graça.',
+    regirock: 'Titã de rocha. Defesa máxima, passo lento.',
+    regice: 'Titã de gelo. Golpes largos e casca grossa.',
+    registeel: 'Titã de aço. A maior armadura de todas.',
+    mew: 'Ancestral. Aprende de tudo e cresce rápido.',
+    celebi: 'Guardião do tempo. Regenera sem parar.',
+    jirachi: 'Realiza desejos. Cartas raras e mais ₽.',
+    mewtwo: 'O mais forte. Dano psíquico devastador.',
+    lugia: 'Guardião dos mares. Quase intocável com vida cheia.',
+    hoOh: 'Arco-íris. Fogo sagrado e cura constante.',
+    kyogre: 'Senhor dos mares. Traz a chuva; vira Primal.',
+    groudon: 'Senhor da terra. Traz o sol; vira Primal.',
+    rayquaza: 'Senhor do céu. O clima não o toca; vira Mega.',
+    dialga: 'Senhor do tempo. Blindado e implacável.',
+    latias: 'Eon veloz. Flutua sobre lava e armadilhas.',
+    latios: 'Eon certeiro. Rápido e letal à distância.',
+    deoxys: 'Vírus do espaço. O especial troca de Forma.',
+    arceus: 'O deus. Seu tipo muda com cada bioma.',
   },
 
   specials: {
@@ -3862,6 +4167,7 @@ export const pt = {
     braveBird: 'Mergulha no inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
     ironHead: 'Avança com a lâmina até o inimigo mais próximo. Aperte de novo logo após acertar para saltar ao próximo.',
     stanceChange: 'Alterna entre a Forma Escudo (−30% de dano recebido, golpes ×0,7) e a Forma Lâmina (golpes ×1,3, +10% de dano recebido).',
+    formeChange: 'Alterna entre as Formas Normal, Ataque (golpes ×1,35, +25% de dano recebido), Defesa (−40% de dano recebido, golpes ×0,75) e Velocidade (+35% de velocidade).',
     dragonFlare: 'Investida longa em chamas azuis de dragão, com rastro de fogo e explosão no fim.',
     psystrike: 'Três ondas psíquicas enormes ao redor que empurram e desaceleram.',
     poltergeist: 'Anel de 24 projéteis sombrios para todos os lados, que podem paralisar.',
@@ -3962,6 +4268,80 @@ export const pt = {
   /** Explainer toast the first time the world strikes at the player in a run (`game/hazards.ts`). */
   hazards: {
     intro: '*O mundo ataca!* O chão marca onde você está e cai em seguida: _não fique parado_.',
+  },
+  /** The Legend mode in a run (`game/legend.ts`): awakenings, the innate, the Clone. Pokémon names stay English. */
+  legend: {
+    mode: 'Modo Lendário',
+    awakening: (name: string) => `${name} está despertando!`,
+    awakened: (name: string) => `${name} despertou! Seu poder cresceu.`,
+    awakenedForm: (from: string, to: string) => `${from} despertou como *${to}*!`,
+    /** The tag on the innate (always on, besides the Ability picked at the first awakening). */
+    innate: 'Inata',
+    /** What a legend's innate adds in this mode beyond its ability's own text (`abilities`). */
+    innateExtra: {
+      articuno: 'O frio das asas deixa lentos os inimigos por perto.',
+      jirachi: 'Cartas raras e brilhantes saem com mais frequência.',
+    } satisfies Partial<Record<LegendId, string>>,
+    /** A boss of the player's own species (Mewtwo's finale for a Mewtwo). */
+    clone: (name: string) => `${name} Clone`,
+    /* Capturing legends (`game/capture.ts`, `ui/capture.ts`): the toasts as one falls, and the partner select's Lendários tab. */
+    escaped: (name: string, wins: number, need: number) => `*${name}* escapou… _${wins}/${need}_`,
+    escapedHint: (left: number) => (left === 1 ? 'Falta 1 vitória para a captura.' : `Faltam ${left} vitórias para a captura.`),
+    /** Arceus before it can count: the endless mode, after the other legends (`left` still to capture). */
+    arceusHint: (left: number) => (left > 0 ? `Só se deixa capturar no modo sem fim, depois dos outros lendários (faltam ${left}).` : 'Só se deixa capturar no modo sem fim.'),
+    caught: (name: string) => `*${name}* capturado! Jogável no _Modo Lendário_.`,
+    caughtShiny: (name: string) => `*${name}* _shiny_ capturado! Jogável no _Modo Lendário_.`,
+    shinyUnlocked: (name: string) => `*${name}* _shiny_ liberado no _Modo Lendário_!`,
+    caughtHint: 'Escolha-o na aba Lendários da seleção de parceiro.',
+    tab: 'LENDÁRIOS',
+    wins: (n: string) => `Vitórias: ${n}`,
+    lockedButton: 'Não capturado',
+    /** Where each legend is beaten (`LegendSource`). */
+    where: {
+      rift: 'Espera numa _fenda lendária_: entre no portal e vença-o lá dentro.',
+      trio: 'Vem como chefe com o _trio lendário_ sorteado na partida.',
+      mythical: 'Às vezes (1 partida em 10) aparece junto do *Mewtwo* no final.',
+      finale: 'É o chefe final: vença uma partida.',
+      endless: 'O último troféu: depois de capturar os outros 22, vença-o no _modo sem fim_.',
+    },
+    rule: (need: number) => (need === 1 ? 'Para capturar, vença este lendário 1 vez como chefe, em qualquer modo.' : `Para capturar, vença este lendário ${need} vezes como chefe, em qualquer modo.`),
+    shinyRule: 'Vencer um shiny na vitória da captura, ou depois, libera a forma shiny.',
+    selectNote: 'Lendários jogam o *Modo Lendário*: ranking próprio, horda mais forte, despertares no Nv 12 e 28.',
+  },
+  /** Wave legendaries on the map (`data/legendBosses.ts`): the epithet on each one's title card, and a line per phase after the first. */
+  legends: {
+    epithets: {
+      articuno: 'Ave do Gelo Eterno',
+      zapdos: 'Senhor do Trovão',
+      moltres: 'Chama Imortal',
+      raikou: 'Fera do Raio',
+      entei: 'Fera dos Vulcões',
+      suicune: 'Vento do Norte',
+      regirock: 'Colosso de Pedra',
+      regice: 'Colosso de Gelo',
+      registeel: 'Colosso de Aço',
+      mew: 'Ancestral de Todos',
+      celebi: 'Viajante do Tempo',
+      jirachi: 'Estrela dos Desejos',
+      mewtwo: 'Fúria Genética',
+      arceus: 'O Primeiro de Todos',
+    } satisfies Record<WaveLegend, string>,
+    phases: {
+      articuno: ['*Articuno* alça voo! Fuja da _sombra_ dele.', 'Uma nevasca! Corra para um _abrigo de neve_ antes do Snowscape.'],
+      zapdos: ['*Zapdos* investe com Drill Peck: saia da _faixa marcada_!', 'O chão se eletrifica! _Fuja de perto_ do Zapdos no Electric Terrain.'],
+      moltres: ['*Moltres* alça voo! A _sombra_ dele queima.', 'O ar ferve! Só _colado no Moltres_ você escapa do Overheat.'],
+      raikou: ['*Raikou* dispara com Extreme Speed: saia das _faixas_!', 'Thunderclap! Ache o _vão entre as lanças_.'],
+      entei: ['*Entei* investe em chamas: saia da _faixa_!', 'Burning Bulwark! Preso no fogo, _desvie dentro do círculo_.'],
+      suicune: ['*Suicune* desliza sobre o campo: saia da _faixa_!', 'Aqua Ring! Os anéis fecham: saia pela _abertura_.'],
+      regirock: ['*Regirock* prende você em Rock Tomb!', 'Rock Wrecker! Saia da _linha de mira_ das rochas.'],
+      regice: ['*Regice* fecha anéis de Icy Wind: ache a _saída_!', 'Glaciate! _Fuja_ do gelo perto dele, depois _volte_ para perto.'],
+      registeel: ['*Registeel* investe com Iron Head: saia da _faixa_!', 'Metal Burst! Ache o _vão entre as lanças_.'],
+      mew: ['*Mew* se teleporta para cima de você: fuja do _círculo_!', 'Ancient Power! As pedras fecham: saia pela _abertura_.'],
+      celebi: ['*Celebi* viaja no tempo e foge de você!', 'Magical Leaf! As folhas te seguem: _mude de direção_.'],
+      jirachi: ['*Jirachi* se teleporta para cima de você: fuja do _círculo_!', 'Wish! Uma chuva de estrelas: ache os _vãos_.'],
+      mewtwo: ['*Mewtwo* libera o poder psíquico! Fuja do _círculo_ do Teleport.', 'Psystrike! Passe pelos _vãos_ e corra para um _abrigo_.'],
+      arceus: ['*Arceus* se teleporta para julgar você!', 'Judgment! Só os _abrigos de luz_ te salvam.'],
+    } satisfies Record<WaveLegend, readonly [string, string]>,
   },
 } satisfies ContentTexts & Record<string, unknown>
 

@@ -16,7 +16,13 @@ import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
 import { bodyOf } from './data/bodies'
 import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
-import { RIFT, RIFT_LEGENDS } from './data/rifts'
+import { isRiftLegend, RIFT, RIFT_LEGENDS } from './data/rifts'
+import { domainTheme } from './game/domain'
+import { partnerOf } from './data/domains'
+import { captureOutcome, setCaptureOutcome } from './render/capture'
+import { captureOutcome as savedCapture } from './game/capture'
+import { domainLines } from './ui/riftTitle'
+import { isWaveLegend, LEGEND_THEME } from './data/legendBosses'
 import { ENEMIES, type EnemyDef, type EnemyId } from './data/enemies'
 import { ITEMS } from './data/items'
 import type { AchievementId } from './data/achievements'
@@ -50,7 +56,14 @@ import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
 import { ENDLESS, REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
+import { legendDevTools } from './game/legendDev'
+import { bankCapture, captureDevTools, showCapture } from './ui/capture'
 import { riftDevTools } from './game/riftDev'
+import { placeDevTools } from './game/placeDev'
+import { placeFeedback } from './ui/places'
+import { landmarkFeedback } from './ui/landmarks'
+import { PLACES } from './data/places'
+import { placeSchedule } from './game/place'
 import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
@@ -66,11 +79,12 @@ import { CURSES } from './data/curses'
 import { CAST_SFX } from './ui/castSfx'
 import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
+import type { LandmarkId } from './data/landmarks'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
 import { runEarnings, wonRun } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
-import { parseHandle, rankable, runResult } from './game/ranking'
+import { parseHandle, rankable, runMode, runResult } from './game/ranking'
 import { rosterSchedule, type Roster } from './game/roster'
 import { parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesStanding, runRoster, startGame, startRecording, TICK, type Recorder, type ReplayStart } from './game/replay'
 import { gameSpecial } from './game/special'
@@ -132,6 +146,8 @@ const STEP = TICK
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!
 const ui = document.querySelector<HTMLDivElement>('#ui')!
+// A capture scene's ball clicks shut once the save holds the legend captured (its win is banked the frame it falls).
+setCaptureOutcome((legend) => savedCapture(loadSave(), legend))
 const ctx = context2d(canvas)
 /** Invisible box CSS puts where the fixed joystick sits (corner, safe area); the stick is centered on it. */
 const stickAnchor = h('div', { class: 'stick-anchor', 'aria-hidden': 'true' })
@@ -331,7 +347,7 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       // Closing rebuilds the title, so a sign in's merged save shows up on the Trainer chip.
       trainer: (focus) =>
         trainerCardScreen(ui, input, { supporters: (back) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: back }, null) }, () => showTitle({ focus })),
-      ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty }) : undefined,
+      ranking: rankingEnabled ? (focus) => rankingScreen(ui, input, () => showTitle({ focus }), { difficulty: loadSave().difficulty, mode: runMode(loadSave().partner) }) : undefined,
       ideas: rankingEnabled ? (focus) => suggestionsScreen(ui, input, () => showTitle({ focus })) : undefined,
       supporters: (focus, open) => supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, open),
       invites: (focus) => invitesScreen(ui, input, () => showTitle({ focus })),
@@ -521,6 +537,7 @@ const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | nul
   track('run_end', {
     starter: g.starter,
     difficulty: g.difficulty,
+    mode: runMode(g.starter),
     outcome: g.endless ? 'endless' : g.phase === 'victory' || g.phase === 'gameover' ? g.phase : 'quit',
     minute: Math.floor(g.time / 60),
     level: p.level,
@@ -596,12 +613,13 @@ const prefetchRun = (day: DayKey | null = null) =>
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper.
+ * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper
+ * (the places' dwellers come from `placeSchedule`).
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
   { dex: TOGEPI_DEX, at: FIELD.first },
-  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.firstAt })),
+  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.slots[0] - RIFT.omenTime })),
   { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
 ]
 
@@ -688,9 +706,11 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   }
   // The crash watch holds the run from now on (`bugReport.ts`).
   syncRunWatch()
-  track('run_start', { starter, difficulty: game.difficulty, ...challengeKind(run.challenge) })
+  track('run_start', { starter, difficulty: game.difficulty, mode: runMode(starter), ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
-  const later = [...rosterSchedule(plan.roster).filter((s) => s.at > 0), ...EXTRAS].sort((a, b) => a.at - b.at)
+  const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
+  // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
+  const later = [...rosterSchedule(game.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
   void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
@@ -806,7 +826,7 @@ const syncOverlay = (r: Run) => {
           eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
           ranking: rankingEnabled
-            ? { panel: rankPanel(r.rank, r.challenge !== null), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, challenge: r.challenge !== null }) }
+            ? { panel: rankPanel(r.rank, r.challenge !== null, runMode(g.starter)), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, mode: runMode(g.starter), challenge: r.challenge !== null }) }
             : null,
           share: {
             open: (back) => sharePreview(ui, input, runShare(g, r.dexBase, r.challenge && r.rank ? r.rank.then((o) => (o.kind === 'ranked' ? o.challenge : null)) : null), back),
@@ -975,11 +995,14 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'boss': {
       const def: EnemyDef = ENEMIES[e.enemy]
+      // A wave legendary's cry and title card come with its entrance (`legendTitle`).
+      if (isWaveLegend(e.enemy)) return
       if (def.legendary) {
         playSfx('legendary')
         playCry(sprites(def.dex).cry, 0.7)
         flashScreen(ui)
-        return banner(ui, rich(t().toast.legendary(def.name)))
+        // A legend meets its dark Clone (`isClone`), never itself.
+        return banner(ui, rich(t().toast.legendary(g.legend?.id === e.enemy ? t().legend.clone(def.name) : def.name)))
       }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
@@ -1017,6 +1040,23 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return
     case 'ability':
       return abilityFeedback(g, e.id, e.moment)
+    case 'awaken': {
+      playCry(playerCry(g))
+      r.closeText?.()
+      r.closeText = textBox(ui, t().legend.awakening(playerForm(g).name))
+      return
+    }
+    case 'awakened': {
+      playSfx('evolve')
+      playCry(cryUrl(playerDex(g), e.form ?? undefined))
+      r.closeText?.()
+      r.closeText = null
+      const name = PLAYABLE[g.starter].name
+      return toast(ui, rich(e.form ? t().legend.awakenedForm(name, playerForm(g).name) : t().legend.awakened(name)), 3500)
+    }
+    // Banked toward capturing it right away (`ui/capture.ts`), so the capture scene reads it.
+    case 'legendBeaten':
+      return bankCapture(e.legend, e.shiny, g.endless !== null)
     case 'evolve': {
       playCry(sprites(e.from).cry)
       r.closeText?.()
@@ -1089,6 +1129,10 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return playSfx('break', 60)
     case 'mapEvent':
       return mapEventFeedback(ui, e.notice)
+    case 'place':
+      return placeFeedback(ui, e.place, e.notice)
+    case 'landmark':
+      return landmarkFeedback(ui, e.landmark, e.moment)
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
@@ -1132,16 +1176,94 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, rich(t().rifts.open), 3200)
     case 'riftClosed':
       return toast(ui, t().rifts.closed, 2000)
+    case 'riftOmen': {
+      const lines = domainLines(e.enemy)
+      playSfx('thunder')
+      // Rayquaza's Air Lock ends what Kyogre or Groudon stirred up earlier in the run.
+      const calmed = e.enemy === 'rayquaza' ? g.rift.met.find((l) => l === 'kyogre' || l === 'groudon') : undefined
+      const nod = calmed ? ` ${t().rifts.calms(ENEMIES[calmed].name)}` : ''
+      return toast(ui, rich(lines ? `${lines.omen}${nod} ${t().rifts.omen(ENEMIES[e.enemy].name)}` : t().rifts.omenFaint), 4200)
+    }
     case 'riftEnter': {
       const def = ENEMIES[e.enemy]
       playSfx('legendary')
-      playCry(sprites(def.dex).cry, 0.7)
       flashScreen(ui)
+      const lines = domainLines(e.enemy)
+      // A domain's legendary shows itself later, in its own forms: have them ready.
+      if (lines) {
+        const partner = partnerOf(e.enemy)
+        void preloadForms(partner ? [def.dex, ENEMIES[partner].dex] : [def.dex], e.shiny)
+        toast(ui, rich(lines.crossing), 3600)
+        return banner(ui, rich(t().rifts.enterDomain(lines.place)))
+      }
+      playCry(sprites(def.dex).cry, 0.7)
       return banner(ui, rich(e.shiny ? t().rifts.enterShiny(def.name) : t().rifts.enter(def.name)))
     }
-    case 'riftCleared':
+    case 'riftTitle':
+      playSfx('legendary')
+      playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.9)
+      return flashScreen(ui)
+    case 'bossPhase': {
+      const def = ENEMIES[e.enemy]
+      playSfx('quake')
+      playCry(sprites(def.dex).cry, 0.7)
+      const line = isRiftLegend(e.enemy) ? domainLines(e.enemy)?.phases[e.phase - 1] : isWaveLegend(e.enemy) ? t().legends.phases[e.enemy][e.phase - 1] : undefined
+      return line ? toast(ui, rich(line), 3600) : undefined
+    }
+    case 'bossUltimate':
+      playSfx('legendary')
+      return toast(ui, h('span', { class: 'toast-ultimate' }, `${e.move}!`), 2400, 'ultimate')
+    case 'riftCapture': {
+      // A pair's capture throws a ball at each: the toast follows the one this event is for.
+      const both = g.rift.arena?.domain?.capture
+      const capture = both?.kind === e.enemy ? both : both?.partner?.kind === e.enemy ? both.partner : null
+      const name = ENEMIES[e.enemy].name
+      if (showCapture(ui, e.enemy)) return
+      if (capture && captureOutcome(capture) === 'caught') {
+        playSfx('unlock')
+        return toast(ui, rich(t().rifts.caught(name), { class: 'toast-evo' }), 3600)
+      }
+      playSfx('break')
+      playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
+      return toast(ui, rich(t().rifts.escaped(name)), 3200)
+    }
+    case 'domainCue': {
+      const line = domainLines(e.enemy)?.cues?.[e.cue]
+      return line ? toast(ui, rich(line), 1600) : undefined
+    }
+    case 'pairDown':
+      playSfx('quake')
+      playCry(sprites(ENEMIES[e.partner].dex).cry, 0.9)
+      return toast(ui, rich(t().rifts.pairDown(ENEMIES[e.enemy].name, ENEMIES[e.partner].name)), 3600)
+    case 'pairRevive':
       playSfx('evolve')
-      return toast(ui, rich(t().rifts.cleared(ENEMIES[e.enemy].name), { class: 'toast-evo' }), 3500)
+      playCry(sprites(ENEMIES[e.partner].dex).cry, 0.8)
+      return toast(ui, rich(t().rifts.pairRevive(ENEMIES[e.enemy].name, ENEMIES[e.partner].name)), 3200)
+    case 'bossGuard':
+      playSfx(e.up ? 'legendary' : 'break')
+      return toast(ui, rich(e.up ? t().rifts.guardUp(ENEMIES[e.enemy].name) : t().rifts.guardDown), e.up ? 3400 : 2200)
+    case 'legendTitle':
+      playSfx('legendary')
+      playCry(sprites(ENEMIES[e.enemy].dex, e.shiny).cry, 0.9)
+      return flashScreen(ui)
+    case 'bossCapture': {
+      const capture = g.legendScene?.capture
+      const name = ENEMIES[e.enemy].name
+      if (showCapture(ui, e.enemy)) return
+      if (capture && captureOutcome(capture) === 'caught') {
+        playSfx('unlock')
+        return toast(ui, rich(t().rifts.caught(name), { class: 'toast-evo' }), 3200)
+      }
+      playSfx('break')
+      playCry(sprites(ENEMIES[e.enemy].dex).cry, 0.6)
+      return toast(ui, rich(t().rifts.escaped(name)), 2800)
+    }
+    case 'riftCleared': {
+      playSfx('evolve')
+      const partner = partnerOf(e.enemy)
+      const text = partner ? t().rifts.pairCleared(ENEMIES[e.enemy].name, ENEMIES[partner].name) : t().rifts.cleared(ENEMIES[e.enemy].name)
+      return toast(ui, rich(text, { class: 'toast-evo' }), 3500)
+    }
     case 'riftFall':
       playSfx('riftFall')
       playCry(playerCry(g))
@@ -1199,8 +1321,15 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
   if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
-  // A rift arena keeps the boss theme until the player is back, loot window included.
-  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : BIOMES[r.game.biome.id].theme
+  // A legendary's domain plays its crossing's theme, then its own from the moment it shows itself.
+  const domain = r.game.rift.arena?.domain
+  if (domain) return domainTheme(domain)
+  // A rift arena keeps the boss theme until the player is back, loot window included; a place plays its own.
+  const inside = r.game.place.inside
+  // A wave legendary plays its own theme from its entrance on.
+  const boss = r.game.bossId === null ? undefined : r.game.enemies.find((e) => e.id === r.game.bossId)
+  if (boss && isWaveLegend(boss.kind)) return LEGEND_THEME[boss.kind]
+  return r.game.bossId !== null || r.game.rift.arena !== null ? 'boss' : inside ? PLACES[inside.id].theme : BIOMES[r.game.biome.id].theme
 }
 
 /* ---------------- Global keys ---------------- */
@@ -1667,6 +1796,27 @@ const devTerrain = (g: Game, kind: SolidKind | 'lake' = 'cliff', dy = 70) => {
   return null
 }
 
+/** Walks the player to the nearest landmark of a kind (any without one), `dy` px south of its anchor. */
+const devLandmark = (g: Game, id?: LandmarkId, dy = 60) => {
+  const C = TERRAIN.cell
+  const pcx = Math.floor(g.player.x / C)
+  const pcy = Math.floor(g.player.y / C)
+  for (let r = 0; r < 40; r++) {
+    for (let cy = pcy - r; cy <= pcy + r; cy++) {
+      for (let cx = pcx - r; cx <= pcx + r; cx++) {
+        if (Math.max(Math.abs(cx - pcx), Math.abs(cy - pcy)) !== r) continue
+        const lm = featureAt(g.terrain.seed, cx, cy)?.landmark
+        if (!lm || (id && lm.id !== id)) continue
+        const at = clearSpot(g, { x: lm.x, y: lm.y + dy }, g.player.radius + 2)
+        g.player.x = at.x
+        g.player.y = at.y
+        return lm
+      }
+    }
+  }
+  return null
+}
+
 // `ps.biome('cave')` and `ps.weather('rain')` stage a run for screenshots (they hold until the next scheduled change).
 if (import.meta.env.DEV) {
   const withRun = (fn: (g: Game) => void) => (run ? fn(run.game) : console.warn('ps: start a run first'))
@@ -1701,10 +1851,13 @@ if (import.meta.env.DEV) {
       card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
       biome: (id: BiomeId) => withRun((g) => setBiome(g, id)),
       terrain: (kind?: SolidKind | 'lake', dy?: number) => (run ? devTerrain(run.game, kind, dy) : console.warn('ps: start a run first')),
+      /** `ps.landmark('maze')` walks you to the nearest maze (`cottage`, `tunnel`, `ruins`, `camp`; any without an argument), 60 px south of it. */
+      landmark: (id?: LandmarkId, dy?: number) => (run ? devLandmark(run.game, id, dy) : console.warn('ps: start a run first')),
       weather: (id: WeatherId) => withRun((g) => setWeather(g, id)),
       /** `ps.ball(3)` drops Poké Balls 20 px to the right of the player (inside the magnet), side by side. */
       ball: (n = 1) => withRun((g) => Array.from({ length: n }, (_, i) => dropPickup(g, g.player.x + 20 + i * 6, g.player.y, 'pokeball'))),
       ...riftDevTools(() => run?.game),
+      ...placeDevTools(() => run?.game),
       ...levelUpDevTools(() => run?.game),
       ...kitDevTools(() => run?.game),
       ...eggMoveDevTools(() => run?.game),
@@ -1713,6 +1866,13 @@ if (import.meta.env.DEV) {
       ...duoDevTools(() => run?.game),
       ...tensionDevTools(() => run?.game),
       ...hazardDevTools(() => run?.game),
+      // A Legend-mode run leaves the save's partner as it was.
+      ...legendDevTools(() => run?.game, (id) => {
+        const partner = loadSave().partner
+        void startRun(id)
+        updateSave((s) => ({ ...s, partner }))
+      }),
+      ...captureDevTools(ui, () => Boolean(run?.game.endless)),
       ...spitterDevTools(() => run?.game, (dex) => void loadSpecies(dex).catch(() => {})),
       // Rebuilds the missions screen or the title so changes show up right away.
       ...missionDevTools(() => (screen?.el.classList.contains('title-home') ? showTitle() : screen?.el.querySelector('.missions') ? showMissions() : undefined)),

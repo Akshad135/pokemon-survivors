@@ -11,6 +11,7 @@ import { applyStatus } from './status'
 import type { Game } from './types'
 import { setWeather } from './weather'
 import * as dm from '../engine/dmath'
+import { roomOf } from './room'
 
 /**
  * Mega Evolution in a run. Beating a rift legendary drops the line's Mega
@@ -147,7 +148,7 @@ const transform = (g: Game, def: MegaDef) => {
   g.shake = Math.max(g.shake, 8)
   g.flash = Math.max(g.flash, 0.3)
   // Sand Stream, Drought, Swift Swim: the weather lives outside, so a rift arena keeps its clear skies.
-  if (def.effect.kind === 'weather' && !g.rift.arena) setWeather(g, def.effect.weather)
+  if (def.effect.kind === 'weather' && !roomOf(g)) setWeather(g, def.effect.weather)
   g.events.push({ kind: 'mega', name: def.name })
 }
 
