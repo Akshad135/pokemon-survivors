@@ -389,8 +389,11 @@ export const levelUp = (root: HTMLElement, input: Input, g: Game, onChoose: (off
   const buttons = g.offers.map((offer, i) => {
     const button = h('button', {})
     fillCard(g, button, offer, i)
-    // Read at hold time: Esquecer redraws a slot with another offer.
-    holdMoveCard(button, () => offerCard(g, g.offers[i]!))
+    // Read at hold time: Esquecer redraws a slot with another offer, and a pick (another finger, the keyboard) empties them.
+    holdMoveCard(button, () => {
+      const offer = g.offers[i]
+      return offer ? offerCard(g, offer) : null
+    })
     return button
   })
 
