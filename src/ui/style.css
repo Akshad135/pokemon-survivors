@@ -5442,6 +5442,12 @@ button {
     width: 32px;
     height: 32px;
   }
+  /* Official item sprites sit ~20 px inside their 32 px square: grid cards show them at 2x so they read on phones. */
+  .shop-items.grid .shop-pic:has(> .shop-icon),
+  .shop-items.grid .shop-icon {
+    width: 64px;
+    height: 64px;
+  }
   .shop-pic > img:not(.shop-icon) {
     width: 32px;
     height: 32px;
@@ -5550,6 +5556,12 @@ button {
   .shop-pixel {
     width: 32px;
     height: 32px;
+  }
+  /* Official item sprites sit ~20 px inside their 32 px square: grid cards show them at 2x so they read on phones. */
+  .shop-items.grid .shop-pic:has(> .shop-icon),
+  .shop-items.grid .shop-icon {
+    width: 64px;
+    height: 64px;
   }
   .shop-pic > img:not(.shop-icon) {
     width: 32px;
