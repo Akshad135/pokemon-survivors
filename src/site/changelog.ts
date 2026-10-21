@@ -242,6 +242,11 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             en: 'Try again, tapped after opening the ranking or the share card on the results, started two runs at once, and the one that stayed was off the ranking. Now it starts just one.',
             es: 'Reintentar, tocado después de abrir el ranking o la tarjeta para compartir en los resultados, empezaba dos partidas a la vez, y la que quedaba salía del ranking. Ahora empieza una sola.',
           },
+          {
+            pt: 'Desmaiar no mesmo instante em que um baú se abria mostrava a escolha do item amaldiçoado, e a partida, já enviada ao ranking, seguia com 0 de HP. Agora o desmaio vale: o baú não abre numa partida que acabou, e espera qualquer outra tela fechar em vez de cobri-la.',
+            en: 'Fainting the very moment a chest opened showed the cursed item choice, and the run, already sent to the ranking, went on at 0 HP. Now the faint counts: the chest never opens on a run that ended, and it waits for any other screen to close instead of covering it.',
+            es: 'Desmayarse en el mismo instante en que se abría un cofre mostraba la elección del objeto maldito, y la partida, ya enviada al ranking, seguía con 0 de HP. Ahora el desmayo cuenta: el cofre no se abre en una partida que terminó, y espera a que se cierre cualquier otra pantalla en vez de taparla.',
+          },
         ],
       },
       {

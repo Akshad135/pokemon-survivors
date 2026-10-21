@@ -162,7 +162,8 @@ export const VIEW_LIMIT = { short: 600, long: 2048 } as const
 export const parseView = (w: unknown, h: unknown) =>
   isWhole(w) && isWhole(h) && w > 0 && h > 0 && Math.min(w, h) <= VIEW_LIMIT.short && Math.max(w, h) <= VIEW_LIMIT.long ? { w, h } : null
 
-const parseEvent = (raw: unknown): ReplayEvent | null => {
+/** One event from an untrusted body, or null when its shape is wrong. */
+export const parseEvent = (raw: unknown): ReplayEvent | null => {
   if (!Array.isArray(raw) || !isWhole(raw[0])) return null
   const [tick, kind, a, b] = raw
   if (kind === 'offer' || kind === 'banish') return isWhole(a) && a < 8 ? [tick, kind, a] : null
@@ -172,6 +173,10 @@ const parseEvent = (raw: unknown): ReplayEvent | null => {
   }
   return kind === 'special' || kind === 'mega' || kind === 'lunge' || kind === 'reroll' || kind === 'skip' || kind === 'endless' ? [tick, kind] : null
 }
+
+/** Whether `moves` is a run-length encoded stick (`[code, count…]`, every count above 0). */
+export const isMoves = (moves: unknown[]): moves is number[] =>
+  moves.length % 2 === 0 && moves.every((n, i) => isWhole(n) && (i % 2 === 1 ? n > 0 : n < MOVES.length))
 
 /**
  * A replay from an untrusted body, or null when its shape is wrong or its
@@ -184,7 +189,7 @@ export const parseReplay = (raw: unknown): Replay | null => {
   const view = isRecord(s.view) ? parseView(s.view.w, s.view.h) : null
   if (typeof s.seed !== 'number' || !Number.isFinite(s.seed) || typeof s.starter !== 'string' || !Object.hasOwn(PLAYABLE, s.starter)) return null
   if (!isDifficulty(s.difficulty) || !view) return null
-  if (raw.moves.length % 2 !== 0 || !raw.moves.every((n, i) => isWhole(n) && (i % 2 === 1 ? n > 0 : n < MOVES.length))) return null
+  if (!isMoves(raw.moves)) return null
   const events = raw.events.map(parseEvent)
   if (events.some((e) => e === null) || events.some((e, i) => i > 0 && e![0] < events[i - 1]![0])) return null
   const ranks = isRecord(s.ranks) ? s.ranks : {}

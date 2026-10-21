@@ -15,7 +15,8 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `PUT /me` | Body `{ handle, name }`. 400 when invalid, 409 `{ suggestion }` when the handle is taken |
 | `POST /runs` | Body `{ challenge? }`. `{ token, seed, outbreak, halloween }` for the player's next run: the start token (the id of a new `runs` row), the seed the run must play, the day's outbreak and whether the day is haunted by the server's clock (`outbreakAt` and `halloweenAt`, the day `outbreakFits` and `halloweenFits` check; a challenge run plays its own). It replaces the player's other unfinished token of the same kind (see [Ranked runs](#ranked-runs)). 429 past 30 tokens in 10 minutes. With `challenge` (a Brasília day, `YYYY-MM-DD`) it's that day's Desafio do dia, with the day's seed; 400 when that challenge isn't open (its day, or 10 minutes past it) |
 | `POST /runs/:token/start` | The run of a token asked for ahead starts now: its clock restarts. 204; 404 unknown or finished token, 409 replaced by a newer one |
-| `PUT /runs/:token` | Body `RunResult & { replay }` (`src/game/ranking.ts`, `src/game/replay.ts`). Records how the run ended and returns `{ ranks: { day, week, all }, challenge }` (`ChallengePlace` for a challenge run, else null). 400 implausible, without a replay, a replay of another run (or of a screen bigger than the game shows, `parseView`), `seed` (a replay of another seed than the token's), `outdated` (a replay of older rules than the API's) or a challenge run whose replay isn't its day's challenge, 404 unknown token, 409 a replaced token or one that contradicts what the run recorded, 422 more play than the wall clock since the token allows, 503 a replay of newer rules (the API isn't deployed yet; the game keeps it and sends it again) |
+| `PUT /runs/:token/chunks/:seq` | Body `ReplayChunk` (`src/game/replayStream.ts`): the replay's ticks `[from, to)` (15 to 30 s of them) while the run plays, chunk `seq` 0, 1, 2… (see [Replay streaming](#replay-streaming)). `{ lag }`, how many seconds late it came (null for a retry of a chunk already in, which changes nothing). 400 wrong shape or size, 404 unknown token or a run that ended (a victory's goes on, into endless mode), 409 replaced token, a `seq` another chunk holds (`committed`) or a chunk that doesn't start where the stream is (`gap`), 422 more play than the wall clock since the start allows |
+| `PUT /runs/:token` | Body `RunResult & { replay }` (`src/game/ranking.ts`, `src/game/replay.ts`). Records how the run ended and returns `{ ranks: { day, week, all }, challenge, listed }` (`ChallengePlace` for a challenge run, else null; `listed` false when, with `STREAM_ENFORCE` on, its replay wasn't streamed in time and the run stays off the boards). 400 implausible, without a replay, a replay of another run (or of a screen bigger than the game shows, `parseView`), `seed` (a replay of another seed than the token's), `outdated` (a replay of older rules than the API's) or a challenge run whose replay isn't its day's challenge, 404 unknown token, 409 a replaced token, one that contradicts what the run recorded, or `rewrite` (a replay that changes inputs its chunks committed), 422 more play than the wall clock since the token allows, 503 a replay of newer rules (the API isn't deployed yet; the game keeps it and sends it again) |
 | `GET /boards/:difficulty` | `?period=day\|week\|all&starter=<id>&friends=1`. `{ entries, me }`: the top 50, each player once with their best run (its id in `run`, to report it), and the asker's own line. Banned players never show |
 | `GET /challenge/:day` | `?friends=1`. `ChallengeBoard`: the day's official attempts (top 50, the asker's line), how many took part and whether the asker made theirs (`attempted`) |
 | `GET /profiles/:handle` | The public profile: name, title, Pokédex counts, records, recent runs, follower counts. 404 if nobody has the handle, or its player is banned |
@@ -44,7 +45,7 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `POST /admin/moderation` | Body `{ userId, action, run?, reason? }` (`parseModeration`): `remove` (the run leaves the boards), `reset` (wipes the save, see [Resetting a save](#resetting-a-save)), `ban` (a reason is required), `unban` or `dismiss`. Resolves the reports it answers. `{ resolved }`, 404 for an unknown player or run |
 | `PUT /admin/suggestions/:id` | Body `{ status }`: `done` (shipped, stamps `done_at`), `open` again, or `hidden` (off the board). `{ status }`, 404 for an unknown idea |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote`, `POST /reports` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles`, `GET /suggestions` and `POST /bug-reports` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs` (and its chunks), `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote`, `POST /reports` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles`, `GET /suggestions` and `POST /bug-reports` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
@@ -60,6 +61,39 @@ The server picks a ranked run's seed, so nobody can try seeds offline and pick a
 - A run that reported may only report again grown after a victory (endless mode); any other longer report is 409, so a short run can't keep its seed on hold for later.
 
 The server takes a result only if the wall clock since the token's start is at least the time survived, minus a 30 s slack for a start that arrived late (the simulation never runs faster than real time, and pausing only widens the gap). It also checks plausible numbers (`parseRunResult`). A victory that goes on into endless mode sends again with the same token; the run may only grow. Day and week boards start at midnight and on Monday in America/Sao_Paulo, and a run counts for the period it started in.
+
+### Replay streaming
+
+The simulation is deterministic, open source and much faster than real time, so with a seed in hand a bot could search a run offline (die at 2:50, rewind to 2:40, try another path), wait out the wall clock and send a perfect replay, which re-simulation would verify. So a ranked run's replay reaches the API while it plays, and what's in is committed: the report must keep it.
+
+- **Chunks** (`src/game/replayStream.ts`, `src/ranking.ts`): every 15 s of play (`STREAM.ticks`, counted in ticks, so pauses and level-up screens cut nothing) the game cuts the recorder's new ticks (their moves and events) and sends them to `PUT /runs/:token/chunks/:seq`, in order, after `/start`. A chunk that can't go (offline, an expired session) waits and is sent again (2 s, doubling to 30 s), and the result of the run waits behind its chunks; any other failure (a refusal, a 5xx, an API without the route) ends the stream, so a result never waits on a broken chunk route. A retry of a chunk already in changes nothing. Guests and unranked runs send nothing. The cut reads only the new stretch of the recorder, at most once per 15 s.
+- **Checks on each chunk** (`putChunk`): the player's token, not replaced, unfinished (or finished as a victory: endless mode goes on), `seq` next in line, starting at the tick where the last one ended, 15 to 30 s of ticks and 2,000 events at most, and no more play than the wall clock since `started_at` allows (`clockAllows`).
+- **Lag** (`commitLag`): how late a commitment came, past the play its new ticks take, counted from the last commitment (the first chunk from when the seed was dealt, `runs.issued_at`, since a seed known on the menus could be searched before `/start`). Real time only runs ahead of game time (pauses, level-up screens, the results screen before endless mode), so an honest stream lags by what the player waited plus the network, and a bot by its search. The run keeps its worst (`runs.stream_lag`). It's counted per commitment rather than as the whole stream's distance to the wall clock, which every level-up screen and pause of a long run would add up. The game asks for a fresh ticket when the one in hand is 2 minutes old, so menu time doesn't count against it.
+- **The report** (`finishRun`, `settleReport`): its replay must keep every committed input, else 409 `rewrite`. It then pins all its ticks by the sha256 of their canonical form (`runs.stream_base`, `stream_digest`), so a later report of the same run (endless mode) can't rewrite them either, and the chunks it covers are deleted. A victory's report is timed like a chunk (the run may go on from it); a faint's or a quit's isn't. Its **tail**, the ticks it brings past the stream, may be at most 30 s (`STREAM.tailTicks`). Chunks of runs that never reported are swept a day later.
+- **Observe or enforce.** A report was streamed in time (`streamedInTime`, stored in `runs.stream_ok` and logged) when its tail fits and no commitment came more than 3 minutes late (`STREAM.lagTolerance`). With `STREAM_ENFORCE` off (the default) nothing else changes. With it on, a run that wasn't stays off the public boards for good (`runs.unlisted`: the boards, the challenge board, ribbons, the Discord podium) but still counts for the player (profile, records, clears), and the results screen says the connection dropped (`listed: false`). A game from before streaming sends no chunks, so with enforcement on its runs longer than 30 s stay off the boards; `watchDeploys` reloads it once its player is back on the menus.
+
+Before turning enforcement on, measure honest lag over the last days (seconds; `stream_seq > 0` keeps games that stream):
+
+```sql
+select count(*) as runs,
+  percentile_cont(array[0.5, 0.9, 0.95, 0.99]) within group (order by stream_lag) as lag_p50_p90_p95_p99,
+  count(*) filter (where stream_lag > 180) as lag_over_3_min,
+  count(*) filter (where not stream_ok) as not_in_time,
+  percentile_cont(0.95) within group (order by extract(epoch from started_at - issued_at)) as menu_wait_p95
+from runs
+where finished_at > now() - interval '7 days' and stream_seq > 0;
+```
+
+And the longest runs enforcement would have kept off the boards, to see whether they look honest:
+
+```sql
+select r.id, u.handle, r.difficulty, r.survived, r.stream_lag, r.stream_seq as chunks, r.version
+from runs r join users u on u.id = r.user_id
+where r.finished_at > now() - interval '7 days' and r.stream_ok is false
+order by r.survived desc limit 50;
+```
+
+Requests: one chunk every 15 s of play per player in a ranked run (240 an hour, ~1 to 3 KB each), each one transaction with a row lock, an insert and an update.
 
 ### Desafio do dia and ribbons
 
@@ -103,7 +137,7 @@ Moderation is reactive: a run still counts as soon as it's reported, and nothing
 
 - A signed-in player reports a run from its board row (the flag) or a player from their profile (`POST /reports`, `src/moderation.ts`). One report per reporter per run, or per player when there's no run; 10 a day per reporter. Reporting oneself is refused. The answer never says anything about the target: an unknown handle, a run that isn't theirs and a repeat are dropped as if stored.
 - The admin panel's **Denúncias** tab (`src/ui/admin.ts`, its tab label counts the open reports) lists them grouped (`groupReports`), and acts on a group: **Tirar a run** (`runs.verified = false`: off the boards and the profile), **Zerar o save** (in one transaction, exactly what [Resetting a save](#resetting-a-save) does by hand), **Banir** or **Desbanir** (with a reason), or **Descartar**. Every action resolves the reports it answers (`resolved_at`, `resolved_by`, `resolution`): a run's removal or dismissal closes that run's reports, a player's dismissal the ones without a run, and a reset, ban or unban every open report on the player. The panel's player search has Banir/Desbanir and Zerar too, to act without a report. Each action is logged.
-- A ban (`users.banned_at`, `banned_reason`) refuses the account's writes with 403 `{ error: 'banned' }`: `POST /runs`, `POST /runs/:token/start`, `PUT /runs/:token`, `PUT /save`, `POST /reports`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `PUT /poll` (`BAN_GATED`, checked in `auth`). Reads still answer. The player leaves every board, the challenge board, public profiles (404), the supporters wall, the idea board, the ribbons and the Discord podium. The game keeps playing as a guest would: a run start gets no token (unranked), a queued result is dropped as rejected, and the save stays on the device (the sync shows offline).
+- A ban (`users.banned_at`, `banned_reason`) refuses the account's writes with 403 `{ error: 'banned' }`: `POST /runs`, `POST /runs/:token/start`, `PUT /runs/:token/chunks/:seq`, `PUT /runs/:token`, `PUT /save`, `POST /reports`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `PUT /poll` (`BAN_GATED`, checked in `auth`). Reads still answer. The player leaves every board, the challenge board, public profiles (404), the supporters wall, the idea board, the ribbons and the Discord podium. The game keeps playing as a guest would: a run start gets no token (unranked), a queued result is dropped as rejected, and the save stays on the device (the sync shows offline).
 
 ### Verification by re-simulation
 
@@ -169,6 +203,7 @@ The player's device still holds the edited save. Its next push comes on top of a
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Optional. The community Discord bot's token and the server's id. Without both there's no bot |
 | `POSTHOG_KEY` | Optional. The game's PostHog project token (`phc_…`, the same as the client's `VITE_POSTHOG_KEY`): 500s, uncaught exceptions and rejections go to its error tracking (`src/errors.ts`), tied to the player's id when the request had one. Without it errors only go to the log |
 | `DISCORD_BUG_FORUM_ID` | Optional. The #bug-reports forum's channel id, where bug reports go. Without it the bot finds the forum by name |
+| `STREAM_ENFORCE` | Optional. `1` keeps ranked runs whose replay wasn't streamed in time off the public boards (see [Replay streaming](#replay-streaming)). Unset, the API only measures and logs the lag |
 | `PORT` | Default `3000` |
 
 ## Database
@@ -192,6 +227,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `bug_reports`: each bug report (`user_id`, null for a guest; `text`; `tech`, the `BugTech` JSON or null; `thread_id`, the forum thread once posted).
 - `users.save_reset_revision`, `save_resets`: the revision a reset stored (see [Resetting a save](#resetting-a-save)), and what each reset wiped.
 - `users.banned_at`, `banned_reason`: a ban, since when and why (null for everyone else). `reports`: each report (`reporter_id`, `target_id`, `run_id` when it's about a run, `reason`, `note`), unique per reporter and run (or player, without a run), and how it was resolved (`resolved_at`, `resolved_by`, `resolution`: the `ModerationAction`).
+- `runs.issued_at`: when the token and its seed were dealt (`started_at` moves with `/start`, this doesn't). `runs.stream_seq`, `stream_ticks`, `stream_at`, `stream_lag`: the replay stream so far (the next chunk's `seq` and first tick, when the last commitment came, the worst lag in seconds). `runs.stream_base`, `stream_digest`: the ticks the last report pinned and their sha256. `runs.stream_ok`: whether the last report was streamed in time (null before streaming). `runs.unlisted`: kept off the public boards for its stream (only with `STREAM_ENFORCE`). `run_chunks`: each chunk waiting for its run's report (`seq`, `from_tick`, `to_tick`, `moves`, `events`, `received_at`).
 - `discord_posts`: what the Discord bot already did, by key (`patch:<date>`, `challenge:<day>`, `podium:<day>`, `outbreak:<day>`, `welcome:<user>`, `short:<message>`), with the message a patch note became so it can be edited.
 
 ## Local development
@@ -243,6 +279,7 @@ New versions roll out with no downtime:
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Dokploy (`api`) | The "Pokémon Survivors" bot's token and the community server's id |
 | `POSTHOG_KEY` | Dokploy (`api`) | PostHog (US cloud) project token, public |
 | `DISCORD_BUG_FORUM_ID` | Dokploy (`api`) | The #bug-reports forum's channel id (optional: found by name without it) |
+| `STREAM_ENFORCE` | Dokploy (`api`) | Unset (observe only) until the lag is measured; `1` to enforce |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Vercel, production only | `pk_live_…`, which only works on `pokemonsurvivors.com` |
 | `VITE_API_URL` | Vercel, production only | `https://api.pokemonsurvivors.com` |
 | `VITE_POSTHOG_KEY` | Vercel, production only | The same PostHog project token: the game's events and errors (`src/analytics.ts`) |
