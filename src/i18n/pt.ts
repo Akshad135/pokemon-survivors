@@ -3645,6 +3645,78 @@ export const pt = {
         '+14 de dano e +15% de área',
       ],
     },
+    rainDance: {
+      description: 'Você dança e chama a chuva por 40s, por cima do clima da partida, que volta depois. Enquanto ela dura, gotas pesadas caem nos inimigos à sua volta. Na chuva, golpes de Água ficam 50% mais fortes e os de Fogo mais fracos, os dos inimigos também.',
+      upgrades: [
+        '+2 de dano',
+        'A chuva dura +5s',
+        { fork: [{ name: 'Aguaceiro', desc: 'A chuva dura +15s e +1 gota; o golpe salta para vizinhos' }, { name: 'Chuva calmante', desc: 'Cura 0.8% do HP por segundo enquanto chove em você; as gotas curam com parte do dano' }] },
+        'Recarga 8s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Tempestade', desc: '+4 de dano; quem cai explode' }, { name: 'Dilúvio', desc: '+40% de área; as gotas deixam poças que ferem' }] },
+        '+1 gota e +2 de dano',
+      ],
+    },
+    sunnyDay: {
+      description: 'Você chama o sol forte por 40s, por cima do clima da partida, que volta depois. Enquanto ele dura, raios de sol caem nos inimigos à sua volta. No sol, golpes de Fogo ficam 50% mais fortes e os de Água mais fracos, os dos inimigos também.',
+      upgrades: [
+        '+2 de dano',
+        'O sol dura +5s',
+        { fork: [{ name: 'Verão', desc: 'O sol dura +15s e +1 raio; o chão arde onde eles caem' }, { name: 'Sol escaldante', desc: 'Queima quem pisa no círculo de sol à sua volta; os raios batem mais em quem tem condição' }] },
+        'Recarga 8s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Raio solar', desc: '+4 de dano; mais forte em elites e chefes' }, { name: 'Clarão', desc: '+40% de área; quem cai explode' }] },
+        '+1 raio e +2 de dano',
+      ],
+    },
+    swordsDance: {
+      description: 'Espadas giram à sua volta e a dança te dá +8% de dano por 5s. Dançando de novo antes de acabar, o bônus acumula (até 3 vezes).',
+      upgrades: [
+        'Recarga 1s mais rápida',
+        'Dura +1.2s',
+        { fork: [{ name: 'Lâminas extras', desc: 'Acumula até 5 vezes e +2 de dano; um segundo anel de espadas' }, { name: 'Dança longa', desc: 'Dura +3s; as espadas batem mais em elites e chefes' }] },
+        'Recarga 0.5s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Redemoinho de aço', desc: '+2 espadas; quem cai explode' }, { name: 'Lâmina vampira', desc: 'Dura +2s e +2 de dano; as espadas curam com parte do dano' }] },
+        '+3 de dano e +1 espada',
+      ],
+    },
+    drainPunch: {
+      description: 'Um soco brilhante no inimigo mais próximo que cura 35% do dano causado (até 4% do seu HP por segundo).',
+      upgrades: [
+        '+4 de dano',
+        'Recarga 0.1s mais rápida',
+        { fork: [{ name: 'Rajada', desc: '+40% de área e +1 soco em leque; soca de novo logo após (50%)' }, { name: 'Sanguessuga', desc: 'Cura +20% do dano; derruba quem fica com pouco HP' }] },
+        '+5 de dano',
+        'Recarga 0.1s mais rápida',
+        { fork: [{ name: 'Soco explosivo', desc: '+6 de dano; quem cai explode' }, { name: 'Dreno total', desc: 'Cura +10% do dano e +3 de dano; mais forte em elites e chefes' }] },
+        '+6 de dano e +15% de área',
+      ],
+    },
+    thunderWave: {
+      description: 'Uma onda de estática em cone, na direção do inimigo mais próximo, paralisa por 2s todos que ela atravessa (chefes resistem a boa parte).',
+      upgrades: [
+        'Recarga 0.3s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Onda larga', desc: 'Cone mais largo; a faísca salta para vizinhos' }, { name: 'Estática', desc: 'A paralisia dura +1.5s; bate mais em quem tem condição' }] },
+        'Recarga 0.3s mais rápida',
+        '+3 de dano',
+        { fork: [{ name: 'Onda dupla', desc: 'Cone ainda mais largo e +20% de área; a onda vem de novo logo após (50%)' }, { name: 'Choque', desc: 'A paralisia dura +1s e +4 de dano; mais forte em elites e chefes' }] },
+        'A paralisia dura +0.5s e +3 de dano',
+      ],
+    },
+    fly: {
+      description: 'A cada 7s você levanta voo por um instante: nada te atinge e os inimigos te perdem de vista. Você continua se movendo e, ao pousar, cai com tudo, ferindo e empurrando quem está em volta.',
+      upgrades: [
+        '+6 de dano',
+        'Recarga 0.7s mais rápida',
+        { fork: [{ name: 'Mergulho', desc: '+35% de área e +6 de dano; quem cai explode' }, { name: 'Voo rápido', desc: 'Recarga 1.5s mais rápida; o pouso deixa um vento cortante no chão' }] },
+        '+8 de dano',
+        'Recarga 0.7s mais rápida',
+        { fork: [{ name: 'Ataque aéreo', desc: '+10 de dano e +15% de área; mais forte em elites e chefes' }, { name: 'Rasante', desc: 'Recarga 1s mais rápida; o impacto salta para vizinhos' }] },
+        '+10 de dano',
+      ],
+    },
     ragingFury: {
       description: 'Você avança em fúria, envolto em chamas: o manto queima quem encosta enquanto você anda, o rastro vira uma estrada em brasa e, a cada poucos passos, a fúria explode numa nova de fogo. Parado, só fumega. Pode queimar.',
       upgrades: [

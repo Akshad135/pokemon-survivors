@@ -9,6 +9,7 @@ import { guard, sweep } from './moveKit'
 import type { CastStats, Look, MoveDef, MoveId, MoveStats } from './moves'
 import { dropCoins } from './pickups'
 import { nearestEnemy } from './queries'
+import { SHOP_TM_MOVES_2 } from './shopTmMoves2'
 import { spawnAttack } from './spawn'
 import type { Attack, Enemy, Game } from './types'
 
@@ -20,8 +21,10 @@ import type { Attack, Enemy, Game } from './types'
  * (up to `PAY_DAY.cap` coins a run) and Thief steals an Alpha's or a boss's
  * held item once each. Protect is a short bubble nothing gets through, and
  * Hyper Beam a huge beam with a long recharge. Like the boss TMs they never
- * evolve and grow through forks. Spread at the end of `MOVES`; art in
- * `render/shopTmFx.ts`.
+ * evolve and grow through forks. The second batch (Rain Dance, Sunny Day,
+ * Swords Dance, Drain Punch, Thunder Wave, Fly) lives in `shopTmMoves2.ts`
+ * and is spread into this table. Spread at the end of `MOVES`; art in
+ * `render/shopTmFx.ts` and `render/shopTmFx2.ts`.
  *
  * Like `tmMoves.ts`, this module must not import `moves.ts` at runtime: it is
  * evaluated while `MOVES` is built.
@@ -251,6 +254,8 @@ export const SHOP_TM_MOVES = {
     ],
     fire: (g, s) => hyperBeam(g, s),
   },
+
+  ...SHOP_TM_MOVES_2,
 } as const satisfies Record<string, MoveDef>
 
 export type ShopTmMoveId = keyof typeof SHOP_TM_MOVES

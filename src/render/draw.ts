@@ -47,6 +47,7 @@ import { drawEgg2Attack, drawEgg2Ground } from './eggMove2Fx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
 import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
 import { drawShopTmAir } from './shopTmFx'
+import { drawShopTm2Air, drawShopTm2Ground, drawShopTm2Player, shopTm2PlayerLook } from './shopTmFx2'
 import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
 import { drawDuoAir, drawDuoGround } from './duoFx'
 import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
@@ -655,16 +656,18 @@ const drawPlayer = (ctx: Ctx, g: Game, calm: boolean) => {
     if (fall.bar) drawHpBar(ctx, g)
     return
   }
-  const anim: AnimName = p.hurt > 0 ? 'Hurt' : airborne(s, inSky(g), p.moving ? 'Walk' : 'Idle')
+  // Fly (the shop TM) lifts the player off the ground: a species with a Fly sheet flaps its wings.
+  const flying = shopTm2PlayerLook(g)
+  const anim: AnimName = p.hurt > 0 ? 'Hurt' : airborne(s, inSky(g) || flying !== null, p.moving ? 'Walk' : 'Idle')
   const charging = g.special.charge > 0 && Math.floor(p.animTime * 16) % 2 === 0
   const blink = p.iframes > 0 && g.special.active <= 0 && Math.floor(p.iframes * 20) % 2 === 0
   // Aegislash flashes white for a moment as it swaps stance.
   const swapped = g.special.stance !== null && g.special.total - g.special.cooldown < 0.12
   const flash = Math.max(mega.flash, calm ? 0 : p.hurt > 0.2 ? 0.7 : charging || swapped ? 0.6 : 0)
   const tint = calm && p.hurt > 0.2 ? HURT_TINT : undefined
-  // Burrowed or out of sight (Dig, Fly): a faint ghost of the player.
-  // Signature moves can lift the sprite (Body Slam's leap, Heavy Slam's hop) or hide it under the mound (Dig).
-  const egg = eggPlayerLook(g) ?? egg3PlayerLook(g)
+  // Burrowed or out of sight (Dig): a faint ghost of the player.
+  // Moves can lift the sprite (Body Slam's leap, Heavy Slam's hop, Fly) or hide it under the mound (Dig).
+  const egg = flying ?? eggPlayerLook(g) ?? egg3PlayerLook(g)
   // Invulnerable after a hit: blinking, or a steady see-through when calm.
   const faded = calm ? p.iframes > 0 && g.special.active <= 0 : blink
   const alpha = egg ? egg.alpha : p.hidden ? 0.3 : faded && mega.flash === 0 ? (calm ? 0.65 : 0.45) : 1
@@ -884,6 +887,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, Math.max(200, reachOf(a.shape)))) drawGroundAttack(ctx, a, t)
   drawVerbGround(ctx, g, t)
   drawTmGround(ctx, g, t)
+  drawShopTm2Ground(ctx, g, t)
   drawVerbEvolvedGround(ctx, g, t)
   drawDuoGround(ctx, g, t)
   drawLegendaryGround(ctx, g, t)
@@ -971,6 +975,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawEgg3Player(ctx, g, t)
   drawSignaturePlayer(ctx, g, t)
   drawTmPlayer(ctx, g, t)
+  drawShopTm2Player(ctx, g, t, g.player.y - playerSprites(g).bodyH)
   drawTraitAir(ctx, g, visible)
   drawAlphaAir(ctx, g, t, visible)
   drawRiftFallAir(ctx, g, t)
@@ -984,6 +989,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   drawVerbAir(ctx, g, t, visible)
   drawTmAir(ctx, g, t, visible)
   drawShopTmAir(ctx, g, t, visible)
+  drawShopTm2Air(ctx, g, t, visible)
   drawVerbEvolvedAir(ctx, g, t, visible)
   drawDuoAir(ctx, g, t, visible)
   drawLegendaryAir(ctx, g, t, visible)

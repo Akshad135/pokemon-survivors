@@ -13,6 +13,7 @@ import { NO_SHOP } from './shop'
 import { mergeSaves } from './sync'
 import { summary } from './tally.fixture'
 import { openTutor } from './tms'
+import { shopTmMoveIds } from './shopTmMoves'
 import { tmMoveIds } from './tmMoves'
 import { armedTms, armTm, buyTm, learnTms, mergeTms, NO_TMS, parseTms, shelfOf, tmBlock, tmListing, tmRotation, type TmCase } from './tmShelf'
 import type { Game } from './types'
@@ -44,9 +45,9 @@ describe('the TM shelf', () => {
     const shelf = shelfOf(tms, DAY)
     expect(shelf).toContain(found)
     expect(tmListing(tms, found, DAY)).toBe('learned')
-    for (const id of ['payDay', 'thief', 'protect', 'hyperBeam'] as const) expect(tmListing(tms, id, DAY)).toBe('exclusive')
+    for (const id of shopTmMoveIds()) expect(tmListing(tms, id, DAY)).toBe('exclusive')
     for (const id of tmRotation(DAY)) expect(shelf).toContain(id)
-    expect(shelf).toHaveLength(4 + 1 + TM_SHELF.rotation)
+    expect(shelf).toHaveLength(shopTmMoveIds().length + 1 + TM_SHELF.rotation)
     expect(shelf.some((id) => (id as string) === 'sacredFire')).toBe(false)
   })
 

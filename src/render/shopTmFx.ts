@@ -2,6 +2,7 @@ import { blitCentered, context2d, createCanvas, ellipse, fromStrings, lazy, ring
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import { HYPER_BEAM, type ShopTmMoveId } from '../game/shopTmMoves'
+import type { ShopTmMove2Id } from '../game/shopTmMoves2'
 import type { Attack, Game } from '../game/types'
 
 /**
@@ -14,13 +15,13 @@ import type { Attack, Game } from '../game/types'
 
 type Ctx = CanvasRenderingContext2D
 
-const px = (ctx: Ctx, x: number, y: number, color: string, w = 1, h = 1) => {
+export const px = (ctx: Ctx, x: number, y: number, color: string, w = 1, h = 1) => {
   ctx.fillStyle = color
   ctx.fillRect(Math.round(x), Math.round(y), w, h)
 }
 
 /** Square-brush line from (x0, y0) to (x1, y1), `w` px thick. */
-const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
+export const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
   const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0)))
   const half = Math.floor(w / 2)
   ctx.fillStyle = color
@@ -48,7 +49,7 @@ const outlined = (s: PixelSprite, color = '#181818'): PixelSprite => {
   return canvas
 }
 
-const sprite = (rows: readonly string[], palette: Palette) => outlined(fromStrings(rows, palette))
+export const sprite = (rows: readonly string[], palette: Palette) => outlined(fromStrings(rows, palette))
 
 const GOLD = { 1: '#805000', 2: '#f8c830', 3: '#fff3a0', 4: '#c89010' } as const
 
@@ -62,7 +63,8 @@ const COIN = lazy(() => [
 
 /* ---------------- Icons ---------------- */
 
-export const SHOP_TM_ICONS: Record<ShopTmMoveId, () => PixelSprite> = {
+/** The first batch's icons; `shopTmFx2.ts` draws the second's (`SHOP_TM_ICONS_2`). */
+export const SHOP_TM_ICONS: Record<Exclude<ShopTmMoveId, ShopTmMove2Id>, () => PixelSprite> = {
   payDay: () => sprite(['..1111..', '.122221.', '12333221', '12322421', '12233421', '12444421', '.122221.', '..1111..'], GOLD),
   thief: () =>
     sprite(

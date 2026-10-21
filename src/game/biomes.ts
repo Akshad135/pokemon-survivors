@@ -19,7 +19,8 @@ export const setBiome = (g: Game, id: BiomeId) => {
   if (id === g.biome.id) return
   g.biome = { ...g.biome, id, prev: g.biome.id, since: g.time }
   g.events.push({ kind: 'biome', biome: id })
-  if (!weatherFits(id, g.weather.id)) g.weather.next = Math.min(g.weather.next, g.time + WEATHER_GRACE)
+  // A move's call (Rain Dance, Sunny Day) holds its sky over any biome; what it held is checked when it ends.
+  if (!g.weather.held && !weatherFits(id, g.weather.id)) g.weather.next = Math.min(g.weather.next, g.time + WEATHER_GRACE)
 }
 
 /** Follows the biome schedule as the run clock advances. */

@@ -3457,6 +3457,78 @@ export const en: Messages = {
         '+14 damage and +15% area',
       ],
     },
+    rainDance: {
+      description: 'You dance and call the rain for 40s, over the run\'s weather, which comes back after. While it lasts, heavy drops fall on the foes around you. In the rain, Water moves hit 50% harder and Fire moves weaker, the foes\' too.',
+      upgrades: [
+        '+2 damage',
+        'The rain lasts +5s',
+        { fork: [{ name: 'Downpour', desc: 'The rain lasts +15s and +1 drop; the hit jumps to neighbors' }, { name: 'Soothing Rain', desc: 'Heals 0.8% HP per second while it rains on you; the drops heal from their damage' }] },
+        'Cooldown 8s faster',
+        '+3 damage',
+        { fork: [{ name: 'Storm', desc: '+4 damage; fainted foes burst' }, { name: 'Deluge', desc: '+40% area; the drops leave puddles that hurt' }] },
+        '+1 drop and +2 damage',
+      ],
+    },
+    sunnyDay: {
+      description: 'You call harsh sunlight for 40s, over the run\'s weather, which comes back after. While it lasts, sunbeams fall on the foes around you. In the sun, Fire moves hit 50% harder and Water moves weaker, the foes\' too.',
+      upgrades: [
+        '+2 damage',
+        'The sun lasts +5s',
+        { fork: [{ name: 'Long Summer', desc: 'The sun lasts +15s and +1 beam; the ground burns where they land' }, { name: 'Scorching Sun', desc: 'Burns whoever steps in the sunlit ring around you; the beams hit afflicted foes harder' }] },
+        'Cooldown 8s faster',
+        '+3 damage',
+        { fork: [{ name: 'Solar Beam', desc: '+4 damage; stronger on elites and bosses' }, { name: 'Flare', desc: '+40% area; fainted foes burst' }] },
+        '+1 beam and +2 damage',
+      ],
+    },
+    swordsDance: {
+      description: 'Swords whirl around you and the dance gives you +8% damage for 5s. Dance again before it ends and it stacks (up to 3 times).',
+      upgrades: [
+        'Cooldown 1s faster',
+        'Lasts +1.2s',
+        { fork: [{ name: 'Sharper Blades', desc: 'Stacks up to 5 times and +2 damage; a second ring of swords' }, { name: 'Long Dance', desc: 'Lasts +3s; the swords hit elites and bosses harder' }] },
+        'Cooldown 0.5s faster',
+        '+3 damage',
+        { fork: [{ name: 'Steel Whirl', desc: '+2 swords; fainted foes burst' }, { name: 'Vampire Blade', desc: 'Lasts +2s and +2 damage; the swords heal from their damage' }] },
+        '+3 damage and +1 sword',
+      ],
+    },
+    drainPunch: {
+      description: 'A glowing punch at the nearest foe that heals 35% of the damage dealt (up to 4% of your HP per second).',
+      upgrades: [
+        '+4 damage',
+        'Cooldown 0.1s faster',
+        { fork: [{ name: 'Flurry', desc: '+40% area and +1 punch in a fan; punches again right after (50%)' }, { name: 'Leech', desc: 'Heals +20% of the damage; finishes off foes left low' }] },
+        '+5 damage',
+        'Cooldown 0.1s faster',
+        { fork: [{ name: 'Blast Punch', desc: '+6 damage; fainted foes burst' }, { name: 'Full Drain', desc: 'Heals +10% of the damage and +3 damage; stronger on elites and bosses' }] },
+        '+6 damage and +15% area',
+      ],
+    },
+    thunderWave: {
+      description: 'A cone of static toward the nearest foe paralyzes everyone it washes over for 2s (bosses shrug off most of it).',
+      upgrades: [
+        'Cooldown 0.3s faster',
+        '+3 damage',
+        { fork: [{ name: 'Wide Wave', desc: 'A wider cone; the spark jumps to neighbors' }, { name: 'Static', desc: 'Paralysis lasts +1.5s; hits afflicted foes harder' }] },
+        'Cooldown 0.3s faster',
+        '+3 damage',
+        { fork: [{ name: 'Double Wave', desc: 'An even wider cone and +20% area; the wave comes again right after (50%)' }, { name: 'Shock', desc: 'Paralysis lasts +1s and +4 damage; stronger on elites and bosses' }] },
+        'Paralysis lasts +0.5s and +3 damage',
+      ],
+    },
+    fly: {
+      description: 'Every 7s you take off for a moment: nothing hits you and the foes lose sight of you. You keep moving and, when you land, you come down hard, hurting and shoving everyone around.',
+      upgrades: [
+        '+6 damage',
+        'Cooldown 0.7s faster',
+        { fork: [{ name: 'Dive Bomb', desc: '+35% area and +6 damage; fainted foes burst' }, { name: 'Quick Flight', desc: 'Cooldown 1.5s faster; the landing leaves a cutting wind on the ground' }] },
+        '+8 damage',
+        'Cooldown 0.7s faster',
+        { fork: [{ name: 'Aerial Ace', desc: '+10 damage and +15% area; stronger on elites and bosses' }, { name: 'Swoop', desc: 'Cooldown 1s faster; the impact jumps to neighbors' }] },
+        '+10 damage',
+      ],
+    },
     ragingFury: {
       description: 'You rampage wreathed in fire: the cloak burns whoever touches it while you walk, your trail becomes a burning road, and every few steps the fury bursts in a nova of flame. Standing still, it only smoulders. May burn.',
       upgrades: [
