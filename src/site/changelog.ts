@@ -203,6 +203,16 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
         ],
       },
       {
+        title: { pt: 'Pesquisa de dificuldade', en: 'Difficulty survey', es: 'Encuesta de dificultad' },
+        notes: [
+          {
+            pt: 'O lobby pergunta o que você está achando das dificuldades Normal, Difícil e Pesadelo. Leva dez segundos e ajuda a ajustar o jogo. Se fechar sem responder, a prancheta com "!" no topo fica lá para quando você quiser.',
+            en: 'The lobby asks how Normal, Hard and Nightmare feel to you. It takes ten seconds and helps tune the game. Close it without answering and the clipboard with a "!" up top waits for whenever you want.',
+            es: 'El lobby pregunta qué te parecen las dificultades Normal, Difícil y Pesadilla. Toma diez segundos y ayuda a ajustar el juego. Si la cierras sin responder, la tablilla con "!" arriba se queda ahí para cuando quieras.',
+          },
+        ],
+      },
+      {
         title: { pt: 'Partidas inteiras no celular', en: 'Whole runs on your phone', es: 'Partidas enteras en el celular' },
         notes: [
           {

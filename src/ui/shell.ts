@@ -115,12 +115,12 @@ export const tabStrip = (labels: readonly string[], active: number, onPick: (i: 
  * Segmented control: one of a few options (PT / EN / ES). `onPick` runs on a
  * tap; `set` moves the highlight. Each option can carry its own `lang`.
  */
-export const segmented = <T extends string>(options: readonly { id: T; label: string; lang?: string; title?: string }[], current: T, onPick: (id: T) => void) => {
+export const segmented = <T extends string>(options: readonly { id: T; label: string; lang?: string; title?: string }[], current: T | null, onPick: (id: T) => void) => {
   const buttons = options.map((o) =>
     h('button', { class: 'shell-seg-option', type: 'button', lang: o.lang, title: o.title, onclick: (e: Event) => (e.stopPropagation(), onPick(o.id)) }, o.label),
   )
   const el = h('div', { class: 'shell-seg', role: 'group' }, ...buttons)
-  const set = (id: T) => options.forEach((o, i) => (buttons[i]!.classList.toggle('on', o.id === id), buttons[i]!.setAttribute('aria-pressed', String(o.id === id))))
+  const set = (id: T | null) => options.forEach((o, i) => (buttons[i]!.classList.toggle('on', o.id === id), buttons[i]!.setAttribute('aria-pressed', String(o.id === id))))
   set(current)
   return { el, set }
 }

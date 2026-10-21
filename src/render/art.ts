@@ -854,6 +854,26 @@ const NEWS = [
 
 export const newsIcon = () => toIconUrl('news', () => art(NEWS, { 1: '#303040', 2: '#f8f8f8', 3: '#c8d0e0', 4: '#e83850', 5: '#9098b8' }))
 
+/** The survey: a clipboard with three lines, bulleted in the difficulty colors. 1 outline, 2 clip, 3 board, 4 paper, 5-7 bullets, 8 text. */
+const SURVEY = [
+  '...11111...',
+  '11112221111',
+  '13312221331',
+  '13441114431',
+  '13444444431',
+  '13458888431',
+  '13444444431',
+  '13468888431',
+  '13444444431',
+  '13478888431',
+  '13444444431',
+  '13333333331',
+  '11111111111',
+]
+
+export const surveyIcon = () =>
+  toIconUrl('survey', () => art(SURVEY, { 1: '#303040', 2: '#c8d0e0', 3: '#c08850', 4: '#f8f8f8', 5: '#58b858', 6: '#f08030', 7: '#a040c8', 8: '#9098b8' }))
+
 /** Discord's app icon: the white Clyde on a blurple rounded square. 1 outline, 2 blurple, 3 white. */
 const DISCORD = [
   '..11111111111111..',
