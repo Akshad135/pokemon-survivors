@@ -4,7 +4,7 @@ import type { Input } from '../engine/input'
 import { clearCount } from '../game/clears'
 import { dexCounts, dexStatus, type DexStatus } from '../game/dex'
 import { PLAYABLE_IDS } from '../data/hatchlings'
-import { pokedex, type DexEntry } from '../site/pokedex'
+import { gameDex, type DexEntry } from '../site/pokedex'
 import { PICKUPS, pokeballIcon, sparkleIcon, trophyIcon } from '../render/art'
 import { cryUrl, drawPokemon, hasShiny, loadedSprites, loadSpecies, portraitUrl } from '../render/sprites'
 import { locale, t } from '../i18n'
@@ -44,7 +44,7 @@ export const pokedexScreen = (root: HTMLElement, input: Input, onClose: () => vo
   const m = t().dex
   const levels = t().difficulty.names
   const { dex: save, clears } = loadSave()
-  const entries = pokedex()
+  const entries = gameDex()
   const status = entries.map((e) => dexStatus(save, e.dex))
   const wild = entries.filter(defeatable)
   const counts = dexCounts(save, entries.map((e) => e.dex))

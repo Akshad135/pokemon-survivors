@@ -15,5 +15,5 @@ export const OWNABLE_SPECIES: ReadonlySet<number> = new Set([
   ...Object.values(BRANCHES).map((b) => b.dex),
 ])
 
-/** Every species the game has, by national dex number: the ones the in-game Pokédex lists (`site/pokedex.ts`). */
+/** Every species the save may hold, by national dex number: the ones the in-game Pokédex lists (`gameDex` in `site/pokedex.ts`). Gift-only companions aren't here. */
 export const GAME_SPECIES: ReadonlySet<number> = new Set([...OWNABLE_SPECIES, ...Object.values(ENEMIES).map((e) => e.dex), MEOWTH_DEX])

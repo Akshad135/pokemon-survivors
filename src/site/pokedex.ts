@@ -8,9 +8,11 @@ import { isRiftLegend, RIFT, type RiftLegend } from '../data/rifts'
 import { DOMAINS } from '../data/domains'
 import { GRAVEYARD, PLACE, PLACE_IDS, PLACES, type PlaceId } from '../data/places'
 import { SUMMONS } from '../data/traits'
-import { bossCandidates, EVENTS, RUN_LENGTH, STAGES, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
+import { bossCandidates, EVENTS, nightCandidates, RUN_LENGTH, STAGES, TRIO_IDS, TRIOS, type TrioId } from '../data/waves'
+import { NIGHT_BOSSES } from '../data/halloween'
 import { ENDLESS, REAPER } from '../game/endless'
 import { MEOWTH_DEX } from '../game/mapEventRules'
+import { SPECIAL_COMPANION_IDS, SPECIAL_COMPANIONS, type SpecialCompanionId } from '../data/companions'
 
 /**
  * The site's Pokédex model: every species the game uses, derived from
@@ -46,8 +48,13 @@ export type DexEntry = {
    * `starter`: playable, a starter or an egg family (`role: 'egg'`); `wild` set when the species also roams the horde,
    * `branch` when it's a stage a branching evolution can go to (`data/branches.ts`).
    * `event`: met at a map event (the fleeing Meowth), not in the horde.
+   * `companion`: a gift-only companion (`data/companions.ts`), listed as an event Pokémon.
    */
-  source: { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId; branch?: BranchId } | { kind: 'wild'; id: EnemyId } | { kind: 'event' }
+  source:
+    | { kind: 'starter'; id: PlayableId; stage: number; wild?: EnemyId; branch?: BranchId }
+    | { kind: 'wild'; id: EnemyId }
+    | { kind: 'event' }
+    | { kind: 'companion'; id: SpecialCompanionId }
 }
 
 /** Last national dex number of each generation, in `REGIONS` order. */
@@ -91,7 +98,11 @@ const base = (dex: number, name: string, types: readonly PokeType[]) => ({
   sprites: spritesOf(dex),
 })
 
-const wildByDex = new Map((Object.keys(ENEMIES) as EnemyId[]).map((id) => [ENEMIES[id].dex, id]))
+/** The first enemy of each species: the horde's own, ahead of a night boss of the same species (`HALLOWEEN.bosses`), which shares its card. */
+const wildByDex = (Object.keys(ENEMIES) as EnemyId[]).reduce((byDex, id) => (byDex.has(ENEMIES[id].dex) ? byDex : byDex.set(ENEMIES[id].dex, id)), new Map<number, EnemyId>())
+
+/** The Noite das Bruxas night boss of a species, if it has one: its card shows that boss's attacks. */
+export const nightBossOf = (dex: number): EnemyId | null => NIGHT_BOSSES.find((id) => ENEMIES[id].dex === dex) ?? null
 
 /** A playable line's stages, then the branches its evolution can take (Eevee's eight, Gallade…), each at the stage it replaces. */
 const playableEntries = (id: PlayableId, role: Role): DexEntry[] => {
@@ -116,13 +127,29 @@ const wildEntry = (id: EnemyId): DexEntry => {
 
 const eventEntry = (): DexEntry => ({ ...base(MEOWTH_DEX, 'Meowth', ['normal']), role: 'event', source: { kind: 'event' } })
 
-/** Every Pokémon in the game, in national dex order. Egg families that also roam the horde get one card, the playable one. */
-export const pokedex = (): DexEntry[] => {
+const companionEntry = (id: SpecialCompanionId): DexEntry => {
+  const c = SPECIAL_COMPANIONS[id]
+  return { ...base(c.dex, c.name, c.types), role: 'event', source: { kind: 'companion', id } }
+}
+
+const byDex = (a: DexEntry, b: DexEntry) => a.dex - b.dex
+
+/**
+ * The in-game Pokédex, in national dex order: every species a run can bring,
+ * so exactly what the save may hold (`GAME_SPECIES`). The Pokédex screen, the
+ * Caixa do PC, the Trainer Card and the profile count these. Egg families that
+ * also roam the horde get one card, the playable one; a night boss shares its
+ * species' card.
+ */
+export const gameDex = (): DexEntry[] => {
   const playable = [...STARTER_IDS.flatMap((id) => playableEntries(id, 'starter')), ...HATCHLING_IDS.flatMap((id) => playableEntries(id, 'egg'))]
   const listed = new Set(playable.map((e) => e.dex))
-  const wild = (Object.keys(ENEMIES) as EnemyId[]).filter((id) => !listed.has(ENEMIES[id].dex)).map(wildEntry)
-  return [...playable, ...wild, eventEntry()].sort((a, b) => a.dex - b.dex)
+  const wild = [...wildByDex].filter(([dex]) => !listed.has(dex)).map(([, id]) => wildEntry(id))
+  return [...playable, ...wild, eventEntry()].sort(byDex)
 }
+
+/** The site's Pokédex: every species the game loads, `gameDex()` plus the gift-only companions (never seen in a run, so never counted in game). */
+export const pokedex = (): DexEntry[] => [...gameDex(), ...SPECIAL_COMPANION_IDS.map(companionEntry)].sort(byDex)
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
 
@@ -134,6 +161,8 @@ export type Appearance =
   | { kind: 'swarm' | 'ring'; at: number; count: number; fixed?: boolean }
   /** `chance` is 1 for bosses that always come (a rare slot drawn among several splits its chance). */
   | { kind: 'boss'; at: number; chance: number }
+  /** A Noite das Bruxas night boss (`HALLOWEEN.bosses`): takes the boss slot at `at` in haunted runs, drawn among its pool (`chance` each). */
+  | { kind: 'night'; at: number; chance: number }
   /** A trio slot's boss, in the runs that draw `trio`. */
   | { kind: 'trio'; at: number; trio: TrioId }
   /** Waits behind a legendary rift, which first opens at `from`. */
@@ -150,7 +179,7 @@ export type Appearance =
 /**
  * When an enemy can show up: the spawn-pool windows of the stages with a slot
  * of its tier (contiguous stages merged), the swarms (flyers only) and rings of
- * its tier or naming it, its boss events, rifts, the reaper, places and summons.
+ * its tier or naming it, its boss events (a night boss's haunted slot too), rifts, the reaper, places and summons.
  */
 export const appearances = (id: EnemyId): Appearance[] => {
   const def: EnemyDef = ENEMIES[id]
@@ -165,8 +194,11 @@ export const appearances = (id: EnemyId): Appearance[] => {
   }, [])
   const events = EVENTS.flatMap((e): Appearance[] => {
     if (e.kind === 'boss') {
+      // A night boss, and the horde's own of its species, show its haunted slot.
+      const night = nightCandidates(e)
+      const haunted: Appearance[] = night.some((n) => ENEMIES[n].dex === def.dex) ? [{ kind: 'night', at: e.at, chance: 1 / night.length }] : []
       const candidates = bossCandidates(e)
-      if (!candidates.includes(id)) return []
+      if (!candidates.includes(id)) return haunted
       const trio = 'trio' in e ? TRIO_IDS.find((t) => TRIOS[t][e.trio] === id) : undefined
       return trio ? [{ kind: 'trio', at: e.at, trio }] : [{ kind: 'boss', at: e.at, chance: (e.chance ?? 1) / candidates.length }]
     }
