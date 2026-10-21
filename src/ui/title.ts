@@ -14,7 +14,7 @@ import { dayKey, missionStatus } from '../game/missions'
 import { pendingPicks, playsShiny } from '../game/shinyPicks'
 import { supporterCount, type WallEntry } from '../game/supporters'
 import { formatNumber, locale, t } from '../i18n'
-import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon } from '../render/art'
+import { bulbIcon, coinIcon, discordIcon, eggIcon, giftIcon, heartIcon, medalIcon, newsIcon, pokeballIcon, ribbonIcon, socialIcon, sparkleIcon, supporterIcon, surveyIcon } from '../render/art'
 import { logoScale, titleLogo } from '../render/logo'
 import { drawPokemon, loadedSprites, loadSpecies, type Dex } from '../render/sprites'
 import type { Place } from '../render/titleScene'
@@ -29,6 +29,7 @@ import { contentLine } from './gifts'
 import { countedFriends, loadInvites } from './invites'
 import { isUnread, latestUpdate } from './news'
 import { hallFace, hallPortrait } from './supporters'
+import { surveyWaiting, takeSurveyOffer } from './survey'
 import type { Screen } from './screens'
 import { gearButton, helpButton, iconButton, shellBody, topBar, walletChip } from './shell'
 import { nearestInDirection, type Direction } from './spatial'
@@ -40,6 +41,7 @@ import { uiDpr, uiViewport, uiZoom } from './uiScale'
 export type LobbyFocus =
   | 'trainer'
   | 'news'
+  | 'survey'
   | 'discord'
   | 'help'
   | 'settings'
@@ -107,6 +109,8 @@ export type TitleActions = {
   halloween: (focus: LobbyFocus) => Screen
   /** Opens Novidades (the newest update's highlights) over the title, like `settings`. */
   news: (focus: LobbyFocus) => Screen
+  /** Opens the difficulty survey over the title, like `settings`; the lobby also opens it by itself once (`takeSurveyOffer`). */
+  survey: (focus: LobbyFocus) => Screen
   /** Opens the Discord screen (the community server, linking a Discord account) over the title, like `settings`. */
   discord: (focus: LobbyFocus) => Screen
   /** Opens the in-game Pokédex over the title; closing it rebuilds the title on `focus`, like `settings`. */
@@ -253,6 +257,14 @@ const newsButton = (onClick: () => void) => {
     },
     () => {},
   )
+  return el
+}
+
+/** The survey in the top bar while it waits for an answer (`surveyWaiting`): a clipboard that hops under a red "!", like unread Novidades. */
+const surveyButton = (onClick: () => void) => {
+  const el = iconButton(surveyIcon(), t().survey.open, onClick)
+  el.classList.add('lobby-survey')
+  el.append(h('em', { class: 'lobby-badge' }, '!'))
   return el
 }
 
@@ -588,7 +600,7 @@ export type ShopTrip = 'shop' | 'look'
 /**
  * Title screen over the live meadow: the pixel logo and a blinking "press
  * start", then the lobby. The top bar holds the Trainer chip, the wallet,
- * Novidades, `?` (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
+ * the survey while it waits for an answer (it opens by itself once), Novidades, `?` (how to play) and the gear. Hoje has the day's cards (Surto, Desafio,
  * Missões), the Hall da Fama card sits beside them (Convide amigos, Discord and the official profiles
  * under it; on landscape phones Discord and the profiles move to the top bar), the saved partner stands
  * in the middle, and JOGAR goes with the collection dock (Pokédex, Ovos,
@@ -690,6 +702,7 @@ export const titleScreen = (
     help: () => location.assign(ROUTES.guide[lang]),
     settings: () => openOver(actions.settings),
     news: () => openOver(actions.news),
+    survey: () => openOver(actions.survey),
     halloween: () => openOver(actions.halloween),
     discord: () => openOver(actions.discord),
     outbreak: () => toast(root, rich(`*${ENEMIES[outbreakToday()].name}*: ${t().outbreak.blurb}`), 3600, 'outbreak'),
@@ -725,6 +738,7 @@ export const titleScreen = (
       right: [
         (wallet = walletChip(save.wallet)),
         ...(landscape ? [navigable(discordButton(press('discord')), 'discord'), ...SOCIAL_IDS.map((id) => navigable(socialButton(id, press(id)), id))] : []),
+        ...(surveyWaiting() ? [navigable(surveyButton(press('survey')), 'survey')] : []),
         navigable(newsButton(press('news')), 'news'),
         navigable(helpButton(press('help')), 'help'),
         navigable(gearButton(press('settings')), 'settings'),
@@ -934,6 +948,8 @@ export const titleScreen = (
     // `?loja` (and the dev's `ps.plaza()`) head for the shop once the lobby is laid out.
     const trip = opts.shop
     if (trip) requestAnimationFrame(() => visitShop(trip, opts.instant))
+    // Otherwise the survey asks by itself once; closed unanswered, its clipboard in the top bar keeps asking.
+    else if (takeSurveyOffer()) openOver(actions.survey)
   }
 
   /**

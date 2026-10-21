@@ -135,6 +135,7 @@ import { martDevTools } from './ui/martDev'
 import { missionDevTools } from './ui/missionsDev'
 import { pcBoxScreen } from './ui/pcBox'
 import { newsScreen } from './ui/news'
+import { forgetSurvey, surveyScreen } from './ui/survey'
 import { halloweenScreen } from './ui/halloween'
 import { pokedexScreen } from './ui/pokedex'
 import { profileEditor, profileScreen } from './ui/profile'
@@ -453,6 +454,8 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip;
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       news: (focus) => newsScreen(ui, input, () => showTitle({ focus })),
+      // Closed unanswered, the lobby highlights the survey's clipboard; answered, it's gone and JOGAR is.
+      survey: () => surveyScreen(ui, input, () => showTitle({ focus: 'survey' })),
       halloween: (focus) =>
         halloweenScreen(ui, input, {
           gifts: showGifts,
@@ -2219,6 +2222,12 @@ if (import.meta.env.DEV) {
         return hunted
       },
       pumpkin: () => withRun((g) => g.props.push({ id: g.nextId++, cell: -1 - g.nextId, kind: 'pumpkin', x: g.player.x + 40, y: g.player.y, hp: 2, hitCooldown: 0, shake: 0 })),
+      /** Opens the difficulty survey over the title, whatever the runs played; `ps.survey('reset')` forgets this device's answer. */
+      survey: (mode?: 'reset') => {
+        endRun()
+        if (mode === 'reset') return (forgetSurvey(), showTitle())
+        setScreen(surveyScreen(ui, input, () => showTitle({ focus: 'survey' })))
+      },
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
       card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),
