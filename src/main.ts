@@ -113,7 +113,7 @@ import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon 
 import { TYPE_COLORS } from './data/types'
 import { megaStoneIcon } from './render/megaFx'
 import { createTitleScene, drawTitleScene, meetPartner, sceneAt, steerPartner, stepTitleScene, talkSpot, tapsPlaza, visitPlaza } from './render/titleScene'
-import type { ShopLevel } from './render/plaza'
+import { KECLEON_DEX, type ShopLevel } from './render/plaza'
 import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
@@ -744,10 +744,13 @@ const RUN_IDLE = 2
 const MENU_IDLE = 20
 
 /**
- * What the menus stream and keep: the Noite das Bruxas' ghosts in the meadow first, every region's
- * starter trio (the partner select), then the next run's first stage.
+ * What the menus stream and keep: the Noite das Bruxas' ghosts in the meadow first, the plaza's
+ * Kecleon (off screen most of the time, and back after a run swept it), every region's starter trio
+ * (the partner select), then the next run's first stage.
  */
-const menuSprites = () => [...new Set([...(halloweenToday() ? HAUNT_DEX : []), ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)])]
+const menuSprites = () => [
+  ...new Set([...(halloweenToday() ? HAUNT_DEX : []), KECLEON_DEX, ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)]),
+]
 
 /**
  * Hands the sprite stream what's needed now and next, and frees the sheets
