@@ -1,6 +1,6 @@
 import { chance, createRng, hash2, pick, range, seedFrom } from '../engine/rng'
 import { HALLOWEEN, NIGHT_BOSSES } from '../data/halloween'
-import { ENEMIES, type EnemyId } from '../data/enemies'
+import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { EVENTS, nightCandidates, stageIndexAt, type WaveEvent } from '../data/waves'
 import { brasiliaDay, dayNumber, previousDay, type DayKey } from './day'
 import { createFight } from './bossFight'
@@ -65,6 +65,18 @@ export const halloweenFits = (haunted: boolean, startedAt: Date) => {
 /** Odds of the haunt next to the stage's other species: as common as an average one. */
 const hauntWeight = (pool: Roster['stages'][number]) => pool.reduce((sum, [, w]) => sum + w, 0) / Math.max(1, pool.length)
 
+/** The ghosts a legend's run meets: the event's evolved ones (tier 4 up), like the rest of its horde (`LEGEND_HORDE`). */
+const LEGEND_HAUNTS: readonly EnemyId[] = HALLOWEEN.haunts.filter((id) => {
+  const def: EnemyDef = ENEMIES[id]
+  return (def.tier ?? 1) >= 4
+})
+
+/** The ghost haunting stage `stage` (`HALLOWEEN.haunts`, `LEGEND_HAUNTS` in a legend's run); past the list, its last one. */
+export const hauntAt = (stage: number, legend = false): EnemyId => {
+  const haunts = legend ? LEGEND_HAUNTS : HALLOWEEN.haunts
+  return haunts[Math.min(stage, haunts.length - 1)]!
+}
+
 /**
  * The night bosses of a haunted run with `seed`, aligned with `events`: each
  * regular boss slot takes one of its ghosts (`nightCandidates`), never one
@@ -86,26 +98,23 @@ export const drawNightBosses = (seed: number, events: readonly WaveEvent[] = EVE
 }
 
 /**
- * The haunted cast of a run with `seed`: the stage's ghost (`HALLOWEEN.haunts`)
- * in each stage and the night bosses in the regular boss slots
+ * The haunted cast of a run with `seed`: the stage's ghost (`hauntAt`, a
+ * legend's own) in each stage and the night bosses in the regular boss slots
  * (`drawNightBosses`). Done after the draw, so the rest of the cast stays the
  * same; doing it again changes nothing.
  */
-export const withHaunts = (roster: Roster, haunted: boolean, seed: number): Roster => {
+export const withHaunts = (roster: Roster, haunted: boolean, seed: number, legend = false): Roster => {
   if (!haunted) return roster
   const night = drawNightBosses(seed)
   return {
     ...roster,
     stages: roster.stages.map((pool, i) => {
-      const haunt = HALLOWEEN.haunts[Math.min(i, HALLOWEEN.haunts.length - 1)]!
+      const haunt = hauntAt(i, legend)
       return pool.some(([id]) => id === haunt) ? pool : [...pool, [haunt, hauntWeight(pool)] as const]
     }),
     events: roster.events.map((id, i) => night[i] ?? id),
   }
 }
-
-/** The ghost haunting the stage at `time`. */
-const stageHaunt = (time: number): EnemyId => HALLOWEEN.haunts[Math.min(stageIndexAt(time), HALLOWEEN.haunts.length - 1)]!
 
 const isGhost = (e: Pick<Enemy, 'types'>) => e.types.includes('ghost')
 
@@ -154,7 +163,7 @@ const TRICK_COLORS = ['#a058e0', '#e0c0ff', '#58f0b0', '#ffffff'] as const
 export const crackPumpkin = (g: Game, x: number, y: number) => {
   const p = HALLOWEEN.pumpkin
   const treat = chance(g.rng, p.treat)
-  const ghost = treat ? null : stageHaunt(g.time)
+  const ghost = treat ? null : hauntAt(stageIndexAt(g.time), g.legend !== null)
   burst(g, x, y - 6, { colors: PUMPKIN_COLORS, count: 22, speed: 100, ttl: 0.55, gravity: 90 })
   if (!ghost) {
     dropCandies(g, x, y - 4, p.treatCandies)

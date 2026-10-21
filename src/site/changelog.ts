@@ -28,8 +28,9 @@ export type ChangelogUpdate = {
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
     date: '2026-10-21',
-    title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+    title: { pt: 'Noite das Bruxas e lendários jogáveis', en: 'Halloween Night and playable legendaries', es: 'Noche de Brujas y legendarios jugables' },
     highlights: [
+      { pt: 'Modo Lendário: vença os 23 lendários como chefes, no mapa ou nas novas fendas épicas, para capturá-los e jogar com eles, com ranking próprio.', en: 'Legend Mode: beat all 23 legendaries as bosses, on the map or in the new epic rifts, to catch them and play as them, with their own ranking.', es: 'Modo Legendario: vence a los 23 legendarios como jefes, en el mapa o en las nuevas grietas épicas, para capturarlos y jugar con ellos, con su propio ranking.' },
       { pt: 'Noite das Bruxas de 24/10 a 2/11: toda partida é assombrada, à noite, com um surto de fantasma por dia e abóboras pelo mapa. Doces ou travessuras?', en: 'Halloween Night from Oct 24 to Nov 2: every run is haunted, at night, with a ghost outbreak every day and jack-o\'-lanterns all over the map. Trick or treat?', es: 'Noche de Brujas del 24/10 al 2/11: cada partida está embrujada, de noche, con un brote de fantasma por día y calabazas por el mapa. ¿Dulce o truco?' },
       { pt: '12 chefes da noite, do Mimikyu ao Chandelure, tomam o lugar do Onix e do Snorlax: cace todos e ganhe o título Exorcista.', en: '12 night bosses, from Mimikyu to Chandelure, take Onix\'s and Snorlax\'s places: hunt them all for the Exorcist title.', es: '12 jefes de la noche, de Mimikyu a Chandelure, toman el lugar de Onix y Snorlax: cázalos a todos y gana el título Exorcista.' },
       { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
