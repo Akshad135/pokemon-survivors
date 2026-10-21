@@ -103,10 +103,10 @@ describe('Pressure', () => {
 })
 
 describe("the legend's horde", () => {
-  it('draws no basics: every species of the stages, swarms, rings and spitters is tier 4 or 5, and no outbreak', () => {
-    for (const seed of [1, 2, 3]) {
+  it('draws no basics: every species of the stages (the event ghosts too), swarms, rings and spitters is tier 4 or 5, and no outbreak', () => {
+    for (const [seed, halloween] of [[1, false], [2, true], [3, true]] as const) {
       const outbreak = OUTBREAK_SPECIES[0]!
-      const { roster } = startGame({ seed, starter: 'kyogre', difficulty: 'nightmare', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak, lure: false, incense: false, view: VIEW })
+      const { roster } = startGame({ seed, starter: 'kyogre', difficulty: 'nightmare', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak, halloween, lure: false, incense: false, view: VIEW })
       const horde = [
         ...roster.stages.flatMap((pool) => pool.map(([id]) => id)),
         ...roster.spitters.flatMap((id) => (id ? [id] : [])),
@@ -121,10 +121,10 @@ describe("the legend's horde", () => {
   })
 
   it('keeps the bosses and the shape of the run: same stages, same events', () => {
-    const roster = runRoster(4, null, true)
+    const roster = runRoster(4, null, false, true)
     expect(roster.stages).toHaveLength(STAGES.length)
     expect(roster.events.map((id, i) => (EVENTS[i]?.kind === 'boss' ? id : null))).toEqual(
-      runRoster(4, null).events.map((id, i) => (EVENTS[i]?.kind === 'boss' ? id : null)),
+      runRoster(4, null, false).events.map((id, i) => (EVENTS[i]?.kind === 'boss' ? id : null)),
     )
   })
 })

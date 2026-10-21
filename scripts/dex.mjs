@@ -45,7 +45,9 @@ export const RIFT_LEGENDS = [249, 250, 382, 383, 384, 483, 380, 381, 386]
 export const REAPER = [493]
 /** Places' bosses (src/data/places.ts): Spiritomb, out of the graveyard's Odd Keystone. It can roll shiny. */
 export const PLACE_BOSSES = [442]
-export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES])]
+/** Companions that aren't playable (`SPECIAL_COMPANIONS` in src/game/supporters.ts): Pumpkaboo, the Noite das Bruxas supporters'. */
+export const COMPANIONS = [710]
+export const DEX = [...new Set([...STARTERS, ...HATCHLINGS, ...HORDE, ...TRAITS, ...BOSSES, ...CRITTERS, ...RIFT_LEGENDS, ...REAPER, ...PLACE_BOSSES, ...COMPANIONS])]
 /**
  * Flying types that take to the sky (the sky's flock in src/data/places.ts and the
  * Flying-type player forms): they get a `Fly` sheet when SpriteCollab has one.

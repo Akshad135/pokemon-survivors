@@ -252,8 +252,9 @@ export type BoardEntry = ProfileName & {
   time: number
   outcome: RunOutcome
   at: string
-  /** The player's supporter badge (`game/supporters.ts`), null when they have none or hide it. Missing from an older API. */
+  /** The player's supporter badge (`game/supporters.ts`), null when they have none or hide it, and since when (ISO). Missing from an older API. */
   supporter?: SupporterTier | null
+  supporterSince?: string | null
   /** The run's id, to report it (`game/reports.ts`). Missing from an older API. */
   run?: string
 }

@@ -19,7 +19,7 @@ import type { Game } from './types'
  * rules. Refactors and presentation keep every digest.
  */
 
-const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
 
 /** A run set up by hand before its first tick (the same on the recording and the re-simulation). */
 type Scenario = { start: ReplayStart; seconds: number; stage: (g: Game) => void }
@@ -86,7 +86,7 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  26: {
+  27: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',

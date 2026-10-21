@@ -1211,6 +1211,7 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 493 | Arceus (shiny) | baronessfaron | baronessfaron |
 | 442 | Spiritomb | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 442 | Spiritomb (shiny) | Anonymous | baronessfaron |
+| 710 | Pumpkaboo | baronessfaron | baronessfaron, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 
 ## Cries
 

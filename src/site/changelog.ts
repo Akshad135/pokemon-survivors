@@ -27,6 +27,59 @@ export type ChangelogUpdate = {
  */
 export const CHANGELOG: readonly ChangelogUpdate[] = [
   {
+    date: '2026-10-21',
+    title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+    highlights: [
+      { pt: 'Noite das Bruxas de 24/10 a 2/11: toda partida é assombrada, à noite, com fantasmas e abóboras pelo mapa.', en: 'Halloween Night from Oct 24 to Nov 2: every run is haunted, at night, with ghosts and jack-o\'-lanterns all over the map.', es: 'Noche de Brujas del 24/10 al 2/11: cada partida está embrujada, de noche, con fantasmas y calabazas por el mapa.' },
+      { pt: 'Um surto assombrado por dia, com o Gastly no dia 31.', en: 'A haunted outbreak every day, with Gastly on the 31st.', es: 'Un brote embrujado cada día, con Gastly el 31.' },
+      { pt: 'Junte doces e encha o pote: moldura, fundo e papel de parede de Halloween, um título e um Gastly shiny.', en: 'Gather candies and fill the jar: a Halloween frame, background and wallpaper, a title and a shiny Gastly.', es: 'Junta dulces y llena el frasco: marco, fondo y fondo de pantalla de Halloween, un título y un Gastly shiny.' },
+      { pt: 'Quebre as abóboras: doces ou travessuras?', en: 'Smash the jack-o\'-lanterns: trick or treat?', es: 'Rompe las calabazas: ¿dulce o truco?' },
+      { pt: 'Apoiadores até 2/11 trocam o coração por uma abóbora, para sempre, e ganham o Pumpkaboo como companheiro.', en: 'Supporters by Nov 2 swap their heart for a jack-o\'-lantern, forever, and get Pumpkaboo as a companion.', es: 'Quien apoye hasta el 2/11 cambia el corazón por una calabaza, para siempre, y gana a Pumpkaboo como compañero.' },
+    ],
+    changes: [
+      {
+        title: { pt: 'Noite das Bruxas', en: 'Halloween Night', es: 'Noche de Brujas' },
+        notes: [
+          {
+            pt: 'De 24 de outubro a 2 de novembro (horário de Brasília), toda partida é assombrada: cai a noite, um fantasma a mais entra em cada fase (do Shedinja ao Gengar) e abóboras iluminadas aparecem entre os itens do mapa. O lobby também se veste para a noite, com abóboras, morcegos e fantasmas passeando.',
+            en: 'From October 24 to November 2 (Brasília time), every run is haunted: night falls, an extra ghost joins each stage (from Shedinja to Gengar) and lit jack-o\'-lanterns stand among the breakables. The lobby dresses for the night too, with jack-o\'-lanterns, bats and ghosts wandering around.',
+            es: 'Del 24 de octubre al 2 de noviembre (hora de Brasilia), cada partida está embrujada: cae la noche, un fantasma más se une a cada fase (de Shedinja a Gengar) y calabazas iluminadas aparecen entre los objetos del mapa. El lobby también se viste para la noche, con calabazas, murciélagos y fantasmas paseando.',
+          },
+          {
+            pt: 'Surtos assombrados: cada dia do evento tem o seu fantasma (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), o Gastly no dia 31, as velas do Litwick no Día de Muertos e o Duskull no Dia de Finados. O Desafio do dia também fica assombrado.',
+            en: 'Haunted outbreaks: each event day has its ghost (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), Gastly on the 31st, Litwick\'s candles for the Día de Muertos and Duskull for All Souls\' Day. The Daily Challenge gets haunted too.',
+            es: 'Brotes embrujados: cada día del evento tiene su fantasma (Shuppet, Phantump, Sinistea, Honedge, Dreepy, Cubone…), Gastly el 31, las velas de Litwick en el Día de Muertos y Duskull en el Día de los Fieles Difuntos. El Desafío del día también se embruja.',
+          },
+          {
+            pt: 'Doces: Pokémon do tipo Fantasma deixam cair doces, chefes e Alfas sempre trazem 10, e as abóboras são doces ou travessuras (às vezes uma roda de fantasmas aparece em volta de você). Os doces enchem um pote que dá prêmios no Presente do lobby: a moldura Abóbora só por participar, o fundo Noite das Bruxas, um Ovo Raro, o papel de parede Casa Assombrada, o título Rei das Abóboras e um Gastly shiny.',
+            en: 'Candies: Ghost-type Pokémon drop candies, bosses and Alphas always bring 10, and jack-o\'-lanterns are trick or treat (sometimes a ring of ghosts shows up around you). Candies fill a jar that pays prizes in the lobby\'s Gift box: the Pumpkin frame just for joining in, the Halloween Night background, a Rare Egg, the Haunted House wallpaper, the Pumpkin King title and a shiny Gastly.',
+            es: 'Dulces: los Pokémon de tipo Fantasma sueltan dulces, los jefes y los Alfas siempre traen 10, y las calabazas son dulce o truco (a veces aparece una ronda de fantasmas a tu alrededor). Los dulces llenan un frasco que da premios en el Regalo del lobby: el marco Calabaza solo por participar, el fondo Noche de Brujas, un Huevo Raro, el fondo de pantalla Casa Embrujada, el título Rey Calabaza y un Gastly shiny.',
+          },
+          {
+            pt: 'Apoiadores da Noite das Bruxas: quem já apoia o jogo ou apoiar até 2 de novembro troca o coração por uma abóbora com um coração entalhado (dourada no Ouro), no ranking, no perfil e no Hall da Fama. Ela fica para sempre, e durante o evento a linha deles no ranking brilha como uma vela. E quem entrar no jogo como apoiador durante o evento ganha o Pumpkaboo, um companheiro que só apoiadores têm e que deixa um rastro de doces brilhando por onde passa.',
+            en: 'Halloween Night supporters: anyone who already supports the game or does by November 2 swaps their heart for a jack-o\'-lantern with a heart carved in (golden for Gold), on the ranking, their profile and the Hall of Fame. It stays forever, and during the event their ranking line glows like a candle. And supporters who play during the event get Pumpkaboo, a companion only supporters have, leaving a trail of sparkling candy wherever it goes.',
+            es: 'Patrocinadores de la Noche de Brujas: quien ya apoya el juego o lo apoye hasta el 2 de noviembre cambia el corazón por una calabaza con un corazón tallado (dorada en Oro), en el ranking, su perfil y el Salón de la Fama. Se queda para siempre, y durante el evento su línea en el ranking brilla como una vela. Y quien entre al juego como patrocinador durante el evento gana a Pumpkaboo, un compañero que solo tienen los patrocinadores y que deja un rastro de dulces brillantes por donde pasa.',
+          },
+        ],
+      },
+      {
+        title: { pt: 'Modo Lendário mais difícil', en: 'A tougher Legend Mode', es: 'Un Modo Legendario más difícil' },
+        notes: [
+          {
+            pt: 'Lendário não enfrenta forma básica: a horda do Modo Lendário agora vem só de Pokémon evoluídos, do primeiro minuto ao último, sem o surto do dia (na Noite das Bruxas, só os fantasmas evoluídos: Misdreavus, Banette e Gengar).',
+            en: 'Legendaries don’t fight basic forms: Legend Mode’s horde is now all evolved Pokémon, from the first minute to the last, without the outbreak of the day (on Halloween Night, only the evolved ghosts: Misdreavus, Banette and Gengar).',
+            es: 'Un legendario no enfrenta formas básicas: la horda del Modo Legendario ahora es solo de Pokémon evolucionados, del primer minuto al último, sin el brote del día (en la Noche de Brujas, solo los fantasmas evolucionados: Misdreavus, Banette y Gengar).',
+          },
+          {
+            pt: 'A Pressão ficou mais forte em todas as dificuldades, e muito mais no Pesadelo: mais Pokémon, mais resistentes, mais rápidos e batendo mais forte. Ficar parado deixou de ser um passeio.',
+            en: 'Pressure got stronger on every difficulty, and much stronger on Nightmare: more Pokémon, tougher, faster and hitting harder. Standing around is no longer a stroll.',
+            es: 'La Presión se volvió más fuerte en todas las dificultades, y mucho más en Pesadilla: más Pokémon, más resistentes, más rápidos y pegando más fuerte. Quedarse quieto dejó de ser un paseo.',
+          },
+        ],
+      },
+    ],
+  },
+  {
     date: '2026-10-20',
     title: { pt: 'Lendários jogáveis e um mapa para explorar', en: 'Playable legendaries and a map to explore', es: 'Legendarios jugables y un mapa para explorar' },
     highlights: [
@@ -56,9 +109,9 @@ export const CHANGELOG: readonly ChangelogUpdate[] = [
             es: 'Los legendarios no evolucionan: despiertan en el Nv 12 y en el Nv 28, con Habilidad, más fuerza y una carga de Olvidar. En el segundo despertar, Kyogre y Groudon se vuelven Primigenios y Rayquaza, Mega; Latias, Latios y Mewtwo (Y) megaevolucionan con el botón Mega, y el especial de Deoxys cambia su Forma. Cada uno empieza con su movimiento legendario y una Habilidad innata siempre activa: Drizzle trae la lluvia, Drought el sol, Air Lock vuelve a Rayquaza inmune al clima y Levitate hace flotar a los Latis sobre la lava.',
           },
           {
-            pt: 'A partida dura o mesmo tempo, as três dificuldades continuam valendo e a horda vem mais forte (Pressão), só de Pokémon evoluídos: nada de formas básicas, nem o surto do dia. O modo tem um ranking só dele, o Lendário, separado por dificuldade: no ranking, troque entre Padrão e Lendário. E ninguém enfrenta a si mesmo: um Mewtwo encara o Mewtwo Clone no final.',
-            en: 'A run lasts as long as ever, all three difficulties still apply and the horde comes in stronger (Pressure), all evolved Pokémon: no basic forms, and no outbreak of the day. The mode has a ranking of its own, Legendary, split by difficulty: on the rankings, switch between Standard and Legendary. And no one faces themselves: a Mewtwo takes on the Mewtwo Clone at the end.',
-            es: 'La partida dura lo mismo, las tres dificultades siguen valiendo y la horda viene más fuerte (Presión), solo de Pokémon evolucionados: nada de formas básicas, ni el brote del día. El modo tiene un ranking propio, el Legendario, separado por dificultad: en el ranking, cambia entre Estándar y Legendario. Y nadie se enfrenta a sí mismo: un Mewtwo se mide con el Mewtwo Clon al final.',
+            pt: 'A partida dura o mesmo tempo, as três dificuldades continuam valendo e a horda vem mais forte (Pressão). O modo tem um ranking só dele, o Lendário, separado por dificuldade: no ranking, troque entre Padrão e Lendário. E ninguém enfrenta a si mesmo: um Mewtwo encara o Mewtwo Clone no final.',
+            en: 'A run lasts as long as ever, all three difficulties still apply and the horde comes in stronger (Pressure). The mode has a ranking of its own, Legendary, split by difficulty: on the rankings, switch between Standard and Legendary. And no one faces themselves: a Mewtwo takes on the Mewtwo Clone at the end.',
+            es: 'La partida dura lo mismo, las tres dificultades siguen valiendo y la horda viene más fuerte (Presión). El modo tiene un ranking propio, el Legendario, separado por dificultad: en el ranking, cambia entre Estándar y Legendario. Y nadie se enfrenta a sí mismo: un Mewtwo se mide con el Mewtwo Clon al final.',
           },
           {
             pt: '11 golpes lendários novos, um para cada membro dos trios, Mewtwo e Arceus: Snowscape, Electric Terrain, Overheat, Thunderclap, Burning Bulwark, Aqua Ring, Rock Wrecker, Glaciate, Metal Burst, Telekinesis e Judgment, que muda de tipo com o bioma.',

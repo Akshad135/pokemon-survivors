@@ -35,6 +35,7 @@ import { portraitUrl, sprites } from '../render/sprites'
 import { placeIcon } from '../render/places'
 import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
+import { treatIcon } from '../render/halloweenArt'
 import { h, later } from './dom'
 import { boundPadHint, glyphText } from './inputLabels'
 import { pressGuard } from './pressGuard'
@@ -851,6 +852,7 @@ export const results = (
         extra > 0 && h('div', {}, h('span', {}, r.overtime), h('b', {}, `+${formatTime(extra)}`)),
         h('div', {}, h('span', {}, m.level), h('b', {}, g.player.level)),
         h('div', {}, h('span', {}, m.kills), h('b', {}, g.kills)),
+        g.halloween && h('div', { class: 'result-treats' }, h('span', {}, t().halloween.candies), h('b', {}, h('img', { src: treatIcon(), alt: '' }), `+${formatNumber(g.candies)}`)),
         legends.length > 0 &&
           h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
         g.place.cleared.length > 0 &&

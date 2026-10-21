@@ -78,6 +78,7 @@ export const siteEs: SiteMessages = {
     learnStart: 'desde el inicio',
     wildStats: { hp: 'HP', damage: 'Daño por contacto', speed: 'Velocidad', xp: 'EXP' },
     eventNote: 'Aparece en los eventos del mapa: huye de ti y suelta monedas con cada golpe. Derríbalo antes de que escape para ganarte el Pay Day.',
+    companionNote: 'Compañero de regalo: llega a la caja de regalos de quienes apoyan durante la Noche de Brujas y camina a tu lado en la partida, dejando un rastro de dulces.',
     wildNote: 'Valores base. Los enemigos comunes se vuelven más fuertes cada minuto; los jefes, no.',
     appears: 'Cuándo aparece',
     horde: (from: string, until: string) => `Puede entrar en la horda, de ${from} a ${until}`,
