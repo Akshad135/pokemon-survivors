@@ -7,9 +7,12 @@ import type { ShopLevel } from '../data/shop'
 
 /**
  * The Kecleon plaza: the lobby's shop as a place in the meadow, east of the
- * partner's home. Cobblestones and the round stone pad are drawn in code (and
- * cached); the building of the shop's level and the props are PixelLab PNGs
- * (`public/assets/shop/`), anchored by the bottom center of what they paint.
+ * partner's home. The cobblestones are drawn in code (and cached); the
+ * building of the shop's level and the props are PixelLab PNGs
+ * (`public/assets/shop/`), anchored by the bottom center of what they paint,
+ * with no ground of their own: each casts a shadow on the cobblestones (its
+ * own silhouette squashed flat, or a soft ellipse under the deep 3/4
+ * buildings). The building keeps an invisible footprint walkers go around.
  * The shopkeepers are Kecleon's own sheets, plus its purple brother from Lv 2,
  * recolored from the same sheets. Pure presentation, like the rest of the lobby.
  */
@@ -27,7 +30,7 @@ type ArtId = (typeof ART_IDS)[number]
 const artFile = (id: ArtId) => `${import.meta.env.BASE_URL}assets/shop/${id.startsWith('lv') ? `shop-${id}` : `prop-${id}`}.png`
 
 /** A loaded PNG and the box of its painted pixels, so pieces stand on their real feet whatever padding the image has. */
-type Art = { img: HTMLImageElement; minX: number; maxY: number; w: number; h: number }
+type Art = { img: HTMLImageElement; minX: number; minY: number; maxY: number; w: number; h: number }
 const arts = new Map<ArtId, Art>()
 let loading = false
 
@@ -50,7 +53,7 @@ const measure = (img: HTMLImageElement): Art => {
       if (y > maxY) maxY = y
     }
   }
-  return { img, minX, maxY, w: maxX - minX + 1, h: maxY - minY + 1 }
+  return { img, minX, minY, maxY, w: maxX - minX + 1, h: maxY - minY + 1 }
 }
 
 /** Starts loading the plaza's PNGs and the shopkeeper's sheets (once). Pieces show up as they arrive. */
@@ -125,10 +128,13 @@ export const keeperSprites = (purple: boolean) => {
 type Placed = { x: number; y: number }
 type KeeperSpot = Placed & { dir: Dir8 }
 
+/** A shadow on the cobblestones, relative to the building's feet: a piece's squashed silhouette (its feet at x, y), or a soft ellipse centered at x, y. */
+type Shadow = (Placed & { art: Art }) | (Placed & { rx: number; ry: number })
+
 /** Where everything stands at a level, relative to the building's feet (its bottom center). */
 type Layout = {
   building: Art
-  /** The round stone pad under the building: its center's y, and radii. */
+  /** The building's footprint, never drawn: an ellipse walkers go around (its center's y, and radii). */
   pad: { y: number; rx: number; ry: number }
   /** The green Kecleon, then the purple brother from Lv 2. */
   keepers: readonly KeeperSpot[]
@@ -139,6 +145,8 @@ type Layout = {
   spot: Placed
   /** The cobblestones' ellipse. */
   cobbles: Placed & { rx: number; ry: number }
+  /** What the building and the props cast on the cobblestones. */
+  shadows: readonly Shadow[]
 }
 
 const layouts = new Map<ShopLevel, Layout>()
@@ -152,7 +160,7 @@ const layoutOf = (level: ShopLevel): Layout | null => {
   const building = arts.get(`lv${level}`)
   if (!building || ART_IDS.some((id) => !arts.has(id))) return null
   const half = Math.round(building.w / 2)
-  // The 3/4 buildings of Lv 4 and 5 stand on a deep diamond: the pad and the cobblestones reach back under all of it.
+  // The 3/4 buildings of Lv 4 and 5 stand on a deep diamond: the footprint and the cobblestones reach back under all of it.
   const depth = level >= 4 ? Math.round(half * 0.45) : 0
   // Lanterns flank the building, the rest of the props sit outside them.
   const lamp = Math.max(104, half + 14)
@@ -168,20 +176,26 @@ const layoutOf = (level: ShopLevel): Layout | null => {
             { x: -half + 2, y: 14, dir: 1 },
             { x: half - 2, y: 14, dir: 7 },
           ]
+  const props: Layout['props'] = [
+    { id: 'lantern', x: -lamp, y: 14 },
+    { id: 'lantern', x: lamp, y: 14 },
+    { id: 'crates', x: lamp + 26, y: 30 },
+    ...(level >= 2 ? [{ id: 'board' as const, x: -lamp - 36, y: 58 }] : []),
+    ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: lamp + 16, y: 66 }] : []),
+  ]
   const layout: Layout = {
     building,
     pad: { y: -6 - depth, rx: half + 4 + (depth ? 6 : 0), ry: Math.round(building.w / 7) + depth },
     keepers,
     counter: level === 3 ? LV3_COUNTER : null,
-    props: [
-      { id: 'lantern', x: -lamp, y: 14 },
-      { id: 'lantern', x: lamp, y: 14 },
-      { id: 'crates', x: lamp + 26, y: 30 },
-      ...(level >= 2 ? [{ id: 'board' as const, x: -lamp - 36, y: 58 }] : []),
-      ...(level >= 3 ? [{ id: 'flowers' as const, x: -lamp + 2, y: 44 }, { id: 'flowers' as const, x: lamp + 16, y: 66 }] : []),
-    ],
+    props,
     spot: { x: 0, y: 34 },
     cobbles: { x: 0, y: 36 - Math.round(depth * 0.7), rx: lamp + 66, ry: 78 + Math.round(depth * 1.1) },
+    shadows: [
+      // The deep 3/4 buildings cast a soft ellipse under their footprint; everything else, its own silhouette.
+      depth ? { x: 0, y: -Math.round(half * 0.3), rx: half - 10, ry: Math.round(half * 0.32) } : { x: 0, y: 0, art: building },
+      ...props.map((p) => ({ x: p.x, y: p.y, art: arts.get(p.id)! })),
+    ],
   }
   layouts.set(level, layout)
   return layout
@@ -265,7 +279,7 @@ export const talkAnchor = (plaza: Plaza, p: Vec): Vec | null => {
   return best && { x: plaza.x + best.x, y: plaza.y + best.y - 30 }
 }
 
-/** Pushes feet at `v` out of the building's pad, so walkers go around the shop (mutates `v`). */
+/** Pushes feet at `v` out of the building's footprint, so walkers go around the shop (mutates `v`). */
 export const pushOut = (plaza: Plaza, v: Vec) => {
   const layout = layoutOf(plaza.level)
   if (!layout) return
@@ -392,59 +406,37 @@ const cobbles = (() => {
   }
 })()
 
-/** Hard-edged filled ellipse rows into `ctx` centered at (x, y). */
-const fillEllipse = (ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, color: string) => {
-  ctx.fillStyle = color
-  for (let j = -ry; j <= ry; j++) {
-    const span = Math.round(rx * Math.sqrt(Math.max(0, 1 - (j / (ry + 0.5)) ** 2)))
-    if (span > 0) ctx.fillRect(x - span, y + j, span * 2, 1)
-  }
-}
+/** The shadows' tint: a dark green that reads on the cobblestones and on the grass. */
+const SHADOW = 'rgba(30,40,30,0.3)'
+/** How flat a silhouette shadow is, of its piece's painted height. */
+const SQUASH = 0.28
 
-/**
- * The round stone base a building stands on: a dark rim, two lighter rings,
- * a floor of small staggered slabs and the building's contact shadow in the
- * middle. Cached per size, centered on its middle.
- */
-const stonePad = (() => {
-  const cache = new Map<string, HTMLCanvasElement>()
+/** A piece's silhouette shadow: its painted rows squashed to `SQUASH` of their height and tinted `SHADOW`. Cached per art. */
+const silhouette = (() => {
+  const cache = new Map<Art, HTMLCanvasElement>()
   onCanvasReset(() => cache.clear())
-  return (rx: number, ry: number) => {
-    const key = `${rx}x${ry}`
-    const hit = cache.get(key)
+  return (art: Art) => {
+    const hit = cache.get(art)
     if (hit) return hit
-    const m = 3
-    const w = rx * 2 + m * 2 + 1
-    const h = ry * 2 + m * 2 + 5
-    const canvas = createCanvas(w, h)
+    const canvas = createCanvas(art.img.width, Math.max(1, Math.round(art.h * SQUASH)))
     const ctx = context2d(canvas)
-    const cx = rx + m
-    const cy = ry + m
-    fillEllipse(ctx, cx, cy + 2, rx + 2, ry + 2, 'rgba(30,50,30,0.25)')
-    fillEllipse(ctx, cx, cy, rx + 1, ry + 1, '#6a5a48')
-    fillEllipse(ctx, cx, cy, rx, ry, '#a89070')
-    fillEllipse(ctx, cx, cy, rx - 1, ry - 1, '#cbb48c')
-    // Slabs inside the inner ring only (a hard-edged clip: a row per slab line).
-    const irx = rx - 3
-    const iry = ry - 2
-    for (let j = -iry; j <= iry; j++) {
-      const span = Math.round(irx * Math.sqrt(Math.max(0, 1 - (j / (iry + 0.5)) ** 2)))
-      const ly = (j + 200) % 5
-      const offset = (Math.floor((j + 200) / 5) % 2) * 4
-      for (let i = -span; i < span; i++) {
-        const lx = (i + 400 + offset) % 9
-        const slab = Math.floor((i + 400 + offset) / 9) + Math.floor((j + 200) / 5)
-        ctx.fillStyle = lx === 8 || ly === 4 ? '#b8a07c' : ly === 0 ? '#ece0bf' : slab % 3 ? '#d8c49c' : '#c9b48a'
-        ctx.fillRect(cx + i, cy + j, 1, 1)
-      }
-    }
-    fillEllipse(ctx, cx, cy + 1, Math.round(rx * 0.72), Math.round(ry * 0.55), 'rgba(40,30,20,0.28)')
-    cache.set(key, canvas)
+    ctx.drawImage(art.img, 0, art.minY, art.img.width, art.h, 0, 0, canvas.width, canvas.height)
+    ctx.globalCompositeOperation = 'source-in'
+    ctx.fillStyle = SHADOW
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    cache.set(art, canvas)
     return canvas
   }
 })()
 
-/** Draws the plaza's floor (cobblestones, the building's pad) under everyone, when it's in view. */
+/** Draws a shadow on the ground at (x, y), screen px: a silhouette bottom-aligned to the feet and nudged 2 px down-right, or an ellipse centered there. */
+const drawShadow = (ctx: CanvasRenderingContext2D, s: Shadow, x: number, y: number) => {
+  if ('rx' in s) return blitCentered(ctx, ellipse(s.rx, s.ry, SHADOW), x, y)
+  const mask = silhouette(s.art)
+  ctx.drawImage(mask, Math.round(x - (s.art.minX + s.art.w / 2)) + 2, Math.round(y - mask.height) + 2)
+}
+
+/** Draws the plaza's floor (cobblestones, the pieces' shadows) under everyone, when it's in view. */
 export const drawPlazaGround = (ctx: CanvasRenderingContext2D, plaza: Plaza, camX: number, camY: number, w: number, h: number) => {
   const layout = layoutOf(plaza.level)
   if (!layout) return
@@ -453,8 +445,7 @@ export const drawPlazaGround = (ctx: CanvasRenderingContext2D, plaza: Plaza, cam
   const y = plaza.y + c.y - camY
   if (x + c.rx + 8 < 0 || x - c.rx - 8 > w || y + c.ry + 8 < 0 || y - c.ry - layout.building.h > h) return
   blitCentered(ctx, cobbles(c.rx, c.ry), x, y)
-  const pad = stonePad(layout.pad.rx, layout.pad.ry)
-  ctx.drawImage(pad, plaza.x - camX - (pad.width - 1) / 2, plaza.y + layout.pad.y - camY - layout.pad.ry - 3)
+  for (const s of layout.shadows) drawShadow(ctx, s, plaza.x + s.x - camX, plaza.y + s.y - camY)
 }
 
 /** Height (px) of a hop `since` seconds in, `count` hops long; 0 outside it. */
@@ -494,10 +485,7 @@ export const plazaPieces = (plaza: Plaza): readonly Piece[] => {
       const y = plaza.y + p.y
       return {
         y,
-        draw: (ctx, camX, camY) => {
-          blitCentered(ctx, ellipse(Math.round(art.w / 2) - 1, 2, 'rgba(16,40,16,0.25)'), x - camX, y - camY - 1)
-          put(ctx, art, x - camX, y - camY)
-        },
+        draw: (ctx, camX, camY) => put(ctx, art, x - camX, y - camY),
       }
     }),
     {
