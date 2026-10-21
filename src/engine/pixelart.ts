@@ -5,10 +5,38 @@
 export type Palette = Readonly<Record<string, string>>
 export type PixelSprite = HTMLCanvasElement
 
+/**
+ * Canvases `createCanvas` made that are still alive (as far as the garbage
+ * collector has said) and their pixels in bytes (w×h×4), with the peaks since
+ * `resetCanvasPeaks`: the crash watch and `run_end` read them. A canvas resized
+ * after it's made counts at its first size.
+ */
+export const canvasStats = { live: 0, bytes: 0, peakLive: 0, peakBytes: 0 }
+
+const collected =
+  typeof FinalizationRegistry === 'function'
+    ? new FinalizationRegistry<number>((bytes) => {
+        canvasStats.live--
+        canvasStats.bytes -= bytes
+      })
+    : null
+
+/** Starts the peaks over from what's alive now (a run starting). */
+export const resetCanvasPeaks = () => {
+  canvasStats.peakLive = canvasStats.live
+  canvasStats.peakBytes = canvasStats.bytes
+}
+
 export const createCanvas = (w: number, h: number) => {
   const c = document.createElement('canvas')
   c.width = Math.max(1, Math.ceil(w))
   c.height = Math.max(1, Math.ceil(h))
+  const bytes = c.width * c.height * 4
+  canvasStats.live++
+  canvasStats.bytes += bytes
+  if (canvasStats.live > canvasStats.peakLive) canvasStats.peakLive = canvasStats.live
+  if (canvasStats.bytes > canvasStats.peakBytes) canvasStats.peakBytes = canvasStats.bytes
+  collected?.register(c, bytes)
   return c
 }
 
