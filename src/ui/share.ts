@@ -18,7 +18,7 @@ import { CARD, cardBlob, drawRunCard, drawTrainerCard, type CardMon, type CardTr
 import type { CardStyle } from '../render/cosmetics'
 import { logoScale } from '../render/logo'
 import { gameUrl } from '../ranking'
-import { pokedex } from '../site/pokedex'
+import { gameDex, pokedex } from '../site/pokedex'
 import { t } from '../i18n'
 import { h, later } from './dom'
 import { boxSpecies, caughtShinies } from './pcBox'
@@ -113,7 +113,7 @@ export const runShare = (g: Game, dexBase: Pokedex, place: Promise<ChallengePlac
 
 /** What a Trainer Card counts, from a save: the Pokédex (caught and seen of every species), the shinies caught and the medals per tier. */
 export const trainerTotals = (save: Save) => {
-  const species = pokedex()
+  const species = gameDex()
   return {
     species,
     counts: dexCounts(save.dex, species.map((e) => e.dex)),

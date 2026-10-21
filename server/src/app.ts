@@ -10,6 +10,7 @@ import { parseDonation } from '../../src/data/donations'
 import { isPollOption } from '../../src/data/supporters'
 import { isDayKey } from '../../src/game/day'
 import { isDifficulty } from '../../src/game/difficulty'
+import { halloweenAt } from '../../src/game/halloween'
 import { parseSaveData } from '../../src/game/meta'
 import { outbreakAt } from '../../src/game/outbreak'
 import { isRecord } from '../../src/game/parse'
@@ -241,8 +242,9 @@ export const createApp = ({ store, ranking, gifts, checks, verify, donate, suppo
     const challenge = isRecord(body) && body.challenge !== undefined ? body.challenge : null
     if (challenge !== null && (!isDayKey(challenge) || !challengeOpen(challenge, new Date()))) return c.json({ error: 'not an open challenge' }, 400)
     const started = await ranking.startRun(c.var.userId, challenge)
-    // The day's outbreak by this clock (the one `outbreakFits` checks against), so a wrong device clock can't play another day's.
-    return started ? c.json({ ...started, outbreak: outbreakAt(new Date()) }, 201) : c.json({ error: 'too many runs' }, 429)
+    // The day by this clock (the one `outbreakFits` and `halloweenFits` check against): its outbreak and whether it's haunted, so a wrong device clock can't play another day's.
+    const now = new Date()
+    return started ? c.json({ ...started, outbreak: outbreakAt(now), halloween: halloweenAt(now) }, 201) : c.json({ error: 'too many runs' }, 429)
   })
 
   app.post('/runs/:token/start', auth, async (c) => {

@@ -17,8 +17,8 @@ import * as dm from '../engine/dmath'
 /**
  * Noite das Bruxas (`data/halloween.ts`): the event's calendar, the haunted
  * run and the candy jar. A run started on an event day is haunted, a run
- * input like the outbreak (`ReplayStart.halloween`, checked by the server
- * with `halloweenFits`): a ghost joins each stage, Ghost-type foes carry
+ * input like the outbreak (`ReplayStart.halloween`, dealt with a ranked
+ * run's token by the API's clock and checked with `halloweenFits`): a ghost joins each stage, Ghost-type foes carry
  * candies (`dropCandies`) and some breakables are jack-o'-lanterns
  * (`crackPumpkin`: a treat of candies, or a trick, a ring of ghosts), and
  * night bosses take the regular wave boss slots (`drawNightBosses`). The
@@ -50,8 +50,9 @@ export const HALLOWEEN_CALENDAR = Object.entries(HALLOWEEN.outbreaks).map(([day,
 
 /**
  * Whether a run that started at `startedAt` may be haunted: an event day, or
- * the day after one (the menus planned it just before midnight). A run that
- * isn't haunted always fits.
+ * the day after one (the menus planned it, or the API dealt its ticket, just
+ * before midnight; a ticket's day holds less than a day). A run that isn't
+ * haunted always fits.
  */
 export const halloweenFits = (haunted: boolean, startedAt: Date) => {
   if (!haunted) return true

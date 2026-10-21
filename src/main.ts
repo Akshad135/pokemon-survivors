@@ -608,7 +608,7 @@ type RunPlan = { seed: number; outbreak: EnemyId; halloween: boolean; roster: Ro
 /** A Desafio do dia run, as `startRun` takes it: the challenge, and whether the screen called it official. */
 type ChallengeRun = { challenge: Challenge; official: boolean }
 
-/** A run's plan from `seed` and `outbreak`: the API's for a ranked run, else the game's own and the device's day (which also says whether it's haunted). */
+/** A run's plan from `seed`, `outbreak` and `halloween`: the API's for a ranked run, else the game's own and the device's day. */
 const planRun = (seed = Date.now(), outbreak = outbreakToday(), halloween = halloweenToday()): RunPlan => ({ seed, outbreak, halloween, roster: runRoster(seed, outbreak, halloween) })
 
 let upcoming = planRun()
@@ -616,14 +616,15 @@ let upcoming = planRun()
 /**
  * Asks ahead for the next ranked run's ticket (`day`: a Desafio do dia's), so
  * Play never waits on it. Only between runs: a new token replaces the one a
- * run in progress plays. A regular ticket's seed and outbreak become the next
- * plan, so the menus warm up the cast it draws.
+ * run in progress plays. A regular ticket's seed, outbreak and haunting become
+ * the next plan, so the menus warm up the cast it draws.
  */
 const prefetchRun = (day: DayKey | null = null) =>
   void prefetchRanked(day).then((ticket) => {
     if (!ticket || ticket.seed === null || day) return
     const outbreak = outbreakToday(ticket.outbreak)
-    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak || upcoming.halloween !== halloweenToday()) upcoming = planRun(ticket.seed, outbreak)
+    const halloween = halloweenToday(ticket.halloween)
+    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak || upcoming.halloween !== halloween) upcoming = planRun(ticket.seed, outbreak, halloween)
   })
 
 /**
@@ -661,9 +662,9 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   const ranked = startRanked(c?.day ?? null)
   // A ranked run plays the seed the API dealt (a challenge's is the day's); the replay starts from it and the cast is drawn from it.
   const seed = c ? c.seed : (ranked?.seed ?? upcoming.seed)
-  // And the outbreak it dealt with the ticket (the API checks it by its own clock); without one, the device's day.
+  // And the outbreak and haunting it dealt with the ticket (the API checks them by its own clock); without one, the device's day.
   const outbreak = outbreakToday(ranked?.outbreak ?? null)
-  const halloween = halloweenToday()
+  const halloween = halloweenToday(ranked?.halloween ?? null)
   // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak (or haunting).
   const plan = c
     ? { seed, outbreak: c.outbreak, halloween: c.halloween, roster: runRoster(seed, c.outbreak, c.halloween) }

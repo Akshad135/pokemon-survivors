@@ -132,13 +132,24 @@ const companionEntry = (id: SpecialCompanionId): DexEntry => {
   return { ...base(c.dex, c.name, c.types), role: 'event', source: { kind: 'companion', id } }
 }
 
-/** Every Pokémon in the game, in national dex order. Egg families that also roam the horde get one card, the playable one; a night boss shares its species' card. */
-export const pokedex = (): DexEntry[] => {
+const byDex = (a: DexEntry, b: DexEntry) => a.dex - b.dex
+
+/**
+ * The in-game Pokédex, in national dex order: every species a run can bring,
+ * so exactly what the save may hold (`GAME_SPECIES`). The Pokédex screen, the
+ * Caixa do PC, the Trainer Card and the profile count these. Egg families that
+ * also roam the horde get one card, the playable one; a night boss shares its
+ * species' card.
+ */
+export const gameDex = (): DexEntry[] => {
   const playable = [...STARTER_IDS.flatMap((id) => playableEntries(id, 'starter')), ...HATCHLING_IDS.flatMap((id) => playableEntries(id, 'egg'))]
   const listed = new Set(playable.map((e) => e.dex))
   const wild = [...wildByDex].filter(([dex]) => !listed.has(dex)).map(([, id]) => wildEntry(id))
-  return [...playable, ...wild, eventEntry(), ...SPECIAL_COMPANION_IDS.map(companionEntry)].sort((a, b) => a.dex - b.dex)
+  return [...playable, ...wild, eventEntry()].sort(byDex)
 }
+
+/** The site's Pokédex: every species the game loads, `gameDex()` plus the gift-only companions (never seen in a run, so never counted in game). */
+export const pokedex = (): DexEntry[] => [...gameDex(), ...SPECIAL_COMPANION_IDS.map(companionEntry)].sort(byDex)
 
 /* ---------------- When a wild Pokémon shows up ---------------- */
 

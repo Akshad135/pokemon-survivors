@@ -88,9 +88,12 @@ export const setOutbreak = (id: EnemyId | null) => {
 /**
  * Whether today (Brasília, on the missions' clock) is a Noite das Bruxas day:
  * runs are haunted and the lobby dresses for it. Asked every frame (the
- * menus' music), so it's worked out once a minute.
+ * menus' music), so it's worked out once a minute. A ranked run passes the
+ * answer the API dealt with its ticket (`dealt`), which a wrong device clock
+ * can't move, unless the dev console moved the clock (`ps.halloween`).
  */
-export const halloweenToday = () => {
+export const halloweenToday = (dealt: boolean | null = null) => {
+  if (dealt !== null && clockOffset === 0) return dealt
   const now = today()
   const minute = Math.floor(now.getTime() / 60_000)
   if (haunted.minute !== minute) haunted = { minute, on: isHalloweenDay(brasiliaDay(now)) }
