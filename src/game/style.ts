@@ -4,7 +4,7 @@ import { isRecord, knownIds } from './parse'
 /**
  * Styles the player owns and wears: the share cards' frame and background
  * and the Caixa do PC's wallpaper (`data/style.ts`). Bought on the Poké
- * Mart's style shelf (`buyStyle` in `game/counter.ts` pays for it) or given
+ * Mart's style shelf (`buyStyle` in `game/shop.ts` pays for it) or given
  * (`grantStyle`). Pure; shared with the API through the save.
  */
 

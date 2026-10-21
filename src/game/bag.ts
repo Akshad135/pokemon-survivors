@@ -1,23 +1,17 @@
+import { BAG_ITEM_IDS, BAG_ITEMS, type BagItem } from '../data/shop'
 import { isRecord, wholeNumber } from './parse'
+import type { StatDelta } from './stats'
+
+export { BAG_ITEM_IDS, BAG_ITEMS, type BagItem }
 
 /**
- * The Bag: items bought at the Poké Mart's counter (or paid by missions)
- * that boost one run. The player arms them on the select screen and the next
- * run uses them up as it starts (`useArmed`), recording them in its
- * `ReplayStart`. Pure; shared with the API through the save.
+ * The Bag: consumables bought at the Kecleon Shop's Vitrine (or paid by
+ * missions and the daily gift) that boost one run. The player arms them on
+ * the select screen, one of each and as many different ones as the shop's
+ * level allows (`SHOP_LEVELS[level].bagSlots`), and the next run uses them up
+ * as it starts (`useArmed`), recording them in its `ReplayStart`. Pure;
+ * shared with the API through the save.
  */
-
-/** What each item does for the run that uses it. Names stay in English (official); descriptions live in `i18n`. */
-export const BAG_ITEMS = {
-  /** Wild shinies twice as likely (outbreak included). */
-  lure: { name: 'Lure', boost: 2 },
-  /** Eggs twice as likely to drop. */
-  incense: { name: 'Incense', boost: 2 },
-} as const satisfies Record<string, { name: string; boost: number }>
-
-export type BagItem = keyof typeof BAG_ITEMS
-
-export const BAG_ITEM_IDS = Object.keys(BAG_ITEMS) as BagItem[]
 
 /**
  * Per item, how many the player ever got and ever used (what's left is the
@@ -28,11 +22,9 @@ export type Bag = Counts & { armed: Readonly<Record<BagItem, boolean>> }
 
 type Counts = Readonly<Record<BagItem, { got: number; used: number }>>
 
-export const EMPTY_BAG: Bag = {
-  lure: { got: 0, used: 0 },
-  incense: { got: 0, used: 0 },
-  armed: { lure: false, incense: false },
-}
+const NOT_ARMED = Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, false])) as Record<BagItem, boolean>
+
+export const EMPTY_BAG: Bag = { ...(Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, { got: 0, used: 0 }])) as Counts), armed: NOT_ARMED }
 
 /** How many of `id` are left. */
 export const bagCount = (bag: Bag, id: BagItem) => Math.max(0, bag[id].got - bag[id].used)
@@ -40,19 +32,39 @@ export const bagCount = (bag: Bag, id: BagItem) => Math.max(0, bag[id].got - bag
 /** Puts `n` of `id` in the bag (a purchase, a mission reward, a gift). */
 export const addToBag = (bag: Bag, id: BagItem, n = 1): Bag => ({ ...bag, [id]: { ...bag[id], got: bag[id].got + Math.max(0, n) } })
 
-/** Arms (or disarms) `id` for the next run. Only an item the player has can be armed. */
-export const armItem = (bag: Bag, id: BagItem, on: boolean): Bag => ({ ...bag, armed: { ...bag.armed, [id]: on && bagCount(bag, id) > 0 } })
+/** The items a run starting now uses: the armed ones still in the bag, the first `limit` of them in catalog order. */
+export const armedItems = (bag: Bag, limit = Infinity): BagItem[] => BAG_ITEM_IDS.filter((id) => bag.armed[id] && bagCount(bag, id) > 0).slice(0, limit)
 
-/** The items a run starting now uses: the armed ones still in the bag. */
-export const armedItems = (bag: Bag): Record<BagItem, boolean> =>
-  Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, bag.armed[id] && bagCount(bag, id) > 0])) as Record<BagItem, boolean>
-
-/** A run starts: each armed item is used up and disarmed (the pick is for one run). Returns what the run got. */
-export const useArmed = (bag: Bag): { bag: Bag; used: Record<BagItem, boolean> } => {
-  const used = armedItems(bag)
-  const next = BAG_ITEM_IDS.reduce<Bag>((b, id) => (used[id] ? { ...b, [id]: { ...b[id], used: b[id].used + 1 } } : b), bag)
-  return { bag: { ...next, armed: { lure: false, incense: false } }, used }
+/** Why `id` can't be armed now (none left, or `limit` different items armed already), or null when it can. */
+export const armBlock = (bag: Bag, id: BagItem, limit: number): 'empty' | 'full' | null => {
+  if (bagCount(bag, id) === 0) return 'empty'
+  return !bag.armed[id] && armedItems(bag).length >= limit ? 'full' : null
 }
+
+/** Arms (or disarms) `id` for the next run; arming does nothing when blocked (`armBlock`). */
+export const armItem = (bag: Bag, id: BagItem, on: boolean, limit: number): Bag =>
+  on && armBlock(bag, id, limit) ? bag : { ...bag, armed: { ...bag.armed, [id]: on } }
+
+/**
+ * A run starts: each armed item (up to `limit`) is used up and every pick is
+ * disarmed (it's for one run). `keep` leaves an item that does nothing in this
+ * run in the bag (Honey in a run without an outbreak). Returns what the run got.
+ */
+export const useArmed = (bag: Bag, limit: number, keep: (id: BagItem) => boolean = () => false): { bag: Bag; used: BagItem[] } => {
+  const used = armedItems(bag, limit).filter((id) => !keep(id))
+  const next = used.reduce<Bag>((b, id) => ({ ...b, [id]: { ...b[id], used: b[id].used + 1 } }), bag)
+  return { bag: { ...next, armed: NOT_ARMED }, used }
+}
+
+/** The stat layers a run's Bag items add (Lucky Egg, Luck Incense, X Attack), for `recomputeStats`. */
+export const bagDeltas = (used: readonly BagItem[]): StatDelta[] =>
+  used.flatMap((id) => {
+    const effect = BAG_ITEMS[id].effect
+    return 'stat' in effect ? [effect.stat] : []
+  })
+
+/** A run's Bag items from an untrusted list (a replay, a stored run): known ids, each once, in catalog order. */
+export const parseBagItems = (raw: unknown): BagItem[] => (Array.isArray(raw) ? BAG_ITEM_IDS.filter((id) => raw.includes(id)) : [])
 
 /**
  * Both bags in one: each counter keeps the larger side (an item got on
@@ -61,14 +73,18 @@ export const useArmed = (bag: Bag): { bag: Bag; used: Record<BagItem, boolean> }
  */
 export const mergeBag = (base: Bag, incoming: Bag): Bag => {
   const counts = Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, { got: Math.max(base[id].got, incoming[id].got), used: Math.max(base[id].used, incoming[id].used) }])) as Counts
-  const merged = { ...counts, armed: EMPTY_BAG.armed }
-  return { ...merged, armed: armedItems({ ...merged, armed: incoming.armed }) }
+  return withArmed(counts, incoming.armed)
+}
+
+/** Counters with only the picks still in the bag armed. */
+const withArmed = (counts: Counts, armed: Readonly<Record<string, unknown>>): Bag => {
+  const bag = { ...counts, armed: NOT_ARMED }
+  return { ...bag, armed: Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, armed[id] === true && bagCount(bag, id) > 0])) as Record<BagItem, boolean> }
 }
 
 /** The save's `bag`: counters clamped to whole numbers (never more used than got), unknown items dropped. */
 export const parseBag = (raw: unknown): Bag => {
   if (!isRecord(raw)) return EMPTY_BAG
-  const armed = isRecord(raw.armed) ? raw.armed : {}
   const counts = Object.fromEntries(
     BAG_ITEM_IDS.map((id) => {
       const entry = isRecord(raw[id]) ? raw[id] : {}
@@ -76,6 +92,5 @@ export const parseBag = (raw: unknown): Bag => {
       return [id, { got, used: wholeNumber(entry.used, got) }]
     }),
   ) as Counts
-  const bag = { ...counts, armed: EMPTY_BAG.armed }
-  return { ...bag, armed: armedItems({ ...bag, armed: Object.fromEntries(BAG_ITEM_IDS.map((id) => [id, armed[id] === true])) as Record<BagItem, boolean> }) }
+  return withArmed(counts, isRecord(raw.armed) ? raw.armed : {})
 }

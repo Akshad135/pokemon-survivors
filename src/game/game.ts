@@ -8,7 +8,7 @@ import { isHidden } from '../data/abilities'
 import { branchesAt } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilityLuck, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
-import { BAG_ITEMS } from './bag'
+import { BAG_ITEMS, type BagItem } from './bag'
 import { branchContext, drawBranches, playerForm } from './branch'
 import { createAlphaClock, updateAlphas } from './alphas'
 import { updateAttacks } from './attacks'
@@ -45,7 +45,7 @@ import { AWAKENING, avoidLegend, createLegendState, formAfter, pendingAwakening,
 import { decidePokeball, updatePickups } from './pickups'
 import { rollShiny, SHINY_ODDS, shinyBoost } from './shiny'
 import { updateProps } from './props'
-import { withOutbreak } from './outbreak'
+import { withHoney, withOutbreak } from './outbreak'
 import { withHaunts } from './halloween'
 import { createTerrain, groundAt, playerWaterPace, updateTerrain } from './terrain'
 import { createLandmarkState, updateLandmarks, updateTunnel } from './landmarks'
@@ -97,9 +97,8 @@ export type RunOptions = {
   outbreak?: EnemyId | null
   /** Noite das Bruxas (`game/halloween.ts`): a ghost in every stage of the roster and the night bosses (`withHaunts`, which a roster drawn ahead may already have), candies and jack-o'-lanterns. */
   halloween?: boolean
-  /** Bag items the run uses (`game/bag.ts`): a Lure doubles wild shinies, an Incense egg drops. */
-  lure?: boolean
-  incense?: boolean
+  /** Bag items the run uses (`game/bag.ts`), each doing its `BAG_ITEMS` effect. */
+  bag?: readonly BagItem[]
   /** Opens the run on the opening draft (`draftOffers`): three moves of the learnset to pick the second move from. */
   draft?: boolean
 }
@@ -117,6 +116,7 @@ export const createGame = (
   options: RunOptions = {},
 ): Game => {
   const def = PLAYABLE[starter]
+  const bag = options.bag ?? []
   const rng = createRng(seed)
   const lucky = rollShiny(rng, SHINY_ODDS.player)
   const shiny = lucky || options.shiny === true
@@ -182,7 +182,14 @@ export const createGame = (
     branch: null,
     ability: createAbilityState(),
     // A legend never meets itself among the bosses (`avoidLegend`), nor the outbreak's basic in its horde (`LEGEND_HORDE`).
-    roster: avoidLegend(withOutbreak(withHaunts(roster ?? drawRoster(rng), options.halloween === true, seed, isLegend(starter)), isLegend(starter) ? null : (options.outbreak ?? null)), starter),
+    roster: avoidLegend(
+      withHoney(
+        withOutbreak(withHaunts(roster ?? drawRoster(rng), options.halloween === true, seed, isLegend(starter)), isLegend(starter) ? null : (options.outbreak ?? null)),
+        isLegend(starter) ? null : (options.outbreak ?? null),
+        bag.includes('honey') ? BAG_ITEMS.honey.effect.outbreakWeight : 1,
+      ),
+      starter,
+    ),
     spawnBudget: 0,
     nextEvent: 0,
     bossId: null,
@@ -203,11 +210,13 @@ export const createGame = (
     tm: createTmState(),
     endless: null,
     tally: createTally(),
-    eggs: { found: [], lucky: options.luckyEgg === true, boost: options.incense ? BAG_ITEMS.incense.boost : 1 },
+    eggs: { found: [], lucky: options.luckyEgg === true, boost: bag.includes('incense') ? BAG_ITEMS.incense.effect.eggOdds : 1 },
     outbreak: options.outbreak ?? null,
     halloween: options.halloween === true,
     candies: 0,
-    shinyBoost: shinyBoost(ranks.shinyCharm, options.lure === true),
+    shinyBoost: shinyBoost(ranks.shinyCharm, bag.includes('lure')),
+    bag,
+    maxRevive: bag.includes('maxRevive'),
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
@@ -221,16 +230,26 @@ export const createGame = (
   }
   recomputeStats(g)
   g.player.hp = g.player.stats.maxHp
+  // A Rare Candy starts the run a few levels up: their level-ups come right after the opening draft.
+  if (bag.includes('rareCandy')) {
+    g.player.level = BAG_ITEMS.rareCandy.effect.startLevel
+    g.player.xpNext = xpFor(g.player.level)
+    g.pendingLevelUps = g.player.level - 1
+  }
   if (options.draft) {
     g.phase = 'levelup'
-    g.pendingLevelUps = 1
+    g.pendingLevelUps++
     g.offers = draftOffers(loadout(g), g.rng)
-  }
+  } else if (g.pendingLevelUps > 0) advancePhase(g)
   return g
 }
 
-/** Whether the level-up on screen is the opening draft: the run's clock only starts once it's picked. */
-export const drafting = (g: Game) => g.phase === 'levelup' && g.time === 0
+/**
+ * Whether the level-up on screen is the opening draft: the run's clock only
+ * starts once it's picked. The draft is the first of the run's level-ups
+ * (a Rare Candy's come after it, at the same 0:00).
+ */
+export const drafting = (g: Game) => g.phase === 'levelup' && g.time === 0 && g.pendingLevelUps === g.player.level
 
 /** How a run rolls its level-up cards: rarity on, with its Shiny Charm's odds and the luck of an ability (Jirachi's Serene Grace). */
 const rolling = (g: Game): RollOptions => {

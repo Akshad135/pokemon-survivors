@@ -1,5 +1,5 @@
 /**
- * The day everyone shares: the Surto do dia, the Poké Mart's daily counter
+ * The day everyone shares: the Surto do dia, the Kecleon Shop's Vitrine do dia
  * and the ranking's boards all turn over at midnight in Brasília, so the
  * server can check a run against the day it started. (Missions keep the
  * player's local day.) Pure; shared with the API.
@@ -40,7 +40,13 @@ export const previousDay = (day: DayKey): DayKey => {
   return new Date(Date.UTC(y!, m! - 1, d! - 1)).toISOString().slice(0, 10)
 }
 
-/** Milliseconds from `d` to the next midnight in Brasília (when the day's outbreak and counter turn over). */
+/** The day `n` days after `day` (before it for a negative `n`; calendar arithmetic, no time zone involved). */
+export const addDays = (day: DayKey, n: number): DayKey => {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(Date.UTC(y!, m! - 1, d! + n)).toISOString().slice(0, 10)
+}
+
+/** Milliseconds from `d` to the next midnight in Brasília (when the day's outbreak and Vitrine turn over). */
 export const msToNextDay = (d: Date) => (86_400 - clockAt(d).seconds) * 1000 - d.getMilliseconds()
 
 /** Milliseconds since the last midnight in Brasília. */

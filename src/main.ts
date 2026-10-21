@@ -33,7 +33,8 @@ import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId 
 import { isLegend } from './data/legends'
 import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
-import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
+import { BAG_ITEMS, useArmed, type BagItem } from './game/bag'
+import { SHOP_LEVELS } from './data/shop'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
@@ -567,6 +568,8 @@ const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | nul
     bosses: g.tally.bossKills,
     foe: faint?.foe ?? null,
     hit: faint?.hit ?? null,
+    coins: r.paid,
+    bag: [...r.recorder.replay.start.bag],
     ...challengeKind(r.challenge),
     ...(g.halloween ? { candies: g.candies } : {}),
   })
@@ -687,8 +690,10 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   await loadAll([...familyDex(starter), ...openingDex(plan)])
   // The outbreak's shiny can show up in the first minute.
   void preloadShinies([ENEMIES[plan.outbreak].dex])
-  // Armed bag items are used up as the run starts (the challenge leaves them in the Bag).
-  const { bag, used } = c ? { bag: loadSave().bag, used: { lure: false, incense: false } } : useArmed(loadSave().bag)
+  // Armed bag items are used up as the run starts, as many as the shop's level lets a run take (the challenge leaves them in the Bag).
+  // Honey stays in the Bag for a run without an outbreak (a legend's).
+  const before = loadSave()
+  const { bag, used } = c ? { bag: before.bag, used: [] } : useArmed(before.bag, SHOP_LEVELS[before.shop.level].bagSlots, (id) => id === 'honey' && legend)
   updateSave((s) => ({ ...s, bag }))
   const save = loadSave()
   const start: ReplayStart = c ? challengeStart(c, view, challengeShiny(c)) : {
@@ -701,8 +706,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
     outbreak: plan.outbreak,
     halloween: plan.halloween,
-    lure: used.lure,
-    incense: used.incense,
+    bag: used,
     view: { w: view.w, h: view.h },
   }
   // Created like a replay is re-simulated (the roster drawn ahead is the same one).
@@ -763,9 +767,7 @@ const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
     const def = ENEMIES[start.outbreak]
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
   }
-  for (const id of BAG_ITEM_IDS) {
-    if (start[id]) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon(id), alt: '' }), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
-  }
+  for (const id of start.bag) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon(id), alt: '' }), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
 }
 
 const runHud = (game: Game) => {
@@ -1202,6 +1204,9 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'revive':
       playSfx('evolve')
       return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: consumableIcon('revive'), alt: '' }), rich(t().toast.revive)), 3000)
+    case 'maxRevive':
+      playSfx('evolve')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon('maxRevive'), alt: '' }), rich(t().toast.maxRevive)), 3400)
     case 'gameover':
       bankRun(r, true)
       recordProgress(r)

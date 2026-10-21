@@ -19,7 +19,7 @@ import type { Game, OwnedMove, TmOffer } from './types'
 
 const owned = (id: MoveId, level = 1): OwnedMove => ({ id, level, cooldown: 0 })
 const SIX: OwnedMove[] = (['waterGun', 'whirlpool', 'swift', 'thunder', 'sludgeBomb', 'gust'] as const).map((id) => owned(id))
-const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
 
 /** A run past the opening draft, playing. */
 const run = (): Game => {

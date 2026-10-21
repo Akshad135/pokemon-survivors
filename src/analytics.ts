@@ -4,6 +4,7 @@ import type { BranchId } from './data/branches'
 import type { EnemyId } from './data/enemies'
 import type { PlayableId } from './data/hatchlings'
 import type { MegaId } from './data/megas'
+import type { BagItem } from './data/shop'
 import type { Difficulty } from './game/difficulty'
 import type { RunMode } from './game/ranking'
 import type { LobbyFocus } from './ui/title'
@@ -42,6 +43,10 @@ type AnalyticsEvents = {
     /** What landed the last hit of a faint: the foe's species (null for a hazard) and the kind of hit. */
     foe: EnemyId | null
     hit: HitKind | null
+    /** ₽ the run banked (coins, plus the end bonus when it got it), to tune the economy. */
+    coins: number
+    /** The Bag items the run took (`ReplayStart.bag`). */
+    bag: BagItem[]
     challenge?: 'official' | 'practice'
     /** A haunted run's (Noite das Bruxas) candies, to tune the candy jar. */
     candies?: number

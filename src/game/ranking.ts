@@ -7,6 +7,7 @@ import { DAY_TIME_ZONE, isDayKey, type DayKey } from './day'
 import { isDifficulty, type Difficulty } from './difficulty'
 import { wonRun } from './meta'
 import { isRecord } from './parse'
+import type { BagItem } from '../data/shop'
 import type { RibbonTier } from './ribbons'
 import type { SupporterTier } from './supporters'
 import type { Game } from './types'
@@ -257,6 +258,8 @@ export type BoardEntry = ProfileName & {
   supporterSince?: string | null
   /** The run's id, to report it (`game/reports.ts`). Missing from an older API. */
   run?: string
+  /** The Bag items the run took (`ReplayStart.bag`), for their icons. Missing from an older API. */
+  bag?: BagItem[]
 }
 
 /** The top of a board, plus the asking player's own line (null if they're not on it). */
@@ -296,6 +299,8 @@ export type ProfileRun = {
   time: number
   outcome: RunOutcome
   at: string
+  /** The Bag items the run took (`ReplayStart.bag`). Missing from an older API. */
+  bag?: BagItem[]
 }
 
 /** What `/profiles/:handle` answers. `followed`: the asking player follows them; `self`: it's the asking player. */

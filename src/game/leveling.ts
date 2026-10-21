@@ -23,6 +23,7 @@ import { forkAt, isManual, maxMoveLevel, MOVES, withBranch, type MoveId } from '
 import { stanceStats } from './stance'
 import { awakeningDeltas } from './legend'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
+import { bagDeltas } from './bag'
 import type { Game, Offer, OwnedItem, OwnedMove, PrizeSource, Rarity } from './types'
 
 export const MAX_MOVES = 6
@@ -246,6 +247,7 @@ export const recomputeStats = (g: Game) => {
     ...abilityDeltas(g, MAX_ITEMS - p.items.length),
     ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),
     ...g.curses.held.map((id) => CURSES[id].stats),
+    ...bagDeltas(g.bag),
   ])
   p.stats = stanceStats(deltas, g.special.stance)
   if (p.stats.maxHp > before) p.hp += p.stats.maxHp - before

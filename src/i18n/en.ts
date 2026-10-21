@@ -520,8 +520,8 @@ export const en: Messages = {
     yes: 'Yes',
     no: 'No',
     hint: 'Q E shelf · ↑ ↓ choose · ENTER buy · ESC back',
-    tabs: { upgrades: 'Upgrades', counter: "Today's counter", style: 'Style' },
-    counterIntro: (time) => `The same for everyone, with a daily stock. Restocks in ${time}.`,
+    tabs: { upgrades: 'Upgrades', vitrine: "Today's showcase", style: 'Style' },
+    vitrineIntro: (level, time) => `${level} · The same for everyone, with a daily stock. Turns over in ${time}.`,
     stock: (left, max) => `Stock ${left}/${max}`,
     inBag: (n) => `In the bag: ${n}`,
     sale: (pct) => `-${pct}%`,
@@ -545,6 +545,24 @@ export const en: Messages = {
     },
   },
 
+
+  shop: {
+    levels: { 1: 'Cart', 2: 'Tent', 3: 'Shop', 4: 'Kecleon Mart', 5: 'Department Store' },
+    level: (name, n) => `${name} (Lv ${n})`,
+    gift: (name) => `Gift: ${name}`,
+    giftDescription: (text) => `Free, one a day. ${text}`,
+    claim: 'Take it free',
+    claimed: 'Gift taken',
+    free: 'Free',
+    dayStyle: "Today's style",
+    allStyles: 'You own every style on sale.',
+    eggOdds: (common, rare, ultra) => `Odds of today's egg: common ${common}%, rare ${rare}%, ultra ${ultra}%.`,
+    blocks: { locked: 'Grow the shop', soldOut: 'Sold out today', owned: 'Already yours', full: 'Incubator full', poor: 'Not enough ₽' },
+    invest: (name) => `Grow into ${name}`,
+    investDescription: (name, slots, bag) => `The shop becomes a ${name}: ${slots} items in the showcase and ${bag} different Bag items per run. The investment is for good, with no refund.`,
+    investConfirm: (name, price) => `Invest ${price} and turn the shop into a ${name}? There's no refund.`,
+    investMax: "The shop can't grow any bigger.",
+  },
   outbreak: {
     title: "Today's outbreak",
     blurb: 'Shows up in every run today: about 2 of its shinies per run.',
@@ -895,9 +913,26 @@ export const en: Messages = {
     descriptions: {
       lure: 'Wild shinies twice as common in your next run (the outbreak too).',
       incense: 'Eggs twice as likely in your next run.',
+      rareCandy: 'Start your next run at Lv 3: the two levels come right after your first pick.',
+      luckyEgg: '+25% EXP in your next run.',
+      luckIncense: '+50% ₽ in your next run, from coins and the end bonus.',
+      honey: "The outbreak's Pokémon shows up twice as often in your next run.",
+      xAttack: 'Moves +10% in your next run.',
+      maxRevive: 'In your next run, the first time you faint you get back up with half your HP.',
     },
-    active: { lure: 'Shinies twice as common this run!', incense: 'Eggs twice as likely this run!' },
+    active: {
+      lure: 'Shinies twice as common this run!',
+      incense: 'Eggs twice as likely this run!',
+      rareCandy: 'You start at Lv 3!',
+      luckyEgg: '+25% EXP this run!',
+      luckIncense: '+50% ₽ this run!',
+      honey: 'The outbreak shows up twice as often this run!',
+      xAttack: 'Moves +10% this run!',
+      maxRevive: 'One faint forgiven this run!',
+    },
     toggle: (name, n) => `${name} ×${n}`,
+    armed: (n, max) => `${n}/${max}`,
+    full: (max) => `The Bag takes ${max} different items per run. Grow the shop to take more.`,
   },
 
   toast: {
@@ -918,6 +953,7 @@ export const en: Messages = {
     pokeballEvolution: (name) => `${name}!`,
     pokeballBerry: 'an Oran Berry!',
     revive: 'Your *Revive* got you back on your feet!',
+    maxRevive: 'Your *Max Revive* got you back up with half your HP!',
   },
 
   mega: {

@@ -3,6 +3,7 @@ import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { query } from '../engine/spatial'
 import { BUFFS, DROP_TABLES, ENEMY_DROP_CHANCE, FLUTE_SLEEP, REPEL_RADIUS, rollDrop, type BuffId, type Drop } from '../data/consumables'
+import { BAG_ITEMS } from './bag'
 import { addBuff, hasBuff, tickBuffs } from './buffs'
 import { healPlayer, killEnemy } from './combat'
 import { burst, damageText, floatText } from './effects'
@@ -128,6 +129,18 @@ export const tryRevive = (g: Game) => {
   p.iframes = 2
   burst(g, p.x, p.y - 10, { colors: ['#f8d830', '#fff8c0', '#ffffff'], count: 40, speed: 120, ttl: 0.8, gravity: -40 })
   g.events.push({ kind: 'revive' })
+  return true
+}
+
+/** Called when HP hits 0, before a held Revive: spends the Bag's Max Revive (once a run) to get back up. */
+export const tryMaxRevive = (g: Game) => {
+  if (!g.maxRevive) return false
+  const p = g.player
+  g.maxRevive = false
+  p.hp = Math.round(p.stats.maxHp * BAG_ITEMS.maxRevive.effect.revive)
+  p.iframes = 2
+  burst(g, p.x, p.y - 10, { colors: ['#f8d830', '#fff8c0', '#88d8ff', '#ffffff'], count: 56, speed: 140, ttl: 0.9, gravity: -40 })
+  g.events.push({ kind: 'maxRevive' })
   return true
 }
 

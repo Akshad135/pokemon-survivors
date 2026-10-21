@@ -4,6 +4,8 @@ import { isLegend } from '../data/legends'
 import { createRng } from '../engine/rng'
 import * as dm from '../engine/dmath'
 import type { Vec } from '../engine/math'
+import { MAX_BAG_SLOTS } from '../data/shop'
+import { parseBagItems, type BagItem } from './bag'
 import { isDifficulty, type Difficulty } from './difficulty'
 import { continueEndless } from './endlessSystem'
 import { banishOffer, chooseOffer, createGame, rerollOffers, skipLevelUp, step } from './game'
@@ -35,7 +37,7 @@ export const TICK = 1 / 60
  * pins where a few scripted replays end under this version and fails when the
  * simulation moves them without a bump; bump it, then pin the digests it prints.
  */
-export const RULES_VERSION = 28
+export const RULES_VERSION = 29
 
 /**
  * How this build stands to a replay's rules: it can judge the `same`; a
@@ -61,9 +63,8 @@ export type ReplayStart = {
   outbreak: EnemyId | null
   /** Noite das Bruxas (`game/halloween.ts`): the run is haunted; the server checks it against the day the run started (`halloweenFits`). */
   halloween: boolean
-  /** Bag items used up as the run started (`game/bag.ts`): a Lure and an Incense. */
-  lure: boolean
-  incense: boolean
+  /** Bag items used up as the run started (`game/bag.ts`), in catalog order; the API lists them with the run. */
+  bag: readonly BagItem[]
   /** World px the screen showed at the start: spawns and despawns depend on it. */
   view: { w: number; h: number }
 }
@@ -182,7 +183,8 @@ export const isMoves = (moves: unknown[]): moves is number[] =>
 
 /**
  * A replay from an untrusted body, or null when its shape is wrong or its
- * screen is bigger than the game shows (`parseView`). Ranks are clamped to the
+ * screen is bigger than the game shows (`parseView`), or its Bag repeats an
+ * item or takes more than any shop level allows. Ranks are clamped to the
  * Poké Mart's limits; a replay without `rules` predates them (1).
  */
 export const parseReplay = (raw: unknown): Replay | null => {
@@ -195,6 +197,10 @@ export const parseReplay = (raw: unknown): Replay | null => {
   const events = raw.events.map(parseEvent)
   if (events.some((e) => e === null) || events.some((e, i) => i > 0 && e![0] < events[i - 1]![0])) return null
   const ranks = isRecord(s.ranks) ? s.ranks : {}
+  // Replays from before the Kecleon Shop said `lure` and `incense` apart.
+  const bag = parseBagItems([...(Array.isArray(s.bag) ? s.bag : []), ...(s.lure === true ? ['lure'] : []), ...(s.incense === true ? ['incense'] : [])])
+  // One of each, and no more than the shop's top level lets a run take.
+  if (Array.isArray(s.bag) && (bag.length !== s.bag.length || bag.length > MAX_BAG_SLOTS)) return null
   return {
     rules: isWhole(raw.rules) && raw.rules > 0 ? raw.rules : 1,
     start: {
@@ -206,8 +212,7 @@ export const parseReplay = (raw: unknown): Replay | null => {
       luckyEgg: s.luckyEgg === true,
       outbreak: isOutbreakSpecies(s.outbreak) ? s.outbreak : null,
       halloween: s.halloween === true,
-      lure: s.lure === true,
-      incense: s.incense === true,
+      bag,
       view,
     },
     moves: raw.moves,
@@ -237,8 +242,7 @@ export const startGame = (start: ReplayStart, view: Game['view'] = { ...start.vi
     difficulty: start.difficulty,
     outbreak: start.outbreak,
     halloween: start.halloween,
-    lure: start.lure,
-    incense: start.incense,
+    bag: start.bag,
   })
 
 const applyEvent = (g: Game, e: ReplayEvent) => {

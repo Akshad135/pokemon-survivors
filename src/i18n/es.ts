@@ -520,8 +520,8 @@ export const es: Messages = {
     yes: 'Sí',
     no: 'No',
     hint: 'Q E estante · ↑ ↓ elegir · ENTER comprar · ESC volver',
-    tabs: { upgrades: 'Mejoras', counter: 'Mostrador del día', style: 'Estilo' },
-    counterIntro: (time) => `Igual para todos, con stock del día. Se renueva en ${time}.`,
+    tabs: { upgrades: 'Mejoras', vitrine: 'Vitrina del día', style: 'Estilo' },
+    vitrineIntro: (level, time) => `${level} · Igual para todos, con stock del día. Cambia en ${time}.`,
     stock: (left, max) => `Stock ${left}/${max}`,
     inBag: (n) => `En la mochila: ${n}`,
     sale: (pct) => `-${pct}%`,
@@ -545,6 +545,24 @@ export const es: Messages = {
     },
   },
 
+
+  shop: {
+    levels: { 1: 'Carrito', 2: 'Tienda de campaña', 3: 'Tienda', 4: 'Kecleon Mart', 5: 'Gran Almacén' },
+    level: (name, n) => `${name} (Nv ${n})`,
+    gift: (name) => `Regalo: ${name}`,
+    giftDescription: (text) => `Gratis, uno por día. ${text}`,
+    claim: 'Tomar gratis',
+    claimed: 'Regalo tomado',
+    free: 'Gratis',
+    dayStyle: 'Estilo del día',
+    allStyles: 'Ya tienes todos los estilos a la venta.',
+    eggOdds: (common, rare, ultra) => `Probabilidades del huevo del día: común ${common}%, raro ${rare}%, ultra ${ultra}%.`,
+    blocks: { locked: 'Agranda la tienda', soldOut: 'Agotado hoy', owned: 'Ya es tuyo', full: 'Incubadora llena', poor: 'Faltan ₽' },
+    invest: (name) => `Agrandar a ${name}`,
+    investDescription: (name, slots, bag) => `La tienda se vuelve ${name}: ${slots} objetos en la vitrina y ${bag} objetos distintos en la mochila por partida. La inversión es para siempre y no tiene reembolso.`,
+    investConfirm: (name, price) => `¿Invertir ${price} y convertir la tienda en ${name}? No tiene reembolso.`,
+    investMax: 'La tienda ya es la más grande posible.',
+  },
   outbreak: {
     title: 'Brote de hoy',
     blurb: 'Aparece en todas las partidas de hoy: unos 2 shinies suyos por partida.',
@@ -895,9 +913,26 @@ export const es: Messages = {
     descriptions: {
       lure: 'Shinies salvajes 2× más comunes en la próxima partida (los del brote también).',
       incense: 'Probabilidad de huevo 2× mayor en la próxima partida.',
+      rareCandy: 'Empieza la próxima partida en Nv 3: los dos niveles llegan justo después de tu primera elección.',
+      luckyEgg: '+25% de EXP en la próxima partida.',
+      luckIncense: '+50% de ₽ en la próxima partida, en las monedas y el bono final.',
+      honey: 'El Pokémon del brote aparece 2× más en la próxima partida.',
+      xAttack: 'Movimientos +10% en la próxima partida.',
+      maxRevive: 'En la próxima partida, la primera vez que te debilites te levantas con la mitad de los PS.',
     },
-    active: { lure: '¡Shinies 2× más comunes en esta partida!', incense: '¡Probabilidad de huevo 2× mayor en esta partida!' },
+    active: {
+      lure: '¡Shinies 2× más comunes en esta partida!',
+      incense: '¡Probabilidad de huevo 2× mayor en esta partida!',
+      rareCandy: '¡Empiezas en Nv 3!',
+      luckyEgg: '¡+25% de EXP en esta partida!',
+      luckIncense: '¡+50% de ₽ en esta partida!',
+      honey: '¡El brote aparece 2× más en esta partida!',
+      xAttack: '¡Movimientos +10% en esta partida!',
+      maxRevive: '¡Un debilitamiento perdonado en esta partida!',
+    },
     toggle: (name, n) => `${name} ×${n}`,
+    armed: (n, max) => `${n}/${max}`,
+    full: (max) => `La mochila lleva ${max} objetos distintos por partida. Agranda la tienda para llevar más.`,
   },
 
   toast: {
@@ -919,6 +954,7 @@ export const es: Messages = {
     pokeballEvolution: (name) => `¡${name}!`,
     pokeballBerry: '¡una Oran Berry!',
     revive: '¡El *Revive* te puso de pie!',
+    maxRevive: '¡El *Max Revive* te levantó con la mitad de los PS!',
   },
 
   mega: {
