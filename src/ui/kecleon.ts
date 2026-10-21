@@ -128,9 +128,9 @@ export const visitLine = (trigger: Trigger, c: VisitContext, now = new Date()): 
   }
 }
 
-/** A short thanks after a purchase, a different one each time (`n`: purchases so far this visit). */
-export const thanks = (n: number): DialogueLine => {
-  const lines = t().plaza.thanks
+/** A short thanks after a purchase, a different one each time (`n`: purchases so far this visit); the purple brother has his own. */
+export const thanks = (n: number, purple = false): DialogueLine => {
+  const lines = purple ? t().plaza.thanksPurple : t().plaza.thanks
   return { text: lines[n % lines.length]!, emotion: n % 2 ? 'Joyous' : 'Happy' }
 }
 

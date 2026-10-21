@@ -9,7 +9,7 @@ import { dropItem } from './consumables'
 import { burst, floatText } from './effects'
 import { applyOffer, branchOffers, recomputeStats } from './leveling'
 import { forkAt, MOVES, type MoveId } from './moves'
-import { forgetChoice, needsForget, TM_REFUND, tmChoice, tutorPicks, tutorPool, tutorPrice, type TmSource } from './tmRules'
+import { forgetChoice, needsForget, TM_REFUND, tmChoice, TUTOR, tutorPicks, tutorPool, tutorPrice, type TmSource } from './tmRules'
 import type { Enemy, Game, Offer, Pickup, TmOffer } from './types'
 
 /**
@@ -20,21 +20,34 @@ import type { Enemy, Game, Offer, Pickup, TmOffer } from './types'
  * `tmRules.ts`, the screen in `ui/tmPick.ts`.
  */
 
-/** Tutors met (`tutors`), lessons taken from them (`lessons`) and whether the run learned its legendary TM. */
-export type TmState = { tutors: number; lessons: number; legendary: boolean }
+/**
+ * Tutors met (`tutors`), lessons taken from them (`lessons`), whether the run
+ * learned its legendary TM, the TMs armed at the Kecleon Shop still waiting
+ * for a disc (`armed`, `ReplayStart.tms`), the ₽ coins Pay Day knocked loose
+ * (`coins`) and the foes Thief already robbed (`stolen`, by id).
+ */
+export type TmState = { tutors: number; lessons: number; legendary: boolean; armed: MoveId[]; coins: number; stolen: Set<number> }
 
-export const createTmState = (): TmState => ({ tutors: 0, lessons: 0, legendary: false })
+export const createTmState = (armed: readonly MoveId[] = []): TmState => ({ tutors: 0, lessons: 0, legendary: false, armed: [...armed], coins: 0, stolen: new Set() })
 
 /** Puts a TM disc on the ground at (x, y). */
 export const dropTm = (g: Game, x: number, y: number, move: MoveId, source: TmSource) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -20, 20), vy: range(g.rng, -40, -20), attracted: false, age: 0, kind: 'tm', move, source })
 }
 
-/** A defeated wave boss leaves its TM (`BOSS_TMS`); a mythical of the finale its legendary TM. */
+/**
+ * The armed TMs' hook: the run's first TM discs (a wave boss's) and Move
+ * Tutor lessons teach the TMs armed at the shop, in order, one each, instead
+ * of what they'd teach. Rift legendaries' gold discs are never swapped. Pure
+ * bookkeeping on `TmState.armed`, so the replay re-simulates it.
+ */
+const takeArmed = (g: Game): MoveId | null => g.tm.armed.shift() ?? null
+
+/** A defeated wave boss leaves its TM (`BOSS_TMS`), or the next armed one; a mythical of the finale its legendary TM. */
 export const dropBossTm = (g: Game, e: Enemy) => {
   const table: Partial<Record<Enemy['kind'], MoveId>> = BOSS_TMS
   const move = table[e.kind]
-  if (move) dropTm(g, e.x - 10, e.y + 2, move, 'boss')
+  if (move) dropTm(g, e.x - 10, e.y + 2, takeArmed(g) ?? move, 'boss')
   else if (MYTHICALS.some((id) => id === e.kind)) dropLegendaryTm(g, e.kind, e.x - 10, e.y + 2)
 }
 
@@ -74,10 +87,16 @@ export const collectTm = (g: Game, pickup: Extract<Pickup, { kind: 'tm' }>) => {
   g.events.push({ kind: 'tmMastered', move: pickup.move, coins })
 }
 
-/** A Move Tutor's lesson: two moves of types that suit the player's form, paid from the run's ₽ after the first. False when it has nothing to teach. */
+/**
+ * A Move Tutor's lesson: two moves of types that suit the player's form, paid
+ * from the run's ₽ after the first; an armed TM still waiting takes the first
+ * card. False when it has nothing to teach.
+ */
 export const openTutor = (g: Game) => {
   const pool = tutorPool({ starter: g.starter, branch: g.branch, types: playerForm(g).types, moves: g.player.moves, banished: g.banished })
-  return openTm(g, tutorPicks(pool, g.rng), 'tutor', tutorPrice(g.tm.lessons))
+  const picks = tutorPicks(pool, g.rng)
+  const armed = takeArmed(g)
+  return openTm(g, armed ? [armed, ...picks.filter((id) => id !== armed)].slice(0, TUTOR.offers) : picks, 'tutor', tutorPrice(g.tm.lessons))
 }
 
 /** Takes a move out of the loadout, with what it left on the field and on the player (Whirlpool's aura, a guard, a buff). */
@@ -99,6 +118,7 @@ const learn = (g: Game, tm: TmOffer, forgot: MoveId | null) => {
   if (owned) owned.level = tm.level
   else p.moves.push({ id: tm.id, level: 1, cooldown: 0.3, path: 0 })
   pay(g, tm)
+  if (!g.tally.tms.includes(tm.id)) g.tally.tms.push(tm.id)
   celebrate(g, tm, forgot)
 }
 

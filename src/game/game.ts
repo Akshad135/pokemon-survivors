@@ -5,7 +5,10 @@ import { bodyOf } from '../data/bodies'
 import { isLegend } from '../data/legends'
 import type { EnemyId } from '../data/enemies'
 import { isHidden } from '../data/abilities'
-import { branchesAt } from '../data/branches'
+import { BRANCH_OFFERS, branchesAt } from '../data/branches'
+import type { EvoItemId } from '../data/shop'
+import type { EvolutionStage } from '../data/starters'
+import { guaranteedBranches, runBoost } from './evoItems'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { abilityImmune, abilityLuck, abilitySet, createAbilityState, grantAbility, updateAbility } from './abilities'
 import { BAG_ITEMS, type BagItem } from './bag'
@@ -34,7 +37,7 @@ import { updateDuos } from './duoMoves'
 import { createMegaState, updateMega, updateMegaIntro } from './mega'
 import { NO_RANKS, runCharges, type Ranks } from './meta'
 import { afterCast as afterModCast, echoStats, hasMod, MOD } from './mods'
-import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef } from './moves'
+import { forkAt, isManual, MOVES, moveStats, type CastStats, type MoveDef, type MoveId } from './moves'
 import { afterCast, updateMoveKit } from './moveHooks'
 import { updateSignatures } from './signatures'
 import { createTmState, pickTm } from './tms'
@@ -99,6 +102,12 @@ export type RunOptions = {
   halloween?: boolean
   /** Bag items the run uses (`game/bag.ts`), each doing its `BAG_ITEMS` effect. */
   bag?: readonly BagItem[]
+  /** TMs armed at the shop (`game/tmShelf.ts`): the run's first TM discs and lessons teach them, in order (`tms.ts`). */
+  tms?: readonly MoveId[]
+  /** Evolution items owned (`game/evoItems.ts`): their branches are always offered. */
+  evo?: readonly EvoItemId[]
+  /** The Pokémon's Bottle Cap level (`runBoost`). */
+  caps?: number
   /** Opens the run on the opening draft (`draftOffers`): three moves of the learnset to pick the second move from. */
   draft?: boolean
 }
@@ -207,7 +216,7 @@ export const createGame = (
     rift: createRiftState(),
     place: createPlaceState(),
     landmarks: createLandmarkState(),
-    tm: createTmState(),
+    tm: createTmState(options.tms),
     endless: null,
     tally: createTally(),
     eggs: { found: [], lucky: options.luckyEgg === true, boost: bag.includes('incense') ? BAG_ITEMS.incense.effect.eggOdds : 1 },
@@ -217,6 +226,9 @@ export const createGame = (
     shinyBoost: shinyBoost(ranks.shinyCharm, bag.includes('lure')),
     bag,
     maxRevive: bag.includes('maxRevive'),
+    everstone: bag.includes('everstone'),
+    evoItems: options.evo ?? [],
+    boost: runBoost(options.caps ?? 0, bag),
     dexLog: createDexLog(),
     // Only a lucky roll is news: a shiny picked (or hatched) is shiny every run.
     events: lucky && !options.shiny ? [{ kind: 'shinyPlayer' }] : [],
@@ -354,6 +366,8 @@ export const advancePhase = (g: Game): void => {
     return
   }
   if (pendingAwakening(g) > 0) return startAwakening(g)
+  // Held in its first form by an Everstone, the Pokémon still picks its Ability when it would have evolved.
+  if (everstoneAbilityDue(g)) return offerAbilities(g)
   if (!pendingEvolution(g)) {
     g.phase = 'playing'
     return
@@ -361,11 +375,18 @@ export const advancePhase = (g: Game): void => {
   const branches = g.branch === null ? branchesAt(g.starter, g.player.stage + 1) : []
   if (branches.length > 0) {
     g.phase = 'branch'
-    g.offers = drawBranches(g.rng, branches, branchContext(g)).map(({ id, favor }) => ({ kind: 'form', id, favor }))
+    g.offers = drawBranches(g.rng, branches, branchContext(g), BRANCH_OFFERS, guaranteedBranches(g.evoItems, branches)).map(({ id, favor }) => ({ kind: 'form', id, favor }))
     g.events.push({ kind: 'branchChoice' })
     return
   }
   startEvolution(g)
+}
+
+/** An Everstone run reached its first evolution's level without an Ability yet: it gets its pick there instead. */
+const everstoneAbilityDue = (g: Game) => {
+  if (!g.everstone || g.ability.id !== null || g.legend) return false
+  const first: EvolutionStage = PLAYABLE[g.starter].line[0]
+  return first.evolveAt !== undefined && g.player.level >= first.evolveAt
 }
 
 const startEvolution = (g: Game) => {

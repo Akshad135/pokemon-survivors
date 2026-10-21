@@ -46,6 +46,7 @@ import { drawEgg3Attack, drawEgg3Ground, drawEgg3Player, egg3PlayerLook } from '
 import { drawEgg2Attack, drawEgg2Ground } from './eggMove2Fx'
 import { drawVerbAir, drawVerbGround } from './verbFx'
 import { drawTmAir, drawTmDisc, drawTmGround, drawTmPlayer } from './tmFx'
+import { drawShopTmAir } from './shopTmFx'
 import { drawVerbEvolvedAir, drawVerbEvolvedGround } from './verbEvolvedFx'
 import { drawDuoAir, drawDuoGround } from './duoFx'
 import { drawLegendaryAir, drawLegendaryGround } from './legendaryFx'
@@ -982,6 +983,7 @@ export const render = (ctx: Ctx, g: Game, t: number, opts: RenderOptions) => {
   for (const a of g.attacks) if (a.age >= 0 && visible(a.x, a.y, 200)) drawAttack(ctx, a, t)
   drawVerbAir(ctx, g, t, visible)
   drawTmAir(ctx, g, t, visible)
+  drawShopTmAir(ctx, g, t, visible)
   drawVerbEvolvedAir(ctx, g, t, visible)
   drawDuoAir(ctx, g, t, visible)
   drawLegendaryAir(ctx, g, t, visible)

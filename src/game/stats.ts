@@ -83,3 +83,11 @@ export const applyDeltas = (base: PlayerStats, deltas: readonly StatDelta[]): Pl
     }
     return next
   }, base)
+
+/**
+ * Every stat `boost` stronger (0.09 = +9%), Pokémon-style: HP, power and
+ * speed grow by it, and the damage taken shrinks by it (defense). Bottle Caps
+ * and the Everstone (`runBoost`); 0 changes nothing.
+ */
+export const boostStats = (s: PlayerStats, boost: number): PlayerStats =>
+  boost === 0 ? s : { ...s, maxHp: Math.round(s.maxHp * (1 + boost)), might: s.might * (1 + boost), speed: s.speed * (1 + boost), damageTaken: s.damageTaken / (1 + boost) }

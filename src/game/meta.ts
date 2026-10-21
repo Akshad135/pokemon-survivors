@@ -12,6 +12,9 @@ import { NO_HALLOWEEN, parseHalloween, recordHunt, type HalloweenSave } from './
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
 import { NO_SHOP, parseShop, type ShopSave } from './shop'
+import { learnTms, NO_TMS, parseTms, type TmCase } from './tmShelf'
+import { parseCaps, parseEvoItems, type Caps } from './evoItems'
+import type { EvoItemId } from '../data/shop'
 import { isRecord, wholeNumber } from './parse'
 import { parseRibbons, type Ribbon } from './ribbons'
 import { NO_STYLES, parseStyle, type StyleSave } from './style'
@@ -153,6 +156,12 @@ export type Save = {
   halloween: HalloweenSave
   /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
   legends: Captures
+  /** The TM case (`game/tmShelf.ts`): TMs bought at the shop, the ones armed for the next runs and the TM moves runs ever taught. */
+  tms: TmCase
+  /** Evolution items bought at the shop (`game/evoItems.ts`): each guarantees its branches among the offers. */
+  evo: readonly EvoItemId[]
+  /** Bottle Cap levels per Pokémon (`game/evoItems.ts`): every stat a bit stronger in its runs. */
+  caps: Caps
   /** The last official Desafio do dia attempt finished (`game/attempt.ts`): synced, so every device of the account shows practice after it. */
   attempt: Attempt | null
 }
@@ -198,6 +207,9 @@ export const EMPTY_SAVE: Save = {
   clears: {},
   halloween: NO_HALLOWEEN,
   legends: NO_CAPTURES,
+  tms: NO_TMS,
+  evo: [],
+  caps: {},
   attempt: null,
 }
 
@@ -264,6 +276,9 @@ export const parseSaveData = (json: unknown): Save => {
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
     halloween: parseHalloween(data.halloween),
     legends: parseCaptures(data.legends),
+    tms: parseTms(data.tms),
+    evo: parseEvoItems(data.evo),
+    caps: parseCaps(data.caps),
     attempt: parseAttempt(data.attempt),
   }
 }
@@ -371,13 +386,14 @@ const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
 
 /**
  * Records a run (or what changed since `before`, the snapshot already recorded
- * for it) into the missions, lifetime records, clears and the Caça aos Fantasmas, and pays the rewards. `save`
+ * for it) into the missions, lifetime records, clears, the Caça aos Fantasmas
+ * and the TM shelf's list of TMs found in runs, and pays the rewards. `save`
  * already has the run's Pokédex log; `eggRoom` is how many reward eggs the run
  * can still take (`EGGS.perRun` minus the eggs it found or got already).
  */
 export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date, eggRoom: number = EGGS.perRun) => {
   const m = recordMissions(save.missions, summary, before, date)
-  const ticked = { ...save, clears: addClear(save.clears, summary), halloween: recordHunt(save.halloween, summary.nightBosses) }
+  const ticked = { ...save, clears: addClear(save.clears, summary), halloween: recordHunt(save.halloween, summary.nightBosses), tms: learnTms(save.tms, summary.tms) }
   return settle(ticked, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
 }
 

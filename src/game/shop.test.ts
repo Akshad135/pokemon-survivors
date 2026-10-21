@@ -106,6 +106,23 @@ describe('buying from the Vitrine', () => {
     expect(buyFromVitrine(save, later, 'rareCandy')).not.toBeNull()
   })
 
+  it('never gives as the free gift the item that is the deal, and never gives an Everstone', () => {
+    let dealtItem = 0
+    for (let i = 0; i < 365; i++) {
+      const v = vitrineOf(addDays(VITRINE.epoch, i))
+      expect(v.gift).not.toBe(v.cards[0])
+      expect(v.gift).not.toBe('everstone')
+      if (v.cards[0] !== 'egg' && v.cards[0] !== 'style') dealtItem++
+    }
+    expect(dealtItem).toBeGreaterThan(100)
+  })
+
+  it('keeps the Everstone locked until the Shop (Lv 3)', () => {
+    const v = dayWith('everstone', false)
+    expect(vitrineBlock(rich(100_000, { level: 2 }), v, 'everstone')).toBe('locked')
+    expect(vitrineBlock(rich(100_000, { level: 3 }), v, 'everstone')).toBeNull()
+  })
+
   it("only sells the cards the shop's level shows, to a wallet that can pay", () => {
     const v = vitrineOf(DAY)
     const hidden = v.cards[v.cards.length - 1]!

@@ -37,6 +37,8 @@ import { isLegend } from './data/legends'
 import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, stageSyncedSave, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEMS, useArmed, type BagItem } from './game/bag'
+import { armedTms, tmLimit } from './game/tmShelf'
+import { capLevel } from './game/evoItems'
 import { SHOP_LEVEL_IDS, SHOP_LEVELS } from './data/shop'
 import { CONSUMABLES } from './game/consumables'
 import { depositEggs, EGG_TIERS, EGGS, freeSlots, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
@@ -854,7 +856,10 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   // Armed bag items are used up as the run starts, as many as the shop's level lets a run take (the challenge leaves them in the Bag).
   // Honey stays in the Bag for a run without an outbreak (a legend's).
   const before = loadSave()
-  const { bag, used } = c ? { bag: before.bag, used: [] } : useArmed(before.bag, SHOP_LEVELS[before.shop.level].bagSlots, (id) => id === 'honey' && legend)
+  // So does an Everstone for a Pokémon that never evolves anyway (a legend, a single-stage family).
+  const evolves = !legend && PLAYABLE[starter].line.length > 1
+  const keep = (id: BagItem) => (id === 'honey' && legend) || (id === 'everstone' && !evolves)
+  const { bag, used } = c ? { bag: before.bag, used: [] } : useArmed(before.bag, SHOP_LEVELS[before.shop.level].bagSlots, keep)
   updateSave((s) => ({ ...s, bag }))
   const save = loadSave()
   const start: ReplayStart = c ? challengeStart(c, view, challengeShiny(c)) : {
@@ -868,6 +873,10 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     outbreak: plan.outbreak,
     halloween: plan.halloween,
     bag: used,
+    // The shop's armed TMs, evolution items and this Pokémon's Bottle Caps (the challenge brings none).
+    tms: armedTms(save.tms, tmLimit(save.shop.level)),
+    evo: [...save.evo],
+    caps: capLevel(save.caps, starter),
     view: { w: view.w, h: view.h },
   }
   // Created like a replay is re-simulated (the roster drawn ahead is the same one).
@@ -917,7 +926,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   announceRun(start, run.challenge)
 }
 
-/** The run's first toasts: the challenge it plays, the day's outbreak, then each bag item it used. */
+/** The run's first toasts: the challenge it plays, the day's outbreak, then each bag item it used and each TM it armed. */
 const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
   if (challenge) {
     const m = t().challenge
@@ -933,6 +942,7 @@ const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
   }
   for (const id of start.bag) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: bagIcon(id), alt: '' }), h('b', {}, BAG_ITEMS[id].name), t().bag.active[id]), 3200, id)
+  for (const id of start.tms ?? []) toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon(id), alt: '' }), rich(t().toast.armedTm(MOVES[id].name))), 3200, `tm-${id}`)
 }
 
 const runHud = (game: Game) => {
@@ -1144,6 +1154,9 @@ const handleEvent = (r: Run, e: GameEvent) => {
     case 'hurt': return playSfx('hurt', 120)
     case 'shatter': return playSfx('break', 60)
     case 'guard': return playSfx('stance', 0)
+    case 'stolen':
+      playSfx('buy')
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: moveIcon('thief'), alt: '' }), rich(t().toast.stolen)), 2600, 'stolen')
     case 'cast': {
       const sound = castSound(e.move) ?? CAST_SFX[e.move]
       return sound && playSfx(sound[0], sound[1])

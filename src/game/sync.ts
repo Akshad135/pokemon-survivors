@@ -6,6 +6,8 @@ import { mergeHalloween } from './halloween'
 import { mergeCaptures } from './capture'
 import { mergeBag } from './bag'
 import { mergeShop, shopInvested } from './shop'
+import { mergeTms } from './tmShelf'
+import { mergeCaps, mergeEvoItems } from './evoItems'
 import { mergeStyle } from './style'
 import { mergeDex } from './dex'
 import { mergeEggs, mergeHatched } from './eggs'
@@ -61,6 +63,9 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  * - The Noite das Bruxas candy jar: the fuller one (its rewards are gifts, kept above); its Caça aos Fantasmas: a union.
  * - Legend captures: each legend's win count at the larger side (a shiny
  *   captured is a `shinyStarters` key, a union like the rest).
+ * - The TM case: TMs owned and TMs runs taught are unions; the armed picks
+ *   are `incoming`'s (`mergeTms`). Evolution items: a union. Bottle Caps:
+ *   each Pokémon at the higher level (`mergeCaps`). What they cost is in `spent`.
  * - The Desafio do dia attempt: the later day (`base`'s on the same day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
@@ -94,6 +99,9 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     clears: mergeClears(base.clears, incoming.clears),
     halloween: mergeHalloween(base.halloween, incoming.halloween),
     legends: mergeCaptures(base.legends, incoming.legends),
+    tms: mergeTms(base.tms, incoming.tms),
+    evo: mergeEvoItems(base.evo, incoming.evo),
+    caps: mergeCaps(base.caps, incoming.caps),
     attempt: mergeAttempts(base.attempt, incoming.attempt),
   }
 }
