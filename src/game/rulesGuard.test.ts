@@ -7,6 +7,7 @@ import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
 import { moveOf, recordEvent, recordStep, resimulate, RULES_VERSION, startGame, startRecording, TICK, type Replay, type ReplayStart } from './replay'
 import { enterArena } from './riftArena'
+import { EVENTS } from '../data/waves'
 import type { Game } from './types'
 
 /**
@@ -19,7 +20,7 @@ import type { Game } from './types'
  * rules. Refactors and presentation keep every digest.
  */
 
-const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
 
 /** A run set up by hand before its first tick (the same on the recording and the re-simulation). */
 type Scenario = { start: ReplayStart; seconds: number; stage: (g: Game) => void }
@@ -66,6 +67,27 @@ const SCENARIOS = {
       spawnAlpha(g, pickAlpha(g.rng, g.roster.stages[0]!)!, g.player.x + 120, g.player.y)
     },
   },
+  /** A haunted run (Noite das Bruxas) at 4:59: the 5:00 slot brings the night boss the seed drew, and its fight plays out. */
+  nightBoss: {
+    start: { ...START, halloween: true, starter: 'gastly' },
+    seconds: 30,
+    stage: (g) => {
+      g.time = 299
+      g.nextEvent = EVENTS.findIndex((e) => e.kind === 'boss' && 'enemy' in e && e.enemy === 'snorlax')
+      g.revives = 2
+      gainXp(g, 1200)
+    },
+  },
+  /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
+  legend: {
+    start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
+    seconds: 20,
+    stage: (g) => {
+      g.time = 180
+      g.nextEvent = 99
+      gainXp(g, 800)
+    },
+  },
 } as const satisfies Record<string, Scenario>
 
 type ScenarioId = keyof typeof SCENARIOS
@@ -76,11 +98,13 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  25: {
+  28: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
     alphaHazards: '1002·6·19·93ff9daa',
+    nightBoss: '2098·37·17·7d5edd66',
+    legend: '1098·51·14·86dc0d8b',
   },
 }
 

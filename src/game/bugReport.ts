@@ -35,6 +35,25 @@ export type BugRun = {
   biome: string
   /** Wild Pokémon on the field, a hint for crashes under load. */
   enemies: number
+  /** Attacks and hazards in flight (the player's and the world's). */
+  projectiles: number
+  /** The last wave event that started (`swarm`, `boss`…) and the boss on the field (its species), if any. */
+  wave: string
+  boss: string
+  /** The rift (`rift:kyogre`) or place (`cave`) the player is in, if any. */
+  place: string
+}
+
+/** Graphics memory and frame pace on the device: what tells a phone killing the tab under load apart from a bug. */
+export type BugPerf = {
+  /** Canvases the game made that are still alive (`createCanvas`), and their pixels in MB (w×h×4). */
+  canvases: number
+  canvasMb: number
+  /** The most of each since the run started. */
+  peakCanvases: number
+  peakCanvasMb: number
+  /** Average time between frames (ms) over the last couple of seconds. */
+  frameMs: number | null
 }
 
 /** The run the game was in when the page died last time, as the crash watch last saw it. */
@@ -45,6 +64,7 @@ export type BugCrash = {
   run: BugRun | null
   /** JS heap in MB then (Chrome only). */
   heapMb: number | null
+  perf: BugPerf | null
   /** The last error of that session, if any. */
   error: BugError | null
 }
@@ -68,6 +88,7 @@ export type BugTech = {
   touch: boolean
   /** Seconds since the page loaded. */
   uptime: number
+  perf: BugPerf | null
   /** The screen on top (`settings-screen`, `pause`…). */
   view: string
   run: BugRun | null
@@ -113,12 +134,29 @@ const parseRun = (v: unknown): BugRun | null =>
         phase: line(v.phase, 20),
         biome: line(v.biome, 20),
         enemies: wholeNumber(v.enemies, 100_000),
+        projectiles: wholeNumber(v.projectiles, 100_000),
+        wave: line(v.wave, 20),
+        boss: line(v.boss, 40),
+        place: line(v.place, 40),
+      }
+    : null
+
+const parsePerf = (v: unknown): BugPerf | null =>
+  isRecord(v)
+    ? {
+        canvases: wholeNumber(v.canvases, 1e6),
+        canvasMb: num(v.canvasMb, 0, 1e6) ?? 0,
+        peakCanvases: wholeNumber(v.peakCanvases, 1e6),
+        peakCanvasMb: num(v.peakCanvasMb, 0, 1e6) ?? 0,
+        frameMs: num(v.frameMs, 0, 1e4),
       }
     : null
 
 /** The crashed run, from the API's body or the crash watch in localStorage. */
 export const parseBugCrash = (v: unknown): BugCrash | null =>
-  isRecord(v) ? { at: line(v.at, 40), version: line(v.version, 40), run: parseRun(v.run), heapMb: num(v.heapMb, 0, 1e6), error: parseError(v.error) } : null
+  isRecord(v)
+    ? { at: line(v.at, 40), version: line(v.version, 40), run: parseRun(v.run), heapMb: num(v.heapMb, 0, 1e6), perf: parsePerf(v.perf), error: parseError(v.error) }
+    : null
 
 /** The technical info, rebuilt field by field: unknown fields are dropped, strings clipped, odd numbers null. */
 export const parseBugTech = (v: unknown): BugTech | null => {
@@ -136,6 +174,7 @@ export const parseBugTech = (v: unknown): BugTech | null => {
     standalone: v.standalone === true,
     touch: v.touch === true,
     uptime: wholeNumber(v.uptime, 1e9),
+    perf: parsePerf(v.perf),
     view: line(v.view, 60),
     run: parseRun(v.run),
     errors: (Array.isArray(v.errors) ? v.errors : []).slice(-BUG_REPORT.errors).map(parseError).filter((e): e is BugError => e !== null),

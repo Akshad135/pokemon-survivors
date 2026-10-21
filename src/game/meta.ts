@@ -7,6 +7,7 @@ import { DEFAULT_DIFFICULTY, parseDifficulty, type Difficulty } from './difficul
 import { EGG_TIERS, EGGS, grantEgg, parseEggs, parseHatched, type Egg, type EggTier, type Hatched } from './eggs'
 import { ENDLESS, overtime } from './endless'
 import { parseClaimedGifts } from './gifts'
+import { NO_HALLOWEEN, parseHalloween, recordHunt, type HalloweenSave } from './halloween'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
 import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
@@ -16,7 +17,8 @@ import { NO_STYLES, parseStyle, type StyleSave } from './style'
 import { NO_SHINY_STARTERS, parseShinyStarters, type ShinyStarters } from './shinyStarters'
 import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
-import { parseCompanion, type Companion } from './supporters'
+import type { SpecialCompanionId } from '../data/companions'
+import { parseCompanion, parseCompanions, type Companion } from './supporters'
 import { NO_CAPTURES, parseCaptures, type Captures } from './capture'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
@@ -140,10 +142,14 @@ export type Save = {
   shinyPicks: readonly ShinyPick[]
   /** The supporter's companion, drawn after the player in runs (`game/supporters.ts`). */
   companion: Companion | null
+  /** Companions only a Mystery Gift brings (`data/companions.ts`): the Noite das Bruxas supporters' Pumpkaboo. */
+  companions: readonly SpecialCompanionId[]
   /** Where each branching family evolved last (`data/branches.ts`): the Trainer Card shows that form. */
   branches: Branches
   /** The hardest difficulty each Pokémon beat Mewtwo on (`game/clears.ts`): the Pokédex and partner select badges. */
   clears: Clears
+  /** The Noite das Bruxas candy jar (`game/halloween.ts`): what it holds pays the event's rewards. */
+  halloween: HalloweenSave
   /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
   legends: Captures
 }
@@ -184,8 +190,10 @@ export const EMPTY_SAVE: Save = {
   ribbons: [],
   shinyPicks: [],
   companion: null,
+  companions: [],
   branches: {},
   clears: {},
+  halloween: NO_HALLOWEEN,
   legends: NO_CAPTURES,
 }
 
@@ -245,9 +253,11 @@ export const parseSaveData = (json: unknown): Save => {
     ribbons: parseRibbons(data.ribbons),
     shinyPicks: parseShinyPicks(data.shinyPicks),
     companion: parseCompanion(data.companion),
+    companions: parseCompanions(data.companions),
     branches: parseBranches(data.branches),
     // Plus the clears the lifetime records prove, for wins from before clears were tracked.
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
+    halloween: parseHalloween(data.halloween),
     legends: parseCaptures(data.legends),
   }
 }
@@ -318,41 +328,51 @@ const rewardEggs = (completed: readonly Mission[], unlocked: readonly Achievemen
   }),
 ]
 
-type EggPay = { save: Save; eggs: EggTier[]; refund: number }
+/** Reward eggs paid out in ₽ instead: `full`, the incubator had no room; `cap`, the run had its `EGGS.perRun` eggs already. */
+export type ConvertedEggs = { full: EggTier[]; cap: EggTier[] }
+
+type EggPay = { save: Save; eggs: EggTier[]; converted: ConvertedEggs }
 
 /**
  * Puts reward eggs in the incubator (`grantEgg`: a full one pays their ₽).
  * Past `room` they are paid in ₽ too, so a run's rewards share its
- * `EGGS.perRun` with the eggs it found.
+ * `EGGS.perRun` with the eggs it found. `converted` says which became ₽ and why.
  */
 const payEggs = (save: Save, eggs: readonly EggTier[], room: number) =>
   eggs.reduce<EggPay>(
     (acc, tier, i) => {
-      if (i >= room) return { ...acc, save: { ...acc.save, wallet: acc.save.wallet + EGG_TIERS[tier].refund }, refund: acc.refund + EGG_TIERS[tier].refund }
+      const { full, cap } = acc.converted
+      if (i >= room) return { ...acc, save: { ...acc.save, wallet: acc.save.wallet + EGG_TIERS[tier].refund }, converted: { full, cap: [...cap, tier] } }
       const granted = grantEgg(acc.save, tier)
-      return { save: granted.save, eggs: granted.converted.length > 0 ? acc.eggs : [...acc.eggs, tier], refund: acc.refund + granted.refund }
+      return granted.converted.length > 0
+        ? { ...acc, save: granted.save, converted: { full: [...full, tier], cap } }
+        : { ...acc, save: granted.save, eggs: [...acc.eggs, tier] }
     },
-    { save, eggs: [], refund: 0 },
+    { save, eggs: [], converted: { full: [], cap: [] } },
   )
 
-/** Saves the boards and records, and pays every mission completed and medal earned (₽, then items into the bag, then eggs). */
+/**
+ * Saves the boards and records, and pays every mission completed and medal earned (₽, then items into the bag, then eggs).
+ * `reward` is the ₽ of the missions and medals; the eggs that didn't fit (`converted`) pay theirs on top.
+ */
 const settle = (save: Save, m: Progress, a: Medals, eggRoom: number) => {
   const coins = m.completed.reduce((sum, mission) => sum + mission.reward, 0) + a.unlocked.reduce((sum, id) => sum + MEDAL_REWARD[ACHIEVEMENTS[id].medal], 0)
   const items = m.completed.flatMap((mission): BagItem[] => (mission.item ? [mission.item] : []))
   const bag = items.reduce((b, id) => addToBag(b, id), save.bag)
   const paid = payEggs({ ...save, wallet: save.wallet + coins, bag, missions: m.missions, achievements: a.achievements }, rewardEggs(m.completed, a.unlocked), eggRoom)
-  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins + paid.refund, eggs: paid.eggs, items }
+  return { save: paid.save, completed: m.completed, unlocked: a.unlocked, reward: coins, eggs: paid.eggs, converted: paid.converted, items }
 }
 
 /**
  * Records a run (or what changed since `before`, the snapshot already recorded
- * for it) into the missions, lifetime records and clears, and pays the rewards. `save`
+ * for it) into the missions, lifetime records, clears and the Caça aos Fantasmas, and pays the rewards. `save`
  * already has the run's Pokédex log; `eggRoom` is how many reward eggs the run
  * can still take (`EGGS.perRun` minus the eggs it found or got already).
  */
 export const recordRun = (save: Save, summary: RunSummary, before: RunSummary | null, date: Date, eggRoom: number = EGGS.perRun) => {
   const m = recordMissions(save.missions, summary, before, date)
-  return settle({ ...save, clears: addClear(save.clears, summary) }, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
+  const ticked = { ...save, clears: addClear(save.clears, summary), halloween: recordHunt(save.halloween, summary.nightBosses) }
+  return settle(ticked, m, recordAchievements(save.achievements, summary, before, m.completed.length, save.dex), eggRoom)
 }
 
 /** Records a hatched egg (`save` already has it hatched) into the missions and records, and pays the rewards. */

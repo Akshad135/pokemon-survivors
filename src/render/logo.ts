@@ -1,5 +1,6 @@
 import { context2d, createCanvas, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { PICKUPS } from './art'
+import { logoJack } from './halloweenArt'
 
 /**
  * The "POKéMON SURVIVORS" logo as pixel art: the game font rasterized at its
@@ -77,12 +78,15 @@ const lettering = (mask: PixelSprite, fill: PixelSprite, outline: string, thickn
   return canvas
 }
 
-const build = () => {
+/** Builds the logo; `haunted` (the Noite das Bruxas) paints SURVIVORS pumpkin orange on witch purple, between two jack-o'-lanterns. */
+const build = (haunted: boolean) => {
   const topMask = textMask('POKéMON', 16, 0)
-  const top = lettering(topMask, banded(topMask, [['#fff070', 0.2], ['#ffcb05', 0.55], ['#f0a000', 0.25]]), '#2a5aa8', 2, 3)
+  const top = lettering(topMask, banded(topMask, [['#fff070', 0.2], ['#ffcb05', 0.55], ['#f0a000', 0.25]]), haunted ? '#5a2088' : '#2a5aa8', 2, 3)
   const bottomMask = textMask('SURVIVORS', 8, 2)
-  const bottom = lettering(bottomMask, banded(bottomMask, [['#ffffff', 0.6], ['#d0d8f0', 0.4]]), '#c82828', 1, 2)
-  const ball = PICKUPS.pokeball()
+  const bottom = haunted
+    ? lettering(bottomMask, banded(bottomMask, [['#ffd060', 0.35], ['#f88820', 0.65]]), '#3a1450', 1, 2)
+    : lettering(bottomMask, banded(bottomMask, [['#ffffff', 0.6], ['#d0d8f0', 0.4]]), '#c82828', 1, 2)
+  const ball = haunted ? logoJack() : PICKUPS.pokeball()
   const gap = 4
   const bottomRow = bottom.width + (ball.width + gap) * 2
   const canvas = createCanvas(Math.max(top.width, bottomRow), top.height + bottom.height + 2)
@@ -97,12 +101,18 @@ const build = () => {
   return canvas
 }
 
-let logo: Promise<HTMLCanvasElement> | null = null
-onCanvasReset(() => (logo = null))
+const logos = new Map<boolean, Promise<HTMLCanvasElement>>()
+onCanvasReset(() => logos.clear())
 
-/** The logo sprite, built once the game font has loaded. */
-export const titleLogo = () =>
-  (logo ??= document.fonts.load(`16px ${FONT}`).then(build, build))
+/** The logo sprite (`haunted`: the Noite das Bruxas one), built once the game font has loaded. */
+export const titleLogo = (haunted = false) => {
+  let logo = logos.get(haunted)
+  if (!logo) {
+    const make = () => build(haunted)
+    logos.set(haunted, (logo = document.fonts.load(`16px ${FONT}`).then(make, make)))
+  }
+  return logo
+}
 
 /** Largest whole number of device px per logo px that fits `maxW`×`maxH` CSS px, so every logo pixel stays square. */
 export const logoScale = (logoW: number, logoH: number, maxW: number, maxH: number, dpr: number) =>

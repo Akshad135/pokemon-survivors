@@ -1,12 +1,14 @@
 import { clamp, dir8, retain, type Dir8, type Vec } from '../engine/math'
-import { blitCentered, ellipse } from '../engine/pixelart'
+import { blitCentered, blitEllipse } from '../engine/pixelart'
 import { chance, createRng, pick, range, weightedPick, type Rng } from '../engine/rng'
 import { ENEMIES } from '../data/enemies'
 import { STARTER_IDS, starterDex } from '../data/starters'
 import { EMOTES, type Emote } from './art'
+import { createCompanion, drawCompanion, stepCompanion, type CompanionView } from './companion'
 import { drawSparkles, shadow } from './draw'
 import { drawPokemon, hasShiny, loadedSprites, loadSpecies, type Dex } from './sprites'
 import { drawGround } from './world'
+import { drawMeadowJacks, drawMeadowNight } from './halloweenArt'
 
 /**
  * Attract-mode backdrop behind the menus: the meadow under a slowly drifting
@@ -91,12 +93,16 @@ export type TitleScene = {
   nextShiny: Dex | null
   spawned: number
   partner: Partner | null
+  /** The supporter's companion (`render/companion.ts`), trotting after the partner while it's out in the meadow. */
+  companion: CompanionView | null
   /** Cries for the shell to play (a wild Pokémon answering a hello), drained every frame. */
   cries: Dex[]
   /** Scene time before which no other cry is queued, so a crowd doesn't shout at once. */
   quietUntil: number
   /** Dust where the partner landed, by scene time. */
   puffs: { x: number; y: number; at: number }[]
+  /** The Noite das Bruxas (set by the shell): night falls, jack-o'-lanterns light the meadow and ghosts roam it. */
+  haunted: boolean
 }
 
 /** Every species that may roam: wild Pokémon and the starter lines (evolutions show up once a run has loaded them). */
@@ -104,6 +110,11 @@ const POOL: readonly Dex[] = [
   ...Object.values(ENEMIES).flatMap((e) => ('boss' in e ? [] : [e.dex])),
   ...STARTER_IDS.flatMap(starterDex),
 ]
+
+/** The ghosts among them, who take over the meadow on the Noite das Bruxas. */
+const GHOSTS: readonly Dex[] = Object.values(ENEMIES).flatMap((e) => (!('boss' in e) && e.types.some((t) => t === 'ghost') ? [e.dex] : []))
+/** Share of a haunted meadow's newcomers that are ghosts, when any is loaded. */
+const HAUNTED_SHARE = 0.65
 
 const CAMERA_SPEED = 9
 /** Off-screen band (world px) where wanderers enter; past it they're recycled. */
@@ -151,15 +162,18 @@ export const createTitleScene = (seed: number): TitleScene => {
     nextShiny: null,
     spawned: 0,
     partner: null,
+    companion: null,
     cries: [],
     quietUntil: 0,
     puffs: [],
+    haunted: false,
   }
 }
 
-/** The lobby's partner takes its place on the stage (`null`: the lobby closed, it's gone). */
-export const meetPartner = (s: TitleScene, partner: { dex: Dex; shiny: boolean } | null) => {
+/** The lobby's partner takes its place on the stage, with the supporter's companion if one walks along (`null`: the lobby closed, both are gone). */
+export const meetPartner = (s: TitleScene, partner: { dex: Dex; shiny: boolean } | null, companion: CompanionView | null = null) => {
   for (const wd of s.wanderers) wd.followUntil = 0
+  s.companion = partner && companion
   s.partner = partner && {
     ...partner,
     state: 'home',
@@ -218,7 +232,8 @@ const pickSpecies = (s: TitleScene) => {
     s.nextShiny = null
     return { dex, shiny: true }
   }
-  return { dex: pick(s.rng, ready), shiny: false }
+  const ghosts = s.haunted ? ready.filter((dex) => GHOSTS.includes(dex)) : []
+  return { dex: pick(s.rng, ghosts.length > 0 && chance(s.rng, HAUNTED_SHARE) ? ghosts : ready), shiny: false }
 }
 
 const spawn = (s: TitleScene, w: number, h: number) => {
@@ -406,6 +421,10 @@ export const stepTitleScene = (s: TitleScene, dt: number, w: number, h: number) 
     s.cam.y += Math.sin(s.time * 0.11) * 4 * dt
   }
   if (p) stepPartner(s, p, dt, w, h)
+  // The companion waits behind the stage while the partner stands on it, and follows it out.
+  const c = s.companion
+  if (c && p && p.state === 'home') Object.assign(c, createCompanion(c.dex, c.shiny, p, c.sparkles))
+  else if (c && p) stepCompanion(c, p, dt)
   const { cam, rng } = s
   const roaming = p && p.state !== 'home' ? p : null
   for (const wd of s.wanderers) {
@@ -441,7 +460,7 @@ const drawPuffs = (ctx: CanvasRenderingContext2D, s: TitleScene, camX: number, c
   for (const puff of s.puffs) {
     const k = (s.time - puff.at) / PUFF_TIME
     ctx.globalAlpha = 0.8 * (1 - k)
-    for (const side of [-1, 1]) blitCentered(ctx, ellipse(3, 2, '#f0f0e0'), Math.round(puff.x - camX + side * (4 + k * 10)), Math.round(puff.y - camY - k * 3))
+    for (const side of [-1, 1]) blitEllipse(ctx, 3, 2, '#f0f0e0', Math.round(puff.x - camX + side * (4 + k * 10)), Math.round(puff.y - camY - k * 3))
   }
   ctx.globalAlpha = 1
 }
@@ -451,8 +470,10 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
   const camX = Math.round(s.cam.x)
   const camY = Math.round(s.cam.y)
   drawGround(ctx, camX, camY, w, h)
+  if (s.haunted) drawMeadowJacks(ctx, camX, camY, w, h, s.time)
   drawPuffs(ctx, s, camX, camY)
   const p = s.partner?.state === 'home' ? null : s.partner
+  const c = p && s.companion
   const drawPartner = () => {
     const sprite = p && loadedSprites(p.dex, p.shiny)
     if (!p || !sprite) return
@@ -461,13 +482,20 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     shadow(ctx, x, y, sprite.bodyW)
     drawPokemon(ctx, sprite, p.moving ? 'Walk' : 'Idle', p.dir, s.time, x, y - hopHeight(s.time - p.hopAt))
   }
+  const drawFollower = () => {
+    const sprite = c && loadedSprites(c.dex, c.shiny)
+    if (!c || !sprite) return
+    shadow(ctx, Math.round(c.x) - camX, Math.round(c.y) - camY, sprite.bodyW)
+    ctx.save()
+    ctx.translate(-camX, -camY)
+    drawCompanion(ctx, c, s.time)
+    ctx.restore()
+  }
+  // The partner and its companion, back to front, slot in among the wanderers by their feet.
+  const pending = [...(p ? [{ y: p.y, draw: drawPartner }] : []), ...(c ? [{ y: c.y, draw: drawFollower }] : [])].sort((a, b) => a.y - b.y)
   s.wanderers.sort((a, b) => a.y - b.y)
-  let partnerDrawn = false
   for (const wd of s.wanderers) {
-    if (!partnerDrawn && p && wd.y > p.y) {
-      drawPartner()
-      partnerDrawn = true
-    }
+    while (pending[0] && wd.y > pending[0].y) pending.shift()!.draw()
     const sprite = loadedSprites(wd.dex, wd.shiny)
     if (!sprite) continue
     const x = Math.round(wd.x) - camX
@@ -478,7 +506,8 @@ export const drawTitleScene = (ctx: CanvasRenderingContext2D, s: TitleScene, w: 
     drawPokemon(ctx, sprite, wd.vx === 0 && wd.vy === 0 ? 'Idle' : 'Walk', wd.dir, s.time + wd.phase, x, y - lift, { alpha })
     if (wd.shiny) drawSparkles(ctx, x, y - sprite.bodyH / 2, Math.max(sprite.bodyW, sprite.bodyH), s.time - wd.bornAt, wd.id)
   }
-  if (!partnerDrawn) drawPartner()
+  for (const rest of pending) rest.draw()
+  if (s.haunted) drawMeadowNight(ctx, camX, camY, w, h, s.time)
   // Emotes over everyone's heads, bobbing a pixel.
   const bubbles = EMOTES()
   for (const wd of s.wanderers) {

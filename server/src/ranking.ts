@@ -84,14 +84,17 @@ const toRun = (r: RunRow): ProfileRun => ({
   at: r.started_at.toISOString(),
 })
 
-type SupporterRow = { supporter_points: number; supporter_public: boolean }
+type SupporterRow = { supporter_points: number; supporter_public: boolean; supporter_since: Date | null }
 
 /** A player's supporter badge, if they donated and show it. */
 const badgeOf = (r: SupporterRow) => (r.supporter_public ? supporterTier(r.supporter_points) : null)
 
 type EntryRow = RunRow & SupporterRow & { id: string; user_id: string; handle: string; name: string; rank: number }
 
-const toEntry = (r: EntryRow): BoardEntry => ({ ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter: badgeOf(r), run: r.id })
+const toEntry = (r: EntryRow): BoardEntry => {
+  const supporter = badgeOf(r)
+  return { ...toRun(r), rank: r.rank, handle: r.handle, name: r.name, supporter, supporterSince: supporter ? (r.supporter_since?.toISOString() ?? null) : null, run: r.id }
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -120,7 +123,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
         ${friends && viewer ? sql`and (r.user_id = ${viewer} or r.user_id in (select followee_id from follows where follower_id = ${viewer}))` : sql``}
       order by r.user_id, r.survived desc, r.started_at
     )
-    select b.*, u.handle, u.name, u.supporter_points, u.supporter_public, (row_number() over (order by b.survived desc, b.started_at))::int as rank
+    select b.*, u.handle, u.name, u.supporter_points, u.supporter_public, u.supporter_since, (row_number() over (order by b.survived desc, b.started_at))::int as rank
     from best b join users u on u.id = b.user_id
     where u.handle is not null and u.banned_at is null`
 
@@ -130,7 +133,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
    * how many are on it.
    */
   const challengeRanked = (day: DayKey, friends: boolean, viewer: string | null) => sql`
-    select r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public,
+    select r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public, u.supporter_since,
       (row_number() over (order by r.survived desc, r.started_at))::int as rank,
       (count(*) over ())::int as total
     from runs r join users u on u.id = r.user_id
@@ -211,7 +214,8 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
      * Takes chunk `seq` of the stream of `token`'s run (`src/game/replayStream.ts`): it must start where
      * the stream is and fit the wall clock since the run started (`clockAllows`). The same chunk again
      * (a retry whose answer got lost) is fine. Returns how late it came (`commitLag`), from the last
-     * commitment, or from when the seed was dealt for the first; the run keeps its worst.
+     * commitment, or from when the seed was dealt for the first; the run keeps its worst, and counts
+     * those past `STREAM.lagTolerance` (`stream_late`).
      */
     putChunk: (userId: string, token: string, seq: number, chunk: ReplayChunk): Promise<{ ok: true; lag: number | null } | { ok: false; error: ChunkError }> =>
       sql.begin(async (tx) => {
@@ -237,8 +241,12 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
         await tx`
           insert into run_chunks (run_id, seq, from_tick, to_tick, moves, events)
           values (${token}, ${seq}, ${chunk.from}, ${chunk.to}, ${tx.json(chunk.moves)}, ${tx.json(chunk.events.map((e) => [...e]))})`
-        await tx`update runs set stream_seq = ${seq + 1}, stream_ticks = ${chunk.to}, stream_at = now(), stream_lag = greatest(stream_lag, ${lag}) where id = ${token}`
-        if (lag > STREAM.lagTolerance) console.log(`stream ${token}: chunk ${seq} came ${lag.toFixed(1)} s late`)
+        const late = lag > STREAM.lagTolerance
+        await tx`
+          update runs set stream_seq = ${seq + 1}, stream_ticks = ${chunk.to}, stream_at = now(), stream_lag = greatest(stream_lag, ${lag}),
+            stream_late = stream_late + ${late ? 1 : 0}
+          where id = ${token}`
+        if (late) console.log(`stream ${token}: chunk ${seq} came ${lag.toFixed(1)} s late`)
         return { ok: true, lag } as const
       }),
 
@@ -257,9 +265,9 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
      * the first one of the player's day to finish is their official attempt.
      * The replay must keep every input its stream committed (`settleReport`, else `rewrite`); it then
      * pins all of its ticks and the chunks it covers are deleted. A victory's report is timed like a chunk
-     * (endless mode may go on from it); a faint's or a quit's isn't, its tail being capped. Whether the
-     * run was streamed in time is stored and logged; with `streamEnforce` a run that wasn't stays off
-     * the public boards for good (`unlisted`), and still counts for the player.
+     * (endless mode may go on from it, and a late one counts in `stream_late`); a faint's or a quit's isn't,
+     * its tail being capped. Whether the run was streamed in time is stored and logged; with `streamEnforce`
+     * a run that wasn't stays off the public boards for good (`unlisted`), and still counts for the player.
      */
     finishRun: (userId: string, token: string, result: RunResult, replay: Replay): Promise<Finished | { ok: false; error: FinishError }> =>
       sql.begin(async (tx) => {
@@ -320,6 +328,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
             survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
             replay = ${tx.json(replay)}, verified = null, checked_at = null, check_ms = null, official = ${official},
             stream_base = ${settled.pin.ticks}, stream_digest = ${settled.pin.digest}, stream_lag = ${stream.lag}, stream_ok = ${inTime}, unlisted = ${!listed},
+            stream_late = stream_late + ${lag !== null && lag > STREAM.lagTolerance ? 1 : 0},
             mode = ${runMode(result.starter)}
             ${fresh ? tx`, stream_at = now()` : tx``}
           where id = ${token}`
@@ -458,7 +467,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
      * banned player). The title and the Pokédex come from the player's synced save.
      */
     profile: async (handle: string, viewer: string | null): Promise<PublicProfile | null> => {
-      const [user] = await sql<(SupporterRow & { id: string; handle: string; name: string | null; supporter_since: Date | null })[]>`
+      const [user] = await sql<(SupporterRow & { id: string; handle: string; name: string | null })[]>`
         select id, handle, name, supporter_points, supporter_public, supporter_since from users where handle = ${handle} and banned_at is null`
       if (!user) return null
       const self = viewer === user.id

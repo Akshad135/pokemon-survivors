@@ -8,7 +8,7 @@ import type { DayKey } from './game/day'
 import { isOutbreakSpecies } from './game/outbreak'
 import { parseChallengePlace, parseRunResult, type Board, type BoardPeriod, type ChallengeBoard, type ChallengePlace, type PublicProfile, type RunMode, type RunRanks, type RunResult } from './game/ranking'
 import { firstTouch, landingRef, parseInvites, REF_PARAM } from './game/referral'
-import type { Recorder, Replay } from './game/replay'
+import { RULES_VERSION, type Recorder, type Replay } from './game/replay'
 import { cutReplay, STREAM, STREAM_START, type ReplayChunk } from './game/replayStream'
 import { ROUTES, SITE_URL } from './site/routes'
 import { locale } from './i18n'
@@ -35,15 +35,24 @@ const call = (path: string, token: string | null, init: RequestInit = {}) =>
     signal: AbortSignal.timeout(TIMEOUT_MS),
   })
 
-/** A JSON body, or null when the call failed or answered an error. */
-const read = async (path: string, token: string | null, init?: RequestInit) => {
+/** A JSON body, or null when the call failed or answered an error; for an error, the API's `{ error }` when it said one. */
+const read = async (path: string, token: string | null, init?: RequestInit): Promise<{ status: number; body: unknown; error: string | null }> => {
   try {
     const res = await call(path, token, init)
-    const body: unknown = res.ok ? await res.json() : null
-    return { status: res.status, body }
+    if (res.ok) return { status: res.status, body: await res.json(), error: null }
+    const said: unknown = await res.json().catch(() => null)
+    return { status: res.status, body: null, error: isRecord(said) && typeof said.error === 'string' ? said.error : null }
   } catch {
-    return { status: 0, body: null }
+    return { status: 0, body: null, error: null }
   }
+}
+
+/** Called when the API plays newer rules than this build (`RULES_VERSION`): its runs would be refused as `outdated`. */
+let rulesBehind = () => {}
+
+/** Sets what to do when this build's rules fall behind the API's (`main.ts` loads the newer build). */
+export const onRulesBehind = (then: () => void) => {
+  rulesBehind = then
 }
 
 /* ---------------- Ranked runs ---------------- */
@@ -92,12 +101,13 @@ const writeQueue = (queue: Pending[]) => {
 /**
  * What became of a ranked run's result: on the boards (`ranked`, with the
  * player's position, and the challenge board's for a Desafio do dia run),
- * waiting for a connection (`queued`), refused by the server (`rejected`),
- * never ranked because its start got no token (`unranked`), or taken but
+ * waiting for a connection (`queued`), refused by the server (`rejected`;
+ * `outdated` when it played by older rules than the API's: the game was
+ * updated while it played), never ranked because its start got no token (`unranked`), or taken but
  * kept off the boards because its replay didn't reach the API in time while
  * it played (`unlisted`: the connection dropped; only with the API's `STREAM_ENFORCE`).
  */
-export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'unranked' | 'unlisted' }
+export type RankOutcome = { kind: 'ranked'; ranks: RunRanks; challenge: ChallengePlace | null } | { kind: 'queued' | 'rejected' | 'outdated' | 'unranked' | 'unlisted' }
 
 const parseRanks = (body: unknown): RunRanks | null => {
   const ranks = isRecord(body) && isRecord(body.ranks) ? body.ranks : null
@@ -204,11 +214,13 @@ const flushOnce = async () => {
   for (const p of readQueue().filter((q) => q.userId === userId)) {
     // The replay's chunks before its result: what they committed must be in by then.
     if (streaming?.token === p.token && !(await streaming.flush())) break
-    const { status, body } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
+    const { status, body, error } = await read(`/runs/${p.token}`, token, { method: 'PUT', body: JSON.stringify({ ...p.result, replay: p.replay }) })
     if (status === 0 || status === 401 || status === 429 || status >= 500) break
     const ranks = parseRanks(body)
     const listed = !isRecord(body) || body.listed !== false
-    done.set(p.token, !ranks ? { kind: 'rejected' } : listed ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'unlisted' })
+    const outdated = status === 400 && error === 'outdated'
+    if (outdated) rulesBehind()
+    done.set(p.token, outdated ? { kind: 'outdated' } : !ranks ? { kind: 'rejected' } : listed ? { kind: 'ranked', ranks, challenge: isRecord(body) ? parseChallengePlace(body.challenge) : null } : { kind: 'unlisted' })
     // A newer result of the same run (endless mode) may have queued meanwhile: only this one is done.
     writeQueue(readQueue().filter((q) => q.token !== p.token || q.result.time > p.result.time))
   }
@@ -223,25 +235,30 @@ export const flushRuns = () => (flushing = flushing.then(flushOnce, flushOnce).c
 /**
  * A start token the API dealt ahead of its run, for the player `userId`, with
  * the seed the run must play (null from an API older than server seeds,
- * which takes any), the day's outbreak by the API's clock (null from an older
- * API), when it came (`dealt`: the wall clock and the page's monotonic one)
- * and the Desafio do dia day it's for (null: a regular run).
+ * which takes any), the day's outbreak and whether the day is haunted (Noite
+ * das Bruxas) by the API's clock (null from an older API), when it came
+ * (`dealt`: the wall clock and the page's monotonic one) and the Desafio do
+ * dia day it's for (null: a regular run).
  */
-type Ticket = { userId: string; day: DayKey | null; token: string; seed: number | null; outbreak: EnemyId | null; dealt: { wall: number; mono: number } }
+type Ticket = TicketPlan & { userId: string; day: DayKey | null; token: string; dealt: { wall: number; mono: number } }
 
 /**
- * How long a ticket's outbreak holds. The API accepts the outbreak of the day
- * a run starts or the day before (`outbreakFits`), so one dealt less than a
- * day before the run fits whatever the device's clock says; past this, the
- * run plays the device's day instead.
+ * How long a ticket's day holds (its outbreak and haunting). The API accepts
+ * the outbreak of the day a run starts or the day before (`outbreakFits`),
+ * and a haunted run on an event day or the day after (`halloweenFits`), so a
+ * day dealt less than a day before the run fits whatever the device's clock
+ * says; past this, the run plays the device's day instead.
  */
-const OUTBREAK_HOLD_MS = 20 * 3600 * 1000
+const DAY_HOLD_MS = 20 * 3600 * 1000
 
 /** How long a ticket has been held, by both clocks (sleep can stall the monotonic one, a clock fix jumps the wall one). */
 const heldFor = (t: Ticket) => Math.max(Date.now() - t.dealt.wall, performance.now() - t.dealt.mono)
 
-/** The ticket's outbreak while it holds. */
-const heldOutbreak = (t: Ticket) => (heldFor(t) < OUTBREAK_HOLD_MS ? t.outbreak : null)
+/** What a ticket tells its run: its seed, plus its day (outbreak and haunting) while it holds. */
+const planOf = (t: Ticket): TicketPlan =>
+  heldFor(t) < DAY_HOLD_MS
+    ? { seed: t.seed, outbreak: t.outbreak, halloween: t.halloween }
+    : { seed: t.seed, outbreak: null, halloween: null }
 
 /**
  * A ticket held longer than this is asked for again when the menus prefetch:
@@ -251,8 +268,8 @@ const heldOutbreak = (t: Ticket) => (heldFor(t) < OUTBREAK_HOLD_MS ? t.outbreak 
  */
 const FRESH_MS = 2 * 60 * 1000
 
-/** What a ticket in hand tells the next run: its seed and outbreak (null: the game's own). */
-export type TicketPlan = { seed: number | null; outbreak: EnemyId | null }
+/** What a ticket in hand tells the next run: its seed, outbreak and haunting (null: the game's own). */
+export type TicketPlan = { seed: number | null; outbreak: EnemyId | null; halloween: boolean | null }
 
 type TicketKind = 'regular' | 'challenge'
 
@@ -270,7 +287,7 @@ let reporting: Promise<unknown> = Promise.resolve()
 /** Whether `t` can start a run of `day` for the player signed in now. */
 const fits = (t: Ticket | null, day: DayKey | null): t is Ticket => t !== null && t.userId === accountUserId() && t.day === day
 
-/** A start token, its seed and the day's outbreak from the API, or null (guest, offline, rate limited, a challenge that closed). */
+/** A start token, its seed and the day (outbreak, haunting) from the API, or null (guest, offline, rate limited, a challenge that closed). */
 const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket | null> => {
   const session = await sessionToken()
   if (!session) return null
@@ -278,7 +295,10 @@ const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket
   if (!isRecord(body) || typeof body.token !== 'string') return null
   const seed = typeof body.seed === 'number' && Number.isSafeInteger(body.seed) ? body.seed : null
   const outbreak = isOutbreakSpecies(body.outbreak) ? body.outbreak : null
-  return { userId, day, token: body.token, seed, outbreak, dealt: { wall: Date.now(), mono: performance.now() } }
+  const halloween = typeof body.halloween === 'boolean' ? body.halloween : null
+  // An API older than this answers no `rules`.
+  if (typeof body.rules === 'number' && body.rules > RULES_VERSION) rulesBehind()
+  return { userId, day, token: body.token, seed, outbreak, halloween, dealt: { wall: Date.now(), mono: performance.now() } }
 }
 
 /**
@@ -287,14 +307,14 @@ const requestTicket = async (userId: string, day: DayKey | null): Promise<Ticket
  * waits on the network. Results still queued go first: the new token replaces
  * the player's unfinished one, which may be a run that just ended. Call it
  * only between runs (menus, results), never while a ranked run plays.
- * Resolves to the ticket's seed and outbreak, null without one.
+ * Resolves to what the ticket tells its run (`TicketPlan`), null without one.
  */
 export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketPlan | null> => {
   const userId = accountUserId()
   const kind = kindOf(day)
   if (!rankingEnabled || !userId) return null
   const have = held[kind]
-  if (fits(have, day) && heldFor(have) < FRESH_MS) return { seed: have.seed, outbreak: heldOutbreak(have) }
+  if (fits(have, day) && heldFor(have) < FRESH_MS) return planOf(have)
   // A stale ticket gives way now: the new one replaces its token, so no run may start on it meanwhile.
   if (have && !asking[kind]) held[kind] = null
   asking[kind] ??= reporting
@@ -303,7 +323,7 @@ export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketP
     .then((t) => (t && accountUserId() === userId ? (held[kind] = t) : null))
     .finally(() => (asking[kind] = null))
   const got = await asking[kind]
-  return fits(got, day) ? { seed: got.seed, outbreak: heldOutbreak(got) } : null
+  return fits(got, day) ? planOf(got) : null
 }
 
 /**
@@ -316,7 +336,7 @@ export const prefetchRanked = async (day: DayKey | null = null): Promise<TicketP
  */
 export type RankedRun = { stream: (rec: Recorder) => void; submit: (result: RunResult, replay: Replay) => Promise<RankOutcome> }
 
-/** A run that starts signed in: the seed and outbreak it must play (null: the game's own) and its ranking. */
+/** A run that starts signed in: the seed, outbreak and haunting it must play (null: the game's own) and its ranking. */
 export type RankedStart = TicketPlan & { ranked: RankedRun }
 
 const unranked: RankedRun = { stream: () => {}, submit: () => Promise.resolve({ kind: 'unranked' }) }
@@ -325,14 +345,14 @@ const unranked: RankedRun = { stream: () => {}, submit: () => Promise.resolve({ 
  * Takes the ticket in hand for a run that begins now (`challenge`: the day of
  * the Desafio do dia it plays) and restarts its clock on the API. Without one
  * (offline, rate limited, Play pressed before it came) the run is unranked
- * and plays a seed and outbreak of the game's own. Null for guests.
+ * and plays a seed and day of the game's own. Null for guests.
  */
 export const startRanked = (challenge: DayKey | null = null): RankedStart | null => {
   const userId = accountUserId()
   if (!rankingEnabled || !userId) return null
   const kind = kindOf(challenge)
   const ticket = held[kind]
-  if (!fits(ticket, challenge)) return { seed: null, outbreak: null, ranked: unranked }
+  if (!fits(ticket, challenge)) return { seed: null, outbreak: null, halloween: null, ranked: unranked }
   held[kind] = null
   const { token } = ticket
   // 409: another tab or device got a newer token since, so this one can't report.
@@ -342,8 +362,7 @@ export const startRanked = (challenge: DayKey | null = null): RankedStart | null
   let sent = -1
   let last: Promise<RankOutcome> = Promise.resolve({ kind: 'unranked' })
   return {
-    seed: ticket.seed,
-    outbreak: heldOutbreak(ticket),
+    ...planOf(ticket),
     ranked: {
       stream: stream.cut,
       submit: (result, replay) => {

@@ -139,12 +139,21 @@ export const createInput = (target: HTMLElement, bindings: () => Bindings, fixed
     held.set(e.code, code)
     if (!e.repeat) dispatch(code)
   })
-  window.addEventListener('keyup', (e) => held.delete(e.code))
-  window.addEventListener('blur', () => {
+  // macOS swallows the keyups of keys pressed while ⌘ is down, so letting go of ⌘ lets go of everything.
+  window.addEventListener('keyup', (e) => (e.key === 'Meta' ? held.clear() : held.delete(e.code)))
+  // Wherever a keyup can get lost, forget the held keys; one still down comes back with its next auto-repeat.
+  // F11 (the browser's own fullscreen) fires neither `blur` nor `fullscreenchange`, only `resize`.
+  const releaseKeys = () => held.clear()
+  const releaseAll = () => {
     held.clear()
     pointerId = null
     stick = null
-  })
+  }
+  window.addEventListener('resize', releaseKeys)
+  document.addEventListener('fullscreenchange', releaseKeys)
+  window.addEventListener('blur', releaseAll)
+  window.addEventListener('pagehide', releaseAll)
+  document.addEventListener('visibilitychange', () => document.hidden && releaseAll())
 
   // The first finger on the canvas owns the stick; extra fingers are ignored.
   // A fixed stick only answers touches within its reach.
