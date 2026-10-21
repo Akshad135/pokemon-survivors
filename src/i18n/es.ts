@@ -636,6 +636,18 @@ export const es: Messages = {
     hintTouch: 'Toca para elegir',
   },
 
+  survey: {
+    title: 'ENCUESTA RÁPIDA',
+    open: 'Encuesta: ¿qué te parece la dificultad?',
+    question: '¿Qué te está pareciendo la dificultad del juego?',
+    answers: { easy: 'Fácil', medium: 'Media', hard: 'Difícil', unsure: 'No sé' },
+    send: 'Enviar',
+    later: 'Ahora no',
+    thanks: '¡Gracias! Tu respuesta ayuda a ajustar el juego.',
+    hintKeys: '↑ ↓ dificultad · ← → respuesta · ENTER confirmar · ESC cerrar',
+    hintTouch: 'Toca para responder',
+  },
+
   ribbons: {
     names: { gold: 'Cinta de Oro', silver: 'Cinta de Plata', bronze: 'Cinta de Bronce' },
     section: 'Cintas del desafío',
