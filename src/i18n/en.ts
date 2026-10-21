@@ -1244,6 +1244,7 @@ export const en: Messages = {
   eggs: {
     tiers: { common: 'Common Egg', rare: 'Rare Egg', ultra: 'Ultra Rare Egg', friend: 'Friendship Egg' },
     found: (egg) => `You found a *${egg}*! It goes to the incubator.`,
+    foundFull: (egg, coins) => `You found a *${egg}*! The incubator is full, so it will become *${coins}*.`,
     title: 'INCUBATOR',
     intro: 'Eggs hatch with the steps you take in runs. Every egg in the incubator walks along.',
     sources: 'Bosses, locked chests and rifts sometimes leave an egg.',
@@ -1272,7 +1273,8 @@ export const en: Messages = {
     readyBadge: (n) => (n === 1 ? '1 egg ready!' : `${n} eggs ready!`),
     steps: 'Steps',
     eggs: 'Eggs',
-    full: (coins) => `Incubator full: the egg became ${coins}.`,
+    full: (n, coins) => (n === 1 ? `Incubator full: the egg became ${coins}.` : `Incubator full: ${n} eggs became ${coins}.`),
+    capped: (n, coins, cap) => (n === 1 ? `${cap} eggs per run at most: the egg became ${coins}.` : `${cap} eggs per run at most: ${n} eggs became ${coins}.`),
   },
   mapEvents: {
     altar: (buff) => `The altar granted *${buff}*!`,

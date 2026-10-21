@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { PLAYABLE_IDS } from '../data/hatchlings'
 import { BAG_ITEM_IDS } from '../data/shop'
-import { challengeOpen, challengeProblem, challengeStart, dailyChallenge, nextIsOfficial, ribbonsDue } from './challenge'
+import { challengeOpen, challengeProblem, challengeStart, dailyChallenge, ribbonsDue } from './challenge'
 import { previousDay } from './day'
 import { chooseOffer, step } from './game'
 import { NO_RANKS } from './meta'
@@ -95,14 +95,5 @@ describe('the challenge clock', () => {
     expect(ribbonsDue(DAY, new Date('2026-10-16T01:00:00-03:00'))).toBe(false)
     expect(ribbonsDue(DAY, new Date('2026-10-16T03:00:00-03:00'))).toBe(true)
     expect(ribbonsDue(DAY, new Date('2026-10-18T01:00:00-03:00'))).toBe(true)
-  })
-})
-
-describe('nextIsOfficial', () => {
-  it('is practice once this device or the server knows of a finished attempt', () => {
-    expect(nextIsOfficial(DAY, null, null)).toBe(true)
-    expect(nextIsOfficial(DAY, { day: previousDay(DAY), time: 300 }, false)).toBe(true)
-    expect(nextIsOfficial(DAY, { day: DAY, time: 300 }, null)).toBe(false)
-    expect(nextIsOfficial(DAY, null, true)).toBe(false)
   })
 })

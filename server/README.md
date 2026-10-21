@@ -259,10 +259,8 @@ In the game, set `VITE_CLERK_PUBLISHABLE_KEY` and `VITE_API_URL=http://localhost
 
 ### What runs
 
-The Dokploy project **Pokémon Survivors** has two services:
-
-- **Postgres 18** `survivors-postgres-kwkfm5`, with no external port. Only the API reaches it, over Dokploy's internal network.
-- **App `api`**: built with the Dockerfile `server/Dockerfile` and build context `.` (the repository root, since the API bundles `src/`). It listens on container port `3000` behind `api.pokemonsurvivors.com`, with a Let's Encrypt certificate.
+- **Postgres 17 on Supabase** (project `rkctmaklefamxfleiqwe`, sa-east-1), reached through the **transaction pooler** (port `6543`). The session pooler (`5432`) caps clients at its pool size, and start-first rollouts run two containers at once, so it refused connections on deploys. The API connects as `postgres` with `prepare: false`, and anything that needs one connection stays in a transaction (`sql.begin`, `pg_advisory_xact_lock`): no session locks, `LISTEN` or session `SET`. RLS is on in every table and `anon`/`authenticated` have no grants, since nothing uses Supabase's Data API.
+- **App `api`** in the Dokploy project **Pokémon Survivors**:: built with the Dockerfile `server/Dockerfile` and build context `.` (the repository root, since the API bundles `src/`). It listens on container port `3000` behind `api.pokemonsurvivors.com`, with a Let's Encrypt certificate.
 
 ### When it deploys
 
@@ -285,7 +283,7 @@ New versions roll out with no downtime:
 
 | Variable | Where | |
 | --- | --- | --- |
-| `DATABASE_URL` | Dokploy (`api`) | Internal connection string of `survivors-postgres-kwkfm5` |
+| `DATABASE_URL` | Dokploy (`api`) | Supabase transaction pooler: `postgresql://postgres.rkctmaklefamxfleiqwe:…@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require` |
 | `CLERK_SECRET_KEY` | Dokploy (`api`) | Production instance secret key |
 | `ABACATEPAY_API_KEY` | Dokploy (`api`) | AbacatePay production key, with `CHECKOUT:CREATE`, `PRODUCT:CREATE` and `PRODUCT:READ` |
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID` | Dokploy (`api`) | The "Pokémon Survivors" bot's token and the community server's id |

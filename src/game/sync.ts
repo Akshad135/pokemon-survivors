@@ -1,4 +1,5 @@
 import { mergeAchievements, mergeGiftTitles } from './achievements'
+import { mergeAttempts } from './attempt'
 import { mergeClaimedGifts } from './gifts'
 import { mergeClears } from './clears'
 import { mergeHalloween } from './halloween'
@@ -60,6 +61,7 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + shopInvested(s.shop.
  * - The Noite das Bruxas candy jar: the fuller one (its rewards are gifts, kept above); its Caça aos Fantasmas: a union.
  * - Legend captures: each legend's win count at the larger side (a shiny
  *   captured is a `shinyStarters` key, a union like the rest).
+ * - The Desafio do dia attempt: the later day (`base`'s on the same day).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -92,6 +94,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     clears: mergeClears(base.clears, incoming.clears),
     halloween: mergeHalloween(base.halloween, incoming.halloween),
     legends: mergeCaptures(base.legends, incoming.legends),
+    attempt: mergeAttempts(base.attempt, incoming.attempt),
   }
 }
 

@@ -3586,6 +3586,8 @@ button {
   flex: none;
   display: grid;
   place-items: center;
+  /* The 40 px portrait is wider than the circle: center its track too (see `.trainer-avatar`). */
+  place-content: center;
   width: 32px;
   height: 32px;
   margin-right: -8px;
@@ -6218,11 +6220,16 @@ button {
   text-align: left;
 }
 
-/* Portraits are 40 px: shown at 1:1 (cropped to the circle) or 2:1, never in between. */
+/*
+ * Portraits are 40 px: shown at 1:1 (cropped to the circle) or 2:1, never in between.
+ * A portrait wider than the circle makes its grid track overflow: `place-content` centers
+ * the track too, or the face would hang from the top-left corner.
+ */
 .trainer-avatar {
   flex: none;
   display: grid;
   place-items: center;
+  place-content: center;
   width: 36px;
   height: 36px;
   overflow: hidden;
@@ -10071,6 +10078,7 @@ a.btn.dex-site {
   height: 44px;
   display: grid;
   place-items: center;
+  place-content: center;
   overflow: hidden;
   border-radius: 50%;
   background: #3a2878;
