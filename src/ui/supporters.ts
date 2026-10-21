@@ -5,7 +5,7 @@ import { HATCHLINGS, isHatchling, PLAYABLE, PLAYABLE_IDS, type PlayableId } from
 import { HALLOWEEN } from '../data/halloween'
 import { POLL, SUPPORTER, type PollOptionId } from '../data/supporters'
 import { pendingPicks, pickShiny, ownsShiny, shinyChoices } from '../game/shinyPicks'
-import { canWalkWith, companionForm, hallOf, isSupporter, parseCode, type Companion, type CompanionId, type SupporterStatus, type WallEntry } from '../game/supporters'
+import { canWalkWith, companionForm, hallOf, isSupporter, parseCode, supporterCount, type Companion, type CompanionId, type SupporterStatus, type Wall, type WallEntry } from '../game/supporters'
 import { isSpecialCompanion, SPECIAL_COMPANION_IDS } from '../data/companions'
 import { savedSupporterTier } from '../game/trainer'
 import { brasiliaDay } from '../game/day'
@@ -536,7 +536,7 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
   /** The account's standing: undefined while it loads, null when the API can't say. */
   let status: SupporterStatus | null | undefined
   /** The wall: undefined while it loads, null offline. */
-  let wall: WallEntry[] | null | undefined
+  let wall: Wall | null | undefined
   let legends: ReturnType<typeof legendCard>[] = []
   let closed = false
 
@@ -652,7 +652,7 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
     const buttons: { el: HTMLElement; run: () => void }[] = []
     legends = []
     if (wall === undefined || wall === null) return { sections: [...sections, h('p', { class: `hall-note${wall === undefined ? ' blink' : ''}` }, wall === undefined ? m.loading : m.offline)], buttons }
-    const split = hallOf(wall)
+    const split = hallOf(wall.entries)
     legends = split.legends.map(legendCard)
     const empty = h('div', { class: 'legend-card empty' }, h('span', { class: 'legend-stage' }, h('span', { class: 'legend-pedestal' })), h('b', { class: 'legend-name' }, m.firstLegend))
     sections.push(
@@ -668,8 +668,10 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
       h(
         'section',
         { class: 'hall-fans' },
-        h('h3', { class: 'hall-label pink' }, m.fans(split.supporters.length)),
+        h('h3', { class: 'hall-label pink' }, m.fans(split.supporters.length + wall.hidden.supporter)),
         fans.length > 0 ? h('div', { class: 'fan-grid' }, ...fans.map((f) => f.el)) : h('p', { class: 'hall-note' }, m.wallEmpty),
+        // Supporters who chose to stay off the wall still count: the Hall says so, without naming them.
+        ...(wall.hidden.supporter + wall.hidden.gold > 0 ? [h('p', { class: 'hall-note' }, m.offWall(supporterCount(wall)))] : []),
       ),
     )
     buttons.push(...split.legends.map((e, i) => ({ el: legends[i]!.el, run: () => profile(e.handle) })), ...fans.map((f) => ({ el: f.el, run: () => profile(f.e.handle) })))
@@ -737,8 +739,8 @@ export const supportersScreen = (root: HTMLElement, input: Input, actions: Suppo
 export const creditsLine = () => {
   const el = h('p', { class: 'supporter-credits hidden' })
   void fetchWall().then((wall) => {
-    if (!wall || wall.length === 0) return
-    const names = [...wall].sort(() => Math.random() - 0.5).slice(0, SUPPORTER.credits).map((e) => e.name)
+    if (!wall || wall.entries.length === 0) return
+    const names = [...wall.entries].sort(() => Math.random() - 0.5).slice(0, SUPPORTER.credits).map((e) => e.name)
     el.replaceChildren(h('img', { src: heartIcon(), alt: '' }), h('small', {}, t().supporters.credits), h('span', {}, names.join(' · ')))
     el.classList.remove('hidden')
   })

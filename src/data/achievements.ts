@@ -1,4 +1,5 @@
 import type { EggTier } from '../game/eggs'
+import { PLACE_IDS } from './places'
 import { RIFT_LEGENDS } from './rifts'
 
 /**
@@ -25,6 +26,7 @@ export type AchievementStat =
   | 'rifts' | 'legends' | 'overtimeMinutes' | 'reaperDefeats'
   | 'bossKills' | 'chests' | 'meowths' | 'altars' | 'coins' | 'moveEvolutions' | 'missions'
   | 'dexSeen' | 'starterLines' | 'hatches' | 'shinyHatches' | 'megas' | 'alphaKills'
+  | 'placeClears' | 'places' | 'landmarks'
 
 export type AchievementDef = {
   medal: Medal
@@ -73,6 +75,11 @@ export const ACHIEVEMENTS = {
   shinyHatch: { medal: 'gold', stat: 'shinyHatches', target: 1, title: true },
   rift1: { medal: 'bronze', stat: 'rifts', target: 1 },
   rift25: { medal: 'silver', stat: 'rifts', target: 25 },
+  place1: { medal: 'bronze', stat: 'placeClears', target: 1 },
+  place25: { medal: 'silver', stat: 'placeClears', target: 25 },
+  /** Treasures of the map's landmarks: the cottage's crate, the maze's chest, the ruins' altar, the camp's backpack. */
+  landmark1: { medal: 'bronze', stat: 'landmarks', target: 1 },
+  landmark50: { medal: 'silver', stat: 'landmarks', target: 50 },
   mega1: { medal: 'bronze', stat: 'megas', target: 1 },
   mega25: { medal: 'silver', stat: 'megas', target: 25 },
   alpha1: { medal: 'bronze', stat: 'alphaKills', target: 1 },
@@ -81,6 +88,8 @@ export const ACHIEVEMENTS = {
   /** Every rift legendary beaten at least once (unlocked ones stay unlocked when the list grows). */
   legends: { medal: 'gold', stat: 'legends', target: RIFT_LEGENDS.length, title: true },
   shinyLegend: { medal: 'gold', stat: 'shinyLegends', target: 1 },
+  /** Every place cleared at least once: the cave's treasure, Spiritomb and a flight with a wing (which takes a Flying type). */
+  explorer: { medal: 'gold', stat: 'places', target: PLACE_IDS.length, title: true },
   champion: { medal: 'silver', stat: 'wins', target: 1, title: true },
   wins10: { medal: 'gold', stat: 'wins', target: 10 },
   trio: { medal: 'silver', stat: 'trio', target: 3 },

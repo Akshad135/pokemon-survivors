@@ -5,6 +5,7 @@ import { ABILITIES } from '../data/abilities'
 import { abilityLit, abilityStacks } from '../game/abilities'
 import { playerDex } from '../game/game'
 import { playerForm } from '../game/branch'
+import { innateAbility, isClone } from '../game/legend'
 import { MAX_ITEMS, MAX_MOVES } from '../game/leveling'
 import { heldMega } from '../game/mega'
 import type { Game } from '../game/types'
@@ -12,6 +13,7 @@ import { weatherHere } from '../game/weather'
 import { formatPokeDollars, t } from '../i18n'
 import { coinIcon, curseIcon, itemIcon, moveIcon, pokeballIcon, sparkleIcon } from '../render/art'
 import { CURSES } from '../data/curses'
+import { legendSignature } from '../data/legends'
 import { isDuo, readyDuos } from '../game/duoRules'
 import { consumableIcon } from '../render/props'
 import { weatherIcon } from '../render/weather'
@@ -21,6 +23,9 @@ import { abilityIcon } from '../render/abilityArt'
 import { megaIcon } from '../render/megaFx'
 import { h, setStyle, setText } from './dom'
 import { createRiftHud } from './riftHud'
+import { createPlaceCard } from './placeCard'
+import { createRiftTitle } from './riftTitle'
+import { phasesOf, pooledShare } from '../game/bossFight'
 import { createFieldMissionHud } from './fieldMissionHud'
 import { createLungeControls } from './lungeButton'
 import { createMegaControls } from './megaButton'
@@ -43,6 +48,8 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const mega = createMegaControls(onMega)
   const lunge = createLungeControls(onLunge)
   const rift = createRiftHud()
+  const card = createPlaceCard()
+  const title = createRiftTitle()
   const mission = createFieldMissionHud()
   const xpFill = h('div', { class: 'xp-fill' })
   const xpLabel = h('div', { class: 'xp-label' })
@@ -59,7 +66,13 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const buffs = h('div', { class: 'buffs' })
   const bossName = h('div', { class: 'boss-name' })
   const bossFill = h('div', { class: 'boss-fill' })
-  const boss = h('div', { class: 'boss hidden' }, bossName, h('div', { class: 'boss-bar' }, bossFill))
+  const bossBar = h('div', { class: 'boss-bar' }, bossFill)
+  // A linked pair (Latias and Latios) shares the bar; under it, each one's own HP in its color.
+  const pairFills = [h('i', { class: 'boss-pair-fill' }), h('i', { class: 'boss-pair-fill' })] as const
+  const pairBars = h('div', { class: 'boss-pair hidden' }, h('span', { class: 'boss-pair-bar' }, pairFills[0]), h('span', { class: 'boss-pair-bar' }, pairFills[1]))
+  const boss = h('div', { class: 'boss hidden' }, bossName, bossBar, pairBars)
+  /** The boss whose phase ticks the bar shows (`BOSS_PHASES`), so they're laid once per boss. */
+  let ticked: string | null = null
   const portrait = h('img', { class: 'status-portrait', alt: '' })
   const shinyBadge = h('img', { class: 'shiny-badge hidden', src: sparkleIcon(), alt: 'Shiny' })
   const name = h('div', { class: 'status-name' })
@@ -102,6 +115,8 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     ),
     boss,
     rift.el,
+    card.el,
+    title.el,
     mission.el,
     h(
       'div',
@@ -148,7 +163,7 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
   const renderSlots = (g: Game) => {
     const p = g.player
     // Moves a fusion on the table would use blink in the duo's colors.
-    const fusing = new Set(readyDuos(p.moves).flatMap((d) => d.from))
+    const fusing = new Set(readyDuos(p.moves, legendSignature(g.starter)).flatMap((d) => d.from))
     moveSlots.replaceChildren(
       ...Array.from({ length: MAX_MOVES }, (_, i) => {
         const m = p.moves[i]
@@ -198,6 +213,8 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     mega.update(g)
     lunge.update(g)
     rift.update(g)
+    card.update(g)
+    title.update(g)
     mission.update(g, !rift.el.classList.contains('hidden'))
 
     const key = [...p.moves.map((m) => `${m.id}${m.level}`), ...p.items.map((i) => `${i.id}${i.level}`)].join()
@@ -220,13 +237,15 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
 
     const dex = playerDex(g)
     const megaName = g.mega.active > 0 ? heldMega(g)?.name : undefined
-    if (`${dex}${p.shiny}${megaName}` !== portraitKey) {
-      portraitKey = `${dex}${p.shiny}${megaName}`
+    // A legend's awakened form (Primal Kyogre) renames it on the same dex.
+    const formName = playerForm(g).name
+    if (`${dex}${p.shiny}${megaName}${formName}` !== portraitKey) {
+      portraitKey = `${dex}${p.shiny}${megaName}${formName}`
       portrait.setAttribute('src', portraitUrl(dex, p.shiny))
       shinyBadge.classList.toggle('hidden', !p.shiny)
       name.classList.toggle('shiny-name', p.shiny)
       name.classList.toggle('mega-name', megaName !== undefined)
-      setText(name, megaName ?? playerForm(g).name)
+      setText(name, megaName ?? formName)
     }
     setText(level, t().levelShort(p.level))
     const ratio = Math.max(0, p.hp / p.stats.maxHp)
@@ -236,7 +255,8 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
     setText(hpText, `${Math.ceil(p.hp)}/${Math.round(p.stats.maxHp)}`)
 
     const megaDef = g.mega.active > 0 ? heldMega(g) : null
-    const id = g.ability.id
+    // A legend shows its innate until it picks an Ability at its first awakening.
+    const id = g.ability.id ?? innateAbility(g.starter)
     const stacks = megaDef || !id ? 0 : abilityStacks(g)
     const lit = !megaDef && id !== null && abilityLit(g)
     const akey = `${id}|${megaDef?.ability}|${lit}|${stacks}`
@@ -254,9 +274,26 @@ export const createHud = (root: HTMLElement, onSpecial: () => void, onMega: () =
 
     const b = g.bossId !== null ? g.enemies.find((e) => e.id === g.bossId) : undefined
     boss.classList.toggle('hidden', !b)
-    if (b) {
-      setText(bossName, ENEMIES[b.kind].name)
+    const mate = b?.fight && b.fight.link >= 0 ? g.enemies.find((e) => e.id === b.fight!.link) : undefined
+    pairBars.classList.toggle('hidden', !mate)
+    if (b && mate) {
+      setText(bossName, t().rifts.pairName(ENEMIES[b.kind].name, ENEMIES[mate.kind].name))
+      setStyle(bossFill, 'width', `${(pooledShare(b, mate) * 100).toFixed(1)}%`)
+      setStyle(pairFills[0], 'width', `${((Math.max(0, b.hp) / b.maxHp) * 100).toFixed(1)}%`)
+      setStyle(pairFills[1], 'width', `${((Math.max(0, mate.hp) / mate.maxHp) * 100).toFixed(1)}%`)
+      pairFills[0].classList.toggle('down', b.fight?.down === true)
+      pairFills[1].classList.toggle('down', mate.fight?.down === true)
+      pairFills[0].dataset.kind = b.kind
+      pairFills[1].dataset.kind = mate.kind
+    } else if (b) {
+      setText(bossName, isClone(g, b) ? t().legend.clone(ENEMIES[b.kind].name) : ENEMIES[b.kind].name)
       setStyle(bossFill, 'width', `${((b.hp / b.maxHp) * 100).toFixed(1)}%`)
+    }
+    if (b) {
+      if (ticked !== b.kind) {
+        ticked = b.kind
+        bossBar.replaceChildren(bossFill, ...(phasesOf(b.kind) ?? []).slice(1).filter((ph) => ph.rebirth === undefined).map((ph) => h('i', { class: 'boss-tick', style: `left:${(ph.below * 100).toFixed(1)}%` })))
+      }
     }
   }
 

@@ -19,6 +19,7 @@ import { parseShinyPicks, type ShinyPick } from './shinyPicks'
 import { isPlayable } from './ranking'
 import type { SpecialCompanionId } from '../data/companions'
 import { parseCompanion, parseCompanions, type Companion } from './supporters'
+import { NO_CAPTURES, parseCaptures, type Captures } from './capture'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import type { PlayableId } from '../data/hatchlings'
 import type { StatDelta } from './stats'
@@ -149,6 +150,8 @@ export type Save = {
   clears: Clears
   /** The Noite das Bruxas candy jar (`game/halloween.ts`): what it holds pays the event's rewards. */
   halloween: HalloweenSave
+  /** Wins toward capturing each legend for the Legend mode (`game/capture.ts`); its shiny lives in `shinyStarters`. */
+  legends: Captures
 }
 
 /** The branch each branching family took in its latest run that got there. */
@@ -191,6 +194,7 @@ export const EMPTY_SAVE: Save = {
   branches: {},
   clears: {},
   halloween: NO_HALLOWEEN,
+  legends: NO_CAPTURES,
 }
 
 /** Brings any older save shape up to the current version. Add a case per schema bump. */
@@ -254,6 +258,7 @@ export const parseSaveData = (json: unknown): Save => {
     // Plus the clears the lifetime records prove, for wins from before clears were tracked.
     clears: mergeClears(pastClears(achievements.lifetime), parseClears(data.clears)),
     halloween: parseHalloween(data.halloween),
+    legends: parseCaptures(data.legends),
   }
 }
 

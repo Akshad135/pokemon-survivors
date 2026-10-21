@@ -3,18 +3,21 @@ import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { formatTime } from '../engine/math'
 import { HATCHLING_IDS, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { LEGEND_IDS } from '../data/legends'
 import { REGIONS } from '../data/starters'
 import { dailyChallenge } from '../game/challenge'
 import { brasiliaDay, previousDay, type DayKey } from '../game/day'
 import { DIFFICULTY_IDS, type Difficulty } from '../game/difficulty'
 import { pumpkinRow } from '../game/halloween'
-import { BOARD_PERIODS, isPlayable, type Board, type BoardEntry, type BoardPeriod } from '../game/ranking'
+import { BOARD_PERIODS, isPlayable, RUN_MODES, runMode, type Board, type BoardEntry, type BoardPeriod, type RunMode } from '../game/ranking'
 import { fetchBoard, fetchChallengeBoard, type BoardFilter, type RankOutcome } from '../ranking'
 import { formatDay, t } from '../i18n'
+import { flagIcon } from '../render/art'
 import { jackIcon } from '../render/halloweenArt'
 import { today } from './save'
 import { h, later, rich } from './dom'
 import { profileScreen, runForm, runPortrait, supporterBadge } from './profile'
+import { reportDialog } from './report'
 import { hint, menu, type Screen } from './screens'
 
 const step = <T>(list: readonly T[], at: T, by: number) => list[(list.indexOf(at) + by + list.length) % list.length]!
@@ -37,17 +40,26 @@ const entryRow = (e: BoardEntry, me: boolean) => {
   )
 }
 
-/** The Pokémon filter: every starter by region, then the egg families. */
-const pokemonSelect = (value: PlayableId | null, onPick: (id: PlayableId | null) => void) => {
+/** A row with its report flag beside it (signed in, someone else's run), or the row alone. */
+const entryLine = (row: HTMLElement, e: BoardEntry, report: ((e: BoardEntry) => void) | null) =>
+  report
+    ? h(
+        'div',
+        { class: 'rank-line' },
+        row,
+        h('button', { class: 'rank-flag', type: 'button', 'aria-label': t().report.flag(e.handle), title: t().report.flag(e.handle), onclick: () => (playSfx('select'), report(e)) }, h('img', { src: flagIcon(), alt: '' })),
+      )
+    : row
+
+/** The Pokémon filter: every starter by region, then the egg families; the legends on the Legend mode's board. */
+const pokemonSelect = (mode: RunMode, value: PlayableId | null, onPick: (id: PlayableId | null) => void) => {
   const m = t().ranking
   const option = (id: PlayableId) => h('option', { value: id, selected: id === value }, PLAYABLE[id].name)
-  const select = h(
-    'select',
-    { class: 'rank-select', 'aria-label': m.pokemon },
-    h('option', { value: '' }, m.allPokemon),
-    ...REGIONS.map((r) => h('optgroup', { label: r.name }, ...r.starters.map(option))),
-    h('optgroup', { label: m.eggGroup }, ...HATCHLING_IDS.map(option)),
-  )
+  const groups =
+    mode === 'legend'
+      ? [h('optgroup', { label: m.legendGroup }, ...LEGEND_IDS.map(option))]
+      : [...REGIONS.map((r) => h('optgroup', { label: r.name }, ...r.starters.map(option))), h('optgroup', { label: m.eggGroup }, ...HATCHLING_IDS.map(option))]
+  const select = h('select', { class: 'rank-select', 'aria-label': m.pokemon }, h('option', { value: '' }, m.allPokemon), ...groups)
   select.addEventListener('change', () => {
     // Back to the game's keys: the arrows move through the board again.
     select.blur()
@@ -73,19 +85,21 @@ const challengeDay = (d: ChallengeDay): DayKey => {
 
 /**
  * The boards: one per difficulty, each by day, week and all time, every player
- * once with their best run, and the Desafio do dia's, today's and yesterday's,
+ * once with their best run, for the regular runs or the Legend mode's (a
+ * mode toggle, M), and the Desafio do dia's, today's and yesterday's,
  * every player once with their official attempt. Filters by Pokémon (not the
  * challenge's: it's one Pokémon) and by friends (who the player follows, plus
  * them). The player's own line stays in sight below the top when they're
- * further down. A row opens that trainer's profile over the board.
+ * further down. A row opens that trainer's profile over the board; signed
+ * in, the flag beside someone else's row reports that run (`reportDialog`).
  *
- * Keys: ↑/↓ rows and buttons, ←/→ period (or day), Q/E board, F friends, Enter
+ * Keys: ↑/↓ rows and buttons, ←/→ period (or day), Q/E board, M mode, F friends, Enter
  * opens, Esc goes back. `onClose` runs after the key dispatch.
- * `challenge` opens on the challenge's tab.
+ * `challenge` opens on the challenge's tab, `mode` on that mode's boards.
  */
-export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => void, opts: { difficulty?: Difficulty; challenge?: boolean } = {}): Screen => {
+export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => void, opts: { difficulty?: Difficulty; mode?: RunMode; challenge?: boolean } = {}): Screen => {
   const signedIn = () => accountState().kind === 'signedIn'
-  const filter: BoardFilter = { difficulty: opts.difficulty ?? 'normal', period: 'day', starter: null, friends: false }
+  const filter: BoardFilter = { mode: opts.mode ?? 'standard', difficulty: opts.difficulty ?? 'normal', period: 'day', starter: null, friends: false }
   let tab: Tab = opts.challenge ? 'challenge' : filter.difficulty
   let day: ChallengeDay = 'today'
   /** Players on the challenge board shown. */
@@ -111,6 +125,19 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
     })
   }
 
+  /** The report dialog over the board, about `e`'s run on the board shown. */
+  const openReport = (e: BoardEntry) => {
+    nav?.off()
+    el.classList.add('hidden')
+    const difficulty = tab === 'challenge' ? dailyChallenge(challengeDay(day)).difficulty : filter.difficulty
+    const run = e.run ? { id: e.run, pokemon: runForm(e).name, time: e.time, difficulty } : null
+    sub = reportDialog(root, input, { handle: e.handle, name: e.name, run }, () => {
+      sub = null
+      el.classList.remove('hidden')
+      render()
+    })
+  }
+
   const myHandle = () => {
     const s = accountState()
     return s.kind === 'signedIn' ? s.handle : null
@@ -125,6 +152,7 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
       ? CHALLENGE_DAYS.map((d) => button(m.days[d], d === day, () => setDay(d)))
       : BOARD_PERIODS.map((p) => button(m.periods[p], p === filter.period, () => set({ period: p })))
     const scope = [button(m.everyone, !filter.friends, () => set({ friends: false })), button(m.friends, filter.friends, () => set({ friends: true }))]
+    const modes = RUN_MODES.map((mode) => button(m.modes[mode], mode === filter.mode, () => setMode(mode)))
     const shown = onChallenge ? dailyChallenge(challengeDay(day)) : null
 
     const rows: { el: HTMLElement; handle: string }[] = []
@@ -135,13 +163,18 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
     else if (board === 'offline') list = [status(m.offline)]
     else {
       const mine = board.me
-      const top = board.entries.map((e) => ({ el: entryRow(e, e.handle === mine?.handle), handle: e.handle }))
+      const report = signedIn() ? openReport : null
+      const top = board.entries.map((e) => {
+        const me = e.handle === mine?.handle || e.handle === myHandle()
+        const row = entryRow(e, me)
+        return { el: row, line: entryLine(row, e, me ? null : report), handle: e.handle }
+      })
       const below = mine && !board.entries.some((e) => e.handle === mine.handle) ? [{ el: entryRow(mine, true), handle: mine.handle }] : []
       rows.push(...top, ...below)
       list =
         rows.length === 0
           ? [status(filter.friends ? m.emptyFriends : onChallenge ? m.challengeEmpty : m.empty)]
-          : [...top.map((r) => r.el), ...(below.length > 0 ? [h('div', { class: 'rank-gap', 'aria-hidden': 'true' }, '⋮'), below[0]!.el] : [])]
+          : [...top.map((r) => r.line), ...(below.length > 0 ? [h('div', { class: 'rank-gap', 'aria-hidden': 'true' }, '⋮'), below[0]!.el] : [])]
     }
 
     const handle = myHandle()
@@ -168,12 +201,13 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
         { class: opening ? 'dialog box pop rank' : 'dialog box rank' },
         h('div', { class: 'dialog-title' }, m.title),
         h('div', { class: 'region-tabs rank-tabs', role: 'tablist' }, ...boards),
+        !onChallenge && h('div', { class: 'region-tabs rank-tabs rank-modes', role: 'tablist' }, ...modes),
         h(
           'div',
           { class: 'rank-filters' },
           h('div', { class: 'region-tabs rank-tabs', role: 'tablist' }, ...periods),
           h('div', { class: 'region-tabs rank-tabs', role: 'tablist' }, ...scope),
-          !onChallenge && pokemonSelect(filter.starter, (starter) => set({ starter })),
+          !onChallenge && pokemonSelect(filter.mode, filter.starter, (starter) => set({ starter })),
         ),
         shown &&
           h(
@@ -222,11 +256,14 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
 
   const set = (change: Partial<BoardFilter>) => {
     const next = { ...filter, ...change }
-    if (next.difficulty === filter.difficulty && next.period === filter.period && next.starter === filter.starter && next.friends === filter.friends) return
+    if (next.mode === filter.mode && next.difficulty === filter.difficulty && next.period === filter.period && next.starter === filter.starter && next.friends === filter.friends) return
     Object.assign(filter, next)
     playSfx('move')
     void load()
   }
+
+  /** The regular boards or the Legend mode's; a Pokémon filter of the other side goes. */
+  const setMode = (mode: RunMode) => set({ mode, starter: filter.starter && runMode(filter.starter) === mode ? filter.starter : null })
 
   const offKeys = input.onKey((key) => {
     if (sub || closed) return
@@ -238,6 +275,7 @@ export const rankingScreen = (root: HTMLElement, input: Input, onClose: () => vo
     if (key === 'KeyQ' || key === 'PageUp') return setTab(step(TABS, tab, -1))
     if (key === 'KeyE' || key === 'PageDown') return setTab(step(TABS, tab, 1))
     if (key === 'KeyF') return set({ friends: !filter.friends })
+    if (key === 'KeyM' && tab !== 'challenge') return setMode(filter.mode === 'legend' ? 'standard' : 'legend')
     // `menu` moved the cursor: keep it in view in the scrolling list.
     if (nav) el.querySelectorAll('.rank-row, .buttons .btn')[nav.index]?.scrollIntoView({ block: 'nearest' })
   })
@@ -285,16 +323,17 @@ const challengeLine = (o: RankOutcome) => {
 
 /**
  * The results screen's ranking line: the player's position today, this week
- * and all time on the run's difficulty once the API answers, or why the run
+ * and all time on the run's difficulty (and mode: a legend's run is on the Legend boards) once the API answers, or why the run
  * isn't there (guest, offline, no profile yet). A challenge run adds its
  * place on the day's challenge board (or that it was practice, or local
  * practice for a guest). Null without a ranking.
  */
-export const rankPanel = (outcome: Promise<RankOutcome> | null, challenge = false) => {
+export const rankPanel = (outcome: Promise<RankOutcome> | null, challenge = false, mode: RunMode = 'standard') => {
   const m = t().ranking
   const line = h('span', {}, outcome ? m.sending : m.guest)
   const extra = h('span', { class: 'rank-panel-challenge' }, challenge && !outcome ? m.challengeGuest : '')
-  const el = h('div', { class: 'rank-panel' }, h('b', { class: 'rank-panel-title' }, m.title), line, challenge && extra)
+  const title = mode === 'legend' ? `${m.title} · ${m.modes.legend}` : m.title
+  const el = h('div', { class: 'rank-panel' }, h('b', { class: 'rank-panel-title' }, title), line, challenge && extra)
   void outcome?.then((o) => {
     line.replaceChildren(outcomeLine(o))
     if (challenge) extra.replaceChildren(challengeLine(o) ?? '')

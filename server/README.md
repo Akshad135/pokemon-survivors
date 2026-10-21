@@ -10,14 +10,15 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | --- | --- |
 | `GET /health` | 200 while Postgres answers, else 503 |
 | `GET /save` | The player's `{ save, revision }`, 404 before the first push |
-| `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Either way the player's ranked wins add their clears (`wonClears`). Returns `{ save, revision, merged }` |
+| `PUT /save` | Body `{ save, base }`: the device's save and the revision it last got (`null` if it never synced). Stores the save as is when `base` is the latest revision, else merges both. Either way the player's ranked wins add their clears (`wonClears`), and gift-only rewards (gift titles, ribbons, shiny tickets, styles never sold, the companion) stay only if the player's gifts brought them (`keepGiven`). After a [reset](#resetting-a-save), a push from a device that hasn't seen it stores nothing and gets the reset save back. Returns `{ save, revision, merged }` |
 | `GET /me` | `{ profile }`: the player's `{ handle, name }`, `null` before they pick them |
 | `PUT /me` | Body `{ handle, name }`. 400 when invalid, 409 `{ suggestion }` when the handle is taken |
-| `POST /runs` | Body `{ challenge? }`. `{ token }` for a run that just started (the id of a new `runs` row). 429 past 30 starts in 10 minutes. With `challenge` (a Brasília day, `YYYY-MM-DD`) it's that day's Desafio do dia; 400 when that challenge isn't open (its day, or 10 minutes past it) |
-| `PUT /runs/:token` | Body `RunResult` (`src/game/ranking.ts`). Records how the run ended and returns `{ ranks: { day, week, all }, challenge }` (`ChallengePlace` for a challenge run, else null). 400 implausible or a challenge run whose replay isn't its day's challenge, 404 unknown token, 409 contradicts what the run recorded, 422 more play than the wall clock since the token allows |
-| `GET /boards/:difficulty` | `?period=day\|week\|all&starter=<id>&friends=1`. `{ entries, me }`: the top 50, each player once with their best run, and the asker's own line |
+| `POST /runs` | Body `{ challenge? }`. `{ token, seed, outbreak }` for the player's next run: the start token (the id of a new `runs` row), the seed the run must play and the day's outbreak by the server's clock (`outbreakAt`, the day `outbreakFits` checks; a challenge run plays its own). It replaces the player's other unfinished token of the same kind (see [Ranked runs](#ranked-runs)). 429 past 30 tokens in 10 minutes. With `challenge` (a Brasília day, `YYYY-MM-DD`) it's that day's Desafio do dia, with the day's seed; 400 when that challenge isn't open (its day, or 10 minutes past it) |
+| `POST /runs/:token/start` | The run of a token asked for ahead starts now: its clock restarts. 204; 404 unknown or finished token, 409 replaced by a newer one |
+| `PUT /runs/:token` | Body `RunResult & { replay }` (`src/game/ranking.ts`, `src/game/replay.ts`). Records how the run ended and returns `{ ranks: { day, week, all }, challenge }` (`ChallengePlace` for a challenge run, else null). 400 implausible, without a replay, a replay of another run (or of a screen bigger than the game shows, `parseView`), `seed` (a replay of another seed than the token's), `outdated` (a replay of older rules than the API's) or a challenge run whose replay isn't its day's challenge, 404 unknown token, 409 a replaced token or one that contradicts what the run recorded, 422 more play than the wall clock since the token allows, 503 a replay of newer rules (the API isn't deployed yet; the game keeps it and sends it again) |
+| `GET /boards/:difficulty` | `?period=day\|week\|all&starter=<id>&friends=1`. `{ entries, me }`: the top 50, each player once with their best run (its id in `run`, to report it), and the asker's own line. Banned players never show |
 | `GET /challenge/:day` | `?friends=1`. `ChallengeBoard`: the day's official attempts (top 50, the asker's line), how many took part and whether the asker made theirs (`attempted`) |
-| `GET /profiles/:handle` | The public profile: name, title, Pokédex counts, records, recent runs, follower counts. 404 if nobody has the handle |
+| `GET /profiles/:handle` | The public profile: name, title, Pokédex counts, records, recent runs, follower counts. 404 if nobody has the handle, or its player is banned |
 | `PUT /follows/:handle`, `DELETE /follows/:handle` | Follows or unfollows. `{ followed, followers }` |
 | `GET /gifts` | `{ gifts }`: the player's unclaimed Mystery Gifts (`{ id, content, reason, at }`), oldest first, 20 at most |
 | `POST /gifts/claim` | Body `{ ids }`: marks those gifts claimed once the game applied them. `{ claimed }` |
@@ -34,17 +35,31 @@ The merge rules are not here: `mergeSaves` and `applyPush` live in `src/game/syn
 | `POST /suggestions` | Body `{ title, body }` (`parseSuggestionDraft`). 201 `{ suggestion }`, posted with the author's up vote. 400 invalid, 403 before the player has a handle, 429 past 3 ideas in 24 hours |
 | `PUT /suggestions/:id/vote` | Body `{ vote }`: 1, -1, or 0 to take it back. `{ score, vote }`. 404 unknown or hidden, 409 shipped |
 | `POST /bug-reports` | Body `{ text, tech? }` (`parseBugReport` in `src/game/bugReport.ts`): what the player wrote and, unless they turned it off, the technical info the game gathered. Guests too; with a token the thread shows the player's handle. 201 `{ id }`: stored, and posted to Discord in the background (see [Bug reports](#bug-reports)). 400 invalid, 429 past 5 reports in an hour from the IP or the account |
+| `POST /reports` | Body `{ target, run?, reason, note? }` (`parseReport` in `src/game/reports.ts`): a player's handle, the id of their run on a board when it's about one, `cheating`, `name` or `other`, and up to 200 characters. 202 `{ received: true }` whatever became of it (see [Reports and bans](#reports-and-bans)). 400 invalid or `self`, 429 past 10 reports in 24 hours |
 | `GET /admin` | `{ admin: true }` for an admin (see [Admin gift desk](#admin-gift-desk)), 403 for anyone else, like every `/admin` route |
 | `GET /admin/users` | `?q=` a handle (with or without `@`, in part) or an email (in part, asked of Clerk). `{ users }`: up to 10 `AdminUser` with their email and when they were last seen |
 | `POST /admin/gifts` | Body `{ userId, content, request }`: sends a Mystery Gift (`parseAdminGift`: any `GiftContent` but a ribbon). `request` is a uuid per send, so a retry sends nothing twice: `{ sent }`, false when it already went. 404 for an unknown player |
 | `GET /admin/gifts` | `{ gifts }`: the last 30 gifts sent by hand (`AdminSent`), with when they were claimed |
+| `GET /admin/reports` | `{ groups, open }`: the open reports grouped by run, or by player when there's no run (`ReportGroup`, `groupReports`: count, reasons, notes with who left them, the player and their ban, the run's numbers and whether it verified), the most reported first, and how many reports are open |
+| `POST /admin/moderation` | Body `{ userId, action, run?, reason? }` (`parseModeration`): `remove` (the run leaves the boards), `reset` (wipes the save, see [Resetting a save](#resetting-a-save)), `ban` (a reason is required), `unban` or `dismiss`. Resolves the reports it answers. `{ resolved }`, 404 for an unknown player or run |
 | `PUT /admin/suggestions/:id` | Body `{ status }`: `done` (shipped, stamps `done_at`), `open` again, or `hidden` (off the board). `{ status }`, 404 for an unknown idea |
 
-`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles`, `GET /suggestions` and `POST /bug-reports` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
+`/save`, `/me`, `/runs`, `/follows`, `/gifts`, `/referral`, `/donations/redeem`, `/me/supporter`, `PUT /poll`, `POST /suggestions`, `PUT /suggestions/:id/vote`, `POST /reports` and `/admin` need `Authorization: Bearer <Clerk session token>`. `/boards`, `/challenge`, `/profiles`, `GET /suggestions` and `POST /bug-reports` are public and read the token when there is one (`friends=1` needs it). CORS allows `https://www.pokemonsurvivors.com`, `https://pokemonsurvivors.com`, any `http://localhost` port and whatever `CORS_ORIGINS` adds.
 
 ### Ranked runs
 
-The game asks for a start token when a run begins and sends the result when it ends. The server takes it only if the wall clock since the token is at least the time survived, minus a 30 s slack for a token that arrived late (the simulation never runs faster than real time, and pausing only widens the gap). It also checks plausible numbers (`parseRunResult`) and limits run starts per player. A victory that goes on into endless mode sends again with the same token; the run may only grow. Day and week boards start at midnight and on Monday in America/Sao_Paulo, and a run counts for the period it started in.
+The server picks a ranked run's seed, so nobody can try seeds offline and pick an easy one, or play a run out before asking for its token (the game is open source and the simulation is deterministic).
+
+- `POST /runs` deals a start token and its seed (`runs.seed`): random from `crypto.randomInt` in the 32 bits the simulation reads (`RANKED.seedSpan`), or the day's challenge seed for a Desafio do dia run. When the run ends, its replay's `start.seed` must be that seed (`reportProblem`), else 400 `seed`. Rows from before the server dealt seeds (null) take any.
+- **One live token per kind:** a new token replaces the player's other unfinished token of the same kind, regular or challenge (`runs.replaced_at`), which can't report anymore (409). So a player holds one seed at a time and can't keep several to pick from. Replaced rows still count for the start limit (30 in 10 minutes), which bounds how fast anyone can throw seeds away. The kinds are apart so the game can hold one of each; challenge tokens are single too, so nobody plays several attempts at once to report the best one first.
+- Two devices or tabs at once: the last one to ask holds the live token. A run started on the other comes out unranked (its `/start` answers 409), or rejected if it was already playing.
+- The game asks for its token ahead, on the lobby, the partner select, the challenge screen and the results (for Play again), so Play never waits; it first sends the results still queued, since the new token replaces the unfinished one. A run that starts without a token in hand (offline, rate limited, Play pressed before it came) plays a seed of the game's own and is unranked.
+- When the run really starts the game calls `POST /runs/:token/start`, which moves `started_at` to now: the time spent on the menus doesn't widen the clock budget, and the run counts for the day and week it was played. It can only shorten the budget, so skipping it gains nothing a pause doesn't.
+- The outbreak comes with the token too: a ranked run plays the one the server dealt, so a device whose clock is a day or more off still plays a run that fits `outbreakFits` (a ticket held for 20 hours or more falls back to the device's day, since the run may start two days later). Guests and unranked runs play the device's day. A game that ignores `outbreak` keeps working, judged by `outbreakFits` as before.
+- A game from before server seeds ignores `seed` and plays one of its own. Its token from before this API has no seed and takes any, so a run that straddled the deploy still counts; a token it got after is refused (400 `seed`, which it shows as off the ranking) until the tab reloads. Nothing a client says can exempt a run from the check, since a cheater would say the same.
+- A run that reported may only report again grown after a victory (endless mode); any other longer report is 409, so a short run can't keep its seed on hold for later.
+
+The server takes a result only if the wall clock since the token's start is at least the time survived, minus a 30 s slack for a start that arrived late (the simulation never runs faster than real time, and pausing only widens the gap). It also checks plausible numbers (`parseRunResult`). A victory that goes on into endless mode sends again with the same token; the run may only grow. Day and week boards start at midnight and on Monday in America/Sao_Paulo, and a run counts for the period it started in.
 
 ### Desafio do dia and ribbons
 
@@ -82,9 +97,17 @@ For gifting players by hand (someone who talked about the game on social media, 
 - The search reads handles from our `users` table and emails from Clerk (we don't store them). A Clerk account that never synced still shows and can get a gift: it gets its `users` row, and the gift waits in its inbox.
 - A gift goes through the same inbox as every other (`sendGift`), with reason `{ kind: 'staff', from: <admin's handle> }` (the banner says "Um presente de @…"), key `staff:<request>` and `gifts.sent_by` the admin, which is what the recent list reads. Each send is logged.
 
+### Reports and bans
+
+Moderation is reactive: a run still counts as soon as it's reported, and nothing waits for an admin. Only a report brings a run or a player before one.
+
+- A signed-in player reports a run from its board row (the flag) or a player from their profile (`POST /reports`, `src/moderation.ts`). One report per reporter per run, or per player when there's no run; 10 a day per reporter. Reporting oneself is refused. The answer never says anything about the target: an unknown handle, a run that isn't theirs and a repeat are dropped as if stored.
+- The admin panel's **Denúncias** tab (`src/ui/admin.ts`, its tab label counts the open reports) lists them grouped (`groupReports`), and acts on a group: **Tirar a run** (`runs.verified = false`: off the boards and the profile), **Zerar o save** (in one transaction, exactly what [Resetting a save](#resetting-a-save) does by hand), **Banir** or **Desbanir** (with a reason), or **Descartar**. Every action resolves the reports it answers (`resolved_at`, `resolved_by`, `resolution`): a run's removal or dismissal closes that run's reports, a player's dismissal the ones without a run, and a reset, ban or unban every open report on the player. The panel's player search has Banir/Desbanir and Zerar too, to act without a report. Each action is logged.
+- A ban (`users.banned_at`, `banned_reason`) refuses the account's writes with 403 `{ error: 'banned' }`: `POST /runs`, `POST /runs/:token/start`, `PUT /runs/:token`, `PUT /save`, `POST /reports`, `POST /suggestions`, `PUT /suggestions/:id/vote` and `PUT /poll` (`BAN_GATED`, checked in `auth`). Reads still answer. The player leaves every board, the challenge board, public profiles (404), the supporters wall, the idea board, the ribbons and the Discord podium. The game keeps playing as a guest would: a run start gets no token (unranked), a queued result is dropped as rejected, and the save stays on the device (the sync shows offline).
+
 ### Verification by re-simulation
 
-Runs are trusted: one counts on the boards as soon as it's reported, and only a failed check takes it off. The result comes with the run's replay (`src/game/replay.ts`). After answering, the API queues it (`src/checks.ts`), and when its turn comes re-simulates it from the seed only if the run is on show: a challenge's official attempt, or the player's line in the top 50 of its difficulty's day, week or all-time board, or the top 3 of its Pokémon's (`CHECKED`, `shown`). A random 5% of the other runs is checked too, to keep an eye on determinism; every other replay is dropped unchecked. Checks run one at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported; otherwise it's marked failed and counts nowhere. The branch isn't judged: a verified run takes the one its replay took over the one the game reported (which `parseRunResult` already keeps only when it's of the run's family, at a stage it reached). Boards and profiles never show whether a run was checked. A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
+Runs are trusted: one counts on the boards as soon as it's reported, and only a failed check takes it off. So every result must come with a replay this API can judge (`src/game/replay.ts`, of its own `RULES_VERSION`): one without, or of other rules, is never taken, since nothing could ever take it off. After answering, the API queues it (`src/checks.ts`), and when its turn comes re-simulates it from the seed only if the run is on show: a challenge's official attempt, or the player's line in the top 50 of its difficulty's day, week or all-time board, or the top 3 of its Pokémon's (`CHECKED`, `shown`). A random 5% of the other runs is checked too, to keep an eye on determinism; every other replay is dropped unchecked. Checks run one at a time on a worker thread (`src/verify.ts`, bundled to `dist/verify.js`), so requests never wait on it. The run is verified when the replay ends on the same time, faints and level it reported, even when it ends on an open level-up (`stuck`, which the log notes); otherwise it's marked failed and counts nowhere. The branch isn't judged: a verified run takes the one its replay took over the one the game reported (which `parseRunResult` already keeps only when it's of the run's family, at a stage it reached). Boards and profiles never show whether a run was checked. A verified run's replay is dropped; a failed one keeps it, to look into. If the worker itself fails, the run stays pending and is checked again at the next start (`resume`). Under `npm run dev` (tsx) the check runs in place, since a worker can't load the TypeScript source.
 
 Cost, measured on an Apple M4 Pro with Node 24 (bot runs with a full Poké Mart, `dist/verify.js`):
 
@@ -115,6 +138,22 @@ The game's "Reportar bug" (Settings → About, the pause menu, and the prompt af
 
 The bot's application has **Message Content** and **Server Members** on (Developer Portal → Bot → Privileged Gateway Intents), which needs no review under 100 servers.
 
+### Resetting a save
+
+For a player whose save was edited (a Pokédex full of species they never met, a fortune no run paid): the account goes back to an empty save, and their runs leave the boards. The admin panel's **Zerar o save** does it (`POST /admin/moderation` with `reset`, see [Reports and bans](#reports-and-bans)); by hand, run this in a transaction, with the player's handle:
+
+```sql
+begin;
+with u as (select id from users where handle = 'HANDLE')
+insert into save_resets (user_id, data, revision, reason) select s.user_id, s.data, s.revision, 'edited save' from saves s join u on u.id = s.user_id;
+update saves set data = '{"version": 1}', version = 1, revision = revision + 1, updated_at = now() where user_id = (select id from users where handle = 'HANDLE');
+update users set save_reset_revision = (select revision from saves where user_id = users.id) where handle = 'HANDLE';
+update runs set verified = false where user_id = (select id from users where handle = 'HANDLE') and finished_at is not null;
+commit;
+```
+
+The player's device still holds the edited save. Its next push comes on top of an older revision than the reset (`users.save_reset_revision`), so `applyPush` stores nothing and answers with the empty save, which the device takes over its own. `save_resets` keeps what was wiped.
+
 ## Environment
 
 | Variable | |
@@ -141,6 +180,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `runs`: one row per ranked run, created at its start (the id is the start token) and filled when it ends. Unfinished rows never show, and are dropped after 7 days.
 - `follows`: who follows whom, one way.
 - `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending, or when the run wasn't checked).
+- `runs.seed`, `runs.replaced_at`: the seed dealt with the token (null before the server dealt them), and when a newer token of the same kind replaced an unfinished one.
 - `runs.branch`: the branching evolution the run took (`BranchId`, Espeon, Gallade…), so the boards show the form it ended in. Null when it took none, and on every run before it was stored (those keep showing the line's own form).
 - `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
 - `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.
@@ -150,6 +190,8 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `suggestions`: the idea board (`status` `open`, `done` or `hidden`, `score` recounted from the votes on every vote, `done_at`). `suggestion_votes`: one vote per player per idea (1 or -1; taking it back deletes the row).
 - `users.discord_id`, `discord_name`: the Discord account a player linked (one game account per Discord account).
 - `bug_reports`: each bug report (`user_id`, null for a guest; `text`; `tech`, the `BugTech` JSON or null; `thread_id`, the forum thread once posted).
+- `users.save_reset_revision`, `save_resets`: the revision a reset stored (see [Resetting a save](#resetting-a-save)), and what each reset wiped.
+- `users.banned_at`, `banned_reason`: a ban, since when and why (null for everyone else). `reports`: each report (`reporter_id`, `target_id`, `run_id` when it's about a run, `reason`, `note`), unique per reporter and run (or player, without a run), and how it was resolved (`resolved_at`, `resolved_by`, `resolution`: the `ModerationAction`).
 - `discord_posts`: what the Discord bot already did, by key (`patch:<date>`, `challenge:<day>`, `podium:<day>`, `outbreak:<day>`, `welcome:<user>`, `short:<message>`), with the message a patch note became so it can be edited.
 
 ## Local development

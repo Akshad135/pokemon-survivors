@@ -12,7 +12,7 @@ import { collectCandy } from './halloween'
 import type { Game, Offer, Pickup } from './types'
 import * as dm from '../engine/dmath'
 
-const MAX_XP_PICKUPS = 260
+export const MAX_XP_PICKUPS = 260
 /** Speed (px/s) a pulled pickup heads for the player at, well above any player's speed. */
 const PULL_SPEED = 420
 /** How fast (1/s) a pulled pickup's velocity turns toward the player. */
@@ -24,15 +24,27 @@ export const dropPickup = (g: Game, x: number, y: number, kind: PickupKind) => {
   g.pickups.push({ id: g.nextId++, x, y, vx: 0, vy: 0, attracted: false, age: 0, kind })
 }
 
-/** Drops an Exp. Candy. Past the cap, value merges into the oldest candy so totals are never lost. */
+/**
+ * Drops an Exp. Candy where a foe fainted. Past the cap, the oldest candy left
+ * on the ground folds into the new one: every kill still shows its candy and
+ * no EXP is lost (merging into the old candy instead hid every drop for the
+ * rest of a run that had left the cap's worth behind).
+ */
 export const dropXp = (g: Game, x: number, y: number, value: number) => {
-  const xp = g.pickups.filter((p): p is Extract<Pickup, { kind: 'xp' }> => p.kind === 'xp')
-  const oldest = xp.length >= MAX_XP_PICKUPS ? xp.find((p) => !p.attracted) : undefined
-  if (oldest) {
-    oldest.value += value
-    return
+  let count = 0
+  let oldest = -1
+  for (let i = 0; i < g.pickups.length; i++) {
+    const k = g.pickups[i]!
+    if (k.kind !== 'xp') continue
+    count++
+    if (oldest < 0 && !k.attracted) oldest = i
   }
-  g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -20, 20), vy: range(g.rng, -30, -10), attracted: false, age: 0, kind: 'xp', value })
+  let total = value
+  if (count >= MAX_XP_PICKUPS && oldest >= 0) {
+    const [old] = g.pickups.splice(oldest, 1)
+    if (old?.kind === 'xp') total += old.value
+  }
+  g.pickups.push({ id: g.nextId++, x, y, vx: range(g.rng, -20, 20), vy: range(g.rng, -30, -10), attracted: false, age: 0, kind: 'xp', value: total })
 }
 
 /** Scatters Poké Dollar coins around a fainted enemy. */

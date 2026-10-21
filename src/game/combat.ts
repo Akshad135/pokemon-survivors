@@ -2,12 +2,12 @@ import { dirTo } from '../engine/math'
 import { chance, range } from '../engine/rng'
 import { effectiveness, TYPE_COLORS, type PokeType } from '../data/types'
 import { ENEMY_BERRY_CHANCE } from '../data/consumables'
-import { ENEMIES } from '../data/enemies'
+import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HitKind } from '../data/abilities'
 import { abilityHolds, abilityHurt, abilityImmune, abilityKill, abilityTakes, strikeBonus } from './abilities'
 import { enemyDrop, isRepelled, tryRevive } from './consumables'
 import { logDefeat } from './dex'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { burst, damageText, floatText } from './effects'
 import { bossEggSource } from './eggs'
 import { dropBossTm } from './tms'
@@ -19,13 +19,17 @@ import { applyStatus, breakOnHit, hitTakenMult, STATUS_RULES, type StatusKind } 
 import { bonusMult, drainAmount, drainRefill, executes, nearestFoes, SEED_DECAY, SEED_JUMPS, SEED_MIN_TIME, SEED_REACH } from './kitRules'
 import { guardHit, moveEvent, moveHit } from './moveHooks'
 import { fallInArena } from './riftArena'
-import { countKill } from './tally'
+import { domainHarm } from './rift'
+import { fallInPlace } from './placeKit'
+import { countKill, countLegend } from './tally'
 import { noteHarm, noteKill } from './tensionSystem'
 import { absorb } from './traits'
 import { alphaDown } from './alphas'
+import { holdsOn, phaseTaken } from './bossFight'
+import { legendFell } from './legendScene'
 import { hordeGrit } from './horde'
 import type { Attack, DamageSource, Enemy, Game } from './types'
-import { weatherBoost, weatherHere, weatherPower } from './weather'
+import { playerWeatherBoost, weatherHere, weatherPower } from './weather'
 import * as dm from '../engine/dmath'
 
 const TEXT_COLORS = { super: '#ffd830', normal: '#ffffff', weak: '#a8a8b8', warded: '#88b8f8' } as const
@@ -34,8 +38,8 @@ export const damageEnemy = (g: Game, e: Enemy, attack: Attack) => {
   // A sure hit (Sacred Sword) lands resisted matchups as neutral and cuts through wards.
   const eff = attack.sure ? Math.max(1, effectiveness(attack.type, e.types)) : effectiveness(attack.type, e.types)
   // Conditional bonuses (Hex), a mark and a freeze multiply the hit; without them it's exactly ×1.
-  const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status))
-  const raw = Math.max(1, Math.round(base * eff * weatherBoost(weatherHere(g), attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
+  const base = attack.damage * (bonusMult(attack.bonus, e) * hitTakenMult(e.status) * phaseTaken(e))
+  const raw = Math.max(1, Math.round(base * eff * playerWeatherBoost(g, attack.type) * strikeBonus(g, e) * range(g.rng, 0.9, 1.1)))
   // A Bronzong ward soaks the hit first, unless the move or the ability (Infiltrator) goes through wards.
   const dmg = attack.sure || attack.ignoreWards || abilityImmune(g, 'wards') ? raw : absorb(e.trait, raw)
   e.hp -= dmg
@@ -89,8 +93,8 @@ const shatter = (g: Game, e: Enemy, cause: 'execute' | 'freeze') => {
 export const drainHeal = (g: Game, damage: number, fraction: number) => {
   const p = g.player
   const d = p.drain
-  d.left = drainRefill(d.left, g.time - d.at, p.stats.maxHp)
-  d.at = g.time
+  d.left = drainRefill(d.left, g.now - d.at, p.stats.maxHp)
+  d.at = g.now
   const amount = drainAmount(damage, fraction, d.left)
   if (amount <= 0) return 0
   d.left -= amount
@@ -139,6 +143,11 @@ export const dotDamage = (g: Game, e: Enemy, amount: number, move: DamageSource 
 
 /** Faints an enemy. `source` (when known) lets a kill by the special, or any kill mid-chain, feed Power Herb. */
 export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
+  // A boss with phases still to go doesn't faint: it stays up and moves on to its next phase.
+  if (holdsOn(e)) {
+    e.hp = 1
+    return
+  }
   if (e.status.seed.time > 0) spreadSeed(g, e)
   e.dying = 0
   e.hp = 0
@@ -168,14 +177,25 @@ export const killEnemy = (g: Game, e: Enemy, source?: DamageSource | null) => {
   } else if (e.boss) {
     // Every boss defeated earns an Esquecer charge (`banishOffer`).
     g.banishes++
+    // A legendary's defeat counts toward capturing it (the save's side, `legendBeaten`).
+    const def: EnemyDef = ENEMIES[e.kind]
+    if (def.legendary) {
+      countLegend(g.tally, e.kind, e.shiny)
+      g.events.push({ kind: 'legendBeaten', legend: e.kind, shiny: e.shiny })
+    }
     dropPickup(g, e.x, e.y, 'pokeball')
     awardEgg(g, bossEggSource(e.kind), e.x, e.y)
     dropBossTm(g, e)
     if (g.bossId === e.id) g.bossId = null
     g.shake = 6
+    // A wave legendary's capture plays where it fell; Mewtwo's victory waits for it.
+    const captured = legendFell(g, e)
     if (e.kind === 'mewtwo') {
-      g.phase = 'victory'
-      g.events.push({ kind: 'victory' })
+      if (captured && g.legendScene) g.legendScene.then = 'victory'
+      else {
+        g.phase = 'victory'
+        g.events.push({ kind: 'victory' })
+      }
     }
   } else if (chance(g.rng, ENEMY_BERRY_CHANCE * share)) {
     dropPickup(g, e.x + 6, e.y, 'berry')
@@ -202,8 +222,10 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   if (from && blinded(g, from)) return
   const taken = abilityTakes(g, amount, types, hit, from)
   if (taken === null) return
-  const mods = DIFFICULTIES[g.difficulty]
-  const dmg = armored(taken * mods.enemyDamage * weatherPower(weatherHere(g), types) * p.stats.damageTaken, p.stats.armor)
+  const mods = runMods(g)
+  // Air Lock: the weather boosts no foe's hit.
+  const weather = abilityImmune(g, 'weather') ? 1 : weatherPower(weatherHere(g), types)
+  const dmg = armored(taken * mods.enemyDamage * weather * domainHarm(g, from !== undefined) * p.stats.damageTaken, p.stats.armor)
   p.hp -= dmg
   p.iframes = mods.iframes
   noteHarm(g, dmg)
@@ -222,8 +244,9 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   }
 
   if (p.hp > 0) return
-  // Falling in a rift arena isn't the end: the rift throws the player back out.
+  // Falling in a rift arena or a place isn't the end: the rift throws the player back out, a rescue brings them back.
   if (g.rift.arena) return fallInArena(g)
+  if (g.place.inside) return fallInPlace(g)
   // Sturdy holds before a Revive is spent.
   if (!abilityHolds(g) && !tryRevive(g)) {
     p.hp = 0
@@ -256,7 +279,7 @@ const BLIND_IFRAMES = 0.4
 /** Heals the player by `amount`, cut or not by the difficulty, up to max HP. Returns the HP actually restored. */
 export const healPlayer = (g: Game, amount: number) => {
   const p = g.player
-  const healed = Math.max(0, Math.min(amount * DIFFICULTIES[g.difficulty].healing, p.stats.maxHp - p.hp))
+  const healed = Math.max(0, Math.min(amount * runMods(g).healing, p.stats.maxHp - p.hp))
   p.hp += healed
   return healed
 }

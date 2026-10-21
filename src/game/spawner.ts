@@ -3,9 +3,10 @@ import { chance, range, weightedPick } from '../engine/rng'
 import { ENEMIES, type EnemyDef, type EnemyId } from '../data/enemies'
 import { BOSS_FIGHT, bossCandidates, bossWaveAt, ELITE, EVENTS, FINALE, stageAt, stageIndexAt, type WaveEvent } from '../data/waves'
 import { bossReach, chaseOffBosses, finaleEntrance } from './bosses'
-import { DIFFICULTIES } from './difficulty'
+import { runMods } from './legend'
 import { endlessPressure } from './endless'
 import { despawnEnemy, spawnEnemy } from './enemies'
+import { legendEntrance } from './legendScene'
 import { eliteSpawn, makeElite, makeRunner } from './horde'
 import { oldestRenewable, RENEWAL } from './renewal'
 import { hasTrait, pickSpawn, type StagePool } from './roster'
@@ -55,8 +56,8 @@ export const spawnSwarm = (g: Game, species: EnemyId, count: number) => {
 
 /**
  * A wave boss arrives off screen: the earlier wave's boss flees (`at` is the
- * wave's time), it takes the HP bar and the shell gets its entrance. The dev
- * console's `ps.boss` calls it too.
+ * wave's time), it takes the HP bar and the shell gets its entrance (a
+ * legendary's plays on the map, `legendEntrance`). The dev console's `ps.boss` calls it too.
  */
 export const spawnWaveBoss = (g: Game, enemy: EnemyId, at: number, finale = false) => {
   chaseOffBosses(g, at)
@@ -67,6 +68,7 @@ export const spawnWaveBoss = (g: Game, enemy: EnemyId, at: number, finale = fals
   g.shake = def.legendary ? 9 : 5
   if (finale) finaleEntrance(g)
   g.events.push({ kind: 'boss', enemy })
+  legendEntrance(g, boss)
   return boss
 }
 
@@ -118,8 +120,8 @@ const surge = (g: Game, pool: StagePool, level: number) => {
 
 /** Retires one long-lived off-screen enemy per tick (`RENEWAL.maxAge`), cap or not; the spawner refills the room. */
 const retireOld = (g: Game) => {
-  const old = oldestRenewable(g.enemies, g.camera, g.view, g.time)
-  if (old >= 0 && g.time - g.enemies[old]!.bornAt >= RENEWAL.maxAge) despawnEnemy(g.enemies[old]!)
+  const old = oldestRenewable(g.enemies, g.camera, g.view, g.now)
+  if (old >= 0 && g.now - g.enemies[old]!.bornAt >= RENEWAL.maxAge) despawnEnemy(g.enemies[old]!)
 }
 
 /**
@@ -145,7 +147,7 @@ export const updateSpawner = (g: Game, dt: number) => {
   const spit = SPITTERS[g.difficulty]
   const spitter = g.roster.spitters[index] ?? null
   const reach = bossReach(g)
-  const more = DIFFICULTIES[g.difficulty].spawnRate
+  const more = runMods(g).spawnRate
   let regular = 0
   let traitsAlive = 0
   let elites = 0
@@ -154,7 +156,7 @@ export const updateSpawner = (g: Game, dt: number) => {
   for (const e of g.enemies) {
     if (e.dying >= 0) continue
     if (e.boss) {
-      if (!bossNear && g.time - e.bornAt < BOSS_FIGHT.duration && bossWaveAt(e.kind) !== null) {
+      if (!bossNear && g.now - e.bornAt < BOSS_FIGHT.duration && bossWaveAt(e.kind) !== null) {
         bossNear = dm.sq(e.x - g.player.x) + dm.sq(e.y - g.player.y) < reach * reach
       }
       continue
@@ -188,7 +190,7 @@ export const updateSpawner = (g: Game, dt: number) => {
     g.spawnBudget--
     if (regular >= cap) {
       // At the cap, swap the oldest off-screen enemy for the fresh pick so the horde keeps turning over.
-      const old = oldestRenewable(g.enemies, g.camera, g.view, g.time)
+      const old = oldestRenewable(g.enemies, g.camera, g.view, g.now)
       if (old < 0) continue
       const gone = g.enemies[old]!
       if (hasTrait(gone.kind)) traitsAlive--

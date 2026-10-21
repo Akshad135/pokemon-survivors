@@ -158,7 +158,7 @@ export const LEGEND_FX = {
 
 /** The emblem sits on a dark disc inside a gold rim: legendary moves read apart at a glance. */
 const ICON = 17
-const medallion = (emblem: PixelSprite, disc = '#28203c') => {
+export const medallion = (emblem: PixelSprite, disc = '#28203c') => {
   const canvas = createCanvas(ICON, ICON)
   const ctx = context2d(canvas)
   const c = (ICON - 1) / 2

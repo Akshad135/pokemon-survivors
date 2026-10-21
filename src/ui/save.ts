@@ -74,8 +74,12 @@ export const setToday = (date: Date | null) => {
 /** Dev-only outbreak held instead of the day's (`ps.outbreak`). */
 let outbreakOverride: EnemyId | null = null
 
-/** The outbreak of the day (Brasília) on the missions' clock, unless the dev console holds another. */
-export const outbreakToday = (): EnemyId => outbreakOverride ?? outbreakAt(today())
+/**
+ * The outbreak of the day (Brasília) on the missions' clock, unless the dev
+ * console holds another. A ranked run passes the one the API dealt with its
+ * ticket (`dealt`), which a wrong device clock can't move.
+ */
+export const outbreakToday = (dealt: EnemyId | null = null): EnemyId => outbreakOverride ?? dealt ?? outbreakAt(today())
 
 export const setOutbreak = (id: EnemyId | null) => {
   outbreakOverride = id

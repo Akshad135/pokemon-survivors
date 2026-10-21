@@ -15,6 +15,7 @@ import { isAirborne } from './traits'
 import { weatherHere } from './weather'
 import type { Game, Hazard } from './types'
 import * as dm from '../engine/dmath'
+import { roomOf } from './room'
 
 /**
  * The world's attack clock: `charge` fills by the pace each tick and an attack
@@ -57,12 +58,12 @@ export const hazardFlavor = (weather: WeatherId, biome: BiomeId): HazardFlavor =
 const countAt = (g: Game, counts: readonly [number, number]) => Math.round(lerp(counts[0], counts[1], rampAt(g.difficulty, g.time)))
 
 /**
- * Pace multiplier right now: 0 inside a rift arena, before the start, during a
+ * Pace multiplier right now: 0 inside a room (rift arena, place), before the start, during a
  * boss's entrance and (on Normal) while Mewtwo lives; cut while a boss is in
  * the fight, or an Alpha nearby aims or charges (its red lane must stay readable).
  */
 const paceNow = (g: Game) => {
-  if (g.rift.arena !== null || g.time < HAZARD_PACE[g.difficulty].start) return 0
+  if (roomOf(g) !== null || g.time < HAZARD_PACE[g.difficulty].start) return 0
   const reach = bossReach(g)
   let fight = false
   for (const e of g.enemies) {
@@ -72,7 +73,7 @@ const paceNow = (g: Game) => {
       fight ||= near && e.alpha.phase !== 'walk'
       continue
     }
-    if (g.time - e.bornAt < HAZARD_RULES.entrance) return 0
+    if (g.now - e.bornAt < HAZARD_RULES.entrance) return 0
     fight ||= near
   }
   const finale = finaleAlive(g) ? HAZARD_PACE[g.difficulty].finale : 1

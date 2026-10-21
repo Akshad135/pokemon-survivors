@@ -2,6 +2,7 @@ import type { BiomeId, WeatherId } from '../data/biomes'
 import type { EnemyId } from '../data/enemies'
 import { evolvedFrom } from '../data/evolutions'
 import type { RiftLegend } from '../data/rifts'
+import type { PlaceId } from '../data/places'
 import type { PlayableId } from '../data/hatchlings'
 import type { PokeType } from '../data/types'
 import type { Difficulty } from './difficulty'
@@ -33,7 +34,12 @@ export type RunTally = {
   alphaKills: number
   /** Map event notices heard, by kind (`chestOpen`, `payDay`, `altar`…). */
   notices: Partial<Record<MapEventNotice['kind'], number>>
+  /** Legendary bosses beaten, by species: how many times, and how many of them shiny (capturing them, Legend mode). */
+  legendWins: Partial<Record<EnemyId, LegendWins>>
 }
+
+/** A legendary's defeats in a run. */
+export type LegendWins = { beaten: number; shiny: number }
 
 export const createTally = (): RunTally => ({
   killsByType: {},
@@ -46,6 +52,7 @@ export const createTally = (): RunTally => ({
   outbreakKills: 0,
   alphaKills: 0,
   notices: {},
+  legendWins: {},
 })
 
 const bump = <K extends string>(counts: Partial<Record<K, number>>, key: K) => {
@@ -67,6 +74,12 @@ export const countKill = (tally: RunTally, e: Enemy, weather: WeatherId, biome: 
 }
 
 export const countNotice = (tally: RunTally, notice: MapEventNotice) => bump(tally.notices, notice.kind)
+
+/** Counts a legendary boss's defeat (rift, trio, mythical, Mewtwo, Arceus). */
+export const countLegend = (tally: RunTally, legend: EnemyId, shiny: boolean) => {
+  const wins = tally.legendWins[legend] ?? { beaten: 0, shiny: 0 }
+  tally.legendWins[legend] = { beaten: wins.beaten + 1, shiny: wins.shiny + (shiny ? 1 : 0) }
+}
 
 /** Everything missions and achievements need to know about a run, as plain data. */
 export type RunSummary = {
@@ -97,6 +110,11 @@ export type RunSummary = {
   altars: number
   /** Rift legendaries beaten, in order. */
   legends: readonly RiftLegend[]
+  /** Places whose goal was reached (`place.ts`), in order, and how many. */
+  places: readonly PlaceId[]
+  placeClears: number
+  /** Landmark treasures opened (`landmarks.ts`). */
+  landmarks: number
   reaperDefeats: number
   /** Moves evolved with their paired held item. */
   moveEvolutions: number
@@ -111,6 +129,8 @@ export type RunSummary = {
   killsByType: Partial<Record<PokeType, number>>
   killsByWeather: Partial<Record<WeatherId, number>>
   killsByBiome: Partial<Record<BiomeId, number>>
+  /** Legendary bosses beaten, by species (`countLegend`): the save counts them toward capturing each one. */
+  legendWins: Partial<Record<EnemyId, LegendWins>>
 }
 
 /** Snapshot of a run for missions and achievements. Safe to take again later: recording works on deltas. */
@@ -135,6 +155,9 @@ export const summarizeRun = (g: Game): RunSummary => {
     meowths: t.notices.payDay ?? 0,
     altars: t.notices.altar ?? 0,
     legends: [...g.rift.cleared],
+    places: [...g.place.cleared],
+    placeClears: g.place.cleared.length,
+    landmarks: g.landmarks.opened,
     reaperDefeats: g.endless?.reaperDefeats ?? 0,
     moveEvolutions: g.player.moves.filter((m) => evolvedFrom(m.id)).length,
     megas: g.mega.count,
@@ -144,5 +167,6 @@ export const summarizeRun = (g: Game): RunSummary => {
     killsByType: { ...t.killsByType },
     killsByWeather: { ...t.killsByWeather },
     killsByBiome: { ...t.killsByBiome },
+    legendWins: { ...t.legendWins },
   }
 }

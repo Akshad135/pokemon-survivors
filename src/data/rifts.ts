@@ -11,6 +11,9 @@ export const RIFT_LEGENDS = ['lugia', 'hoOh', 'kyogre', 'groudon', 'rayquaza', '
 
 export type RiftLegend = (typeof RIFT_LEGENDS)[number]
 
+/** The legendaries a rift draws: Latios never comes alone, he fights beside Latias in her domain (`partner`, `data/domains/latis.ts`). */
+export const RIFT_DRAWS = RIFT_LEGENDS.filter((l): l is Exclude<RiftLegend, 'latios'> => l !== 'latios')
+
 /** How an arena looks: floor tiles (base, alternate, grout), the wall ring (light, dark), the void past it and its floating motes. */
 export type ArenaTheme = {
   floor: readonly [string, string, string]
@@ -42,10 +45,17 @@ export const ARENAS: Record<RiftLegend, ArenaTheme> = {
 
 /** Timing and size of rifts, in seconds and world px. */
 export const RIFT = {
-  /** The first portal opens at 3:30, then one every `every ± jitter`. */
-  firstAt: 210,
+  /**
+   * Two portals per run, around 4:00 and 10:20 (± `jitter`), clear of the
+   * trio's slots at 7:00, 9:30 and 12:00. Each opens `omenTime` s after its
+   * omen starts (`game/riftPortal.ts`). In endless mode one comes every
+   * `every ± jitter` s, the first `endlessFirst` s in.
+   */
+  slots: [240, 620],
+  jitter: 10,
+  omenTime: 20,
   every: 240,
-  jitter: 30,
+  endlessFirst: 60,
   /**
    * A portal that comes due during a boss fight waits for the boss to fall,
    * but no longer than this, so slow fights don't cost the run its rifts.
@@ -56,6 +66,8 @@ export const RIFT = {
   /** Seconds the player must stand inside the portal to step in. */
   enterTime: 1,
   portalRadius: 18,
+  /** A domain's portal is a huge tear: the player steps in anywhere within this radius. */
+  tearRadius: 24,
   /** Seconds before the arena collapses and throws the player back. */
   arenaTime: 60,
   /** Seconds to grab the loot after the legendary falls. */
@@ -70,3 +82,6 @@ export const RIFT = {
 
 /** Items always dropped by a beaten rift legendary, on top of its ₽ and Poké Balls. */
 export const RIFT_ITEMS: readonly Drop[] = ['rareCandy', 'superPotion']
+
+/** Whether a species is one of the rift legendaries. */
+export const isRiftLegend = (id: EnemyId): id is RiftLegend => RIFT_LEGENDS.some((l) => l === id)

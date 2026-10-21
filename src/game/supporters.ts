@@ -1,6 +1,7 @@
 import { TITLE_IDS, type TitleId } from '../data/achievements'
 import { isSpecialCompanion, SPECIAL_COMPANION_IDS, SPECIAL_COMPANIONS, type SpecialCompanionId } from '../data/companions'
-import { isHatchling, PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { isUnlocked } from './eggs'
 import { isPollOption, POLL, POLL_OPTION_IDS, SUPPORTER, type PollOptionId } from '../data/supporters'
 import type { GiftContent } from './gifts'
 import type { Save } from './meta'
@@ -80,14 +81,12 @@ export type CompanionId = PlayableId | SpecialCompanionId
 export type Companion = { id: CompanionId; shiny: boolean }
 
 /**
- * Pokémon the save may take along: every starter and each family hatched,
- * shiny only if owned so, and the gift-only ones it got (`save.companions`),
- * never shiny.
+ * Pokémon the save may take along: every starter and each family hatched
+ * (no legend), shiny only if owned so, and the gift-only ones it got
+ * (`save.companions`), never shiny.
  */
 export const canWalkWith = (save: Save, c: Companion) =>
-  isSpecialCompanion(c.id)
-    ? save.companions.includes(c.id) && !c.shiny
-    : (!isHatchling(c.id) || save.hatched[c.id] !== undefined) && (!c.shiny || ownsShiny(save, c.id))
+  isSpecialCompanion(c.id) ? save.companions.includes(c.id) && !c.shiny : isUnlocked(save.hatched, c.id) && (!c.shiny || ownsShiny(save, c.id))
 
 /** The name and dex a companion walks as (a playable family's first stage, or the gift-only one's), and the sparkles it leaves. */
 export const companionForm = (id: CompanionId): { name: string; dex: number; sparkles?: 'candy' } => (isSpecialCompanion(id) ? SPECIAL_COMPANIONS[id] : PLAYABLE[id].line[0])
@@ -117,6 +116,12 @@ export type SupporterStatus = { tier: SupporterTier | null; since: string | null
  */
 export type WallEntry = { handle: string; name: string; tier: SupporterTier; since: string; title: TitleId | null; pokemon: Companion | null }
 
+/** Supporters per tier who chose to stay off the wall: only counted, never named. */
+export type HiddenSupporters = Record<SupporterTier, number>
+
+/** `GET /supporters`: the wall and how many supporters stay off it. */
+export type Wall = { entries: WallEntry[]; hidden: HiddenSupporters }
+
 /** `GET /poll`: the current poll and its votes per option. */
 export type Poll = { id: string; votes: Record<PollOptionId, number> }
 
@@ -136,6 +141,15 @@ export const parseWall = (v: unknown): WallEntry[] =>
         return since ? [{ handle: e.handle, name: e.name, tier: e.tier, since, title, pokemon: parseCompanion(e.pokemon) }] : []
       })
     : []
+
+/** The hidden supporters' counts from the API. An API from before them sends none: zero then. */
+export const parseHidden = (v: unknown): HiddenSupporters => {
+  const counts = isRecord(v) ? v : {}
+  return { supporter: wholeNumber(counts.supporter), gold: wholeNumber(counts.gold) }
+}
+
+/** Every supporter, on the wall or off it. */
+export const supporterCount = (wall: Wall) => wall.entries.length + wall.hidden.supporter + wall.hidden.gold
 
 /** The Hall da Fama from the wall: the gold tier's Lendas and the other supporters, each newest first (a new name shows up front). */
 export const hallOf = (wall: readonly WallEntry[]) => {

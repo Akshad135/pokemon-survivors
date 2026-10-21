@@ -1,7 +1,8 @@
 import { GIFT_TITLES, type GiftTitleId } from '../data/achievements'
 import { isSpecialCompanion, type SpecialCompanionId } from '../data/companions'
+import { parseTitle } from './achievements'
 import { HATCHLING_IDS, HATCHLINGS, type HatchlingId } from '../data/hatchlings'
-import { STYLE_SLOTS, styleIds, type StyleId, type StyleSlot } from '../data/style'
+import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
 import { parseHandle } from './ranking'
 import { markHatch } from './dex'
 import { EGG_TIER_IDS, EGG_TIERS, EGGS, grantEgg, type EggTier, type Hatch } from './eggs'
@@ -10,7 +11,7 @@ import { isRecord, wholeNumber } from './parse'
 import { mergeRibbons, parseRibbon, type Ribbon } from './ribbons'
 import { isSupporterTier, type SupporterTier } from './supporters'
 import { grantShinyPick } from './shinyPicks'
-import { equipStyle, grantStyle, type StyleSave } from './style'
+import { equipStyle, grantStyle, parseStyle, type StyleSave } from './style'
 
 /**
  * Presente Misterioso (Mystery Gift): the API keeps an inbox per player
@@ -221,3 +222,33 @@ export const parseClaimedGifts = (v: unknown): string[] => (Array.isArray(v) ? [
 
 /** Both lists in one (a union), sorted so the merge comes out the same either way. */
 export const mergeClaimedGifts = (a: readonly string[], b: readonly string[]): string[] => [...new Set([...a, ...b])].sort()
+
+/* ---------------- What only a gift brings ---------------- */
+
+/**
+ * `save` with only the gift-only rewards the API really sent: `given` is
+ * every gift of the player (claimed or not). Gift titles, ribbons, shiny
+ * tickets and the styles never sold (a `null` price) can't be earned on the
+ * device, so whatever else a save lists came from editing it. The equipped
+ * title and styles fall back when they go, and so does the companion with the
+ * Supporter title. The API runs it on every push.
+ */
+export const keepGiven = (save: Save, given: readonly Pick<Gift, 'id' | 'content'>[]): Save => {
+  const contents = given.map((g) => g.content)
+  const titles = save.titles.filter((t) => contents.some((c) => c.kind === 'title' && c.title === t))
+  const ribbons = mergeRibbons([], contents.flatMap((c) => (c.kind === 'ribbon' && save.ribbons.some((r) => r.day === c.ribbon.day) ? [c.ribbon] : [])))
+  const tickets = new Set(given.flatMap((g) => (g.content.kind === 'shinyPick' ? [g.id] : [])))
+  const styles = contents.flatMap((c) => (c.kind === 'style' ? [c.style] : []))
+  const kept = <S extends StyleSlot>(slot: S, ids: readonly StyleId<S>[]) =>
+    ids.filter((id) => stylePrice(slot, id) !== null || styles.some((s) => s.slot === slot && s.id === id))
+  const owned = { frame: kept('frame', save.style.owned.frame), background: kept('background', save.style.owned.background), wallpaper: kept('wallpaper', save.style.owned.wallpaper) }
+  return {
+    ...save,
+    titles,
+    title: parseTitle(save.title, save.achievements.unlocked, titles),
+    ribbons,
+    shinyPicks: save.shinyPicks.filter((p) => tickets.has(p.id)),
+    style: parseStyle({ owned, equipped: save.style.equipped }),
+    companion: titles.includes('supporter') ? save.companion : null,
+  }
+}

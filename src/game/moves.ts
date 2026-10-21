@@ -20,6 +20,7 @@ import { VERB_EVOLVED_MOVES } from './verbEvolutions'
 import { EGG_MOVES_2 } from './eggMoves2'
 import { DUO_MOVES } from './duoMoves'
 import { LEGENDARY_MOVES } from './legendaryMoves'
+import { LEGENDARY_MOVES_2 } from './legendaryMoves2'
 import { beatOf } from './signatureRules'
 import { stacksOf } from './kitRules'
 import * as dm from '../engine/dmath'
@@ -2268,6 +2269,8 @@ export const MOVES = {
   ...DUO_MOVES,
   /* ---------- Legendary moves (`legendaryMoves.ts`) ---------- */
   ...LEGENDARY_MOVES,
+  /* ---------- Legendary moves, second batch: the trios, Mewtwo and Arceus (`legendaryMoves2.ts`) ---------- */
+  ...LEGENDARY_MOVES_2,
 } as const satisfies Record<string, MoveDef>
 
 export type MoveId = keyof typeof MOVES

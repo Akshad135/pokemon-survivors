@@ -2,6 +2,7 @@ import { mergeAchievements, mergeGiftTitles } from './achievements'
 import { mergeClaimedGifts } from './gifts'
 import { mergeClears } from './clears'
 import { mergeHalloween } from './halloween'
+import { mergeCaptures } from './capture'
 import { mergeBag } from './bag'
 import { mergeCounter } from './mart'
 import { mergeStyle } from './style'
@@ -53,6 +54,8 @@ const worth = (s: Save) => s.wallet + totalSpent(s.ranks) + s.spent
  * - Branches taken: per family, `incoming`'s when it has one (like the partner).
  * - Clears: a union, each Pokémon at the harder difficulty of the two.
  * - The Noite das Bruxas candy jar: the fuller one (its rewards are gifts, kept above).
+ * - Legend captures: each legend's win count at the larger side (a shiny
+ *   captured is a `shinyStarters` key, a union like the rest).
  */
 export const mergeSaves = (base: Save, incoming: Save): Save => {
   const ranks: Ranks = Object.fromEntries(UPGRADE_IDS.map((id) => [id, Math.max(base.ranks[id], incoming.ranks[id])])) as Record<UpgradeId, number>
@@ -83,6 +86,7 @@ export const mergeSaves = (base: Save, incoming: Save): Save => {
     branches: { ...base.branches, ...incoming.branches },
     clears: mergeClears(base.clears, incoming.clears),
     halloween: mergeHalloween(base.halloween, incoming.halloween),
+    legends: mergeCaptures(base.legends, incoming.legends),
   }
 }
 
@@ -97,9 +101,16 @@ export type Push = { save: Save; base: number | null }
  * seen everything stored, so its save is the newer one and replaces it as is:
  * that keeps ₽ spent, eggs hatched and refunds. Anything else (a first sign
  * in, another device pushed in between) merges both with `mergeSaves`.
+ *
+ * `resetAt` is the revision a reset stored, when the account's save was wiped
+ * (an edited save, see `server/README.md`). A device that hasn't seen it (its
+ * `base` is older, or it never synced) would merge the wiped progress back, so
+ * its push changes nothing and gets the stored save, as merged: the device
+ * takes it over its own.
  */
-export const applyPush = (stored: Stored | null, push: Push): Stored & { merged: boolean } => {
+export const applyPush = (stored: Stored | null, push: Push, resetAt: number | null = null): Stored & { merged: boolean } => {
   if (!stored) return { save: push.save, revision: 1, merged: false }
+  if (resetAt !== null && (push.base === null || push.base < resetAt)) return { ...stored, merged: true }
   const merged = push.base !== stored.revision
   return { save: merged ? mergeSaves(stored.save, push.save) : push.save, revision: stored.revision + 1, merged }
 }

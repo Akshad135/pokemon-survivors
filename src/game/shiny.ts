@@ -28,6 +28,6 @@ export const makeShiny = (g: Game, e: Enemy) => {
   e.shiny = true
   e.hp = e.maxHp = hp
   e.xp = xp
-  e.bornAt = g.time
+  e.bornAt = g.now
   g.events.push({ kind: 'shiny', enemy: e.kind })
 }

@@ -63,8 +63,9 @@ export const CHECKED = { top: { global: BOARD_SIZE, starter: 3 }, sample: 0.05 }
 /**
  * Re-simulation of ranked runs, one at a time, after the API has answered,
  * for the runs worth it (`CHECKED`). A run is verified when its replay ends
- * on the same time, faints and level it reported (and then shows the branch
- * its replay took, whatever the game said); otherwise it's marked failed and
+ * on the same time, faints and level it reported, even if it ends on an open
+ * level-up (the log notes it), and then shows the branch its replay took,
+ * whatever the game said; otherwise it's marked failed and
  * leaves the boards. A replay that played another day's outbreak
  * (`outbreakFits`), or a haunted run outside the Noite das Bruxas
  * (`halloweenFits`), fails without re-simulating. When the machinery fails
@@ -117,10 +118,11 @@ export const createChecks = (ranking: RankingStore) => {
         const answer = await run(id, reported.replay)
         if (!answer) continue
         const r = answer.result
-        const ok = !r.stuck && r.time === reported.time && r.kills === reported.kills && r.level === reported.level
+        // A replay that ends on an open level-up (`stuck`) still played the run it reported, when the numbers match.
+        const ok = r.time === reported.time && r.kills === reported.kills && r.level === reported.level
         // The branch isn't judged: the replay's own replaces the reported one.
         await ranking.setVerified(id, reported.time, ok ? { ok, branch: r.branch } : { ok }, answer.ms)
-        console.log(`check ${id}: ${ok ? 'verified' : 'failed'} in ${answer.ms} ms`)
+        console.log(`check ${id}: ${ok ? 'verified' : 'failed'} in ${answer.ms} ms${r.stuck ? ', ending on an open level-up' : ''}`)
       } catch (err) {
         console.error('check failed', id, err)
       }

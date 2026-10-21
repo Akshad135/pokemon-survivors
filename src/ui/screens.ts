@@ -19,6 +19,7 @@ import { abilitySet } from '../game/abilities'
 import { heldMega } from '../game/mega'
 import { megaIcon } from '../render/megaFx'
 import { BRANCHES } from '../data/branches'
+import { legendSignature } from '../data/legends'
 import { abilityIcon } from '../render/abilityArt'
 import type { Difficulty } from '../game/difficulty'
 import { toSteps } from '../game/eggs'
@@ -31,6 +32,7 @@ import { berryIcon, coinIcon, curseIcon, eggIcon, itemIcon, moveIcon, sparkleIco
 import { modIcon } from '../render/modFx'
 import { specialIcon } from '../render/specialFx'
 import { portraitUrl, sprites } from '../render/sprites'
+import { placeIcon } from '../render/places'
 import { formatNumber, formatPokeDollars, locale, t } from '../i18n'
 import { ROUTES } from '../site/routes'
 import { treatIcon } from '../render/halloweenArt'
@@ -74,7 +76,8 @@ export const hint = (keys: string, touch: string) =>
  * Arrows move the cursor, Enter/Space activate, digits pick directly.
  * `guard` (ms) makes a menu that opens mid-fight ignore picks at first:
  * taps and clicks for that long, keys and pad buttons until they pause
- * (`pressGuard`).
+ * (`pressGuard`). `off` stops it whole, keys and pointer: a screen that binds
+ * its buttons again (back from a screen on top) doesn't stack a second click.
  */
 export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number) => void, opts: { horizontal?: boolean; initial?: number; guard?: number } = {}) => {
   let index = opts.initial ?? 0
@@ -86,14 +89,15 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
     buttons.forEach((b, j) => b.classList.toggle('selected', j === index))
     if (sound) playSfx('move')
   }
+  const pointer = new AbortController()
   buttons.forEach((b, i) => {
-    b.addEventListener('pointerenter', () => i !== index && focus(i))
-    b.addEventListener('click', () => performance.now() - openedAt > tapGuard && activate(i))
+    b.addEventListener('pointerenter', () => i !== index && focus(i), { signal: pointer.signal })
+    b.addEventListener('click', () => performance.now() - openedAt > tapGuard && activate(i), { signal: pointer.signal })
   })
   focus(index, false)
   const prev = opts.horizontal ? ['ArrowLeft', 'KeyA'] : ['ArrowUp', 'KeyW']
   const next = opts.horizontal ? ['ArrowRight', 'KeyD'] : ['ArrowDown', 'KeyS']
-  const off = input.onKey((key) => {
+  const offKeys = input.onKey((key) => {
     if (prev.includes(key)) focus(index - 1)
     else if (next.includes(key)) focus(index + 1)
     else if (key === 'Enter' || key === 'Space') {
@@ -103,6 +107,10 @@ export const menu = (input: Input, buttons: HTMLElement[], activate: (i: number)
       if (i < buttons.length && takes(performance.now() - openedAt)) activate(i)
     }
   })
+  const off = () => {
+    offKeys()
+    pointer.abort()
+  }
   return { off, focus, get index() { return index } }
 }
 
@@ -160,7 +168,7 @@ const offerRecipes = (g: Game, offer: Offer) => {
       // Reaching max level makes it a duo ingredient: the fusions it would open show up.
       if (offer.level < maxMoveLevel(offer.id) || isDuo(offer.id)) return evos
       const moves = [...p.moves.filter((o) => o.id !== offer.id), { id: offer.id, level: offer.level, cooldown: 0 }]
-      const duos = readyDuos(moves).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves).some((r) => r.to === d.to))
+      const duos = readyDuos(moves, legendSignature(g.starter)).filter((d) => d.from.includes(offer.id) && !readyDuos(p.moves, legendSignature(g.starter)).some((r) => r.to === d.to))
       return [...evos, ...duos.map((d) => duoChip(d.from, d.to))]
     }
     case 'duo':
@@ -570,7 +578,7 @@ const duoPanel = (g: Game) => {
   const p = g.player
   const owned = p.moves.find((o) => isDuo(o.id))
   const types = new Set<PokeType>([...runLearnset(g.starter, g.branch), ...p.moves.map((o) => o.id)].map((id) => MOVES[id].type))
-  const ready = readyDuos(p.moves)
+  const ready = readyDuos(p.moves, legendSignature(g.starter))
   const recipes = reachableDuos(types)
   if (recipes.length === 0 && !owned) return null
   const chips = owned
@@ -616,12 +624,20 @@ export const pauseMenu = (root: HTMLElement, input: Input, g: Game, actions: Pau
   /** The screen open on top (settings, the bug report). */
   let sub: Screen | null = null
 
+  /**
+   * Hides the menu under `open`'s screen and redraws it when that one closes.
+   * Both ends run after a key dispatch (`later`), when the menu may be gone
+   * already (the run resumed, the game ended it): a disposed menu (`el` out of
+   * the page, as `openSettings` checks too) opens nothing and binds no keys,
+   * or its Quit and Resume would keep listening over the run.
+   */
   const openSub = (open: (back: () => void) => Screen, focus: number) => {
-    if (sub) return
+    if (sub || !el.isConnected) return
     nav?.off()
     el.classList.add('hidden')
     sub = open(() => {
       sub = null
+      if (!el.isConnected) return
       el.classList.remove('hidden')
       render(focus, false)
     })
@@ -783,13 +799,19 @@ export const results = (
   const share = extras.share ? h('button', { class: extras.share.glow ? 'btn share-button glow' : 'btn share-button' }, h('img', { src: sparkleIcon(), alt: '' }), t().share.button) : null
   /** The boards or the share preview, open over the results. */
   let sub: Screen | null = null
-  /** Hides the results under `open`'s screen until it closes, then comes back on the same button. */
+  /**
+   * Hides the results under `open`'s screen until it closes, then comes back
+   * on the same button. Once the results are disposed (Retry, endless mode)
+   * nothing opens or binds again, as in the pause menu: their keys would play
+   * Retry or Menu over the next run.
+   */
   const openSub = (open: ((back: () => void) => Screen) | undefined, button: HTMLButtonElement) => {
-    if (!open) return
+    if (!open || sub || !el.isConnected) return
     nav.off()
     el.classList.add('hidden')
     sub = open(() => {
       sub = null
+      if (!el.isConnected) return
       el.classList.remove('hidden')
       nav = bindNav(buttons.indexOf(button))
     })
@@ -833,6 +855,8 @@ export const results = (
         g.halloween && h('div', { class: 'result-treats' }, h('span', {}, t().halloween.candies), h('b', {}, h('img', { src: treatIcon(), alt: '' }), `+${formatNumber(g.candies)}`)),
         legends.length > 0 &&
           h('div', {}, h('span', {}, r.legends), h('b', { class: 'result-legends' }, ...legends.map((id) => h('img', { src: portraitUrl(ENEMIES[id].dex), alt: ENEMIES[id].name, title: ENEMIES[id].name })))),
+        g.place.cleared.length > 0 &&
+          h('div', {}, h('span', {}, t().places.results), h('b', { class: 'result-legends' }, ...g.place.cleared.map((id) => h('img', { src: placeIcon(id), alt: t().places.names[id], title: t().places.names[id] })))),
         h('div', {}, h('span', {}, e.steps), h('b', {}, formatNumber(toSteps(g.player.walked)))),
         g.eggs.found.length > 0 &&
           h('div', {}, h('span', {}, e.eggs), h('b', { class: 'result-legends' }, ...g.eggs.found.map((egg) => h('img', { src: eggIcon(egg.tier), alt: e.tiers[egg.tier], title: e.tiers[egg.tier] })))),

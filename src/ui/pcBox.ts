@@ -3,6 +3,7 @@ import type { Input } from '../engine/input'
 import { context2d } from '../engine/pixelart'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import { RIFT_LEGENDS } from '../data/rifts'
+import { GRAVEYARD } from '../data/places'
 import { dexStatus, type Pokedex } from '../game/dex'
 import { pokedex, type DexEntry } from '../site/pokedex'
 import { sparkleIcon } from '../render/art'
@@ -21,8 +22,9 @@ const BOX_SLOTS = BOX.cols * BOX.rows
 
 /**
  * Can this species be caught shiny? Playable lines can (the 1/64 roll, a
- * shiny hatch), and so can the wild horde and the rift legendaries; wave
- * bosses and event Pokémon never are. Only species with shiny sprites count.
+ * shiny hatch), and so can the wild horde, the rift legendaries and
+ * Spiritomb; wave bosses and event Pokémon never are. Only species with shiny
+ * sprites count.
  */
 const shinyCatchable = (e: DexEntry) => {
   if (!e.sprites.shiny) return false
@@ -30,7 +32,7 @@ const shinyCatchable = (e: DexEntry) => {
   if (e.source.kind !== 'wild') return false
   const wild = e.source.id
   const def: EnemyDef = ENEMIES[wild]
-  return def.tier !== undefined || RIFT_LEGENDS.some((id) => id === wild)
+  return def.tier !== undefined || RIFT_LEGENDS.some((id) => id === wild) || wild === GRAVEYARD.boss
 }
 
 /** Every species the Caixa do PC has room for, in national dex order. */

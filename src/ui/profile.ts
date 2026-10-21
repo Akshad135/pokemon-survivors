@@ -17,6 +17,7 @@ import { LOCALES, locale, t } from '../i18n'
 import { h, later } from './dom'
 import { today } from './save'
 import { titleBadge } from './missions'
+import { reportDialog } from './report'
 import { sharePreview, trainerShare } from './share'
 import { difficultyTag, hint, menu, type Screen } from './screens'
 import { toast } from './toasts'
@@ -89,9 +90,19 @@ const ribbonRow = (ribbons: Record<RibbonTier, number> | undefined) => {
   )
 }
 
+/** The Legend mode's records (its own boards), or null before the first one (or from an older API). */
+const legendRecords = (p: PublicProfile) => {
+  const records = p.legendRecords
+  if (!records || Object.keys(records).length === 0) return null
+  return section(t().profile.legendRecords, h('div', { class: 'profile-records' }, ...DIFFICULTY_IDS.map((d) => recordCell(d, records[d]))))
+}
+
+/** The profile's longest record, the Legend mode's included. */
+const bestRecord = (p: PublicProfile) => [...Object.values(p.records), ...Object.values(p.legendRecords ?? {})].sort((a, b) => b.time - a.time)[0]
+
 /** The profile's face: the Pokémon of its longest record, or a Poké Ball before any. */
 const headPortrait = (p: PublicProfile) => {
-  const best = Object.values(p.records).sort((a, b) => b.time - a.time)[0]
+  const best = bestRecord(p)
   return best ? runPortrait(best) : pokeballIcon()
 }
 
@@ -109,8 +120,8 @@ const share = async (root: HTMLElement, p: PublicProfile) => {
 
 /**
  * A public profile (`/?u=handle` opens it straight away): name, handle, the
- * equipped title, records per difficulty, Desafio do dia ribbons, Pokédex progress, recent ranked runs
- * and follower counts. Signed in, it offers Follow, or Edit on one's own.
+ * equipped title, records per difficulty (the Legend mode's apart), Desafio do dia ribbons, Pokédex progress, recent ranked runs
+ * and follower counts. Signed in, it offers Follow and Denunciar, or Edit on one's own.
  * Back, Esc or Backspace close it and call `onClose` after the key dispatch.
  */
 export const profileScreen = (root: HTMLElement, input: Input, handle: string, onClose: () => void): Screen => {
@@ -158,6 +169,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
     const actions = [
       ...(p.self ? [{ label: m.edit, run: openEditor }, { label: m.card, run: () => openCard(p) }] : signedIn ? [follow] : []),
       { label: m.share, run: () => void share(root, p) },
+      ...(signedIn && !p.self ? [{ label: m.report, run: () => openReport(p) }] : []),
       back(),
     ]
     frame(
@@ -178,6 +190,7 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
         h('p', { class: 'profile-social' }, [m.followers(p.followers), m.following(p.following), ...(p.brought ? [m.brought(p.brought)] : [])].join(' · ')),
         !p.self && !signedIn ? note(m.followGuest) : null,
         section(m.records, h('div', { class: 'profile-records' }, ...DIFFICULTY_IDS.map((d) => recordCell(d, p.records[d])))),
+        legendRecords(p),
         ribbonRow(p.ribbons),
         section(
           m.dex,
@@ -207,8 +220,19 @@ export const profileScreen = (root: HTMLElement, input: Input, handle: string, o
   const openCard = (p: PublicProfile) => {
     nav?.off()
     el.classList.add('hidden')
-    const best = Object.values(p.records).sort((a, b) => b.time - a.time)[0]
+    const best = bestRecord(p)
     sub = sharePreview(root, input, trainerShare(best?.starter ?? 'charmander'), () => {
+      sub = null
+      el.classList.remove('hidden')
+      show(p)
+    })
+  }
+
+  /** The report dialog over the profile, about the player (not a run). */
+  const openReport = (p: PublicProfile) => {
+    nav?.off()
+    el.classList.add('hidden')
+    sub = reportDialog(root, input, { handle: p.handle, name: p.name, run: null }, () => {
       sub = null
       el.classList.remove('hidden')
       show(p)

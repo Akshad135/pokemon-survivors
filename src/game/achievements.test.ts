@@ -43,6 +43,17 @@ describe('achievements', () => {
     expect(achievementProgress(save.lifetime, 'regions')).toEqual({ value: 3, target: 9 })
   })
 
+  it('make an explorer of whoever clears every place, over as many runs as it takes', () => {
+    const cave = recordAchievements(NO_ACHIEVEMENTS, summary({ places: ['cave'], placeClears: 1 }), null)
+    expect(cave.unlocked).toContain('place1')
+    const again = recordAchievements(cave.achievements, summary({ places: ['cave', 'graveyard'], placeClears: 2 }), null)
+    expect(again.unlocked).not.toContain('explorer')
+    const sky = recordAchievements(again.achievements, summary({ starter: 'pidgey', places: ['sky'], placeClears: 1 }), null)
+    expect(sky.unlocked).toContain('explorer')
+    expect(sky.achievements.lifetime).toMatchObject({ placeClears: 4, places: ['cave', 'graveyard', 'sky'] })
+    expect(parseAchievements(JSON.parse(JSON.stringify(sky.achievements))).lifetime.places).toEqual(['cave', 'graveyard', 'sky'])
+  })
+
   it('pay missions and medals into the wallet', () => {
     const date = new Date(2026, 9, 13, 12)
     const r = recordRun(EMPTY_SAVE, summary({ kills: 100_000 }), null, date)

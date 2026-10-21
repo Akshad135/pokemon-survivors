@@ -1,5 +1,6 @@
 import { dirTo, fromAngle } from '../engine/math'
 import { burst } from './effects'
+import { updateLegendary2 } from './legendary2'
 import { LEAF, WHIRL } from './legendaryMoves'
 import { moveStats, type MoveId } from './moves'
 import { nearestEnemy } from './queries'
@@ -12,7 +13,8 @@ import type { Attack, Game } from './types'
  * once their age reaches `memo`: Psycho Boost's comets and Magical Leaf's
  * leaves home in on a foe each, Ancient Power's stones fly straight at one.
  * Whirlwind's cyclone ends in a gust that flings the foes around it. `game.ts`
- * calls `updateLegendary` every tick, before the moves cast.
+ * calls `updateLegendary` every tick, before the moves cast; the second
+ * batch's side runs in `updateLegendary2` (`legendary2.ts`).
  */
 
 /** How the launchers of each move take off: homing (and how hard it turns) or straight. */
@@ -61,6 +63,7 @@ const gust = (g: Game, a: Attack) => {
 }
 
 export const updateLegendary = (g: Game) => {
+  updateLegendary2(g)
   const speeds = new Map<MoveId, number>()
   for (const a of g.attacks) {
     if (a.age < 0 || a.move === 'special' || a.move === 'ability') continue

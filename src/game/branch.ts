@@ -4,6 +4,7 @@ import { BRANCH_OFFERS, BRANCHES, branchStage, type BranchDef, type BranchId } f
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import type { EvolutionStage } from '../data/starters'
 import type { Game } from './types'
+import { legendStage } from './legend'
 import { weatherHere } from './weather'
 
 /**
@@ -29,8 +30,8 @@ export const formAt = (starter: PlayableId, branch: BranchId | null, stage: numb
 export const formLine = (starter: PlayableId, branch: BranchId | null): readonly EvolutionStage[] =>
   PLAYABLE[starter].line.map((_, i) => formAt(starter, branch, i))
 
-/** The form the player is in right now (before a Mega form). */
-export const playerForm = (g: Game) => formAt(g.starter, g.branch, g.player.stage)
+/** The form the player is in right now (before a Mega form): a legend's awakened form and Multitype's typing included (`legendStage`). */
+export const playerForm = (g: Game): EvolutionStage => (g.legend ? legendStage(g, g.legend) : formAt(g.starter, g.branch, g.player.stage))
 
 /** What nudges the draw: the weather where the player stands and the biome. */
 export type BranchContext = { weather: WeatherId; biome: BiomeId }

@@ -10,7 +10,9 @@ import { abilityDeltas } from './abilities'
 import { formAt } from './branch'
 import { FRESH_WEIGHT, runLearnset, unlockedAt } from './learnsets'
 import { buffDeltas } from './buffs'
+import { wingDeltas } from './place'
 import { CURSES, type CurseId } from '../data/curses'
+import { legendSignature } from '../data/legends'
 import { blocksNewMoves } from './curses'
 import { readyDuos } from './duoRules'
 import { healPlayer } from './combat'
@@ -19,6 +21,7 @@ import { rankDeltas } from './meta'
 import { learnable } from './kitRules'
 import { forkAt, isManual, maxMoveLevel, MOVES, withBranch, type MoveId } from './moves'
 import { stanceStats } from './stance'
+import { awakeningDeltas } from './legend'
 import { applyDeltas, BASE_STATS, type StatDelta } from './stats'
 import type { Game, Offer, OwnedItem, OwnedMove, PrizeSource, Rarity } from './types'
 
@@ -120,6 +123,8 @@ export const shinyOfferOdds = (shinyCharm: number) => OFFER_RARITY.shiny * (shin
 export type RollOptions = {
   /** Roll each card's rarity, with these shiny odds; without it every card is common (the Poké Ball, the opening draft). */
   shiny?: number
+  /** Extra odds of a rare card on top of `OFFER_RARITY.rare` (a lucky ability). */
+  rare?: number
   /** Leave out upgrades that land on a fork: the Poké Ball picks on its own, and a fork is the player's call. */
   forks?: boolean
   /** Leave out duo fusions (`duoRules.ts`): the Poké Ball picks on its own, and fusing two moves is the player's call. */
@@ -142,11 +147,11 @@ const rareLevel = (offer: Offer) => {
   return next <= maxMoveLevel(offer.id) && !forkAt(offer.id, offer.level) && !forkAt(offer.id, next) ? next : null
 }
 
-/** A card's rarity, from one roll in [0, 1): shiny, then rare, else common. Only moves and items can be lucky. */
-export const withRarity = (offer: Offer, roll: number, shinyOdds: number): Offer => {
+/** A card's rarity, from one roll in [0, 1): shiny, then rare (`OFFER_RARITY.rare` plus `rare`), else common. Only moves and items can be lucky. */
+export const withRarity = (offer: Offer, roll: number, shinyOdds: number, rare = 0): Offer => {
   if (offer.kind !== 'move' && offer.kind !== 'item') return offer
   if (roll < shinyOdds) return { ...offer, rarity: 'shiny' }
-  const level = roll < shinyOdds + OFFER_RARITY.rare ? rareLevel(offer) : null
+  const level = roll < shinyOdds + OFFER_RARITY.rare + rare ? rareLevel(offer) : null
   return level === null ? offer : { ...offer, level, rarity: 'rare' }
 }
 
@@ -171,7 +176,7 @@ export const openPrizeLevelUp = (g: Game, source: PrizeSource, shinyFirst = fals
 export const rollOffers = (loadout: Loadout, rng: Rng, count = 3, opts: RollOptions = {}): Offer[] => {
   const shown = opts.shown ?? []
   const taken = new Set(shown.map((o) => (o.kind === 'evolution' ? o.to : offerSubject(o))))
-  const duos: Offer[] = opts.duos === false ? [] : readyDuos(loadout.moves).filter(({ to }) => !taken.has(to)).map(({ from, to }) => ({ kind: 'duo', from, to }))
+  const duos: Offer[] = opts.duos === false ? [] : readyDuos(loadout.moves, legendSignature(loadout.starter)).filter(({ to }) => !taken.has(to)).map(({ from, to }) => ({ kind: 'duo', from, to }))
   const pool = offerPool(loadout).filter(([o]) => !taken.has(offerSubject(o)) && (opts.forks !== false || o.kind !== 'move' || !forkAt(o.id, o.level)))
   const evolutions: Offer[] = readyEvolutions(loadout)
     .filter(({ to }) => !taken.has(to))
@@ -185,7 +190,7 @@ export const rollOffers = (loadout: Loadout, rng: Rng, count = 3, opts: RollOpti
     pool.splice(index, 1)
   }
   const shinyOdds = opts.shiny
-  const offers = shinyOdds === undefined ? picked : picked.map((o) => withRarity(o, rng(), shinyOdds))
+  const offers = shinyOdds === undefined ? picked : picked.map((o) => withRarity(o, rng(), shinyOdds, opts.rare))
   return offers.length > 0 ? offers : [{ kind: 'berry' }]
 }
 
@@ -224,17 +229,19 @@ const starterDeltas = (id: PlayableId, stage: number, branch: BranchId | null = 
 export const starterStats = (id: PlayableId, stage: number, branch: BranchId | null = null) => applyDeltas(BASE_STATS, starterDeltas(id, stage, branch))
 
 /**
- * Rebuilds player stats from starter (and branch), Poké Mart ranks, evolution stage, held items, buffs,
- * the ability, the Mega form, cursed items and Aegislash's stance.
+ * Rebuilds player stats from starter (and branch), a legend's awakenings, Poké Mart ranks, evolution stage,
+ * held items, buffs, the ability, the Mega form, cursed items and the stance (Aegislash, Deoxys).
  */
 export const recomputeStats = (g: Game) => {
   const p = g.player
   const before = p.stats.maxHp
   const deltas = applyDeltas(BASE_STATS, [
     ...starterDeltas(g.starter, p.stage, g.branch),
+    ...(g.legend ? awakeningDeltas(g.legend.id, g.legend.awakened) : []),
     ...rankDeltas(g.ranks),
     ...p.items.flatMap((i) => ITEMS[i.id].levels.slice(0, i.level)),
     ...buffDeltas(g.buffs),
+    ...wingDeltas(g.place.wings),
     ...g.player.moveBuffs.map((b) => b.stats),
     ...abilityDeltas(g, MAX_ITEMS - p.items.length),
     ...(g.mega.active > 0 && g.mega.stone ? [MEGAS[g.mega.stone].stats] : []),

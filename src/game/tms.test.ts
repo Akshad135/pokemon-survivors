@@ -176,6 +176,13 @@ describe('TMs in a run', () => {
     expect(g.pickups.some((k) => k.kind === 'tm')).toBe(false)
   })
 
+  it('leave a Rare Candy where the player already knows the legendary move (a legend beating its clone)', () => {
+    const g = startGame({ ...START, starter: 'mew' })
+    dropLegendaryTm(g, 'mew', 0, 0)
+    expect(g.pickups.some((k) => k.kind === 'tm')).toBe(false)
+    expect(g.pickups.some((k) => k.kind === 'consumable' && k.item === 'rareCandy')).toBe(true)
+  })
+
   it('charge a tutor lesson from the run’s ₽, and ignore one the player can’t pay', () => {
     const g = run()
     g.tm.lessons = 1

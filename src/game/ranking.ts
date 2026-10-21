@@ -1,6 +1,7 @@
 import type { TitleId } from '../data/achievements'
 import { BRANCHES, isBranch, type BranchId } from '../data/branches'
 import { PLAYABLE, type PlayableId } from '../data/hatchlings'
+import { isLegend } from '../data/legends'
 import { RUN_LENGTH } from '../data/waves'
 import { DAY_TIME_ZONE, isDayKey, type DayKey } from './day'
 import { isDifficulty, type Difficulty } from './difficulty'
@@ -67,6 +68,8 @@ export const RANKED = {
   window: 10 * 60,
   /** Start tokens never used are dropped after this many days. */
   tokenDays: 7,
+  /** Seeds the server deals are in [0, seedSpan): the 32 bits the simulation reads (`createRng`). */
+  seedSpan: 2 ** 32,
 } as const
 
 export const isPlayable = (v: unknown): v is PlayableId => typeof v === 'string' && Object.hasOwn(PLAYABLE, v)
@@ -105,6 +108,25 @@ export const parseRunResult = (raw: unknown): RunResult | null => {
 
 /** Whether `time` seconds of play fit in `elapsed` seconds of wall clock since the start token. */
 export const clockAllows = (elapsed: number, time: number) => time <= elapsed + RANKED.slack
+
+/** What a start token's row holds when its run reports: the seed dealt with it (null on rows from before the server dealt seeds) and what the run reported before, if it did. */
+export type IssuedRun = { seed: number | null; reported: Pick<RunResult, 'starter' | 'difficulty' | 'time' | 'outcome'> | null }
+
+/**
+ * Why a run's report doesn't fit its start token's row, or null when it does.
+ * `seed`: the replay played another seed than the one dealt (a row without
+ * one takes any). `mismatch`: the run reported before and this isn't it
+ * grown: another Pokémon or difficulty, a shorter run, or a longer one after
+ * anything but a victory (only endless mode goes on). So a short run can't
+ * keep its seed on hold to grow later.
+ */
+export const reportProblem = (row: IssuedRun, result: RunResult, seed: number): 'seed' | 'mismatch' | null => {
+  if (row.seed !== null && row.seed !== seed) return 'seed'
+  const before = row.reported
+  if (!before) return null
+  if (before.starter !== result.starter || before.difficulty !== result.difficulty || before.time > result.time) return 'mismatch'
+  return before.time < result.time && before.outcome !== 'victory' ? 'mismatch' : null
+}
 
 /** Quits in the first minute stay off the ranking: they'd only crowd the profile's recent runs. */
 export const rankable = (r: RunResult) => r.outcome !== 'quit' || r.time >= 60
@@ -200,6 +222,20 @@ export type BoardPeriod = (typeof BOARD_PERIODS)[number]
 
 export const isBoardPeriod = (v: unknown): v is BoardPeriod => BOARD_PERIODS.some((p) => p === v)
 
+/**
+ * The boards' two sides: the regular runs (`standard`) and the Legend mode's
+ * (`legend`, a legend played), each split by difficulty. The mode follows the
+ * Pokémon played, so a run can't report the wrong one.
+ */
+export const RUN_MODES = ['standard', 'legend'] as const
+
+export type RunMode = (typeof RUN_MODES)[number]
+
+export const isRunMode = (v: unknown): v is RunMode => RUN_MODES.some((m) => m === v)
+
+/** The boards a run of `starter` goes on. */
+export const runMode = (starter: PlayableId): RunMode => (isLegend(starter) ? 'legend' : 'standard')
+
 /** Players shown at the top of a board. */
 export const BOARD_SIZE = 50
 
@@ -219,6 +255,8 @@ export type BoardEntry = ProfileName & {
   /** The player's supporter badge (`game/supporters.ts`), null when they have none or hide it, and since when (ISO). Missing from an older API. */
   supporter?: SupporterTier | null
   supporterSince?: string | null
+  /** The run's id, to report it (`game/reports.ts`). Missing from an older API. */
+  run?: string
 }
 
 /** The top of a board, plus the asking player's own line (null if they're not on it). */
@@ -265,6 +303,8 @@ export type PublicProfile = ProfileName & {
   title: TitleId | null
   dex: { seen: number; caught: number }
   records: Partial<Record<Difficulty, ProfileRun>>
+  /** The Legend mode's records, by difficulty. Missing from an older API. */
+  legendRecords?: Partial<Record<Difficulty, ProfileRun>>
   recent: ProfileRun[]
   followers: number
   following: number

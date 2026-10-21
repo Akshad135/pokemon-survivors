@@ -14,6 +14,8 @@ import type { StatDelta } from './stats'
 import { applyStatus } from './status'
 import type { Enemy, Game } from './types'
 import { setWeather, weatherHere } from './weather'
+import { roomOf } from './room'
+import { innateAbility, innateEffects } from './legend'
 
 /**
  * Abilities in a run (`data/abilities.ts`): picked when the first evolution
@@ -61,10 +63,35 @@ export const abilitySet = (starter: PlayableId, branch: BranchId | null): Abilit
 export const activeAbility = (g: Game): AbilityId | null => (g.mega.active > 0 ? null : g.ability.id)
 
 const NONE: readonly AbilityEffect[] = []
+const joined = new Map<string, readonly AbilityEffect[]>()
 
+/**
+ * The effects in play: a legend's innate (`legend.ts`, always on) and the
+ * ability picked. Cached per pair, since the hits and ticks ask all the time.
+ */
 const effectsOf = (g: Game): readonly AbilityEffect[] => {
   const id = activeAbility(g)
-  return id ? ABILITIES[id].effects : NONE
+  const innate = innateEffects(g.starter)
+  if (innate.length === 0) return id ? ABILITIES[id].effects : NONE
+  if (!id) return innate
+  const key = `${g.starter}|${id}`
+  let effects = joined.get(key)
+  if (!effects) joined.set(key, (effects = [...innate, ...ABILITIES[id].effects]))
+  return effects
+}
+
+/** Tells the shell an effect did something, under the ability it belongs to: the one picked, else the innate. */
+const proc = (g: Game, e: AbilityEffect) => {
+  const id = activeAbility(g)
+  const own: readonly AbilityEffect[] = id ? ABILITIES[id].effects : NONE
+  const owner = id && own.includes(e) ? id : innateAbility(g.starter)
+  if (owner) g.events.push({ kind: 'ability', id: owner, moment: 'proc' })
+}
+
+/** How lucky the level-up cards come out (a `luck` effect: Jirachi's Serene Grace): extra rare odds and a shiny multiplier. */
+export const abilityLuck = (g: Game) => {
+  const e = effectOf(g, 'luck')
+  return e ? { rare: e.rare, shiny: e.shiny } : { rare: 0, shiny: 1 }
 }
 
 /** The ability's effect of a kind, if it has one. */
@@ -152,7 +179,7 @@ export const abilityKey = (g: Game) => {
   effectsOf(g).forEach((e, i) => {
     if (effectOn(g, e)) bits |= 1 << i
   })
-  return bits + 16 * (abilityStacks(g) + 64 * (g.ability.mood + 1))
+  return bits + 256 * (abilityStacks(g) + 64 * (g.ability.mood + 1))
 }
 
 /** Whether the ability is doing something right now, for the HUD: a condition met, stacks held, a guard or Sturdy waiting. */
@@ -216,7 +243,7 @@ export const abilityTakes = (g: Game, amount: number, types: readonly PokeType[]
       p.iframes = Math.max(p.iframes, ABILITY.guardIframes)
       burst(g, p.x, p.y - 12, { colors: ['#f8f8ff', '#b8a8f8', '#8878d8'], count: 18, speed: 90, ttl: 0.4 })
       if (e.reflect && from && isAlive(from)) strike(g, from, amount * 2 + contactPower(g))
-      g.events.push({ kind: 'ability', id: g.ability.id!, moment: 'proc' })
+      proc(g, e)
       return null
     }
   }
@@ -233,14 +260,15 @@ export const abilityHurt = (g: Game) => {
 
 /** The player would faint: Sturdy holds once, at 1 HP. True when it held. */
 export const abilityHolds = (g: Game) => {
-  if (g.ability.spent || !effectOf(g, 'sturdy')) return false
+  const sturdy = effectOf(g, 'sturdy')
+  if (g.ability.spent || !sturdy) return false
   const p = g.player
   g.ability.spent = true
   p.hp = 1
   p.iframes = Math.max(p.iframes, ABILITY.sturdyIframes)
   burst(g, p.x, p.y - 12, { colors: ['#f8d030', '#ffffff', '#b89848'], count: 40, speed: 140, ttl: 0.6, size: 2 })
   g.shake = Math.max(g.shake, 6)
-  g.events.push({ kind: 'ability', id: g.ability.id!, moment: 'proc' })
+  proc(g, sturdy)
   return true
 }
 
@@ -262,7 +290,7 @@ export const abilityKill = (g: Game, e: Enemy) => {
       if (s.stacks >= effect.max) continue
       s.stacks = Math.min(effect.max, s.stacks + 1)
       // A milestone (Battle Bond's) is news; Moxie's one-kill stacks just show on the HUD.
-      if (effect.per > 1) g.events.push({ kind: 'ability', id: s.id!, moment: 'proc' })
+      if (effect.per > 1) proc(g, effect)
     } else if (effect.kind === 'drop' && chance(g.rng, effect.chance)) {
       if (effect.drop === 'berry') dropPickup(g, e.x + 4, e.y, 'berry')
       else if (effect.drop === 'coin') dropCoins(g, e.x, e.y, [10])
@@ -308,11 +336,11 @@ export const updateAbility = (g: Game, dt: number) => {
   for (const e of effectsOf(g)) {
     switch (e.kind) {
       case 'summon':
-        // The weather lives outside: a rift arena waits until the player is back.
-        if (s.biome !== g.biome.id && !g.rift.arena) {
+        // The weather lives outside: a room (rift arena, place) waits until the player is back.
+        if (s.biome !== g.biome.id && !roomOf(g)) {
           s.biome = g.biome.id
           setWeather(g, e.weather)
-          g.events.push({ kind: 'ability', id: s.id!, moment: 'proc' })
+          proc(g, e)
         }
         break
       case 'contact':
@@ -335,7 +363,7 @@ export const updateAbility = (g: Game, dt: number) => {
         if (s.clock >= e.every) {
           s.clock -= e.every
           s.stacks = Math.min(e.max, s.stacks + 1)
-          g.events.push({ kind: 'ability', id: s.id!, moment: 'proc' })
+          proc(g, e)
         }
         break
       case 'heal':
@@ -362,7 +390,7 @@ export const updateAbility = (g: Game, dt: number) => {
           // Never the same boost twice in a row.
           const next = Math.floor(g.rng() * (e.options.length - (s.mood >= 0 ? 1 : 0)))
           s.mood = s.mood >= 0 && next >= s.mood ? next + 1 : next
-          g.events.push({ kind: 'ability', id: s.id!, moment: 'proc' })
+          proc(g, e)
         }
         break
       case 'guard':

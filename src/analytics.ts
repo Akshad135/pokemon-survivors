@@ -5,6 +5,7 @@ import type { EnemyId } from './data/enemies'
 import type { PlayableId } from './data/hatchlings'
 import type { MegaId } from './data/megas'
 import type { Difficulty } from './game/difficulty'
+import type { RunMode } from './game/ranking'
 import type { LobbyFocus } from './ui/title'
 
 /**
@@ -17,11 +18,13 @@ import type { LobbyFocus } from './ui/title'
 
 /** Custom events, with their payloads. Keep this list short: every event counts against the free tier. */
 type AnalyticsEvents = {
-  run_start: { starter: PlayableId; difficulty: Difficulty; challenge?: 'official' | 'practice' }
+  /** `mode`: a regular run or the Legend mode's (a legend played, `runMode`). */
+  run_start: { starter: PlayableId; difficulty: Difficulty; mode: RunMode; challenge?: 'official' | 'practice' }
   /** How a run ended, with what it was built from: the build and the cause of a faint are what tuning needs. */
   run_end: {
     starter: PlayableId
     difficulty: Difficulty
+    mode: RunMode
     outcome: 'victory' | 'gameover' | 'endless' | 'quit'
     minute: number
     level: number

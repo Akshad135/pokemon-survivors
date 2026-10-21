@@ -16,20 +16,20 @@ import { dashedRing } from './strokes'
  * clock). Both walk `g.attacks` themselves. Everything snaps to whole pixels.
  */
 
-type Ctx = CanvasRenderingContext2D
+export type Ctx = CanvasRenderingContext2D
 
-const px = (ctx: Ctx, x: number, y: number, color: string, w = 1, h = 1) => {
+export const px = (ctx: Ctx, x: number, y: number, color: string, w = 1, h = 1) => {
   ctx.fillStyle = color
   ctx.fillRect(Math.round(x), Math.round(y), w, h)
 }
 
-const radiusOf = (a: Attack) => (a.shape.kind === 'circle' ? a.shape.r : 8)
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+export const radiusOf = (a: Attack) => (a.shape.kind === 'circle' ? a.shape.r : 8)
+export const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 /** 1 while it lives, easing to 0 over its last `window` seconds. */
-const fadeOut = (a: Attack, window: number) => clamp01((a.ttl - a.age) / window)
+export const fadeOut = (a: Attack, window: number) => clamp01((a.ttl - a.age) / window)
 
 /** Square-brush line from (x0, y0) to (x1, y1), `w` px thick. */
-const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
+export const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: number, color: string) => {
   const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0)))
   const half = Math.floor(w / 2)
   ctx.fillStyle = color
@@ -40,13 +40,13 @@ const thickLine = (ctx: Ctx, x0: number, y0: number, x1: number, y1: number, w: 
 }
 
 /** A 4-point twinkle. */
-const twinkle = (ctx: Ctx, x: number, y: number, size: number, color: string) => {
+export const twinkle = (ctx: Ctx, x: number, y: number, size: number, color: string) => {
   px(ctx, x - size, y, color, size * 2 + 1, 1)
   px(ctx, x, y - size, color, 1, size * 2 + 1)
 }
 
 /** A solid ring `thick` px wide at radius `r` (squashed by `squash`), in one color. */
-const band = (ctx: Ctx, x: number, y: number, r: number, thick: number, color: string, squash = 1) => {
+export const band = (ctx: Ctx, x: number, y: number, r: number, thick: number, color: string, squash = 1) => {
   const steps = Math.max(24, Math.ceil(r * TAU))
   ctx.fillStyle = color
   for (let i = 0; i < steps; i++) {
@@ -56,7 +56,7 @@ const band = (ctx: Ctx, x: number, y: number, r: number, thick: number, color: s
 }
 
 /** Rays from (x, y), `count` of them from `inner` to `outer`, alternating long and short. */
-const spokes = (ctx: Ctx, x: number, y: number, inner: number, outer: number, count: number, colors: readonly string[], turn = 0, squash = 1) => {
+export const spokes = (ctx: Ctx, x: number, y: number, inner: number, outer: number, count: number, colors: readonly string[], turn = 0, squash = 1) => {
   for (let i = 0; i < count; i++) {
     const a = turn + (i / count) * TAU
     const len = i % 2 === 0 ? outer : inner + (outer - inner) * 0.55
