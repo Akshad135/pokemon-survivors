@@ -2,7 +2,8 @@ import '@fontsource/press-start-2p'
 import '@fontsource/vt323'
 import './ui/style.css'
 // First, so its error listeners catch what goes wrong while the rest loads.
-import { bugReportsEnabled, describeWith, syncRunWatch, takeCrash } from './bugReport'
+import { bugReportsEnabled, describeWith, deviceMemory, syncRunWatch, takeCrash } from './bugReport'
+import type { BugCrash, BugPerf } from './game/bugReport'
 
 import { playCry, playSfx, unlockAudio, type Sfx } from './engine/audio'
 import { castSound } from './ui/castSounds'
@@ -10,13 +11,14 @@ import { createInput, type Stick } from './engine/input'
 import type { Vec } from './engine/math'
 import { currentTheme, duckMusic, playTheme, type ThemeId } from './engine/music'
 import { advancePacer, pacer, resetPacer } from './engine/pacing'
-import { context2d, resetCanvases } from './engine/pixelart'
+import { canvasStats, context2d, resetCanvases, resetCanvasPeaks } from './engine/pixelart'
+import { frameStats, recentFrameMs, recordFrame, resetRunFrames, runFrames } from './engine/frameStats'
 import { fitView } from './engine/viewport'
 import { createRng } from './engine/rng'
 import { BIOME_ORDER, BIOMES, type BiomeId, type WeatherId } from './data/biomes'
 import { bodyOf } from './data/bodies'
 import { MEGA_LINES, MEGAS, megasOf, type MegaId } from './data/megas'
-import { isRiftLegend, RIFT, RIFT_LEGENDS } from './data/rifts'
+import { isRiftLegend } from './data/rifts'
 import { domainTheme } from './game/domain'
 import { partnerOf } from './data/domains'
 import { captureOutcome, setCaptureOutcome } from './render/capture'
@@ -31,16 +33,20 @@ import { REGIONS, STARTERS } from './data/starters'
 import { nextIsOfficial } from './game/attempt'
 import { challengeStart, type Challenge } from './game/challenge'
 import { HATCHLING_IDS, HATCHLINGS, PLAYABLE, type HatchlingId, type PlayableId } from './data/hatchlings'
+import { isLegend } from './data/legends'
 import { accountHandle, accountState, accountsEnabled, accountUserId, backFromSignIn, giftInbox, onAccountChange, stageGifts, stageSyncedSave, startAccount, syncSave } from './account'
 import { identify, startAnalytics, track, type ErrorContext } from './analytics'
 import { BAG_ITEM_IDS, BAG_ITEMS, useArmed, type BagItem } from './game/bag'
 import { CONSUMABLES } from './game/consumables'
-import { depositEggs, EGGS, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
+import { depositEggs, EGG_TIERS, EGGS, freeSlots, grantEgg, hatchEgg, isReady, toSteps, type EggTier, type Hatch } from './game/eggs'
 import { setBiome } from './game/biomes'
+import { addCandies, HAUNT_DEX, recordHunt } from './game/halloween'
+import { HALLOWEEN, isNightBoss, NIGHT_BOSSES } from './data/halloween'
+import { jackIcon, treatIcon } from './render/halloweenArt'
 import { brasiliaDay, previousDay, type DayKey } from './game/day'
 import { spawnEnemy } from './game/enemies'
 import { pickAlpha, spawnAlpha } from './game/alphas'
-import { stageIndexAt } from './data/waves'
+import { EVENTS, stageIndexAt } from './data/waves'
 import { makeShiny } from './game/shiny'
 import { MAP_EVENT_KINDS, MAP_EVENTS, spawnMapEvent, type MapEventKind } from './game/mapEvents'
 import { MEOWTH_DEX } from './game/mapEventRules'
@@ -54,7 +60,7 @@ import { abilityStacks, grantAbility } from './game/abilities'
 import { abilityIcon } from './render/abilityArt'
 import { recomputeStats, xpFor } from './game/leveling'
 import { dropMegaStones, grantStone, heldMega, megaBaseName } from './game/mega'
-import { ENDLESS, REAPER } from './game/endless'
+import { REAPER } from './game/endless'
 import { continueEndless } from './game/endlessSystem'
 import { levelUpDevTools } from './game/levelUpDev'
 import { legendDevTools } from './game/legendDev'
@@ -64,7 +70,6 @@ import { placeDevTools } from './game/placeDev'
 import { placeFeedback } from './ui/places'
 import { landmarkFeedback } from './ui/landmarks'
 import { PLACES } from './data/places'
-import { placeSchedule } from './game/place'
 import { kitDevTools } from './game/kitDev'
 import { eggMoveDevTools } from './game/eggMovesDev'
 import { learnDevTools } from './game/learnDev'
@@ -82,7 +87,7 @@ import { clearSpot, featureAt } from './game/terrain'
 import { TERRAIN, type SolidKind } from './data/terrain'
 import type { LandmarkId } from './data/landmarks'
 import { dexNews, dexStatus, mergeDex, recordRun, type Pokedex } from './game/dex'
-import { runEarnings, wonRun } from './game/meta'
+import { runEarnings, wonRun, type ConvertedEggs } from './game/meta'
 import { missionStatus, type MissionStatus } from './game/missions'
 import { summarizeRun, type RunSummary } from './game/tally'
 import { parseHandle, rankable, runMode, runResult } from './game/ranking'
@@ -91,14 +96,16 @@ import { parseReplay, recordEvent, recordStep, resimulate, RULES_VERSION, rulesS
 import { gameSpecial } from './game/special'
 import { unlockShinyStarter } from './game/shinyStarters'
 import { playsShiny } from './game/shinyPicks'
-import { canWalkWith, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type SupporterTier } from './game/supporters'
+import { canWalkWith, companionForm, isSupporter, SUPPORTER_TIERS, TIER_GIFTS, type CompanionId, type SupporterTier } from './game/supporters'
 import { createCompanion, stepCompanion, type CompanionView } from './render/companion'
 import { MOVES } from './game/moves'
 import type { Game, GameEvent, Offer, Phase } from './game/types'
 import { setWeather } from './game/weather'
 import { render, warmScenery } from './render/draw'
+import { createGovernor, detail, observeFrame } from './render/quality'
 import { drawJoystick } from './render/joystick'
-import { cryUrl, loadAll, loadSpecies, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies } from './render/sprites'
+import { cryUrl, loadAll, loadedCount, loadSpecies, overlayStats, portraitUrl, preloadForms, preloadShinies, sprites, streamSpecies, sweepSprites, type Dex } from './render/sprites'
+import { castNeeds, runSprites, type SpriteNeed } from './render/spriteNeeds'
 import { setMarkerInsets } from './render/mapEvents'
 import { consumableIcon } from './render/props'
 import { bagIcon, berryIcon, curseIcon, eggIcon, moveIcon, ribbonIcon, warmIcon } from './render/art'
@@ -109,14 +116,14 @@ import { weatherIcon } from './render/weather'
 import { formatDay, formatPokeDollars, locale, LOCALES, t } from './i18n'
 import { h, later, rich } from './ui/dom'
 import { setActivePad } from './ui/inputLabels'
-import { captureRef, flushRuns, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
+import { captureRef, flushRuns, onRulesBehind, prefetchRanked, PROFILE_PARAM, rankingEnabled, stageInvite, startRanked, type RankedRun, type RankOutcome } from './ranking'
 import { DISCORD_GIFT, parseGiftContent, type GiftKind, type GiftReason } from './game/gifts'
 import { giftScreen } from './ui/gifts'
 import { playGate } from './ui/account'
 import { trainerCardScreen } from './ui/trainer'
 import { discordScreen } from './ui/discord'
 import { createHud, type Hud } from './ui/hud'
-import { bankEggs, challengeToday, depositPokeDollars, loadAttempt, loadSave, outbreakToday, recordRunProgress, saveAttempt, saveHatch, today, updateSave, writeSave } from './ui/save'
+import { bankEggs, challengeToday, depositPokeDollars, halloweenToday, loadAttempt, loadSave, outbreakToday, recordRunProgress, saveAttempt, saveHatch, setToday, today, updateSave, writeSave } from './ui/save'
 import { challengeScreen, challengeShiny } from './ui/challenge'
 import { hatchScene, incubator } from './ui/incubator'
 import { medalChips, missionReport, missionsScreen, progressToast, titleBadge } from './ui/missions'
@@ -124,6 +131,7 @@ import { martDevTools } from './ui/martDev'
 import { missionDevTools } from './ui/missionsDev'
 import { pcBoxScreen } from './ui/pcBox'
 import { newsScreen } from './ui/news'
+import { halloweenScreen } from './ui/halloween'
 import { pokedexScreen } from './ui/pokedex'
 import { profileEditor, profileScreen } from './ui/profile'
 import { rankingScreen, rankPanel } from './ui/ranking'
@@ -222,6 +230,8 @@ type Run = {
   closeText: (() => void) | null
   /** ₽ of this run already in the wallet: a victory banks right away and again if the run goes on endless. */
   paid: number
+  /** Noite das Bruxas candies of this run already in the save's jar, banked the same way. */
+  candies: number
   /** True once the run's end was reported to analytics. */
   reported: boolean
   /** Missions as the run started, and what the run has recorded so far (see `recordProgress`). */
@@ -232,8 +242,10 @@ type Run = {
   reward: number
   rewardEggs: number
   rewardItems: BagItem[]
-  /** Steps and eggs of this run already in the incubator, and the ₽ paid for eggs that found it full. */
-  hatchery: { steps: number; eggs: number; refund: number }
+  /** Steps and eggs of this run already in the incubator. */
+  hatchery: { steps: number; eggs: number }
+  /** Eggs of this run (found or rewards) paid in ₽ because they didn't fit, for the results. */
+  convertedEggs: ConvertedEggs
   /** The Pokédex as saved when the run began: banking folds the run's log into it, so banking twice changes nothing. */
   dexBase: Pokedex
   /** Everything the simulation took from the player, for the ranking to re-simulate (`game/replay.ts`). */
@@ -251,6 +263,8 @@ type Run = {
   challenge: { day: DayKey; official: boolean; attempt: boolean } | null
   /** The supporter's companion walking along, drawn only (`render/companion.ts`). */
   companion: CompanionView | null
+  /** Which sheets the run streams and keeps (`syncSprites`): its cast's windows, and what it keeps in every variant. */
+  sprites: { needs: SpriteNeed[]; always: Dex[] }
 }
 
 let screen: Screen | null = null
@@ -269,9 +283,9 @@ let meadowStick: Stick | null = null
 /** A CSS px point on screen, in the meadow's world px (the canvas sits at the viewport's corner). */
 const meadowAt = (at: Vec): Vec => ({ x: Math.round(scene.cam.x) + at.x / cssScale, y: Math.round(scene.cam.y) + at.y / cssScale })
 
-/** The lobby's handle on the meadow: its partner walks there. */
+/** The lobby's handle on the meadow: its partner walks there, with the supporter's companion. */
 const meadow: Meadow = {
-  meet: (partner) => meetPartner(scene, partner),
+  meet: (partner) => meetPartner(scene, partner, partner && runCompanion({ x: 0, y: 0 })),
   steer: (move, tap, home) => steerPartner(scene, move, tap && meadowAt(tap), meadowAt(home)),
   out: () => scene.partner !== null && scene.partner.state !== 'home',
   stick: (stick) => (meadowStick = stick),
@@ -289,13 +303,43 @@ const playerName = (g: Game) => (g.mega.active > 0 && heldMega(g)?.name) || play
 const SCREEN_CLASSES = new Set(['screen', 'shell', 'dim', 'pop', 'hidden'])
 
 // A bug report says what's on screen: the screens stacked up (the form itself aside) and the run, as plain numbers.
+/** Frame pacing, for the crash watch and the run's summary on `run_end`. */
+const frames = frameStats()
+
+const mb = (bytes: number) => Math.round(bytes / 104_857.6) / 10
+
+/** Canvas memory and frame pace right now (`createCanvas` keeps the counts as it goes). */
+const perfNow = (): BugPerf => ({
+  canvases: canvasStats.live,
+  canvasMb: mb(canvasStats.bytes),
+  peakCanvases: canvasStats.peakLive,
+  peakCanvasMb: mb(canvasStats.peakBytes),
+  frameMs: recentFrameMs(frames),
+})
+
 describeWith(() => {
   const view = [...ui.querySelectorAll(':scope > .screen:not(.bug-screen)')].map((el) => [...el.classList].filter((c) => !SCREEN_CLASSES.has(c)).join('.')).join(' > ')
+  const perf = perfNow()
   const g = run?.game
-  if (!g || g.phase === 'gameover' || g.phase === 'victory') return { view, run: null }
+  if (!g || g.phase === 'gameover' || g.phase === 'victory') return { view, run: null, perf }
+  const boss = g.bossId === null ? undefined : g.enemies.find((e) => e.id === g.bossId)
   return {
     view,
-    run: { partner: g.starter, form: playerName(g), difficulty: g.difficulty, time: Math.floor(g.time), level: g.player.level, phase: g.phase, biome: g.biome.id, enemies: g.enemies.length },
+    perf,
+    run: {
+      partner: g.starter,
+      form: playerName(g),
+      difficulty: g.difficulty,
+      time: Math.floor(g.time),
+      level: g.player.level,
+      phase: g.phase,
+      biome: g.biome.id,
+      enemies: g.enemies.length,
+      projectiles: g.attacks.length + g.hazards.length,
+      wave: EVENTS[g.nextEvent - 1]?.kind ?? '',
+      boss: boss?.kind ?? '',
+      place: g.rift.arena ? `rift:${g.rift.arena.legend}` : (g.place.inside?.id ?? ''),
+    },
   }
 })
 
@@ -342,6 +386,12 @@ const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus } = {}) => {
       // The language may change inside Settings, so closing them rebuilds the title on the same entry.
       settings: (focus) => openSettings(ui, input, () => showTitle({ focus })),
       news: (focus) => newsScreen(ui, input, () => showTitle({ focus })),
+      halloween: (focus) =>
+        halloweenScreen(ui, input, {
+          gifts: showGifts,
+          support: () => setScreen(supportersScreen(ui, input, { play: (id) => void startRun(id), onClose: () => showTitle({ focus }) }, null)),
+          close: () => showTitle({ focus }),
+        }),
       discord: (focus) => discordScreen(ui, input, () => showTitle({ focus })),
       pokedex: (focus) => pokedexScreen(ui, input, () => showTitle({ focus }), showPcBox),
       mart: (focus) => shop(ui, input, () => showTitle({ focus })),
@@ -389,9 +439,9 @@ const runCompanion = (at: Vec): CompanionView | null => {
   const save = loadSave()
   const c = save.companion
   if (!c || !isSupporter(save) || !canWalkWith(save, c)) return null
-  const dex = PLAYABLE[c.id].line[0].dex
+  const { dex, sparkles } = companionForm(c.id)
   void (c.shiny ? preloadShinies([dex]) : loadSpecies(dex)).catch(() => {})
-  return createCompanion(dex, c.shiny, at)
+  return createCompanion(dex, c.shiny, at, sparkles ?? null)
 }
 
 const showShop = () => setScreen(shop(ui, input, () => showMenu()))
@@ -477,8 +527,9 @@ const bankHatchery = (r: Run) => {
   const steps = toSteps(g.player.walked)
   const fresh = g.eggs.found.slice(r.hatchery.eggs).map((e) => ({ tier: e.tier, steps: steps - toSteps(e.at) }))
   if (steps === r.hatchery.steps && fresh.length === 0) return
-  const { refund } = bankEggs(steps - r.hatchery.steps, fresh)
-  r.hatchery = { steps, eggs: g.eggs.found.length, refund: r.hatchery.refund + refund }
+  const { converted } = bankEggs(steps - r.hatchery.steps, fresh)
+  r.hatchery = { steps, eggs: g.eggs.found.length }
+  r.convertedEggs.full.push(...converted)
 }
 
 /**
@@ -491,6 +542,8 @@ const bankRun = (r: Run, withBonus: boolean) => {
   const total = withBonus ? runEarnings(g).total : g.coins
   if (total > r.paid) depositPokeDollars(total - r.paid)
   r.paid = Math.max(r.paid, total)
+  if (g.candies > r.candies) updateSave((save) => addCandies(save, g.candies - r.candies))
+  r.candies = Math.max(r.candies, g.candies)
   bankHatchery(r)
   // Merged into the stored Pokédex, which an account sync may have grown during the run.
   updateSave((save) => ({ ...save, dex: mergeDex(save.dex, recordRun(r.dexBase, g.dexLog)) }))
@@ -508,6 +561,8 @@ const recordProgress = (r: Run) => {
   r.unlocked.push(...record.unlocked)
   r.reward += record.reward
   r.rewardEggs += record.eggs.length
+  r.convertedEggs.full.push(...record.converted.full)
+  r.convertedEggs.cap.push(...record.converted.cap)
   r.rewardItems.push(...record.items)
   return record
 }
@@ -554,7 +609,22 @@ const reportRun = (r: Run, faint: Extract<GameEvent, { kind: 'gameover' }> | nul
     foe: faint?.foe ?? null,
     hit: faint?.hit ?? null,
     ...challengeKind(r.challenge),
+    ...runPerf(),
+    ...(g.halloween ? { candies: g.candies } : {}),
   })
+}
+
+/** How the device coped with the run: canvas memory at its peak and the frames while playing. */
+const runPerf = () => {
+  const f = runFrames(frames)
+  return {
+    peakCanvasMb: mb(canvasStats.peakBytes),
+    peakCanvases: canvasStats.peakLive,
+    deviceMemory: deviceMemory(),
+    frameAvg: f.avg,
+    frameP95: f.p95,
+    longFrames: f.long,
+  }
 }
 
 /** The `challenge` field of a run's events: a Desafio do dia run says whether it started as the official attempt. */
@@ -588,54 +658,96 @@ const endRun = () => {
 
 const loadingScreen = () => h('div', { class: 'screen' }, h('p', { class: 'loading blink' }, t().loading))
 
-/** The next run's seed, the day's outbreak and the wild cast, drawn ahead so the menus can warm up its first stage. */
-type RunPlan = { seed: number; outbreak: EnemyId; roster: Roster }
+/** The next run's seed, the day's outbreak, whether it's haunted (Noite das Bruxas) and the wild cast (a legend's own, `legend`), drawn ahead so the menus can warm up its first stage. */
+type RunPlan = { seed: number; outbreak: EnemyId; halloween: boolean; legend: boolean; roster: Roster }
 
 /** A Desafio do dia run, as `startRun` takes it: the challenge, and whether the screen called it official. */
 type ChallengeRun = { challenge: Challenge; official: boolean }
 
-/** A run's plan from `seed` and `outbreak`: the API's for a ranked run, else the game's own and the device's day. */
-const planRun = (seed = Date.now(), outbreak = outbreakToday()): RunPlan => ({ seed, outbreak, roster: runRoster(seed, outbreak) })
+/** A run's plan from `seed`, `outbreak`, `halloween` and `legend`: the API's for a ranked run, else the game's own and the device's day. */
+const planRun = (seed = Date.now(), outbreak = outbreakToday(), halloween = halloweenToday(), legend = false): RunPlan => ({
+  seed,
+  outbreak,
+  halloween,
+  legend,
+  roster: runRoster(seed, outbreak, halloween, legend),
+})
 
 let upcoming = planRun()
 
 /**
  * Asks ahead for the next ranked run's ticket (`day`: a Desafio do dia's), so
  * Play never waits on it. Only between runs: a new token replaces the one a
- * run in progress plays. A regular ticket's seed and outbreak become the next
- * plan, so the menus warm up the cast it draws.
+ * run in progress plays. A regular ticket's seed, outbreak and haunting become
+ * the next plan, so the menus warm up the cast it draws.
  */
 const prefetchRun = (day: DayKey | null = null) =>
   void prefetchRanked(day).then((ticket) => {
     if (!ticket || ticket.seed === null || day) return
     const outbreak = outbreakToday(ticket.outbreak)
-    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak) upcoming = planRun(ticket.seed, outbreak)
+    const halloween = halloweenToday(ticket.halloween)
+    if (upcoming.seed !== ticket.seed || upcoming.outbreak !== outbreak || upcoming.halloween !== halloween) upcoming = planRun(ticket.seed, outbreak, halloween, upcoming.legend)
   })
 
 /**
  * Species a run may need outside its drawn cast, with when they can first show
- * up: the fleeing Meowth, the escort mission's Togepi, the rift legendaries and the endless mode's reaper
- * (the places' dwellers come from `placeSchedule`).
+ * up: the fleeing Meowth and the escort mission's Togepi. A rift's legendary,
+ * a place's dwellers and the reaper load when the run gets near them (`runSprites`).
  */
 const EXTRAS = [
   { dex: MEOWTH_DEX, at: MAP_EVENTS.meowth.spawn.from },
   { dex: TOGEPI_DEX, at: FIELD.first },
-  ...RIFT_LEGENDS.map((id) => ({ dex: ENEMIES[id].dex, at: RIFT.slots[0] - RIFT.omenTime })),
-  { dex: ENEMIES[REAPER].dex, at: ENDLESS.reaperAt },
 ]
 
 /** Dex numbers of a cast's first stage, the only enemies a run waits for. */
 const openingDex = (plan: RunPlan) => rosterSchedule(plan.roster).flatMap((s) => (s.at === 0 ? [s.dex] : []))
+
+/** Milliseconds between sprite syncs (`syncSprites`). */
+const SPRITE_SYNC = 3000
+/**
+ * Syncs a sheet survives undrawn before it's freed: a run lets go of a past
+ * stage's horde within seconds; the menus keep what they loaded for a minute,
+ * so a screen's art never vanishes while it's open.
+ */
+const RUN_IDLE = 2
+const MENU_IDLE = 20
+
+/**
+ * What the menus stream and keep: the Noite das Bruxas' ghosts in the meadow first, every region's
+ * starter trio (the partner select), then the next run's first stage.
+ */
+const menuSprites = () => [...new Set([...(halloweenToday() ? HAUNT_DEX : []), ...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)])]
+
+/**
+ * Hands the sprite stream what's needed now and next, and frees the sheets
+ * nothing needs any more (`sweepSprites`): during a run its current and next
+ * stages, what's alive and the player's line, so a phone's memory stays flat
+ * over the 15 minutes instead of holding every species and shiny the run met.
+ */
+const syncSprites = () => {
+  if (run) {
+    const { stream, keep } = runSprites(run.game, run.sprites.needs, run.sprites.always)
+    streamSpecies(stream)
+    // The results screen is a menu: its share card loads the run's shinies and legendaries to draw them.
+    const over = run.game.phase === 'gameover' || run.game.phase === 'victory'
+    sweepSprites(keep, over ? MENU_IDLE : RUN_IDLE)
+    return
+  }
+  const menu = menuSprites()
+  streamSpecies(menu)
+  sweepSprites({ species: new Set(menu), variants: new Set() }, MENU_IDLE)
+}
 
 /**
  * Loads the starter's evolution line and the first stage's species, then starts
  * a fresh run: a regular one from the save (upgrades, the Bag's armed items),
  * or the Desafio do dia's (`challengeStart`: its seed, nothing from the save
  * but the shiny colors). The rest of the cast (later stages, swarms, bosses) and the
- * `EXTRAS` stream in the background in the order the run needs them, then the
- * next run's opening.
+ * `EXTRAS` stream in the background as the run nears them (`syncSprites`).
  */
 const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) => {
+  // Play again on a build that fell behind (`watchDeploys`): the newer one first, back in the lobby.
+  if (reloadForDeploy) return location.reload()
   setScreen(null)
   endRun()
   const c = daily?.challenge ?? null
@@ -647,11 +759,18 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
   const ranked = startRanked(c?.day ?? null)
   // A ranked run plays the seed the API dealt (a challenge's is the day's); the replay starts from it and the cast is drawn from it.
   const seed = c ? c.seed : (ranked?.seed ?? upcoming.seed)
-  // And the outbreak it dealt with the ticket (the API checks it by its own clock); without one, the device's day.
+  // And the outbreak and haunting it dealt with the ticket (the API checks them by its own clock); without one, the device's day.
   const outbreak = outbreakToday(ranked?.outbreak ?? null)
-  // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak.
-  const plan = c ? { seed, outbreak: c.outbreak, roster: runRoster(seed, c.outbreak) } : upcoming.seed === seed && upcoming.outbreak === outbreak ? upcoming : planRun(seed, outbreak)
-  if (!c) upcoming = planRun()
+  const halloween = halloweenToday(ranked?.halloween ?? null)
+  const legend = !c && isLegend(starter)
+  // A plan from another day (the menus stayed open past midnight) would play yesterday's outbreak (or haunting).
+  const plan = c
+    ? planRun(seed, c.outbreak, c.halloween)
+    : upcoming.seed === seed && upcoming.outbreak === outbreak && upcoming.halloween === halloween && upcoming.legend === legend
+      ? upcoming
+      : planRun(seed, outbreak, halloween, legend)
+  // The next run likely plays the same mode: its plan draws that horde.
+  if (!c) upcoming = planRun(undefined, undefined, undefined, legend)
   // The whole family, branches included: the evolution scene can land on any of them.
   await loadAll([...familyDex(starter), ...openingDex(plan)])
   // The outbreak's shiny can show up in the first minute.
@@ -669,6 +788,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     shiny: playsShiny(save, starter),
     luckyEgg: save.eggs.length === 0 && HATCHLING_IDS.every((id) => !save.hatched[id]),
     outbreak: plan.outbreak,
+    halloween: plan.halloween,
     lure: used.lure,
     incense: used.incense,
     view: { w: view.w, h: view.h },
@@ -689,6 +809,7 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     shown: null,
     closeText: null,
     paid: 0,
+    candies: 0,
     reported: false,
     missionsBefore: missionStatus(save.missions, today()),
     recorded: null,
@@ -696,7 +817,8 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     reward: 0,
     rewardEggs: 0,
     rewardItems: [],
-    hatchery: { steps: 0, eggs: 0, refund: 0 },
+    hatchery: { steps: 0, eggs: 0 },
+    convertedEggs: { full: [], cap: [] },
     dexBase: save.dex,
     recorder: startRecording(start),
     ranked: ranked?.ranked ?? null,
@@ -704,15 +826,18 @@ const startRun = async (starter: PlayableId, daily: ChallengeRun | null = null) 
     bestBefore: save.achievements.lifetime.bestTime,
     challenge: daily ? { day: daily.challenge.day, official: daily.official, attempt: false } : null,
     companion: runCompanion(game.player),
+    // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
+    sprites: { needs: castNeeds(game.roster, EXTRAS), always: [...familyDex(starter), playerDex(game), ENEMIES[plan.outbreak].dex] },
   }
-  // The crash watch holds the run from now on (`bugReport.ts`).
+  if (run.companion) run.sprites.always.push(run.companion.dex)
+  // The menus' sheets age out from here; the run's next stage starts streaming.
+  syncSprites()
+  // The crash watch holds the run from now on (`bugReport.ts`), and the run's own peaks and frames start here.
+  resetCanvasPeaks()
+  resetRunFrames(frames)
   syncRunWatch()
   track('run_start', { starter, difficulty: game.difficulty, mode: runMode(starter), ...challengeKind(run.challenge) })
   announceRun(start, run.challenge)
-  const flies = PLAYABLE[game.starter].line.some((s) => s.types.includes('flying'))
-  // The run's own roster: a legend's (`avoidLegend`) may have swapped a boss.
-  const later = [...rosterSchedule(game.roster).filter((s) => s.at > 0), ...EXTRAS, ...placeSchedule(flies)].sort((a, b) => a.at - b.at)
-  void streamSpecies([...later.map((s) => s.dex), ...openingDex(upcoming)], () => run?.game === game)
 }
 
 /** The run's first toasts: the challenge it plays, the day's outbreak, then each bag item it used. */
@@ -721,7 +846,12 @@ const announceRun = (start: ReplayStart, challenge: Run['challenge']) => {
     const m = t().challenge
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: ribbonIcon('gold'), alt: '' }), h('span', {}, rich(m.started(formatDay(challenge.day))), h('small', {}, challenge.official ? m.startedOfficial : m.startedPractice))), 4200, 'challenge')
   }
-  if (start.outbreak) {
+  if (start.halloween) {
+    const m = t().halloween
+    toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: jackIcon(), alt: '' }), h('span', {}, rich(m.started), h('small', {}, m.startedHint))), 4600, 'halloween')
+  }
+  // A legend's horde has no outbreak (`runRoster`).
+  if (start.outbreak && !isLegend(start.starter)) {
     const def = ENEMIES[start.outbreak]
     toast(ui, h('span', { class: 'item-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), h('span', {}, rich(t().outbreak.started(def.name)), h('small', {}, t().outbreak.hint))), 4200, 'outbreak')
   }
@@ -824,7 +954,7 @@ const syncOverlay = (r: Run) => {
           badge: titleBadge(loadSave().title),
           report: missionReport(r.missionsBefore, r.reward, r.rewardEggs, r.rewardItems),
           medals: medalChips(r.unlocked),
-          eggs: { refund: r.hatchery.refund, ready: loadSave().eggs.filter(isReady).length },
+          eggs: { converted: r.convertedEggs, ready: loadSave().eggs.filter(isReady).length },
           news: dexNews(r.dexBase, g.dexLog),
           ranking: rankingEnabled
             ? { panel: rankPanel(r.rank, r.challenge !== null, runMode(g.starter)), open: (back) => rankingScreen(ui, input, back, { difficulty: g.difficulty, mode: runMode(g.starter), challenge: r.challenge !== null }) }
@@ -1007,7 +1137,22 @@ const handleEvent = (r: Run, e: GameEvent) => {
       }
       playSfx('boss')
       playCry(sprites(def.dex).cry, 0.5)
+      // A night boss comes in the event's colors.
+      if (isNightBoss(e.enemy)) return toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: portraitUrl(def.dex), alt: '' }), rich(t().halloween.nightBoss(def.name))), 3200)
       return toast(ui, rich(t().toast.boss(def.name)), 3200)
+    }
+    case 'nightBoss': {
+      // Its first defeat ticks the Caça aos Fantasmas off (from the run's results, `recordHunt`): the toast says so now.
+      const before = loadSave().halloween
+      if (before.hunted.includes(e.enemy)) return
+      const ticked = recordHunt(before, g.tally.nightBosses).hunted.length
+      return toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: treatIcon(), alt: '' }), rich(t().halloween.hunted(ENEMIES[e.enemy].name, HALLOWEEN.hunt.candies, ticked, NIGHT_BOSSES.length))), 3600, 'nightBoss')
+    }
+    case 'disguise': {
+      const def = ENEMIES[e.enemy]
+      playSfx('break')
+      playCry(sprites(def.dex).cry, 0.6)
+      return toast(ui, rich(t().halloween.disguise(def.name)), 2400)
     }
     case 'bossFled': {
       const def = ENEMIES[e.enemy]
@@ -1128,6 +1273,18 @@ const handleEvent = (r: Run, e: GameEvent) => {
     }
     case 'propBreak':
       return playSfx('break', 60)
+    case 'treat':
+      return playSfx('treat', 50)
+    case 'trickOrTreat': {
+      const m = t().halloween
+      if (!e.ghost) {
+        playSfx('heal')
+        return toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: treatIcon(), alt: '' }), rich(m.treat)), 2200, 'trickOrTreat')
+      }
+      playSfx('trick')
+      playCry(cryUrl(ENEMIES[e.ghost].dex), 0.5)
+      return toast(ui, h('span', { class: 'item-toast halloween-toast' }, h('img', { src: portraitUrl(ENEMIES[e.ghost].dex), alt: '' }), rich(m.trick(ENEMIES[e.ghost].name))), 2600, 'trickOrTreat')
+    }
     case 'mapEvent':
       return mapEventFeedback(ui, e.notice)
     case 'place':
@@ -1294,8 +1451,11 @@ const handleEvent = (r: Run, e: GameEvent) => {
       return toast(ui, rich(t().alphas.prize), 2600)
     case 'egg': {
       const m = t().eggs
+      // The run's eggs bank when it ends: this one fits if the incubator has a slot for it after the ones found before it.
+      const fits = g.eggs.found.length - r.hatchery.eggs <= freeSlots(loadSave().eggs)
+      const text = fits ? m.found(m.tiers[e.tier]) : m.foundFull(m.tiers[e.tier], formatPokeDollars(EGG_TIERS[e.tier].refund))
       playSfx('unlock')
-      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: eggIcon(e.tier), alt: '' }), rich(m.found(m.tiers[e.tier]))), 3600)
+      return toast(ui, h('span', { class: 'item-toast' }, h('img', { src: eggIcon(e.tier), alt: '' }), rich(text)), 3600)
     }
   }
 }
@@ -1321,7 +1481,8 @@ const weatherToast = (next: WeatherId, prev: WeatherId) => {
 /** Silence until "press start", then menus play the village theme, a run its biome's theme, and a living boss takes over until it falls. */
 const themeFor = (r: Run | null): ThemeId | null => {
   if (!pressedStart) return null
-  if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return 'menu'
+  // The Noite das Bruxas swaps the village for Lavender Tower's tune.
+  if (!r || r.game.phase === 'gameover' || r.game.phase === 'victory') return halloweenToday() ? BIOMES.tower.theme : 'menu'
   // A legendary's domain plays its crossing's theme, then its own from the moment it shows itself.
   const domain = r.game.rift.arena?.domain
   if (domain) return domainTheme(domain)
@@ -1385,8 +1546,25 @@ window.addEventListener('beforeunload', (e) => {
 let last = performance.now()
 /** The simulation's tick accumulator, snapped to the display's cadence (`engine/pacing.ts`). */
 const pace = pacer()
+/** Watches how the run's frames hold up and turns lean drawing on and off (`render/quality.ts`). */
+const governor = createGovernor((navigator as Navigator & { deviceMemory?: number }).deviceMemory)
+detail.lean = governor.lean
+/** `ps.quality()` pins the governor's choice for screenshots and tests. */
+let qualityPin: 'auto' | 'lean' | 'full' = 'auto'
+/** When the last frame that advanced the run was drawn (NaN after one that didn't). */
+let lastDrawn = NaN
+/** Seconds of menu time not drawn yet: the menus' meadow and screens draw at most about 60 times a second. */
+let menuAcc = 0
 
+/**
+ * One display frame. It books the next one first: an exception thrown in here
+ * still reaches the error report (once, `analytics.ts` dedupes it) but never
+ * stops the loop, which would freeze the game for good.
+ */
 const frame = (now: number) => {
+  requestAnimationFrame(frame)
+  const started = performance.now()
+  recordFrame(frames, now - last, run?.game.phase === 'playing')
   const dt = Math.min(0.1, (now - last) / 1000)
   last = now
   const t = now / 1000
@@ -1439,10 +1617,24 @@ const frame = (now: number) => {
         if (stick && g.phase === 'playing') drawJoystick(ctx, stick, cssScale)
         r.hud.update(g)
       }
+      // Only frames that moved the run tell how the device keeps up.
+      if (steps > 0) {
+        const lean = observeFrame(governor, performance.now() - started, now - lastDrawn)
+        detail.lean = qualityPin === 'auto' ? lean : qualityPin === 'lean'
+        lastDrawn = now
+      } else lastDrawn = NaN
     }
   } else {
-    // Attract mode: wild Pokémon stroll through the meadow behind the menus.
-    stepTitleScene(scene, dt, view.w, view.h)
+    // On 90 and 120 Hz screens the menus draw at most about 60 times a second, like a run: half the work behind a menu.
+    menuAcc += dt
+  }
+  const menuFrame = menuAcc >= STEP * 0.6
+  if (!run && menuFrame) {
+    const mdt = Math.min(0.1, menuAcc)
+    menuAcc = 0
+    // Attract mode: wild Pokémon stroll through the meadow behind the menus (haunted on the Noite das Bruxas).
+    scene.haunted = halloweenToday()
+    stepTitleScene(scene, mdt, view.w, view.h)
     drawTitleScene(ctx, scene, view.w, view.h)
     ctx.fillStyle = `rgba(16,24,48,${screen?.dim ?? 0.35})`
     ctx.fillRect(0, 0, view.w, view.h)
@@ -1451,13 +1643,12 @@ const frame = (now: number) => {
     for (const dex of scene.cries.splice(0)) playCry(cryUrl(dex), 0.3)
     // Menu news (what a quit run completed) shares the run's queue. Banners (Mystery Gifts) wait
     // for the bare title: over the starter select or a dialog they'd cover what the player is reading.
-    tickToasts(ui, dt, false, !ui.querySelector(':scope > .title-home:not(.hidden)') || ui.querySelector(':scope > .screen.dim:not(.hidden)') !== null)
+    tickToasts(ui, mdt, false, !ui.querySelector(':scope > .title-home:not(.hidden)') || ui.querySelector(':scope > .screen.dim:not(.hidden)') !== null)
   }
-  screen?.tick?.(t)
+  if (run || menuFrame) screen?.tick?.(t)
   playTheme(themeFor(run))
   // Ducked under the pause menu, but at full level while the player tunes the volume.
   duckMusic(run?.game.phase === 'paused' && !isSettingsOpen())
-  requestAnimationFrame(frame)
 }
 
 /* ---------------- Idle warm-up ---------------- */
@@ -1478,9 +1669,13 @@ const pumpWarmUp = (deadline: { didTimeout: boolean; timeRemaining: () => number
   const calm = !run || (run.game.phase !== 'playing' && run.game.phase !== 'evolving')
   const warm = () => warmScenery(run?.game ?? null, calm) || warmIcon()
   let made = false
-  if (deadline.didTimeout) made = warm()
-  else while (deadline.timeRemaining() > IDLE_SLACK && warm()) made = true
-  scheduleWarmUp(made ? (hasIdle ? 0 : 50) : 1000)
+  // A build that throws (reported as any error) must not stop the warm-up for the rest of the session.
+  try {
+    if (deadline.didTimeout) made = warm()
+    else while (deadline.timeRemaining() > IDLE_SLACK && warm()) made = true
+  } finally {
+    scheduleWarmUp(made ? (hasIdle ? 0 : 50) : 1000)
+  }
 }
 const scheduleWarmUp = (ms: number) =>
   setTimeout(() => {
@@ -1489,15 +1684,6 @@ const scheduleWarmUp = (ms: number) =>
   }, ms)
 
 /* ---------------- Boot ---------------- */
-
-/**
- * Warms the sprite cache one species at a time so the menu stays responsive:
- * every region's trio first (menu cards), then the next run's first stage.
- */
-const preloadInBackground = async () => {
-  const queue = [...REGIONS.flatMap((r) => r.starters.map((id) => STARTERS[id].line[0].dex)), ...openingDex(upcoming)]
-  for (const dex of queue) await loadSpecies(dex).catch(() => {})
-}
 
 /** A shared profile link (`/?u=handle`): the game opens on that profile, and closing it leaves the link. */
 const showSharedProfile = (handle: string) => {
@@ -1533,7 +1719,7 @@ const promptProfile = () => {
   })
 }
 
-/** Set when a newer build is live and a run held off the reload: the next trip to the lobby reloads. */
+/** Set when a newer build is live and a run held off the reload: the next trip to the lobby, or the next run, reloads. */
 let reloadForDeploy = false
 
 /** Whether the site now serves another build: the page's HTML, fetched fresh, misses one of this page's scripts. False offline. */
@@ -1543,24 +1729,53 @@ const newerBuild = async () => {
   return html !== null && scripts.some((path) => !html.includes(path))
 }
 
+/** Reloads into a newer build when one is live: right away in the menus (the save is local), or once the run is over. */
+const loadNewerBuild = () =>
+  void newerBuild().then((newer) => {
+    if (!newer) return
+    if (run) reloadForDeploy = true
+    else location.reload()
+  })
+
 /**
  * Each deploy renames the chunks loaded on demand (Novidades, Clerk) and drops
- * the old ones, so a game opened before it can't load them anymore. When a
- * chunk fails and a newer build is live, reload into it: right away in the
- * menus (the save is local), or once the run is over.
+ * the old ones, so a game opened before it can't load them anymore: when a
+ * chunk fails, load the newer build. Same when the API plays newer rules than
+ * this build (a ticket says so, or a result came back `outdated`): every
+ * ranked run this build plays would be refused.
  */
-const watchDeploys = () =>
-  addEventListener('vite:preloadError', () =>
-    void newerBuild().then((newer) => {
-      if (!newer) return
-      if (run) reloadForDeploy = true
-      else location.reload()
-    }),
-  )
+const watchDeploys = () => {
+  addEventListener('vite:preloadError', loadNewerBuild)
+  onRulesBehind(loadNewerBuild)
+}
+
+/** Counts a run the page died in, once, whether or not the player reports it: rare enough for an event of its own. */
+const reportCrash = (c: BugCrash) =>
+  track('run_crash', {
+    version: c.version,
+    sameVersion: c.version === __GAME_VERSION__,
+    at: c.at,
+    partner: c.run?.partner ?? null,
+    phase: c.run?.phase ?? null,
+    minute: c.run ? Math.floor(c.run.time / 60) : null,
+    enemies: c.run?.enemies ?? null,
+    projectiles: c.run?.projectiles ?? null,
+    wave: c.run?.wave || null,
+    boss: c.run?.boss || null,
+    place: c.run?.place || null,
+    heapMb: c.heapMb,
+    canvases: c.perf?.canvases ?? null,
+    canvasMb: c.perf?.canvasMb ?? null,
+    peakCanvasMb: c.perf?.peakCanvasMb ?? null,
+    frameMs: c.perf?.frameMs ?? null,
+    deviceMemory: deviceMemory(),
+    error: c.error?.message ?? null,
+  })
 
 /** The game closed mid-run last time (`takeCrash`): the title asks, once, whether to report it. */
 const askAboutCrash = () => {
   const crash = takeCrash()
+  if (crash) reportCrash(crash)
   if (!crash || !bugReportsEnabled || !screen?.el.classList.contains('title-home')) return
   crashPrompt(screen.el, () => setScreen(bugReportForm(ui, input, () => showTitle(), crash)))
 }
@@ -1583,7 +1798,9 @@ const boot = () => {
   askAboutCrash()
   requestAnimationFrame(frame)
   scheduleWarmUp(1000)
-  void preloadInBackground()
+  // The menus' sheets stream in one at a time, so the title stays responsive; from then on the stream follows the run.
+  syncSprites()
+  setInterval(syncSprites, SPRITE_SYNC)
   promptProfile()
   // Coming back to the game syncs again, but not mid-run: a run syncs when it ends.
   startAccount(() => run === null)
@@ -1728,13 +1945,14 @@ const devGifts = {
   /**
    * Puts a Mystery Gift in the lobby's gift box as if a sync listed it: `ps.gift('egg', 'friend')`, `ps.gift('coins', '500')`,
    * `ps.gift('title')`, `ps.gift('style', 'ambassador')` (a frame), `ps.gift('shinyHatch', 'munchlax')`,
-   * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice).
+   * `ps.gift('ribbon', 'gold')` (yesterday's challenge, #12 of 340), `ps.gift('shinyPick')` (a shiny of one's choice),
+   * `ps.gift('companion', 'pumpkaboo')` (a gift-only companion).
    * `why`: an inviter's handle (welcome) or a count of friends brought.
    */
   gift: (kind: GiftKind = 'egg', arg?: string, why?: string | number) => {
-    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' }, ribbon: { ribbon: { day: previousDay(brasiliaDay(today())), tier: arg ?? 'gold', rank: 12, total: 340 } }, shinyPick: {} }[kind]
+    const raw = { egg: { tier: arg ?? 'friend' }, coins: { amount: Number(arg ?? 500) }, title: { title: arg ?? 'ambassador' }, style: { style: { slot: 'frame', id: arg ?? 'ambassador' } }, shinyHatch: { family: arg ?? 'munchlax' }, ribbon: { ribbon: { day: previousDay(brasiliaDay(today())), tier: arg ?? 'gold', rank: 12, total: 340 } }, shinyPick: {}, companion: { id: arg ?? 'pumpkaboo' } }[kind]
     const content = parseGiftContent({ kind, ...raw })
-    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick'
+    if (!content) return 'Kinds: egg (tier), coins (amount), title, style (frame id), shinyHatch (family), ribbon (tier), shinyPick, companion (id)'
     const reason: GiftReason | null = typeof why === 'number' ? { kind: 'friends', count: why } : why ? { kind: 'welcome', from: why } : null
     return stageGifts([{ id: `dev-${Date.now()}`, content, reason }])
   },
@@ -1750,8 +1968,8 @@ const devGifts = {
         TIER_GIFTS[t].map((content, i) => ({ id: `dev-support-${t}-${i}-${Date.now()}`, content, reason: { kind: 'support', tier: t } as const })),
       ),
     ),
-  /** Takes `id` along as the companion (`shiny` if owned so); no argument walks alone. Shows from the next run. */
-  companion: (id?: PlayableId, shiny = false) => updateSave((s) => ({ ...s, companion: id ? { id, shiny } : null })),
+  /** Takes `id` along as the companion (`shiny` if owned so; a gift-only one like `pumpkaboo` must be owned); no argument walks alone. Shows from the next run. */
+  companion: (id?: CompanionId, shiny = false) => updateSave((s) => ({ ...s, companion: id ? { id, shiny } : null })),
   /** Lands as a guest invited by `handle` (shown as `name`): the title shows the invite banner. */
   invite: (handle = 'ash', name = 'Ash') => {
     stageInvite(handle, name)
@@ -1837,9 +2055,17 @@ if (import.meta.env.DEV) {
     ps: {
       run: () => run,
       startRun,
+      // Sheets loaded and frame silhouettes cached right now (`render/sprites.ts`).
+      sprites: () => ({ loaded: loadedCount(), overlays: overlayStats() }),
       showTitle,
       showMenu,
       theme: currentTheme,
+      /** `ps.quality('lean')` pins lean drawing (`'full'` full detail, `'auto'` back to the governor); returns the governor's state. */
+      quality: (pin?: 'auto' | 'lean' | 'full') => {
+        if (pin) qualityPin = pin
+        detail.lean = qualityPin === 'auto' ? governor.lean : qualityPin === 'lean'
+        return { pin: qualityPin, drawing: detail.lean ? 'lean' : 'full', governor: { ...governor } }
+      },
       spawn: devSpawn,
       alpha: devAlpha,
       mega: devMega,
@@ -1860,6 +2086,31 @@ if (import.meta.env.DEV) {
       },
       /** The lobby's meadow: its wanderers, the partner and the camera, to stage greetings (`ps.meadow().partner`). */
       meadow: () => scene,
+      /**
+       * Noite das Bruxas: moves the missions' clock to an event day (`2026-10-31` by default; `ps.halloween('2026-10-22')` for the
+       * countdown) and rebuilds the title; `ps.halloween(false)` goes back to now. Runs started then are haunted (dev only: the server
+       * would refuse them). `ps.candies(500)` sets the candy jar; `ps.pumpkin()` puts a jack-o'-lantern 40 px to the right of the player.
+       */
+      halloween: (day: string | false = '2026-10-31') => {
+        setToday(day ? new Date(`${day}T12:00-03:00`) : null)
+        upcoming = planRun()
+        void Promise.allSettled(HAUNT_DEX.map((dex) => loadSpecies(dex)))
+        showTitle()
+        return brasiliaDay(today())
+      },
+      candies: (n = 500) => {
+        updateSave((s) => ({ ...s, halloween: { ...s.halloween, candies: n } }))
+        showTitle()
+        return n
+      },
+      /** `ps.ghostHunt(n)` ticks the first `n` night bosses off the Caça aos Fantasmas (one short of all by default, so the next one completes it; 0 clears it). */
+      ghostHunt: (n = NIGHT_BOSSES.length - 1) => {
+        const hunted = NIGHT_BOSSES.slice(0, Math.max(0, n))
+        updateSave((s) => ({ ...s, halloween: { ...s.halloween, hunted } }))
+        showTitle()
+        return hunted
+      },
+      pumpkin: () => withRun((g) => g.props.push({ id: g.nextId++, cell: -1 - g.nextId, kind: 'pumpkin', x: g.player.x + 40, y: g.player.y, hp: 2, hitCooldown: 0, shake: 0 })),
       /** The Caixa do PC over the title; `ps.card()` opens the Trainer Card's share preview. */
       pc: () => (endRun(), setScreen(showPcBox(() => showTitle()))),
       card: (partner: PlayableId = loadSave().partner) => (endRun(), setScreen(sharePreview(ui, input, trainerShare(partner), () => showTitle()))),

@@ -51,6 +51,23 @@ describe('bugThread', () => {
     expect(t.name.length).toBeLessThanOrEqual(100)
   })
 
+  it('shows the load at the crash: canvas memory, frame pace and what was on the field', () => {
+    const perf = { canvases: 412, canvasMb: 38.5, peakCanvases: 530, peakCanvasMb: 51.2, frameMs: 17.1 }
+    const run = { partner: 'pichu', enemies: 240, projectiles: 85, wave: 'boss', boss: 'onix', place: '' }
+    const t = bugThread(report('Closed in the boss fight', { userAgent: ANDROID, perf, crash: { at: 'x', run, perf } }), 'a guest')
+    expect(t.messages[0]).toContain('canvas: 412 (38.5 MB, peak 51.2 MB / 530) · frame 17.1 ms')
+    expect(t.messages[0]).toContain('240 enemies · 85 projectiles · wave boss · boss onix')
+    expect(t.messages[0]).toContain('  then canvas: 412')
+  })
+
+  it('moves the technical info to a message of its own rather than cut the player’s words', () => {
+    const run = { partner: 'p'.repeat(40), form: 'f'.repeat(40), boss: 'b'.repeat(40), place: 'q'.repeat(40) }
+    const tech = { userAgent: ANDROID.repeat(3), view: 'v'.repeat(60), perf: {}, run, crash: { at: 'x', run, perf: {} } }
+    const t = bugThread(report('x'.repeat(1000), tech), 'a guest')
+    expect(t.messages[0]).toContain('x'.repeat(999))
+    expect(t.messages[1]).toMatch(/^```\nversion:/)
+  })
+
   it('says when the report came without technical info', () => {
     const t = bugThread(report('Something broke', null), 'a guest')
     expect(t.tags).toEqual(['Open'])

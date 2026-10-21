@@ -22,7 +22,8 @@ import { ROUTES, SOCIAL_IDS, SOCIALS, type SocialId } from '../site/routes'
 import { fetchWall } from '../supporters'
 import { h, later, rich } from './dom'
 import { boundKey } from './inputLabels'
-import { challengeToday, loadAttempt, loadSave, outbreakToday, today } from './save'
+import { challengeToday, halloweenToday, loadAttempt, loadSave, outbreakToday, today } from './save'
+import { halloweenCard, halloweenCardShows } from './halloween'
 import { contentLine } from './gifts'
 import { countedFriends, loadInvites } from './invites'
 import { isUnread, latestUpdate } from './news'
@@ -41,6 +42,7 @@ export type LobbyFocus =
   | 'discord'
   | 'help'
   | 'settings'
+  | 'halloween'
   | 'outbreak'
   | 'challenge'
   | 'missions'
@@ -88,6 +90,8 @@ export type TitleActions = {
    * title (the language may have changed), highlighting `focus`.
    */
   settings: (focus: LobbyFocus) => Screen
+  /** Opens the Noite das Bruxas screen (its Hoje card) over the title, like `settings`. */
+  halloween: (focus: LobbyFocus) => Screen
   /** Opens Novidades (the newest update's highlights) over the title, like `settings`. */
   news: (focus: LobbyFocus) => Screen
   /** Opens the Discord screen (the community server, linking a Discord account) over the title, like `settings`. */
@@ -221,13 +225,17 @@ const newsButton = (onClick: () => void) => {
   const m = t().news
   const el = iconButton(newsIcon(), m.open, onClick, 'N')
   el.classList.add('lobby-news')
-  void latestUpdate().then((update) => {
-    if (!isUnread(update)) return
-    el.classList.add('unread')
-    el.setAttribute('aria-label', m.unread)
-    el.title = m.unread
-    el.append(h('em', { class: 'lobby-badge' }, '!'))
-  })
+  // A chunk that didn't load (a deploy renamed it, the network dropped) just leaves the badge off.
+  void latestUpdate().then(
+    (update) => {
+      if (!isUnread(update)) return
+      el.classList.add('unread')
+      el.setAttribute('aria-label', m.unread)
+      el.title = m.unread
+      el.append(h('em', { class: 'lobby-badge' }, '!'))
+    },
+    () => {},
+  )
   return el
 }
 
@@ -563,7 +571,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   const lang = locale()
 
   const logo = h('canvas', { class: 'title-logo', width: 1, height: 1, 'aria-hidden': 'true' })
-  void titleLogo().then((sprite) => {
+  void titleLogo(halloweenToday()).then((sprite) => {
     logo.width = sprite.width
     logo.height = sprite.height
     context2d(logo).drawImage(sprite, 0, 0)
@@ -575,7 +583,8 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
   // The top bar waits for the lobby: the intro is just the logo and "press start".
   let bar: HTMLElement = h('span', { class: 'hidden' })
   const intro = shellBody(h('h1', { class: 'sr-only' }, 'Pokémon Survivors'), logo, prompt)
-  const el = h('div', { class: 'screen shell title-home' }, bar, intro)
+  // The Noite das Bruxas dresses the lobby in orange and purple (`style.css`).
+  const el = h('div', { class: halloweenToday() ? 'screen shell title-home haunted' : 'screen shell title-home' }, bar, intro)
 
   let lobby: HTMLElement | null = null
   let tickers: ((time: number) => void)[] = []
@@ -630,6 +639,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
     help: () => location.assign(ROUTES.guide[lang]),
     settings: () => openOver(actions.settings),
     news: () => openOver(actions.news),
+    halloween: () => openOver(actions.halloween),
     discord: () => openOver(actions.discord),
     outbreak: () => toast(root, rich(`*${ENEMIES[outbreakToday()].name}*: ${t().outbreak.blurb}`), 3600, 'outbreak'),
     challenge: actions.challenge,
@@ -712,6 +722,7 @@ export const titleScreen = (root: HTMLElement, input: Input, actions: TitleActio
       'section',
       { class: 'lobby-today', 'aria-label': m.today },
       h('h2', { class: 'lobby-rail-label' }, m.today),
+      ...(halloweenCardShows() ? [pressable(halloweenCard(), 'halloween')] : []),
       pressable(outbreak.el, 'outbreak'),
       pressable(challengeCard(), 'challenge'),
       pressable(missionsCard(), 'missions'),

@@ -1,5 +1,6 @@
 import { Worker } from 'node:worker_threads'
 import { outbreakFits } from '../../src/game/outbreak'
+import { halloweenFits } from '../../src/game/halloween'
 import { BOARD_SIZE } from '../../src/game/ranking'
 import { parseReplay, rulesStanding, type Replay, type Resimulated } from '../../src/game/replay'
 import type { RankingStore } from './ranking'
@@ -66,7 +67,8 @@ export const CHECKED = { top: { global: BOARD_SIZE, starter: 3 }, sample: 0.05 }
  * level-up (the log notes it), and then shows the branch its replay took,
  * whatever the game said; otherwise it's marked failed and
  * leaves the boards. A replay that played another day's outbreak
- * (`outbreakFits`) fails without re-simulating. When the machinery fails
+ * (`outbreakFits`), or a haunted run outside the Noite das Bruxas
+ * (`halloweenFits`), fails without re-simulating. When the machinery fails
  * instead, the run stays pending for the next start.
  * Only replays of this build's rules are judged (`RULES_VERSION`): an older
  * one (a run that straddled a balance deploy) loses its replay and stays
@@ -105,6 +107,12 @@ export const createChecks = (ranking: RankingStore) => {
         if (parsed && !outbreakFits(parsed.start.outbreak, reported.startedAt)) {
           await ranking.setVerified(id, reported.time, { ok: false }, null)
           console.log(`check ${id}: failed, outbreak ${parsed.start.outbreak} isn't the one of ${reported.startedAt.toISOString()}`)
+          continue
+        }
+        // So is the Noite das Bruxas: a haunted run must have started on one of its days.
+        if (parsed && !halloweenFits(parsed.start.halloween, reported.startedAt)) {
+          await ranking.setVerified(id, reported.time, { ok: false }, null)
+          console.log(`check ${id}: failed, haunted run outside the event (${reported.startedAt.toISOString()})`)
           continue
         }
         const answer = await run(id, reported.replay)

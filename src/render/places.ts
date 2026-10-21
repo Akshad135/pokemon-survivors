@@ -1,4 +1,4 @@
-import { blitCentered, blitRotated, canvasCache, context2d, createCanvas, ellipse, lazy, onCanvasReset, type PixelSprite } from '../engine/pixelart'
+import { blitCentered, blitEllipse, blitRotated, canvasCache, context2d, createCanvas, lazy, onCanvasReset, type PixelSprite } from '../engine/pixelart'
 import { TAU } from '../engine/math'
 import { hash2 } from '../engine/rng'
 import type { ArenaShape, FloorPlan, Pt } from '../data/arenas'
@@ -182,6 +182,13 @@ const bakeGraveyard = (floor: readonly ArenaShape[], graves: readonly Pt[], keys
 let baked: { layout: FloorPlan; floor: Baked; fence: Baked | null } | null = null
 onCanvasReset(() => (baked = null))
 
+/** Frees the last place's baked floor (a few MB) once the player is back outside (`warmScenery`). */
+export const dropPlaceFloor = () => {
+  if (!baked) return
+  for (const b of [baked.floor, baked.fence]) if (b) b.canvas.width = b.canvas.height = 0
+  baked = null
+}
+
 const bakedFloor = (inside: PlaceInterior) => {
   if (baked?.layout === inside.layout) return baked
   if (inside.id === 'graveyard') {
@@ -321,7 +328,7 @@ export const drawPlaceGround = (ctx: Ctx, g: Game, t: number) => {
       const y = inside.y + s.stairs[1]
       // A soft glow under the stairs, then the stairs, with a glint running down the steps so they catch the eye in the dark.
       ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.12
-      blitCentered(ctx, ellipse(14, 10, '#f8e8b0'), x, y)
+      blitEllipse(ctx, 14, 10, '#f8e8b0', x, y)
       ctx.globalAlpha = 1
       blitCentered(ctx, STAIRS(), x, y)
       const k = Math.floor(t * 10) % 16
@@ -345,7 +352,7 @@ const drawKeystoneAura = (ctx: Ctx, inside: PlaceInteriorOf<'graveyard'>, t: num
   const y = inside.y + s.keystone[1]
   const k = s.spirits / GRAVEYARD.spirits
   ctx.globalAlpha = 0.25 + k * 0.35 + Math.sin(t * (2 + k * 6)) * 0.08
-  blitCentered(ctx, ellipse(16 + Math.round(k * 8), 6 + Math.round(k * 3), '#7860a8'), x, y)
+  blitEllipse(ctx, 16 + Math.round(k * 8), 6 + Math.round(k * 3), '#7860a8', x, y)
   ctx.globalAlpha = 1
   const n = Math.ceil(s.spirits / 2)
   for (let i = 0; i < n; i++) {
@@ -398,7 +405,7 @@ export const drawWings = (ctx: Ctx, g: Game, t: number) => {
     const y = w.y - 4 + Math.sin(w.age * 2.2) * 2
     // A soft halo so it stands out against the clouds.
     ctx.globalAlpha = 0.45 + Math.sin(t * 4 + w.id) * 0.15
-    blitCentered(ctx, ellipse(8, 8, WING_COLORS[w.wing][2]), w.x, y)
+    blitEllipse(ctx, 8, 8, WING_COLORS[w.wing][2], w.x, y)
     ctx.globalAlpha = 1
     blitRotated(ctx, wingSprite(w.wing), w.x, y, tilt)
     if (Math.floor(t * 6 + w.id) % 7 === 0) {
@@ -604,14 +611,14 @@ const drawGateFog = (ctx: Ctx, ent: PlaceEntrance, t: number) => {
   for (let i = 0; i < 3; i++) {
     const wx = x - 50 + i * 46 + Math.sin(t * 0.9 + i * 2) * 6
     const wy = y - 34 - Math.sin(t * 1.7 + i) * 4
-    blitCentered(ctx, ellipse(2, 3, 'rgba(184,152,248,0.45)'), wx, wy)
-    blitCentered(ctx, ellipse(1, 2, '#e0d0ff'), wx, wy)
+    blitEllipse(ctx, 2, 3, 'rgba(184,152,248,0.45)', wx, wy)
+    blitEllipse(ctx, 1, 2, '#e0d0ff', wx, wy)
   }
   // Fog rolling out under the gate.
   ctx.globalAlpha = 0.35
   for (let i = 0; i < 5; i++) {
     const k = (t * 0.15 + i / 5) % 1
-    blitCentered(ctx, ellipse(10 + Math.round(k * 8), 3, '#b8b0c8'), x - 12 + (i % 3) * 12 + Math.sin(t + i) * 3, y + 2 + k * 10)
+    blitEllipse(ctx, 10 + Math.round(k * 8), 3, '#b8b0c8', x - 12 + (i % 3) * 12 + Math.sin(t + i) * 3, y + 2 + k * 10)
   }
   ctx.globalAlpha = 1
   if (!ent.open) {
@@ -630,7 +637,7 @@ const drawUpdraft = (ctx: Ctx, ent: PlaceEntrance, t: number) => {
   const y = ent.y
   // A glow on the platform, then arcs of wind spiraling up out of it, widening as they rise.
   ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.1
-  blitCentered(ctx, ellipse(22, 8, '#e8f8ff'), x, y)
+  blitEllipse(ctx, 22, 8, '#e8f8ff', x, y)
   for (let i = 0; i < 7; i++) {
     const k = (t * 0.45 + i / 7) % 1
     const r = 14 + k * 16

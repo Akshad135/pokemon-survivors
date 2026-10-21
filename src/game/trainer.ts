@@ -2,8 +2,8 @@ import { PLAYABLE, type PlayableId } from '../data/hatchlings'
 import { formAt } from './branch'
 import type { Save } from './meta'
 import { playsShiny } from './shinyPicks'
-import { ownsStyle } from './style'
-import { canWalkWith, isSupporter, type Companion, type SupporterTier } from './supporters'
+import { isSpecialCompanion, SPECIAL_COMPANIONS } from '../data/companions'
+import { canWalkWith, isGoldSupporter, isSupporter, type Companion, type SupporterTier } from './supporters'
 
 /**
  * The trainer's face on the Trainer chip and card: the supporter's companion
@@ -12,7 +12,9 @@ import { canWalkWith, isSupporter, type Companion, type SupporterTier } from './
  */
 export const trainerAvatar = (save: Save) => {
   const companion = save.companion && isSupporter(save) && canWalkWith(save, save.companion) ? save.companion : null
-  const id: PlayableId = companion?.id ?? save.partner
+  const walking = companion?.id
+  if (walking !== undefined && isSpecialCompanion(walking)) return { dex: SPECIAL_COMPANIONS[walking].dex, shiny: companion?.shiny === true }
+  const id: PlayableId = walking ?? save.partner
   const shiny = companion ? companion.shiny : playsShiny(save, id)
   // A branching family wears the branch it took last (an Espeon trainer stays an Espeon).
   return { dex: formAt(id, save.branches[id] ?? null, PLAYABLE[id].line.length - 1).dex, shiny }
@@ -22,8 +24,7 @@ export const trainerAvatar = (save: Save) => {
  * The supporter tier this save got the thank-you of, without asking the API:
  * the Supporter title, and the gold background on top of it at gold.
  */
-export const savedSupporterTier = (save: Save): SupporterTier | null =>
-  !isSupporter(save) ? null : ownsStyle(save.style, 'background', 'supporter') ? 'gold' : 'supporter'
+export const savedSupporterTier = (save: Save): SupporterTier | null => (!isSupporter(save) ? null : isGoldSupporter(save) ? 'gold' : 'supporter')
 
 /**
  * The Pokémon a supporter stands with on the Hall da Fama (the API reads it

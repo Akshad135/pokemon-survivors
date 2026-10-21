@@ -1,4 +1,5 @@
 import { GIFT_TITLES, type GiftTitleId } from '../data/achievements'
+import { isSpecialCompanion, type SpecialCompanionId } from '../data/companions'
 import { parseTitle } from './achievements'
 import { HATCHLING_IDS, HATCHLINGS, type HatchlingId } from '../data/hatchlings'
 import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
@@ -35,14 +36,17 @@ export type GiftContent =
   | { kind: 'ribbon'; ribbon: Ribbon }
   /** A shiny of the player's choice, picked later (`game/shinyPicks.ts`): the supporters' thank-you. */
   | { kind: 'shinyPick' }
+  /** A gift-only companion (`data/companions.ts`), taken along at once. */
+  | { kind: 'companion'; id: SpecialCompanionId }
 
 export type GiftKind = GiftContent['kind']
 
 /**
  * Why it came: an invite's welcome (from the inviter's handle), friends
  * brought, a donation (`game/supporters.ts`), a present from the game's
- * admin (`game/admin.ts`, from their handle), or joining the community
- * Discord with the account linked (`DISCORD_GIFT`).
+ * admin (`game/admin.ts`, from their handle), joining the community
+ * Discord with the account linked (`DISCORD_GIFT`), the Noite das Bruxas
+ * candy jar and Caça aos Fantasmas, or supporting the game on the Noite das Bruxas.
  */
 export type GiftReason =
   | { kind: 'welcome'; from: string | null }
@@ -50,6 +54,12 @@ export type GiftReason =
   | { kind: 'support'; tier: SupporterTier }
   | { kind: 'staff'; from: string | null }
   | { kind: 'discord' }
+  /** The Noite das Bruxas candy jar (`game/halloween.ts`): made by the game, never listed by the API. */
+  | { kind: 'halloween' }
+  /** Being a supporter on the Noite das Bruxas (`game/halloween.ts`): made by the game too. */
+  | { kind: 'halloweenSupport' }
+  /** The Noite das Bruxas Caça aos Fantasmas, every night boss beaten (`game/halloween.ts`): made by the game too. */
+  | { kind: 'ghostHunt' }
 
 export type Gift = { id: string; content: GiftContent; reason: GiftReason | null }
 
@@ -101,6 +111,8 @@ export const parseGiftContent = (v: unknown): GiftContent | null => {
     }
     case 'shinyPick':
       return { kind: 'shinyPick' }
+    case 'companion':
+      return isSpecialCompanion(v.id) ? { kind: 'companion', id: v.id } : null
     default:
       return null
   }
@@ -113,6 +125,9 @@ const parseReason = (v: unknown): GiftReason | null => {
   if (v.kind === 'support' && isSupporterTier(v.tier)) return { kind: 'support', tier: v.tier }
   if (v.kind === 'staff') return { kind: 'staff', from: parseHandle(v.from) }
   if (v.kind === 'discord') return { kind: 'discord' }
+  if (v.kind === 'halloween') return { kind: 'halloween' }
+  if (v.kind === 'halloweenSupport') return { kind: 'halloweenSupport' }
+  if (v.kind === 'ghostHunt') return { kind: 'ghostHunt' }
   return null
 }
 
@@ -158,7 +173,8 @@ const wear = (style: StyleSave, ref: StyleRef): StyleSave => {
 /**
  * The content on the save, with the hatch to show if it was one. Titles and
  * styles are worn right away; a ribbon joins the day's; a shiny pick leaves
- * its ticket (under the gift's `id`) for the player to spend.
+ * its ticket (under the gift's `id`) for the player to spend; a companion
+ * walks along from the next run.
  */
 const give = (save: Save, content: GiftContent, id: string): { save: Save; hatch: Hatch | null } => {
   switch (content.kind) {
@@ -176,6 +192,11 @@ const give = (save: Save, content: GiftContent, id: string): { save: Save; hatch
       return { save: { ...save, ribbons: mergeRibbons(save.ribbons, [content.ribbon]) }, hatch: null }
     case 'shinyPick':
       return { save: grantShinyPick(save, id), hatch: null }
+    case 'companion':
+      return {
+        save: { ...save, companions: save.companions.includes(content.id) ? save.companions : [...save.companions, content.id], companion: { id: content.id, shiny: false } },
+        hatch: null,
+      }
   }
 }
 

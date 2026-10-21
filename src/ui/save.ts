@@ -5,6 +5,7 @@ import { dailyChallenge } from '../game/challenge'
 import { brasiliaDay } from '../game/day'
 import { counterOf } from '../game/mart'
 import { outbreakAt } from '../game/outbreak'
+import { isHalloweenDay } from '../game/halloween'
 import { depositEggs, type Egg } from '../game/eggs'
 import { parseSave, recordHatch, recordRun, type Save } from '../game/meta'
 import type { RunSummary } from '../game/tally'
@@ -59,11 +60,15 @@ export const bankEggs = (steps: number, found: readonly Egg[]) => {
 /** Dev-only shift of the missions' clock (`ps.date`), in ms. */
 let clockOffset = 0
 
+/** `halloweenToday`'s answer and the minute it was worked out for. */
+let haunted = { minute: -1, on: false }
+
 /** The date missions are drawn for: the local clock, unless the dev console moved it. */
 export const today = () => new Date(Date.now() + clockOffset)
 
 export const setToday = (date: Date | null) => {
   clockOffset = date ? date.getTime() - Date.now() : 0
+  haunted = { minute: -1, on: false }
 }
 
 /** Dev-only outbreak held instead of the day's (`ps.outbreak`). */
@@ -78,6 +83,21 @@ export const outbreakToday = (dealt: EnemyId | null = null): EnemyId => outbreak
 
 export const setOutbreak = (id: EnemyId | null) => {
   outbreakOverride = id
+}
+
+/**
+ * Whether today (Brasília, on the missions' clock) is a Noite das Bruxas day:
+ * runs are haunted and the lobby dresses for it. Asked every frame (the
+ * menus' music), so it's worked out once a minute. A ranked run passes the
+ * answer the API dealt with its ticket (`dealt`), which a wrong device clock
+ * can't move, unless the dev console moved the clock (`ps.halloween`).
+ */
+export const halloweenToday = (dealt: boolean | null = null) => {
+  if (dealt !== null && clockOffset === 0) return dealt
+  const now = today()
+  const minute = Math.floor(now.getTime() / 60_000)
+  if (haunted.minute !== minute) haunted = { minute, on: isHalloweenDay(brasiliaDay(now)) }
+  return haunted.on
 }
 
 /** Today's Desafio do dia (Brasília day, on the missions' clock). */

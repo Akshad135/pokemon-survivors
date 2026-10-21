@@ -113,6 +113,13 @@ const SFX = {
     tone(1319, 1319, 0.14, 'square', 0.1, 0.05)
   },
   buy: () => [1319, 1568, 2093].forEach((f, i) => tone(f, f, 0.08, 'square', 0.1, i * 0.06)),
+  /** A Noite das Bruxas candy: a sugary bloop up. */
+  treat: () => {
+    tone(784, 1175, 0.06, 'triangle', 0.12)
+    tone(1568, 1568, 0.08, 'triangle', 0.08, 0.05)
+  },
+  /** A jack-o'-lantern's trick: a ghostly wail sliding down a minor arpeggio. */
+  trick: () => [659, 622, 523, 415].forEach((f, i) => tone(f, f * 0.94, 0.22, 'triangle', 0.14, i * 0.12)),
   denied: () => tone(160, 120, 0.16, 'square', 0.12),
   select: () => tone(660, 990, 0.08, 'square', 0.12),
   move: () => tone(440, 440, 0.04, 'square', 0.06),

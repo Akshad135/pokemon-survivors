@@ -4,6 +4,7 @@ import { PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
 import { brasiliaDay, dayNumber, msSinceDayStart, previousDay, type DayKey } from './day'
 import type { Difficulty } from './difficulty'
 import { NO_RANKS, UPGRADE_IDS } from './meta'
+import { isHalloweenDay } from './halloween'
 import { outbreakOf } from './outbreak'
 import type { ReplayStart } from './replay'
 
@@ -14,7 +15,7 @@ import type { ReplayStart } from './replay'
  * included: a taste of it) and the difficulty. The Poké Mart's upgrades, the
  * Bag's Lure and Incense, the Shiny Charm and the first run's lucky egg are
  * off, so the board is clean; the day's outbreak stays on (it's the day's
- * too). Only the first finished run of each player counts on the challenge
+ * too), and so does the Noite das Bruxas on its days. Only the first finished run of each player counts on the challenge
  * board (the API decides, `server/src/ranking.ts`); the rest are practice.
  * The shell plays it like any run, so replays and their check are the same.
  * Pure; shared with the API.
@@ -29,7 +30,7 @@ export const CHALLENGE = {
   settleMs: 3 * 3_600_000,
 } as const
 
-export type Challenge = { day: DayKey; seed: number; starter: PlayableId; difficulty: Difficulty; outbreak: EnemyId }
+export type Challenge = { day: DayKey; seed: number; starter: PlayableId; difficulty: Difficulty; outbreak: EnemyId; halloween: boolean }
 
 /** A seeded shuffle of every playable Pokémon: one cycle of days gives each one its day. */
 const cycleOrder = (cycle: number) => {
@@ -53,6 +54,7 @@ export const dailyChallenge = (day: DayKey): Challenge => {
     starter: cycleOrder(Math.floor(n / size))[((n % size) + size) % size]!,
     difficulty: weightedPick(rng, CHALLENGE.difficulty),
     outbreak: outbreakOf(day),
+    halloween: isHalloweenDay(day),
   }
 }
 
@@ -65,16 +67,17 @@ export const challengeStart = (c: Challenge, view: { w: number; h: number }, shi
   shiny,
   luckyEgg: false,
   outbreak: c.outbreak,
+  halloween: c.halloween,
   lure: false,
   incense: false,
   view: { w: view.w, h: view.h },
 })
 
-export type ChallengeProblem = 'seed' | 'starter' | 'difficulty' | 'ranks' | 'items' | 'outbreak'
+export type ChallengeProblem = 'seed' | 'starter' | 'difficulty' | 'ranks' | 'items' | 'outbreak' | 'halloween'
 
 /**
  * Why a run's start isn't `day`'s challenge, or null when it is: the same
- * seed, Pokémon, difficulty and outbreak, no upgrade, no Lure, Incense or
+ * seed, Pokémon, difficulty, outbreak and haunting, no upgrade, no Lure, Incense or
  * lucky egg. The shiny colors are free (they don't touch the run).
  */
 export const challengeProblem = (start: ReplayStart, day: DayKey): ChallengeProblem | null => {
@@ -84,6 +87,7 @@ export const challengeProblem = (start: ReplayStart, day: DayKey): ChallengeProb
   if (start.difficulty !== c.difficulty) return 'difficulty'
   if (UPGRADE_IDS.some((id) => start.ranks[id] !== 0)) return 'ranks'
   if (start.lure || start.incense || start.luckyEgg) return 'items'
+  if (start.halloween !== c.halloween) return 'halloween'
   return start.outbreak === c.outbreak ? null : 'outbreak'
 }
 
