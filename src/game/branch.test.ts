@@ -62,7 +62,7 @@ describe('drawBranches', () => {
 })
 
 describe('replays', () => {
-  const start: ReplayStart = { seed: 11, starter: 'eevee', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
+  const start: ReplayStart = { seed: 11, starter: 'eevee', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
   /** Eevee at its evolution level, the branch pick open. */
   const staged = () => {
     const g = startGame(start)

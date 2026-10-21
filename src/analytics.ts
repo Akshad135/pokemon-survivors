@@ -4,6 +4,7 @@ import type { BranchId } from './data/branches'
 import type { EnemyId } from './data/enemies'
 import type { PlayableId } from './data/hatchlings'
 import type { MegaId } from './data/megas'
+import type { BagItem } from './data/shop'
 import type { SurveyAnswer } from './data/survey'
 import type { Difficulty } from './game/difficulty'
 import type { RunMode } from './game/ranking'
@@ -43,6 +44,10 @@ type AnalyticsEvents = {
     /** What landed the last hit of a faint: the foe's species (null for a hazard) and the kind of hit. */
     foe: EnemyId | null
     hit: HitKind | null
+    /** ₽ the run banked (coins, plus the end bonus when it got it), to tune the economy. */
+    coins: number
+    /** The Bag items the run took (`ReplayStart.bag`). */
+    bag: BagItem[]
     challenge?: 'official' | 'practice'
     /** How the device coped: canvas memory at its peak (MB, `createCanvas`), `navigator.deviceMemory` (GB), and the frames while playing (ms; long: past 50 ms). */
     peakCanvasMb: number

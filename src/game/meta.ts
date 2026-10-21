@@ -11,7 +11,7 @@ import { parseClaimedGifts } from './gifts'
 import { NO_HALLOWEEN, parseHalloween, recordHunt, type HalloweenSave } from './halloween'
 import { NO_MISSIONS, parseMissions, recordHatchMissions, recordMissions, type Mission, type MissionsSave } from './missions'
 import { addToBag, EMPTY_BAG, parseBag, type Bag, type BagItem } from './bag'
-import { NO_COUNTER, parseCounter, type CounterSave } from './mart'
+import { NO_SHOP, parseShop, type ShopSave } from './shop'
 import { isRecord, wholeNumber } from './parse'
 import { parseRibbons, type Ribbon } from './ribbons'
 import { NO_STYLES, parseStyle, type StyleSave } from './style'
@@ -125,13 +125,13 @@ export type Save = {
   partner: PlayableId
   /** Shiny starters unlocked by a lucky roll, and the Normal/Shiny pick of each (`game/shinyStarters.ts`). */
   shinyStarters: ShinyStarters
-  /** Lures and Incenses, and the ones armed for the next run (`game/bag.ts`). */
+  /** The Bag's consumables, and the ones armed for the next run (`game/bag.ts`). */
   bag: Bag
-  /** What was bought from the Poké Mart's daily counter today (`game/mart.ts`). */
-  counter: CounterSave
+  /** The Kecleon Shop: its level, what was bought from today's Vitrine, the gift and the wishlist (`game/shop.ts`). */
+  shop: ShopSave
   /** Card frames, backgrounds and PC wallpapers owned and worn (`game/style.ts`). */
   style: StyleSave
-  /** ₽ ever spent at the counter and on styles: the sync counts it as part of the fortune (`game/sync.ts`). */
+  /** ₽ ever spent on the Vitrine and on styles: the sync counts it as part of the fortune (`game/sync.ts`). */
   spent: number
   /** Titles a Mystery Gift gave (the Ambassador's); medal titles come from `achievements`. */
   titles: readonly GiftTitleId[]
@@ -185,7 +185,7 @@ export const EMPTY_SAVE: Save = {
   partner: DEFAULT_PARTNER,
   shinyStarters: NO_SHINY_STARTERS,
   bag: EMPTY_BAG,
-  counter: NO_COUNTER,
+  shop: NO_SHOP,
   style: NO_STYLES,
   spent: 0,
   titles: [],
@@ -249,7 +249,8 @@ export const parseSaveData = (json: unknown): Save => {
     partner: isPlayable(data.partner) ? data.partner : DEFAULT_PARTNER,
     shinyStarters: parseShinyStarters(data.shinyStarters),
     bag: parseBag(data.bag),
-    counter: parseCounter(data.counter),
+    // A save from before the Kecleon Shop brings its Balcão do dia counts.
+    shop: parseShop(data.shop, data.counter),
     style: parseStyle(data.style),
     spent: wholeNumber(data.spent),
     titles,

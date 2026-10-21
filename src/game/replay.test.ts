@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
-import { chooseOffer, step, takeBerryLevelUps } from './game'
+import { chooseOffer, drafting, step, takeBerryLevelUps } from './game'
+import { hurtPlayer } from './combat'
+import { BAG_ITEM_IDS, MAX_BAG_SLOTS } from '../data/shop'
 import { ITEM_IDS, ITEMS } from '../data/items'
 import { maxMoveLevel, type MoveId } from './moves'
 import { LEGENDARY_MOVES_2 } from './legendaryMoves2'
@@ -28,7 +30,7 @@ import { moveCode, moveOf, parseReplay, recordEvent, recordStep, resimulate, RUL
 
 const LEGENDARY_IDS_2 = Object.keys(LEGENDARY_MOVES_2) as MoveId[]
 
-const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
 
 /**
  * Plays `seconds` like the shell would, with a wandering stick, picks and a
@@ -220,13 +222,67 @@ describe('replays', () => {
   })
 
   it("re-simulate a run of the day's outbreak with a Lure and an Incense, which change how it plays", () => {
-    const start: ReplayStart = { ...START, outbreak: OUTBREAK_SPECIES[0]!, lure: true, incense: true }
+    const start: ReplayStart = { ...START, outbreak: OUTBREAK_SPECIES[0]!, bag: ['lure', 'incense'] }
     const { g, replay } = play(40, start)
     expect(g.roster.stages.every((pool) => pool.some(([id]) => id === start.outbreak))).toBe(true)
     expect(g.shinyBoost).toBe(2)
     expect(resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
     expect(resimulate({ ...replay, start: { ...replay.start, outbreak: null } })).not.toEqual(resimulate(replay))
     expect(parseReplay({ ...JSON.parse(JSON.stringify(replay)), start: { ...replay.start, outbreak: 'mewtwo' } })!.start.outbreak).toBeNull()
+  })
+
+  it('re-simulate runs with each Bag item', () => {
+    const outbreak = OUTBREAK_SPECIES[0]!
+    for (const id of BAG_ITEM_IDS) {
+      const start: ReplayStart = { ...START, outbreak, bag: [id] }
+      const { g, replay } = play(45, start)
+      const again = resimulate(parseReplay(JSON.parse(JSON.stringify(replay)))!)
+      expect(again, id).toEqual({ time: g.time, kills: g.kills, level: g.player.level, branch: g.branch, phase: g.phase, stuck: false })
+    }
+  }, 30_000)
+
+  it('starts a Rare Candy run at Lv 3, its two level-ups right after the opening draft', () => {
+    const g = startGame({ ...START, bag: ['rareCandy'] })
+    expect(g.player.level).toBe(3)
+    expect(g.pendingLevelUps).toBe(3)
+    expect(drafting(g)).toBe(true)
+    chooseOffer(g, g.offers[0]!)
+    expect(g.phase).toBe('levelup')
+    expect(drafting(g)).toBe(false)
+    chooseOffer(g, g.offers[0]!)
+    chooseOffer(g, g.offers[0]!)
+    expect(g.phase).toBe('playing')
+    expect(g.player.level).toBe(3)
+  })
+
+  it('stacks the stat items on the run, makes Honey double the outbreak and saves the first faint once with a Max Revive', () => {
+    const outbreak = OUTBREAK_SPECIES[0]!
+    const plain = startGame({ ...START, outbreak })
+    const boosted = startGame({ ...START, outbreak, bag: ['luckyEgg', 'luckIncense', 'xAttack', 'honey'] })
+    expect(boosted.player.stats.growth - plain.player.stats.growth).toBeCloseTo(0.25)
+    expect(boosted.player.stats.greed - plain.player.stats.greed).toBeCloseTo(0.5)
+    expect(boosted.player.stats.might - plain.player.stats.might).toBeCloseTo(0.1)
+    const weight = (g: Game) => g.roster.stages[0]!.find(([id]) => id === outbreak)![1]
+    expect(weight(boosted)).toBe(weight(plain) * 2)
+    const g = startGame({ ...START, bag: ['maxRevive'] })
+    chooseOffer(g, g.offers[0]!)
+    const foe = spawnEnemy(g, 'rattata', g.player.x + 4, g.player.y)
+    hurtPlayer(g, 9999, foe)
+    expect(g.phase).toBe('playing')
+    expect(g.player.hp).toBe(Math.round(g.player.stats.maxHp / 2))
+    expect(g.events.some((e) => e.kind === 'maxRevive')).toBe(true)
+    g.player.iframes = 0
+    hurtPlayer(g, 9999, foe)
+    expect(g.phase).toBe('gameover')
+  })
+
+  it("rejects a replay's Bag that repeats an item or takes more than any shop level allows, and reads older ones", () => {
+    const raw = (bag: unknown, extra = {}) => ({ rules: RULES_VERSION, start: { ...START, bag, ...extra }, moves: [], events: [] })
+    expect(parseReplay(raw(['lure', 'lure']))).toBeNull()
+    expect(parseReplay(raw(['lure', 'rocket']))).toBeNull()
+    expect(parseReplay(raw(BAG_ITEM_IDS.slice(0, MAX_BAG_SLOTS + 1)))).toBeNull()
+    expect(parseReplay(raw(['maxRevive', 'lure']))!.start.bag).toEqual(['lure', 'maxRevive'])
+    expect(parseReplay(raw(undefined, { lure: true, incense: true }))!.start.bag).toEqual(['lure', 'incense'])
   })
 
   it('re-simulate a haunted run (Noite das Bruxas): its ghosts, candies and jack-o\'-lanterns, tricks included', () => {

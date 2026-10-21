@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng'
 import { PLAYABLE_IDS } from '../data/hatchlings'
+import { BAG_ITEM_IDS } from '../data/shop'
 import { challengeOpen, challengeProblem, challengeStart, dailyChallenge, ribbonsDue } from './challenge'
 import { previousDay } from './day'
 import { chooseOffer, step } from './game'
@@ -41,8 +42,7 @@ describe('challengeProblem', () => {
   it('refuses upgrades, Bag items and the lucky egg', () => {
     expect(challengeProblem({ ...start, ranks: { ...NO_RANKS, protein: 1 } }, DAY)).toBe('ranks')
     expect(challengeProblem({ ...start, ranks: { ...NO_RANKS, shinyCharm: 3 } }, DAY)).toBe('ranks')
-    expect(challengeProblem({ ...start, lure: true }, DAY)).toBe('items')
-    expect(challengeProblem({ ...start, incense: true }, DAY)).toBe('items')
+    for (const id of BAG_ITEM_IDS) expect(challengeProblem({ ...start, bag: [id] }, DAY)).toBe('items')
     expect(challengeProblem({ ...start, luckyEgg: true }, DAY)).toBe('items')
   })
 

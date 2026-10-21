@@ -5,6 +5,7 @@ import { chooseOffer, step } from './game'
 import { gainXp, recomputeStats } from './leveling'
 import { grantStone } from './mega'
 import { NO_RANKS } from './meta'
+import { OUTBREAK_SPECIES } from './outbreak'
 import { moveOf, recordEvent, recordStep, resimulate, RULES_VERSION, startGame, startRecording, TICK, type Replay, type ReplayStart } from './replay'
 import { enterArena } from './riftArena'
 import { EVENTS } from '../data/waves'
@@ -20,7 +21,7 @@ import type { Game } from './types'
  * rules. Refactors and presentation keep every digest.
  */
 
-const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 11, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
 
 /** A run set up by hand before its first tick (the same on the recording and the re-simulation). */
 type Scenario = { start: ReplayStart; seconds: number; stage: (g: Game) => void }
@@ -78,6 +79,17 @@ const SCENARIOS = {
       gainXp(g, 1200)
     },
   },
+  /** Four Bag items on Nightmare at 6:00 with the day's outbreak: a Rare Candy's level-ups, X Attack, Honey's swarm and a Max Revive that saves the first faint. */
+  bag: {
+    start: { ...START, difficulty: 'nightmare', outbreak: OUTBREAK_SPECIES[0]!, bag: ['rareCandy', 'honey', 'xAttack', 'maxRevive'] },
+    seconds: 20,
+    stage: (g) => {
+      g.time = 360
+      g.nextEvent = 99
+      g.revives = 2
+      g.player.hp = 1
+    },
+  },
   /** Kyogre on Nightmare at 3:00, a few levels in: the Legend mode's own horde (`LEGEND_HORDE`) and Pressure. */
   legend: {
     start: { ...START, difficulty: 'nightmare', starter: 'kyogre' },
@@ -98,12 +110,13 @@ type ScenarioId = keyof typeof SCENARIOS
  * failing test prints.
  */
 const PINNED: Partial<Record<number, Record<ScenarioId, string>>> = {
-  28: {
+  29: {
     levelUps: '2998·51·13·6ff1ec0d',
     mega: '1900·33·2·cac44d82',
     riftFall: '711·0·1·74733b0f',
     alphaHazards: '1002·6·19·93ff9daa',
     nightBoss: '2098·37·17·7d5edd66',
+    bag: '1077·9·3·d13820e7',
     legend: '1098·51·14·86dc0d8b',
   },
 }
@@ -197,12 +210,13 @@ describe(`the simulation under RULES_VERSION ${RULES_VERSION}`, () => {
   const endings = Object.fromEntries(Object.entries(SCENARIOS).map(([id, s]) => [id, ending(s)])) as Record<ScenarioId, ReturnType<typeof ending>>
 
   it('plays each scenario through what it covers, and its replay lands on the same ending', () => {
-    const { levelUps, mega, riftFall, alphaHazards } = endings
+    const { levelUps, mega, riftFall, alphaHazards, bag } = endings
     expect(levelUps.live.player.level).toBeGreaterThan(10)
     expect(mega.live.mega.count).toBe(1)
     expect(riftFall.live.events.map((e) => e.kind)).toEqual(expect.arrayContaining(['riftFall', 'riftExit', 'revive', 'gameover']))
     expect(alphaHazards.live.worldHazards.fired).toBeGreaterThan(0)
     expect(alphaHazards.live.events.some((e) => e.kind === 'alpha' && e.moment === 'charge')).toBe(true)
+    expect(bag.live.events.some((e) => e.kind === 'maxRevive')).toBe(true)
     for (const e of Object.values(endings)) expect(e.sameEnd).toBe(true)
   })
 

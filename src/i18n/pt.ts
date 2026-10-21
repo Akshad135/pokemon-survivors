@@ -18,6 +18,8 @@ import type { Difficulty } from '../game/difficulty'
 import type { SurveyAnswer } from '../data/survey'
 import type { BackgroundId, FrameId, StyleSlot, WallpaperId } from '../data/style'
 import type { BagItem } from '../game/bag'
+import type { ShopLevel } from '../data/shop'
+import type { VitrineBlock } from '../game/shop'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
 import type { SuggestionSort } from '../game/suggestions'
@@ -639,8 +641,8 @@ export const pt = {
     yes: 'Sim',
     no: 'Não',
     hint: 'Q E prateleira · ↑ ↓ escolher · ENTER comprar · ESC voltar',
-    tabs: { upgrades: 'Melhorias', counter: 'Balcão do dia', style: 'Estilo' },
-    counterIntro: (time: string) => `Igual para todo mundo, com estoque do dia. Renova em ${time}.`,
+    tabs: { upgrades: 'Melhorias', vitrine: 'Vitrine do dia', style: 'Estilo' },
+    vitrineIntro: (level: string, time: string) => `${level} · Igual para todo mundo, com estoque do dia. Vira em ${time}.`,
     stock: (left: number, max: number) => `Estoque ${left}/${max}`,
     inBag: (n: number) => `Na bolsa: ${n}`,
     sale: (pct: number) => `-${pct}%`,
@@ -665,6 +667,26 @@ export const pt = {
   },
 
   /** Surto do dia: one species everywhere today, its shiny far likelier. */
+
+  /** The Kecleon Shop (`game/shop.ts`): its levels and the Vitrine do dia. */
+  shop: {
+    levels: { 1: 'Carrinho', 2: 'Tenda', 3: 'Loja', 4: 'Kecleon Mart', 5: 'Loja de Departamento' } satisfies Record<ShopLevel, string>,
+    level: (name: string, n: number) => `${name} (Nv ${n})`,
+    gift: (name: string) => `Brinde: ${name}`,
+    giftDescription: (text: string) => `Grátis, um por dia. ${text}`,
+    claim: 'Pegar grátis',
+    claimed: 'Brinde pego',
+    free: 'Grátis',
+    dayStyle: 'Estilo do dia',
+    allStyles: 'Você já tem todos os estilos à venda.',
+    eggOdds: (common: number, rare: number, ultra: number) => `Chances do ovo do dia: comum ${common}%, raro ${rare}%, ultra ${ultra}%.`,
+    blocks: { locked: 'Aumente a loja', soldOut: 'Esgotado hoje', owned: 'Já é seu', full: 'Incubadora cheia', poor: 'Faltam ₽' } satisfies Record<VitrineBlock, string>,
+    invest: (name: string) => `Aumentar para ${name}`,
+    investDescription: (name: string, slots: number, bag: number) =>
+      `A loja vira ${name}: ${slots} itens na vitrine e ${bag} itens diferentes na bolsa por partida. O investimento é para sempre e não tem reembolso.`,
+    investConfirm: (name: string, price: string) => `Investir ${price} e transformar a loja em ${name}? Não tem reembolso.`,
+    investMax: 'A loja já é a maior que dá.',
+  },
   outbreak: {
     title: 'Surto de hoje',
     blurb: 'Aparece em todas as partidas de hoje: uns 2 shinies dele por partida.',
@@ -1048,9 +1070,26 @@ export const pt = {
     descriptions: {
       lure: 'Shinies selvagens 2× mais comuns na próxima partida (os do surto também).',
       incense: 'Chance de ovo 2× maior na próxima partida.',
+      rareCandy: 'Começa a próxima partida no Nv 3: os dois níveis vêm logo depois da primeira escolha.',
+      luckyEgg: '+25% de EXP na próxima partida.',
+      luckIncense: '+50% de ₽ na próxima partida, nas moedas e no bônus do fim.',
+      honey: 'O Pokémon do surto aparece 2× mais na próxima partida.',
+      xAttack: 'Golpes +10% na próxima partida.',
+      maxRevive: 'Na próxima partida, o primeiro desmaio te põe de pé com metade do HP.',
     } satisfies Record<BagItem, string>,
-    active: { lure: 'Shinies 2× mais comuns nesta partida!', incense: 'Chance de ovo 2× maior nesta partida!' } satisfies Record<BagItem, string>,
+    active: {
+      lure: 'Shinies 2× mais comuns nesta partida!',
+      incense: 'Chance de ovo 2× maior nesta partida!',
+      rareCandy: 'Você começa no Nv 3!',
+      luckyEgg: '+25% de EXP nesta partida!',
+      luckIncense: '+50% de ₽ nesta partida!',
+      honey: 'O surto aparece 2× mais nesta partida!',
+      xAttack: 'Golpes +10% nesta partida!',
+      maxRevive: 'Um desmaio perdoado nesta partida!',
+    } satisfies Record<BagItem, string>,
     toggle: (name: string, n: number) => `${name} ×${n}`,
+    armed: (n: number, max: number) => `${n}/${max}`,
+    full: (max: number) => `A bolsa leva ${max} itens diferentes por partida. Aumente a loja para levar mais.`,
   },
 
   toast: {
@@ -1072,6 +1111,7 @@ export const pt = {
     pokeballEvolution: (name: string) => `${name}!`,
     pokeballBerry: 'uma Oran Berry!',
     revive: 'O *Revive* te pôs de pé!',
+    maxRevive: 'O *Max Revive* te pôs de pé com metade do HP!',
   },
 
   /** Mega Evolution: the button, its toasts, the partner details and what each Mega form does. */

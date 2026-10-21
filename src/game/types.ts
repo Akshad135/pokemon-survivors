@@ -7,6 +7,7 @@ import type { EnemyId } from '../data/enemies'
 import type { BiomeId, WeatherId } from '../data/biomes'
 import type { RiftLegend } from '../data/rifts'
 import type { BuffId } from '../data/consumables'
+import type { BagItem } from '../data/shop'
 import type { ItemId } from '../data/items'
 import type { TraitId } from '../data/traits'
 import type { PokeType } from '../data/types'
@@ -554,6 +555,8 @@ export type GameEvent =
   /** A boss's Disguise took a hit and broke (`BOSS_DISGUISE`). */
   | { kind: 'disguise'; enemy: EnemyId }
   | { kind: 'revive' }
+  /** The Bag's Max Revive got the player back up. */
+  | { kind: 'maxRevive' }
   | { kind: 'victory' }
   /** The run walked into another biome. */
   | { kind: 'biome'; biome: BiomeId }
@@ -707,6 +710,10 @@ export type Game = {
   curses: CurseState
   /** Revives held (0 or 1). Auto-used on fainting. */
   revives: number
+  /** Bag items the run took (`game/bag.ts`), in catalog order. */
+  bag: readonly BagItem[]
+  /** The Bag's Max Revive is still unspent: the first faint gets back up (`tryMaxRevive`). */
+  maxRevive: boolean
   /** Full-screen white flash strength (Explosion), decays to 0. */
   flash: number
   /** Biome the run is in (`game/biomes.ts`). */

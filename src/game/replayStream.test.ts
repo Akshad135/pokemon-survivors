@@ -3,7 +3,7 @@ import { recordEvent, recordStep, startRecording, TICK, type Recorder, type Repl
 import { NO_RANKS } from './meta'
 import { boardListed, commitLag, cutReplay, parseChunk, settleReport, STREAM, STREAM_START, ticksOf, type ReplayChunk, type StreamCursor } from './replayStream'
 
-const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, lure: false, incense: false, view: { w: 480, h: 270 } }
+const START: ReplayStart = { seed: 7, starter: 'squirtle', difficulty: 'normal', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak: null, halloween: false, bag: [], view: { w: 480, h: 270 } }
 
 const VIEW = { w: 480, h: 270 }
 

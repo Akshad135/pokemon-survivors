@@ -9,7 +9,7 @@ export const SHINY_ODDS = { enemy: 1 / 450, player: 1 / 64 } as const
  * How much likelier a run's wild shinies are: each Shiny Charm rank adds a
  * third (1/450 → 1/225 at rank 3) and a Lure doubles it.
  */
-export const shinyBoost = (charm: number, lure: boolean) => (1 + charm / 3) * (lure ? BAG_ITEMS.lure.boost : 1)
+export const shinyBoost = (charm: number, lure: boolean) => (1 + charm / 3) * (lure ? BAG_ITEMS.lure.effect.shinyOdds : 1)
 
 /** Shiny elites are tankier and worth a lot more EXP (plus a Poké Ball on defeat). */
 export const SHINY_BUFF = { hp: 8, xp: 10 } as const

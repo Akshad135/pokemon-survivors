@@ -91,3 +91,10 @@ export const withOutbreak = (roster: Roster, outbreak: EnemyId | null): Roster =
     spitters: roster.spitters.map((id) => (id === outbreak ? null : id)),
   }
 }
+
+/**
+ * Honey (a Bag item): the outbreak weighs `boost` times as much in every
+ * stage, so it spawns that much more often. Applied once, after `withOutbreak`.
+ */
+export const withHoney = (roster: Roster, outbreak: EnemyId | null, boost: number): Roster =>
+  outbreak === null || boost === 1 ? roster : { ...roster, stages: roster.stages.map((pool) => pool.map(([id, w]) => [id, id === outbreak ? w * boost : w] as const)) }

@@ -5,7 +5,7 @@ import { ENEMY_BERRY_CHANCE } from '../data/consumables'
 import { ENEMIES, type EnemyDef } from '../data/enemies'
 import type { HitKind } from '../data/abilities'
 import { abilityHolds, abilityHurt, abilityImmune, abilityKill, abilityTakes, strikeBonus } from './abilities'
-import { enemyDrop, isRepelled, tryRevive } from './consumables'
+import { enemyDrop, isRepelled, tryMaxRevive, tryRevive } from './consumables'
 import { logDefeat } from './dex'
 import { runMods } from './legend'
 import { burst, damageText, floatText } from './effects'
@@ -251,8 +251,8 @@ export const hurtPlayer = (g: Game, amount: number, from?: Enemy, types: readonl
   // Falling in a rift arena or a place isn't the end: the rift throws the player back out, a rescue brings them back.
   if (g.rift.arena) return fallInArena(g)
   if (g.place.inside) return fallInPlace(g)
-  // Sturdy holds before a Revive is spent.
-  if (!abilityHolds(g) && !tryRevive(g)) {
+  // Sturdy holds before a Max Revive (the Bag's), which goes before a held Revive.
+  if (!abilityHolds(g) && !tryMaxRevive(g) && !tryRevive(g)) {
     p.hp = 0
     g.phase = 'gameover'
     g.events.push({ kind: 'gameover', foe: from?.kind ?? null, hit })

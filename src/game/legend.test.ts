@@ -106,7 +106,7 @@ describe("the legend's horde", () => {
   it('draws no basics: every species of the stages (the event ghosts too), swarms, rings and spitters is tier 4 or 5, and no outbreak', () => {
     for (const [seed, halloween] of [[1, false], [2, true], [3, true]] as const) {
       const outbreak = OUTBREAK_SPECIES[0]!
-      const { roster } = startGame({ seed, starter: 'kyogre', difficulty: 'nightmare', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak, halloween, lure: false, incense: false, view: VIEW })
+      const { roster } = startGame({ seed, starter: 'kyogre', difficulty: 'nightmare', ranks: NO_RANKS, shiny: false, luckyEgg: false, outbreak, halloween, bag: [], view: VIEW })
       const horde = [
         ...roster.stages.flatMap((pool) => pool.map(([id]) => id)),
         ...roster.spitters.flatMap((id) => (id ? [id] : [])),

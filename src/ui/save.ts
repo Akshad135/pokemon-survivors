@@ -3,7 +3,7 @@ import type { EnemyId } from '../data/enemies'
 import { mergeAttempts, parseAttempt, type Attempt } from '../game/attempt'
 import { dailyChallenge } from '../game/challenge'
 import { brasiliaDay } from '../game/day'
-import { counterOf } from '../game/mart'
+import { vitrineOf } from '../game/shop'
 import { outbreakAt } from '../game/outbreak'
 import { isHalloweenDay } from '../game/halloween'
 import { depositEggs, type Egg } from '../game/eggs'
@@ -131,8 +131,8 @@ export const saveAttempt = (attempt: Attempt | null) => {
   }
 }
 
-/** Today's Poké Mart counter (Brasília day, on the missions' clock). */
-export const counterToday = () => counterOf(brasiliaDay(today()))
+/** Today's Vitrine do dia (Brasília day, on the missions' clock). */
+export const vitrineToday = () => vitrineOf(brasiliaDay(today()))
 
 /**
  * Records a run into the missions and achievements, pays their rewards and saves.

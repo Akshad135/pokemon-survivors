@@ -228,6 +228,7 @@ Migrations are plain SQL files in `migrations/`, run in name order at boot (each
 - `runs.replay`, `runs.verified`: the replay waiting for its check, and the verdict (null while pending, or when the run wasn't checked).
 - `runs.seed`, `runs.replaced_at`: the seed dealt with the token (null before the server dealt them), and when a newer token of the same kind replaced an unfinished one.
 - `runs.branch`: the branching evolution the run took (`BranchId`, Espeon, Gallade…), so the boards show the form it ended in. Null when it took none, and on every run before it was stored (those keep showing the line's own form).
+- `runs.bag`: the Bag items the run took (`ReplayStart.bag`: Lure, Rare Candy, Max Revive…), written from its replay when it reports, so the boards and profiles list them (`bag` on each run) after the replay is dropped. Empty on every run before it was stored. A replay whose Bag repeats an item or holds more than the top shop level allows is malformed (400); the Desafio do dia takes none (`challengeProblem`).
 - `gifts`: each player's Mystery Gifts (`kind`, `payload` = `GiftContent`, `reason`, a per-player unique `key`, `claimed_at`).
 - `users.referred_by`, `referred_at`, `referral_credited_at`: who brought the player and when the invite counted.
 - `runs.challenge`, `runs.official`: the Desafio do dia a run plays (its day) and whether it's the player's official attempt of that day.

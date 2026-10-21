@@ -2,17 +2,36 @@ import { playSfx } from '../engine/audio'
 import type { Input } from '../engine/input'
 import { formatNumber, formatPokeDollars, t } from '../i18n'
 import { STYLE_SLOTS, styleIds, stylePrice, type StyleId, type StyleSlot } from '../data/style'
+import { MAX_SHOP_LEVEL, SHOP_LEVELS, VITRINE, type VitrineEgg, type VitrineKey } from '../data/shop'
 import { BAG_ITEMS, bagCount } from '../game/bag'
 import { msToNextDay } from '../game/day'
 import { EGG_TIERS } from '../game/eggs'
-import { buyFromCounter, buyStyle, COUNTER, counterBlock, counterPrice, stockLeft, type Counter, type CounterSlot } from '../game/mart'
+import {
+  buyFromVitrine,
+  buyStyle,
+  claimGift,
+  dayStyle,
+  giftBlock,
+  investBlock,
+  investInShop,
+  isDeal,
+  nextShopLevel,
+  onPick,
+  stockLeft,
+  vitrineBlock,
+  vitrinePrice,
+  vitrineStock,
+  type StylePick,
+  type Vitrine,
+  type VitrineBlock,
+} from '../game/shop'
 import { buyUpgrade, refundAll, totalSpent, UPGRADE_IDS, UPGRADES, upgradePrice, type Save } from '../game/meta'
 import { equipStyle, ownsStyle } from '../game/style'
 import { bagIcon, coinIcon, eggIcon, upgradeIcon } from '../render/art'
 import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
 import { h, later, setText } from './dom'
-import { counterToday, loadSave, today, writeSave } from './save'
+import { loadSave, today, vitrineToday, writeSave } from './save'
 import { hint, menu, type Screen } from './screens'
 
 const isTouch = (e: Event) => e instanceof PointerEvent && e.pointerType !== '' && e.pointerType !== 'mouse'
@@ -30,15 +49,19 @@ const confirmDialog = (root: HTMLElement, input: Input, text: string, onAnswer: 
 
 /* ---------------- Shelves ---------------- */
 
-const SHELVES = ['upgrades', 'counter', 'style'] as const
+const SHELVES = ['upgrades', 'vitrine', 'style'] as const
 
 type Shelf = (typeof SHELVES)[number]
 
 /** What the description box shows for the highlighted row: a picture, a title, a line and the main button. */
 type Desc = { icon: HTMLElement; title: string; text: string; action: string; disabled: boolean }
 
-/** One row of a shelf: its button, how it redraws, its description, and what the main button does (null: denied). */
-type Row = { el: HTMLButtonElement; refresh: (save: Save) => void; describe: (save: Save) => Desc; act: (save: Save) => Save | null }
+/**
+ * One row of a shelf: its button, how it redraws, its description, and what
+ * the main button does (null: denied). `confirm`: the question to ask first
+ * (null when the row can't act), for spending that can't be undone.
+ */
+type Row = { el: HTMLButtonElement; refresh: (save: Save) => void; describe: (save: Save) => Desc; act: (save: Save) => Save | null; confirm?: (save: Save) => string | null }
 
 const icon = (src: string, cls = '') => h('img', { src, alt: '', class: cls })
 
@@ -81,49 +104,121 @@ const upgradeRows = (): Row[] =>
     }
   })
 
-/** Name, picture and description of a counter item today. */
-const counterItem = (counter: Counter, slot: CounterSlot) => {
-  if (slot === 'egg') {
-    const tier = counter.egg
-    return { name: t().eggs.tiers[tier], src: eggIcon(tier), text: t().mart.eggDescription(formatNumber(EGG_TIERS[tier].steps)) }
+/** Name, picture and description of a Vitrine card today; the style card shows the day's `style` for this save (null: it owns them all). */
+const vitrineItem = (v: Vitrine, key: VitrineKey, style: StylePick | null) => {
+  const sh = t().shop
+  if (key === 'egg') {
+    const tier = v.egg
+    const odds = (Object.keys(VITRINE.eggs) as VitrineEgg[]).map((k) => VITRINE.eggs[k].weight)
+    const total = odds.reduce((a, b) => a + b, 0)
+    const [common, rare, ultra] = odds.map((w) => Math.round((w / total) * 100)) as [number, number, number]
+    return { name: t().eggs.tiers[tier], picture: () => icon(eggIcon(tier)), text: `${t().mart.eggDescription(formatNumber(EGG_TIERS[tier].steps))} ${sh.eggOdds(common, rare, ultra)}` }
   }
-  return { name: BAG_ITEMS[slot].name, src: bagIcon(slot), text: t().bag.descriptions[slot] }
+  if (key === 'style') {
+    if (!style) return { name: sh.dayStyle, picture: () => icon(frameIcon('classic'), 'mart-pixel'), text: sh.allStyles }
+    const name = (t().mart.styles[style.slot] as Readonly<Record<string, string>>)[style.id] ?? style.id
+    return { name: `${sh.dayStyle}: ${name}`, picture: (big: boolean) => onPick(style, (slot, id) => stylePicture(slot, id, big)), text: t().mart.styleDescriptions[style.slot] }
+  }
+  return { name: BAG_ITEMS[key].name, picture: () => icon(bagIcon(key)), text: t().bag.descriptions[key] }
 }
 
-/** The day's counter: Lure, Incense and the egg of the day, one of them on sale, each with its stock. */
-const counterRows = (counter: Counter): Row[] =>
-  (['lure', 'incense', 'egg'] as const).map((slot) => {
-    const item = counterItem(counter, slot)
-    const { el, sub, price } = rowShell(icon(item.src), item.name)
-    const onSale = counter.sale === slot
-    if (onSale) el.classList.add('on-sale')
-    const priceTag = () => formatPokeDollars(counterPrice(counter, slot))
-    const blockText = (block: ReturnType<typeof counterBlock>) => (block === 'soldOut' ? t().mart.soldOut : block === 'full' ? t().mart.incubatorFull : null)
-    return {
-      el,
-      refresh: (save) => {
-        const left = stockLeft(save.counter, counter, slot)
-        const lines = [t().mart.stock(left, COUNTER[slot].stock), slot !== 'egg' && t().mart.inBag(bagCount(save.bag, slot))].filter((l) => typeof l === 'string')
-        setText(sub, lines.join(' · '))
-        const block = counterBlock(save, counter, slot)
-        const blocked = blockText(block)
-        price.replaceChildren(...(onSale && !blocked ? [h('b', { class: 'mart-sale' }, t().mart.sale(COUNTER.sale * 100)), ' '] : []), blocked ?? priceTag())
-        el.classList.toggle('maxed', blocked !== null)
-        el.classList.toggle('poor', block === 'poor')
-      },
-      describe: (save) => {
-        const block = counterBlock(save, counter, slot)
-        return {
-          icon: icon(item.src),
-          title: item.name,
-          text: onSale ? `${item.text} ${t().mart.saleNote(COUNTER.sale * 100)}` : item.text,
-          action: blockText(block) ?? t().mart.buy(priceTag()),
-          disabled: block !== null,
-        }
-      },
-      act: (save) => buyFromCounter(save, counter, slot),
-    }
-  })
+/** What a blocked Vitrine row says instead of its price. */
+const blockText = (block: VitrineBlock | null) => (block === null || block === 'poor' ? null : t().shop.blocks[block])
+
+/** The free gift of the day: one consumable, taken once per day. */
+const giftRow = (v: Vitrine): Row => {
+  const sh = t().shop
+  const name = BAG_ITEMS[v.gift].name
+  const { el, sub, price } = rowShell(icon(bagIcon(v.gift)), sh.gift(name))
+  el.classList.add('on-sale')
+  return {
+    el,
+    refresh: (save) => {
+      const taken = giftBlock(save, v) !== null
+      setText(sub, t().mart.inBag(bagCount(save.bag, v.gift)))
+      setText(price, taken ? sh.claimed : sh.free)
+      el.classList.toggle('maxed', taken)
+    },
+    describe: (save) => {
+      const taken = giftBlock(save, v) !== null
+      return { icon: icon(bagIcon(v.gift)), title: sh.gift(name), text: sh.giftDescription(t().bag.descriptions[v.gift]), action: taken ? sh.claimed : sh.claim, disabled: taken }
+    },
+    act: (save) => claimGift(save, v),
+  }
+}
+
+/** One card of the day's Vitrine (every card shows; the ones above the shop's level say so), the deal first. */
+const vitrineRow = (v: Vitrine, key: VitrineKey, style: StylePick | null): Row => {
+  const item = vitrineItem(v, key, style)
+  const { el, sub, price } = rowShell(item.picture(false), item.name)
+  const deal = isDeal(v, key)
+  if (deal) el.classList.add('on-sale')
+  const priceTag = (save: Save) => formatPokeDollars(vitrinePrice(v, key, save.style) ?? 0)
+  return {
+    el,
+    refresh: (save) => {
+      const lines = [t().mart.stock(stockLeft(save.shop, v, key), vitrineStock(key)), key !== 'egg' && key !== 'style' && t().mart.inBag(bagCount(save.bag, key))]
+      setText(sub, lines.filter((l) => typeof l === 'string').join(' · '))
+      const block = vitrineBlock(save, v, key)
+      const blocked = blockText(block)
+      price.replaceChildren(...(deal && !blocked ? [h('b', { class: 'mart-sale' }, t().mart.sale(VITRINE.deal * 100)), ' '] : []), blocked ?? priceTag(save))
+      el.classList.toggle('maxed', blocked !== null)
+      el.classList.toggle('poor', block === 'poor')
+    },
+    describe: (save) => {
+      const block = vitrineBlock(save, v, key)
+      return {
+        icon: item.picture(true),
+        title: item.name,
+        text: deal ? `${item.text} ${t().mart.saleNote(VITRINE.deal * 100)}` : item.text,
+        action: blockText(block) ?? t().mart.buy(priceTag(save)),
+        disabled: block !== null,
+      }
+    },
+    act: (save) => buyFromVitrine(save, v, key),
+  }
+}
+
+/** Investing in the shop's next level: for good, so it asks first. */
+const investRow = (): Row => {
+  const sh = t().shop
+  const { el, sub, price } = rowShell(icon(coinIcon(2)), '')
+  const next = (save: Save) => nextShopLevel(save.shop.level)
+  return {
+    el,
+    refresh: (save) => {
+      const lv = next(save)
+      el.querySelector('.mart-name')!.textContent = lv ? sh.invest(sh.levels[lv]) : sh.level(sh.levels[MAX_SHOP_LEVEL], MAX_SHOP_LEVEL)
+      setText(sub, sh.level(sh.levels[save.shop.level], save.shop.level))
+      setText(price, lv ? formatPokeDollars(SHOP_LEVELS[lv].cost) : t().max)
+      el.classList.toggle('maxed', lv === null)
+      el.classList.toggle('poor', investBlock(save) === 'poor')
+    },
+    describe: (save) => {
+      const lv = next(save)
+      if (!lv) return { icon: icon(coinIcon(2)), title: sh.level(sh.levels[MAX_SHOP_LEVEL], MAX_SHOP_LEVEL), text: sh.investMax, action: t().max, disabled: true }
+      const def = SHOP_LEVELS[lv]
+      return {
+        icon: icon(coinIcon(2)),
+        title: sh.invest(sh.levels[lv]),
+        text: sh.investDescription(sh.levels[lv], def.vitrineSlots + 1, def.bagSlots),
+        action: t().mart.buy(formatPokeDollars(def.cost)),
+        disabled: investBlock(save) !== null,
+      }
+    },
+    act: investInShop,
+    confirm: (save) => {
+      const lv = next(save)
+      return lv && !investBlock(save) ? sh.investConfirm(sh.levels[lv], formatPokeDollars(SHOP_LEVELS[lv].cost)) : null
+    },
+  }
+}
+
+/** The Vitrine do dia's shelf: the gift, every card of the day and the shop's next level. */
+const vitrineRows = (v: Vitrine, save: Save): Row[] => {
+  const style = dayStyle(v, save.style)
+  return [giftRow(v), ...v.cards.map((key) => vitrineRow(v, key, style)), investRow()]
+}
 
 /** A style's picture: the frame's ball (or rings), a corner of the sky, the wallpaper's tile. */
 const stylePicture = <S extends StyleSlot>(slot: S, id: StyleId<S>, big: boolean) => {
@@ -182,7 +277,7 @@ const styleRows = (slot: StyleSlot): Row[] =>
     ]
   })
 
-/** "5h 12min": time left until the counter restocks. */
+/** "5h 12min": time left until the Vitrine turns over. */
 const restocksIn = () => {
   const minutes = Math.ceil(msToNextDay(today()) / 60_000)
   return t().missions.duration(0, Math.floor(minutes / 60), minutes % 60)
@@ -190,9 +285,9 @@ const restocksIn = () => {
 
 /**
  * Poké Mart: three shelves in tabs. Upgrades (permanent ranks, the Shiny
- * Charm among them), the day's counter (Lure, Incense and an egg, a daily
- * stock, the same for everyone) and Style (card frames and backgrounds, PC
- * wallpapers). GBA-style list with prices on the right and a description box
+ * Charm among them), the Vitrine do dia (the day's gift and cards, a daily
+ * stock, the same for everyone, and the shop's next level) and Style (card
+ * frames and backgrounds, PC wallpapers). GBA-style list with prices on the right and a description box
  * below. Keyboard (Q/E or ←/→ shelf, ↑↓, Enter, Esc), mouse (click buys) and
  * touch (tap selects, tap again or the button buys).
  */
@@ -200,7 +295,7 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
   const m = t().mart
   let save = loadSave()
   let shelf: Shelf = 'upgrades'
-  let counter = counterToday()
+  let vitrine = vitrineToday()
   let rows: Row[] = []
   let index = 0
   let confirm: Screen | null = null
@@ -222,6 +317,9 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
   const entries = () => [...rows.map((r) => r.el), back, ...(shelf === 'upgrades' ? [refund] : [])]
 
   const close = () => later(onClose)
+
+  /** The Vitrine's line: the shop's level and when it turns over. */
+  const vitrineIntro = () => m.vitrineIntro(t().shop.level(t().shop.levels[save.shop.level], save.shop.level), restocksIn())
 
   const refresh = () => {
     setText(wallet, formatPokeDollars(save.wallet))
@@ -253,14 +351,14 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
       tab.setAttribute('aria-selected', String(SHELVES[i] === shelf))
     })
     refund.classList.toggle('hidden', shelf !== 'upgrades')
-    intro.classList.toggle('hidden', shelf !== 'counter')
+    intro.classList.toggle('hidden', shelf !== 'vitrine')
     if (shelf === 'upgrades') {
       rows = upgradeRows()
       list.replaceChildren(...rows.map((r) => r.el))
-    } else if (shelf === 'counter') {
-      counter = counterToday()
-      setText(intro, m.counterIntro(restocksIn()))
-      rows = counterRows(counter)
+    } else if (shelf === 'vitrine') {
+      vitrine = vitrineToday()
+      setText(intro, vitrineIntro())
+      rows = vitrineRows(vitrine, save)
       list.replaceChildren(...rows.map((r) => r.el))
     } else {
       const groups = STYLE_SLOTS.map((slot) => ({ slot, rows: styleRows(slot) }))
@@ -302,6 +400,17 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
     refresh()
   }
 
+  /** Asks `question` before the row acts (an investment), then acts on a yes. */
+  const askFirst = (row: Row, question: string) => {
+    later(() => {
+      confirm = confirmDialog(root, input, question, (yes) => {
+        confirm?.dispose()
+        confirm = null
+        if (yes) purchase(row)
+      })
+    })
+  }
+
   const askRefund = () => {
     if (totalSpent(save.ranks) === 0) return playSfx('denied')
     later(() => {
@@ -319,6 +428,8 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
 
   const activate = (i: number) => {
     const row = rows[i]
+    const question = row?.confirm?.(loadSave())
+    if (row && question) return askFirst(row, question)
     if (row) return purchase(row)
     if (i === rows.length) return close()
     askRefund()
@@ -383,15 +494,15 @@ export const shop = (root: HTMLElement, input: Input, onClose: () => void): Scre
   let shownMinute = -1
   return {
     el,
-    // The counter's countdown, and a fresh counter once the day turns over.
+    // The Vitrine's countdown, and a fresh Vitrine once the day turns over.
     tick: () => {
       const minute = Math.floor(Date.now() / 60_000)
-      if (minute === shownMinute || shelf !== 'counter') return
+      if (minute === shownMinute || shelf !== 'vitrine') return
       shownMinute = minute
-      if (counterToday().day !== counter.day) {
+      if (vitrineToday().day !== vitrine.day) {
         build()
         refresh()
-      } else setText(intro, m.counterIntro(restocksIn()))
+      } else setText(intro, vitrineIntro())
     },
     dispose: () => (off(), confirm?.dispose(), el.remove()),
   }

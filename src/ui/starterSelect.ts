@@ -11,7 +11,8 @@ import { EGGS, isReady } from '../game/eggs'
 import { isLegend, LEGEND_IDS, LEGENDS, type LegendId } from '../data/legends'
 import { ABILITIES } from '../data/abilities'
 import { canPlay, capturedCount, isCaptured, legendSource, winsNeeded } from '../game/capture'
-import { armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
+import { armBlock, armedItems, armItem, BAG_ITEM_IDS, bagCount, type BagItem } from '../game/bag'
+import { SHOP_LEVELS } from '../data/shop'
 import { ownsShiny, pickShinyForm, playsShiny } from '../game/shinyPicks'
 import { bagIcon, eggIcon, PICKUPS, sparkleIcon, trophyIcon } from '../render/art'
 import { cryUrl, drawPokemon, loadedSprites, loadSpecies, portraitUrl, walkSheet } from '../render/sprites'
@@ -36,8 +37,8 @@ const STARTER_IDS: readonly StarterId[] = REGIONS.flatMap((r) => r.starters)
 /** The three types a region's trio covers, in roster order (the desktop rows). */
 const ROW_TYPES = STARTER_IDS.slice(0, 3).map((id) => PLAYABLE[id].line[0].types[0]!)
 
-/** Keys that flip each bag item. */
-const BAG_KEYS = { lure: 'KeyC', incense: 'KeyV' } as const satisfies Record<BagItem, string>
+/** Keys that flip the first bag items (the rest are a tap or click away). */
+const BAG_KEYS: Partial<Record<BagItem, string>> = { lure: 'KeyC', incense: 'KeyV' }
 
 /** How many hatched families the desktop's "Hatched" teaser row shows before "+n". */
 const TEASER = 7
@@ -372,38 +373,56 @@ export const starterSelect = (root: HTMLElement, input: Input, actions: SelectAc
     paintGo()
   }
 
-  const slots = BAG_ITEM_IDS.map((id) =>
-    h(
+  const slots = BAG_ITEM_IDS.map((id) => {
+    const key = BAG_KEYS[id]
+    return h(
       'button',
       { class: 'partner-slot', type: 'button', role: 'switch', title: m.bag.descriptions[id], onclick: () => toggleBag(id) },
       h('img', { src: bagIcon(id), alt: '' }),
       h('em', {}),
-      h('span', { class: 'key-hint' }, BAG_KEYS[id].slice(3)),
-    ),
-  )
-  const renderBag = () =>
+      key && h('span', { class: 'key-hint' }, key.slice(3)),
+    )
+  })
+  /** Different items a run may take: the shop's level says (`SHOP_LEVELS`). */
+  const bagLimit = () => SHOP_LEVELS[loadSave().shop.level].bagSlots
+  const bagLabel = h('small', { class: 'partner-bag-label' })
+  /** Shows the items the player has (or the first two, empty, when the Bag is), and how many are armed of the limit. */
+  const renderBag = () => {
+    const held = BAG_ITEM_IDS.filter((id) => bagCount(bag, id) > 0)
+    const shown = held.length > 0 ? held : BAG_ITEM_IDS.slice(0, 2)
     BAG_ITEM_IDS.forEach((id, i) => {
       const n = bagCount(bag, id)
       const slot = slots[i]!
+      slot.classList.toggle('hidden', !shown.includes(id))
       slot.classList.toggle('empty', n === 0)
       slot.classList.toggle('on', bag.armed[id])
       slot.setAttribute('aria-checked', String(bag.armed[id]))
       slot.setAttribute('aria-label', m.bag.toggle(m.bag.descriptions[id], n))
       slot.querySelector('em')!.textContent = `${n}`
     })
-  /** Arms or disarms a bag item for the next run (the run uses it up as it starts); the line under the difficulty says what it does. */
+    bagLabel.textContent = `${m.bag.label} ${m.bag.armed(armedItems(bag).length, bagLimit())}`
+  }
+  /**
+   * Arms or disarms a bag item for the next run (the run uses it up as it
+   * starts), up to the shop level's limit of different items; the line under
+   * the difficulty says what it does, or why it can't.
+   */
   const toggleBag = (id: BagItem) => {
-    if (bagCount(bag, id) === 0) return playSfx('denied')
     const on = !bag.armed[id]
-    bag = armItem(bag, id, on)
-    updateSave((s) => ({ ...s, bag: armItem(s.bag, id, on) }))
+    const block = on ? armBlock(bag, id, bagLimit()) : null
+    if (block) {
+      if (block === 'full') blurb.textContent = m.bag.full(bagLimit())
+      return playSfx('denied')
+    }
+    bag = armItem(bag, id, on, bagLimit())
+    updateSave((s) => ({ ...s, bag: armItem(s.bag, id, on, bagLimit()) }))
     playSfx(on ? 'shiny' : 'move')
     blurb.textContent = on ? m.bag.descriptions[id] : m.difficulty.blurbs[difficulty]
     renderBag()
   }
 
   const bar = actionBar(
-    h('div', { class: 'partner-bag' }, h('small', { class: 'partner-bag-label' }, m.bag.label), ...slots),
+    h('div', { class: 'partner-bag' }, bagLabel, ...slots),
     h('div', { class: 'partner-diff' }, h('div', { class: 'partner-diff-row' }, seg.el, h('span', { class: 'key-hint' }, 'X')), blurb),
     go,
   )

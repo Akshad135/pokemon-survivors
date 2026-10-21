@@ -29,6 +29,7 @@ import type { BranchId } from '../../src/data/branches'
 import type { PlayableId } from '../../src/data/hatchlings'
 import { RIBBON_TIERS, type RibbonTier } from '../../src/game/ribbons'
 import { TICK, type Replay } from '../../src/game/replay'
+import { parseBagItems } from '../../src/game/bag'
 import { boardListed, commitLag, sameSegment, settleReport, STREAM, streamedInTime, type ReplayChunk } from '../../src/game/replayStream'
 import { supporterTier } from '../../src/game/supporters'
 import type { Sql } from './db'
@@ -66,7 +67,8 @@ const sha256 = (key: string) => createHash('sha256').update(key).digest('hex')
 /** Chunks of a run that never reported (a closed tab, a replaced token) are swept after this many hours. */
 const CHUNK_HOURS = 24
 
-type RunRow = { starter: PlayableId; stage: number; branch: BranchId | null; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date }
+/** `bag`: the Bag items the run took (`ReplayStart.bag`), empty for runs from before the column. */
+type RunRow = { starter: PlayableId; stage: number; branch: BranchId | null; difficulty: Difficulty; survived: number; outcome: ProfileRun['outcome']; started_at: Date; bag: string[] | null }
 
 /** A profile record: a run row and the mode of the boards it's on. */
 type RecordRow = RunRow & { mode: RunMode }
@@ -82,6 +84,7 @@ const toRun = (r: RunRow): ProfileRun => ({
   time: r.survived,
   outcome: r.outcome,
   at: r.started_at.toISOString(),
+  bag: parseBagItems(r.bag),
 })
 
 type SupporterRow = { supporter_points: number; supporter_public: boolean; supporter_since: Date | null }
@@ -115,7 +118,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
   /** Every player's best run on a board, ranked, as a fragment to select from. */
   const ranked = ({ mode, difficulty, period, starter, friends, viewer }: BoardQuery) => sql`
     with best as (
-      select distinct on (r.user_id) r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at
+      select distinct on (r.user_id) r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, r.bag
       from runs r
       where r.finished_at is not null and r.verified is not false and not r.unlisted and r.mode = ${mode} and r.difficulty = ${difficulty}
         ${period === 'all' ? sql`` : sql`and r.started_at >= (date_trunc(${period}, now() at time zone ${BOARD_TIME_ZONE}) at time zone ${BOARD_TIME_ZONE})`}
@@ -133,7 +136,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
    * how many are on it.
    */
   const challengeRanked = (day: DayKey, friends: boolean, viewer: string | null) => sql`
-    select r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, u.handle, u.name, u.supporter_points, u.supporter_public, u.supporter_since,
+    select r.id, r.user_id, r.starter, r.stage, r.branch, r.difficulty, r.survived, r.outcome, r.started_at, r.bag, u.handle, u.name, u.supporter_points, u.supporter_public, u.supporter_since,
       (row_number() over (order by r.survived desc, r.started_at))::int as rank,
       (count(*) over ())::int as total
     from runs r join users u on u.id = r.user_id
@@ -326,7 +329,7 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
         await tx`
           update runs set finished_at = now(), starter = ${result.starter}, stage = ${result.stage}, branch = ${result.branch}, difficulty = ${result.difficulty},
             survived = ${result.time}, outcome = ${result.outcome}, level = ${result.level}, kills = ${result.kills}, version = ${result.version},
-            replay = ${tx.json(replay)}, verified = null, checked_at = null, check_ms = null, official = ${official},
+            replay = ${tx.json(replay)}, verified = null, checked_at = null, check_ms = null, official = ${official}, bag = ${tx.array([...replay.start.bag])}::text[],
             stream_base = ${settled.pin.ticks}, stream_digest = ${settled.pin.digest}, stream_lag = ${stream.lag}, stream_ok = ${inTime}, unlisted = ${!listed},
             stream_late = stream_late + ${lag !== null && lag > STREAM.lagTolerance ? 1 : 0},
             mode = ${runMode(result.starter)}
@@ -475,11 +478,11 @@ export const rankingStore = (sql: Sql, { streamEnforce = false }: { streamEnforc
       const supporter = self ? supporterTier(user.supporter_points) : badgeOf(user)
       const [records, recent, [counts], [save], ribbons] = await Promise.all([
         sql<RecordRow[]>`
-          select distinct on (mode, difficulty) mode, starter, stage, branch, difficulty, survived, outcome, started_at
+          select distinct on (mode, difficulty) mode, starter, stage, branch, difficulty, survived, outcome, started_at, bag
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by mode, difficulty, survived desc, started_at`,
         sql<RunRow[]>`
-          select starter, stage, branch, difficulty, survived, outcome, started_at
+          select starter, stage, branch, difficulty, survived, outcome, started_at, bag
           from runs where user_id = ${user.id} and finished_at is not null and verified is not false
           order by started_at desc limit 10`,
         sql<{ followers: number; following: number; followed: boolean; brought: number }[]>`
