@@ -2,68 +2,30 @@ import { blitCentered, blitEllipse, canvasCache, context2d, createCanvas, type P
 import { TAU } from '../engine/math'
 import type { EvoItemId } from '../data/shop'
 import type { Pickup } from '../game/types'
-import { shopIconUrl } from '../ui/shopIcons'
+import { itemArt } from './art'
 import { px } from './shopTmFx'
 
 type Ctx = CanvasRenderingContext2D
 
-/** The shop icons, loaded once each (decoded or not): the ground sprite is cut from them. */
+/** The items' official sprites, loaded once each (decoded or not): the ground sprite is copied from them. */
 const images = new Map<EvoItemId, HTMLImageElement>()
 
-/** The ground sprites, halved from the icons (`halve`). */
+/** The ground sprites, the official sprites at 1× (15 to 23 px, a bit over a TM disc). */
 const sprites = canvasCache<EvoItemId, PixelSprite>()
 
-/**
- * A 32 px shop icon halved to 16 px, the size of a TM disc on the ground: each
- * pixel is its 2×2 block's average color, solid when the block is at least
- * half covered and see-through otherwise, so the edges stay hard.
- */
-const halve = (img: HTMLImageElement): PixelSprite => {
-  const w = img.naturalWidth
-  const h = img.naturalHeight
-  const src = createCanvas(w, h)
-  const sctx = context2d(src)
-  sctx.drawImage(img, 0, 0)
-  const from = sctx.getImageData(0, 0, w, h).data
-  src.width = src.height = 0
-  const out = createCanvas(w / 2, h / 2)
-  const octx = context2d(out)
-  const to = octx.createImageData(out.width, out.height)
-  for (let y = 0; y < out.height; y++) {
-    for (let x = 0; x < out.width; x++) {
-      let r = 0, g = 0, b = 0, a = 0
-      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {
-        const i = ((y * 2 + dy) * w + x * 2 + dx) * 4
-        const alpha = from[i + 3]!
-        r += from[i]! * alpha
-        g += from[i + 1]! * alpha
-        b += from[i + 2]! * alpha
-        a += alpha
-      }
-      if (a < 2 * 255) continue
-      const o = (y * out.width + x) * 4
-      to.data[o] = r / a
-      to.data[o + 1] = g / a
-      to.data[o + 2] = b / a
-      to.data[o + 3] = 255
-    }
-  }
-  octx.putImageData(to, 0, 0)
-  return out
-}
-
-/** The ground sprite of an item, or null while its icon loads (the first call starts it). */
+/** The ground sprite of an item, or null while its sprite loads (the first call starts it). */
 const groundSprite = (id: EvoItemId): PixelSprite | null => {
   const cached = sprites.get(id)
   if (cached) return cached
   let img = images.get(id)
   if (!img) {
     img = new Image()
-    img.src = shopIconUrl(id)
+    img.src = itemArt(id)
     images.set(id, img)
   }
   if (!img.complete || img.naturalWidth === 0) return null
-  const sprite = halve(img)
+  const sprite = createCanvas(img.naturalWidth, img.naturalHeight)
+  context2d(sprite).drawImage(img, 0, 0)
   sprites.set(id, sprite)
   return sprite
 }

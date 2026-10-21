@@ -41,7 +41,7 @@ import {
 } from '../game/shop'
 import { playsShiny } from '../game/shinyPicks'
 import { equipStyle, ownsStyle } from '../game/style'
-import { coinIcon, eggIcon, moveIcon, upgradeIcon } from '../render/art'
+import { coinIcon, eggIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { styleThumb } from '../render/card'
 import { frameIcon, wallpaperUrl } from '../render/cosmetics'
@@ -56,7 +56,7 @@ import { h, later, setText } from './dom'
 import { emptyCounter, kecleonSpeaker, levelUpLine, pickTrigger, thanks, visitLine, weekdayOf, type VisitContext } from './kecleon'
 import { loadSave, today, vitrineToday, writeSave } from './save'
 import { hint, menu, type Screen } from './screens'
-import { capPips, shopIcon } from './shopIcons'
+import { capPips, shopIcon, tmPicture } from './shopIcons'
 import { nearestInDirection, type Direction } from './spatial'
 
 /**
@@ -330,9 +330,6 @@ const bagCard = (id: BagItem): Card => {
 
 /* ---------------- TMs (the purple brother) ---------------- */
 
-/** A TM's picture: the disc with its move's icon on it. */
-const tmPicture = (id: ShelfTm) => h('span', { class: 'shop-tm' }, shopIcon('tmDisc'), img(moveIcon(id), 'shop-tm-move'))
-
 /** What a blocked TM card says instead of its price. */
 const tmBlockText = (block: TmBlock | null) => (block === null || block === 'poor' ? null : t().shop.tms.blocks[block])
 
@@ -563,7 +560,7 @@ const capsPicker = (
 /** The permanent upgrades (the vitamins and the Shiny Charm), with their ranks as pips. */
 const upgradeCard = (id: (typeof UPGRADE_IDS)[number]): Card => {
   const def = UPGRADES[id]
-  const { el, sub, price } = shell(img(upgradeIcon(id)), def.name)
+  const { el, sub, price } = shell(shopIcon(id), def.name)
   sub.classList.add('pips')
   return {
     el,
@@ -579,7 +576,7 @@ const upgradeCard = (id: (typeof UPGRADE_IDS)[number]): Card => {
       const rank = save.ranks[id]
       const maxed = rank >= def.maxRank
       return {
-        icon: img(upgradeIcon(id)),
+        icon: shopIcon(id),
         title: t().mart.rank(def.name, rank, def.maxRank),
         text: t().upgrades[id],
         action: maxed ? t().max : t().mart.buy(formatPokeDollars(upgradePrice(id, rank))),

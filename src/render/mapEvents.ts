@@ -13,6 +13,7 @@ import { TUTOR } from '../game/tmRules'
 import { isMission } from '../game/fieldMissions'
 import { drawFieldMission, missionIcon, missionSpot } from './fieldMissions'
 import { HURT_TINT } from './flashes'
+import { sceneryArt } from './scenery'
 
 /**
  * Map events on the ground (altar, fountain, chest, traps, Meowth, the Move Tutor) and the
@@ -76,7 +77,7 @@ const progressArc = (ctx: Ctx, x: number, y: number, r: number, k: number, color
 const groundShadow = (ctx: Ctx, x: number, y: number, rx: number) => blitEllipse(ctx, rx, Math.max(1, Math.round(rx * 0.35)), 'rgba(16,40,16,0.3)', x, y)
 
 const drawAltar = (ctx: Ctx, ev: MapEventOf<'altar'>, t: number) => {
-  const { pedestal } = ART()
+  const pedestal = sceneryArt('pedestal')?.sprite ?? ART().pedestal
   const color = BUFF_COLORS[ev.state.buff]
   groundShadow(ctx, ev.x, ev.y, 8)
   ctx.drawImage(pedestal, Math.round(ev.x - pedestal.width / 2), Math.round(ev.y - pedestal.height + 1))

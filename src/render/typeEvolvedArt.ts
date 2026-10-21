@@ -1,7 +1,7 @@
 import type { Palette } from '../engine/pixelart'
 
 /**
- * Pixel rows and palettes for the newer type items and the moves they evolve
+ * Pixel rows and palettes for the moves the newer type items evolve
  * (`game/typeEvolutions.ts`). Plain data with no canvas, so both `art.ts`
  * (icons) and `typeEvolved.ts` (the effects) build sprites from it without
  * importing each other. Some shapes are generated (pinwheel, heart, crescent)
@@ -121,14 +121,3 @@ export const FISSURE_ICON: ArtSpec = [
 /** Steel Beam: a muzzle and its beam. */
 export const BEAM_ICON: ArtSpec = [['..111.......', '.12221111111', '123443333333', '123444444444', '123443333333', '.12221111111', '..111.......'], STEEL]
 
-/* ---------------- Held items ---------------- */
-
-export const TYPE_ITEM_ART = {
-  blackBelt: [['111111111', '122232221', '111333111', '...121...', '..12.21..', '.12...21.', '.11...11.'], { 1: '#202028', 2: '#484850', 3: '#888890' }],
-  metalCoat: [['..111..', '..131..', '.12221.', '1223221', '1234321', '1223221', '.12221.', '..111..'], { 1: '#505868', 2: '#9098b0', 3: '#d0d8e8', 4: '#ffffff' }],
-  spellTag: [['..11..', '.1..1.', '111111', '122221', '123321', '122321', '123221', '122221', '121121', '111111'], { 1: '#504830', 2: '#e8d8a8', 3: '#8040a0' }],
-  blackGlasses: [['1........1', '1111111111', '1321..1321', '1221..1221', '.11....11.'], { 1: '#383840', 2: '#202028', 3: '#8890a8' }],
-  twistedSpoon: [['......11.', '.....1221', '.....1231', '......11.', '.....12..', '....12...', '...121...', '..12.....', '.12......', '11.......'], { 1: '#686878', 2: '#c8c8d8', 3: '#ffffff' }],
-  softSand: [['....1....', '...121...', '..12321..', '.1223221.', '124222421', '111111111'], { 1: '#a07838', 2: '#e0c068', 3: '#f8e8a8', 4: '#c09048' }],
-  fairyFeather: [['......11', '....1221', '...12231', '..12231.', '.12231..', '.1231...', '1.11....', '1.......'], { 1: '#c04878', 2: '#f8a8c8', 3: '#ffffff' }],
-} as const satisfies Record<string, ArtSpec>
