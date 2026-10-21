@@ -7819,6 +7819,11 @@ button {
   background: radial-gradient(ellipse 34% 30% at 50% 66%, #dcebd0 0 99%, transparent 100%);
 }
 
+/* The Haunted Egg hatches at night: a dusk-violet glow instead of the meadow's. */
+.hatch.haunted .hatch-canvas {
+  background: radial-gradient(ellipse 34% 30% at 50% 66%, #b8a0e0 0 99%, transparent 100%);
+}
+
 .hatch-text {
   margin: 0;
   min-height: 2.2em;

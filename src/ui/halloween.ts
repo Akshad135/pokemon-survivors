@@ -13,6 +13,7 @@ import {
 import { savedSupporterTier } from '../game/trainer'
 import { formatDay, formatNumber, t } from '../i18n'
 import { jackIcon, pumpkinHeartIcon, treatIcon } from '../render/halloweenArt'
+import { eggIcon } from '../render/art'
 import { portraitUrl } from '../render/sprites'
 import { h, later, rich } from './dom'
 import { contentLine } from './gifts'
@@ -176,6 +177,7 @@ export const halloweenScreen = (root: HTMLElement, input: Input, actions: Hallow
     [treatIcon(), m.howGhosts],
     [portraitUrl(ENEMIES.gengar.dex), m.howBosses],
     [jackIcon(), m.howPumpkins],
+    [eggIcon('haunted'), m.howEgg],
   ] as const
 
   // A supporter already wears the badge (from the first day on); anyone else is offered it.

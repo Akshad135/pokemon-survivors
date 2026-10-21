@@ -1,6 +1,6 @@
 import { createRng, seedFrom, weightedPick } from '../engine/rng'
 import type { EnemyId } from '../data/enemies'
-import { PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
+import { isEventFamily, PLAYABLE_IDS, type PlayableId } from '../data/hatchlings'
 import { brasiliaDay, dayNumber, msSinceDayStart, previousDay, type DayKey } from './day'
 import type { Difficulty } from './difficulty'
 import { NO_RANKS, UPGRADE_IDS } from './meta'
@@ -12,7 +12,7 @@ import type { ReplayStart } from './replay'
  * Desafio do dia (daily challenge): one run per Brasília day that is the same
  * for everyone, drawn from the date alone: the seed (so the same map, cast
  * and drops), the Pokémon (any playable one, an egg family still unhatched
- * included: a taste of it) and the difficulty. The Poké Mart's upgrades, the
+ * included: a taste of it; the event families aside) and the difficulty. The Poké Mart's upgrades, the
  * Bag's consumables, the armed TMs, evolution items and Bottle Caps, the Shiny Charm and the first run's lucky egg are
  * off, so the board is clean; the day's outbreak stays on (it's the day's
  * too), and so does the Noite das Bruxas on its days. Only the first finished run of each player counts on the challenge
@@ -32,10 +32,17 @@ export const CHALLENGE = {
 
 export type Challenge = { day: DayKey; seed: number; starter: PlayableId; difficulty: Difficulty; outbreak: EnemyId; halloween: boolean }
 
-/** A seeded shuffle of every playable Pokémon: one cycle of days gives each one its day. */
+/**
+ * Who the challenge draws from: every playable Pokémon but the event
+ * families, which only their event's egg brings (they also joined after the
+ * draw began: leaving them out keeps every day's Pokémon where it was).
+ */
+const POOL = PLAYABLE_IDS.filter((id) => !isEventFamily(id))
+
+/** A seeded shuffle of the pool: one cycle of days gives each one its day. */
 const cycleOrder = (cycle: number) => {
   const rng = createRng(seedFrom(`challenge:${cycle}`))
-  const order = [...PLAYABLE_IDS]
+  const order = [...POOL]
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     ;[order[i], order[j]] = [order[j]!, order[i]!]
@@ -46,7 +53,7 @@ const cycleOrder = (cycle: number) => {
 /** The challenge of a Brasília day. The Pokémon walk through seeded cycles, so none repeats within one. */
 export const dailyChallenge = (day: DayKey): Challenge => {
   const n = dayNumber(day)
-  const size = PLAYABLE_IDS.length
+  const size = POOL.length
   const rng = createRng(seedFrom(`challenge-day:${day}`))
   return {
     day,

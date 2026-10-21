@@ -148,7 +148,7 @@ import { tmPick } from './ui/tmPick'
 import { isSettingsOpen, openSettings, settings, toggleMute } from './ui/settings'
 import { mapEventFeedback } from './ui/mapEvents'
 import { runShare, sharePreview, trainerShare } from './ui/share'
-import { shop, type ShopPlaza } from './ui/shop'
+import { shop, type ShopPlaza, type VisitorShelf } from './ui/shop'
 import { starterSelect } from './ui/starterSelect'
 import { invitesScreen } from './ui/invites'
 import { titleScreen, type LobbyFocus, type Meadow, type ShopTrip } from './ui/title'
@@ -343,7 +343,7 @@ const shopPlaza: ShopPlaza = {
     devPlazaLevel = null
     celebrateShop(scene, level)
   },
-  lookAt: (keeper) => (scene.plaza.focus = keeper === 'purple' ? 1 : keeper === 'meowth' ? 'caravan' : 0),
+  lookAt: (keeper) => (scene.plaza.focus = keeper === 'purple' ? 1 : keeper === 'meowth' ? 'caravan' : keeper === 'stall' ? 'stall' : 0),
 }
 
 /** Who comes by the plaza (Meowth's caravan, a seasonal stall, the golden statue), worked out from the save about once a second. */
@@ -356,8 +356,8 @@ const refreshVisitors = (now: number) => {
   if (next.caravan !== was.caravan || next.stall !== was.stall || next.statue !== was.statue) scene.plaza.visitors = next
 }
 
-/** The shop over the plaza; `close` leaves it (and `?loja` behind); `shelf` opens on Meowth's caravan. */
-const openShop = (close: () => void, shelf?: 'caravan') => {
+/** The shop over the plaza; `close` leaves it (and `?loja` behind); `shelf` opens on Meowth's caravan or a seasonal stall's shelf. */
+const openShop = (close: () => void, shelf?: VisitorShelf) => {
   const won = wonLastRun
   wonLastRun = false
   return shop(ui, input, {
@@ -448,7 +448,7 @@ let pressedStart = false
  * Title screen. `intro` shows the blinking "press start" first (boot, PWA launch, not back from signing in);
  * coming back from the starter select goes straight to the lobby. `focus` is what the lobby highlights (JOGAR by default).
  */
-const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; instant?: boolean; back?: () => void } = {}) => {
+const showTitle = (opts: { intro?: boolean; focus?: LobbyFocus; shop?: ShopTrip; shelf?: VisitorShelf; instant?: boolean; back?: () => void } = {}) => {
   endRun()
   shopLevel = loadSave().shop.level
   // A newer build went live during the run (see `watchDeploys`): back in the lobby, with the run banked, ranked and its crash watch cleared, is the moment to load it.
@@ -2232,12 +2232,15 @@ if (import.meta.env.DEV) {
         showTitle()
         return loadSave().shop
       },
-      /** Puts a seasonal stall on the plaza (`ps.stall('halloween')`, `'christmas'`; `null` none; no argument: the calendar's) and goes there. */
-      stall: (id?: StallId | null) => {
+      /**
+       * Puts a seasonal stall on the plaza (`ps.stall('halloween')`, `'christmas'`; `null` none; no argument: the calendar's) and
+       * goes there; `ps.stall('halloween', true)` opens its shelf in the shop, as a talk with Duskull does.
+       */
+      stall: (id?: StallId | null, shop = false) => {
         if (id && !STALL_IDS.includes(id)) return `Stalls: ${STALL_IDS.join(', ')}`
         setDevStall(id)
         visitorsAt = -1
-        showTitle({ shop: 'look' })
+        showTitle(shop ? { shop: 'shop', shelf: 'stall' } : { shop: 'look' })
         return plazaVisitors(loadSave())
       },
       /** The camouflage easter egg on demand: the lobby goes to the shop and the counter looks empty until you talk. */

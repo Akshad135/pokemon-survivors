@@ -29,6 +29,7 @@ export const HATCHLINGS = [
   524, 525, 526, // Roggenrola's line (common)
   403, 404, 405, // Shinx's line (common)
   446, 143, // Friendship Egg (invites)
+  607, 608, 609, 708, 709, 425, 426, 769, 770, // Haunted Egg (Duskull's stall, Noite das Bruxas): Litwick, Phantump, Drifloon and Sandygast's lines
   // Branching evolutions (src/data/branches.ts): the eeveelutions, Gallade, Froslass, Politoed, Kleavor and Ceruledge
   134, 135, 136, 196, 470, 471, 700, 475, 478, 186, 900, 937,
 ]

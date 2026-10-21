@@ -15,13 +15,22 @@ import type { Save } from './meta'
  * them (`awardEgg` in `pickups.ts`) and `ui/save.ts` persists them.
  */
 
+/** An egg tier: the steps it walks to hatch, the ₽ it pays when it can't fit (or hatches a duplicate), and `even` odds among its families. */
+type EggTierRule = { steps: number; refund: number; even?: boolean }
+
 export const EGG_TIERS = {
   common: { steps: 2000, refund: 300 },
   rare: { steps: 4000, refund: 600 },
   ultra: { steps: 8000, refund: 1200 },
   /** The Friendship Egg: only a Mystery Gift for an invite brings it (`game/referral.ts`), and only Munchlax comes out. */
   friend: { steps: 2000, refund: 600 },
-} as const satisfies Record<string, { steps: number; refund: number }>
+  /**
+   * The Haunted Egg: only Duskull's stall sells it, on the Noite das Bruxas
+   * (`STALLS` in `data/visitors.ts`), and only its four ghosts come out, at
+   * `even` odds (no nudge towards the families not hatched yet, as the stall shows).
+   */
+  haunted: { steps: 3000, refund: 1500, even: true },
+} as const satisfies Record<string, EggTierRule>
 
 export type EggTier = keyof typeof EGG_TIERS
 
@@ -126,9 +135,18 @@ export const grantEgg = (save: Save, tier: EggTier) => depositEggs(save, 0, [{ t
 
 export type Hatch = { id: HatchlingId; tier: EggTier; shiny: boolean; duplicate: boolean; refund: number }
 
-/** Who can come out of an egg of `tier`, weighted towards families not hatched yet. */
-export const hatchPool = (tier: EggTier, hatched: Hatched) =>
-  HATCHLING_IDS.filter((id) => HATCHLINGS[id].egg === tier).map((id) => [id, hatched[id] ? 1 : EGGS.newWeight] as const)
+/** Who can come out of an egg of `tier`, weighted towards families not hatched yet (all alike for an `even` tier). */
+export const hatchPool = (tier: EggTier, hatched: Hatched) => {
+  const rule: EggTierRule = EGG_TIERS[tier]
+  return HATCHLING_IDS.filter((id) => HATCHLINGS[id].egg === tier).map((id) => [id, hatched[id] || rule.even ? 1 : EGGS.newWeight] as const)
+}
+
+/** Each family's share of an egg of `tier` for this save (what the shop shows): the weights of `hatchPool`, summing to 1. */
+export const hatchOdds = (tier: EggTier, hatched: Hatched) => {
+  const pool = hatchPool(tier, hatched)
+  const total = pool.reduce((sum, [, w]) => sum + w, 0)
+  return pool.map(([id, w]) => [id, w / total] as const)
+}
 
 /**
  * Hatches the ready egg at `index`. A new family, or the shiny form of one

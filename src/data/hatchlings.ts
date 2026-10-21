@@ -7,7 +7,9 @@ import type { PokeType } from './types'
 /**
  * Playable families that hatch from eggs (`game/eggs.ts`), on top of the 27
  * starters. They share the starters' shape; `egg` is the egg tier they hatch from
- * (Munchlax alone hatches from the Friendship Egg, which only invites bring).
+ * (Munchlax alone hatches from the Friendship Egg, which only invites bring;
+ * the Haunted Egg's ghosts only from the egg Duskull's stall sells on the
+ * Noite das Bruxas, so they stay out of the Desafio do dia and the shiny tickets).
  */
 export type HatchlingDef = PlayableDef & { egg: EggTier }
 
@@ -641,6 +643,50 @@ export const HATCHLINGS = {
     learnset: [['gyroBall', 'bodySlam', 'metronome', 'sludgeBomb', 'crunch', 'focusPunch'], ['selfDestruct', 'pyroBall', 'roost']],
     line: line2(['Munchlax', 446, ['normal']], ['Snorlax', 143, ['normal']], { maxHp: 90, armor: 2, might: 0.22, regen: 0.4, area: 0.1 }),
   },
+  /* ---------- Haunted Egg (only Duskull's stall sells it, during the Noite das Bruxas) ---------- */
+  litwick: {
+    name: 'Litwick',
+    color: '#9068d0',
+    egg: 'haunted',
+    // A candle that feeds on life force: frail, but its flames burn longer and Chandelure's reach wider.
+    stats: { might: 0.08, duration: 0.1, statusDamage: 0.1, maxHp: -15 },
+    signature: 'fireSpin',
+    learnset: [['fireSpin', 'ember', 'hex', 'willOWisp', 'psyshock'], ['torchSong', 'spiritShackle', 'toxicSpikes'], ['futureSight', 'sludgeBomb']],
+    line: line3(['Litwick', 607, ['ghost', 'fire']], ['Lampent', 608, ['ghost', 'fire']], ['Chandelure', 609, ['ghost', 'fire']], [
+      { maxHp: 20, might: 0.1, duration: 0.05 },
+      { maxHp: 35, might: 0.25, area: 0.15 },
+    ]),
+  },
+  phantump: {
+    name: 'Phantump',
+    color: '#6a8a48',
+    egg: 'haunted',
+    // A stump with a lost spirit inside: sturdy and slow to wilt; Trevenant's roots heal it as it fights.
+    stats: { maxHp: 20, regen: 0.2, speed: -3 },
+    signature: 'vineWhip',
+    learnset: [['vineWhip', 'razorLeaf', 'hex', 'willOWisp', 'venoshock'], ['leafBlade', 'drumBeating', 'toxicSpikes', 'solarBeam']],
+    line: line2(['Phantump', 708, ['ghost', 'grass']], ['Trevenant', 709, ['ghost', 'grass']], { maxHp: 65, might: 0.22, armor: 1, regen: 0.4 }),
+  },
+  drifloon: {
+    name: 'Drifloon',
+    color: '#9070c0',
+    egg: 'haunted',
+    // A balloon that drifts off with whoever holds its string: light, quick to pull pickups, quicker once Drifblim.
+    stats: { speed: 5, magnet: 10, maxHp: -10 },
+    signature: 'spiritShackle',
+    learnset: [['spiritShackle', 'roost', 'swift', 'selfDestruct', 'thunder'], ['aerialAce', 'shockWave', 'futureSight', 'disarmingVoice']],
+    line: line2(['Drifloon', 425, ['ghost', 'flying']], ['Drifblim', 426, ['ghost', 'flying']], { maxHp: 60, might: 0.22, speed: 4, area: 0.1 }),
+  },
+  sandygast: {
+    name: 'Sandygast',
+    color: '#d8b070',
+    egg: 'haunted',
+    // A sandcastle that drains whoever builds it: tough, slow, its quakes ever wider as Palossand.
+    stats: { maxHp: 25, armor: 1, area: 0.05, speed: -5 },
+    signature: 'bulldoze',
+    learnset: [['bulldoze', 'hex', 'earthquake', 'whirlpool', 'stealthRock'], ['brine', 'psyshock', 'razorLeaf', 'flashCannon']],
+    line: line2(['Sandygast', 769, ['ghost', 'ground']], ['Palossand', 770, ['ghost', 'ground']], { maxHp: 70, armor: 2, might: 0.2, area: 0.15 }),
+  },
 } as const satisfies Record<string, HatchlingDef>
 
 export type HatchlingId = keyof typeof HATCHLINGS
@@ -660,6 +706,13 @@ export type PlayableId = StarterId | HatchlingId | LegendId
 export const PLAYABLE_IDS: readonly (StarterId | HatchlingId)[] = [...STARTER_IDS, ...HATCHLING_IDS]
 
 export const isHatchling = (id: PlayableId): id is HatchlingId => id in HATCHLINGS
+
+/**
+ * A family only an event's egg brings (the Haunted Egg's ghosts): the
+ * Desafio do dia never draws it and shiny tickets can't pick it, so the egg
+ * stays its only way in.
+ */
+export const isEventFamily = (id: PlayableId) => isHatchling(id) && HATCHLINGS[id].egg === 'haunted'
 
 /** A starter: neither a hatched family nor a legend. */
 export const isStarter = (id: PlayableId): id is StarterId => id in STARTERS

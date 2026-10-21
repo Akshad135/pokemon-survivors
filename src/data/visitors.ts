@@ -73,20 +73,29 @@ export const TYCOON_REWARDS = [
   { kind: 'style', style: { slot: 'frame', id: 'kecleon' } },
 ] as const satisfies readonly GiftContent[]
 
+/** What a stall sells, by key: an egg of `egg`'s tier at `price`, `perDay` per save each Brasília day. */
+type StallGoods = Readonly<Record<string, { egg: EggTier; price: number; perDay: number }>>
+
 /**
  * Seasonal stalls: during an event's Brasília days (`from` to `to`, both
  * included) its stall stands on the plaza, its keeper (`dex`) beside it, and a
- * talk gets its lines (`plaza.stalls` in `i18n`). `link` opens an event screen
- * after the talk. A new event is a new entry here, with its art in
- * `public/assets/shop/stall-<id>.png` and its lines.
+ * talk gets its lines (`plaza.stalls` in `i18n`). A stall with `goods` opens
+ * its shelf in the shop after the talk (`game/stalls.ts`). A new event is a
+ * new entry here, with its art in `public/assets/shop/stall-<id>.png` and its lines.
  */
 export const STALLS = {
-  /** Noite das Bruxas: Duskull minds the candy jar's stall. */
-  halloween: { from: HALLOWEEN.from, to: HALLOWEEN.to, dex: 355, name: 'Duskull', art: 'stall-duskull', link: 'halloween' },
+  /**
+   * Noite das Bruxas: Duskull sells the Haunted Egg, one a day, the only way
+   * to its four ghosts (`HATCHLINGS` with `egg: 'haunted'`). It's back next year.
+   */
+  halloween: { from: HALLOWEEN.from, to: HALLOWEEN.to, dex: 355, name: 'Duskull', art: 'stall-duskull', goods: { hauntedEgg: { egg: 'haunted', price: 6_000, perDay: 1 } } },
   /** Christmas: Delibird Presentes (a talk for now, no shop). */
-  christmas: { from: '2026-12-15', to: '2026-12-31', dex: 225, name: 'Delibird', art: 'stall-delibird', link: null },
-} as const satisfies Record<string, { from: string; to: string; dex: number; name: string; art: string; link: 'halloween' | null }>
+  christmas: { from: '2026-12-15', to: '2026-12-31', dex: 225, name: 'Delibird', art: 'stall-delibird', goods: {} },
+} as const satisfies Record<string, { from: string; to: string; dex: number; name: string; art: string; goods: StallGoods }>
 
 export type StallId = keyof typeof STALLS
 
 export const STALL_IDS = Object.keys(STALLS) as StallId[]
+
+/** Every good any stall sells. */
+export type StallGoodId = { [K in StallId]: keyof (typeof STALLS)[K]['goods'] }[StallId]

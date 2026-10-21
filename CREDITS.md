@@ -479,6 +479,24 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 446 | Munchlax (shiny) | El_Pangoro_Parse | Lovi |
 | 143 | Snorlax | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR, Emboarger |
 | 143 | Snorlax (shiny) | El_Pangoro_Parse | El_Pangoro_Parse |
+| 607 | Litwick | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 607 | Litwick (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 608 | Lampent | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 608 | Lampent (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 609 | Chandelure | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 609 | Chandelure (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 708 | Phantump | [Emmuffin](https://twitter.com/Ernmuffin), ShyStarryRain | baronessfaron, Anonymous |
+| 708 | Phantump (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
+| 709 | Trevenant | baronessfaron | baronessfaron |
+| 709 | Trevenant (shiny) | [Chesyon](https://linktr.ee/chesyon) | ◥θ┴θ◤, baronessfaron |
+| 425 | Drifloon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Deleca7755, Fearless-Quit |
+| 425 | Drifloon (shiny) | Scizivire | Prismatic, Deleca7755, Fearless-Quit |
+| 426 | Drifblim | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR |
+| 426 | Drifblim (shiny) | Scizivire | NOLASMOR, Prismatic |
+| 769 | Sandygast | [Emmuffin](https://twitter.com/Ernmuffin) | JFain, [Emmuffin](https://twitter.com/Ernmuffin) |
+| 769 | Sandygast (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 770 | Palossand | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
+| 770 | Palossand (shiny) | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 134 | Vaporeon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron |
 | 134 | Vaporeon (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | Tacocoa, Emboarger, [Morei](https://bsky.app/profile/murpia57.bsky.social) |
 | 135 | Jolteon | [CHUNSOFT](https://www.spike-chunsoft.com/), dmDash | [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron, ShyStarryRain |
@@ -959,10 +977,6 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 399 | Bidoof (shiny) | Scizivire, [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 400 | Bibarel | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/) |
 | 400 | Bibarel (shiny) | Scizivire, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | Lovi, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
-| 425 | Drifloon | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), Deleca7755, Fearless-Quit |
-| 425 | Drifloon (shiny) | Scizivire | Prismatic, Deleca7755, Fearless-Quit |
-| 426 | Drifblim | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), NOLASMOR |
-| 426 | Drifblim (shiny) | Scizivire | NOLASMOR, Prismatic |
 | 434 | Stunky | [CHUNSOFT](https://www.spike-chunsoft.com/), JFain | [CHUNSOFT](https://www.spike-chunsoft.com/), C_Pariah, [Jarleypeño](https://www.deviantart.com/applecone413) |
 | 434 | Stunky (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | Anonymous, [Noo](https://artfight.net/~NooNoo_Skidoo) |
 | 436 | Bronzor | [CHUNSOFT](https://www.spike-chunsoft.com/) | [CHUNSOFT](https://www.spike-chunsoft.com/), chime |
@@ -1005,12 +1019,6 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 553 | Krookodile (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social), [Emmuffin](https://twitter.com/Ernmuffin) |
 | 559 | Scraggy | [Soulja](https://twitter.com/OlSoulja) | [Soulja](https://twitter.com/OlSoulja) |
 | 559 | Scraggy (shiny) | ShyStarryRain, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [Noo](https://artfight.net/~NooNoo_Skidoo), [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
-| 607 | Litwick | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
-| 607 | Litwick (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Emmuffin](https://twitter.com/Ernmuffin) |
-| 608 | Lampent | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
-| 608 | Lampent (shiny) | ShyStarryRain | [Emmuffin](https://twitter.com/Ernmuffin) |
-| 609 | Chandelure | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |
-| 609 | Chandelure (shiny) | [Caitemis](https://caitemis-art.tumblr.com/) | [Emmuffin](https://twitter.com/Ernmuffin) |
 | 610 | Axew | [FrivolousAqua](https://twitter.com/FrivolousAqua), baronessfaron, [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 | 610 | Axew (shiny) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) | [G〜](https://bsky.app/profile/justtr4sh.pmd.social) |
 | 659 | Bunnelby | [pi3.14](https://twitter.com/Pi_y_ranitas), baronessfaron | baronessfaron |
@@ -1037,10 +1045,6 @@ CHUNSOFT are original *Pokémon Mystery Dungeon* sprites. This file is generated
 | 704 | Goomy (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [RacieB](https://twitter.com/RacieBeep) |
 | 707 | Klefki | ◥θ┴θ◤, [Emmuffin](https://twitter.com/Ernmuffin) | baronessfaron, ◥θ┴θ◤ |
 | 707 | Klefki (shiny) | ◥θ┴θ◤, [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/), ◥θ┴θ◤, baronessfaron |
-| 708 | Phantump | [Emmuffin](https://twitter.com/Ernmuffin), ShyStarryRain | baronessfaron, Anonymous |
-| 708 | Phantump (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Caitemis](https://caitemis-art.tumblr.com/) |
-| 709 | Trevenant | baronessfaron | baronessfaron |
-| 709 | Trevenant (shiny) | [Chesyon](https://linktr.ee/chesyon) | ◥θ┴θ◤, baronessfaron |
 | 731 | Pikipek | [FlowerSnek](https://twitter.com/EthanLac13) | [Aviivix](https://twitter.com/aviivix/), [Morei](https://bsky.app/profile/murpia57.bsky.social), NOLASMOR |
 | 731 | Pikipek (shiny) | [Emmuffin](https://twitter.com/Ernmuffin) | [Dasawkem](https://dasawkem.carrd.co/#social), NOLASMOR |
 | 734 | Yungoos | baronessfaron | [Emmuffin](https://twitter.com/Ernmuffin) |

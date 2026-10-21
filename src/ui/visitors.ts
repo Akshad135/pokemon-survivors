@@ -3,7 +3,7 @@ import { caravanHere, isCaravanDay } from '../game/caravan'
 import { addDays, brasiliaDay, type DayKey } from '../game/day'
 import { hasStatue } from '../game/loyalty'
 import type { Save } from '../game/meta'
-import { stallOn } from '../game/stalls'
+import { stallGoods, stallOn } from '../game/stalls'
 import type { PlazaVisitors } from '../render/plaza'
 import { emotionUrl, type Speaker } from './dialogue'
 import { h } from './dom'
@@ -42,6 +42,22 @@ export const caravanOpen = (save: Save) => devCaravan !== false && caravanHere(s
 
 /** The seasonal stall on the plaza today, or null. */
 export const stallToday = (): StallId | null => (devStall !== undefined ? devStall : stallOn(brasiliaDay(today())))
+
+/**
+ * The day a stall's sales follow: today, or, while the dev console forces a
+ * stall in outside its dates, its first day (the rules stay the calendar's, only the day moves).
+ */
+export const stallDay = (): DayKey => {
+  const day = brasiliaDay(today())
+  const id = stallToday()
+  return devStall !== undefined && id !== null && stallOn(day) !== id ? STALLS[id].from : day
+}
+
+/** The stall on the plaza today, when it sells something (its shelf opens in the shop). */
+export const stallSelling = (): StallId | null => {
+  const id = stallToday()
+  return id !== null && stallGoods(id).length > 0 ? id : null
+}
 
 /** Everyone who comes by the plaza for this save today. */
 export const plazaVisitors = (save: Save): PlazaVisitors => ({ caravan: caravanOpen(save), stall: stallToday(), statue: hasStatue(save) })

@@ -141,7 +141,7 @@ export const VITRINE = {
   /** How many eggs and styles one save may buy on a day. */
   eggStock: 1,
   styleStock: 1,
-} as const satisfies { eggs: Record<Exclude<EggTier, 'friend'>, { price: number; weight: number }> } & Record<string, unknown>
+} as const satisfies { eggs: Record<Exclude<EggTier, 'friend' | 'haunted'>, { price: number; weight: number }> } & Record<string, unknown>
 
 export type VitrineEgg = keyof typeof VITRINE.eggs
 

@@ -20,6 +20,7 @@ import type { BagItem } from '../game/bag'
 import type { ShopLevel, ShopProp } from '../data/shop'
 import type { VitrineBlock } from '../game/shop'
 import type { CaravanBlock } from '../game/caravan'
+import type { StallBlock } from '../game/stalls'
 import type { StallId } from '../data/visitors'
 import type { RibbonTier } from '../game/ribbons'
 import type { SupporterTier } from '../game/supporters'
@@ -666,7 +667,7 @@ export const pt = {
     levels: { 1: 'Carrinho', 2: 'Tenda', 3: 'Loja', 4: 'Kecleon Mart', 5: 'Loja de Departamento' } satisfies Record<ShopLevel, string>,
     level: (name: string, n: number) => `${name} (Nv ${n})`,
     /** The shelves, as tabs (`SHELVES` in ui/shop.ts). */
-    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', caravan: 'Caravana', loyalty: 'Fidelidade', expansion: 'Expansão' },
+    tabs: { vitrine: 'Vitrine', bag: 'Mochila', tms: 'TMs', evolution: 'Evolução', training: 'Treino', style: 'Estilo', caravan: 'Caravana', stall: 'Barraca', loyalty: 'Fidelidade', expansion: 'Expansão' },
     /** Corner tags on the cards. */
     badges: { gift: 'BRINDE', wish: 'LISTA', new: 'NOVO', armed: 'LEVANDO', level: (n: number) => `NV ${n}`, exclusive: 'EXCLUSIVA', found: 'ACHOU', today: 'HOJE', owned: 'SUA', sure: 'GARANTE' },
     vitrineOf: (weekday: string, level: string) => `Vitrine de ${weekday} · ${level}`,
@@ -776,6 +777,17 @@ export const pt = {
         doneAction: 'Pechinchado',
       },
     },
+    /** A seasonal stall's shelf (`game/stalls.ts`): Duskull's Haunted Egg on the Noite das Bruxas. */
+    stall: {
+      intro: (until: string) => `Barraca do Duskull · Noite das Bruxas · até ${until}`,
+      egg: (steps: string) => `Choca em ${steps} passos: fantasmas que nenhum outro ovo traz.`,
+      /** Every family alike: their names, then the one share. */
+      even: (names: string, pct: number) => `${names}: ${pct}% cada`,
+      odds: (list: string, shiny: number) => `${list}. Shiny 1 em ${shiny}.`,
+      duplicate: (coins: string) => `Repetido: ${coins}.`,
+      stock: 'Um por dia, só na Noite das Bruxas (volta no ano que vem).',
+      blocks: { closed: 'Fechada', soldOut: 'Volta amanhã', full: 'Incubadora cheia', poor: 'Faltam ₽' } satisfies Record<StallBlock, string>,
+    },
     /** The loyalty card (`game/loyalty.ts`). */
     loyalty: {
       intro: (n: number) => `Cartão fidelidade: ${n} ${n === 1 ? 'carimbo' : 'carimbos'} · um por dia de visita`,
@@ -818,6 +830,7 @@ export const pt = {
     howGhosts: 'Pokémon do tipo *Fantasma* deixam cair doces',
     howBosses: '*Chefes* e *Alfas* sempre trazem 10 doces',
     howPumpkins: 'Quebre as *abóboras*: doces ou travessuras?',
+    howEgg: 'Na praça, o *Duskull* vende um *Ovo Assombrado* por dia',
     jarCount: (n: string) => `Pote de doces: *${n}*`,
     jarNext: (n: string) => `mais ${n} para o próximo prêmio`,
     received: 'recebido',
@@ -1486,7 +1499,7 @@ export const pt = {
   },
   /** Eggs: the incubator, the hatching scene and the egg box in the Pokémon select. */
   eggs: {
-    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade' } satisfies Record<EggTier, string>,
+    tiers: { common: 'Ovo comum', rare: 'Ovo raro', ultra: 'Ovo ultra raro', friend: 'Ovo da Amizade', haunted: 'Ovo Assombrado' } satisfies Record<EggTier, string>,
     found: (egg: string) => `Você achou um *${egg}*! Ele vai para a incubadora.`,
     /** Found mid-run with no room left in the incubator: it will be paid in ₽ when the run ends. */
     foundFull: (egg: string, coins: string) => `Você achou um *${egg}*! A incubadora está cheia, então ele vai virar *${coins}*.`,
@@ -1514,6 +1527,7 @@ export const pt = {
     locked: '???',
     lockedBlurb: (egg: string) => `Ainda está no ovo. Sai de um *${egg}*.`,
     friendBlurb: 'Só sai do *Ovo da Amizade*: convide amigos pelo seu link para ganhar um.',
+    hauntedBlurb: 'Só sai do *Ovo Assombrado*, que o Duskull vende na praça durante a Noite das Bruxas. Depois, só no ano que vem.',
     lockedButton: 'Ainda no ovo',
     incubator: (n: number, slots: number) => `Incubadora ${n}/${slots}`,
     readyBadge: (n: number) => (n === 1 ? '1 ovo pronto!' : `${n} ovos prontos!`),
@@ -4386,6 +4400,10 @@ export const pt = {
     feebas: 'O mais sem graça. Até virar o mais belo.',
     deino: 'Mordedor cego. Bate forte e, com três cabeças, atira mais.',
     munchlax: 'Tanque guloso. Muita vida, defesa e regeneração; puxa os itens de longe.',
+    litwick: 'Vela fantasma. Chamas que duram mais e queimam mais forte.',
+    phantump: 'Toco assombrado. Muita vida e regeneração.',
+    drifloon: 'Balão fantasma. Rápido, puxa os itens de longe.',
+    sandygast: 'Castelo de areia. Resistente, com tremores largos.',
     articuno: 'Ave do gelo. Golpes amplos; o frio deixa os inimigos lentos.',
     zapdos: 'Ave do trovão. Rápido, e quem o toca fica paralisado.',
     moltres: 'Ave do fogo. Muito dano, e quem o toca se queima.',
@@ -4576,9 +4594,14 @@ export const pt = {
       haggleAgain: 'Já te dei desconto! Quer me deixar sem moedas pro Pay Day?',
       thanks: ['Nyahaha! Negócio fechado!', 'Pagou, levou! Sem devolução!', 'Isso brilha mais que a moeda da minha testa!'],
     },
+    /** Duskull at its stall's shelf (`game/stalls.ts`): its hello, by the day, and its thanks in turn. */
+    duskull: {
+      hello: ['Um Ovo Assombrado por noite. O que sai dele? Fantasmas que não aparecem em nenhum outro ovo.', 'Buu... Esses ovos não chocam no calor. Chocam no medo. Leva um?', 'Quatro fantasmas, um ovo. Qual vai sair? Nem eu sei... hehehe.'],
+      thanks: ['Buu... Boa escolha. Cuidado com ele à meia-noite.', 'Hehehe... Ele já está olhando pra você.', 'Volte amanhã. Se tiver coragem.'],
+    },
     /** The seasonal stalls' keepers (`STALLS` in data/visitors.ts), line by line. */
     stalls: {
-      halloween: ['Buu... A Noite das Bruxas chegou à praça.', 'Junte doces nas partidas: o pote troca por prêmios. Vem ver!'],
+      halloween: ['Buu... A Noite das Bruxas chegou à praça.', 'Os doces das partidas vão pro pote, lá no lobby. Aqui eu vendo outra coisa...'],
       christmas: ['Deli! A Delibird Presentes chegou à praça!', 'Ainda tô embrulhando tudo. Volta no Natal que o saco vai estar cheio!'],
     } satisfies Record<StallId, readonly string[]>,
   },

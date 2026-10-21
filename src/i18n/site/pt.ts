@@ -63,7 +63,7 @@ export const sitePt = {
   pokedex: {
     title: 'Pokédex do Pokémon Survivors: iniciais, inimigos, chefes e lendários',
     description:
-      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 55 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
+      'Todos os Pokémon do Pokémon Survivors com sprite animado e shiny: os 27 iniciais e as 59 famílias dos ovos com suas evoluções, inimigos selvagens, chefes e lendários. Tipos, status no jogo, golpes, especiais e quando cada um aparece.',
     h1: 'Pokédex',
     intro: (count: number) =>
       `Os ${count} Pokémon que existem no Pokémon Survivors, com os números do jogo: iniciais de todas as regiões, as famílias que saem dos ovos e suas evoluções, a horda selvagem, os chefes e os lendários. Passe o mouse (ou toque) para ver o sprite andando e use ★ para ver o shiny.`,
@@ -566,6 +566,7 @@ export const sitePt = {
         `Quando um ovo fica pronto, ele choca ao sair da partida ou na incubadora (no menu inicial e na aba Ovos da escolha de parceiro). Famílias que você ainda não tem saem ${weight}x mais. O filhote tem 1 chance em ${shiny} de ser shiny, e aí fica shiny em todas as partidas.`,
         'Um repetido, ou um ovo achado com a incubadora cheia, vira Poké Dollars. O jogador que nunca teve um ovo ganha o primeiro com certeza.',
         'O Ovo da Amizade não cai em partidas: ele chega como Presente Misterioso quando você cria a conta pelo convite de alguém, e quando um amigo que você convidou termina 3 partidas. Só sai Munchlax dele. Com 3 amigos você ganha o título Embaixador(a) e uma moldura exclusiva, com 5, um Ovo ultra raro, e com 10, um Dratini shiny. O seu link e o progresso de cada amigo ficam no card Convide amigos, na tela inicial.',
+        'O Ovo Assombrado também não cai em partidas: só a barraca do Duskull vende, na praça, durante a Noite das Bruxas (24/10 a 2/11), um por dia. Dele só saem Litwick, Phantump, Drifloon e Sandygast, 25% cada, tenha você já ou não. Depois do evento, ele só volta no ano que vem.',
       ],
       tierHead: 'Ovo',
       stepsHead: 'Passos',
